@@ -35,6 +35,7 @@ WHERE IT MAY WRITE
     grants it:
     ~/.kube
     ~/.config/shhh
+    /work/shhh/.git — the repository's store and hooks
   changed with /add-dir
 
 CONTAINMENT
@@ -98,6 +99,7 @@ WHERE IT MAY WRITE
     grants it:
     ~/.kube
     ~/.config/shhh
+    /work/shhh/.git — the repository's store and hooks
   changed with /add-dir
 
 CONTAINMENT
@@ -105,7 +107,6 @@ CONTAINMENT
   sandbox-exec · workspace
   sandbox.require is off
 
-  Command containment:
 ↓ 5 more · web · what the checkout was let load · mcp · sec…
 
 [↑↓/jk] scroll · [esc] back to the prompt
@@ -208,6 +209,7 @@ TOOLS
 ␛[38;5;254m    grants it:␛[m
 ␛[38;5;254m    ~/.kube␛[m
 ␛[38;5;254m    ~/.config/shhh␛[m
+␛[38;5;254m    /work/shhh/.git — the repository's store and hooks␛[m
 ␛[38;5;244m  changed with /add-dir␛[m
 
 ␛[38;5;244mCONTAINMENT␛[m
@@ -271,6 +273,7 @@ TOOLS
 ␛[38;5;254m    grants it:␛[m
 ␛[38;5;254m    ~/.kube␛[m
 ␛[38;5;254m    ~/.config/shhh␛[m
+␛[38;5;254m    /work/shhh/.git — the repository's store and hooks␛[m
 ␛[38;5;244m  changed with /add-dir␛[m
 
 ␛[38;5;244mCONTAINMENT␛[m
@@ -278,7 +281,6 @@ TOOLS
 ␛[38;5;254m  sandbox-exec · workspace␛[m
 ␛[38;5;254m  sandbox.require is off␛[m
 ␛[38;5;254m␛[m
-␛[38;5;254m  Command containment:␛[m
 ␛[38;5;244m↓ 5 more · web · what the checkout was let load · mcp · sec…␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m

@@ -271,6 +271,27 @@ func TestResolvePinsUpToTheWidestGrantAndSkipsADanglingLink(t *testing.T) {
 
 // GitStoreOf answers for the store and every program path, and for nothing
 // else in the checkout.
+// The store a workspace's repository keeps is named from the checkout's
+// top, from below it and from a linked worktree, whose store is the main
+// checkout's — and nothing is named outside a repository.
+func TestGitStoreForNamesTheWorkspacesStore(t *testing.T) {
+	testHome(t)
+	_, ws := gitWorkspace(t)
+	dotgit := filepath.Join(ws, ".git")
+	gitRun(t, ws, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "seed")
+	linked := filepath.Join(t.TempDir(), "linked")
+	gitRun(t, ws, "worktree", "add", "-q", linked)
+
+	for _, dir := range []string{ws, mkdir(t, filepath.Join(ws, "src")), linked} {
+		if store, ok := GitStoreFor(dir); !ok || store != dotgit {
+			t.Errorf("GitStoreFor(%s) = %q, %v; want %s", dir, store, ok, dotgit)
+		}
+	}
+	if store, ok := GitStoreFor(t.TempDir()); ok {
+		t.Errorf("a directory in no repository has no store: %q", store)
+	}
+}
+
 func TestGitStoreOfNamesTheStoreAndItsProgramPathsOnly(t *testing.T) {
 	testHome(t)
 	_, ws := gitWorkspace(t)

@@ -32,6 +32,7 @@ func safetySections() []SafetySection {
 			"Sensitive — asks whatever the mode, and only /add-dir grants it:",
 			"  ~/.kube",
 			"  ~/.config/shhh",
+			"  /work/shhh/.git — the repository's store and hooks",
 		}},
 		{Title: "containment", ChangedBy: "/sandbox", Lines: []string{
 			"Containment",
@@ -72,6 +73,8 @@ func safetySections() []SafetySection {
 // absent rather than left off the page.
 func safetyAbsent() []SafetySection {
 	out := safetySections()
+	// A workspace in no repository: the store's line is not drawn at all.
+	out[1].Lines = out[1].Lines[:len(out[1].Lines)-1]
 	out[2] = SafetySection{Title: "containment", ChangedBy: "/sandbox", Absent: true, Lines: []string{
 		"Containment",
 		"unconfined — sandbox-exec not found at /usr/bin/sandbox-exec",

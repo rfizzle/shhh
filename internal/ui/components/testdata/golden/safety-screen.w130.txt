@@ -31,6 +31,7 @@ WHERE IT MAY WRITE
   Sensitive — asks whatever the mode, and only /add-dir grants it:
     ~/.kube
     ~/.config/shhh
+    /work/shhh/.git — the repository's store and hooks
   changed with /add-dir
 
 CONTAINMENT
@@ -82,6 +83,7 @@ TOOLS
   Sensitive — asks whatever the mode, and only /add-dir grants it:
     ~/.kube
     ~/.config/shhh
+    /work/shhh/.git — the repository's store and hooks
   changed with /add-dir
 
 CONTAINMENT
@@ -93,7 +95,6 @@ CONTAINMENT
     profile:   workspace (network: 1 host — proxy.golang.org)
     masked:    ~/.ssh, ~/.aws, ~/.config/gh, ~/.netrc
   changed with /sandbox
-
 ↓ 5 more · web · what the checkout was let load · mcp · secrets · tools
 
 [↑↓/jk] scroll · [esc] back to the prompt                                                      a reading · nothing here changes it
@@ -180,6 +181,7 @@ TOOLS
 ␛[38;5;252m  Sensitive — asks whatever the mode, and only /add-dir grants it:␛[m
 ␛[38;5;252m    ~/.kube␛[m
 ␛[38;5;252m    ~/.config/shhh␛[m
+␛[38;5;252m    /work/shhh/.git — the repository's store and hooks␛[m
 ␛[38;5;241m  changed with /add-dir␛[m
 
 ␛[38;5;243mCONTAINMENT␛[m
@@ -231,6 +233,7 @@ TOOLS
 ␛[38;5;252m  Sensitive — asks whatever the mode, and only /add-dir grants it:␛[m
 ␛[38;5;252m    ~/.kube␛[m
 ␛[38;5;252m    ~/.config/shhh␛[m
+␛[38;5;252m    /work/shhh/.git — the repository's store and hooks␛[m
 ␛[38;5;241m  changed with /add-dir␛[m
 
 ␛[38;5;243mCONTAINMENT␛[m
@@ -242,7 +245,6 @@ TOOLS
 ␛[38;5;252m    profile:   workspace (network: 1 host — proxy.golang.org)␛[m
 ␛[38;5;252m    masked:    ~/.ssh, ~/.aws, ~/.config/gh, ~/.netrc␛[m
 ␛[38;5;241m  changed with /sandbox␛[m
-
 ␛[38;5;241m↓ 5 more · web · what the checkout was let load · mcp · secrets · tools␛[m
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                      ␛[38;5;241ma reading · nothing here changes it␛[m

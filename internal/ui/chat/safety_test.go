@@ -2,6 +2,7 @@ package chat
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -161,6 +162,35 @@ func TestSafety_AHostGrantIsReadLive(t *testing.T) {
 		if !strings.Contains(web, want) {
 			t.Errorf("the web section does not say %q:\n%s", want, web)
 		}
+	}
+}
+
+// The workspace repository's store is on the sensitive list, as the working
+// scope classifies it, and only where there is a repository to have one.
+func TestSafety_TheRepositoryStoreIsSensitiveWhereThereIsOne(t *testing.T) {
+	const words = "the repository's store and hooks"
+	if where := strings.Join(sectionNamed(t, safetyModel(t), "where it may write").Lines, "\n"); strings.Contains(where, words) {
+		t.Errorf("a workspace in no repository names a store:\n%s", where)
+	}
+
+	repo := t.TempDir()
+	if out, err := exec.Command("git", "init", "-q", repo).CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v\n%s", err, out)
+	}
+	sc, errs := scope.New(repo)
+	if len(errs) > 0 {
+		t.Fatal(errs)
+	}
+	store, err := filepath.EvalSymlinks(filepath.Join(repo, ".git"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if class, _ := scope.Classify(store); class != scope.Sensitive {
+		t.Fatalf("the working scope does not classify %s sensitive", store)
+	}
+	where := strings.Join(sectionNamed(t, safetyModel(t).WithScope(sc), "where it may write").Lines, "\n")
+	if !strings.Contains(where, store+" — "+words) {
+		t.Errorf("the sensitive list does not name %s:\n%s", store, where)
 	}
 }
 

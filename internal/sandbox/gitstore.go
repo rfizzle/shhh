@@ -374,3 +374,16 @@ func GitStoreOf(dir string) (string, bool) {
 	}
 	return "", false
 }
+
+// GitStoreFor is the store of the repository dir is in, read the way the
+// mask reads it — git's answer first, the .git found by walking up where git
+// gives none — so a report naming the store names the one a grant would
+// unmask. It answers false where dir is in no repository.
+// See docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only.
+func GitStoreFor(dir string) (string, bool) {
+	g, ok := readGitStore(dir)
+	if !ok || len(g.stores) == 0 {
+		return "", false
+	}
+	return g.stores[0], true
+}

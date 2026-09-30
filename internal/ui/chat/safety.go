@@ -188,11 +188,22 @@ func (m Model) safetyScope() components.SafetySection {
 	// every one of these lives under it.
 	home, _ := os.UserHomeDir()
 	home = filepath.Clean(home)
-	for _, dir := range append(sandbox.CredentialPaths(), sandbox.ShhhPaths()...) {
+	short := func(dir string) string {
 		if rest, ok := strings.CutPrefix(dir, home+string(filepath.Separator)); ok && home != "." {
-			dir = filepath.Join("~", rest)
+			return filepath.Join("~", rest)
 		}
-		sec.Lines = append(sec.Lines, "  "+dir)
+		return dir
+	}
+	for _, dir := range append(sandbox.CredentialPaths(), sandbox.ShhhPaths()...) {
+		sec.Lines = append(sec.Lines, "  "+short(dir))
+	}
+	// The workspace repository's store is sensitive to the working scope
+	// too: git runs its hooks and config on the host, so a grant that lets a
+	// contained command write them is a person's to make. It is named only
+	// where there is a store, found the way the mask finds it.
+	// See docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only.
+	if store, ok := sandbox.GitStoreFor(m.scope.Root()); ok {
+		sec.Lines = append(sec.Lines, "  "+short(store)+" — the repository's store and hooks")
 	}
 	return sec
 }

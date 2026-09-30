@@ -15,9 +15,11 @@ snap 01-start "Some things worth doing first"
 keys "/safety" Enter
 snap 02-reading "/safety · manual" "WHERE IT MAY WRITE" "changed with /permissions"
 # Scrolled, the top of the pane names the section it folded away and the
-# foot the ones still below — sections by name, not a count of rows.
+# foot the ones still below — sections by name, not a count of rows. The
+# sensitive list ends on the workspace repository's store, which the scene
+# has because it runs in a fresh repository.
 keys Down Down Down Down Down Down Down Down Down Down Down Down
-snap 03-scrolled "↑ 1 more · mode and policy" "↓"
+snap 03-scrolled "↑ 1 more · mode and policy" "↓" "the repository's"
 # Containment is the session's own mechanism read against the scope as it
 # stands, and the last section is the toolset in its tiers. The fold count
 # above the last page depends on how much the host's containment section
