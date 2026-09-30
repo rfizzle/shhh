@@ -330,7 +330,17 @@ while IFS= read -r line; do
 	esac
 done < "$scene/steps.txt"
 
-envs="HOME=$home XDG_CONFIG_HOME=$home/config XDG_DATA_HOME=$home/data"
+envs="HOME=$home XDG_CONFIG_HOME=$home/config XDG_DATA_HOME=$home/data XDG_CACHE_HOME=$home/.cache"
+
+# The release check is answered before the binary starts: a failed check
+# recorded just now, which the binary honours for an hour by asking nothing.
+# Without it a versioned build — the one `make tui-check` drives — asks
+# GitHub in the background as it opens, and where the answer lands before the
+# session is built the frame opens with an `update:` line the scene never
+# asked for. That is one row off every rail, decided by the network, and a
+# scene whose rail is full then sheds whatever the rail gives up first.
+mkdir -p "$home/.cache/shhh"
+printf '{"latest":"","checked_at":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$home/.cache/shhh/update_check.json"
 envs="$envs SHHH_PROVIDER=openai-compatible SHHH_BASE_URL=http://127.0.0.1:$PORT/v1 SHHH_API_KEY=scripted SHHH_MODEL=scripted-model SHHH_REASONING=medium"
 envs="$envs TERM=xterm-256color COLORTERM=truecolor"
 
