@@ -1345,6 +1345,16 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			if plan.Writer && agents.runsCommands(plan.Role) {
 				fields = append(fields, writerCommands)
 			}
+			// A checkout's profile says what its commands are for in the
+			// checkout's words, which the classifier is not handed; the
+			// person reads them here instead, before the child exists.
+			// See docs/capabilities/approvals-and-safety.md#a-profile-can-narrow-the-classifier-never-widen-it.
+			if intent := agents.checkoutIntent(plan.Role); intent != "" {
+				fields = append(fields, chat.GatedField{
+					Label: "intent", Value: intent,
+					Detail: "the checkout's profile says so · the classifier is not told",
+				})
+			}
 			return chat.GatedPreview{
 				Action: "spawn", Summary: summary, Fields: fields,
 				// The act the card's row states, and the transcript's own

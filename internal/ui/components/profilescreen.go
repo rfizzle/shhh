@@ -177,7 +177,16 @@ type ProfileSection struct {
 	// the words its key row offers it under; empty is a field block enter
 	// does nothing on.
 	Pick string
+	// Revisable says a field block is revised the way a prose section is —
+	// a note, the editor, clearing it — while it is still drawn as its
+	// value line. Body then holds the text the editor opens on, and is
+	// empty when there is nothing to clear.
+	Revisable bool
 }
+
+// revisable says the section takes the prose acts: a note, the editor and
+// clearing.
+func (s ProfileSection) revisable() bool { return s.Prose || s.Revisable }
 
 // ProfileDraftView is the profile as the draft step states it: what it is
 // called, what it is for, and its sections in the order the file keeps them.
@@ -576,7 +585,7 @@ func (p *ProfileScreen) updateSections(msg tea.KeyPressMsg) (bool, ProfileResult
 		p.section = min(max(p.section+keys.Step(pressed, keys.Profile.Move), 0), len(p.Draft.Sections)-1)
 		p.reveal = true
 	case keys.Is(pressed, keys.Profile.Refine):
-		if !sec.Prose {
+		if !sec.revisable() {
 			if sec.Pick == "" {
 				return false, ProfileResult{}
 			}
@@ -594,9 +603,9 @@ func (p *ProfileScreen) updateSections(msg tea.KeyPressMsg) (bool, ProfileResult
 		p.field.Reset()
 		p.field.Placeholder = "what to change across the draft"
 		p.field.Focus()
-	case keys.Is(pressed, keys.Profile.Edit) && sec.Prose:
+	case keys.Is(pressed, keys.Profile.Edit) && sec.revisable():
 		return true, ProfileResult{Action: ProfileEdit, Index: p.section}
-	case keys.Is(pressed, keys.Profile.Clear) && sec.Prose && strings.TrimSpace(sec.Body) != "":
+	case keys.Is(pressed, keys.Profile.Clear) && sec.revisable() && strings.TrimSpace(sec.Body) != "":
 		return true, ProfileResult{Action: ProfileClear, Index: p.section}
 	case keys.Is(pressed, keys.Profile.Back):
 		// esc takes back the selected section's last revision while it has
@@ -1027,10 +1036,10 @@ func (p *ProfileScreen) sectionHint() []KeyOffer {
 	}
 	sec, ok := p.selected()
 	segments := []KeyOffer{keyOfferAs(keys.Profile.Move, "section")}
-	if ok && !sec.Prose && sec.Pick != "" {
+	if ok && !sec.revisable() && sec.Pick != "" {
 		segments = append(segments, keyOfferAs(keys.Profile.Refine, sec.Pick))
 	}
-	if ok && sec.Prose {
+	if ok && sec.revisable() {
 		segments = append(segments,
 			keyOfferAs(keys.Profile.Refine, "refine it with a note"),
 			keyOfferAs(keys.Profile.Edit, "edit it yourself"))

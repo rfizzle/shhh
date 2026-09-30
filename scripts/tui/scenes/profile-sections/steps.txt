@@ -10,7 +10,8 @@
 # marked as the person's own; esc takes that back; and tab hands the keyboard
 # to the card, whose pane folds rather than giving ground; then one note for
 # the whole draft rewrites every section but the one the person wrote, and
-# esc on the row it leaves takes it back.
+# esc on the row it leaves takes it back; last, the Commands block is revised
+# on a note, cleared and given back.
 snap 01-start "Some things worth doing first"
 keys "/agents new a test writer" Enter
 snap 02-sections "[enter] refine it with a note" "❯ Purpose" "Report ⚠ empty · the drafter left it"
@@ -54,3 +55,18 @@ keys Enter
 snap 14-whole "Whole draft · redrafted on your note" "Restrictions kept as you" "[esc] take it back from every section it changed"
 keys Escape
 snap 15-whole-back "❯ Model" "[esc] discard the draft"
+# The Commands block takes the prose sections' keys: it states nothing yet,
+# a note about it comes back with its two fields — and every section
+# rewritten besides, of which nothing is taken — x clears it back to the
+# session's own lists, and esc takes the clear back.
+keys Up
+snap 16-commands "❯ Commands" "none stated · the session's own command lists apply" "[e] edit it yourself"
+keys Enter
+snap 17-commands-note "what to change in Commands"
+keys "it must never push or install"
+keys Enter
+snap 18-commands-refined "Commands · refined once" "for: running the package's tests and go vet" "never: git push, go install"
+keys x
+snap 19-commands-cleared "Commands · you cleared it" "none stated"
+keys Escape
+snap 20-commands-back "never: git push, go install" "[esc] take back its last revision"

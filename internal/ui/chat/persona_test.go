@@ -926,3 +926,79 @@ func TestPersona_AChatRevisionCannotGrantAWritingTier(t *testing.T) {
 		t.Fatalf("the dropped tool should still be named:\n%s", view)
 	}
 }
+
+// commandsBlock is the Commands block's index among the draft's blocks.
+func commandsBlock(t *testing.T) int {
+	t.Helper()
+	for i, name := range personaBlocks {
+		if name == persona.SectionCommands {
+			return i
+		}
+	}
+	t.Fatal("the draft has no Commands block")
+	return -1
+}
+
+// The Commands block is revised the way a prose section is: a note to the
+// drafter takes only its two fields from the answer, the editor reads its
+// lines back, x clears it and esc takes each revision back — and none of it
+// moves the prompt, the tiers or the name.
+func TestPersona_TheCommandsSectionIsRevisedLikeAProseOne(t *testing.T) {
+	answer := answerRewritingEverything()
+	answer.Draft.Intent = "running the package's tests"
+	answer.Draft.Deny = []string{"git push"}
+	m, reqs, saves := sectionedModel(t, persona.KindCode, answer)
+	if view := personaView(m); !strings.Contains(view, "none stated · the session's own command lists apply") {
+		t.Fatalf("a draft stating no commands should say what applies:\n%s", view)
+	}
+	m = refineSection(t, m, commandsBlock(t), "it must never push")
+	req := (*reqs)[len(*reqs)-1]
+	if req.Section != persona.SectionCommands || req.Feedback != "it must never push" {
+		t.Fatalf("request = %+v", req)
+	}
+	d := m.persona.draft
+	if d.Intent != "running the package's tests" || strings.Join(d.Deny, ",") != "git push" {
+		t.Fatalf("the Commands fields should come from the answer: %q %v", d.Intent, d.Deny)
+	}
+	if d.Sections.Purpose != "Add tests." || d.Name != "test-writer" || strings.Join(d.Permissions, ",") != "write,execute" {
+		t.Fatalf("a Commands refine moved the rest of the draft: %+v", *d)
+	}
+	if view := personaView(m); !strings.Contains(view, "Commands · refined once") ||
+		!strings.Contains(view, "for: running the package's tests · never: git push") {
+		t.Fatalf("the refined block should state its fields:\n%s", view)
+	}
+
+	m = handEdit(t, m, persona.SectionCommands, "# a comment\nintent: run the tests and the build\ndeny: git push\ndeny: go install")
+	if d := m.persona.draft; d.Intent != "run the tests and the build" || strings.Join(d.Deny, ",") != "git push,go install" {
+		t.Fatalf("the editor's lines should be read back: %q %v", d.Intent, d.Deny)
+	}
+	if view := personaView(m); !strings.Contains(view, "Commands · edited by you") {
+		t.Fatalf("a hand edit should be marked:\n%s", view)
+	}
+
+	// An allow line is the loader's refusal, said while it is a card.
+	m = handEdit(t, m, persona.SectionCommands, "allow: go test")
+	if view := personaView(m); !strings.Contains(view, "a profile carries no allowlist") {
+		t.Fatalf("an allow line should be refused in the loader's words:\n%s", view)
+	}
+	if strings.Join(m.persona.draft.Deny, ",") != "git push,go install" {
+		t.Fatalf("a refused edit changed the draft: %v", m.persona.draft.Deny)
+	}
+
+	m = pressOn(t, m, tea.KeyPressMsg{Code: 'x', Text: "x"})
+	if d := m.persona.draft; d.Intent != "" || len(d.Deny) != 0 {
+		t.Fatalf("x should clear the Commands fields: %q %v", d.Intent, d.Deny)
+	}
+	if view := personaView(m); !strings.Contains(view, "Commands · you cleared it") {
+		t.Fatalf("a cleared Commands block should say so:\n%s", view)
+	}
+	for _, want := range []string{"git push,go install", "git push", ""} {
+		m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+		if got := strings.Join(m.persona.draft.Deny, ","); got != want {
+			t.Fatalf("esc took Commands back to %q, want %q", got, want)
+		}
+	}
+	if len(*saves) != 0 {
+		t.Fatalf("a revision wrote a file: %v", *saves)
+	}
+}

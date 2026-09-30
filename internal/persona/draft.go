@@ -109,6 +109,10 @@ func (d *Drafter) Enabled() bool {
 	return d != nil && d.provider != nil && d.cfg.model() != ""
 }
 
+// SectionCommands is the Commands section's name: the intent and deny
+// fields, revised as one section the way a prose one is.
+const SectionCommands = "Commands"
+
 // DraftToolName is the tool the drafter answers through.
 const DraftToolName = "draft_profile"
 
@@ -151,6 +155,8 @@ const draftSchemaTemplate = `{
 					},
 					"required": ["purpose", "scope", "restrictions", "method", "report"]
 				},
+				"intent": {"type": "string", "description": "Optional, for a role that runs commands: one sentence on what its commands are for. It can only make approvals stricter; omit it for a role that runs none"},
+				"deny": {"type": "array", "items": {"type": "string"}, "description": "Optional: command prefixes this role must never run, such as \"git push\". They are refused outright; omit when the brief names none"},
 				"max_tokens": {"type": "integer", "description": "Token budget for one task; omit for the default"},
 				"why": {"type": "string", "description": "One sentence on the choices that were not obvious"}
 			},
@@ -337,7 +343,15 @@ func userPrompt(req Request) string {
 			// One section is being revised. The rest is context the answer
 			// must not move, and the caller takes that section alone from
 			// it, so a rewrite of anything else would be work thrown away.
-			fmt.Fprintf(&b, "\nRevise the %s section only, to match what the person said about it. Every other section and field is fixed: answer them exactly as they are in the current draft. Only %s is taken from your answer.\n", req.Section, req.Section)
+			section := req.Section
+			if section == SectionCommands {
+				// Not a heading in the prompt but two fields of the file, so
+				// the drafter is told which.
+				section = SectionCommands + " section (the intent and deny fields)"
+			} else {
+				section += " section"
+			}
+			fmt.Fprintf(&b, "\nRevise the %s only, to match what the person said about it. Every other section and field is fixed: answer them exactly as they are in the current draft. Only %s is taken from your answer.\n", section, req.Section)
 			fmt.Fprintf(&b, "\nWhat the person said about %s:\n%s\n", req.Section, strings.TrimSpace(req.Feedback))
 			return b.String()
 		}

@@ -216,6 +216,60 @@ func TestAProfilesSectionedPromptReachesTheChildAsWritten(t *testing.T) {
 	}
 }
 
+// A profile's Commands fields reach the supervisor, and the child reads them
+// under its own prompt — only where it holds the command tool, since a child
+// that runs nothing has nothing to read them against.
+func TestAProfilesCommandsReachTheChild(t *testing.T) {
+	def := config.AgentDefinition{Name: "tester", Description: "runs tests", Permissions: []string{"execute"},
+		Prompt: "Run the tests.", Intent: "running the package's tests", Deny: []string{"git push", "go install"}}
+	p, err := profileFromDefinition(def)
+	if err != nil || p.Intent != def.Intent || strings.Join(p.Deny, ",") != "git push,go install" {
+		t.Fatalf("the Commands fields did not reach the supervisor: %+v %v", p, err)
+	}
+	info := shell.Info{OS: "linux", Cwd: "/w"}
+	got := composed(profileEnv(def, subagent.Spec{}, info, "", nil, nil, map[string]bool{}))
+	for _, want := range []string{"Run the tests.\n\n## Commands", "Your commands are for: running the package's tests",
+		"Never run a command beginning `git push`, `go install`."} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("the child's prompt lacks %q:\n%s", want, got)
+		}
+	}
+	reader := def
+	reader.Permissions = nil
+	if got := composed(profileEnv(reader, subagent.Spec{}, info, "", nil, nil, map[string]bool{})); strings.Contains(got, "## Commands") {
+		t.Fatalf("a child that runs nothing was handed a Commands section:\n%s", got)
+	}
+}
+
+// A profile is the person's only where it was read from their own agents
+// directory; anything else — the checkout's, or a path neither reading
+// expected — is the checkout's, whose intent goes on the spawn card and
+// never to the classifier.
+func TestOnlyThePersonsOwnProfileIsTheirs(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	cwd := t.TempDir()
+	own := config.AgentDefinition{Path: filepath.Join(config.AgentDirs()[0], "tester.toml")}
+	if fromCheckout(own, cwd) {
+		t.Fatal("a profile in the person's agents directory read as the checkout's")
+	}
+	for _, def := range []config.AgentDefinition{
+		{Path: filepath.Join(config.ProjectAgentDir(cwd), "tester.toml")},
+		{Path: filepath.Join(t.TempDir(), "tester.toml")},
+		{},
+	} {
+		if !fromCheckout(def, cwd) {
+			t.Fatalf("%q read as the person's own", def.Path)
+		}
+	}
+	agents := &agentProfiles{profiles: subagent.Profiles{
+		"mine":   {Name: "mine", Intent: "running tests"},
+		"theirs": {Name: "theirs", Intent: "running tests", Checkout: true},
+	}}
+	if agents.checkoutIntent("mine") != "" || agents.checkoutIntent("theirs") != "running tests" {
+		t.Fatal("only a checkout's intent belongs on the spawn card")
+	}
+}
+
 // The same holds for a read-only profile that does not review: the gate
 // sentence follows the toolset, so it is there when the runner reached the
 // child and absent when an untrusted checkout opened none.

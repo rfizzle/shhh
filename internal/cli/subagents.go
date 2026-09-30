@@ -102,6 +102,7 @@ func loadAgentProfilesIn(cwd string, projectScoped bool) (*agentProfiles, error)
 		if err != nil {
 			return nil, err
 		}
+		p.Checkout = fromCheckout(def, cwd)
 		out.profiles[p.Name] = p
 	}
 	return out, nil
@@ -118,6 +119,8 @@ func profileFromDefinition(def config.AgentDefinition) (subagent.Profile, error)
 		MaxTokens:   def.MaxTokens,
 		MaxRounds:   def.MaxRounds,
 		Inherit:     def.Inherit,
+		Deny:        def.Deny,
+		Intent:      def.Intent,
 	}
 	if strings.TrimSpace(def.Mode) != "" {
 		mode, err := agent.ParseMode(def.Mode)
@@ -132,6 +135,22 @@ func profileFromDefinition(def config.AgentDefinition) (subagent.Profile, error)
 		}
 	}
 	return p, nil
+}
+
+// fromCheckout reports a profile that is not the person's own: anything not
+// read from one of their config directories' agents/, which is the
+// checkout's directory in practice. The words in such a file are the
+// checkout's, so what it says its commands are for is shown on the spawn
+// card and never handed to the classifier as evidence it trusts to narrow.
+// It asks where the file is rather than whether it is in the checkout, so a
+// path neither reading expected falls on the side that sends nothing.
+// See docs/capabilities/approvals-and-safety.md#a-profile-can-narrow-the-classifier-never-widen-it.
+func fromCheckout(def config.AgentDefinition, cwd string) bool {
+	dir := filepath.Dir(def.Path)
+	if def.Path == "" || dir == config.ProjectAgentDir(cwd) {
+		return true
+	}
+	return !slices.Contains(config.AgentDirs(), dir)
 }
 
 // readers is the subset of profiles that can change nothing: what a
@@ -594,6 +613,17 @@ func holdsCommand(defs []provider.Tool) bool {
 // a profile file that grants execute and does not list it away, or the
 // built-in writer. It is what the spawn card asks before it states what a
 // writer's commands run under, since a writer that may only edit has none.
+// checkoutIntent is what a checkout's profile says its commands are for, for
+// the spawn card: the one place those words reach, since the classifier is
+// never handed them. Empty for the person's own profiles and for one that
+// states nothing.
+func (a *agentProfiles) checkoutIntent(role subagent.Role) string {
+	if p, ok := a.profiles[role]; ok && p.Checkout {
+		return strings.TrimSpace(p.Intent)
+	}
+	return ""
+}
+
 func (a *agentProfiles) runsCommands(role subagent.Role) bool {
 	if def, ok := a.definitions[string(role)]; ok {
 		return def.Has(config.PermissionExecute) && def.Allows(tools.ExecCommandName)
@@ -1237,10 +1267,11 @@ func builtinEnv(role subagent.Role, spec subagent.Spec, info shell.Info, extra s
 // handed the profile's grants alone, it would tell a child with the notebook
 // and a server's reads that it has neither.
 func profilePrompt(def config.AgentDefinition, spec subagent.Spec, info shell.Info, extra string, names []string) string {
+	own := strings.TrimSpace(def.Prompt) + commandsSection(def, names)
 	var sysPrompt string
 	switch {
 	case strings.EqualFold(strings.TrimSpace(def.PromptMode), config.PromptReplace):
-		sysPrompt = strings.TrimSpace(def.Prompt)
+		sysPrompt = own
 		if extra != "" {
 			sysPrompt += "\n\n" + extra
 		}
@@ -1261,7 +1292,7 @@ func profilePrompt(def config.AgentDefinition, spec subagent.Spec, info shell.In
 			Name:        def.Name,
 			Description: def.Description,
 			Tools:       names,
-		}, prompt.CombineExtra(strings.TrimSpace(def.Prompt), extra))
+		}, prompt.CombineExtra(own, extra))
 	default:
 		sysPrompt = prompt.BuildProfile(info, prompt.ProfileSpec{
 			Name:        def.Name,
@@ -1270,12 +1301,41 @@ func profilePrompt(def config.AgentDefinition, spec subagent.Spec, info shell.In
 			Execute:     def.Has(config.PermissionExecute),
 			Tools:       names,
 			Isolated:    def.Writes(),
-		}, prompt.CombineExtra(strings.TrimSpace(def.Prompt), extra))
+		}, prompt.CombineExtra(own, extra))
 	}
 	if def.Writes() {
 		sysPrompt += scopeNote(spec.Paths)
 	}
 	return sysPrompt
+}
+
+// commandsSection is the profile's Commands fields as the child reads them,
+// under the prompt it wrote: what its commands are for and what it must
+// never run. It is there only where the child holds the command tool — a
+// child that runs nothing has nothing to read it against — and says the
+// refusals are refused whatever the spelling, which is true because they
+// are matched the way the person's own deny list is.
+// See docs/capabilities/subagents.md#a-profile-is-a-file.
+func commandsSection(def config.AgentDefinition, names []string) string {
+	intent := strings.TrimSpace(def.Intent)
+	var deny []string
+	for _, d := range def.Deny {
+		if d = strings.TrimSpace(d); d != "" {
+			deny = append(deny, "`"+d+"`")
+		}
+	}
+	if (intent == "" && len(deny) == 0) || !slices.Contains(names, tools.ExecCommandName) {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\n\n## Commands\n")
+	if intent != "" {
+		b.WriteString("\nYour commands are for: " + intent + "\n")
+	}
+	if len(deny) > 0 {
+		b.WriteString("\nNever run a command beginning " + strings.Join(deny, ", ") + ". Each is refused however it is spelled or wrapped.\n")
+	}
+	return strings.TrimRight(b.String(), "\n")
 }
 
 // childSandboxProfile is the profile a child's commands run under: the

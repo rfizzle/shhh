@@ -1,14 +1,17 @@
-# The drafter's three turns. A drafting request offers draft_profile as its
+# The drafter's four turns. A drafting request offers draft_profile as its
 # one tool, so the endpoint answers it from the reading queue: first the
 # draft, with Report left empty as a gap, then the answer to the note about
 # Method — which rewrites every section and renames the profile, so the
 # capture shows that only Method is taken from it — then the answer to the
 # note on the whole draft, which rewrites every section, renames the profile
 # and drops its tiers, so the capture shows the sections taken, the one the
-# person wrote kept, and the fields left as they were.
+# person wrote kept, and the fields left as they were — then the answer to
+# the note about Commands, which states its two fields and rewrites every
+# section besides, so the capture shows only the two fields taken.
 [session]
 Nothing in this scene asks the session anything.
 [reading]
 tool:draft_profile:{"profile":{"name":"test-writer","description":"adds table-driven tests for a package and runs them","permissions":["write","execute"],"sections":{"purpose":"Add table-driven tests for one package at a time. Done when every exported function has a case in its table and the package's tests pass.","scope":"The package you were pointed at and its _test.go files. Leave the exported API and every other package alone.","restrictions":"Never change an expected value to make a case pass.","method":"Read the package, then its tests, then write the cases the table is missing. Run the package's tests after each file.","report":""},"why":"a writer that could not run the tests would be proposing them"}}
 tool:draft_profile:{"profile":{"name":"renamed","description":"something else","permissions":["write","execute"],"sections":{"purpose":"REWRITTEN purpose.","scope":"REWRITTEN scope.","restrictions":"REWRITTEN restrictions.","method":"Read the package, then its tests, then write the missing cases. Run the tests and go vet after each file, and stop at the first that fails.","report":"REWRITTEN report."}}}
 tool:draft_profile:{"profile":{"name":"renamed","description":"something else","permissions":[],"sections":{"purpose":"Add table-driven tests to one package. Done when every exported function has a case and the tests pass.","scope":"The named package and its _test.go files; nothing else.","restrictions":"REWRITTEN restrictions.","method":"Read, then write the missing cases; run the tests after each file.","report":"The cases added, by function, and the test run's last line."}}}
+tool:draft_profile:{"profile":{"name":"renamed","description":"something else","permissions":[],"intent":"running the package's tests and go vet","deny":["git push","go install"],"sections":{"purpose":"REWRITTEN purpose.","scope":"REWRITTEN scope.","restrictions":"REWRITTEN restrictions.","method":"REWRITTEN method.","report":"REWRITTEN report."}}}

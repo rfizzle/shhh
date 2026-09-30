@@ -42,6 +42,14 @@ type Draft struct {
 	// the project's own checks says so: quality_gate sits under read
 	// (docs/capabilities/subagents.md#a-profile-that-changes-nothing-can-still-run-the-checks).
 	Tools []string `json:"tools,omitempty"`
+	// Intent and Deny are the Commands section: what the agent's commands
+	// are for, and command prefixes it must never run. Both only narrow —
+	// the deny list is added to the person's, and the intent is put to the
+	// classifier as something that may refuse and never allow — so the
+	// drafter may propose them and a profile carries no allowlist beside
+	// them (docs/capabilities/subagents.md#a-profile-is-a-file).
+	Intent string   `json:"intent,omitempty"`
+	Deny   []string `json:"deny,omitempty"`
 	// Sections is the prompt as the drafter answers it: the five prose
 	// sections by name, so one it left empty is an empty field rather than
 	// a paragraph nobody can see is missing. Normalise writes Prompt from
@@ -168,9 +176,86 @@ func (d Draft) Definition() config.AgentDefinition {
 		Reasoning:   d.Reasoning,
 		Permissions: d.Permissions,
 		Tools:       d.Tools,
+		Intent:      d.Intent,
+		Deny:        d.Deny,
 		Prompt:      d.Prompt,
 		MaxTokens:   d.MaxTokens,
 	}
+}
+
+// The words the Commands section is written in when it is handed to the
+// person's editor: one field per line, each deny prefix a line of its own.
+const (
+	commandsIntent = "intent:"
+	commandsDeny   = "deny:"
+	commandsAllow  = "allow:"
+)
+
+// CommandsText is the Commands section as text: the intent on a line, then
+// one line per deny prefix, in the words ParseCommands reads back. It is
+// empty for a draft that states neither.
+func (d Draft) CommandsText() string {
+	var lines []string
+	if d.Intent != "" {
+		lines = append(lines, commandsIntent+" "+d.Intent)
+	}
+	for _, p := range d.Deny {
+		lines = append(lines, commandsDeny+" "+p)
+	}
+	return strings.Join(lines, "\n")
+}
+
+// SetCommands replaces the Commands section with what text says, read the
+// way CommandsText writes it: an `intent:` line, `deny:` lines, blank lines
+// and `#` comments ignored. Anything else is refused with its line, and so
+// is an `allow:` line, in the loader's own words — the file would not load,
+// so the card must not keep it. On a refusal the draft is left as it was.
+func (d *Draft) SetCommands(text string) error {
+	var intent []string
+	var deny []string
+	for i, line := range strings.Split(text, "\n") {
+		line = strings.TrimSpace(line)
+		lower := strings.ToLower(line)
+		switch {
+		case line == "" || strings.HasPrefix(line, "#"):
+		case strings.HasPrefix(lower, commandsIntent):
+			if v := strings.TrimSpace(line[len(commandsIntent):]); v != "" {
+				intent = append(intent, v)
+			}
+		case strings.HasPrefix(lower, commandsDeny):
+			if v := strings.TrimSpace(line[len(commandsDeny):]); v != "" {
+				deny = append(deny, v)
+			}
+		case strings.HasPrefix(lower, commandsAllow):
+			return config.CheckCommands(nil, "", true)
+		default:
+			return fmt.Errorf("line %d: start it with %q or %q", i+1, commandsIntent, commandsDeny)
+		}
+	}
+	next := Draft{Intent: strings.Join(intent, " "), Deny: deny}
+	next.tidyCommands()
+	if err := config.CheckCommands(next.Deny, next.Intent, false); err != nil {
+		return err
+	}
+	d.Intent, d.Deny = next.Intent, next.Deny
+	return nil
+}
+
+// tidyCommands puts the intent on one line and drops blank and repeated
+// deny prefixes, keeping the order they were written in.
+func (d *Draft) tidyCommands() {
+	d.Intent = strings.Join(strings.Fields(d.Intent), " ")
+	seen := map[string]bool{}
+	var deny []string
+	for _, p := range d.Deny {
+		p = strings.Join(strings.Fields(p), " ")
+		if p == "" || seen[p] {
+			continue
+		}
+		seen[p] = true
+		deny = append(deny, p)
+	}
+	d.Deny = deny
 }
 
 // Writes reports a draft that could change something.
@@ -281,6 +366,7 @@ func (d *Draft) Normalise(kind Kind) error {
 	if d.MaxTokens < 0 {
 		d.MaxTokens = 0
 	}
+	d.tidyCommands()
 	return d.Definition().Validate()
 }
 
@@ -397,6 +483,16 @@ func Render(d Draft, kind Kind) string {
 	}
 	if d.MaxTokens > 0 {
 		fmt.Fprintf(&b, "max_tokens = %d\n", d.MaxTokens)
+	}
+	if d.Intent != "" {
+		fmt.Fprintf(&b, "intent = %s\n", tomlString(d.Intent))
+	}
+	if len(d.Deny) > 0 {
+		quoted := make([]string, len(d.Deny))
+		for i, p := range d.Deny {
+			quoted[i] = tomlString(p)
+		}
+		fmt.Fprintf(&b, "deny = [%s]\n", strings.Join(quoted, ", "))
 	}
 	b.WriteString("prompt = \"\"\"\n")
 	b.WriteString(strings.ReplaceAll(d.Prompt, `"""`, `""\"`))

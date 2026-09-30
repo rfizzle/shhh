@@ -49,6 +49,30 @@ type Profile struct {
 	// hands a child its task alone.
 	// See docs/capabilities/subagents.md#what-they-share.
 	Inherit int
+	// Deny is command prefixes a child of this role must never run. It is
+	// added to the parent's deny list on the child's policy, so it is
+	// matched and refused exactly as the person's own entries are, and it
+	// can only take commands away.
+	// See docs/capabilities/subagents.md#a-profile-is-a-file.
+	Deny []string
+	// Intent is what the role's commands are for, in the profile's words.
+	// Checkout marks a profile read from the checkout rather than from the
+	// person's own directory: its intent is shown on the spawn card and
+	// never put to the classifier, which trusts it only to narrow and must
+	// not be handed that from the party it is judging.
+	// See docs/capabilities/approvals-and-safety.md#a-profile-can-narrow-the-classifier-never-widen-it.
+	Intent   string
+	Checkout bool
+}
+
+// ClassifierScope is the intent the classifier is handed for this role's
+// commands: the profile's own words where the person wrote them, and
+// nothing for a checkout's.
+func (p Profile) ClassifierScope() string {
+	if p.Checkout {
+		return ""
+	}
+	return strings.TrimSpace(p.Intent)
 }
 
 // Profiles is the set of roles a session can spawn, keyed by name.

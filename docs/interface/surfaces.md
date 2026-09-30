@@ -3009,6 +3009,15 @@ brings its tools with it and one unticked takes them away. A chat profile is
 offered no tier that writes. Enter writes the pick into the draft's tiers and
 tools and touches nothing else; esc leaves them as they were.
 
+The commands block is a field line — what the agent's commands are for and
+what it never runs, `for: … · never: …`, or `none stated` with the session's
+own lists named where the draft states neither — and it takes the prose
+sections' three keys: a note that is answered for its two fields alone, the
+editor over one line per field, and clear. A line the file could not load is
+refused under the draft in the loader's words and the block keeps what it
+had. A note on the whole draft sends it unchanged, as it sends the other
+fields.
+
 The card is the one thing on the surface that never gives ground: on a
 terminal too short for both, the sections fold from the bottom and count what
 they folded, with the profile's own scroll keys to read on, and the selected

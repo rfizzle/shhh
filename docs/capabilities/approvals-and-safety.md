@@ -301,6 +301,31 @@ action to stay inside the boundaries the user set, and a command a person
 wrote down as never is refused by the deny list before any model is paid to
 think about it. A rule stated twice is a rule with two places to drift.
 
+## A profile can narrow the classifier, never widen it
+
+A sub-agent started from a profile that says what its commands are for
+([`subagents.md`](subagents.md#a-profile-is-a-file)) carries that sentence to
+the classifier as evidence of its own, `profile_scope`, on each command the
+classifier is asked about for that child — placed after the conversation
+that holds the user's request, because it qualifies that request rather than
+making one. The instruction says what it may do with it: deny a command
+outside it, and never allow one because it covers what the request does not.
+A test-runner's profile can therefore turn a `curl` the request might have
+stretched to cover into a no; it cannot turn a `git push` nobody asked for
+into a yes.
+
+It rides commands and nothing else. It is a statement about commands, and
+read against an edit or a fetch it would narrow calls it never described.
+
+Only the person's own profiles send it. Evidence trusted to narrow is still
+evidence the classifier weighs, and a checkout's profile is the checkout's
+words about the checkout's agent — the party being judged writing part of
+the brief it is judged against. So a profile read from anywhere but the
+person's own agents directory keeps its sentence off the classifier, and the
+spawn card shows it instead, where the person reads it before the child
+exists. Which side a file falls on is decided by where it was read from, and
+a location neither reading expected falls on the side that sends nothing.
+
 ## Blast radius
 
 An approval that names the action but not its consequences pushes the risk

@@ -1704,6 +1704,51 @@ func TestGolden_ProfileWholeDraft(t *testing.T) {
 	})
 }
 
+// TestGolden_ProfileCommands captures the Commands block through the host:
+// the two fields on the line the artboard draws them on, the note that
+// revises them alone, the editor's lines taken back as the person's own, the
+// loader's refusal of an allow line said on the card, and the block cleared
+// back to the session's own lists.
+func TestGolden_ProfileCommands(t *testing.T) {
+	captureGolden(t, "profile-commands", "the Commands section of a profile draft in the pane", goldenWidths, func(width int) []golden.Panel {
+		draft := &persona.Draft{
+			Name:        "test-writer",
+			Description: "adds table-driven tests for a package and runs them",
+			Permissions: []string{"write", "execute"},
+			Intent:      "running the package's tests and the build",
+			Deny:        []string{"git push", "rm -rf"},
+			Sections: &persona.Sections{
+				Purpose:      "Add table-driven tests for one package at a time.",
+				Scope:        "The package you were pointed at and its _test.go files.",
+				Restrictions: "Never change an expected value to make a case pass.",
+				Method:       "Read the package, then its tests, then write the missing cases.",
+				Report:       "The cases added, by function, and the test run's last line.",
+			},
+		}
+		m, _, _ := personaModel(t, persona.KindCode, persona.Outcome{Draft: draft})
+		m.width, m.height = width, 40
+		m.syncInputWidth()
+		pane := func(m Model) string { return m.personaPane(width, 40) }
+		m = submitLine(t, m, "/agents new something for tests")
+		for range commandsBlock(t) {
+			m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyDown})
+		}
+		selected := pane(m)
+		noting := pane(typeInto(t, pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter}), "it must never install anything"))
+		m = handEdit(t, m, persona.SectionCommands, "intent: running the package's tests\ndeny: git push\ndeny: go install")
+		edited := pane(m)
+		refused := pane(handEdit(t, m, persona.SectionCommands, "allow: go test"))
+		m = pressOn(t, m, tea.KeyPressMsg{Code: 'x', Text: "x"})
+		return []golden.Panel{
+			{Label: "Commands selected · what its commands are for and what it never runs, on one line", View: selected},
+			{Label: "a note open under Commands · only its two fields are taken from the answer", View: noting},
+			{Label: "written in the editor · marked as the person's own", View: edited},
+			{Label: "an allow line refused on the card · in the loader's words", View: refused},
+			{Label: "cleared · the session's own command lists apply, and esc takes it back", View: pane(m)},
+		}
+	})
+}
+
 // TestGolden_ProfileToolsSelector captures the Tools & permissions selector
 // through the host: the rows are the session's own registered tools and the
 // refusals are the loader's own sentences, so what the card offers and what

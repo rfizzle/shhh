@@ -471,6 +471,38 @@ func TestClassifier_RequestShape(t *testing.T) {
 	}
 }
 
+// A profile's scope is evidence of its own, labelled and placed after the
+// conversation that carries the user's request, and the instruction says it
+// may only narrow. A call with none carries no key at all, so the evidence
+// every other call is judged on is what it was.
+func TestClassifier_AProfileScopeIsLabelledEvidenceThatOnlyNarrows(t *testing.T) {
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return eventsOf(decisionCall(`{"decision":"allow","reason":"ok"}`)), nil
+	}}
+	c := NewClassifier(p, ClassifierConfig{Model: "m"})
+	req := testRequest()
+	req.ProfileScope = " running the package's tests "
+	c.Judge(context.Background(), req)
+	evidence := p.msgs[1].Content
+	scope := strings.Index(evidence, `"profile_scope":"running the package's tests"`)
+	if scope < 0 || scope < strings.Index(evidence, `"recent_conversation"`) || scope > strings.Index(evidence, `"working_directory"`) {
+		t.Fatalf("profile_scope should follow the conversation as its own key:\n%s", evidence)
+	}
+	for _, want := range []string{"profile_scope", "It may only narrow what the user's request allows",
+		"never return ALLOW because profile_scope covers a command the user's request does not"} {
+		if !strings.Contains(p.msgs[0].Content, want) {
+			t.Fatalf("the instruction lacks %q", want)
+		}
+	}
+	c.Judge(context.Background(), testRequest())
+	if strings.Contains(p.msgs[1].Content, "profile_scope") {
+		t.Fatalf("a call with no profile scope should carry no key:\n%s", p.msgs[1].Content)
+	}
+	if !strings.HasPrefix(p.msgs[1].Content, "UNTRUSTED EVIDENCE:\n{\"proposed_action\":") {
+		t.Fatalf("the evidence's order moved:\n%s", p.msgs[1].Content)
+	}
+}
+
 // The verdict is asked for twice on one request: as a schema the answer must
 // match, and as the tool a model that takes no schema is offered. The
 // provider picks, so both have to be there — and either way the classifier

@@ -1088,6 +1088,30 @@ starts in read-only mode under an auto session — and never looser. The clamp t
 keeps a child inside its parent's mode applies to a profile's mode the same
 way, so writing a file is not a way around the mode the person chose.
 
+A profile's Commands section says what its agent's commands are for and what
+the agent must never run, and both halves only take away. `deny` lists
+command prefixes that are added to the person's own deny list for that
+agent's children: matched the same way, so a chained, wrapped or
+path-qualified spelling is caught as the plain one is, refused before the
+mode is asked, and answered with the same result every deny-list refusal
+gets — which names no list and no file, since a refusal that said where the
+rule lives would be saying where to take it away. The entries are the
+role's; another role's children never see them. `intent` is a sentence on
+what the commands are for, which auto mode's classifier is shown as evidence
+that may [narrow what the request allows and never widen
+it](approvals-and-safety.md#a-profile-can-narrow-the-classifier-never-widen-it),
+and which the child reads under its own prompt beside the prefixes, where it
+has the command tool to read them against.
+
+There is no `allow`. A file listing commands that run without asking would be
+a file granting them, and a profile is a file that can arrive with a
+checkout; the person's own settings and a card's answer are the only things
+that let a command through unasked. A profile carrying the key is refused
+when it is read, with that reason, rather than loaded with the key ignored —
+an author who wrote an allowlist expects it to do something, and should
+learn that it cannot from the loader rather than from a card they did not
+expect.
+
 One file per agent rather than a section per agent in the config file,
 because a prompt is most of a profile and a prompt is a document: it wants
 its own file, its own history, and to be shared by copying one thing. The
@@ -1224,7 +1248,11 @@ direction is one note for the whole draft rather than one per section: it
 rewrites every prose section at once, with the fields sent as fixed context
 and the sections the person wrote kept unless they say otherwise, and each
 section it changed is a revision of that section, so the note can be taken
-back whole or one section at a time. The five prose
+back whole or one section at a time. Commands is revised the way a prose
+section is — a note that rewrites its two fields and nothing else, the
+editor over one `intent:` line and a `deny:` line per prefix, or clearing
+it back to the session's own lists — and an `allow:` line is refused there
+in the loader's words, while it is still a card. The five prose
 sections are `##` headings inside the profile's prompt; the other three are
 the file's fields. The headings are for the drafter and the person reading the
 file: the child is handed the prompt as it is written, and a profile written

@@ -380,3 +380,83 @@ func TestAWholeDraftRevisionFixesTheFieldsAndTheSectionsKept(t *testing.T) {
 		t.Fatalf("no kept section should name none:\n%s", none)
 	}
 }
+
+// The Commands section is two fields of the file: the drafter may answer
+// them, the renderer writes them, and the loader reads them back as the
+// deny list and the intent the child is run under.
+func TestTheCommandsSectionIsWrittenAndReadBack(t *testing.T) {
+	var schema struct {
+		Properties struct {
+			Profile struct {
+				Properties map[string]json.RawMessage `json:"properties"`
+			} `json:"profile"`
+		} `json:"properties"`
+	}
+	if err := json.Unmarshal(DraftTool().Parameters, &schema); err != nil {
+		t.Fatal(err)
+	}
+	for _, field := range []string{"intent", "deny"} {
+		if _, ok := schema.Properties.Profile.Properties[field]; !ok {
+			t.Fatalf("the draft schema does not offer %q", field)
+		}
+	}
+	if _, ok := schema.Properties.Profile.Properties["allow"]; ok {
+		t.Fatal("the draft schema offers an allow list")
+	}
+	dir := filepath.Join(t.TempDir(), "agents")
+	d := Draft{Name: "tester", Description: "adds tests", Permissions: []string{"write", "execute"},
+		Prompt: "Add tests.", MaxTokens: 300000,
+		Intent: "  running the\npackage's tests ", Deny: []string{"git push", " git  push ", "", `rm "-rf"`}}
+	path, err := Write(dir, d, KindCode, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	def, err := config.LoadAgentFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if def.Intent != "running the package's tests" || strings.Join(def.Deny, "|") != `git push|rm "-rf"` {
+		t.Fatalf("loaded intent %q deny %q", def.Intent, def.Deny)
+	}
+}
+
+// SetCommands reads the editor's lines: intent and deny, comments and blank
+// lines skipped; anything else is refused with its line, and an allow line
+// in the loader's own words, leaving the draft as it was.
+func TestSetCommandsReadsTheEditorsLines(t *testing.T) {
+	d := Draft{Intent: "before", Deny: []string{"git push"}}
+	if err := d.SetCommands("# guide\n\nIntent: run the tests\ndeny: go install\ndeny: go install\n"); err != nil {
+		t.Fatal(err)
+	}
+	if d.Intent != "run the tests" || strings.Join(d.Deny, ",") != "go install" {
+		t.Fatalf("read %q %v", d.Intent, d.Deny)
+	}
+	if got := d.CommandsText(); got != "intent: run the tests\ndeny: go install" {
+		t.Fatalf("CommandsText = %q", got)
+	}
+	for text, want := range map[string]string{
+		"allow: go test": "a profile carries no allowlist",
+		"run: go test":   `line 1: start it with "intent:" or "deny:"`,
+		"intent: " + strings.Repeat("x", config.MaxIntentChars+1): "intent:",
+	} {
+		if err := d.SetCommands(text); err == nil || !strings.Contains(err.Error(), want) {
+			t.Fatalf("SetCommands(%.20q) = %v, want %q", text, err, want)
+		}
+	}
+	if d.Intent != "run the tests" || strings.Join(d.Deny, ",") != "go install" {
+		t.Fatalf("a refused text changed the draft: %q %v", d.Intent, d.Deny)
+	}
+}
+
+// A revision of the Commands section names its two fields, since they are
+// not a heading in the prompt the drafter could find by name.
+func TestACommandsRevisionNamesItsFields(t *testing.T) {
+	cur := &Draft{Name: "tester", Description: "adds tests", Sections: &Sections{Purpose: "Add tests."}}
+	prompt := userPrompt(Request{Kind: KindCode, Brief: "tests", Current: cur, Section: SectionCommands, Feedback: "never push"})
+	for _, want := range []string{"Revise the Commands section (the intent and deny fields) only",
+		"Only Commands is taken from your answer", "What the person said about Commands:\nnever push"} {
+		if !strings.Contains(prompt, want) {
+			t.Fatalf("the Commands revision request lacks %q:\n%s", want, prompt)
+		}
+	}
+}

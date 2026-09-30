@@ -79,6 +79,20 @@ type AgentDefinition struct {
 	// is handed ahead of its task when the call does not say; zero, the
 	// default, hands it the task alone. A spawn may lower it.
 	Inherit int `toml:"inherit"`
+	// Deny is command prefixes this agent must never run, matched the way
+	// the person's own behavior.command_denylist is and added to it: a
+	// profile can only take commands away from its agent, never give back
+	// one the person's list refused.
+	// See docs/capabilities/subagents.md#a-profile-is-a-file.
+	Deny []string `toml:"deny"`
+	// Intent is a short statement of what this agent's commands are for. In
+	// auto mode it is put to the classifier after the user's request, as
+	// evidence that may only narrow what the request allows.
+	// See docs/capabilities/approvals-and-safety.md#a-profile-can-narrow-the-classifier-never-widen-it.
+	Intent string `toml:"intent"`
+	// Allow is decoded only so that it is refused by name rather than as an
+	// unknown key: a profile carries no allowlist (CheckCommands).
+	Allow []string `toml:"allow"`
 
 	// Path is the file this definition was read from; empty for one built
 	// in code.
@@ -265,6 +279,38 @@ func (d AgentDefinition) Validate() error {
 	}
 	if d.Inherit < 0 {
 		return fmt.Errorf("inherit: must not be negative")
+	}
+	return CheckCommands(d.Deny, d.Intent, d.Allow != nil)
+}
+
+// MaxIntentChars bounds a profile's intent. It is a sentence or two saying
+// what the agent's commands are for, and it rides every command call the
+// classifier is asked about; anything longer is a second prompt, which the
+// prompt's own sections are for.
+const MaxIntentChars = 400
+
+// CheckCommands is the loader's rules on a profile's Commands section: every
+// deny entry names something, the intent is short, and there is no
+// allowlist at all. The drafter asks it too, so an edit the loader would
+// refuse is refused while it is still a card.
+//
+// A profile carries no allowlist because an allowlist is a grant: a file
+// naming commands that run without asking would be a file deciding what a
+// spawned agent may do unasked, and a profile is a file that can arrive with
+// a checkout. Only the person's own settings and a card's answer let a
+// command through without one.
+// See docs/capabilities/subagents.md#a-profile-is-a-file.
+func CheckCommands(deny []string, intent string, allow bool) error {
+	if allow {
+		return fmt.Errorf("allow: a profile carries no allowlist — a file that lets commands run without asking would be a file granting them, and only your own settings or a card may; a profile can only add to what is refused, with deny")
+	}
+	for _, prefix := range deny {
+		if strings.TrimSpace(prefix) == "" {
+			return fmt.Errorf("deny: an empty entry refuses nothing; remove it")
+		}
+	}
+	if n := len([]rune(strings.TrimSpace(intent))); n > MaxIntentChars {
+		return fmt.Errorf("intent: %d characters, at most %d — say what the agent's commands are for in a sentence or two", n, MaxIntentChars)
 	}
 	return nil
 }

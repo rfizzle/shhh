@@ -204,6 +204,12 @@ func TestLoadAgentsRejectsBadFiles(t *testing.T) {
 		// the child is built, so the author reads it as a line in a file.
 		{"gate for a writer", "a.toml", "tools = [\"quality_gate\"]\npermissions = [\"write\"]", "changes nothing"},
 		{"gate for an executor", "a.toml", "tools = [\"quality_gate\"]\npermissions = [\"execute\"]", "changes nothing"},
+		// A profile carries no allowlist, and says why, whatever it lists —
+		// an empty one included, since the key is the claim.
+		{"an allowlist", "a.toml", "permissions = [\"execute\"]\nallow = [\"go test\"]", "a profile carries no allowlist"},
+		{"an empty allowlist", "a.toml", `allow = []`, "a profile carries no allowlist"},
+		{"an empty deny entry", "a.toml", `deny = ["git push", " "]`, "deny: an empty entry"},
+		{"a long intent", "a.toml", fmt.Sprintf("intent = %q", strings.Repeat("x", MaxIntentChars+1)), "intent:"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -217,6 +223,25 @@ func TestLoadAgentsRejectsBadFiles(t *testing.T) {
 				t.Fatalf("error %q should mention %q", err, tc.want)
 			}
 		})
+	}
+}
+
+// The Commands section is two fields of the file: what the agent must never
+// run and what its commands are for, read as they were written.
+func TestLoadAgentsReadsTheCommandsSection(t *testing.T) {
+	dir := t.TempDir()
+	writeAgent(t, dir, "tester.toml", `
+permissions = ["execute"]
+intent = "running the package's tests"
+deny = ["git push", "go install"]
+`)
+	defs, err := LoadAgentsFrom(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	def := defs["tester"]
+	if def.Intent != "running the package's tests" || strings.Join(def.Deny, ",") != "git push,go install" || def.Allow != nil {
+		t.Fatalf("Commands misread: %+v", def)
 	}
 }
 

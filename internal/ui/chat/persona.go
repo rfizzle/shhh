@@ -146,7 +146,7 @@ type personaPass struct {
 // personaBlocks is the draft step's blocks in order: the five prose sections
 // by their loader names, then the three field blocks the file keeps beside
 // them. The index is what the surface hands back with a key.
-var personaBlocks = append(config.PromptSectionNames(), personaToolsBlock, "Commands", "Model")
+var personaBlocks = append(config.PromptSectionNames(), personaToolsBlock, persona.SectionCommands, "Model")
 
 // personaToolsBlock is the block that is a set of tiers and tools rather
 // than prose. Enter on it is the door the tools-and-permissions selector
@@ -251,7 +251,7 @@ func (m Model) draftPersona(brief string) (tea.Model, tea.Cmd) {
 // (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation).
 func (m Model) refinePersonaSection(index int, note string) (tea.Model, tea.Cmd) {
 	f := m.persona
-	name := personaProse(index)
+	name := personaRevisable(index)
 	if f.draft == nil || name == "" {
 		return m, nil
 	}
@@ -318,6 +318,18 @@ func personaProse(index int) string {
 		return ""
 	}
 	return names[index]
+}
+
+// personaRevisable is the section a block index names where it is revised
+// by a note, the editor or clearing: a prose section, or Commands.
+func personaRevisable(index int) string {
+	if name := personaProse(index); name != "" {
+		return name
+	}
+	if index >= 0 && index < len(personaBlocks) && personaBlocks[index] == persona.SectionCommands {
+		return persona.SectionCommands
+	}
+	return ""
 }
 
 // drafterExchange is the exchange as the drafter is told it. An empty answer
@@ -432,7 +444,11 @@ func (m Model) finishSectionRedraft(o persona.Outcome) (tea.Model, tea.Cmd) {
 	name := f.redrafting
 	f.redrafting = ""
 	body := ""
-	if o.Draft != nil {
+	if o.Draft != nil && name == persona.SectionCommands {
+		// The answer was normalised and validated as a whole draft, so
+		// its two fields are already what the file may hold.
+		body = o.Draft.CommandsText()
+	} else if o.Draft != nil {
 		for _, sec := range o.Draft.SectionList() {
 			if sec.Name == name {
 				body = strings.TrimSpace(sec.Body)
@@ -560,6 +576,30 @@ func (f *personaFlow) resetSections() {
 	for _, sec := range f.draft.SectionList() {
 		f.sections[sec.Name] = personaSection{body: strings.TrimSpace(sec.Body)}
 	}
+	f.sections[persona.SectionCommands] = personaSection{body: f.draft.CommandsText()}
+}
+
+// setDraftSection writes one section's standing into the draft: a prose one
+// through SetSection, Commands through SetCommands. Every text that reaches
+// it was checked where it was taken (personaCommandsFrom), so the Commands
+// half cannot refuse here.
+func (f *personaFlow) setDraftSection(name, body string) {
+	if name == persona.SectionCommands {
+		_ = f.draft.SetCommands(body)
+		return
+	}
+	f.draft.SetSection(name, body)
+}
+
+// personaCommandsFrom is a Commands text as the draft would hold it, or the
+// refusal it would meet — the loader's own words for an allow line — so a
+// revision the file could not load is refused while it is still a card.
+func personaCommandsFrom(text string) (string, error) {
+	var d persona.Draft
+	if err := d.SetCommands(text); err != nil {
+		return "", err
+	}
+	return d.CommandsText(), nil
 }
 
 // applySection is every revision of a section: the standing it replaces is
@@ -570,7 +610,7 @@ func (f *personaFlow) resetSections() {
 func (f *personaFlow) applySection(name string, next personaSection) {
 	f.revisions[name] = append(f.revisions[name], f.sections[name])
 	f.sections[name] = next
-	f.draft.SetSection(name, next.body)
+	f.setDraftSection(name, next.body)
 }
 
 // undoSection takes back a section's last revision, and reports whether it
@@ -583,7 +623,7 @@ func (f *personaFlow) undoSection(name string) bool {
 	prev := history[len(history)-1]
 	f.revisions[name] = history[:len(history)-1]
 	f.sections[name] = prev
-	f.draft.SetSection(name, prev.body)
+	f.setDraftSection(name, prev.body)
 	return true
 }
 
@@ -623,7 +663,9 @@ func (m *Model) openPersonaCard() {
 			Mine:     sec.mine,
 		})
 	}
-	blocks = append(blocks, personaToolsSection(*d), personaCommandsSection(), personaModelSection(*d))
+	blocks = append(blocks, personaToolsSection(*d),
+		personaCommandsSection(f.sections[persona.SectionCommands], len(f.revisions[persona.SectionCommands]) > 0),
+		personaModelSection(*d))
 	if pass != nil {
 		blocks = append(blocks, personaPassSection(*pass, f))
 	}
@@ -685,6 +727,12 @@ func personaItThem(names []string) string {
 // the drafter's own rewrites are counted, dim.
 func personaMark(name string, s personaSection) (string, components.ProfileMarkTone) {
 	switch {
+	case name == persona.SectionCommands && s.body == "" && (s.cleared || s.mine):
+		// Optional: an empty Commands section is the session's own lists,
+		// which is no gap to find before saving.
+		return "· you cleared it", components.ProfileMarkQuiet
+	case name == persona.SectionCommands && s.body == "":
+		return "", components.ProfileMarkQuiet
 	case s.body == "" && (s.cleared || s.mine):
 		// Emptied by the person, with x or in the editor: the drafter did
 		// not leave it, and the mark must not say it did.
@@ -748,16 +796,40 @@ func personaToolsSection(d persona.Draft) components.ProfileSection {
 	}
 }
 
-// personaCommandsSection is the Commands block. A drafted profile states no
-// command fields yet, so the block says what applies instead: the session's
-// own lists.
-func personaCommandsSection() components.ProfileSection {
-	return components.ProfileSection{
-		Name:   "Commands",
-		Value:  "none stated",
-		Tone:   components.ToneQuiet,
-		Detail: "the session's own command lists apply",
+// personaCommandsSection is the Commands block: what the agent's commands
+// are for and what it must never run, on one line the way the artboard
+// draws it, or what applies instead where the draft states neither. It is a
+// field block revised the way a prose section is — a note to the drafter,
+// the editor over its `intent:`/`deny:` lines, x to clear — so its standing
+// is kept beside the prose sections' and esc takes a revision back the
+// same way (docs/capabilities/subagents.md#a-profile-is-a-file).
+func personaCommandsSection(s personaSection, revised bool) components.ProfileSection {
+	var d persona.Draft
+	// The standing's text was checked when it was applied, so reading it
+	// back cannot fail; a cleared one reads as a draft stating neither.
+	_ = d.SetCommands(s.body)
+	mark, tone := personaMark(persona.SectionCommands, s)
+	sec := components.ProfileSection{
+		Name:      persona.SectionCommands,
+		Body:      s.body,
+		Mark:      mark,
+		MarkTone:  tone,
+		Revised:   revised,
+		Revisable: true,
 	}
+	var parts []string
+	if d.Intent != "" {
+		parts = append(parts, "for: "+d.Intent)
+	}
+	if len(d.Deny) > 0 {
+		parts = append(parts, "never: "+strings.Join(d.Deny, ", "))
+	}
+	if len(parts) == 0 {
+		sec.Value, sec.Tone, sec.Detail = "none stated", components.ToneQuiet, "the session's own command lists apply"
+		return sec
+	}
+	sec.Value, sec.Detail = parts[0], strings.Join(parts[1:], " · ")
+	return sec
 }
 
 // personaModelSection is the Model & budget block: each value, or the
@@ -865,7 +937,7 @@ func (m Model) updatePersona(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // so esc gives the text back.
 func (m Model) clearPersonaSection(index int) (tea.Model, tea.Cmd) {
 	f := m.persona
-	name := personaProse(index)
+	name := personaRevisable(index)
 	if f.draft == nil || name == "" || f.sections[name].body == "" {
 		return m, nil
 	}
@@ -889,7 +961,7 @@ func (m Model) undoPersonaSection(index int) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
-	name := personaProse(index)
+	name := personaRevisable(index)
 	if f.draft == nil || name == "" || !f.undoSection(name) {
 		return m, nil
 	}
@@ -915,7 +987,7 @@ type personaEditorDoneMsg struct {
 // draft half refuses.
 func (m Model) editPersonaSection(index int) (tea.Model, tea.Cmd) {
 	f := m.persona
-	name := personaProse(index)
+	name := personaRevisable(index)
 	if f.draft == nil || name == "" {
 		return m, nil
 	}
@@ -924,7 +996,11 @@ func (m Model) editPersonaSection(index int) (tea.Model, tea.Cmd) {
 		m.syncViewport()
 		return m, nil
 	}
-	path, err := writeDraftFile(f.sections[name].body + "\n")
+	text := f.sections[name].body + "\n"
+	if name == persona.SectionCommands {
+		text = personaCommandsGuide + text
+	}
+	path, err := writeDraftFile(text)
 	if err != nil {
 		m.personaScreen.Warn("could not write " + name + " out for the editor — " + err.Error())
 		m.syncViewport()
@@ -935,6 +1011,22 @@ func (m Model) editPersonaSection(index int) (tea.Model, tea.Cmd) {
 	return m, tea.ExecProcess(proc, func(err error) tea.Msg {
 		return personaEditorDoneMsg{flow: f, section: name, path: path, err: err}
 	})
+}
+
+// personaCommandsGuide heads the Commands text handed to the editor: the two
+// line shapes it is read back in, as comments the reading skips.
+const personaCommandsGuide = "# intent: what this agent's commands are for, in a sentence\n" +
+	"# deny: a command prefix it must never run — one line each\n" +
+	"# a profile has no allow list: only your own settings or a card let a command run unasked\n"
+
+// personaEdited is a section's text as the editor left it, read the way the
+// section is kept: a prose section trimmed, Commands through its two line
+// shapes, which may refuse.
+func personaEdited(section, content string) (string, error) {
+	if section == persona.SectionCommands {
+		return personaCommandsFrom(content)
+	}
+	return strings.TrimSpace(content), nil
 }
 
 // personaEditorFinished takes the edited text back into its section and
@@ -952,7 +1044,9 @@ func (m Model) personaEditorFinished(msg personaEditorDoneMsg) (tea.Model, tea.C
 		warning = "the editor exited with an error, so " + msg.section + " is as it was — " + msg.err.Error()
 	} else if content, err := os.ReadFile(msg.path); err != nil {
 		warning = "could not read " + msg.section + " back, so it is as it was — " + err.Error()
-	} else if body := strings.TrimSpace(string(content)); body != f.sections[msg.section].body {
+	} else if body, err := personaEdited(msg.section, string(content)); err != nil {
+		warning = msg.section + " is as it was — " + err.Error()
+	} else if body != f.sections[msg.section].body {
 		cur := f.sections[msg.section]
 		f.applySection(msg.section, personaSection{body: body, refined: cur.refined, mine: true})
 	}

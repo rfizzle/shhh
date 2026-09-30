@@ -66,6 +66,7 @@ func buildPersonas(session chatSession, env *sessionEnv, agents *agentProfiles, 
 		if err != nil {
 			return err
 		}
+		prof.Checkout = fromCheckout(def, cwd)
 		// A conversation spawns the roles that read, which is what it was
 		// started with; an edit that grants a writing tier is refused
 		// rather than let in (docs/capabilities/chat.md#colleagues-not-workers).

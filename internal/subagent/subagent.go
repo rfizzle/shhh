@@ -2274,6 +2274,14 @@ func (s *Supervisor) childPolicy(c *child) agent.ModePolicy {
 	if len(g.Hosts) > 0 {
 		hosts = append(append([]string(nil), hosts...), g.Hosts...)
 	}
+	// The role's own refusals join the person's and never replace them: a
+	// profile may only take commands away from its child, and a copy rather
+	// than an append so one child's list never lands in the shared slice.
+	// See docs/capabilities/subagents.md#a-profile-is-a-file.
+	denylist := s.opts.CommandDenylist
+	if len(c.profile.Deny) > 0 {
+		denylist = append(append([]string(nil), denylist...), c.profile.Deny...)
+	}
 	return agent.ModePolicy{
 		Mode:             s.childMode(c),
 		AllowEdits:       g.AllEdits,
@@ -2282,7 +2290,7 @@ func (s *Supervisor) childPolicy(c *child) agent.ModePolicy {
 		EditPaths:        g.EditPaths,
 		ExactCommands:    g.ExactCommands,
 		CommandAllowlist: allowlist,
-		CommandDenylist:  s.opts.CommandDenylist,
+		CommandDenylist:  denylist,
 		AllowHosts:       hosts,
 		DenyHosts:        s.opts.DenyHosts,
 		ReadOnlyExtra:    s.opts.ReadOnlyExtra,
@@ -5324,13 +5332,22 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, a
 	if len(action.OutOfScope) > 0 {
 		return agent.Ask, 0, "", false
 	}
-	v := s.opts.Classifier.Judge(c.ctx, agent.ClassifierRequest{
+	req := agent.ClassifierRequest{
 		Tool:      tc.Name,
 		Arguments: tc.Arguments,
 		CWD:       c.root,
 		Recent:    c.agent.RequestMessages(),
 		Reading:   action.Reading,
-	})
+	}
+	// What the role's commands are for rides a command and nothing else:
+	// it is a statement about commands, and read against an edit or a
+	// fetch it would narrow calls it never described. A checkout's profile
+	// states none here (ClassifierScope).
+	// See docs/capabilities/approvals-and-safety.md#a-profile-can-narrow-the-classifier-never-widen-it.
+	if action.Kind == agent.ActionCommand {
+		req.ProfileScope = c.profile.ClassifierScope()
+	}
+	v := s.opts.Classifier.Judge(c.ctx, req)
 	// Classifier spend is the child's spend: it counts toward the child's
 	// token budget, and exhausting it cancels the child like any other
 	// overrun.
