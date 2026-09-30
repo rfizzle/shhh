@@ -1014,8 +1014,8 @@ func (n ActivityNotice) View(width int) string {
 }
 
 // The step outline draws its headers on this same grid but lives in
-// internal/ui/chat, because it groups history rather than rendering a widget
-// (see AGENTS.md). These are the fields it needs; the widths stay declared
+// internal/ui/chat, because it groups history rather than rendering a
+// widget. These are the fields it needs; the widths stay declared
 // here so a grid change remains a one-line change.
 const (
 	// GridPointerWidth is the marker gutter: the columns held back for a

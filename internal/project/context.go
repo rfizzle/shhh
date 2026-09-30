@@ -443,9 +443,8 @@ func cutToFit(s string, n int) (string, int) {
 // longest one that fits, since the tail is where a document that leads with
 // its shape keeps its rules, and a subsection the note names is not read as
 // the section above it. A file whose last section is itself larger than max
-// — this repository's own is — would otherwise keep nothing from the end at
-// all, so it falls back to whole lines and the note says the text resumes
-// part-way through.
+// would otherwise keep nothing from the end at all, so it falls back to
+// whole lines and the note says the text resumes part-way through.
 func lastSections(s string, max int) (tail, resumes string) {
 	heads := headingOffsets(s)
 	for _, off := range heads {

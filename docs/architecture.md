@@ -71,9 +71,9 @@ Dialects differ in ways that are not cosmetic: how a tool result is addressed
 back to the call it answers, whether reasoning state has to be handed back
 untouched, what a failure looks like on the wire. Those differences are
 absorbed inside each implementation, and where one has a rule that reads like
-a quirk, it is load-bearing — the ones that have bitten us are recorded in
-[`AGENTS.md`](../AGENTS.md) with the symptom, because the symptom (the model
-silently calls the same tool again) does not point at the cause.
+a quirk, it is load-bearing — the ones that have bitten us are explained, with
+the symptom, in a comment at the code that has them, because the symptom (the
+model silently calls the same tool again) does not point at the cause.
 
 A failure is classified into a closed set before it reaches any surface. The
 classes belong to the provider layer; what to *offer* the user about each one

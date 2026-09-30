@@ -30,12 +30,11 @@ func today() string { return now().Format("Monday, 2 January 2006") }
 // at 128KB a project has to write more than a book's chapter before anything
 // is dropped, and when something is, the prompt says which file and how much.
 //
-// A single file over the bound is not the exotic case it was once taken for.
-// This repository's own AGENTS.md measures 197,230 bytes, half again over it,
-// so the shape of the cut matters as much as the number: it keeps the end of
-// a file as well as its head (project.InstructionBlock), because a document
-// that leads with its shape keeps its rules last, and a head-only cut drops
-// exactly the sections a session gets corrected on.
+// A single file over the bound is not exotic — one project's AGENTS.md can
+// pass it on its own — so the shape of the cut matters as much as the number:
+// it keeps the end of a file as well as its head (project.InstructionBlock),
+// because a document that leads with its shape keeps its rules last, and a
+// head-only cut drops exactly the sections a session gets corrected on.
 //
 // The number is bytes rather than tokens because the files are read from
 // disk and never re-read: a session pays for this once, at the head of a

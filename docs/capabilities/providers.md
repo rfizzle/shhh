@@ -15,10 +15,10 @@ failure looks like on the wire. Each implementation absorbs its own
 differences, and where one has a rule that reads like a quirk, it is
 load-bearing.
 
-Those quirks are recorded in [`AGENTS.md`](../../AGENTS.md) rather than here,
-with the symptom attached — because the symptom (the model silently repeats a
-tool call) does not point at the cause, and the next person to "simplify" the
-code will have the symptom, not the explanation.
+Those quirks are recorded in a comment at the code that has each one rather
+than here, with the symptom attached — because the symptom (the model silently
+repeats a tool call) does not point at the cause, and the next person to
+"simplify" the code will be reading that code, not this page.
 
 ## Resolution runs one way
 

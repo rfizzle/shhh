@@ -13,8 +13,8 @@ step. It proves that the key reaches the surface, that the surface lands in
 the panel the register put it in, and that the provider's stream arrives
 through the whole program.
 
-**A change to a surface is accepted with both.** The rule and its reasons
-are in `AGENTS.md` under *Driving the binary*; this is how to do it.
+**A change to a surface is accepted with both.** The rule is in
+`AGENTS.md` under *Driving the binary*; this is how to do it.
 
 ## Run it
 
