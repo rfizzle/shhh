@@ -753,6 +753,9 @@ func TestMeasureSearch_Shapes(t *testing.T) {
 		{"the notice is not an item",
 			"a.go:10: needle\n… (truncated at 50 matches; narrow the pattern or path)",
 			SearchSize{N: 1, Truncated: true}},
+		{"a distinct match stands for its count, whatever its text looks like",
+			"3 matches in 2 files: a.go:4- x\n1 match in 1 file: b.go: 2 matches\n… (truncated at 2 of 9 distinct matches; narrow the pattern or path)",
+			SearchSize{N: 4, Truncated: true}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -760,5 +763,210 @@ func TestMeasureSearch_Shapes(t *testing.T) {
 				t.Errorf("MeasureSearch(%q) = %+v, want %+v", tc.result, got, tc.want)
 			}
 		})
+	}
+}
+
+// onlyMatchingFixture holds three IDs in three files, one of them twice on a
+// line and once more below, so the counts and the file counts disagree.
+func onlyMatchingFixture(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, "a.go"), "x := ID-1 + ID-2\ny := ID-1\n")
+	mustWrite(t, filepath.Join(dir, "b.go"), "z := ID-1\r\n")
+	mustWrite(t, filepath.Join(dir, "c.txt"), "ID-3\n")
+	return dir
+}
+
+// only_matching is `grep -oh | sort | uniq -c | sort -rn`: the matched texts
+// themselves, once each, most frequent first, with no path or line quoted.
+func TestSearch_OnlyMatching(t *testing.T) {
+	check := func(t *testing.T) {
+		dir := onlyMatchingFixture(t)
+		out := runSearch(t, fmt.Sprintf(`{"pattern":"id-\\d","path":%q,"only_matching":true}`, dir))
+		want := "3 matches in 2 files: ID-1\n1 match in 1 file: ID-2\n1 match in 1 file: ID-3"
+		if out != want {
+			t.Errorf("got:\n%s\nwant:\n%s", out, want)
+		}
+		if size := MeasureSearch(out); size.N != 5 || size.Files || size.Truncated {
+			t.Errorf("want 5 matches measured, got %+v", size)
+		}
+	}
+	t.Run("walker", func(t *testing.T) { forceWalker(t); check(t) })
+	t.Run("ripgrep", func(t *testing.T) { requireRg(t); check(t) })
+}
+
+// The counts are over the whole search and the bound is on how many texts
+// are shown, with a notice naming how many there were.
+func TestSearch_OnlyMatchingIsBounded(t *testing.T) {
+	forceWalker(t)
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, "ids.txt"), "ID-1\nID-1\nID-1\nID-2\nID-2\nID-3\nID-4\nID-5\n")
+	out := runSearch(t, fmt.Sprintf(`{"pattern":"ID-\\d","path":%q,"only_matching":true,"limit":2}`, dir))
+	want := "3 matches in 1 file: ID-1\n2 matches in 1 file: ID-2\n… (truncated at 2 of 5 distinct matches; narrow the pattern or path, or raise limit to at most 500)"
+	if out != want {
+		t.Errorf("got:\n%s\nwant:\n%s", out, want)
+	}
+	if !MeasureSearch(out).Truncated {
+		t.Errorf("the notice should read as a cut: %q", out)
+	}
+}
+
+// A distinct text past the line bound is cut like a matched line is, so one
+// minified run cannot fill the answer.
+func TestSearch_OnlyMatchingTrimsALongMatch(t *testing.T) {
+	forceWalker(t)
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, "min.js"), "k"+strings.Repeat("x", 2*MaxSearchLineBytes)+"\n")
+	out := runSearch(t, fmt.Sprintf(`{"pattern":"kx+","path":%q,"only_matching":true}`, dir))
+	if !strings.Contains(out, "(match truncated)") || len(out) > MaxSearchLineBytes+100 {
+		t.Errorf("a long match should be cut to the line bound, got %d bytes", len(out))
+	}
+}
+
+func TestSearch_OnlyMatchingRefusesFilesOnly(t *testing.T) {
+	forceWalker(t)
+	_, err := executeSearch(json.RawMessage(fmt.Sprintf(`{"pattern":"x","path":%q,"only_matching":true,"files_only":true}`, t.TempDir())))
+	if err == nil {
+		t.Error("only_matching and files_only are two answers to one call; expected a refusal")
+	}
+}
+
+// Ripgrep only names the files; the texts are read out of them with the
+// walker's expression, so the answer is the walker's on every machine.
+func TestSearch_OnlyMatchingReadsTheFilesRipgrepNames(t *testing.T) {
+	dir := onlyMatchingFixture(t)
+	argvFile := filepath.Join(t.TempDir(), "argv")
+	// Names a.go only, whatever the tree holds: the answer is then a.go's.
+	fakeRg(t, fmt.Sprintf(`printf '%%s\n' "$@" > %s; printf '%%s\0' %q`, argvFile, filepath.Join(dir, "a.go")))
+
+	out := runSearch(t, fmt.Sprintf(`{"pattern":"ID-\\d","path":%q,"only_matching":true,"multiline":true}`, dir))
+	if want := "2 matches in 1 file: ID-1\n1 match in 1 file: ID-2"; out != want {
+		t.Errorf("got:\n%s\nwant:\n%s", out, want)
+	}
+	argv, err := os.ReadFile(argvFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"--files-with-matches\n", "--multiline\n"} {
+		if !strings.Contains(string(argv), want) {
+			t.Errorf("rg should be asked %q, got:\n%s", want, argv)
+		}
+	}
+	if strings.Contains(string(argv), "--line-number\n") {
+		t.Errorf("a file list takes no line numbers, got:\n%s", argv)
+	}
+}
+
+func TestSearch_OnlyMatchingFallsBackWhenRipgrepFails(t *testing.T) {
+	fakeRg(t, "exit 2")
+	dir := onlyMatchingFixture(t)
+	out := runSearch(t, fmt.Sprintf(`{"pattern":"ID-3","path":%q,"only_matching":true}`, dir))
+	if out != "1 match in 1 file: ID-3" {
+		t.Errorf("an rg failure should fall back to the walker, got %q", out)
+	}
+}
+
+// multilineFixture is a signature broken over lines, the shape a pattern
+// has to cross a line break to find.
+func multilineFixture(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, "f.go"), "func Open(\n\tpath string,\n) error {\n\treturn nil\n}\n")
+	return dir
+}
+
+// multiline lets a pattern span lines, and every line the match touches is a
+// matched line — ripgrep's -U, and the walker matching the whole text.
+func TestSearch_Multiline(t *testing.T) {
+	check := func(t *testing.T) {
+		dir := multilineFixture(t)
+		f := filepath.Join(dir, "f.go")
+		pattern := `func Open\(\s*path`
+		out := runSearch(t, fmt.Sprintf(`{"pattern":%q,"path":%q,"multiline":true,"context_lines":0}`, pattern, dir))
+		want := f + ":1: func Open(\n" + f + ":2: \tpath string,"
+		if out != want {
+			t.Errorf("got:\n%s\nwant:\n%s", out, want)
+		}
+		if size := MeasureSearch(out); size.N != 2 {
+			t.Errorf("every spanned line is a matched line, got %+v", size)
+		}
+
+		// Line by line the same pattern finds nothing.
+		if out := runSearch(t, fmt.Sprintf(`{"pattern":%q,"path":%q,"context_lines":0}`, pattern, dir)); out != NoMatchesFound {
+			t.Errorf("without multiline a pattern cannot cross a line, got:\n%s", out)
+		}
+	}
+	t.Run("walker", func(t *testing.T) { forceWalker(t); check(t) })
+	t.Run("ripgrep", func(t *testing.T) { requireRg(t); check(t) })
+}
+
+// The walker's edges of a multiline match: a match ending on a line break
+// ends on the line the break closes, ^ and $ are still line anchors, a line
+// two matches touch is quoted once, and context around a match is the
+// ordinary window.
+func TestSearch_MultilineWalkerEdges(t *testing.T) {
+	forceWalker(t)
+	dir := multilineFixture(t)
+	f := filepath.Join(dir, "f.go")
+	cases := []struct {
+		name, args, want string
+	}{
+		{"a trailing break stays on its line",
+			`"pattern":"Open\\(\\n","context_lines":0`, f + ":1: func Open("},
+		{"^ and $ anchor lines",
+			`"pattern":"^\\tpath string,$","context_lines":0`, f + ":2: \tpath string,"},
+		{"a line two matches share is quoted once",
+			`"pattern":"(open|path|string)","context_lines":0`, f + ":1: func Open(\n" + f + ":2: \tpath string,"},
+		{"context rides with the spanned lines",
+			`"pattern":"string,\\n\\) error","context_lines":1`,
+			f + ":1- func Open(\n" + f + ":2: \tpath string,\n" + f + ":3: ) error {\n" + f + ":4- \treturn nil"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := runSearch(t, fmt.Sprintf(`{%s,"path":%q,"multiline":true}`, tc.args, dir))
+			if out != tc.want {
+				t.Errorf("got:\n%s\nwant:\n%s", out, tc.want)
+			}
+		})
+	}
+}
+
+// A matched line that falls inside the window of the match before it is
+// written as a match, as ripgrep writes it, and counted as one.
+func TestSearch_AdjacentMatchesKeepTheirSeparator(t *testing.T) {
+	forceWalker(t)
+	dir := t.TempDir()
+	f := filepath.Join(dir, "f.txt")
+	mustWrite(t, f, "hit\nhit\nmiss\n")
+	out := runSearch(t, fmt.Sprintf(`{"pattern":"hit","path":%q,"context_lines":1}`, dir))
+	if want := f + ":1: hit\n" + f + ":2: hit\n" + f + ":3- miss"; out != want {
+		t.Errorf("got:\n%s\nwant:\n%s", out, want)
+	}
+	if n := MeasureSearch(out).N; n != 2 {
+		t.Errorf("want 2 matches measured, got %d", n)
+	}
+}
+
+// A multiline match that only_matching reports is one text, its break
+// written so the answer stays one line per text.
+func TestSearch_MultilineOnlyMatching(t *testing.T) {
+	forceWalker(t)
+	dir := multilineFixture(t)
+	out := runSearch(t, fmt.Sprintf(`{"pattern":"open\\(\\s*path","path":%q,"multiline":true,"only_matching":true}`, dir))
+	if want := `1 match in 1 file: Open(\n` + "\tpath"; out != want {
+		t.Errorf("got %q, want %q", out, want)
+	}
+}
+
+func TestSearch_RipgrepIsAskedForMultiline(t *testing.T) {
+	argvFile := filepath.Join(t.TempDir(), "argv")
+	fakeRg(t, fmt.Sprintf(`printf '%%s\n' "$@" > %s`, argvFile))
+	runSearch(t, fmt.Sprintf(`{"pattern":"x","path":%q,"multiline":true}`, t.TempDir()))
+	argv, err := os.ReadFile(argvFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(argv), "--multiline\n") {
+		t.Errorf("multiline should reach rg as -U, got:\n%s", argv)
 	}
 }

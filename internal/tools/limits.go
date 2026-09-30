@@ -54,6 +54,12 @@ const (
 	// across a whole repository.
 	MaxSearchFileResults = 200
 
+	// MaxSearchDistinctResults caps only_matching output: one line per
+	// distinct match, which is as cheap as a line per file and answers a
+	// question — which names exist — that is usually asked of a whole
+	// repository, so it takes files_only's number.
+	MaxSearchDistinctResults = MaxSearchFileResults
+
 	// MaxSearchLimit is the ceiling on search's own limit argument, which is
 	// how a caller raises either default. The defaults above are sized for
 	// the common question — the first fifty matches usually settle it — and

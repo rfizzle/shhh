@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -25,7 +27,11 @@ import (
 // here are the ones that let a single call finish a thought: `context_lines`
 // shows the code around a match, `files_only` answers "where does this live"
 // without quoting anything, and `include` narrows by file type instead of by
-// re-running with a longer pattern.
+// re-running with a longer pattern. `only_matching` answers "which of these
+// exist" with the matched texts and their counts rather than the lines, and
+// `multiline` lets a pattern cross a line break; each is a shell pipeline or
+// flag the model otherwise reaches for through a command.
+// See docs/capabilities/coding-agent.md#finding-things.
 var search = Definition{
 	Tool: provider.Tool{
 		Name: SearchName,
@@ -46,7 +52,9 @@ var search = Definition{
 				"files_only": {"type": "boolean", "description": "Return one line per matching file with its match count instead of the matching lines. Use it to find where something lives"},
 				"literal": {"type": "boolean", "description": "Treat pattern as plain text rather than a regular expression, so ( ) $ . * need no escaping"},
 				"word_boundary": {"type": "boolean", "description": "Match only where the pattern is a whole word, so Add does not match AddMemory"},
-				"limit": {"type": "integer", "description": "Maximum matches to return (default 50, or 200 with files_only; max 500)"}
+				"only_matching": {"type": "boolean", "description": "Return each distinct matched text instead of the lines, with how many times and in how many files it occurs, most frequent first. Use it to ask which IDs, keys or names exist"},
+				"multiline": {"type": "boolean", "description": "Let a match span lines, so \\n and \\s can match a line break (. still does not). Every line a match spans is shown as matching"},
+				"limit": {"type": "integer", "description": "Maximum matches to return (default 50, or 200 with files_only or only_matching; max 500)"}
 			},
 			"required": ["pattern"]
 		}`),
@@ -69,6 +77,8 @@ type searchArgs struct {
 	FilesOnly     bool   `json:"files_only"`
 	Literal       bool   `json:"literal"`
 	WordBoundary  bool   `json:"word_boundary"`
+	OnlyMatching  bool   `json:"only_matching"`
+	Multiline     bool   `json:"multiline"`
 	Limit         int    `json:"limit"`
 
 	// context is ContextLines resolved against the default, and limit is
@@ -121,11 +131,22 @@ func searchPattern(args searchArgs) string {
 // question, which ripgrep is asked through --ignore-case instead. Compiling
 // it is also what decides whether a call is valid at all, so the two backends
 // refuse the same inputs with the same error.
+//
+// A multiline search is matched against the whole file rather than a line at
+// a time, so it takes (?m): ripgrep's ^ and $ are line anchors whether or not
+// -U is on, and without the flag the walker's would mean the file's ends.
 func searchExpr(args searchArgs) string {
-	if args.CaseSensitive {
+	flags := ""
+	if !args.CaseSensitive {
+		flags += "i"
+	}
+	if args.Multiline {
+		flags += "m"
+	}
+	if flags == "" {
 		return searchPattern(args)
 	}
-	return "(?i)" + searchPattern(args)
+	return "(?" + flags + ")" + searchPattern(args)
 }
 
 func executeSearch(raw json.RawMessage) (string, error) {
@@ -149,9 +170,15 @@ func executeSearch(raw json.RawMessage) (string, error) {
 	if args.context > MaxSearchContextLines {
 		args.context = MaxSearchContextLines
 	}
+	if args.FilesOnly && args.OnlyMatching {
+		return "", fmt.Errorf("files_only and only_matching are two different answers; pass one of them")
+	}
 	args.limit = MaxSearchResults
-	if args.FilesOnly {
+	switch {
+	case args.FilesOnly:
 		args.limit = MaxSearchFileResults
+	case args.OnlyMatching:
+		args.limit = MaxSearchDistinctResults
 	}
 	if args.Limit > 0 {
 		args.limit = min(args.Limit, MaxSearchLimit)
@@ -171,6 +198,10 @@ func executeSearch(raw json.RawMessage) (string, error) {
 
 	if _, err := os.Stat(args.Path); err != nil {
 		return "", fmt.Errorf("cannot access path: %w", err)
+	}
+
+	if args.OnlyMatching {
+		return searchDistinct(re, include, args)
 	}
 
 	if rg, ok := lookupRg(); ok {
@@ -239,18 +270,7 @@ func (m *includeMatcher) match(rel string) bool {
 // concludes the file does not exist and writes a new one. The three excluded
 // globs are what keeps .git out once hidden files are in.
 func searchWithRipgrep(rg string, args searchArgs) (results []string, matches int, err error) {
-	argv := []string{
-		"--line-number", "--no-heading", "--with-filename", "--color=never",
-		"--no-messages", "--null", "--hidden",
-		"--max-columns", strconv.Itoa(MaxSearchLineBytes), "--max-columns-preview",
-		"--glob", "!.git", "--glob", "!node_modules", "--glob", "!vendor",
-	}
-	if !args.CaseSensitive {
-		argv = append(argv, "--ignore-case")
-	}
-	if args.Include != "" {
-		argv = append(argv, "--glob", args.Include)
-	}
+	argv := ripgrepArgv(args)
 	limit := args.limit
 	switch {
 	case args.FilesOnly:
@@ -336,6 +356,58 @@ func searchWithRipgrep(rg string, args searchArgs) (results []string, matches in
 	return results, matches, nil
 }
 
+// ripgrepArgv is the part of the ripgrep command line every mode shares:
+// which files are searched, how a line is written, and the questions the
+// arguments ask of the pattern. --multiline is ripgrep's -U, which lets a
+// match cross a line break and prints every line it spans as a match.
+func ripgrepArgv(args searchArgs) []string {
+	argv := []string{
+		"--line-number", "--no-heading", "--with-filename", "--color=never",
+		"--no-messages", "--null", "--hidden",
+		"--max-columns", strconv.Itoa(MaxSearchLineBytes), "--max-columns-preview",
+		"--glob", "!.git", "--glob", "!node_modules", "--glob", "!vendor",
+	}
+	if !args.CaseSensitive {
+		argv = append(argv, "--ignore-case")
+	}
+	if args.Multiline {
+		argv = append(argv, "--multiline")
+	}
+	if args.Include != "" {
+		argv = append(argv, "--glob", args.Include)
+	}
+	return argv
+}
+
+// ripgrepFiles asks ripgrep only which files hold a match. It is how
+// only_matching uses ripgrep: the walk, the ignore rules and the first pass
+// over each file are ripgrep's, and the matches are then read out of the
+// files it named with the same compiled expression the walker uses — so the
+// texts and their counts are one engine's answer on every machine, rather
+// than ripgrep's -o on one and RE2 on another.
+func ripgrepFiles(rg string, args searchArgs) ([]string, error) {
+	argv := removeArg(ripgrepArgv(args), "--line-number")
+	argv = append(argv, "--files-with-matches", "--regexp", searchPattern(args), "--", args.Path)
+	out, err := exec.Command(rg, argv...).Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+			return nil, nil // exit 1 means no matches
+		}
+		if len(out) == 0 {
+			return nil, fmt.Errorf("ripgrep failed: %w", err)
+		}
+		// Partial errors (e.g. unreadable files) still named files.
+	}
+	var files []string
+	for _, p := range strings.Split(string(out), "\x00") {
+		if p = strings.Trim(p, "\n"); p != "" {
+			files = append(files, p)
+		}
+	}
+	return files, nil
+}
+
 func removeArg(argv []string, drop string) []string {
 	out := argv[:0]
 	for _, a := range argv {
@@ -350,20 +422,34 @@ func removeArg(argv []string, drop string) []string {
 // standard directories, the paths .gitignore names, and binary or oversized
 // files.
 func searchWithWalker(re *regexp.Regexp, include *includeMatcher, args searchArgs) (results []string, matches int, err error) {
+	limit := args.limit
+	err = walkSearch(include, args, func(p string) bool {
+		results, matches = searchFile(p, re, args, results, matches, limit)
+		return matches < limit
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	return results, matches, nil
+}
+
+// walkSearch hands visit every file under args.Path the search reads, and
+// stops when visit answers false. A path naming one file is that file alone.
+func walkSearch(include *includeMatcher, args searchArgs, visit func(path string) bool) error {
 	info, err := os.Stat(args.Path)
 	if err != nil {
-		return nil, 0, fmt.Errorf("cannot access path: %w", err)
+		return fmt.Errorf("cannot access path: %w", err)
 	}
-	limit := args.limit
 	if !info.IsDir() {
-		results, matches = searchFile(args.Path, re, args, nil, 0, limit)
-		return results, matches, nil
+		visit(args.Path)
+		return nil
 	}
 
 	// Ripgrep honours .gitignore of its own accord, so the walker does too:
 	// otherwise the same search answers differently depending on whether rg
 	// happens to be installed on the machine.
 	ignore := newWalkIgnore(args.Path)
+	more := true
 	err = filepath.WalkDir(args.Path, func(p string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return nil
@@ -378,7 +464,7 @@ func searchWithWalker(re *regexp.Regexp, include *includeMatcher, args searchArg
 			}
 			return nil
 		}
-		if matches >= limit {
+		if !more {
 			return filepath.SkipAll
 		}
 		if ignore.file(p) {
@@ -396,13 +482,66 @@ func searchWithWalker(re *regexp.Regexp, include *includeMatcher, args searchArg
 		if isBinary(p) {
 			return nil
 		}
-		results, matches = searchFile(p, re, args, results, matches, limit)
+		more = visit(p)
 		return nil
 	})
 	if err != nil {
-		return nil, 0, fmt.Errorf("search error: %w", err)
+		return fmt.Errorf("search error: %w", err)
 	}
-	return results, matches, nil
+	return nil
+}
+
+// readSearchFile is the one place the walker reads a file's text, for every
+// mode, so a reader that has to turn a file into text first wraps this and
+// nothing else.
+func readSearchFile(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+// matchedLines is which lines of a file hold a match, as indexes into lines.
+// Line by line, a line matches or it does not. A multiline search matches the
+// whole text instead, and every line a match touches is a matched line — the
+// lines ripgrep's -U prints — where a match that ends on a line break ends on
+// the line the break closes.
+func matchedLines(text string, lines []string, re *regexp.Regexp, args searchArgs, room int) []int {
+	var hits []int
+	if !args.Multiline {
+		for i, line := range lines {
+			if re.MatchString(line) {
+				hits = append(hits, i)
+				if !args.FilesOnly && len(hits) >= room {
+					break
+				}
+			}
+		}
+		return hits
+	}
+	// starts[i] is the offset line i begins at.
+	starts := make([]int, len(lines))
+	for i, off := 1, 0; i < len(lines); i++ {
+		off += len(lines[i-1]) + 1
+		starts[i] = off
+	}
+	lineAt := func(off int) int { return sort.SearchInts(starts, off+1) - 1 }
+	next := 0
+	for _, m := range re.FindAllStringIndex(text, -1) {
+		first, last := lineAt(m[0]), lineAt(m[0])
+		if m[1] > m[0] {
+			last = lineAt(m[1] - 1)
+		}
+		for i := max(first, next); i <= last; i++ {
+			hits = append(hits, i)
+		}
+		next = max(next, last+1)
+	}
+	if !args.FilesOnly && len(hits) > room {
+		hits = hits[:max(room, 0)]
+	}
+	return hits
 }
 
 // searchFile appends one file's hits to results, honouring files_only and the
@@ -410,24 +549,13 @@ func searchWithWalker(re *regexp.Regexp, include *includeMatcher, args searchArg
 // match count, which is what the cap is measured in — context lines ride
 // along with the match that earned them.
 func searchFile(path string, re *regexp.Regexp, args searchArgs, results []string, matches, limit int) ([]string, int) {
-	data, err := os.ReadFile(path)
+	text, err := readSearchFile(path)
 	if err != nil {
 		return results, matches
 	}
-	lines := strings.Split(string(data), "\n")
+	lines := strings.Split(text, "\n")
 
-	var hits []int
-	for i, line := range lines {
-		if re.MatchString(line) {
-			hits = append(hits, i)
-			if args.FilesOnly {
-				continue
-			}
-			if matches+len(hits) >= limit {
-				break
-			}
-		}
-	}
+	hits := matchedLines(text, lines, re, args, limit-matches)
 	if len(hits) == 0 {
 		return results, matches
 	}
@@ -460,8 +588,11 @@ func searchFile(path string, re *regexp.Regexp, args searchArgs, results []strin
 			}
 		}
 		for i := start; i <= end; i++ {
+			// A matched line inside the window of the match before it is
+			// still a match: the next hit's window starts past it, so this
+			// is the one place it is written.
 			sep := "-"
-			if i == hit {
+			if _, ok := slices.BinarySearch(hits, i); ok {
 				sep = ":"
 			}
 			results = append(results, formatMatch(path, strconv.Itoa(i+1), sep, lines[i]))
@@ -472,6 +603,146 @@ func searchFile(path string, re *regexp.Regexp, args searchArgs, results []strin
 		matches++
 	}
 	return results, matches
+}
+
+// distinctMatch is one text only_matching reports: how many times the
+// pattern matched it and in how many files.
+type distinctMatch struct {
+	text  string
+	count int
+	files int
+}
+
+// searchDistinct answers only_matching — `grep -oh | sort | uniq -c | sort
+// -rn` in one call: every text the pattern matched, once, with how often and
+// in how many files, most frequent first. The counts are over everything the
+// search reaches rather than the first matches found, since a count taken
+// before the walk ends is a count of the walk's order; what is bounded is how
+// many distinct texts are shown.
+//
+// Ripgrep, where it is on PATH, chooses the files; the texts are read out of
+// them by the compiled expression either way (ripgrepFiles says why).
+func searchDistinct(re *regexp.Regexp, include *includeMatcher, args searchArgs) (string, error) {
+	tally := map[string]*distinctMatch{}
+	count := func(path string) {
+		text, err := readSearchFile(path)
+		if err != nil {
+			return
+		}
+		seen := map[string]bool{}
+		for _, m := range distinctTexts(text, re, args) {
+			d := tally[m]
+			if d == nil {
+				d = &distinctMatch{text: m}
+				tally[m] = d
+			}
+			d.count++
+			if !seen[m] {
+				seen[m] = true
+				d.files++
+			}
+		}
+	}
+
+	walked := false
+	if rg, ok := lookupRg(); ok {
+		if files, err := ripgrepFiles(rg, args); err == nil {
+			// The walker leaves an oversized file out of a directory's
+			// search and reads a file it was pointed at, so this does too.
+			dir := false
+			if info, err := os.Stat(args.Path); err == nil {
+				dir = info.IsDir()
+			}
+			for _, p := range files {
+				if fi, err := os.Stat(p); err != nil || (dir && fi.Size() > MaxSearchFileBytes) {
+					continue
+				}
+				count(p)
+			}
+			walked = true
+		}
+	}
+	if !walked {
+		if err := walkSearch(include, args, func(p string) bool { count(p); return true }); err != nil {
+			return "", err
+		}
+	}
+	return formatDistinct(tally, args), nil
+}
+
+// distinctTexts is every non-empty text re matches in a file, a line at a
+// time or, for a multiline search, across the whole text. A line ending's
+// carriage return is not part of what was matched: the same name on a CRLF
+// line and an LF one is one name.
+func distinctTexts(text string, re *regexp.Regexp, args searchArgs) []string {
+	var found []string
+	keep := func(ms []string) {
+		for _, m := range ms {
+			m = strings.TrimSuffix(strings.ReplaceAll(m, "\r\n", "\n"), "\r")
+			if m != "" {
+				found = append(found, m)
+			}
+		}
+	}
+	if args.Multiline {
+		keep(re.FindAllString(text, -1))
+		return found
+	}
+	for _, line := range strings.Split(text, "\n") {
+		keep(re.FindAllString(line, -1))
+	}
+	return found
+}
+
+// formatDistinct writes only_matching's answer, one line per text, bounded at
+// the limit with a notice saying how many were left out.
+func formatDistinct(tally map[string]*distinctMatch, args searchArgs) string {
+	if len(tally) == 0 {
+		return NoMatchesFound
+	}
+	all := make([]*distinctMatch, 0, len(tally))
+	for _, d := range tally {
+		all = append(all, d)
+	}
+	sort.Slice(all, func(i, j int) bool {
+		a, b := all[i], all[j]
+		if a.count != b.count {
+			return a.count > b.count
+		}
+		if a.files != b.files {
+			return a.files > b.files
+		}
+		return a.text < b.text
+	})
+	shown := all[:min(len(all), args.limit)]
+	lines := make([]string, 0, len(shown)+1)
+	for _, d := range shown {
+		lines = append(lines, formatDistinctLine(d))
+	}
+	if len(all) > len(shown) {
+		lines = append(lines, fmt.Sprintf("… (truncated at %d of %d distinct matches; narrow the pattern or path%s)",
+			len(shown), len(all), raiseLimitHint(args.limit)))
+	}
+	return strings.Join(lines, "\n")
+}
+
+// formatDistinctLine puts the counts first and the text last, so whatever the
+// text holds cannot be read as part of the line's own shape. A text that
+// spans lines is written on one, its breaks as \n.
+func formatDistinctLine(d *distinctMatch) string {
+	text := strings.ReplaceAll(d.text, "\n", `\n`)
+	if len(text) > MaxSearchLineBytes {
+		text = cutUTF8(text, MaxSearchLineBytes) + " … (match truncated)"
+	}
+	times := fmt.Sprintf("%d matches", d.count)
+	if d.count == 1 {
+		times = "1 match"
+	}
+	files := fmt.Sprintf("%d files", d.files)
+	if d.files == 1 {
+		files = "1 file"
+	}
+	return fmt.Sprintf("%s in %s: %s", times, files, text)
 }
 
 func formatMatch(path, lineNo, sep, text string) string {
@@ -541,6 +812,11 @@ var searchMatchLine = regexp.MustCompile(`^.+?:\d+([:-])`)
 // files_only result: one line per file, not per match.
 var searchFileLine = regexp.MustCompile(`^.+: \d+ match(?:es)?$`)
 
+// searchDistinctLine is the shape formatDistinctLine writes. It is read
+// before the other two, because the text it ends with is the matched text and
+// may look like either of them.
+var searchDistinctLine = regexp.MustCompile(`^(\d+) match(?:es)? in \d+ files?: `)
+
 // MeasureSearch reads a search result back into the count the tool had when
 // it wrote it, so a reader can say how much was found rather than how much
 // was printed.
@@ -562,9 +838,14 @@ func MeasureSearch(result string) SearchSize {
 		return size
 	}
 	for _, line := range strings.Split(body, "\n") {
+		d := searchDistinctLine.FindStringSubmatch(line)
 		switch m := searchMatchLine.FindStringSubmatch(line); {
 		case TruncationNotice(line):
 			size.Truncated = true
+		case d != nil:
+			// An only_matching line stands for as many matches as it counts.
+			n, _ := strconv.Atoi(d[1])
+			size.N += n
 		case m != nil:
 			if m[1] == ":" {
 				size.N++

@@ -249,6 +249,20 @@ these are the three narrowings a reader would otherwise do by rewriting the
 regular expression, and getting one of them wrong is the round that gets
 spent.
 
+Some questions are not about lines at all. "Which IDs, keys or names exist"
+was answered with `grep -oh | sort | uniq -c` — a command, so a card or a
+classifier round, and in a read-only session a pipeline that is refused. The
+search answers it itself: each distinct text the pattern matched, once, with
+how many times and in how many files, most frequent first. The counts are
+over the whole search and what is bounded is how many texts are shown, since
+a count taken before the search finishes is a count of the order the files
+were read in. A pattern can also span lines, which is ripgrep's `-U` and the
+only way to find a signature or a call broken over several; every line the
+match touches is shown as matching. Two things the shell pipeline also does
+were left out: an inverted match and a choice of sort. Neither appeared in
+the sessions this was drawn from, and every argument a tool takes is part of
+every request that carries it.
+
 Sizing a file up is asked of the readers too, and not of a shell. A session
 that went looking with commands was, command by command, asking how big a
 file was, reading its end, and listing a document's headings — `wc`, `tail`
