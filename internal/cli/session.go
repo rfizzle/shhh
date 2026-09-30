@@ -810,7 +810,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 
 	// The model is told where the work is, so an out-of-scope path is
 	// a question it asks rather than a call the user refuses.
-	scopeSaid := scopePromptBlock(sc)
+	scopeSaid := scopePromptBlock(sc, true)
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopeSaid)
 
 	// …and what it has to work with. Every optional tool above is

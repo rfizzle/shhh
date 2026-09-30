@@ -387,7 +387,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		}
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles)...)
 	}
-	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc))
+	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc, false))
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs, session.proactive))
 
 	prices := loadPricing()

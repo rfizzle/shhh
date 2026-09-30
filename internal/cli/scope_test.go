@@ -116,15 +116,30 @@ func TestSandboxPolicyMakesTheScopeWritable(t *testing.T) {
 	}
 }
 
+// See docs/capabilities/containment.md#asking-for-a-directory-is-the-way-through.
 func TestScopePromptBlockNamesTheBoundaryAndTheWayOut(t *testing.T) {
 	root := t.TempDir()
 	sc := testScope(t, root)
-	block := scopePromptBlock(sc)
-	if !strings.Contains(block, root) || !strings.Contains(block, "/add-dir") {
+	block := scopePromptBlock(sc, true)
+	if !strings.Contains(block, root) || !strings.Contains(block, "ask the user to run /add-dir <path>") {
 		t.Fatalf("the model should be told where the work is and how to ask for more, got:\n%s", block)
 	}
-	if scopePromptBlock(nil) != "" {
+	if !strings.Contains(block, "expected way through") || !strings.Contains(block, "contained command fails") {
+		t.Fatalf("a refusal outside the scope should read as a reason to ask, not a failure to route around, got:\n%s", block)
+	}
+	if scopePromptBlock(nil, true) != "" {
 		t.Error("a session with no scope tells the model nothing about one")
+	}
+}
+
+func TestScopePromptBlockOnARunNobodyCanWidenNamesTheNextRun(t *testing.T) {
+	root := t.TempDir()
+	block := scopePromptBlock(testScope(t, root), false)
+	if !strings.Contains(block, root) || !strings.Contains(block, "--add-dir <path>") {
+		t.Fatalf("a headless run should name the directory for the next run, got:\n%s", block)
+	}
+	if strings.Contains(block, "/add-dir") {
+		t.Fatalf("a run nobody can widen must not ask for a command it cannot receive, got:\n%s", block)
 	}
 }
 
@@ -229,7 +244,7 @@ func TestOffersCommands_AConversationIsToldNothingAboutRunningOne(t *testing.T) 
 func TestRescopePromptSaysTheScopeAsItStands(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
 	sc := testScope(t, root)
-	said := scopePromptBlock(sc)
+	said := scopePromptBlock(sc, true)
 	text := "# Instructions\nquoted: " + said + "\n\n" + said + "\n\n# Toolbox"
 	if got := rescopePrompt(text, said, sc); got != text {
 		t.Fatalf("an unmoved scope should leave the prompt alone, got:\n%s", got)
@@ -239,7 +254,7 @@ func TestRescopePromptSaysTheScopeAsItStands(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 	got := rescopePrompt(text, said, sc)
-	want := "# Instructions\nquoted: " + said + "\n\n" + scopePromptBlock(sc) + "\n\n# Toolbox"
+	want := "# Instructions\nquoted: " + said + "\n\n" + scopePromptBlock(sc, true) + "\n\n# Toolbox"
 	if got != want || !strings.Contains(got, ", "+dir+".") {
 		t.Fatalf("the prompt should say the grant in the scope block, got:\n%s", got)
 	}

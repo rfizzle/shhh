@@ -30,6 +30,28 @@ on the card is not announced: it answered the model's own call, and that call
 running is the answer. The next session is told the scope as it stands in its
 prompt, so a grant is said once.
 
+### Asking for a directory is the way through
+
+A model that meets the boundary without knowing it can be moved treats it as
+an obstacle to engineer around: it copies the files it needed into the
+workspace, points `HOME` or a tool's cache at a directory it can write, or
+reaches the path through some other tool that was not refused. Each of those
+is work the person did not ask for, and each is worse than the one sentence
+that would have done it — "this needs `../shared`, may I have it?" — because
+the grant is cheap, reversible with `/add-dir drop`, and exactly what the
+scope is for.
+
+So the prompt says that asking is the expected move and not a failure: when
+an edit is refused, or a contained command fails on a path outside the
+scope, the model names the directory and why the task needs it and asks for
+`/add-dir`. Where the path was only somewhere to put scratch output, the
+answer is the workspace and nobody is asked anything.
+
+A `-p` run and a served session have no way to widen the scope once they are
+running, so they are not told to ask for a command they cannot receive: they
+finish what the scope allows and say which directory the next run needs with
+`--add-dir`.
+
 ### Two classes of directory never come along
 
 - **Refused.** A path behind the deny mask cannot be granted at all, by any

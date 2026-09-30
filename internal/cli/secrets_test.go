@@ -232,7 +232,7 @@ func TestBoundaryPromptSaysTheVaultAsItStands(t *testing.T) {
 				t.Fatal(err)
 			}
 			sc := testScope(t, t.TempDir())
-			scopeSaid := scopePromptBlock(sc)
+			scopeSaid := scopePromptBlock(sc, true)
 			// The prompt as launch leaves it: the secrets block in the
 			// standing extra, then the scope block, then the toolbox.
 			launched := prompt.CombineExtra("# Instructions", session.promptExtra, scopeSaid, "# Toolbox")

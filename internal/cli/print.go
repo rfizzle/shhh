@@ -1016,7 +1016,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// The model is told where the work is; a headless run cannot be
 	// asked for a directory mid-flight, so knowing the boundary is the
 	// difference between a report that names it and a round spent retrying.
-	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc))
+	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc, false))
 
 	// …and what it has to work with, for the same reason: nobody is
 	// there to suggest the tool it did not know it had.

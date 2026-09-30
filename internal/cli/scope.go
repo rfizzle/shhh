@@ -87,9 +87,14 @@ func headlessScopeCheck(sc *scope.Scope, yes bool, paths []string) (deny string,
 
 // scopePromptBlock tells the model where the work is. A model that
 // does not know the boundary spends its rounds proposing calls the user has
-// to refuse one at a time; one that does asks for the directory instead,
-// which is a sentence the user can answer with /add-dir.
-func scopePromptBlock(sc *scope.Scope) string {
+// to refuse one at a time, or routing around a refusal it reads as a broken
+// tool; one that does asks for the directory instead, which is a sentence the
+// user can answer with /add-dir. grantable is whether anybody can answer
+// that sentence during the session: a -p run and a served session have their
+// scope fixed at launch, so they are told to name the directory for the next
+// run instead of asking for a command they cannot receive.
+// See docs/capabilities/containment.md#asking-for-a-directory-is-the-way-through.
+func scopePromptBlock(sc *scope.Scope, grantable bool) string {
 	if sc == nil {
 		return ""
 	}
@@ -98,9 +103,18 @@ func scopePromptBlock(sc *scope.Scope) string {
 	for _, d := range sc.Beyond() {
 		b.WriteString(", " + d)
 	}
-	b.WriteString(".\nPaths outside it need the user's approval before anything writes to them, whatever the permission mode says, ")
-	b.WriteString("and sensitive directories need an explicit grant. ")
-	b.WriteString("If the work genuinely needs another directory, say which one and why, and ask the user to run /add-dir <path> — do not work around the boundary.")
+	b.WriteString(".\n")
+	const refused = "When the work needs a directory outside it — an edit there is refused, or a contained command fails on a path there — "
+	const around = "do not work around the boundary by copying files into the scope, pointing HOME or a cache somewhere else, or reaching the path through another tool"
+	if grantable {
+		b.WriteString("Paths outside it need the user's approval before anything writes to them, whatever the permission mode says, and a sensitive directory is granted only by the user's own /add-dir.\n")
+		b.WriteString(refused + "ask the user to run /add-dir <path>, naming the directory and why the task needs it. ")
+		b.WriteString("That is the expected way through, not a failure to report: " + around + ". ")
+		b.WriteString("If the path was only somewhere to put scratch output, put it inside the scope instead and ask for nothing.")
+		return b.String()
+	}
+	b.WriteString("Paths outside it need approval before anything writes to them, and nothing can add a directory during this run.\n")
+	b.WriteString(refused + around + ": finish what the scope allows, and say which directory the work needs and why, so the run can be started again with --add-dir <path>.")
 	return b.String()
 }
 
@@ -114,7 +128,7 @@ func rescopePrompt(text, said string, sc *scope.Scope) string {
 	if said == "" {
 		return text
 	}
-	return resayBlock(text, said, scopePromptBlock(sc), "")
+	return resayBlock(text, said, scopePromptBlock(sc, true), "")
 }
 
 // resayBlock replaces a block said at launch with what it says now, in a
