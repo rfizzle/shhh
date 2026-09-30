@@ -495,7 +495,11 @@ func Render(d Draft, kind Kind) string {
 		fmt.Fprintf(&b, "deny = [%s]\n", strings.Join(quoted, ", "))
 	}
 	b.WriteString("prompt = \"\"\"\n")
-	b.WriteString(strings.ReplaceAll(d.Prompt, `"""`, `""\"`))
+	// A basic string reads a backslash as an escape, so a pattern like \d+ in
+	// the prompt is written as \\d+; the backslashes go first, or the one the
+	// quote rule adds would be doubled too.
+	prompt := strings.ReplaceAll(d.Prompt, `\`, `\\`)
+	b.WriteString(strings.ReplaceAll(prompt, `"""`, `""\"`))
 	b.WriteString("\n\"\"\"\n")
 	return b.String()
 }

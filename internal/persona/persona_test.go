@@ -460,3 +460,28 @@ func TestACommandsRevisionNamesItsFields(t *testing.T) {
 		}
 	}
 }
+
+// The prompt is a TOML basic string, where a backslash is an escape: a
+// drafted \d+ written as it stands is read back as something else or not
+// at all. Whatever the prompt holds, the file the loader reads must hand it
+// back unchanged.
+func TestRenderedPromptSurvivesTheLoader(t *testing.T) {
+	prompt := "Match lines with `\\d+` and split on a literal \\n.\n" +
+		`Quote him: """exactly""" and '''verbatim'''.` + "\n" +
+		`A path ends C:\dir\ and a run of quotes """"".`
+	d := Draft{Name: "matcher", Description: `matches \d+ in logs`, Intent: `finds \d+ runs`, Prompt: prompt}
+	path := filepath.Join(t.TempDir(), "matcher.toml")
+	if err := os.WriteFile(path, []byte(Render(d, KindCode)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	def, err := config.LoadAgentFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.TrimSuffix(def.Prompt, "\n"); got != prompt {
+		t.Fatalf("prompt = %q, want %q", got, prompt)
+	}
+	if def.Description != d.Description || def.Intent != d.Intent {
+		t.Fatalf("description = %q intent = %q", def.Description, def.Intent)
+	}
+}
