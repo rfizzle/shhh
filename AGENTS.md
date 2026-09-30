@@ -1,1660 +1,195 @@
 # AGENTS.md
 
-## Overview
-
-`shhh` is a Go CLI tool that turns natural language into executable shell commands. It has four interaction modes: one-shot generation (`shhh cmd <prompt>`), inline/hotkey (`Ctrl+K` in shell), a read-only conversation with persona sub-agents (`shhh chat`), and a coding agent (`shhh code`); both sessions keep a shared notebook their children read and write. The TUI is built with Bubble Tea v2 (charm.land/bubbletea/v2) and the LLM backend supports Anthropic, OpenAI, Gemini, and OpenRouter via a pluggable provider registry.
+`shhh` is a Go CLI that turns natural language into shell commands. It has
+four modes: one-shot (`shhh cmd <prompt>`), inline (`Ctrl+K` in the shell), a
+read-only conversation with persona sub-agents (`shhh chat`), and a coding
+agent (`shhh code`). The TUI is Bubble Tea v2 (`charm.land/bubbletea/v2`).
 
 ## Scope and restraint
 
-Solve the requested problem with the smallest change that makes it correct,
-safe, and verifiable while following an established local pattern. Do not add
-abstractions, perform opportunistic refactors or renames, reformat unrelated
-code, update dependencies, rewrite tests, expand documentation, or clean up
-adjacent code merely because it is visible. Such work is in scope only when it
-is necessary for the requested behavior or its verification.
-
-Prefer the existing shape over a theoretically cleaner design. Introduce a new
-abstraction only when the requested change itself has repeated behavior that
-cannot be expressed clearly through the shape already present. Keep tests and
-documentation proportionate: cover the changed behavior and its meaningful
-edges, rather than using the request as a reason to broaden unrelated
-coverage or prose.
-
-A review reports concrete, evidenced defects in the proposed change:
-incorrect behavior, a regression, security or data-loss risk, broken
-compatibility, or missing verification for behavior the change claims. It does
-not turn stylistic preferences, speculative concerns, or possible future
-refactors into findings. When the evidence supports no such issue, say so.
-
-Still notice exceptional windfalls. A broadly applicable, low-risk correction
-that prevents serious correctness, security, data-loss, reliability, or major
-maintenance harm may be called out separately, with the evidence, impact, and
-why it is unusually high value. Do not silently fold it into the task, pad a
-review with ordinary cleanup, or pursue it unless it is required to complete
-the requested work or the user chooses to take it on. The default is focus:
-finish the requested outcome and leave unrelated improvements unchanged.
+Make the smallest change that is correct, safe and verifiable, following the
+local pattern. Don't refactor, rename, reformat, update dependencies, rewrite
+tests or expand documentation unless the requested behaviour needs it. A
+review reports concrete, evidenced defects, not style preferences or
+speculative refactors. A broadly applicable, low-risk fix that prevents
+serious harm may be called out separately as a windfall; don't fold it in.
 
 ## Documentation
 
-Two skills in [`.agents/skills/`](.agents/skills/) carry the working guidance.
-`sound-patterns` is how to settle a question about style or convention —
-default to what the Go standard library does, and measure rather than assert.
-`documentation` is the [working
-guide](.agents/skills/documentation/SKILL.md) — where a fact belongs, the
-citation convention, and the test a comment has to pass to earn its place,
-with worked before/after examples.
-[`docs/README.md`](docs/README.md) is the architecture it follows. The short
-version:
+`.agents/skills/documentation/SKILL.md` is the working guide;
+`sound-patterns` settles style (default to what the Go stdlib does, measure).
 
-**Each document answers one question, and that decides where a fact belongs.**
-`docs/product.md` is what shhh is; `docs/architecture.md` is the big shapes and
-why; `docs/capabilities/` is what it does and why that exists;
-`docs/interface/` is what every surface obeys; **this file** is where the code
-is and what will bite you. A fact filed under the wrong question rots there.
-
-**Documents name no Go symbol. Code cites documents.** The dependency points
-one way. A document that can name a function drifts silently when the function
-is renamed, so the map from intent to code lives here in AGENTS.md, and the map
-from code to intent is the citation in the comment:
-
-```go
-// Commands always carry the mutation rail: shhh cannot know whether a command
-// wrote something, so it assumes it did.
-// See docs/interface/principles.md#weight-tracks-risk.
-```
-
-The reason goes in the comment as prose. **The citation is a pointer to the
-long form, never a substitute for the reason** — a reader who does not open the
-document must still understand why the line is the way it is.
-
-**Cite only for product and design decisions.** Local mechanics do not get a
-citation: `SetMaxOpenConns(1)` is explained by the sentence next to it, and
-pointing at a document for it would be noise.
-
-**Headings are anchors — treat one like an exported symbol.** Renaming a
-heading breaks every citation to it, silently. Rename deliberately and fix the
-citations in the same commit. `make docs-check` verifies every citation
-resolves and lists documents nothing cites; it runs as part of `make ci`.
-
-**Exact visual specification is not in this repository.** Column widths, colour
-rungs, glyph assignments and the artboards are normative in the `shhh Design
-System` project in Claude Design, read with the DesignSync tool. Don't re-draw
-an artboard in Markdown — it becomes a second source of truth that disagrees
-with the first. `scripts/design/keymap-check.py` lists every `[key] words`
-caption the artboards draw against the bindings `shhh keys --json` ships,
-reading the export the design-sync skill writes to `.design/` (by default
-`.design/ui_kits/cockpit/*.html`).
+- **Each document answers one question.** `docs/product.md` is what shhh is,
+  `docs/architecture.md` the big shapes and why, `docs/capabilities/` what it
+  does and why, `docs/interface/` what every surface obeys, this file where
+  the code is and what will bite you.
+- **Documents name no Go symbol; code cites documents.** The reason goes in
+  the comment as prose, then the pointer:
+  `// See docs/interface/principles.md#weight-tracks-risk.` Cite only product
+  and design decisions, never local mechanics.
+- **Headings are anchors.** Renaming one breaks its citations; fix them in the
+  same commit. `make docs-check` verifies every citation resolves.
+- **Never reference a story, sprint, backlog item or `.plan/`** in a comment,
+  document or test name. `make docs-check` fails on a story identifier.
+- **Exact visual specification lives in the `shhh Design System` project in
+  Claude Design** (read with DesignSync), not in Markdown here.
 
 ### Where the model reads it
 
-What the model knows about a tool, an argument, a refusal or a mode reaches it
-through three channels, and through nothing else it can read:
-
-- **the definition's schema or description** — the tool's own description and
-  each argument's, which is where *when to pass it* goes, not only what it is;
-- **the toolbox line** — the one sentence `prompt.Toolbox` writes for each
-  tool that was registered, appended once the last one joins, saying when
-  that tool is the right answer;
-- **a prompt paragraph** — a section of a system prompt, for a behaviour that
-  spans tools or a refusal the model should expect before it meets one.
-
-**The base prompt names no tool.** The optional toolset is assembled from what
-the machine turned out to have — a language server was detected, a binary is
-on PATH, a key is configured — so a paragraph that names a tool promises one
-the session may not have, and a model promised a tool tries to use it. A tool
-is named in its own definition and in its toolbox line, and both exist only
-where it was registered.
-
-**The reason for a line goes in the doc the line cites, not in the line.** The
-model reads the line and nothing behind it, so the line says what to do; why
-it says so is prose in `docs/capabilities/`, cited from the comment beside it.
-A change that moves what the model reads says which of the three moved and
-which section holds the reason — in a work item, as a criterion beginning
-`The model is told:` — and a change that moves none of them says so in one
-line. Why there are three and not one:
-[`docs/capabilities/coding-agent.md#the-agent-knows-what-this-machine-has`](docs/capabilities/coding-agent.md#the-agent-knows-what-this-machine-has).
-
-### Never reference a story or a plan
-
-**No comment, document or test name may refer to a story, a sprint, a backlog
-item or anything under `.plan/`.** That directory is not part of the
-repository, so such a reference points at something the reader cannot open —
-and even where it can be opened, it answers "when was this built", which is
-not a question the code should be asking.
-
-Say what the code does and why. Where the reason is a product or design
-decision, cite the document that holds it. If the reason is not captured in
-`docs/` yet, add the section — that is the direction the dependency runs.
-Planning cites the capabilities in `docs/`; `docs/` never cites planning.
-
-`make docs-check` fails on a story identifier anywhere in the code or a
-golden fixture, so this cannot drift back.
+The model learns about a tool only from its definition's schema and
+description, its `prompt.Toolbox` line, or a system-prompt paragraph. **The
+base prompt names no tool**: the toolset depends on the machine, and a model
+promised a tool it lacks tries to use it. The line says what to do; the reason
+is prose in `docs/capabilities/`, cited from the comment beside it
+([`docs/capabilities/coding-agent.md#the-agent-knows-what-this-machine-has`](docs/capabilities/coding-agent.md#the-agent-knows-what-this-machine-has)).
 
 ## Commands
 
 | Task | Command |
 |------|---------|
-| Build | `make build` (this platform; the release matrix is goreleaser's) |
-| Test all | `make test` (the hermetic tier; clears provider, palette, and Git-hook environment) |
-| Test single package | `go test ./internal/<pkg>` |
-| Run loopback contracts | `make test-contract` (the `contract` build tag: CLI/provider, telemetry, fixture-site, and report-serving contracts; requires a listener-capable host and is intentionally outside a contained session) |
-| Run containment integration checks | `make test-integration` (the `integration` build tag; requires a runner with the supported OS mechanism) |
-| Format | `make fmt` (runs gofmt + goimports) |
-| Check formatting without rewriting | `make fmt-check` (reads the tracked tree and fails on the first drift) |
-| Vet | `make vet` (every tier's files, so a tagged test that stopped compiling fails in the gate) |
-| Lint | `make lint` (golangci-lint) |
-| Quality gate | `make test vet lint fmt-check docs-check` — the five checks `.shhh/quality.json` runs; inside a session, `quality_gate` or `/gate run` |
-| CI pipeline | `make ci` (the gate plus `cross` and `tui-check`; the runner's, not an agent's done rule) |
-| Check every released platform compiles | `make cross` |
-| Check doc citations | `make docs-check` |
-| Run the eval suite | `make eval` (the cases that name a model cost real requests; not part of `make ci`) |
-| Rewrite the eval baseline | `make eval-baseline` (the file every run is read against; the diff is the review) |
-| Verify prompt caching against live endpoints | `SHHH_CACHE_IT_URL=… SHHH_CACHE_IT_KEY=… SHHH_CACHE_IT_GATEWAY_URL=… SHHH_CACHE_IT_GATEWAY_KEY=… make cache-check` (costs real requests; each half skips when its own pair is unset) |
-| Update golden files | `go test ./internal/ui ./internal/ui/components ./internal/ui/chat -update-golden` or `SHHH_UPDATE_GOLDEN=1 go test ./...` |
-| Capture the TUI at each step of a scene | `make tui-shot SCENE=<name> COLS=110 ROWS=40` (builds the binary; captures under `bin/tui/<name>/`; with `agg` installed, a still per step drawn from those captures as well) |
-| Open the TUI by hand against a scripted model | `SHHH_BIN=$PWD/bin/tui/shhh scripts/tui/drive.sh --attach scripts/tui/scenes/<name>` (after a `tui-shot` has built the binary; needs tmux) |
-| Record a scene's whole run, not only its steps | `SHHH_BIN=$PWD/bin/tui/shhh scripts/tui/drive.sh --record scripts/tui/scenes/<name>` (an `asciinema` `.cast` beside the captures; without asciinema it says so and records nothing) |
-| Drive every scene through the built binary | `make tui-check` (part of `make ci`, the CI pipeline; the quality gate is what an agent runs to finish an item) |
-
-Build produces a `shhh` binary with version injected via `-ldflags`.
-
-## Testing topology
-
-The default test tier is hermetic: it owns temporary files and configuration,
-uses an in-memory HTTP fixture, and has no requirement for a TCP listener,
-clipboard, container engine, host daemon, public network, or shared Go build
-cache. A session quality suite therefore declares `require_containment`; when
-containment cannot be established it is blocked before it runs, never quietly
-run on the host. This checkout closes changed work with the complete `default`
-suite — hermetic tests, vet, lint, formatting, and documentation checks. The
-shorter `fast` suite is available for an early signal, not a closing verdict.
-
-Tests that prove a real boundary are separate, and a build tag is what
-separates them: a tagged file is not compiled into the hermetic tier, so a
-listener cannot reach the gate by way of a skip somebody forgot. `make
-test-contract` selects the `contract` tag — the CLI/provider, telemetry,
-fixture-site, and report-serving loopback contracts — and fails clearly when
-the selected host cannot bind. Containment implementation checks have the
-`integration` build tag and run through `make test-integration` on a host
-that supports them. `make vet` reads both tags, so a tagged file that stopped
-compiling fails in the gate rather than in the one CI job that selects it. A skip outside
-that host is not contract evidence. CI runs the loopback contract target and
-the Linux and macOS containment targets as separate jobs; none is folded into
-the contained session suite.
-
-What will bite you: a Go `httptest` server opens a real listener. For an
-in-process HTTP fixture, use `internal/testhttp` and pass its client through
-the package's existing transport seam. For a host executable such as the
-clipboard, replace the command at its test seam and restore it with cleanup.
-The quality runner gives Go checks a private build cache; for a direct test in
-a restricted shell, use a fresh writable `GOCACHE` rather than weakening the
-sandbox. The reusable procedure is in `.agents/skills/testing/SKILL.md`; the
-product behaviour and rationale are in
-[`docs/capabilities/testing.md`](docs/capabilities/testing.md).
-
-## Version control
-
-**Never stage with `git add -A`, `git add .`, or `git commit -a`.** Name the
-paths. A blanket add commits whatever else is in the tree — a half-finished
-experiment, a scratch file, a golden nobody meant to update — and the mistake
-is invisible in the diff you reviewed, because you never reviewed those files.
-
-**Scope every commit to the work of the session that produced it.** If you did
-not change a file for the reason you are committing, it does not belong in the
-commit, even when it is already dirty and even when it is a one-line fix. A
-commit that carries a stranger cannot be reverted, cited, or read as a unit,
-which are the only three things a commit is for.
-
-**Commit on the branch that is checked out.** `master` included — do not
-create a branch first. Where the work should live is the author's call and
-they have usually already made it by checking something out; branching on
-their behalf moves the commit somewhere they did not ask for and have to go
-looking for.
-
-**Write the subject as a Conventional Commit.** `type(scope): summary`, where
-the type is one of `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`,
-`ci`, `chore` or `revert`, the scope is optional and names the surface the
-change lives in (`ui/chat`, `cli`, `todo`, `pricing`), and the summary is
-imperative, lower case, has no trailing period and keeps the whole line under
-72 characters. A change that breaks a command's flags, a config key or an
-on-disk format takes a `!` before the colon and a `BREAKING CHANGE:` footer
-saying what the reader has to do about it. A subject that needs an `and` is
-two commits.
-
-The prefix is the only thing the convention decides. The body is what it
-always was: prose after a blank line, saying what the diff cannot — the
-failure the change is for, the decision behind it, what was deliberately left
-alone. History from before this rule stays as it is; don't rewrite it to match.
-`shhh todo run` writes its own commit message by reading `git log -10` and
-matching the shape it finds there, so it picks the convention up on its own as
-recent history turns over.
-
-All four rules yield to an explicit instruction to do otherwise.
-
-## Architecture
-
-```
-cmd/shhh/main.go          Entry point (cobra root command, executed through fang)
-internal/
-  cli/                     All cobra commands (root, cmd, chat, code, init, doctor, etc.)
-  cli/report/              The shape every non-interactive listing prints in (rows, sections, tallies)
-  agent/                   Front-end-agnostic agentic loop (conversation, tool dispatch, approval queue, round cap, repeat detection)
-  provider/                LLM provider interface + implementations (anthropic, openai, gemini, openrouter)
-  pricing/                 Model data: prices, context windows, reasoning flags — downloaded table over the built-in snapshot (`make model-data`)
-  meter/                   Session spend ledger + the provider gate every request is billed at
-  ui/chat/                 Bubble Tea chat TUI model (the main interactive surface)
-  ui/components/           Reusable TUI components (cards, lists, diffs, selectors)
-  ui/golden/               Golden-file test framework for layout regression
-  subagent/                Sub-agent orchestration (spawn_agent tool, worktrees, fan-out)
-  tools/                   Tool definitions and execution (read-only, mutating, execute_command)
-  config/                  TOML config loading (~/.config/shhh/config.toml)
-  storage/                 SQLite persistence (sessions, memories, observations, snippets)
-  logs/                    The diagnostic log: the file a refused request is written to, and the tail `shhh logs` reads
-  reports/                 Report pages: typed blocks and validated freehand rendered to HTML, stored globally, served on loopback
-  sandbox/                 OS-level process containment (bubblewrap on Linux, Seatbelt on macOS)
-  lsp/                     Language server integration (auto-detected, lazy-started): definitions, references, symbol search, file outlines, hover, and the capability gate on the last three; `document_symbol` itself is defined in `tools/` (a Markdown outline, every session) and the server takes it only for a file it covers
-  quality/                 Quality-gate runner (configurable check suites)
-  changeset/               Per-turn edit tracking (before/after content, undo support)
-  scope/                   Working-scope management (directory grants, deny mask)
-  diff/                    Unified diff generation and patch application
-  web/                     Web tools (fetch, and search over either of two backends) with policy guards
-  profile/                 Provider profile loading (gateway endpoints)
-  prompt/                  System prompt construction (per-command prompts + the registered-toolset section)
-  safety/                  Command safety analysis
-  nudge/                   The line a shell read's result carries naming the built-in tool that answers it: one table of reading programs and their tools
-  memory/                  Durable memory (cross-session remembered facts)
-  skill/                   Agent Skills: discovery, SKILL.md frontmatter, the catalog prompt block and the activation tool
-  mcp/                     MCP clients: server definitions and their catalog, the connect over the official SDK, the toolset on the executor chain
-  hook/                    The person's own commands at the session's seams: the event contract, the matcher, and the bounded runner that fires them
-  todo/                    The project backlog: one Markdown item per file under .shhh/todo, the ready set and its order, the archive
-  secret/                  Session secrets: the vault, the scrub every text passes through — by declared value, then by credential shape — and the prompt block naming them
-  migrate/                 Layout migrations, detected and offered by `shhh doctor` (never at startup)
-  observe/                 The session record's contract: the observer every surface reports through, and the closed sets its codes come from
-  eval/                    The eval suite: a workspace and the verdict its own check gives, a labelled table put to a call that leaves no workspace behind, a site served over loopback and a write-up graded against what the run fetched, or a mechanism of the harness's own put to a table with the model's part scripted
-  evidence/                Evidence store for quality-gate output
-  plan/                    Plan mode state (step tracking)
-  resolve/                 Provider resolution from flags/config/env
-  project/                 The checkout as the session finds it: the survey, and the instruction files it reads root-down
-  shell/                   Which shell this platform runs a command line with, and how — the one resolution the prompt and every runner read
-  process/                 Background process management (the process tool)
-  structural/              Optional external tools integration (ast-grep, fd, sd, tokei), the read-only git verbs, and the four git writes a surface can ask for
-  hostgit/                 How shhh runs git on the host: the environment every call takes and the per-verb flags that shut the programs a checkout can name
-  radius/                  Blast-radius analysis for edits
-  preflight/               Startup checks
-  rpc/                     The JSON-RPC surface behind `shhh serve`: the wire, the session registry and the approval queue a client answers
-  update/                  Release check behind `shhh update` and the startup nudge
-```
-
-## Key Design Patterns
-
-This section is the map from the shapes described in [`docs/architecture.md`](docs/architecture.md) to where they live. The *why* is in the docs; the *where* is here.
-
-### Agent Loop
-
-The `internal/agent` package is a **passive state machine** — front-ends (the chat TUI or headless runner) drive it step-by-step. The same `Agent` backs both the interactive TUI and the headless `shhh code -p` runner. The `Headless` type in `headless.go` drives the agent synchronously for scripted/sub-agent use. Why it is passive: [`docs/architecture.md#one-agent-several-front-ends`](docs/architecture.md#one-agent-several-front-ends).
-
-`Headless.Run` is the session's loop and not a simpler one ([`docs/capabilities/coding-agent.md#an-unattended-run-runs-the-same-loop`](docs/capabilities/coding-agent.md#an-unattended-run-runs-the-same-loop)): a round's auto calls go through `Agent.ExecuteCalls`, the same `MaxParallelToolCalls` semaphore returning results in call order, and gated ones stay one at a time through the approval queue. Because a round's calls overlap, `OnToolResult` carries the whole `ToolResult` — a front-end matches a result to the row it opened by `Call.ID` (`pendingEntry` in `subagent.go` is a map for exactly this) and takes the duration off the result rather than timing around the hook. **The retry is a state the driver enters, never a sleep inside the loop.** `retry.go` owns the decision and nothing else: `Backoff.Next` reports whether a failure earns another attempt and how long to wait (`Failure.RetryAfter` when the provider named one, doubling off a second otherwise, floored at a second and capped at a minute, `MaxRetryAttempts` across the whole stall, `Reset` on any answered request). Each driver waits its own way — the TUI's `retryWait` meter in `ui/chat/resume.go` ticks it down and offers `[m]`/`[esc]`, `Headless.waitToRetry` sleeps and registers its cancel where the stream's goes so `Interrupt` wakes it. Stream resume after a *broken wire* (`streamResume`, `continueStream`) stays TUI-only: continuing half a reply the transport lost is a judgement, and an unattended run asks again from the top — `RetryNotice.Partial` hands back what the broken stream had written so the surface that showed it can take it back (`print.go` closes the stdout line, the child clears `c.streaming`), because nothing else can and the replacement answer would otherwise run on from a severed sentence. **A reply cut off at the model's output ceiling is the other half of that and is not TUI-only** ([`docs/capabilities/providers.md#a-reply-says-why-it-stopped`](docs/capabilities/providers.md#a-reply-says-why-it-stopped)): `StreamEvent.Stop` carries a closed `provider.StopReason`, each dialect maps its own field to it, and on `StopLength` the session draws the same `[c]` row (the reply is already in the conversation, so continuing appends only `agent.ContinueAfterCeiling`) while `Headless.Run` appends it itself, once per round, and reports both that and a round that lost an unfinished call through `OnContinue`. `Run` returns the halves joined, since the second was asked to carry on from the first, and drops the half in hand wherever the next reply replaces the answer instead of finishing it (a tool round, a close hand-back). A ceiling reached again with the round's continuation already spent is `Headless.TruncatedReply` — the answer stands but says it is half of one, which `--output json` carries as `truncated` for the callers that grade an answer rather than print it. Anthropic needs `anthropicWholeCalls` rather than `CompletedToolCalls`: the SDK rewrites a cut-off argument string to `{}`, which parses, so the argument fragments are judged as they arrived. `observe.SignalRetry` is reported per attempt at each surface's own site — `headlessObserver.retry` in `cli/print.go`, the child's `OnRetry` in `subagent.go` — with `RetryNotice.Signal()` as the reason.
-
-### Tool Security Tiers
-
-Tools are split into three permission tiers that must never be mixed:
-
-1. **Read-only** (`ReadOnly()`): `read_file`, `list_directory`, `search`, `glob`, `query`, `sqlite` — auto-execute without approval
-2. **Execute** (`ExecCommandTool()`): `execute_command` — requires user approval or policy match
-3. **Mutating** (`Mutating()`): `write_file`, `edit_file` — require approval in manual mode, auto-apply in accept-edits/auto
-
-The `Execute()` function in `tools/tools.go` deliberately only dispatches read-only tools. Mutating calls route through `ExecuteMutating()`. This separation is a security invariant — different functions rather than one function with a branch, for the reason in [`docs/architecture.md#tiers-not-permissions`](docs/architecture.md#tiers-not-permissions). Merging them always looks like a simplification; it isn't.
-
-### The edits array
-
-`edit_file` takes either the inline `old_text`/`new_text` pair or an `edits`
-array, and refuses a call carrying both. `parseEditFileArgs` folds the pair
-into a one-element list, so everything past it sees a list and there is one
-code path to be right about. `applyEdits` in `tools/mutate.go` is the single
-validator both `PreviewMutation` and `executeEditFile` go through: it matches
-every quote against the file as read, collects the byte ranges each one
-claims, sorts them, refuses an intersection naming both edits, and only then
-splices the result. Moving either caller off it puts a card in front of a
-person for a change the write will refuse.
-
-What will bite you: **the ranges are offsets into the content as it was
-read.** Applying each edit in turn with a plain string replacement looks like
-a simplification, passes most of the tests, and changes the meaning of every
-edit after the first — the offsets it matched against no longer exist. The
-staleness check runs once per call, before any of this, and covers every
-element for the same reason: they are all matched against that one content.
-The third form, `append`, is refused beside either and never reaches
-`applyEdits`: `planEdit` is what both callers ask, and it skips the staleness
-check for an append because nothing is quoted — so the write must not mark
-the file read either, which is `noteAppended` in `seen.go`
-([`docs/capabilities/coding-agent.md#adding-to-the-end-of-a-file-needs-no-read`](docs/capabilities/coding-agent.md#adding-to-the-end-of-a-file-needs-no-read)).
-Why the batch exists and what it deliberately does not cover:
-[`docs/capabilities/coding-agent.md#several-places-in-one-file-are-one-call`](docs/capabilities/coding-agent.md#several-places-in-one-file-are-one-call).
-
-### The shell read's line
-
-`internal/nudge` is the line an `execute_command` result carries when the
-command was a plain read a built-in tool answers
-([`docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell`](docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell)).
-Whether a line is a read is `observe.CommandPurpose` and nothing else — the
-record's reading is the read set, and `rows` in `nudge.go` only says which
-tool answers each reading program, so a reader a new tool takes over is a
-row there. `nudge.Turn` is the once-per-turn-per-tool memory, and each
-surface holds one: `Model.nudges` (reset in `startNewSession`) appended in
-`turn.go`'s `cmdDoneMsg` case, `child.nudges` in `resolveGated`, and for
-`runPrintSession` and `serveLoop` the pair `Turn.Ran` (around the runner the
-approvers are handed) and `Turn.WrapResolver`. What will bite you: **the
-line goes on outside the repeat detector, never inside it.** The detector
-keys on the result, so a line on the first of two identical commands and
-not the second makes them two different results and the repeat goes
-unnoticed; and `Ran` is what keeps the line off a refusal, since the
-resolver wrap cannot tell a refusal's sentence from a command's output.
-
-### The read-only git verbs
-
-`internal/structural/git.go` is the `git` tool: five reading verbs (`status`,
-`log`, `show`, `diff`, `blame`) built by `buildGitArgv`, registered by
-`NewToolset` only when the binary is on PATH **and** `insideRepo` says the
-workspace is inside a working tree. It is not gated anywhere, which is the
-whole point — it auto-runs like `search`, in every mode. Why the verb set is
-the security boundary:
-[`docs/capabilities/approvals-and-safety.md#a-closed-verb-set-is-what-makes-a-read-a-read`](docs/capabilities/approvals-and-safety.md#a-closed-verb-set-is-what-makes-a-read-a-read).
-
-What will bite you: **git's colour flags are not uniform across the five
-verbs.** `status` has no `--no-color` and takes `--porcelain=v1` instead;
-`blame` rejects `--no-color` as ambiguous and needs `--no-color-lines
---no-color-by-age`; the other three take `--no-color`. A flag added to the
-common prefix rather than the per-verb branch will fail at runtime on one verb
-and pass every builder test that does not spawn. `git diff --staged` likewise
-takes at most one commit, so the builder refuses the pair rather than earning
-a usage dump.
-
-**One git configuration key is shut off from the environment, not by a flag.**
-`core.fsmonitor` names a program git execs on `status`, `diff` and `blame`,
-and there is no flag for it — `spawnEnv` hands the spawn `hostgit.Env`, which
-blanks it through the `GIT_CONFIG_*` variables, which is why `run` sets
-`cmd.Env` at all. Doing it with `-c` on the command line would put the one flag
-the closed vocabulary most needs to exclude back into the argv. `--no-pager`,
-`--no-ext-diff`, `--no-textconv` and `--no-show-signature` cover the other four
-keys that name a program, and `status` and `diff` carry
-`hostgit.IgnoreSubmodules` so a submodule a contained command staged is never
-asked whether it is dirty.
-
-**Every other git shhh runs on the host goes through `hostgit.Command`**
-([`docs/capabilities/containment.md#the-hosts-own-git-runs-nothing-a-command-wrote`](docs/capabilities/containment.md#the-hosts-own-git-runs-nothing-a-command-wrote)):
-the tree reading, the survey, the quality fingerprint, the changeset tracker,
-the worktree helpers in `internal/subagent/worktree.go`, `run.Commit`, the
-doctor's probe, the containment probe's `rev-parse` and the backlog runner's
-diffs. It puts `--no-pager` first and `verbFlags` after the verb, so a caller
-never names the submodule flag itself — and a new `exec.Command("git", …)` is
-a call that has none of it. A caller that needs its own environment (the
-session's, or a scratch `GIT_INDEX_FILE`) passes it through `hostgit.Env`,
-never onto `cmd.Env` bare. What will bite you: **`git add` takes no
-`--ignore-submodules` and honours no key that would stop it**, so
-`stageAll` in `worktree.go` keeps a gitlink out of a writer's `add -A` by
-pathspec, and `run.Commit` is safe only because its paths come from a status
-that already left submodules out.
-
-Pathspecs use `resolveGitPaths`, not the package's `resolvePath`: history
-names files that no longer exist, so containment is lexical and the symlink
-check runs only when the path is on disk. **Containment is a fact about the
-arguments, not about the output** — a call that names no path answers for the
-whole repository, so a session rooted in a subdirectory sees history from
-outside its root. That is what `git status` means and it is not worth
-breaking; know that it is true.
-
-### The git writes
-
-`internal/structural/gitwrite.go` is the `git_write` tool: four verbs (`add`,
-`commit`, `branch`, `switch`) built by `buildGitWriteArgv`, sharing the
-reader's ref charset (`checkGitRef`), pathspec resolution (`resolveGitPaths`)
-and environment scrub (`spawnEnv`, which answers for both names). Why it is a
-tool rather than a command line:
-[`docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too`](docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too).
-
-**It is registered by a surface, not by the machine.** `NewToolset` never
-registers it; `AllowWrites` does, and only `buildToolset` calls that, only
-when `toolsetOpts.gitWrites` is set. A conversation and every sub-agent
-therefore never have it — a child's work comes back to its parent as a patch.
-The two things `structural.Writes` carries are the two only a surface knows:
-the paths this session changed (`changeset.Store.Paths` on the screen,
-`writtenByCalls.paths` headless) and the checkout's trust answer
-(`project.Trust.RunsOwnPrograms`).
-
-**It is gated at the write tier and dispatched by the write path.**
-`chat.GatedPreview.Write` is what puts it there — `baseAction` in
-`ui/chat/policy.go` reads it and answers `agent.ActionEdit` — and
-`GatedPreview.DenyLine` (from `structural.WriteLine`) is the command line
-`ModePolicy.Decide` matches against the deny list. `Decide` reads the deny
-list off `Action.Command` rather than off `Action.Kind` for exactly this: a
-`git commit` entry has to refuse the verb whatever tier the call sits at.
-Headless is `headlessGate` plus the `git_write` branch of `headlessApprover`.
-
-What will bite you: **the three readings around a commit are hand-written
-argv, not builder output** (`stagedFiles`, `head`, `branch`). That is
-deliberate — none of it comes from the model — but it means a flag added to
-`buildGitWriteArgv`'s common prefix does not reach them. **`switch --create`
-takes its name attached** (`--create=<name>`), because the name after the `--`
-delimiter is git's start-point in that form; every other verb puts its
-argument after the delimiter. **`run.Commit` builds its argv here too**
-(`structural.AddArgv`, `structural.CommitArgv`), so the unattended runner and
-the tool cannot spell a commit two ways.
-
-**A switch empties the record of what the model has been shown**
-(`tools.ForgetAll`) and says so on the second line of its result
-(`switchReadsNote`), which is why this package imports `internal/tools`: every
-reading the record held was taken on the branch the call just left, and
-porcelain never names a file the switch put back to its committed state, so
-the tree reading cannot catch it. It empties the whole record, sub-agents'
-readings included — the per-owner record does not exist, and over-forgetting
-costs a re-read where under-forgetting costs somebody's work. The card for
-`switch` and `branch` states the way back the same way a commit's does, in
-`gitWriteGatedPreview`.
-
-The transcript row is `activityVerbFor` (the verb is a field of the call, so
-the row reads it out of the arguments) plus `digest.Arg`'s `git_write` case
-for the target, and the receipt is the row's outcome. The turn's close gains
-a commit row from `turnCommitRow` in `ui/chat/close.go`, which is also what
-takes the commit offer and the `/undo` note off the changed-files row. The
-reader's own commit is the card `commitHandover` (`ui/chat/commit.go`) opens
-when `keys.Draft.Answer` is pressed on a selected changed-files row with no
-decision waiting; it is routed in `updateKey` beside the decision handover.
-
-### Permission Modes
-
-Five modes control approval flow: `manual`, `accept-edits`, `auto`, `read-only`, `plan`. `read-only` and `plan` are one policy and two modes — `Mode.ReadOnly` is the predicate every reader asks — and the plan record `chat/plan.go` writes on approval (`internal/plan`, `storage.SavePlanRecord`) is what `[n] new session, carry the plan` seeds a fresh conversation from. The auto mode uses an LLM classifier that **always fails closed** — classifier errors never approve, they fall back to asking the human. There is no path where "could not decide" becomes yes, and the zero value must stay the one that costs nothing. The classifier's own no is where the two kinds of surface part, and `agent.JudgedDenialAsks` is that one seam: `ResolveAuto` (the session) turns it into a card carrying the sentence (`approvalRequest.judged`, drawn by `judgedBy` in `ui/chat/approval.go`), `ResolveUnattended` leaves it a refusal. A child's no is routed only by a supervisor told `SetAttended`, which `chat.Model.WithSubagents` alone calls — a supervisor built for `-p` or `serve` would otherwise hand it to `answerChildAsks`, which declines it in the person's name. See [`docs/capabilities/approvals-and-safety.md`](docs/capabilities/approvals-and-safety.md).
-
-**The two command lists are matched in `internal/agent/policy.go` and read in `ModePolicy.Decide`, deny first.** `AllowlistMatches` refuses to match a line carrying shell punctuation; `DenylistMatches` asks `safety.Commands` what the line will actually run and matches each of them, because the two fail in opposite directions and only one of them may fail open. `Decide` answers the deny list before the mode, so a sub-agent's call and a headless run's get the same refusal through the same function. The interactive session raises it a second time in `advanceApprovalQueue`, beside the containment refusal and for the same reason: a card exists to put a decision to a person, and a standing refusal is not a decision — which is also what keeps an earlier batch approval from reaching one. `internal/cli/print.go` and `internal/cli/cmd.go` raise it at their own seams. Every one of them answers with the same tool result, and none of them names the key it came from — a refusal carrying the instructions for editing the list is the way around the list. Both lists union when a checkout layers its own settings (`internal/config/project.go`): a repository may add a refusal and may never take one away.
-
-**A fetch is `ActionFetch`, carrying the host, and the two host lists are matched by `agent.HostMatches` — exact, case-folded, never a suffix.** The session's grants (`policyState.hosts`, from `[a]` on a fetch card) are merged with `web.allow_hosts` in `Model.hostAllowlist` and reach `Decide` as one field, so the reason a row carries is `session grant` either way; `web.deny_hosts` is answered beside the command deny list, before the mode. What will bite you: **the same two lists are enforced a second time inside the fetcher, and they have to be.** `Policy.DenyHost` refuses a denied host at every redirect hop, and `Fetcher.SetGrantedHosts` is what stops a granted host handing the request to an ungranted one — a hop the approval layer never sees, because the decision was taken before the request left. `hopAllowed` judges the hop being taken, host to host: anchor it to the chain's first host instead and a two-step chain launders the grant, since a carded fetch's own host is not granted and the check stands down for the rest of the chain. The chat pushes the merged set through `WithHostGrants` on every change (`syncGrants`), which is why the fetcher keeps it behind a lock: it is written on the UI goroutine and read on whichever goroutine the round's fetch landed on. The grant is not offered on a batch (`batchCategory` excludes `ActionFetch`): two fetches in one queue are two hosts. See [`docs/capabilities/approvals-and-safety.md#a-host-is-granted-once`](docs/capabilities/approvals-and-safety.md#a-host-is-granted-once). **A conversation has no mode and cards no fetch**: `ModePolicy.Conversation` (set from `Model.conversation` in `modePolicy`, and for its children by `Supervisor.SetConversationPolicy`) answers `ActionFetch` with `agent.ConversationReadReason` immediately after the host deny list, and `WithConversation` pins `policy.mode` at manual underneath — not read-only, which would refuse the spawn and the memory card a conversation still asks about. The frame draws `conversationModeWord` over it; the chord, the picker and `/permissions <mode>` answer `conversationModeNote` instead. See [`docs/capabilities/chat.md#a-conversation-has-one-mode`](docs/capabilities/chat.md#a-conversation-has-one-mode).
-
-**A fetch carries its host's reading, and the reading is `internal/web/reputation.go`.** `web.ReadFetch` is the one function every surface asks — `baseAction` in `ui/chat/policy.go`, `actionFor` in `subagent`, the fetch branch of `headlessApprover` — over the `Reputation` `openWebTools` installs with `web.UseReputation`; nil (every test that installs nothing) reads every host as `unknown`. `agent.ReadingAllows` is the whole of what `known` may do (auto mode, after the grants), `ResolveAuto` the whole of what a warning may do (a classifier yes becomes an ask), and `autoJudge.decide` puts an unattended fetch to a `ModePolicy` with the person's host lists before either. What will bite you: **a list that cannot be read must name nobody** — `readHeader` refuses a file of another name or format, and `open` refuses a copy past its window — because an error that fell through to "found" would make a failure read as known. The lists are searched where they lie (`sortedHosts`, a binary search by `ReadAt`), so the on-disk form must stay sorted by byte; `make host-lists` rewrites the two shipped snapshots and `TestHostSnapshotsAreInTheOnDiskForm` holds them to it. `make host-lists-check` (in `make ci` and the release workflow, never the gate) fails when either snapshot's header is unreadable or older than `snapshotAgeBound` in `internal/web/snapshot_age_test.go`; run `make host-lists` and commit the result. `internal/cli`'s `TestMain` seeds every list fresh and empty (`writeModelData`) and fails a run in which `web.HostListsRefreshed` says a download started. See [`docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged`](docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged).
-
-**What counts as dangerous is `internal/safety`'s table of verb plus flag set**, not a list of strings. A short flag is read out of a bundle, from any position, and a long spelling counts as the short one. Adding a danger is a row, and the corpus test beside it is where its spellings go — a rule with one spelling in the test is a rule that will be walked past. The regular expressions that remain are the dangers that are genuinely text: a redirection, a pipe into an interpreter, a statement in SQL. One reading is neither a row nor an expression: a fetch and the run of what it fetched are two commands on one line, so that pair is read across the line's words in order — a file counts as downloaded only where a fetcher wrote it *earlier* in the same line, which is the whole of what keeps a build that writes a bundle and then runs it off the card.
-
-**`safety.Commands` is the one reading of a shell line, and both gates use it.** It yields each command in a chain, the command an interpreter or a `-exec` was handed, and — behind an escalation or a wrapper (`nice`, `ionice`, `timeout`), whose own options shhh cannot tell from the command behind them — every word the real command could start at; behind a shell flow word (`then`, `do`, `!`), which takes no options, the next word alone. `radius.Destroys` splits a line its own way and reads past the same flow words through `safety.FlowWord`, which is why `ScratchDelete` needs no flow-word guard of its own. It over-reads deliberately, quoting included, because everything that reads it is a gate: a stop somebody can see is wrong costs a keystroke, and one that never happened is what the gate exists for. Teach it a carrier and both the deny list and the danger table learn it at once; teach one of them separately and the other has a hole.
-
-**A destroying command pointed at something irreplaceable is the third standing refusal, and it reads the line the other way.** `radius.Destroys` (`internal/radius/destroy.go`) resolves what a recursive delete, a deleting `find`, a forced `git clean`, a recursive `chmod`/`chown` or a device write is pointed at, and `Destruction.Refusal` names the first target that is `/`, the home directory, the workspace root, a git store, the deny mask or outside the scope. Each front-end fills `Action.Irreplaceable` from it — `Model.irreplaceable` (`ui/chat/policy.go`), `ruledAction` in `subagent`, `ruleAction` in `internal/cli/scope.go` for `-p`, a served session and `shhh cmd` — and `agent.RuleRefusal` answers it beside the deny list, in `Decide`, `commandRule` ahead of the card and the headless approver's command branches. What will bite you: **it deliberately does not use `safety.Commands`.** That reading over-reads quoting because its gates cost a keystroke when wrong; this one is a refusal, so it reads with the radius tokenizer, which keeps quotes, and a target it cannot prove — a variable other than `$HOME`, a glob, a substitution, a relative path after a `cd` — is `Unresolved` and refused by nothing. Its fixtures must name `/`, `~` and `$HOME` against a scratch home and workspace: `/` is answered from the text without a stat for exactly that reason. `Destruction.ProvenInside` is the same reading in the other direction, for a clean-up bounded below the workspace root. See [`docs/capabilities/approvals-and-safety.md#some-targets-are-never-destroyed`](docs/capabilities/approvals-and-safety.md#some-targets-are-never-destroyed).
-
-**A delete of untracked scratch is the one flagged command the classifier may answer for, and only on the session.** `radius.ScratchDelete` (`internal/radius/scratch.go`) is the proof: every finding `safety.Findings` makes on the line is a `Warning.Deletes` row, the line and each flagged delete read on its own are `ProvenInside`, every other command on the line is `agent.ReadOnlyAllowed` (the proof is taken before a `mv` or `ln` earlier on the line would move what the delete lands on), and `Destruction.Untracked` says the index names nothing at or under a target (`hostgit`, `ls-files --cached` under `--literal-pathspecs`), no `.git` sits at, under or above one below the root, and no link under one leaves it. `armApprovalDecision` reads it once into `approvalRequest.scratch`, `approvalAction` carries it as `Action.Scratch`, and `agent.ClassifierClearsScratch` — asked by `ResolveAuto` and nothing else — is the exemption; the row's reason is `agent.ScratchReason`. What will bite you: **each flagged delete is read a second time on its own** because the safety table and the destruction reading split a line differently — `time rm -rf src` is an rm to one and nothing to the other — and a line with one proven delete beside one unread delete would otherwise pass; and **`Check` keeps one warning per line**, which is why the exemption asks `Findings` — a pipe into a shell behind an `rm` on the same line is invisible to `Check`. Every step answers no where it cannot settle the answer. A child and an unattended run never set the field. See [`docs/capabilities/approvals-and-safety.md#severity-moves-the-default`](docs/capabilities/approvals-and-safety.md#severity-moves-the-default).
-
-### The tree reading
-
-Whether the working tree moved under a turn is decided in
-`internal/agent/tree.go` (`SetTreeCheck`, `NextTreeNotice`) and delivered by
-whichever front-end holds the turn: `internal/ui/chat/tree.go` for a session,
-`Headless.deliverTree` for a headless run. The snapshot is one
-`git status --porcelain=v2 --branch --untracked-files=normal -z` at the
-repository root — **the untracked mode is asked for and not inherited**,
-because `status.showUntrackedFiles=all` in somebody's own config names every
-file of a new directory and turns a build cache into thousands of paths in
-the notice; the subtrahend is the front-end's — a session hands in its
-changeset, a headless run the paths its mutating calls wrote (`writtenByCalls`
-in `internal/cli/print.go`). `BeginToolRound` counts the command calls of a
-round so the next notice can say a command ran rather than claim the changes
-are somebody else's. **`DefaultTreeBudget` is one deadline for the whole
-reading**, not one per call: `treeState.begin`/`spent`/`downgrade` spend the
-status, the `check-ignore` and the `ls-files` against one clock, and a reading
-that runs past it is finished — cutting a call off would lose the subtraction
-it exists for — and then keeps only the turn boundary. A sub-agent is not handed one: a writer stands in its own
-worktree, and a reader's fan-out would multiply the cost. `behavior.tree_check`
-turns it off.
-
-Porcelain names paths and not their content, so the other half of the reading
-comes from the record of what the model has been shown: `tools.SeenChanged`,
-reached through the `ReadChanged` hook and wired once in `treeCheck`
-(`internal/cli/session.go`) because the record is one per process rather than
-one per front-end. The record itself is `internal/tools/seen.go` — a read
-writes to it, a mutation is checked against it, `NoteUnknown` fills it with a
-reading nobody can vouch for, and `ForgetAll` empties it whenever one
-conversation gives way to another. `StaleSinceRead` is the mutation's
-staleness check asked by a reader: `resolvePosition`
-(`internal/lsp/manager.go`) turns a file, a line and some text into the
-position every navigation answer is about, so a line number from a read the
-file has moved under is refused there with the same sentence an edit gets.
-`NoteRestoredReads` is the pair of those for a transcript that says what was
-read and not what it held, and it lives beside the record rather than at
-either door because both doors restore the same thing: `resumeChat`
-(`internal/cli/session.go`) for a session reopened from the command line,
-`loadChatByName` (`internal/ui/chat/model.go`) for a saved conversation loaded
-over the one on screen.
-`TreeCheck.Instructions` is the project's own instruction files, and a notice
-naming one of them carries a sentence saying the block in the system prompt is
-the older reading — nothing is re-injected. What will bite you: **only the
-session fills that field.** `WithTreeCheck` (`internal/ui/chat/tree.go`) fills
-it from `project.Instructions`, the same walk `chatSession.systemPrompt` made,
-so the notice describes the block the model is actually holding; `treeCheck`
-and `headlessTree` (`internal/cli/session.go`, `internal/cli/print.go`) leave
-it nil, so an unattended run's notice says nothing about its own instruction
-block. It is one line each to change that. The set is also `foreign`'s one
-exception to dropping the state directory: `.shhh/project.md` is a project's
-instruction file and not shhh's bookkeeping, so a change to it is reported
-where a changed checkpoint is not.
-`treeState.reported` is what keeps a stale reading from being named at every
-round until the model goes back to it. Why it exists and what it does not see:
-[`docs/capabilities/coding-agent.md#the-tree-can-move-under-a-session`](docs/capabilities/coding-agent.md#the-tree-can-move-under-a-session).
-
-### The interruption machinery
-
-The steer and the check-in are decided in `internal/agent` and delivered by
-whichever front-end holds the turn. `agent.Steering` (`steering.go`) is the
-tuning every surface carries: the check-in interval, how far it widens, the
-bound on what a steer quotes back, the line a check-in closes on, and the two
-wordings. A zero value is the built-in set, so a test and an unconfigured
-session run the same words. `SetCheckInInterval` and `SetFinished` write one
-field each, because those two are the surface's rather than the config's —
-`newChildAgent` applies the configured set and then puts a child's own shorter
-interval and its own `FinishedAsSubAgent` back over it. **A child's finish is
-spelled in exactly one place**, `Steering.Finished`: the clock's
-`TakeCheckIn`, the sufficiency branch of `NextIntervention`, `ForceCheckIn`
-and the round cap's `CheckInMessage` all read it, and a configured wording's
-`{{finished}}` is substituted from it. A call site that names a closing line
-of its own is how a child asked by its clock ends up told to say so to
-nobody. The summariser's and the classifier's own instructions are
-`SummaryConfig.Prompt` and `ClassifierConfig.Prompt`, beside the rest of what
-each costs.
-
-**The check-in runs on two clocks and `TakeCheckIn` is the only place either
-is read.** `SetCheckInBudget` hands the agent two functions — what the turn
-has spent against what it is allowed, and the paths it has written — and
-`spendDue` fires a check-in every `checkInBudgetShare` of the budget, widening
-off `checkIns`, which is the round interval's own counter: one escalation, not
-two. `NoteIntervention` marks both clocks, so a steer postpones the budget
-question the way it postpones the round one. A check-in either clock is due
-for carries `budgetNote` under the surface's wording — the one thing that
-tells a budget check-in from a round one, and appended rather than substituted
-so a replaced wording still gets it. Both functions are the *child's*
-(`child.budget`, `child.written`), which is why they are installed in
-`openWorkspace` beside `watchTree` and not in `newChildAgent`, which is handed
-an `Env` and never sees a child; every attempt, spawn and retry alike, opens
-its workspace there. A surface that installs nothing runs on rounds alone,
-which is every session.
-Why the second clock exists and what it asks that the first cannot:
-[`docs/capabilities/coding-agent.md#a-childs-other-clock-is-its-budget`](docs/capabilities/coding-agent.md#a-childs-other-clock-is-its-budget).
-
-**When the next reading is due is one predicate — `agent.SummarySchedule`
-(`schedule.go`) — and each surface holds a value of it**: the session on its
-`summaryState`, an unattended run on its `SummaryRun`. It carries the three
-bounds the two used to keep a copy of each (the early first reading, the
-interval, the wall-clock floor) and the fourth that made a second copy
-untenable: an interruption delivered at or since the last reading restarts the
-count, so the reading that says whether the steer took arrives
-`FirstSummaryRound` rounds after it rather than a whole interval on. Both
-delivery sites — `injectInterventions` in the chat model, the boundary tail of
-`Headless.Run` — owe their schedule an `Intervened` and the next digest an
-`Intervention.Row`; a surface that delivers an interruption and forgets either
-reads to its own reader as a session that was never steered. The turn's close
-is the same predicate's `CloseDue` on both surfaces, and on an unattended run
-it is the one reading that lands after `Run` has returned — `SummaryRun.Close`
-hands it straight to `OnSummary` from its own goroutine instead of parking it
-for a boundary that will never come, so a hook that touches state its caller
-tears down at the end of a run has to survive that. Readings are turn-scoped
-for the same reason the round counter is: `SummaryRun.StartTurn` at the top of
-every `Run` starts the schedule again and drops a reading the turn before left
-out, which a run of more than one turn — a child handed another instruction at
-the boundary — would otherwise receive stamped with rounds this turn is
-counting.
-
-**A reading is made of the same evidence on every surface, and the wording of
-it is one function.** `SummaryRequest.Previous` is the last reading's own
-text, so the next revises it rather than describing unchanged work in new
-words; `SummaryRun` keeps it and scopes it to the turn the way it scopes the
-schedule, since a turn handed the reading before it would carry forward a
-verdict about work it has not done. `Changes` is the changeset in
-`agent.SummaryChanges`'s spelling — the chat model's `summaryChanges` and
-`SummaryRun.WithChanges` both go through it, because a run whose files were
-counted in a second dialect is judged on evidence the reading instruction was
-not written for, and a count with no lines is a real answer (a permissions-only
-turn, and every surface that reads its writes off the calls that made them).
-`WithAlerts` and `WithPlan` are the other two suppliers, empty on a surface
-that names no source and left out of the digest when they answer with nothing;
-on an unattended turn the alerts are `headlessCloseGate.alerts` — the last
-verdict as the suite, the verdict word and a row per check that is not green,
-and never the output `Result.Format` carries, which is a check's own bytes and
-this is the evidence a steer is written from. The gate's verdict is written on
-the run's goroutine and read on the reading's, which is what the mutex on it
-is for; `serveLoop.Run` takes the gate into a local before wiring it, since the
-turn after replaces the field while the turn before's reading may still be out.
-
-What will bite you: **a child's changed files are counted off its own calls**
-(`child.noteWrite` over `tools.WrittenPath`), not read from the parent's
-changeset store. A writer edits in an isolated worktree and the parent's store
-hears nothing until the patch lands, which is after the last reading that
-child will ever take — filtered by the child's name it answers zero at every
-reading, and the digest then shows a child that has rewritten five files as
-one that is still only reading, which is the definition of "sufficient". An
-unattended run and a served turn count theirs off `writtenByCalls`, where they
-already hand in the tree reading's subtrahend and the git stager's list.
-
-**Both bounds on acting are counted in the reading interval, and a surface
-hands over the interval rather than the products of it.**
-`Agent.SetInterveneBounds` takes the interval in force and how many of them a
-cooldown runs for — `SummaryRun.Bounds` is the unattended run's pair and the
-chat model's `considerVerdict` computes its own — because a surface that set
-one and forgot the other would judge a reading's age against an interval
-nobody reads on. `ConsiderVerdict` is handed the round it is asked at and
-drops a verdict at or past one interval old, returning the word the record
-files a withheld interruption under; the surfaces record it and show nothing,
-since nothing was said to the model. The age is judged where each surface
-applies a reading: the boundary that collects a parked verdict in
-`Headless.Run`, and `finishSummary` in the chat model. `Headless.OnWithheld`
-is how that reaches an unattended record, beside `OnIntervene` for the ones
-that were delivered.
-
-**A person steering a running turn moves the target; nothing else does.**
-`agent.ExtendTarget` adds their words to the instruction the readings are
-judged against and `agent.TargetLine` is how a surface quotes the result on
-one line — the inverse of the same join, which is why they sit together. Three
-sites owe it: `injectSteering` in the chat model, the `Steer` branch of
-`Headless.Run`, which is where a child's own steering arrives —
-`Supervisor.Steer` from an attached lane, the served loop's queue from an RPC
-client — and `approvePlan`, where the person approving a plan is saying its
-steps are what they asked for (`planTarget` renders them as one part, never
-one per step; `clampTargetParts` shares one budget between the parts, so ten
-of them would starve the ask that earned the plan). Each then retires what was
-judged against the shorter instruction — `Agent.StartInterveneTurn` for the
-queued verdict, `summarySteered` or `SummaryRun.Extend` for the reading in
-flight and the schedule the reset round counter has left behind.
-
-**A steer the reader disagrees with is taken back, not argued with.**
-`Agent.WithdrawIntervention` removes the message from the conversation —
-matched on its content *after* the scrub, since that is the form it was stored
-in, and safe to remove at all only because an interruption is appended alone
-at a round boundary with nothing paired to it — and sets a turn-scoped mark
-that `ConsiderVerdict` reads before anything else, so no further reading
-interrupts before the next instruction. `StartInterveneTurn` clears it. The
-chat model's `withdrawSteer` is the row's half: `[u]` (`keys.Row.Withdraw`)
-routed through reading mode's
-dispatch in `focus.go`, `summaryState.dropIntervention` so the next digest
-stops reporting an interruption that is no longer there to be answered, and
-`withdrawnNotice` rewriting the row. `entry.intervened` is what makes a notice
-a reading-mode stop at all — a system row with no body is otherwise not one.
-The record is deliberately not written there: what a withdrawal says about the
-thresholds belongs with an intervention's outcome, in one place.
-
-**Which model the bounded calls answer on is `resolveFlow`**
-(`internal/cli/summarizer.go`): the flow's own keys, then
-`provider.cheap_model`, then the provider's `CheapModel`, then the session's
-own. `boundedFlows` is the one table of flows and their keys, `resolveFlows`
-answers for all of them with the link that answered (`flowStep`) — the doctor's
-`flows` row reads it, and a screen that lists the flows should too rather
-than restating the keys. `auxiliaryModel` is the chain below the flow keys,
-and every surface fills the record's `runSettings.model` from it, so the stamp
-names the model that was actually asked rather than the one the session runs
-on. What will bite you: **the compaction summary skips the provider's small
-model** (`boundedFlow.window`), because `headlessCompactor` only takes a model
-whose window it can vouch for, and an unconfigured compaction must keep
-running on the conversation's own.
-**The session's readers ask the chain at the call, not at construction**:
-each is built with `ModelAt` (`sessionEnv.flowModelAt`), which walks
-`resolveFlow` over the start config with `sessionEnv.flows` — the models the
-config screen's flows section took for this session alone — laid over it,
-and each reader asks it once per call and keeps the answer for that call.
-The section is `configModel.flowRows`/`takeFlow` in `internal/cli/config.go`,
-`components.ConfigRow.Takes` is what gives a row its three destinations, and
-`sessionEnv.flowsMoved` re-stamps the record. A reader built with a plain
-`Model` string does not see a session value, which is why the description
-and the compaction (`boundedFlow.sessionless`) never offer one.
-Each of these calls sends `EffortLow` outright and carries a ceiling with
-room for the thought and the answer together — off is the model's own depth,
-and the four ceilings are spent by the reasoning first.
-
-**The hold is a state the driver enters, never a flag the loop reads.** It
-generalises the round-limit pause: `holdTurn` in `internal/ui/chat/hold.go`
-parks the session's turn at the boundary `resumeToolLoop` checks the ceiling
-at, with `Model.turnOpen` and the vitals ring left open — `setTurnState`
-skips the whole working-to-idle close for a held turn, because a close row
-and a turn record would both say a turn ended that is about to carry on.
-`releaseHold` goes back through `resumeToolLoop` rather than straight to
-`requestStream`, so the steering typed while parked, the tree notice and the
-ceiling are all owed again. `agent.Headless.Hold` is the same park for a
-child: a hook returning nil to run on or a channel to wait on, selected on at
-the round tail beside the retry's wait and registering its cancel in the same
-place so `Interrupt` wakes it. `Supervisor.Hold`/`Release` back it with a
-channel that is replaced rather than reopened (a closed one lets every later
-fan-out through), and **the child records the channel it is parked on, not a
-flag**: `holdFor` reads the hold and parks the child under one lock, and
-`unpark` clears the mark only for the hold being released, so a hold taken
-again mid-release cannot have its freshly parked child un-marked by the
-release before it. A held child is still `StateRunning` — it keeps its slot
-and its worktree — so `Status.Held` rides beside the state, and everything
-that reads the state for "is anything moving" has to read `Held` too:
-`childProgress` for the rail's glyph, `frameWorking` for the suspend refusal,
-`childrenRunning` for the spinner. The mid-turn marker is `storage.ChatHold`,
-written inside the autosave's own transaction (`saveChatMarked`) rather than
-beside it, because the conversation and what the slot says about it are one
-fact; `SaveChat` leaves it alone, and `--continue` reads it.
-
-`internal/cli/prompts.go` is the door: `loadPrompts` reads whatever
-`[prompts]` named, refuses a file it cannot read or one naming a substitution
-that wording does not take, and `steering` assembles the set from the config's
-numbers and those files. It is called from `buildSessionEnv`, so a chat
-session, a headless run and every child of either read one set;
-`sessionPrompts.fingerprintOf` folds it into the `prompt_hash` at every
-`stamp` call site. `wordingKeys` is the one list of them — key, where the
-settings state it, where the session keeps it, which substitutions it takes —
-walked by `loadPrompts` and by `readWordings` behind the doctor's `prompts`
-row, so a key one of them can reach and the other cannot does not happen.
-`promptSource` is the per-key resolution, most specific first: a file at
-`.shhh/prompts/<key>.md` in a **trusted** checkout (`projectPrompts`, and
-`project.PromptsDir` is a trust resource), then whatever the settings named,
-then `<key>.md` under `userPromptsDir` beside the settings file. The whole
-`[prompts]` table is in `config.projectRefusals`, so a checkout says it in
-files and never in keys, and `projectWordings` is the list the start screen
-names. A key naming a file that is not there still stops the session rather
-than falling through to the directory below.
-
-`wording.builtin` is the text each carries when nothing replaced it —
-`agent.SteerWording` and its three siblings, and `run.BuiltinWordings` for
-the backlog runner's seven. Two callers need it and neither can be told it
-by the file: `configInit` (`internal/cli/configinit.go`) writes them out as
-the scaffold's prompt files, and `fingerprintOf` skips a wording that equals
-one, whitespace aside, so scaffolding the built-in words divides no cohort.
-`config.Scaffold` (`internal/config/scaffold.go`) is the settings half of
-that command, rendered from the same table the reference section is, and
-`Setting.Literal` is the default as the *file* would write it for the keys
-whose `Default` is a sentence — `2 MiB` against `2097152` — which a test
-requires of every such key.
-
-The reasons are in
-[`docs/capabilities/configuration.md#the-mechanism-is-code-its-wording-is-configuration`](docs/capabilities/configuration.md#the-mechanism-is-code-its-wording-is-configuration)
-and, for the backlog runner's seven,
-[`docs/capabilities/todo.md#the-stage-prompts-are-yours-to-edit`](docs/capabilities/todo.md#the-stage-prompts-are-yours-to-edit).
-
-### The working list
-
-The session's own steps and every child's are kept with the `steps` tool
-(`internal/plan/stepstool.go`): each call names the whole list, and
-`plan.ParseStepsCall` is the one reading of it. Why it is a tool and not a
-line format any more:
-[`docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps`](docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps).
-What will bite you: **the session's executor keeps no state.**
-`plan.WrapStepsExecutor` checks the call and answers with the list it names;
-the list the rail draws is `Model.workSteps`, a value, set by `noteStepsCall`
-when the result lands in `turn.go`'s `toolResultsMsg` case — on the UI
-goroutine, in call order — so every reset, rewind and restore path goes on
-treating it as a value. An applied call leaves no transcript row (the STEPS
-block is its display); a refused one keeps its row. A child's list is
-`child.own` under `c.mu`, written by `child.stepsExecutor`, installed in
-`openWorkspace`. **The list lives outside the conversation, so every rebuild
-has to carry it**: `agent.Compactor.Carry` for a child, `agent.CarryUnder`
-at `finishCompact` for the session, and `ResumeContext`'s `steps` argument
-for a reopened conversation — false on the `-p` path, which registers no
-tool — with `stripResumeContext` taking the carried copy off again at every
-save.
-
-### Context management
-
-Two mechanisms in one place. The message surgery is
-`agent.TrimOldToolResults` (`internal/agent/context.go`): it elides the oldest
-tool results between index 0 and the last user message, and never the current
-turn, user or assistant text, or a result the `KeepResults` predicate claims.
-The figures are there too — `agent.TrimThresholdPercent` (80) is where
-recovery starts, `agent.TrimLowWaterPercent` (60, the same line the ctx
-indicator warns at) is where a trim stops — and `internal/ui/chat/context.go`
-aliases them for the surface that colours by them. They are not the screen's,
-because a session that acted at one share of its window and an unattended run
-that acted at another would be one promise with two meanings.
-
-The gap between those two numbers is the design, not slack. Rewriting any
-message invalidates the provider's cached prefix from that message on
-([`docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once`](docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once)),
-so a trim costs a full recompute of the conversation however few bytes it
-recovered. Trimming only to the threshold clears the line by a handful of
-tokens and pays that price again a round later; closing the gap would put the
-defect back. What a request actually read from cache is on `/context`, which
-is where the effect is visible.
-
-**An elided result is recoverable.** `Agent.StoreElided` takes the archive a
-result is put into just before the trim replaces it, and the placeholder then
-names the id — worded like the reduction notice `evidence.Reducer.Process`
-writes, so the toolbox's one instruction about ids covers both
-([`docs/capabilities/evidence.md#a-trim-makes-the-same-promise`](docs/capabilities/evidence.md#a-trim-makes-the-same-promise)).
-`evidence.Reducer.Keep` is what the host wires in (`chat.Evidence.Keep`, set
-in `internal/cli/session.go`); it scrubs before the store writes, like every
-other door onto that store. An archive that answers false, or a result under
-`minEvidenceBytes`, gets the bare `agent.ElidedResult`, and the loop tells an
-already-elided message from a fresh one by prefix rather than by equality —
-the placeholder is a different string every time now.
-
-**The estimate that triggers the trim is corrected against the reports.**
-`agent.Calibration` is a per-model running ratio of what the provider charged
-to what `EstimateTokens` made of the same messages
-([`docs/capabilities/providers.md#how-full-the-window-is-corrected-by-what-it-cost`](docs/capabilities/providers.md#how-full-the-window-is-corrected-by-what-it-cost)).
-The chat model owns one, folds a response into it in `accumulateUsage` — before
-the response joins the conversation, which is what makes the two figures
-describe the same messages — and `contextAccounting` applies it to the
-estimate and never to a report. `TrimOldToolResults` takes it too, because the
-caller trims against a corrected figure and shrinking that by raw estimates
-would stop the loop late. What a figure is — a report, a report with the
-rounds since estimated on top, an estimate, a corrected estimate — is one
-phrasing in `contextBreakdown.source`, on `/context` and `/stats` as the
-source line and on the rail beside the count.
-
-**A report describes the messages it counted, and nothing after them.**
-`accumulateUsage` records `contextReportedAt` — the message-list length — with
-the reported prompt count, and `contextAccounting` scales the categories of
-that prefix onto the report and adds `contextEstimateRange`'s corrected
-estimate of everything appended since. Without the index the report stands for
-the whole list, so a round that returned 400 KB of tool output moved the
-figure by zero and `trimForRequest` declined to trim a conversation far over
-its own estimate. The anchor is the prompt, not prompt plus completion:
-`vitals.lastContext` (prompt plus completion) is the burn series' sample and
-stays that, because the completion becomes a message the estimate counts for
-itself a moment later. Tool definitions and the project context belong to the
-prefix alone — they ride the front of the request once.
-
-**Compaction is a step a driver calls, not something the loop asks for**
-([`docs/capabilities/coding-agent.md#the-window-recovers-where-nobody-is-watching`](docs/capabilities/coding-agent.md#the-window-recovers-where-nobody-is-watching)).
-`internal/agent/compact.go` holds all of it: the instruction, the summary
-request (`Agent.CompactRequest`, sent under `provider.ToolChoiceNone`), the
-verbatim tail (`Agent.CompactKeep`, cut at a user message so the rebuilt list
-is well-formed on every dialect), the rebuild (`Agent.Compact`), and
-`agent.Compactor`, which is the policy — the window, the toolset's cost, where
-the summary is asked, and the calibration. `Compactor.Recover` trims first and
-asks for a summary only where the trim could not clear the line, at most once
-per crossing. `Agent.Compact` deliberately does **not** reset the round
-counter; `finishCompact` does, because there the request was the user's own —
-and it skips that reset for a compaction the round tail asked for, which is
-not the user's.
-
-**Three doors onto the same step.** `Recover` estimates the occupancy itself.
-`RecoverFrom` takes one the caller knows better — `chat.Model.trimContext`
-passes `estimatedContextTokens`, which is the provider's own report for the
-messages it described with only what has landed since estimated on top, and a
-policy trimming against a worse figure than the rails show would be one
-question with two answers. `RecoverOverflow` is the door a refused request
-comes through: it corrects `Window` down to what it made of the request the
-provider would not take — the only hard fact about a window anything here ever
-gets — which is also what forces the step past its own threshold, then clears
-the once-per-crossing flag, because a refusal is a crossing no estimate saw.
-`Calibrate` is how a caller that keeps its own correction hands it over.
-
-**The context-length class stays non-recoverable and the driver special-cases
-it.** `provider.Failure.Recoverable` is answering "does waiting help", which
-for this class is no; `Headless.recoverOverflow` is answering "can this driver
-fix it", which is yes. It runs **before** `Backoff.Next` is asked anything, so
-the forced compaction spends no attempt — a run made to choose between
-recovering and retrying would spend all three re-sending the same oversized
-request — and `Headless.overflowed` bounds it at one per refusal, cleared by
-any request the provider answers.
-
-`chat.Model.compactor` is the session's, built where it is used rather than
-kept: every figure it needs moves under the session (the window with `/model`
-and with an endpoint that answers late, the toolset after the first frame, the
-correction on every response), and the one thing it would hold between calls —
-the bound on asking for a summary — is `Model.autoCompacted`, re-armed only by
-occupancy falling back under the line. **`pressureShown` is re-armed by a
-compaction and this is not**, and the asymmetry is the escalation: the round
-tail asks once and silently, and where that did not clear the line the card is
-still put to the reader at the turn's end. Re-arming `autoCompacted` there
-instead would ask for a summary every round on a window whose system prompt
-and tool definitions are already most of it. `recoverForRound` is the round tail:
-`trimForRequest`, then a compaction when the session is still at severity 2,
-guarded by `screenIsFree` (the predicate `armPressureCard` reads too, so a
-guard added to one cannot go missing from the other). The summary is passed as
-a **nil** `CompactAsk` and started by `resumeToolLoop` instead, because a wait
-on this surface is a `tea.Cmd`; `Model.compactResume` is what sends the round's
-own request after it rather than handing the screen back to the input, and it
-is cleared everywhere a compaction can end badly (`endBrokenTurn`,
-`finishStreaming`'s cancel).
-
-What a compaction leaves on the transcript is one entry —
-`entryCompactSummary`, drawn by `compactBlock` in `internal/ui/chat/context.go`
-— and everything the row states is read off the conversation before the act
-replaces it: `Model.compactRun` is filled in `startCompact` with the
-occupancy, the spend and the clock, `droppedTokens` measures what the summary
-is standing in for while those messages are still in the list, and
-`compactSplit` divides the transcript at the first turn the tail keeps,
-numbering the turns off the `entryUser` rows rather than off `Model.turnCount`
-(a loaded conversation has rows the counter never saw). The rows above that
-boundary are marked `entry.outOfWindow` and appended back under the receipt
-instead of being dropped, which is why `finishCompact` no longer rebuilds an
-empty transcript; `stepHeader.OutOfWindow` is what puts `out of the window` on
-their headers. `compactSplit` folds nothing when every row above the boundary
-is already marked — a second compaction over the same turns recovers nothing —
-and that is the floor case `compactFloor` words. `components.ActivityCompaction`
-is the row's kind: no glyph of its own, so `✓` stands in the glyph column
-without overriding one, and `paintOccupancy` is what puts the two ends of
-`context 88% → 28%` in del and add.
-
-`Headless.Compact` is where an unattended run installs one, and the step runs
-at the head of each round — ahead of the request, so the first request of a
-turn resumed onto a full conversation is covered too. `Headless.askSummary`
-registers its cancel where the stream's goes, so an interrupt aborts a
-compaction the way it aborts a round. `headlessCompactor`
-(`internal/cli/print.go`) resolves the window from the pricing table then the
-model family and returns **nil** when neither can say; `childCompactor`
-(`internal/subagent/subagent.go`) does the same from the child's model name
-alone, since a child holds one stream and never sees its own tool
-definitions. A configured `summary.model` takes the request only when its
-window is at least the conversation's. Both surfaces report through
-`Headless.OnCompact`: stderr and the record for a `-p` run, a transcript row
-and a lane update for a child.
-
-### The fetched page
-
-`internal/web/tool.go` cuts what a fetch puts in the conversation
-(`Toolset.inlineBytes` — `web.inline_bytes`, and without it `StoredInlineBytes`
-where the session keeps a store and `MaxInlineBytes` where it does not) and
-`Toolset.inline` is the one place a page's text becomes a tool result.
-`FetchPlan` states the same number, so the card and the cut cannot disagree.
-`buildToolset` hands it the session's store —
-`UseEvidence(reducer.Keep, reducer.Scrub)` — and declares the fetch bounded in
-the same lines (`evidence.Reducer.Exempt`), because the two go together: a
-fetch that keeps its own page and a reduction pipeline that keeps it again
-disagree about which id holds the page
-([`docs/capabilities/evidence.md#a-page-is-kept-whole`](docs/capabilities/evidence.md#a-page-is-kept-whole)).
-The toolset a session builds is the object its children fetch through, so a
-child's page lands in the same store under an id its own evidence tool
-resolves.
-
-What will bite you: **the store write goes before the cut, and the scrub
-before both.** This was the defect — the fetch cut first, so what the pipeline
-stored as the "original" was the already-cut text and the tail of a long page
-was gone before anything could keep it. The scrub runs once, at the top of
-`inline`, for the reason the reducer scrubs before reducing: cut one text and
-store another and the offset the notice quotes lands somewhere else in the
-original. `FetchPlan.Receives` changes wording with the store, since it is a
-promise to a person about where the page goes.
-
-**The response cache (`internal/web/cache.go`) is written from under that
-door, so it takes the scrub itself.** `Cache.Put` runs inside `Fetcher.Fetch`,
-below `Toolset.inline`, and what it writes stays under the state directory for
-the TTL — so `openSecrets` hands it `v.Scrub` through `scrubWebCache`
-(`internal/cli/web.go`), beside the reducer's and the process supervisor's.
-Two things about it will bite you. **The entry is scrubbed and the key is
-not**: the key is the SHA-256 of the URL as asked for, and hashing the
-scrubbed form would mean the next fetch of the same URL missed the entry it
-had just written. And **`Prune` decides expiry from the directory entry's
-mtime while `Get` reads `meta.Fetched`** — the sweep runs on the path that
-opens a session, where reading and JSON-parsing every file in the directory is
-a wait before anything paints, and an entry is written once so the two agree;
-a fetch being answered gets the entry's own timestamp. Only a text body is
-rewritten (`textualBody`): a substitution inside a PDF is corruption, and the
-text it is read as goes through the same scrub in `inline`.
-
-`internal/web/extract.go` is the renderer under all of that, and **it takes
-the page's final URL because a relative href is only an address relative to
-it** — `ExtractHTML(body, res.FinalURL)`. Pass "" and every relative link on
-the page silently loses its destination, which is the whole failure the
-addresses exist to stop; the eval harness extracts its fixture pages in the
-loop that assigns their URLs for exactly this reason, and not as it reads
-them off the disk. The other trap is `scriptShellTextMax`: it is a bound on
-how much text a page yields, so it is a number that moves whenever the
-renderer starts emitting something new — links carrying their URLs roughly
-doubled what a shell extracts to, and a bound left where it was would have
-read those shells as pages with something to say.
-
-**Pacing lives in `internal/web/limiter.go`, one `limiter` per `Fetcher`,
-which is one per session — children fetch through the parent's `Toolset`
-(`session.web` in `subagents.go`), so the pacing a fan-out gets is the pacing
-of one session.** `Fetch` asks the cache first, then takes the host's turn
-(`take`) and holds it for the whole chain, `defer`red — every redirect hop,
-the body read, and the wait a refusal costs. Three things about that shape
-will bite you. **The turn is held across the wait on purpose**: release it
-and the other two children walk straight into the refusal that was just sat
-out. **The per-request timeout is inside `fetchChain`, not around the retry**
-— put it back outside and a twenty-second `Retry-After` is a guaranteed
-timeout on the thirty-second default, since the wait would be spending the
-budget the request still needs. And **`httpClient` and `pacing` build under
-`Fetcher.mu`**, which the grant predicate already used: two children starting
-together each built a client, and only the loser's survived. `Fetcher.Waiting`
-is what the row's countdown reads and `AbandonWaits` is what the turn's cancel
-calls (`cancelStreaming`, `quitNow`); a wait no surface reports is
-indistinguishable from a hang
-([`docs/capabilities/evidence.md#a-site-is-read-at-the-pace-it-answers`](docs/capabilities/evidence.md#a-site-is-read-at-the-pace-it-answers)).
-A test drives the schedule rather than spending it by replacing the limiter's
-`now` and `after` (`newFakeWaits`).
-
-**What a session read is `internal/web/ledger.go`, one `Ledger` per session
-and shared with every child** — the toolset is one object, so
-`Toolset.WrapExecutor(agent, next)` is where a row learns which agent made
-it, the way `notebook.Store.WrapExecutor` does. `Toolset.executeFetch` fills
-the row while the result is being rendered (`formatFetchResult` threads a
-`*web.Source` into `inline`), because the page's title and the evidence id
-are known once — where the page is extracted and stored — and recovering
-them afterwards means parsing a two-megabyte page a second time. The chat
-model binds it to the slot and stamps the turn in the same two places the
-notebook is bound (`bindSlot`, `nextTurn`), it persists through
-`internal/storage/sources.go` under the slot's **row id** rather than its
-name — the `changes` pattern, not the `notes` one, so a deleted conversation
-takes its ledger with it — and `/sources`
-(`internal/ui/chat/sources.go`, `internal/ui/components/sourcesscreen.go`)
-is the screen over it
-([`docs/capabilities/chat.md#what-was-read`](docs/capabilities/chat.md#what-was-read)).
-Two things will bite you. **No tool reaches it**: there is nothing registered
-that writes a row, because a record the model could edit answers the question
-it exists to answer with whatever the model preferred — which is also why
-`run.SourcesSection` is handed its list by the driver rather than asking the
-model for one. And **`web.Pages` is what was read, not what was tried**: it
-drops a fetch that did not answer 2xx and folds two reads of one URL through
-`web.CanonicalURL`, which is the same comparison `web.CitedURLs` runs a
-write-up's own addresses through — change one of them and *cited, not read*
-starts listing pages that were read. The one other writer is the MCP
-toolset: `mcp.Toolset.UseLedger` (wired in `openSourceLedger`) and its
-`WrapExecutor(agent, next)`/`WrapReadOnlyExecutor(agent, next)` file a
-`web.KindServer` row when a server's result embeds a resource at an http(s)
-address (`pagesRead` in `internal/mcp/client.go`) or when `mcp_resource`
-reads one (`resourcePage`, both through `Toolset.recordPages`), and
-`web.Pages` leaves those rows out, since no request of shhh's answered for
-them — the `/sources` header counts them through `web.ServerPages` instead.
-`openSourceLedger` (`internal/cli/toolset.go`) is the one place a ledger is
-made, and all three surfaces call it — the session, `runPrintSession` and
-the served assembly — after `attachMCP`
-([`docs/capabilities/headless.md#a-run-says-what-it-read`](docs/capabilities/headless.md#a-run-says-what-it-read)).
-An unattended one is never bound to a slot. It leaves as `jsonSource` rows:
-the transcript's `sources` field, and one `observe.EventSource` line per row
-from `headlessObserver.sourcesRead`, asked after every tool result and once
-before the close line — `sourceFeed` is a pointer on the observer because the
-observer is copied (`inTurn`) and every copy reports one ledger. `todoDriver`
-reads each stage's rows back through `ledgerRows`, folds `web.Pages` of them
-into `State.Sources` (`readSources`, in `carry`, `review` and `fanOut`) and adds
-the report's unread citations at `finish` (`citeSources`), so the checkpoint
-carries the list across a stage's process dying.
-
-`internal/web/pdf.go` shells out to `pdftotext`, resolved once by
-`DetectPDFText` in `openWebTools` (`internal/cli/web.go`) the way the
-structural tools probe PATH, with the path on `Toolset.PDFText`. The bytes go
-to a temp file, never the reader's stdin — a PDF is read by seeking to the
-table at its end. Tests put a stub `pdftotext` on PATH or set `PDFText`
-directly; this machine need not have poppler for them to run.
-
-**Two search backends live behind one `web.Searcher`** (`internal/web/search.go`
-for Brave and the dispatch, `searxng.go` for the instance), chosen by
-`web.search_provider` in `openWebTools`: each is registered on what it needs
-alone, so a backend named without its key or its URL leaves `web_search`
-unregistered rather than registering a tool whose every call fails. `Refuse`
-is the whole of the parameter contract — the tool asks it *before* `Search`,
-and that order is the point: a call the backend cannot express never becomes
-a request, so `Toolset.UseObserver` does not record one
-([`docs/capabilities/evidence.md#a-search-is-refused-rather-than-widened`](docs/capabilities/evidence.md#a-search-is-refused-rather-than-widened)).
-What reaches the record is the backend's name and nothing else
-(`observe.SearchHook`, wired by `recordSearches` at all three surfaces); the
-query stays in the ledger. `probeSearch` is the doctor's row, and it reaches
-only the SearXNG instance — never Brave, because a diagnostic does not spend
-a request on a paid endpoint. Its request is stubbed through the
-`searxngCheck` variable, the way the endpoint override stubs a search, so the
-suite never leaves the machine. `prompt.WebTools` is the other half: a
-session with fetch and no search says so in the researcher and profile
-prompts, and a hedge there is what sent a searchless model looking for a
-tool it did not have.
-
-### Provider Interface
-
-All providers implement `StreamCompletion(ctx, messages, opts) (<-chan StreamEvent, error)`. Providers register via `provider.Register(name, factory)` with a `Factory func(ResolveOpts) (Provider, error)`. Provider names are normalized (underscores become hyphens). What the interface deliberately does not abstract over: [`docs/capabilities/providers.md`](docs/capabilities/providers.md).
-
-### TUI State Machine
-
-The chat TUI (`internal/ui/chat/model.go`) distinguishes between **turn states** (what the session's work is doing) and **surface states** (what borrows the screen). A surface can overlay while a turn keeps running underneath. This split is why `turnState()` / `setTurnState()` exist separately from `Model.state`.
-
-**A surface is one row of the register in `internal/ui/chat/overlay.go`, not an entry in six lists.** The row says where the mode draws (the bottom panel, the transcript pane, or floating above the frame until the handover), whether it borrows the screen from the turn, how tall it may grow, what it leaves where the draft box was, and what it does with a key — and `isSurface`, the key route in `keyroute.go`, `resolvePanel`, `paneView`, `draftPanel` and `clickableTranscript` all read it. It also says whether the mode stands over the inspector rail (`hidesRail`, read by `inspectorHidden`), whether the pointer can still select the transcript under it (`noSelection`, read by `selectableSurface`), the slash command whose job is opening it (`command`: the completion row, the `/help` paragraph and what typing it does, read by `runCommand`, `slashCommands` and `helpSheet`), and the rail block whose heading is its door (`door`, from which `railDoors` and `railDoorSet` are built — plus `doorAlso` for a block that stands in that one's place, as PLAN does for STEPS, whose opener then reads which list is up). Adding a mode is that row plus the mode's own file; a mode missing from one of those readers is not a compile error, it is a surface that draws and cannot be typed into, so `overlay_test.go` holds the rows to each other and to the readers. What will bite you: **the menu's order is `buildSlashCommands`' and not the register's**, because the register is a map and non-surface commands sit between surface ones — a surface's command stands in that list as `registeredSlash("/name")`, a slot saying nothing else, and moving the slot moves the `help-chat` and `palette` goldens. The palette's tally is not one of them: its fixture pins its own reach (`pinPaletteReach`), and how many commands a session offers is the one number in `TestPalette_CountsEveryCommandTheRegistryOffers`. A command left out of the register (a picker, a card that only asks first) keeps its row in `complete.go`, its paragraph in `helpCommands` and its case in `runCommand`. Two modes ride over whatever the state is (`coverOverlay`: the agent manager and a child's routed ask) and one rides inside the approval card (`askOverlay`: the memory prompt), because none of the three is a state the session can be in.
-
-**A screen built once per opening keeps its state behind its row, not on `Model`.** The row says `holds`, and the screen lives in `Model.screens` — `heldScreens`, keyed by the row's state, with a typed accessor per screen (`m.screens.steps()`) — so `modelFields` in `model_test.go` counts one field for all of them and a screen joining the register does not move it. The session boundary drops them in one call (`heldScreens.keeping`, which keeps only the screen on show, since a sprint crosses the boundary under an open board), and `TestNewSession_TakesEveryHeldScreenWithIt` opens every holding row through its own command and asserts the boundary took each: that test is what stands in for the count where the count no longer looks. What will bite you: **write it through `with` and `without`, never into the map.** A map is shared by every copy of a `Model`, and a Bubble Tea model is copied on every message and again for the paint, so a delete made on a copy would reach the others; the two methods hand back a new map, which is what gives each value the snapshot the pointer fields it replaced gave it. The viewers with a return state beside them (the diff, the output view, review), the agent manager and the profile drafter keep their fields, because moving their pointer alone would split one surface's state across two places.
-
-The register is built on first use rather than at initialisation, and so are the slash-command tables in `complete.go` and `command.go`: a row names the session's own methods, and reading the session eventually asks which mode has the screen, which the compiler reads as an initialisation cycle in a package-level table. The tables derived from the rows (the commands by name, the doors by block) are built in the same `Do` as the rows, and every reader reaches them through `overlays()` — a derived map read any other way is nil until something happened to build the register, which the compiler does not refuse; `TestRegisterDerivedTablesOpenFromAZeroModel` resets the register and opens each one from a zero `Model`.
-
-### The take-over screens
-
-Ten surfaces take the whole terminal — doctor, metrics, config, history, rate, snippets, the saved-chat browser, the context reading, the sources ledger and the profile drafter ([`docs/interface/surfaces.md#the-supporting-screens`](docs/interface/surfaces.md#the-supporting-screens)). **They share one chrome, in `internal/ui/components/chrome.go`, and a screen supplies its parts rather than drawing its own skeleton.** `ScreenChrome` is the header, the rule, the body's row budget and the footer; `ScreenHeader` is the row itself; `KeyFooter` is the key row and what annotates it. What a screen still owns is what is a fact about that screen: its title, what it is counting, which keys it offers, and what its body draws in the rows it is left.
-
-What will bite you: **the header's two halves are fitted in the opposite order from the one that reads naturally.** The keys are laid out first and the left-hand rail into what is left of the row, so the reading a screen is counting is dropped before its stated way out is. Fitting the left first is the bug this replaced — three of the seven did it, each self-consistent, and no single screen's test could see it. The family's drop order is asserted once in `chrome_test.go` and captured once in the `screen-family` goldens at 60 and 130 columns, which is the only place all ten are side by side — and is what a screen joining the family is held to: the last two arrived carrying a chrome of their own, and neither one's own test could have said whether it matched. Four of the ten are a list with a preview beside it, and the split is `screenpanes.go` rather than a copy each: what a screen supplies is its own four numbers, because how wide the list wants to be is a fact about what its rows carry.
-
-A left-hand field carries the ` · ` that joins it to the field in front of it. That is why a dropped field cannot leave a dangling separator behind — and why the fields can be coloured separately, which a spinner, a percentage and a warning about unwritten changes all need.
-
-**`TabStrip` (`internal/ui/components/tabstrip.go`) is the one row that says which part of a decision you are holding**: a mark per tab (where you are, done, neither), a `Word` beside each mark that has one, and a two-rung tail — `TabTally` builds both spellings — given up long-first when the terminal is narrow, the way `AttachmentChips` gives up chips. Its one caller is the question card's sheet of tabs (`internal/ui/chat/question.go`, `questionSheet.strip`); the backlog screen has tabs and draws no strip, and `docs/interface/departures.md` says why it stays that way. **The strip's keys are `keys.Select.Tab` (`←→`, declared as a pair in `keymap.go` so `keys.Step` reads the direction) and never `tab`**, which `keys.Select.Note` has held on the whole selector family since before there were tabs.
-
-### Three primitives every surface that scrolls or lists is built on
-
-**`List[T]` (`internal/ui/components/list.go`) is the pointer and the window**: where the focus may land, where it goes next, which run of items a body budget shows, and — through `Matches` and `Filter` — what the query left showing. The selector, the multi-select, the note selector, the agent manager and the saved-chat browser all move on it, and the four case-folded substring filters are one function now. A list keeps its own `Options`/`Rows` and `Focus` as exported fields because hosts read and write both; the `List` is aimed at them where the movement happens and the focus it leaves is read back. The window itself is the one piece of state — `listwindow.go` is the arithmetic under it, and `ListOverflowRow` is the counted marker its edges take. `noteselect.go` has no copy of any of this and never did: it holds a `Select` and moves through it, so it inherited the move.
-
-**`Pager` (`pager.go`) is the offset a body longer than its pane is read through**: `Held` holds it inside the body, `Window` takes the run and writes the held offset back, `Reveal` brings a row in with the least movement, `Above`/`Below` are what a counted marker states, and `Screen` is the header/body/footer shape with the pad that keeps the footer on the bottom row. The full-screen diff, the output view, review mode's hunk pane and the approval card's body are all it.
-
-The transcript pane has a search of its own (`internal/ui/chat/viewport.go`): `Search` finds every occurrence, `NextMatch`/`PrevMatch` walk them and bring the pane to them, and the marks are painted on the copy `visibleLines` already makes rather than on the line cache's own rows. `internal/ui/chat/navigate.go` is the session's half — it routes to the pane the reader is looking at, leaves a surface that owns the pane alone, and puts the position on the reading rail. The way in is reading mode's: `keys.Reading.Search` (`/`) opens the query row, `keys.Reading.Match` (`n/N`) walks what it found, and `keys.Find` is the row's own two keys — a register row of its own, because a row being typed into keeps every letter as text and none of the mode's bare letters are live while it is up. `focus.go` routes it: `updateSearchQuery` reads every key before the mode's ladder does, the row replaces the key bar in `focusHintLines`, and the mode's register row in `overlay.go` names `readingSearchCursor` so the terminal's cursor stands on the query. **The state of the open row lives on the pane** (`typed`, `typing`), beside the query and the marks, because the three have to agree on every frame of a streaming turn. The reason the pane has its own search rather than the bubbles viewport's is written out at the top of `viewport.go` and is about ownership, not speed: that viewport retains and rewrites the caller's slice, and clears its highlights on every content change.
-
-**`SectionFitter` (`sectionfitter.go`) drops whole blocks until a body fits**, reserving the marker's own row from the moment anything is dropped. What a screen supplies is the order — the diagnostic drops what has least to say, the metrics screen drops from the bottom — because the order is the only part that is a fact about the screen.
-
-What will bite you: **a golden is the test for all three.** Every adoption of them was required to leave the rendered bytes identical, so a change to the arithmetic that looks harmless shows up as a golden diff on a surface you were not editing.
-
-A screen's height reaches it through `Sized.SetSize`, and its keys answer with a typed result rather than `any` (`Keyed[R]`). `internal/cli/screen.go` hosts all five commands' screens with one `screenModel[R]`: the command's own state stays in its own type, behind a pointer the `answer` function closes over, because a Bubble Tea model is a value and every one of these commands has something to say after the screen has closed.
-
-### CLI reports
-
-Every non-interactive listing is one shape, built in `internal/cli/report`
-([`docs/interface/surfaces.md#outside-the-tui`](docs/interface/surfaces.md#outside-the-tui)): a
-`Report` is a title, `Section`s of `Row`s (`glyph name  subject · detail
-[outcome]`, with consequence, body and fix lines beneath), `Pair`s aligned on
-the colon, `Note`s for warnings and diagnostics, and a tally. `report.Empty`
-and `report.Done` are the two one-row shapes — every empty state and every
-write confirmation in the CLI is one of them, which is what `voice_test.go`
-asserts as a pattern.
-
-`Render(width)` produces plain bytes and nothing else; `Fprint(w, r)` measures
-the stream with `term.GetSize` (falling back to 80, the exit banner's rule) and
-paints through the palette only when `components.DetectProfile` says the
-destination is above ASCII — so a pipe, `TERM=dumb` and `NO_COLOR` are
-byte-identical and escape-free, and every width calculation happens before any
-styling. A row clips its target and never its outcome. The name column sizes to
-the section's longest name capped at `NameCap`; `Section.NameWidth` pins it,
-which is what the doctor and `shhh mcp` do at eight so their closed
-vocabularies keep the drift signal. `Report.String()` renders at the fallback width, for the
-slash commands whose answers land in the transcript with no stream to measure:
-a row rendered wider than it is displayed soft-wraps instead of clipping, which
-puts the outcome on a line of its own and loses the rule.
-
-`doctorReportOf` in `internal/cli/doctor.go` is the seam from
-`components.DoctorCheck` to a report; `report.StateOf` maps the screen's state
-enum to the report's. `--json` never emits a report: each command has its own
-domain structs (`providers_json.go`, `metrics_json.go`, `memoryJSON`,
-`jsonMessages` for both transcript emitters) through the shared `writeJSON`.
-The fixtures are `internal/cli/testdata/report`, written by
-`go test ./internal/cli -update-golden`.
-
-### The diagnostic log
-
-`internal/logs` is the file behind `shhh logs` ([`docs/capabilities/configuration.md#a-failure-is-written-down`](docs/capabilities/configuration.md#a-failure-is-written-down)). It is a leaf package — it takes the path rather than asking `storage.Dir()`, because `internal/storage` is in `internal/provider`'s import graph and the provider is what writes to it. `logs.Logger()` is an `*slog.Logger` over a sink that discards until `logs.To(path)` names a file; `To` also calls `slog.SetDefault`, which re-points the `log` package, so a dependency's stray line lands in the file instead of on top of a session. `logs.SetLevel` is `logs.level`, and it is a `slog.LevelVar` behind one fixed handler on purpose: the file is opened in `PersistentPreRunE` before the settings that name the level have been read, so a level baked into the handler would apply to a logger nobody is holding any more.
-
-The sink opens the file per record and closes it again — don't "optimise" that into a held handle. Three things depend on it: `MaxBytes` is a bound rather than a size read once at startup; two sessions share one file, and a held handle goes on writing into the generation the other one renamed, which the next rotation then unlinks; and a directory that was unwritable a minute ago is retried instead of costing the session its whole log. The file is `O_APPEND` at 0600, one generation is set aside at `MaxBytes`, and a record that cannot be written is dropped silently — the store's own doctor row is what fails when that directory is unusable, and duplicating it in the log's row would name one fault twice.
-
-Every writer is a seam that is the *only* place its event is named, and that is the rule for adding one — a formatted line sprayed at a call site is how a log stops being worth tailing. There are nine. `record` in `internal/provider/failure.go` sits on the classifier every dialect's error already passes through, and `Backoff.Next` in `internal/agent/retry.go` writes each wait from the one place the decision is made rather than from each driver. The other five are the mechanisms that fail without stopping the session, so the only symptom is something else entirely: `Classifier.Judge` when the attempts are used up and it falls back to asking, `Summarizer.Summarize` on a reading that did not happen, `startServer` in `internal/lsp/server.go` at either half of the handshake, `Dial` in `internal/mcp/client.go` when the transport will not connect, and `logUnconfined` in `internal/cli/sandbox.go` when nothing on the host contains commands. The last two are not failures but decisions with no lasting surface, which is the same problem in the other direction: `agent.LogRefusal` is every refused call — called from `ModePolicy.Decide`, which wraps the unexported `decide` so that each of its ways out writes one line, and from `refuse` in the headless approver, which is the tier the policy is never consulted at — and `logRecovery` in `internal/agent/compact.go` is what a window-recovery step did, at the shares of the window it did it at. Both carry the first word of a command and never the rest of it, and neither is wired into the session's own surfaces: a trim a person watched happen is on the rail in front of them. **A cancellation is never logged** — at any of them; the commonest line in the file would otherwise be somebody pressing escape, and a log like that is one nobody reads. It bites hardest at `Dial`, which runs on the session's own context because the SSE transport keeps its stream on it, so a caller that gave up waiting leaves the dial running: without the guard, quitting with a slow server still handshaking accuses it of a failure that was the session ending. **Nor is the failure's own text**, at the five: a provider's words are already a line here through the taxonomy, and a language server's, an MCP transport's or a containment probe's are built from a path or a command line, which the file two sessions share does not accumulate. What each line carries is a fixed identifier — a model, a server name, a profile — and a failure code from a closed set, which is also what makes them cheap to grep.
-
-`internal/cli/logs.go` owns the path (`logPath`, beside `doctorStorePath`'s own join), `openLog` in `root.go`'s `PersistentPreRunE`, and `runLogs` — the tail's offset is what the follow resumes from. `probeLogs`/`doctorLogs` in `doctor.go` is the row that names the file, and it asks `logPath` so a check cannot report a path the reader cannot open.
-
-### Reports
-
-`internal/reports` is the page behind the `report` tool ([`docs/capabilities/reports.md`](docs/capabilities/reports.md)): typed blocks re-rendered from data on every serve, freehand sections validated once and frozen — the stored markup is the validator's own re-serialization, never the model's raw string, so what was checked is exactly what replays. Every colour is a `var(--token)` from the embedded stylesheet, whose normative home is `tokens/report.css` in the design system; the validator parses its token names from that file at init, so the two cannot disagree. The freehand grammar is an allowlist (no scripts, no event handlers, no `href`/`src`, no literal colours), and the server sends the CSP that makes self-containment the browser's problem too.
-
-The store mirrors `internal/evidence`: opaque `rp-` ids resolved only through the index (an id can never name a path — 64 random bits is also the URL's unguessability), 0700/0600, prune-on-open against `reports.retention_days`. The server is the repo's first and only HTTP listener: loopback, port 0, one route, lazy — a session that makes no report opens no port, and a one-shot surface holds no `Server` at all. **The tool definition comes off the `Publisher`, not the package**, because its last sentence promises which line the result leads with and the two must not disagree: a `Resident` surface answers with the URL, a `OneShot` one — a `--print` run, whose port would be gone before the reader typed it — answers with `shhh reports open <id>` and is described to the model that way. `internal/cli/reports.go` owns the path (`reportsDir`, the `logPath` pattern) for the command, the publisher and the doctor row; `buildToolset` registers the tool and is where a surface says what it is (`browser`, and `resident` — whose zero value is the reading that cannot dangle), and deliberately **not** in `subagents.go` — a child answers its parent, not the user. The activity row lifts the result's first line into the outcome field, the one the target clips for; on the TUI that line is always the URL.
-
-Components are **plain state plus two methods** — an update that takes a key
-press and reports whether it is done, and a view that takes an explicit width
-— not nested Bubble Tea models. The chat `Model` owns them via its states. No
-sub-programs, no goroutines inside a component.
-
-Every component is handed a width and must handle a narrow terminal by
-stacking rather than truncating its hints. The column-grid field widths are
-constants in `activityrow.go`, and every surface drawing a transcript row uses
-them, so a grid change is a one-line change.
-
-Diffs are computed in `internal/diff` from the old and new content the edit
-tools already hold — no shelling out to `git diff` except for the session-wide
-diff view. Lines are aligned by Myers' difference algorithm in its
-linear-space form, with the common head and tail trimmed off first, so the
-cost follows the size of the change and not the size of the file. One trap
-survives that: a region whose edit distance passes the `maxEdits` bound in
-`diff.go` still degrades to deleting every line and adding every line, which
-on screen is a whole-file replacement with no hunks and no intraline
-emphasis. If a diff looks like that, the bound is the first thing to check.
-
-The step outline is a layer over the entry list in `internal/ui/chat/steps.go`
-rather than a component: it groups history instead of rendering a widget.
-`stepBlocks` tiles the entries into blocks — a titled step, a run of
-consecutive calls nothing titled (`callRun`), or one lone entry — and
-`Model.blockSlots` (`fold.go`) is what every reader of a block asks for its
-rows, since a folded run of read-only calls is one counted row where its
-members would have been. Two traps. **Ask through the slots, never over the
-range**: the renderer, focus mode's targets, the search's folds and the
-copy row all walk the same list, and a walk over `blk.start`…`blk.end` puts a
-cursor on a row nothing is drawing. And **the tiling is a prefix that only
-ever grows at its end**, which is what both stable-prefix caches
-(`renderHistory`, `frozenGutterBlocks`) freeze against — a block that can
-still take a row is the last one with entries in it, so nothing that changes
-as calls land may widen a block behind it.
-
-A tool or command row's output has the same three depths an edit's diff has:
-the bounded body with its counted tail (`components/activityrow.go`), the
-wider in-place window, and the full screen — `internal/ui/chat/outputview.go`
-hosts the last one (`components/outputview.go` renders it), and the cycle
-lives in `toggleRow` (`click.go`) so the key and the pointer open a row
-through one act. Reading mode's copy key is `internal/ui/chat/copyrow.go`;
-the approval card's scroll is the card's own windowing in
-`components/approval.go`, with its offsets on the chat model because the card
-is rebuilt every frame.
-
-**The card's note field is split the same way, and the seam is three exported
-calls.** The field itself is a `textinput` on the chat model
-(`decisionNote` in `model.go`, opened and routed in `approval.go`, cleared
-wherever the card changes in `setTurnState`); the card owns where it goes —
-`components.NoteWidth` is how wide to draw it, `ApprovalCard.NoteField` is
-where the render lands, and `ApprovalCard.NoteOrigin` is the cell it starts
-at, which `confirmCursor` adds the field's own caret to. Two things bite.
-`components.NewTextInput` paints its own cursor unless the host says
-otherwise, so a field this session places a real cursor for must be given
-`SetVirtualCursor(false)` or the reader sees two. And `ApprovalCard.Noted` is
-what turns the offer on: a card with nothing waiting to read the sentence
-keeps the capital-N default marker and goes on reading `Y`/`N` as it always
-did, which is what leaves the `/run` confirm, the scaffold card and a child's
-routed ask byte-identical.
-
-**The two questions a command card answers about the command rather than
-about the decision are one shape written twice, on purpose.** The dry run
-(`dryRunOffer`/`dryRunKey`/`dryRunDoneMsg`/`finishDryRun`/`dryRunView` in
-`internal/ui/chat/run.go`, over `internal/dryrun`) runs a derived form of the
-command in the containment the real one would have run in; the explanation
-(`explainOffer`/`explainKey`/`explainDoneMsg`/`finishExplain`/`explainView`,
-over `agent.Explainer` in `internal/agent/explain.go`) asks a model what it
-does. Both are keyed off `pendingApproval` rather than off the model — the
-in-flight flag has to be a fact about *this* call, or the next decision in
-the queue is advertised as running one — both open through `openOutputFull`
-with `stateConfirmRun` as the return, both are routed in `updateConfirmRun`
-*above* the card so the letter is not read as the start of a sentence, and
-neither is in `KeyRun`, so `KeyAt` and a click are untouched. Three things
-bite. The offer must be absent where it cannot be answered — no derived form,
-no configured model — because `TestDecisionCards_EveryOfferedKeyDoesSomething`
-presses everything a card advertises. `agent.ModeInstructions` (`internal/agent/mode.go`) wraps the two mode
-paragraphs `internal/prompt` holds, so `internal/agent` imports
-`internal/prompt` and must not be imported by it. And the explanation
-leaves **no** transcript row where the dry run leaves one: nothing ran on
-this machine, and a row is how output reaches the screen a second time, not
-how a reading is recorded. Its spend is `meter.SourceExplanation`, built in
-`buildExplainer` (`internal/cli/approvals.go`) beside `buildClassifier` off
-the shared `gateModel`.
-
-Reasoning is a row like any other act: `internal/ui/chat/think.go` owns the
-`think` row — where the round's thinking is collected as it streams, its three
-fold depths, and the verbosity that drops it. The text it shows is not the
-reasoning the next request replays; that stays with the agent as the
-provider's own signed blocks, and dropping them turns the second round of
-every thinking turn into a 400 (see the Gemini and Anthropic notes below).
-
-So is a session reading. `internal/ui/chat/summary.go` owns both halves: the
-rail's bounded `SUMMARY` block (`inspectorSummary`) and the `summary` row a
-landed reading appends to the transcript (`appendSummaryRow`, `summaryRowFor`,
-kind `components.ActivitySummary`), which is where a reading too long for
-three rail lines can be read whole. A quiet reading — on target or unclear,
-and drawn whole by the rail (`quietReading`, which asks the rail block itself
-rather than copying its bound) — appends none. `finishSummary` reports
-whether it wrote a row, because the reading arrives with no stream behind it
-owing a repaint. The row stores its own `summaryReading` — the verdict plus
-`summaryTarget` as it stood — rather than reading the target back at render
-time, since the next instruction replaces the target and a steer typed into
-the turn extends it.
-
-The attached sub-agent view is not a separate surface — the chat `Model`
-renders whichever agent is focused, and every agent including the orchestrator
-is an `internal/agent` instance with its own transcript, queue and mode.
-Attaching switches the focused agent. It does not hide the inspector rail:
-`inspectorHidden` lists the takeovers and an attached child is not one, since
-the rail's blocks answer for the session either way. The rail's `AGENTS` block
-is the map of the run — `Model.inspectorAgents` puts `orchestratorAgent` first
-and then `Snapshot()` in spawn order, and `components.InspectorAgent.Focused`
-marks whichever row `attachedTo` names. `Model.sessionMap` is that same order
-as names and `cycleAgent` (`keys.Draft.NextAgent` / `PrevAgent`) steps through
-it via `attach`, so the per-session scroll is kept.
-
-### Project instructions
-
-`internal/project` is what the model is told about the checkout before the first keystroke, and what the checkout is allowed to make a session load ([`docs/capabilities/configuration.md#project-context-is-opt-in-and-lives-with-the-project`](docs/capabilities/configuration.md#project-context-is-opt-in-and-lives-with-the-project)). `project.Instructions(dir, user)` collects the set: the user's own file first (`userInstructionsPath` in `internal/cli/session.go` — `instructions.md` beside the config file), then one file per directory from `project.Root(dir)` down to `dir`, the first of `contextFilenames` (`.shhh/project.md`, `AGENTS.md`, `CLAUDE.md`) that exists and is not blank in each. `project.InstructionBlock(files, prompt.InstructionBudget)` renders them under `## <path>` headings and applies the cap, cutting the outermost file first and saying in its heading that it did. `project.FindFrom` still exists and still answers a different question — the nearest single file — which is what `NeedsScaffold` and the fallback for a directory with no root above it use.
-
-**Trust is the other half of the package, and it is the one to read before touching any loader** ([`docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs`](docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs)). `trust.go` holds the list of paths a checkout can use to make a session run something — the three skills directories, `.shhh/agents`, `.shhh/quality.json`, `.shhh/hooks.json`, `.shhh/mcp.json`, `.mcp.json` — and it is the only such list: `project.Fingerprint` walks it to a content digest and reports which `project.Kind`s the checkout actually holds, and `project.ResourceNames` is the same list as a surface prints it, so a kind that loads without appearing in the withheld list cannot happen quietly. `project.ReadTrust(root, store)` grants wherever `storage.ProjectTrusted` has a row for the root, whatever the files say now, and returns a `project.Trust`; its zero value withholds, so a missing store, an unnamed root and a surface that forgot to ask all land on the same answer. **The digest is a notice, never a withholding.** The walk also takes one digest per kind, the row keeps what a session last read (the `kinds` column), and `Trust.Changed` is the kinds that moved since — named once on the start screen, in `/status` and on the headless stderr line, after which `restampProjectTrust` in `buildSessionEnv` moves the row to the digests just read so the next session is quiet. A row with no per-kind digests (one written before they existed) reads as trusted and unchanged and is stamped the same way. The re-stamp never creates a row and never touches the held reading, which this session's screens are still reporting; the doctor reads the same standing and writes nothing. A missing file is fingerprinted as absent and a symlink as the link rather than as what it points at — following one would hash a tree outside the checkout and re-pointing it would read as unchanged. Instruction files are deliberately not in the set: prose can only ask.
-
-**The toolchain declaration is `internal/project/toolchain.go`** ([`docs/capabilities/containment.md#a-checkout-declares-the-toolchain-its-work-needs`](docs/capabilities/containment.md#a-checkout-declares-the-toolchain-its-work-needs)): `project.LoadToolchain(trust)` is the one seam, answering a `project.Toolchain` value and whether one loaded — nothing in an untrusted checkout, not even a parse, so a broken file there costs nothing — and nothing registers it in a session yet. It lives here rather than in `internal/sandbox` because the sandbox imports this package and the CLI already reaches both; the other way would pull the sandbox's whole graph into anything that reads the file. Two things will bite you. **`pinnedInstall` is an allowlist of installers, not a denylist of `@latest`**: a line is accepted only where the version can be read off an installer's arguments, so a new installer is a row in `installers` with its own version grammar, and widening `exact` to a range (`@v1` is a Go prefix query, `^1.2.3` an npm range) is the cache lying. **The host grammar is a copy** of `sandbox.ParseHosts`'s, since the import runs the other way; `TestTheToolchainReadsHostsAsTheProxyDoes` in `internal/sandbox` holds the two to the same answers, so change them together.
-
-**The declaration is drafted in a bounded request, never written by the model** ([`docs/capabilities/containment.md#a-checkout-declares-the-toolchain-its-work-needs`](docs/capabilities/containment.md#a-checkout-declares-the-toolchain-its-work-needs)). `project.ToolchainGrammar` (`internal/project/toolchaindraft.go`, a `go:embed` of `toolchain_grammar.md`) is the one text of the file's grammar and rules: `prompt.ToolchainDraft` puts it in the drafter's instruction and `make docs` writes it into the containment doc's generated region, with `TestReference_ToolchainGrammarIsCurrent` holding the two equal and `TestTheGrammarsExamplesLoad` holding every example in it to the loader. The drafter is `toolchainDrafter` in `internal/cli/toolchaindraft.go` — the profile and backlog drafters' shape: one request on `agents.drafter_model`, billed as `meter.SourceToolchain`, answered through the `draft_toolchain` tool (`toolchainDraftSchema`) with the survey plus `project.ReadDraftEvidence` (build files, task runners, linter configs, CI workflows, `.shhh/quality.json`, lockfile names) and the existing file as its evidence, and scrubbed through the session vault before it leaves. What will bite you: **the answer goes through the loader before anything is shown.** `toolchainDraftOf` renders the four lists with `Toolchain.Render` and reads them back with `project.ParseToolchain`; a refused line is fed back to the model once with the loader's sentence, and a second refusal ends the drafting with no card. The card is `toolchainDraftCard` (`internal/ui/chat/toolchaindraft.go`, the scaffold card's shape on `stateToolchainDraft`, opened by `/toolchain` or the start screen's read-only offer through `toolchainDraftOffered`), `[e]` re-reads the edited text the same way and keeps the previous draft on a refusal, and only the yes calls `writeToolchainDraft` (`config.ReplaceFile`, parsed again, a link refused). `wireToolchainDraft` is called from `runChatSession` alone: a `-p` run and a served session answer `/toolchain` with `toolchainCommandRefusal`, and a child never has it.
-
-The CLI side is `internal/cli/trust.go`. `projectTrust` reads once and holds the answer because four loaders ask — `loadSkills`, `loadAgentProfiles`, `openQualityGate`, `mcpOptions` — and a session that loaded skills under one answer and withheld suites under another would be reporting a state that never existed; it is a variable so a test can state the answer instead of writing a checkout and a store to imply one. `setProjectTrust` is the only writer of the row, so the doctor's `[a]`, `shhh trust [off]` (`newTrustCmd`, a SETUP verb of its own) and `/trust` cannot drift apart — and it calls `forgetProjectTrust`, **which is the part to keep**: the doctor re-runs every check when an offer is taken and `shhh mcp` dials again, so a held reading would put "untrusted" directly under the answer the reader just gave. A session already under way is unaffected, which is what the hold is for. `trustStartupNote` is the stderr line every session prints when something was held back or a trusted checkout changed, emitted from `buildSessionEnv` because that is the one point the interactive and the headless session share. The reading is a `⊘` and never a failure: withholding is a diagnostic, and trust is a person's act — no mode reaches it and the classifier is never asked.
-
-**The workspace block does not freeze** ([`docs/capabilities/coding-agent.md#the-agent-knows-where-and-when-it-is-standing`](docs/capabilities/coding-agent.md#the-agent-knows-where-and-when-it-is-standing)). `project.PromptBlock` renders the survey as the `# Workspace` section and `project.ReplaceBlock` swaps that section inside an assembled system prompt — it matches the **last** line equal to the heading and ends at the blank line between sections, because a project instruction file is injected ahead of it and is free to contain the same words. `project.RereadGit` is the cheap half of a survey asked again (branch, detached, dirty, head) with the walk's answers kept, and it stamps `Info.Reread`, which is what turns the dirty sentence from "already there before this session started" into a dated count that admits the session's own edits. One closure builds the block for every reader — `sessionEnv.workspace` in `internal/cli/session.go`, reached through `workspaceBlock` — so a conversation and a child cannot come to two answers about one tree. Readers: `chat.Model.WithWorkspaceBlock`, whose `regenerateWorkspace` (`internal/ui/chat/context.go`) is called from `finishCompact` and from `loadChatByName`, the two places a conversation is rebuilt out of a stored message; and `childExtra` (`internal/cli/subagents.go`), which appends `worktreeNote` when `subagent.Spec.Worktree` says the child is standing in a seeded copy rather than in the parent's own directory. **The unattended run does not have it yet**: `agent.Compactor` takes no such hook, so a headless run that compacts keeps the block it launched with.
-
-Three traps. **The walk is `project.Root`'s, not a second one**: the set stops at the repository root, or with no `.git` at the nearest ancestor holding a `.shhh` directory, and only where there is neither does it fall back to the nearest single file above. **Display paths are stated from the root, never from cwd** — otherwise the same file is named `AGENTS.md` in one session and `../../AGENTS.md` in another opened two directories deeper, and the survey's `ContextFiles`, the start screen's context note and `shhh doctor`'s project row all print that. **The set is read once, at session start**, in `buildSessionEnv`; the system prompt is built once per session and `env.projectTokens` is the estimate of this block, so a per-turn re-read would both cost a syscall and invalidate a cached prefix for a file nobody edited. `@path` imports are not followed: such a line is text.
-
-### Skills
-
-`internal/skill` follows the Agent Skills specification ([agentskills.io](https://agentskills.io/specification)) and its client guide. `skill.Roots(cwd, native, projectTrusted)` is the search order (project `.shhh/skills`, `.agents/skills`, `.claude/skills` from cwd up to the git root, then the user-scope ones) — with the project half dropped entirely when the checkout has not been trusted, which is a parameter rather than something this package reads because nothing inside a checkout may decide it. `skill.Discover` reads them into a `Catalog` with lenient validation — a skill that cannot load is a `Diagnostics` entry, never an error, for the reason in [`docs/capabilities/skills.md#where-skills-live`](docs/capabilities/skills.md#where-skills-live). The frontmatter reader in `frontmatter.go` is deliberately not a YAML parser: it takes everything after the first colon as the value, because skills written for other harnesses do.
-
-Three tiers, three places: `skill.PromptBlock` is the catalog in the system prompt (appended as prompt extra, like the toolbox, only when something loaded); the `skill` tool (`skill.ToolDefinition`, read-only, its `name` an enum of the catalog) returns `skill.Content` — body, directory, bundled files listed not read; the file tools do the rest. `/skill <name> [task]` and the `/<skill-name>` shortcut (`internal/ui/chat/skills.go`) send the same content as a user message. `agent.KeepResults(skill.IsContent)` exempts activated content from `TrimOldToolResults`. `allowed-tools` is parsed and displayed and grants nothing — [`docs/capabilities/skills.md#a-skill-cannot-grant-itself-anything`](docs/capabilities/skills.md#a-skill-cannot-grant-itself-anything). `shhh skills` and `/skills` print the catalog with its diagnostics.
-
-### MCP servers
-
-`internal/mcp` is the client side of the Model Context Protocol ([`docs/capabilities/mcp.md`](docs/capabilities/mcp.md)) over `github.com/modelcontextprotocol/go-sdk`. A `mcp.Definition` is one server as written — `Transport` stdio/http/sse, argv or URL, `ReadOnly`, `Scope` user or project — and `mcp.Discover(cwd, userDefs, userDirs)` reads the catalog: the config file's `[mcp.servers]` (converted in `internal/cli/mcp.go`'s `mcpDefinitions`), `mcp.json` beside it, and the project's `.shhh/mcp.json` / `.mcp.json` under `mcp.ProjectRoot`, project shadowing user by name, every unreadable definition a `Diagnostics` entry. `mcp.Connect(ctx, catalog, Options)` dials every admitted definition concurrently and returns a `Toolset` with a `Report` per definition (`Status` connected / failed / disabled / untrusted / missing-env / excluded); `admit` is where a project server in an untrusted checkout, a `${VAR}` that is unset, or a non-read-only server in a conversation is left out *before* anything is spawned; `mcp.Options.Project` is the person's answer about the checkout as a value, because a definition file is not the only thing a clone can make run and one answer covers all of them. `Definition.Expand` resolves `${VAR}` and the unexpanded definition is what reports show, so a token never reaches a listing. **`ReadJSON` normalises a name and `Discover` validates it, each exactly once**: a vendor's `Framelink Figma MCP` becomes `framelink-figma-mcp` through `normaliseName` with a diagnostic naming both spellings, because the documented promise is that a pasted snippet works as it is; the config file's own table headers are refused instead, and `ReadJSON` deliberately does not call `Validate` — `Discover.add` is the one validator, and having both reported the same broken server twice in the same words. Tool names are `mcp.ToolName`: `<server>__<remote>` made provider-safe and capped at 64; `mcp.SplitName` is how the UI recognises one without a registry. **`Definition.Tools` names the remote tools to register and unset means all** ([`docs/capabilities/mcp.md#a-large-server-is-taken-in-part`](docs/capabilities/mcp.md#a-large-server-is-taken-in-part)) — a ninety-tool server is otherwise ninety schemas in every request's prefix. `Server.RegisteredTools` is the filter and `Toolset.index` is the *only* caller that decides membership from it, which is what keeps `Definitions`, `Gated`, `Preview`, `Lookup` and `Execute` agreeing; a tool left out still has a name and a description, so `shhh mcp show` lists it marked `not registered` and `mcpOffering` says "12 tools, 78 not registered". Don't filter in `listTools`: the names would shift with the selection, and the screen a person reads to pick names would stop showing what they are picking from. `Server.Call` flattens a result with `mcp.Flatten` (text as is, binary as a one-line notice, structured content as the fallback) and returns `IsError` as a Go error so the agent reports it like any failed tool.
-
-**All three halves of a server's catalog are read, and each is reached its own way.** `Server.listAll` asks for tools always, and for prompts and resources only when the handshake declared them — a server that never declared prompts answers `prompts/list` with a protocol error — and only the tools decide whether the dial succeeded: a listing that failed leaves the tools registered rather than losing the server. Prompts are commands, not tools: `mcp.PromptName` is `<server>:<prompt>` through the same `joinName` as `ToolName`, `Toolset.Prompts`/`Toolset.Render` are what the session reads and fills one in with, and `mcp.PromptBlock` deliberately does not name them — the model has no way to invoke one. Resources are one tool for every server, `mcp.ResourceToolName`, whose whole schema is a `uri`: `Toolset.resolveResource` takes an exact match first and then a unique scheme among the listed URIs, so a server's own addressing space is reachable past the handful it enumerated, and an ambiguous scheme is refused rather than guessed. **`Toolset.ReadOnly` and `Has` answer true for it whatever the servers are marked**, which is the whole of how it auto-runs: the TUI's `requiresApproval`, the headless gate in `print.go` and the transcript's rail all read those two, and `Gated()` never names it. `WrapReadOnlyExecutor` is the one place that narrows it, to the read-only servers, because what a child was handed is a set of servers. `mcp.FlattenResource` gives a blob the same `binaryNotice` a tool result's embedded resource gets.
-
-**A transport that dies is noticed once, and a call can be given up.** Every request a server answers goes through `Server.noticeIfDead`, which is the only place the two kinds of failure are told apart: `transportFailure` is `sdk.ErrConnectionClosed` or the `io.EOF` a connection retires its outstanding calls with, and everything else — a `*jsonrpc.Error`, a result with `IsError` — is a live server saying no. A transport failure calls `Server.markDead`, which nils the session under `s.mu` and kills the process, so every later request short-circuits through `Server.closedErr` with the sentence the model needs rather than the transport's words ([`docs/capabilities/mcp.md#a-server-that-dies-is-noticed`](docs/capabilities/mcp.md#a-server-that-dies-is-noticed)). The tools stay registered on purpose: drop them and the name falls off the executor chain and comes back as "unknown tool". `Toolset.Refresh` takes the death the way it takes a re-listing — `Server.takeDeath` is `takePending`'s twin, once — parks it for `Toolset.Deaths`, and reports movement, which is what makes `mcpToolSources` grey the rail's row and `mcpDeathNotes` write the transcript line; both are read through `chat.MCP.Restate`, one call so the row and the line cannot disagree. `wrapErr` wraps with `%w` and not `%v` **because the caller matches on the cause**: `Toolset.givenUp` turns the context package's words into a sentence naming the server, the tool and the bound it passed, and a flattened chain would leave it reading that back out of a string. Every dispatch goes through `Toolset.dispatch`, which bounds the request by `Definition.ToolCallTimeout` (config `mcp.call_timeout_seconds`, or the server's own `call_timeout_seconds`, which wins) and puts its cancel on `Toolset.calls` — the register `Toolset.AbandonCalls` reaches, wired to `chat.MCP.Abandon` and called from `cancelStreaming` and `quitNow` beside `Fetcher.AbandonWaits`, because a tool executor is handed a name and arguments and no context at all. The `end` `dispatch` returns must run on the abandoned path too, or `inflight` never returns to zero and the toolset takes no further re-listing for the session.
-
-**A list-changed notification is taken at a round boundary and never inside one.** The three handlers on `sdk.ClientOptions` call `Server.relist`, which re-lists in the background and parks the result in `Server.pending`; `Toolset.Refresh` swaps it in and rebuilds every table through `Toolset.index`, and does nothing while `Toolset.inflight` is above zero — `Execute` and `resolveResource` bracket every dispatch, so a catalog cannot move between a call and its result. The session calls `Refresh` from `submitInput` (`internal/ui/chat/command.go`); the inflight guard is what makes that safe, since a line submitted mid-turn is steering. The two headless drivers go through `mcpTurnBoundary` (`internal/cli/mcp.go`), which is the refresh *and* the drain — `runPrintSession` on both sides of `Headless.Run`, because an unattended run is one turn and a server that went mid-run has no later boundary to be said at, and `serveLoop.Run` at the head of each served turn. **What it does not move is anything the model was already told** — the tool list *and* `mcp.PromptBlock`'s resource lines both went into the request at `attachMCP`, and `promptExtra` is rebuilt only at a session boundary, so a prompt a server adds is typable on the next line and a resource it adds is the model's from the next session. Don't write a comment or a doc line claiming the resources move live for the model; they move in the toolset's own tables, which is what makes the tool work if it is asked and what `/mcp` lists. `Server.relist` bounds its background listing with `Definition.StartupTimeout`: without it a server that announces a change and hangs parks the goroutine for the session and, because `Server.listing` admits one re-listing at a time, swallows every later notification it sends. Because the tables are rebuilt off the transport's goroutine, every reader of them — `Has`, `ReadOnly`, `Definitions`, `Lookup`, `Preview`, `Gated`, `Servers` — takes `ts.mu`; `Toolset.sorted` is the unlocked half for callers that already hold it.
-
-The CLI (`internal/cli/mcp.go`) owns every door: `openMCP` in `runChatSession` and `runPrintSession` (after the store opens, and before the toolbox block is built), `Toolset.WrapExecutor` beside web/lsp/structural, `Toolset.Gated()` registered as `chat.GatedPreviewFunc`s (so a non-read-only server's call goes through the ordinary approval queue as `ActionOther` — Ask in every mode, classifier in auto, Deny in plan), `chat.MCP{Has, ReadOnly, Manage, Sources, Prompts, Render, Refresh}` via `Model.WithMCP` (`Sources` is `mcpToolSources`, what the rail's `toolsBlock` and `/status` name; `Prompts` is `Toolset.Prompts` itself — a call rather than a value, because a server can change what it publishes), the headless gate and approver in `print.go`, and `ReadOnlyDefinitions` for children in `subagents.go`'s `newEnv`. Trust is not this package's any more: `mcpOptions` reads `projectTrust()` (`internal/cli/trust.go`) and the row behind it is `storage.ProjectTrusted/TrustProject/DistrustProject` on `project_trust`, keyed by repository root alone. `shhh mcp` is `doctorCommand`'s screen with `Title`/nouns (`runDoctorScreenTitled`) over `mcpProbes` — one probe per server whose verb is the transport — and `mcpFinding` is the reading, including the `[a] trust` offer, which trusts the checkout and says so; `mcpListing` is the no-TTY text and `/mcp`'s answer with words after it. Bare `/mcp` and the rail's TOOLS door open the tools screen (`internal/ui/chat/tools.go` over `components.ToolsScreen`), which reads `chat.ToolSources` — `sessionToolSources` in `internal/cli/toolsources.go` — again on every frame: a server row is `mcpToolSources` for the state and `mcpServerRow` (the listing's own row) for the words, and `restateServers` hands what the screen read back to `MCP.Sources`, so the rail it closes onto agrees with it. What will bite you: its `[a]` goes through `ToolSources.Trust`, which is `trustManager` — the writer behind `/trust` — not through `MCP.Manage`, whose `trust`/`distrust` only say where the answer is given. The transcript maps a server tool to verb `mcp`, kind `components.ActivityRemote` (⇄, rail) unless `MCP.ReadOnly` says it is a read (`activity.go`). `prompt.Toolbox` knows nothing about these tools: `mcp.PromptBlock` is a section of its own with the server's `Instructions` and the resources it publishes by uri, and children get `ReadOnlyPromptBlock`. Both are bounded per server — `MaxInstructionsBytes` cut at a line boundary, `MaxPromptResources` with "…and N more" under it — and the cuts read only that server's own catalog, because the block is in the cached opening every round repeats and a budget shared across servers would re-cut one server's words when another changed. The block also says once that the quoted lines are the server's own claim; that sentence is the framing, not decoration, since the text is third-party prose landing beside the person's instructions. A server's prompts reach the session as commands through `internal/ui/chat/mcp.go`: `mcpPrompt` is the dispatch `runCommand` tries before the skill names, `mcpCommandMatches` is the tail of `commandMatches`, and `lookupCommand` falls through to `mcpPromptCommand` so argument completion, the exact-match focus rule and the idle-only check see a prompt as the command it is. The arguments are `name=value` in any order — the protocol gives them no order and no schema — checked by `mcpPromptValues` before the request rather than by the server a round later, and `Prompt.Usage` is the one rendering of the usage line the menu hint, the listing row and that refusal all quote. `runMCPPrompt` renders off the UI goroutine and lands as `mcpPromptMsg` in `turn.go`; `applyMCPPrompt` starts a user turn on the text, or queues it as steering while the agent works, which is what `activateSkill` does with a skill's content and for the same reason.
-
-### Hooks
-
-`internal/hook` runs the person's own commands at the seams the session already has ([`docs/capabilities/hooks.md`](docs/capabilities/hooks.md)). A `hook.Entry` is one hook as a file writes it — `event`, `matcher`, `command`, `timeout` — in the same four fields in the config file's `[hooks.entries.<name>]` and in a checkout's `.shhh/hooks.json`, and `hook.Load(userEntries, userSource, projectFile)` builds the `Set`: names sorted, a project entry shadowing a user one, and an entry that will not build named in `Diagnostics` rather than dropped. `projectFile` is `""` where the checkout is untrusted — the trust answer is the caller's (`hookSet` in `internal/cli/hooks.go` asks `projectTrust()` for the root *and* the answer, so a session cannot load under one and report the other). `hook.NewRunner` answers `nil` for an empty set, and every seam is nil-safe, so no surface checks before it asks.
-
-**The tier rule is the invariant, and it is held by there being nothing to break it with.** `hook.Response` has four fields and none of them names a tool, so a `pre_tool` hook on `read_file` can refuse it or rewrite its arguments and can never make it a write. The seam sits *inside* one tier's dispatcher and never in front of two, and `Runner.WrapExecutor` is that seam written once for both surfaces: it takes a `gated` predicate, skips the seam *in front of* a call the surface will put to a decision, and keeps the one behind it (a hook behind a call has no tier to break — the call has already run). `Model.hookExecutor` passes `requiresApproval`, which is why `WithHooks` is the last thing the session builder calls, after every registration that decides what is gated; `runPrintSession` passes its own `gate`, resolved when a call is dispatched because it is assembled after the chain. The gated tier's own seams are `startPreToolHook`/`finishPreToolHook` in `advanceApprovalQueue` — off the UI goroutine exactly as the classifier is, re-entering at `armApprovalDecision` rather than at the top of the queue, so the containment refusal and the deny list are not asked twice — and `hookApprover` around `headlessApprover`, which is the whole dispatcher for that tier in an unattended run and therefore fires *both* seams. `updated_input` at the card rebuilds the request through `buildApprovalRequest`, so the preview shows what will run. The two tools no executor ever dispatches, `write_file` and `edit_file`, meet the seam behind them on `hookPostMutation`, joined to `lspMutationHook` by `chainMutation` since the model holds one such field and two things want it — which is why `hookApprover` skips a mutating call's post seam.
-
-**Nothing decides yes on a failure, and a hook's `allow` decides nothing at all.** Exit 2 refuses; every other non-zero exit, and a hook that reaches its ceiling, is `Verdict.Failed` — an ask where the call was going to be put to a person (`approvalRequest.mustAsk`, read above the batch approval and the mode), a note where it was not, and `hook.AskedResult` in `hookApprover`, which stops the call and says it was an ask rather than borrowing the refusal's permanence. `Verdict.Notes` is what the person hears and `Verdict.faults` — the failures among them — is what `Verdict.Lead` sends to the model, because a `note` is documented as never reaching the model and joining the two would send one the moment some other hook on the same seam broke. `Config.HookCeiling` cannot be turned off and cannot exceed the command ceiling, which is the one place a hook is bounded more tightly than a command: `turn_close` runs on the goroutine drawing the screen (deliberately — a hook that fired after the turn had gone back to the input would be closing nothing), so the ceiling is what keeps a hook from being a session that has stopped. `Verdict.Decision` never carries `allow`. A hook is deliberately **not** run through `internal/runner`: it needs the payload on stdin, and that runner hands a command still printing at its ceiling to the process supervisor, which is the wrong ending for a seam something is waiting on. `hookExec` (`internal/cli/hooks.go`) is the small exec instead, wrapped by `chat.Containment.Wrap`, asked per run so a scope granted mid-session reaches a hook too. That is why both surfaces assemble the runner *after* `buildContainment` and join a `session_start` hook's context to the already-built `env.sysPrompt` (and to `session.promptExtra`, so the next `/new` carries it) rather than folding it in before the prompt: a hook running on the host while the assistant's commands run in a container would be the hole containment was turned on to close.
-
-**The payload is the `--output jsonl` event's shape**, field for field, so a hook author learns one vocabulary; `TestHookPayload_SharesTheEventStreamsSpelling` holds `hook.Payload` and `jsonEvent` together, and the decision and outcome words are held equal to `observe`'s by tests — the package declares its own rather than importing them, because `internal/config` imports this package and should not acquire the provider and the whole tool set to know two words. The five seams: `runChatSession`/`runPrintSession` for `session_start` (before the system prompt, whose extra it joins) and `stop` (after the program returns, when there is no screen left to hold up), the two dispatchers for the tool pair, and `appendTurnClose` for `turn_close` — the one seam that runs on the goroutine drawing the screen, because every path back to the input goes through it and none of them carries a command back. The other four are two places in the loop. A child's life is `subagent.Env.Start`/`Stop`, called in `Supervisor.run` — the start before the first request, the stop in the done path *before* `finish` (where a refusal goes back in through `Supervisor.Steer` as `SteerFromHook` and the loop takes the next turn) and in `finish` for every other ending — filled by `childHookStart`/`childHookStop` in `internal/cli/hooks.go`; a child's `agent` is an object spelled like `jsonAgent`, because the stream's `agent` is already one. A compaction is `agent.Compactor.Before`/`After` for every round tail that drives one (`hookCompaction`: the `-p` run, a served session, a child through `Env.Compaction`), always `auto`, so `Runner.PreCompact` turns a refusal there into a note; the session's own is `startCompact`/`finishPreCompact`/`postCompactCmd` in `internal/ui/chat/context.go`, off the UI goroutine as the pre-tool seam is, and only a `manual` one can be refused. `jsonlStream.compacted` is the stream line carrying the same `trigger`/`before_pct`/`after_pct`.
-
-### Backlog
-
-`internal/todo` is the project backlog ([`docs/capabilities/todo.md`](docs/capabilities/todo.md)): `todo.Root(cwd)` keys it on the nearest ancestor holding a `.shhh` directory, then on the enclosing repository root — that is `project.Root`, and `project.RootFound` is the same answer with whether anything in the tree marked it, which is what lets the backlog know it is standing nowhere; `project.InRepo` is the same walk asked only whether a repository was found — and, where nothing marked a project, on `todo.Elsewhere`: the root `todo.root` names, else the global backlog beside the settings. `todo.Hold` states the pair once, from `internal/cli/root.go` through `backlogElsewhere` in `internal/cli/todoroot.go`, because every surface asks `todo.Root` and only the command tree reads a settings file; `todo.Dir` answers with the global root itself, since nothing but the backlog is kept there, `todo.Load(profile, root)` reads `.shhh/todo/*.md` and `.shhh/todo/done/*.md` into a `Store` whose `Items` are in `todo.Less` order (priority, created, slug) and whose `Ready()` is open items with every `depends_on` in the archive. The header reader in `header.go` keeps every line's text so `SetStatus`/`SetField` rewrite one line and nothing else; `Render` is only for a new file. **The words on an item are a `todo.Profile` and never a constant**: `profile.go` holds the noun, the ordered `Field`s with their `Value`s (each with the gloss a prompt states it by and the letter a compact row draws it as) and the name of the grading field, `BuiltinCode()` is the vocabulary a checkout of code is written in, and every reader — `Parse`, `Render`, `Load`, `Create`, `Extractor`, `Drafter`, `chat.Todos`, `todoProfile()` in `internal/cli/todo.go` — is handed one rather than reaching for a default, because there is none. `Item.Fields` is the profile's fields by name and `Item.Grade()` the value of the grading one; `Item.Priority` stays a member with a rank of its own, since `Less` is one rule for every backlog and a profile that could reorder it would make two projects' ready lists disagree under what reads as one rule. `Profile.GradeRank` is what `run` reads — position on the scale, never the word — so `Rounds`, the self-review threshold and the lane split work on a scale of two grades as well as three. Loading is lenient the way skills are: a file that cannot be read at all — no header, no title, an unknown status — is a `Store.Unreadable` entry (and the same sentence in `Diagnostics`, which is what the printed listing reads), and a value merely off its field's scale is a warning on the loaded `Item` — the grade is dropped (a run must not spend against a word the profile cannot rank), priority falls back to its default (the list is ordered by it), and anything else is kept as the file wrote it. The `Unreadable` half exists so a surface can draw the file as a row: a list that dropped it would say the work is gone. `Reopen` is the way back out of the archive — the reverse of `Archive`, checked before the file is moved, and it keeps the report. Slugs are validated by `todo.ValidSlug`, which is the grammar and nothing else — lowercase letters, digits, single hyphens, a length cap; a name a project reserves is `Profile.SlugRefuse`, a pattern the profile carries, asked only by `Create` because that is the one place a slug is chosen and every other verb takes one a file already has. **A slug shaped like a letter, a hyphen and three digits is a slug like any other here**: shhh's own `make docs-check` is what keeps a planning identifier out of this tree, and the refusal that used to duplicate it sat in a package every project loads. `Create` writes `.shhh/todo/.gitignore` ignoring `.run/`; whether the backlog itself is committed is the user's call and nothing in shhh stages it. `sprint.go` is the set being worked — `.shhh/todo/sprint.md`, the item header grammar over a name/status/created/session plus a goal paragraph and a `## Items` list of slugs, read by `LoadSprint` into `Store.Sprint` and skipped by `readDir` so it is never loaded as an item. An open sprint is what `Ready`/`Next` answer from, in the file's order (`readyAll` is the unscoped list, and what a proposal is drawn from); a slug that is not ready is skipped rather than offered, and `SprintEntries` is where every surface reads each slug's state from. Writes are line edits like an item's: `SprintAdd`/`SprintDrop` move one bullet, `SprintSetGoal` replaces the block above `## Items`, `SprintSetStatus` goes through `editHeader`. `CreateSprint` refuses a name `done/sprints/` already holds and the chat picks a free one with `freeSprintName`, because a sprint that cannot be filed under its own name never closes and goes on scoping `Ready` to slugs that are all finished. `CloseSprintIfDone` is called after every archive — `todoManager`'s `done` case and `todoRunDone` — and moves the file to `done/sprints/<name>.md` with `SprintNotes` at the top and each item's `## Report` copied under its slug; the notes are the set as release notes (title, `ItemSummary`, `ItemCommit`, then what was deferred) and they go on the report page too, because a closed set's next act is a tag message somebody pastes — `CommitLine` is written onto the item at archive time by both drivers rather than asked of git later, since whether `.shhh/todo` is committed at all is the project's call; `SprintProgress` leaves a slug the backlog no longer holds out of both halves of n of m while `SprintFinished` still counts it as accounted for. Grooming is `internal/todo/groom.go` — the closed `Verdict` set, `Groom` reading a turn's marker blocks against the file and resolving each claim to a line, `Accept` writing the accepted ones (a header field through `header.set`, a body line where it stands, and `groomed: <date> @ <short head>` as the last line of all) — **one physical line takes one accepted change**, because two verdicts can name one line (two finished dependencies on one `depends_on`) and each was written against the line as it originally stood, so the rest come back as `Unwritten` for the surface to name rather than being written over each other, `Behind`/`Stale` counting how far the tree has moved since a reading with `git rev-list --count`, and `SaveReading`/`GroomingBlock` keeping the accepted reading at `.shhh/todo/.run/<slug>.groom.json` so `run.Options.Groomed` can hand it to the research stage instead of paying for it again; the prompt is `run.GroomPrompt` and the card is `internal/ui/chat/todogroom.go` (`todoGroomAfter` in the `Update` tail beside the runner's, a `components.MultiSelect` on `stateTodoGroom` whose rows are `components.LineChange` diffs of one line each, and whose last row is the stamp — which is what makes "written only when the person accepts" a fact about the card rather than a promise). `todo.Stale` is asked in `reloadTodos` and nowhere near a frame, because it is a git call per groomed item. Planning is `internal/todo/plan.go` — `Store.PlanPrompt` (the candidates with their headers, what each unblocks and the accepted reading of each, so the planner reads those rather than the tree twice) and `ParsePlan`, whose marker blocks are the set in order with a line each, a `goal:`, a `release:` from a two-word closed set and `out:` lines from the four-word `Omissions` set; it is here and not in `run/prompt.go` because planning a set is not a stage of working one. `Plan.GoalText` is what goes in the file — the sentence and the release line, never a header field — and the reasoning lines stay on the card. `SprintBudget` is a list of grade allowances in the profile's order rather than a map, so a budget states itself back in the order somebody typed it, and its `Fits` refuses a budget no ready grade can spend before a turn is paid for, and `ParsePlan` moves what overran the budget into the left-out list as `too big`. `internal/ui/chat/todosprint.go` is the sprint in the session: `sprintBoard` builds the `components.SprintBoard` the screen's sprint tab draws, `startTodoSprintPlan` queues a grooming pass over the candidates with no standing reading (`todoGroomState.planAfter` is what carries the plan across it) and then `startSprintPlanTurn`/`todoPlanAfter`/`openPlanCard` — the `Update` tail hook beside the runner's and the groomer's — put a `components.SprintPlan` on `Model.sprintPlan` and open the screen on that tab, and `sprintReportDoc`/`sprintReportPage` write the closed set as a `reports.Document` through `Todos.PublishReport` (wired from `internal/cli/session.go` to `Publisher.Publish`, which is the non-model door: it validates and stores, freezes no freehand and opens no browser). The plan lives on the model rather than on the screen because its `[g]` hands the keyboard back to the input, and a proposal that died with the surface would have to be planned again; `Model.sprintClosed` keeps the just-closed sprint for the same reason — the file is renamed into the archive the moment it closes and the board's report row is the only place the link survives it. `run.Options.Sprint` carries the goal into `State.Sprint`, which only `researchPrompt` reads. `shhh todo` (`internal/cli/todo.go`) prints the store, and `todoVerb` there is the one implementation of the textual subcommands: `todoManager` wraps it for the session's `/todo` (a `todoNotFound` becomes the mistyped-name row, a `todoUsage` the usage line, anything else an `Error:` line), and the cobra verbs registered beside `newTodoCmd` — `ready`, `next`, `block`, `open`, `done`, `drop` over `newTodoStateCmds`, plus `sprint` (with `plan` under it, which spends one turn through `todoSprintPlanRead` and writes nothing at all — not the file, not a reading), `run` and `show` — hand the same error to fang so a script has the refusal in its exit status. `todoHeld` is the one refusal only the command surface could have needed and both get: `run.HeldBy` reads the item's checkpoint and then the sprint's, because a sprint records the item it has taken before that item has a checkpoint of its own. `todo_json.go` is `--json` on the listing verbs (`todoDoc`, the store as the screen has it — state, ready, waiting, the sprint, diagnostics and the per-item warnings), and `todoShow` splits on the destination: `report.Mono`/`report.Width` and `internal/ui/markdown` for a terminal, the item file byte for byte for a pipe. The chat side is `internal/ui/chat/todo.go`: `Todos`/`WithTodos` wiring from `internal/cli/chat.go`, a cached `Model.todoStore` reloaded by `reloadTodos` on the events that can change a file (a `/todo` command, the editor returning, a turn ending in `turn.go`) and never per frame, `openTodoEditor` reusing the draft editor's `editorArgv`/`editorRefusal` with its own `todoEditorDoneMsg` so the item file is never removed, and `inspectorTodo` feeding the rail's `todoBlock` (`internal/ui/components/inspectortodo.go`, between PLAN and CHANGES). Bare `/todo` and `keys.Draft.Backlog` open `components.BacklogScreen` on `stateBacklog` — a pane overlay in the register like the context surface. It has three tabs (`backlogTabItems`/`backlogTabSprint`/`backlogTabDone`) and `swapTab` skips the sprint one where `Board` and `Plan` are both nil, so the key never lands on an empty tab. `components/sprintboard.go` is that tab: `SprintBoard` is the head (goal, `SprintMeter`, spend, the block that stopped it, what comes next, the report page) over rows whose `BacklogRow.Note` replaces the computed state field, because where a slug stands in a set is the host's reading and not one the row can compute. `SprintPlan` is the proposal drawn there, with `SprintPlanOut` folded under the set behind `keys.Sprint.Left`; it holds the keyboard through `updatePlan`, which is why its keys are `keys.Sprint` — a surface of its own in the register — and why `j/k` works on the one screen whose list moves on the arrows alone. The component owns no backlog semantics: a key resolves to a `BacklogCommand` and `todoScreenAct` carries it out, three acts closing the screen (editor, run, new item) and the rest going through `todos.Manage` — the same `todoVerb` a typed `/todo` reaches — before `refreshTodoScreen` rebuilds the rows from a reloaded store. `Prose` is injected rather than imported because `internal/ui/markdown` imports `internal/ui/components` for the palette, so a component reaching for the renderer is an import cycle; the session wires `mdOptions`, and a screen with none draws the file's own lines. `BacklogScreen.ReadOnly` is `Model.working()`: the state keys go grey with the reason above them rather than being pressed and refused. Its keys are `keys.Backlog`, and it is the one list here whose pointer does not move on `j/k` — `k` cycles one flattened list of every field's words (`BacklogField`/`BacklogValue`, handed over by `todoScreenFieldSet`, since the component may not import `internal/todo`) while `p` keeps the ordering field to itself, and `TestBacklogMovementLeavesTheFilterLetters` holds the two apart. A bare `/todo add` is `internal/ui/chat/todoadd.go`: `todo.Extractor` (`internal/todo/extract.go`, the summarizer's shape — tool schema, text fallback, untrusted digest, no tool output) runs as a background command and lands as `todoProposalsMsg`; the card is a `components.MultiSelect` on `stateTodoPropose` with everything checked, and `writeProposals` resolves `depends_on` titles to slugs over the accepted set, dropping and naming what matches nothing. The reading is billed as `meter.SourceBacklog` and uses the session model. `/todo new <sentence>` is that file's other door: `todo.Drafter` is the same schema, the same `ExtractToolName` tool and the same `ParseProposals` over one sentence instead of a digest — both go through `readProposals`, which is why the loop lives beside neither type — and it lands as `todoDraftMsg` on `stateTodoDraft`. That card is a `components.Select` whose rows are the header fields: `SelectOption.Values` is the scale a row steps through on `keys.Select.Toggle`, `Select.Body` is the item's prose under them (folded before the rows are, since the rows are what a key lands on), and `Select.Warning` is the pinned line about a dependency that names nothing. The `waits on` row opens a `MultiSelect` over the backlog with `AllowNone` set, because checking nothing there is how dependencies are cleared rather than the slip it is elsewhere. `todoDraft.from` is the discriminator: -1 is a draft from a sentence, where `e` hands the item to the editor over a temporary file (`writeTodoDraftFile`, `todoDraftEditorDoneMsg`, `todo.Parse` reading it back, removed on the way out) and `enter` writes it with `writeTodoDraft` — its own writer rather than `writeProposals`, because the draft carries a body the editor may have rewritten; anything else is a row of the `/todo add` card, opened by that card's `e` (`MultiSelect.Actions`), where `enter` puts the header back on the row and sets `state` to `stateTodoPropose` directly, since `leaveSurface` hands the screen to the turn rather than to the surface underneath. The backlog screen's `n` composes `/todo new ` into the draft box: a draft is made from a sentence and the screen has nowhere to type one. `observe.SignalTodo` with `TodoNew`/`TodoAdd`/`TodoEdit`, `GroomReason` and `PlanReason` is how the record says the backlog grew, was read or was grouped into a set, separately from `SignalRun`, which is the runner working an item that already exists. **Both sessions have it** ([`docs/capabilities/chat.md#the-backlog-is-here-too`](docs/capabilities/chat.md#the-backlog-is-here-too)): `WithTodos` is wired for a conversation as well and `todosEnabled` asks only whether `Manage` is set, so what a read-only session cannot do is `Pipeline.Refuse` against `todoRunCan` — `Changeset` and `Runner` are false there, and the refusal names the step. `PipelineStep.Persona` is the agent profile an agent step's child takes; `todoReviewRole` spawns it where `Supervisor.Profiles()` has one by that name and falls back to `subagent.RoleReviewer` where it does not, which is every coding session. A `FinishNote` run goes through `run.FileNote` rather than `run.File`, which writes the report to `notebook.Store.Write` signed `run.NoteAuthor` and titled with the slug before the archive; `Options.Notebook` is false without one and `Pipeline.Noteless` turns the finish back into an archive.
-
-The runner is `internal/todo/run` (a pure state machine: `State`, `Step`, `First`/`Observe`/`VerifyResult`/`Committed`/`Block`, the step prompts in `prompt.go`, marker-line parsers, and the `.shhh/todo/.run/<slug>.json` checkpoint). **Which steps a run has is a `Pipeline` and never a switch**: `step.go` holds the closed set of kinds the code carries out — `turn`, `agent`, `fan-out`, `command`, `gate`, `finish` — each with the answer shape it appends (`PipelineStep.Shape`, built from the kind and the step's `Reads`) and the reading of it `Observe` dispatches to; `pipeline.go` is the ordered list, its `Strip`/`Place` (the steps with no `Under`, which is why a division and a remediation round draw under the step they belong to), its `Next` (which passes over the step that names `Back`, since a remediation is entered from a failed verdict and nowhere else), its `Refuse` (what a session must be able to do, asked per step and only of the steps that always run — `Can.Checks` is the one member that is a fact about the project rather than the session: a `command` step with no `Command` of its own runs whatever the project said checking means, so a project carrying no `.shhh/quality.json` is refused before the first turn, read once by `newTodoDriver` and by `todoProjectNamesChecks` on the chat side, while a step that names its own command asks for nothing; `run.NothingVerifies` is the backstop at the step itself, for an item whose own `Tests` were what verified it and are gone), its `Digest` on the checkpoint beside the wordings', and `Validate`, which refuses a run with no finish, a gate after a step that writes, a division with no turn to integrate it, and a commit in a run whose steps never write. `run.BuiltinCode()` in `builtin.go` is that machine as a pipeline; `Options.Steps()` is what a driver hands over, with `NoCommit` turning the commit finish into `Archiving()`'s archive — the setting keeps its name and the run keeps its shape. A rule stated by grade (`Pause`, `Rounds`) is read from both ends of whatever scale the profile has (`scaleIndex`), so one pipeline gates a two-grade backlog as it gates a three-grade one. `run.Commit` in `finish.go` is the one commit both drivers make and `run.File` the one archive, report and commit line they write onto a finished item. The chat side is `internal/ui/chat/todorun.go`, which is the driver with one file per stage beside it (`todorunverify.go`, `todoruncommit.go`, `todorunreview.go`, `todorunfanout.go`, `todorunpause.go`, `todorunend.go`), the transcript row in `todorunrow.go` and the loop over a set in `todorunsprint.go`: `startTodoRun` sets the item in progress and sends the research prompt in plan mode; `todoRunAfter` is the `Update` tail hook (beside the summary's close) that reads the stage's answer when the turn is truly over — not during a round-limit pause or a decision card — and `todoRunStep` carries out the step handed back; `todoVerifyCmd` runs `State.Tests` (the `## Tests` bullets snapshotted by `run.Start`, never re-read from the file the model may have edited) and `Gate.Run` — quoting both ends of each command's output (`quality.Excerpt`) with the id `Evidence.Keep` spooled the rest under, and blocking on `run.NothingVerifies` where an item lists no tests and no gate runs, which is the same answer the unattended runner gives — `todoCommitCmd` hands `todoRunPaths` to `run.Commit`, `todoRunDone` archives with the report, `todoRunBlocked` writes the evidence. What will bite you in `run.Commit`: **`git diff --cached --quiet` has four exits and only one of them is about the index.** 1 is a staged difference; 127 is what `git` here reports for a binary that could not be started at all (an `*exec.Error` rather than an `*exec.ExitError`); and outside a repository the code moved between git versions — 128 for the refusal, 129 on 2.51, where `--cached` becomes a usage error against the `--no-index` fallback — so the repository is read from the filesystem with `project.InRepo` instead, which does not move. **A step prompt is an instruction, blocks and a tail, and only the first is a wording.** `run.Wordings` is a map keyed by step name — `standards`, each step's own, and `<step>_task` for an agent step's child — which is what lets `wordingKeys()` in `internal/cli/prompts.go` read the keys off `Pipeline.WordingKeys()` rather than out of a table of its own; it is the set the run was started with (`run.Options.Wordings`, from `chat.Todos.Wordings` or `todoDriver.wordings`, both out of `sessionPrompts.todo`); `stagePrompt` in `prompt.go` substitutes any `{{item}}`/`{{plan}}`/`{{answers}}`/`{{findings}}`/`{{diff}}` the wording names **in place, keeping the file's own spacing** — a substitution mid-sentence stays mid-sentence — appends the blocks it did not name after the instruction, and then appends the `after` pieces: the standards sentence, the commit style, and the stage's tail, the marker lines `Observe` parses, which arrive whatever the wording said. **The built-in wordings name their own placeholders**, which is what keeps an unconfigured stage reading as it always has (blocks first, the instructions about them after); a file that names none gets its blocks appended instead. `Wordings` is `json:"-"` on `State` and `WordingsAt` (its `Digest`) is what the checkpoint keeps, so `State.Continue` can say on the row that the files moved under a run. `readTheChange`, `diffBlock` and `commitStyle` are code, not wording, because whether there is a repository to read is a fact about the machine — and `commitStyle` is not placeable at all, so `{{diff}}` never means two things in one run. `GroomPrompt` takes no wording: a grooming pass is not a stage of a run. `run.Options` carries the two facts a run is started with: `NoCommit` (`--no-commit` on the command, or `todo.commit = false` reaching `chat.Todos.NoCommit` from `internal/cli/session.go`) ends the run at `State.archive` after a clean review, with a code-written report naming `State.Paths`; `Repo` is what every stage prompt that names a git command reads (`readTheChange`, `commitStyle`, the reviewer's task note), so a run outside a repository never tells the model to read a history that is not there. The run is drawn as one transcript row (`entryTodoRun`, `todoRunRow` in `todorunrow.go`): appended by `openTodoRunRow` when the run starts, told about every transition by `observeTodoRunRow`, and rendered by `todoRunRowView` from the machine's own `*run.State` rather than from a copy, so it moves as the run moves. What the row keeps of its own is `marks` — which strip stages this row watched go by — because a run continued from a checkpoint saw none of the ones below it and draws them as restored. `run.Strip`/`run.Place` are the stages and their order; `run.Step.Name` is the one word the record (`observe.SignalRun`) and the row both use for a transition, which is the stage for a model turn and the action otherwise. `/todo status` opens that row in reading mode rather than printing a summary, a blocked run's row names `/todo open <slug>` on itself (`todoRunRow.reopenLine`), and a blocked run's accepted follow-up is named on the row by `nameFollowUpOnRun`. The plan-approval card is suppressed while a run owns the plan-mode turn (`doneMsg` in `model.go`). `/clear`, `/todo stop` and the cancel chord on a stage turn end a run and put the item back to open (esc stops nothing — `cancelStreaming` is the one path that sets `todoRunCancelled`); plain text is refused while a run is going (`todoRunHoldsInput` in `command.go`), and a turn that ends without being the stage's (`todoRunTurn`) blocks the run. Review and commit turns run in plan mode. Phase-two gates: `afterResearch` pauses (`ActionPause`, `State.Paused`) for L always, for M on questions or a size upgrade, and blocks an S with questions; the chat's `openTodoPause` is a `components.NoteSelect` on `stateTodoPause` whose answers are `Resume`, `Replan(note)` (the note is appended to the item under `## Answers` and research runs again) or stop. For M/L the review is `ActionReview`: `startTodoReview` spawns `subagent.RoleReviewer` through `Supervisor.Spawn` with the diff in the task, `todoReviewDone` (hooked in `handleSubagentEvent`'s `EventDone`) reads `Supervisor.Report` into `ReviewResult`; no supervisor or a refused spawn falls back to `SelfReview`. A blocked run offers `todoFollowUp` on the proposals card (`openTodoProposals`). Resilience: `/todo run <slug>` on an in-progress item with a checkpoint calls `State.Continue` (the checkpointed stage restarts; `Session`, `PrevMode`, `Turn` are re-stamped), and a stage turn displaced by another turn (`turnCount != todoRunTurn`) goes through `stopTodoRunKeeping` — checkpoint kept, item left in progress — rather than blocking. **A stage turn that ended on a recovery row is not observed at all** (`todoStageStopped`, reading the `entryStreamDrop` the session drew): a `streamResume.truncated` row is continued with `continueStream` — the same `agent.ContinueAfterCeiling` the row's `[c]` sends — with the half kept in `todoRunState.carried` so `todoStageAnswer` returns both halves as the one answer, and a second ceiling in the stage blocks on `run.CutAtCeiling`; a wire drop takes `stopTodoRunKeeping` instead, because continuing half a sentence is the judgement the row offers a reader. The changeset store is per session, so `State.Paths` (snapshotted on every save) is what lets a continued run stage and diff what an earlier session changed; `todoRunPaths`/`todoRunDiff` union it with this session's records. Reviewer children are named from `State.Reviews`, never reused, because a killed child keeps its name in the supervisor. A large item goes through `StageSplit` (plan mode; `ParseLanes` in `run/lanes.go` checks 2–`MaxLanes` lanes with disjoint paths, none under the backlog, and `lanes: none` or a refused division falls back to `implementWhole`) and `StageFanOut` (`ActionFanOut`: `startTodoFanOut` spawns one `subagent.RoleWriter` per `Lane` in one supervisor batch, named `tw<Fanouts>-<lane>`, with `LaneTask` as its task and the lane's paths as its claim); `todoLaneAsk` in `handleSubagentEvent` auto-approves a lane's `AskPatch` and refuses one carrying an overlap warning (`LaneFailed`), `EventPatch` marks the lane landed (`LanePatched`), and the writer's `EventDone` is `todoWriterDone` → `LaneDone`, which blocks on an unfinished writer or one whose patch never landed and, on the last lane, sends the `integratePrompt` as the `StageImplement` turn. `State.LiveAgents` is what `endTodoRun`/`stopTodoRunKeeping` kill. `internal/todo/run/sprint.go` is the loop above a run: `run.Sprint` is a checkpoint of its own at `.shhh/todo/.run/sprint.json` — current item, done, attempts, cap, the set's running `Turns`/`Cost` (added by `Spent` at the session boundary, because the ledger is reset at every one and a sprint crosses one per item), and one of four closed endings (`SprintEmpty`, `SprintCapped`, `SprintBlocked`, `SprintStopped`) — and `run.Live(root)` is how every surface asks whether a sprint is going, so a corrupt or ended file reads as no sprint rather than as one nobody can end. It takes items from `Store.Ready()` and nothing of its own, which is what scopes it to the sprint file when the backlog holds one; `Peek` is that choice without taking it, which is what the board and the row after a session boundary both name the next item from. `internal/todo/run/sprint.go` is the loop above a run: `run.Sprint` is a checkpoint of its own at `.shhh/todo/.run/sprint.json` — current item, done, attempts, cap, and one of four closed endings (`SprintEmpty`, `SprintCapped`, `SprintBlocked`, `SprintStopped`) — and `run.Live(root)` is how every surface asks whether a sprint is going, so a corrupt or ended file reads as no sprint rather than as one nobody can end. It takes items from `Store.Ready()` and nothing of its own, which is what scopes it to the sprint file when the backlog holds one. `run.State.InSprint` marks a run the loop started: it arms the on-close gate for every stage (`closeGateArmed`), names the item in the turn-close notification (`sprintCloseWords`), and is what the rail's `on <slug>` row is drawn from. The chat side is `startTodoSprint`/`sprintNext`/`advanceSprint`/`endTodoSprint` in `todorunsprint.go`; `advanceSprint` crosses the session boundary through the same `startNewSession` `/new` uses, so one definition of a session ending serves both. **The sprint's state is on disk and not on the model**, read back through `run.Live` at each decision point rather than cached — which is why nothing in the rail's per-frame path touches it. The per-item wall-clock cap is `run.Sprint.Expired`/`run.TimedOut`, read at a stage boundary rather than by a timer — a stage is the smallest thing the machine can judge — and each driver supplies the duration itself: the headless one from `config.Config.TodoItemTimeout` (`todo.item_timeout_minutes`), the chat one from `chat.Todos.ItemTimeout`. `internal/cli/todorun.go` is the same loop with no TUI: `todoDriver` runs the machine and spends each `ActionPrompt` as one `shhh code --print --output json` in the checkout (`todoDriver.turn`, a field so the loop is testable without a provider), reads `.final` whatever the exit status and blocks on the child's `truncated` (`Headless.TruncatedReply` through `jsonTranscript`) with the same `run.CutAtCeiling` the session uses, blocks on `ActionPause` because there is nobody to ask, and takes the child's `gate` and `written` off the same transcript — `State.Checks(quality.Closing)` is set from the word the close reported and never from `exitDone`, since a turn that checked nothing and one whose checks passed both exit 0. **What a commit holds has one definition for both drivers**: `run.Contents(held, wrote, dirty, atStart)` in `internal/todo/run/tree.go`, the run's own writes (the session's changeset records, or the stage processes' `written`) unioned with `run.DirtyPaths` minus the baseline `State.Prestart` took when the item started — so a `gofmt -w` is committed and a stranger's edit is not, and `run.Committable` is the one place the backlog and the run's own spool are excluded. `run.PorcelainPaths` is untrimmed on purpose, because porcelain's first two columns are marks and a trimmed line moves the path. The spool is `run.MakeSpool`/`EvidenceDir` at `.shhh/run/<slug>/evidence`, an `evidence.OpenAt` store the driver hands the gate (`Runner.Evidence`) and points each stage's process at through `SHHH_EVIDENCE_STORE` (`evidenceStoreEnv`, read by `openEvidence`) — a lane gets no such pointer, since lanes run at once and one index written by several processes loses entries — and `run.ClearSpool` takes it away with the run. **The rest of `todoDriver.stageEnv` goes to every stage, lanes included**: `SHHH_PARENT_SESSION` is the driver's own observe row (`newTodoDriver` opens one of kind `todo`, `d.close()` ends it), which `startObserveRecorder` turns into a `StartChildAgentSession` so a sprint is one tree — and falls back to an unlinked row when the id names none, since `parent_id` is a foreign key — with `SHHH_TODO_ITEM`/`SHHH_TODO_STAGE` beside it for the split columns. `todoDriver.keepChat` gathers the `chat` and `resume` each stage's transcript reports and `settleChats` answers for them **once the item is over**, deleting them all unless `State.Stage` is `StageBlocked` — the decision cannot be taken per stage, because a run stops at `ActionVerify`, which spends no turn, several `carry` calls after the turn that wrote what failed the checks, so a rule applied as each turn came back would delete exactly the conversation the block is about. It carries a `.gitignore` of its own, or the run would watch its own bookkeeping move the fingerprint. **Its children are processes, not children of a supervisor** (`todoDriver.review`, `todoDriver.fanOut`): `ActionReview` spends the reading as one more `d.turn` whose prompt is `State.ReviewTask` with `reviewDiff` in it, bounded per file by `run.BoundDiff` so a twenty-file change reaches the reader as twenty files rather than as the last two whole — a fresh conversation given the change, which is the whole of what makes a second opinion one, and a reader that did not finish falls back to `SelfReview` on both surfaces rather than blocking finished work — and `ActionFanOut` makes a `subagent.Worktree` per lane before starting any of them, runs the lanes concurrently through `d.turn` with the copy's root as the directory, then lands the patches serially in lane order (`Worktree.Land`, all-or-nothing, so the second lane over one file is a `LaneFailed` and not a race). `d.turn` takes the directory for exactly that reason. Both need git, which is why `todoDriver.can()` answers `Supervisor: d.repo` and the fallbacks (`SelfReview`, `NoLanes`) are what a checkout that is not a repository gets. `subagent.NewWorktree`/`Land`/`Remove` in `internal/subagent/worktree.go` are the package's own `addWorktree`/`worktreePatch`/`applyPatch`/`removeWorktree` under exported names — not a second implementation, because the seeding is the delicate half. Its `exitBlocked` (7) joins the closed exit-code set in `internal/cli/print.go`. The `.shhh` path is a directory now: the context file is `.shhh/project.md` (`project.ContextFile`), `shhh init --project` writes it there, and a checkout still holding the old single `.shhh` file is a `shhh doctor` migration (`internal/migrate/project.go`), not something the context reader falls back to.
-
-**A parallel sprint is `internal/cli/todorunlanes.go`** ([`docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once`](docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once)): `todo run --all --parallel N` is `todoDriver.sprintParallel`, which takes items through `run.Sprint.TakeLane` — an item's claim is `todo.Item.Touches`, the `## Touches` section `Profile.Touches` names, and an item with none is taken alone once the lanes drain — and works each in `runLane`, a copy of the driver (`laneDriver`) whose `tree` is a `subagent.Worktree` and whose `root` is still the checkout. That split is the thing to keep straight: **everything that reads or changes the work goes to `d.tree`, everything that reads or changes the backlog goes to `d.root`**, and a new `d.root` in a stage's path is a lane working in the checkout. `todoLanes.mu` is the checkpoint's one writer (`SprintLane` running figures included); `todoLanes.land` is held by every landing (`todoLane.land`: `Worktree.LandPatch`, then — in `landCommit` — `run.Commit` in the checkout), every catch-up (`todoLane.catchUp`, which carries each of `todoLanes.landings` into the copy with `Worktree.Reseed` and blocks on a `*subagent.ReseedCollision`) and every `NewWorktree`/`Remove`, because git's own worktree administration is not safe run concurrently in one repository. What a landing hands the other lanes is the patch `Worktree.LandPatch` applied rather than the lane's own, because a merge or a regeneration lands something the lane did not write. A `*subagent.MergeConflict` at landing goes to `todoLane.integrateConflict` and nowhere else: it keeps the copy and blocks naming the files, because an unattended run has no supervisor to start an integration writer under and nobody to review one's patch. Every copy the runner makes (`runLane`, `fanOut`) is given `Worktree.UseGenerators(d.gate)`, and `d.gate.WrapIn` is built in `newTodoDriver` from the sandbox policy, so a generator runs contained in the copy it writes. The seam is `d.spendTurn`, not `d.turn`: `turn` is nil for the real process so a lane's copy asks as itself. A session's `/todo run --all --parallel N` is `chat.Todos.Parallel` → `todoParallelStarter`, the runner as a background process; the chat follows it off `run.Live` on `todoLanesMsg` and stops it through `run.RequestStop`, a file, rather than a pid.
-
-**A profile is a directory, and the five shipped are read out of the binary through the same loader a person's is** ([`docs/capabilities/todo.md#a-profile-says-what-the-work-is`](docs/capabilities/todo.md#a-profile-says-what-the-work-is)): `internal/todo/run/profilefile.go` is the grammar — `profile.toml` (the vocabulary as `name`/`noun`/`grade`/`slug_refuse` and `[[field]]` blocks, then the run as `[[step]]` blocks) beside a `prompts/` directory of one `<key>.md` per `Pipeline.WordingKeys()` — and `readProfile` takes an `fs.FS` so `LoadProfile(dir)` and `BuiltinProfile(name)` (`embed.go`, `//go:embed builtin`) are one path. **Every word a file may write is put to a closed set the runner owns**, so a mistyped kind, finish, pause rule, block or `reads` word is refused with the closed set it missed; `source.at`/`lineOf` put the file and the line on every refusal, because a table of words has no shape to search by. `Pipeline.Validate()` runs here and nowhere else at runtime, and `Profile.Reserved()` is what refuses a `slug_refuse` that will not compile — a pattern that reserves nothing while looking like it works. The file writes `blocks = ["item"]` where a wording writes `{{item}}`, `solo` and `always-when <grade>` as grade *words* (converted through `Profile.GradeRank`), and `[[field]] name = "priority"` with nothing under it as the placement of the one field a profile may not restate. **A wording file is the step's `Builtin`, so the profile's prose is what everything downstream calls the built-in text**: `Pipeline.Standards` carries the shared sentence, `Builtins()` is built from the steps, and `wordingKeys()` in `internal/cli/prompts.go`, `config init`'s scaffold and the `prompt_hash` all follow without knowing a file was read. A missing wording file stops the load; `WordingKeys()` is empty for a pipeline with no steps, so `checklist` scaffolds nothing. `Pipeline.Stated()` is what `Options.Steps()` falls back on (a caller that named no pipeline takes `BuiltinCode()`), and `Runs()` is the checklist case both drivers refuse before they spend anything; `Options.Notebook` turns a `note` finish into an archive through `Noteless()` where there is nowhere for a write-up to be read. Resolution is `internal/cli/todoprofile.go`: `backlogProfileFor(cfg)` in `PersistentPreRunE` holds one answer for the process — `.shhh/todo/profile/` behind `project.KindProfile` trust, then `<config dir>/todo/<name>/`, then the embedded ones — and `todoProfile()`/`todoPipeline()` are what every reader asks. An unknown name fails there, naming all three places; `backlogProfileIs` is a variable so a test can state an answer. The profile shows on the start screen (`chat.StartProfile`, named only when it is not `code`), in the tally (`BacklogScreen.Noun`) and on the doctor's prompts row (`profileLines`).
-
-### Saved chats
-
-A conversation autosaves to a slot of its own, and the slot is the store's to give ([`docs/capabilities/sessions-and-memory.md#a-slot-belongs-to-one-session`](docs/capabilities/sessions-and-memory.md#a-slot-belongs-to-one-session)): `newSessionName` (`internal/ui/chat/model.go`) is only the timestamp, and `ClaimChatSlot` is the insert that settles a collision, appending `(2)`, `(3)` when the name is taken — a look before the insert would hand two processes started in the same second the same name, which is the defect this replaced. `Model.WithDB` claims, `adoptSlot` moves the session between slots and gives an unwritten claim back through `ReleaseChatSlot`, and `quitCmd` does the same for a session that never saved. **`ListChats` inner-joins `chat_messages`, so a claimed slot is invisible until its first save** — without that, `--continue` would offer the empty slot the session had just minted. The store remembers `chatWrote`, a `chatWrite` per slot — the highest seq this process wrote to or read from it, and a `chatDigest` fingerprint of those messages — under a `chatMu` held across the whole save, record included: `saveChatTx` returns `ChatSlotConflictError` when the slot no longer holds what this process left there, `AutosaveChat` answers that by claiming a fresh slot and writing the conversation there, and `chatMoved` keeps a second refusal on the same slot from making a second copy. **The digest is what makes `saveChatTx` an append** ([`docs/capabilities/sessions-and-memory.md#a-save-writes-the-turn-not-the-conversation`](docs/capabilities/sessions-and-memory.md#a-save-writes-the-turn-not-the-conversation)): it writes only the messages past the stored seq when the new array's persisted prefix digests to what this process left there, and falls back to delete-and-rewrite when it does not — which is the rewind and the compaction. The seq alone would not do: a compaction can leave a slot exactly as long as it was. The chat model follows with `autosaveMovedMsg`/`noteSlotMove`, which re-points the observer's session link and resets the title reading, because the slot it was read for is somebody else's row now. **A new conversation is a new session** ([`docs/capabilities/sessions-and-memory.md#a-new-conversation-is-a-new-session`](docs/capabilities/sessions-and-memory.md#a-new-conversation-is-a-new-session)): `startNewSession` (`internal/ui/chat/model.go`) is the boundary and the only definition of what one resets — the autosave first in `quitCmd`'s own sequence, children cancelled, a backlog run let go of through `keepTodoRun` with its checkpoint kept, then the conversation, the changeset (`changeset.Store.Reset`), the seen map (`tools.ForgetAll`), the tree baseline (`agent.RestartTreeCheck`), the counters, the odometers, the summary, every screen a register row holds (one call, `heldScreens.keeping`) and the slot — `mintSlotKeeping` rather than `mintSlot` whenever a save is queued, because giving the old claim back deletes the row that save is about to write into. The half it cannot do itself is the `chat.NewSession` hook the host is handed at start (`WithNewSession`, wired in `internal/cli/session.go`): `observeRecorder.restart` ends the row and opens another under the same kind, provider, model and settings stamp, and `chatSession.systemPrompt` builds the prompt again from the checkout as it stands — the same function `buildSessionEnv` uses at launch, so the two cannot drift. `/clear` and `/new` are one command; over a turn that is not over (`turnInFlight`, so a held turn too) both draw the confirm quitting draws, through the one surface `openEndConfirm` builds with the act a yes carries out. The pressure card's `[n]` crosses the same boundary. `storage/chat.go` is the rest of the store: `SaveChat`/`SaveChatBranch`/`LoadChat`, `ListChats` with the generated `Title`, `SearchChats`, `RenameChat` (branches follow ids; a collision is `ChatExistsError`), `DeleteChat` (takes the descendants with it), `PruneOldChats`, `CountChatBranches` for the confirm, `SetChatTitle`/`ChatTitle`. Three views draw it ([`docs/capabilities/sessions-and-memory.md#housekeeping`](docs/capabilities/sessions-and-memory.md#housekeeping)): the `/chats` picker is `internal/ui/chat/chats.go` — the generic picker with `Select.Actions` offering `keys.Select.Delete`/`Rename`, a `components.Confirm` or a `textinput` row drawn under the card, the session's own slot as the `⊘` row (`protectedPhrase`), state in the `chatOps` value on the model; the browser is `components.ChatScreen`, hosted by `chatsModel` and `pickSavedChat` in `internal/cli/session.go` — `chatBrowseRows` is the store's half, and the row for a slot another session holds carries the mark and the sentence the picker beside it says; `shhh chats` (`internal/cli/chats.go`) is the browser bare and `list|show|search|delete|rename [--json]` with a verb. Titles ([`docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write`](docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write)) are `agent.Titler` (`internal/agent/title.go`, the summarizer's shape, `CleanTitle` bounds the answer) driven by `internal/ui/chat/title.go`: `titleCloseCmd` in the `Update` tail beside the summary's close, at most `titleAttempts` readings, only on an `isAutosaveSlot` name, written by `finishTitle` and carried by every autosave and `/save`; `/ui title` and `summary.title` (`Config.TitlesEnabled`, on unless set off) switch it. **The standing account is the other half of a listing** — two sentences on what the session was doing and where it left off, `agent.Accountant` (`internal/agent/account.go`, the titler's shape, revising `AccountRequest.Previous`) driven by `internal/ui/chat/account.go`: `noteAccountTurn` in `appendTurnClose` counts, `accountCloseCmd` in the `Update` tail asks every `Config.AccountInterval()` turns, and `closingAccount` is the reading a boundary and a quit owe, run inside `saveCmd` so it rides the save that leaves the slot. What will bite you: **the account *is* `compactSummary`** — the one value every save puts in the slot's `summary` column, so a compaction and an account are two writers of it and the later stands; `finishAccount` drops a reading whose `basis` is no longer the value it revised. The headless run revises it in `headlessChat.reviseAccount` before its save; every listing reads it off `ChatListEntry.Summary`. **A resumed coding session keeps the files it still owns** ([`docs/capabilities/sessions-and-memory.md#a-resumed-session-keeps-the-files-it-still-owns`](docs/capabilities/sessions-and-memory.md#a-resumed-session-keeps-the-files-it-still-owns)): change records persist with the slot (`internal/storage/changes.go`), and `changeset.Store.Restore` (`internal/changeset/changeset.go`) rehydrates them into the live store from `bindSlot` (`internal/ui/chat/options.go`) — a file whose After still stands is session-owned again, and one that has moved since is named drifted rather than offered for undo or commit. `CopyChanges` carries the rows to a fresh slot when autosave has to move (`AutosaveChat`), so a later resume of that sitting does not lose them. `resumeConversation` resets then restores, and `restoreTurnClose` (`internal/ui/chat/close.go`) puts the last owned turn's changeset row back on the transcript, which a rebuilt conversation otherwise has none of. **A conversation is told what the checkout looks like now on its way back** ([`docs/capabilities/sessions-and-memory.md#a-resumed-session-sees-the-tree-as-it-is`](docs/capabilities/sessions-and-memory.md#a-resumed-session-sees-the-tree-as-it-is)): `internal/ui/chat/reopen.go` is the whole of it — `ResumeContext` reads the slot's `storage.ChatResume` (the `summary` and `head` columns, written by every autosave beside the title through `SetChatResume`) and surveys the workspace, `resumeNotice` builds the user-role messages and the folded row from a `project.Info` and that state, and `resumeConversation` is the one path `WithResumedMessages` and `loadChatByName` both take. `project.Head` is the cheap half of the survey, asked for at every save so the slot records the commit the conversation was written down on; the moved-head line is the difference between it and `Info.Head`, and `movedPaths` reads what those commits changed so the line has a list of exceptions under it — bounded at both ends (`resumeMovedNamed` names them, `resumeMovedMax` is where a move stops being a list at all), and answering with nothing wherever git does, which leaves the message exactly as it reads without one. `ResumeContext` is a package function rather than a method because a front-end with no model — the unattended run handed a conversation to carry on — needs the same reading. **The reading is never stored with the conversation**: `stripResumeContext` takes it off at every save and at every load, so a slot cannot come back carrying a reading of a checkout that has since moved, rendered as something the person said; `injectResumeContext` shifts the rewind checkpoints by what it inserted, since a checkpoint is a conversation index. The `/compact` summary is carried on the model as `compactSummary`, set by `finishCompact` or by a landed account reading and cleared at the session boundary.
-
-**The offered next step is the titler's shape again, and never a message** ([`docs/capabilities/chat.md#the-next-step-is-offered-not-typed`](docs/capabilities/chat.md#the-next-step-is-offered-not-typed)): `agent.Suggester` (`internal/agent/suggest.go`, one request under `provider.ToolChoiceNone`, `CleanSuggestion` bounds the answer) driven by `internal/ui/chat/suggest.go` — `suggestCloseCmd` in the `Update` tail beside the account's, on `suggestRequest`'s evidence (the last close row, `workSteps`, `summary.last`, `compactSummary`, the last instruction), billed as `meter.SourceSuggestion` on `flowSuggestion` (`behavior.suggestion_model`). Only `runChatSession`'s builder calls `WithSuggester`, which is the whole of why a `-p` run, a served session and a child never ask. What will bite you: **`suggestionShown` is the one predicate** the ghost in `draftView`, the `[→]` on `frameHints` and the take in `suggestionKey` all ask, and `suggestionKey` runs at the top of `updateKey` so *any* key drops the offer (filed `observe.SuggestionIgnored`) before a surface answers it — a route added above it would take a key without dropping the offer.
-
-### Session observability
-
-`shhh observe` ([`docs/capabilities/sessions-and-memory.md#observations-are-what-the-session-did`](docs/capabilities/sessions-and-memory.md#observations-are-what-the-session-did)) is four layers. `internal/observe` is the contract itself — the `Observer` callbacks, the `Pos` an event happened at, and every code as a constant: `ClassFromResult` maps a failed result to its class by shape, `ReasonCode` a policy reason to its code, `ToolOutcome` is the pair a surface reports a result as, and all three are where free text is stopped from reaching the table. It lives below every front-end because a vocabulary each runner keeps its own copy of is a vocabulary that drifts, and nothing fails when it does. `storage/observe.go` is the tables (`agent_sessions` with provenance, the chat-session name and the `chat_session_id` reference every join uses, `agent_events` with `turn`/`round`) and the aggregate queries the dashboard draws; the event kinds are `tool`, `decision`, `turn` and `signal`. `internal/ui/chat/observe.go` is the chat model's adaptation to the contract — where its turn, round, ledger and close state are read off — and declares none of the vocabulary itself; `headlessObserver` in `internal/cli/print.go` is the same thing for a headless run, whose whole position is turn 1 and the round the loop has reached. `internal/cli/observe.go` is the `observeRecorder` that writes what the observer reports, the `stamp` of provenance (fingerprints, never the prompt or the path), and the `observe`, `observe compare --split <key>`, `observe session <id>`, `observe export [--transcript]`, `observe classify` and `observe purge` commands. **Spend reaches the recorder already priced, and its own pricing is the fallback for a run nothing billed**: `usagePriced` writes the cost it is handed and only `usage` reaches for the table, which prices a bare token pair and so charges every cache read at the fresh input rate — several times the bill on anything that re-sends its prompt each round. A session's cost is the ledger's (`internal/meter`, one entry per origin and model, each request split into fresh/cached/created as it arrives); a child's is its own ledger, kept per attempt in `internal/subagent` off `Options.Prices`, carried across a retry as `priorSpend` and reported on `Status.Spend` — which is the roll-up the fan-out lane, the agent map and the attached rail all draw, and the reason `Status` carries no token pair. The chat model's hook sites: tool results and the turn close (`close.go`, the one place a turn ends), `trimContext`, `finishSummary`, `injectSteering`, `applyUndo`, `applyMode`, the plan card, the round-pause offers, `handleSubagentEvent`, `todoRunStep` and the run's stop paths, `activateSkill`, and `autosaveCmd` with `noteSlotMove` for the session link. `agent.IsRepeatNotice` is how a surface counts repeat notices without knowing their wording. Adding a signal means a new constant in `internal/observe` with its reason set in the comment, and a call at the site — never a formatted string.
-
-**A command's tool event carries a purpose word** ([`docs/capabilities/sessions-and-memory.md#a-command-is-recorded-by-what-it-was-for`](docs/capabilities/sessions-and-memory.md#a-command-is-recorded-by-what-it-was-for)): `observe.CommandPurpose` (`internal/observe/purpose.go`) reads a shell line through `safety.Commands` into one of the `Purpose*` constants, `observe.ToolPurpose` does the same from a call's arguments and answers "" for every other tool, and `Observer.ToolCall` carries it to `agent_events.purpose` — a column of its own because `reason` already holds a failed command's class. All three surfaces pass it: the chat model's `recordToolResult` from the call and its `cmdDoneMsg` branch from the line that ran (an amended command is the reader's line), `headlessObserver.toolResult`, and the child's `OnToolResult` in `internal/subagent/subagent.go`. The dashboard's `COMMANDS` block is `observeCommandRows` over `AgentCommandPurposes`; `observe classify` is `classifyRecordedCommands`, which pairs unrecorded rows with the saved conversation through `observeCalls` and writes through `SetAgentCommandPurposes`, which never overwrites a word. The span does not carry it. What will bite you: **the reading is a table and one function per flag-dependent verb** — `commandPurposes` and `flagPurposes` — so a verb that should count differently is a row, not a branch; and **`cleanShellLine` runs before `safety.Commands`** because that reading over-reads on purpose for the gates, and a count over-read files `grep 'a|b'` as a program called `b`.
-
-**A round can be read back against what was said in it** ([`docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back`](docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back)). A tool row on `shhh observe session <id>` carries what the call was pointed at, and `--transcript` puts what it came back with under the row, bounded by `observeResultLines` the way the feed bounds a result. **Neither is ever stored beside the event** — the record stays content-free by construction, so both are read at print time out of the conversation the session saved on this machine, and the page's `targets:` row says so before the rows it is about. The join is `provider.Message.Turn`/`Round`, stamped by `Agent.Append` from whatever `Agent.SetTurn` was last told, written and read by `saveChatTx`/`chatMessages`, and matched against the event's own `turn`/`round` by `storage.AgentSessionCalls` and `observeCalls` in `internal/cli/observe.go` — by turn, round *and* tool name, taken in order, so a round that searched twice gives each row its own target. **Every site that moves the turn has to say so, or the two tables describe different sessions from that point on**: `nextTurn` and `bindSlot` in the chat model, `injectSteering` (which moves the number *per steer, before that steer's own `Append`*, so the checkpoint, the message and the events after it agree), `a.SetTurn(1)` in `internal/cli/print.go` for a headless run — one turn by construction, which is what `headlessObserver.pos` files under — and `serveLoop.Run` for the protocol. **The reference is `ON DELETE SET NULL`**, like `chat_sessions.parent_id` and for the same reason: the conversation's retention window is shorter than the record's, so `DeleteChat` and `PruneOldChats` raw-delete `chat_sessions` rows and would be refused outright by an enforced reference — one linked session anywhere in the prune's single `DELETE` failing the whole batch, whose error `pruneStoreOnce` discards. **The message carries the position rather than the event carrying a `seq`**: the sequence a result will land at is not known when the event is written, and a compaction rewrites a slot from zero, so a stored `seq` would silently point at somebody else's words. A child has no conversation to reach — nothing saves one, deliberately: every row in `chat_sessions` is a conversation a person can open, resume, rename and search — and `observeTargetsOf` says that on the page rather than drawing nameless rows.
-
-**The record has a window and a switch, and they are different things** ([`docs/capabilities/sessions-and-memory.md#the-record-is-kept-for-a-window`](docs/capabilities/sessions-and-memory.md#the-record-is-kept-for-a-window)). `PruneAgentObservability` is the window: it rides `pruneStoreOnce` in `internal/cli/store.go` — one guard, one goroutine, the first store a command opens, and at most once a day: the `sync.Once` is this process asking twice and `storage.ClaimPrune` (the `housekeeping` table) is every other process on the machine, which is the half that matters where a sprint is dozens of processes an hour. The window is `observe.retention_days`, whose default is twice history's because a cohort comparison reads back across a change made a quarter ago. `PurgeAgentObservability` is still everything, on purpose. Two traps in the prune. **`agent_sessions.parent_id` declares no cascade**, so a parent deleted while one of its children survives leaves a row pointing at nothing; the delete set is therefore a recursive family and not a `WHERE` on the timestamp, and a child goes with its parent whether or not it ever ended. And the events are deleted explicitly beside the sessions in one transaction rather than left to the schema's `ON DELETE CASCADE`: a prune that quietly did nothing because a pragma was off is exactly the failure a window cannot survive, since nobody looks at a table that is supposed to shrink by itself. Only an ended row seeds the family — an open one is either running or waiting for the next session's start to close it, which brings it into reach the ordinary way.
-
-**The record can leave this machine** ([`docs/capabilities/sessions-and-memory.md#the-record-can-leave-this-machine`](docs/capabilities/sessions-and-memory.md#the-record-can-leave-this-machine)). `internal/observe/otel.go` is the exporter: `NewExporter` builds an OTLP-over-HTTP trace client from `otel.endpoint`, `Exporter.Session` opens the span a session hangs off, and `SessionSpan` has one method per `Observer` callback so the recorder reports the same arguments to the store and to the wire from one line each. The attribute keys are the `Attr*` constants and `exportAttrs` is the closed set; `otel_test.go` reads the file with `go/ast` and fails on an attribute built from anything but one of them, which is what keeps the set closed rather than merely documented. `ParseEndpoint` refuses a scheme-less endpoint on purpose — http and https are different promises about the network. **The wiring seam is `setObserveExport` in `internal/cli/observe.go`**, called from the root beside the two retention windows, because a recorder is opened by four surfaces and none of them has the config: `observeExport.Session(...)` is nil-safe, so `startObserveRecorder` fills `observeRecorder.span` unconditionally and every callback is one extra line. Traps: `usage` is span attributes and not an event, because the record keeps it on the session row; `link` exports nothing, because the saved conversation's name is the join to content; retry is switched **off** at the exporter, since the default would wait out a dead collector on the goroutine closing the session; and a failed export sets `spanSink.pausedUntil` to `exportPause` from now and writes one log record per outage — a **pause**, not a latch, because a restarted collector would otherwise be missing for the rest of a session that runs for hours. `Exporter.Shutdown` is deferred in `cli.Execute`: nothing is queued, so it closes the connection rather than flushing one. **`restart` is the one caller that sends its closing span from a goroutine**, because a session boundary is answered inside the update loop (`/new`, the pressure card, a run starting a fresh conversation) and a slow-but-alive collector would otherwise freeze the screen for `exportTimeout`; the exit keeps the synchronous send, since a span nobody waits for is one the process outlives. A child's span hangs under its parent's: `startChildObserveRecorder` is handed the parent **recorder**, not its row id, because the link is made twice — `StartChildAgentSession` in the table, `Exporter.Child` in the trace — and a caller given the two separately could link the row to one session and the span to another. `Exporter.Child` starts the span under `trace.ContextWithSpan` and adds `AttrParent`, the parent's *kind*: a row id means nothing on the other side of the network. `LinkCountLimit` is `-1` and not `0` — zero is the SDK dropping every link silently, so a relationship added here one afternoon would arrive as a span with nothing attached.
-
-**A session knows it is not alone** ([`docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone`](docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone)). `agent_sessions` carries a `pid` and a `heartbeat` beside the `project` fingerprint it already had, and those three answer "is another session in this checkout right now". `storage/observe.go` holds the reading: `StartAgentSession` stamps the id and the first beat at the insert, `BeatAgentSession` is called from `observeRecorder.turn` — the one callback every surface already reports a finished turn through, so the beat follows the row a session boundary opened rather than the one it closed — `LiveSibling` is the query, and `CloseCrashedAgentSessions` runs at every `startObserveRecorder` to end the rows of processes that are gone. **The liveness check is `pidRunning`, a variable over the build-tagged `pidAlive` in `pid_unix.go`/`pid_windows.go`**: signal 0 on Unix with `EPERM` read as alive, and on Windows `os.FindProcess`, which is `OpenProcess` there and fails outright for an id nothing answers to — `Process.Signal` refuses anything but a kill on Windows, so there is no signal 0 to send. It is a variable because a test cannot write down an id that is dead on every machine. The window beside `agentHeartbeatWindow` is deliberately long; the trap is the opposite one, an idle second session that beats nothing and would disappear from a short window. Wiring: `readSibling` in `internal/cli/start.go` points the question at the store as soon as one is open and `chatSession.sibling` carries it — a question rather than a cached answer, since a second session usually arrives after the first and the prompt is built again at a session boundary. `sessionSibling.since` puts the start time on `project.Info.Sibling`, which the screen (`startFacts`) and the prompt (`project.PromptBlock`) are both written from; `withSibling` hands `sessionSibling.live` to `agent.TreeCheck.Sibling`, which `diffTree` asks only once it has something to report. Slots: `liveChatSlots` marks `ChatListEntry.Live`, which `chatPickOptions` folds with `livePhrase` and `chatsReport` warns on; the picker's apply refuses it the way it refuses the session's own row. **One mark, and every picker over it refuses**: `chatBrowseRows` in `internal/cli/session.go` puts the same sentence on `components.ChatRow.Refused`, and `ChatScreen.open` answers it with the screen's own notice rather than closing, so `--resume` cannot mark a row and open it anyway. Both spellings of the phrase are a `livePhrase` const — one in `internal/ui/chat/chats.go`, one in `internal/cli/session.go`, which also writes `--continue`'s refusal from it. The machine-wide listing is `LiveSessions` beside `LiveSibling`: top-level `chat`/`code` rows only, every other open row folded under the top-level row it descends from, and working told from idle by `agentWorkingWindow` — which is why `UpdateAgentSession` beats the row as well, since the totals arrive with every answered request and the turn close alone would call a long turn idle. `LiveSessionPID` is the one lookup from a slot name to a process. The checkout is `chat_sessions.root`, written by `SetChatResume` beside `head` and never on the record, and the branch is `project.Branch`, read at listing time. `internal/cli/sessions.go` is `shhh sessions` and, through `sessionsFor` and `Model.WithSessions`, `/sessions`; both render `sessionsReport` from the one `runningSession` list `--json` writes.
-
-**A session can hand another a line** ([`docs/capabilities/sessions-and-memory.md#a-session-can-hand-another-a-line`](docs/capabilities/sessions-and-memory.md#a-session-can-hand-another-a-line)). `internal/rpc/inbox.go` is the listener's half — `Inbox` answers `session/send` and nothing else, one message per connection, bounded by `MaxLineBytes` and a deadline — and `rpc.Send` is the client's. It is not `rpc.Server` on purpose: the socket is openable by any process of the user, so what it can reach is one verb, and a second method added to it is a second door around every card. `internal/cli/send.go` owns both ends: `openInbox` binds `inboxPath(pid)` (`<data dir>/inbox/<pid>.sock`) in `runChatSession` after the `assembled` hook, so no hermetic test binds, and says so once on stderr when it cannot; `handInbound` answers a configured `refuse` itself and otherwise hands the screen an `InboundLine` and waits for its word; `newSendCmd` is `shhh send`, finding the pid through `LiveSessionPID` and the sender through `--from` or `sendingSlot`. The chat's half is `internal/ui/chat/inbound.go`: `inboundPolicy` is `sessions.inbound`, defaulting by mode on every line rather than once; `passInbound` queues a `steeringItem` marked `sent` for a turn in flight and opens one through `openTurn` — the typed turn's opening, split out of `sendUserMessageAs` so the two cannot begin differently — for an idle session; `injectSent` is where a line joins, as a machine message framed by `agent.Steering.SessionSteer` (`internal/agent/sessionsteer.go`, the `session_steer` wording with `{{source}}`), with a `steer` notice row and `observe.SignalSteer` under `subagent.SteerFromSession`. What will bite you: **a line is never a typed message** — it goes in as `Machine`, leaves no rewind checkpoint, is not restored into the draft by a cancel (`restoreSteering` puts it back on `inbound.held` instead), and never reaches `submitInput`, which is the whole of why a slash command in it is text. The held card is `stateInboundHold` in the register, drawn by `components.HeldLine`, answered by `keys.Confirm.Yes` and `keys.Decision.Refuse` only; `openHeldLine` rides the `Update` tail and opens it only onto an empty draft and a free screen, which is what leaves a waiting decision untouched. The scene is `session-steer`, and `drive.sh`'s `shell` step is what starts the second binary in it.
-
-**A queued message is the reader's until it is sent** ([`docs/interface/surfaces.md#the-input-frame`](docs/interface/surfaces.md#the-input-frame)). `internal/ui/chat/msgqueue.go` is the list — `queuedRows` over `Model.steering` then `Model.followUps`, the rows above the box (`queueRail`, a pre-rail between the status row and the staged strip, drawn by `components.QueueRows`), and `stateQueue` in the register, the card `keys.Draft.Queued` opens (`components.QueueCard`, answered by `keys.Queue`). Not to be confused with `queue.go` beside it, which is the order a round's calls are filed in. A message the reader typed carries an `id` from `queueState.next` and the attachments staged when it was queued (`steeringItem.atts`); `injectSteering`, `dispatchFollowUp` (through `sendUserMessageWith`) and `restoreSteering` all read them off the item, never off the strip. What will bite you: **a pull-back and a cancel remove by id through `takeQueued`, and nothing else may** — the turn keeps delivering under the card, so an index is a different message by the next boundary, and a removal that missed its id is how a message gets sent and pulled back both. `takeQueued` rebuilds the slice rather than cutting it in place, because every copy of a `Model` shares the array. The chord's pull-newest (`pullQueued`) is the same removal aimed at the last row. The scene is `queue-edit`.
-
-**Every composition writes the same rows** ([`docs/capabilities/sessions-and-memory.md#every-composition-is-one-population`](docs/capabilities/sessions-and-memory.md#every-composition-is-one-population)). A session and a headless run open their row in `runChatSession` and `runPrintSession`; `newCmdCmd` opens one of kind `cmd` above its pipe branch, so a piped one-shot is recorded too, and closes it with an explicit call before each `os.Exit`, because a defer does not survive one — `raw.SystemPrompt` is exported so the piped run's stamp fingerprints the prompt that actually went out rather than a second construction of it. **The one-shot's store is opened on a goroutine (`startRecord`), so the row, its stamp and the `requests` row all sit behind `pendingRecord.wait`, and that is the trap:** anything added to `newCmdCmd` that touches `db` or the recorder without going through `wait` first reads a nil that is only nil because the store had not answered yet, and it will be nil on a fast machine and not on a slow one. The prompt both branches stamp with is therefore built above the branch rather than inside it, because the goroutine is started with it. `oneShotOutcome` and `headlessTurnOutcome` map each surface's ending onto the same closed set the chat's `turnOutcomeCode` uses; a headless round cap is `cap-paused`, not `failed`, because it is the same event a session's cap is and only the way out differs. A child is `subagent.Recorder` — the contract plus the `End` no caller outside the supervisor could hold — handed to `Options.Record` with the child's own system prompt, so its provenance is its own rather than its parent's; `child.pos()` places its events, `endTurn` in `Supervisor.run` closes each of its turns, and `resolveGated` reports the policy's verdict, the classifier's and the user's answer as the two events a session reports. The decision reason codes are `observe.Reason*` — one spelling per verdict across four deciders. `agent.Headless.OnSummary` is what puts a reading in the record from every unattended surface at once, and `observe.SummaryCode` is the one spelling of its states. **A child's end is the child's own row and never the parent's** ([`docs/capabilities/sessions-and-memory.md#a-child-ends-for-a-reason`](docs/capabilities/sessions-and-memory.md#a-child-ends-for-a-reason)): `finish` in `Supervisor.run` is the one place every route out of the loop passes through, and it files `observe.SignalSubagent` with a `Child*` word beside `Recorder.End(observe.ChildEnd)`, which `EndChildAgentSession` writes into `end_reason`, `verdict`, `steers` and `attempt`. `childEndReason` is the fork `failReason` takes in the record's vocabulary and the two are written together on purpose. `Kill` marks `child.killed` before it cancels, because a kill and a session shutting down are the same cancelled context otherwise; `restart` claims the attempt number in its first locked read so a reader's record — opened before the counter resets — is not stamped with the number of the attempt it replaces; and the new attempt files `ChildRetry` on its own record at the start, since the row it replaces is closed before anything can replace it. The chat model files none of this: a copy on the parent would count a fan-out's children twice in every window.
-
-**Whether it worked** ([`docs/capabilities/sessions-and-memory.md#whether-it-worked`](docs/capabilities/sessions-and-memory.md#whether-it-worked)) is two things on top of that. The gate verdict is `Observer.Gate`, the one callback that is not a `Signal` — a signal carries one qualifier and a gate run carries a suite as well, and it takes no `Pos` because `/gate run` starts one between turns. `quality.Runner.Observe` hangs off `finish`, the single point both `Run` and `Start` land on; `recordGateVerdicts` is the one function that points a gate at a session's record, so a third surface cannot wire the gate and forget the record. It is handed the suite only when `Result.Trusted` says the name resolved in `.shhh/quality.json`: the tool takes that name from the model, so an unresolved one is the model's own text and `observe.GateHook` replaces it with `GateSuiteUnknown`. Verdicts map through `observe.GateVerdict`, and the event is a signal row whose `tool` is the suite. The session outcome is the `outcome` column, written optimistically by `observeRecorder.turn` through `observe.SessionOutcome` and corrected in `end` (nothing finished ⇒ abandoned) or `endWith` (the TUI failed and `os.Exit` will skip the close). A cap-paused turn maps to nothing at all — a sub-agent's supervisor grants itself more rounds and runs on, so a pause read as an abandonment would libel every child that took a check-in. An empty column reads as `unknown` and is never written. **An interruption has an outcome** ([`docs/capabilities/sessions-and-memory.md#an-interruption-has-an-outcome`](docs/capabilities/sessions-and-memory.md#an-interruption-has-an-outcome)) is the other half: `AgentInterventionOutcomes` left-joins each `intervened` row to the next `summary` row of the same session — by row id, not by round, since rounds restart at every turn — and `observeInterventionRows` draws it as `steer → on-target` with the share of that kind's interruptions and the rounds between, the `INTERVENED` section beside `SIGNALS`. It rides `AgentCohortReading` too, so `observe compare --split` draws the one figure a threshold change is made to move. The turn's own answer is `Model.recordIntervened`, called from `appendTurnClose` beside `recordTurn`: one `observe.SignalOutcome` row per interrupted turn, from `observe.InterveneOutcome` over the turn's closing word, `summaryState.steers` and `agent.InterventionWithdrawn` — which is why `dropIntervention` takes the whole `Intervention` and decrements that count. `Model.noteOffPlan` is the same shape for plan mode, filing `observe.PlanOffPlan` against the approvals once per run. `AgentGateVerdicts` and `AgentSessionOutcomes` are the two aggregates, drawn as the `GATE` and `OUTCOMES` sections, and `AgentOverturns` is the classifier's second opinion read the same way — each `deny/classifier` decision paired by row id with the person's next decision in the same session, turn and round, drawn as the `overturned N of M judged denials` row of DECISIONS and as a share on a comparison, with a denial nobody was asked about left out of M; `observeSignalRows` drops the gate because it has a section of its own, and the pass rate's denominator is pass plus fail only, since a blocked run is no reading of the code rather than a bad one.
-
-**The `rating` column is the human check on that outcome** ([`docs/capabilities/sessions-and-memory.md#a-rating-is-how-you-check-the-inference`](docs/capabilities/sessions-and-memory.md#a-rating-is-how-you-check-the-inference)), written by `shhh rate` through `RateAgentSession` and nullable, so unrated and disliked stay apart. **`ListUnratedSessions` is the one query in `storage/observe.go` that reads content, and it is the trap this section exists to name:** it joins `agent_sessions` to `chat_sessions` and pulls the title and the first user message, because a content-free row is not something anyone can judge. The crossing is read-only — the answer that comes back is one integer — and the join is also what excludes children and headless runs, since `Observer.Session` is wired from the chat model and nowhere else — its autosave, and the session boundary, which links the new row to the slot it mints. Resuming a conversation opens a second session row against the same name, so both are reminded by the first sitting's opening line. `internal/cli/rate.go` holds the walk: `rateItem` is one entry of either kind, `rateHandle` is the `c11`/`s7` string the card carries back so the screen never learns there are two tables, and `components.RateRow`'s `Kind`/`Verb`/`Target` are what let one card draw a shell command and an agent run.
-
-**What a session ran under** ([`docs/capabilities/sessions-and-memory.md#what-a-session-ran-under`](docs/capabilities/sessions-and-memory.md#what-a-session-ran-under)) is `storage.AgentSettings`, carried on `AgentProvenance` and written by `StampAgentSession` only when its `ConfigHash` is set; the thirteen columns are nullable so a row older than them scans to a nil `AgentSessionSummary.Settings` rather than to zero values, and `observeSettingsPairs` prints nothing for that row. Two of them are not config at all: `Item` and `Stage` are the backlog item and step a stage of `todo run` was started for, read off `SHHH_TODO_ITEM`/`SHHH_TODO_STAGE` by `todoStageStamp` because a comparison splits on a column and these are the two a sprint's record is asked about. `sessionSettings` in `internal/cli/observe.go` is the allowlist — the one function that reads a config value into the stamp, except the sandbox profile, which each surface parses through `sandbox.ParseProfile`'s closed set before filling `runSettings` — over a `runSettings` each surface fills with what it resolved for itself (mode, effort, the cap through `roundCapFor`, the containment profile in force, and whether it has a summariser and a classifier at all); `configHash` is the JSON of the whole `config.Config` fingerprinted. `agentSplitColumns` in `internal/storage/observe.go` is what a cohort may be split on, and every key is spelled the way its column is. `settings_test.go` marks every config field by reflection and fails if any marker off `settingsAllowlist` reaches the stamp, so a new config key is excluded by default. A child's mode and cap ride on `subagent.Spec` (`Mode`, `MaxRounds`, the latter from `roundCap`) because the supervisor is the only thing that knows them after the profile and the parent clamp; the headless run stamps no mode and no classifier, and `cmd` stamps only its reasoning level and the hash.
-
-**Two cohorts, as rates** ([`docs/capabilities/sessions-and-memory.md#a-comparison-is-two-cohorts-as-rates`](docs/capabilities/sessions-and-memory.md#a-comparison-is-two-cohorts-as-rates)). `shhh observe compare --split <key>` is `AgentCohorts` — one `GROUP BY` over a stamped column, largest cohort first — plus `ReadAgentCohort`, which is every event aggregate the dashboard draws taken over one cohort's sessions. The CLI half folds the two readings into one `[]observeChange`, and the report and `--json` are both rendered from that list and nothing else: a second builder for the export is exactly how the screen and the file come to hold different numbers. **The aggregates are one piece of query text each, not two copies.** Every event reading and the outcome mix is a `const` with a `%s` where its `WHERE` clause goes, filled by `observeEventWindow`/`observeSessionWindow` for the dashboard and `observeEventCohort`/`observeSessionCohort` for a cohort — so the comparison cannot drift into measuring something the dashboard does not draw. Those two write the column name into the SQL rather than binding it, which a placeholder cannot do, and that is why the name comes from `agentSplitColumn`'s allowlist and from nowhere else. Traps: `compareMinSessions` refuses the whole comparison rather than caveating a row, and `observeCompared` is the pure half so the refusal and the full screen are both held against fixtures; `observeShareColumns` settles a share's decimal per column *after* every change is built, since a block whose rows disagree about their decimal reads as a rendering fault; a share's direction is in points and everything else's in percent, because a pass rate moving 75% → 92% is seventeen of one and twenty-three of the other; and no row carries a tick or a cross, because which direction is the good one is the reader's.
-
-### Quality gate
-
-`internal/quality` is the gate: `LoadConfig` reads the workspace's trusted `.shhh/quality.json` with `DisallowUnknownFields`, `Runner.Run` and `Runner.Start` are the blocking and background halves over the one `execute`, `Result.Format` writes the verdict and `Summarize` reads it back — beside `Format`, so the one place that writes the string is the one place that parses it. The CLI owns the wiring (`internal/cli/quality.go`): `openQualityGate` returns nil in a checkout the person has not trusted — no runner, so no `quality_gate` tool is registered at all rather than one that would refuse — and otherwise builds the runner with the containment wrap and the evidence hook, `gateManager` backs `/gate run|result`, and `recordGateVerdicts` points it at the record.
-
-**A turn can run the suite itself as it closes** ([`docs/capabilities/coding-agent.md#it-can-check-itself`](docs/capabilities/coding-agent.md#it-can-check-itself)). The suite is `Config.OnClose` and the hand-back budget `Config.CloseRetries()` — a pointer field, because zero is an answer here and an absent key is not. A name that resolves to no suite is refused by `validate`, at the read rather than at the close. Two surfaces run it and they share nothing but the text: `agent.Headless.OnClose` is asked at the one point the loop reaches a final message, and what it returns is appended as a user message and the loop continues (`internal/cli/print.go`'s `headlessCloseGate`, whose `err` is the run's exit code); the chat's is `internal/ui/chat/gate.go`, where `setTurnState` sends a closing turn to `stateCloseGate` instead of to the input, the Update tail starts the run, and `finishCloseGate` either hands the verdict back and re-enters the stream or settles and lets the close row be drawn. **The verdict is fed back as a user message and not as a synthetic tool result**: a fabricated assistant tool call would put a request in the model's mouth that it never made, and every checkpoint, save and rewind index would carry it. The text is the runner's own either way, which is the part that matters.
-
-**One reading decides what a turn's verification came to.** `internal/ui/chat/resolved.go`'s `resolveChecks` walks a span of entries — a turn's, or the whole transcript for the rail — into `resolvedChecks`: every check attempt in order, and where the most recent applicable gate pass sits. `standing()` is what a verdict is built from, `superseded()` is the count the row states, and `settled(i)` is the question `inspectorAlerts` asks of every alert before it calls one live. `turnChecksRow`, `reviewVerdict`/`failureLines` and `inspectorAlerts` all go through it, which is what stops the close row and the rail disagreeing about one turn (docs/interface/surfaces.md#the-turns-close). The rail's `ALERTS` block is the other half of that agreement: `inspectorAlerts` groups the session's broken commands by `alertName` and the turn that ran them, marks the answered ones `Superseded` rather than dropping them, and `components.InspectorAlerts` (`internal/ui/components/inspectoralerts.go`, between THIS TURN and PLAN) draws at most two live rows over the count of the rest — so nothing but `Live()` may be read as a current failure, which is why `summaryAlerts` asks for that and not the slice. Adding a fourth surface that reports a verdict means calling it, not scanning entries again.
-
-What will bite you: **the close row reads its verdict off the transcript, not off the runner.** `turnChecksRow` scans the turn's entries for a `quality.ToolName` row, so `appendCloseGateRow` is what makes the run visible at all — and it is why `cancelStreaming` calls `cancelCloseGate` first, since a turn abandoned mid-suite would otherwise close showing whatever the turn had checked itself. `closeGateOwed` is the one question, asked in `setTurnState` and again by the tail hook, and `changeset.Turn.Checkable` (`changeset.AnyCheckable` for the surfaces with no changeset) is what keeps a turn that only wrote under `project.StateDir` from paying for a build. A backlog run arms itself through `run.State.ClosesWithGate`, which is the implement stage and no other, and `run.State.Checks` carries a pass to the verify stage so the suite is not run twice over a tree that did not move between them.
-
-### Secrets
-
-`internal/secret` is the vault of values the model never sees ([`docs/capabilities/secrets.md`](docs/capabilities/secrets.md)). A `secret.Vault` holds name→value; `Environ()` is what a command gets, `Scrub()` is what everything read gets, and `PromptBlock` names the secrets to the model. The CLI owns the vault (`internal/cli/secrets.go`) and every door: `chatSession.openSecrets` runs before the first command and puts the values in `runner.SetSessionEnv` (every captured runner sets `cmd.Env` from `runner.Environ()`), `process.Supervisor.SetEnv` (the process tool builds a bare environment and would otherwise miss them), and `sandbox.Container.ExecArgv`'s `--env NAME` pass-through (a container has no host environment). The scrub sits on the executor chain (`Vault.WrapExecutor`, outside the reducer), on the runners (`scrubRunner`, `scrubTailRunner`, `scrubContainment` — the tail is what the screen shows), on the agent (`Agent.SetScrub`, applied in `Append`, `SetMessages` and `Stream`) and on the stream closure in `buildSessionEnv` and the sub-agent `newEnv`. Children get the same through `subagent.Env.Scrub`. `/secret` (`internal/ui/chat/secrets.go`) calls the CLI's `secretsManager`, which returns the note and an announcement the chat sends the model as a user message — the system prompt cannot be rewritten mid-session. `Scrub` also replaces base64/hex/URL-escaped forms and any run of the value ≥ 8 bytes — one walk of the text for the whole vault, not one per secret: `Add` and `Remove` rebuild a shared map from every 8-byte window of every value to the entry that owns it, behind a bitset over each window's first *two* bytes, and a window whose gate bit is missing is silently never scrubbed, the same failure a shape's `markers` have (one byte does not filter: measured over 2.7 MB of log text, five secrets' windows have 55 distinct first bytes that three quarters of the positions hit, against 111 two-byte prefixes that under 10% do) — and then runs a second pass (`patterns.go`) over what is left: a small table of credential shapes — AWS access keys, GitHub, GitLab and Slack tokens, the API keys a coding session meets (`sk-ant-`, `sk-`/`sk-proj-`, `AIza`, `sk_live_`, `npm_`, `SG.`), PEM private-key blocks, JWTs, and a `Bearer` header as the last row — each replaced with `[redacted:<kind>]`. Every row is a marker the issuer put there and a `markers` prefilter that must be a literal substring of every match, or the pattern is silently never applied; the two rows with no issuer marker of their own — the bare `sk-` form and `Bearer` — are held by length and alphabet instead, and `Bearer` is last so a family with a name of its own keeps it. The order is load-bearing: a declared value is already `[secret:NAME]` by the time a shape could match it, so the name survives, and a session with nothing declared still gets the shapes. Both are text matching and the doc says so. The by-name half is `secrets.env_mask` (on unless turned off): `secret.MaskedEnvName` is handed to `runner.SetEnvMask` by `openSecrets`, so `runner.Environ()` drops every inherited `*_KEY`/`*_SECRET`/`*_TOKEN` before the vault's own pairs are appended — which is what exempts a declared secret. `process.buildEnv` needs no mask because it names `PATH` and `HOME` and inherits nothing else; `secret.PromptBlock` tells the model the mask and both placeholders exist. **The wrap order is not where the disk is protected.** `Vault.WrapExecutor` sits outside `Reducer.WrapExecutor`, so it sees a result only after the store has already written the original — which is why the scrub is also handed *into* the three things that write copies that outlive the turn: `evidence.Reducer.SetScrub` runs it before `Store.Put`, and `process.Supervisor.SetScrub` runs it on every stream write, so a process's spool and the ring the model pages are the same clean bytes — plus one whole-text pass over the spool at `spoolCopy`, because a value split across two pipe writes is otherwise only caught by the fragment rule, and the spool is the copy that becomes a file. **The quality gate is the third and is wired differently**, because it is built with the toolset and the toolset is complete before `openSecrets` runs: `openQualityGate` hands `quality.Runner.SetScrub` the reducer's own `Scrub` method, so the runner reads whatever scrub was installed at the moment a check's output is kept rather than copying a vault that does not exist yet. `runCheck` runs it once over the whole capture, before the evidence hook and before `quality.Excerpt`, so the file in the store and what `/gate result` prints are the same text; checks run with `cmd.Env` nil, which is shhh's own environment and where the values were loaded from. All three take a `func(string) string` rather than a vault, so none of the packages imports `internal/secret`; nil is a session with no secrets and writes raw, and a scrub can never be why a write fails — `streamBuf.Write` reports the caller's own count, because `os/exec` reads a short write as a broken pipe. The outer wrap stays as the second door: it is what scrubs a tool's error, a self-bounding result the reducer exempts, and the `evidence` tool's own paged output.
-
-### Sub-agents
-
-`shhh code` can spawn child agents via `spawn_agent`. Children are `researcher` (read-only tools + web), `writer` (full toolset against an isolated git worktree) or `reviewer` (read-only, plan mode, handed a diff; `prompt.BuildReviewer`), or any custom profile the user wrote to `~/.config/shhh/agents/<name>.toml`. Hard limits: max 3 concurrent per level of delegation, 32 started per session — a limit on attention, not on resources ([`docs/capabilities/subagents.md`](docs/capabilities/subagents.md)). Children that can write or execute produce patches that the parent approves.
-
-**A child may delegate, and depth is what bounds it.** `agents.max_depth` (`AgentsConfig`, default `DefaultMaxDepth = 3`) counts the session as depth 1, so its children are 2 and theirs are 3; `spawnFrom` takes the caller's name off `Supervisor.WrapExecutor(caller, next)`, computes `depthOf(caller)+1`, and refuses past the cap *before* the preflight `Env` is built — the one refusal that is even earlier than the token admission. `withDelegation` (`internal/cli/subagents.go`) is what puts `subagent.Definitions` and that wrap on a child, and it puts them on **only** where `spec.Depth < sup.MaxDepth()`. What will bite you: the wrap must go on after the web branch and the gate branch, for the reason the gate's own comment gives; and `newEnv` is built before `subagent.New` returns, so the supervisor reaches it through a captured `var sup *Supervisor` set afterwards — nothing reads it before the first spawn, which cannot happen until `New` has returned. **Concurrency slots are per depth** (`Supervisor.slots(depth)`), not per session, and that plus descendant-only orchestration tools is the whole deadlock rule ([`docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree`](docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree)): `agent_report` blocks on `c.turnDone()` with no timeout, so a descendant that could queue behind its own ancestor, or two agents that could wait on each other, would hang the run. `reachable`/`descends` is what bounds report, steer and retry to the caller's own subtree. A wait on several names is one `reflect.Select` over their done channels plus the caller's steer signal (`steerSignal`): a child's is `child.steered`, closed by `Steer`; the session's is fed by its front-end through `Supervisor.SessionSteering` — the chat's `Update` tail and `serveLoop`'s `Steer`/`drainSteering` — so a surface that queues steering for the session and does not say so leaves a wait deaf to it. The running ceiling is therefore `max_concurrent` per level — six by default, not three.
-
-**A child is admitted before it claims a slot, worktree or record row.** `DefaultMaxTokens` is 300,000 and an explicit spawn may not name fewer than 200,000; `admissionFloor` adds the inherited prompt and tool definitions, the declared task, and the 200,000-token working reserve, refusing a budget that cannot leave that reserve. Profile budgets are role defaults and must be at least 300,000. `Status` and `observe.ChildEnd` keep the effective budget, floor, and token attribution for inherited context, setup, tool results, analysis and handoff — do not reconstruct those from billed totals, whose cached input is deliberately not budget consumption.
-
-**A review's `paths` are evidence, not a claim, and its round cap is a stop.** `Profile.Reviews` is what splits the two meanings of `spawnArgs.Paths`: a writer's are reserved against other writers by `claimConflict`, a reviewer's are read by `declaredEvidence` into the prologue its first turn opens with — `git diff HEAD` under those paths, truncated at `reviewEvidenceBytes`. That prologue is counted by `admissionFloor` and re-issued by `restart`, so a retried review does not open unbounded. At the cap, `child.reviewPassOver` routes a review to `reviewReportDirective` instead of to `Agent.CheckInMessage` with a doubled cap, and the second cap hit ends it at `observe.ChildCap`. What will bite you: the report turn's cap is set to `reviewReportRounds` outright, never added to `Agent.Rounds()` — a turn zeroes its round counter, so adding the rounds already spent hands the report a second pass the size of the inspection. And adding `Reviews` to a profile that writes makes one field mean both things at once, with nothing downstream able to tell which was intended.
-
-**`Supervisor.Steer` is the only door into a child's conversation, and every
-caller names itself.** The person typing at the lane, the `agent_steer` tool
-the orchestrator calls and the interruption the child's own reading earns are
-one mechanism with three sources — four with a `subagent_stop` hook's steer, `SteerFromHook`, counted with the lane's ([`docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it`](docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it)),
-and `subagent.SteerSource` is the closed set the roster line, the lane note
-and the session record all draw the same word from. The trap is the count
-beside it: `Status.Steers` is what the child's *reader* has had to say this
-turn and goes back to zero the moment anyone hands the child a message, while
-`Status.SteerFrom` outlives the turn boundary a steer opens — for an idle
-child the steer *is* the next turn's instruction. A second path that queued
-into `child.steering` without going through `Steer` would deliver the message
-and leave both of them lying.
-
-**A child may be handed its parent's last turns** (`spawn_agent`'s `inherit`, or `Profile.Inherit` as the default a call may lower to 0), and `internal/subagent/inherit.go` is all of it: `lastTurns` counts turns at the user messages somebody wrote (a `Machine` one belongs to the turn it arrived in), `inheritedPrologue` renders them through `Env.Scrub` with each tool result replaced by `agent.ElideResult` — the trim's own placeholder, exported rather than copied — and the session's conversation reaches it through `Supervisor.SetConversation`, which the chat model, `runPrintSession` and `serveLoop` each set; a child's own spawn reads the child's agent. The chat sets it per spawn with a copy taken in `executeApprovedTool`, on the UI goroutine, because the approved call runs on another one and a cancel appends to the conversation meanwhile; the two headless drivers run the approver on the loop's own goroutine and hand over `Agent.Messages` itself. What will bite you: **the turns are chosen before `NewEnv` and rendered after it** — the prompt `prompt.Inherited` rewrites needs `Spec.Inherit`, and the scrub and store are the environment's — and admission measures them with `measuringArchive`, a stand-in of the real id's length, so a refused spawn writes nothing to the store. The text is kept on the child (`child.inheritance`) and `restart` puts it back ahead of the handoff unchanged; re-reading the parent there would hand a retry turns its first attempt never saw. `Status.Inheritance` is the estimate the lane's cost line states. Why turns and not bytes, and why the default is nothing: [`docs/capabilities/subagents.md#what-they-share`](docs/capabilities/subagents.md#what-they-share).
-
-**A failed child leaves a durable handoff before it releases anything.** `persistHandoff` (`internal/subagent/handoff.go`) copies only the immutable task and scope, closed failure category, phase spend, completed activity, public progress and opaque evidence IDs into `child_handoffs`; it never replays a child’s transcript or private provider reasoning. `spawn_agent` can name that opaque handle as `resume_handoff`, but the stored task and paths replace the call’s own values, and `resumePrologue` validates every evidence ID before the replacement sees it. Every writer that ends with an unlanded patch — declined, cancelled, refused by `git apply`, or stopped by a budget, a kill or a cancel — goes through `child.keepPatch` (`keepStoppedPatch` on the failure path, called from `finish` before `persistHandoff` and before the worktree is removed): `Env.Archive` stores it scrubbed and the raw text stays on `child.kept`, because the stored copy may be scrubbed or cut and an apply must write what the child wrote. `Status.PatchKept` is what the manager row and the rail draw, `Supervisor.ReviewKept` is `[p]` — the same `patchAsk`/`landPatch` pair `reviewPatch` uses — and `Supervisor.PatchToKeep` is what the kill confirm asks. The handoff carries only `PatchEvidence`; the concurrent slot is released before the failure event either way. Do not put handoff text in `agent_sessions`: that table is content-free by contract and may be exported.
-
-**A retry is a second attempt, not the same attempt run twice.** `restart`
-(`internal/subagent/subagent.go`) reads two things off the attempt it replaces
-before it clears them — the detail it ended on, and `c.report`, which for a
-budget stop is the handoff `finalCheckIn` asked for — and leaves them in
-`child.prologue`, which `run` takes once and puts in front of the first turn.
-`c.task` is deliberately untouched by that: it is what every reading of the
-child is judged against and what the roster row prints, so the prologue lives
-on the turn and nowhere else, and a second turn on the same attempt is the
-ordinary conversation. A budget-exhausted attempt is also given `retryBudget`
-— twice what it had, clamped at `MaxTokensCeiling` — because an attempt
-restarted on the budget that killed it stops in the same place. Three doors
-open it: the lane's key, `Supervisor.Retry` from code, and the `agent_retry`
-tool, which is auto-run rather than carded because it starts no agent, takes
-no slot and re-runs a task the person already approved.
-
-**A writer's worktree is not the last commit** ([`docs/capabilities/subagents.md#a-writer-starts-from-your-tree`](docs/capabilities/subagents.md#a-writer-starts-from-your-tree)). `addWorktree` (`internal/subagent/worktree.go`) seeds each fresh worktree with `git diff HEAD --binary` from the parent plus the untracked paths `Options.Untracked` names — `sessionUntracked` in `internal/cli/subagents.go`, reading the session changeset, because git cannot tell a file this session wrote from a scratch file the person left lying about — and then **commits it in the worktree**, which is the part that will bite you: HEAD in a child is a dangling seed commit, not the parent's HEAD, and that is exactly what makes `worktreePatch`'s `git diff --cached` return the child's own work rather than the parent's changes as well. `git apply` stays plain in both directions: `--3way` implies `--index` and refuses any file whose working copy differs from the index, which is every file the parent has edited and not staged — the case this whole mechanism exists for. A seed that will not apply fails the spawn; a writer that silently started from HEAD would write a patch against text nobody has. `Status.Seeded` carries the count to the lane note. A patch that no longer applies to the parent is merged by `mergeWorktree`, not by `--3way`: base is the copy's HEAD blob, ours the parent's file on disk, theirs the copy's index after `worktreePatch`, each moved file through `git merge-file`, and the result is a `diff-tree` between two trees built in a scratch index — never a worktree of its own, because concurrent `git worktree add` races git itself. `reviewPatch` asks `checkPatch` before every card, so the card is always the patch that lands (`Ask.Merged` says it is a merge), and a landing refused because the tree moved while the card was up loops back through the merge to a new card; a conflict region keeps the patch, raises no card and starts an integration writer. `Worktree.Land` does the same without the card, and answers a conflict with `*MergeConflict`.
-
-**A conflict is handed to an integration writer** ([`docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer`](docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer)), and `internal/subagent/integrate.go` is all of it. `spawnIntegration` goes through `Supervisor.spawn` — `spawnFrom` with an `*integration` — so the child is admitted, claimed (`wait_for_claim` on the conflicting files, which queues it behind the writer it reconciles), slotted and counted like any writer; it joins the source's batch, and its evidence (`integrationEvidence`, each region as `git merge-file --diff3` marks it) is its opening prologue. `Spec.Integrates` is what adds `prompt.IntegrationWriter` in `newEnv`. `integration.seed` runs in `openWorkspace`: `mergeKept` redoes the merge from the kept patch's `base` commit (it outlives the copy in the shared object store) against the checkout as it stands, applies `patchMerge.Resolved` — the clean files — into the fresh copy and records each conflicting file as seeded. What will bite you: **`reviewPatch` reads an integration's patch before it trusts it** — `integration.unreconciled` refuses one that leaves a conflicting file as seeded or adds a marker line, and then both patches stay kept with `keptPatch.integrated` set, which is what stops `ReviewKept` starting a second integration from either row. A landed integration spends the source's kept patch (`integrationLanded`); an integration's own conflict never starts another. `ReviewKept` merges a kept patch with a `base` through `mergeKept` too, and answers a conflict with `*IntegrationStarted` rather than a card. Two writers may share a claim when both were spawned with `overlap: allowed`: `claimHeld`'s callers skip a holder with `child.overlap` when the asker has it, and `SharedClaim` is what the spawn card's scope names.
-
-**A landing moves every other live writer's base, at its boundary.** `landPatch` calls `queueLanding`, which parks the patch on each other writer holding a copy (`child.landings`); `holdFor` — the hold's round-tail seam — runs `reseed` before it reads the hold, so the copy moves only while the child is between rounds, and `Status.Reseeding` (with `Held`) is what the rail draws meanwhile. `reseedWorktree` (`Worktree.Reseed` for callers outside the supervisor) applies the landed patch twice: to a scratch index read from HEAD, which is committed on top of the base with `commit-tree`, and plainly to the working tree over the child's uncommitted work — so `worktreePatch` still answers with the child's work alone. What will bite you: **the two applies are checked before either is made**, and a failure after the working-tree apply reverses it; a copy whose files hold the landed change over a base that does not hands that change back as the child's own. A patch that will not carry is a `*ReseedCollision`, and the child is steered with `SteerFromLanding`. **`Headless.Run` asks the hold before it drains the steering** for exactly that steer: the other order delivers it one round after the boundary it was written at.
-
-**The notebook is the session's, not a conversation's, and not a tree's** ([`docs/capabilities/subagents.md#what-they-share`](docs/capabilities/subagents.md#what-they-share)). `internal/notebook` is a `Store` of short signed notes over a `Backend` (`internal/storage/notes.go`, the `notes` table keyed by the session slot). `chatSession.openNotebook` (`internal/cli/session.go`) opens one for **every** session and runs after `buildToolset`, because `SetScrub` has to be on the store before the first write — a note outlives the turn, so a wrap around the store would see a value only after the backend kept it, which is the ordering `evidence.Reducer.SetScrub` established. `withNotebook` (`internal/cli/subagents.go`) is the one call that wires a child in, outside every role branch: the two definitions, `WrapExecutor(spec.Name, …)` for the signature, and `PromptBlock` — which is also where the child's sentence lives rather than in `internal/prompt`, since that package must never name a tool a session might not have. **There is no delete tool and there must not be one**: `Store.Delete` is reached only by `/notes` (`internal/ui/chat/notes.go`), so a child can add to what the session knows and never take something out of it. `Note.Turn` is stamped by `Store.SetTurn`, called from `Model.nextTurn` (which is what every `turnCount++` site became) and from `bindSlot` after the counter has caught up with the slot — a new session zeroes the counter and then rebinds, so both doors are covered — and `notebook.WrittenIn` is what `turnNotesClause` counts for the close's `TurnClose.Notes` row. The row carries neither rail nor glyph: it is a reading, not an act.
-
-Profiles are three layers, and the split matters: `config.AgentDefinition` (`internal/config/agents.go`) is the file as written and validates what needs no runtime — names, tiers, tool names against tiers; `subagent.Profile` (`internal/subagent/profile.go`) is what the supervisor decides by — worktree or not, starting mode, default budgets — and knows nothing about tools or prompts; `internal/cli/subagents.go` translates a definition into a child's toolset and prompt (`profileEnv`) and checks the mode and reasoning names, because those vocabularies belong to `agent` and `provider`, which `config` must not import. The three built-in roles are `subagent.BuiltinProfiles()` and keep their hand-written prompts; a file named `researcher.toml`, `writer.toml` or `reviewer.toml` replaces one — so the `reviewer.toml` example in `docs/agents/` is now an override, and copying it changes the backlog runner's reviewer to what the file says. The file format and examples are in [`docs/agents/README.md`](docs/agents/README.md).
-
-**A prompt's five prose sections are read, never sent** ([`docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation`](docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation)). `config.ReadPromptSections` (`AgentDefinition.Sections`) is the one reading of the stored form — always all five, in order, a `## ` heading counted only outside a fence, text above the first heading and a prompt with none read as Purpose — and `config.WritePromptSections` its inverse, which writes a Purpose-only set as bare text so a headingless profile is not given a heading by a round trip. `profilePrompt` hands the child `def.Prompt` and nothing built from the sections; reassembling there would reorder a file whose author put Report before Method. The drafter (`internal/persona`) answers through `draft_profile`'s `sections` object, one required field per section, into `persona.Sections`, and what will bite you is that **`Draft.Normalise` writes `Prompt` from `Sections` whenever any section is filled**: a revision that changes `Prompt` on a draft that already has sections is overwritten at the next normalise, so revise the section.
-
-**The drafter's draft step is revised one section at a time, and `persona.Draft.SetSection` is the only writer.** `internal/ui/chat/persona.go` keeps where each prose section stands in `personaFlow.sections` and every earlier standing in `personaFlow.revisions` — `applySection` pushes and writes through `SetSection`, `undoSection` pops, and the draft step's esc (`components.ProfileUndo`) is the pop. A note is `refinePersonaSection`, which sends a copy of the draft with `persona.Request.Section` set; `finishSectionRedraft` takes that one section out of the answer and nothing else, so a section the person wrote in the editor (`editPersonaSection` over `writeDraftFile`/`editorArgv`, back through `personaEditorDoneMsg`) cannot be rewritten by a note about another, and a chat draft's tiers cannot move through a revision at all. The surface is `components.ProfileScreen`'s `ProfileSection` blocks over a `Select` card with `Idle` set while the sections hold the keyboard; the draft step is its own register row (`the profile draft`) because enter refines there where it answers on the brief. Enter on a block that is fields rather than prose is `components.ProfilePick`, answered by `pickPersonaSection`, which opens nothing yet — it is the seam the Tools block (`personaToolsBlock`) opens its selector from.
-
-**A note on the whole draft is the section refine with no section named.** `refinePersonaAll` sends `persona.Request` with `Section` empty and `Keep` naming the sections the person wrote (none when the note's second `R` said include them), and `finishWholeRedraft` takes every other prose section out of the answer through `applySection` — one revision per section, so esc on a block still takes back that section alone — and never the tiers, tools or name. The pass is `personaFlow.passes` and its row is an extra `components.ProfileSection` with `Whole` set after the eight blocks (`personaPassSection`), whose esc is `undoPass`. What will bite you: **a pass is taken back by tag, not by count.** Each standing it wrote carries `personaSection.pass`, numbered from `passID` for the life of the flow and never reused, and `undoPass` pops only a section whose current standing still carries the tag — a section revised again since, or already taken back on its own, is not popped in the note's name. `livePass` drops a pass none of whose sections still carries it.
-
-**A profile's Commands section only takes away** ([`docs/capabilities/subagents.md#a-profile-is-a-file`](docs/capabilities/subagents.md#a-profile-is-a-file)). `config.CheckCommands` is the loader's rule and the drafter's (`persona.Draft.SetCommands`): `deny` entries non-empty, `intent` bounded by `config.MaxIntentChars`, and an `allow` key refused outright — `AgentDefinition.Allow` exists only so the refusal can name the rule rather than read as an unknown key. `Profile.Deny` joins the person's list in `Supervisor.childPolicy`, which copies rather than appends so one role's entries never land in `Options.CommandDenylist`, and `ModePolicy.Decide` refuses it with `agent.DenylistResult` like any entry. `Profile.ClassifierScope` is the `profile_scope` the child's `classify` puts on a command's `agent.ClassifierRequest`, and is empty whenever `Profile.Checkout` is set; `fromCheckout` (`internal/cli/subagents.go`) sets it for every file not read from one of `config.AgentDirs()`, so a path nobody expected sends nothing, and the spawn card's `intent` field (`agentProfiles.checkoutIntent`) is where a checkout's words go instead. What will bite you: **`classifierEvidence` is a struct so its keys have an order** — `profile_scope` sits after the conversation, and the other three keep the byte order the map used to give them.
-
-**A read-only profile's child reaches the quality gate, which is the only thing it can run.** `profileEnv` appends `quality.ToolDefinition()` and wraps the child's executor with the session's own `quality.Runner`, carried across on `chatSession.gateRunner` because `buildToolset` is what opens it. `config.QualityGateTool` sits in `knownAgentTools` under read, so a `tools` allowlist may name it, and `AgentDefinition.Validate` refuses it to a profile that writes — the gate runs over the parent's checkout, and a writer works in a copy of it. What will bite you: the branch must come *after* the web one, which replaces the executor rather than wrapping it, so a gate wrap installed before it disappears silently and the call comes back as an unknown tool; and the runner is the session's own, so a child's run and the session's cannot overlap — whichever is second is told a run is already in progress.
-
-### The unattended contract
-
-`shhh code -p` is a contract a script is written against ([`docs/capabilities/headless.md`](docs/capabilities/headless.md)), and its two halves are the exit code and the output shape.
-
-**The exit code is a projection of the record's turn outcome, never a second closed set** ([`docs/capabilities/headless.md#the-exit-code-is-the-contract`](docs/capabilities/headless.md#the-exit-code-is-the-contract)). `headlessTurnOutcome` maps the loop's ending onto `observe.Turn*` — the same value `observeRecorder.turn` writes to the table — and `headlessExitCode` (`internal/cli/print.go`) reads the code off *that*: `cap-paused` → 2, `cancelled` → 3, `failed` → 4, `rejected` → 8, and for a turn that finished the two second opinions, a failing on-close suite → 5 and a standing policy refusal → 6, in that order. **`rejected` is the split inside `failed`**, and `providerRefusedRequest` is the whole of it: the four classes that mean the provider objected to the request rather than failed to answer it (`ClassAuth`, `ClassQuota`, `ClassContextLength`, `ClassModelNotFound`), named rather than taken as `!Failure.Recoverable()`, so a class added later falls to 4 instead of being enrolled into a status that tells its reader their configuration is wrong. `failureClass` puts the provider's own word on the `error_class` field of both JSON shapes, which is what a consumer reads to tell two `4`s apart; it is derived inside `writeJSONTranscript` and `jsonlStream.closed` from the error they were already handed, so `serve.go` gets it without a signature to pass it through. The trap on the record's side is that only the surfaces holding a classified failure at the closing seam write `rejected` — the TUI's `endBrokenTurn` has no failure in hand at `turnOutcomeCode` and writes `failed` — so an aggregate over "turns that broke" has to add the two. 1 is deliberately outside the set and belongs to every command that could not run at all. The code leaves the tree in an `exitError`, which fang returns unwrapped, `cli.ExitCode` reads with `errors.As` and `cmd/shhh/main.go` exits with; anything else is a 1. **A signal is an interrupt for the turn, and only the first one is** ([`docs/capabilities/headless.md#what-a-signal-does-to-a-run`](docs/capabilities/headless.md#what-a-signal-does-to-a-run)). `interruptOnSignal` (`internal/cli/print.go`) is up only around `Headless.Run`: the first SIGINT or SIGTERM calls `Interrupt`, which the retry wait, the hold and the stream checkpoints already answer to, and the watcher stops its own channel before telling the loop anything — so the second signal reaches the default disposition and kills the process, and so does one that arrives once the loop has returned. Take the handler away and a signalled run dies with no record, no slot to continue from and a signal status where a script expects the code. The trap is that **exit 6 is the *last* verdict and not any verdict** — `lastVerdict` wraps the reporter the approver is handed, so every decision still reaches the record on its way past, and a denial the run went on from is not the ending.
-
-**`--output text|json|jsonl` is the shape; `--json` is an alias for `json` and stays one.** `resolveOutput` settles the two spellings in `newCodeCmd` before a provider is resolved, and refuses a disagreement rather than picking a winner. `jsonl` is `jsonlStream` in `print.go`: one `jsonEvent` per line, kinds from `observe.Event*`, every code field a constant from `internal/observe` and never text the run composed. **Events leave from the observer and not from the hooks** — `headlessObserver` carries the stream beside the recorder and `signal`/`decision`/`toolResult`/`usage` write to both, which is what keeps an event from reaching the table and not the stream. The stream is nil for every other shape and each method is nil-safe. `usageOf` is the one reading of a run's totals, so the transcript and the stream state the same three figures, cached tokens included. `headlessChat.handles` is the same idea for where the run left off — the slot, the observe row and a literal `shhh <kind> --resume="<slot>"` — read after `save` because the slot is not settled until then, and stated by `jsonTranscript` and by the `close` line both, since a reader of the stream never sees the transcript.
-
-**One registration, not one per surface.** `buildToolset` (`internal/cli/toolset.go`) opens and registers the reducer, the web tools, the language server, the structural tools, the quality gate, the process supervisor, the report publisher and the vault, and `toolset.executor` builds the dispatch chain over them; `runChatSession` and `runPrintSession` both call it, and `registerSkills` is the last-mile pair. It stops short of MCP because the servers have not answered yet — the chain is built after `attachMCP`, which appends its own definitions. Each surface adds only what the other genuinely does not have: sub-agent roles, the memory tool and the notebook on the session, the repeat detector and the sub-agent supervisor outside the shared chain. `kind` is how the record names the surface and the origin a published report is filed under (`"print"` for a headless run), and `toolsetOpts.browser` is the one behavioural difference: a run with nobody at a desktop pops none. **A new optional tool joins `registrableDefinitions` (`internal/cli/registrable.go`) in the same change that registers it**, wherever the registration is: that list, built from fixtures and opening nothing, is what the tests beside it hold to a `prompt.Toolbox` note per tool and a description of at least thirty characters on every argument at any depth — `internal/prompt` cannot import this package, which is why the walk lives here. MCP server tools are the one thing it leaves out, since their words are the server's. **It is also where self-boundedness is declared**, because it is the only place that knows which optional tools this session has: `tools.SelfBounding` answers for the four readers that exist in every session, and `buildToolset` hands `evidence.Reducer.Exempt` the LSP and structural definitions' names on top of it. `git` is the exception and goes through `Reducer.ExemptWhen` with `structural.GitCallBounded`, because the bound there is per verb — status, log and blame bound themselves and `show`/`diff` are the pipeline's to bound — and a per-call exemption is only readable from `Reducer.WrapExecutor`, where the arguments and the result are both in hand; a result reaching `Process` without them is reduced unless the whole tool is `Exempt`.
-
-**The print path is both sessions, and what it may resolve is what the session registered.** `runPrintSession` takes a `chatSession`, so `shhh chat --print` is `conversationSession` behind the same assembly — which is why `attachMCP` is passed `session.conversation` there rather than a constant, and why `onlyRegistered` (`internal/cli/print.go`) wraps the approver outermost. `unattendedGate` and `headlessApprover` decide by *tier*: a name that mutates is a mutation and a command is a command, whether or not anything offered it, which is right for a surface that registered the whole toolset and wrong for one that registered part of it — a conversation run with `--yes` would otherwise write through a `write_file` it never had. **Two answers sit behind the flags** (`internal/cli/approvals.go`): `unattended{sup, judge}` is the last parameter of `headlessApprover`, and the `answer` closure inside it is the whole permission policy of an unattended run written once — the flags, then `autoJudge.decide` where `--mode auto` built one, then a refusal. `autoJudge` is `Classifier.Judge` plus `agent.ResolveUnattended`, which is the same backstops as `ResolveAuto` with `Ask` resolved to `Deny` and the classifier's own no left standing, because the card a session falls back to would be drawn at nobody; `agent.UnattendedRefusedResult` is the sentence the model reads. `subagent.SpawnToolName` is gated by `unattendedGate` only where a supervisor exists, and answered by the same `answer` closure — `--yes`, or the classifier — so `session.agents` is set in `code.go` for a headless run only when one of the two can answer it. `answerChildAsks` (`internal/cli/subagents.go`) is **not optional** wherever a supervisor is built without a person behind it: `Supervisor.emit` blocks on the event channel, so a run that spawned a child and read nothing would stop the child at its first routed request and itself behind it; it approves an `AskPatch` with no overlap warning where the run may write, refuses every other `Ask`, and adds an `EventPatch`'s files to `writtenByCalls` so the tree reading, the close gate and the git stager see a child's work as the run's. `shhh todo run` picks between the two by the step's mode (`todoStageArgs`, `internal/cli/todorun.go`): a step that writes is `shhh code --print --yes`, and a step that reads is `shhh chat --print` only where nothing in the pipeline writes, because the reading steps of a run that *does* write are reading the change it made and that takes the git verbs a conversation has not got.
-
-### The protocol surface
-
-`shhh serve` is the same loop behind a socket ([`docs/capabilities/headless.md#something-else-can-drive-it`](docs/capabilities/headless.md#something-else-can-drive-it)). `internal/rpc` is the wire and nothing else: the framing is one JSON object per line in both directions — the unattended stream's own framing, so a client needs no second reader — plus the session registry, the fan-out to every connection watching a session, and the approval queue. It knows no vocabulary of its own. An event is a `json.RawMessage` it forwards, and the two decision words are taken from `internal/observe` rather than spelled again.
-
-**What the protocol contributes to a run is `rpc.Seams` and nothing else**: where the events go, and who is asked. `internal/cli/serve.go` is the assembly on the other side of that, and it is the print path's assembly reached by name — `buildToolset`, `buildContainment`, `buildHooks`, `openHeadlessChat`, `startObserveRecorder`, `headlessObserver`, `headlessApprover`, `hookApprover`, `headlessTree`, `headlessCompactor`, `headlessCloseGate`, `headlessTurnOutcome`, `headlessExitCode`. Nothing was copied, because a copy agrees on the day it is written. **`unattendedGate` (`internal/cli/approvals.go`) is the one piece that had to be lifted rather than reached for**: which calls are put to a decision at all is the line between the tier that runs on its own and the tier that has to be answered for, and a second copy of it is how the next tool that needs an answer gets added to one surface and run unasked on the other, with nothing going red. The one difference is `--sandbox`, which a served session does not take: a disposable container is created for one run and torn down with it, and a session outlives every one of its turns. **All five hook seams fire here, and two of them are held on `serveLoop` rather than wired where they are built** (`hooks`, `hookCtx`): a served turn's close is the end of `Run` and the session's stop is `release`, both of which happen after the assembly has returned — the fields are set last so a failed assembly fires no stop, and `stopOnce` keeps the person's command to one run per sitting. `hookNote` is the difference from `-p`: a client cannot see this process's stderr, so a note also goes on the event stream under `observe.SignalHook`, which is the one signal code that reaches a stream and never the record. **`Run` drains the steering queue after `Headless.Run` returns and before the snapshot.** The loop's own drain sits inside its tool-round branch, so a steer sent while the model was writing the answer that ends the turn has no boundary left in front of it; it is carried out as another pass of the same turn — `Summary.Extend` then `Headless.Run` again, rounds added up — under the turn number the server minted, so one turn is still one record row and one close line.
-
-**The client's answer chooses an approver rather than replacing one.** `serveLoop`'s resolve calls `Seams.Ask` and, on a yes, hands the call to `headlessApprover` built with `printOpts{yes: true}` — so the containment refusal, the deny list, the safety table and the working scope answer it exactly as they answer a `--yes` run, in that order and before the opt-in. On a no it states the refusal itself and consults nothing, because the allowlist behind it would otherwise run a call the client had just declined. `answeredByClient` rewrites the one verdict that would be a lie in the record: the approver's own `headless-yes` becomes `observe.ReasonUser`. There is deliberately no `--yes` and no allow flag on the command. **`--mode auto` is the one thing that takes the client out of the loop**: `resolveCall` hands every gated call to a second `headlessApprover` built with `printOpts{}` and an `autoJudge` instead of calling `Seams.Ask` at all, because putting a call to a client that is not attached would hang the turn rather than reach a decision. A served session always builds a supervisor (`agents: true`), since a client can answer the spawn card the way it answers any other; its children take the parent's grants (`SetParentMode`/`SetParentGrants`) because the protocol has no card for a child's own request, and `sup.Close` joins `serveLoop.closers`.
-
-**Two things are per turn and one is per session.** `headlessCloseGate` and `lastVerdict` are rebuilt at each `serveLoop.Run` — a hand-back budget and a standing refusal both belong to the turn that produced them — and the verdict is behind an `atomic.Pointer` because the approver closure was built once and has to report to whichever is current. `writtenByCalls` deliberately accumulates instead: it is the subtrahend for the tree reading, and a path this session wrote in turn one is not somebody else's change in turn three. `headlessObserver.turn` is what a surface with more than one turn fills in; a `-p` run leaves it nil and stays turn 1.
-
-**`eventLines` is the seam that keeps one vocabulary.** `jsonlStream` writes to an `io.Writer`, so a served session gives it one that splits finished lines and hands each to `Seams.Emit` — what reaches a client is the line `--output jsonl` would have printed, not a second encoding of the same event. `TestServe_AClientReadsTheSameRunTheStreamPrints` holds the two runs' event sequences equal through the built binary.
-
-**One store, several sessions.** `runServe` opens it once and every session shares it, because the file takes exactly one connection by design. A session outlives the connection that opened it; `Server.Close` ends them all, and a socket that already exists is refused rather than unlinked — it is either a live server whose clients would silently stop being served or the remains of a dead one, and only the person who knows which can say.
-
-**Two liveness traps, both about a turn that must not be left hanging.** Everything written to a client goes through one bounded queue per connection (`outboundQueue`) with one writer goroutine, *not* a lock around the encoder: a write to a client that has stopped reading blocks, and under a lock that block is the turn's own goroutine — one wedged client would stop the agent and every other client watching the same session with it. A client that fills the queue is given up on rather than served an incomplete stream. `Serve` closes each accepted connection on the context as well as the listener, because closing only the listener leaves every read already blocked exactly where it was and a server told to stop with somebody connected would never stop. And `Session.end` interrupts the turn and then *waits* for it before closing the loop: what a turn does as it ends is write its record and save its conversation, and releasing the store out from under that loses exactly the run somebody would want to come back to. `Seams.Ask` answers false where there is nobody attached and false again when the last client leaves mid-wait, so a session being torn down cannot sit on a decision nobody is left to make.
+| Build / test one package | `make build` / `go test ./internal/<pkg>` |
+| **Quality gate** (the done rule) | `make test vet lint fmt-check docs-check` |
+| Format | `make fmt` |
+| Loopback contracts / containment | `make test-contract` / `make test-integration` |
+| CI pipeline | `make ci` (the gate plus `cross` and `tui-check`) |
+| Update goldens | `go test ./internal/ui ./internal/ui/components ./internal/ui/chat -update-golden` |
+| Capture a TUI scene | `make tui-shot SCENE=<name> COLS=110 ROWS=40` |
+| Eval suite (costs real requests) | `make eval` |
 
 ## Testing
 
-### Golden Files
-
-TUI layout tests use golden files in `testdata/golden/` directories. Golden files capture renders at multiple terminal widths (60, 80, 110, 130 columns) in both color and mono palettes. Each golden has two blocks: ANSI-stripped layout and escaped-ANSI for color assertions.
-
-**A component's golden is its own, and the whole surface is captured at two widths.** Every block the chat surface draws has a golden of its own; `screen` holds only the seams none of them can see — 130 columns, the rail beside the transcript and the bottom panel taking rows off both, and 60, the stacked form — so a change to one block moves that block's files and those two, not forty. A fact only some other width shows (a key the rail sheds, a count a frame layout drops, the rail's growth) goes into the component's golden or a layout test, not a third frame: `screenWidths` in `internal/ui/chat/golden_test.go` says where each rung is held now.
-
-**A golden's clock stands still.** Every elapsed, age and window the chat surface draws is read off the package's `clock` rather than `time.Now`, and `captureCases` holds it at `goldenNow` for every capture (`holdClock`). A new clock the screen draws reads `clock()`; one read off `time.Now` puts the machine's speed into a fixture, and the next run takes it out again. A supervisor a fixture builds takes `Now: goldenClock` for the same reason.
-
-**To update goldens after an intentional layout change:**
-```
-go test ./internal/ui ./internal/ui/components ./internal/ui/chat -update-golden
-```
-
-A `TestMain` in each golden-using package calls `golden.Run(m)` which **deletes stale golden files** that no test touched. Adding/removing a test case therefore requires running with `-update-golden` to reconcile files.
+- `make test` is hermetic: no TCP listener, clipboard, container, daemon or
+  network. Tests that cross a real boundary carry a build tag (`contract`,
+  `integration`) so they never compile into it.
+- **`httptest` opens a real listener.** Use `internal/testhttp` through the
+  package's transport seam; replace host executables at their test seam. In a
+  restricted shell use a fresh writable `GOCACHE`. See
+  `.agents/skills/testing/SKILL.md`.
+- **Never `os.Chdir` or `t.Chdir` in a test**: it makes the package
+  uncacheable. Pass the directory in, and point destructive fixtures at a
+  `t.TempDir()`, never the real filesystem.
+- Stdlib `testing` only (`teatest` is the one harness allowed), table-driven,
+  beside the source. Don't add `-count=1` to `make test`.
+- **Goldens** are in `testdata/golden/` at 60/80/110/130 columns, colour and
+  mono. `golden.Run(m)` deletes every golden no test touched, so add or remove
+  a case with `-update-golden`; never hand-write one. Anything the screen
+  draws reads the held `clock()`, never `time.Now`.
 
 ### Driving the binary
 
-Three layers ask three different questions of a surface, and none of them
-answers another's:
+A golden proves the render, `internal/ui/chat/program_test.go` the route, and
+a driven scene (`scripts/tui/`, tmux plus `fakeprovider.py`) the terminal.
+**A change to a surface is accepted with both a golden and a driven capture**,
+and the capture has to be read. Compare its `.txt` with the golden's layout
+block, never the `.ansi`. Wait on text only the surface draws. Guide:
+`.agents/skills/tui-drive/SKILL.md`.
 
-- **The golden is the render.** `internal/ui/golden` draws the surface
-  in-process at four widths in two palettes and asks what it looks like. It
-  builds the model directly, so it can say nothing about how a reader gets
-  there.
-- **The program test is the route.** `internal/ui/chat/program_test.go` runs
-  a real `tea.Program` over the session model under `teatest`, sends the keys
-  a reader sends, lets a scripted `provider.Provider` answer on the runtime's
-  own goroutines, and reads the frame the program ends on. It asks whether
-  the key reaches the surface and whether the stream arrives through the
-  whole program — as a `go test` verdict, on every platform, including the
-  one with no tmux. It has no terminal, so it can say nothing about what a
-  terminal does with the frame.
-- **The driven scene is the terminal and the stream.** It is the only one
-  that sees the alternate screen, the colour profile, the cursor placement
-  and the exit banner, because it is the only one with a terminal.
+## Version control
 
-The gate below is unchanged by the middle layer: a surface is still accepted
-with a golden and a driven capture. What the program test buys is that a
-broken route fails in `make ci` before either is looked at.
+- **Never `git add -A`, `git add .` or `git commit -a`.** Name the paths.
+- Scope each commit to this session's work, even when other files are dirty.
+- Commit on the checked-out branch, `master` included; don't branch first.
+- Subject: `type(scope): summary` with type `feat`, `fix`, `docs`, `refactor`,
+  `perf`, `test`, `build`, `ci`, `chore` or `revert`; imperative, lower case,
+  no trailing period, under 72 characters. A breaking change to flags, config
+  keys or an on-disk format takes `!` and a `BREAKING CHANGE:` footer. A
+  subject that needs "and" is two commits. The body says what the diff cannot.
 
-A golden proves a surface renders. It cannot prove that the key reaches the
-surface, that the panel it draws into is the one the register placed it in,
-or that a provider's stream arrives through the real program. `scripts/tui/`
-is the other half: `drive.sh` opens the built binary in a tmux pane of a
-stated size, in a fresh repository under a home of its own, pointed at
-`fakeprovider.py` — an openai-compatible endpoint that answers each request
-with the next line of a scene's `replies.txt` — and walks the scene's
-`steps.txt`: type these keys, then capture the screen once this text is on
-it. Each capture is the cells (`.txt`) and the cells with colour (`.ansi`);
-`--pictures` draws each of those `.ansi` captures as a still beside it, a
-`.gif` per snap, through `agg` — one binary, no browser. The
-[`tui-drive`](.agents/skills/tui-drive/SKILL.md) skill is the working guide:
-the scene grammar, the key names, and how to read a capture.
+These yield to an explicit instruction to do otherwise.
 
-**A change to a surface is accepted with both a golden and a driven
-capture.** A surface is anything under `internal/ui/` that draws, and any
-row, panel, card or screen `docs/interface/surfaces.md` names. The golden is
-the render at `goldenWidths` in both palettes, as above. The capture is the
-built binary driven through a scene that reaches the surface, at the width
-the item names — the narrowest it must fit at, when it names none — and read
-by whoever ticks the criterion: the `.txt` against what the artboard says,
-the picture by eye. A capture that was taken and not read is a screenshot in
-a folder. `make tui-check` runs every scene in the tree and is part of `make
-ci`, so a scene is a test for as long as it is committed and the harness
-itself cannot rot. A story's own `make tui-shot` run is the reading of one
-scene, and its scene lives under `scripts/tui/scenes/<slug>/` so `tui-check`
-runs it again on every change. The `tui` suite in `.shhh/quality.json`
-(`/gate run tui`) drives the smoke scene contained; it is never `default` or
-`on_close`, because it wants tmux and a loopback listener the closing verdict
-may not depend on, and it names `tmux` and `python3` as checks of their own so
-a host without them blocks rather than failing a scene
-([`docs/capabilities/testing.md#a-scene-can-run-in-the-gate`](docs/capabilities/testing.md#a-scene-can-run-in-the-gate)).
+## Architecture
 
-**A scene drives from wherever the checkout is**, a worktree under
-`.claude/worktrees/<name>/` included, and needs nothing set to do it. The
-tmux socket lives in a directory of the run's own under `$TMPDIR` and goes
-when the run's other scratch does — never under `bin/tui/<scene>/`, where the
-checkout's own path has already spent most of a Unix socket's 104-byte cap
-and tmux answers "File name too long", which reaches the reader as every snap
-timing out rather than as a path being long. An inherited `TMUX_TMPDIR` still
-wins, and a socket path that is over the cap even so is named and stops the
-run before the provider starts. Two runs on one host do not meet either: the
-provider's port is a free one asked of the kernel as the run starts and the
-tmux server is named for the run, so a second worktree's `make tui-shot`
-cannot take the first's port or kill its server; `PORT` and `SOCK` override
-both, for a reader who wants to know where to look. `make tui-longpath`,
-which `tui-check` runs after the scenes, drives the smoke scene from a copy
-of `scripts/tui/` whose own path is past the cap, so the harness cannot
-quietly go back to a socket named after the checkout.
+Package doc comments and the comments at each trap are the detailed map.
+Packages not listed are named for what they do.
 
-What will bite you: **a capture is the terminal's cells, not the View's
-bytes.** tmux re-emits colour per cell, so an `.ansi` file will never match a
-golden's ansi block and must not be diffed against one; compare the `.txt`
-with the golden's layout block instead. **A snap waits for text, and the
-text has to be the surface's own.** Waiting for the line you typed passes
-before the reply arrives; wait for a word only the reply carries. **The
-scripted model speaks one dialect**, openai-compatible SSE, the one a
-`base_url` alone redirects — a scene cannot exercise the Anthropic or Gemini
-stream loops, which the provider package's own tests cover. **A still is the
-capture drawn, not a second run of the scene**: it is rendered from the same
-`.ansi` the `.txt` came from, so the two cannot disagree — and nothing in it
-can show where the cursor stood, which tmux does not capture either.
-`drive.sh` clears the previous run's captures and stills before it starts, so
-a picture from an earlier run is never read as this one's. **Captures live under
-`bin/` and are never committed**: the scene is the record, and a capture is
-reproduced from it.
+```
+cmd/shhh/main.go   entry point (cobra root, executed through fang)
+internal/
+  cli/             every cobra command, and each surface's assembly
+  agent/           front-end-agnostic agent loop; Headless drives it unattended
+  provider/        provider interface and the four dialects
+  ui/chat/         the chat TUI model (the main interactive surface)
+  ui/components/   reusable TUI components
+  ui/keys/         the key register and keymap file
+  subagent/        sub-agents: spawn, worktrees, fan-out, patches
+  tools/           built-in tools, split by security tier
+  runner/          captured command execution and the command ceiling
+  config/          TOML config and the settings table
+  storage/         SQLite persistence
+  sandbox/         process containment (bubblewrap, Seatbelt, containers)
+  scope/           working-scope grants and the deny mask
+  safety/          command danger analysis
+  radius/          blast-radius analysis
+  web/             fetch and search, host policy, the sources ledger
+  project/         checkout survey, instruction files, trust
+  structural/      external tools, and the read-only and write git verbs
+  hostgit/         how shhh runs git on the host
+  secret/          the vault and the scrub
+  observe/         the session record's contract and closed vocabularies
+  evidence/        store for reduced and elided output
+  todo/, todo/run/ the project backlog and its runner
+  rpc/             the JSON-RPC surface behind `shhh serve`
+```
 
-### Test Conventions
+## Invariants
 
-- Tests live alongside their source (`foo_test.go` beside `foo.go`)
-- Table-driven tests are the norm
-- No external test dependencies (no testify); tests use stdlib `testing`. The one exception is `teatest`, which is a harness rather than an assertion library: it starts a real `tea.Program` over a model, which nothing in the standard library can do. Assertions in those tests are still plain `if`/`t.Fatalf`
-- SQLite storage tests use `OpenPath` with a temp file or `:memory:`
-- The LSP package has integration tests that spawn real language servers
-- `internal/cli`'s contract tier builds the binary once in its `TestMain` (into a `bin` directory under the temp home, since the temp home itself is the config directory) and drives `shhh code -p` against a fake provider over `httptest`; the fake must speak the openai-compatible dialect the built binary is configured for. Those files carry the `contract` tag, and the hermetic tier's `prepareContractTier` is a no-op. The hermetic suite stays cacheable, so `make test` must not pass `-count=1`
-
-**Never change the working directory in a test.** `cmd/go` records every
-chdir target as one of the test's inputs, and a `t.TempDir()` path is new on
-every run, so a single `os.Chdir` or `t.Chdir` makes its whole package
-uncacheable — `go test ./...` re-runs it in full against a tree nothing has
-touched, and the packages around it report `(cached)` so it reads as a slow
-suite rather than a broken one. Give the code under test the directory
-instead: `chat.Model.WithWorkspace`, `radius.Resolve`, `project.FindFrom`,
-`migrate.Plan` and `buildScaffold` all take it as an argument for this reason.
-`make docs-check` fails on a `Chdir` in a `_test.go`, so this cannot drift
-back.
-
-The same reasoning bans a test that reads the machine rather than its own
-scratch directory. A fixture command of `rm -rf /` asks `internal/radius` to
-walk the real filesystem — twenty thousand entries, a different set of
-`/proc` paths each run, and the package is uncacheable again. Point a
-destructive fixture at a `t.TempDir()`.
-
-## Configuration
-
-Config is TOML at `~/.config/shhh/config.toml` (or `$XDG_CONFIG_HOME/shhh/`), the same on every platform — see [`docs/capabilities/configuration.md#one-layout-everywhere`](docs/capabilities/configuration.md#one-layout-everywhere). Key sections: `[provider]`, `[behavior]`, `[sandbox]`, `[web]`, `[lsp]`, `[appearance]`, `[history]`, `[agents]`, `[secrets]` (names only; values come from the environment), `[prompts]` (paths to wordings that replace the built-in ones, read at session start), `[mcp]` with one `[mcp.servers.<name>]` table per server (plus `mcp.json` beside the file and the project's `.mcp.json`, read by `mcp.Discover`). Agent profiles are one TOML file each in the `agents/` directory beside it (`config.AgentDirs`), loaded by `config.LoadAgents`. User-scope skills are directories under `skills/` beside it (`config.SkillDirs`); project-scope ones come from the checkout (`skill.ProjectRoots`).
-
-**The keymap file moves keys inside the register, and `internal/ui/keys/keymap.go` is all of it** ([`docs/capabilities/configuration.md#the-keymap-file`](docs/capabilities/configuration.md#the-keymap-file)). `keys.Load` applies `keybindings.toml` once, at the top of the process, and records what it read; `keys.Applied` is that record — the file this process's keyboard came from and the refusal, if any — and is what the doctor and `shhh keys` read. `keys.Check` is the other question, whether a session started now would take the file: it applies the file to `declared`, the snapshot of the register taken before any file was read, and puts this process's register back before it returns — apply-and-restore against the shipped register, never a copy of it, because the five rules are asked of the package's own surfaces and a copy has none. That also makes it for a process that draws nothing. `movable()` is every group a file may name, in the order the scaffold and the reference are written in, and `fixed()` is empty: a group belongs there only where one of the five rules forbids moving it at all, since a rule that refuses one keystroke is a check on the move and not a reason to take the group away. A new `*Keys` group has to join one of the two lists — a go/ast test holds every declaration to that — and a new key that moves both ways or ends something joins `pairs()` or `destructive()`, which are listed rather than derived because nothing in a binding says either. `keys.KeymapOutdated`/`KeymapUpdated` (`internal/ui/keys/update.go`) are the keymap's half of `config init --update`: what counts as behind is the settings file's rule (a key neither bound nor listed as a commented row, and nothing counts against a file listing none), the rows added are `scaffoldRow`'s, and the result must decode to the same bindings or nothing is written. Every file `config init`, `--update` and `config set` write goes through `config.ReplaceFile` — synced temporary file, rename, synced directory — never `os.WriteFile`, because a wording cut off by a power cut is loaded as a wording.
-
-**The register is one table, the same on every platform** ([`docs/interface/reserved-keys.md#one-keyboard-on-every-platform`](docs/interface/reserved-keys.md#one-keyboard-on-every-platform)). `keys.go` declares no alt chord, because a stock Mac terminal composes a character for Option until a profile setting is ticked, so what it declares is what every desk ships: `declared` is a snapshot of it taken before any `keybindings.toml` is read, which is what "shipped" means to `keys.Load`, `keys.Check` and `shhh keys`, and `TestShippedKeyboard_ShipsNoAltChord` is what keeps it one table. `keys.Platform()` is asked for a sentence and never for a key — the key list's word moves (`wordMoves` in `internal/ui/chat/help.go`), `option+←`/`option+→` on a Mac — and it answers `linux` inside a test binary whatever the host, so the goldens are one set on every desk; `keys.UsePlatform` changes that answer for a test and returns the restore. A keymap file may put a key back on alt, and the doctor's keys row (`internal/cli/doctorkeys.go`) is then the one surface that names the Option setting.
+- **Three tool tiers, never merged.** `Execute` in `tools/tools.go` dispatches
+  read-only tools only, mutating tools go through `ExecuteMutating`, and
+  `execute_command` is its own tier requiring approval. Merging them removes a
+  security boundary
+  ([`docs/architecture.md#tiers-not-permissions`](docs/architecture.md#tiers-not-permissions)).
+- **Nothing fails open.** Auto mode's classifier falls back to asking on any
+  error. Deny lists are answered before the mode; a checkout's settings may
+  add a refusal, never remove one.
+- **Every way of starting a program takes the containment wrap**
+  (`chat.Containment.Run`, `process.Supervisor`), including a new one.
+- **Anything that persists tool output takes the secret scrub before it
+  writes.** The executor wrap only sees a result after it is on disk.
+- **An MCP server's annotations grant nothing.** Read-only is the user's
+  `Definition.ReadOnly`, never `Tool.ReadOnlyHint`.
+- **Every git shhh runs on the host goes through `hostgit.Command`**, never a
+  bare `exec.Command("git", …)`.
+- **`CGO_ENABLED=0`.** The build is pure Go (`modernc.org/sqlite`).
 
 ## Gotchas
 
-- **CGO_ENABLED=0**: The build is pure Go (uses `modernc.org/sqlite`, not cgo sqlite3). Never add cgo dependencies.
-- **Never add a story identifier** (`S-060`, `E-018`) to a comment, a document or a test name. They are gone from the code and `make docs-check` fails on one. Say what the code does and cite `docs/` — see [Never reference a story or a plan](#never-reference-a-story-or-a-plan).
-- **Provider name normalization**: Underscores become hyphens in the registry (`open_ai` → `open-ai`). Use the normalized form when registering or resolving.
-- **An MCP server's annotations grant nothing**: `Tool.ReadOnlyHint` is displayed in `shhh mcp show` and never consulted by `Toolset.ReadOnly`, which reads `Definition.ReadOnly` — the user's word in *their* config — plus the one name a resource read is made under; `ReadJSON` drops `readOnly` from a project file with a diagnostic. Don't wire the hint into the gate, however sensible it looks for a particular server: [`docs/capabilities/mcp.md#a-server-cannot-vouch-for-itself`](docs/capabilities/mcp.md#a-server-cannot-vouch-for-itself). The resource read is the mirror of that rule and not an exception to it: it is a read because reading is not acting, so no annotation can promote it and a server the user did not mark read-only still has its resources read without a card — [`docs/capabilities/mcp.md#a-resource-is-a-read`](docs/capabilities/mcp.md#a-resource-is-a-read).
-- **Every setting is one row of `settings` in `internal/config/settings.go`; the words it may say are judged in `internal/cli`**: the table holds each key's kind, default, description, and the environment variable or flag that outranks the file, and `config.Set` parses a value by the Go type of the field the key names — so a key of a type already in the table is one row and no new parse. `config.Value` reads one back as text, which is what the config screen, `shhh config list` and `shhh config get` all draw from, and `config.Reference` prints the table into the generated region of [`docs/capabilities/configuration.md#every-setting`](docs/capabilities/configuration.md#every-setting) (`make docs` writes it; `make docs-check` and the suite fail when it is stale). A field with no row and a row with no field both fail a test. But a value that is one of a few *names* (a permission mode, a reasoning level, a containment profile or engine or isolation level) is checked by `checkConfigValue` in `internal/cli/config.go`, because those vocabularies belong to `agent`, `provider` and `sandbox`, and `config` imports none of them — the same split `profileFromDefinition` makes for a profile file. A word key whose vocabulary no other package owns is judged against the table's own `Values`; a key that carries `Values` and is not judged fails a test. Every writer in `internal/cli` goes through `writeConfigEdits`, so a new one gets the judge for free — and the note it answers with, which is what the checkout's own file has to say about a key just written to the user's. See [`docs/capabilities/configuration.md#a-value-is-refused-before-it-is-written`](docs/capabilities/configuration.md#a-value-is-refused-before-it-is-written).
-- **Both config files are read in one place, `loadLayeredConfig` (`internal/cli/config.go`), and the result rides on the command's context**: `ConfigFrom` is the merged settings and `ProjectConfigFrom` is what the checkout's `.shhh/config.toml` contributed — the file and the keys it set, which is what every surface that says `project` in a source column reads. `config.LayerProject` (`internal/config/project.go`) does the merge by the keys the file wrote rather than by which of them are non-zero, so a checkout can turn something off; `config.RefusedInProject` is the set a checkout may not decide and is asked by the load and by a write to the checkout's file alike. Don't call `config.Load` from a command — it is the user's file alone, and a surface built on it disagrees with the session beside it. The checkout's file is a trust resource like its skills and its suites (`internal/project/trust.go`), so it loads only where the checkout is trusted. See [`docs/capabilities/configuration.md#two-files-one-resolution-order`](docs/capabilities/configuration.md#two-files-one-resolution-order).
-- **`/config` inside a session is that same host, not a second one**: `configSessionOpener` (`internal/cli/config.go`) builds the `configModel` `shhh config` builds and hands the chat a `chat.ConfigSession` — the screen and one `Answer` function — which is all `internal/ui/chat/config.go` has to work with, because the chat package owns no config semantics any more than it owns the writer beside it (`WithConfigWriter`). The chat's half is one register row in `overlay.go` (a pane, borrowing the screen, so the turn keeps running), the transcript row a write leaves, and nothing else. The file is read again on every opening: the screen's whole right-hand column is where a value came from, and the copy the session started with would be saying that about a file `shhh config set` may have edited since. The one field the component takes for this is `ConfigScreen.InSession`, which decides two words — what the screen calls itself and whether its header says `back` or `quit`.
-- **The deny mask is not configurable, and two grantable tiers are decided per session**: `fixedDenyPaths` (`internal/sandbox/sandbox.go`) cannot be disabled and `deny_extra` only adds to it — `~/.ssh`, `~/.aws`, `~/.config/gh`, `~/.netrc`, `~/.gnupg`, `~/.password-store`, and `~/.secrets`. `sandbox.CredentialPaths` (`~/.kube`, `~/.docker`, `~/.azure`, `~/.config/gcloud`, `~/.gem`) and `sandbox.ShhhPaths` (the config and state directories) are masked unless a write grant is at or inside them, so the working scope is what unmasks one and nothing subtracts from the fixed mask. The order matters — the mask is assembled *after* the grants, and a grant below a store unmasks the store because masking the parent of a writable path is refused outright. `internal/scope` reads both lists rather than keeping a second copy: `Classify` returns Refused behind the fixed mask and Sensitive for a credential or shhh directory, so neither auto mode nor the classifier can widen into one. Shhh's paths are sensitive rather than fixed because developing shhh is the legitimate exception; `/add-dir`, `--add-dir`, or a trusted checkout's `behavior.scope_dirs` makes that exception explicitly. A new store goes in the fixed list only if nothing legitimate ever writes to it; anything a session might work in goes in a grantable list, because the fixed list has no way back. See [`docs/capabilities/containment.md#the-deny-mask-is-not-configurable`](docs/capabilities/containment.md#the-deny-mask-is-not-configurable).
-- **The workspace repository's program paths are read-only, not masked, and git says where they are**: `spec.maskGitStore` (`internal/sandbox/gitstore.go`) runs after the grants and asks `git rev-parse` for the store, the effective hooks directory and the git dir — with the walked-up `.git`'s ordinary layout as a floor, so a store a command broke for a moment does not read as no repository — then makes config, hooks, `info/`, `commondir`, `config.worktree`, a linked worktree's `.git` file and a subdirectory workspace's `.git` read-only while the rest of the store stays writable. A grant at or inside the store unmasks all of it, and `scope.Classify` calls `sandbox.GitStoreOf` so that grant is Sensitive. What will bite you: **the directories above an entry are pinned** (`gitPinned` — a self-`--bind` under bubblewrap, a `literal` deny under Seatbelt), because a mount follows the directory it sits on and a Seatbelt rename is judged by the names it touches, so `.git` moved aside, written into and moved back walks around every other rule; and **bubblewrap cannot hold an absent path or a symlink** (`gitUnheld`, named by `Report`), which is why the words `sandbox.GitStoreWords` gives the card, `/status` and the doctor row stop at the entries that exist. See [`docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only`](docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only).
-- **The temporary directory is the session's own, and the mechanism decides where it is**: `hostTempDirs` (`internal/sandbox/sandbox.go`) is `/tmp` plus whatever `TMPDIR` names when that is somewhere else, and `spec.privatiseTmp` hides both — it is the one part of the write boundary that used to be open in both directions, since `defaultWritePaths` granted `os.TempDir()` outright. `resolvePolicy` takes the mechanism for this and nothing else: bubblewrap mounts `--tmpfs` over each of them and `TMPDIR` becomes `/tmp`, Seatbelt cannot rearrange a filesystem so it denies them and `sessionTmpDir` hands out one directory per shhh process under the state dir — which the ungranted shhh-path mask hides, so the profile allows it *after* that mask and SBPL's later-rule-wins is what makes one session's scratch its own. Nothing deletes a session directory when a session ends (there is no such seam — the wrap is built per command), so `sweepSessionTmpDirs` reaps the ones whose pid is gone on the way in, and leaves a name that is not a pid alone. **Order is the whole of how a grant still works**: the tmpfs is mounted before the write binds and the deny is written before the allowances, so `/add-dir /tmp/whatever` brings back exactly that path — and on Seatbelt a grant needs its *reads* allowed again too, because the deny took those and `(allow file-write*)` does not undo it (`tmpReadable`). `spec.tmpVisible` is the same re-exposure for a workspace or cwd that lives under `/tmp` without being a grant, which is every `t.TempDir()` in the suite and a read-only workspace under the quality gate. `withTmpdir` replaces the inherited `TMPDIR` rather than adding one, because `containedEnv` keeps the later pair and two of them is a coin toss. See [`docs/capabilities/containment.md#the-temporary-directory-is-the-sessions-own`](docs/capabilities/containment.md#the-temporary-directory-is-the-sessions-own).
-- **The namespaces and the environment are unconditional, and the environment is an allowlist**: `envAllowlist` in `internal/sandbox/sandbox.go` is every variable name that crosses into containment, plus `Policy.SecretNames` — the vault's own list, asked for rather than guessed at, which is why nothing here reads the shape of a name. Both halves are filled in one place, `sandboxPolicy` (`internal/cli/sandbox.go`), from `runner.Environ` and `runner.SessionEnvNames`, because every command path resolves its policy through it: a sub-agent's command, the quality gate's check and a process start would each otherwise decide separately what a contained command may carry. `Policy.WithEnv` is the second and only other way onto that allowlist: a process start's `env`, appended to `Policy.Env` with its names appended to `SecretNames`, one command wide — a name the session already declared is dropped rather than applied, so the person's value still wins, which is the precedence the uncontained spawn gets from appending the session's pairs last. `containedEnv` applies the allowlist to `Policy.Env` (the session's pairs; empty falls back to this process's environment) and each mechanism rebuilds from the result: bubblewrap with `--clearenv` and a `--setenv` per pair beside `--unshare-pid --unshare-ipc --unshare-uts`, Seatbelt with `env -i`, since a Seatbelt policy says what a process may reach and nothing about what it is told. Both also mask `SSH_AUTH_SOCK`'s socket, after the write grants, because dropping the address does not stop a command that guesses the path — and an agent signs for anything that reaches it, so the deny mask over the private key is worth nothing without this. `agentSocketPath` answers `""` for a path nothing is listening on, and it has to: a mount needs somewhere to land, bubblewrap cannot make one on the read-only root, and an address left over from a dead agent would otherwise fail every wrap in the session (`--ro-bind-try` does not help — it forgives a missing *source*, and the source is `/dev/null`). Don't turn the allowlist into a mask of credential-shaped names: the leak it closed came from variables shhh had never heard of. See [`docs/capabilities/containment.md#a-contained-command-carries-almost-no-environment`](docs/capabilities/containment.md#a-contained-command-carries-almost-no-environment).
-- **A checkout's declared tools are found through the captured commands' PATH, never shhh's own**: `openToolchain` (`internal/cli/toolchain.go`) reads `.shhh/toolchain.toml` through `project.LoadToolchain` and calls `runner.SetPathAfter` with `sandbox.ToolchainDir()`'s `bin`, which `runner.Environ` appends to the end of PATH — so `sandboxPolicy` carries it into containment and `Toolchain.Missing` is judged against `runner.PathValue()`. Don't `os.Setenv` it into shhh's own PATH, and don't move it to the front: every contained command can write that directory, and shhh looks up and runs programs for itself uncontained. The install is `chat.Containment.Toolchain` (built by `toolchainCard` at the end of `buildContainment`), opened by `/setup` or the start screen's offer as `stateSetup` (`internal/ui/chat/toolchain.go`), and `installLine` is its only runner: `installPolicy` makes the workspace read-only, drops the scope's directories, starts in the toolchain directory and takes the declaration's `hosts` as `AllowHosts`; `installEnv` points `GOBIN` and each other installer there. Only `runChatSession` wires the card; `print.go` and `serve.go` pass `false` to `toolchainPromptBlock`, which writes nothing when nothing is missing. `openProcessSupervisor` hands `runner.PathValue` to `process.Supervisor.SetPath` for the same reason, so a bare process start finds what a captured command finds — a function rather than an import, because `internal/runner`'s own tests import `internal/process`. What will bite you: **the prompt paragraph is written once, and everything else about the declaration is read again** — `finishSetup` tells the model what an install landed through `announce` (`toolchainInstalledMessage`), and `Toolchain.Reread`/`Moved` re-read the card's state in the `Update` tail (`rereadToolchain`) whenever `toolchainMoves` moves, which `forgetProjectTrust` and `writeToolchainDraft` do; `takeToolchainReading` keeps the session's own fields (the draft, a run under way), so a new field that is the session's rather than the checkout's has to be carried across there. See [`docs/capabilities/containment.md#a-checkout-declares-the-toolchain-its-work-needs`](docs/capabilities/containment.md#a-checkout-declares-the-toolchain-its-work-needs).
-- **A `--sandbox` run's container starts from an image prepared from the declaration, and the base stays what the policy reads**: `preparedImage` (`internal/cli/sandbox.go`) is called from `startSandbox` before `CreateContainer`, asks `sandbox.LookupPrepared` for the image kept under `sandbox.PreparedKey` (the base's digest, the declaration's `Digest` and `prepareRecipe`), and only where there is none runs `sandbox.PrepareImage` (`internal/sandbox/prepare.go`) — a setup container from `prepareArgv` (no mount, no `--network none`, every capability dropped), the execs of `prepareSteps`, then `commitArgv` under `localhost/shhh-toolchain:<key>`. The ID lands on `ContainerSpec.Prepared`, which `createArgv` runs in `Image`'s place while `ValidateImage` still reads `Image`. What will bite you: **a commit keeps the container's own environment and labels in the image**, so the installers' variables (`containerInstallEnv`) go on each `exec`, never on the setup container's `run`, or every session container started from the image runs under them; and **`image inspect` is read as its JSON rather than through a `--format` template**: `Id` and `Config.Labels` are the keys both engines print, which relies on no engine's template field names — and only docker has been driven through it here. `probeImage` (`internal/cli/doctor.go`, the doctor's `image` row) reads the same lookup into `doctorImage` and prepares nothing. See [`docs/capabilities/containment.md#a-sandbox-starts-from-an-image-prepared-from-it`](docs/capabilities/containment.md#a-sandbox-starts-from-an-image-prepared-from-it).
-- **A required session refuses before the card, not at the runner**: `sandbox.require` (and `--require-sandbox`, which can only turn it on) makes `buildContainment` fill `chat.Containment.Refusal` with the doctor's own wording — `doctorSandbox` in `internal/cli/doctor.go`, so the instruction for installing a mechanism has one spelling. `advanceApprovalQueue` answers it in front of everything the queue does, the headless approver in front of policy — and, for a `-p` run and a served session alike, `unattendedHooks` (`internal/cli/hooks.go`) in front of both hook seams that wrap that approver — and `childCommandRunnerIn` (`internal/cli/subagents.go`) builds no runner at all where it would otherwise fall back to the plain one — a child is the one path with no card to draw and nobody to draw it for, so a requirement that stopped at the session is one a fan-out walks around. A child's routed card is spared the same way: `childCommandRefusal` is the one answer, deciding both that the child has no runner and what `subagent.Env.CommandRefusal` says, which `refuseUncontained` answers in front of the surface's gated seam — so a child's pre-tool hook no more fires for it than a session's does — and so ahead of the policy, the classifier and the card, filing no decision. Every one of these refusals is worded by `refusalFor` (`internal/cli/sandbox.go`) round `observe.ContainmentRequired`, and that clause on the first line is what `ClassFromResult` files as `harness-containment`: the host's reason beside it says "not found", which the keyword ladder would otherwise read as a stale path. The model reads the refusal as the call's result and no card is drawn for a decision that has no sides. The flag is folded into the config in `buildSessionEnv` rather than beside the containment build, because those three read it from three different builders. The knob only adds the refusal; the environment allowlist above is in force either way. See [`docs/capabilities/containment.md#containment-can-be-required`](docs/capabilities/containment.md#containment-can-be-required).
-- **There are two command paths and both take the wrap**: `execute_command` runs through `chat.Containment.Run`, and a `process` start runs through `process.Supervisor`, which `buildContainment` (`internal/cli/sandbox.go`) hands the same `sandbox.Availability` and the same policy via `SetContainment` — resolved per start, so a directory added to the working scope mid-session is writable to a process too, and with the start's own directory as the policy's cwd, because the mechanism chdirs into it. The start's own `env` argument travels the same way — `Containment.Wrap` takes `(dir, argv, env)` and the wrap puts the pairs into the policy with `Policy.WithEnv` — because the mechanism clears whatever the spawn set and rebuilds from the policy alone: pairs left on `cmd.Env` reach a contained process as nothing at all, and the symptom is a server told `PORT=3001` listening on 3000. A start the wrap refuses is an error result naming the mechanism, never a bare process; a `--sandbox` run refuses one outright, since a process cannot follow the commands into the container. The approval card asks `Processes.Contained` — the supervisor — rather than the runner for the mechanism it names, which is the difference between reporting this path and reporting the one beside it. A third way to spawn would need the wrap as well. See [`docs/capabilities/containment.md#a-started-process-is-contained-too`](docs/capabilities/containment.md#a-started-process-is-contained-too).
-- **A host list is a proxy, and the kernel never sees a host**: `sandbox.allow_hosts` (`Policy.AllowHosts`, parsed by `sandbox.ParseHosts`) takes the command's network away (`spec.network` false) and `internal/sandbox/proxy.go` is the only way out — a CONNECT/absolute-URI proxy in shhh's own process that checks the host before it dials anything and carries one request per connection. SBPL's network filter takes `*` or `localhost` and refuses a host name, so Seatbelt allows the proxy's one loopback port; bubblewrap's namespace has no route to the host's loopback at all, so the proxy listens on a socket file in the session's scratch directory and `RunBridge` (`bridge.go`) — the shhh binary itself, answered in `cmd/shhh/main.go` before the keymap loads, because inside containment its files are masked — listens on `bridgePort` inside and carries it there. Two traps: **the proxy is started by `spec.attachProxy` in `Wrap`/`WrapArgv` and never by `resolvePolicy`**, which `Report` also calls, so a doctor run opens no listener; and the socket and the bridge are bound onto the private `/tmp` *after* the masks, since both live under paths the tmpfs or the state-directory mask would otherwise cover. `sandbox.NetworkWords` is the one phrasing every report reads, `chat.Containment.Hosts` is set only where `HoldsHosts` says the mechanism holds a list, and the integration tier's `TestMain` makes the test binary the bridge. See [`docs/capabilities/containment.md#a-contained-commands-network-can-be-a-list-of-hosts`](docs/capabilities/containment.md#a-contained-commands-network-can-be-a-list-of-hosts).
-- **The command ceiling is decided where the command is held, not where the limit is set**: the deadline is put on the context by `boundedRunner` (`internal/cli/timeout.go`) for the surfaces with no reader, and by `executeRun` (`internal/ui/chat/run.go`) for an assistant command in a session; what happens when it arrives belongs to `capture` in `internal/runner/capture.go`, the one funnel every captured form goes through. It builds the child on a context with the deadline stripped — `os/exec` would otherwise kill it before there was anything to decide — watches the caller's context itself, and tells a deadline from a cancellation by `ctx.Err()`. A command that has printed something is offered to `runner.SetAdopter`, installed by `openProcessSupervisor` (`internal/cli/process.go`) and taken by `process.Supervisor.Adopt`, which registers it under a generated name and hands back the writer the rest of its output goes to; a silent one is stopped. Both endings are said in words in the output, in that one place, because an exit code cannot tell either from a command that broke — don't put a second notice back at a caller. **The adopter is package state on purpose**, like the session environment and the env mask beside it: a session runs commands through half a dozen paths and a ceiling that backgrounded on some and killed on the others would be a dev server that lives or dies by whether containment was available. A handed-over command reports exit code 0, because it did not fail and a code that says it did sends the model debugging. A `--sandbox` run withdraws the adopter (`internal/cli/print.go`) beside the start refusal and for the same reason: the local process there is the exec client, not the thing running in the container. `process.reap` takes a `func() error` rather than an `*exec.Cmd` since the run's wait is already in flight and `os/exec` allows only one. **`tools.CaptureBuffer` keeps both ends of the output, not a prefix**: the bound's first half is a plain slice, the second half is a ring, and `Bytes` assembles head, drop notice and tail — so it is not a raw copy of what was written and a caller that seeds another writer from it (`captureWriter.handOff`) must use that one assembly rather than pairing it with `String`. **A captured command that never exited comes back with a negative code, and no surface may print one as an exit status**: `resultCode` (`internal/runner/exec.go`) reports `-N` for signal N — Python's `subprocess.returncode` convention, and the only encoding of "no status, and this is why" that fits the `int` every caller already reads — with `-1` left for a command that could not be spawned or ended with no signal to name. Which of the three endings it was is decided where the context is, not where the code is: `commandEnding` (`internal/ui/chat/activity.go`) reads `ctx.Err()`, because the ceiling and the reader's cancel chord end a command with the same signal and only the context knows who asked. The row then says `stopped` (dim, ⊘ — their decision, not a break), `killed · signal 9` or `timed out · 30s`, with the number in the account field; `components.OutcomeExit` refuses a negative code outright so the surfaces holding only the code — the history screen, the turn close, the rail's standing alerts — cannot print one either. See [`docs/capabilities/containment.md#a-command-that-will-not-finish-is-not-waited-on-forever`](docs/capabilities/containment.md#a-command-that-will-not-finish-is-not-waited-on-forever).
-- **A process with a terminal takes a different spawn**: `pty:true` on a start goes through `startPTY` (`internal/process/pty_unix.go`, refused in a sentence by `pty_windows.go` so the Windows build still links), which opens the terminal, wires the command's three streams to it and starts it — so that path must not call `cmd.Start` again. `sysProcAttr(tty bool)` drops `Setpgid` for it: opening a terminal makes the process a session leader, and `setpgid` on a session leader is refused by the kernel. It is still in a group of its own, so the signal path is unchanged. The master is both the process's input and the whole of its output, which is why `stderr` stays empty, and `proc.drained` is what keeps the reaper's close of the master from cutting off output the terminal still held.
-- **The quit chord is answered once, above the surfaces**: every takeover surface leaves the session on it rather than leaving the surface, so `surfaceKey` (`internal/ui/chat/cancel.go`) answers it in front of whichever handler the key ladder picked, and `quitNow` is the one place that cancels what was still running. **It also finishes the stop rather than scheduling it**: `runner.StopCaptured` drains every captured command synchronously — interrupt, wait, kill, wait, bounded by the same `killGrace` — because the kill `stopGroup` would otherwise do is a timer inside a process that is about to exit, so cancelling alone orphans a command that ignores SIGINT. `prepare` (`internal/runner/group.go`) hands back a `group` rather than the `*exec.Cmd` so that both halves of that have somewhere to live: the live list a drain reads, and the `exited` channel that keeps a pending kill off a pid the machine has since reused. Every capture must wait through `group.wait`, and anything that transfers ownership — the ceiling's hand-over — must call `group.release`, or the drain will stop a command it no longer owns. Linux additionally sets a parent-death signal on the spawn (`attr_linux.go`), which is the backstop for the endings no code of ours reaches. Don't put the chord back at the top of a surface's own key handler — the copies that were there each cancelled a different half of the live work. Two branches of the ladder do not route through it: the quit confirm, because that surface is the question the chord asks, and the context screen, which has never answered it.
-- **Bubble Tea message routing**: shhh's own messages are typed structs (not interfaces with methods). When adding new async operations, add a corresponding `type fooMsg struct{}` and handle it in the `Update` switch. Note that some of Bubble Tea v2's *own* messages are interfaces — `tea.KeyMsg` covers presses and releases, `tea.MouseMsg` covers click/motion/release/wheel — so match `tea.KeyPressMsg` and the specific mouse types rather than the interface.
-- **`View()` returns a `tea.View`, not a string**: the screen's content plus the terminal states the surface asks for (`AltScreen`, `MouseMode`, and the window's own `WindowTitle` and `ProgressBar`, which `internal/ui/chat/terminal.go` derives beside the suspend guard and the redraw key). Tests that want the painted screen read `.View().Content`. Programs start through `internal/cli/program.go` so they all get the colour profile `components.Profile()` resolved the palette against.
-- **The chat surface's geometry lives in `internal/ui/chat/layout.go`** ([`docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it`](docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it)): `columns()` and `surface()` split the terminal into rectangles with `ultraviolet/layout`, and `contentWidth`, `paneWidth`, `transcriptWidth` and `viewportHeight` read them. Don't add a new `width - something` in a renderer — add a rectangle to the split and read it. Blocks are placed with `drawIn`, which clips to the rectangle, so a renderer never has to measure what it is about to overflow. One paint resolves that geometry once: `paint` puts a `frame` on its own copy of the model, and `columns`, `surface`, `panel`, `liveTail`, `framePreRails`, `interruptLines` and `frameLayout` all read it rather than resolving again. The bottom panel is the reason — its rows are what the vertical split takes off the transcript, so the split has to render it to learn them, and the draw then rendered it a second time to paint it. Add a new block whose own size decides the split and give it a slot on the frame; `testHookRenderPanel` holds the property that a frame renders the panel once. The frame also memoises two things a paint asks for more than once: the step tiling of a run of transcript entries, keyed on the run itself, which reading mode's paint wanted eight times over the whole session; and the inspector rail, keyed on the spinner's frame, the transcript's length and the turn count. Both are per-paint — `paint` runs on its own copy of the model, so nothing written during one survives it — and outside a paint every caller resolves its own answer as before. A block fitted to the panel's rows goes through `padPanel` and not its own pad loop. The inspector rail's own column count is `railWidth` there and nowhere else: `components.InspectorWidthFor` is the ladder (`InspectorWidth`, `InspectorMaxWidth`, `InspectorMinContentWidth` in `internal/ui/components/inspector.go`), `Model.railCols` is what `appearance.rail_width` and `/ui rail` set, and the rail's blocks size their meter and sparkline runs off the width they are handed (`railCells` in `meters.go`) rather than off the constant. What will bite you: **the layout rungs are stated in one datum and read in another.** The design states them as terminal columns; every width on this surface is a content width, the terminal less `horizontalPadding` on each side, so a rung compared against a content width lands four columns late and the arrangement a terminal is named for is not the one it draws. `frameWideWidth`, `frameCompactWidth`, `minFrameWidth` and `InspectorMinContentWidth` each carry that conversion in their own definition; a new rung states the terminal width and subtracts the inset there rather than at the comparison. The pane's own two reserved columns are the other trap: `components.ScrollGutterWidth` is the thumb's column *and* an empty one after it, because `┃│` against the pane divider is a double border grown back; and `components.GridPointerWidth` is the transcript's, held back on every row for the fold mark and the reading cursor, which is why reading mode adds no columns at all — `gutterPrefix` (`focus.go`) writes the cursor into the columns the row already has, and only a block the grid has not reached (`onGrid`) takes an indent, rendered two columns narrower to pay for it.
-- **Colours are resolved when styles are built, not when they are drawn**: a `lipgloss.Style` holds one `color.Color`, so a `components.Token` picks its truecolor/256/16 rung through `Token.Color()` at `newStyles` time. Changing the palette *or* the profile means rebuilding every derived style — both go through `applyPalette`.
-- **Golden file deletion**: `golden.Run(m)` removes any `.txt` file in `testdata/golden/` that wasn't asserted during the run. Don't manually create golden files; let the test framework generate them.
-- **The investigation rules in `BuildAgent` are load-bearing**: the "Finding things" section — batch independent calls, make one search answer the question, never repeat a call you already made — is there because a real session spent all 150 rounds re-running the same searches. It reads like padding and is not; see the comment on `BuildAgent` and [`docs/capabilities/coding-agent.md#finding-things`](docs/capabilities/coding-agent.md#finding-things).
-- **Never name a tool in a base system prompt**: the rule and its reason are [Where the model reads it](#where-the-model-reads-it), beside the other two channels the model learns a tool from.
-- **Gemini pairs tool results by function *name*, not by id**: `FunctionResponse.Name` must be the name of the function called, and the Gemini API sends no `functionCall.id` at all — the ids in `provider.ToolCall` are ours. Don't "simplify" `toGeminiContents` back to putting `ToolCallID` in that field; it addresses every result to a function the model never called, and the model just calls again. Gemini 3 thought signatures ride the same parts and must go back on the part they arrived on.
-- **Only the current chain's thinking goes back on the wire, and the cut may only move forward**: `replayFrom` (`internal/provider/reasoning.go`) is where the Messages API and the Responses API both ask which messages may still send their `ReasoningBlock`s — the last user turn, or the last assistant turn where that comes first, because a round boundary can append a user message of its own after an assistant turn that asked for a tool and cutting there would send the `tool_use` with none of the thinking behind it. Two failures live here. A converter that ignores the boundary compiles and passes its own tests, and quietly bills the whole session's thinking as input on every round for the life of the conversation — the one category `TrimOldToolResults` cannot reach, because it rewrites tool results and never an assistant turn. And a cut that is not a prefix is a 400: a thinking block records which block came before it, so blocks may be removed from the *front* of a history, oldest first, while removing one from the middle invalidates every block after it. Moving the cut also costs the prompt cache from that position on, which is why it is the user turn and not the round — within a turn it does not move, and a turn is where the rounds are. Gemini replays all of it on purpose (the signature rides the call), which is why `EstimateMessageTokens` counts every message's reasoning rather than only the replayed part — exact there, an over-count on the other two, and over-counting is the direction that trims early rather than sending the request that overflows. See [`docs/capabilities/providers.md#only-the-chain-being-worked-on-now-goes-back`](docs/capabilities/providers.md#only-the-chain-being-worked-on-now-goes-back).
-- **A chat-completions tool call is addressed by its id, never by its `index`**: `toolCallSet` (`internal/provider/openai_stream.go`) keys a round's calls by id and keeps them in the order the stream opened them, because a gateway is free to number its calls from 1, to leave a gap where one was abandoned, or to omit the index from the continuation chunks entirely — an accumulator keyed by index answered all three by folding two calls into one, so the model got a result for one tool it asked for and the turn ran on owing an answer for the other. The index survives only as the address for chunks that carry no id, and a chunk carrying neither ends the round rather than being read as call 0: its arguments would otherwise land inside a call the model wrote separately.
-- **The output ceiling is `max_completion_tokens` everywhere but one branch**: chat completions deprecated `max_tokens`, and a reasoning model answers a request naming it with a 400, so `openai` and `openrouter` send the new field for every model. The `openai-compatible` provider is the exception: it points at whatever the user is running — the default is a local Ollama — and those runtimes do not agree on whether they know the new field, so it sends the new one only for a model something describes as reasoning and the old one otherwise. That branch is judged by the same `CapabilitiesFor` answer that decides whether `reasoning_effort` goes out at all; don't collapse it to one field, and don't give the two decisions separate judges. Because that branch sends the deprecated field on purpose, the failure classifier must never read a field *name* as a full window: `contextPhrases` (`internal/provider/failure.go`) carried a bare `"max_tokens"` and so classified both the reply to that request and an output ceiling set above the model's as *context too long*, which offers "compact now" — a summary request spent to arrive at the identical 400. The phrases are anchored on the request being too big, and `TestClassify_TheLiteralStringsTheDialectsEmit` holds them to the strings the dialects actually emit rather than to synthetic ones.
-- **Cache breakpoints are decided in one place and applied in two**: `internal/provider/cache.go` chooses the positions — the head, then the last two messages — and both the Messages API request and the gateway's chat-completions body take them from there. The gateway half is annotated on the encoded body, by the round tripper `NewCacheMarkTransport` returns, because the OpenAI Go client's content part is a closed struct with nowhere to put `cache_control`; it fires only for a model id the gateway routes to that API, and every other id is sent the bytes it was already sent. That transport is what both gateway paths wrap — the built-in provider in `openrouter.go` and, in `profile/register.go`, every profile route speaking `openai-chat`, where it goes *under* the profile's own rewrites so that what carries the breakpoints is the body as it will leave. A profile route speaking `anthropic-messages` needs none of it and takes the session's lifetime through `NewAnthropicNamed` instead. Don't add a third copy of the position rule for a new dialect, and don't put a marker on the tools as well as the system prompt — the API hashes the tools in front of it, so the second marker would cache a prefix the first already covers. See [`docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once`](docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once).
-- **Every dialect's stream loop must mark itself alive on *every* event**: `internal/provider/idle.go` gives each turn's stream a derived context and a deadline on the gap between events, and `idleWatch.alive()` is what pushes it forward. Call it on the raw read — before the chunk is inspected, and including the ones the loop then ignores: an empty choice, a keep-alive comment, a frame that failed to parse. What is being watched for is silence on the wire, not progress toward an answer, so a loop that only marks itself alive on the events it uses will cancel a live stream that is sending something else. The deadline is enforced by cancelling the request, so what the transport reports back is a cancellation — which reads as the reader pressing Esc — and every ending therefore goes through `idleWatch.err`, including the ones with no error in hand (`err(nil)`), because a cancelled body can read as a clean end of stream and a turn that reported itself finished and empty is worse than the hang this replaces. A new dialect that skips any of this compiles, passes its own tests, and quietly has no deadline. See [`docs/capabilities/providers.md#a-stream-that-stops-writing-is-a-failure`](docs/capabilities/providers.md#a-stream-that-stops-writing-is-a-failure).
-- **Tool-round cap is a checkpoint, not a limit**: The default 150-round cap pauses for user input rather than terminating. Sub-agents default to uncapped (`UnlimitedToolRounds = -1`) because they have no one to ask.
-- **The model-data refresh runs behind the caller, and its failure is a file**: `pricing.Load` reads the built-in snapshot plus whatever is cached and returns; when the cache is stale or missing it starts the download in a goroutine, at most once per process, and the *next* process reads what landed. A download that fails writes `model_prices.fail` beside the cache and `shouldRefresh` honours it for an hour — without that marker a failure changes nothing on disk, so every process pays the client's timeout again: 4.07 s per process against a black hole, once per stage of a `todo run --all`. `pricing.Refresh` is the manual trigger behind `shhh update` and is the one path that waits. Don't make `Load` synchronous again to settle a test — the seams are the package's `client`, whose transport a test replaces, and `refreshing`, the `WaitGroup` a test waits on. The cache lands by rename because the writer is a goroutine in a process that may exit mid-write, and a half-written file parses as nothing while carrying a fresh mtime. `internal/update` remembers a failed release check the same way and for the same reason.
-- **Three directories, one layout, no per-platform branch**: config (`config.Paths`), data (`storage.Dir`) and cache (`pricing.CacheDir`) each follow XDG on every platform including macOS. Don't reintroduce a `runtime.GOOS == "darwin"` branch in any of them — the retired `~/Library` layout is a migration in `internal/migrate`, not a fallback, and the reasons are in [`docs/capabilities/configuration.md#one-layout-everywhere`](docs/capabilities/configuration.md#one-layout-everywhere).
-- **A migration is a `shhh doctor` check, never a startup step and never a command of its own**: add a detector to `migrate.detectors` returning a `Pending`; leave `Pending.Apply` nil when the change needs a person's judgement, and the doctor row will report it without offering a key. See [`docs/capabilities/configuration.md#a-migration-is-a-doctor-check`](docs/capabilities/configuration.md#a-migration-is-a-doctor-check).
-- **Storage is single-connection SQLite**: `SetMaxOpenConns(1)` is intentional. The WAL journal mode and busy timeout handle concurrency; don't open multiple `*DB` instances to the same file from one command. In `internal/cli` open the store through `openStore()` (`store.go`), never `storage.Open()` directly: the history purge rides the first connection a command opens, once per process, so no command opens a second one for it. `migrate` still applies every step under `BEGIN IMMEDIATE` with the version re-read inside the lock, so two processes opening a store that is behind — two shells starting `shhh` after an upgrade — cannot apply the same `ALTER TABLE` twice. **The busy timeout does not cover every wait, which is why writes are retried.** A transaction that reads before it writes — `saveChat`, `SaveChange` — begins deferred, takes its read lock at the first SELECT and asks to upgrade at the first INSERT, and SQLite refuses that upgrade at once rather than waiting when another connection has written since; it arrives as `SQLITE_BUSY_SNAPSHOT`, the primary code with a second byte, which is why `refusedLock` masks rather than compares. Every steady-state write goes through `retryBusy` (`storage.go`), the migration's retry generalised: the autosave, `SaveChange`, `RecordAgentEvent` and `BeatAgentSession`, each retried from the top of its transaction so a retry re-reads the store rather than re-attempting a stale judgement — a slot another session really took over is still refused. `TestStore_TwoWritersAtOnce` is the guard, and it fails within a few dozen saves without it. What retries cannot rescue, the TUI says: a failed autosave is a system row and a log line (`autosaveFailedMsg`), the way a headless run prints one to stderr. **The three FTS5 indexes are external-content and trigger-maintained, and two things about them will bite you.** `recursive_triggers` is on in the DSN because SQLite otherwise skips a child table's triggers for rows a foreign-key cascade removed, which would leave a deleted conversation's words in `chat_message_search` forever — turning it off again silently reintroduces the leak. And an index's shadow tables hold rows from the moment the store is created, so anything asking "does this store hold anything" has to skip them the way `Recorded`'s `belongsToIndex` does. Queries go through `matchTerms`/`matchQuery` (`storage.go`), never a hand-built MATCH string: they quote each word so punctuation is text rather than query operators, and star it so a half-typed word still matches.
-- **Version injection**: The `version` var in `internal/cli` is set via `-ldflags` at build time. It defaults to `"dev"` when built without flags.
-- **Releases**: Handled by GoReleaser v2 triggered on `v*` tags via GitHub Actions.
+- **Storage** is single-connection SQLite on purpose. In `internal/cli` open
+  it with `openStore()`, never `storage.Open()`.
+- **Config**: read the merged layers with `ConfigFrom`, never `config.Load`.
+  Every setting is one row of `settings` in `internal/config/settings.go`.
+  Write config files through `config.ReplaceFile`.
+- **Provider names are normalised**: underscores become hyphens.
+- **Bubble Tea**: shhh's messages are typed structs handled in `Update`. Match
+  `tea.KeyPressMsg` and the concrete mouse types, not v2's interfaces.
+  `View()` returns a `tea.View`; tests read `.View().Content`.
+- **Chat geometry is rectangles in `internal/ui/chat/layout.go`.** Add one to
+  the split rather than a `width - n` in a renderer. A chat surface is one row
+  of the register in `overlay.go`.
+- **`edit_file` ranges are offsets into the file as read.** Every edit goes
+  through `applyEdits`; applying them one at a time by string replacement
+  changes the meaning of each edit after the first.
+- **A new optional tool joins `registrableDefinitions`**
+  (`internal/cli/registrable.go`) in the change that registers it.
+- **The tool-round cap is a checkpoint**: at 150 rounds a session pauses for
+  the user. The "Finding things" rules in `BuildAgent` are load-bearing;
+  without them a session spent all 150 re-running the same searches.
+- **Migrations are `shhh doctor` checks**, never a startup step. Config, data
+  and cache follow XDG on every platform; don't add a `darwin` branch.
+
+### Provider quirks
+
+Each looks like something to simplify, and the symptom doesn't point at the
+cause.
+
+- **Gemini pairs tool results by function name, not id.** Put the id in
+  `FunctionResponse.Name` and the model silently calls the tool again.
+- **Messages and Responses replay only the current chain's thinking**
+  (`replayFrom`; Gemini replays all on purpose), and the cut only moves forward. Replay everything and every round bills the
+  session's thinking again; cut in the middle and the request is a 400.
+- **Chat-completions tool calls are keyed by id, never `index`.** Gateways
+  renumber, skip or omit it, and keying on it folds two calls into one.
+- **The output ceiling is `max_completion_tokens`**, except on
+  `openai-compatible` for a non-reasoning model. Never read that field's name
+  as a context-length failure.
+- **Every stream loop calls `idleWatch.alive()` on every raw event** and ends
+  through `idleWatch.err`, or the dialect has no idle deadline.
