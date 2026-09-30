@@ -168,8 +168,9 @@ same list. A sub-agent's fetch and an unattended run's are read by the same
 function and answered by the same rule.
 
 **Your own lists outrank every reading.** `web.deny_hosts` refuses a host the
-ranking calls known, and `web.allow_hosts` — or a host granted with `[a]` —
-lets through a host a list warns about. A list is somebody else's opinion of
+ranking calls known, and `web.allow_hosts` lets through a host a list warns
+about (a grant made with `[a]` before a list named the host stands too; the
+key is not offered once one has). A list is somebody else's opinion of
 the internet; the two host lists and a grant are yours about this session.
 `web.reputation_off` turns any list off, shhh's own included.
 

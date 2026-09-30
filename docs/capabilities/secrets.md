@@ -54,7 +54,8 @@ first door. Sub-agents have the same scrub on their own conversations.
 A bounded request that is not a conversation is a door as well. Drafting a
 toolchain declaration reads the checkout's build files and CI workflows, and a
 workflow is exactly where an inline token sits; reading a session into
-backlog items sends the backlog's titles and what was typed. Each passes its
+backlog items sends the backlog's titles and what was typed; drafting an
+agent profile sends the brief and every note typed at it. Each passes its
 whole text through the same scrub once, before the request is built.
 
 Scrubbing at the executor rather than at one tool is deliberate. The command

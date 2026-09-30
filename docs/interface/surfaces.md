@@ -991,7 +991,8 @@ was already sent, and a sent message is taken back by rewinding to before
 it. Nothing about any of this reaches the model: a cancelled message never
 does, and an edited one does as it is sent. What the session queues for
 itself — an announcement, a line another session sent — is not the reader's
-sentence, and is not on the list. Attached to a child, the draft is the
+sentence: it is on the list marked for what it is, to be read and, where
+that is safe, cancelled, never pulled back into a draft it was never in. Attached to a child, the draft is the
 child's and the queue drawn is not: the lane's own queue is not yet
 editable.
 
@@ -1190,7 +1191,10 @@ so you stop running commands to recover what the session already knows.
 
 One block is scoped to the turn and the rest are scoped to the session, and
 both kinds say their scope in words, because two of them count files and would
-otherwise be read as contradicting each other. A file edited in turn 2 is
+otherwise be read as contradicting each other. A rail row is not a transcript
+row: it has a name and a note and no account column, so when the rail is
+narrow the note is cut from its end and the name is kept whole — the one word
+that says which server or file the row is about is never the one dropped. A file edited in turn 2 is
 still on screen in turn 8: "what has this session done to my machine" does not
 reset when the agent starts a new turn.
 
