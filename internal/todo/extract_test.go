@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/secret"
 )
 
 // fakeProvider answers one request with a scripted stream.
@@ -88,6 +89,41 @@ func TestExtract_InstructionsAreSeparateFromTheDigest(t *testing.T) {
 	}
 	if fp.got.MaxTokens != DefaultExtractMaxTokens {
 		t.Errorf("max tokens = %d", fp.got.MaxTokens)
+	}
+}
+
+// The digest carries the backlog's titles as their files hold them and the
+// conversation as it was typed, so both doors pass the session's scrub
+// before the request leaves: a declared value comes back as its name and a
+// token of a known shape as its kind.
+func TestExtractAndDraft_TheDigestIsScrubbedBeforeItLeaves(t *testing.T) {
+	const (
+		declared = "hunter2-deploy-key-7f3a9c"
+		shaped   = "ghp_016C4C7C4C7C4C7C4C7C4C7C4C7C4C7C4C7C"
+	)
+	v := secret.New()
+	if err := v.Add("DEPLOY_KEY", declared); err != nil {
+		t.Fatal(err)
+	}
+	cfg := ExtractConfig{Model: "m", Scrub: v.Scrub}
+	existing := []string{"rotate — Rotate " + declared + " and " + shaped}
+	answer := []provider.StreamEvent{{ToolCalls: []provider.ToolCall{{Name: ExtractToolName, Arguments: proposalsJSON}}}}
+	for name, send := range map[string]func(*fakeProvider){
+		"extract": func(fp *fakeProvider) {
+			NewExtractor(fp, cfg, BuiltinCode()).Extract(context.Background(), ExtractRequest{Instructions: []string{"use " + declared}, Existing: existing})
+		},
+		"draft": func(fp *fakeProvider) {
+			NewDrafter(fp, cfg, BuiltinCode()).Draft(context.Background(), DraftRequest{Sentence: "rotate " + shaped, Existing: existing})
+		},
+	} {
+		fp := &fakeProvider{events: answer}
+		send(fp)
+		if strings.Contains(fp.prompt, declared) || strings.Contains(fp.prompt, shaped) {
+			t.Fatalf("%s: a secret reached the provider: %q", name, fp.prompt)
+		}
+		if !strings.Contains(fp.prompt, secret.Placeholder("DEPLOY_KEY")) || !strings.Contains(fp.prompt, secret.Redacted("github-token")) {
+			t.Errorf("%s: the digest was not scrubbed to the placeholders: %q", name, fp.prompt)
+		}
 	}
 }
 

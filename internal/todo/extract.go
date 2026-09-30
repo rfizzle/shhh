@@ -163,6 +163,13 @@ type ExtractConfig struct {
 	// session this reading was written for and the one every caller that
 	// says nothing has.
 	Session SessionKind
+	// Scrub is the session's secret scrub. The digest carries the backlog's
+	// titles as its files hold them and the conversation as it was typed,
+	// and this request is a door onto the provider like every other, so the
+	// whole digest passes it once before the request is built; nil is a
+	// session with no secrets and sends it as written.
+	// See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
+	Scrub func(string) string
 }
 
 // fixed is the config with its model asked for once, which is the config a
@@ -422,6 +429,9 @@ func ExtractTool(profile Profile) provider.Tool {
 // proposal is.
 func readProposals(ctx context.Context, p provider.Provider, cfg ExtractConfig, profile Profile, instructions, digest string) ([]Proposal, *provider.Usage, error) {
 	schema := extractSchema(profile)
+	if cfg.Scrub != nil {
+		digest = cfg.Scrub(digest)
+	}
 	attemptCtx, cancel := context.WithTimeout(ctx, cfg.timeout())
 	defer cancel()
 	events, err := p.StreamCompletion(attemptCtx, []provider.Message{

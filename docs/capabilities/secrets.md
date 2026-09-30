@@ -51,6 +51,12 @@ it is scrubbed as it is written; the request is scrubbed again as it leaves,
 because a resumed session or a front-end's own stream is a path around the
 first door. Sub-agents have the same scrub on their own conversations.
 
+A bounded request that is not a conversation is a door as well. Drafting a
+toolchain declaration reads the checkout's build files and CI workflows, and a
+workflow is exactly where an inline token sits; reading a session into
+backlog items sends the backlog's titles and what was typed. Each passes its
+whole text through the same scrub once, before the request is built.
+
 Scrubbing at the executor rather than at one tool is deliberate. The command
 that prints the key is the obvious case; `read_file` on the `.env` it lives
 in, a web fetch that returns the page it was posted to, and a process

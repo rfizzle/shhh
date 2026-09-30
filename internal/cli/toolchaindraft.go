@@ -117,6 +117,13 @@ type toolchainDrafter struct {
 	// root is the checkout the declaration belongs to and dir the directory
 	// the session stands in, which the survey is taken of.
 	root, dir string
+	// scrub is the session's secret scrub. The evidence is the checkout's
+	// own files — a workflow holding an inline token among them — and this
+	// request is a door onto the provider like every other, so the text
+	// passes it once, whole, before the request is built; nil is a session
+	// with no secrets and sends it as read.
+	// See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
+	scrub func(string) string
 }
 
 // draft runs one drafting: the request, the loader's reading of the answer,
@@ -129,9 +136,13 @@ func (d toolchainDrafter) draft(ctx context.Context, review bool) chat.Toolchain
 		return chat.ToolchainDraft{Err: project.ToolchainFile + " is there and cannot be read as a declaration — it is past the loader's bound or unreadable — so it is neither reviewed nor written over"}
 	}
 	review = review && exists
+	evidence := toolchainDraftEvidence(project.Survey(d.dir), project.ReadDraftEvidence(d.root), prev, review)
+	if d.scrub != nil {
+		evidence = d.scrub(evidence)
+	}
 	msgs := []provider.Message{
 		{Role: provider.RoleSystem, Content: prompt.ToolchainDraft(review)},
-		{Role: provider.RoleUser, Content: toolchainDraftEvidence(project.Survey(d.dir), project.ReadDraftEvidence(d.root), prev, review)},
+		{Role: provider.RoleUser, Content: evidence},
 	}
 	var refused error
 	for attempt := 0; attempt < 2; attempt++ {
@@ -321,7 +332,7 @@ func writeToolchainDraft(root string) func([]byte) (string, error) {
 // wireToolchainDraft gives the chat session's toolchain state the draft and
 // the write. Only the chat session calls it — a run with nobody to answer
 // the card, and every sub-agent, never has the command.
-func wireToolchainDraft(tc *chat.Toolchain, prov provider.Provider, model func() string) {
+func wireToolchainDraft(tc *chat.Toolchain, prov provider.Provider, model func() string, scrub func(string) string) {
 	dir, err := os.Getwd()
 	if err != nil {
 		return
@@ -333,7 +344,7 @@ func wireToolchainDraft(tc *chat.Toolchain, prov provider.Provider, model func()
 	}
 	_, tc.Exists = project.Declared(root)
 	tc.Untrusted = !t.Allows()
-	d := toolchainDrafter{prov: prov, model: model, root: root, dir: dir}
+	d := toolchainDrafter{prov: prov, model: model, root: root, dir: dir, scrub: scrub}
 	tc.Draft = d.draft
 	tc.WriteDraft = writeToolchainDraft(root)
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/secret"
 )
 
 // draftAnswers is a model that answers each drafting request with the next
@@ -195,5 +196,47 @@ func TestAnUnreadableDeclarationIsNotDraftedOver(t *testing.T) {
 	got := drafterOn(p, root).draft(context.Background(), false)
 	if got.Err == "" || got.Content != nil || len(p.sent) != 0 {
 		t.Fatalf("an oversized declaration was drafted over (err %q, %d requests)", got.Err, len(p.sent))
+	}
+}
+
+// The evidence is the checkout's own files, so it passes the session's scrub
+// before it leaves: a declared value comes back as its name, and a token of
+// a known shape nobody declared comes back as its kind.
+func TestTheDraftEvidenceIsScrubbedBeforeItLeaves(t *testing.T) {
+	const (
+		declared = "hunter2-deploy-key-7f3a9c"
+		shaped   = "ghp_016C4C7C4C7C4C7C4C7C4C7C4C7C4C7C4C7C"
+	)
+	root := draftCheckout(t)
+	dir := filepath.Join(root, ".github", "workflows")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	workflow := "jobs:\n  lint:\n    steps:\n      - run: golangci-lint run ./...\n        env:\n          DEPLOY_KEY: " + declared + "\n          GH_TOKEN: " + shaped + "\n"
+	if err := os.WriteFile(filepath.Join(dir, "ci.yml"), []byte(workflow), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	v := secret.New()
+	if err := v.Add("DEPLOY_KEY", declared); err != nil {
+		t.Fatal(err)
+	}
+	p := &draftAnswers{answers: []string{pinnedAnswer}}
+	d := drafterOn(p, root)
+	d.scrub = v.Scrub
+	if got := d.draft(context.Background(), false); got.Err != "" {
+		t.Fatalf("the draft failed: %s", got.Err)
+	}
+	for _, msgs := range p.sent {
+		for _, m := range msgs {
+			if strings.Contains(m.Content, declared) || strings.Contains(m.Content, shaped) {
+				t.Fatalf("a secret reached the provider:\n%s", m.Content)
+			}
+		}
+	}
+	user := p.sent[0][1].Content
+	for _, want := range []string{"--- .github/workflows/ci.yml ---", secret.Placeholder("DEPLOY_KEY"), secret.Redacted("github-token")} {
+		if !strings.Contains(user, want) {
+			t.Errorf("the evidence never says %q:\n%s", want, user)
+		}
 	}
 }

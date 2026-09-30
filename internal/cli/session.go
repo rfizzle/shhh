@@ -931,7 +931,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		// …and the offer to draft or review the declaration itself, which
 		// is this surface's alone: its answer is a card, and only a session
 		// has somebody to put one to (toolchaindraft.go).
-		wireToolchainDraft(&containment.Toolchain, ledger.For(env.prov, meter.SourceToolchain), env.flowModelAt(cfg, flowToolchain))
+		wireToolchainDraft(&containment.Toolchain, ledger.For(env.prov, meter.SourceToolchain), env.flowModelAt(cfg, flowToolchain), session.vault.Scrub)
 	}
 
 	// The person's own commands at this session's seams (hooks.go). They are
@@ -1202,7 +1202,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		// and unset they fall down the bounded-call chain like every other
 		// digest, so the session model is never spent on one by accident
 		// (docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model).
-		reading := todo.ExtractConfig{ModelAt: env.flowModelAt(cfg, flowBacklog), Session: todo.CodingSession}
+		reading := todo.ExtractConfig{ModelAt: env.flowModelAt(cfg, flowBacklog), Session: todo.CodingSession, Scrub: session.vault.Scrub}
 		if session.conversation {
 			reading.Session = todo.Conversation
 		}
