@@ -995,8 +995,11 @@ type observeData struct {
 	// much of that calling came before the session changed anything.
 	FirstWrites []storage.AgentFirstWrite
 	Decisions   []storage.AgentDecisionCount
-	Turns       []storage.AgentTurnOutcome
-	Signals     []storage.AgentSignalCount
+	// Overturns is the classifier's judged denials paired with the person's
+	// answer to each.
+	Overturns storage.AgentOverturns
+	Turns     []storage.AgentTurnOutcome
+	Signals   []storage.AgentSignalCount
 	// Interventions pairs every interruption with the reading that followed
 	// it, which is the one reading here that says whether the machinery
 	// worked rather than how often it fired.
@@ -1022,6 +1025,7 @@ func readObserveData(db *storage.DB, window string, since time.Time) (observeDat
 		{"command purposes", func() (err error) { data.Commands, err = db.AgentCommandPurposes(since); return }},
 		{"first writes", func() (err error) { data.FirstWrites, err = db.AgentFirstWrites(since); return }},
 		{"decisions", func() (err error) { data.Decisions, err = db.AgentDecisions(since); return }},
+		{"overturns", func() (err error) { data.Overturns, err = db.AgentOverturns(since); return }},
 		{"turns", func() (err error) { data.Turns, err = db.AgentTurns(since); return }},
 		{"signals", func() (err error) { data.Signals, err = db.AgentSignals(since); return }},
 		{"intervention outcomes", func() (err error) {
@@ -1064,7 +1068,7 @@ func observeReport(data observeData) report.Report {
 		{Header: "TOOLS", Rows: observeToolRows(data.ToolMix, data.ToolErrors)},
 		{Header: "COMMANDS", Rows: observeCommandRows(data.Commands)},
 		{Header: "FIRST WRITE", Rows: observeFirstWriteRows(data.FirstWrites)},
-		{Header: "DECISIONS", Rows: observeDecisionRows(data.Decisions)},
+		{Header: "DECISIONS", Rows: observeDecisionRows(data.Decisions, data.Overturns)},
 		{Header: "TURNS", Rows: observeTurnRows(data.Turns)},
 		{Header: "SIGNALS", Rows: observeSignalRows(data.Signals)},
 		{Header: "INTERVENED", Rows: observeInterventionRows(data.Interventions)},
@@ -1224,8 +1228,8 @@ func observeCount(v float64) string {
 	return strconv.FormatFloat(v, 'f', -1, 64)
 }
 
-func observeDecisionRows(decisions []storage.AgentDecisionCount) []report.Row {
-	rows := make([]report.Row, 0, len(decisions))
+func observeDecisionRows(decisions []storage.AgentDecisionCount, overturns storage.AgentOverturns) []report.Row {
+	rows := make([]report.Row, 0, len(decisions)+1)
 	for _, d := range decisions {
 		// The verdict and its decider are one phrase, so they stay one field
 		// rather than being split across the name column.
@@ -1233,6 +1237,17 @@ func observeDecisionRows(decisions []storage.AgentDecisionCount) []report.Row {
 			State:   observeDecisionState(d.Decision),
 			Subject: components.OutcomeBy(observeDecisionWord(d.Decision), observeDecider(d.Reason)),
 			Outcome: countOf(d.Count, "time", "times"),
+		})
+	}
+	// The overturn rate is over the judged denials a person answered, not
+	// over every denial above it: the classifier's no that nobody was asked
+	// about is counted in its own row and has no answer to be overturned by.
+	if n := overturns.Judged; n > 0 {
+		rows = append(rows, report.Row{
+			State: report.Queue,
+			Subject: fmt.Sprintf("overturned %d of %s", overturns.Overturned,
+				countOf(n, "judged denial", "judged denials")),
+			Outcome: fmt.Sprintf("%.0f%%", float64(overturns.Overturned)/float64(n)*100),
 		})
 	}
 	return rows
@@ -2615,8 +2630,19 @@ func observeDecisionChanges(earlier, later *observeCohortData) []observeChange {
 		}
 		return t
 	}
-	return observeTallyRows("decisions", "per turn", observeRate,
+	out := observeTallyRows("decisions", "per turn", observeRate,
 		tally(earlier), tally(later), earlier.turns(), later.turns())
+	// The overturn rate is a share of each cohort's own judged denials: it
+	// is the figure a change to the classifier is made to move, and per turn
+	// it would move with how often the classifier said no at all.
+	overturned := func(c *observeCohortData) observeTally {
+		var t observeTally
+		t.add("overturned", "overturned", "you", float64(c.Reading.Overturns.Overturned))
+		return t
+	}
+	return append(out, observeTallyRows("decisions", "of judged denials", observeShare,
+		overturned(earlier), overturned(later),
+		float64(earlier.Reading.Overturns.Judged), float64(later.Reading.Overturns.Judged))...)
 }
 
 // observeSignalChanges is the rest of the loop's safeguards, per turn. The

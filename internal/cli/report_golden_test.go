@@ -330,7 +330,11 @@ func goldenObserve() observeData {
 			{Decision: "allow", Reason: "mode-accept-edits", Count: 14},
 			{Decision: "deny", Reason: "", Count: 2},
 			{Decision: "deny", Reason: "plan-mode", Count: 1},
+			{Decision: "deny", Reason: "classifier", Count: 3},
 		},
+		// Three of the classifier's no's put to the person, one of which
+		// they said yes to.
+		Overturns: storage.AgentOverturns{Judged: 3, Overturned: 1},
 		Turns: []storage.AgentTurnOutcome{
 			{Outcome: "done", Count: 6, AvgRounds: 3.2, MaxRounds: 9, AvgDurationMs: &slow},
 			{Outcome: "cap-paused", Count: 1, AvgRounds: 40, MaxRounds: 40},
@@ -604,7 +608,9 @@ func goldenObserveCompare() observeCompareData {
 				{Decision: "allow", Reason: "mode-accept-edits", Count: 96},
 				{Decision: "ask", Reason: "safety", Count: 14},
 				{Decision: "deny", Count: 5},
+				{Decision: "deny", Reason: "classifier", Count: 8},
 			},
+			Overturns: storage.AgentOverturns{Judged: 8, Overturned: 3},
 			Signals: []storage.AgentSignalCount{
 				{Signal: "summary", Reason: "on-target", Count: 40},
 				{Signal: "intervened", Reason: "steer", Count: 12},
@@ -650,7 +656,10 @@ func goldenObserveCompare() observeCompareData {
 				{Decision: "allow", Reason: "mode-accept-edits", Count: 120},
 				{Decision: "ask", Reason: "safety", Count: 10},
 				{Decision: "deny", Count: 3},
+				{Decision: "deny", Reason: "classifier", Count: 6},
 			},
+			// The person said yes to fewer of the classifier's no's.
+			Overturns: storage.AgentOverturns{Judged: 6, Overturned: 1},
 			Signals: []storage.AgentSignalCount{
 				{Signal: "summary", Reason: "on-target", Count: 52},
 				{Signal: "intervened", Reason: "steer", Count: 18},

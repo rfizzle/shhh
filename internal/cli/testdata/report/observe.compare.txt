@@ -45,9 +45,11 @@
 
   DECISIONS
 
-  · allowed  1.66 → 1.67 per turn · auto · mode-accept-edits  [+1%]
-  · asked    0.24 → 0.14 per turn · auto · safety  [-42%]
-  · denied   0.09 → 0.04 per turn · you  [-52%]
+  · allowed     1.66 → 1.67 per turn · auto · mode-accept-edits  [+1%]
+  · asked       0.24 → 0.14 per turn · auto · safety  [-42%]
+  · denied      0.09 → 0.04 per turn · you  [-52%]
+  · denied      0.14 → 0.08 per turn · auto · classifier  [-40%]
+  · overturned  38% → 17% of judged denials · you  [-21 pts]
 
   SIGNALS
 

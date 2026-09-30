@@ -31,6 +31,8 @@
   ✓ allowed · auto · mode-accept-edits  [14 times]
   ⊘ denied · you  [2 times]
   ⊘ denied · auto · plan-mode  [1 time]
+  ⊘ denied · auto · classifier  [3 times]
+  · overturned 1 of 3 judged denials  [33%]
 
   TURNS
 

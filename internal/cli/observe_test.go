@@ -1419,6 +1419,33 @@ func TestObserveCompare_NoWriteIsNoRow(t *testing.T) {
 	}
 }
 
+// The overturn rate is a share of each cohort's own judged denials, drawn in
+// the decisions block, and a dashboard with no judged denial draws no row.
+func TestObserveOverturns_AShareOfTheJudgedDenials(t *testing.T) {
+	earlier := observeCohortOf("aaa", 10, []storage.AgentTurnOutcome{{Outcome: "done", Count: 20}})
+	earlier.Reading.Overturns = storage.AgentOverturns{Judged: 4, Overturned: 2}
+	later := observeCohortOf("bbb", 10, []storage.AgentTurnOutcome{{Outcome: "done", Count: 40}})
+	later.Reading.Overturns = storage.AgentOverturns{Judged: 10, Overturned: 1}
+	data := observeCompared(observeCompareData{Window: "30d", Split: "prompt_hash", Sessions: 20,
+		Earlier: earlier, Later: later, MinSessions: compareMinSessions})
+
+	c, ok := findObserveChange(data.Changes, "decisions", "overturned")
+	if !ok {
+		t.Fatalf("no overturn row: %+v", data.Changes)
+	}
+	if c.Before != 0.5 || c.After != 0.1 || c.Unit != "of judged denials" {
+		t.Fatalf("the overturn rate is not over the judged denials: %+v", c)
+	}
+
+	rows := observeDecisionRows(nil, storage.AgentOverturns{Judged: 3, Overturned: 1})
+	if len(rows) != 1 || rows[0].Subject != "overturned 1 of 3 judged denials" || rows[0].Outcome != "33%" {
+		t.Fatalf("the dashboard row = %+v", rows)
+	}
+	if rows := observeDecisionRows(nil, storage.AgentOverturns{}); len(rows) != 0 {
+		t.Fatalf("a window with no judged denial drew a row: %+v", rows)
+	}
+}
+
 // The median is the middle of the sample, and the mean of the middle two
 // where there is no single middle.
 func TestObserveMedian(t *testing.T) {

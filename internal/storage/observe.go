@@ -848,7 +848,10 @@ type AgentCohortReading struct {
 	ToolErrors  []AgentToolErrorCount
 	FirstWrites []AgentFirstWrite
 	Decisions   []AgentDecisionCount
-	Signals     []AgentSignalCount
+	// Overturns is the one decision figure that is a pairing rather than a
+	// count: how often the person said yes to the classifier's no.
+	Overturns AgentOverturns
+	Signals   []AgentSignalCount
 	// Interventions is the same join the dashboard draws, over this cohort:
 	// the reading that follows an interruption is the one figure a change to
 	// the thresholds is meant to move, so a comparison without it cannot
@@ -885,6 +888,9 @@ func (db *DB) ReadAgentCohort(since time.Time, key, value string) (AgentCohortRe
 	}
 	if r.Decisions, err = db.agentDecisions(events, cutoff, value); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort decisions: %w", err)
+	}
+	if r.Overturns, err = db.agentOverturns(events, cutoff, value); err != nil {
+		return AgentCohortReading{}, fmt.Errorf("query cohort overturns: %w", err)
 	}
 	if r.Signals, err = db.agentSignals(events, cutoff, value); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort signals: %w", err)
@@ -1297,6 +1303,63 @@ func (db *DB) agentDecisions(scope string, args ...any) ([]AgentDecisionCount, e
 		out = append(out, d)
 	}
 	return out, rows.Err()
+}
+
+// AgentOverturns is how often a person answering the classifier's no said
+// yes: the judged denials a person answered, and how many of those answers
+// allowed the call.
+//
+// It is the figure a change to the classifier is made to move. Both halves
+// were already decision rows — the classifier's verdict filed as the verdict
+// it was, and the person's answer filed as a row of its own when the card is
+// answered — and nothing joined them, so the rate was something a person
+// read off two adjacent rows one session at a time.
+type AgentOverturns struct {
+	// Judged is the classifier's denials a person answered. A denial nobody
+	// was asked about — an unattended run's, which stands as a refusal — has
+	// no answer and is left out: counted, it would read as a person agreeing
+	// with a verdict nobody put to them.
+	Judged int
+	// Overturned is how many of those answers were an allow.
+	Overturned int
+}
+
+// AgentOverturns pairs every judged denial in the window with the person's
+// answer to it.
+func (db *DB) AgentOverturns(since time.Time) (AgentOverturns, error) {
+	return db.agentOverturns(observeEventWindow, observeCutoff(since))
+}
+
+// The answer is the next decision row of the same session, turn and round,
+// found by row id the way agentInterventionOutcomesQuery finds its reading.
+// A decision row names no call, and it needs none: the card carrying the
+// verdict holds the approval queue until it is answered, so no other call's
+// decision is written between the two. The next row is taken as the answer
+// only where it is a person's allow or deny — an amended line put back on
+// the card is not an answer yet, and a hard refusal followed by the next
+// call's policy decision is no pair at all.
+//
+// The person's codes are `user` and every `user-` code beside it, since a
+// grant taken from the card and a batch answer are the person saying yes as
+// well. They are spelled here rather than imported, as the signal codes are:
+// this reads rows written by every build that ever wrote one.
+const agentOverturnsQuery = `WITH judged AS (
+		   SELECT id, session_id, kind, turn, round FROM agent_events
+		   WHERE kind = ? AND outcome = 'deny' AND reason = 'classifier' AND %s
+		 )
+		 SELECT COUNT(*), COALESCE(SUM(a.outcome = 'allow'), 0)
+		 FROM judged j
+		 JOIN agent_events a ON a.id = (
+		   SELECT MIN(x.id) FROM agent_events x
+		   WHERE x.session_id = j.session_id AND x.kind = j.kind
+		     AND x.turn = j.turn AND x.round = j.round AND x.id > j.id)
+		 WHERE a.outcome IN ('allow', 'deny') AND (a.reason = 'user' OR a.reason LIKE 'user-%%')`
+
+func (db *DB) agentOverturns(scope string, args ...any) (AgentOverturns, error) {
+	var o AgentOverturns
+	err := db.sql.QueryRow(fmt.Sprintf(agentOverturnsQuery, scope),
+		append([]any{AgentEventDecision}, args...)...).Scan(&o.Judged, &o.Overturned)
+	return o, err
 }
 
 // AgentTurnOutcome is how many turns ended one way, and what they took.

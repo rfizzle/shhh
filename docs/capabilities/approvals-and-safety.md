@@ -265,7 +265,8 @@ read-only mode all answer before it, and still refuse without a card.
 
 The record keeps the two apart: the classifier's verdict is a row of its own,
 a denial by the classifier, and the person's answer is the row after it — so
-how often a person overturned the classifier is something the record can say
+how often a person overturned the classifier is a share of the denials they
+answered, which `shhh observe` draws and a comparison carries
 ([`sessions-and-memory.md`](sessions-and-memory.md#observations-are-what-the-session-did)).
 
 Where there is no human to fall back to — a scripted run in auto mode, a

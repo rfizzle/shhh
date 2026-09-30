@@ -1327,6 +1327,79 @@ func TestAgentInterventionOutcomes_PairsAnInterruptionWithTheReadingAfterIt(t *t
 	}
 }
 
+func TestAgentOverturns_PairsAJudgedDenialWithThePersonsAnswer(t *testing.T) {
+	db := openTestDB(t)
+
+	start := func(hash string) int64 {
+		id, err := db.StartAgentSession("code", "openai", "gpt-test")
+		if err != nil {
+			t.Fatalf("start session: %v", err)
+		}
+		if err := db.StampAgentSession(id, AgentProvenance{PromptHash: hash}); err != nil {
+			t.Fatalf("stamp session: %v", err)
+		}
+		return id
+	}
+	record := func(id int64, events ...AgentEvent) {
+		for _, e := range events {
+			if err := db.RecordAgentEvent(id, e); err != nil {
+				t.Fatalf("record event: %v", err)
+			}
+		}
+	}
+	judged := func(turn, round int64) AgentEvent {
+		return AgentEvent{Kind: AgentEventDecision, Outcome: "deny", Reason: "classifier", Turn: turn, Round: round}
+	}
+	answer := func(outcome, reason string, turn, round int64) AgentEvent {
+		return AgentEvent{Kind: AgentEventDecision, Outcome: outcome, Reason: reason, Turn: turn, Round: round}
+	}
+
+	id := start("aaa")
+	record(id,
+		// Overturned, with a tool row between the verdict and the answer,
+		// which is not a decision and answers nothing.
+		judged(1, 2),
+		AgentEvent{Kind: AgentEventTool, Tool: "read_file", Outcome: "ok", Turn: 1, Round: 2},
+		answer("allow", "user", 1, 2),
+		// Upheld.
+		judged(1, 3),
+		answer("deny", "user", 1, 3),
+		// A refusal that stood with nobody asked, followed by the next
+		// call's own card: that answer is to a different call.
+		judged(2, 1),
+		answer("ask", "safety", 2, 1),
+		answer("allow", "user", 2, 1),
+		// A grant taken from the card is the person saying yes too.
+		judged(2, 2),
+		answer("allow", "user-turn", 2, 2),
+		// A verdict at the end of its round is not answered by the next
+		// round's card.
+		judged(3, 1),
+		answer("allow", "user", 3, 2),
+	)
+	// Another session's answer never answers for this one's verdict.
+	other := start("bbb")
+	record(other, judged(3, 1), answer("allow", "user", 4, 1))
+	record(id, judged(4, 1))
+	record(other, answer("allow", "user", 4, 1))
+
+	want := AgentOverturns{Judged: 3, Overturned: 2}
+	got, err := db.AgentOverturns(time.Now().Add(-time.Hour))
+	if err != nil {
+		t.Fatalf("overturns: %v", err)
+	}
+	if got != want {
+		t.Errorf("window overturns = %+v, want %+v", got, want)
+	}
+	reading, err := db.ReadAgentCohort(time.Now().Add(-time.Hour), "prompt_hash", "aaa")
+	if err != nil {
+		t.Fatalf("read cohort: %v", err)
+	}
+	if reading.Overturns != want {
+		t.Errorf("cohort overturns = %+v, want %+v", reading.Overturns, want)
+	}
+}
+
 // A child's row is closed with how its attempt ended, so the questions a
 // fan-out raises afterwards — was the budget right, did the retry do any
 // better — can be asked of the row that holds what the attempt spent.
