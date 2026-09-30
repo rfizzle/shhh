@@ -261,7 +261,11 @@ letters and the arrows, live only once it holds the keyboard. The key list
 the chord opens spends nothing from the free set: its own keys
 (`keylist.move`, `keylist.page`, `keylist.ends`, `keylist.close`) are the
 arrows, the page keys, `home` and `end`, and esc — never a letter, because
-every letter it is sent is its filter's.
+every letter it is sent is its filter's. A takeover spends bare letters
+because nothing else is listening: the profile drafter's draft step spends
+`R` for `profile.refine_all`, one note for every section, a capital beside
+`profile.refine` on enter the way the agent manager's `K` widens a kill to
+all of them.
 
 Nothing ships on alt, so every alt letter is left to a keymap file on Linux
 and Windows — where it costs nothing — apart from the six the textarea holds

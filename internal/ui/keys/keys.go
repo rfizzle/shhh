@@ -1229,6 +1229,7 @@ type ProfileKeys struct {
 	Move       Binding
 	Take       Binding
 	Refine     Binding
+	RefineAll  Binding
 	Edit       Binding
 	Clear      Binding
 	Note       Binding
@@ -1249,6 +1250,11 @@ var Profile = ProfileKeys{
 	Refine: bind("enter", "refine it with a note", "enter"),
 	Edit:   bind("e", "edit it yourself", "e"),
 	Clear:  bind("x", "clear it", "x"),
+	// The one note for every section is refine widened, and a widened act
+	// is the capital here the way the manager's kill all is: R is free on
+	// the draft step, and pressed again while its note is still empty it
+	// says the sections the person wrote go too.
+	RefineAll: bind("R", "refine the whole draft with one note", "R"),
 	// tab hands the keyboard between the draft's sections and the card that
 	// writes it.
 	Note: bind("tab", "the sections or the card", "tab"),

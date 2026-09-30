@@ -353,3 +353,30 @@ func TestASectionRevisionNamesItsSection(t *testing.T) {
 		t.Fatalf("a section's revision should not ask for the whole draft:\n%s", prompt)
 	}
 }
+
+// A note on the whole draft names no section: every section is revised, the
+// fields are fixed, and the sections the person wrote are named as fixed too.
+func TestAWholeDraftRevisionFixesTheFieldsAndTheSectionsKept(t *testing.T) {
+	cur := &Draft{Name: "tester", Description: "adds tests",
+		Sections: &Sections{Purpose: "Add tests.", Scope: "One package.", Method: "Read, then write."}}
+	prompt := userPrompt(Request{Kind: KindCode, Brief: "tests", Current: cur, Feedback: "terser",
+		Keep: []string{config.SectionScope, config.SectionMethod}})
+	for _, want := range []string{"Revise every section to match what the person said about the whole draft",
+		"The name, description, permissions, tools, model, reasoning and budget are fixed",
+		"The person wrote the Scope and Method sections themselves, so they are fixed too",
+		"Only the sections are taken from your answer", "What the person said about the whole draft:\nterser"} {
+		if !strings.Contains(prompt, want) {
+			t.Fatalf("the whole-draft request lacks %q:\n%s", want, prompt)
+		}
+	}
+	if strings.Contains(prompt, "section only") {
+		t.Fatalf("a whole-draft note should not name one section:\n%s", prompt)
+	}
+	one := userPrompt(Request{Kind: KindCode, Brief: "tests", Current: cur, Feedback: "terser", Keep: []string{config.SectionScope}})
+	if !strings.Contains(one, "The person wrote the Scope section themselves, so it is fixed too: answer it exactly as it is") {
+		t.Fatalf("one kept section should read as one:\n%s", one)
+	}
+	if none := userPrompt(Request{Kind: KindCode, Brief: "tests", Current: cur, Feedback: "terser"}); strings.Contains(none, "themselves") {
+		t.Fatalf("no kept section should name none:\n%s", none)
+	}
+}

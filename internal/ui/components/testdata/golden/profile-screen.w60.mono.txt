@@ -117,8 +117,8 @@
   ⋮ 2 more sections · [shift+↓] scroll the profile
 
   [↑↓] section · [enter] refine it with a note
-  [e] edit it yourself · [x] clear it · [tab] the card
-  [esc] take back its last revision
+  [e] edit it yourself · [x] clear it · [R] all
+  [tab] the card · [esc] take back its last revision
 
 ╭─ Keep test-writer? ──────────────────────────────────────╮
 │   1. Save to this project  .shhh/agents                  │
@@ -165,8 +165,8 @@
   ⋮ 2 more sections · [shift+↓] scroll the profile
 
   [↑↓] section · [enter] refine it with a note
-  [e] edit it yourself · [x] clear it · [tab] the card
-  [esc] take back its last revision
+  [e] edit it yourself · [x] clear it · [R] all
+  [tab] the card · [esc] take back its last revision
 
 ╭─ Keep test-writer? ──────────────────────────────────────╮
 │   1. Save to this project  .shhh/agents                  │
@@ -448,8 +448,8 @@
   ␛[38;5;244m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
   ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m
-  ␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
-  ␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
+  ␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
+  ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m.shhh/agents␛[m                  ␛[38;5;244m│␛[m
@@ -496,8 +496,8 @@
   ␛[38;5;244m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
   ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m
-  ␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
-  ␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
+  ␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
+  ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m.shhh/agents␛[m                  ␛[38;5;244m│␛[m

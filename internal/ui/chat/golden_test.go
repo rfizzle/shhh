@@ -1656,6 +1656,54 @@ func TestGolden_ProfileDrafter(t *testing.T) {
 	})
 }
 
+// TestGolden_ProfileWholeDraft captures one note revising the whole draft
+// through the host: the note open under the section list with the section
+// the person wrote named as kept, the wait under the note, and the result —
+// the sections it changed marked, the kept one saying so, and the note's
+// own row under them with the pointer on it.
+func TestGolden_ProfileWholeDraft(t *testing.T) {
+	captureGolden(t, "profile-whole", "a note on the whole profile draft in the pane", goldenWidths, func(width int) []golden.Panel {
+		draft := &persona.Draft{
+			Name:        "test-writer",
+			Description: "adds table-driven tests for a package and runs them",
+			Permissions: []string{"write", "execute"},
+			Sections: &persona.Sections{
+				Purpose:      "Add table-driven tests for one package at a time. Done when every exported function has a case in its table and the package's tests pass.",
+				Scope:        "The package you were pointed at and its _test.go files. Leave the exported API and every other package alone.",
+				Restrictions: "Never change an expected value to make a case pass.",
+				Method:       "Read the package, then its tests, then write the cases the table is missing. Run the package's tests after each file.",
+				Report:       "The cases added, by function, and the test run's last line.",
+			},
+		}
+		terse := *draft
+		terse.Sections = &persona.Sections{
+			Purpose:      "Add table-driven tests to one package. Done when every exported function has a case and the tests pass.",
+			Scope:        "The package named and its _test.go files; nothing else.",
+			Restrictions: "REWRITTEN restrictions.",
+			Method:       "Read the package and its tests; write the missing cases; run the tests after each file.",
+			Report:       draft.Sections.Report,
+		}
+		m, _, _ := personaModel(t, persona.KindCode, persona.Outcome{Draft: draft}, persona.Outcome{Draft: &terse})
+		m.width, m.height = width, 40
+		m.syncInputWidth()
+		pane := func(m Model) string { return m.personaPane(width, 40) }
+		m = submitLine(t, m, "/agents new something for tests")
+		m = handEdit(t, m, "Restrictions", "Never change an expected value to make a case pass. Never delete a test.")
+		m = pressOn(t, m, tea.KeyPressMsg{Code: 'R', Text: "R"})
+		open := pane(m)
+		m = typeInto(t, m, "terser throughout — one sentence each where it will go")
+		updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+		m = updated.(Model)
+		waiting := pane(m)
+		m = runPersonaCmd(t, m, cmd)
+		return []golden.Panel{
+			{Label: "the whole-draft note open under the sections · the section you wrote named as kept", View: open},
+			{Label: "the wait, under the note · every section stands until it lands", View: waiting},
+			{Label: "the result · each changed section marked, the kept one says so, the note's row selected", View: pane(m)},
+		}
+	})
+}
+
 // TestGolden_ProfileToolsSelector captures the Tools & permissions selector
 // through the host: the rows are the session's own registered tools and the
 // refusals are the loader's own sentences, so what the card offers and what

@@ -19,7 +19,6 @@
   test-writer — adds tests
 
   ⋮ 2 more sections above · [shift+↑] scroll up
-
   Restrictions
     Never delete a test.
 
@@ -30,6 +29,7 @@
     The cases added.
 
 ❯ Tools
+    read + write + execute · it can change things, in its own copy of the tree
   ⋮ 2 more sections · [shift+↓] scroll the profile
 
 ╭─ What may test-writer do? ─────────────────────────────────────────────────────────────────────────────────╮
@@ -102,8 +102,7 @@
 
   test-writer — adds tests
 
-  ⋮ 2 more sections above · [shift+↑] scroll up
-  Restrictions
+  ⋮ 3 more sections above · [shift+↑] scroll up
     Never delete a test.
 
   Method
@@ -113,6 +112,7 @@
     The cases added.
 
 ❯ Tools
+    read + write + execute · it can change things, in its own copy of the tree
   ⋮ 2 more sections · [shift+↓] scroll the profile
 
 ╭─ What may test-writer do? ─────────────────────────────────────────────────────────────────────────────────╮
@@ -146,7 +146,6 @@
   ␛[38;5;254mtest-writer — adds tests␛[m
 
   ␛[38;5;244m⋮ 2 more sections above · [shift+↑] scroll up␛[m
-
   ␛[38;5;254mRestrictions␛[m
     ␛[38;5;244mNever delete a test.␛[m
 
@@ -157,6 +156,7 @@
     ␛[38;5;244mThe cases added.␛[m
 
 ␛[38;5;254m❯␛[m ␛[38;5;254mTools␛[m
+    ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
   ␛[38;5;244m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mWhat may test-writer do? ␛[m␛[38;5;254m─────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -229,8 +229,7 @@
 
   ␛[38;5;254mtest-writer — adds tests␛[m
 
-  ␛[38;5;244m⋮ 2 more sections above · [shift+↑] scroll up␛[m
-  ␛[38;5;254mRestrictions␛[m
+  ␛[38;5;244m⋮ 3 more sections above · [shift+↑] scroll up␛[m
     ␛[38;5;244mNever delete a test.␛[m
 
   ␛[38;5;254mMethod␛[m
@@ -240,6 +239,7 @@
     ␛[38;5;244mThe cases added.␛[m
 
 ␛[38;5;254m❯␛[m ␛[38;5;254mTools␛[m
+    ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
   ␛[38;5;244m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mWhat may test-writer do? ␛[m␛[38;5;254m─────────────────────────────────────────────────────────────────────────────────╮␛[m

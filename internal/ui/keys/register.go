@@ -541,7 +541,7 @@ func Surfaces() []Surface {
 			Position: Takeover,
 			Reached:  "the drafter's last step",
 			Bindings: []Binding{
-				Profile.Move, Profile.Refine, Profile.Edit, Profile.Clear,
+				Profile.Move, Profile.Refine, Profile.RefineAll, Profile.Edit, Profile.Clear,
 				Profile.Note, Profile.ScrollUp, Profile.ScrollDown, Screen.List, Profile.Back,
 			},
 		},

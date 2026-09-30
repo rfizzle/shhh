@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -108,6 +109,12 @@ type personaFlow struct {
 	// redrafting is the section a drafting turn in flight is rewriting, or
 	// "" when the turn drafts the whole profile.
 	redrafting string
+	// whole is a note on the whole draft in flight, and passes every one
+	// that landed, newest last: what each changed, so esc on the row it
+	// leaves takes back exactly those revisions, and what it kept.
+	whole  *personaPass
+	passes []personaPass
+	passID int
 	// pick is the Tools block's selector while it is open (personatools.go).
 	pick *personaPick
 }
@@ -121,6 +128,19 @@ type personaSection struct {
 	refined int
 	mine    bool
 	cleared bool
+	// pass is the whole-draft note this standing came from, or 0. A pass is
+	// taken back only from the sections still standing where it put them,
+	// so a revision made on top of one is never popped in its name.
+	pass int
+}
+
+// personaPass is one note on the whole draft: the note, which sections it
+// changed and which it sent as fixed context because the person wrote them.
+type personaPass struct {
+	id      int
+	note    string
+	changed []string
+	kept    []string
 }
 
 // personaBlocks is the draft step's blocks in order: the five prose sections
@@ -255,6 +275,41 @@ func (m Model) refinePersonaSection(index int, note string) (tea.Model, tea.Cmd)
 	}, "redrafting "+name)
 }
 
+// refinePersonaAll sends the draft back with one note for every section
+// (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation). It
+// is the section refine's request with no section named: the tiers, tools
+// and fields go as fixed context, and so do the sections the person wrote,
+// unless the note's second press said they go too.
+func (m Model) refinePersonaAll(note string, include bool) (tea.Model, tea.Cmd) {
+	f := m.persona
+	if f.draft == nil {
+		return m, nil
+	}
+	var keep []string
+	if !include {
+		for _, name := range config.PromptSectionNames() {
+			if f.sections[name].mine {
+				keep = append(keep, name)
+			}
+		}
+	}
+	f.whole = &personaPass{note: note, kept: keep}
+	current := *f.draft
+	if current.Sections != nil {
+		sections := *current.Sections
+		current.Sections = &sections
+	}
+	return m.runDrafter(persona.Request{
+		Kind:     m.personas.Kind,
+		Brief:    f.brief,
+		Exchange: drafterExchange(f.exchange),
+		Current:  &current,
+		Keep:     keep,
+		Feedback: note,
+		Models:   m.personas.Models,
+	}, "redrafting every section")
+}
+
 // personaProse is the prose section a block index names, or "" for a field
 // block or an index past the end.
 func personaProse(index int) string {
@@ -347,6 +402,9 @@ func (m Model) finishPersonaDraft(msg personaDraftMsg) (tea.Model, tea.Cmd) {
 	if f.redrafting != "" {
 		return m.finishSectionRedraft(o)
 	}
+	if f.whole != nil {
+		return m.finishWholeRedraft(o)
+	}
 	if o.Failed {
 		return m.closePersona("The profile could not be drafted — " + o.Err + ".")
 	}
@@ -400,12 +458,105 @@ func (m Model) finishSectionRedraft(o persona.Outcome) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// finishWholeRedraft takes every section the note could change out of the
+// drafter's answer, each as a revision of its own, and nothing else: the
+// tiers, tools and name stay as the draft had them whatever the answer says,
+// which is what keeps a chat profile unable to write. A section the person
+// wrote and the note kept is not read at all, and a section the answer left
+// empty keeps its text, since an empty answer is a drafter that said
+// nothing rather than one that cleared it. A failed or question-only turn
+// keeps the draft, as a section's does.
+func (m Model) finishWholeRedraft(o persona.Outcome) (tea.Model, tea.Cmd) {
+	f := m.persona
+	pass := *f.whole
+	f.whole = nil
+	var warning string
+	switch {
+	case o.Failed:
+		warning = "The draft could not be redrafted — " + o.Err + ". Every section keeps its last text."
+	case len(o.Questions) > 0:
+		warning = "The draft was not redrafted: the drafter asked " + strconv.Quote(o.Questions[0]) + " instead. Refine it again with the answer in the note."
+	case o.Draft == nil:
+		warning = "The drafter answered with no draft. Every section keeps its last text."
+	}
+	if warning == "" {
+		// Numbered for the life of the flow and never reused: a standing
+		// an older note left can come back off a stack after that note's
+		// row is gone, and must not be read as a newer note's.
+		f.passID++
+		pass.id = f.passID
+		answer := map[string]string{}
+		for _, sec := range o.Draft.SectionList() {
+			answer[sec.Name] = strings.TrimSpace(sec.Body)
+		}
+		for _, name := range config.PromptSectionNames() {
+			cur := f.sections[name]
+			body := answer[name]
+			if slices.Contains(pass.kept, name) || body == "" || body == cur.body {
+				continue
+			}
+			f.applySection(name, personaSection{body: body, refined: cur.refined + 1, pass: pass.id})
+			pass.changed = append(pass.changed, name)
+		}
+		if len(pass.changed) == 0 {
+			warning = "The drafter changed no section on that note. The draft is as it was."
+		} else {
+			f.passes = append(f.passes, pass)
+		}
+	}
+	m.openPersonaCard()
+	if warning == "" {
+		// The pointer lands on the note's own row, whose esc takes the whole
+		// revision back: the act a person who disliked it reaches for first.
+		m.personaScreen.Select(len(personaBlocks))
+	}
+	m.personaScreen.Warn(warning)
+	m.syncViewport()
+	return m, nil
+}
+
+// livePass is the newest whole-draft note that still has a section standing
+// where it put it — the one the row under the sections offers to take back.
+// A pass every section of which has since been taken back one at a time is
+// dropped on the way, so the row falls to the note before it.
+func (f *personaFlow) livePass() *personaPass {
+	for len(f.passes) > 0 {
+		p := &f.passes[len(f.passes)-1]
+		for _, name := range p.changed {
+			if f.sections[name].pass == p.id {
+				return p
+			}
+		}
+		f.passes = f.passes[:len(f.passes)-1]
+	}
+	return nil
+}
+
+// undoPass takes a whole-draft note back: one revision off each section it
+// changed, and only off a section still standing where the note put it — a
+// section revised again since, or already taken back on its own, is not
+// popped in the note's name.
+func (f *personaFlow) undoPass() bool {
+	p := f.livePass()
+	if p == nil {
+		return false
+	}
+	for _, name := range p.changed {
+		if f.sections[name].pass == p.id {
+			f.undoSection(name)
+		}
+	}
+	f.passes = f.passes[:len(f.passes)-1]
+	return true
+}
+
 // resetSections reads a new draft's sections as the flow's starting point:
 // a whole draft is a new draft, so nothing revised before it can be taken
 // back into it.
 func (f *personaFlow) resetSections() {
 	f.sections = map[string]personaSection{}
 	f.revisions = map[string][]personaSection{}
+	f.passes = nil
 	for _, sec := range f.draft.SectionList() {
 		f.sections[sec.Name] = personaSection{body: strings.TrimSpace(sec.Body)}
 	}
@@ -453,10 +604,15 @@ func (m *Model) openPersonaCard() {
 	if f.sections == nil {
 		f.resetSections()
 	}
-	blocks := make([]components.ProfileSection, 0, len(personaBlocks))
+	blocks := make([]components.ProfileSection, 0, len(personaBlocks)+1)
+	pass := f.livePass()
 	for _, name := range config.PromptSectionNames() {
 		sec := f.sections[name]
 		mark, tone := personaMark(name, sec)
+		if pass != nil && sec.mine && slices.Contains(pass.kept, name) {
+			// Sent as fixed context with the note, and the result says so.
+			mark += " · kept"
+		}
 		blocks = append(blocks, components.ProfileSection{
 			Name:     name,
 			Body:     sec.body,
@@ -464,9 +620,13 @@ func (m *Model) openPersonaCard() {
 			MarkTone: tone,
 			Prose:    true,
 			Revised:  len(f.revisions[name]) > 0,
+			Mine:     sec.mine,
 		})
 	}
 	blocks = append(blocks, personaToolsSection(*d), personaCommandsSection(), personaModelSection(*d))
+	if pass != nil {
+		blocks = append(blocks, personaPassSection(*pass, f))
+	}
 	saves := make([]components.SelectOption, 0, 2)
 	for _, s := range m.personaSaves() {
 		saves = append(saves, s.option)
@@ -476,6 +636,46 @@ func (m *Model) openPersonaCard() {
 		Description: d.Description,
 		Sections:    blocks,
 	}, saves)
+}
+
+// personaPassSection is the row a note on the whole draft leaves under the
+// sections: the note, and which sections it changed and still stand as it
+// left them — the ones esc on the row takes back.
+func personaPassSection(p personaPass, f *personaFlow) components.ProfileSection {
+	var standing []string
+	for _, name := range p.changed {
+		if f.sections[name].pass == p.id {
+			standing = append(standing, name)
+		}
+	}
+	detail := personaList(standing) + " changed"
+	if len(p.kept) > 0 {
+		detail += " · " + personaList(p.kept) + " kept as you wrote " + personaItThem(p.kept)
+	}
+	return components.ProfileSection{
+		Name:   "Whole draft",
+		Mark:   "· redrafted on your note",
+		Value:  strconv.Quote(p.note),
+		Tone:   components.ToneQuiet,
+		Detail: detail,
+		Whole:  true,
+	}
+}
+
+// personaList is section names as a sentence lists them.
+func personaList(names []string) string {
+	if len(names) < 2 {
+		return strings.Join(names, "")
+	}
+	return strings.Join(names[:len(names)-1], ", ") + " and " + names[len(names)-1]
+}
+
+// personaItThem agrees a sentence with how many sections it names.
+func personaItThem(names []string) string {
+	if len(names) == 1 {
+		return "it"
+	}
+	return "them"
 }
 
 // personaMark is what the mark after a section's heading says about it. An
@@ -643,6 +843,8 @@ func (m Model) updatePersona(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.savePersona(res.Index)
 	case components.ProfileRefine:
 		return m.refinePersonaSection(res.Index, res.Text)
+	case components.ProfileRefineAll:
+		return m.refinePersonaAll(res.Text, res.Include)
 	case components.ProfileEdit:
 		return m.editPersonaSection(res.Index)
 	case components.ProfileClear:
@@ -678,6 +880,15 @@ func (m Model) clearPersonaSection(index int) (tea.Model, tea.Cmd) {
 // edit or a clear — and nothing else on the draft moves.
 func (m Model) undoPersonaSection(index int) (tea.Model, tea.Cmd) {
 	f := m.persona
+	if f.draft != nil && index == len(personaBlocks) {
+		// The whole-draft note's own row: one revision off every section
+		// it changed.
+		if f.undoPass() {
+			m.openPersonaCard()
+			m.syncViewport()
+		}
+		return m, nil
+	}
 	name := personaProse(index)
 	if f.draft == nil || name == "" || !f.undoSection(name) {
 		return m, nil
@@ -812,8 +1023,8 @@ func (m Model) abortPersonaDraft() (tea.Model, tea.Cmd) {
 	// arrives (finishPersonaDraft).
 	f.drafting = false
 	f.runID++
-	if f.redrafting != "" && f.draft != nil {
-		f.redrafting = ""
+	if (f.redrafting != "" || f.whole != nil) && f.draft != nil {
+		f.redrafting, f.whole = "", nil
 		m.openPersonaCard()
 		m.syncViewport()
 		return m, nil

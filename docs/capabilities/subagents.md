@@ -1219,7 +1219,12 @@ said what the agent must never touch is not asked. The person then revises
 one section at a time — a note to the drafter rewrites that section with
 the other seven sent as fixed context, or their own words in the editor,
 which marks the section as theirs and puts it beyond any later refine — and
-nothing is written until they take the card's save row. The five prose
+nothing is written until they take the card's save row. A change of
+direction is one note for the whole draft rather than one per section: it
+rewrites every prose section at once, with the fields sent as fixed context
+and the sections the person wrote kept unless they say otherwise, and each
+section it changed is a revision of that section, so the note can be taken
+back whole or one section at a time. The five prose
 sections are `##` headings inside the profile's prompt; the other three are
 the file's fields. The headings are for the drafter and the person reading the
 file: the child is handed the prompt as it is written, and a profile written

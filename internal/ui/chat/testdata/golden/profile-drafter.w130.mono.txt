@@ -92,7 +92,7 @@
   Model
     inherited from this session · 8.0k tokens
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [tab] the card
+  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [R] all · [tab] the card
   [esc] discard the draft
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -134,7 +134,7 @@
   Model
     inherited from this session · 8.0k tokens
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [tab] the card
+  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [R] all · [tab] the card
   [esc] discard the draft
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -254,7 +254,7 @@
 
   ⋮ 1 more section · [shift+↓] scroll the profile
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [tab] the card
+  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [R] all · [tab] the card
   [esc] take back its last revision
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -296,7 +296,7 @@
 
   ⋮ 1 more section · [shift+↓] scroll the profile
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [tab] the card
+  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [R] all · [tab] the card
   [esc] discard the draft
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -373,8 +373,7 @@
     Read the package, then its tests, then write the missing cases. Run the tests and go vet after each file, and stop at the
     first that fails.
 
-  Report ⚠ empty · the drafter left it; a report is required
-  ⋮ 3 more sections · [shift+↓] scroll the profile
+  ⋮ 4 more sections · [shift+↓] scroll the profile
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ❯ 1. Save to this project  /repo/.shhh/agents                                                                                  │
@@ -386,6 +385,7 @@
 [↑↓] move
 [enter] take it
 [enter] refine it with a note
+[R] refine the whole draft with one note
 [e] edit it yourself
 [x] clear it
 [tab] the sections or the card
@@ -493,7 +493,7 @@ $  a shell command
   ␛[38;5;254mModel␛[m
     ␛[38;5;254minherited from this session␛[m␛[38;5;244m · 8.0k tokens␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
+  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
   ␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -535,7 +535,7 @@ $  a shell command
   ␛[38;5;254mModel␛[m
     ␛[38;5;254minherited from this session␛[m␛[38;5;244m · 8.0k tokens␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
+  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
   ␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -655,7 +655,7 @@ $  a shell command
 
   ␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
+  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
   ␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -697,7 +697,7 @@ $  a shell command
 
   ␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
+  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
   ␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -774,8 +774,7 @@ $  a shell command
     ␛[38;5;244mRead the package, then its tests, then write the missing cases. Run the tests and go vet after each file, and stop at the␛[m
     ␛[38;5;244mfirst that fails.␛[m
 
-  ␛[38;5;254mReport␛[m ␛[38;5;254m⚠ empty · the drafter left it; a report is required␛[m
-  ␛[38;5;244m⋮ 3 more sections · [shift+↓] scroll the profile␛[m
+  ␛[38;5;244m⋮ 4 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Save to this project  /repo/.shhh/agents                                                                                 ␛[m ␛[38;5;244m│␛[m
@@ -787,6 +786,7 @@ $  a shell command
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m
 ␛[38;5;254m[enter]␛[m␛[38;5;244m take it␛[m
 ␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m
+␛[38;5;254m[R]␛[m␛[38;5;244m refine the whole draft with one note␛[m
 ␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m
 ␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m
 ␛[38;5;254m[tab]␛[m␛[38;5;244m the sections or the card␛[m

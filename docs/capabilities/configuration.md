@@ -921,6 +921,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `profile.move` | `up`, `down` | move | yes |
 | `profile.take` | `enter` | take it | yes |
 | `profile.refine` | `enter` | refine it with a note | yes |
+| `profile.refine_all` | `R` | refine the whole draft with one note | yes |
 | `profile.edit` | `e` | edit it yourself | yes |
 | `profile.clear` | `x` | clear it | yes |
 | `profile.note` | `tab` | the sections or the card | yes |

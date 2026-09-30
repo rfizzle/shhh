@@ -78,6 +78,10 @@ const (
 	// ProfileRefine asks the drafter to rewrite the section Index names,
 	// with the note in Text; the other sections go with it unchanged.
 	ProfileRefine
+	// ProfileRefineAll asks the drafter to rewrite every prose section on
+	// the note in Text. Include says the sections the person wrote go too;
+	// without it they are sent unchanged with the fields.
+	ProfileRefineAll
 	// ProfileEdit hands the section Index names to the person's editor.
 	ProfileEdit
 	// ProfileClear empties the section Index names.
@@ -110,6 +114,9 @@ type ProfileResult struct {
 	// Index picks the save row on a ProfileSave, and the section on the acts
 	// that revise one.
 	Index int
+	// Include is a whole-draft note's second press: the sections the person
+	// wrote are redrafted with the rest rather than kept.
+	Include bool
 }
 
 // ProfileQA is one question the drafter asked and the answer it got, kept on
@@ -159,6 +166,13 @@ type ProfileSection struct {
 	Prose bool
 	// Revised says the section has a revision esc can take back.
 	Revised bool
+	// Mine says the person wrote the section themselves, which a note on the
+	// whole draft keeps unless its second press says otherwise.
+	Mine bool
+	// Whole says the block is the row a note on the whole draft left under
+	// the sections rather than a section: esc on it takes that revision back
+	// from every section it changed.
+	Whole bool
 	// Pick is what enter does on a field block that opens a selector, in
 	// the words its key row offers it under; empty is a field block enter
 	// does nothing on.
@@ -248,6 +262,13 @@ type ProfileScreen struct {
 	// refining is the note open under the selected section: the field has
 	// the keyboard, and enter sends it.
 	refining bool
+	// whole says the note, or the wait after it, is about the whole draft
+	// rather than the selected section, and is drawn under the section list;
+	// include is its second press, and sent the note as it went to the
+	// drafter, which the wait keeps on screen above itself.
+	whole   bool
+	include bool
+	sent    string
 	// pane is the offset into the sections' rows, held as a Pager like every
 	// other scrolling body's here, so the fold under it counts through the
 	// same arithmetic the rest of the package folds through
@@ -348,6 +369,7 @@ func (p *ProfileScreen) Show(draft ProfileDraftView, saves []SelectOption) {
 	p.Warning = ""
 	p.saves = saves
 	p.refining = false
+	p.whole, p.include, p.sent = false, false, ""
 	p.Picker = nil
 	p.section = min(max(p.section, 0), max(len(draft.Sections)-1, 0))
 	p.reveal = true
@@ -373,6 +395,17 @@ func (p *ProfileScreen) OpenPicker(picker *MultiSelect) {
 // Selected is the section the pointer is on, for a host that words a wait
 // or a warning about it.
 func (p *ProfileScreen) Selected() int { return p.section }
+
+// Select puts the pointer on a block and the keyboard on the sections, for a
+// host that lands a revision on a block the person should be standing on —
+// a whole-draft note's own row, whose esc takes the revision back.
+func (p *ProfileScreen) Select(index int) {
+	if index < 0 || index >= len(p.Draft.Sections) {
+		return
+	}
+	p.section, p.card, p.reveal = index, false, true
+	p.syncCard()
+}
 
 // CardFocused reports that the card rather than the sections has the
 // keyboard.
@@ -554,6 +587,13 @@ func (p *ProfileScreen) updateSections(msg tea.KeyPressMsg) (bool, ProfileResult
 		p.field.Placeholder = "what to change in " + sec.Name
 		p.field.Focus()
 		p.reveal = true
+	case keys.Is(pressed, keys.Profile.RefineAll):
+		// One note for every section, whichever block the pointer is on: it
+		// opens under the section list, since it is about all of them.
+		p.refining, p.whole, p.include = true, true, false
+		p.field.Reset()
+		p.field.Placeholder = "what to change across the draft"
+		p.field.Focus()
 	case keys.Is(pressed, keys.Profile.Edit) && sec.Prose:
 		return true, ProfileResult{Action: ProfileEdit, Index: p.section}
 	case keys.Is(pressed, keys.Profile.Clear) && sec.Prose && strings.TrimSpace(sec.Body) != "":
@@ -563,7 +603,7 @@ func (p *ProfileScreen) updateSections(msg tea.KeyPressMsg) (bool, ProfileResult
 		// one, and is the step's own esc on a section with none: every
 		// revision is kept for the life of the flow, so the way back through
 		// them is the key that is always the safe answer.
-		if sec.Revised {
+		if sec.Revised || sec.Whole {
 			return true, ProfileResult{Action: ProfileUndo, Index: p.section}
 		}
 		return true, ProfileResult{Action: ProfileDiscard}
@@ -576,8 +616,11 @@ func (p *ProfileScreen) updateSections(msg tea.KeyPressMsg) (bool, ProfileResult
 func (p *ProfileScreen) updateRefine(msg tea.KeyPressMsg) (bool, ProfileResult) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Profile.Back):
-		p.refining = false
+		p.refining, p.whole, p.include = false, false, false
 		p.field.Blur()
+		return false, ProfileResult{}
+	case p.toggles(pressed):
+		p.include = !p.include
 		return false, ProfileResult{}
 	case keys.Is(pressed, keys.Profile.Refine):
 		// A note is what a refine is made of, so enter over an empty one does
@@ -586,10 +629,46 @@ func (p *ProfileScreen) updateRefine(msg tea.KeyPressMsg) (bool, ProfileResult) 
 		if note == "" {
 			return false, ProfileResult{}
 		}
+		if p.whole {
+			p.sent = note
+			return true, ProfileResult{Action: ProfileRefineAll, Text: note, Include: p.include}
+		}
 		return true, ProfileResult{Action: ProfileRefine, Index: p.section, Text: note}
 	}
 	p.field, _ = p.field.Update(msg)
 	return false, ProfileResult{}
+}
+
+// toggles reports a keystroke that is the whole-draft note's second press
+// rather than a letter of it: the note's own key, while nothing has been
+// typed and some section is the person's to keep or include. Once the note
+// has text in it the key is text, since a note is a sentence.
+func (p *ProfileScreen) toggles(pressed string) bool {
+	return p.whole && keys.Is(pressed, keys.Profile.RefineAll) &&
+		p.field.Value() == "" && len(p.mine()) > 0
+}
+
+// mine is the names of the sections the person wrote themselves, in order.
+func (p *ProfileScreen) mine() []string {
+	var out []string
+	for _, sec := range p.Draft.Sections {
+		if sec.Mine {
+			out = append(out, sec.Name)
+		}
+	}
+	return out
+}
+
+// sectionCount is the draft's sections, leaving out the row a whole-draft
+// note left under them.
+func (p *ProfileScreen) sectionCount() int {
+	n := 0
+	for _, sec := range p.Draft.Sections {
+		if !sec.Whole {
+			n++
+		}
+	}
+	return n
 }
 
 // selected is the section the pointer is on.
@@ -620,7 +699,7 @@ func (p *ProfileScreen) listLive() bool {
 func (p *ProfileScreen) keyList() []KeyOffer {
 	return []KeyOffer{
 		keyOffer(keys.Profile.Move), keyOffer(keys.Profile.Take),
-		keyOffer(keys.Profile.Refine), keyOffer(keys.Profile.Edit),
+		keyOffer(keys.Profile.Refine), keyOffer(keys.Profile.RefineAll), keyOffer(keys.Profile.Edit),
 		keyOffer(keys.Profile.Clear), keyOffer(keys.Profile.Note),
 		keyOffer(keys.Profile.ScrollUp), keyOffer(keys.Profile.ScrollDown),
 		keyOffer(keys.Profile.Back),
@@ -899,6 +978,10 @@ func (p *ProfileScreen) hintFor(width int) []string {
 			keyOfferAs(keys.Profile.Back, p.backWords()),
 		}
 	case ProfileWorking:
+		if p.redrafting() && p.whole {
+			segments = []KeyOffer{keyOfferAs(keys.Profile.Back, "stop drafting · every section keeps its last text")}
+			break
+		}
 		if p.redrafting() {
 			segments = []KeyOffer{keyOfferAs(keys.Profile.Back, "stop drafting · the section keeps its last text")}
 			break
@@ -922,6 +1005,17 @@ func (p *ProfileScreen) hintFor(width int) []string {
 // the keyboard this one is not drawn: two rows of live keys for one keyboard
 // would be offering it twice.
 func (p *ProfileScreen) sectionHint() []KeyOffer {
+	if p.refining && p.whole {
+		segments := []KeyOffer{keyOfferAs(keys.Profile.Refine, "redraft every section")}
+		if len(p.mine()) > 0 && p.field.Value() == "" {
+			again := "again to include the sections you edited"
+			if p.include {
+				again = "again to keep the sections you edited"
+			}
+			segments = append(segments, keyOfferAs(keys.Profile.RefineAll, again))
+		}
+		return append(segments, keyOfferAs(keys.Profile.Back, "leave it as it is"))
+	}
 	if p.refining {
 		return []KeyOffer{
 			keyOfferAs(keys.Profile.Refine, "refine it"),
@@ -944,7 +1038,12 @@ func (p *ProfileScreen) sectionHint() []KeyOffer {
 			segments = append(segments, keyOfferAs(keys.Profile.Clear, "clear it"))
 		}
 	}
-	segments = append(segments, keyOfferAs(keys.Profile.Note, "the card"))
+	segments = append(segments,
+		keyOfferAs(keys.Profile.RefineAll, "all"),
+		keyOfferAs(keys.Profile.Note, "the card"))
+	if ok && sec.Whole {
+		return append(segments, keyOfferAs(keys.Profile.Back, "take it back from every section it changed"))
+	}
 	if ok && sec.Revised {
 		return append(segments, keyOfferAs(keys.Profile.Back, "take back its last revision"))
 	}
@@ -986,7 +1085,9 @@ func (p *ProfileScreen) draftRows(width, budget int) []string {
 		head = append(head, "")
 	}
 	blocks, starts := p.sectionRows(width)
-	var tail []string
+	// A note on the whole draft, and the wait after it, are under the
+	// section list and never folded with it: the note holds the keyboard.
+	tail := p.wholeRows(width)
 	if len(hint) > 0 {
 		tail = append(append(tail, ""), hint...)
 	}
@@ -1026,8 +1127,9 @@ func (p *ProfileScreen) foldedSections(width, room int, blocks []string, starts 
 		// by one more and the selected section brought back into it.
 		height = room - 2
 		p.pane.Height = height
-		first, _ := p.selectedRows(starts, len(blocks))
-		if first < p.pane.Offset || first >= p.pane.Offset+height {
+		first, last := p.selectedRows(starts, len(blocks))
+		if first < p.pane.Offset || last >= p.pane.Offset+height {
+			p.pane.Reveal(last)
 			p.pane.Reveal(first)
 		}
 		p.pane.Offset = p.pane.Held()
@@ -1109,7 +1211,9 @@ func sectionsFrom(starts []int, row int) int {
 func (p *ProfileScreen) sectionRows(width int) ([]string, []int) {
 	var rows []string
 	starts := make([]int, 0, len(p.Draft.Sections))
-	lit := !p.card || p.Step == ProfileWorking
+	// A whole-draft note is about every section, so no one of them is lit
+	// while it is open or being waited on.
+	lit := (!p.card || p.Step == ProfileWorking) && !p.whole
 	for i, sec := range p.Draft.Sections {
 		if i > 0 {
 			rows = append(rows, "")
@@ -1118,7 +1222,7 @@ func (p *ProfileScreen) sectionRows(width int) ([]string, []int) {
 		selected := i == p.section && lit
 		rows = append(rows, p.headingRow(sec, selected, width))
 		rows = append(rows, p.sectionBody(sec, width)...)
-		if i != p.section {
+		if i != p.section || p.whole {
 			continue
 		}
 		switch {
@@ -1196,7 +1300,7 @@ func (p *ProfileScreen) sectionBody(sec ProfileSection, width int) []string {
 // refineRows is the note under the section being refined: what it is for,
 // and the field.
 func (p *ProfileScreen) refineRows(sec ProfileSection, width int) []string {
-	others := len(p.Draft.Sections) - 1
+	others := p.sectionCount() - 1
 	label := fmt.Sprintf("┄ what to change in %s — the other %s are sent as fixed context", sec.Name, spellNumber(others))
 	inner := max(width-profileBodyIndent-2, 8)
 	p.field.SetWidth(inner)
@@ -1211,6 +1315,54 @@ func (p *ProfileScreen) refineRows(sec ProfileSection, width int) []string {
 		rows = append(rows, Clip(bodyIndent(line), width))
 	}
 	return rows
+}
+
+// wholeRows is a note on the whole draft under the section list: what it is
+// sent with — which sections it keeps, when some are the person's — and the
+// field, or once it has gone, the note as sent and the wait under it.
+func (p *ProfileScreen) wholeRows(width int) []string {
+	if !p.whole || (!p.refining && !p.redrafting()) {
+		return nil
+	}
+	label := "┄ a note on the whole draft — every section is redrafted on it; the tiers, tools and fields are sent as fixed context"
+	if mine := p.mine(); len(mine) > 0 {
+		verb := "is"
+		if len(mine) > 1 {
+			verb = "are"
+		}
+		if p.include {
+			label += "; " + joinAnd(mine) + ", which you edited, " + verb + " redrafted too"
+		} else {
+			label += "; " + joinAnd(mine) + ", which you edited, " + verb + " kept"
+		}
+	}
+	inner := max(width-profileIndent-2, 8)
+	// Wrapped rather than clipped: the half a clip would cut is the half that
+	// says which of the person's own sections the note may touch.
+	rows := []string{""}
+	for _, line := range wrapPlain(label, inner) {
+		rows = append(rows, Clip(indent(sty.Dim.Render(line)), width))
+	}
+	if p.refining {
+		p.field.SetWidth(inner)
+		StyleTextArea(&p.field)
+		for _, line := range strings.Split(p.field.View(), "\n") {
+			rows = append(rows, Clip(indent("  "+line), width))
+		}
+		return rows
+	}
+	for _, line := range wrapPlain(p.sent, inner) {
+		rows = append(rows, Clip(indent("  "+sty.Dimmer.Render(line)), width))
+	}
+	return append(rows, "", Clip(indent(p.workingLabel("")), width))
+}
+
+// joinAnd is names as a sentence lists them.
+func joinAnd(names []string) string {
+	if len(names) < 2 {
+		return strings.Join(names, "")
+	}
+	return strings.Join(names[:len(names)-1], ", ") + " and " + names[len(names)-1]
 }
 
 // cardRows is the decision, windowed to the height when even it does not fit:

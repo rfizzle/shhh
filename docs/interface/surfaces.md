@@ -2968,6 +2968,21 @@ lost its refine row and its note, since revision lives on the sections now:
 it is the ways out and nothing else, and tab moves the keyboard between it
 and the sections.
 
+A change of direction is one note rather than five. A key from any block
+opens a note for the whole draft under the section list, not under one
+block, since it is about all of them; the drafter rewrites every prose
+section against it with the tiers, tools and fields sent unchanged. A
+section the person wrote is kept, and the note says which before it is
+sent: pressing the key again while the note is still empty takes those
+sections in too, and the note says that instead. The wait is drawn under the
+note, and a note that fails, is stopped or is answered with a question
+leaves the draft as it was. What comes back lands one section at a time —
+each section it changed is marked refined and takes its own revision, so esc
+on that block takes back that section alone — and the note leaves a row of
+its own under the sections, with the pointer on it, naming what it changed
+and what it kept: esc there takes the note back from every section still
+standing where it left them, and never a revision made since.
+
 Enter on the tools and permissions block opens a selector where the card
 stands, with the draft's own grant ticked: the tiers first, each saying in
 plain words what it lets the agent do, then the tools this session has that a

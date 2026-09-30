@@ -19,7 +19,6 @@
   test-writer — adds tests
 
   ⋮ 3 more sections above · [shift+↑] scroll up
-    Never delete a test.
 
   Method
     Read, then write.
@@ -29,6 +28,7 @@
 
 ❯ Tools
     read + write + execute
+    it can change things, in its own copy of the tree
   ⋮ 2 more sections · [shift+↓] scroll the profile
 
 ╭─ What may test-writer do? ───────────────────────────────╮
@@ -61,7 +61,6 @@
   test-writer — adds tests
 
   ⋮ 1 more section above · [shift+↑] scroll up
-    Add tests.
 
   Scope
     One package.
@@ -76,6 +75,7 @@
     The cases added.
 
 ❯ Tools
+    read + web · it reads and reports
   ⋮ 2 more sections · [shift+↓] scroll the profile
 
 ╭─ What may test-writer do? ───────────────────────────────╮
@@ -102,8 +102,7 @@
 
   test-writer — adds tests
 
-  ⋮ 3 more sections above · [shift+↑] scroll up
-  Method
+  ⋮ 4 more sections above · [shift+↑] scroll up
     Read, then write.
 
   Report
@@ -111,6 +110,7 @@
 
 ❯ Tools
     read + write + execute
+    it can change things, in its own copy of the tree
   ⋮ 2 more sections · [shift+↓] scroll the profile
 
 ╭─ What may test-writer do? ───────────────────────────────╮
@@ -146,7 +146,6 @@
   ␛[38;5;254mtest-writer — adds tests␛[m
 
   ␛[38;5;244m⋮ 3 more sections above · [shift+↑] scroll up␛[m
-    ␛[38;5;244mNever delete a test.␛[m
 
   ␛[38;5;254mMethod␛[m
     ␛[38;5;244mRead, then write.␛[m
@@ -156,6 +155,7 @@
 
 ␛[38;5;254m❯␛[m ␛[38;5;254mTools␛[m
     ␛[38;5;254mread + write + execute␛[m
+    ␛[38;5;244mit can change things, in its own copy of the tree␛[m
   ␛[38;5;244m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mWhat may test-writer do? ␛[m␛[38;5;254m───────────────────────────────╮␛[m
@@ -188,7 +188,6 @@
   ␛[38;5;254mtest-writer — adds tests␛[m
 
   ␛[38;5;244m⋮ 1 more section above · [shift+↑] scroll up␛[m
-    ␛[38;5;244mAdd tests.␛[m
 
   ␛[38;5;254mScope␛[m
     ␛[38;5;244mOne package.␛[m
@@ -203,6 +202,7 @@
     ␛[38;5;244mThe cases added.␛[m
 
 ␛[38;5;254m❯␛[m ␛[38;5;254mTools␛[m
+    ␛[38;5;254mread + web␛[m␛[38;5;244m · it reads and reports␛[m
   ␛[38;5;244m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mWhat may test-writer do? ␛[m␛[38;5;254m───────────────────────────────╮␛[m
@@ -229,8 +229,7 @@
 
   ␛[38;5;254mtest-writer — adds tests␛[m
 
-  ␛[38;5;244m⋮ 3 more sections above · [shift+↑] scroll up␛[m
-  ␛[38;5;254mMethod␛[m
+  ␛[38;5;244m⋮ 4 more sections above · [shift+↑] scroll up␛[m
     ␛[38;5;244mRead, then write.␛[m
 
   ␛[38;5;254mReport␛[m
@@ -238,6 +237,7 @@
 
 ␛[38;5;254m❯␛[m ␛[38;5;254mTools␛[m
     ␛[38;5;254mread + write + execute␛[m
+    ␛[38;5;244mit can change things, in its own copy of the tree␛[m
   ␛[38;5;244m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mWhat may test-writer do? ␛[m␛[38;5;254m───────────────────────────────╮␛[m

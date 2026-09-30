@@ -27,8 +27,14 @@ type Request struct {
 	Feedback string
 	// Section names the one section of Current the note is about, for a
 	// revision of that section alone; the rest of the draft is sent as
-	// fixed context and only that section is taken from the answer.
+	// fixed context and only that section is taken from the answer. Empty
+	// with Current set is a note on the whole draft: every prose section is
+	// revised, and the tiers, tools and fields go as fixed context.
 	Section string
+	// Keep names the prose sections a whole-draft revision must hand back
+	// as they are — the ones the person wrote themselves — so they go as
+	// fixed context with the fields.
+	Keep []string
 	// Existing is the role names the session already has.
 	Existing []string
 	// Models the drafter may name; empty leaves the model inherited.
@@ -335,7 +341,43 @@ func userPrompt(req Request) string {
 			fmt.Fprintf(&b, "\nWhat the person said about %s:\n%s\n", req.Section, strings.TrimSpace(req.Feedback))
 			return b.String()
 		}
-		fmt.Fprintf(&b, "\nWhat the person said about it — revise the draft to match, keeping everything they did not mention:\n%s\n", strings.TrimSpace(req.Feedback))
+		// A note on the whole draft. Only the sections are taken from the
+		// answer, so the fields are named as fixed rather than left for a
+		// rewrite nobody reads, and so are the sections the person wrote.
+		b.WriteString("\nRevise every section to match what the person said about the whole draft, keeping what they did not mention. The name, description, permissions, tools, model, reasoning and budget are fixed: answer them exactly as they are in the current draft.")
+		if len(req.Keep) > 0 {
+			fmt.Fprintf(&b, " The person wrote %s themselves, so %s fixed too: answer %s exactly as %s in the current draft.",
+				sectionNames(req.Keep), isAre(req.Keep), itThem(req.Keep), isAre(req.Keep))
+		}
+		b.WriteString(" Only the sections are taken from your answer.\n")
+		fmt.Fprintf(&b, "\nWhat the person said about the whole draft:\n%s\n", strings.TrimSpace(req.Feedback))
 	}
 	return b.String()
+}
+
+// sectionNames is a list of sections as a sentence says it: "the Scope
+// section", "the Scope and Method sections".
+func sectionNames(names []string) string {
+	switch len(names) {
+	case 1:
+		return "the " + names[0] + " section"
+	case 2:
+		return "the " + names[0] + " and " + names[1] + " sections"
+	}
+	return "the " + strings.Join(names[:len(names)-1], ", ") + " and " + names[len(names)-1] + " sections"
+}
+
+// isAre and itThem agree a sentence with how many sections it names.
+func isAre(names []string) string {
+	if len(names) == 1 {
+		return "it is"
+	}
+	return "they are"
+}
+
+func itThem(names []string) string {
+	if len(names) == 1 {
+		return "it"
+	}
+	return "them"
 }

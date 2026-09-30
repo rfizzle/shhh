@@ -198,6 +198,7 @@
   · move         up down · move  [shipped]
   · take         enter · take it  [shipped]
   · refine       enter · refine it with a note  [shipped]
+  · refine_all   R · refine the whole draft with one note  [shipped]
   · edit         e · edit it yourself  [shipped]
   · clear        x · clear it  [shipped]
   · note         tab · the sections or the card  [shipped]
@@ -342,4 +343,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  249 keys · 1 moved
+  250 keys · 1 moved

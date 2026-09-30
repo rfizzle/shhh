@@ -717,6 +717,201 @@ func TestPersona_AFailedOrStoppedRedraftKeepsTheDraft(t *testing.T) {
 	}
 }
 
+// refineWhole opens the note for the whole draft — pressing its key again
+// first when include is set — and sends it.
+func refineWhole(t *testing.T, m Model, note string, include bool) Model {
+	t.Helper()
+	m = pressOn(t, m, tea.KeyPressMsg{Code: 'R', Text: "R"})
+	if include {
+		m = pressOn(t, m, tea.KeyPressMsg{Code: 'R', Text: "R"})
+	}
+	m = typeInto(t, m, note)
+	return pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+}
+
+// One note revises every section at once through the section's own request
+// with no section named: the fields are fixed context, a section the person
+// wrote is kept and says so, and each section the drafter changed carries
+// its own revision and its own mark.
+func TestPersona_AWholeDraftNoteRevisesEverySectionButTheOnesYouWrote(t *testing.T) {
+	m, reqs, saves := sectionedModel(t, persona.KindCode, answerRewritingEverything())
+	m = handEdit(t, m, "Restrictions", "Never touch the goldens.")
+	m = pressOn(t, m, tea.KeyPressMsg{Code: 'R', Text: "R"})
+	view := personaView(m)
+	for _, want := range []string{"┄ a note on the whole draft", "Restrictions, which you edited, is kept",
+		"[R] again to include the sections you edited", "[enter] redraft every section"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the whole-draft note lacks %q:\n%s", want, view)
+		}
+	}
+	m = typeInto(t, m, "terser throughout")
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	req := (*reqs)[len(*reqs)-1]
+	if req.Section != "" || req.Feedback != "terser throughout" || req.Current == nil ||
+		strings.Join(req.Keep, ",") != "Restrictions" {
+		t.Fatalf("request = %+v", req)
+	}
+	d := m.persona.draft
+	want := []string{"NEW purpose.", "NEW scope.", "Never touch the goldens.", "NEW method.", "NEW report."}
+	for i, sec := range d.SectionList() {
+		if sec.Body != want[i] {
+			t.Fatalf("section %s = %q, want %q", sec.Name, sec.Body, want[i])
+		}
+	}
+	if d.Name != "test-writer" || d.Description != "adds tests" || strings.Join(d.Permissions, ",") != "write,execute" || len(d.Tools) != 0 {
+		t.Fatalf("a whole-draft note moved the fields: %+v", d)
+	}
+	for _, name := range []string{"Purpose", "Scope", "Method", "Report"} {
+		if n := len(m.persona.revisions[name]); n != 1 {
+			t.Fatalf("%s carries %d revisions, want its own one", name, n)
+		}
+	}
+	view = personaView(m)
+	for _, want := range []string{"Purpose · refined once", "Report · refined once", "Restrictions · edited by you · kept",
+		"Whole draft · redrafted on your note", "Purpose, Scope, Method and Report changed", "[esc] take it back from every section it changed"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the result lacks %q:\n%s", want, view)
+		}
+	}
+	if len(*saves) != 0 {
+		t.Fatalf("a whole-draft note wrote a file: %v", *saves)
+	}
+}
+
+// The note's second press takes the person's own sections in with the rest,
+// and says so before the note is sent; with text in the field the key is a
+// letter of the note.
+func TestPersona_AWholeDraftNotesSecondPressIncludesYourSections(t *testing.T) {
+	m, reqs, _ := sectionedModel(t, persona.KindCode, answerRewritingEverything())
+	m = handEdit(t, m, "Restrictions", "Never touch the goldens.")
+	m = pressOn(t, pressOn(t, m, tea.KeyPressMsg{Code: 'R', Text: "R"}), tea.KeyPressMsg{Code: 'R', Text: "R"})
+	if view := personaView(m); !strings.Contains(view, "Restrictions, which you edited, is redrafted too") ||
+		!strings.Contains(view, "[R] again to keep the sections you edited") {
+		t.Fatalf("the second press should say the edited section goes too:\n%s", view)
+	}
+	m = typeInto(t, m, "cut the Repetition")
+	if view := personaView(m); !strings.Contains(view, "cut the Repetition") || strings.Contains(view, "[R] again") {
+		t.Fatalf("an R in the note's text should be text:\n%s", view)
+	}
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	req := (*reqs)[len(*reqs)-1]
+	if len(req.Keep) != 0 || req.Feedback != "cut the Repetition" {
+		t.Fatalf("an included section should not be kept: %+v", req)
+	}
+	if got := m.persona.draft.Sections.Restrictions; got != "NEW restrictions." {
+		t.Fatalf("the included section was not redrafted: %q", got)
+	}
+	if view := personaView(m); strings.Contains(view, "Restrictions · edited by you") {
+		t.Fatalf("a redrafted section is no longer the person's own:\n%s", view)
+	}
+}
+
+// esc on the note's own row takes one revision off every section the note
+// changed — and only off those still standing where it put them — while esc
+// on one section takes back that section alone.
+func TestPersona_AWholeDraftNoteIsTakenBackExactly(t *testing.T) {
+	m, _, saves := sectionedModel(t, persona.KindCode, answerRewritingEverything(),
+		persona.Outcome{Draft: &persona.Draft{Name: "x", Description: "y",
+			Sections: &persona.Sections{Purpose: "LATER purpose.", Scope: "s", Restrictions: "r", Method: "m", Report: "p"}}})
+	m = refineWhole(t, m, "terser", false)
+	// A section taken back on its own: Scope goes back, the rest stand.
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyUp})
+	for m.personaScreen.Selected() != 1 {
+		m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyUp})
+	}
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	if got := m.persona.draft.Sections.Scope; got != "One package." {
+		t.Fatalf("esc on Scope took it to %q", got)
+	}
+	// Purpose revised again on top of the note: the note's row must not pop
+	// that revision in its name.
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyUp})
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = typeInto(t, m, "later")
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if got := m.persona.draft.Sections.Purpose; got != "LATER purpose." {
+		t.Fatalf("Purpose = %q", got)
+	}
+	if view := personaView(m); !strings.Contains(view, "Method and Report changed") || strings.Contains(view, "Purpose, Scope") {
+		t.Fatalf("the note's row should name only what still stands as it left it:\n%s", view)
+	}
+	for m.personaScreen.Selected() != len(personaBlocks) {
+		m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyDown})
+	}
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	s := m.persona.draft.Sections
+	if s.Purpose != "LATER purpose." || s.Scope != "One package." || s.Method != "Read, then write." ||
+		s.Report != "The cases added." || s.Restrictions != "Never delete a test." {
+		t.Fatalf("the note's row took back the wrong revisions: %+v", *s)
+	}
+	if !strings.Contains(m.persona.draft.Prompt, "Read, then write.") {
+		t.Fatalf("the prompt should follow the sections back:\n%s", m.persona.draft.Prompt)
+	}
+	if n := len(m.persona.revisions["Purpose"]); n != 2 {
+		t.Fatalf("Purpose's own stack should be untouched, has %d", n)
+	}
+	if m.persona == nil || strings.Contains(personaView(m), "Whole draft") {
+		t.Fatalf("the note's row should be gone once it is taken back:\n%s", personaView(m))
+	}
+	if len(*saves) != 0 {
+		t.Fatalf("a revision wrote a file: %v", *saves)
+	}
+}
+
+// A whole-draft note that fails, asks instead, or is stopped keeps the
+// draft as it was, with the wait drawn under the note while it lasts.
+func TestPersona_AFailedOrStoppedWholeDraftNoteKeepsTheDraft(t *testing.T) {
+	for _, o := range []persona.Outcome{
+		{Failed: true, Err: "the model timed out"},
+		{Questions: []string{"Terser how?"}},
+	} {
+		m, _, _ := sectionedModel(t, persona.KindCode, o)
+		m = refineWhole(t, m, "terser", false)
+		if m.persona == nil || m.personaScreen.Step != components.ProfileDraft ||
+			m.persona.draft.Sections.Purpose != "Add tests." || len(m.persona.revisions["Purpose"]) != 0 {
+			t.Fatalf("a %+v whole-draft note moved the draft", o)
+		}
+		view := personaView(m)
+		if !strings.Contains(view, "the model timed out. Every section keeps its last text.") &&
+			!strings.Contains(view, `the drafter asked "Terser how?" instead`) {
+			t.Fatalf("the draft should stand with the reason under it:\n%s", view)
+		}
+		if strings.Contains(view, "Whole draft") {
+			t.Fatalf("a note that changed nothing leaves no row:\n%s", view)
+		}
+	}
+
+	m, _, _ := sectionedModel(t, persona.KindCode, answerRewritingEverything())
+	m = pressOn(t, m, tea.KeyPressMsg{Code: 'R', Text: "R"})
+	m = typeInto(t, m, "terser")
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	view := personaView(m)
+	if !strings.Contains(view, "redrafting every section") || !strings.Contains(view, "┄ a note on the whole draft") ||
+		!strings.Contains(view, "every section keeps its last text") {
+		t.Fatalf("the wait should draw under the note:\n%s", view)
+	}
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = runPersonaCmd(t, m, cmd)
+	if m.personaScreen.Step != components.ProfileDraft || m.persona.draft.Sections.Purpose != "Add tests." {
+		t.Fatalf("a stopped whole-draft note should leave the draft: step=%d purpose=%q",
+			m.personaScreen.Step, m.persona.draft.Sections.Purpose)
+	}
+}
+
+// A whole-draft note cannot grant a chat profile a writing tier: the tiers
+// are never read from its answer.
+func TestPersona_AChatWholeDraftNoteCannotGrantAWritingTier(t *testing.T) {
+	m, _, _ := sectionedModel(t, persona.KindChat, answerRewritingEverything())
+	m = refineWhole(t, m, "sharper", false)
+	if m.persona.draft.Writes() || strings.Join(m.persona.draft.Permissions, ",") != "web" || len(m.persona.draft.Tools) != 0 {
+		t.Fatalf("a chat whole-draft note granted a writing tier: %+v", *m.persona.draft)
+	}
+	if m.persona.draft.Sections.Purpose != "NEW purpose." {
+		t.Fatalf("the sections should still be taken: %q", m.persona.draft.Sections.Purpose)
+	}
+}
+
 // The chat drafter's rule holds through a revision: whatever tier a redraft
 // answer grants, the chat profile still only reads, and the tools the first
 // draft had taken off are still named.

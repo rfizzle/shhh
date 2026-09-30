@@ -8,7 +8,9 @@
 # sent and only Method comes back rewritten, marked refined, though the answer
 # rewrote every section; Restrictions goes through the editor and comes back
 # marked as the person's own; esc takes that back; and tab hands the keyboard
-# to the card, whose pane folds rather than giving ground.
+# to the card, whose pane folds rather than giving ground; then one note for
+# the whole draft rewrites every section but the one the person wrote, and
+# esc on the row it leaves takes it back.
 snap 01-start "Some things worth doing first"
 keys "/agents new a test writer" Enter
 snap 02-sections "[enter] refine it with a note" "❯ Purpose" "Report ⚠ empty · the drafter left it"
@@ -37,3 +39,18 @@ keys Space
 snap 10-writer "test-writer is a writer"
 keys Enter
 snap 11-taken "read + write" "[enter] open the selector"
+# One note for the whole draft: Restrictions is written in the editor first,
+# so the note under the section list names it as kept; the answer rewrites
+# every section and the fields, and only the other sections are taken, each
+# marked, with the note's own row under them holding the pointer. esc there
+# takes the note back from every section it changed.
+keys Up Up Up
+keys e
+snap 12-mine "Restrictions · edited by you"
+keys R
+snap 13-whole-note "a note on the whole draft" "you edited, is kept" "[R] again to include the sections you edited"
+keys "terser throughout"
+keys Enter
+snap 14-whole "Whole draft · redrafted on your note" "Restrictions kept as you" "[esc] take it back from every section it changed"
+keys Escape
+snap 15-whole-back "❯ Model" "[esc] discard the draft"
