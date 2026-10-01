@@ -102,6 +102,9 @@ const (
 	// ProfileUnpicked is esc on the open selector: the section stays as it
 	// was.
 	ProfileUnpicked
+	// ProfileMigrate is the older-shape offer taken: the profile opened from
+	// its file is sent to the drafter to be moved into the sections.
+	ProfileMigrate
 )
 
 // ProfileResult is the surface's Update result.
@@ -194,6 +197,9 @@ type ProfileDraftView struct {
 	Name        string
 	Description string
 	Sections    []ProfileSection
+	// Note is a dim clause after the headline: what has happened to a
+	// profile opened from its file that nothing has written yet.
+	Note string
 }
 
 // headline is the name and what it is for on one line.
@@ -295,6 +301,32 @@ type ProfileScreen struct {
 	// keys reports that `?` has the register and the glyph legend showing
 	// under the step.
 	keys bool
+
+	// FromFile says the profile was opened from its file rather than
+	// drafted from a brief: there is no brief or questions behind it, so the
+	// rail is not drawn, and esc closes it with nothing written
+	// (docs/interface/surfaces.md#the-profile-drafter).
+	FromFile bool
+	// Migratable puts the older-shape offer at the head of the draft and
+	// makes its key live: the profile's file was written before the five
+	// sections. OlderNote is what the offer says about it.
+	Migratable bool
+	OlderNote  string
+	// Original is the prompt as the file wrote it, readable beside the
+	// sections while a migration is being reviewed — beside them where the
+	// width allows, under them where it does not.
+	Original string
+	// Diff is the change the card's save would make, as unified-diff lines,
+	// drawn above the card once the person asks to see it.
+	Diff []string
+	// DiscardDesc is what the card's Discard row says beside it.
+	DiscardDesc string
+	// diff is the diff's window: it stands where the sections stood while
+	// the card holds the keyboard, and the profile's scroll keys move it.
+	diff Pager
+	// migrating is the wait while a profile opened from its file is moved
+	// into the sections: drawn on its own, with the file's headline.
+	migrating bool
 }
 
 // NewProfileScreen builds the surface with its text field. The field is one
@@ -362,6 +394,18 @@ func (p *ProfileScreen) Work(doing string) {
 	p.Step = ProfileWorking
 	p.Working = doing
 	p.refining = false
+	p.migrating = false
+	p.field.Blur()
+}
+
+// Migrating puts the surface on the wait while a profile opened from its
+// file is moved into the sections. It is the whole draft's wait, not a
+// section's: every section is about to be replaced.
+func (p *ProfileScreen) Migrating(doing string) {
+	p.Step, p.from = ProfileWorking, ProfileWorking
+	p.Working = doing
+	p.refining = false
+	p.migrating = true
 	p.field.Blur()
 }
 
@@ -380,11 +424,12 @@ func (p *ProfileScreen) Show(draft ProfileDraftView, saves []SelectOption) {
 	p.refining = false
 	p.whole, p.include, p.sent = false, false, ""
 	p.Picker = nil
+	p.migrating = false
 	p.section = min(max(p.section, 0), max(len(draft.Sections)-1, 0))
 	p.reveal = true
 	p.field.Blur()
 	options := append([]SelectOption{}, saves...)
-	options = append(options, SelectOption{Label: "Discard"})
+	options = append(options, SelectOption{Label: "Discard", Desc: p.DiscardDesc})
 	// The card's title names the profile, so the question stays answerable
 	// on a terminal too short to keep the headline above it: "keep this
 	// profile" without saying which one is a decision with the subject
@@ -607,6 +652,8 @@ func (p *ProfileScreen) updateSections(msg tea.KeyPressMsg) (bool, ProfileResult
 		return true, ProfileResult{Action: ProfileEdit, Index: p.section}
 	case keys.Is(pressed, keys.Profile.Clear) && sec.revisable() && strings.TrimSpace(sec.Body) != "":
 		return true, ProfileResult{Action: ProfileClear, Index: p.section}
+	case keys.Is(pressed, keys.Profile.Migrate) && p.Migratable:
+		return true, ProfileResult{Action: ProfileMigrate, Index: p.section}
 	case keys.Is(pressed, keys.Profile.Back):
 		// esc takes back the selected section's last revision while it has
 		// one, and is the step's own esc on a section with none: every
@@ -706,13 +753,18 @@ func (p *ProfileScreen) listLive() bool {
 
 // keyList is every key the drafter has, for `?`.
 func (p *ProfileScreen) keyList() []KeyOffer {
-	return []KeyOffer{
+	list := []KeyOffer{
 		keyOffer(keys.Profile.Move), keyOffer(keys.Profile.Take),
 		keyOffer(keys.Profile.Refine), keyOffer(keys.Profile.RefineAll), keyOffer(keys.Profile.Edit),
-		keyOffer(keys.Profile.Clear), keyOffer(keys.Profile.Note),
-		keyOffer(keys.Profile.ScrollUp), keyOffer(keys.Profile.ScrollDown),
-		keyOffer(keys.Profile.Back),
+		keyOffer(keys.Profile.Clear),
 	}
+	if p.Migratable {
+		// Live only on a profile opened in the older shape.
+		list = append(list, keyOffer(keys.Profile.Migrate))
+	}
+	return append(list, keyOffer(keys.Profile.Note),
+		keyOffer(keys.Profile.ScrollUp), keyOffer(keys.Profile.ScrollDown),
+		keyOffer(keys.Profile.Back))
 }
 
 // taken is what enter takes on the brief step: what has been typed, or the
@@ -755,6 +807,11 @@ func (p *ProfileScreen) View(width int) string {
 		Head:     []string{p.railRow(width), ""},
 		MaxLines: p.MaxLines,
 	}
+	if p.FromFile {
+		// Opened from a file: no brief was given and no question asked, so
+		// a rail of three steps would claim exchanges that never happened.
+		chrome.Head = nil
+	}
 	// The register takes the foot only while it is asked for and only where
 	// `?` is still a key: a step that has since put a field in front of the
 	// reader has taken the character back.
@@ -786,8 +843,12 @@ func (p *ProfileScreen) header() ScreenHeader {
 // not the same act and must not be worded as if they were.
 func (p *ProfileScreen) wayOutWords() string {
 	switch {
+	case p.Step == ProfileWorking && p.migrating:
+		return "stop"
 	case p.Step == ProfileWorking:
 		return "stop drafting"
+	case p.Step == ProfileDraft && p.FromFile && !p.refining && p.Picker == nil:
+		return "close, nothing written"
 	case p.Step == ProfileDraft && (p.refining || p.Picker != nil):
 		return "leave it as it is"
 	case p.Step == ProfileDraft:
@@ -872,6 +933,9 @@ func (p *ProfileScreen) bodyRows(width, budget int) []string {
 			return rows
 		}
 		return rows[:budget]
+	case p.migrating:
+		rows = []string{Clip(indent(sty.Body.Render(p.Draft.headline())), width), ""}
+		rows = append(rows, Clip(bodyIndent(p.workingLabel("the author's sentences, placed where they belong")), width), "")
 	default:
 		rows = p.workingRows(width)
 	}
@@ -987,6 +1051,10 @@ func (p *ProfileScreen) hintFor(width int) []string {
 			keyOfferAs(keys.Profile.Back, p.backWords()),
 		}
 	case ProfileWorking:
+		if p.migrating {
+			segments = []KeyOffer{keyOfferAs(keys.Profile.Back, "stop · the profile stays as the file has it")}
+			break
+		}
 		if p.redrafting() && p.whole {
 			segments = []KeyOffer{keyOfferAs(keys.Profile.Back, "stop drafting · every section keeps its last text")}
 			break
@@ -1047,6 +1115,9 @@ func (p *ProfileScreen) sectionHint() []KeyOffer {
 			segments = append(segments, keyOfferAs(keys.Profile.Clear, "clear it"))
 		}
 	}
+	if p.Migratable {
+		segments = append(segments, keyOffer(keys.Profile.Migrate))
+	}
 	segments = append(segments,
 		keyOfferAs(keys.Profile.RefineAll, "all"),
 		keyOfferAs(keys.Profile.Note, "the card"))
@@ -1056,7 +1127,7 @@ func (p *ProfileScreen) sectionHint() []KeyOffer {
 	if ok && sec.Revised {
 		return append(segments, keyOfferAs(keys.Profile.Back, "take back its last revision"))
 	}
-	return append(segments, keyOfferAs(keys.Profile.Back, "discard the draft"))
+	return append(segments, keyOfferAs(keys.Profile.Back, p.wayOutWords()))
 }
 
 // draftRows is the finished profile over the decision: what it is, its
@@ -1079,7 +1150,15 @@ func (p *ProfileScreen) draftRows(width, budget int) []string {
 		card = p.cardRows(width, budget)
 	}
 	hint := p.hintFor(width)
-	head := []string{Clip(indent(sty.Body.Render(p.Draft.headline())), width), ""}
+	var head []string
+	if p.Migratable {
+		head = append(head, Clip(indent(p.olderRow()), width), "")
+	}
+	headline := sty.Body.Render(p.Draft.headline())
+	if p.Draft.Note != "" {
+		headline += sty.Dim.Render(" · " + p.Draft.Note)
+	}
+	head = append(head, Clip(indent(headline), width), "")
 	if p.Warning != "" {
 		// Wrapped rather than clipped: the warning is the loader's sentence
 		// about why the save was refused, and the part a clip would cut is
@@ -1093,12 +1172,23 @@ func (p *ProfileScreen) draftRows(width, budget int) []string {
 		}
 		head = append(head, "")
 	}
-	blocks, starts := p.sectionRows(width)
+	blocks, starts := p.originalBeside(width)
 	// A note on the whole draft, and the wait after it, are under the
 	// section list and never folded with it: the note holds the keyboard.
 	tail := p.wholeRows(width)
 	if len(hint) > 0 {
 		tail = append(append(tail, ""), hint...)
+	}
+	if p.diffUp() {
+		// The diff is what the card's decision is about while it is up, so
+		// it takes the sections' place, in a window of its own, and the
+		// card keeps its rows.
+		room := len(p.Diff)
+		if budget > 0 {
+			room = budget - len(head) - len(tail) - len(card) - 1
+		}
+		rows := append(head, p.diffWindow(width, room)...)
+		return append(append(append(rows, tail...), ""), card...)
 	}
 	if len(card) > 0 {
 		tail = append(append(tail, ""), card...)
@@ -1243,6 +1333,118 @@ func (p *ProfileScreen) sectionRows(width int) ([]string, []int) {
 		}
 	}
 	return rows, starts
+}
+
+// olderRow is the offer at the head of a profile opened in the older shape:
+// the mark in its glyph and words, what it means, and the key that moves it.
+func (p *ProfileScreen) olderRow() string {
+	row := sty.Accent.Render(OlderShapeMark)
+	if p.OlderNote != "" {
+		row += sty.Dim.Render(" · " + p.OlderNote)
+	}
+	return row + sty.Dim.Render(" · ") + strings.Join(HintRows([]KeyOffer{keyOffer(keys.Profile.Migrate)}, 1<<10), "")
+}
+
+// originalColumn is the narrowest width the original prompt is drawn beside
+// the sections at; under it the original is drawn after them.
+const originalColumn = 100
+
+// originalBeside is the sections with the original prompt readable next to
+// them: a column on the right where the width allows, rows after the
+// sections where it does not. The starts index the same rows either way.
+func (p *ProfileScreen) originalBeside(width int) ([]string, []int) {
+	if p.Original == "" {
+		return p.sectionRows(width)
+	}
+	if width < originalColumn {
+		blocks, starts := p.sectionRows(width)
+		blocks = append(blocks, "", Clip(indent(sty.Dim.Render("as the file wrote it")), width))
+		for _, line := range p.originalLines(width - profileBodyIndent) {
+			blocks = append(blocks, Clip(bodyIndent(sty.Dim.Render(line)), width))
+		}
+		return blocks, starts
+	}
+	right := min(52, width/3)
+	left := width - right - 2
+	blocks, starts := p.sectionRows(left)
+	column := append([]string{sty.Dim.Render("as the file wrote it")}, p.originalLines(right-2)...)
+	for i, line := range column {
+		if i >= len(blocks) {
+			blocks = append(blocks, "")
+		}
+		if i > 0 {
+			line = sty.Dim.Render(line)
+		}
+		blocks[i] = padRight(blocks[i], left) + sty.Dimmer.Render("│ ") + line
+	}
+	return blocks, starts
+}
+
+// originalLines is the original prompt wrapped paragraph by paragraph.
+func (p *ProfileScreen) originalLines(width int) []string {
+	var out []string
+	for i, para := range strings.Split(strings.TrimSpace(p.Original), "\n\n") {
+		if i > 0 {
+			out = append(out, "")
+		}
+		out = append(out, wrapPlain(para, width)...)
+	}
+	return out
+}
+
+// diffUp says the save's diff stands where the sections do: it was asked
+// for and the card holds the keyboard.
+func (p *ProfileScreen) diffUp() bool {
+	return len(p.Diff) > 0 && p.card && p.Step == ProfileDraft && p.Picker == nil
+}
+
+// diffWindow is the diff windowed to room rows, with a counted marker for
+// the lines above and below it, paid for out of the room.
+func (p *ProfileScreen) diffWindow(width, room int) []string {
+	all := p.diffRows(width)
+	if room <= 0 {
+		return nil
+	}
+	if len(all) <= room {
+		p.diff = Pager{}
+		return all
+	}
+	height := max(room-2, 1)
+	p.diff.Height, p.diff.Total = height, len(all)
+	p.diff.Offset = p.diff.Held()
+	var rows []string
+	if p.diff.Offset > 0 {
+		rows = append(rows, Clip(indent(sty.Dim.Render(fmt.Sprintf("⋮ %s above · %s",
+			plural(p.diff.Offset, "more line"), words(keys.Profile.ScrollUp, "scroll up")))), width))
+	} else {
+		height++
+		p.diff.Height = height
+	}
+	window := p.diff.Window(all)
+	rows = append(rows, window...)
+	if below := len(all) - p.diff.Offset - len(window); below > 0 {
+		rows = append(rows, Clip(indent(sty.Dim.Render(fmt.Sprintf("⋮ %s · %s",
+			plural(below, "more line"), words(keys.Profile.ScrollDown, "scroll the diff")))), width))
+	}
+	return rows
+}
+
+// diffRows is the save's diff, a line each, in the diff's own tones.
+func (p *ProfileScreen) diffRows(width int) []string {
+	rows := make([]string, 0, len(p.Diff))
+	for _, line := range p.Diff {
+		style := sty.Dim
+		switch {
+		case strings.HasPrefix(line, "+++"), strings.HasPrefix(line, "---"), strings.HasPrefix(line, "@@"):
+			style = sty.Dimmer
+		case strings.HasPrefix(line, "+"):
+			style = sty.Add
+		case strings.HasPrefix(line, "-"):
+			style = sty.Del
+		}
+		rows = append(rows, Clip(indent(style.Render(line)), width))
+	}
+	return rows
 }
 
 // headingRow is a section's heading with its mark after it.
@@ -1391,6 +1593,10 @@ func (p *ProfileScreen) cardRows(width, budget int) []string {
 // scrollPane moves the sections by a row, held inside them against the rows
 // the pane last drew them in.
 func (p *ProfileScreen) scrollPane(by int) {
+	if p.diffUp() {
+		p.diff.Offset = Pager{Offset: p.diff.Offset + by, Height: p.diff.Height, Total: p.diff.Total}.Held()
+		return
+	}
 	p.pane.Offset = Pager{Offset: p.pane.Offset + by, Height: p.pane.Height, Total: p.pane.Total}.Held()
 }
 

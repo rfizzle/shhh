@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -35,6 +36,12 @@ type Request struct {
 	// as they are — the ones the person wrote themselves — so they go as
 	// fixed context with the fields.
 	Keep []string
+	// Source is a profile written before the five sections, sent to be moved
+	// into them: its prompt is distributed across the sections in the
+	// author's own sentences, and only the sections are read from the
+	// answer — every field stays the file's (Migrated).
+	// See docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten.
+	Source *config.AgentDefinition
 	// Existing is the role names the session already has.
 	Existing []string
 	// Models the drafter may name; empty leaves the model inherited.
@@ -249,15 +256,21 @@ func (d *Drafter) Draft(ctx context.Context, req Request) Outcome {
 			}
 		}
 	}
+	read := func(text string) (Outcome, bool) {
+		if req.Source != nil {
+			return migrated(text, *req.Source)
+		}
+		return parse(text, req.Kind)
+	}
 	for _, tc := range calls {
 		if tc.Name == DraftToolName {
-			if o, ok := parse(tc.Arguments, req.Kind); ok {
+			if o, ok := read(tc.Arguments); ok {
 				o.Usage, o.Elapsed = out.Usage, time.Since(start)
 				return o
 			}
 		}
 	}
-	if o, ok := parse(text.String(), req.Kind); ok {
+	if o, ok := read(text.String()); ok {
 		o.Usage, o.Elapsed = out.Usage, time.Since(start)
 		return o
 	}
@@ -265,10 +278,8 @@ func (d *Drafter) Draft(ctx context.Context, req Request) Outcome {
 	return finish(out)
 }
 
-// parse reads the tool's arguments — or a reply carrying the same JSON —
-// into an outcome. A draft that will not normalise is a failure in words,
-// not a card the person cannot save.
-func parse(text string, kind Kind) (Outcome, bool) {
+// jsonObject is the JSON object in a reply, with any prose around it cut.
+func jsonObject(text string) string {
 	text = strings.TrimSpace(text)
 	if i := strings.Index(text, "{"); i > 0 {
 		text = text[i:]
@@ -276,6 +287,47 @@ func parse(text string, kind Kind) (Outcome, bool) {
 	if j := strings.LastIndex(text, "}"); j >= 0 && j < len(text)-1 {
 		text = text[:j+1]
 	}
+	return text
+}
+
+// migrated reads a migration's answer: the five sections and nothing else.
+// The name, description, tiers, tools, model, reasoning, mode, budgets,
+// rounds, inherit, reviews, prompt mode, deny list and intent are the file's,
+// whatever the answer says, so a chat profile cannot come out able to write
+// and a reviewer cannot lose its reviews. An answer that moved nothing is a
+// failure in words rather than a draft with every section empty.
+// See docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten.
+func migrated(text string, src config.AgentDefinition) (Outcome, bool) {
+	var body struct {
+		Profile *struct {
+			Sections *Sections `json:"sections"`
+		} `json:"profile"`
+		Questions []string `json:"questions"`
+	}
+	if err := json.Unmarshal([]byte(jsonObject(text)), &body); err != nil {
+		return Outcome{}, false
+	}
+	if body.Profile == nil || body.Profile.Sections == nil {
+		if len(body.Questions) > 0 {
+			return Outcome{Failed: true, Err: "the drafter asked " + strconv.Quote(body.Questions[0]) + " instead of moving the prompt"}, true
+		}
+		return Outcome{}, false
+	}
+	secs := sectionsOf(body.Profile.Sections.List())
+	if len(secs.Empty()) == len(config.PromptSectionNames()) {
+		return Outcome{Failed: true, Err: "the drafter moved nothing into the sections"}, true
+	}
+	d := FromDefinition(src)
+	d.Sections = secs
+	d.Prompt = config.WritePromptSections(secs.List())
+	return Outcome{Draft: &d}, true
+}
+
+// parse reads the tool's arguments — or a reply carrying the same JSON —
+// into an outcome. A draft that will not normalise is a failure in words,
+// not a card the person cannot save.
+func parse(text string, kind Kind) (Outcome, bool) {
+	text = jsonObject(text)
 	var body struct {
 		Profile   *Draft   `json:"profile"`
 		Questions []string `json:"questions"`
@@ -335,6 +387,9 @@ func userPrompt(req Request) string {
 	if len(req.Models) > 0 {
 		fmt.Fprintf(&b, "Models the profile may name: %s. Omit the model to inherit the session's, which is the right default unless the job is clearly cheap and wide or clearly hard.\n", strings.Join(req.Models, ", "))
 	}
+	if req.Source != nil {
+		return migrationPrompt(&b, *req.Source)
+	}
 	fmt.Fprintf(&b, "\nBRIEF (the person's own words):\n%s\n", strings.TrimSpace(req.Brief))
 	if len(req.Exchange) > 0 {
 		b.WriteString("\nYou asked, they answered:\n")
@@ -378,6 +433,20 @@ func userPrompt(req Request) string {
 		b.WriteString(" Only the sections are taken from your answer.\n")
 		fmt.Fprintf(&b, "\nWhat the person said about the whole draft:\n%s\n", strings.TrimSpace(req.Feedback))
 	}
+	return b.String()
+}
+
+// migrationPrompt is the request that moves a profile written before the
+// sections into them. It is a bounded flow, worded as the per-section
+// revision is: what to do with the text, what not to do, and what is taken
+// from the answer. The author's words are moved, not rewritten, and a
+// section the text says nothing about stays empty for the person to fill,
+// because a section the drafter invented would read as the author's.
+func migrationPrompt(b *strings.Builder, src config.AgentDefinition) string {
+	b.WriteString("\nMove an existing profile into the five sections. It was written before the sections existed, so its prompt is one block of the author's own text.\n")
+	b.WriteString("Distribute that prompt across Purpose, Scope, Restrictions, Method and Report. Keep the author's sentences verbatim wherever they fit, moving each sentence to the section it belongs in; do not rewrite, summarise, reorder within a sentence or add to them. A section the text says nothing about is an empty string: never invent one. Answer the name, description and permissions exactly as they are below. Only the five sections are taken from your answer.\n")
+	fmt.Fprintf(b, "\nPROFILE:\nname: %s\ndescription: %s\npermissions: %s\n", src.Name, src.Description, strings.Join(src.Permissions, ", "))
+	fmt.Fprintf(b, "\nPROMPT (the author's own words):\n%s\n", strings.TrimSpace(src.Prompt))
 	return b.String()
 }
 

@@ -1,0 +1,33 @@
+# program test: TestProgram_AnOlderProfileIsMigratedFromTheManager
+#
+# An agent profile written before the five sections, migrated from the agent
+# manager (docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten).
+#
+# What the capture is for: the manager marks the older role after where its
+# file lives and offers [m] on it alone; m opens it on the drafter and the
+# answer lands with each moved section marked, Method marked empty as the
+# file's gap, and the file's own prompt beside the sections; a note fills
+# Method; the card's second row shows the file's diff, with the mode, the
+# reviews and the comment header untouched around the prompt; the first row
+# replaces the file, and the manager no longer marks it.
+setup mkdir -p "$home/config/shhh/agents"
+setup printf '%s\n' '# critic — argues against a diff; kept read-only on purpose' 'description = "reads a diff and argues"' 'reasoning = "xhigh"' 'mode = "read-only"' 'reviews = true' 'max_rounds = 30' 'prompt = """' 'You are a critic. Read the diff you are given and argue against it: what it breaks, what it assumes, what it leaves untested. Only read files; never edit or run anything. Give each objection a file and line, and end with the three you would block the change on."""' > "$home/config/shhh/agents/critic.toml"
+snap 01-start "Some things worth doing first"
+keys "/agents" Enter
+keys Down
+snap 02-manager "◆ older shape" "[m] move it into sections" "[e] open its file"
+keys m
+snap 03-migrated "Purpose · migrated" "Method ⚠ empty · the file says nothing about it" "Report · migrated"
+wide 100 snap 03-original "as the file wrote it" "│ You are a critic. Read the diff"
+keys Down Down Down Enter
+snap 04-note "what to change in Method"
+keys "say how it reads"
+keys Enter
+snap 05-filled "Method · refined once" "Read the diff, then the files it touches."
+keys Tab Down Enter
+snap 06-diff "critic.toml as it stands" "+## Purpose" "Replace its file"
+keys Up Enter
+snap 07-saved "Saved critic"
+keys "/agents" Enter
+keys Down
+snap 08-current "[enter] open it" "[e] open its file"

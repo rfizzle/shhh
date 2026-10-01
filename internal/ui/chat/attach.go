@@ -508,6 +508,9 @@ func (m Model) buildAgentRows() ([]components.AgentRow, []string) {
 			Task:     role.Description,
 			Status:   role.Scope,
 			Editable: role.Path != "",
+			// A file in the older shape is marked and offered to be moved
+			// into the sections; a shipped role has no file to move.
+			Migratable: role.Path != "" && role.Older,
 		})
 		names = append(names, role.Name)
 	}
@@ -747,7 +750,14 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	name := names[res.Index]
 	switch res.Action {
-	case components.AgentOpenRole:
+	case components.AgentOpenRole, components.AgentMigrate:
+		// The profile opens on the drafter's draft step, the way a draft is
+		// edited; m opens it and sends it to be moved into the sections.
+		m.agentList = nil
+		m.answerAgent = ""
+		m.syncViewport()
+		return m.openPersonaProfile(name, res.Action == components.AgentMigrate)
+	case components.AgentEditRole:
 		// The editor takes the terminal, so the list goes first: coming back
 		// to a takeover that was drawn before the file was edited is coming
 		// back to a stale screen.

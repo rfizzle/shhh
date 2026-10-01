@@ -16,8 +16,32 @@ func agentsProject(t *testing.T) string {
 	must(t, os.MkdirAll(filepath.Join(root, ".git"), 0o755))
 	must(t, os.MkdirAll(filepath.Join(root, ".shhh", "agents"), 0o755))
 	must(t, os.WriteFile(filepath.Join(root, ".shhh", "agents", "auditor.toml"),
-		[]byte("description = \"reads a change for the licences it pulls in\"\npermissions = [\"read\"]\n"), 0o644))
+		[]byte("description = \"reads a change for the licences it pulls in\"\npermissions = [\"read\"]\n"+
+			"prompt = \"\"\"\n## Purpose\nName every licence.\n## Scope\nThe change.\n## Restrictions\nRead only.\n"+
+			"## Method\nRead the manifests.\n## Report\nOne line per licence.\n\"\"\"\n"), 0o644))
 	return root
+}
+
+// A profile written before the five sections is marked beside where it
+// lives, in the words the manager uses; a current one and a built-in are not.
+func TestAgentsListingMarksAnOlderProfile(t *testing.T) {
+	root := agentsProject(t)
+	must(t, os.WriteFile(filepath.Join(root, ".shhh", "agents", "critic.toml"),
+		[]byte("description = \"reads a diff and argues\"\nprompt = \"You are a critic. Argue.\"\n"), 0o644))
+	withProjectTrust(t, project.Trust{Root: root, Granted: true, Present: []project.Kind{project.KindAgents}})
+	r, err := agentsListing(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range r.Sections[0].Rows {
+		older := strings.Contains(row.Outcome, "older shape")
+		if (row.Name == "critic") != older {
+			t.Errorf("row %q outcome %q", row.Name, row.Outcome)
+		}
+	}
+	if !strings.Contains(r.String(), "critic") || !strings.Contains(r.String(), "project · ◆ older shape") {
+		t.Fatalf("listing:\n%s", r.String())
+	}
 }
 
 // A trusted checkout's profile is listed beside the three built-in roles,

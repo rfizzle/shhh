@@ -22,6 +22,8 @@ package chat
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -30,6 +32,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/exp/teatest/v2"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -413,5 +416,127 @@ func TestProgram_TheDraftIsRevisedOneSectionAtATime(t *testing.T) {
 	defer mu.Unlock()
 	if len(asked) != 2 || asked[1].Section != "Method" || asked[1].Feedback != "run go vet" {
 		t.Fatalf("requests = %+v", asked)
+	}
+}
+
+// An older profile is migrated from the manager through the whole program,
+// over real files: m moves it into the sections, the card replaces its file,
+// the save registers it again the way an edited role is, and its row loses
+// the mark. A save the loader would refuse is refused on the card in the
+// loader's words, with the file untouched
+// (docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten).
+func TestProgram_AnOlderProfileIsMigratedFromTheManager(t *testing.T) {
+	dir := t.TempDir()
+	critic := filepath.Join(dir, "critic.toml")
+	terse := filepath.Join(dir, "terse.toml")
+	const terseFile = "description = \"says little\"\nprompt_mode = \"replace\"\nprompt = \"Be terse.\"\n"
+	if err := os.WriteFile(critic, []byte(criticFile), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(terse, []byte(terseFile), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var mu sync.Mutex
+	var reloaded []string
+	roles := func() []SpawnableRole {
+		var out []SpawnableRole
+		for _, path := range []string{critic, terse} {
+			def, err := config.LoadAgentFile(path)
+			if err != nil {
+				t.Error(err)
+				continue
+			}
+			out = append(out, SpawnableRole{Name: def.Name, Description: def.Description, Scope: "project", Path: path, Older: !def.Current()})
+		}
+		return out
+	}
+	reload := func(path string) error {
+		mu.Lock()
+		defer mu.Unlock()
+		reloaded = append(reloaded, path)
+		_, err := config.LoadAgentFile(path)
+		return err
+	}
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(&programProvider{turns: []programTurn{{text: "unused"}}})).
+		WithPersonas(Personas{
+			Kind:    persona.KindCode,
+			Enabled: true,
+			Roles:   roles,
+			Reload:  reload,
+			Open:    persona.Open,
+			Draft: func(_ context.Context, req persona.Request) persona.Outcome {
+				if req.Source != nil {
+					return persona.Outcome{Draft: criticMigrated(&persona.Source{Def: *req.Source})}
+				}
+				// The gap the migration left, filled by a note on its section.
+				filled := *req.Current
+				filled.SetSection(config.SectionMethod, "Read the diff, then the files it touches.")
+				return persona.Outcome{Draft: &filled}
+			},
+			SaveOpened: func(src *persona.Source, d persona.Draft) (string, error) {
+				path, err := persona.SaveOpened(src, d)
+				if err != nil {
+					return path, err
+				}
+				return path, reload(path)
+			},
+		})
+	tm := runProgramAt(t, m, 130, 60)
+
+	tm.Type("/agents")
+	tm.Send(programEnter)
+	waitForText(t, tm, "◆ older shape")
+	tm.Send(tea.KeyPressMsg{Code: tea.KeyDown})
+	tm.Send(tea.KeyPressMsg{Code: 'm', Text: "m"})
+	waitForText(t, tm, "Purpose · migrated")
+	for range 3 {
+		tm.Send(tea.KeyPressMsg{Code: tea.KeyDown})
+	}
+	tm.Send(programEnter)
+	waitForText(t, tm, "what to change in Method")
+	tm.Type("say how it reads")
+	tm.Send(programEnter)
+	waitForText(t, tm, "Method · refined once")
+	tm.Send(tea.KeyPressMsg{Code: tea.KeyTab})
+	tm.Send(programEnter)
+	waitForText(t, tm, "Saved critic")
+	tm.Type("/agents")
+	tm.Send(programEnter)
+	waitForText(t, tm, "says little")
+
+	// The second older role: its Purpose cleared leaves a replace-mode
+	// profile with no prompt, which the loader refuses.
+	tm.Send(tea.KeyPressMsg{Code: tea.KeyDown})
+	tm.Send(tea.KeyPressMsg{Code: tea.KeyDown})
+	tm.Send(programEnter)
+	waitForText(t, tm, "Keep terse?")
+	tm.Send(tea.KeyPressMsg{Code: 'x', Text: "x"})
+	tm.Send(tea.KeyPressMsg{Code: tea.KeyTab})
+	tm.Send(programEnter)
+	waitForText(t, tm, "needs a prompt to replace the base with")
+	frame := finalFrame(t, tm)
+
+	def, err := config.LoadAgentFile(critic)
+	if err != nil || !def.Current() || def.Mode != "read-only" || !def.Reviews || def.MaxRounds != 30 || def.Reasoning != "xhigh" {
+		t.Fatalf("the saved critic = %+v, %v", def, err)
+	}
+	if got, _ := os.ReadFile(critic); !strings.HasPrefix(string(got), "# critic — argues against a diff; kept read-only on purpose\n") {
+		t.Fatalf("the comment header was not kept:\n%s", got)
+	}
+	if got, _ := os.ReadFile(terse); string(got) != terseFile {
+		t.Fatalf("a refused save touched the file:\n%s", got)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(reloaded) != 1 || reloaded[0] != critic {
+		t.Fatalf("the save should register the file again, reloaded %v", reloaded)
+	}
+	if !strings.Contains(frame, "Keep terse?") {
+		t.Fatalf("the refused draft should stay on the card:\n%s", frame)
+	}
+	for _, role := range roles() {
+		if role.Name == "critic" && role.Older {
+			t.Fatal("the migrated critic is still in the older shape")
+		}
 	}
 }

@@ -1595,6 +1595,39 @@ func TestGolden_AlertsOutput(t *testing.T) {
 // The draft is revised the way a person revises one: a section refined on a
 // note, another written in the editor, and each mark is read off the flow's
 // own record of what happened to the section.
+// A profile opened from its file on the drafter's surface, in the older
+// shape, through its migration to the card that replaces the file
+// (docs/interface/surfaces.md#the-profile-drafter).
+func TestGolden_ProfileOpenedFromAFile(t *testing.T) {
+	captureGolden(t, "profile-opened", "a profile opened from its file", goldenWidths, func(width int) []golden.Panel {
+		m, _, _ := openedModel(t)
+		m.width, m.height = width, 40
+		m.syncInputWidth()
+		m.personas.SaveOpened = func(s *persona.Source, _ persona.Draft) (string, error) {
+			return s.Path, errors.New(s.Path + " changed on disk since it was opened; nothing was written")
+		}
+		pane := func(m Model) string { return m.personaPane(width, 40) }
+		key := func(m Model, k tea.KeyPressMsg) Model { return pressOn(t, m, k) }
+		m = key(managerOn(t, m, "critic"), tea.KeyPressMsg{Code: tea.KeyEnter})
+		opened := pane(m)
+		updated, cmd := m.Update(tea.KeyPressMsg{Code: 'm', Text: "m"})
+		m = updated.(Model)
+		waiting := pane(m)
+		m = runPersonaCmd(t, m, cmd)
+		migrated := pane(m)
+		m = key(key(key(m, tea.KeyPressMsg{Code: tea.KeyTab}), tea.KeyPressMsg{Code: tea.KeyDown}), tea.KeyPressMsg{Code: tea.KeyEnter})
+		diffed := m.personaPane(width, 60)
+		m = key(m, tea.KeyPressMsg{Code: tea.KeyEnter})
+		return []golden.Panel{
+			{Label: "enter on an older role · the file on the draft step, its title the file, the offer at its head", View: opened},
+			{Label: "m · the migration's wait, on the surface and stoppable", View: waiting},
+			{Label: "the migrated draft · each moved section marked, the gap marked, the file's prompt beside them", View: migrated},
+			{Label: "See what changes · the file as it stands against the file as it would be written, over the card", View: diffed},
+			{Label: "a file changed since it was opened · the save refused in a sentence, the draft kept", View: m.personaPane(width, 60)},
+		}
+	})
+}
+
 func TestGolden_ProfileDrafter(t *testing.T) {
 	captureGolden(t, "profile-drafter", "the profile drafter in the pane", goldenWidths, func(width int) []golden.Panel {
 		draft := &persona.Draft{

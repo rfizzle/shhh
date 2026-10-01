@@ -1126,7 +1126,8 @@ person wrote, with no way for either to notice.
 
 A profile edited from the [agent manager](../interface/surfaces.md#the-agent-manager)
 is the running session's, not the next one's: the file is read again when the
-editor closes, through the same registration a drafted profile ends on, and
+editor closes or the drafter's save lands, through the same registration a
+drafted profile ends on, and
 the spawn tool the model holds is rebuilt with it — its roles and what each is
 for — so the model is told the role as the file now reads before it asks for
 one. A file that no longer loads mid-session does not stop anything: the role
@@ -1258,6 +1259,59 @@ the file's fields. The headings are for the drafter and the person reading the
 file: the child is handed the prompt as it is written, and a profile written
 before the sections, with no headings at all, loads as it did and reads to the
 drafter as one Purpose section.
+
+## An older profile is moved into sections, not rewritten
+
+Profiles written before the sections are one block of prose, and they load
+and run as they always did. What they cannot have is what the sections give a
+draft: a section revised on its own, a gap that shows. So a profile in the
+older shape is marked where it is listed — in the agent manager and by
+`shhh agents` — and one key sends it to the drafter to be moved into them.
+
+What current means is read from the file and never written into it. A
+profile is current when its prompt reads into the five sections with every
+one of them filled, and in the older shape otherwise, a profile with no prompt
+included. A version key would have been simpler to check and worse to have:
+the loader refuses a key it does not know, so a file stamped by this shhh
+would be refused by an older one, and the shape is already in the text. When
+the sections next change, the reading of the text is what changes with them.
+
+The conversion moves the author's words; it does not rewrite them. The
+drafter is told to distribute the existing prompt across the sections, keeping
+each sentence verbatim where it fits and moving it to the section it belongs
+in, and to answer a section the text says nothing about with nothing rather
+than an invention, because a sentence the drafter made up would read on the
+card as the author's. Only the five sections are read from its answer. The
+name, description, tiers, tools, model, reasoning, mode, budgets, rounds,
+inherit, reviews, prompt mode, deny list and intent are the file's whatever
+the answer says, so a profile cannot come out of a migration able to do more
+than it could, and a reviewer cannot lose `reviews`. The prompt passes the
+session's [secret scrub](secrets.md#the-value-is-scrubbed-at-every-door)
+before it is sent, as a brief does.
+
+Nothing is written by the migration. Its answer lands on the drafter's draft
+step: each moved section marked as moved, a gap marked empty, and the file's
+own prompt readable beside them, so the person can see that nothing was lost
+before anything is saved. Every revision a new draft has works on it, and
+the card shows the file as it stands against the file as it would be written
+before the row that replaces it. Stepping away from an unrevised migration
+drops it and leaves the file as it was.
+
+The save keeps everything it did not change. Only the prompt — inline, or in
+the `prompt_file` the profile points at, with the TOML left alone — and the
+fields revised on the surface are written, in place; every other key and
+every comment stays byte for byte, rather than the file being rendered again
+from what the drafter knows about, which would drop a `mode` or a comment the
+drafter never had a field for. A file changed on disk since it was opened is
+not overwritten, because the change is someone's and the draft was made
+against what came before it. What would be written is read by the loader
+first, so a profile it would refuse is refused on the card in its words with
+the file untouched. A checkout's profile is saved only in a checkout the
+person has trusted, the condition it is read under.
+
+The same surface edits any profile with a file, current or not: the manager
+opens it on the draft step, and the raw file is one key further away for
+whoever would rather edit the TOML.
 
 ## A failed child leaves a handoff
 

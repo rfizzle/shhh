@@ -890,6 +890,23 @@ every site already gives it — *this line is the run speaking, not the
 answer* — and the failure that answers a call hangs from its line with `↳`,
 as [above](#a-line-that-answers-the-one-above-hangs-from-it).
 
+## A profile in the older shape is marked with a diamond
+
+*A gap in the guideline pages.* The `Drafter` artboard's section on moving a
+profile into sections draws `◆ older shape` after where a role's file lives,
+and again at the head of the drafter opened on such a file; no guideline page
+lists `◆`. It marks a file written before the prompt's five sections: nothing
+is wrong with it and nothing is waiting on it — it loads and runs as it always
+did — but there is something to do about it, and one key does it.
+
+The kit's marks each say something this is not. `⚠` is a stall or a gap that
+needs you now, and on a role that runs as written it would read as a profile
+that is broken. `✗` is a failure and `⊘` a stop. `○` is the empty half of a
+choice. So the diamond is added once, with the one meaning both sites give
+it, always beside the words `older shape` so colour and the glyph never carry
+it alone ([an older profile is moved into sections, not
+rewritten](../capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten)).
+
 ## The start screen's trust row has no artboard
 
 *A gap.* The start screen's artboard draws a checkout shhh has never seen and

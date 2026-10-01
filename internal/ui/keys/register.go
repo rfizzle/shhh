@@ -514,7 +514,7 @@ func Surfaces() []Surface {
 			Reached:  Shown(Draft.Agents) + ", /agents",
 			Bindings: []Binding{
 				Agent.Move, Agent.Attach, Agent.Answer, Agent.Steer,
-				Agent.Retry, Agent.Review, Agent.Cancel, Agent.Kill,
+				Agent.Retry, Agent.Review, Agent.Migrate, Agent.Edit, Agent.Cancel, Agent.Kill,
 				Agent.KillAll, Agent.Back, Screen.List,
 			},
 		},
@@ -543,7 +543,7 @@ func Surfaces() []Surface {
 			Reached:  "the drafter's last step",
 			Bindings: []Binding{
 				Profile.Move, Profile.Refine, Profile.RefineAll, Profile.Edit, Profile.Clear,
-				Profile.Note, Profile.ScrollUp, Profile.ScrollDown, Screen.List, Profile.Back,
+				Profile.Migrate, Profile.Note, Profile.ScrollUp, Profile.ScrollDown, Screen.List, Profile.Back,
 			},
 		},
 		{

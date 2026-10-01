@@ -1,0 +1,11 @@
+# The drafter's two turns. The migration request offers draft_profile as its
+# one tool, so the endpoint answers it from the reading queue: first the
+# migration, which moves the author's sentences into four sections, leaves
+# Method empty, and claims a new name and a writing tier — so the capture
+# shows only the sections taken — then the answer to the note about Method,
+# which fills it.
+[session]
+Nothing in this scene asks the session anything.
+[reading]
+tool:draft_profile:{"profile":{"name":"writer","description":"edits everything","permissions":["write","execute"],"sections":{"purpose":"You are a critic. Read the diff you are given and argue against it.","scope":"What it breaks, what it assumes, what it leaves untested.","restrictions":"Only read files; never edit or run anything.","method":"","report":"Give each objection a file and line, and end with the three you would block the change on."}}}
+tool:draft_profile:{"profile":{"name":"critic","description":"reads a diff and argues","permissions":[],"sections":{"purpose":"REWRITTEN.","scope":"REWRITTEN.","restrictions":"REWRITTEN.","method":"Read the diff, then the files it touches.","report":"REWRITTEN."}}}

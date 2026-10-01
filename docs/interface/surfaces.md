@@ -1749,16 +1749,29 @@ nowhere a reader could reach until here.
 
 A role's row says what it is called, what it is for, and where the file that
 says so lives — `project`, `global`, or `built-in` for the roles shhh ships,
-which live in no file — and `[enter]` opens that file in your editor, the way
-editing a memory hands you its text. The way back from the editor reads the
-file again, so the next child of that role this session spawns is the file as
-you left it, and the note under the list says so. A file that no longer loads
-changes nothing: the role stays as it was and the note carries the loader's
-reason, rather than leaving it to be discovered from a child that behaved the
-old way. A role with no file behind it is offered no `[enter]`, because there
-would be nothing to open. The offer to draft stands only where drafting is
-wired, and the keys that act on an agent are silent over every row in this
-section.
+which live in no file. `[enter]` opens a role with a file on the [profile
+drafter](#the-profile-drafter)'s draft step, where it is edited the way a
+draft is, and `[e]` opens the file itself in your editor, the way editing a
+memory hands you its text, for whoever would rather edit the TOML. The way
+back from either reads the file again, so the next child of that role this
+session spawns is the file as you left it, and the note under the list says
+so. A file that no longer loads changes nothing: the role stays as it was and
+the note carries the loader's reason, rather than leaving it to be discovered
+from a child that behaved the old way. A role with no file behind it is
+offered neither key, because there would be nothing to open. The offer to
+draft stands only where drafting is wired, and the keys that act on an agent
+are silent over every row in this section.
+
+A role whose file was written before the prompt's five sections says so after
+where it lives — `project · ◆ older shape`, the glyph and the words together so
+a terminal without colour still says it — and a current row draws as it always
+has, so the mark sits on what needs doing. Over that row, and no other, `[m]`
+moves it into the sections: the profile opens on the drafter and is sent to be
+moved at once, with the wait on the surface and stoppable like any drafting
+turn ([an older profile is moved into sections, not
+rewritten](../capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten)).
+Enter on the same row opens it without moving it, because moving it spends a
+request and enter elsewhere on the list only opens.
 
 ## Cards
 
@@ -3044,6 +3057,29 @@ question stays answerable on a surface too short to keep the name above it.
 Nothing on the surface writes anything until that card's own row is taken,
 which is the rule the scaffold card keeps: a decision gets a card, and the
 card is the end of the flow rather than a step in it.
+
+The same surface opens on a profile that already has a file, from the agent
+manager, and edits it as a draft is edited. Its title is the profile's name
+and the file's path; there is no rail, because no brief was given and no
+question asked; and esc on an unrevised block closes it with nothing written.
+Every field the file sets is drawn, including the ones a draft could not
+propose — a mode, a round cap, `reviews`, `xhigh` — because the save keeps
+them and the person is agreeing to the file. A profile in the older shape
+opens as its prompt reads, one Purpose section with the others marked as not
+in the file, under an offer at the head of the surface: `◆ older shape`, what
+that means for this file, and `[m]` to move it into the sections. The
+migration's answer lands as the draft's new starting point: each section it
+filled marked `migrated`, a gap marked `⚠ empty` as the file's rather than the
+drafter's, and the file's own prompt readable beside the sections — a column
+on the right where the width allows, under them where it does not — so the
+person can check nothing was lost. Every revision works on it as on a draft's.
+
+The card of an opened profile replaces the file rather than choosing where to
+put a new one. Its second row shows the file as it stands against the file as
+it would be written, over the card, before the row that writes it is taken;
+only the prompt and the fields revised on the surface differ in it. A file
+changed on disk since it was opened, or a profile the loader would refuse, is
+refused in a sentence over the draft, which stays on the card.
 
 ### The context surface
 

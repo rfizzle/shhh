@@ -57,7 +57,7 @@ func TestAgentListReadsTheSessionsRoles(t *testing.T) {
 	for _, want := range []string{
 		"researcher · read-only tools", "built-in",
 		"critic · reads a diff", "project",
-		"[enter] open its file",
+		"[enter] open it", "[e] open its file",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the roles section lacks %q:\n%s", want, view)
@@ -74,6 +74,76 @@ func TestAgentListReadsTheSessionsRoles(t *testing.T) {
 	}
 	if view := ansi.Strip(l.View(96)); strings.Contains(view, "[enter]") {
 		t.Fatalf("a role with no file must offer no enter:\n%s", view)
+	}
+}
+
+// A role whose file is in the older shape says so after where the file
+// lives, in a glyph and words; a current role and a shipped one draw no mark.
+func TestAgentList_AnOlderProfileIsMarked(t *testing.T) {
+	rows := []AgentRow{
+		{State: AgentRole, Name: "critic", Task: "reads a diff", Status: "project", Editable: true, Migratable: true},
+		{State: AgentRole, Name: "reviewer", Task: "reads a change", Status: "global", Editable: true},
+		{State: AgentRole, Name: "researcher", Task: "read-only tools", Status: "built-in"},
+	}
+	view := ansi.Strip((&AgentList{Rows: rows}).View(110))
+	lines := strings.Split(view, "\n")
+	for _, line := range lines {
+		switch {
+		case strings.Contains(line, "critic"):
+			if !strings.Contains(line, "project · "+OlderShapeMark) {
+				t.Fatalf("the older role lacks its mark: %q", line)
+			}
+		case strings.Contains(line, "reviewer"), strings.Contains(line, "researcher"):
+			if strings.Contains(line, OlderShapeMark) {
+				t.Fatalf("a current or shipped role is marked: %q", line)
+			}
+		}
+	}
+}
+
+// [m] is offered and live only on an older role with a file; over a current
+// role, a shipped one or an agent it is silent and not drawn.
+func TestAgentList_MigrateIsOfferedOnlyOnAnOlderProfile(t *testing.T) {
+	rows := append(managerRows(),
+		AgentRow{State: AgentRole, Name: "critic", Task: "reads a diff", Status: "project", Editable: true, Migratable: true},
+		AgentRow{State: AgentRole, Name: "reviewer", Task: "reads a change", Status: "project", Editable: true},
+		AgentRow{State: AgentRole, Name: "researcher", Task: "read-only tools", Status: "built-in", Migratable: true})
+	older := len(rows) - 3
+	l := &AgentList{Rows: rows, Focus: older}
+	if view := ansi.Strip(l.View(110)); !strings.Contains(view, "[m] move it into sections") {
+		t.Fatalf("the older role should offer [m]:\n%s", view)
+	}
+	if done, res := l.Update(agentKey("m")); !done || res.Action != AgentMigrate || res.Index != older {
+		t.Fatalf("m on the older role = %#v (done=%v)", res, done)
+	}
+	for _, focus := range []int{0, older + 1, older + 2} {
+		l := &AgentList{Rows: rows, Focus: focus}
+		if view := ansi.Strip(l.View(110)); strings.Contains(view, "[m]") {
+			t.Fatalf("row %d should not offer [m]:\n%s", focus, view)
+		}
+		if done, res := l.Update(agentKey("m")); done || res.Action != AgentNone {
+			t.Fatalf("m on row %d = %#v (done=%v), want nothing", focus, res, done)
+		}
+	}
+}
+
+// Enter opens a role with a file on the drafter, and its raw file is one key
+// away; a shipped role has neither.
+func TestAgentList_EnterOpensTheProfileAndItsFileIsAKeyAway(t *testing.T) {
+	rows := roleRows()
+	fromFile, builtIn := 1, 0
+	if done, res := (&AgentList{Rows: rows, Focus: fromFile}).Update(agentKey("enter")); !done || res.Action != AgentOpenRole {
+		t.Fatalf("enter = %#v (done=%v)", res, done)
+	}
+	if done, res := (&AgentList{Rows: rows, Focus: fromFile}).Update(agentKey("e")); !done || res.Action != AgentEditRole || res.Index != fromFile {
+		t.Fatalf("e = %#v (done=%v)", res, done)
+	}
+	l := &AgentList{Rows: rows, Focus: builtIn}
+	if done, res := l.Update(agentKey("e")); done || res.Action != AgentNone {
+		t.Fatalf("e on a shipped role = %#v (done=%v)", res, done)
+	}
+	if view := ansi.Strip(l.View(110)); strings.Contains(view, "[e]") {
+		t.Fatalf("a shipped role must not offer [e]:\n%s", view)
 	}
 }
 

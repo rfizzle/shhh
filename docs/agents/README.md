@@ -82,6 +82,18 @@ is read as Purpose, so a prompt with no headings at all — every profile
 written before the sections — still loads and runs as it did, and reads as
 one Purpose section.
 
+A profile whose prompt does not fill all five is marked `older shape` where it
+is listed: by `shhh agents`, and in the agent manager (`f12` or `/agents`). To
+move one into the sections, put the pointer on its row in the manager and
+press `m`. The drafter moves your sentences into the sections without
+rewriting them, leaves a section your text says nothing about empty for you to
+fill, and shows your original prompt beside the result. Nothing is written
+until you take the card's row that replaces the file, and that save changes
+only the prompt — every other key and comment stays as you wrote it, and a
+`prompt_file` is written in place of an inline prompt. `enter` on a role opens
+any profile with a file the same way without moving it, and `e` opens the file
+in your editor.
+
 ## What a profile cannot do
 
 - Grant a child more than its parent. Modes are clamped, the working scope is

@@ -441,8 +441,21 @@ func LoadAgentsFrom(dirs ...string) (map[string]AgentDefinition, error) {
 // LoadAgentFile reads one profile. The name defaults to the file's stem and
 // a prompt_file is resolved relative to the profile's directory.
 func LoadAgentFile(path string) (AgentDefinition, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return AgentDefinition{}, fmt.Errorf("agent profile %s: %w", path, err)
+	}
+	return ReadAgentFile(path, data, os.ReadFile)
+}
+
+// ReadAgentFile is LoadAgentFile over a file's bytes rather than the disk,
+// with readPrompt reading a prompt_file: it is how a save is put to the
+// loader before anything is written, so a profile the loader would refuse
+// leaves the file it came from untouched.
+// See docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten.
+func ReadAgentFile(path string, data []byte, readPrompt func(string) ([]byte, error)) (AgentDefinition, error) {
 	var def AgentDefinition
-	meta, err := toml.DecodeFile(path, &def)
+	meta, err := toml.Decode(string(data), &def)
 	if err != nil {
 		return AgentDefinition{}, fmt.Errorf("agent profile %s: %w", path, err)
 	}
@@ -469,7 +482,7 @@ func LoadAgentFile(path string) (AgentDefinition, error) {
 		if !filepath.IsAbs(p) {
 			p = filepath.Join(filepath.Dir(path), p)
 		}
-		body, err := os.ReadFile(p)
+		body, err := readPrompt(p)
 		if err != nil {
 			return AgentDefinition{}, fmt.Errorf("agent profile %s: prompt_file: %w", path, err)
 		}
@@ -516,6 +529,23 @@ type PromptSection struct {
 // reading.
 func (d AgentDefinition) Sections() []PromptSection {
 	return ReadPromptSections(d.Prompt)
+}
+
+// Current reports a profile in the shape the drafter writes: its prompt reads
+// into the five sections with every one of them filled. Anything else is the
+// older shape — a prompt written as one block, one with a section missing,
+// and a profile with no prompt at all. It is read from the text and never
+// stamped in the file: the loader refuses a key it does not know, so a
+// version key would be refused by an older shhh, and the shape is already in
+// the prompt. When the sections next change, this is what changes with them.
+// See docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten.
+func (d AgentDefinition) Current() bool {
+	for _, s := range ReadPromptSections(d.Prompt) {
+		if strings.TrimSpace(s.Body) == "" {
+			return false
+		}
+	}
+	return true
 }
 
 // ReadPromptSections reads a prompt into the five sections, always all five

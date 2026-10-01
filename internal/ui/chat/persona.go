@@ -57,6 +57,13 @@ type Personas struct {
 	// written. It is what the manager's editor ends on, and an error is the
 	// loader's refusal, with the running role left as it was.
 	Reload func(path string) error
+	// Open reads a role's file for the drafter's surface, and SaveOpened
+	// writes a profile opened that way back over its own file — only what
+	// changed, refusing a file changed on disk since it was opened — and
+	// registers what it now says the way Save does
+	// (docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten).
+	Open       func(path string) (*persona.Source, error)
+	SaveOpened func(src *persona.Source, d persona.Draft) (string, error)
 	// ProjectDir and GlobalDir are the two places a file can go, for the
 	// card to name.
 	ProjectDir, GlobalDir string
@@ -72,6 +79,10 @@ type SpawnableRole struct {
 	Description string
 	Scope       string
 	Path        string
+	// Older says the file was written before the five sections, which the
+	// manager marks and offers to move
+	// (docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten).
+	Older bool
 }
 
 // WithPersonas wires the drafting flow.
@@ -117,6 +128,16 @@ type personaFlow struct {
 	passID int
 	// pick is the Tools block's selector while it is open (personatools.go).
 	pick *personaPick
+	// source is the file a profile opened from the manager was read from;
+	// nil for a profile drafted from a brief. migrating is the turn in
+	// flight that moves it into the sections, and migrated says that turn
+	// landed: its sections are marked as moved and the original prompt is
+	// shown beside them. showDiff says the card's diff is up.
+	source    *persona.Source
+	scope     string
+	migrating bool
+	migrated  bool
+	showDiff  bool
 }
 
 // personaSection is one prose section as it stands: its text, and what has
@@ -132,6 +153,9 @@ type personaSection struct {
 	// taken back only from the sections still standing where it put them,
 	// so a revision made on top of one is never popped in its name.
 	pass int
+	// migrated says the section is where a migration moved the file's own
+	// text, which the mark says until it is revised.
+	migrated bool
 }
 
 // personaPass is one note on the whole draft: the note, which sections it
@@ -169,6 +193,9 @@ type personaDraftMsg struct {
 type personaSave struct {
 	option components.SelectOption
 	scope  persona.Scope
+	// diff marks the row of a profile opened from its file that shows what
+	// the save would change rather than saving it.
+	diff bool
 }
 
 // personaDrafting reports a drafting turn in flight, which is what keeps the
@@ -364,7 +391,11 @@ func (m Model) runDrafter(req persona.Request, doing string) (tea.Model, tea.Cmd
 	draft := m.personas.Draft
 	ctx, cancel := context.WithCancel(context.Background())
 	f.cancel = cancel
-	m.personaScreen.Work(doing)
+	if f.migrating {
+		m.personaScreen.Migrating(doing)
+	} else {
+		m.personaScreen.Work(doing)
+	}
 	m.syncViewport()
 	// No tick is batched with it: Update applies the one-tick rule after
 	// every message, so entering the wait resumes the chain on its own
@@ -411,6 +442,9 @@ func (m Model) finishPersonaDraft(msg personaDraftMsg) (tea.Model, tea.Cmd) {
 	f.drafting = false
 	f.cancel = nil
 	o := msg.outcome
+	if f.migrating {
+		return m.finishMigration(o)
+	}
 	if f.redrafting != "" {
 		return m.finishSectionRedraft(o)
 	}
@@ -574,7 +608,8 @@ func (f *personaFlow) resetSections() {
 	f.revisions = map[string][]personaSection{}
 	f.passes = nil
 	for _, sec := range f.draft.SectionList() {
-		f.sections[sec.Name] = personaSection{body: strings.TrimSpace(sec.Body)}
+		body := strings.TrimSpace(sec.Body)
+		f.sections[sec.Name] = personaSection{body: body, migrated: f.migrated && body != ""}
 	}
 	f.sections[persona.SectionCommands] = personaSection{body: f.draft.CommandsText()}
 }
@@ -648,7 +683,7 @@ func (m *Model) openPersonaCard() {
 	pass := f.livePass()
 	for _, name := range config.PromptSectionNames() {
 		sec := f.sections[name]
-		mark, tone := personaMark(name, sec)
+		mark, tone := f.mark(name, sec)
 		if pass != nil && sec.mine && slices.Contains(pass.kept, name) {
 			// Sent as fixed context with the note, and the result says so.
 			mark += " · kept"
@@ -663,9 +698,13 @@ func (m *Model) openPersonaCard() {
 			Mine:     sec.mine,
 		})
 	}
+	var file *config.AgentDefinition
+	if f.source != nil {
+		file = &f.source.Def
+	}
 	blocks = append(blocks, personaToolsSection(*d),
 		personaCommandsSection(f.sections[persona.SectionCommands], len(f.revisions[persona.SectionCommands]) > 0),
-		personaModelSection(*d))
+		personaModelSection(*d, file))
 	if pass != nil {
 		blocks = append(blocks, personaPassSection(*pass, f))
 	}
@@ -673,11 +712,72 @@ func (m *Model) openPersonaCard() {
 	for _, s := range m.personaSaves() {
 		saves = append(saves, s.option)
 	}
-	m.personaScreen.Show(components.ProfileDraftView{
+	view := components.ProfileDraftView{
 		Name:        d.Name,
 		Description: d.Description,
 		Sections:    blocks,
-	}, saves)
+	}
+	m.personaScreen.Migratable, m.personaScreen.OlderNote, m.personaScreen.Original = false, "", ""
+	m.personaScreen.Diff = nil
+	if src := f.source; src != nil {
+		m.personaScreen.Migratable = !f.migrated && src.Older()
+		m.personaScreen.OlderNote = personaOlderNote(src.Def)
+		if f.migrated {
+			view.Note = "moved into sections, nothing written yet"
+			m.personaScreen.Original = src.Def.Prompt
+		}
+		if f.showDiff {
+			lines, err := src.Diff(*d)
+			switch {
+			case err != nil:
+				lines = []string{"the change could not be worked out — " + err.Error()}
+			case len(lines) == 0:
+				lines = []string{"nothing has changed yet · the file is as it stands"}
+			}
+			m.personaScreen.Diff = lines
+		}
+	}
+	m.personaScreen.Show(view, saves)
+}
+
+// personaOlderNote is what the older-shape offer says about the file's
+// prompt: the shape it is in, in the words the sections are read in.
+func personaOlderNote(def config.AgentDefinition) string {
+	filled := 0
+	for _, sec := range def.Sections() {
+		if strings.TrimSpace(sec.Body) != "" {
+			filled++
+		}
+	}
+	switch {
+	case filled == 0:
+		return "the file has no prompt yet"
+	case filled == 1 && def.Sections()[0].Body != "":
+		return "the file's prompt is one block, read here as Purpose"
+	}
+	return "the file's prompt leaves a section empty"
+}
+
+// mark is what the mark after a section's heading says, for a profile
+// opened from its file as well as a drafted one: a file in the older shape
+// is read as it stands, a migration's sections are marked as moved until
+// they are revised, and a gap the file left is the file's rather than the
+// drafter's (docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten).
+func (f *personaFlow) mark(name string, s personaSection) (string, components.ProfileMarkTone) {
+	if f.source == nil || s.mine || s.cleared || s.refined > 0 {
+		return personaMark(name, s)
+	}
+	switch {
+	case f.migrated && s.body == "":
+		return "⚠ empty · the file says nothing about it", components.ProfileMarkEmpty
+	case s.migrated:
+		return "· migrated", components.ProfileMarkQuiet
+	case f.source.Older() && s.body == "":
+		return "· not in the file", components.ProfileMarkQuiet
+	case f.source.Older():
+		return "· as the file wrote it", components.ProfileMarkQuiet
+	}
+	return personaMark(name, s)
 }
 
 // personaPassSection is the row a note on the whole draft leaves under the
@@ -833,8 +933,10 @@ func personaCommandsSection(s personaSection, revised bool) components.ProfileSe
 }
 
 // personaModelSection is the Model & budget block: each value, or the
-// session's own where the draft names none.
-func personaModelSection(d persona.Draft) components.ProfileSection {
+// session's own where the draft names none. A profile opened from its file
+// shows every field the file sets, the ones a draft could not propose
+// included, since the save keeps them and the person is agreeing to the file.
+func personaModelSection(d persona.Draft, file *config.AgentDefinition) components.ProfileSection {
 	model := d.Model
 	if model == "" {
 		model = "inherited from this session"
@@ -842,6 +944,23 @@ func personaModelSection(d persona.Draft) components.ProfileSection {
 	var detail []string
 	if d.Reasoning != "" {
 		detail = append(detail, "reasoning "+d.Reasoning)
+	}
+	if file != nil {
+		if mode := strings.TrimSpace(file.Mode); mode != "" {
+			detail = append(detail, mode)
+		}
+		if file.MaxRounds > 0 {
+			detail = append(detail, strconv.Itoa(file.MaxRounds)+" rounds")
+		}
+		if file.Reviews {
+			detail = append(detail, "reviews")
+		}
+		if file.Inherit > 0 {
+			detail = append(detail, "inherits "+strconv.Itoa(file.Inherit)+" turns")
+		}
+		if strings.EqualFold(strings.TrimSpace(file.PromptMode), config.PromptReplace) {
+			detail = append(detail, "replaces the base prompt")
+		}
 	}
 	if d.MaxTokens > 0 {
 		detail = append(detail, formatTokenCount(d.MaxTokens)+" tokens")
@@ -854,6 +973,14 @@ func personaModelSection(d persona.Draft) components.ProfileSection {
 // profile can belong to the work
 // (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation).
 func (m Model) personaSaves() []personaSave {
+	if f := m.persona; f != nil && f.source != nil {
+		// The file is the profile's own: the save replaces it, and the row
+		// beside it shows what that would change before anything is written.
+		return []personaSave{
+			{option: components.SelectOption{Label: "Replace its file", Desc: f.source.Path}},
+			{option: components.SelectOption{Label: "See what changes", Desc: "the file as it stands against the file as it would be written"}, diff: true},
+		}
+	}
 	project := m.personas.ProjectDir
 	if project == "" {
 		project = ".shhh/agents"
@@ -929,6 +1056,11 @@ func (m Model) updatePersona(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.takePersonaPick()
 	case components.ProfileUnpicked:
 		return m.dropPersonaPick()
+	case components.ProfileMigrate:
+		return m.migratePersona()
+	}
+	if f := m.persona; f.source != nil {
+		return m.closePersona(f.source.Def.Name + " is as its file has it; nothing was written.")
 	}
 	return m.closePersona("Profile discarded.")
 }
@@ -1117,6 +1249,13 @@ func (m Model) abortPersonaDraft() (tea.Model, tea.Cmd) {
 	// arrives (finishPersonaDraft).
 	f.drafting = false
 	f.runID++
+	if f.migrating {
+		// Stopped before it landed: the profile is as the file has it.
+		f.migrating = false
+		m.openPersonaCard()
+		m.syncViewport()
+		return m, nil
+	}
 	if (f.redrafting != "" || f.whole != nil) && f.draft != nil {
 		f.redrafting, f.whole = "", nil
 		m.openPersonaCard()
@@ -1135,6 +1274,9 @@ func (m Model) savePersona(index int) (tea.Model, tea.Cmd) {
 	saves := m.personaSaves()
 	if f.draft == nil || index < 0 || index >= len(saves) {
 		return m.closePersona("Profile discarded.")
+	}
+	if f.source != nil {
+		return m.saveOpenedPersona(saves[index])
 	}
 	path, err := m.personas.Save(saves[index].scope, *f.draft, f.overwrite)
 	if err != nil {
@@ -1159,6 +1301,129 @@ func (m Model) savePersona(index int) (tea.Model, tea.Cmd) {
 	name := f.draft.Name
 	return m.closePersona(fmt.Sprintf(
 		"Saved %s to %s. It is spawnable now as role %q; edit the file any time.", name, path, name))
+}
+
+// openPersonaProfile opens a role's file on the drafter's draft step, the
+// way a draft is edited: its sections from the file, its tiers and tools on
+// the selector, every field it sets on the Model block. With migrate set the
+// profile is sent to be moved into the sections at once, the manager's m.
+// See docs/interface/surfaces.md#the-profile-drafter.
+func (m Model) openPersonaProfile(name string, migrate bool) (tea.Model, tea.Cmd) {
+	var role SpawnableRole
+	for _, r := range m.spawnableRoles() {
+		if r.Name == name {
+			role = r
+		}
+	}
+	if role.Path == "" {
+		return m, nil
+	}
+	if m.personas.Open == nil {
+		return m.openRoleEditor(name)
+	}
+	if m.persona != nil && m.persona.drafting {
+		return m.surfaceNotice("still drafting — the card opens when it is done")
+	}
+	src, err := m.personas.Open(role.Path)
+	if err != nil {
+		return m.surfaceNotice("could not open " + role.Path + " — " + err.Error())
+	}
+	d := persona.FromDefinition(src.Def)
+	m.persona = &personaFlow{draft: &d, source: src, scope: role.Scope}
+	screen := components.NewProfileScreen(src.Def.Name)
+	screen.FromFile = true
+	screen.Subject = role.Path
+	if role.Scope != "" {
+		screen.Subject += " · " + role.Scope
+	}
+	screen.DiscardDesc = "the file stays as it is"
+	m.personaScreen = screen
+	m.enterSurface(statePersona)
+	m.openPersonaCard()
+	if migrate && m.personaScreen.Migratable {
+		return m.migratePersona()
+	}
+	m.syncViewport()
+	return m, nil
+}
+
+// migratePersona sends a profile opened in the older shape to the drafter to
+// be moved into the sections. Nothing is written by it: the answer lands on
+// the draft step, to be reviewed and saved from the card like any draft. A
+// profile with no prompt has nothing to move, so no request is spent on it.
+// See docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten.
+func (m Model) migratePersona() (tea.Model, tea.Cmd) {
+	f := m.persona
+	if f == nil || f.source == nil || f.migrated || f.drafting {
+		return m, nil
+	}
+	def := f.source.Def
+	if strings.TrimSpace(def.Prompt) == "" {
+		m.personaScreen.Warn(def.Name + " has no prompt to move. Write each section with enter or e, then save.")
+		m.syncViewport()
+		return m, nil
+	}
+	f.migrating = true
+	return m.runDrafter(persona.Request{
+		Kind:   m.personas.Kind,
+		Source: &def,
+		Models: m.personas.Models,
+	}, "moving "+def.Name+" into sections")
+}
+
+// finishMigration lands a migration's answer as the draft's starting point:
+// each section the migration filled is marked as moved, a gap it left is
+// marked empty, and the file's prompt is shown beside them. It is a new
+// starting point rather than a revision, so esc on an unrevised section
+// drops the migration with the file untouched. A failed turn leaves the
+// profile as the file has it, and says so.
+func (m Model) finishMigration(o persona.Outcome) (tea.Model, tea.Cmd) {
+	f := m.persona
+	f.migrating = false
+	if o.Failed || o.Draft == nil {
+		why := o.Err
+		if why == "" {
+			why = "the drafter answered with no sections"
+		}
+		m.openPersonaCard()
+		m.personaScreen.Warn(f.source.Def.Name + " could not be moved into sections — " + why + ". The file is as it was.")
+		m.syncViewport()
+		return m, nil
+	}
+	f.draft = o.Draft
+	f.migrated = true
+	f.resetSections()
+	m.personaScreen.Select(0)
+	m.openPersonaCard()
+	m.syncViewport()
+	return m, nil
+}
+
+// saveOpenedPersona takes a row of an opened profile's card: the diff, or
+// the save that replaces the file. A refusal — a file changed since it was
+// opened, a profile the loader would not read, an untrusted checkout — leaves
+// the draft on the card with the sentence under it and the file untouched.
+func (m Model) saveOpenedPersona(row personaSave) (tea.Model, tea.Cmd) {
+	f := m.persona
+	if row.diff {
+		f.showDiff = true
+		m.openPersonaCard()
+		m.syncViewport()
+		return m, nil
+	}
+	if m.personas.SaveOpened == nil {
+		return m.closePersona("Profile discarded.")
+	}
+	path, err := m.personas.SaveOpened(f.source, *f.draft)
+	if err != nil {
+		m.openPersonaCard()
+		m.personaScreen.Warn("Not saved — " + err.Error() + ". The draft is still here.")
+		m.syncViewport()
+		return m, nil
+	}
+	name := f.draft.Name
+	return m.closePersona(fmt.Sprintf(
+		"Saved %s to %s. The next %s this session spawns is the file as it now reads.", name, path, name))
 }
 
 // personaPane renders the surface into the transcript pane it takes over.

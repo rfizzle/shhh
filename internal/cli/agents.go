@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/ui/chat"
+	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"
 )
 
@@ -40,9 +41,16 @@ func agentsReport(roles []chat.SpawnableRole, withheld bool) report.Report {
 	r.Subject = countOf(len(roles), "role", "roles")
 	rows := make([]report.Row, 0, len(roles))
 	for _, role := range roles {
+		outcome := role.Scope
+		if role.Older {
+			// Said beside the place the file lives, as the manager says it:
+			// written before the five sections, and moved into them from
+			// there (docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten).
+			outcome += " · " + components.OlderShapeMark
+		}
 		rows = append(rows, report.Row{
 			State: report.Pass, Name: role.Name,
-			Subject: clipRunes(role.Description, 96), Outcome: role.Scope,
+			Subject: clipRunes(role.Description, 96), Outcome: outcome,
 		})
 	}
 	r.Sections = []report.Section{{Rows: rows}}

@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -165,6 +166,33 @@ func (d *Draft) SetSection(name, body string) bool {
 	d.Sections = sectionsOf(list)
 	d.Prompt = config.WritePromptSections(list)
 	return true
+}
+
+// FromDefinition is a profile file read as a draft, for the drafter's
+// surface to open it on its draft step: its fields as the file sets them and
+// its prompt read into the five sections — one Purpose section for a prompt
+// written before the sections existed. Nothing is normalised: the file is
+// what it is, and a save writes back only what the surface changed
+// (Source.Rewrite).
+// See docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten.
+func FromDefinition(def config.AgentDefinition) Draft {
+	reasoning := def.Reasoning
+	if def.InheritsReasoning() {
+		reasoning = ""
+	}
+	return Draft{
+		Name:        def.Name,
+		Description: def.Description,
+		Model:       def.ProfileModel(),
+		Reasoning:   reasoning,
+		Permissions: slices.Clone(def.Permissions),
+		Tools:       slices.Clone(def.Tools),
+		Intent:      def.Intent,
+		Deny:        slices.Clone(def.Deny),
+		Sections:    sectionsOf(def.Sections()),
+		Prompt:      def.Prompt,
+		MaxTokens:   def.MaxTokens,
+	}
 }
 
 // Definition is the draft as the loader would read it.

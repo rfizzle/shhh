@@ -188,6 +188,8 @@
   · steer     s · steer  [shipped]
   · retry     r · retry  [shipped]
   · review    p · review  [shipped]
+  · migrate   m · move it into sections  [shipped]
+  · edit      e · open its file  [shipped]
   · cancel    x · cancel  [shipped]
   · kill      X · kill  [shipped]
   · kill_all  K · kill all  [shipped]
@@ -202,6 +204,7 @@
   · refine_all   R · refine the whole draft with one note  [shipped]
   · edit         e · edit it yourself  [shipped]
   · clear        x · clear it  [shipped]
+  · migrate      m · move it into sections  [shipped]
   · note         tab · the sections or the card  [shipped]
   · scroll_up    shift+up · scroll the profile up  [shipped]
   · scroll_down  shift+down · scroll the profile  [shipped]
@@ -344,4 +347,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  251 keys · 1 moved
+  254 keys · 1 moved

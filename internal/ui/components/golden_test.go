@@ -1273,7 +1273,8 @@ func TestGolden_AgentList(t *testing.T) {
 		// so has nothing for enter to open — with the offer to draft another
 		// under them.
 		offered := append(append([]AgentRow{}, rows...),
-			AgentRow{State: AgentRole, Name: "critic", Task: "reads a diff and argues", Status: "project", Editable: true},
+			AgentRow{State: AgentRole, Name: "critic", Task: "reads a diff and argues", Status: "project", Editable: true, Migratable: true},
+			AgentRow{State: AgentRole, Name: "reviewer", Task: "reads a change for what it breaks", Status: "project", Editable: true},
 			AgentRow{State: AgentRole, Name: "researcher", Task: "read-only tools plus web", Status: "built-in"},
 			AgentRow{State: AgentOffer, Name: "draft a new profile", Status: "/agents new"})
 		// A child that delegated, in the order the host hands the list over:
@@ -1349,7 +1350,9 @@ func TestGolden_AgentList(t *testing.T) {
 				View: (&AgentList{Rows: killed, Focus: 4}).View(width)},
 			{Label: "the rows that are not agents · the session's roles, and the offer to draft another",
 				View: (&AgentList{Rows: offered, Focus: len(offered) - 1}).View(width)},
-			{Label: "focus · a role read from a file, which enter opens",
+			{Label: "focus · a role in the older shape · enter opens it, [m] moves it into sections, [e] opens its file",
+				View: (&AgentList{Rows: offered, Focus: len(offered) - 4}).View(width)},
+			{Label: "focus · a current role · no mark and no [m]",
 				View: (&AgentList{Rows: offered, Focus: len(offered) - 3}).View(width)},
 			{Label: "a child that delegated · the request is under the row it belongs to",
 				View: (&AgentList{Rows: nested, Focus: 2}).View(width)},

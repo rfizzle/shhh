@@ -914,6 +914,8 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `agent.steer` | `s` | steer | yes |
 | `agent.retry` | `r` | retry | yes |
 | `agent.review` | `p` | review | yes |
+| `agent.migrate` | `m` | move it into sections | yes |
+| `agent.edit` | `e` | open its file | yes |
 | `agent.cancel` | `x` | cancel | yes |
 | `agent.kill` | `X` | kill | yes |
 | `agent.kill_all` | `K` | kill all | yes |
@@ -925,6 +927,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `profile.refine_all` | `R` | refine the whole draft with one note | yes |
 | `profile.edit` | `e` | edit it yourself | yes |
 | `profile.clear` | `x` | clear it | yes |
+| `profile.migrate` | `m` | move it into sections | yes |
 | `profile.note` | `tab` | the sections or the card | yes |
 | `profile.scroll_up` | `shift+up` | scroll the profile up | yes |
 | `profile.scroll_down` | `shift+down` | scroll the profile | yes |

@@ -190,8 +190,10 @@ func TestWritePromptSectionsRoundTrips(t *testing.T) {
 }
 
 // The shipped examples are the reference for the sectioned form: each loads,
-// and each prompt fills the five.
-func TestShippedExampleProfilesAreSectioned(t *testing.T) {
+// and each that carries a prompt is current. One that carries none (an
+// override of a built-in's model) is the older shape by definition, and is
+// left out rather than given a prompt it does not need.
+func TestTheShippedExampleProfilesAreCurrent(t *testing.T) {
 	dir := filepath.Join("..", "..", "docs", "agents")
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -211,14 +213,38 @@ func TestShippedExampleProfilesAreSectioned(t *testing.T) {
 			continue
 		}
 		prompted++
-		for _, s := range def.Sections() {
-			if s.Body == "" {
-				t.Errorf("%s: %s is empty", e.Name(), s.Name)
-			}
+		if !def.Current() {
+			t.Errorf("%s is in the older shape: %+v", e.Name(), def.Sections())
 		}
 	}
 	if prompted == 0 {
 		t.Fatal("no shipped example carries a prompt")
+	}
+}
+
+// Current is read from the prompt alone: all five sections filled, and
+// nothing else will do.
+func TestAPromptWithoutTheFiveSectionsIsAnOlderShape(t *testing.T) {
+	five := "## Purpose\nfind bugs\n\n## Scope\nsrc\n\n## Restrictions\nno edits\n\n## Method\nread\n\n## Report\na list"
+	cases := []struct {
+		name   string
+		prompt string
+		want   bool
+	}{
+		{"five sections", five, true},
+		{"headings in another case", strings.ReplaceAll(five, "## Scope", "## scope"), true},
+		{"one block, no headings", "You are a critic. Read the diff and argue.", false},
+		{"no prompt", "", false},
+		{"a section missing", strings.Replace(five, "## Report\na list", "", 1), false},
+		{"a section headed and empty", strings.Replace(five, "a list", "", 1), false},
+		{"headings only inside a fence", "```\n" + five + "\n```", false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := (AgentDefinition{Prompt: c.prompt}).Current(); got != c.want {
+				t.Fatalf("Current() = %v, want %v", got, c.want)
+			}
+		})
 	}
 }
 

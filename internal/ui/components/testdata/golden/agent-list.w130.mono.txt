@@ -75,13 +75,14 @@
 │     the rails and the frame are one component                                                                                  │
 │   ✗ patcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                                                   │
-│   ◇ critic · reads a diff and argues                                                                                   project │
+│   ◇ critic · reads a diff and argues                                                                   project · ◆ older shape │
+│   ◇ reviewer · reads a change for what it breaks                                                                       project │
 │   ◇ researcher · read-only tools plus web                                                                             built-in │
 │ ❯ ⚙ draft a new profile                                                                                            /agents new │
 │ [enter] draft a profile · [a] answer without attaching · [K] kill all · every level · [esc] back to the turn                   │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-· focus · a role read from a file, which enter opens
+· focus · a role in the older shape · enter opens it, [m] moves it into sections, [e] opens its file
 ╭─ Agents ───────────────────────────────────────────────────────────────────────────────────────────── 1 needs you · 2 running ─╮
 │   ● orchestrator · this session                                                                    round 7 · streaming…  $0.12 │
 │   ⚠ runner-2 · go test ./...                                                                     ⚠ needs you · 3 tools · $0.01 │
@@ -91,10 +92,29 @@
 │     the rails and the frame are one component                                                                                  │
 │   ✗ patcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                                                   │
-│ ❯ ◇ critic · reads a diff and argues                                                                                   project │
+│ ❯ ◇ critic · reads a diff and argues                                                                   project · ◆ older shape │
+│   ◇ reviewer · reads a change for what it breaks                                                                       project │
 │   ◇ researcher · read-only tools plus web                                                                             built-in │
 │   ⚙ draft a new profile                                                                                            /agents new │
-│ [enter] open its file · [a] answer without attaching · [K] kill all · every level · [esc] back to the turn                     │
+│ [enter] open it · [m] move it into sections · [e] open its file · [a] answer without attaching · [K] kill all · every level    │
+│ [esc] back to the turn                                                                                                         │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+· focus · a current role · no mark and no [m]
+╭─ Agents ───────────────────────────────────────────────────────────────────────────────────────────── 1 needs you · 2 running ─╮
+│   ● orchestrator · this session                                                                    round 7 · streaming…  $0.12 │
+│   ⚠ runner-2 · go test ./...                                                                     ⚠ needs you · 3 tools · $0.01 │
+│     waiting approval: run go test ./internal/agent/...                                                                         │
+│   ◇ writer-1 · docs/loop.md                                                                        ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
+│   ◇ reader-3 · survey internal/ui                                                                    ✓ done · 12 tools · $0.04 │
+│     the rails and the frame are one component                                                                                  │
+│   ✗ patcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01 │
+│     round limit (25) reached                                                                                                   │
+│   ◇ critic · reads a diff and argues                                                                   project · ◆ older shape │
+│ ❯ ◇ reviewer · reads a change for what it breaks                                                                       project │
+│   ◇ researcher · read-only tools plus web                                                                             built-in │
+│   ⚙ draft a new profile                                                                                            /agents new │
+│ [enter] open it · [e] open its file · [a] answer without attaching · [K] kill all · every level · [esc] back to the turn       │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a child that delegated · the request is under the row it belongs to
@@ -304,13 +324,14 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                                          ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m critic␛[38;5;244m · reads a diff and argues␛[m                                                                                   ␛[38;5;244mproject␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m critic␛[38;5;244m · reads a diff and argues␛[m                                                                   ␛[38;5;244mproject␛[m␛[38;5;244m · ␛[m␛[38;5;254m◆ older shape␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m reviewer␛[38;5;244m · reads a change for what it breaks␛[m                                                                       ␛[38;5;244mproject␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m researcher␛[38;5;244m · read-only tools plus web␛[m                                                                             ␛[38;5;244mbuilt-in␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m⚙␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mdraft a new profile                                                                                            /agents new␛[m␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m draft a profile␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                   ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-· focus · a role read from a file, which enter opens
+· focus · a role in the older shape · enter opens it, [m] moves it into sections, [e] opens its file
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mAgents ␛[m␛[38;5;254m───────────────────────────────────────────────────────────────────────────────────────────── ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 running␛[m ─╮␛[m
 ␛[38;5;254m│␛[m   ␛[1;38;5;254m●␛[m orchestrator␛[38;5;244m · this session␛[m                                                                    ␛[38;5;244mround 7 · streaming…␛[m  ␛[38;5;244m$0.12␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m⚠␛[m runner-2␛[38;5;244m · go test ./...␛[m                                                                     ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m ␛[38;5;254m│␛[m
@@ -320,10 +341,29 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                                          ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m◇␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mcritic · reads a diff and argues                                                                                   project␛[m␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m◇␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mcritic · reads a diff and argues                                                                   project · ◆ older shape␛[m␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m reviewer␛[38;5;244m · reads a change for what it breaks␛[m                                                                       ␛[38;5;244mproject␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m researcher␛[38;5;244m · read-only tools plus web␛[m                                                                             ␛[38;5;244mbuilt-in␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m⚙␛[m draft a new profile                                                                                            ␛[38;5;244m/agents new␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m open its file␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[m]␛[m␛[38;5;244m move it into sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m open its file␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m    ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                                                                                         ␛[38;5;254m│␛[m
+␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+
+· focus · a current role · no mark and no [m]
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mAgents ␛[m␛[38;5;254m───────────────────────────────────────────────────────────────────────────────────────────── ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 running␛[m ─╮␛[m
+␛[38;5;254m│␛[m   ␛[1;38;5;254m●␛[m orchestrator␛[38;5;244m · this session␛[m                                                                    ␛[38;5;244mround 7 · streaming…␛[m  ␛[38;5;244m$0.12␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254m⚠␛[m runner-2␛[38;5;244m · go test ./...␛[m                                                                     ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m     ␛[38;5;244mwaiting approval: run go test ./internal/agent/...␛[m                                                                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m writer-1␛[38;5;244m · docs/loop.md␛[m                                                                        ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱␛[m ␛[38;5;244m2/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m reader-3␛[38;5;244m · survey internal/ui␛[m                                                                    ␛[38;5;254m✓ done␛[m␛[38;5;244m · ␛[m␛[38;5;244m12 tools · $0.04␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                                                  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                                          ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                                                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m critic␛[38;5;244m · reads a diff and argues␛[m                                                                   ␛[38;5;244mproject␛[m␛[38;5;244m · ␛[m␛[38;5;254m◆ older shape␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m◇␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mreviewer · reads a change for what it breaks                                                                       project␛[m␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m researcher␛[38;5;244m · read-only tools plus web␛[m                                                                             ␛[38;5;244mbuilt-in␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254m⚙␛[m draft a new profile                                                                                            ␛[38;5;244m/agents new␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m open its file␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m       ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a child that delegated · the request is under the row it belongs to

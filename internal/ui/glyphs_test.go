@@ -124,6 +124,7 @@ var additions = map[rune]string{
 	'▓': "departures.md#two-surfaces-draw-with-blocks-rather-than-in-them",
 	'↳': "departures.md#a-line-that-answers-the-one-above-hangs-from-it",
 	'»': "departures.md#an-unattended-runs-activity-lines-lead-with-a-chevron",
+	'◆': "departures.md#a-profile-in-the-older-shape-is-marked-with-a-diamond",
 }
 
 // screenSources is every tree this test reads, relative to internal/ui. The

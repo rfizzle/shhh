@@ -1203,8 +1203,15 @@ type AgentKeys struct {
 	// writer's patch is put on, with the diff open over it
 	// (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
 	Review Binding
-	Cancel Binding
-	Kill   Binding
+	// Migrate sends a role written before the five sections to the drafter
+	// to be moved into them, and Edit opens a role's file in the editor now
+	// that enter opens it on the drafter. Both are a role row's, live only
+	// over a row with a file, and Migrate only over one in the older shape
+	// (docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten).
+	Migrate Binding
+	Edit    Binding
+	Cancel  Binding
+	Kill    Binding
 	// KillAll ends every child at once, and it is the capital of Kill's own
 	// letter for the reason Kill is a capital at all: an act nobody can undo
 	// may not sit under a keystroke a reader presses without reading the row
@@ -1222,6 +1229,8 @@ var Agent = AgentKeys{
 	Steer:   bind("s", "steer", "s"),
 	Retry:   bind("r", "retry", "r"),
 	Review:  bind("p", "review", "p"),
+	Migrate: bind("m", "move it into sections", "m"),
+	Edit:    bind("e", "open its file", "e"),
 	Cancel:  bind("x", "cancel", "x"),
 	Kill:    bind("X", "kill", "X"),
 	KillAll: bind("K", "kill all", "K"),
@@ -1242,6 +1251,7 @@ type ProfileKeys struct {
 	RefineAll  Binding
 	Edit       Binding
 	Clear      Binding
+	Migrate    Binding
 	Note       Binding
 	ScrollUp   Binding
 	ScrollDown Binding
@@ -1265,6 +1275,9 @@ var Profile = ProfileKeys{
 	// the draft step, and pressed again while its note is still empty it
 	// says the sections the person wrote go too.
 	RefineAll: bind("R", "refine the whole draft with one note", "R"),
+	// A profile opened from a file in the older shape is moved into the
+	// sections from its own draft step, on the manager's letter for it.
+	Migrate: bind("m", "move it into sections", "m"),
 	// tab hands the keyboard between the draft's sections and the card that
 	// writes it.
 	Note: bind("tab", "the sections or the card", "tab"),

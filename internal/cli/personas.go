@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
@@ -108,5 +109,25 @@ func buildPersonas(session chatSession, env *sessionEnv, agents *agentProfiles, 
 		return path, register(path)
 	}
 	p.Reload = register
+	p.Open = persona.Open
+	// A profile opened from the manager is saved over its own file. A
+	// checkout's profile is saved only where it is read: in a checkout the
+	// person has trusted
+	// (docs/capabilities/subagents.md#a-profile-is-a-file).
+	p.SaveOpened = func(src *persona.Source, d persona.Draft) (string, error) {
+		if filepath.Dir(src.Path) == config.ProjectAgentDir(cwd) && !projectTrust().Allows() {
+			return src.Path, fmt.Errorf("this checkout is not trusted, so its profiles are not saved; trust it with shhh trust first")
+		}
+		// register refuses a writing role in a conversation, and it runs
+		// after the file is written, so the same refusal is asked first.
+		if kind == persona.KindChat && d.Writes() {
+			return src.Path, fmt.Errorf("agent profile %s: grants a tier that writes, and a conversation spawns only roles that read", src.Path)
+		}
+		path, err := persona.SaveOpened(src, d)
+		if err != nil {
+			return path, err
+		}
+		return path, register(path)
+	}
 	return p
 }

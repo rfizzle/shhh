@@ -75,6 +75,12 @@ type AgentRow struct {
 	Answerable bool
 	Retryable  bool
 	Editable   bool
+	// Migratable marks a role row whose file is in the older shape, written
+	// before the five sections: the row says so after where the file lives,
+	// in a word, and it is the one row [m] moves into the sections. A current
+	// row draws as it always has, so the mark sits on what needs doing
+	// (docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten).
+	Migratable bool
 	// PatchKept marks a stopped writer holding a change that never reached
 	// the checkout. It gates [p], and it takes the outcome field the way a
 	// blocked child's `⚠ needs you` does, because it is the one thing left
@@ -137,7 +143,9 @@ const (
 	AgentRetry                // r — run a failed agent again on its task
 	AgentReview               // p — review a stopped writer's kept patch
 	AgentDraft                // enter on the offer row — draft a profile
-	AgentOpenRole             // enter on a role row — open its file in the editor
+	AgentOpenRole             // enter on a role row — open it on the drafter
+	AgentMigrate              // m on an older role row — move it into sections
+	AgentEditRole             // e on a role row — open its file in the editor
 	AgentBack                 // esc — dismiss the list
 )
 
@@ -334,6 +342,14 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResu
 		if l.focused().PatchKept {
 			return false, AgentListResult{Action: AgentReview, Index: l.Focus}
 		}
+	case keys.Is(pressed, keys.Agent.Migrate):
+		if row := l.focused(); row.State == AgentRole && row.Editable && row.Migratable {
+			return true, AgentListResult{Action: AgentMigrate, Index: l.Focus}
+		}
+	case keys.Is(pressed, keys.Agent.Edit):
+		if row := l.focused(); row.State == AgentRole && row.Editable {
+			return true, AgentListResult{Action: AgentEditRole, Index: l.Focus}
+		}
 	case keys.Is(pressed, keys.Agent.Cancel):
 		// A role row and the offer row are not agents, so the keys that act
 		// on one are silent over them the way [a] and [r] are silent over a
@@ -496,7 +512,14 @@ func (r AgentRow) stateGlyph() string {
 // command the offer opens, and the place a role's file lives.
 func (r AgentRow) rightField() string {
 	if !r.isAgent() {
-		return sty.Dimmer.Render(r.Status)
+		field := sty.Dimmer.Render(r.Status)
+		if r.State == AgentRole && r.Editable && r.Migratable {
+			// The glyph and the words carry it, so a terminal without colour
+			// still says which file is behind
+			// (docs/interface/principles.md#colour-never-carries-meaning-alone).
+			field += sty.Dimmer.Render(detailSep) + sty.Accent.Render(OlderShapeMark)
+		}
+		return field
 	}
 	if r.Progress != nil {
 		if r.PatchKept {
@@ -521,6 +544,10 @@ func (r AgentRow) rightField() string {
 	}
 	return status
 }
+
+// OlderShapeMark is what a role row whose file was written before the five
+// sections says after where the file lives.
+const OlderShapeMark = "◆ older shape"
 
 // keptPatchField is the outcome field of a row holding a kept patch: what is
 // left to do about it, in the place `⚠ needs you` stands on a blocked row,
@@ -662,7 +689,11 @@ func (l *AgentList) hints() []KeyOffer {
 	case focus.State == AgentOffer:
 		segments = append(segments, keyOfferAs(keys.Agent.Attach, "draft a profile"))
 	case focus.Editable:
-		segments = append(segments, keyOfferAs(keys.Agent.Attach, "open its file"))
+		segments = append(segments, keyOfferAs(keys.Agent.Attach, "open it"))
+		if focus.Migratable {
+			segments = append(segments, keyOffer(keys.Agent.Migrate))
+		}
+		segments = append(segments, keyOffer(keys.Agent.Edit))
 	}
 	if l.answerable() >= 0 {
 		segments = append(segments, keyOfferAs(keys.Agent.Answer, "answer without attaching"))

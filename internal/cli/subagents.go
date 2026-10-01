@@ -190,6 +190,7 @@ func (a *agentProfiles) roles(cwd string) []chat.SpawnableRole {
 		role := chat.SpawnableRole{Name: string(name), Description: p.Description, Scope: roleBuiltIn}
 		if def, ok := a.definitions[string(name)]; ok && def.Path != "" {
 			role.Path, role.Scope = def.Path, string(persona.ScopeGlobal)
+			role.Older = !def.Current()
 			if filepath.Dir(def.Path) == projectDir {
 				role.Scope = string(persona.ScopeProject)
 			}

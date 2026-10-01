@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -1000,5 +1001,222 @@ func TestPersona_TheCommandsSectionIsRevisedLikeAProseOne(t *testing.T) {
 	}
 	if len(*saves) != 0 {
 		t.Fatalf("a revision wrote a file: %v", *saves)
+	}
+}
+
+// criticFile is a profile written before the sections, in the shapes the
+// person's own take: a comment header, xhigh, a mode, reviews, a round cap.
+const criticFile = `# critic — argues against a diff; kept read-only on purpose
+description = "reads a diff and argues"
+reasoning = "xhigh"
+mode = "read-only"
+reviews = true
+max_rounds = 30
+tools = ["read_file", "search"]
+prompt = """
+You are a critic. Read the diff you are given and argue against it: what it breaks, what it assumes, what it leaves untested.
+
+Only read files; never edit or run anything. Give each objection a file and line, and end with the three you would block the change on.
+"""
+`
+
+// criticSource is the critic opened from where a project keeps it, held in
+// memory so nothing on screen carries a scratch directory.
+func criticSource(t *testing.T) *persona.Source {
+	t.Helper()
+	const path = "/repo/.shhh/agents/critic.toml"
+	def, err := config.ReadAgentFile(path, []byte(criticFile), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &persona.Source{Path: path, Def: def, Raw: []byte(criticFile)}
+}
+
+// criticMigrated is the migration's answer for the critic: the author's
+// sentences moved, Method left empty because the text says nothing of it.
+func criticMigrated(src *persona.Source) *persona.Draft {
+	d := persona.FromDefinition(src.Def)
+	d.SetSection(config.SectionPurpose, "You are a critic. Read the diff you are given and argue against it.")
+	d.SetSection(config.SectionScope, "What it breaks, what it assumes, what it leaves untested.")
+	d.SetSection(config.SectionRestrictions, "Only read files; never edit or run anything.")
+	d.SetSection(config.SectionReport, "Give each objection a file and line, and end with the three you would block the change on.")
+	return &d
+}
+
+// openedModel is the manager over an older critic, a current reviewer and a
+// shipped researcher, with every save recorded rather than written.
+func openedModel(t *testing.T, outcomes ...persona.Outcome) (Model, *[]persona.Request, *[]persona.Draft) {
+	t.Helper()
+	src := criticSource(t)
+	if len(outcomes) == 0 {
+		outcomes = []persona.Outcome{{Draft: criticMigrated(src)}}
+	}
+	m, reqs, _ := personaModel(t, persona.KindCode, outcomes...)
+	current := *src
+	current.Path = "/repo/.shhh/agents/reviewer.toml"
+	whole := criticMigrated(src)
+	whole.SetSection(config.SectionMethod, "Read the diff, then the files it touches.")
+	current.Def.Name, current.Def.Prompt = "reviewer", whole.Prompt
+	m.personas.Roles = func() []SpawnableRole {
+		return []SpawnableRole{
+			{Name: "critic", Description: "reads a diff and argues", Scope: "project", Path: src.Path, Older: true},
+			{Name: "researcher", Description: "read-only tools plus web", Scope: "built-in"},
+			{Name: "reviewer", Description: "reads a change for what it breaks", Scope: "project", Path: current.Path},
+		}
+	}
+	m.personas.Open = func(path string) (*persona.Source, error) {
+		if path == current.Path {
+			c := current
+			return &c, nil
+		}
+		s := *src
+		return &s, nil
+	}
+	var saved []persona.Draft
+	m.personas.SaveOpened = func(s *persona.Source, d persona.Draft) (string, error) {
+		saved = append(saved, d)
+		return s.Path, nil
+	}
+	return m, reqs, &saved
+}
+
+// managerOn opens the manager with the pointer on a role row.
+func managerOn(t *testing.T, m Model, role string) Model {
+	t.Helper()
+	m = submitLine(t, m, "/agents")
+	for i, row := range m.agentList.Rows {
+		if row.Name == role {
+			m.agentList.Focus = i
+		}
+	}
+	return m
+}
+
+// Enter on a role with a file opens it on the drafter's draft step whatever
+// its shape: its sections from the file, every field it sets on the Model
+// block, and for an older one a single Purpose with the offer at the head.
+// No request is spent on opening it.
+func TestPersona_AnOpenedProfileIsEditedLikeADraft(t *testing.T) {
+	m, reqs, saved := openedModel(t)
+	m = pressOn(t, managerOn(t, m, "critic"), tea.KeyPressMsg{Code: tea.KeyEnter})
+	if m.state != statePersona || m.personaScreen == nil || !m.personaScreen.FromFile {
+		t.Fatalf("enter should open the profile on the drafter, state=%d", m.state)
+	}
+	view := personaView(m)
+	for _, want := range []string{
+		"critic", "/repo/.shhh/agents/critic.toml · project", "◆ older shape", "[m] move it into sections",
+		"Purpose · as the file wrote it", "Scope · not in the file", "argue against it: what it breaks",
+		"reasoning xhigh", "read-only", "30 rounds", "reviews", "read_file, search",
+		"Replace its file", "See what changes", "[esc] close, nothing written",
+	} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the opened profile lacks %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, "● draft") || len(*reqs) != 0 {
+		t.Fatalf("an opened profile has no rail and spends no request (requests %d):\n%s", len(*reqs), view)
+	}
+
+	// A current profile opens the same way, its five sections and no offer.
+	m, _, _ = openedModel(t)
+	m = pressOn(t, managerOn(t, m, "reviewer"), tea.KeyPressMsg{Code: tea.KeyEnter})
+	view = personaView(m)
+	if strings.Contains(view, "older shape") || strings.Contains(view, "[m]") || strings.Contains(view, "as the file wrote it") ||
+		!strings.Contains(view, "Read the diff, then the files it touches.") {
+		t.Fatalf("a current profile should open without the offer:\n%s", view)
+	}
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	if m.state == statePersona || len(*saved) != 0 || !strings.Contains(lastNote(m), "nothing was written") {
+		t.Fatalf("esc should close with nothing written, note %q", lastNote(m))
+	}
+}
+
+// m sends the older profile to be moved into the sections and the answer
+// lands on the draft step to be reviewed: the moved sections marked, the gap
+// marked empty, the file's prompt beside them. Nothing is written, and esc
+// on the unrevised migration drops it.
+func TestPersona_AMigrationWritesNothingUntilSaved(t *testing.T) {
+	m, reqs, saved := openedModel(t)
+	updated, cmd := managerOn(t, m, "critic").Update(tea.KeyPressMsg{Code: 'm', Text: "m"})
+	m = updated.(Model)
+	if waiting := personaView(m); !strings.Contains(waiting, "moving critic into sections") ||
+		!strings.Contains(waiting, "[esc] stop · the profile stays as the file has it") {
+		t.Fatalf("the wait should be on the surface:\n%s", waiting)
+	}
+	m = runPersonaCmd(t, m, cmd)
+	if len(*reqs) != 1 || (*reqs)[0].Source == nil || !strings.Contains((*reqs)[0].Source.Prompt, "You are a critic.") {
+		t.Fatalf("the migration should send the file's profile, requests %+v", *reqs)
+	}
+	view := personaView(m)
+	for _, want := range []string{
+		"moved into sections, nothing written yet", "Purpose · migrated", "Report · migrated",
+		"Method ⚠ empty · the file says nothing about it", "as the file wrote it", "reasoning xhigh",
+	} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the migrated draft lacks %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, "◆ older shape") {
+		t.Fatalf("the offer should be gone once migrated:\n%s", view)
+	}
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	if m.state == statePersona || len(*saved) != 0 {
+		t.Fatalf("esc on an unrevised migration should drop it with nothing written, saved %d", len(*saved))
+	}
+}
+
+// A migrated draft is revised with every tool a new draft has, and the card
+// shows the file's diff before the row that replaces it.
+func TestPersona_AMigratedSectionIsRevisedLikeADraftsSection(t *testing.T) {
+	src := criticSource(t)
+	method := criticMigrated(src)
+	method.SetSection(config.SectionMethod, "Read the diff, then the files it touches.")
+	m, reqs, saved := openedModel(t, persona.Outcome{Draft: criticMigrated(src)}, persona.Outcome{Draft: method})
+	m = pressOn(t, managerOn(t, m, "critic"), tea.KeyPressMsg{Code: 'm', Text: "m"})
+	for range 3 {
+		m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyDown})
+	}
+	m = typeInto(t, pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter}), "say how it reads")
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if last := (*reqs)[len(*reqs)-1]; last.Section != config.SectionMethod || last.Source != nil {
+		t.Fatalf("the refine should be a section's, request %+v", last)
+	}
+	view := personaView(m)
+	if !strings.Contains(view, "Method · refined once") || !strings.Contains(view, "Read the diff, then the files it touches.") {
+		t.Fatalf("the gap should be filled the way a draft's is:\n%s", view)
+	}
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	if view := personaView(m); !strings.Contains(view, "Method ⚠ empty") {
+		t.Fatalf("esc should take the revision back:\n%s", view)
+	}
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyTab})
+	m = pressOn(t, pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyDown}), tea.KeyPressMsg{Code: tea.KeyEnter})
+	view = personaView(m)
+	for _, want := range []string{"critic.toml as it stands", "+## Purpose", "-You are a critic.", " max_rounds = 30"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the diff lacks %q:\n%s", want, view)
+		}
+	}
+	if len(*saved) != 0 {
+		t.Fatal("the diff wrote the file")
+	}
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if len(*saved) != 1 || (*saved)[0].Sections.Purpose == "" || !strings.Contains(lastNote(m), "Saved critic") {
+		t.Fatalf("replace should save the migrated draft, saved %+v, note %q", *saved, lastNote(m))
+	}
+}
+
+// A refused save keeps the draft on the card with the sentence over it.
+func TestPersona_ARefusedSaveOfAnOpenedProfileKeepsTheDraft(t *testing.T) {
+	m, _, _ := openedModel(t)
+	m.personas.SaveOpened = func(s *persona.Source, _ persona.Draft) (string, error) {
+		return s.Path, fmt.Errorf("%s changed on disk since it was opened; nothing was written", s.Path)
+	}
+	m = pressOn(t, managerOn(t, m, "critic"), tea.KeyPressMsg{Code: 'm', Text: "m"})
+	m = pressOn(t, pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyTab}), tea.KeyPressMsg{Code: tea.KeyEnter})
+	view := personaView(m)
+	if m.state != statePersona || !strings.Contains(view, "critic.toml changed on disk since it was opened") ||
+		!strings.Contains(view, "Purpose · migrated") {
+		t.Fatalf("the refusal should stand over the draft:\n%s", view)
 	}
 }
