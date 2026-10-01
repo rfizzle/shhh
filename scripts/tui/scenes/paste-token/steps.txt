@@ -30,7 +30,7 @@ snap 05-back "[enter] open" "back to the draft"
 keys Escape
 snap 05b-draft "[enter] send" "fix the exit condition"
 keys Enter
-snap 06-sent "expand" "▸ Paste#1 · 214 lines"
+snap 06-sent "paste-1.txt · 214 lines" "⟨¶ Paste#1⟩"
 # ↑ on the sent sentence. The send emptied the staging area, so what the fold
 # stands for has to come back with the words: it is staged again from the row's
 # own bytes, priced on the vitals as it was before the send, and opened by its
