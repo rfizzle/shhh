@@ -65,7 +65,7 @@ func registrableDefinitions(skills *skill.Catalog, profiles subagent.Profiles) [
 	)
 	defs = append(defs, notebook.Definitions()...)
 	defs = append(defs, plan.StepsToolDefinition())
-	defs = append(defs, subagent.Definitions(profiles)...)
+	defs = append(defs, subagent.Definitions(profiles, subagent.Offer{})...)
 	defs = append(defs,
 		evidence.ToolDefinition(),
 		memory.ToolDefinition(),

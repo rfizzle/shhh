@@ -33,14 +33,14 @@ func TestPersonasReloadMakesAnEditedRoleTheRunningSessions(t *testing.T) {
 	agents := &agentProfiles{profiles: subagent.BuiltinProfiles(), definitions: map[string]config.AgentDefinition{}}
 	sup := subagent.New(t.Context(), subagent.Options{Root: t.TempDir(), Profiles: agents.profiles})
 	t.Cleanup(sup.Close)
-	tools := subagent.Definitions(agents.profiles)
+	tools := subagent.Definitions(agents.profiles, subagent.Offer{})
 	env := &sessionEnv{
 		prov: assemblyProvider{},
 		replaceTools: func(edit func([]provider.Tool) []provider.Tool) {
 			tools = edit(tools)
 		},
 	}
-	p := buildPersonas(chatSession{}, env, agents, sup, meter.New(nil))
+	p := buildPersonas(chatSession{}, env, agents, sup, meter.New(nil), nil)
 
 	// What the spawn card's About row says about critic: the same plan the
 	// session's gated preview builds the card's row from.
@@ -125,7 +125,7 @@ func TestPersonasDraftWithTheSessionsScrub(t *testing.T) {
 	sup := subagent.New(t.Context(), subagent.Options{Root: t.TempDir(), Profiles: agents.profiles})
 	t.Cleanup(sup.Close)
 	env := &sessionEnv{prov: briefProvider{sent: &sent}, modelName: "m", replaceTools: func(func([]provider.Tool) []provider.Tool) {}}
-	p := buildPersonas(chatSession{vault: v}, env, agents, sup, meter.New(nil))
+	p := buildPersonas(chatSession{vault: v}, env, agents, sup, meter.New(nil), nil)
 
 	p.Draft(t.Context(), persona.Request{Kind: persona.KindCode, Brief: "deploy with " + declared})
 	if len(sent) == 0 {
@@ -153,7 +153,7 @@ func TestPersonasReloadKeepsAConversationsRolesReaders(t *testing.T) {
 	sup := subagent.New(t.Context(), subagent.Options{Root: t.TempDir(), Profiles: agents.profiles})
 	t.Cleanup(sup.Close)
 	env := &sessionEnv{prov: assemblyProvider{}, replaceTools: func(func([]provider.Tool) []provider.Tool) {}}
-	p := buildPersonas(chatSession{conversation: true}, env, agents, sup, meter.New(nil))
+	p := buildPersonas(chatSession{conversation: true}, env, agents, sup, meter.New(nil), nil)
 	must(t, p.Reload(path))
 
 	must(t, os.WriteFile(path, []byte("description = \"writes now\"\npermissions = [\"read\", \"write\"]\n"), 0o644))

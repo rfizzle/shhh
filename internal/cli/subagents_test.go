@@ -1325,7 +1325,7 @@ func TestDelegationToolsReachAChildWithALevelBelowIt(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gated := map[string]bool{}
 			spec := subagent.Spec{Name: "critic-1", Depth: tc.depth}
-			defs, exec := withDelegation(sup, agents, tc.def, spec, nil, nil, gated)
+			defs, exec := withDelegation(sup, agents, subagent.Offer{}, tc.def, spec, nil, nil, gated)
 			names := toolsetNames(defs)
 			if got := containsString(names, subagent.SpawnToolName); got != tc.offered {
 				t.Fatalf("%s was offered the spawn = %v, want %v (%v)", tc.name, got, tc.offered, names)
@@ -1388,7 +1388,7 @@ func TestTheProfileFormatSpellsTheDelegationToolsTheWayTheyAreRegistered(t *test
 // A supervisor is never nil in a session, but a surface that builds none
 // hands a child no way to delegate rather than a panic.
 func TestDelegationToolsAreAbsentWithoutASupervisor(t *testing.T) {
-	defs, exec := withDelegation(nil, &agentProfiles{}, config.AgentDefinition{Name: "critic"},
+	defs, exec := withDelegation(nil, &agentProfiles{}, subagent.Offer{}, config.AgentDefinition{Name: "critic"},
 		subagent.Spec{Name: "critic-1", Depth: 2}, nil, nil, map[string]bool{})
 	if len(defs) != 0 || exec != nil {
 		t.Fatalf("a session with no supervisor offered %v", toolsetNames(defs))

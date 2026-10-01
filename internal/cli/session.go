@@ -296,6 +296,72 @@ func modelListerFor(p provider.Provider) func(context.Context) ([]string, error)
 	}
 }
 
+// endpointModels is the endpoint's own model list, asked lazily and shared
+// by the two things that want it: the /model picker, and the check on a
+// model a spawn names. Neither asks at startup, and a list one of them read
+// is the other's without a second request.
+//
+// A failure is remembered for the spawn's check and not for the picker. A
+// spawn that could not check is let through with a note, and asking again
+// on every later spawn would put the same wait in front of each of them;
+// the picker is a person asking, and a person who opens it again after a
+// failure is asking to be asked again — which is what it has always done.
+// See docs/capabilities/subagents.md#the-model-is-offered-the-models-it-can-name.
+type endpointModels struct {
+	fetch func(context.Context) ([]string, error)
+
+	// mu is held across the request, so a spawn and the picker asking at
+	// once make one request between them rather than two.
+	mu       sync.Mutex
+	listed   bool
+	names    []string
+	spawnErr error
+}
+
+// newEndpointModels shares fetch, or answers nil where there is nothing to
+// ask, which the picker reads as a provider with no list of its own.
+func newEndpointModels(fetch func(context.Context) ([]string, error)) *endpointModels {
+	if fetch == nil {
+		return nil
+	}
+	return &endpointModels{fetch: fetch}
+}
+
+// picker is the list as the /model picker's lazy lister, nil where there is
+// no endpoint to ask.
+func (e *endpointModels) picker() func(context.Context) ([]string, error) {
+	if e == nil {
+		return nil
+	}
+	return func(ctx context.Context) ([]string, error) { return e.list(ctx, false) }
+}
+
+// forSpawn is the list as the spawn's check reads it: asked at most once,
+// bounded by the lister's own timeout, and a failure kept.
+func (e *endpointModels) forSpawn() ([]string, error) {
+	return e.list(context.Background(), true)
+}
+
+func (e *endpointModels) list(ctx context.Context, spawn bool) ([]string, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.listed {
+		return e.names, nil
+	}
+	if spawn && e.spawnErr != nil {
+		return nil, e.spawnErr
+	}
+	names, err := e.fetch(ctx)
+	if err != nil {
+		if spawn {
+			e.spawnErr = err
+		}
+		return nil, err
+	}
+	e.listed, e.names = true, names
+	return names, nil
+}
+
 // endpointWindowsFor asks an endpoint that can report the context length it
 // serves each model at, and hands the session a lookup over the answer.
 // Providers without the capability return nil and the session reads the
@@ -364,6 +430,12 @@ type sessionEnv struct {
 	messages    []provider.Message
 	stream      agent.StreamFunc
 	switchModel func(string)
+	// model reads the session's model as it is now, which /model and a
+	// provider switch move; modelName is the one it opened on.
+	model func() string
+	// endpointModels is the opening provider's own model list, nil where it
+	// cannot list one: the picker and the spawn's model check share it.
+	endpointModels *endpointModels
 	// effort is the reasoning level the session resolved to, and
 	// switchReasoning is what ctrl+t and /reasoning change it with.
 	// Like the model it is read by the stream closure from another
@@ -453,6 +525,15 @@ func (e *sessionEnv) workspaceBlock() string {
 		return ""
 	}
 	return e.workspace()
+}
+
+// currentModel is the session's model as it is now, or the one it opened on
+// where the session was assembled without the live reading.
+func (e *sessionEnv) currentModel() string {
+	if e.model == nil {
+		return e.modelName
+	}
+	return e.model()
 }
 
 // addBuiltPrompt joins a block to a system prompt that has already been
@@ -651,7 +732,13 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 			currentModel = name
 			sessionMu.Unlock()
 		},
-		effort: effort,
+		model: func() string {
+			sessionMu.Lock()
+			defer sessionMu.Unlock()
+			return currentModel
+		},
+		endpointModels: newEndpointModels(modelListerFor(p)),
+		effort:         effort,
 		switchReasoning: func(e provider.Effort) {
 			sessionMu.Lock()
 			currentEffort = e
@@ -782,7 +869,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			// (docs/capabilities/chat.md#colleagues-not-workers).
 			agents = agents.readers()
 		}
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles)...)
+		// The models it may name are known once the provider is, and are
+		// put on the definition then (offerOn).
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles, subagent.Offer{})...)
 	}
 
 	db, storeErr := openStore()
@@ -851,6 +940,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	env, err := buildSessionEnv(cmd, session, ledger)
 	if err != nil {
 		return err
+	}
+	if agents != nil {
+		session.toolDefs = spawnModels{env: env, agents: agents, prices: prices}.offerOn(agents.profiles, session.toolDefs)
 	}
 	cfg := env.cfg
 	proj := ProjectConfigFrom(cmd.Context())
@@ -1052,6 +1144,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			hooks, func() []string { return sessionUntracked(changes) })
 		executor = sup.WrapExecutor("", executor)
 		defer sup.Close()
+		// Before the chat is handed the two switches below, so the ones it
+		// calls are the ones that also move what spawn_agent offers.
+		followSpawnModels(env, spawnModels{env: env, agents: agents, prices: prices}, sup.Profiles)
 	}
 
 	// Repeat detection goes on last, so it sees every tool the chain
@@ -1125,7 +1220,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			outranking(resolve.ReasoningOutranks(*session.flags), proj, "provider.reasoning")).
 		WithProvider(env.provName, env.replaceKey, env.switchProvider).
 		WithModelOptions(provider.KnownModels(env.prov.Name())).
-		WithModelLister(modelListerFor(env.prov)).
+		WithModelLister(env.endpointModels.picker()).
 		WithEndpointWindows(endpointWindowsFor(env.prov))
 	model = model.WithNotebook(session.notebook).WithSources(session.sources)
 	if session.conversation {
@@ -1302,7 +1397,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	if sup != nil {
 		writerCommands := writerContainment(cfg, childContainment()).field()
-		gatedPreviews[subagent.SpawnToolName] = func(args json.RawMessage) (chat.GatedPreview, error) {
+		gatedPreviews[subagent.SpawnToolName] = checkedSpawnPreview(sup, func(args json.RawMessage) (chat.GatedPreview, error) {
 			summary, err := subagent.SpawnSummary(agents.profiles, args)
 			if err != nil {
 				return chat.GatedPreview{}, err
@@ -1368,8 +1463,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 					Task: plan.Task, Touches: plan.Scope, Writer: plan.Writer,
 				},
 			}, nil
-		}
-		model = model.WithSubagents(sup).WithPersonas(buildPersonas(session, env, agents, sup, ledger))
+		})
+		model = model.WithSubagents(sup).WithPersonas(buildPersonas(session, env, agents, sup, ledger, prices))
 	}
 	// The writing half of git is gated at the write tier: it proceeds where
 	// an edit proceeds and is asked where an edit is asked, because what it

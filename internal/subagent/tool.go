@@ -83,15 +83,84 @@ const (
 	SteerFromSession SteerSource = "session"
 )
 
+// SpawnModel is one model a spawn may name, as the /model picker offers it:
+// the id, and the per-Mtok price the picker prints beside it, empty where
+// the pricing table has no row for it.
+type SpawnModel struct {
+	ID    string
+	Price string
+}
+
+// Offer is what the session tells the orchestration tools beyond its
+// profiles, read by the surface that knows it. It is a struct so a further
+// fact the definitions carry joins it beside the models, rather than as one
+// more argument at every caller.
+type Offer struct {
+	// Models are the ids a spawn may name, in the picker's order. Empty
+	// says nothing about models, which is what a caller with no session —
+	// an eval, a listing of every definition — wants.
+	Models []SpawnModel
+	// Endpoint is a session whose provider can list its own models, so an
+	// id outside Models is asked about rather than refused outright.
+	Endpoint bool
+}
+
+// MaxListedModels caps the ids the model argument's description lists. The
+// description rides every request the session makes, so a gateway profile
+// that declares a long catalog must not grow it without bound. A dozen
+// covers the largest curated catalog with a few configured models beside
+// it; an id past the cap is still nameable, and the refusal names it.
+const MaxListedModels = 12
+
+// spawnModelDescription is the model argument's description: what it is
+// for and, where the session said, the models it may name and what becomes
+// of one it may not. It is description text rather than a JSON enum because
+// an id the endpoint lists is valid too, and an enum is a constraint the
+// provider may enforce before the session is ever asked.
+// See docs/capabilities/subagents.md#the-model-is-offered-the-models-it-can-name.
+func spawnModelDescription(offer Offer) string {
+	const base = "Optional model for this agent (defaults to the profile's model, then the configured agent model, then the session model). Use a smaller, cheaper model for wide mechanical work and the session model for reasoning-heavy work."
+	if len(offer.Models) == 0 {
+		return base
+	}
+	shown := offer.Models[:min(len(offer.Models), MaxListedModels)]
+	listed := make([]string, 0, len(shown)+1)
+	for _, m := range shown {
+		if m.Price != "" {
+			listed = append(listed, m.ID+" ("+m.Price+")")
+			continue
+		}
+		listed = append(listed, m.ID)
+	}
+	// The ones past the cap are as nameable as the rest, so they are counted
+	// as part of the list and the model is told where it can read them.
+	if more := len(offer.Models) - len(shown); more > 0 {
+		listed = append(listed, fmt.Sprintf("and %d more, which a refusal lists", more))
+	}
+	refused := "An id not among them is refused"
+	if offer.Endpoint {
+		refused += " unless the provider's endpoint lists it"
+	}
+	return base + " The models this session can run: " + strings.Join(listed, ", ") + ". " + refused + ", so leave it out rather than guess one."
+}
+
+// ModelCheck answers for a model a spawn named. An error refuses the spawn,
+// and its text is what the calling model reads, so it names the models it
+// may name instead. A note is a model the check could not settle: the spawn
+// goes ahead, and its result says so.
+type ModelCheck func(model string) (note string, err error)
+
 // Definitions returns the orchestration tool definitions the parent session
 // registers. The role enum and its description are built from the profiles
 // the session loaded, so a profile the user wrote is one the model can see
-// and choose between; nil means the built-in two.
-func Definitions(profiles Profiles) []provider.Tool {
+// and choose between; nil means the built-in two. The model argument lists
+// what offer says the session can run.
+func Definitions(profiles Profiles, offer Offer) []provider.Tool {
 	if profiles == nil {
 		profiles = BuiltinProfiles()
 	}
 	names, _ := json.Marshal(profiles.Names())
+	modelDesc, _ := json.Marshal(spawnModelDescription(offer))
 	return []provider.Tool{
 		{
 			Name:        SpawnToolName,
@@ -103,7 +172,7 @@ func Definitions(profiles Profiles) []provider.Tool {
 					"task": {"type": "string", "description": "Complete, self-contained task prompt for the agent"},
 					"name": {"type": "string", "description": "Optional short name (letters, digits, dashes); auto-generated like researcher-1 when omitted"},
 					"paths": {"type": "array", "items": {"type": "string"}, "description": "The paths or globs this agent's work is scoped to (e.g. [\"internal/ui/**\", \"README.md\"]). For an agent that changes files, they are what it may change: two concurrent writing agents may not claim overlapping paths unless both allow overlap, so declare them whenever you fan out more than one. For a reviewing agent, they are the evidence: it is handed those paths and their diff before its task and reports once it has examined them, so declaring them is what keeps a review from surveying the repository to find the change.", "maxItems": 32},
-					"model": {"type": "string", "description": "Optional model for this agent (defaults to the profile's model, then the configured agent model, then the session model). Use a smaller, cheaper model for wide mechanical work and the session model for reasoning-heavy work."},
+					"model": {"type": "string", "description": ` + string(modelDesc) + `},
 					"steps": {"type": "integer", "description": "Optional number of steps this task breaks into (max 20). Pass it when you can name the steps up front: the agent's lane then shows progress against it instead of a spinner. Leave it out rather than guessing — an invented denominator is worse than none."},
 					"max_rounds": {"type": "integer", "description": "Optional: make the agent pause every N tool rounds to take stock — what it has done, what is left, what it is doing next — before carrying on with a larger budget. Omitted (the default) it runs to completion without pausing, which is what you want for most tasks. Pass it for long open-ended work where an agent quietly drifting off the task would otherwise go unnoticed. It is a pacing choice, not a limit: it never stops the agent, and the token budget is what bounds it."},
 					"max_tokens": {"type": "integer", "description": "Optional token budget (default 1200000, what one writer measured on one backlog item; minimum 200000 before prompt admission; at most 2400000). It counts new tokens — the part of each prompt the provider did not serve from its cache, plus the completion. It must cover the admission floor: the inherited prompt and tool definitions, the declared task, the inherited turns where any, and the context the first turn opens on (review evidence, a resume or retry prologue), plus a 200000-token working reserve; a spawn or retry under it is refused with that floor stated."},

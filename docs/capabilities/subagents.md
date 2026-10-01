@@ -637,6 +637,51 @@ default is what stands for everything nobody chose one for. A depth with no
 entry inherits exactly the way a child does today, which is what keeps a
 config that has never heard of depth behaving as it did.
 
+### The model is offered the models it can name
+
+The first of those layers is the orchestrating model's own choice, and a
+model choosing a model is guessing at names. A name the provider does not
+serve used to cost a whole spawn: a card the person approved, a slot, a
+child that failed on its first request, and a round for the orchestrator to
+read the failure and try again. So the `model` argument is checked rather
+than taken as written. A spawn naming a model outside the list is refused
+before the card is drawn and before a slot is taken, with a result that
+names the list, and the model corrects itself in the turn it made the
+mistake. A child's own spawns are held to the same list, by the same check.
+A spawn that names no model, and a retry of a spawn already accepted, are
+never checked.
+
+The list is what `/model` offers — the provider's catalog, or the models a
+gateway profile declares, with the session's own model — and then every
+model the configuration names for an agent: `[agents] model`, each
+`[agents.depth.<n>] model`, each `[agents.profiles.<role>] model` and a
+profile file's `model`. The picker is the person's own answer to "what can
+this session run", so the orchestrator is offered the same answer; and a
+model the person set for a role is one they meant to be used, so it can
+always be named, catalog or not. That is also how a model the catalog does
+not know yet becomes nameable: set it for an agent, or switch the session to
+it. A profile marked `strict_models` is the exception: its declared catalog
+is all it may send to, so its list is that catalog and nothing else. The
+list follows the session — a `/model` switch, a provider switch and a
+profile saved from the agent manager each rebuild it before the next
+request.
+
+It reaches the model as text in the argument's description, each id with
+the price the picker prints beside it, and not as a schema enum. An endpoint
+that lists its own models — a local runtime, a gateway — serves ids no
+catalog can know, and an enum is a constraint a provider may enforce before
+the session is ever asked. The description is capped at a dozen ids, with
+how many more there are, because it rides every request the session makes.
+
+The endpoint is asked lazily. A name outside the list is checked against the
+endpoint's own list where the provider can give one, and that list is asked
+for at most once, by whichever wants it first: the spawn's check or the
+`/model` picker, which then share the answer. It is never asked at startup,
+and it is bounded by the picker's own wait. A listing that fails does not
+refuse the spawn: a check that could not be made is not evidence the name is
+wrong, so the spawn goes ahead and its result says the model could not be
+checked.
+
 ### What nesting does to the rest of it
 
 Delegation is one mechanism and it reaches every surface a child already

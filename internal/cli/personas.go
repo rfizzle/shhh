@@ -8,6 +8,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/persona"
+	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/chat"
@@ -25,7 +26,7 @@ func personaKind(session chatSession) persona.Kind {
 // down the bounded-call chain where that is unset, and a save
 // that writes the file and makes the role spawnable in this session.
 // See docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation.
-func buildPersonas(session chatSession, env *sessionEnv, agents *agentProfiles, sup *subagent.Supervisor, ledger *meter.Ledger) chat.Personas {
+func buildPersonas(session chatSession, env *sessionEnv, agents *agentProfiles, sup *subagent.Supervisor, ledger *meter.Ledger, prices *pricing.Table) chat.Personas {
 	kind := personaKind(session)
 	drafter := persona.NewDrafter(ledger.For(env.prov, meter.SourcePersona), persona.Config{ModelAt: env.flowModelAt(env.cfg, flowDrafter), Scrub: session.vault.Scrub})
 	cwd, err := os.Getwd()
@@ -74,26 +75,15 @@ func buildPersonas(session chatSession, env *sessionEnv, agents *agentProfiles, 
 		if kind == persona.KindChat && prof.Writes {
 			return fmt.Errorf("agent profile %s: grants a tier that writes, and a conversation spawns only roles that read", path)
 		}
+		agents.mu.Lock()
 		agents.definitions[def.Name] = def
 		agents.profiles[prof.Name] = prof
+		agents.mu.Unlock()
 		sup.AddProfile(prof)
 		// The spawn tool's role enum is the profiles at the time it was
-		// built; rebuild it so the next request can name the new one.
-		env.replaceTools(func(defs []provider.Tool) []provider.Tool {
-			fresh := subagent.Definitions(sup.Profiles())
-			byName := map[string]provider.Tool{}
-			for _, t := range fresh {
-				byName[t.Name] = t
-			}
-			out := make([]provider.Tool, 0, len(defs))
-			for _, t := range defs {
-				if f, ok := byName[t.Name]; ok {
-					t = f
-				}
-				out = append(out, t)
-			}
-			return out
-		})
+		// built, and its model list the models they named; rebuild it so
+		// the next request can name the new role and the model it brought.
+		spawnModels{env: env, agents: agents, prices: prices}.offerOn(sup.Profiles(), nil)
 		return nil
 	}
 	p.Save = func(scope persona.Scope, d persona.Draft, overwrite bool) (string, error) {

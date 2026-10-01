@@ -76,7 +76,7 @@ func askDelegation(ctx context.Context, p provider.Provider, model string, row R
 	// spawn line.
 	defs := tools.Definitions()
 	if row.Delegation != config.DelegationOff {
-		defs = append(defs, subagent.Definitions(subagent.BuiltinProfiles())...)
+		defs = append(defs, subagent.Definitions(subagent.BuiltinProfiles(), subagent.Offer{})...)
 	}
 	sys := prompt.BuildAgent(shell.Info{OS: runtime.GOOS, Cwd: dir},
 		prompt.Toolbox(defs, row.Delegation == config.DelegationProactive))

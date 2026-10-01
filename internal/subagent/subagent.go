@@ -847,6 +847,10 @@ type Options struct {
 	// at and the model the spawn call asked for (empty when it asked for
 	// none). Nil means every child runs on the session model.
 	ModelFor func(role Role, depth int, requested string) string
+	// CheckModel answers for a model a spawn call named, before anything is
+	// claimed or put to anyone. Nil lets every name through, as a session
+	// with nothing to check against has always done.
+	CheckModel ModelCheck
 	// Profiles is the set of roles a spawn may name; nil means the two
 	// built-in ones.
 	Profiles Profiles
@@ -3364,6 +3368,31 @@ func (s *Supervisor) reachable(caller, name string) error {
 // from code exempts a child from the attention budget.
 func (s *Supervisor) Spawn(raw json.RawMessage) (string, error) { return s.spawnFrom("", raw) }
 
+// CheckModel puts the model a spawn_agent call named to the session's check,
+// for the surfaces that must refuse it before the call reaches a card: the
+// session's approval queue, and an unattended run's verdict. A call that
+// names no model, or whose arguments do not parse, passes — the second is
+// refused by the spawn's own parse, which says what is wrong with it.
+// See docs/capabilities/subagents.md#the-model-is-offered-the-models-it-can-name.
+func (s *Supervisor) CheckModel(raw json.RawMessage) (note string, err error) {
+	var args struct {
+		Model string `json:"model"`
+	}
+	if json.Unmarshal(raw, &args) != nil {
+		return "", nil
+	}
+	return s.checkModel(args.Model)
+}
+
+// checkModel is CheckModel over a name already read off the call.
+func (s *Supervisor) checkModel(model string) (string, error) {
+	model = strings.TrimSpace(model)
+	if model == "" || s.opts.CheckModel == nil {
+		return "", nil
+	}
+	return s.opts.CheckModel(model)
+}
+
 // MaxDepth is the deepest an agent may sit, counting the session as
 // SessionDepth. A surface builds a child's toolset from it: an agent with no
 // level left below it is handed no delegation tools.
@@ -3601,6 +3630,15 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 	}
 	if s.ctx.Err() != nil {
 		return "", ErrClosed
+	}
+	// The model is checked first of all, for the reason depth is: a name
+	// the session cannot run is a child that fails on its first request,
+	// and a refusal the model reads now costs nothing it was refusing to
+	// spend. An integration writer is the supervisor's own and names none.
+	// See docs/capabilities/subagents.md#the-model-is-offered-the-models-it-can-name.
+	unchecked, err := s.checkModel(args.Model)
+	if err != nil {
+		return "", err
 	}
 	// Depth is checked with the role and before everything else that could
 	// claim something, for the reason the token admission is: a refusal that
@@ -3911,6 +3949,9 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 	if inheritTurns > 0 {
 		resumed += fmt.Sprintf(" It was handed your %s (~%s tokens) ahead of its task.",
 			lastTurnsPhrase(inheritTurns), formatTokens(agent.EstimateTokens(inheritance)))
+	}
+	if unchecked != "" {
+		resumed += " " + unchecked
 	}
 	return fmt.Sprintf("Spawned %s (%s%s, %s, ~%s token budget).%s%s It works in the background: call agent_report with name=%q in a later step to wait for and collect its final report, or agent_report with no arguments for a status overview.",
 		name, args.role, modelNote, roundBudgetLabel(args.maxRounds), formatTokens(args.maxTokens), note, resumed, name), nil
@@ -5154,6 +5195,16 @@ func (s *Supervisor) refuseUncontained(c *child, tc provider.ToolCall) (string, 
 // be a rate over the half of the work a person was looking at.
 func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 	raw := json.RawMessage(tc.Arguments)
+	// A child's spawn naming a model the session cannot run is refused here,
+	// ahead of the policy, the classifier and the card, as the session's own
+	// is refused ahead of its queue: no answer the person could give makes
+	// the name one the provider serves.
+	// See docs/capabilities/subagents.md#the-model-is-offered-the-models-it-can-name.
+	if tc.Name == SpawnToolName {
+		if _, err := s.CheckModel(raw); err != nil {
+			return "error: " + err.Error()
+		}
+	}
 	rooted, err := RootArgs(c.root, tc.Name, raw)
 	if err != nil {
 		return "error: " + err.Error()

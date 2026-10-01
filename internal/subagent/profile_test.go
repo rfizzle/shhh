@@ -36,7 +36,7 @@ func TestProfilesParseAndNames(t *testing.T) {
 }
 
 func TestDefinitionsListProfiles(t *testing.T) {
-	defs := Definitions(customProfiles())
+	defs := Definitions(customProfiles(), Offer{})
 	var spawn provider.Tool
 	for _, d := range defs {
 		if d.Name == SpawnToolName {

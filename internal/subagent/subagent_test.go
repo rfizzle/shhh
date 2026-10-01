@@ -2411,7 +2411,7 @@ func TestSteerToolRefusesACallWithNothingToDeliver(t *testing.T) {
 // out of the definitions is a tool no model ever calls.
 func TestTheOrchestrationToolsAreRegisteredTogether(t *testing.T) {
 	have := map[string]bool{}
-	for _, d := range Definitions(nil) {
+	for _, d := range Definitions(nil, Offer{}) {
 		have[d.Name] = true
 	}
 	for _, want := range []string{SpawnToolName, ReportToolName, SteerToolName, RetryToolName} {

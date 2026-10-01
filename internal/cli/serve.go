@@ -386,7 +386,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		if agents, err = loadAgentProfiles(true); err != nil {
 			return nil, err
 		}
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles)...)
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles, subagent.Offer{})...)
 	}
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc, false))
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs, session.proactive))
@@ -396,6 +396,9 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	env, err := buildSessionEnv(cmd, session, l.ledger)
 	if err != nil {
 		return nil, err
+	}
+	if agents != nil {
+		session.toolDefs = spawnModels{env: env, agents: agents, prices: prices}.offerOn(agents.profiles, session.toolDefs)
 	}
 	cfg = env.cfg
 

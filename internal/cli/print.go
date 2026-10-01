@@ -1013,7 +1013,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		if err != nil {
 			return err
 		}
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles)...)
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles, subagent.Offer{})...)
 	}
 
 	// The model is told where the work is; a headless run cannot be
@@ -1034,6 +1034,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	env, err := buildSessionEnv(cmd, session, ledger)
 	if err != nil {
 		return err
+	}
+	if agents != nil {
+		session.toolDefs = spawnModels{env: env, agents: agents, prices: prices}.offerOn(agents.profiles, session.toolDefs)
 	}
 	cfg := env.cfg
 
@@ -2156,6 +2159,13 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 		// the decision — and the only one.
 		// See docs/capabilities/subagents.md#spawning-is-a-decision.
 		if un.sup != nil && tc.Name == subagent.SpawnToolName {
+			// A model the session cannot run is refused ahead of the
+			// verdict, as the session refuses it ahead of its card: no
+			// classifier round is spent on a spawn that cannot start.
+			// See docs/capabilities/subagents.md#the-model-is-offered-the-models-it-can-name.
+			if _, err := un.sup.CheckModel(json.RawMessage(tc.Arguments)); err != nil {
+				return "error: " + err.Error()
+			}
 			reason, ok := answer(tc, agent.Action{Kind: agent.ActionOther},
 				opts.yes, observe.ReasonHeadlessYes, "spawning an agent", "sub-agents by default (run with --yes)")
 			if !ok {
