@@ -27,90 +27,94 @@
 
   ⚙ read 24 files in internal/agent/ · searched 6 times                8.2s
 
-   ⚙ read    internal/agent/round01.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round02.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round03.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round04.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round05.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round06.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round07.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round08.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round09.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round10.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round11.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round12.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round13.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round14.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round15.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round16.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round17.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round18.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round19.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round20.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round21.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round22.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round23.go                         2 lines
-    a
-    b
-   ⚙ read    internal/agent/round24.go                         2 lines
-    a
-    b
-   ⚙ search  ErrRoundLimit ./internal/agent                    1 match
-    internal/agent/loop.go:41:    ErrRoundLimit
-   ⚙ search  roundLimit ./internal/agent                       1 match
-    internal/agent/loop.go:41:    roundLimit
-   ⚙ search  maxRounds ./internal/agent                        1 match
-    internal/agent/loop.go:41:    maxRounds
-   ⚙ search  budgetFor ./internal/agent                        1 match
-    internal/agent/loop.go:41:    budgetFor
-   ⚙ search  checkpoint ./internal/agent                       1 match
-    internal/agent/loop.go:41:    checkpoint
-   ⚙ search  resumeAt ./internal/agent                         1 match
-    internal/agent/loop.go:41:    resumeAt
+    ▾ read 24 files                                                    6.4s
+      ⚙ internal/agent/round01.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round02.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round03.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round04.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round05.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round06.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round07.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round08.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round09.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round10.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round11.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round12.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round13.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round14.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round15.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round16.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round17.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round18.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round19.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round20.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round21.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round22.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round23.go                                   2 lines
+        a
+        b
+      ⚙ internal/agent/round24.go                                   2 lines
+        a
+        b
+    ▾ searched 6 times                                                 1.8s
+      ⚙ ErrRoundLimit ./internal/agent                              1 match
+        internal/agent/loop.go:41:    ErrRoundLimit
+      ⚙ roundLimit ./internal/agent                                 1 match
+        internal/agent/loop.go:41:    roundLimit
+      ⚙ maxRounds ./internal/agent                                  1 match
+        internal/agent/loop.go:41:    maxRounds
+      ⚙ budgetFor ./internal/agent                                  1 match
+        internal/agent/loop.go:41:    budgetFor
+      ⚙ checkpoint ./internal/agent                                 1 match
+        internal/agent/loop.go:41:    checkpoint
+      ⚙ resumeAt ./internal/agent                                   1 match
+        internal/agent/loop.go:41:    resumeAt
+
+    in order ⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙                        30 tools
 
 
 
@@ -132,89 +136,93 @@
 
   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m␛[38;5;244m 24 files in internal/agent/ · searched 6 times␛[m                ␛[38;5;244m8.2s␛[m
 
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round01.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round02.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round03.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round04.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round05.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round06.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round07.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round08.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round09.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round10.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round11.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round12.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round13.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round14.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round15.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round16.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round17.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round18.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round19.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round20.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round21.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round22.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round23.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round24.go␛[m                         ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mErrRoundLimit␛[m␛[38;5;244m ./internal/agent␛[m                    ␛[38;5;244m1 match␛[m
-    ␛[38;5;244minternal/agent/loop.go:41:    ErrRoundLimit␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mroundLimit␛[m␛[38;5;244m ./internal/agent␛[m                       ␛[38;5;244m1 match␛[m
-    ␛[38;5;244minternal/agent/loop.go:41:    roundLimit␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mmaxRounds␛[m␛[38;5;244m ./internal/agent␛[m                        ␛[38;5;244m1 match␛[m
-    ␛[38;5;244minternal/agent/loop.go:41:    maxRounds␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mbudgetFor␛[m␛[38;5;244m ./internal/agent␛[m                        ␛[38;5;244m1 match␛[m
-    ␛[38;5;244minternal/agent/loop.go:41:    budgetFor␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mcheckpoint␛[m␛[38;5;244m ./internal/agent␛[m                       ␛[38;5;244m1 match␛[m
-    ␛[38;5;244minternal/agent/loop.go:41:    checkpoint␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mresumeAt␛[m␛[38;5;244m ./internal/agent␛[m                         ␛[38;5;244m1 match␛[m
-    ␛[38;5;244minternal/agent/loop.go:41:    resumeAt␛[m
+    ␛[38;5;244m▾ read 24 files␛[m                                                    ␛[38;5;244m6.4s␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round01.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round02.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round03.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round04.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round05.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round06.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round07.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round08.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round09.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round10.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round11.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round12.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round13.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round14.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round15.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round16.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round17.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round18.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round19.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round20.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round21.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round22.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round23.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/round24.go␛[m                                   ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+    ␛[38;5;244m▾ searched 6 times␛[m                                                 ␛[38;5;244m1.8s␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244mErrRoundLimit ./internal/agent␛[m                              ␛[38;5;244m1 match␛[m
+        ␛[38;5;244minternal/agent/loop.go:41:    ErrRoundLimit␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244mroundLimit ./internal/agent␛[m                                 ␛[38;5;244m1 match␛[m
+        ␛[38;5;244minternal/agent/loop.go:41:    roundLimit␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244mmaxRounds ./internal/agent␛[m                                  ␛[38;5;244m1 match␛[m
+        ␛[38;5;244minternal/agent/loop.go:41:    maxRounds␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244mbudgetFor ./internal/agent␛[m                                  ␛[38;5;244m1 match␛[m
+        ␛[38;5;244minternal/agent/loop.go:41:    budgetFor␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244mcheckpoint ./internal/agent␛[m                                 ␛[38;5;244m1 match␛[m
+        ␛[38;5;244minternal/agent/loop.go:41:    checkpoint␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244mresumeAt ./internal/agent␛[m                                   ␛[38;5;244m1 match␛[m
+        ␛[38;5;244minternal/agent/loop.go:41:    resumeAt␛[m
+
+    ␛[38;5;244min order ␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m                        ␛[38;5;244m30 tools␛[m
 
 

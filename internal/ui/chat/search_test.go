@@ -104,10 +104,11 @@ func TestSearch_EnterOpensTheFoldOntoTheMatch(t *testing.T) {
 	if blk, _ := m.stepBlockAt(es, 1); m.cardHidesRows(blk, es) {
 		t.Fatal("the card should be open onto its calls")
 	}
-	// The calls are on screen, and the cursor is on the one that read the
-	// file the query names.
-	if m.focusIdx != 4 {
-		t.Fatalf("the cursor is on %d, want the read that holds the match", m.focusIdx)
+	// The calls are on screen, and the cursor is on the line of the group
+	// holding the read of the file the query names: a call in a group is
+	// reached along the strip, and its group is the stop.
+	if _, _, ok := m.groupAt(es, m.focusIdx); !ok || m.focusIdx != m.cursorStopFor(es, 4) {
+		t.Fatalf("the cursor is on %d, want the line of the group holding the read with the match", m.focusIdx)
 	}
 	if at, total := m.searchPosition(); at != 1 || total != 1 {
 		t.Fatalf("position %d/%d, want the one occurrence reached", at, total)

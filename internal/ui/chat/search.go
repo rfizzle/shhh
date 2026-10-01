@@ -412,7 +412,7 @@ func (m Model) openFoldToMatch() (Model, bool) {
 func (m *Model) focusFirstMatchUnder(es []entry, f transcriptFold) {
 	for i := f.start; i < f.end; i++ {
 		if m.selectableRow(es[i]) && m.searchMatchesIn(es, i, i+1) > 0 {
-			m.focusIdx = i
+			m.focusIdx = m.cursorStopFor(es, i)
 			return
 		}
 	}

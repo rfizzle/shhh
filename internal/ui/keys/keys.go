@@ -409,31 +409,40 @@ var Search = SearchKeys{
 // ReadingKeys are reading mode's own. It is a takeover, so its letters
 // are live because nothing else is listening.
 type ReadingKeys struct {
-	Move      Binding
-	Expand    Binding
-	Collapse  Binding
-	Copy      Binding
-	CopyBlock Binding
-	Search    Binding
-	Match     Binding
-	Half      Binding
-	PageUp    Binding
-	PageDown  Binding
-	List      Binding
-	Back      Binding
+	Move       Binding
+	StripLeft  Binding
+	StripRight Binding
+	Expand     Binding
+	Collapse   Binding
+	Copy       Binding
+	CopyBlock  Binding
+	Search     Binding
+	Match      Binding
+	Half       Binding
+	PageUp     Binding
+	PageDown   Binding
+	List       Binding
+	Back       Binding
 }
 
 // All is reading mode's keys in the order it offers them, which is the order
 // `?` lists them in.
 func (k ReadingKeys) All() []Binding {
-	return []Binding{k.Move, k.Expand, k.Collapse, k.Copy, k.CopyBlock, k.Search,
+	return []Binding{k.Move, k.StripLeft, k.StripRight, k.Expand, k.Collapse, k.Copy, k.CopyBlock, k.Search,
 		k.Match, k.Half, k.PageUp, k.PageDown, k.List, k.Back}
 }
 
 var Reading = ReadingKeys{
-	Move:     bind("j/k", "move", "k", "j", "up", "down"),
-	Expand:   bind("enter", "expand", "enter"),
-	Collapse: bind("-", "collapse", "-"),
+	Move: bind("j/k", "move", "k", "j", "up", "down"),
+	// StripLeft and StripRight walk an open card's strip a call at a time
+	// (docs/interface/surfaces.md#the-step). They are the arrows because
+	// the strip is one row and j/k already walk the rows: along the row is
+	// the other axis, which is the gesture ←→ is on every strip here. Two
+	// bindings rather than one pair, so a keymap file can move either half.
+	StripLeft:  bind("←", "along the strip, back", "left"),
+	StripRight: bind("→", "along the strip, on", "right"),
+	Expand:     bind("enter", "expand", "enter"),
+	Collapse:   bind("-", "collapse", "-"),
 	// Copy is [y] rather than [c]: the row is the whole message, and c is
 	// the narrower copy beside it.
 	Copy: bind("y", "copy the row", "y"),

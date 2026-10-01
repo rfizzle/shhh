@@ -14,9 +14,12 @@
                                                                              
   ⚙ searched 3 times                                                   0.9s  
                                                                              
-   ⚙ search  steeringItem ./internal/ui/chat                   1 match       
-   ⚙ search  queuedSteer ./internal/ui/chat                  2 matches       
-   ⚙ search  authorOf ./internal/ui/chat                                     
+    ▾ searched 3 times                                                 0.9s  
+      ⚙ steeringItem ./internal/ui/chat                             1 match  
+      ⚙ queuedSteer ./internal/ui/chat                            2 matches  
+      ⚙ authorOf ./internal/ui/chat                                          
+                                                                             
+    in order ⚙⚙⚙                                                    3 tools  
                                                                              
 
 
@@ -24,9 +27,12 @@
                                                                              
   ⚙ searched 3 times                                                   1.0s  
                                                                              
-   ⚙ search  steeringItem ./internal/ui/chat                   1 match       
-   ⚙ search  steeringItem ./internal/ui/chat                   1 match       
-   ⚙ search  steeringItem ./internal/ui/chat                   1 match       
+    ▾ searched 3 times                                                 1.0s  
+      ⚙ steeringItem ./internal/ui/chat                             1 match  
+      ⚙ steeringItem ./internal/ui/chat                             1 match  
+      ⚙ steeringItem ./internal/ui/chat                             1 match  
+                                                                             
+    in order ⚙⚙⚙                                                    3 tools  
                                                                              
 
 
@@ -35,9 +41,12 @@
 ␛[48;5;234m                                                                             ␛[m
 ␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252msearched␛[m␛[48;5;234m␛[38;5;241m 3 times␛[m␛[48;5;234m                                                   ␛[38;5;241m0.9s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                             ␛[m
-␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252msteeringItem␛[m␛[48;5;234m␛[38;5;241m ./internal/ui/chat␛[m␛[48;5;234m                   ␛[38;5;245m1 match␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252mqueuedSteer␛[m␛[48;5;234m␛[38;5;241m ./internal/ui/chat␛[m␛[48;5;234m                  ␛[38;5;245m2 matches␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252mauthorOf␛[m␛[48;5;234m␛[38;5;241m ./internal/ui/chat␛[m␛[48;5;234m                                     ␛[m
+␛[48;5;234m    ␛[38;5;241m▾ searched 3 times␛[m␛[48;5;234m                                                 ␛[38;5;241m0.9s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245msteeringItem ./internal/ui/chat␛[m␛[48;5;234m                             ␛[38;5;245m1 match␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245mqueuedSteer ./internal/ui/chat␛[m␛[48;5;234m                            ␛[38;5;245m2 matches␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245mauthorOf ./internal/ui/chat␛[m␛[48;5;234m                                          ␛[m
+␛[48;5;234m                                                                             ␛[m
+␛[48;5;234m    ␛[38;5;241min order ␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m                                                    ␛[38;5;241m3 tools␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                             ␛[m
 
 
@@ -45,8 +54,11 @@
 ␛[48;5;234m                                                                             ␛[m
 ␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252msearched␛[m␛[48;5;234m␛[38;5;241m 3 times␛[m␛[48;5;234m                                                   ␛[38;5;241m1.0s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                             ␛[m
-␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252msteeringItem␛[m␛[48;5;234m␛[38;5;241m ./internal/ui/chat␛[m␛[48;5;234m                   ␛[38;5;245m1 match␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252msteeringItem␛[m␛[48;5;234m␛[38;5;241m ./internal/ui/chat␛[m␛[48;5;234m                   ␛[38;5;245m1 match␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252msteeringItem␛[m␛[48;5;234m␛[38;5;241m ./internal/ui/chat␛[m␛[48;5;234m                   ␛[38;5;245m1 match␛[m␛[48;5;234m       ␛[m
+␛[48;5;234m    ␛[38;5;241m▾ searched 3 times␛[m␛[48;5;234m                                                 ␛[38;5;241m1.0s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245msteeringItem ./internal/ui/chat␛[m␛[48;5;234m                             ␛[38;5;245m1 match␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245msteeringItem ./internal/ui/chat␛[m␛[48;5;234m                             ␛[38;5;245m1 match␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245msteeringItem ./internal/ui/chat␛[m␛[48;5;234m                             ␛[38;5;245m1 match␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                                             ␛[m
+␛[48;5;234m    ␛[38;5;241min order ␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m                                                    ␛[38;5;241m3 tools␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                             ␛[m
 

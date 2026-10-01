@@ -206,11 +206,11 @@ the three depths enter already walks on a row's output, a diff and a thought.
 A click folds a card and unfolds it, so the same cell pressed twice is where
 it started.
 
-An open card draws its calls as rows on its band, each a stop of its own,
-until the strip is the way to one call. A run of calls nothing titled is kept
-on its first call, so once it is open the stop there is that call's row, and
-enter acts on the row: the card folds back by `-`, or by a click on its own
-header, which always means the card.
+An open card's stops are its group lines and the rows of its groups of one
+call. A run of calls nothing titled is kept on its first call, so once it is
+open the stop there is the first group's line, or that call's row, and enter
+acts on it: `-` folds that group and then the card, and a click on the card's
+own header always means the card.
 
 ## A run nothing titled, and a refused call, are cards
 
@@ -234,6 +234,53 @@ call — and draws a step of seven calls without one and a step of twenty-two
 with one, without saying where large begins. The binary draws it from eight:
 past that, the counts on the header stop being enough to hold the order the
 calls came in.
+
+## The open card's strip starts at two calls, and a group's line at two
+
+*A gap.* The catalogue draws the open strip under a step of twenty-two calls
+and says a group line appears only from two calls; it does not say where the
+open strip begins. The footer's strip starts at eight, where the header's
+counts stop holding the order; the open card's starts at two, because there
+it is not a summary but the way to one call, and two calls in a card are
+already two places to go. A group of one call draws that call's row with no
+line over it, so its row is the stop the group's line would have been.
+
+## The strip's cursor starts on its last call and lets go on a move
+
+*A gap.* The catalogue says the cursor starts on the last glyph and the
+arrows move it a call at a time. The binary puts the cursor on the strip with
+the first arrow pressed on an open card, at its last call, and moves it from
+the second; a key that moves the reading cursor takes it off the strip, which
+stays where it was drawn. The way back on the strip closes the card to its
+card rung, with the reading cursor on it.
+
+## An open card's cursor keeps the pointer column
+
+*A disagreement.* The catalogue draws the open card's lit call row with its
+`❯` two columns in, beside the call. The binary keeps the `❯` in the
+transcript's one pointer column, where it stands on the card's header and on
+every row outside a card, so the eye finds the cursor in one column whatever
+it is on; the band runs to where the line's own marks begin and the highlight
+starts there, as the catalogue lights it.
+
+## A failed call in an open card keeps its mark and its body
+
+*A disagreement.* The catalogue draws the failed command inside an open card
+as `$` in red, its error line beside the command and no body under it. The
+binary draws `✗`, in the row and in the strip, as the footer's strip and every
+failed row elsewhere do: red alone is lost in mono and at sixteen colours,
+and the mark is what says the call broke. Its body stays open under the row,
+as a failed row's does anywhere, so the explanation of a command that never
+started is not one more press away; the line beside the subject is drawn only
+while the body is shut.
+
+## A call in an open card names its verb where its group does not
+
+*A gap.* The catalogue's rows inside an open card name the call's subject
+alone, the group's line carrying the verb. The binary does the same where the
+group's verb is the call's — a command run, a file read, an edit made, a
+search — and keeps the call's own verb where it says more: staging and
+committing are commands, and `add` and `commit` are what tell their rows apart.
 
 ## A card's header keeps a column between its sides
 

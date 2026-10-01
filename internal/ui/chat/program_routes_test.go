@@ -293,7 +293,8 @@ func readingSession(dir string, turns ...programTurn) Model {
 var twelve = []string{"one.go", "two.go", "three.go", "four.go", "five.go", "six.go", "seven.go", "eight.go", "nine.go", "ten.go", "eleven.go", "twelve.go"}
 
 // A turn that only read is one card stating its reads, and reading mode's
-// cursor reaches the card and opens it onto them in place.
+// cursor reaches the card and opens it onto them in place: the reads under
+// their verb, rolled up by directory.
 func TestProgram_AFoldedRunOfReadsOpensInPlace(t *testing.T) {
 	files := map[string]string{}
 	for _, f := range twelve {
@@ -308,10 +309,41 @@ func TestProgram_AFoldedRunOfReadsOpensInPlace(t *testing.T) {
 	send(tm, "how is the round limit counted")
 	waitForAll(t, tm, "nowhere else", "read 12 files")
 	programPress(t, tm, "ctrl+o", "k", "k", "enter")
-	waitForText(t, tm, "eleven.go")
+	waitForText(t, tm, "./ one.go")
 
 	frame := finalFrame(t, tm)
-	frameHas(t, frame, "one.go", "eleven.go", "back to the prompt")
+	frameHas(t, frame, "▾ read 12 files", "./ one.go · two.go", "back to the prompt")
+}
+
+// The route to one call: reading mode opens a card of twelve reads onto its
+// groups, and a click on the fourth glyph of its strip puts the strip's
+// cursor on the fourth read, which the bar then names.
+func TestProgram_AClickOnAStripGlyphMovesTheCursor(t *testing.T) {
+	files := map[string]string{}
+	for _, f := range twelve {
+		files[f] = "package fixture\n"
+	}
+	dir := fixtureDir(t, files)
+	tm := runProgramAt(t, readingSession(dir,
+		programTurn{calls: reads(twelve...)},
+		programTurn{text: "The round limit is counted in the loop and nowhere else."},
+	).WithMouse(true), 130, 40)
+
+	send(tm, "how is the round limit counted")
+	waitForAll(t, tm, "nowhere else", "read 12 files")
+	programPress(t, tm, "ctrl+o", "k", "k", "enter")
+	frame := waitForFrame(t, tm, "the open card's strip", func(f string) bool { return strings.Contains(f, "in order ") })
+	x, y := -1, -1
+	for i, l := range strings.Split(frame, "\n") {
+		if at := strings.Index(l, "in order "); at >= 0 {
+			x, y = len([]rune(l[:at]))+len("in order ")+3, i
+		}
+	}
+	tm.Send(tea.MouseClickMsg{Button: tea.MouseLeft, X: x, Y: y})
+	tm.Send(tea.MouseReleaseMsg{Button: tea.MouseNone, X: x, Y: y})
+	waitForText(t, tm, "tool 4 of 12")
+
+	frameHas(t, finalFrame(t, tm), "along the strip", "open that tool")
 }
 
 // The transcript's search counts what is folded away and walks into it: the

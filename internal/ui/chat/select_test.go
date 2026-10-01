@@ -780,10 +780,10 @@ func TestSelection_SurvivesStreaming(t *testing.T) {
 // A row put back at its call's place in the round (queue.go) is the one
 // change that lands new lines above lines already drawn. A selection moves
 // with the text it was lit over, the way the reading cursor moves with the
-// row it stands on: one below the placed row still copies what the reader
-// dragged over, one across it takes the row in between, and one above it is
-// untouched. One on lines the placed row redrew has nothing to follow and is
-// dropped, the way a width change drops it.
+// row it stands on: one above the placed row is untouched. One on lines the
+// placed row redrew — a card's header, an open card's rows down to its
+// strip — has nothing to follow and is dropped, the way a width change
+// drops it.
 func TestSelection_MovesWithARowPlacedAboveIt(t *testing.T) {
 	read := func(id, path string) entry {
 		call := readCall(id, path)
@@ -812,28 +812,16 @@ func TestSelection_MovesWithARowPlacedAboveIt(t *testing.T) {
 	}
 	place := func(m Model) Model { return placeRow(m, command) }
 
-	t.Run("below", func(t *testing.T) {
+	t.Run("inside the open card", func(t *testing.T) {
+		// An open card lists its calls by kind and ends in its strip, one
+		// glyph per call, so a call that lands in it redraws the card down to
+		// its last line, and a selection on its rows has nothing to follow.
 		m := build(t)
 		line := lineOf(t, m, "third.go")
 		m = dragLines(t, m, line, line)
-		want := m.selectedText()
 		m = place(m)
-		if got := m.selectedText(); got != want {
-			t.Fatalf("the selection should still cover the third read: %q → %q", want, got)
-		}
-	})
-
-	t.Run("across", func(t *testing.T) {
-		// From above the card, since the card's header restates its calls
-		// and is redrawn when one lands in it.
-		m := build(t)
-		m = dragLines(t, m, lineOf(t, m, "read the three files"), lineOf(t, m, "third.go"))
-		m = place(m)
-		got := m.selectedText()
-		for _, path := range []string{"first.go", "go test ./second", "third.go"} {
-			if !strings.Contains(got, path) {
-				t.Fatalf("a selection across the placed row should reach from the first read to the third, got %q", got)
-			}
+		if m.sel.on {
+			t.Fatalf("a selection on a card the placed row redrew should be dropped, still covers %q", m.selectedText())
 		}
 	})
 

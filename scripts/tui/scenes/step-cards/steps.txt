@@ -1,5 +1,6 @@
 # program test: TestProgram_AnEditCardAppliesTheEdit,
 #   TestProgram_AFoldedRunOfReadsOpensInPlace,
+#   TestProgram_AClickOnAStripGlyphMovesTheCursor,
 #   TestProgram_TheQuitChordArmsThenLeaves
 #
 # Each step a card (docs/interface/surfaces.md#the-step), through the built
@@ -14,10 +15,19 @@
 # the step that only read. The answer stands on bare screen under the cards.
 #
 # Then reading mode: the cursor stops on a card as a whole, the bar says what
-# enter does to it, enter opens it onto its calls, enter again folds it to its
-# header with `▸` in the pointer column, and enter a third time gives the card
+# enter does to it, and enter opens the large step onto its calls — the reads
+# under `▾ read`, rolled up by directory, the two commands under `▾ ran`, each
+# with its rail, and the strip under them. Read 07 against the `Cards`
+# artboard's large step open (screens 5 and 6). The arrows put a cursor on
+# the strip at its last call, the failed command, and walk it back one call
+# and on again, its glyph lit and its row lit with it, the bar naming the
+# strip's keys (read 08 and 10 against screen 11); enter opens that call's
+# own view, esc comes back to the strip where it was, and esc again closes
+# the card. Then enter opens it,
+# folds it to its header with `▸` in the pointer column, and gives the card
 # back.
-setup mkdir -p docs && printf 'Scenes drive the built binary.\n' > docs/scenes.md
+setup mkdir -p docs internal/ui && printf 'Scenes drive the built binary.\n' > docs/scenes.md
+setup for f in keys render reply click fold; do printf 'package ui\n' > internal/ui/$f.go; done
 setup printf 'notes nobody has committed\n' > notes.md
 snap 01-start "Some things worth doing first"
 keys "write the copy story" Enter
@@ -44,20 +54,37 @@ keys k
 snap 06-on-the-card "[enter] open it" "Running the suite once more"
 keys Enter
 # Below 80 columns the bar sheds enter's words before collapse's.
-wide 80 snap 07-open "[enter] fold it" "run     printf"
-narrow 80 snap 07-open "[-] collapse" "run     printf"
+wide 80 snap 07-open "[enter] fold it" "▾ read " "▾ ran 2 commands" "▎✗ printf"
+narrow 80 snap 07-open "[-] collapse" "▾ read " "▾ ran 2 commands"
+# The first arrow puts the strip's cursor on the last call, the failed
+# command; the next two walk it back one call and on again.
+keys Left
+snap 08-strip "tool 8 of 8" "[←→] along" "❯    ▎✗ printf" "⚙⚙⚙⚙⚙⚙$✗"
+keys Left
+snap 09-strip-back "tool 7 of 8" "❯    ▎$ git status --short notes.md"
+keys Right
+snap 10-strip-on-the-failure "tool 8 of 8" "[←→] along" "[enter] open" "❯    ▎✗ printf"
 keys Enter
-snap 08-folded "[enter] unfold it" "❯▎✗ ran printf"
+snap 11-the-call "$ printf" "--- FAIL: TestReplyGolden"
+keys Escape
+snap 12-back-on-the-strip "tool 8 of 8" "❯    ▎✗ printf"
+keys Escape
+snap 13-closed "[enter] open it" "Running the suite once more"
+keys Enter
+wide 80 snap 14-open-again "[enter] fold it" "▾ ran 2 commands"
+narrow 80 snap 14-open-again "[-] collapse" "▾ ran 2 commands"
+keys Enter
+snap 15-folded "[enter] unfold it" "❯▎✗ read"
 # The cursor stands in the pointer column, so the fold's own mark shows once
 # it moves off the card.
 keys k
-snap 09-folded-mark "▸▎✗ ran printf"
+snap 16-folded-mark "▸▎✗ read"
 keys j
 keys Enter
-snap 10-card-again "[enter] open it" "Running the suite once more"
+snap 17-card-again "[enter] open it" "Running the suite once more"
 keys q
-snap 11-prompt "╭─ ✓ done"
+snap 18-prompt "╭─ ✓ done"
 keys C-c
-snap 12-quit-armed "again quits"
+snap 19-quit-armed "again quits"
 keys C-c
-snap 13-exit "that is everything the screen was holding"
+snap 20-exit "that is everything the screen was holding"

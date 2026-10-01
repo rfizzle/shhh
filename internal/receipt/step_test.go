@@ -369,3 +369,71 @@ func TestStepReceipt_TheHeaderSplitsForTheDropOrder(t *testing.T) {
 		})
 	}
 }
+
+// An open card lists the calls under the receipt's verbs, in the order the
+// receipt counts kinds; a refused call is listed under its kind, and a kind
+// nothing of which ran is a group of its own, last.
+func TestStepReceipt_GroupsAreTheCallsUnderTheirVerbs(t *testing.T) {
+	refused := editAct("c.go")
+	refused.State = StateRefused
+	slow := readAct("internal/ui/a.go")
+	slow.Duration = 2 * time.Second
+	edit := editAct("x.go", hunk(1, diff.Line{Kind: diff.Add, Text: "a"}, diff.Line{Kind: diff.Del, Text: "b"}))
+	cases := []struct {
+		name string
+		acts []Act
+		want []string
+	}{
+		{"by kind, in the order each was first used",
+			[]Act{slow, commandAct("go build", "", tools.ExecSucceeded), readAct("internal/ui/b.go"), edit,
+				commandAct("go test", "FAIL x", tools.ExecExited)},
+			[]string{"read 2 files [0 2] 2s", "ran 2 commands [1 4] 0s", "wrote x.go [3] 0s +1 −1"}},
+		{"the reads are counted without where",
+			reads("internal/ui/a.go", "internal/ui/b.go", "docs/c.md"),
+			[]string{"read 3 files [0 1 2] 0s"}},
+		{"a refusal is listed under the kind that ran",
+			[]Act{edit, refused},
+			[]string{"wrote x.go [0 1] 0s +1 −1"}},
+		{"a kind nothing of which ran is counted as refused, last",
+			[]Act{refused, readAct("a.go")},
+			[]string{"read a.go [1] 0s", "1 refused call [0] 0s"}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var got []string
+			for _, g := range BuildStep(c.acts).Groups {
+				line := fmt.Sprintf("%s %v %s", g.Label, g.Calls, g.Duration)
+				if g.Added+g.Removed > 0 {
+					line += fmt.Sprintf(" +%d −%d", g.Added, g.Removed)
+				}
+				got = append(got, line)
+			}
+			if !slices.Equal(got, c.want) {
+				t.Errorf("groups = %q, want %q", got, c.want)
+			}
+		})
+	}
+}
+
+// A call's row in an open card says the one line the call stands on: the
+// line a broken call said it with, an edit's first changed line, and
+// nothing for a call that came back with nothing to add to its subject.
+func TestStepReceipt_ACallsLineIsItsBreakOrItsHunk(t *testing.T) {
+	cases := []struct {
+		name string
+		act  Act
+		want string
+	}{
+		{"a failed command's last line", commandAct("go test", "ok a\n--- FAIL: TestX\nFAIL", tools.ExecExited), "FAIL"},
+		{"an edit's first changed line", editAct("x.go", hunk(4, diff.Line{Kind: diff.Add, Text: "case \"c\":"})), "+ case \"c\":"},
+		{"a command that passed", commandAct("go build", "built", tools.ExecSucceeded), ""},
+		{"a read", readAct("a.go"), ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := c.act.Line(); got != c.want {
+				t.Errorf("Line() = %q, want %q", got, c.want)
+			}
+		})
+	}
+}

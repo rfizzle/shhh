@@ -168,7 +168,9 @@ func (m *Model) entryLineStarts() map[int]int {
 		if havePrev {
 			n += strings.Count(separatorBefore(prev, u.sepBefore), "\n")
 		}
-		starts[u.idx] = n - 1
+		if !u.shadow {
+			starts[u.idx] = n - 1
+		}
 		n += strings.Count(u.text, "\n")
 		prev, havePrev = u.sepAfter, true
 	}

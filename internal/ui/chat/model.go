@@ -631,6 +631,10 @@ type entry struct {
 	// different question: stepFold decides how much of the card is on
 	// screen, this decides how much of each of its rows is.
 	detailFold foldState
+	// groupFolded is the reader's fold of the group of an open card's calls
+	// this entry is the first of (cardopen.go): kept on the call the group
+	// starts at, as a card's fold is kept on the entry it starts at.
+	groupFolded bool
 	// thinkDepth is how much of an entryThink row's body is on screen — the
 	// reader's own answer to [enter], recorded on the entry so the row
 	// re-renders at any width like every other one.
@@ -1005,6 +1009,8 @@ type Model struct {
 	//; -1 while the transcript is being read with nothing on it to
 	// select.
 	focusIdx int
+	// strip is the cursor along an open card's strip (cardopen.go).
+	strip stripCursor
 	// keyList is what `?` opened over a card or reading mode (keylist.go),
 	// and the surface it goes back to; nil while no list is open.
 	keyList *keyListView

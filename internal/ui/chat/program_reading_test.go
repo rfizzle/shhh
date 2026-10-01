@@ -41,13 +41,14 @@ func TestProgram_AnEditRowOpensToEachDepth(t *testing.T) {
 	tm.Send(programAllow)
 	waitForText(t, tm, "where the file says")
 	// The three calls are one card: the cursor reaches it, enter opens it
-	// onto them, and the edit is the second of its rows.
+	// onto them, the two reads under one line and the edit a row of its own
+	// after it.
 	programPress(t, tm, "ctrl+o", "k", "k")
 	waitForText(t, tm, "row 1 of 3")
 	programPress(t, tm, "enter")
-	waitForText(t, tm, "row 1 of 5")
+	waitForText(t, tm, "row 1 of 4")
 	programPress(t, tm, "j")
-	waitForText(t, tm, "row 2 of 5")
+	waitForText(t, tm, "row 2 of 4")
 	programPress(t, tm, "enter")
 	waitForText(t, tm, "@@ -4,7 +4,7 @@")
 	programPress(t, tm, "enter")
@@ -70,8 +71,10 @@ func TestProgram_EscFoldsWhatThePointerOpened(t *testing.T) {
 		"loop.go":  "package agent\n\nfunc loop() {}\n",
 		"round.go": "package agent\n\nconst limit = 25\n",
 	})
+	// A read and a search are a group of one call each, so each is a row
+	// the pointer can stand on once the card is open.
 	tm := runProgram(t, readingSession(dir,
-		programTurn{calls: reads("loop.go", "round.go")},
+		programTurn{calls: []provider.ToolCall{reads("loop.go")[0], call("s1", "search", `{"pattern":"const limit"}`)}},
 		programTurn{text: "The limit is a checkpoint, not a wall."},
 	))
 

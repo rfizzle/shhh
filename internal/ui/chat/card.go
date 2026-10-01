@@ -185,13 +185,11 @@ func (m Model) liveCardTicks() bool {
 	return false
 }
 
-// stepCardFor builds the card for a block at the width it will be drawn at.
-func (m Model) stepCardFor(blk transcriptBlock, es []entry, width int, selected bool) components.StepCard {
-	density, folded := m.cardShape(blk, es)
+// cardActs is a card's calls as its receipt counts them, with the entry each
+// call is, in the order they were made; and the reading taken into the card,
+// where one was.
+func (m Model) cardActs(blk transcriptBlock, es []entry) (acts []receipt.Act, at []int, reading *summaryReading) {
 	start, end := blk.members()
-	var acts []receipt.Act
-	var at []int
-	var reading *summaryReading
 	for i := start; i < end && i < len(es); i++ {
 		switch e := es[i]; {
 		case isActivityEntry(e):
@@ -201,6 +199,14 @@ func (m Model) stepCardFor(blk transcriptBlock, es []entry, width int, selected 
 			reading = e.reading
 		}
 	}
+	return acts, at, reading
+}
+
+// stepCardFor builds the card for a block at the width it will be drawn at.
+func (m Model) stepCardFor(blk transcriptBlock, es []entry, width int, selected bool) components.StepCard {
+	density, folded := m.cardShape(blk, es)
+	start, end := blk.members()
+	acts, at, reading := m.cardActs(blk, es)
 	s := receipt.BuildStep(acts)
 	h := s.Header()
 	if h.Verb == "" && len(acts) > 0 {

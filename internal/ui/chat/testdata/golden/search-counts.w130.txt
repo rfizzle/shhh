@@ -14,10 +14,13 @@
                                                                              
   ⚙ searched 4 times                                                   1.7s  
                                                                              
-   ⚙ search  steeringItem ./internal/ui/chat               50+ matches   0.9s
-   ⚙ search  queuedSteer ./internal/ui/chat                    2 files       
-   ⚙ glob    **/*.go ./internal/ui/chat                       2+ items       
-   ⚙ search  authorOf ./internal/ui/chat                                     
+    ▾ searched 4 times                                                 1.7s  
+      ⚙ steeringItem ./internal/ui/chat                  50+ matches · 0.9s  
+      ⚙ queuedSteer ./internal/ui/chat                              2 files  
+      ⚙ glob **/*.go ./internal/ui/chat                            2+ items  
+      ⚙ authorOf ./internal/ui/chat                                          
+                                                                             
+    in order ⚙⚙⚙⚙                                                   4 tools  
                                                                              
 
 
@@ -26,9 +29,12 @@
 ␛[48;5;234m                                                                             ␛[m
 ␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252msearched␛[m␛[48;5;234m␛[38;5;241m 4 times␛[m␛[48;5;234m                                                   ␛[38;5;241m1.7s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                             ␛[m
-␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252msteeringItem␛[m␛[48;5;234m␛[38;5;241m ./internal/ui/chat␛[m␛[48;5;234m               ␛[38;5;245m50+ matches␛[m␛[48;5;234m   ␛[38;5;241m0.9s␛[m␛[48;5;234m␛[m
-␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252mqueuedSteer␛[m␛[48;5;234m␛[38;5;241m ./internal/ui/chat␛[m␛[48;5;234m                    ␛[38;5;245m2 files␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252mglob␛[m␛[48;5;234m    ␛[38;5;252m**/*.go␛[m␛[48;5;234m␛[38;5;241m ./internal/ui/chat␛[m␛[48;5;234m                       ␛[38;5;245m2+ items␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252mauthorOf␛[m␛[48;5;234m␛[38;5;241m ./internal/ui/chat␛[m␛[48;5;234m                                     ␛[m
+␛[48;5;234m    ␛[38;5;241m▾ searched 4 times␛[m␛[48;5;234m                                                 ␛[38;5;241m1.7s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245msteeringItem ./internal/ui/chat␛[m␛[48;5;234m                  ␛[38;5;245m50+ matches␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m0.9s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245mqueuedSteer ./internal/ui/chat␛[m␛[48;5;234m                              ␛[38;5;245m2 files␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245mglob **/*.go ./internal/ui/chat␛[m␛[48;5;234m                            ␛[38;5;245m2+ items␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245mauthorOf ./internal/ui/chat␛[m␛[48;5;234m                                          ␛[m
+␛[48;5;234m                                                                             ␛[m
+␛[48;5;234m    ␛[38;5;241min order ␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m                                                   ␛[38;5;241m4 tools␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                             ␛[m
 

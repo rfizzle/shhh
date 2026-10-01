@@ -312,7 +312,7 @@ func TestSteps_FocusFoldsAndUnfolds(t *testing.T) {
 	m.focusIdx = 1
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	if !strings.Contains(stripANSI(m.renderHistory()), "search  ErrRoundLimit") {
+	if !strings.Contains(stripANSI(m.renderHistory()), "⚙ ErrRoundLimit") {
 		t.Fatalf("enter on a card should open it onto its calls:\n%s", stripANSI(m.renderHistory()))
 	}
 	if got := m.expandableIndices(); fmt.Sprint(got) != fmt.Sprint([]int{1, 2, 3, 4}) {

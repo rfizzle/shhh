@@ -14,11 +14,14 @@
                                                                           
  ▎$ ran 4 commands                                                  1.2s  
                                                                           
-  ▎$ add     internal/agent/loop.go +1               staged 2 files       
-  ▎$ commit  feat(agent): …  committed 3 files as a41f2c9 on master       
-  ▎$ branch  topic                             created branch topic       
-  ▎$ switch  master                              switched to master       
-    reads dropped · the working tree changed under every prior read       
+    ▾ ran 4 commands                                                1.2s  
+     ▎$ add internal/agent/loop.go +1                     staged 2 files  
+     ▎$ commit feat(agent): cap … committed 3 files as a41f2c9 on master  
+     ▎$ branch topic                                created branch topic  
+     ▎$ switch master                                 switched to master  
+        reads dropped · the working tree changed under every prior read   
+                                                                          
+    in order $$$$                                                4 tools  
                                                                           
 
 
@@ -26,8 +29,8 @@
                                                                           
  ▎✗ ran add README.md                                              error  
                                                                           
-  ▎✗ add     README.md                                        error       
-    error: README.md is not this session's work; commit it yourself       
+     ▎✗ add README.md                                              error  
+        error: README.md is not this session's work; commit it yourself   
                                                                           
 
 
@@ -35,8 +38,8 @@
                                                                           
  ▎$ ran commit feat(agent): cap … committed 3 files as a41f2c9 on master  
                                                                           
-  ▎$ commit  feat(agent): …  committed 3 files as a41f2c9 on master       
-    pre-commit and commit-msg skipped · not trusted — /trust to run them  
+     ▎$ commit feat(agent): cap … committed 3 files as a41f2c9 on master  
+        pre-commit and commit-msg skipped · not trusted — /trust to run…  
                                                                           
 
 
@@ -44,7 +47,7 @@
                                                                           
  ▎$ ran commit feat(agent): cap … committed 3 files as a41f2c9 on master  
                                                                           
-  ▎$ commit  feat(agent): …  committed 3 files as a41f2c9 on master       
+     ▎$ commit feat(agent): cap … committed 3 files as a41f2c9 on master  
                                                                           
 
    ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14
@@ -57,11 +60,14 @@
 ␛[48;5;234m                                                                          ␛[m
 ␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m␛[38;5;241m 4 commands␛[m␛[48;5;234m                                                  ␛[38;5;241m1.2s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m  ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252madd␛[m␛[48;5;234m     ␛[38;5;252minternal/agent/loop.go +1␛[m␛[48;5;234m               ␛[92mstaged 2 files␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m  ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mcommit␛[m␛[48;5;234m  ␛[38;5;252mfeat(agent): …␛[m␛[48;5;234m  ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m  ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mbranch␛[m␛[48;5;234m  ␛[38;5;252mtopic␛[m␛[48;5;234m                             ␛[92mcreated branch topic␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m  ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mswitch␛[m␛[48;5;234m  ␛[38;5;252mmaster␛[m␛[48;5;234m                              ␛[92mswitched to master␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m    ␛[38;5;245mreads dropped · the working tree changed under every prior read␛[m␛[48;5;234m       ␛[m
+␛[48;5;234m    ␛[38;5;241m▾ ran 4 commands␛[m␛[48;5;234m                                                ␛[38;5;241m1.2s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;245madd internal/agent/loop.go +1␛[m␛[48;5;234m                     ␛[92mstaged 2 files␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;245mcommit feat(agent): cap …␛[m␛[48;5;234m ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;245mbranch topic␛[m␛[48;5;234m                                ␛[92mcreated branch topic␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;245mswitch master␛[m␛[48;5;234m                                 ␛[92mswitched to master␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;245mreads dropped · the working tree changed under every prior read␛[m␛[48;5;234m   ␛[m
+␛[48;5;234m                                                                          ␛[m
+␛[48;5;234m    ␛[38;5;241min order ␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m                                                ␛[38;5;241m4 tools␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
 
@@ -69,8 +75,8 @@
 ␛[48;5;234m                                                                          ␛[m
 ␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245madd README.md␛[m␛[48;5;234m                                              ␛[91merror␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m  ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252madd␛[m␛[48;5;234m     ␛[38;5;252mREADME.md␛[m␛[48;5;234m                                        ␛[91merror␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m    ␛[38;5;245merror: README.md is not this session's work; commit it yourself␛[m␛[48;5;234m       ␛[m
+␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;245madd README.md␛[m␛[48;5;234m                                              ␛[91merror␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;245merror: README.md is not this session's work; commit it yourself␛[m␛[48;5;234m   ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
 
@@ -78,8 +84,8 @@
 ␛[48;5;234m                                                                          ␛[m
 ␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mcommit feat(agent): cap …␛[m␛[48;5;234m ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m  ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mcommit␛[m␛[48;5;234m  ␛[38;5;252mfeat(agent): …␛[m␛[48;5;234m  ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m    ␛[38;5;245mpre-commit and commit-msg skipped · not trusted — /trust to run them␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;245mcommit feat(agent): cap …␛[m␛[48;5;234m ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;245mpre-commit and commit-msg skipped · not trusted — /trust to run…␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
 
@@ -87,7 +93,7 @@
 ␛[48;5;234m                                                                          ␛[m
 ␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mcommit feat(agent): cap …␛[m␛[48;5;234m ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m  ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mcommit␛[m␛[48;5;234m  ␛[38;5;252mfeat(agent): …␛[m␛[48;5;234m  ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m       ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;245mcommit feat(agent): cap …␛[m␛[48;5;234m ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[m

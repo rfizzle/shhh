@@ -122,9 +122,13 @@ func (m Model) scanExpandable(es []entry) []int {
 			if blk.step != nil {
 				idxs = append(idxs, cardAnchor(blk))
 			}
+			// Open, its calls are reached by their groups and along the
+			// strip, and the step's other members are stops as they are
+			// anywhere (cardopen.go).
+			idxs = append(idxs, m.openCardStops(blk, es)...)
 			start, end := blk.members()
 			for i := start; i < end; i++ {
-				if m.selectableRow(es[i]) {
+				if !isActivityEntry(es[i]) && m.selectableRow(es[i]) {
 					idxs = append(idxs, i)
 				}
 			}
@@ -167,8 +171,15 @@ func (m Model) rowOnScreen(idx int) bool {
 				return true
 			}
 			// A card offers its rows only while it is open; anywhere else
-			// they are not on the screen to stand on.
-			return open && m.selectableRow(es[idx])
+			// they are not on the screen to stand on. Open, a call is a stop
+			// only as its group's line or as a card's one call.
+			if !open {
+				return false
+			}
+			if isActivityEntry(es[idx]) {
+				return slices.Contains(m.openCardStops(blk, es), idx)
+			}
+			return m.selectableRow(es[idx])
 		}
 		return m.selectableRow(es[idx])
 	}
@@ -218,6 +229,15 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 	}
 	m.enterSurface(stateFocus)
 	idxs := m.expandableIndices()
+	if m.stripLive() {
+		// A click put the strip's cursor on a call before the mode opened:
+		// that is where the reader is, so the mode opens on its card.
+		m.pointer = false
+		m.focusIdx = m.cursorStopFor(*m.entries(), m.strip.anchor)
+		m.refreshFocusView()
+		return m, nil
+	}
+	m.strip = stripCursor{}
 	if m.pointer && slices.Contains(idxs, m.focusIdx) {
 		// A pointer lit from the prompt is where the reader already is, so
 		// the mode opens on it; the flag goes, because in here the cursor
@@ -268,6 +288,14 @@ func (m Model) openCursorRow(ret state) (tea.Model, tea.Cmd) {
 		if _, ok := trayPicture(es[m.focusIdx]); ok {
 			return m.openTrayPicture(m.focusIdx)
 		}
+	}
+	// A group line of an open card folds and unfolds its group: the cursor
+	// stops on the line and not on the calls under it, which the strip
+	// reaches (cardopen.go).
+	if m.toggleGroupFold(m.focusIdx) {
+		m.invalidateRenderCache()
+		m.refreshCursorView()
+		return m, nil
 	}
 	claimed, full, output := m.toggleRow(m.focusIdx, gestureCycle)
 	if full != nil {
@@ -370,6 +398,13 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if next, cmd, took := m.updateStrip(msg); took {
 		return next, cmd
 	}
+	// An open card's strip answers its arrows, and while its cursor is on
+	// the strip, enter and the way back (cardopen.go).
+	next, cmd, took := m.updateCardStrip(msg)
+	if took {
+		return next, cmd
+	}
+	m = next.(Model)
 	// The copy caption stands until the next key: whatever the reader does
 	// next, they have moved on from the copy it describes.
 	if !keys.Match(msg, keys.Reading.Copy) {
@@ -589,8 +624,10 @@ func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
 	// The copy caption closes with the mode — it captions a mode that is
 	// ending.
 	m.readingCopied = ""
-	// The strip's cursor is the mode's; the chip stays staged.
+	// The strip's cursor is the mode's; the chip stays staged. So is an
+	// open card's.
 	m.staged.onStrip = false
+	m.strip = stripCursor{}
 	// So does the search. Its marks are painted on the pane the feed uses
 	// too, and the keys that walk them are this mode's: a query left standing
 	// would mark lines in a transcript with nothing on screen offering to
@@ -826,11 +863,17 @@ func (m *Model) gutterRender(starts map[int]int) (lines []string, selStart, selC
 			lines = appendRendered(lines, separatorBefore(prev, u.sepBefore))
 		}
 		at := len(lines) - 1
-		if starts != nil {
+		if starts != nil && !u.shadow {
 			starts[u.idx] = at
 		}
-		if u.idx == m.focusIdx {
+		if u.idx == m.focusIdx && !u.shadow {
 			selStart, selCount = at, strings.Count(u.text, "\n")
+		}
+		if u.strip && m.strip.on && u.idx == m.strip.anchor && selCount > 0 && selStart <= at {
+			// With the cursor on an open card's strip, the stretch kept on
+			// screen runs down to the strip, so the lit glyph and the call
+			// it lights are in view together (cardopen.go).
+			selCount = at + strings.Count(u.text, "\n") - selStart
 		}
 		lines = appendRendered(lines, u.text)
 		prev, havePrev = u.sepAfter, true
@@ -917,7 +960,9 @@ func newGutterBlock(units []unit) gutterBlock {
 		if i > 0 {
 			gb.lines = appendRendered(gb.lines, separatorBefore(prev, u.sepBefore))
 		}
-		gb.starts = append(gb.starts, unitStart{idx: u.idx, line: len(gb.lines) - 1})
+		if !u.shadow {
+			gb.starts = append(gb.starts, unitStart{idx: u.idx, line: len(gb.lines) - 1})
+		}
 		gb.lines = appendRendered(gb.lines, u.text)
 		prev = u.sepAfter
 	}

@@ -55,18 +55,21 @@
   ⚙ read 3 files · searched once
     Locate the round accounting
 
-   ⚙ read    internal/agent/loop.go     3 lines
-    a
-    b
-    c
-   ⚙ read    internal/agent/tools.go    2 lines
-    a
-    b
-   ⚙ read    internal/agent/context.go   1 line
-    a
-   ⚙ search  ErrRoundLimit            2 matches
-    internal/agent/loop.go:88:         return ErrRoun…
-    internal/agent/agent.go:12: // ErrRoundLimit ends…
+    ▾ read 3 files                              0.9s
+      ⚙ internal/agent/loop.go               3 lines
+        a
+        b
+        c
+      ⚙ internal/agent/tools.go              2 lines
+        a
+        b
+      ⚙ internal/agent/context.go             1 line
+        a
+      ⚙ ErrRoundLimit                      2 matches
+        internal/agent/loop.go:88:         return Err…
+        internal/agent/agent.go:12: // ErrRoundLimi…
+
+    in order ⚙⚙⚙⚙                            4 tools
 
 
 
@@ -90,10 +93,12 @@
  ▎✗ wrote internal/agent/loop.go              exit 1
     Thread the sentinel through the loop
 
-  ▎✎ edit    internal/agent/loop.go      1 line   1.1s
-    edited
-  ▎✗ run     go test ./internal/agent/…  exit 1    21s
-    --- FAIL: TestRoundLimit
+     ▎✎ internal/agent/loop.go         1 line · 1.1s
+        edited
+     ▎✗ go test ./internal/agent/...    exit 1 · 21s
+        --- FAIL: TestRoundLimit
+
+    in order ✎✗                              2 tools
 
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
@@ -187,18 +192,21 @@
   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m␛[38;5;244m 3 files · searched once␛[m
     ␛[38;5;254mLocate the round accounting␛[m
 
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m     ␛[38;5;244m3 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-    ␛[38;5;244mc␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/tools.go␛[m    ␛[38;5;244m2 lines␛[m
-    ␛[38;5;244ma␛[m
-    ␛[38;5;244mb␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/context.go␛[m   ␛[38;5;244m1 line␛[m
-    ␛[38;5;244ma␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mErrRoundLimit␛[m            ␛[38;5;244m2 matches␛[m
-    ␛[38;5;244minternal/agent/loop.go:88:         return ErrRoun…␛[m
-    ␛[38;5;244minternal/agent/agent.go:12: // ErrRoundLimit ends…␛[m
+    ␛[38;5;244m▾ read 3 files␛[m                              ␛[38;5;244m0.9s␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/loop.go␛[m               ␛[38;5;244m3 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+        ␛[38;5;244mc␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/tools.go␛[m              ␛[38;5;244m2 lines␛[m
+        ␛[38;5;244ma␛[m
+        ␛[38;5;244mb␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244minternal/agent/context.go␛[m             ␛[38;5;244m1 line␛[m
+        ␛[38;5;244ma␛[m
+      ␛[38;5;244m⚙␛[m ␛[38;5;244mErrRoundLimit␛[m                      ␛[38;5;244m2 matches␛[m
+        ␛[38;5;244minternal/agent/loop.go:88:         return Err…␛[m
+        ␛[38;5;244minternal/agent/agent.go:12: // ErrRoundLimi…␛[m
+
+    ␛[38;5;244min order ␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m                            ␛[38;5;244m4 tools␛[m
 
 
 
@@ -222,10 +230,12 @@
  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mwrote␛[m ␛[38;5;244minternal/agent/loop.go␛[m              ␛[38;5;254mexit 1␛[m
     ␛[38;5;254mThread the sentinel through the loop␛[m
 
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254medit␛[m    ␛[38;5;254minternal/agent/loop.go␛[m      ␛[38;5;244m1 line␛[m   ␛[38;5;244m1.1s␛[m
-    ␛[38;5;244medited␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/…␛[m  ␛[38;5;254mexit 1␛[m    ␛[38;5;244m21s␛[m
-    ␛[38;5;244m--- FAIL: TestRoundLimit␛[m
+     ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;244minternal/agent/loop.go␛[m         ␛[38;5;244m1 line␛[m␛[38;5;244m · ␛[m␛[38;5;244m1.1s␛[m
+        ␛[38;5;244medited␛[m
+     ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;244mgo test ./internal/agent/...␛[m    ␛[38;5;254mexit 1␛[m␛[38;5;244m · ␛[m␛[38;5;244m21s␛[m
+        ␛[38;5;244m--- FAIL: TestRoundLimit␛[m
+
+    ␛[38;5;244min order ␛[m␛[38;5;254m✎␛[m␛[38;5;254m✗␛[m                              ␛[38;5;244m2 tools␛[m
 
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m

@@ -337,7 +337,7 @@ func TestProgram_ASelectedEditRowKeepsItsOwnEnter(t *testing.T) {
 	stepUp(t, tm, "the cursor on an edit's card", onEdit)
 	programPress(t, tm, "alt+z")
 	programPress(t, tm, "enter")
-	waitForText(t, tm, "edit    ")
+	waitForText(t, tm, "1 hunk")
 	programPress(t, tm, "enter")
 	waitForText(t, tm, "@@ -1,3 +1,3 @@")
 

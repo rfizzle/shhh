@@ -113,7 +113,7 @@ func TestReadingRow_KeepsTheMutationRailInsideTheHighlight(t *testing.T) {
 	m.moveFocus(-1)
 	line := focusedLine(t, m)
 
-	if !strings.Contains(ansi.Strip(line), "▎✎ edit") {
+	if !strings.Contains(ansi.Strip(line), "▎✎ internal/agent/loop.go") {
 		t.Fatalf("expected the edit row under the cursor, got %q", ansi.Strip(line))
 	}
 	// The rail keeps its own colour rather than being repainted bright with

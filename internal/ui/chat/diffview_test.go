@@ -19,7 +19,8 @@ import (
 // An applied edit packs into its card like every other act. It used to be a
 // block, so the archetypal mutation was set apart by a blank line either side
 // from the rows it belongs among (docs/interface/principles.md#one-grid); in
-// an open card it is one row among the others, with no gap either side.
+// an open card it is a row under the reads it was made among, with no gap
+// between them.
 func TestAppliedEdit_PacksIntoTheFeedLikeAnyOtherRow(t *testing.T) {
 	m := activityModel(t)
 	row := entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"loop.go"}`,
@@ -35,12 +36,11 @@ func TestAppliedEdit_PacksIntoTheFeedLikeAnyOtherRow(t *testing.T) {
 	lines := strings.Split(strings.TrimRight(stripANSI(m.renderHistory()), "\n"), "\n")
 	at := -1
 	for i, line := range lines {
-		if strings.Contains(line, "▎✎ edit    loop.go") {
+		if strings.Contains(line, "▎✎ loop.go") {
 			at = i
 		}
 	}
-	if at < 1 || at+1 >= len(lines) ||
-		!strings.Contains(lines[at-1], "read    loop.go") || !strings.Contains(lines[at+1], "read    loop.go") {
+	if at < 1 || !strings.Contains(lines[at-1], "./ loop.go") {
 		t.Fatalf("the edit is one row between the two reads, no gap either side:\n%s", strings.Join(lines, "\n"))
 	}
 }

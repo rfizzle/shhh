@@ -298,9 +298,38 @@ its header alone, with `▸` in the pointer column, which is how it says it is
 a fold. Under reading mode's cursor the card is the stop, and enter walks it
 through three depths: open onto its calls, folded to its header, and the card
 again; a click folds and unfolds it, so the same cell pressed twice is where
-it started. Open, the calls are rows on the card's band, each a stop of its
-own; a search counting a match behind a card says so on its header and opens
-it onto that row.
+it started.
+
+Open, a card lists its calls under the receipt's verbs, in the order the
+header counts them: one line per verb with the group's count and what its
+calls took (`▾ read 17 files  41s`, `▾ ran 3 commands  1m 12s`, `▾ wrote 2
+files  +88 −5`), and under it the calls. Reads are rolled up by directory,
+each directory a row naming as many of its files as the pane holds and
+counting the rest, the directories past the header's three counted on one
+row; a command is a row of its own with its outcome and time, a write a row
+with its file, its first changed line and its `+N −M`, and every one of them
+keeps its own rail. A group of one call has no line over it, since the line
+would only repeat the call; the call's row stands there alone. Each group
+folds to its line and back on its own, and the fold is kept on the call the
+group starts at, as the card's is kept on the entry it starts at. Where the
+card's detail is open — `/step`, or the high rung — every call is a row with
+its body, the reads included, because the bodies are what the reader asked
+for.
+
+Under the groups, from two calls, is the strip: `in order`, one glyph per call
+in the order they were made, and how many there were. It is the way to one
+call. Reading mode's cursor stops on the card's header and on its group lines
+rather than on every call; the arrows put a cursor on the strip, starting at
+the last call, and walk it a call at a time. The glyph under that cursor is lit
+on the focus ground and the call's row is lit with it, pointer and all, so the
+two read as one place in mono too. Enter opens that call's own view — the
+title and the lines its row opens — and esc there comes back to the strip with
+its cursor where it was; the way back on the strip closes the card. The strip
+prints no key: the hint bar names its keys while the cursor is on it, and the
+call the cursor is on, of how many, and how it came out. A click on a group's
+line folds it, and a click on a glyph puts the strip's cursor on that call. A
+search counting a match behind a card says so on its header and opens it onto
+the group holding the match.
 
 A run of calls no prose titled is a card too, with no body unless a reading
 gives it one, and the outline does not number it. A call that was refused is

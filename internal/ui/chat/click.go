@@ -12,9 +12,9 @@ package chat
 // the button is down, so a drag that starts on a target still selects, and
 // the one button carries both gestures without either having to give ground.
 //
-// Eight things are targets, and the test they pass is the same one eight
-// times: the pointer names exactly one of them, and the thing it names already
-// has a key.
+// Ten things are targets, and the test they pass is the same one ten times:
+// the pointer names exactly one of them, and the thing it names already has a
+// key.
 //
 //   - An activity row. Its whole width is one row, and [enter] under reading
 //     mode's cursor already opens it. The row line opens and closes it; the
@@ -44,6 +44,14 @@ package chat
 //     a picture onto its card, every click, and a paste in place
 //     (attachments.go). A document's row opens onto nothing under either
 //     input, so it is not one.
+//   - An open card's group line. It names one group of the card's calls,
+//     and [enter] with reading mode's cursor on the line folds and unfolds
+//     that group (cardopen.go). The directories under a group of reads name
+//     files rather than an act, and are not targets.
+//   - A glyph on an open card's strip. It names one call, and the arrows
+//     walk the strip's cursor to it a call at a time; the click puts the
+//     cursor there, and enter opens the call from there, as it does after
+//     the arrows. The strip's words and its count name no call.
 //   - A code block's heading row in a reply. It names exactly one block, and
 //     reading mode's [c] on that reply reaches the same block; the click
 //     copies it through the key's own handler (blockhead.go). The rest of
@@ -134,6 +142,9 @@ func (m Model) clickAt(x, y int) (tea.Model, tea.Cmd) {
 			return next, cmd
 		}
 		if next, cmd, ok := m.clickBlockHeading(pt.line); ok {
+			return next, cmd
+		}
+		if next, cmd, ok := m.clickCardStrip(pt); ok {
 			return next, cmd
 		}
 		return m.clickRow(pt.line)
@@ -231,11 +242,34 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 	if idx < 0 || idx >= len(es) {
 		return m, nil
 	}
+	// A click on anything but a strip glyph takes the strip's cursor off
+	// it: the click names the line it landed on, and enter after it acts
+	// there (cardopen.go).
+	m.strip = stripCursor{}
 	if u.cardHead && m.toggleCardFold(idx) {
 		// A click on a card's own lines folds it or unfolds it, open or
 		// not: a run nothing titled is kept on its first call, so the card
 		// and that call's row share an index, and the line says which one
 		// was meant (docs/interface/surfaces.md#the-step).
+		m.invalidateRenderCache()
+		if m.state == stateFocus {
+			m.focusIdx = idx
+			m.refreshFocusView()
+			return m, nil
+		}
+		m.viewport.SetLines(m.renderHistoryLines())
+		if m.atBottom {
+			m.viewport.GotoBottom()
+		}
+		return m, nil
+	}
+	if u.group {
+		// An open card's group line folds its group and unfolds it; the
+		// directories under a group of reads name files rather than an act,
+		// and a click there does nothing (cardopen.go).
+		if offset > 0 || !m.toggleGroupFold(idx) {
+			return m, nil
+		}
 		m.invalidateRenderCache()
 		if m.state == stateFocus {
 			m.focusIdx = idx
@@ -256,8 +290,9 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 		// Inside reading mode the cursor is the reader's place in the rows, so
 		// it goes to the row they pointed at — before the row is opened rather
 		// than after, because a body that takes the screen returns to this
-		// cursor when it closes.
-		m.focusIdx = idx
+		// cursor when it closes. A call inside an open card is not a stop of
+		// its own, so the cursor goes to the line of its group.
+		m.focusIdx = m.cursorStopFor(es, idx)
 	}
 	// The turn clicked, not the newest one: the changed-files line is its own
 	// target, and a click reaches it without taking the keyboard from the

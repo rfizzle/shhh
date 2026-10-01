@@ -62,7 +62,7 @@ func TestPointer_ShiftArrowsLightAndMoveItWithoutTakingTheKeyboard(t *testing.T)
 	if m.focusIdx != 1 {
 		t.Fatalf("up should step to the search row, got %d", m.focusIdx)
 	}
-	if row := pointerRow(m); !strings.Contains(row, "search") {
+	if row := pointerRow(m); !strings.Contains(row, "⚙ x") {
 		t.Fatalf("the marker should follow to the search row, got %q", row)
 	}
 	updated, _ = m.Update(shiftKey(tea.KeyDown))

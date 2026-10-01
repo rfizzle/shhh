@@ -287,6 +287,12 @@ lands somewhere new; with a single character in the box the arrow is the
 line editor's again ([the next step is offered, not
 typed](../capabilities/chat.md#the-next-step-is-offered-not-typed)).
 
+Reading mode spends the two bare arrows `←` and `→` for `reading.strip_left`
+and `reading.strip_right`, which walk the cursor along an open card's strip.
+They take nothing from the free set: they are bare arrows on a takeover, where
+nothing else is listening, and the draft's `→` for `draft.take_suggestion` is
+the input's, never up while reading mode holds the keyboard.
+
 Nothing ships on alt, so every alt letter is left to a keymap file on Linux
 and Windows — where it costs nothing — apart from the six the textarea holds
 and `alt+0` … `alt+9`, which GNOME Terminal switches tabs with; on a Mac one

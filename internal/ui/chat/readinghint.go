@@ -95,8 +95,23 @@ func joinSegs(segs []hintSeg) string {
 // reason teaches which rows open and which do not
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) readingModeKeys() []hintSeg {
+	if m.stripLive() {
+		// The strip prints no key; while the cursor is on it, the bar is
+		// its keys and nothing else (docs/interface/surfaces.md#the-step).
+		return m.stripKeys()
+	}
 	segs := []hintSeg{seg(keys.Reading.Move)}
-	if _, ok := m.reviewableRow(m.focusIdx); ok {
+	if _, _, ok := m.groupAt(*m.entries(), m.focusIdx); ok {
+		// A group line folds and unfolds its group.
+		words := cardFoldWords
+		if (*m.entries())[m.focusIdx].groupFolded {
+			words = cardUnfoldWords
+		}
+		segs = append(segs, segAs(keys.Reading.Expand, words))
+		if m.focusedRowOpen() {
+			segs = append(segs, seg(keys.Reading.Collapse))
+		}
+	} else if _, ok := m.reviewableRow(m.focusIdx); ok {
 		// The row states what a turn changed, and enter opens that turn's
 		// review rather than a body (openCursorRow).
 		segs = append(segs, segAs(keys.Reading.Expand, reviewTurnWords))
@@ -343,6 +358,9 @@ func dropExpandKey(segs []hintSeg) []hintSeg {
 // which is the one moment that fact outranks the position. Prose
 // has no addressable rows to count, so it reports nothing.
 func (m Model) readingPositionFields() []string {
+	if m.stripLive() {
+		return m.stripPosition()
+	}
 	if m.readingCopied != "" {
 		return []string{m.readingCopied}
 	}
@@ -424,6 +442,8 @@ const (
 	// detail answer standing, and closing the detail leaves the step open
 	// (steps.go, detail.go).
 	openDetail
+	// openGroup is an open card's group showing its calls (cardopen.go).
+	openGroup
 	// openDiff is a diff showing its hunks inside the transcript.
 	openDiff
 	// openThink is a reasoning row showing part or all of its block.
@@ -438,6 +458,17 @@ const (
 func (m Model) focusedOpenKind() openKind {
 	es := *m.entries()
 	if m.focusIdx < 0 || m.focusIdx >= len(es) {
+		return openNone
+	}
+	if _, _, ok := m.groupAt(es, m.focusIdx); ok {
+		// A group line has its group open or folded; folded, what [-] has
+		// left to close on a run nothing titled is the card it starts.
+		switch _, isCard := m.cardBlockAt(es, m.focusIdx); {
+		case !es[m.focusIdx].groupFolded:
+			return openGroup
+		case isCard:
+			return openStep
+		}
 		return openNone
 	}
 	if blk, ok := m.cardTakesKey(es, m.focusIdx); ok {
@@ -498,6 +529,8 @@ func (m *Model) collapseFocused() bool {
 	}
 	es := *m.entries()
 	switch kind {
+	case openGroup:
+		es[m.focusIdx].groupFolded = true
 	case openStep, openDetail:
 		m.toggleStepFold(m.focusIdx)
 	case openDiff:
@@ -773,6 +806,11 @@ func (m Model) readingKeyLine(width int) string {
 	noMatch := dropMatchKey(noCopy)
 	forms := [][]hintSeg{full, noList, noAbsent, short, noSearch, noBlock, noCopy, noMatch,
 		dropExpandKey(noMatch)}
+	if m.stripLive() {
+		// The strip's three keys are its whole bar, so none of them is
+		// given up: their words are, to the verb.
+		forms = [][]hintSeg{full, stripKeysShort(full)}
+	}
 	positions := m.readingPositionFields()
 	for _, form := range forms {
 		left := joinSegs(form)

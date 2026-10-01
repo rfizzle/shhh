@@ -599,6 +599,17 @@ type unit struct {
 	// the card's own lines and that call's row share idx, and a click has
 	// to say which of the two it landed on (click.go).
 	cardHead bool
+	// group marks an open card's group line, kept on the group's first
+	// call, and strip its strip, kept on the card's anchor: each shares its
+	// idx with a row of its own, and a click has to say which it landed on
+	// (cardopen.go).
+	group, strip bool
+	// shadow marks a unit that shares its idx with the unit the reading
+	// cursor stands on for that entry and is not it: an open card's own
+	// lines where nothing titled it, its strip, a call row under the line
+	// of its group. The cursor's line and a row's place are read off the
+	// other one.
+	shadow bool
 }
 
 // blockUnits renders one block. In focus mode selectable units carry the
@@ -658,7 +669,8 @@ func (m Model) cardUnits(blk transcriptBlock, es []entry, width int, focus bool,
 	anchor := cardAnchor(blk)
 	// A run nothing titled is kept on its first call, which is a row of its own
 	// once the card is open: the cursor there is on the row, not the card.
-	onCard := focus && focusIdx == anchor && (blk.step != nil || !m.cardOpen(blk, es))
+	_, onStrip := m.stripCallOn(anchor)
+	onCard := focus && focusIdx == anchor && (blk.step != nil || !m.cardOpen(blk, es)) && !onStrip
 	card := m.stepCardFor(blk, es, width, onCard)
 	// One blank either side of a card, and between two cards one blank
 	// rather than two: the separator rule reads the card as a block
@@ -667,28 +679,7 @@ func (m Model) cardUnits(blk transcriptBlock, es []entry, width int, focus bool,
 	if card.Folded || card.Density != components.CardHigh {
 		return []unit{{idx: anchor, sepBefore: block, sepAfter: block, text: card.View(width) + "\n", cardHead: true}}
 	}
-	tight := entry{kind: entryTool}
-	units := []unit{{idx: anchor, sepBefore: block, sepAfter: tight, text: card.Head(width) + "\n", cardHead: true}}
-	start, end := blk.members()
-	detail := m.cardDetailOpen(blk, es)
-	for i := start; i < end; i++ {
-		text, selectable, grid := m.entryUnitText(i, es, width, focus, focusIdx, detail)
-		if text == "" {
-			continue
-		}
-		if focus && selectable {
-			text = gutterPrefix(text, i == focusIdx, grid, gutterWidth(width, grid))
-		}
-		var lines []string
-		for _, l := range strings.Split(strings.TrimSuffix(text, "\n"), "\n") {
-			lines = append(lines, components.OnBand(l, width))
-		}
-		units = append(units, unit{idx: i, sepBefore: tight, sepAfter: tight, text: strings.Join(lines, "\n") + "\n"})
-	}
-	last := &units[len(units)-1]
-	last.text += components.CardPad(width) + "\n"
-	last.sepAfter = block
-	return units
+	return m.openCardUnits(blk, es, width, focus, focusIdx, card)
 }
 
 // unitWidth is the width an entry's own unit is rendered at in a pane of

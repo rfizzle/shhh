@@ -128,6 +128,29 @@ type Step struct {
 	Evidence Evidence
 	// Strip is every call in the order it was made, refused ones included.
 	Strip []Mark
+	// Groups is the calls as an open card lists them: one group per kind,
+	// in the order the tallies count kinds, then a group for each kind
+	// whose every call was refused.
+	Groups []Group
+}
+
+// Group is the calls of one kind of a step, under the line an open card
+// heads them with. The strip keeps the order the calls were made in; the
+// groups are the same calls sorted by what they did, so a reader can find
+// the commands without walking past the reads.
+type Group struct {
+	Kind Kind
+	// Calls are the group's places in the strip, in the order they were
+	// made, refused ones included.
+	Calls []int
+	// Label is the group's line in the receipt's verbs: the kind's clause
+	// without the reads' directory clause, which the open card draws as a
+	// row per directory under it.
+	Label string
+	// Duration is what the group's calls that ran took, summed.
+	Duration time.Duration
+	// Added and Removed are the lines the group's edits changed.
+	Added, Removed int
 }
 
 // ReadDirCeiling is how many directories the header names behind a step's
@@ -204,7 +227,70 @@ func BuildStep(acts []Act) Step {
 		s.Reads = byDir(files[KindRead])
 	}
 	s.Lead, s.Evidence = lead(acts, s)
+	s.Groups = s.groups(acts)
 	return s
+}
+
+// groups sorts the calls under their kinds, in the tallies' order. A call
+// that was refused is listed under its kind with the calls that ran, and a
+// kind nothing of which ran is a group of its own at the end, counted as
+// what it is: refused.
+func (s Step) groups(acts []Act) []Group {
+	gs := make([]Group, 0, len(s.Tallies))
+	at := map[Kind]int{}
+	for _, t := range s.Tallies {
+		at[t.Kind] = len(gs)
+		gs = append(gs, Group{Kind: t.Kind, Label: s.groupLabel(t)})
+	}
+	for i, a := range acts {
+		k := a.Receipt.Kind
+		g, ok := at[k]
+		if !ok {
+			g = len(gs)
+			at[k] = g
+			gs = append(gs, Group{Kind: k})
+		}
+		gs[g].Calls = append(gs[g].Calls, i)
+		if a.state() == StateRefused {
+			continue
+		}
+		gs[g].Duration += a.Duration
+		if h := a.Receipt.Hunk; h != nil && k == KindWrite {
+			gs[g].Added += h.Added
+			gs[g].Removed += h.Removed
+		}
+	}
+	for i, g := range gs {
+		if g.Label == "" {
+			gs[i].Label = counted(len(g.Calls), "refused call", "refused calls")
+		}
+	}
+	return gs
+}
+
+// groupLabel is a kind's clause as its group's line says it: the receipt's
+// own, except that reads are counted without saying where, since the
+// directories are the rows under the line.
+func (s Step) groupLabel(t Tally) string {
+	if t.Kind == KindRead && t.Files > 0 && (t.Calls > 1 || t.Subject == "") {
+		return "read " + counted(t.Files, "file", "files")
+	}
+	return s.phrase(t)
+}
+
+// Line is the one line an open card's row shows beside a call's subject:
+// the line a call that broke said it with, or an edit's first changed line.
+// Any other call's row is its subject and its outcome, and Line is empty.
+// Like the footer's evidence it is the tool's own text cut to one line.
+func (a Act) Line() string {
+	r := a.Receipt
+	switch {
+	case a.state() == StateFailed:
+		return cut(errorLine(r))
+	case r.Kind == KindWrite && r.Hunk != nil && a.state() == StateDone:
+		return cut(r.Hunk.Marked())
+	}
+	return ""
 }
 
 // byDir groups paths by their directory, the directory holding the most

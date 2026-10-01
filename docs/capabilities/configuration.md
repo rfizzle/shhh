@@ -814,6 +814,8 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `search.keep` | `enter` | keep it in the draft | yes |
 | `search.cancel` | `esc`, `ctrl+c` | put the draft back | yes |
 | `reading.move` | `k`, `j`, `up`, `down` | move | yes |
+| `reading.strip_left` | `left` | along the strip, back | yes |
+| `reading.strip_right` | `right` | along the strip, on | yes |
 | `reading.expand` | `enter` | expand | yes |
 | `reading.collapse` | `-` | collapse | yes |
 | `reading.copy` | `y` | copy the row | yes |

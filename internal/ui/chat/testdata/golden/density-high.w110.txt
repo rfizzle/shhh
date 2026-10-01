@@ -18,31 +18,36 @@
   ⚙ read 2 files in internal/agent/ · searched ErrRoundLimit                                      0.9s  
     Locate the round accounting                                                                         
                                                                                                         
-   ⚙ read    internal/agent/loop.go                                                       3 lines       
-    a                                                                                                   
-    b                                                                                                   
-    c                                                                                                   
+    ▾ read 2 files                                                                                0.7s  
+      ⚙ internal/agent/loop.go                                                                 3 lines  
+        a                                                                                               
+        b                                                                                               
+        c                                                                                               
+      ⚙ internal/agent/round.go                                                                2 lines  
+        a                                                                                               
+        b                                                                                               
+      ⚙ ErrRoundLimit                                                                        2 matches  
+        internal/agent/loop.go:88:         return ErrRoundLimit                                         
+        internal/agent/agent.go:12: // ErrRoundLimit ends a turn.                                       
    ✻ think                                                                                 1 line       
     The cap is counted in the loop, so the sentinel has to come from there.                             
-   ⚙ read    internal/agent/round.go                                                      2 lines       
-    a                                                                                                   
-    b                                                                                                   
-   ⚙ search  ErrRoundLimit                                                              2 matches       
-    internal/agent/loop.go:88:         return ErrRoundLimit                                             
-    internal/agent/agent.go:12: // ErrRoundLimit ends a turn.                                           
+                                                                                                        
+    in order ⚙⚙⚙                                                                               3 tools  
                                                                                                         
 
                                                                                                         
  ▎✗ wrote internal/agent/loop.go · ran go test ./internal/agent/...                       exit 1 · 22s  
     Thread the sentinel through the loop                                                                
                                                                                                         
+     ▎✎ internal/agent/loop.go                                                           1 line · 1.1s  
+        edited                                                                                          
+     ▎✗ go test ./internal/agent/...                                                      exit 1 · 21s  
+        --- FAIL: TestRoundLimit                                                                        
    ✻ think                                                                                2 lines       
     One return path, then the test.                                                                     
     The test names the sentinel directly.                                                               
-  ▎✎ edit    internal/agent/loop.go                                                        1 line   1.1s
-    edited                                                                                              
-  ▎✗ run     go test ./internal/agent/...                                                  exit 1    21s
-    --- FAIL: TestRoundLimit                                                                            
+                                                                                                        
+    in order ✎✗                                                                                2 tools  
                                                                                                         
 
 
@@ -55,30 +60,35 @@
 ␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 2 files in internal/agent/ · searched ErrRoundLimit␛[m␛[48;5;234m                                      ␛[38;5;241m0.9s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                                                                         ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m    ␛[38;5;252minternal/agent/loop.go␛[m␛[48;5;234m                                                       ␛[38;5;245m3 lines␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m    ␛[38;5;245ma␛[m␛[48;5;234m                                                                                                   ␛[m
-␛[48;5;234m    ␛[38;5;245mb␛[m␛[48;5;234m                                                                                                   ␛[m
-␛[48;5;234m    ␛[38;5;245mc␛[m␛[48;5;234m                                                                                                   ␛[m
+␛[48;5;234m    ␛[38;5;241m▾ read 2 files␛[m␛[48;5;234m                                                                                ␛[38;5;241m0.7s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m                                                                 ␛[38;5;245m3 lines␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;245ma␛[m␛[48;5;234m                                                                                               ␛[m
+␛[48;5;234m        ␛[38;5;245mb␛[m␛[48;5;234m                                                                                               ␛[m
+␛[48;5;234m        ␛[38;5;245mc␛[m␛[48;5;234m                                                                                               ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245minternal/agent/round.go␛[m␛[48;5;234m                                                                ␛[38;5;245m2 lines␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;245ma␛[m␛[48;5;234m                                                                                               ␛[m
+␛[48;5;234m        ␛[38;5;245mb␛[m␛[48;5;234m                                                                                               ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245mErrRoundLimit␛[m␛[48;5;234m                                                                        ␛[38;5;245m2 matches␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;245minternal/agent/loop.go:88:         return ErrRoundLimit␛[m␛[48;5;234m                                         ␛[m
+␛[48;5;234m        ␛[38;5;245minternal/agent/agent.go:12: // ErrRoundLimit ends a turn.␛[m␛[48;5;234m                                       ␛[m
 ␛[48;5;234m   ␛[38;5;241m✻␛[m␛[48;5;234m ␛[38;5;252mthink␛[m␛[48;5;234m   ␛[38;5;252m␛[m␛[48;5;234m                                                                              ␛[38;5;245m1 line␛[m␛[48;5;234m       ␛[m
 ␛[48;5;234m    ␛[38;5;245mThe cap is counted in the loop, so the sentinel has to come from there.␛[m␛[48;5;234m                             ␛[m
-␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m    ␛[38;5;252minternal/agent/round.go␛[m␛[48;5;234m                                                      ␛[38;5;245m2 lines␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m    ␛[38;5;245ma␛[m␛[48;5;234m                                                                                                   ␛[m
-␛[48;5;234m    ␛[38;5;245mb␛[m␛[48;5;234m                                                                                                   ␛[m
-␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252mErrRoundLimit␛[m␛[48;5;234m                                                              ␛[38;5;245m2 matches␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m    ␛[38;5;245minternal/agent/loop.go:88:         return ErrRoundLimit␛[m␛[48;5;234m                                             ␛[m
-␛[48;5;234m    ␛[38;5;245minternal/agent/agent.go:12: // ErrRoundLimit ends a turn.␛[m␛[48;5;234m                                           ␛[m
+␛[48;5;234m                                                                                                        ␛[m
+␛[48;5;234m    ␛[38;5;241min order ␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m                                                                               ␛[38;5;241m3 tools␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
 ␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m␛[38;5;241m · ran go test ./internal/agent/...␛[m␛[48;5;234m                       ␛[91mexit 1␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m22s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mThread the sentinel through the loop␛[m␛[48;5;234m                                                                ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m✎␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m                                                           ␛[38;5;245m1 line␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m1.1s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;245medited␛[m␛[48;5;234m                                                                                          ␛[m
+␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;245mgo test ./internal/agent/...␛[m␛[48;5;234m                                                      ␛[91mexit 1␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m21s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;245m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                                                                        ␛[m
 ␛[48;5;234m   ␛[38;5;241m✻␛[m␛[48;5;234m ␛[38;5;252mthink␛[m␛[48;5;234m   ␛[38;5;252m␛[m␛[48;5;234m                                                                             ␛[38;5;245m2 lines␛[m␛[48;5;234m       ␛[m
 ␛[48;5;234m    ␛[38;5;245mOne return path, then the test.␛[m␛[48;5;234m                                                                     ␛[m
 ␛[48;5;234m    ␛[38;5;245mThe test names the sentinel directly.␛[m␛[48;5;234m                                                               ␛[m
-␛[48;5;234m  ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m✎␛[m␛[48;5;234m ␛[38;5;252medit␛[m␛[48;5;234m    ␛[38;5;252minternal/agent/loop.go␛[m␛[48;5;234m                                                        ␛[38;5;245m1 line␛[m␛[48;5;234m   ␛[38;5;241m1.1s␛[m␛[48;5;234m␛[m
-␛[48;5;234m    ␛[38;5;245medited␛[m␛[48;5;234m                                                                                              ␛[m
-␛[48;5;234m  ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mrun␛[m␛[48;5;234m     ␛[38;5;252mgo test ./internal/agent/...␛[m␛[48;5;234m                                                  ␛[91mexit 1␛[m␛[48;5;234m    ␛[38;5;241m21s␛[m␛[48;5;234m␛[m
-␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                                                                            ␛[m
+␛[48;5;234m                                                                                                        ␛[m
+␛[48;5;234m    ␛[38;5;241min order ␛[m␛[48;5;234m␛[38;5;214m✎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m                                                                                ␛[38;5;241m2 tools␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 

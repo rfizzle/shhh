@@ -1,9 +1,11 @@
 # One reply per request; a line beginning with + continues the reply above it.
 # One turn of four steps, each titled by the sentence before its calls, so
 # each is a card with that sentence for a body: a step that only read, a step
-# that read and then ran a command, a step that wrote, and a step whose
-# command failed. The last line is the answer, prose on bare screen under the
-# cards, and it repeats once the steps run out.
+# that read and then ran a command, a step that wrote, and a large step of
+# eight calls whose last command failed — six reads, a status check and the
+# failing command, which is the strip's last glyph. The last line is the
+# answer, prose on bare screen under the cards, and it repeats once the steps
+# run out.
 [session]
 Reading the notes and the scene guide before I write anything.
 +tool:read_file:{"path":"notes.md"}
@@ -14,6 +16,13 @@ Confirming the notes are untracked, so nothing I write gets committed.
 Writing the story now, appended after the last one.
 +tool:write_file:{"path":"story.md","content":"# A code block is copied by itself\n"}
 Running the suite once more before I stop.
++tool:read_file:{"path":"internal/ui/keys.go"}
++tool:read_file:{"path":"internal/ui/render.go"}
++tool:read_file:{"path":"internal/ui/reply.go"}
++tool:read_file:{"path":"internal/ui/click.go"}
++tool:read_file:{"path":"internal/ui/fold.go"}
++tool:read_file:{"path":"docs/scenes.md"}
++tool:execute_command:{"command":"git status --short notes.md"}
 +tool:execute_command:{"command":"printf -- '--- FAIL: TestReplyGolden: reply_copy.golden differs\\n' && exit 1"}
 The story is written; the suite still fails on the golden.
 # The session's own readings of its run take their answers from here rather
