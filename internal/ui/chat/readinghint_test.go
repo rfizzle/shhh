@@ -38,6 +38,10 @@ func colorProfile(t *testing.T) {
 func readingModel(t *testing.T, width int) Model {
 	t.Helper()
 	m := goldenModel(t, width)
+	// The failed step's card is open onto its calls, so the rows under the
+	// cursor are the edit and the command these tests stand on.
+	openCardRows(m.transcript, 6)
+	m.invalidateRenderCache()
 	next, _ := m.enterFocusMode()
 	return next.(Model)
 }
@@ -432,9 +436,9 @@ func TestReadingMoveAnswersEveryDeclaredKey(t *testing.T) {
 // answers are the reader's and what the press costs the rest of the chain.
 
 // escFoldModel is a pane with one of every way a row can be open, each on a
-// row of its own: a step unfolded, a read-only run given back, a body
-// expanded, a second step's detail opened by /step, a diff expanded in place,
-// and a reasoning row opened whole.
+// row of its own: a step unfolded, a body expanded, a second step's detail
+// opened by /step, a diff expanded in place, and a reasoning row opened
+// whole.
 func escFoldModel(t *testing.T) Model {
 	t.Helper()
 	// A pane shorter than what the open rows render to, so folding them
@@ -458,7 +462,6 @@ func escFoldModel(t *testing.T) Model {
 		{kind: entryThink, text: "the cap is a checkpoint, not a wall", thinkDepth: thinkFull},
 	}
 	m.transcript[1].stepFold = foldOpen
-	m.transcript[2].groupFold = foldOpen
 	m.transcript[3].expanded = true
 	m.transcript[6].detailFold = foldOpen
 	// A tail of plain rows, so the folded pane is still taller than the
@@ -468,8 +471,8 @@ func escFoldModel(t *testing.T) Model {
 	// it did when the box opened at three, and a tail that did not follow
 	// would put the anchor at the bottom where the assertion is trivial.
 	for i := 0; i < 16; i++ {
-		m.transcript = append(m.transcript, entry{kind: entryCommand,
-			text: fmt.Sprintf("go test ./internal/agent/round%d", i), toolResult: "ok"})
+		m.transcript = append(m.transcript, entry{kind: entrySystem,
+			text: fmt.Sprintf("go test ./internal/agent/round%d · ok", i)})
 	}
 	m.invalidateRenderCache()
 	m.refreshTranscript()
@@ -490,8 +493,8 @@ func openRowCount(m Model) int {
 
 func TestEscFold_FoldsEveryRowTheReaderOpened(t *testing.T) {
 	m := escFoldModel(t)
-	if got := openRowCount(m); got != 6 {
-		t.Fatalf("the fixture has %d open rows, wanted one of each of the six", got)
+	if got := openRowCount(m); got != 5 {
+		t.Fatalf("the fixture has %d open rows, wanted one of each of the five", got)
 	}
 
 	m, _ = pressKey(t, m, escK)
@@ -499,7 +502,7 @@ func TestEscFold_FoldsEveryRowTheReaderOpened(t *testing.T) {
 	if got := openRowCount(m); got != 0 {
 		t.Errorf("one esc left %d rows open", got)
 	}
-	if m.foldNotice != "folded 6 rows" {
+	if m.foldNotice != "folded 5 rows" {
 		t.Errorf("the rail says %q, wanted the fold counted", m.foldNotice)
 	}
 	// Resting and not closed: a fold that wrote foldClosed would outrank the
@@ -507,9 +510,6 @@ func TestEscFold_FoldsEveryRowTheReaderOpened(t *testing.T) {
 	es := *m.entries()
 	if es[1].stepFold != foldAuto || es[6].detailFold != foldAuto || es[6].stepFold != foldAuto {
 		t.Error("a step was folded past its resting state")
-	}
-	if es[2].groupFold != foldAuto {
-		t.Error("a group was folded past its resting state")
 	}
 	if es[10].thinkDepth != thinkAuto {
 		t.Error("a think row was folded past its resting state")
@@ -567,8 +567,8 @@ func TestEscFold_ADraftWithTextIsClearedAndNoRowMoves(t *testing.T) {
 	if m.input.Value() != "" {
 		t.Fatal("esc with a draft must clear it")
 	}
-	if got := openRowCount(m); got != 6 {
-		t.Errorf("clearing the draft folded rows: %d of 6 left open", got)
+	if got := openRowCount(m); got != 5 {
+		t.Errorf("clearing the draft folded rows: %d of 5 left open", got)
 	}
 	if m.foldNotice != "" {
 		t.Errorf("clearing the draft said %q about folding", m.foldNotice)

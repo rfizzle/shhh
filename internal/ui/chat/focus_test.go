@@ -25,6 +25,10 @@ func focusModel(t *testing.T) Model {
 	m.appendEntry(entry{kind: entryUser, text: "look around"})
 	m.appendEntry(entry{kind: entryTool, toolName: "search", toolArgs: `{"pattern":"x"}`, toolResult: strings.TrimRight(long.String(), "\n")})
 	m.appendEntry(entry{kind: entryCommand, text: "go test ./...", toolResult: "ok", exitCode: 0})
+	// The two calls are one card; it is opened onto them, as the reader's
+	// enter leaves it, because the rows are what these tests are about.
+	openCardRows(*m.entries(), 1)
+	m.invalidateRenderCache()
 	m.viewport.SetLines(m.renderHistoryLines())
 	return m
 }

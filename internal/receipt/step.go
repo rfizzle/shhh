@@ -75,6 +75,11 @@ type Tally struct {
 	// memory is not a file, and counting it as one would put a number on
 	// the header that is of what was called rather than of what was read.
 	Files int
+	// Subject is what the kind's one call was about, while it has one: a
+	// kind with a single call names it rather than counting it, since `ran
+	// 1 command` says less than the command does in the same columns.
+	// Counting starts at two.
+	Subject string
 }
 
 // Dir is one directory of a step's reads and the files read in it, in the
@@ -171,6 +176,15 @@ func BuildStep(acts []Act) Step {
 			s.Tallies = append(s.Tallies, Tally{Kind: r.Kind})
 		}
 		s.Tallies[i].Calls++
+		if s.Tallies[i].Calls == 1 {
+			s.Tallies[i].Subject = r.Subject
+			if r.gitVerb != "" {
+				// Git's writing half is named by its own act — `ran commit
+				// …`, `ran add …` — since what follows `ran` is read as a
+				// command line, and a commit message alone is not one.
+				s.Tallies[i].Subject = strings.TrimSpace(r.gitVerb + " " + r.Subject)
+			}
+		}
 		if r.Kind != KindRead && r.Kind != KindWrite {
 			continue
 		}
@@ -236,7 +250,8 @@ func rank(k Kind) int {
 }
 
 // lead picks the step's glyph and its evidence line together, by one
-// precedence: a failure over a write over a command over a read. They are
+// precedence: a failure over a write over a command over a search over a
+// read. They are
 // picked in one place because they are one claim — a footer showing a
 // write under a header that says the step failed is a card arguing with
 // itself.
@@ -244,7 +259,8 @@ func rank(k Kind) int {
 // A failure is the last call that broke, since a failure the step went on
 // past and answered is not what it stands on. A write is the first edit
 // with a change to show, as the open card lists them. A command is the last
-// that answered, its output being what the step stands on. A read shows
+// that answered, its output being what the step stands on. A search is the
+// last query asked, since the query is the search's own text. A read shows
 // its path only where the step read one file: past one, the header's
 // rollup has already said where, and there is nothing one line can add.
 func lead(acts []Act, s Step) (Mark, Evidence) {
@@ -290,6 +306,15 @@ func lead(acts []Act, s Step) (Mark, Evidence) {
 			}
 		}
 	case 0:
+		// A search's query stands above a read's path: what was looked for
+		// says more about where the step went than one of the files it
+		// opened, and its count of what was found is the footer's figure.
+		for i := len(acts) - 1; i >= 0; i-- {
+			a := acts[i]
+			if a.state() == StateDone && a.Receipt.Kind == KindSearch && a.Receipt.Subject != "" {
+				return m, footer(i, a.Receipt.Subject, "")
+			}
+		}
 		if len(s.Reads) == 1 && len(s.Reads[0].Files) == 1 {
 			p := s.Reads[0].Files[0]
 			for i, a := range acts {
@@ -395,8 +420,13 @@ func (s Step) Counts() string {
 // phrase is one kind's clause in the step's receipt, in the receipt's verbs:
 // read, searched, looked up, ran, wrote. A kind with no word of its own is
 // counted under its kind's name, which is the signal the list has fallen
-// behind (docs/interface/principles.md#closed-vocabularies).
+// behind (docs/interface/principles.md#closed-vocabularies). A kind with one
+// call names what it was about instead of counting it — `ran git status`,
+// `read a.go` — and the count starts at two.
 func (s Step) phrase(t Tally) string {
+	if t.Calls == 1 && t.Subject != "" {
+		return stepVerb(t.Kind) + " " + t.Subject
+	}
 	switch t.Kind {
 	case KindRead:
 		if t.Files == 0 {
@@ -416,6 +446,86 @@ func (s Step) phrase(t Tally) string {
 		return "wrote " + counted(t.Files, "file", "files")
 	}
 	return counted(t.Calls, t.Kind.String(), t.Kind.String()+"s")
+}
+
+// Header is the step's receipt split the way a card's header draws it: the
+// verb that leads it, and what follows in the order a narrow pane gives it
+// up. Rollup is the rest of the receipt — the lead kind's count and every
+// other kind's clause — and Bare is the same without the reads' directory
+// clause, which goes before the rollup does. Subject is the lead kind's one
+// call where it has one, which a pane cuts rather than drops: a card that
+// said `ran` and nothing else would not say what ran.
+type Header struct {
+	Verb, Subject, Rollup, Bare string
+}
+
+// Header splits the receipt for a card's header. A step with no call that
+// ran has no verb, and an empty header.
+func (s Step) Header() Header {
+	if len(s.Tallies) == 0 {
+		return Header{}
+	}
+	lead := s.Tallies[0]
+	h := Header{Verb: stepVerb(lead.Kind)}
+	var rest, bare []string
+	if lead.Calls == 1 && lead.Subject != "" {
+		h.Subject = lead.Subject
+	} else {
+		head, ok := strings.CutPrefix(s.phrase(lead), h.Verb+" ")
+		if !ok {
+			// A clause that does not open with its verb — `2 lookups` —
+			// leads with the verb and counts the calls behind it.
+			head = times(lead.Calls)
+		}
+		rest, bare = append(rest, head), append(bare, s.bareClause(lead, head))
+	}
+	for _, t := range s.Tallies[1:] {
+		p := s.phrase(t)
+		rest, bare = append(rest, p), append(bare, s.bareClause(t, p))
+	}
+	h.Rollup, h.Bare = strings.Join(rest, " · "), strings.Join(bare, " · ")
+	return h
+}
+
+// bareClause is a clause as the narrower rollup has it: the reads counted
+// without their directories, and a kind's one call counted rather than
+// named. A subject behind the lead is what makes a rollup too long to keep
+// — a whole command line, a path — and the count is the clause's fact in the
+// fewest columns, so the narrow form keeps the count rather than giving the
+// rollup up for one subject.
+// See docs/interface/departures.md#the-narrow-rollup-counts-what-the-wide-one-names.
+func (s Step) bareClause(t Tally, clause string) string {
+	if t.Calls == 1 && t.Subject != "" {
+		bare := t
+		bare.Subject = ""
+		return s.phrase(bare)
+	}
+	if t.Kind != KindRead || t.Files == 0 {
+		return clause
+	}
+	files := counted(t.Files, "file", "files")
+	if strings.HasPrefix(clause, "read ") {
+		return "read " + files
+	}
+	return files
+}
+
+// stepVerb is the word a kind leads its clause with, in the receipt's past
+// tense. A kind with no word of its own is its kind's name.
+func stepVerb(k Kind) string {
+	switch k {
+	case KindRead:
+		return "read"
+	case KindSearch:
+		return "searched"
+	case KindLookup:
+		return "looked up"
+	case KindRun:
+		return "ran"
+	case KindWrite:
+		return "wrote"
+	}
+	return k.String()
 }
 
 // readFiles is the read clause's count, rolled up by directory where the

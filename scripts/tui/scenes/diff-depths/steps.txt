@@ -34,15 +34,21 @@ sleep 1
 keys C-Space
 sleep 0.3
 keys y
-# The first depth: the edit closed to one row on the grid, its counts beside
-# the path.
-snap 03-row "The cap is where the file says it is" "+1 −1 · 1 hunk · approved by you"
+# The read and the edit are one card, whose header answers with the change
+# and whose footer is the edit's first changed line.
+snap 03-card "The cap is where the file says it is" "▎✎ read loop.go · wrote loop.go" "+1 −1"
 keys C-o
-snap 04-reading "row 4 of 4"
+snap 04-reading "row 3 of 3"
 # The cursor lands on the row most recently put on the pane — the close, since
 # the session's quiet reading of its run leaves no row — so it walks up the
-# pane to the edit: two rows, in the mode's own movement key.
+# pane to the card, enter opens it onto its rows, and the edit is the second
+# of them: the first depth, the edit closed to one row on the grid, its
+# counts beside the path.
 keys k k
+snap 04b-on-the-card "row 1 of 3" "[enter] open it"
+keys Enter
+snap 04c-open "row 1 of 4" "+1 −1 · 1 hunk · approved by you"
+keys j
 snap 05-on-the-edit "row 2 of 4"
 # The second depth: the change in place under the row it was opened from,
 # indented, bounded to the lines the transcript can spare.

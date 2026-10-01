@@ -191,7 +191,7 @@ func TestGolden_ActivityRows(t *testing.T) {
 			})},
 			{Label: "kind · think, folded", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb, r.Target = ActivityThink, "think", ""
-				r.Counts, r.Keys, r.KeysHint = "42 lines", GroupExpandKey, true
+				r.Counts = "42 lines"
 			})},
 			{Label: "kind · think, opened to its tail", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb, r.Target = ActivityThink, "think", ""

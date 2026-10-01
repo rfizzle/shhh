@@ -83,10 +83,11 @@ func (m Model) selectableRow(e entry) bool {
 }
 
 // expandableIndices lists the transcript indices focus mode can select,
-// scoped to whichever agent's transcript the surface renders. Step
-// headers are targets too: j/k steps between headers and rows
-// alike, and a folded step offers only its header, since its rows are not on
-// screen to select.
+// scoped to whichever agent's transcript the surface renders. A card is one
+// target: j/k steps from card to card, and a card drawn open offers its
+// rows as well, since those are the only calls on screen to select
+// (docs/interface/surfaces.md#reading-mode). A run nothing titled is kept on
+// its first call, so open, its first row is the stop the card was.
 func (m Model) expandableIndices() []int {
 	es := *m.entries()
 	if m.framed != nil {
@@ -108,23 +109,30 @@ func (m Model) expandableIndices() []int {
 func (m Model) scanExpandable(es []entry) []int {
 	var idxs []int
 	for _, blk := range m.blocksOf(es) {
-		if blk.step != nil {
-			if blk.step.queued() {
-				// A declared step nobody has started is a header with no rows
-				// and no entry behind it: nothing to select, nothing to
-				// expand.
-				continue
-			}
-			idxs = append(idxs, blk.step.titleIdx)
-			if m.headerFor(blk, es).Folded {
-				continue
-			}
+		if blk.step != nil && blk.step.queued() {
+			// A declared step nobody has started is a header with no rows
+			// and no entry behind it: nothing to select, nothing to expand.
+			continue
 		}
-		// A folded group offers its group row, not the rows inside it —
-		// inside a step or outside one (fold.go).
-		for _, sl := range m.blockSlots(es, blk) {
-			if m.selectableRow(es[sl.idx]) {
-				idxs = append(idxs, sl.idx)
+		if isCardBlock(blk, es) {
+			if !m.cardOpen(blk, es) {
+				idxs = append(idxs, cardAnchor(blk))
+				continue
+			}
+			if blk.step != nil {
+				idxs = append(idxs, cardAnchor(blk))
+			}
+			start, end := blk.members()
+			for i := start; i < end; i++ {
+				if m.selectableRow(es[i]) {
+					idxs = append(idxs, i)
+				}
+			}
+			continue
+		}
+		for i := blk.start; i < blk.end; i++ {
+			if m.selectableRow(es[i]) {
+				idxs = append(idxs, i)
 			}
 		}
 	}
@@ -148,28 +156,21 @@ func (m Model) rowOnScreen(idx int) bool {
 		if !blk.holds(idx) {
 			continue
 		}
-		if blk.step != nil {
-			if blk.step.queued() {
-				// A declared step nobody has started is a header with no rows
-				// and no entry behind it.
-				return false
-			}
-			if idx == blk.step.titleIdx {
+		if blk.step != nil && blk.step.queued() {
+			// A declared step nobody has started is a header with no rows
+			// and no entry behind it.
+			return false
+		}
+		if isCardBlock(blk, es) {
+			open := m.cardOpen(blk, es)
+			if idx == cardAnchor(blk) && (blk.step != nil || !open) {
 				return true
 			}
-			if m.headerFor(blk, es).Folded {
-				// A folded step offers its header, not the rows inside it.
-				return false
-			}
+			// A card offers its rows only while it is open; anywhere else
+			// they are not on the screen to stand on.
+			return open && m.selectableRow(es[idx])
 		}
-		// And a folded run offers its group row: a row behind one is not on
-		// the screen to stand on, whether the run is in a step or not.
-		for _, sl := range m.blockSlots(es, blk) {
-			if sl.idx == idx {
-				return m.selectableRow(es[idx])
-			}
-		}
-		return false
+		return m.selectableRow(es[idx])
 	}
 	return false
 }

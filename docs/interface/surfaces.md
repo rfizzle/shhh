@@ -16,11 +16,14 @@ the other is always a claim that a decision is being asked for.
 
 The transcript is one column of text, and every kind of entry in it begins in
 the same place. A narrow gutter on the left is held back for a mark *about* an
-entry — the reader's own `❯`, a step's fold caret, reading mode's cursor — and
+entry — the reader's own `❯`, a folded card's `▸`, reading mode's cursor — and
 everything that is not one of those marks starts in the first column past it:
 a paragraph's first word, a notice's first word, an activity row's mutation
 rail and the glyph beside it, a progress checkpoint, a reading of the session,
-and the line a turn closes on. An entry with no mark of its own leaves the
+and the line a turn closes on. A step's card is the one entry drawn into the
+gutter, and only with a mark: its pointer column is one wide and its mutation
+rail stands in the second, so its glyph, the verb on its header and the body
+under it start one step in from the rows ([the step](#the-step)). An entry with no mark of its own leaves the
 gutter blank rather than starting in it, which is what makes a mark's arrival
 cost nothing — the cursor lands in a column the entry was already holding for
 it, and no text slides sideways to say where the cursor is.
@@ -43,9 +46,10 @@ use were already making for nothing.
 
 ### The activity row
 
-The unit the transcript is made of. Every act the session takes is one — a
-read, a search, an edit, a command, a spawned child, a failure, a folded group
-of them.
+The shape every act the session takes is drawn in — a read, a search, an
+edit, a command, a spawned child, a failure — under the card of the step it
+belongs to ([the step](#the-step)). A card stands in for its calls until it
+is opened, and what it opens onto is a row for each.
 
 Because it is one shape, a reader learns it once. A provider failure using the
 same row as a file read is the point rather than an accident: a failure is
@@ -81,8 +85,8 @@ strips the indent the code's own rows share.
 
 A call that never happened is one too. Something the queue refused before it
 could reach a decision — arguments that would not parse, a file that moved
-since it was read — is the call's own row saying it was skipped and why,
-rather than a sentence beside the acts: the reader is scanning a column for
+since it was read — is the call's own card and its own row saying it was
+skipped and why, rather than a sentence beside the acts: the reader is scanning a column for
 what became of each call, and the one call that produced nothing is the one
 they are most likely to be looking for. It is about the file it tried to
 touch, where its arguments got far enough to name one, and says outright that
@@ -128,12 +132,22 @@ record, so the refusal and what was said about it are still together after the
 turn has moved on, and the frame above carries neither
 ([`../capabilities/approvals-and-safety.md`](../capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason)).
 
-A call still in flight is a row already, and it is the only place the live
-command is drawn: the outcome field says it is running, the duration field
+A call still in flight is drawn once. Inside a step that is already a card,
+the card draws it: the spinner is its mark, its time counts the command still
+running, and the command's last line out stands under its body. A command
+whose step is not a card yet, or one the reader ran themselves, is a row under
+the transcript: the outcome field says it is running, the duration field
 ticks that call's own clock, and the last line it has printed sits under it
 until it finishes. The [frame](#the-input-frame) below states the phase the
 turn is in and leaves the command here, where the field that grows has the
 width of the pane behind it.
+
+A row prints no key for what enter does on it: reading mode's hint bar says
+that for the row under its cursor, and a key written on a row above a live
+draft would be an offer nothing accepts. A key on a row is a live chord the
+row offers — a rule's refusal sending the reader to the rule's own answer —
+drawn in the key colour
+([`principles.md`](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
 
 A row's output is bounded, and the bound is a fold rather than a loss: a body
 cut at the cap ends by counting what it swallowed. Opening the row widens the
@@ -160,9 +174,10 @@ because a row reporting no thinking is a stat nobody measured.
 
 It is a row rather than a panel because thinking is one of the things a turn
 did, and the transcript has one shape for those. The row states how much it
-swallowed, so folding hides the words without hiding that there were words,
-and it opens through the diff's three depths: closed, the end of the thought,
-then all of it. The end rather than the beginning, because a model that
+swallowed, so folding hides the words without hiding that there were words —
+it prints no key for opening it; reading mode's bar does — and it opens
+through the diff's three depths: closed, the end of the thought, then all of
+it. The end rather than the beginning, because a model that
 thought for four hundred lines is being read for where it arrived. A block
 short enough to fit the window skips that middle step.
 
@@ -174,11 +189,11 @@ characters long and cutting it keeps a sentence and loses the thought.
 The row sits inside the step it was thought in rather than ending it. The
 model stopping to think between two rounds of the same step is still that
 step's work, and what it does next is still what the title announced, so the
-calls after the row stay under the heading and folding the step folds the
-thought with them. The header's count is the step's calls, and the row is not
-one of them: the count is of acts, and a thought ran nothing, read nothing and
-changed nothing. What ends a step is prose — a new title, or an explanation
-too long to be one — never private reasoning.
+calls after the row stay in the step's card, and the card stands in for the
+thought with them until it is opened. The card's receipt is the step's calls,
+and the row is not one of them: the receipt is of acts, and a thought ran
+nothing, read nothing and changed nothing. What ends a step is prose — a new
+title, or an explanation of several lines — never private reasoning.
 
 The row fills while the model thinks, so the wait is legible as work rather
 than as a spinner. Thinking is the model talking to itself: it changed
@@ -218,32 +233,98 @@ you will see afterwards.
 
 ### The step
 
-A titled group of consecutive rows. A forty-tool turn is four lines until you
-ask for more.
+One padded card on the band for each step a turn took: the receipt the reader
+scans, the sentence they read, and the evidence under it. A forty-tool turn
+is four cards — what each step did, what the model said when it took it, and
+the one line that shows it — and the calls themselves are behind the card
+until the reader opens it.
 
-Where the session declared a plan, the steps are the plan's — same numbers,
-same titles — so the outline, the plan block and the plan command are reading
-one list rather than three that agree by coincidence. Work done off the plan
-is marked as such rather than renumbered into it, because renumbering would
-hide the fact that it happened.
+The header is one line, and it is the step's receipt. On the left the
+step's mark: the precedence of what it did — a failure over a write over a
+command over a read — so a step that wrote two files and then broke a test is
+`✗`, and its rail is red, because the failure is what the step stands on.
+The rail is drawn wherever the step wrote, ran a command or called a server
+nobody marked read-only; a step that only read carries none. Then the verb
+in body grey, and the rest of the receipt dim: the calls counted by what they
+did, in the order the step first did each (`read 14 files in internal/ui/, 3
+in docs/ · ran 3 commands · wrote 2 files`), a kind with one call naming what
+it was about instead of counting it (`ran git status --short .plan/`). On the
+right the step's answer — what broke, what a write changed (`+88 −5`), how a
+single call came out — then the gate's word or the reading's verdict, then
+the time. As the pane narrows the header gives fields up in one order: the
+time first, then the verdict, then the directory clause (the reads counted
+without saying where), then the rest of the receipt; a lone call's subject is
+cut, never dropped, and the mark, the rail, the verb and the answer never go.
+The verb is never cut.
 
-Where nothing was declared, the prose that preceded a batch of calls becomes
-the title. A step runs until the next prose: the notices a batch earns and
-the think rows between its rounds are members of it, so a step that paused to
-reason reads as one step and folds as one, and its count stays the calls it
-made. Where there is no structure to find, the transcript is a flat list
-and no empty grouping chrome is drawn. A public progress update is ordinary
-assistant prose, so one short enough to be a title titles the following group
-while the rail continues to state only the immediate phase; one too long to be
-a title is drawn as [the checkpoint it is](#the-progress-checkpoint).
+The body is the prose that titled the step, whole, wrapped at the body
+column — the column the verb stands in — and held two columns short of the
+band's edge. A sentence long enough to have been cut as a title is a body
+now, because the card has somewhere to put it. Where the model said nothing
+and a reading of the session stands after the calls, the reading's sentence
+is the body, dimmer and italic, its verdict on the header. Where there is
+neither, the card has no body and the footer follows the header.
 
-The counted row a run of read-only calls collapses into is not the step's,
-though the step is where it is most often seen. It is a fact about a run of
-rows — three or more consecutive calls that only looked at something and came
-back — so a turn that reads its way into a task before it has said anything
-folds the same way, under no heading at all. That turn is the one the fold is
-worth the most in: a session with a plan buries eight reads under a step, and
-a session still working out what to do buries thirty under nothing.
+The footer is drawn only where the step has something to show. Its line is
+the tool's own text, picked by the precedence that picked the mark — the
+failing line, a write's first changed line with its file, a command's first
+line of output, the last query a search asked, a single file's path where
+the header does not already name it — and cut to the pane with `…`; what
+stands right of it keeps its place: what that call counted, the reading's
+verdict where there is a footer for it to sit in, and for a large step the
+strip, one glyph per call in the order they were made. A step that only read,
+several files, with nothing one line could add, has no footer. A call refused
+among calls that ran is the footer too, the call as it was asked for and who
+refused it, because the header counts only what ran and a refusal anywhere
+else would read as the answer of the calls it names.
+
+A padding row inside the band opens and closes every card, and one blank line
+stands between two cards and between a card and anything beside it. Prose
+with no calls behind it — a reply, an explanation of several lines — stands
+on bare screen with its own air. The band is a token
+([`principles.md`](principles.md#a-colour-is-three-values-and-a-ground)): at
+sixteen colours and in mono there is no band, and a card is its padding rows
+alone.
+
+Live and after are one card. A running step is the same card with the
+spinner in the mark's place, the running command's last line under the body
+and the time counting with it, and the row under the transcript does not
+draw the command a second time. A card the turn has finished does not fold
+on its own; it stays as the density ladder draws it — its header alone at
+low, header, body and footer at normal, open at high — until the reader
+folds or opens it, and the reader's answer outranks the rung
+([`principles.md`](principles.md#density-is-one-ladder)). Folded, a card is
+its header alone, with `▸` in the pointer column, which is how it says it is
+a fold. Under reading mode's cursor the card is the stop, and enter walks it
+through three depths: open onto its calls, folded to its header, and the card
+again; a click folds and unfolds it, so the same cell pressed twice is where
+it started. Open, the calls are rows on the card's band, each a stop of its
+own; a search counting a match behind a card says so on its header and opens
+it onto that row.
+
+A run of calls no prose titled is a card too, with no body unless a reading
+gives it one, and the outline does not number it. A call that was refused is
+a card of its own where nothing titled it: it is a call a step made, nothing
+it would have done happened, and its card says so — `⊘`, the call as it was
+asked for, who refused it, and why as its footer. Where the session declared
+a plan, the steps are the plan's — same numbers, same titles — so the
+outline, the plan block and the plan command are reading one list rather than
+three that agree by coincidence; a step the run has not reached is the plan's
+own line, numbered and queued, until its first call makes a card of it. Work
+done off the plan is marked as such on the plan's own surfaces rather than
+renumbered into it. A step runs until the next prose: the notices a batch
+earns and the think rows between its rounds are members of it, so a step that
+paused to reason is one card, and the card counts the calls it made. A public
+progress update short enough to be a title titles the following card while
+the rail continues to state only the immediate phase; one too long is drawn
+as [the checkpoint it is](#the-progress-checkpoint).
+
+No key is printed on a card for what enter does: the hint bar says what enter
+does to the card under the cursor. A card prints a key only where it offers a
+live chord — a rule's refusal sending the reader to its own answer — in the
+key colour, under the rule that a key is inert until its surface holds the
+keyboard
+([`principles.md`](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
 
 ### The turn's close
 
@@ -475,7 +556,7 @@ body under a row — the foot counts what the cap swallowed and says where the
 turns themselves went.
 
 They went nowhere. The turns a compaction folds keep their rows, and their
-step headers say `out of the window`: the search still reaches them, the folds
+cards say `out of the window`: the search still reaches them, the cards
 still open, and the only thing that changed is what the model can be asked
 about. A transcript that dropped them would be answering a question nobody
 asked it — the record is of what happened on this machine, and compaction is
@@ -544,9 +625,9 @@ left out the same way; a conversation stored before the mark existed is read
 by the built-in sentence instead, because that is all it recorded.
 
 A checkpoint short enough to title the batch of calls that follows it is drawn
-as that step's header instead. That is not an exception to any of this — the
-outline is where a title belongs, and a note that is already a title is
-already one row and already folds with its step.
+as that step's card's body instead. That is not an exception to any of this —
+the card is where a title belongs, and a note that is already a title is
+already one line and already folds with its card.
 
 ## Panels
 
@@ -594,8 +675,7 @@ opens onto is [a staged attachment](#a-staged-attachment).
 
 One key copies the row under the cursor, shaped by what the row is: a message
 as its markdown source, a command as the command over its output, an edit as
-the unified diff, a read as what the read returned, a folded group member by
-member. What a program painted is stripped on the way — the escape codes are
+the unified diff, a read as what the read returned, a card call by call. What a program painted is stripped on the way — the escape codes are
 this terminal's, not part of what was said — and the copy rides the same
 clipboard path `/copy` and the drag selection use. The mode's rail captions
 what was caught and how far it ran, until the next key says the reader has

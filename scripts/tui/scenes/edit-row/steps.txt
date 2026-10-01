@@ -2,17 +2,17 @@
 #   TestProgram_ACallRefusedBeforeItsCardIsItsOwnRow,
 #   TestProgram_TheQuitChordArmsThenLeaves
 #
-# An applied edit and a refused call, both as rows on the grid
-# (docs/interface/surfaces.md#the-activity-row). The edit is the archetypal
-# mutation and used to be the one row in the transcript with no rail on it:
-# the picture is looked at for the rail in the gutter, the ✎ beside it and
-# the verb in the same column as the read above.
+# An applied edit and a refused call (docs/interface/surfaces.md#the-activity-row).
+# The edit is the archetypal mutation and used to be the one row in the
+# transcript with no rail on it: the picture is looked at for the rail on its
+# card and, with the card opened, the rail in the gutter of its row, the ✎
+# beside it and the verb in the same column as the read above.
 #
 # The refusal below it is the other half. A call the queue would not put to
-# anybody is the call's own row — ⊘ and every word dim, `skipped` in the
-# outcome column with why beside it, and the rail still in the gutter because
-# a refusal is a decision — rather than a sentence hanging off the left edge
-# of a pane made of columns.
+# anybody is a card of its own — ⊘, `skipped` in the outcome with why beside
+# it, why it was skipped as its footer, and the rail still in the gutter
+# because a refusal is a decision — rather than a sentence hanging off the
+# left edge of a pane made of columns.
 #
 # Spaces rather than tabs in the fixture: a tab is re-expanded by the
 # terminal against the pane's own columns, not the row's, and the capture
@@ -39,10 +39,22 @@ sleep 1
 keys C-Space
 sleep 0.3
 keys y
-# The row the scene is for, and the refusal under it: the write never reaches
-# a card, so the turn runs to its last sentence on its own.
-snap 04-rows "The cap is where the file says it is" "+1 −1 · 1 hunk · approved by you" "skipped · changed since it was read"
+# The refusal under the calls that ran: the write never reaches a decision,
+# so the turn runs to its last sentence on its own, and it is a card of its
+# own beside the card of the calls.
+snap 04-cards "The cap is where the file says it is" "▎✎ read loop.go · wrote loop.go" "skipped · changed since it was read"
+# The row the scene is for is inside the first card, so the card is opened.
+# The cursor opens on the turn's close, and the card is three stops above it.
+keys C-o
+snap 05-reading "[j/k] move"
+keys k
+keys k
+keys k
+snap 06-on-the-card "[enter] open it"
+keys Enter
+snap 07-rows "+1 −1 · 1 hunk · approved by you" "edit    loop.go"
+keys q
 keys C-c
-snap 05-quit-armed "again quits"
+snap 08-quit-armed "again quits"
 keys C-c
-snap 06-exit "that is everything the screen was holding"
+snap 09-exit "that is everything the screen was holding"

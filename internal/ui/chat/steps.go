@@ -1,8 +1,9 @@
 package chat
 
 // Step outline (docs/interface/surfaces.md#the-step): consecutive tool
-// calls fold under numbered steps, so a forty-tool turn reads as an outline
-// instead of a scrolling feed. The grouping is a layer over the entry list —
+// calls are grouped into numbered steps, each drawn as one card (card.go),
+// so a forty-tool turn reads as an outline instead of a scrolling feed. The
+// grouping is a layer over the entry list —
 // the agent already emits ordered tool results, and inventing a step protocol
 // on the wire would couple every provider to the UI. Plan mode is the
 // one place a step list is authoritative: once a plan is approved its
@@ -10,8 +11,8 @@ package chat
 // including the ones not started — and work the plan never named is marked as
 // off it rather than renumbered into it. Without a plan every step is
 // inferred from the assistant prose immediately preceding a batch of calls,
-// and a turn with no discernible steps renders exactly as it did before — a
-// flat list, no empty group chrome.
+// and a run of calls no prose titled is a card too, with no body, that the
+// outline does not number.
 
 import (
 	"fmt"
@@ -22,7 +23,6 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // stepState is a step's state. It follows its rows: running while any
@@ -37,37 +37,29 @@ const (
 	stepFailed                   // ✗ finished, contained a failure
 )
 
-// foldState is your override of a step's automatic folding. It lives on the
-// entry that titles the step, so steps themselves hold no layout state and
-// re-render from stored raw entries on resize.
+// foldState is your answer to how much of a card is drawn, over the
+// density rung's. It lives on the entry the card is kept on, so cards hold no
+// layout state and re-render from stored raw entries on resize (card.go).
 type foldState int
 
 const (
-	foldAuto   foldState = iota // open while running or broken, folded once done
-	foldOpen                    // you unfolded it
-	foldClosed                  // you folded it
+	foldAuto   foldState = iota // as the density rung draws it; never folded by finishing
+	foldOpen                    // you opened it onto its calls
+	foldClosed                  // you folded it to its header
 	// foldSearch is a fold the transcript search opened to reach a match it
 	// had counted behind it (search.go). It draws exactly like foldOpen and
 	// is a value of its own for one reason: clearing the query puts it back,
-	// and a fold the reader opened themselves stays open. Nothing but the
+	// and a card the reader opened themselves stays open. Nothing but the
 	// search writes it, so "who opened this" is answered by the entry rather
 	// than by a list somebody has to keep in step with the entries.
 	foldSearch
+	// foldCard is the card itself — header, body and footer — where the
+	// rung would draw its header alone: the reader unfolded a card at low.
+	foldCard
 )
-
-// stepTitleMaxRunes bounds what counts as a title: one short line of prose.
-// Longer prose is an explanation, not a heading, and keeps its own block —
-// the outline titles a step, it never swallows text (invariant 4).
-const stepTitleMaxRunes = 120
 
 // stepOrdinalWidth keeps titles on one column for the first 99 steps.
 const stepOrdinalWidth = 2
-
-// stepTitleMinWidth is how much of a title has to survive for the header to
-// spend columns on anything optional. Below it the title is no longer a
-// heading, and a header whose stats crowded its own title out would be an
-// outline with nothing to outline.
-const stepTitleMinWidth = 12
 
 // stepGroup is one titled run of consecutive activity entries: the assistant
 // entry at titleIdx heads it, and members [start,end) are the calls it made.
@@ -159,36 +151,69 @@ func isStepMember(e entry) bool {
 	return isActivityEntry(e) || (!entryIsBlock(e) && e.kind != entryAssistant)
 }
 
-// callRun measures the run of consecutive tool calls starting at i, which is
-// the block a batch of calls nothing titled renders as. It is at least one
-// row: everything else on the transcript stands alone, and a call is the only
-// kind of row a group row can ever stand in for (fold.go).
+// callRun measures the run of consecutive calls starting at i, which is the
+// block a batch of calls nothing titled renders as: one card, however many
+// calls and of whatever kind (card.go). It is at least one row: everything
+// else on the transcript stands alone.
 //
-// Only calls, because a tool entry can never title a step — a title is
-// assistant prose — so a run can be taken here without a second look at what
-// the scan above it already claimed.
+// Only calls, because a call can never title a step — a title is assistant
+// prose — so a run can be taken here without a second look at what the scan
+// above it already claimed. A reading that lands straight after the run is
+// taken into it as well, and ends it: where the model said nothing about the
+// calls, the reading's sentence is what the card has for a body
+// (docs/interface/surfaces.md#the-step).
 func callRun(es []entry, i int) int {
-	if es[i].kind != entryTool {
+	// A call that was refused is a card of its own: it is a call a step
+	// asked for and nothing it would have done happened, so a card counting
+	// what ran around it would read as its answer.
+	// See docs/interface/departures.md#a-run-nothing-titled-and-a-refused-call-are-cards.
+	if !isActivityEntry(es[i]) || refusedCall(es[i]) {
 		return 1
 	}
 	n := 0
-	for i+n < len(es) && es[i+n].kind == entryTool {
+	for i+n < len(es) && isActivityEntry(es[i+n]) && !refusedCall(es[i+n]) {
+		n++
+	}
+	if i+n < len(es) && es[i+n].kind == entrySummary {
 		n++
 	}
 	return n
 }
 
-// stepTitle reports the title an assistant entry offers a step, if any.
+// refusedCall reports whether an entry is a call that never ran: a person
+// or a rule refused it, the queue skipped it, or the reader cancelled it.
+func refusedCall(e entry) bool {
+	return e.kind == entryTool && (e.deniedBy != "" || e.skipped != "" || e.toolResult == cancelledToolResult)
+}
+
+// stepTitle reports the title an assistant entry offers a step, if any: one
+// line of prose, however long. The card has a body to put the whole of it in
+// (docs/interface/surfaces.md#the-step), so a long sentence titles its step
+// rather than standing on its own above it; prose of several lines is a
+// passage, keeps its own block, and the calls after it are a card nothing
+// titled.
 func stepTitle(e entry) (string, bool) {
 	if e.kind != entryAssistant {
 		return "", false
 	}
 	t := strings.TrimSpace(e.text)
-	if t == "" || strings.Contains(t, "\n") || len([]rune(t)) > stepTitleMaxRunes {
+	if t == "" || strings.Contains(t, "\n") {
+		return "", false
+	}
+	// A progress checkpoint is the session's own note, bounded and folded
+	// where it stands (docs/interface/surfaces.md#the-progress-checkpoint),
+	// so one longer than a line keeps its own block rather than becoming a
+	// card's body; one short enough to title the calls after it does.
+	if e.checkpoint && len([]rune(t)) > checkpointTitleMaxRunes {
 		return "", false
 	}
 	return t, true
 }
+
+// checkpointTitleMaxRunes is the longest checkpoint that titles a step: one
+// line at the body column of a wide pane. Past it the note is the bounded
+// block the checkpoint is drawn as.
+const checkpointTitleMaxRunes = 120
 
 // stepBlocks tiles the entries into blocks: a step wherever a one-line
 // assistant title is followed by at least one call, a lone entry everywhere
@@ -239,10 +264,11 @@ func stepBlocks(es []entry, declared []plan.Step) []transcriptBlock {
 			}
 		}
 		// A run of consecutive calls no prose titled is one block rather than
-		// one block each, because the fold is a property of a run of rows and
+		// one block each, because a card is a property of a run of calls and
 		// not of the outline above it: a turn that reads thirty files before
 		// it has anything to say about them is the deepest burial there is,
-		// and it is exactly the turn with no step to fold under (fold.go).
+		// and it is exactly the turn with no step to stand them under
+		// (card.go).
 		run := callRun(es, i)
 		blocks = append(blocks, transcriptBlock{start: i, end: i + run})
 		i += run
@@ -290,14 +316,10 @@ func stepByNumber(declared []plan.Step, n int) (plan.Step, bool) {
 	return plan.Step{}, false
 }
 
-// stepBlockAt returns the block whose step is titled by the entry at idx.
+// stepBlockAt returns the card kept on the entry at idx: the step it titles,
+// or the run of calls it begins where nothing titled them (card.go).
 func (m Model) stepBlockAt(es []entry, idx int) (transcriptBlock, bool) {
-	for _, blk := range m.blocksOf(es) {
-		if blk.step != nil && blk.step.titleIdx == idx {
-			return blk, true
-		}
-	}
-	return transcriptBlock{}, false
+	return m.cardBlockAt(es, idx)
 }
 
 // stepStats reads a step's state, tool count and duration off its rows. The
@@ -334,50 +356,18 @@ func (m Model) stepStats(g *stepGroup, es []entry) (state stepState, tools int, 
 	return stepDone, tools, d
 }
 
-// stepFolded decides whether a step shows only its header. A step is open
-// while it runs and collapses when it finishes — except one that contains a
-// failure, because a failure you have to scroll to find is a failure you will
-// miss. Your own fold overrides both.
-func (m Model) stepFolded(g *stepGroup, es []entry, state stepState) bool {
-	if g.titleIdx == stepNoTitle {
-		// A declared step nobody has started has no rows to fold and no entry
-		// to record a fold on.
-		return false
-	}
-	switch es[g.titleIdx].stepFold {
-	case foldOpen, foldSearch:
-		return false
-	case foldClosed:
-		return true
-	}
-	switch {
-	case m.density(verbosityHigh):
-		return false
-	case !m.density(verbosityNormal):
-		// Headers only: at low every step is folded, a broken one
-		// included — you asked for the outline, and the ✗ is on the header.
-		return true
-	}
-	return state == stepDone
-}
-
-// toggleStepFold flips a step between folded and open, recording the choice
-// on the entry that titles it.
+// toggleStepFold flips a card between its header alone and the card,
+// recording the choice on the entry the card is kept on (card.go).
 func (m *Model) toggleStepFold(idx int) {
-	es := *m.entries()
-	blk, ok := m.stepBlockAt(es, idx)
-	if !ok {
-		return
-	}
-	if m.headerFor(blk, es).Folded {
-		es[idx].stepFold = foldOpen
-	} else {
-		es[idx].stepFold = foldClosed
-	}
+	m.toggleCardFold(idx)
 }
 
-// stepHeader is one step's line: fold state, ordinal, title, a faint rule
-// stretching to the stats, state glyph, tool count and duration.
+// stepHeader is what a step's outline states about it: its ordinal and
+// title, how it stands, its calls and what they took, and whether it is
+// drawn as its header alone. The transcript draws a step that has begun as a
+// card (card.go); this header's own line is drawn for a step an approved
+// plan declared and the run has not reached, which has no calls to make a
+// card of, and the plan's checklist and the rail read its state.
 type stepHeader struct {
 	Ordinal  int
 	Title    string
@@ -513,21 +503,6 @@ func (h stepHeader) View(width int) string {
 	label := h.countLabel()
 	stats := h.glyph() + " " + sty.Step.Stats.Render(label)
 	statsW := lipgloss.Width(label) + 2
-	if h.Matches > 0 {
-		// The count is only half of what the row owes the reader: a number
-		// with no way to reach it would be the fold hiding rather than
-		// folding. The offer is the first thing to go when the row is tight,
-		// though, because the count is the fact and the key is on the mode's
-		// own bar under the transcript either way
-		// (guidelines/layout-breakpoints: the word goes rather than being
-		// cut down).
-		key := " · " + searchOpenKey
-		if width-leadW-statsW-lipgloss.Width(key)-components.GridDurationGap-components.GridDurationWidth-3 >= stepTitleMinWidth {
-			stats += sty.Step.Stats.Render(" · ") + sty.Search.Hint.Render(searchOpenKey)
-			statsW += lipgloss.Width(key)
-		}
-	}
-
 	// The rule takes what the title leaves; the title clips before the rule
 	// disappears, because the stats are the reason to read the header.
 	fixed := leadW + statsW + components.GridDurationGap + components.GridDurationWidth + 3
@@ -571,6 +546,17 @@ func (m Model) stepStateFor(blk transcriptBlock, es []entry) stepState {
 	return state
 }
 
+// stepHeaderOnly reports whether a step's card is drawn as its header alone:
+// the reader folded it, or the rung draws headers only. A declared step
+// nobody has started is its header and nothing else, and is not folded.
+func (m Model) stepHeaderOnly(blk transcriptBlock, es []entry) bool {
+	if blk.step != nil && blk.step.queued() {
+		return false
+	}
+	d, folded := m.cardShape(blk, es)
+	return folded || d == components.CardLow
+}
+
 // headerFor builds the header for a step from its rows.
 func (m Model) headerFor(blk transcriptBlock, es []entry) stepHeader {
 	g := blk.step
@@ -582,26 +568,18 @@ func (m Model) headerFor(blk transcriptBlock, es []entry) stepHeader {
 		State:    state,
 		Tools:    tools,
 		Duration: d,
-		Folded:   m.stepFolded(g, es, state),
+		Folded:   m.stepHeaderOnly(blk, es),
 		Detail:   g.titleIdx != stepNoTitle && es[g.titleIdx].detailFold == foldOpen,
 		OffPlan:  g.offPlan,
 		// Read off the rows rather than off the title, so a step whose title
 		// entry a plan supplied still says which side of the window it is on.
 		OutOfWindow: g.end > g.start && es[g.start].outOfWindow,
 	}
-	if h.Folded {
+	if m.cardHidesRows(blk, es) {
 		h.Matches = m.searchMatchesIn(es, g.start, g.end)
 	}
 	return h
 }
-
-// searchOpenKey is what a fold row counting a search's matches says opens it.
-// It is the hint treatment the counted group row's key has always used: enter
-// belongs to the draft until reading mode takes the keyboard, so on a
-// transcript row this is a label for what the row does under the cursor
-// rather than an offer standing open
-// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-var searchOpenKey = keys.Bracket(keys.Reading.Expand) + " open to the first"
 
 // unit is one addressable piece of rendered history: a step header, or a
 // single entry's block. Focus mode selects units, so the plain, focus and
@@ -616,6 +594,11 @@ type unit struct {
 	sepBefore entry
 	sepAfter  entry
 	text      string
+	// cardHead marks the lines a card draws itself, as against the rows of
+	// its calls. A run nothing titled is kept on its first call, so open,
+	// the card's own lines and that call's row share idx, and a click has
+	// to say which of the two it landed on (click.go).
+	cardHead bool
 }
 
 // blockUnits renders one block. In focus mode selectable units carry the
@@ -624,67 +607,87 @@ type unit struct {
 // holds back — and one that is not renders two columns narrower to make room
 // for it (gutterPrefix).
 func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool, focusIdx int) []unit {
+	if isCardBlock(blk, es) {
+		return m.cardUnits(blk, es, width, focus, focusIdx)
+	}
 	var units []unit
-	add := func(idx int, sepBefore, sepAfter entry, text string, selectable, grid bool) {
+	if blk.step != nil {
+		// A declared step nobody has started is the plan's outline row and
+		// nothing else: no calls to make a card of, so nothing for focus mode
+		// to select either.
+		header := m.headerFor(blk, es)
+		return append(units, unit{idx: blk.step.titleIdx, sepBefore: entry{kind: entryAssistant},
+			sepAfter: entry{kind: entryTool}, text: header.View(width) + "\n"})
+	}
+	for i := blk.start; i < blk.end; i++ {
+		e := es[i]
+		text, selectable, grid := m.entryUnitText(i, es, width, focus, focusIdx, false)
 		if text == "" {
-			return
+			continue
 		}
 		if focus && selectable {
-			text = gutterPrefix(text, idx == focusIdx, grid, gutterWidth(width, grid))
+			text = gutterPrefix(text, i == focusIdx, grid, gutterWidth(width, grid))
 		}
-		units = append(units, unit{idx: idx, sepBefore: sepBefore, sepAfter: sepAfter, text: text})
+		units = append(units, unit{idx: i, sepBefore: e, sepAfter: e, text: text})
 	}
-	entryWidth := func(e entry) int { return m.unitWidth(e, width, focus) }
-	addEntry := func(i int, detail bool) {
-		e := es[i]
-		// A row's own offers are live only under reading mode's cursor. Under
-		// the pointer lit from the prompt every letter is text, so the row
-		// draws them grey beside the handover that reaches it, and every
-		// other row beside the key that hands the keyboard to the transcript.
-		sel := rowUnselected
-		if focus && i == focusIdx {
-			sel = rowPointed
-			if m.state == stateFocus {
-				sel = rowUnderCursor
-			}
-		}
-		add(i, e, e, m.renderEntryDetail(e, entryWidth(e), sel, detail), m.selectableRow(e), onGrid(e))
-	}
+	return units
+}
 
-	// A block's rows render through its slots, so a folded run of read-only
-	// calls arrives as one counted group row — unless the step around it has
-	// its detail open, which gives the run back.
-	addSlots := func(detail bool) {
-		for _, sl := range m.blockSlots(es, blk) {
-			if !sl.group {
-				addEntry(sl.idx, detail)
-				continue
-			}
-			// A folded group row is an activity row: it holds its own pointer
-			// column back like the rows it swallowed.
-			e := es[sl.idx]
-			add(sl.idx, e, es[sl.idx+sl.span-1], m.groupRowFor(es, sl).View(width)+"\n", true, true)
+// entryUnitText is one entry's own unit, drawn at the width its unit takes
+// and dressed for the cursor's three states, before the gutter is added.
+func (m Model) entryUnitText(i int, es []entry, width int, focus bool, focusIdx int, detail bool) (text string, selectable, grid bool) {
+	e := es[i]
+	// A row's own offers are live only under reading mode's cursor. Under
+	// the pointer lit from the prompt every letter is text, so the row
+	// draws them grey beside the handover that reaches it, and every other
+	// row beside the key that hands the keyboard to the transcript.
+	sel := rowUnselected
+	if focus && i == focusIdx {
+		sel = rowPointed
+		if m.state == stateFocus {
+			sel = rowUnderCursor
 		}
 	}
+	return m.renderEntryDetail(e, m.unitWidth(e, width, focus), sel, detail), m.selectableRow(e), onGrid(e)
+}
 
-	if blk.step == nil {
-		// A run outside a step has no header to be opened by, so /step never
-		// reaches it and [enter] on the group row is the only thing that
-		// opens it. There is nothing else for the detail to come from either,
-		// which is why the rows here are never a step's detail.
-		addSlots(false)
-		return units
+// cardUnits renders a card. A card is one unit — the reading cursor stops
+// on it as a whole — until it is open, when its calls are rows of their own
+// on the card's band so the cursor can stand on each.
+func (m Model) cardUnits(blk transcriptBlock, es []entry, width int, focus bool, focusIdx int) []unit {
+	anchor := cardAnchor(blk)
+	// A run nothing titled is kept on its first call, which is a row of its own
+	// once the card is open: the cursor there is on the row, not the card.
+	onCard := focus && focusIdx == anchor && (blk.step != nil || !m.cardOpen(blk, es))
+	card := m.stepCardFor(blk, es, width, onCard)
+	// One blank either side of a card, and between two cards one blank
+	// rather than two: the separator rule reads the card as a block
+	// (separatorBefore).
+	block := entry{kind: entryAssistant}
+	if card.Folded || card.Density != components.CardHigh {
+		return []unit{{idx: anchor, sepBefore: block, sepAfter: block, text: card.View(width) + "\n", cardHead: true}}
 	}
-	g := blk.step
-	header := m.headerFor(blk, es)
-	// A declared step nobody has started is its header and nothing else: no
-	// rows to expand, so nothing for focus mode to select either.
-	add(g.titleIdx, entry{kind: entryAssistant}, entry{kind: entryTool},
-		header.View(width)+"\n", !g.queued(), true)
-	if header.Folded || g.queued() {
-		return units
+	tight := entry{kind: entryTool}
+	units := []unit{{idx: anchor, sepBefore: block, sepAfter: tight, text: card.Head(width) + "\n", cardHead: true}}
+	start, end := blk.members()
+	detail := m.cardDetailOpen(blk, es)
+	for i := start; i < end; i++ {
+		text, selectable, grid := m.entryUnitText(i, es, width, focus, focusIdx, detail)
+		if text == "" {
+			continue
+		}
+		if focus && selectable {
+			text = gutterPrefix(text, i == focusIdx, grid, gutterWidth(width, grid))
+		}
+		var lines []string
+		for _, l := range strings.Split(strings.TrimSuffix(text, "\n"), "\n") {
+			lines = append(lines, components.OnBand(l, width))
+		}
+		units = append(units, unit{idx: i, sepBefore: tight, sepAfter: tight, text: strings.Join(lines, "\n") + "\n"})
 	}
-	addSlots(header.Detail)
+	last := &units[len(units)-1]
+	last.text += components.CardPad(width) + "\n"
+	last.sepAfter = block
 	return units
 }
 

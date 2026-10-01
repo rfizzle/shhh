@@ -16,9 +16,10 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-// An applied edit packs into the feed like every other act. It used to be a
+// An applied edit packs into its card like every other act. It used to be a
 // block, so the archetypal mutation was set apart by a blank line either side
-// from the rows it belongs among (docs/interface/principles.md#one-grid).
+// from the rows it belongs among (docs/interface/principles.md#one-grid); in
+// an open card it is one row among the others, with no gap either side.
 func TestAppliedEdit_PacksIntoTheFeedLikeAnyOtherRow(t *testing.T) {
 	m := activityModel(t)
 	row := entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"loop.go"}`,
@@ -28,16 +29,19 @@ func TestAppliedEdit_PacksIntoTheFeedLikeAnyOtherRow(t *testing.T) {
 		Hunks: diff.Compute("const limit = 25\n", "const limit = 50\n"),
 	}}
 	m.transcript = []entry{row, edit, row}
+	openCardRows(m.transcript, 0)
 	m.invalidateRenderCache()
 
 	lines := strings.Split(strings.TrimRight(stripANSI(m.renderHistory()), "\n"), "\n")
+	at := -1
 	for i, line := range lines {
-		if strings.TrimSpace(line) == "" {
-			t.Fatalf("a run of rows has no gaps in it, blank at %d:\n%s", i, strings.Join(lines, "\n"))
+		if strings.Contains(line, "▎✎ edit    loop.go") {
+			at = i
 		}
 	}
-	if len(lines) != 3 || !strings.Contains(lines[1], "▎✎ edit    loop.go") {
-		t.Fatalf("the edit is one row between the two reads:\n%s", strings.Join(lines, "\n"))
+	if at < 1 || at+1 >= len(lines) ||
+		!strings.Contains(lines[at-1], "read    loop.go") || !strings.Contains(lines[at+1], "read    loop.go") {
+		t.Fatalf("the edit is one row between the two reads, no gap either side:\n%s", strings.Join(lines, "\n"))
 	}
 }
 
@@ -147,6 +151,10 @@ func TestFocusMode_DiffRowCyclesToFullScreen(t *testing.T) {
 		t.Fatalf("ctrl+o should enter focus mode, got state %d", m.state)
 	}
 
+	// The edit is a card of its own; enter opens it onto its row, and the
+	// cursor is on that row.
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
 	// Enter expands the collapsed diff row in place.
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)

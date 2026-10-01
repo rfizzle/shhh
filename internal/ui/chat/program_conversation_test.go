@@ -35,7 +35,7 @@ func TestProgram_AConversationFetchesWithoutACard(t *testing.T) {
 	waitForText(t, tm, "A conversation has one mode")
 
 	frame := finalFrame(t, tm)
-	frameHas(t, frame, "✓ 1 tool", "read-only")
+	frameHas(t, frame, "looked up https://docs.example.test/notes", "read-only")
 	if strings.Contains(frame, "Approve") {
 		t.Errorf("a card was drawn in a conversation:\n%s", frame)
 	}

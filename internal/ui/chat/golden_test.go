@@ -235,23 +235,23 @@ func goldenModel(t *testing.T, width int) Model {
 	return m
 }
 
-// TestGolden_StepOutline captures the transcript's step grammar (
-// at each breakpoint: the numbered headers with their state glyph and
-// stats, the folded read-only group row, and the step that stays open because
-// it contains a failure.
+// TestGolden_StepOutline captures the transcript's steps as cards at each
+// breakpoint (docs/interface/surfaces.md#the-step): each step's receipt on
+// its header, the prose that titled it for a body, the failure in its
+// footer, and the card the reader folded, opened and left to the rung.
 func TestGolden_StepOutline(t *testing.T) {
 	captureGolden(t, "step-outline", "transcript step outline", goldenWidths, func(width int) []golden.Panel {
 		m := goldenModel(t, width)
 		normal := m.renderHistory()
-		// Step 1 finished, so it collapsed to its header; opening it is what
-		// puts the counted group row on the sheet.
+		// A finished card does not fold on its own; the reader's fold is
+		// what draws step 1 as its header alone.
 		m.toggleStepFold(1)
 		m.invalidateRenderCache()
 		opened := m.renderHistory()
 		m.toggleStepFold(1)
-		// Ctrl+O on step 1: it unfolds, its rows give the counted group back,
-		// and every one of them carries its bounded body — one step deep,
-		// with step 2 beside it untouched.
+		// /step on step 1: the card opens on its calls, every one of them
+		// with its bounded body — one step deep, with step 2 beside it
+		// untouched.
 		blk, ok := m.stepBlockAt(m.transcript, 1)
 		if !ok {
 			t.Fatal("step 1 not found in the golden transcript")
@@ -277,8 +277,8 @@ func TestGolden_StepOutline(t *testing.T) {
 		}
 		arriving := live.renderHistory()
 		// A step that stopped to think between its rounds, landed the same
-		// way: the think row is a member, so the calls after it stay under
-		// the title and the fold takes the thought with them.
+		// way: the think row is a member, so the calls after it stay in the
+		// title's card and the card closes over the thought with them.
 		thought := frameModel(t, width, 40)
 		thought.setTurnState(stateStreaming)
 		for _, e := range thinkingStep() {
@@ -290,14 +290,14 @@ func TestGolden_StepOutline(t *testing.T) {
 		thought.invalidateRenderCache()
 		thinkFolded := thought.renderHistory()
 		return []golden.Panel{
-			{Label: "verbosity · normal (a finished step collapses)", View: normal},
-			{Label: "verbosity · normal, step 1 opened (read-only run folds to a group row)", View: opened},
-			{Label: "/step · step 1's detail, one step deep", View: detail},
-			{Label: "verbosity · high (every row, with detail)", View: high},
-			{Label: "verbosity · low (step headers only)", View: low},
-			{Label: "row by row · a notice, then a batch with no prose over it, under one header", View: arriving},
-			{Label: "row by row · a think row mid-step, opened (the calls after it stay in the step)", View: thinkOpen},
-			{Label: "row by row · a think row mid-step, folded (the thought folds with the step)", View: thinkFolded},
+			{Label: "verbosity · normal (each step a card, none folded on its own)", View: normal},
+			{Label: "verbosity · normal, step 1 folded by the reader (its header, ▸ in the pointer column)", View: opened},
+			{Label: "/step · step 1's detail, the card open on its calls", View: detail},
+			{Label: "verbosity · high (every card open, every row with detail)", View: high},
+			{Label: "verbosity · low (each card its header alone)", View: low},
+			{Label: "row by row · a notice, then a batch with no prose over it, in one live card", View: arriving},
+			{Label: "row by row · a think row mid-step (the card closed over the calls after it too)", View: thinkOpen},
+			{Label: "row by row · a think row mid-step, folded (the thought folds with the card)", View: thinkFolded},
 		}
 	})
 }
@@ -361,26 +361,26 @@ func readRunTranscript() []entry {
 	return es
 }
 
-// TestGolden_ReadRun captures the fold where there is no outline over it: a
-// planless turn of thirty read-only calls, closed to the counted group row
-// the step draws and opened back onto its rows.
+// TestGolden_ReadRun captures a run with no outline over it: a planless
+// turn of thirty read-only calls, drawn as one card nothing titled and, at
+// high, open onto its rows.
 //
-// It is the counterpart of the step outline's capture. There the group row is
-// one line inside a titled step; here it is the whole turn, which is the
-// shape the fold was worth the least in and buried the most.
+// It is the counterpart of the step's capture. There the card has the prose
+// that titled it for a body; here it has none, which is the shape a run of
+// reads buried the most in.
 func TestGolden_ReadRun(t *testing.T) {
 	captureGolden(t, "read-run", "a planless run of reads", goldenWidths, func(width int) []golden.Panel {
 		m := frameModel(t, width, 40)
 		m.transcript = readRunTranscript()
 		m.invalidateRenderCache()
 		closed := m.renderHistory()
-		// The reader opened it: every row back, in place, under nothing.
-		m.transcript[1].groupFold = foldOpen
+		// At high every card is open: every row back, in place, on the band.
+		m.verbosity = verbosityHigh
 		m.invalidateRenderCache()
 		opened := m.renderHistory()
 		return []golden.Panel{
-			{Label: "no plan and no prose · thirty calls as one counted row", View: closed},
-			{Label: "the same run opened · every row back in place", View: opened},
+			{Label: "no plan and no prose · thirty calls as one card", View: closed},
+			{Label: "the same run at high · every row back in place", View: opened},
 		}
 	})
 }
@@ -2180,7 +2180,7 @@ func TestGolden_ScrollGutter(t *testing.T) {
 		long := scrollFixture(24)
 		return []golden.Panel{
 			{Label: "nothing to scroll · the column is reserved and empty",
-				View: gutter(scrollFixture(2), func(m *Model) {})},
+				View: gutter(scrollFixture(1), func(m *Model) {})},
 			{Label: "the live end · the thumb is on the last row",
 				View: gutter(long, func(m *Model) {})},
 			{Label: "scrolled halfway up",
@@ -2228,24 +2228,20 @@ func TestGolden_ScrollGutterBesideTheDivider(t *testing.T) {
 		})
 }
 
-// scrollFixture is n read rows behind one prompt, numbered so a reader
-// checking the thumb against the pane can see which slice of the whole is
-// showing without counting rows. Callers pick an n that overflows the pane
-// they built, since a gutter is only drawn when something is below. They are
-// activity rows rather than prose because the subject is one column, and a
-// markdown fixture would bury it under glamour's own escapes in the ansi
-// block.
+// scrollFixture is n steps of one read each behind one prompt, numbered so a
+// reader checking the thumb against the pane can see which slice of the
+// whole is showing without counting rows. Callers pick an n that overflows
+// the pane they built, since a gutter is only drawn when something is below.
+// Each read is a step of its own because a run of calls is one card, and a
+// pane with one card in it has no gutter to capture.
 func scrollFixture(n int) []entry {
 	es := []entry{{kind: entryUser, text: "read the round accounting"}}
 	for i := 1; i <= n; i++ {
-		es = append(es, entry{kind: entryTool, toolName: "read_file",
-			toolArgs:   fmt.Sprintf(`{"path":"internal/agent/round%02d.go"}`, i),
-			toolResult: "a\nb", duration: 200 * time.Millisecond})
+		es = append(es, entry{kind: entryAssistant, text: fmt.Sprintf("Round %02d.", i)},
+			entry{kind: entryTool, toolName: "read_file",
+				toolArgs:   fmt.Sprintf(`{"path":"internal/agent/round%02d.go"}`, i),
+				toolResult: "a\nb", duration: 200 * time.Millisecond})
 	}
-	// The run is open, because the subject is the column beside the rows: a
-	// run of reads is one counted row until a reader opens it (fold.go), and
-	// a pane with one row in it has no gutter to capture.
-	es[1].groupFold = foldOpen
 	return es
 }
 
@@ -2303,15 +2299,26 @@ func TestGolden_ReadingMode(t *testing.T) {
 			mut(&rm)
 			return readingSurface(rm)
 		}
+		// The failed step's card opened onto its calls, so the cursor can
+		// stand on the edit inside it.
+		readingOpen := func(mut func(*Model)) string {
+			m := goldenModel(t, width)
+			openCardRows(m.transcript, 6)
+			m.invalidateRenderCache()
+			next, _ := m.enterFocusMode()
+			rm := next.(Model)
+			mut(&rm)
+			return readingSurface(rm)
+		}
 		return []golden.Panel{
 			{Label: "the transcript has the keyboard", View: reading(func(m *Model) {})},
 			{Label: "the input has it · plain rail, no row lit, the frame is accented",
 				View: readingSurface(goldenModel(t, width))},
-			{Label: "the cursor on a row that changed the machine", View: reading(func(m *Model) {
+			{Label: "the cursor on a row that changed the machine", View: readingOpen(func(m *Model) {
 				m.moveFocus(-1)
 				m.moveFocus(-1)
 			})},
-			{Label: "expanded under the cursor · [-] joins the bar", View: reading(func(m *Model) {
+			{Label: "expanded under the cursor · [-] joins the bar", View: readingOpen(func(m *Model) {
 				m.moveFocus(-1)
 				m.moveFocus(-1)
 				next, _ := m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -2386,14 +2393,15 @@ func TestGolden_TranscriptSearch(t *testing.T) {
 			"internal/agent/loop.go", "internal/provider/retry.go",
 			"internal/agent/loop.go",
 		} {
-			reads = append(reads, entry{kind: entryTool, toolName: "read_file",
-				toolArgs:   fmt.Sprintf(`{"path":%q}`, path),
-				toolResult: "a\nb", duration: time.Duration(200+i*10) * time.Millisecond})
+			// A step each, so each card's header names the file it read: the
+			// subject here is the marks on what is drawn, and one card over
+			// the five reads would be counting them behind itself, which is
+			// the case the last two panels capture.
+			reads = append(reads, entry{kind: entryAssistant, text: fmt.Sprintf("Read %d.", i+1)},
+				entry{kind: entryTool, toolName: "read_file",
+					toolArgs:   fmt.Sprintf(`{"path":%q}`, path),
+					toolResult: "a\nb", duration: time.Duration(200+i*10) * time.Millisecond})
 		}
-		// Opened, because the subject here is the marks on the rows: the run
-		// would otherwise be one counted row, which is the case the last two
-		// panels capture (fold.go).
-		reads[1].groupFold = foldOpen
 		search := func(keep bool) string {
 			m := frameModel(t, width, 24)
 			m.transcript = reads
@@ -2419,9 +2427,9 @@ func TestGolden_TranscriptSearch(t *testing.T) {
 			rm.viewport.GotoTop()
 			return searchSurface(rm)
 		}
-		// The only occurrence of this path is on a read inside a step that
-		// has finished and folded, so nothing on screen is drawing it: the
-		// header is what has to say it is there.
+		// The only occurrence of this path is on a read inside a card, which
+		// stands in for its calls, so nothing on screen is drawing it: the
+		// card's header is what has to say it is there.
 		inFold := func(open bool) string {
 			m := goldenModel(t, width)
 			next, _ := m.enterFocusMode()
@@ -2449,12 +2457,19 @@ func TestGolden_TranscriptSearch(t *testing.T) {
 		return []golden.Panel{
 			{Label: "the query row where the key bar was · every match bold", View: search(false)},
 			{Label: "kept · the pointer's occurrence bold on the lit row, [n/N] on the bar", View: search(true)},
-			{Label: "the only match is behind a fold · the header counts it and offers the key",
+			{Label: "the only match is behind a card · its header counts it",
 				View: inFold(false)},
-			{Label: "[enter] opened the step · the run it holds still says what it is covering",
+			{Label: "[enter] opened the card · its calls on screen, the cursor on the match",
 				View: inFold(true)},
 		}
 	})
+}
+
+// openCardRows opens the card kept on es[anchor] onto its rows with their
+// bodies closed, the way the reader's enter on it does: a capture or a test
+// whose subject is what each call's row says or does draws them that way.
+func openCardRows(es []entry, anchor int) {
+	es[anchor].stepFold = foldOpen
 }
 
 // searchSurface is readingSurface through the pane: the marks a search leaves
@@ -3244,6 +3259,9 @@ func TestGolden_AutoApproved(t *testing.T) {
 				toolResult: "ok  \tgithub.com/rfizzle/shhh/internal/ui/chat\t27.107s",
 				allowedBy:  classifierRule, allowElapsed: 2100 * time.Millisecond},
 		}
+		// The acts are one card, opened onto them: what this sheet is about
+		// is the account each one's own row carries.
+		openCardRows(m.transcript, 0)
 		m.invalidateRenderCache()
 		answered := frameModel(t, width, 40)
 		answered.transcript = []entry{
@@ -3264,6 +3282,7 @@ func TestGolden_AutoApproved(t *testing.T) {
 				toolResult: "ok  \tgithub.com/rfizzle/shhh/internal/ui/chat\t27.107s",
 				approvedBy: decidedByYou},
 		}
+		openCardRows(answered.transcript, 0)
 		answered.invalidateRenderCache()
 		return []golden.Panel{
 			{Label: "an edit, a staging and a command, one row each", View: m.renderHistory()},
@@ -3407,6 +3426,9 @@ func TestGolden_CommandErrors(t *testing.T) {
 				commandResult: tools.ExecResult{ExitCode: -1, Outcome: tools.ExecDidNotStart}},
 			{kind: entryCommand, text: "watch", toolResult: `process "watch"`, duration: 1 * time.Second},
 		}
+		// Each panel's card is opened onto its rows: what this sheet is about
+		// is the word each command's own row ends on, and the body under it.
+		openCardRows(m.transcript, 0)
 		m.invalidateRenderCache()
 		panels := []golden.Panel{{Label: "success, exit status, signal, timeout, spawn failure and handoff", View: m.renderHistory()}}
 		for _, c := range []struct {
@@ -3424,6 +3446,7 @@ func TestGolden_CommandErrors(t *testing.T) {
 			report := tools.ExecPrereqReport(c.prereq, c.detail)
 			m.transcript = []entry{{kind: entryCommand, text: c.command, toolResult: report, exitCode: -1,
 				commandResult: tools.ExecResult{Output: report, ExitCode: -1, Outcome: tools.ExecDidNotStart, Prereq: c.prereq}}}
+			openCardRows(m.transcript, 0)
 			m.invalidateRenderCache()
 			panels = append(panels, golden.Panel{Label: "did not start · " + string(c.prereq), View: m.renderHistory()})
 		}
@@ -3431,6 +3454,7 @@ func TestGolden_CommandErrors(t *testing.T) {
 		m.transcript = []entry{{kind: entryCommand, text: "make release", exitCode: -1, duration: 4 * time.Second,
 			toolResult:    "packaging…\nwait: read |0: file already closed",
 			commandResult: tools.ExecResult{ExitCode: -1, Outcome: tools.ExecDidNotComplete}}}
+		openCardRows(m.transcript, 0)
 		m.invalidateRenderCache()
 		panels = append(panels, golden.Panel{Label: "ran, and nobody could read how it ended", View: m.renderHistory()})
 		return panels
@@ -3497,10 +3521,10 @@ func TestGolden_GitWriteRows(t *testing.T) {
 		}
 		build := func(es ...entry) string {
 			m := frameModel(t, width, 40)
-			// The run is open: three read-only calls in a row fold to one
-			// counted row (fold.go), and what this capture is about is what
-			// each of them says on its own row.
-			es[0].groupFold = foldOpen
+			// The card is open onto its rows: a run of calls is one card
+			// (card.go), and what this capture is about is what each of
+			// them says on its own row.
+			openCardRows(es, 0)
 			m.transcript = es
 			m.invalidateRenderCache()
 			return m.renderHistory()
@@ -3569,10 +3593,10 @@ func TestGolden_SearchSweep(t *testing.T) {
 		}
 		build := func(es ...entry) string {
 			m := frameModel(t, width, 40)
-			// The run is open: three read-only calls in a row fold to one
-			// counted row (fold.go), and what this capture is about is what
-			// each of them says on its own row.
-			es[0].groupFold = foldOpen
+			// The card is open onto its rows: a run of calls is one card
+			// (card.go), and what this capture is about is what each of
+			// them says on its own row.
+			openCardRows(es, 0)
 			m.transcript = es
 			m.invalidateRenderCache()
 			return m.renderHistory()
@@ -3630,10 +3654,9 @@ func TestGolden_SearchCounts(t *testing.T) {
 			tool("search", `{"pattern":"authorOf","path":"internal/ui/chat"}`,
 				tools.NoMatchesFound, 200*time.Millisecond),
 		}
-		// Four read-only calls in a row are one counted row until a reader
-		// opens them (fold.go), and the counts this capture is about are the
-		// ones on the rows inside.
-		m.transcript[0].groupFold = foldOpen
+		// Four read-only calls in a row are one card (card.go), and the
+		// counts this capture is about are the ones on the rows inside.
+		openCardRows(m.transcript, 0)
 		m.invalidateRenderCache()
 		return []golden.Panel{{Label: "found, not printed", View: m.renderHistory()}}
 	})

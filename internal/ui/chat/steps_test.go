@@ -49,34 +49,37 @@ func TestSteps_ProseTitlesAGroupOfCalls(t *testing.T) {
 	m := stepsModel(t)
 	view := stripANSI(m.renderHistory())
 
-	// Each batch of calls folds under an ordinal, a state glyph, a rule, a
-	// tool count and a duration.
-	first := stepLine(t, view, "Locate the round accounting")
-	for _, want := range []string{"1 ", "✓", "2 tools", "0.7s", "─"} {
+	// Each batch of calls is one card: its receipt on the header, the prose
+	// that titled it for a body.
+	first := stepLine(t, view, "read internal/agent/loop.go")
+	for _, want := range []string{"⚙", "searched ErrRoundLimit", "0.7s"} {
 		if !strings.Contains(first, want) {
-			t.Fatalf("step header should contain %q: %q", want, first)
+			t.Fatalf("the card's header should contain %q: %q", want, first)
 		}
 	}
-	second := stepLine(t, view, "Thread the sentinel")
-	for _, want := range []string{"2 ", "✗", "2 tools", "22s"} {
+	second := stepLine(t, view, "wrote internal/agent/loop.go")
+	for _, want := range []string{"▎✗", "ran 1 command", "exit 1"} {
 		if !strings.Contains(second, want) {
-			t.Fatalf("failed step header should contain %q: %q", want, second)
+			t.Fatalf("the failed card's header should contain %q: %q", want, second)
 		}
 	}
-	// The prose is the title, not a separate block above it.
+	// The prose is the body, not a separate block above it.
 	if strings.Count(view, "Locate the round accounting") != 1 {
-		t.Fatalf("the title should render once, as the header:\n%s", view)
+		t.Fatalf("the title should render once, as the body:\n%s", view)
 	}
-	// A completed step collapses to its header; the broken one stays open.
-	if strings.Contains(view, "internal/agent/loop.go") && strings.Contains(view, "ErrRoundLimit") {
-		t.Fatalf("a finished step should collapse to its header:\n%s", view)
+	body := stepLine(t, view, "Locate the round accounting")
+	if !strings.HasPrefix(body, strings.Repeat(" ", components.CardBodyIndent)+"Locate") {
+		t.Fatalf("the body sits at the body column: %q", body)
 	}
-	if !strings.Contains(view, "exit 1") {
-		t.Fatalf("a step containing a failure stays open:\n%s", view)
+	// A finished card keeps its body and its footer; the failure is on it.
+	if !strings.Contains(view, "--- FAIL: TestRoundLimit") {
+		t.Fatalf("the failed card's footer is its failure:\n%s", view)
 	}
 }
 
-func TestSteps_FlatWithoutTitles(t *testing.T) {
+// A run of calls nothing titled is a card too, with no body: the footer, or
+// the padding row, follows its header.
+func TestSteps_CallsNothingTitledAreOneCard(t *testing.T) {
 	m := activityModel(t)
 	m.transcript = []entry{
 		{kind: entryUser, text: "look around"},
@@ -84,50 +87,35 @@ func TestSteps_FlatWithoutTitles(t *testing.T) {
 		{kind: entryCommand, text: "go build ./...", toolResult: "ok"},
 	}
 	m.invalidateRenderCache()
-
-	w := m.transcriptWidth()
-	var want string
-	for i, e := range m.transcript {
-		if i > 0 {
-			want += separatorBefore(m.transcript[i-1], e)
-		}
-		want += m.renderEntry(e, w)
+	view := stripANSI(m.renderHistory())
+	header := stepLine(t, view, "searched x")
+	if !strings.Contains(header, "▎$ searched x · ran go build ./...") {
+		t.Fatalf("the two calls are one card's receipt: %q", header)
 	}
-	if got := m.renderHistory(); got != want {
-		t.Fatalf("a turn with no steps must render exactly as a flat list:\n%q\nwant:\n%q", got, want)
+	if strings.Count(view, "go build") != 1 {
+		t.Fatalf("the calls are stated once, on the card:\n%s", view)
 	}
-	// The only rule a flat turn draws is the one closing the sent message.
-	// Step chrome is a rule with a title and a count on the same line, so
-	// that is what this looks for rather than the glyph on its own.
-	for _, line := range strings.Split(stripANSI(m.renderHistory()), "\n") {
-		if strings.Contains(line, "─") && strings.TrimSpace(strings.ReplaceAll(line, "─", "")) != "" {
-			t.Fatalf("no step chrome without steps, got %q", line)
-		}
+	if blocks := m.blocksOf(m.transcript); len(blocks) != 2 || blocks[1].step != nil {
+		t.Fatalf("a card nothing titled is not a step of the outline: %+v", blocks)
 	}
 }
 
 func TestSteps_ProseThatIsNotATitleKeepsItsBlock(t *testing.T) {
-	long := strings.Repeat("a very long explanation ", 10)
-	cases := map[string]string{
-		"multi-line": "Here is what I found.\n\nAnd then some more.",
-		"too long":   long,
+	m := activityModel(t)
+	m.transcript = []entry{
+		{kind: entryAssistant, text: "Here is what I found.\n\nAnd then some more."},
+		{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"a.go"}`, toolResult: "x"},
 	}
-	for name, prose := range cases {
-		t.Run(name, func(t *testing.T) {
-			m := activityModel(t)
-			m.transcript = []entry{
-				{kind: entryAssistant, text: prose},
-				{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"a.go"}`, toolResult: "x"},
-			}
-			m.invalidateRenderCache()
-			view := stripANSI(m.renderHistory())
-			if strings.Contains(view, "─") {
-				t.Fatalf("prose that is an explanation must not become a title:\n%s", view)
-			}
-			if !strings.Contains(view, strings.Join(strings.Fields(prose)[:4], " ")) {
-				t.Fatalf("the prose keeps its own block:\n%s", view)
-			}
-		})
+	m.invalidateRenderCache()
+	view := stripANSI(m.renderHistory())
+	if blocks := m.blocksOf(m.transcript); blocks[0].step != nil {
+		t.Fatalf("prose of several lines is a passage, not a title:\n%s", view)
+	}
+	if !strings.Contains(view, "Here is what I found.") || !strings.Contains(view, "And then some more.") {
+		t.Fatalf("the prose keeps its own block:\n%s", view)
+	}
+	if !strings.Contains(view, "⚙ read a.go") {
+		t.Fatalf("the call after it is a card nothing titled:\n%s", view)
 	}
 }
 
@@ -140,19 +128,23 @@ func TestSteps_LiveStepRunsOpen(t *testing.T) {
 	m.invalidateRenderCache()
 
 	view := stripANSI(m.renderHistory())
-	live := stepLine(t, view, "Thread the sentinel")
-	if !strings.Contains(live, "▾") || !strings.Contains(live, "▸") {
-		t.Fatalf("the live step is running and open: %q", live)
+	live := stepLine(t, view, "ran go test")
+	if strings.Contains(live, "✎ ") || strings.Contains(live, "$ ") {
+		t.Fatalf("the live card has the running glyph in its glyph slot: %q", live)
 	}
-	if !strings.Contains(view, "go test ./internal/agent/...") {
-		t.Fatalf("a running step shows its rows:\n%s", view)
+	if !strings.Contains(view, "Thread the sentinel through the loop") {
+		t.Fatalf("a running card shows its body:\n%s", view)
 	}
 
 	m.setTurnState(stateInput)
 	m.invalidateRenderCache()
-	done := stepLine(t, stripANSI(m.renderHistory()), "Thread the sentinel")
-	if !strings.Contains(done, "▸") || !strings.Contains(done, "✓") {
-		t.Fatalf("a finished step folds to its header: %q", done)
+	view = stripANSI(m.renderHistory())
+	done := stepLine(t, view, "ran go test")
+	if !strings.Contains(done, "▎✎") {
+		t.Fatalf("a finished card takes its own glyph: %q", done)
+	}
+	if !strings.Contains(view, "Thread the sentinel through the loop") {
+		t.Fatalf("a finished card does not fold on its own:\n%s", view)
 	}
 }
 
@@ -228,21 +220,31 @@ func TestSteps_SurviveResizeAndCaching(t *testing.T) {
 		t.Fatal("a second render from the cache must match the first")
 	}
 
-	// A resize re-renders every step from the stored raw entries.
+	// A resize re-renders every card from the stored raw entries.
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 64, Height: 30})
 	m = updated.(Model)
-	narrow := stripANSI(m.renderHistory())
-	line := stepLine(t, narrow, "Locate the round accounting")
-	if got := lipgloss.Width(line); got != m.transcriptWidth() {
-		t.Fatalf("resized header should fill the new width %d, got %d: %q", m.transcriptWidth(), got, line)
+	narrow := m.renderHistory()
+	cold := m
+	cold.invalidateRenderCache()
+	if narrow != cold.renderHistory() {
+		t.Fatal("the resized render drifted from a cold one")
+	}
+	for _, line := range strings.Split(stripANSI(narrow), "\n") {
+		if lipgloss.Width(line) > m.transcriptWidth() {
+			t.Fatalf("a card line runs past the new width %d: %q", m.transcriptWidth(), line)
+		}
 	}
 
-	// A row landing in the open step restates its header, cache or no cache.
+	// A row landing in the last card restates its header, cache or no cache,
+	// at a width with room for the whole receipt.
+	updated, _ = m.Update(tea.WindowSizeMsg{Width: 140, Height: 30})
+	m = updated.(Model)
+	_ = m.renderHistory()
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file",
 		toolArgs: `{"path":"b.go"}`, toolResult: "x", duration: time.Second})
-	grown := stepLine(t, stripANSI(m.renderHistory()), "Thread the sentinel")
-	if !strings.Contains(grown, "3 tools") {
-		t.Fatalf("the header should count the row that just landed: %q", grown)
+	grown := stepLine(t, stripANSI(m.renderHistory()), "wrote internal/agent/loop.go")
+	if !strings.Contains(grown, "read b.go") && !strings.Contains(grown, "read 1 file") {
+		t.Fatalf("the header should state the call that just landed: %q", grown)
 	}
 }
 
@@ -273,19 +275,12 @@ func TestSteps_BatchAfterANoticeJoinsTheStepAbove(t *testing.T) {
 
 	view := stripANSI(m.renderHistory())
 	if got := strings.Count(view, "Locate the round accounting"); got != 1 {
-		t.Fatalf("the step should be headed once, got %d headers:\n%s", got, view)
+		t.Fatalf("the step should be one card, got %d bodies:\n%s", got, view)
 	}
-	header := stepLine(t, view, "Locate the round accounting")
-	for _, want := range []string{"1 ", "3 tools"} {
-		if !strings.Contains(header, want) {
-			t.Fatalf("the one header should carry %q and count the whole step: %q", want, header)
-		}
-	}
-	// The batch is the step's, so its rows are the ones under that header.
-	for _, row := range []string{"loop.go", "round.go", "ErrRoundLimit"} {
-		if !strings.Contains(view, row) {
-			t.Fatalf("the step should show %q under its header:\n%s", row, view)
-		}
+	// The batch is the step's, so the one card's receipt counts it.
+	header := stepLine(t, view, "searched ErrRoundLimit")
+	if !strings.Contains(header, "read 2 files") {
+		t.Fatalf("the one card should state the whole step: %q", header)
 	}
 	// And the frame is what the same entries render as from cold: a frozen
 	// block that changed is exactly the difference between the two.
@@ -307,33 +302,39 @@ func TestSteps_FocusFoldsAndUnfolds(t *testing.T) {
 	if m.state != stateFocus {
 		t.Fatalf("ctrl+o should enter focus mode, got state %d", m.state)
 	}
-	// Headers are selection targets alongside rows: header 1 (folded, so no
-	// rows), header 2 and its two rows.
-	want := []int{1, 4, 5, 6}
+	// A card is one target, and a card that is not open offers no rows.
+	want := []int{1, 4}
 	if got := m.expandableIndices(); fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Fatalf("focus targets should be %v, got %v", want, got)
 	}
 
-	// Enter on a folded header unfolds the group in place.
+	// Enter on a card opens it onto its calls in place.
 	m.focusIdx = 1
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	if !strings.Contains(stripANSI(m.renderHistory()), "ErrRoundLimit") {
-		t.Fatalf("enter on a folded header should unfold it:\n%s", stripANSI(m.renderHistory()))
+	if !strings.Contains(stripANSI(m.renderHistory()), "search  ErrRoundLimit") {
+		t.Fatalf("enter on a card should open it onto its calls:\n%s", stripANSI(m.renderHistory()))
 	}
-	if got := m.expandableIndices(); fmt.Sprint(got) != fmt.Sprint([]int{1, 2, 3, 4, 5, 6}) {
-		t.Fatalf("an unfolded step offers its rows too, got %v", got)
+	if got := m.expandableIndices(); fmt.Sprint(got) != fmt.Sprint([]int{1, 2, 3, 4}) {
+		t.Fatalf("an open card offers its rows too, got %v", got)
 	}
 
-	// And enter again folds it back, hiding nothing the header does not say.
+	// Enter again folds it to its header, which still says what it holds.
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	view := stripANSI(m.renderHistory())
-	if strings.Contains(view, "ErrRoundLimit") {
-		t.Fatalf("enter should fold the group back:\n%s", view)
+	if strings.Contains(view, "Locate the round accounting") {
+		t.Fatalf("enter should fold the card to its header:\n%s", view)
 	}
-	if !strings.Contains(stepLine(t, view, "Locate the round accounting"), "2 tools") {
+	if !strings.Contains(stepLine(t, view, "searched ErrRoundLimit"), "read internal/agent/loop.go") {
 		t.Fatal("a folded header still states what it swallowed")
+	}
+
+	// And a third time gives the card back.
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	if !strings.Contains(stripANSI(m.renderHistory()), "Locate the round accounting") {
+		t.Fatal("enter on a folded card should unfold it")
 	}
 }
 
@@ -343,14 +344,19 @@ func TestSteps_FocusPointerOnHeader(t *testing.T) {
 	m.focusIdx = 1
 	content, start, count := m.renderFocusHistory()
 	lines := strings.Split(stripANSI(content), "\n")
-	if start < 0 || start >= len(lines) {
-		t.Fatalf("selected header line %d out of range (%d lines)", start, len(lines))
+	if start < 0 || start+1 >= len(lines) {
+		t.Fatalf("selected card line %d out of range (%d lines)", start, len(lines))
 	}
-	if !strings.Contains(lines[start], "❯") || !strings.Contains(lines[start], "Locate the round accounting") {
-		t.Fatalf("the pointer should sit on the selected header: %q", lines[start])
+	// The card opens on its padding row; the cursor is on the header under
+	// it, in the card's own pointer column.
+	if !strings.HasPrefix(lines[start+1], "❯▎") && !strings.HasPrefix(lines[start+1], "❯ ") {
+		t.Fatalf("the pointer should sit on the selected card's header: %q", lines[start+1])
 	}
-	if count != 1 {
-		t.Fatalf("a folded header is one line, got %d", count)
+	if !strings.Contains(lines[start+1], "read internal/agent/loop.go") {
+		t.Fatalf("the pointer should sit on the selected card's header: %q", lines[start+1])
+	}
+	if count != 4 {
+		t.Fatalf("a card with a body and no footer is four lines, got %d", count)
 	}
 }
 

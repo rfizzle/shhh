@@ -19,8 +19,9 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// One applied edit opened to its depths from reading mode: the row, the
-// change in place under it, and the whole screen — and back to in place.
+// One applied edit opened to its depths from reading mode: the card it is
+// in, opened onto its calls, the edit's row, the change in place under it,
+// and the whole screen — and back to in place.
 func TestProgram_AnEditRowOpensToEachDepth(t *testing.T) {
 	dir := fixtureDir(t, map[string]string{
 		"loop.go":  "package agent\n\nconst limit = 25\n\nfunc round(a *Agent) error {\n    if a.round >= limit {\n        return ErrRoundLimit\n    }\n    a.round++\n    return nil\n}\n",
@@ -39,7 +40,13 @@ func TestProgram_AnEditRowOpensToEachDepth(t *testing.T) {
 	tm.Send(programHandover)
 	tm.Send(programAllow)
 	waitForText(t, tm, "where the file says")
-	programPress(t, tm, "ctrl+o", "k", "k", "k")
+	// The three calls are one card: the cursor reaches it, enter opens it
+	// onto them, and the edit is the second of its rows.
+	programPress(t, tm, "ctrl+o", "k", "k")
+	waitForText(t, tm, "row 1 of 3")
+	programPress(t, tm, "enter")
+	waitForText(t, tm, "row 1 of 5")
+	programPress(t, tm, "j")
 	waitForText(t, tm, "row 2 of 5")
 	programPress(t, tm, "enter")
 	waitForText(t, tm, "@@ -4,7 +4,7 @@")

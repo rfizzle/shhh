@@ -99,9 +99,10 @@ func contentColumn(line string) int {
 // (docs/interface/surfaces.md#the-leading-columns).
 func TestTranscriptGrid_NoEntryStartsInsideTheMarkerGutter(t *testing.T) {
 	// The marks that are allowed to stand there, and the rule the reader's
-	// message and a step header are drawn under: the mark takes the gutter
-	// and the words start past it.
-	marks := "❯▸▾"
+	// message and a card are drawn under: the mark takes the gutter and the
+	// words start past it. A card's pointer column is one wide and its rail
+	// stands in the second (docs/interface/surfaces.md#the-step).
+	marks := "❯▸▾▎"
 	for _, width := range gridWidths {
 		m := gridModel(t, width, 40)
 		for i, line := range strings.Split(ansi.Strip(m.renderHistory()), "\n") {
@@ -148,7 +149,7 @@ func TestTranscriptGrid_EveryKindSharesOneLeftEdge(t *testing.T) {
 		"the tree reading":       "tree moved —",
 		"the error":              "✗ the notebook",
 		"the arriving reply":     "Re-running the suite",
-		"the changed-files rail": "▎",
+		"the changed-files rail": "file changed",
 	}
 	for _, width := range gridWidths {
 		m := gridModel(t, width, 40)

@@ -266,8 +266,8 @@ and the sentence is the primary thing the user is doing.
 
 ### One grid
 
-Every line of activity — a tool call, a command, a sub-agent, a folded group,
-a failure — is the same row with the same fields in the same columns: what
+Every line of activity — a tool call, a command, a sub-agent, a failure — is
+the same row with the same fields in the same columns: what
 kind of act it was, which act, what it touched, what came of it, how long it
 took.
 
@@ -409,9 +409,9 @@ from this table rather than deciding its own density. The default is
 
 | Rung | Cards | Glosses | Summary rows | Vitals | Think rows | Resolved queue lines | Activity feed |
 |------|-------|---------|--------------|--------|------------|----------------------|---------------|
-| `low` | the offers row only, and the esc offer never drops | none | none | mode · context · spend | off | folded to a count | step headers only, no counts on a row |
-| `normal` | the readings: one row and its footnote | the ones about this call | the rows with something to say | the rail as the frame draws it | folded, counting their lines | as the surface draws them | a finished step folds, a run of reads folds to a counted row |
-| `high` | every hint row | every gloss | every reading | every field | open to their tail | as the surface draws them | every row open with its bounded body |
+| `low` | the offers row only, and the esc offer never drops | none | none | mode · context · spend | off | folded to a count | each step's card its header alone, no counts on a row |
+| `normal` | the readings: one row and its footnote | the ones about this call | the rows with something to say | the rail as the frame draws it | folded, counting their lines | as the surface draws them | each step a card of header, body and footer; a finished card does not fold |
+| `high` | every hint row | every gloss | every reading | every field | open to their tail | as the surface draws them | every card open on its rows, each with its bounded body |
 
 A rung is inclusive of the ones below it: whatever `low` draws, `normal`
 draws, and whatever `normal` draws, `high` draws. A surface that draws

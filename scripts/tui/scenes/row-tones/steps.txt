@@ -5,9 +5,11 @@
 # The outcome column in four tones, and the subject beside it in body text
 # (docs/interface/surfaces.md#the-activity-row). One turn draws a read, a
 # command that finished, a command that broke and a command the reader
-# refused, so the column can be read down for what happened to each without
-# reading a word — and every word is still there, which is what the picture
-# is looked at for.
+# refused. The calls that ran are one card, answering with the break, and the
+# refusal is a card of its own; the first card opened gives each call's row,
+# so the column can be read down for what happened to each without reading a
+# word — and every word is still there, which is what the picture is looked
+# at for.
 #
 # One card, at the end: every act before it is read-only and is allowed
 # without anybody being asked, so there is never a moment where a key meant
@@ -25,8 +27,20 @@ snap 02-broken "No such file or directory"
 snap 03-card "mv loop.go loop.go.bak"
 sleep 1
 keys n
-snap 04-refused "Every state the row paints is above" "ok · 7 lines · auto-allowed · read-only" "exit 1 · auto-allowed · read-only" "denied · you"
+snap 04-refused "Every state the row paints is above" "denied · you" "exit 1"
+# The calls that ran are one card, whose header answers with the break; its
+# rows are where each call's own outcome is, so it is opened. The cursor
+# opens on the turn's close, and the card is three stops above it.
+keys C-o
+snap 05-reading "[j/k] move"
+keys k
+keys k
+keys k
+snap 06-on-the-card "[enter] open it"
+keys Enter
+snap 07-rows "ok · 7 lines · auto-allowed · read-only" "exit 1 · auto-allowed · read-only" "denied · you"
+keys q
 keys C-c
-snap 05-quit-armed "again quits"
+snap 08-quit-armed "again quits"
 keys C-c
-snap 06-exit "that is everything the screen was holding"
+snap 09-exit "that is everything the screen was holding"

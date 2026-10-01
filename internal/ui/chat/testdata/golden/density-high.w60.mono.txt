@@ -14,7 +14,10 @@
 ❯ fix the round limit
 ──────────────────────────────────────────────────────
 
-▾ 1  Locate the round accounting ──── ✓ 3 tools   0.9s
+
+  ⚙ read 2 files · searched once
+    Locate the round accounting
+
    ⚙ read    internal/agent/loop.go     3 lines
     a
     b
@@ -26,10 +29,14 @@
     a
     b
    ⚙ search  ErrRoundLimit            2 matches
-    internal/agent/loop.go:88:         return ErrRoundLimit
+    internal/agent/loop.go:88:         return ErrRoun…
     internal/agent/agent.go:12: // ErrRoundLimit ends…
 
-▾ 2  Thread the sentinel through t… ─ ✗ 2 tools    22s
+
+
+ ▎✗ wrote internal/agent/loop.go              exit 1
+    Thread the sentinel through the loop
+
    ✻ think                              2 lines
     One return path, then the test.
     The test names the sentinel directly.
@@ -39,12 +46,16 @@
     --- FAIL: TestRoundLimit
 
 
+
 ── ansi ────────────────────────────────────────────────────
 · verbosity · high
 ␛[38;5;254m❯␛[m fix the round limit
 ␛[38;5;244m──────────────────────────────────────────────────────␛[m
 
-␛[38;5;244m▾␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mLocate the round accounting␛[m ␛[38;5;244m────␛[m ␛[38;5;254m✓␛[m ␛[38;5;244m3 tools␛[m   ␛[38;5;244m0.9s␛[m
+
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m␛[38;5;244m 2 files · searched once␛[m
+    ␛[38;5;254mLocate the round accounting␛[m
+
    ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m     ␛[38;5;244m3 lines␛[m
     ␛[38;5;244ma␛[m
     ␛[38;5;244mb␛[m
@@ -56,10 +67,14 @@
     ␛[38;5;244ma␛[m
     ␛[38;5;244mb␛[m
    ␛[38;5;244m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mErrRoundLimit␛[m            ␛[38;5;244m2 matches␛[m
-    ␛[38;5;244minternal/agent/loop.go:88:         return ErrRoundLimit␛[m
+    ␛[38;5;244minternal/agent/loop.go:88:         return ErrRoun…␛[m
     ␛[38;5;244minternal/agent/agent.go:12: // ErrRoundLimit ends…␛[m
 
-␛[38;5;244m▾␛[m ␛[38;5;254m2 ␛[m ␛[38;5;254mThread the sentinel through t…␛[m ␛[38;5;244m─␛[m ␛[38;5;254m✗␛[m ␛[38;5;244m2 tools␛[m    ␛[38;5;244m22s␛[m
+
+
+ ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mwrote␛[m ␛[38;5;244minternal/agent/loop.go␛[m              ␛[38;5;254mexit 1␛[m
+    ␛[38;5;254mThread the sentinel through the loop␛[m
+
    ␛[38;5;244m✻␛[m ␛[38;5;254mthink␛[m   ␛[38;5;254m␛[m                           ␛[38;5;244m2 lines␛[m
     ␛[38;5;244mOne return path, then the test.␛[m
     ␛[38;5;244mThe test names the sentinel directly.␛[m
@@ -67,4 +82,5 @@
     ␛[38;5;244medited␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/…␛[m  ␛[38;5;254mexit 1␛[m    ␛[38;5;244m21s␛[m
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m
+
 

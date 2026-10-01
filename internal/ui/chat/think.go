@@ -148,14 +148,10 @@ func (m Model) thinkRowFor(e entry, width int) components.ActivityRow {
 			lines = lines[max(len(lines)-maxToolResultLines, 0):]
 		}
 		row.Detail = lines
-	default:
-		// A closed row says how it opens. The folded group row and the
-		// collapsed diff row say it the same way, and a fold nobody knows is
-		// a fold is a row that looks like it had nothing to show.
-		if len(lines) > 0 {
-			row.Keys, row.KeysHint = components.GroupExpandKey, true
-		}
 	}
+	// A closed row prints no key for what enter does: its count says what
+	// the fold holds, and the hint bar names enter under the cursor
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 	return row
 }
 

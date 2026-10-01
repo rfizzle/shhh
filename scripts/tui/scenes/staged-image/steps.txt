@@ -19,7 +19,8 @@
 # sentence is still in the draft. At 08 the dragged picture is a fold in the
 # middle of the sentence, `⟨Image#2 · 16×8⟩` — the number goes on from the
 # dropped Image#1 — with its chip above and the vitals rail under it. At 09
-# the sent row keeps the fold in the sentence and `▸ Image#2 · 16×8` under it.
+# the sent row keeps the fold in the sentence and the tray row
+# `⟨▣ Image#2⟩  shot.png · 16×8` under it.
 setup echo 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAICAIAAAB/FOjAAAAAHElEQVR4nGJhYGgQYGAgHrEwKDCQBEY1EKMBMADhhgJxNvbMPQAAAABJRU5ErkJggg==' | base64 -d > shot.png
 setup printf '%s' "$PWD/shot.png" > drag.txt
 snap 01-start "Some things worth doing first"
@@ -41,7 +42,7 @@ keys " saw "
 paste drag.txt
 snap 08-fold "attached Image#2 (shot.png" "this is the error I saw ⟨Image#2 · 16×8⟩" "▣ Image#2 shot.png" "├─ ⏸ manual ─"
 keys " on the settings screen" Enter
-snap 09-sent "clipped at the edge" "⟨Image#2 · 16×8⟩ on the settings screen" "▸ Image#2 · 16×8 · [enter] open"
+snap 09-sent "clipped at the edge" "⟨Image#2 · 16×8⟩ on the settings screen" "⟨▣ Image#2⟩  shot.png · 16×8"
 keys C-c
 snap 10-quit-armed "again quits"
 keys C-c

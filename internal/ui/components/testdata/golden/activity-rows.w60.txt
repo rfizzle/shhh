@@ -45,7 +45,7 @@
    ⛁ report    → http://127.0.0.1:52104/r/rp-8f3a11c…   0.8s
 
 · kind · think, folded
-   ✻ think                  42 lines · [enter] expand
+   ✻ think                                   42 lines
 
 · kind · think, opened to its tail
    ✻ think                                   42 lines
@@ -151,7 +151,7 @@
    ␛[38;5;241m⛁␛[m ␛[38;5;252mreport␛[m  ␛[38;5;252m␛[m  ␛[92m→ http://127.0.0.1:52104/r/rp-8f3a11c…␛[m   ␛[38;5;241m0.8s␛[m
 
 · kind · think, folded
-   ␛[38;5;241m✻␛[m ␛[38;5;252mthink␛[m   ␛[38;5;252m␛[m               ␛[38;5;245m42 lines␛[m␛[38;5;241m · ␛[m␛[38;5;241m[enter] expand␛[m
+   ␛[38;5;241m✻␛[m ␛[38;5;252mthink␛[m   ␛[38;5;252m␛[m                                ␛[38;5;245m42 lines␛[m
 
 · kind · think, opened to its tail
    ␛[38;5;241m✻␛[m ␛[38;5;252mthink␛[m   ␛[38;5;252m␛[m                                ␛[38;5;245m42 lines␛[m

@@ -122,31 +122,31 @@ func TestStepDetail_OpeningUnfoldsTheStepAndClosingLeavesItOpen(t *testing.T) {
 	}
 }
 
-func TestStepDetail_OpenedStepGivesItsGroupRowBack(t *testing.T) {
+func TestStepDetail_OpenedStepDrawsItsCalls(t *testing.T) {
 	m := detailModel(t)
 	g := firstStep(t, m)
 	blk, ok := m.stepBlockAt(m.transcript, g.titleIdx)
 	if !ok {
 		t.Fatal("step 1 went missing")
 	}
-	if slots := m.blockSlots(m.transcript, blk); !slots[0].group {
-		t.Fatal("the fixture's read-only run is not folded to begin with")
+	if !m.cardHidesRows(blk, m.transcript) {
+		t.Fatal("the fixture's card is drawing its calls to begin with")
 	}
 
 	m.toggleStepDetail(g)
 	m.invalidateRenderCache()
 
-	for _, sl := range m.blockSlots(m.transcript, blk) {
-		if sl.group {
-			t.Error("an opened step is still swallowing rows into a counted group row")
-		}
+	if m.cardHidesRows(blk, m.transcript) {
+		t.Error("an opened step is still standing in for its calls")
 	}
 	view := stripANSI(m.renderHistory())
-	if strings.Contains(view, "6 reads · 2 searches") {
-		t.Errorf("the group row survived the command that asked what the step did:\n%s", view)
-	}
 	if !strings.Contains(view, "internal/agent/session.go") {
-		t.Errorf("the rows the group had swallowed did not come back:\n%s", view)
+		t.Errorf("the calls the card stood in for did not come back:\n%s", view)
+	}
+	for _, l := range strings.Split(view, "\n") {
+		if strings.Contains(l, "reads ·") {
+			t.Errorf("an open card counted a run of reads into a group row: %q", l)
+		}
 	}
 }
 
@@ -206,7 +206,7 @@ func TestStepDetail_HeaderMarksYourAnswerAndNotTheSetting(t *testing.T) {
 	// High verbosity opens every step, and a word repeated on every header
 	// says nothing about any of them. It is asked of a step nobody has
 	// answered for: an explicit answer outranks the setting, as stepFold's
-	// and groupFold's do.
+	// does.
 	m.verbosity = verbosityHigh
 	untouched := lastStep(t, m)
 	ublk, ok := m.stepBlockAt(m.transcript, untouched.titleIdx)

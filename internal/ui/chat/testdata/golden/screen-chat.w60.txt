@@ -65,8 +65,8 @@
 · a fetch that ran without a card
    shhh chat · gpt-4o                                       
   ────────────────────────────────────────────────────────  
-     ⚙ web     https://docs.python.org/3…  1 line           
                                                             
+    ⚙ looked up https://docs.python.org/3/library/jso…      
                                                             
                                                             
                                                             
@@ -144,9 +144,9 @@
 · a fetch that ran without a card
   ␛[97;1m shhh chat␛[38;5;241;22m · gpt-4o␛[m                                       
   ␛[38;5;241m────────────────────────────────────────────────────────␛[m  
-     ␛[38;5;241m⚙␛[m ␛[38;5;252mweb␛[m     ␛[38;5;252mhttps://docs.python.org/3…␛[m  ␛[38;5;245m1 line␛[m           
-                                                            
-                                                            
+  ␛[48;5;234m                                                      ␛[m    
+  ␛[48;5;234m  ␛[38;5;214m⚙␛[39m ␛[38;5;252mlooked up␛[39m ␛[38;5;245mhttps://docs.python.org/3/library/jso…␛[39m  ␛[m    
+  ␛[48;5;234m                                                      ␛[m    
                                                             
                                                             
                                                             

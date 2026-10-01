@@ -18,8 +18,8 @@ package chat
 // is the one being watched, and the draft keeps the keyboard while it does.
 // Under the cursor, reading mode's [enter] opens any one row whole.
 //
-// The override lives on the entry that titles the step, beside stepFold and
-// groupFold, so steps still hold no layout state of their own and
+// The override lives on the entry that titles the step, beside stepFold, so
+// steps still hold no layout state of their own and
 // re-render from stored raw entries on resize. It is resolved at render time
 // rather than stamped onto the rows, which is what lets a call that lands
 // after the command was run arrive already open — a step in flight is a
@@ -41,9 +41,9 @@ import (
 const noStepDetailNotice = "Nothing to expand yet — /step opens the detail of a step's rows."
 
 // stepDetailOpen reports whether a step is showing its rows' detail bodies.
-// Your own answer overrides the verbosity, the same order stepFolded and
-// groupFolded read their overrides in; with no answer on record, high
-// verbosity is the setting that has already said yes to every step.
+// Your own answer overrides the verbosity, the same order a card reads its
+// fold in (card.go); with no answer on record, high verbosity is the setting
+// that has already said yes to every step.
 func (m Model) stepDetailOpen(g *stepGroup, es []entry) bool {
 	if g == nil || g.titleIdx == stepNoTitle || g.titleIdx >= len(es) {
 		// A declared step nobody has started has no rows to open and no entry
@@ -77,17 +77,6 @@ func (m Model) stepAt(es []entry, idx int) (*stepGroup, bool) {
 		}
 	}
 	return nil, false
-}
-
-// stepDetailAt answers stepDetailOpen for a reader holding only an index —
-// the group-fold check on the row under the cursor, which knows where it is
-// but not which block it is in.
-func (m Model) stepDetailAt(es []entry, idx int) bool {
-	g, ok := m.stepAt(es, idx)
-	if !ok {
-		return false
-	}
-	return m.stepDetailOpen(g, es)
 }
 
 // draftStep is the step /step opens from the input: the last one with rows

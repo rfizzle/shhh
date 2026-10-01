@@ -389,8 +389,8 @@ func TestThinkRow_StaysInTheStepItWasThoughtIn(t *testing.T) {
 	m.transcript[0].stepFold = foldOpen
 	m.invalidateRenderCache()
 	view := stripANSI(m.renderHistory())
-	if strings.Count(view, "Reading the loop") != 1 || !strings.Contains(view, "3 tools") {
-		t.Fatalf("one header, counting three calls:\n%s", view)
+	if strings.Count(view, "Reading the loop") != 1 || !strings.Contains(view, "read 3 files") {
+		t.Fatalf("one card, counting three calls:\n%s", view)
 	}
 	for _, want := range []string{"a.go", "✻", "d.go", "e.go"} {
 		if !strings.Contains(view, want) {
@@ -406,7 +406,7 @@ func TestThinkRow_StaysInTheStepItWasThoughtIn(t *testing.T) {
 			t.Fatalf("folding the step folds %s with it:\n%s", gone, view)
 		}
 	}
-	if !strings.Contains(view, "3 tools") {
+	if !strings.Contains(view, "read 3 files") {
 		t.Fatalf("the folded header still counts what it swallowed:\n%s", view)
 	}
 	if slices.Contains(m.expandableIndices(), 2) {

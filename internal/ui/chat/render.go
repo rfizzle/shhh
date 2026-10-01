@@ -582,8 +582,13 @@ func entryIsBlock(e entry) bool {
 }
 
 // separatorBefore returns the spacing between two adjacent entries: one blank
-// line whenever either side is a block, and nothing between feed rows, so
-// activity rows and one-line notices pack tight while turns keep their air.
+// line whenever either side is a block, and nothing between feed rows. A
+// card is a block — its units say so (steps.go) — so there is one blank line
+// between two cards and between a card and anything beside it, its padding
+// rows are inside its band rather than spent as that blank, and prose with
+// no calls behind it stands on bare screen with its air either side
+// (docs/interface/surfaces.md#the-step). The rows an open card draws are
+// feed rows on its band and pack tight.
 func separatorBefore(prev, cur entry) string {
 	// A tray row sits flush under the message it came with, and under the
 	// row before it: the tray is one band, and a blank line inside it would

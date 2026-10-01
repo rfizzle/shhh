@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // The column grid (docs/interface/principles.md#one-grid, normative). Widths
@@ -296,15 +295,12 @@ type ActivityRow struct {
 	MaxDetail int
 	// Tail is a running command's last output line, shown live beneath the row.
 	Tail string
-	// Keys are the keys the row offers (`/mode why`), rendered in the key
-	// colour after the outcome — every key the interface offers is, so a key
-	// in any other colour is not an offer.
+	// Keys are the live keys the row offers (`/mode why`), rendered in the
+	// key colour after the outcome — every key the interface offers is, so a
+	// key in any other colour is not an offer. A row prints no key for what
+	// enter does under the cursor: the hint bar says that
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 	Keys string
-	// KeysHint draws Keys in the hint grey instead: they label what the row
-	// does under reading mode's cursor, the way GroupExpandKey does on a
-	// folded group, rather than standing open while the draft has the
-	// keyboard.
-	KeysHint bool
 	// ByRule colours a denial del (9) rather than dim (241): `⊘ denied · you`
 	// is a preference, `⊘ denied · auto` is a rule.
 	ByRule bool
@@ -589,17 +585,9 @@ func (r ActivityRow) outcomeField() string {
 		parts = append(parts, paintAccount(r.Allowed, sty.Dim))
 	}
 	if r.Keys != "" {
-		parts = append(parts, r.keysTone().Render(r.Keys))
+		parts = append(parts, sty.Key.Render(r.Keys))
 	}
 	return strings.Join(parts, sty.Dim.Render(" · "))
-}
-
-// keysTone is the tone Keys are drawn in: an offer's, or a hint's.
-func (r ActivityRow) keysTone() lipgloss.Style {
-	if r.KeysHint {
-		return sty.Hint
-	}
-	return sty.Key
 }
 
 // paintCounts paints a ` · `-joined count label, giving an edit's line counts
@@ -785,8 +773,8 @@ func durationField(d string) string {
 // leadWidth, then the target, the outcome field and the duration. The target
 // grows into whatever the fixed fields leave and clips with … so the outcome
 // does not have to — it is the reason to read the line, and it gives way to
-// nothing but the pane. Both the activity row and the folded group row are
-// this shape, which is why they line up.
+// nothing but the pane. The activity row and the notice are this shape,
+// which is why they line up.
 func gridLine(lead, target, outcome, duration string, width int) string {
 	return gridLineWith(lead, target, func(s string) string { return sty.Dim.Render(s) }, outcome, duration, width)
 }
@@ -887,7 +875,7 @@ func (r ActivityRow) foldKeys(width int) (ActivityRow, []string) {
 	if room >= min(lipgloss.Width(r.Target), minTargetWidth) {
 		return r, nil
 	}
-	offer, tone := r.Keys, r.keysTone()
+	offer, tone := r.Keys, sty.Key
 	r.Keys = ""
 	inner := max(width-detailIndent, 1)
 	var under []string
@@ -927,37 +915,6 @@ func indented(s string, indent, width int) string {
 	return pad + sty.Dimmer.Render(Clip(s, inner))
 }
 
-// GroupExpandKey is what a folded group row says opens it. It is drawn in the
-// hint treatment rather than in the key colour, the way the collapsed diff row's has
-// always been: enter belongs to the draft below until reading mode takes the
-// keyboard, so on a transcript row this is a label for what the row does
-// under the cursor, not an offer standing open
-// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-var GroupExpandKey = keys.Bracket(keys.Reading.Expand) + " " + keys.Words(keys.Reading.Expand)
-
-// ActivityGroup is the folded group row: the one line a run of consecutive
-// read-only calls collapses into at normal verbosity. It folds, it never
-// hides (invariant 4) — the label states what it swallowed and the duration
-// states what that cost, so nothing is dropped to save space.
-//
-// It sits on the same grid as a row, shifted by one field: the fold state
-// takes the glyph column and the kind glyph ⚙ takes the verb column, so the
-// line reads as chrome about rows rather than as a call of its own.
-type ActivityGroup struct {
-	// Label counts the swallowed rows by kind, e.g. "6 reads · 2 searches".
-	Label string
-	// Duration is the summed 6-column field, blank under 0.5s like a row's.
-	Duration string
-}
-
-// View renders the group row at the given width.
-func (g ActivityGroup) View(width int) string {
-	lead := strings.Repeat(" ", ptrWidth+railWidth) +
-		sty.Dim.Render("▸") + " " +
-		sty.Dim.Render("⚙") + strings.Repeat(" ", verbWidth-1)
-	return gridLine(lead, g.Label, sty.Hint.Render(GroupExpandKey), g.Duration, width)
-}
-
 // ActivityNotice is a line the session wrote about itself rather than an act
 // it took — a conversation reopened, a new one started. It sits on the grid
 // beside the acts: the verb it opens with in the verb column, what it is
@@ -966,8 +923,8 @@ func (g ActivityGroup) View(width int) string {
 // session's own lines were sentences at column 0 that ran past the pane and
 // were broken by the terminal wherever they happened to run out.
 //
-// The glyph column is blank, the way the folded group row's fields are
-// shifted: the glyph says which kind of act a row was, and this is not one.
+// The glyph column is blank: the glyph says which kind of act a row was,
+// and this is not one.
 // It is dim throughout for the same reason — the session's bookkeeping is
 // chrome about the transcript rather than something that touched the
 // machine, which is the bottom of the weight order

@@ -3,25 +3,29 @@
 #
 # A turn that reads its way into a task before it has anything to say about
 # it (docs/interface/surfaces.md#the-step). Twelve reads with no plan and no
-# prose over them: the run folds to one counted row all the same, and the
-# reading cursor opens it in place.
+# prose over them: the run is one card all the same, counting them on its
+# header with a strip of twelve glyphs under it, and the reading cursor opens
+# it onto its rows in place.
 setup for f in one two three four five six seven eight nine ten eleven twelve; do printf 'package fixture\n' > "${f}.go"; done
 snap 01-start "Some things worth doing first"
 keys "how is the round limit counted" Enter
-# Twelve calls, one row: what they were, how many, and what they cost.
-snap 02-folded "12 reads"
+# Twelve calls, one card: what they were and how many, and the order they
+# came in as a strip.
+snap 02-folded "read 12 files" "⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙"
 keys C-o
-snap 03-reading "12 reads"
-# The cursor starts on the last row of the turn; up twice is the group row,
-# with the answer's prose between them.
+snap 03-reading "read 12 files"
+# The cursor starts on the last row of the turn; up twice is the card, with
+# the answer's prose between them.
 keys k
 keys k
-snap 04-on-the-group "12 reads" "❯  ▸ ⚙"
+snap 04-on-the-card "[enter] open it" "❯ ⚙ read 12 files"
 keys Enter
-# Opened in place: every read back with its own target, under no heading.
+# Opened in place: every read back with its own target, on the card's band.
 snap 05-opened "eleven.go" "⚙ read    one.go" "⚙ read    twelve.go"
-keys Enter
-snap 06-refolded "12 reads"
+# The open card's rows are stops of their own, and its first row is where
+# the card is kept: [-] there folds the whole card to its header.
+keys "-"
+snap 06-refolded "[enter] unfold it" "read 12 files"
 # The way out of reading mode, and the session's.
 keys q
 snap 07-prompt "[enter] send"

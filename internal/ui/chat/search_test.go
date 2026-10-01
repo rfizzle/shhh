@@ -13,9 +13,9 @@ import (
 )
 
 // foldedSearchModel is reading mode over the golden transcript, whose first
-// step has finished — so it is drawn as its header alone, with a run of four
-// read-only calls folded inside that. `context.go` is read exactly once, by a
-// call two folds down, and is on nothing the pane is drawing.
+// step is a card standing in for its four read-only calls. `context.go` is
+// read exactly once, by a call the card covers, and is on nothing the pane
+// is drawing.
 func foldedSearchModel(t *testing.T) Model {
 	t.Helper()
 	m := frameModel(t, 110, 40)
@@ -23,8 +23,9 @@ func foldedSearchModel(t *testing.T) Model {
 	m.invalidateRenderCache()
 	next, _ := m.enterFocusMode()
 	rm := next.(Model)
-	if !rm.headerOf(t, 1).Folded {
-		t.Fatal("the fixture wants a step that has finished and folded")
+	es := *rm.entries()
+	if blk, ok := rm.stepBlockAt(es, 1); !ok || !rm.cardHidesRows(blk, es) {
+		t.Fatal("the fixture wants a card standing in for its calls")
 	}
 	return rm
 }
@@ -41,7 +42,7 @@ func (m Model) headerOf(t *testing.T, idx int) stepHeader {
 }
 
 // A count taken from the rendered lines is a count of the rows that happened
-// to be open. This is the whole story: the one occurrence is two folds down
+// to be open. This is the whole story: the one occurrence is behind a card
 // and the session still says it is there.
 func TestSearch_CountsWhatTheFoldsAreCovering(t *testing.T) {
 	m := foldedSearchModel(t)
@@ -60,22 +61,23 @@ func TestSearch_CountsWhatTheFoldsAreCovering(t *testing.T) {
 	}
 }
 
-// The fold that is covering it says so on its own row, with the key that
-// opens it — a fold states what it swallowed (invariant 4), and while a
-// search is up what it swallowed includes the answer.
-func TestSearch_TheFoldRowCountsAndOffersTheKey(t *testing.T) {
+// The card that is covering it says so on its header — a fold states what
+// it swallowed (invariant 4), and while a search is up what it swallowed
+// includes the answer. The key that opens it is the bar's to name, never the
+// row's.
+func TestSearch_TheCardCountsWhatItCovers(t *testing.T) {
 	m := foldedSearchModel(t)
 	m.searchTranscript("context.go")
 	h := m.headerOf(t, 1)
 	if h.Matches != 1 {
 		t.Fatalf("the header counts %d, want the one occurrence behind it", h.Matches)
 	}
-	row := h.View(m.transcriptWidth())
+	row := cardLine(cardLines(m), "read 3 files")
 	if !strings.Contains(row, "1 match inside") {
-		t.Fatalf("the header row says nothing about it:\n%s", row)
+		t.Fatalf("the card's header says nothing about it:\n%s", row)
 	}
-	if !strings.Contains(row, "open to the first") {
-		t.Fatalf("the count has no way to be reached from the row:\n%s", row)
+	if strings.Contains(row, "[enter]") {
+		t.Fatalf("the card prints a key:\n%s", row)
 	}
 	// And a step covering nothing the query wants says nothing about it.
 	if other := m.headerOf(t, 6); other.Matches != 0 {
@@ -99,23 +101,13 @@ func TestSearch_EnterOpensTheFoldOntoTheMatch(t *testing.T) {
 	if es[1].stepFold != foldSearch {
 		t.Fatalf("the step's fold is %v, want the search's own", es[1].stepFold)
 	}
-	if m.headerOf(t, 1).Folded {
-		t.Fatal("the step should be open")
+	if blk, _ := m.stepBlockAt(es, 1); m.cardHidesRows(blk, es) {
+		t.Fatal("the card should be open onto its calls")
 	}
-	// One level: what is under it now is the run of read-only calls, still
-	// folded and still counting the occurrence it is standing in for.
-	if m.focusIdx != 2 {
-		t.Fatalf("the cursor is on %d, want the run that holds the match", m.focusIdx)
-	}
-	row := m.groupRowFor(es, slot{idx: 2, span: 4, group: true}).View(m.transcriptWidth())
-	if !strings.Contains(row, "1 match inside") {
-		t.Fatalf("the run says nothing about what it is covering:\n%s", row)
-	}
-
-	// And again: the run opens and the row itself is what the cursor is on.
-	m, _ = pressKey(t, m, enter)
-	if got := (*m.entries())[2].groupFold; got != foldSearch {
-		t.Fatalf("the run's fold is %v, want the search's own", got)
+	// The calls are on screen, and the cursor is on the one that read the
+	// file the query names.
+	if m.focusIdx != 4 {
+		t.Fatalf("the cursor is on %d, want the read that holds the match", m.focusIdx)
 	}
 	if at, total := m.searchPosition(); at != 1 || total != 1 {
 		t.Fatalf("position %d/%d, want the one occurrence reached", at, total)
@@ -126,9 +118,11 @@ func TestSearch_EnterOpensTheFoldOntoTheMatch(t *testing.T) {
 // so it goes back. A fold the reader opened is theirs.
 func TestSearch_ClearingTheQueryPutsBackOnlyTheFoldsItOpened(t *testing.T) {
 	m := foldedSearchModel(t)
-	// The reader's own: the second step, folded by hand before any search.
+	// The reader's own: the second step, folded by hand before any search
+	// — enter opens a card, and enter again folds it.
 	m.focusIdx = 6
 	m.refreshFocusView()
+	m, _ = pressKey(t, m, enter)
 	m, _ = pressKey(t, m, enter)
 	if got := (*m.entries())[6].stepFold; got != foldClosed {
 		t.Fatalf("the second step's fold is %v, want the reader's own", got)
@@ -233,17 +227,19 @@ func TestSearch_TheCountFollowsTheSessionUnderAStandingQuery(t *testing.T) {
 	if _, total := m.searchPosition(); total != 1 {
 		t.Fatalf("total %d asked again", total)
 	}
+	// The row lands as a card of its own, whose header names the file it
+	// read and which covers the row naming it again: two occurrences.
 	m.transcript = append(m.transcript, entry{kind: entryTool, toolName: "read_file",
 		toolArgs: `{"path":"internal/agent/context.go"}`, toolResult: "a"})
 	m.invalidateRenderCache()
 	m.refreshFocusView()
-	if _, total := m.searchPosition(); total != 2 {
+	if _, total := m.searchPosition(); total != 3 {
 		t.Fatalf("total %d after a matching row landed", total)
 	}
 	(*m.entries())[1].stepFold = foldOpen
 	m.invalidateRenderCache()
 	m.refreshFocusView()
-	if _, total := m.searchPosition(); total != 2 {
+	if _, total := m.searchPosition(); total != 3 {
 		t.Fatalf("total %d after the fold opened", total)
 	}
 }

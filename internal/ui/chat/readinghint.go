@@ -105,6 +105,13 @@ func (m Model) readingModeKeys() []hintSeg {
 		// every time, so the bar says that and never offers to close it
 		// (attachments.go).
 		segs = append(segs, segAs(keys.Reading.Expand, openTrayWords))
+	} else if words, ok := m.focusedCardWords(); ok {
+		// A card prints no key of its own; the bar says what enter does to
+		// the one under the cursor (docs/interface/surfaces.md#the-step).
+		segs = append(segs, segAs(keys.Reading.Expand, words))
+		if m.focusedRowOpen() {
+			segs = append(segs, seg(keys.Reading.Collapse))
+		}
 	} else if m.focusedExpands() {
 		segs = append(segs, seg(keys.Reading.Expand))
 		if m.focusedRowOpen() {
@@ -143,6 +150,31 @@ func (m Model) readingModeKeys() []hintSeg {
 // openTrayWords is what enter does on a sent picture's row.
 const openTrayWords = "open it"
 
+// The words for what enter does to a card, one per depth it walks.
+const (
+	cardOpenWords   = "open it"
+	cardFoldWords   = "fold it"
+	cardUnfoldWords = "unfold it"
+)
+
+// focusedCardWords is what enter does to the card under the cursor, if the
+// cursor is on one: open it onto its calls, fold an open one to its header,
+// unfold one drawn as its header alone (cycleCard).
+func (m Model) focusedCardWords() (string, bool) {
+	es := *m.entries()
+	blk, ok := m.cardTakesKey(es, m.focusIdx)
+	if !ok {
+		return "", false
+	}
+	switch d, folded := m.cardShape(blk, es); {
+	case folded || d == components.CardLow:
+		return cardUnfoldWords, true
+	case d == components.CardHigh:
+		return cardFoldWords, true
+	}
+	return cardOpenWords, true
+}
+
 // focusedTrayPicture reports whether the cursor stands on a sent picture's
 // row, which enter opens onto its card.
 func (m Model) focusedTrayPicture() bool {
@@ -155,17 +187,14 @@ func (m Model) focusedTrayPicture() bool {
 }
 
 // focusedExpands reports whether [enter] would open anything on the row
-// under the cursor: a step header's fold, a group's, or a row with a body of
-// its own. The bar reads it so the key it offers is one the row will honour.
+// under the cursor: a card's fold, or a row with a body of its own. The bar
+// reads it so the key it offers is one the row will honour.
 func (m Model) focusedExpands() bool {
 	es := *m.entries()
 	if m.focusIdx < 0 || m.focusIdx >= len(es) {
 		return false
 	}
-	if _, ok := m.stepBlockAt(es, m.focusIdx); ok {
-		return true
-	}
-	if m.groupAnchor(es, m.focusIdx) {
+	if _, ok := m.cardTakesKey(es, m.focusIdx); ok {
 		return true
 	}
 	return m.rowExpands(es[m.focusIdx])
@@ -387,7 +416,7 @@ type openKind int
 const (
 	// openNone is a row showing nothing but itself.
 	openNone openKind = iota
-	// openStep is a step showing its rows rather than its header alone.
+	// openStep is a card open onto its calls.
 	openStep
 	// openDetail is those rows showing their detail bodies — what /step
 	// opens. It is a kind of its own rather than a degree of openStep because
@@ -395,8 +424,6 @@ const (
 	// detail answer standing, and closing the detail leaves the step open
 	// (steps.go, detail.go).
 	openDetail
-	// openGroup is a folded run of read-only calls given back row by row.
-	openGroup
 	// openDiff is a diff showing its hunks inside the transcript.
 	openDiff
 	// openThink is a reasoning row showing part or all of its block.
@@ -413,24 +440,18 @@ func (m Model) focusedOpenKind() openKind {
 	if m.focusIdx < 0 || m.focusIdx >= len(es) {
 		return openNone
 	}
-	if blk, ok := m.stepBlockAt(es, m.focusIdx); ok {
-		h := m.headerFor(blk, es)
+	if blk, ok := m.cardTakesKey(es, m.focusIdx); ok {
+		d, folded := m.cardShape(blk, es)
 		switch {
-		case !h.Folded:
+		case !folded && d == components.CardHigh:
 			return openStep
-		case h.Detail:
+		case es[m.focusIdx].detailFold == foldOpen:
 			// A header folded over an open detail: the rows are not on
 			// screen, but the answer that would show their bodies is still
 			// on record, and [-] answers both with the one toggle below.
 			return openDetail
 		}
 		return openNone
-	}
-	if m.groupAnchor(es, m.focusIdx) {
-		if m.groupFolded(es[m.focusIdx], m.stepDetailAt(es, m.focusIdx)) {
-			return openNone
-		}
-		return openGroup
 	}
 	if d := es[m.focusIdx].diff; d != nil {
 		if d.Mode == components.DiffCollapsed {
@@ -449,12 +470,17 @@ func (m Model) focusedOpenKind() openKind {
 	if es[m.focusIdx].expanded {
 		return openBody
 	}
+	// The first call of an open run nothing titled is where its card is
+	// kept: with nothing of its own open, what [-] has to close is the card.
+	if _, ok := m.cardBlockAt(es, m.focusIdx); ok {
+		return openStep
+	}
 	return openNone
 }
 
 // focusedRowOpen reports whether the row under the cursor is showing more
-// than its own line — an expanded body, an unfolded step, or a group whose
-// rows are back.
+// than its own line — an expanded body, or a card drawing more than its
+// header.
 func (m Model) focusedRowOpen() bool { return m.focusedOpenKind() != openNone }
 
 // collapseFocused closes whatever the row under the cursor has open, and
@@ -474,8 +500,6 @@ func (m *Model) collapseFocused() bool {
 	switch kind {
 	case openStep, openDetail:
 		m.toggleStepFold(m.focusIdx)
-	case openGroup:
-		m.toggleGroupFold(m.focusIdx)
 	case openDiff:
 		es[m.focusIdx].diff.Mode = components.DiffCollapsed
 	case openThink:
@@ -507,14 +531,11 @@ func readerOpened(e entry) []openKind {
 	// still put back — nothing on screen reports it, and an answer nothing
 	// reports is one that springs the bodies open the next time the header
 	// opens.
-	if e.stepFold == foldOpen {
+	if e.stepFold == foldOpen || e.stepFold == foldCard {
 		kinds = append(kinds, openStep)
 	}
 	if e.detailFold == foldOpen {
 		kinds = append(kinds, openDetail)
-	}
-	if e.groupFold == foldOpen {
-		kinds = append(kinds, openGroup)
 	}
 	// DiffExpanded, and not "anything but collapsed": the full-screen view is
 	// a surface of its own, and esc there steps back to the expanded form
@@ -543,8 +564,6 @@ func restOpen(e *entry, k openKind) {
 		e.stepFold = foldAuto
 	case openDetail:
 		e.detailFold = foldAuto
-	case openGroup:
-		e.groupFold = foldAuto
 	case openDiff:
 		e.diff.Mode = components.DiffCollapsed
 	case openThink:
@@ -607,17 +626,19 @@ func (m Model) settingHoldsRowsOpen() bool {
 	}
 	es := *m.entries()
 	for _, blk := range m.blocksOf(es) {
-		if blk.step != nil {
-			if h := m.headerFor(blk, es); h.Folded || blk.step.queued() {
-				continue
-			}
+		if blk.step != nil && blk.step.queued() {
+			continue
 		}
-		for _, sl := range m.blockSlots(es, blk) {
-			// A folded run is one counted row and no bodies.
-			if sl.group {
+		start, end := blk.start, blk.end
+		if isCardBlock(blk, es) {
+			// A card drawing anything less than its calls shows no bodies.
+			if !m.cardOpen(blk, es) {
 				continue
 			}
-			if m.settingShowsBody(es[sl.idx]) {
+			start, end = blk.members()
+		}
+		for i := start; i < end; i++ {
+			if m.settingShowsBody(es[i]) {
 				return true
 			}
 		}

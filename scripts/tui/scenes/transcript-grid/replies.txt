@@ -1,9 +1,9 @@
 # One session puts every kind of entry that has a left edge of its own into
-# one transcript: prose over a batch of reads twice (a step each, and the
-# folded run of read-only rows inside them), enough rounds to cross the
-# check-in interval the scene starts the session on (launch), then a third step
-# whose command fails, so it stays open and its row is drawn where the
-# columns can be read — and a plain answer to finish on. The reading of the
+# one transcript: prose over a batch of reads twice (a step each, drawn as a
+# card with the prose for its body), enough rounds to cross the check-in
+# interval the scene starts the session on (launch), then a third step whose
+# command fails, its card answering with the failure and its line — and a
+# plain answer to finish on. The reading of the
 # session takes replies of its own out of this file as it falls due, which is
 # why the last line is the one that repeats.
 The constant is declared in three files, so the loop is the only one of them that can own it.

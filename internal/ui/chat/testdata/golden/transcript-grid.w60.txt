@@ -15,10 +15,12 @@
   tests
 ──────────────────────────────────────────────────────
 
-▾ 1  The constant is declared in t… ─ ✗ 2 tools    21s
-   ⚙ read    internal/agent/loop.go     3 lines
-  ▎✗ run     go test ./internal/agent/…  exit 1    21s
-    --- FAIL: TestRoundLimit
+                                                      
+ ▎✗ read internal/agent/loop.go               exit 1  
+    The constant is declared in three files, so the   
+    loop is the only one of them that can own it.     
+    --- FAIL: TestRoundLimit                  1 line  
+                                                      
 
   The objective is one home for the round limit. The
   evidence is the failure above, which reads the
@@ -47,13 +49,13 @@
 · the whole surface · the same edge in the pane it sits in
    shhh chat · gpt-4o                                       
   ────────────────────────────────────────────────────────  
-      --- FAIL: TestRoundLimit                              
+                                                            
                                                             
     The objective is one home for the round limit. The      
     evidence is the failure above, which reads the          
     constant from the loop and not from the caller. Next    
       … 1 more line                                         
-                                                        ┃   
+                                                            
     Check-in — 36 rounds used. Taking stock, then       ┃   
     carrying on.                                        ┃   
     Steered — the reading says the edits have moved     ┃   
@@ -81,10 +83,12 @@
   tests
 ──────────────────────────────────────────────────────
 
-▾ 1  The constant is declared in t… ─ ✗ 2 tools    21s
-   ⚙ read    internal/agent/loop.go     3 lines
-  ▎✗ run     go test ./internal/agent/…  exit 1    21s
-    --- FAIL: TestRoundLimit
+                                                      
+ ▎✗ read internal/agent/loop.go               exit 1  
+    The constant is declared in three files, so the   
+    loop is the only one of them that can own it.     
+    --- FAIL: TestRoundLimit                  1 line  
+                                                      
 
   The objective is one home for the round limit. The
   evidence is the failure above, which reads the
@@ -114,10 +118,12 @@
   ␛[97mtests␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mThe constant is declared in t…␛[m ␛[38;5;241m─␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m    ␛[38;5;241m21s␛[m
-   ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m     ␛[38;5;245m3 lines␛[m
-  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/…␛[m  ␛[91mexit 1␛[m    ␛[38;5;241m21s␛[m
-    ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
+␛[48;5;234m                                                      ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m               ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;252mThe constant is declared in three files, so the␛[m␛[48;5;234m   ␛[m
+␛[48;5;234m    ␛[38;5;252mloop is the only one of them that can own it.␛[m␛[48;5;234m     ␛[m
+␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                  ␛[38;5;241m1 line␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                      ␛[m
 
   ␛[3;38;5;245mThe objective is one home for the round limit. The␛[m
   ␛[3;38;5;245mevidence is the failure above, which reads the␛[m
@@ -146,13 +152,13 @@
 · the whole surface · the same edge in the pane it sits in
   ␛[97;1m shhh chat␛[38;5;241;22m · gpt-4o␛[m                                       
   ␛[38;5;241m────────────────────────────────────────────────────────␛[m  
-      ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                              
+  ␛[48;5;234m                                                      ␛[m    
                                                             
     ␛[38;5;245;3mThe objective is one home for the round limit. The␛[m      
     ␛[38;5;245;3mevidence is the failure above, which reads the␛[m          
     ␛[38;5;245;3mconstant from the loop and not from the caller. Next␛[m    
       ␛[38;5;241m… 1 more line␛[m                                         
-                                                        ␛[38;5;241m┃␛[m   
+                                                            
     ␛[38;5;241mCheck-in — 36 rounds used. Taking stock, then␛[m       ␛[38;5;241m┃␛[m   
     ␛[38;5;241mcarrying on.␛[m                                        ␛[38;5;241m┃␛[m   
     ␛[38;5;241mSteered — the reading says the edits have moved␛[m     ␛[38;5;241m┃␛[m   
@@ -180,10 +186,12 @@
   ␛[97mtests␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mThe constant is declared in t…␛[m ␛[38;5;241m─␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m    ␛[38;5;241m21s␛[m
-   ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m     ␛[38;5;245m3 lines␛[m
-  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/…␛[m  ␛[91mexit 1␛[m    ␛[38;5;241m21s␛[m
-    ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
+␛[48;5;234m                                                      ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m               ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;252mThe constant is declared in three files, so the␛[m␛[48;5;234m   ␛[m
+␛[48;5;234m    ␛[38;5;252mloop is the only one of them that can own it.␛[m␛[48;5;234m     ␛[m
+␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                  ␛[38;5;241m1 line␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                      ␛[m
 
   ␛[3;38;5;245mThe objective is one home for the round limit. The␛[m
   ␛[3;38;5;245mevidence is the failure above, which reads the␛[m

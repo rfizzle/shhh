@@ -623,7 +623,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// docs/interface/surfaces.md#the-diff-view); failures keep the plain tool
 		// block so the error text stays visible.
 		if req.kind == approvalDiff && len(req.hunks) > 0 && digest.Outcome(msg.result) == digest.OutcomeOK {
-			m.appendCallRow(req.call.ID, entry{kind: entryDiff, diff: &components.DiffView{
+			m.appendCallRow(req.call.ID, entry{kind: entryDiff, toolName: req.call.Name, diff: &components.DiffView{
 				Path:     req.path,
 				Verb:     req.verb,
 				Hunks:    req.hunks,

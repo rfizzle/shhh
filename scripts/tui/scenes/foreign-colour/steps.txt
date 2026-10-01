@@ -11,7 +11,8 @@
 # the terminal reported.
 #
 # The picture is the point of this scene. Read the .txt for the text — every
-# word the linter wrote is still on the row — and then look at the .png: the
+# word the linter wrote is still on the row, once its card is open — and then
+# look at the .png: the
 # warning is the palette's accent, the rule name is its info blue, the grey is
 # a rung of its own ramp, and the reverse-video badge is a run of ordinary
 # body text rather than a block that reads as the reading cursor.
@@ -19,7 +20,18 @@ snap 01-start "Some things worth doing first"
 keys "check the lint" Enter
 snap 02-card "[y] run it once"
 keys y
-snap 03-repainted "no-unused-vars" "warn  no-unused-vars  src/app.ts" "1 error, 2 warnings"
+# The command's card answers with its last line, re-painted; the whole of
+# what it printed is the row under the card, so the card is opened. The
+# cursor opens on the turn's close, and the card is two stops above it.
+snap 03-card "Two warnings and an error" "1 error, 2 warnings"
+keys C-o
+snap 04-reading "[j/k] move"
+keys k
+keys k
+snap 05-on-the-card "[enter] open it"
+keys Enter
+snap 06-repainted "no-unused-vars" "warn  no-unused-vars  src/app.ts" "1 error, 2 warnings"
+keys q
 keys C-c
 keys C-c
-snap 04-exit "that is everything the screen was holding"
+snap 07-exit "that is everything the screen was holding"

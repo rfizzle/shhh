@@ -19,7 +19,9 @@
   raise for one turn never reaches the agent. Next I will read the pause row
     … 1 more line
 
-   ▸ ⚙       1 search · 2 reads                         [enter] expand   1.0s
+
+  ⚙ searched resumeToolLoop · read 2 files                             1.0s
+
 
 
 · the same status opened onto every line it was holding
@@ -51,8 +53,9 @@
   The objective is where the tool-round ceiling is read. The evidence is that
     … 3 more lines
 
-   ⚙ search  resumeToolLoop                                  0 matches
-   ⚙ read    internal/ui/chat/stream.go                         1 line
+
+  ⚙ searched resumeToolLoop · read internal/ui/chat/stream.go          0.7s
+
 
   The objective is unchanged and the pause row is now the evidence: it
   carries the grant and spends it where it is drawn. Next I will run the
@@ -63,7 +66,10 @@
 ❯ trace the checkpoint
 ─────────────────────────────────────────────────────────────────────────────
 
-▸ 1  The round boundary is the seam; next I will trace it… ─ ✓ 3 tools   1.0s
+
+  ⚙ searched resumeToolLoop · read 2 files                             1.0s
+    The round boundary is the seam; next I will trace its callers.
+
 
 
 · the same run reopened · the notes come back as notes
@@ -73,7 +79,9 @@
   The objective is where the tool-round ceiling is read. The evidence is that
     … 3 more lines
 
-   ⚙ read    internal/ui/chat/stream.go                         1 line
+
+  ⚙ read internal/ui/chat/stream.go
+
 
   The objective is unchanged and the pause row is now the evidence: it
   carries the grant and spends it where it is drawn. Next I will run the
@@ -90,7 +98,9 @@
   ␛[3;38;5;244mraise for one turn never reaches the agent. Next I will read the pause row␛[m
     ␛[38;5;244m… 1 more line␛[m
 
-   ␛[38;5;244m▸␛[m ␛[38;5;244m⚙␛[m       ␛[38;5;244m1 search · 2 reads␛[m                         ␛[38;5;244m[enter] expand␛[m   ␛[38;5;244m1.0s␛[m
+
+  ␛[38;5;254m⚙␛[m ␛[38;5;254msearched␛[m ␛[38;5;244mresumeToolLoop␛[m␛[38;5;244m · read 2 files␛[m                             ␛[38;5;244m1.0s␛[m
+
 
 
 · the same status opened onto every line it was holding
@@ -122,8 +132,9 @@
   ␛[3;38;5;244mThe objective is where the tool-round ceiling is read. The evidence is that␛[m
     ␛[38;5;244m… 3 more lines␛[m
 
-   ␛[38;5;244m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mresumeToolLoop␛[m                                  ␛[38;5;244m0 matches␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/ui/chat/stream.go␛[m                         ␛[38;5;244m1 line␛[m
+
+  ␛[38;5;254m⚙␛[m ␛[38;5;254msearched␛[m ␛[38;5;244mresumeToolLoop␛[m␛[38;5;244m · read internal/ui/chat/stream.go␛[m          ␛[38;5;244m0.7s␛[m
+
 
   ␛[3;38;5;244mThe objective is unchanged and the pause row is now the evidence: it␛[m
   ␛[3;38;5;244mcarries the grant and spends it where it is drawn. Next I will run the␛[m
@@ -134,7 +145,10 @@
 ␛[38;5;254m❯␛[m trace the checkpoint
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;244m▸␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mThe round boundary is the seam; next I will trace it…␛[m ␛[38;5;244m─␛[m ␛[38;5;254m✓␛[m ␛[38;5;244m3 tools␛[m   ␛[38;5;244m1.0s␛[m
+
+  ␛[38;5;254m⚙␛[m ␛[38;5;254msearched␛[m ␛[38;5;244mresumeToolLoop␛[m␛[38;5;244m · read 2 files␛[m                             ␛[38;5;244m1.0s␛[m
+    ␛[38;5;254mThe round boundary is the seam; next I will trace its callers.␛[m
+
 
 
 · the same run reopened · the notes come back as notes
@@ -144,7 +158,9 @@
   ␛[3;38;5;244mThe objective is where the tool-round ceiling is read. The evidence is that␛[m
     ␛[38;5;244m… 3 more lines␛[m
 
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/ui/chat/stream.go␛[m                         ␛[38;5;244m1 line␛[m
+
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/ui/chat/stream.go␛[m
+
 
   ␛[3;38;5;244mThe objective is unchanged and the pause row is now the evidence: it␛[m
   ␛[3;38;5;244mcarries the grant and spends it where it is drawn. Next I will run the␛[m

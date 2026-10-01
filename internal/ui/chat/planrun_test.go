@@ -412,7 +412,9 @@ func TestPlanOutline_RenderIncludesQueuedHeaders(t *testing.T) {
 	announce(t, &m, "Locate the round accounting", time.Second, false)
 	out := ansi.Strip(m.renderHistory())
 	for _, want := range []string{
-		"1  Locate the round accounting",
+		// The step the run reached is a card, its announcement the body;
+		// the ones it has not are the plan's outline rows.
+		"    Locate the round accounting",
 		"4  Offer more rounds in the chat model",
 		components.OutcomeQueued,
 	} {

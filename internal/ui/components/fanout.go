@@ -720,7 +720,7 @@ func (l FanoutLane) reportFold(width int) []string {
 	if !l.State.settled() || len(l.Report) == 0 {
 		return nil
 	}
-	mark, key := "▸", GroupExpandKey
+	mark, key := "▸", keys.Bracket(keys.Reading.Expand)+" "+keys.Words(keys.Reading.Expand)
 	if l.ReportOpen {
 		mark, key = "▾", keys.Bracket(keys.Reading.Expand)+" fold it back up"
 	}

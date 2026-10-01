@@ -1,8 +1,8 @@
 # One reply per request; a line beginning with + continues the reply above it.
 # Twelve reads and nothing said over them: no plan to number them and no prose
-# to title them, so there is no step for the run to fold under. The fold is
-# over the run itself, so the turn is one counted row rather than a column of
-# twelve line counts. The sentence comes after the calls, where it is an
+# to title them, so there is no step for the run to stand under. The run is a
+# card of its own all the same, so the turn is one card rather than a column
+# of twelve line counts. The sentence comes after the calls, where it is an
 # answer rather than a title. The first call opens the reply rather than
 # continuing it: a `+` with nothing above it is text, and the scene would get
 # a step titled with the line it meant to call.

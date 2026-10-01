@@ -620,18 +620,16 @@ type entry struct {
 	// machine — and this is how the row says the line was not the model's.
 	// Empty on every command nobody amended, which is nearly all of them.
 	amendedFrom string
-	// stepFold is your fold override for the step this entry titles (
-	// docs/interface/surfaces.md#the-step); steps keep no layout state of their
-	// own, so it lives on the raw entry and survives a resize.
+	// stepFold is your fold override for the card this entry is kept on —
+	// the step it titles, or the run of calls it begins where nothing titled
+	// them (docs/interface/surfaces.md#the-step); cards keep no layout state
+	// of their own, so it lives on the raw entry and survives a resize.
 	stepFold foldState
-	// groupFold is the same override for the folded run of read-only calls
-	// this entry heads.
-	groupFold foldState
 	// detailFold is the same override again for the detail bodies of the step
-	// this entry titles — what /step opens and closes. It is a
-	// third override rather than a level of the first two because it answers
-	// a different question: stepFold and groupFold decide which rows are on
-	// screen, this decides how much of each one is.
+	// this entry titles — what /step opens and closes. It is a second
+	// override rather than a level of the first because it answers a
+	// different question: stepFold decides how much of the card is on
+	// screen, this decides how much of each of its rows is.
 	detailFold foldState
 	// thinkDepth is how much of an entryThink row's body is on screen — the
 	// reader's own answer to [enter], recorded on the entry so the row

@@ -7,14 +7,17 @@
 # repeats none of it. Read the cells against the live-command goldens: the
 # command is bounded by the activity row's grammar rather than cut on the
 # rail, the rail carries no copy of it, and of the two clocks on screen only
-# the rail's says `turn`.
+# the rail's says `turn`. The command is the turn's first call, so no step's
+# card holds it yet and the row under the transcript is where it runs; once
+# it lands it is a card (docs/interface/surfaces.md#the-step), its first line
+# out under the header.
 snap 01-start "Some things worth doing first"
 keys "run the checks" Enter
 snap 02-card "[y] run it once"
 keys y
 snap 03-running "running…"
 snap 04-tail "0.412s" "acting… · turn"
-snap 05-settled "The command finished and its row settled"
+snap 05-settled "The command finished and its row settled" "▎$ ran for f in" "ok  github.com/rfizzle/shhh/internal/agent/loop.go"
 keys C-c
 snap 06-quit-armed "again quits"
 keys C-c

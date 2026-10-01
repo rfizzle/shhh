@@ -281,7 +281,7 @@ func TestProgram_TheApprovalCardsKeysRunTheCommand(t *testing.T) {
 	}
 	// The row the run left, read off the frame rather than off the model: the
 	// act, what it was aimed at, and how it went.
-	for _, want := range []string{"$ run", "echo hi", "ok ·"} {
+	for _, want := range []string{"$ ran", "echo hi", "ok ·"} {
 		if !strings.Contains(frame, want) {
 			t.Fatalf("the command's row is not in the transcript, no %q:\n%s", want, frame)
 		}

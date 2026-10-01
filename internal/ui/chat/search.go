@@ -5,15 +5,15 @@ package chat
 //
 // The pane marks the query where it finds it in the lines it is drawing
 // (viewport.go), and that is the whole of what a search over rendered lines
-// can do: a run of reads folded into `▸ ⚙ 6 reads` is six rows the pane never
+// can do: a card standing in for six reads is six rows the pane never
 // rendered, so a count taken from the pane is a count of the rows that
 // happened to be open. That is the one thing a fold may not do
 // (docs/interface/principles.md#fold-never-hide) — it made `no match` a fact
 // about the reader's fold state rather than about the session.
 //
-// So the search asks the entries. Every fold on the transcript — a step
-// showing only its header, a run of read-only calls showing only its count —
-// is asked what the query would find behind it, by drawing those rows as the
+// So the search asks the entries. Every fold on the transcript — a card
+// standing in for its calls, a rewind's fold — is asked what the query would
+// find behind it, by drawing those rows as the
 // fold would draw them if it opened. The number goes on the fold's own row,
 // it is added to the rail's total, and [enter] opens the fold onto the first
 // row that holds one.
@@ -43,15 +43,13 @@ import (
 )
 
 // transcriptFold is one fold row and the entries it is covering right now:
-// a step drawn as its header alone, or a run of read-only calls drawn as one
-// counted group row. idx is the entry the fold's row is anchored to, which is
-// the entry the reading cursor stands on and the entry the fold override is
-// written to.
+// a card drawn without its calls (card.go), or a rewind's fold. idx is the
+// entry the fold's row is anchored to, which is the entry the reading cursor
+// stands on and the entry the fold override is written to.
 type transcriptFold struct {
 	idx        int
 	start, end int
-	// step marks a step's header, whose override is stepFold; a group row's
-	// is groupFold.
+	// step marks a card, whose override is stepFold.
 	step bool
 	// rewound marks a rewind's fold, which covers rows of its own rather
 	// than a run of the transcript's, and opens on its expanded flag
@@ -60,42 +58,39 @@ type transcriptFold struct {
 }
 
 // transcriptFolds lists every fold row on the transcript in the order they
-// are drawn. It is one walk of the same blocks and slots the renderer walks
-// (steps.go, fold.go), so a fold the reader can see is a fold the search can
-// count behind, and there is no third list of what is folded.
+// are drawn. It is one walk of the same blocks the renderer walks (steps.go,
+// card.go), so a fold the reader can see is a fold the search can count
+// behind, and there is no third list of what is folded.
 //
-// It asks whether a step is folded rather than building the step's header,
-// because building one counts the query behind the fold — which is the work
-// this walk exists to hand out, and paying for it here would pay for it
-// twice.
+// It asks whether a card is drawing its calls rather than building the
+// card, because building one counts the query behind the fold — which is
+// the work this walk exists to hand out, and paying for it here would pay
+// for it twice.
 func (m Model) transcriptFolds(es []entry) []transcriptFold {
 	var folds []transcriptFold
 	for _, blk := range m.blocksOf(es) {
-		if g := blk.step; g != nil {
-			if g.queued() {
-				continue
-			}
-			if m.stepFolded(g, es, m.stepStateFor(blk, es)) {
-				folds = append(folds, transcriptFold{idx: g.titleIdx, start: g.start, end: g.end, step: true})
-				continue
-			}
+		if blk.step != nil && blk.step.queued() {
+			continue
 		}
-		for _, sl := range m.blockSlots(es, blk) {
-			if sl.group {
-				folds = append(folds, transcriptFold{idx: sl.idx, start: sl.idx, end: sl.idx + sl.span})
-				continue
+		if isCardBlock(blk, es) {
+			if m.cardHidesRows(blk, es) {
+				start, end := blk.members()
+				folds = append(folds, transcriptFold{idx: cardAnchor(blk), start: start, end: end, step: true})
 			}
-			if e := es[sl.idx]; e.kind == entryRewound && e.rewound != nil &&
+			continue
+		}
+		for i := blk.start; i < blk.end; i++ {
+			if e := es[i]; e.kind == entryRewound && e.rewound != nil &&
 				!e.expanded && len(e.rewound.rows) > 0 {
-				folds = append(folds, transcriptFold{idx: sl.idx, start: sl.idx, end: sl.idx + 1, rewound: true})
+				folds = append(folds, transcriptFold{idx: i, start: i, end: i + 1, rewound: true})
 			}
 		}
 	}
 	return folds
 }
 
-// foldAt is the fold whose row the entry at idx is: the step header, or the
-// group row. Nothing else on the transcript covers rows.
+// foldAt is the fold whose row the entry at idx is: a card, or a rewind's
+// fold. Nothing else on the transcript covers rows.
 func (m Model) foldAt(es []entry, idx int) (transcriptFold, bool) {
 	for _, f := range m.transcriptFolds(es) {
 		if f.idx == idx {
@@ -201,7 +196,7 @@ func (m Model) searchKeyFor(es []entry) searchKey {
 	const offset, prime = uint64(14695981039346656037), uint64(1099511628211)
 	folds := offset
 	for i := range es {
-		folds ^= uint64(es[i].stepFold)<<4 | uint64(es[i].groupFold)<<2 | uint64(es[i].detailFold)
+		folds ^= uint64(es[i].stepFold)<<4 | uint64(es[i].detailFold)
 		if es[i].rewound != nil && es[i].expanded {
 			// A rewind's fold opens on its expanded flag rather than on an
 			// override, and what it covers changes when it does.
@@ -333,9 +328,6 @@ func (m *Model) clearSearchFolds() bool {
 		if es[i].stepFold == foldSearch {
 			es[i].stepFold, found = foldAuto, true
 		}
-		if es[i].groupFold == foldSearch {
-			es[i].groupFold, found = foldAuto, true
-		}
 		if f := es[i].rewound; f != nil && f.searchOpened {
 			f.searchOpened, es[i].expanded, found = false, false, true
 		}
@@ -379,10 +371,8 @@ func (m *Model) snapFocusOntoARow() {
 // the fold opens and the cursor lands on the first row inside that holds a
 // match, so a session that says nine matches walks to nine of them.
 //
-// It opens one level. A step whose match is inside a folded run of reads
-// gives back that run's counted row, still saying what it is covering, and
-// the same key opens that — which is the fold's own grammar rather than a
-// search that reaches through two of them at once.
+// A card opens with its calls on screen, the rows the count was taken
+// from, and the cursor goes to the first of them that holds a match.
 //
 // The fold is recorded as the search's, not the reader's: clearing the query
 // puts it back, because it was opened to answer a question that is over.
@@ -409,11 +399,7 @@ func (m Model) openFoldToMatch() (Model, bool) {
 		m.pointAtFocusedRow()
 		return m, true
 	}
-	if f.step {
-		es[f.idx].stepFold = foldSearch
-	} else {
-		es[f.idx].groupFold = foldSearch
-	}
+	es[f.idx].stepFold = foldSearch
 	m.invalidateRenderCache()
 	m.focusFirstMatchUnder(es, f)
 	m.refreshFocusView()
@@ -422,25 +408,11 @@ func (m Model) openFoldToMatch() (Model, bool) {
 }
 
 // focusFirstMatchUnder moves the cursor to the first row the opened fold is
-// now showing that holds a match — a row, or the counted row of a run that
-// holds one, which is the row the next [enter] opens.
+// now showing that holds a match, where that row is a stop of its own.
 func (m *Model) focusFirstMatchUnder(es []entry, f transcriptFold) {
-	if !f.step {
-		for i := f.start; i < f.end; i++ {
-			if m.searchMatchesIn(es, i, i+1) > 0 {
-				m.focusIdx = i
-				return
-			}
-		}
-		return
-	}
-	blk, ok := m.stepBlockAt(es, f.idx)
-	if !ok {
-		return
-	}
-	for _, sl := range m.blockSlots(es, blk) {
-		if m.searchMatchesIn(es, sl.idx, sl.idx+sl.span) > 0 {
-			m.focusIdx = sl.idx
+	for i := f.start; i < f.end; i++ {
+		if m.selectableRow(es[i]) && m.searchMatchesIn(es, i, i+1) > 0 {
+			m.focusIdx = i
 			return
 		}
 	}

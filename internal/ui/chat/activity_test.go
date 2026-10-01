@@ -620,10 +620,15 @@ func TestFormatDuration(t *testing.T) {
 }
 
 // TestTranscriptSpacing_UniformRhythm pins the transcript's vertical rhythm:
-// one-line notices sit flush against the activity rows they belong to, and
-// blocks (turns, diffs, multi-line notices) get exactly one blank line on
-// either side — never zero, never two.
+// one blank line between things — a card, a notice, a block — never zero and
+// never two, with a card's padding rows inside its band rather than spent as
+// the blank between it and its neighbour.
 func TestTranscriptSpacing_UniformRhythm(t *testing.T) {
+	// The band is what tells a padding row from a blank one, so the rhythm
+	// is measured where the terminal has a band to draw.
+	was := components.Profile()
+	components.SetProfile(colorprofile.ANSI256)
+	t.Cleanup(func() { components.SetProfile(was) })
 	m := activityModel(t)
 	row := func(name string) entry {
 		return entry{kind: entryTool, toolName: name, toolArgs: `{"name":"agent-4"}`,
@@ -640,43 +645,38 @@ func TestTranscriptSpacing_UniformRhythm(t *testing.T) {
 	}
 	lines := strings.Split(strings.TrimRight(stripANSI(m.renderHistory()), "\n"), "\n")
 
-	blank := func(i int) bool { return strings.TrimSpace(lines[i]) == "" }
-	var blanks []int
+	// A blank line is empty; a padding row is the band's width of spaces.
+	blank := func(i int) bool { return lines[i] == "" }
+	pad := func(i int) bool { return lines[i] != "" && strings.TrimSpace(lines[i]) == "" }
 	for i := range lines {
-		if blank(i) {
-			blanks = append(blanks, i)
-			if i > 0 && blank(i-1) {
-				t.Fatalf("two blank lines in a row at %d:\n%s", i, strings.Join(lines, "\n"))
-			}
+		if blank(i) && i > 0 && blank(i-1) {
+			t.Fatalf("two blank lines in a row at %d:\n%s", i, strings.Join(lines, "\n"))
 		}
-	}
-	if len(blanks) == 0 {
-		t.Fatalf("blocks should be separated by blank lines:\n%s", strings.Join(lines, "\n"))
 	}
 
-	// The feed — notice, row, notice, row — packs tight with no gaps.
-	feed := []string{"Auto-approved", "◇ spawn", "Approved agent-4", "◇ agent"}
-	start := -1
+	// Every card opens and closes on a padding row, and stands one blank from
+	// what is either side of it.
+	cards := 0
 	for i, line := range lines {
-		if strings.Contains(line, feed[0]) {
-			start = i
-			break
+		if !strings.Contains(line, "◇ spawn") && !strings.Contains(line, "◇ agent") {
+			continue
+		}
+		cards++
+		if i < 2 || !pad(i-1) || !blank(i-2) {
+			t.Errorf("a card should open on a padding row one blank below what is above it:\n%s", strings.Join(lines, "\n"))
+		}
+		if i+2 >= len(lines) || !pad(i+1) || !blank(i+2) {
+			t.Errorf("a card should close on a padding row one blank above what follows:\n%s", strings.Join(lines, "\n"))
 		}
 	}
-	if start < 0 {
-		t.Fatalf("first notice missing:\n%s", strings.Join(lines, "\n"))
-	}
-	for off, want := range feed {
-		if got := lines[start+off]; !strings.Contains(got, want) {
-			t.Fatalf("feed line %d should contain %q, got %q:\n%s",
-				off, want, got, strings.Join(lines, "\n"))
-		}
+	if cards != 2 {
+		t.Fatalf("the two calls should be two cards, found %d:\n%s", cards, strings.Join(lines, "\n"))
 	}
 
 	// Blocks keep their air: a blank line above the sent message is
 	// impossible (it leads the transcript), but every later block opens with
 	// one above it.
-	for _, header := range []string{"Multi-line notice:", "Done."} {
+	for _, header := range []string{"Approved agent-4", "Multi-line notice:", "Done."} {
 		for i, line := range lines {
 			if strings.HasPrefix(strings.TrimSpace(line), header) {
 				if i == 0 || !blank(i-1) {

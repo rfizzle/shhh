@@ -173,6 +173,13 @@ func (m Model) clickableTranscript() bool {
 // live streaming tail is not a unit and belongs to no entry, which is right:
 // there is nothing there to open yet.
 func (m Model) unitAtLine(line int) (idx, offset int, ok bool) {
+	u, offset, ok := m.unitAt(line)
+	return u.idx, offset, ok
+}
+
+// unitAt is unitAtLine with the unit itself, for a caller that needs to know
+// whether the line is a card's own rather than one of its rows.
+func (m Model) unitAt(line int) (u unit, offset int, ok bool) {
 	es := *m.entries()
 	focus := m.gutterShowing()
 	at := 0
@@ -184,19 +191,18 @@ func (m Model) unitAtLine(line int) (idx, offset int, ok bool) {
 		}
 		n := strings.Count(u.text, "\n")
 		if line >= at && line < at+n {
-			return u.idx, line - at, true
+			return u, line - at, true
 		}
 		at += n
 		prev, havePrev = u.sepAfter, true
 	}
-	return 0, 0, false
+	return unit{}, 0, false
 }
 
 // clickRow opens the transcript row a rendered line belongs to. It is
 // [enter]'s act reached from the other input, so it takes the same branches
-// in the same order — a step header folds its group, a folded run gives its
-// rows back, a diff opens — and a row with nothing to open does nothing at
-// all.
+// in the same order — a card folds, a diff opens — and a row with nothing
+// to open does nothing at all.
 //
 // What it does not share with [enter] is the *cycle*. The key has one row
 // under its cursor and one press to spend, so its three depths are three
@@ -216,12 +222,30 @@ func (m Model) unitAtLine(line int) (idx, offset int, ok bool) {
 // its changed-files line names one turn, and the turn's review is what
 // enter on the block opens too (openCursorRow) — its other offers stay keys.
 func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
-	idx, offset, ok := m.unitAtLine(line)
+	u, offset, ok := m.unitAt(line)
 	if !ok {
 		return m, nil
 	}
+	idx := u.idx
 	es := *m.entries()
 	if idx < 0 || idx >= len(es) {
+		return m, nil
+	}
+	if u.cardHead && m.toggleCardFold(idx) {
+		// A click on a card's own lines folds it or unfolds it, open or
+		// not: a run nothing titled is kept on its first call, so the card
+		// and that call's row share an index, and the line says which one
+		// was meant (docs/interface/surfaces.md#the-step).
+		m.invalidateRenderCache()
+		if m.state == stateFocus {
+			m.focusIdx = idx
+			m.refreshFocusView()
+			return m, nil
+		}
+		m.viewport.SetLines(m.renderHistoryLines())
+		if m.atBottom {
+			m.viewport.GotoBottom()
+		}
 		return m, nil
 	}
 	g := gestureHeader
@@ -299,9 +323,9 @@ const (
 	gestureBody
 )
 
-// toggleRow opens or closes whatever structure the row at idx is — a step
-// header's group, a folded run of read-only calls, a think row's three
-// depths, a diff's three modes, an output body's — and reports whether it
+// toggleRow opens or closes whatever structure the row at idx is — a card's
+// fold, a think row's three depths, a diff's three modes, an output body's
+// — and reports whether it
 // was one of those at all. output reports that the row wants the full screen
 // (outputview.go), and full says the same for a diff.
 //
@@ -314,16 +338,17 @@ func (m *Model) toggleRow(idx int, g rowGesture) (claimed bool, full *components
 	if idx < 0 || idx >= len(es) {
 		return false, nil, false
 	}
-	if _, ok := m.stepBlockAt(es, idx); ok {
-		// A step header folds or unfolds the whole group in place (
-		// step folding).
-		m.toggleStepFold(idx)
-		return true, nil, false
-	}
-	if m.groupAnchor(es, idx) {
-		// A folded group restores its rows in place, and folds them back
-		// again.
-		m.toggleGroupFold(idx)
+	if g == gestureCycle {
+		if m.cycleCard(idx) {
+			// Enter walks a card through its depths: open onto its calls,
+			// folded to its header, and the card again
+			// (docs/interface/surfaces.md#the-step).
+			return true, nil, false
+		}
+	} else if _, ok := m.cardTakesKey(*m.entries(), idx); ok && m.toggleCardFold(idx) {
+		// A click folds a card to its header and unfolds it again, wherever
+		// on it the press landed: it is one target, and the same cell
+		// pressed twice is where it started.
 		return true, nil, false
 	}
 	if es[idx].kind == entryThink {

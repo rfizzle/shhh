@@ -445,8 +445,8 @@ func (m *Model) resizeSelection(width int) {
 // before and after are the render either side of the insert. What they share
 // at the top stays where it was; what they share at the bottom moved by the
 // difference in length, and a point there moves with it. A point on a line
-// the insert redrew — a run of reads the placed row completed and the step
-// folded into one counted row — has no text on the other side to follow, so
+// the insert redrew — the header of the card the placed row landed in, which
+// restates its calls — has no text on the other side to follow, so
 // the selection goes, the way a width change drops it (resizeSelection).
 func (m *Model) shiftSelection(before, after []string) {
 	head := 0

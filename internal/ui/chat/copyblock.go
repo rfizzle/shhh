@@ -108,18 +108,14 @@ func (m Model) openCopyPick(src string, blocks []codeBlock) (tea.Model, tea.Cmd)
 }
 
 // focusedBlocks is the reply under reading mode's cursor and the fenced
-// blocks in it: none on any other row, on a step's header, and on a folded
-// group. It is the one fact both the bar's offer of [c] and the key itself
+// blocks in it: none on any other row, and none on a card. It is the one fact both the bar's offer of [c] and the key itself
 // read, so the bar never offers the key on a row it would hand back from.
 func (m Model) focusedBlocks() (string, []codeBlock) {
 	es := *m.entries()
 	if m.focusIdx < 0 || m.focusIdx >= len(es) {
 		return "", nil
 	}
-	if _, ok := m.stepBlockAt(es, m.focusIdx); ok {
-		return "", nil
-	}
-	if m.foldedGroupSpan(es, m.focusIdx) > 1 {
+	if _, ok := m.cardTakesKey(es, m.focusIdx); ok {
 		return "", nil
 	}
 	e := es[m.focusIdx]

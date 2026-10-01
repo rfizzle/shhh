@@ -1,0 +1,63 @@
+# program test: TestProgram_AnEditCardAppliesTheEdit,
+#   TestProgram_AFoldedRunOfReadsOpensInPlace,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# Each step a card (docs/interface/surfaces.md#the-step), through the built
+# binary. One turn of four steps: reads only, reads then a command, a write,
+# and a command that fails. Read the capture at 04 against the `Cards`
+# artboard's whole turn: a padding row inside the band above and below each
+# card, one blank between cards; on each header the glyph by precedence, the
+# rail on every card that ran or wrote, the verb in body grey and the receipt
+# dim, the answer on the right; the sentence that titled the step under it at
+# the body column; a footer only where the step has evidence — the command's
+# first line out, the write's first line, the failure's line — and none under
+# the step that only read. The answer stands on bare screen under the cards.
+#
+# Then reading mode: the cursor stops on a card as a whole, the bar says what
+# enter does to it, enter opens it onto its calls, enter again folds it to its
+# header with `▸` in the pointer column, and enter a third time gives the card
+# back.
+setup mkdir -p docs && printf 'Scenes drive the built binary.\n' > docs/scenes.md
+setup printf 'notes nobody has committed\n' > notes.md
+snap 01-start "Some things worth doing first"
+keys "write the copy story" Enter
+# The write and the failing command are put to the reader; the reads and
+# the status check run without a card. Each decision waits out the card's
+# grace window before it is answered.
+snap 02-write-card "[y] apply the change"
+sleep 1
+keys y
+snap 03-command-card "[y] run it once" "Running the suite once more"
+sleep 1
+keys y
+# At 80 columns and up every header keeps its whole receipt; below, the
+# second card's command behind its read is counted rather than named, which
+# is the narrow rollup (docs/interface/departures.md#the-narrow-rollup-counts-what-the-wide-one-names).
+wide 80 snap 04-cards "The story is written" "⚙ read 2 files" "ran git status --short notes.md" "wrote story.md" "?? notes.md" "+ # A code block is copied by itself" "--- FAIL: TestReplyGolden" "exit 1"
+narrow 80 snap 04-cards "The story is written" "⚙ read 2 files" "read docs/scenes.md · ran 1 command" "wrote story.md" "?? notes.md" "+ # A code block is copied by itself" "--- FAIL: TestReplyGolden" "exit 1"
+keys C-o
+# The cursor opens on the turn's close; up twice is the last card, past the
+# answer standing between them.
+snap 05-reading "[enter] review turn"
+keys k
+keys k
+snap 06-on-the-card "[enter] open it" "Running the suite once more"
+keys Enter
+# Below 80 columns the bar sheds enter's words before collapse's.
+wide 80 snap 07-open "[enter] fold it" "run     printf"
+narrow 80 snap 07-open "[-] collapse" "run     printf"
+keys Enter
+snap 08-folded "[enter] unfold it" "❯▎✗ ran printf"
+# The cursor stands in the pointer column, so the fold's own mark shows once
+# it moves off the card.
+keys k
+snap 09-folded-mark "▸▎✗ ran printf"
+keys j
+keys Enter
+snap 10-card-again "[enter] open it" "Running the suite once more"
+keys q
+snap 11-prompt "╭─ ✓ done"
+keys C-c
+snap 12-quit-armed "again quits"
+keys C-c
+snap 13-exit "that is everything the screen was holding"

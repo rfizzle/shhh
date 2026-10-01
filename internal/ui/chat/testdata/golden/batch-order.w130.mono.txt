@@ -11,42 +11,94 @@
 
 ── layout ──────────────────────────────────────────────────
 · the write refused at the card, between the reads that ran while it waited
-   ⚙ read    internal/agent/loop.go                             1 line
-  ▎⊘ write   internal/agent/round.go                      denied · you      —
-   ⚙ read    internal/ui/chat/turn.go                           1 line
+
+  ⚙ read internal/agent/loop.go
+
+
+
+ ▎⊘ write internal/agent/round.go                              denied · you
+
+
+
+  ⠋ read internal/ui/chat/turn.go
+
 
 
 · the write skipped for arguments the preview could not read
-   ⚙ read    internal/agent/loop.go                             1 line
-  ▎⊘ write   internal/agent/round.go       skipped · invalid arguments      —
-   ⚙ read    internal/ui/chat/turn.go                           1 line
+
+  ⚙ read internal/agent/loop.go
+
+
+
+ ▎⊘ write internal/agent/round.go               skipped · invalid arguments
+    invalid arguments: content is required
+
+
+
+  ⠋ read internal/ui/chat/turn.go
+
 
 
 · the classifier unavailable: its notice and the refused command in the command's place
-   ⚙ read    internal/agent/loop.go                             1 line
+
+  ⚙ read internal/agent/loop.go
+
+
   classifier unavailable (the classifier could not evaluate this action: api
   down); asking you instead
-  ▎⊘ run     go test ./internal/agent                     denied · you      —
-   ⚙ read    internal/ui/chat/turn.go                           1 line
+
+
+ ▎⊘ run go test ./internal/agent                               denied · you
+
+
+
+  ⠋ read internal/ui/chat/turn.go
+
 
 
 ── ansi ────────────────────────────────────────────────────
 · the write refused at the card, between the reads that ran while it waited
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                             ␛[38;5;244m1 line␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;244mwrite␛[m   ␛[38;5;244minternal/agent/round.go␛[m                      ␛[38;5;244mdenied · you␛[m      ␛[38;5;244m—␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/ui/chat/turn.go␛[m                           ␛[38;5;244m1 line␛[m
+
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/loop.go␛[m
+
+
+
+ ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;254mwrite␛[m ␛[38;5;244minternal/agent/round.go␛[m                              ␛[38;5;244mdenied · you␛[m
+
+
+
+  ␛[38;5;254m⠋␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/ui/chat/turn.go␛[m
+
 
 
 · the write skipped for arguments the preview could not read
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                             ␛[38;5;244m1 line␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;244mwrite␛[m   ␛[38;5;244minternal/agent/round.go␛[m       ␛[38;5;244mskipped␛[m␛[38;5;244m · ␛[m␛[38;5;244minvalid arguments␛[m      ␛[38;5;244m—␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/ui/chat/turn.go␛[m                           ␛[38;5;244m1 line␛[m
+
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/loop.go␛[m
+
+
+
+ ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;254mwrite␛[m ␛[38;5;244minternal/agent/round.go␛[m               ␛[38;5;244mskipped · invalid arguments␛[m
+    ␛[38;5;244minvalid arguments: content is required␛[m
+
+
+
+  ␛[38;5;254m⠋␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/ui/chat/turn.go␛[m
+
 
 
 · the classifier unavailable: its notice and the refused command in the command's place
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                             ␛[38;5;244m1 line␛[m
+
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/loop.go␛[m
+
+
   ␛[38;5;244mclassifier unavailable (the classifier could not evaluate this action: api␛[m
   ␛[38;5;244mdown); asking you instead␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;244mrun␛[m     ␛[38;5;244mgo test ./internal/agent␛[m                     ␛[38;5;244mdenied · you␛[m      ␛[38;5;244m—␛[m
-   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/ui/chat/turn.go␛[m                           ␛[38;5;244m1 line␛[m
+
+
+ ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;254mrun␛[m ␛[38;5;244mgo test ./internal/agent␛[m                               ␛[38;5;244mdenied · you␛[m
+
+
+
+  ␛[38;5;254m⠋␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/ui/chat/turn.go␛[m
+
 

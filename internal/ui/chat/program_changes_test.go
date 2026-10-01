@@ -317,9 +317,9 @@ func TestProgram_ADraftKeepsEnterWhileACloseIsSelected(t *testing.T) {
 }
 
 // A selected row that makes no offer keeps the chord: the undo a close under
-// it offers is not reached from an edit row the cursor stands on. Enter on
-// that edit row is its own — it cycles the edit's diff rather than opening a
-// turn's review.
+// it offers is not reached from an edit the cursor stands on. Enter on that
+// edit is its own — it opens the edit's card onto its row, and then cycles
+// the edit's diff, rather than opening a turn's review.
 func TestProgram_ASelectedEditRowKeepsItsOwnEnter(t *testing.T) {
 	root := programRepo(t, nil)
 	tm := runProgramAt(t, twoEditTurns(root), 120, 50)
@@ -328,14 +328,16 @@ func TestProgram_ASelectedEditRowKeepsItsOwnEnter(t *testing.T) {
 	programPress(t, tm, "ctrl+o")
 	onEdit := func(f string) bool {
 		for _, l := range strings.Split(f, "\n") {
-			if strings.HasPrefix(strings.TrimLeft(l, " "), "❯") && strings.Contains(l, "edit") {
+			if strings.HasPrefix(strings.TrimLeft(l, " "), "❯") && strings.Contains(l, "wrote") {
 				return true
 			}
 		}
 		return false
 	}
-	stepUp(t, tm, "the cursor on an edit row", onEdit)
+	stepUp(t, tm, "the cursor on an edit's card", onEdit)
 	programPress(t, tm, "alt+z")
+	programPress(t, tm, "enter")
+	waitForText(t, tm, "edit    ")
 	programPress(t, tm, "enter")
 	waitForText(t, tm, "@@ -1,3 +1,3 @@")
 

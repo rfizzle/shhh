@@ -11,26 +11,42 @@
 
 ── layout ──────────────────────────────────────────────────
 · three questions about one package
-   ⚙ search  steeringItem ./internal/…  1 match
-   ⚙ search  queuedSteer ./internal…  2 matches
-   ⚙ search  authorOf ./internal/ui/chat
+                                                      
+  ⚙ searched 3 times                            0.9s  
+                                                      
+   ⚙ search  steeringItem ./internal/…  1 match       
+   ⚙ search  queuedSteer ./internal…  2 matches       
+   ⚙ search  authorOf ./internal/ui/chat              
+                                                      
 
 
 · one question three times · the shape a reader is watching for
-   ⚙ search  steeringItem ./internal/…  1 match
-   ⚙ search  steeringItem ./internal/…  1 match
-   ⚙ search  steeringItem ./internal/…  1 match
+                                                      
+  ⚙ searched 3 times                            1.0s  
+                                                      
+   ⚙ search  steeringItem ./internal/…  1 match       
+   ⚙ search  steeringItem ./internal/…  1 match       
+   ⚙ search  steeringItem ./internal/…  1 match       
+                                                      
 
 
 ── ansi ────────────────────────────────────────────────────
 · three questions about one package
-   ␛[38;5;241m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252msteeringItem ./internal/…␛[m  ␛[38;5;245m1 match␛[m
-   ␛[38;5;241m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252mqueuedSteer ./internal…␛[m  ␛[38;5;245m2 matches␛[m
-   ␛[38;5;241m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252mauthorOf␛[m␛[38;5;241m ./internal/ui/chat␛[m
+␛[48;5;234m                                                      ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252msearched␛[m␛[48;5;234m␛[38;5;241m 3 times␛[m␛[48;5;234m                            ␛[38;5;241m0.9s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                      ␛[m
+␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252msteeringItem ./internal/…␛[m␛[48;5;234m  ␛[38;5;245m1 match␛[m␛[48;5;234m       ␛[m
+␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252mqueuedSteer ./internal…␛[m␛[48;5;234m  ␛[38;5;245m2 matches␛[m␛[48;5;234m       ␛[m
+␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252mauthorOf␛[m␛[48;5;234m␛[38;5;241m ./internal/ui/chat␛[m␛[48;5;234m              ␛[m
+␛[48;5;234m                                                      ␛[m
 
 
 · one question three times · the shape a reader is watching for
-   ␛[38;5;241m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252msteeringItem ./internal/…␛[m  ␛[38;5;245m1 match␛[m
-   ␛[38;5;241m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252msteeringItem ./internal/…␛[m  ␛[38;5;245m1 match␛[m
-   ␛[38;5;241m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252msteeringItem ./internal/…␛[m  ␛[38;5;245m1 match␛[m
+␛[48;5;234m                                                      ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252msearched␛[m␛[48;5;234m␛[38;5;241m 3 times␛[m␛[48;5;234m                            ␛[38;5;241m1.0s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                      ␛[m
+␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252msteeringItem ./internal/…␛[m␛[48;5;234m  ␛[38;5;245m1 match␛[m␛[48;5;234m       ␛[m
+␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252msteeringItem ./internal/…␛[m␛[48;5;234m  ␛[38;5;245m1 match␛[m␛[48;5;234m       ␛[m
+␛[48;5;234m   ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;252msearch␛[m␛[48;5;234m  ␛[38;5;252msteeringItem ./internal/…␛[m␛[48;5;234m  ␛[38;5;245m1 match␛[m␛[48;5;234m       ␛[m
+␛[48;5;234m                                                      ␛[m
 

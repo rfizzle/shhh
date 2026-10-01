@@ -32,11 +32,11 @@ import (
 // What each rung draws is one table
 // (docs/interface/principles.md#density-is-one-ladder), and a surface asks
 // it through Model.density rather than comparing the setting itself. In the
-// activity feed (docs/interface/surfaces.md#the-step) low shows step headers
-// only and draws no think row at all
-// (docs/interface/surfaces.md#the-think-row), normal folds a step's
-// consecutive read-only calls into one counted row, high expands every row
-// with its bounded detail body.
+// activity feed (docs/interface/surfaces.md#the-step) low draws each card as
+// its header alone and no think row at all
+// (docs/interface/surfaces.md#the-think-row), normal draws a card's header,
+// body and footer, and high opens every card onto its calls, each with its
+// bounded detail body.
 type verbosity int
 
 const (
@@ -160,6 +160,18 @@ const (
 // the receipt's, and the screen's part is how that is drawn.
 // See docs/architecture.md#one-agent-several-front-ends.
 func (m Model) receiptOf(e entry) receipt.Receipt {
+	if e.kind == entryDiff && e.diff != nil {
+		// An applied edit holds its change rather than its result, so its
+		// receipt is read from the change: the file and the hunks, under the
+		// tool that made it. A row filed before it kept the tool's name is
+		// still a write.
+		rc := receipt.Build(receipt.Call{Name: e.toolName, Path: e.diff.Path, Hunks: e.diff.Hunks})
+		rc.Kind = receipt.KindWrite
+		if rc.Subject == "" {
+			rc.Subject = e.diff.Path
+		}
+		return rc
+	}
 	if e.kind == entryCommand {
 		ended := e.commandResult
 		if ended.Outcome == "" {

@@ -54,11 +54,14 @@ func TestStepReceipt_CountsByVerbInOrderOfFirstUse(t *testing.T) {
 		want string
 	}{
 		{"reads, a search and a lookup",
-			[]Act{readAct("a.go"), searchAct("x"), readAct("b/c.go"), lookupAct()},
-			"read 2 files · searched once · 1 lookup"},
+			[]Act{readAct("a.go"), searchAct("x"), readAct("b/c.go"), lookupAct(), lookupAct()},
+			"read 2 files · searched x · 2 lookups"},
 		{"the order is of first use, not of kind",
-			[]Act{lookupAct(), searchAct("x"), searchAct("y"), readAct("a.go"), lookupAct()},
-			"2 lookups · searched twice · read 1 file"},
+			[]Act{lookupAct(), searchAct("x"), searchAct("y"), readAct("a.go"), readAct("b/c.go"), lookupAct()},
+			"2 lookups · searched twice · read 2 files"},
+		{"a kind with one call names what it was about, and counting starts at two",
+			[]Act{commandAct("git status --short .plan/", "", tools.ExecSucceeded), readAct("a.go"), lookupAct()},
+			"ran git status --short .plan/ · read a.go · looked up a.go"},
 		{"a file read twice is one file",
 			[]Act{readAct("a.go"), readAct("a.go")},
 			"read 1 file"},
@@ -73,8 +76,9 @@ func TestStepReceipt_CountsByVerbInOrderOfFirstUse(t *testing.T) {
 			[]Act{searchAct("x"), refused, searchAct("y"), searchAct("z")},
 			"searched 3 times"},
 		{"a kind with no word of its own is counted under its name",
-			[]Act{{Receipt: Build(Call{Name: "spawn_agent", Args: `{"task":"t"}`, Result: "started"})}},
-			"1 spawn"},
+			[]Act{{Receipt: Build(Call{Name: "spawn_agent", Args: `{"task":"t"}`, Result: "started"})},
+				{Receipt: Build(Call{Name: "spawn_agent", Args: `{"task":"u"}`, Result: "started"})}},
+			"2 spawns"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -244,8 +248,11 @@ func TestStepReceipt_EvidenceIsPickedByPrecedence(t *testing.T) {
 		{"a command that printed nothing gives way to one that did",
 			[]Act{commandAct("git status", "?? .plan/", tools.ExecSucceeded), commandAct("true", "", tools.ExecSucceeded)},
 			Evidence{Line: "?? .plan/", Call: 0}},
-		{"a read's path, where the step read one file", []Act{searchAct("x"), readAct("internal/ui/keys.go")},
+		{"a read's path, where the step read one file", []Act{lookupAct(), readAct("internal/ui/keys.go")},
 			Evidence{Line: "internal/ui/keys.go", Call: 1}},
+		{"a search's query, the last one asked, over a read's path",
+			[]Act{searchAct("x"), readAct("internal/ui/keys.go"), searchAct("copyBlock")},
+			Evidence{Line: "copyBlock", Call: 2}},
 		{"one line, bounded on a rune", []Act{long},
 			Evidence{Line: "a" + strings.Repeat("é", evidenceMaxBytes/2-1), Call: 0}},
 	}
@@ -268,7 +275,7 @@ func TestStepReceipt_AQuietReadHasNoEvidence(t *testing.T) {
 		acts []Act
 	}{
 		{"several files", reads("a/x.go", "b/y.go")},
-		{"only searches and lookups", []Act{searchAct("x"), lookupAct()}},
+		{"only lookups", []Act{lookupAct(), lookupAct()}},
 		{"a read that named no file", []Act{{Receipt: Build(Call{Name: "git", Args: `{"verb":"log"}`, Result: "abc x"})}}},
 		{"a command still running has said nothing yet", []Act{readAct("a/x.go"), readAct("b/y.go"), running}},
 	}
@@ -321,5 +328,44 @@ func TestStepReceipt_AddsUpItsEdits(t *testing.T) {
 	})
 	if s.Added != 2 || s.Removed != 1 {
 		t.Errorf("+%d −%d, want +2 −1", s.Added, s.Removed)
+	}
+}
+
+// A card's header gives its receipt up in an order as the pane narrows, so
+// the receipt is split where the order cuts it: the verb that leads, the one
+// call's subject that is cut and never dropped, the directory clause that
+// goes first and the rollup that goes after it.
+func TestStepReceipt_TheHeaderSplitsForTheDropOrder(t *testing.T) {
+	var large []Act
+	for _, p := range []string{"internal/ui/a.go", "internal/ui/b.go", "internal/ui/c.go", "docs/x.md", "docs/y.md"} {
+		large = append(large, readAct(p))
+	}
+	large = append(large, commandAct("go test", "ok", tools.ExecSucceeded), commandAct("go vet", "", tools.ExecSucceeded))
+	cases := []struct {
+		name string
+		acts []Act
+		want Header
+	}{
+		{"reads by directory, then the other kinds",
+			large,
+			Header{Verb: "read", Rollup: "3 files in internal/ui/, 2 in docs/ · ran 2 commands",
+				Bare: "5 files · ran 2 commands"}},
+		{"one call names its subject, and the rest is the rollup",
+			[]Act{commandAct("git status --short .plan/", "", tools.ExecSucceeded), readAct("a.go"), readAct("b/c.go")},
+			Header{Verb: "ran", Subject: "git status --short .plan/", Rollup: "read 2 files", Bare: "read 2 files"}},
+		{"a call behind the lead is counted, not named, in the narrow rollup",
+			[]Act{readAct("a.go"), readAct("b/c.go"), commandAct("go test ./internal/ui/...", "ok", tools.ExecSucceeded)},
+			Header{Verb: "read", Rollup: "2 files · ran go test ./internal/ui/...", Bare: "2 files · ran 1 command"}},
+		{"a clause that does not open with its verb counts behind it",
+			[]Act{lookupAct(), lookupAct()},
+			Header{Verb: "looked up", Rollup: "twice", Bare: "twice"}},
+		{"nothing that ran is no header", nil, Header{}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := BuildStep(tc.acts).Header(); got != tc.want {
+				t.Errorf("header %+v, want %+v", got, tc.want)
+			}
+		})
 	}
 }

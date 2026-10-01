@@ -29,8 +29,8 @@ keys C-o
 snap 05-reading "back to the prompt"
 keys k
 keys k
-snap 06-cursor "expand" "❯ 3  Read the loop once more"
-# Opening the step gives back the run of reads it folded, which is the row the
+snap 06-cursor "open it" "❯ ⚙ read 2 files"
+# Opening the card gives back the reads it stands for, which are the rows the
 # Reading artboard draws its cursor on.
 keys Enter
 keys j

@@ -109,43 +109,6 @@ func TestCopyRow_StripsANSI(t *testing.T) {
 	}
 }
 
-// A folded group copies each member in order — the fold hides the rows,
-// never what they returned.
-func TestCopyRow_FoldedGroupCopiesEachMember(t *testing.T) {
-	var caught []string
-	m := copyModel(t, &caught)
-	// Three consecutive read-only calls under an announced step fold into
-	// one counted row at normal verbosity (fold_test's shape).
-	m.appendEntry(entry{kind: entryUser, text: "read the loop"})
-	m.appendEntry(entry{kind: entryAssistant, text: "Reading the loop"})
-	for _, r := range []string{"first result", "second result", "third result"} {
-		m.appendEntry(entry{kind: entryTool, toolName: "read_file",
-			toolArgs: `{"path":"a.go"}`, toolResult: r})
-	}
-	m.viewport.SetLines(m.renderHistoryLines())
-	updated, _ := m.Update(readingChord())
-	m = updated.(Model)
-	// The finished step arrives folded to its header; [enter] gives its rows
-	// back — as the counted group row — and the cursor steps onto it.
-	updated, _ = m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = updated.(Model)
-	m.moveFocus(1)
-	if es := *m.entries(); !m.groupAnchor(es, m.focusIdx) {
-		t.Fatalf("the cursor should stand on the folded group row, got %d", m.focusIdx)
-	}
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
-	m = updated.(Model)
-	if len(caught) != 1 {
-		t.Fatalf("expected one copy, got %d", len(caught))
-	}
-	if want := "first result\nsecond result\nthird result"; caught[0] != want {
-		t.Fatalf("copied %q, want %q", caught[0], want)
-	}
-	if !strings.Contains(m.readingCopied, "3 rows") {
-		t.Fatalf("the caption should count the members, got %q", m.readingCopied)
-	}
-}
-
 // A row with nothing to copy hands the letter back to the draft, the way [-]
 // does with nothing open.
 func TestCopyRow_NothingToCopyIsALetter(t *testing.T) {

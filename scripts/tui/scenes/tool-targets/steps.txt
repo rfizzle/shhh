@@ -6,17 +6,17 @@
 # from what is on PATH.
 #
 # One turn of calls that have no file path to be about. Read the target column
-# down the feed against the Steps artboard's row anatomy (verb, target,
-# outcome): every row's target is what the call was about and none of them is
-# the tool's own name. At 02 the two history reads say the command they stand
-# for — `git status`, `git diff HEAD` — rather than a bare verb; at 03 the
-# gate's row says which suite ran and how much of one it is; at 04 the two
-# refused edits say the file the arguments named and, where they named none,
-# that they named none. The refusals are drawn between the reads and the gate,
+# against the Steps artboard's row anatomy (verb, target, outcome): every
+# card's and every row's subject is what the call was about and none of them
+# is the tool's own name. At 02 the gate's card says which suite ran and how
+# much of one it is; at 03 the two refused edits are cards of their own that
+# say the file the arguments named and, where they named none, that they
+# named none; at 06 the history reads' card, opened, says the command each
+# read stands for — `git status`, `git diff HEAD` — rather than a bare verb. The refusals are drawn between the reads and the gate,
 # which is the order the model asked in: the gate ran while the edits waited
 # for a decision, and the feed is the record of the turn rather than of the
 # order its answers came back. Inspect the picture for the treatment: the
-# refused rows are dim end to end with the mutation rail still on them, and
+# refused cards keep the mutation rail their calls would have carried, and
 # `(no path)` is no brighter than the path above it.
 setup mkdir -p .shhh checks internal/agent
 setup printf 'package agent\n\nfunc rounds(round, cap int) bool {\n\treturn round >= cap\n}\n' > internal/agent/loop.go
@@ -26,9 +26,22 @@ setup printf '#!/bin/sh\nexit 0\n' > checks/ok.sh; chmod +x checks/ok.sh
 setup printf '{"suites":{"default":{"checks":[{"name":"test","exe":"./checks/ok.sh"},{"name":"vet","exe":"./checks/ok.sh"},{"name":"lint","exe":"./checks/ok.sh"},{"name":"fmt-check","exe":"./checks/ok.sh"},{"name":"docs-check","exe":"./checks/ok.sh"}]}}}\n' > .shhh/quality.json
 snap 01-start "Some things worth doing first"
 keys "raise the round cap by one and check the tree" Enter
-snap 02-history "git diff HEAD" "git status"
-snap 03-gate "quality gate · default · 5 checks"
-snap 04-refused "(no path)" "internal/agent/loop.go" "skipped · invalid arguments"
+snap 02-cards "the suite is green" "⚙ read twice" "quality gate · default · 5 checks"
+snap 03-refused "(no path)" "internal/agent/loop.go" "skipped · invalid arguments"
+# The history reads are a card that counts them; opened, its rows say the
+# command each stands for. The cursor opens on the turn's close, and the
+# reads' card is five stops above it.
+keys C-o
+snap 04-reading "[j/k] move"
+keys k
+keys k
+keys k
+keys k
+keys k
+snap 05-on-the-card "❯ ⚙ read twice"
+keys Enter
+snap 06-history "git diff HEAD" "git status"
+keys q
 keys C-c
 keys C-c
-snap 05-exit "that is everything the screen was holding"
+snap 07-exit "that is everything the screen was holding"

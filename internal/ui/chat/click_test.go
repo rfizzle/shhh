@@ -107,7 +107,7 @@ func TestClick_OpensTheRowUnderIt(t *testing.T) {
 	if (*m.entries())[1].expanded {
 		t.Fatal("the search row starts collapsed")
 	}
-	x, y := rowCell(t, m, "search")
+	x, y := rowCell(t, m, "search  x")
 	m = click(t, m, x, y)
 	if !(*m.entries())[1].expanded {
 		t.Fatal("a click on an activity row should open it, the way [enter] does")
@@ -124,7 +124,7 @@ func TestClick_OpensTheRowUnderIt(t *testing.T) {
 func TestClick_NeverTakesTheKeyboard(t *testing.T) {
 	m := clickModel(t)
 	m.input.SetValue("half a sentence")
-	x, y := rowCell(t, m, "search")
+	x, y := rowCell(t, m, "search  x")
 	m = click(t, m, x, y)
 	if m.state == stateFocus {
 		t.Fatal("a click must not open reading mode")
@@ -140,7 +140,7 @@ func TestClick_ADragIsNotAClick(t *testing.T) {
 	c := &clip{}
 	m := clickModel(t)
 	m.copyFn = c.fn()
-	line := lineOf(t, m, "search")
+	line := lineOf(t, m, "search  x")
 	x, y := at(t, m, line, 0)
 	next, _ := m.Update(mousePress(x, y))
 	m = next.(Model)
@@ -178,7 +178,7 @@ func TestClick_ReadingModeMovesTheCursor(t *testing.T) {
 	if m.focusIdx != 2 {
 		t.Fatalf("reading mode should open on the last row, got %d", m.focusIdx)
 	}
-	x, y := rowCell(t, m, "search")
+	x, y := rowCell(t, m, "search  x")
 	m = click(t, m, x, y)
 	if m.focusIdx != 1 {
 		t.Fatalf("a click should put the cursor on the row it opened, got %d", m.focusIdx)
@@ -454,12 +454,12 @@ func deepClickModel(t *testing.T) Model {
 // instead of giving the row back.
 func TestClick_TheRowLineToggles(t *testing.T) {
 	m := deepClickModel(t)
-	x, y := rowCell(t, m, "main.go")
+	x, y := rowCell(t, m, "read    main.go")
 	m = click(t, m, x, y)
 	if !(*m.entries())[3].expanded {
 		t.Fatal("a click on the row line should open it")
 	}
-	x, y = rowCell(t, m, "main.go")
+	x, y = rowCell(t, m, "read    main.go")
 	m = click(t, m, x, y)
 	if (*m.entries())[3].expanded {
 		t.Fatal("the same cell pressed twice should give the row back")
@@ -473,7 +473,7 @@ func TestClick_TheRowLineToggles(t *testing.T) {
 // asks for that content whole.
 func TestClick_TheBodyOpensItWhole(t *testing.T) {
 	m := deepClickModel(t)
-	x, y := rowCell(t, m, "main.go")
+	x, y := rowCell(t, m, "read    main.go")
 	m = click(t, m, x, y)
 	bx, by := rowCell(t, m, "deep line 2")
 	m = click(t, m, bx, by)
@@ -493,7 +493,7 @@ func TestClick_TheBodyOpensItWhole(t *testing.T) {
 // half: the click must not fall through and close the body being read.
 func TestClick_ABodyWithNothingDeeperStaysPut(t *testing.T) {
 	m := clickModel(t)
-	x, y := rowCell(t, m, "search")
+	x, y := rowCell(t, m, "search  x")
 	m = click(t, m, x, y)
 	before := m.renderHistoryRaw()
 	bx, by := rowCell(t, m, "result line 3")
@@ -529,13 +529,13 @@ func diffClickModel(t *testing.T) Model {
 // the change itself is what the full screen is for.
 func TestClick_TheDiffRowLineToggles(t *testing.T) {
 	m := diffClickModel(t)
-	x, y := rowCell(t, m, "loop.go")
+	x, y := rowCell(t, m, "edit    internal/agent/loop.go")
 	m = click(t, m, x, y)
 	d := (*m.entries())[3].diff
 	if d.Mode != components.DiffExpanded {
 		t.Fatalf("a click on the row line should expand the diff, got mode %d", d.Mode)
 	}
-	x, y = rowCell(t, m, "loop.go")
+	x, y = rowCell(t, m, "edit    internal/agent/loop.go")
 	m = click(t, m, x, y)
 	if d.Mode != components.DiffCollapsed {
 		t.Fatalf("the same cell should collapse it again, got mode %d", d.Mode)
@@ -547,7 +547,7 @@ func TestClick_TheDiffRowLineToggles(t *testing.T) {
 
 func TestClick_TheDiffBodyOpensFullScreen(t *testing.T) {
 	m := diffClickModel(t)
-	x, y := rowCell(t, m, "loop.go")
+	x, y := rowCell(t, m, "edit    internal/agent/loop.go")
 	m = click(t, m, x, y)
 	bx, by := rowCell(t, m, "new line")
 	m = click(t, m, bx, by)

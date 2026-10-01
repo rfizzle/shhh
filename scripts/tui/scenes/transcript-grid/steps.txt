@@ -5,17 +5,18 @@
 #
 # The transcript's leading columns
 # (docs/interface/surfaces.md#the-leading-columns) through the built binary.
-# One session draws, in order: the reader's own `❯` message, the model's
-# prose, activity rows under a step, the session's own check-in, a command's
-# row, a plain reply, and then — at the next turn's round boundary — the tree
-# reading about a file the next terminal changed (launch).
+# One session draws, in order: the reader's own `❯` message, two steps as
+# cards with the model's prose for their bodies, the session's own check-in,
+# a failed command's card, a plain reply, and then — at the next turn's round
+# boundary — the tree reading about a file the next terminal changed
+# (launch).
 #
 # Read the cells down the left edge rather than line by line. The `❯` of a
-# sent message is the only thing standing in the two columns every entry
-# holds back; prose, a row's rail, the check-in, the tree notice and the
-# block the turn closes on all start in the first column past them, and a
-# notice long enough to wrap comes back to that same column instead of the
-# pane's edge. Inspect the picture for the same edge in colour: the notices
+# sent message and a card's rail are the only things standing in the two
+# columns every entry holds back; a card's glyph, prose, the check-in, the
+# tree notice and the block the turn closes on all start in the first column
+# past them, and a notice long enough to wrap comes back to that same column
+# instead of the pane's edge. Inspect the picture for the same edge in colour: the notices
 # are the quietest thing in the feed, and the tone is what sets them apart
 # rather than the indent.
 setup for f in one two three four five six seven eight; do printf 'package fixture\n' > "${f}.go"; done

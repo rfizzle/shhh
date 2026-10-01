@@ -272,40 +272,6 @@ func runeIndex(haystack, needle string) int {
 	return len([]rune(haystack[:i]))
 }
 
-func TestActivityGroup_FoldsOnTheSameGrid(t *testing.T) {
-	row := ActivityRow{Kind: ActivityTool, Verb: "read", Target: "internal/agent/loop.go",
-		Counts: "218 lines", Duration: "0.6s"}
-	group := ActivityGroup{Label: "6 reads · 2 searches", Duration: "3.9s"}
-
-	for _, width := range []int{60, 80, 120} {
-		line := stripANSI(group.View(width))
-		if w := len([]rune(line)); w > width {
-			t.Fatalf("width %d: group row overflows to %d cells: %q", width, w, line)
-		}
-		// The fold state takes the glyph column and ⚙ the verb column, so the
-		// group's label starts where a row's target does.
-		_, rail, _, rest := fieldsOf(t, group.View(width))
-		if strings.TrimSpace(rail) != "" {
-			t.Fatalf("a fold changed nothing, so it carries no mutation rail: %q", line)
-		}
-		if !strings.HasPrefix(rest, "6 reads") {
-			t.Fatalf("width %d: the label should start in the target column: %q", width, rest)
-		}
-		// It states what it swallowed and what that cost, and offers the key
-		// that brings the rows back (invariant 4).
-		for _, want := range []string{"▸", "⚙", GroupExpandKey, "3.9s"} {
-			if !strings.Contains(line, want) {
-				t.Fatalf("width %d: group row should contain %q: %q", width, want, line)
-			}
-		}
-		// Both lines end on the same right edge, so a fold does not break the
-		// duration column the feed is scanned down.
-		if got, want := len([]rune(line)), len([]rune(stripANSI(row.View(width)))); got != want {
-			t.Fatalf("width %d: group row ends at %d, rows at %d", width, got, want)
-		}
-	}
-}
-
 // The account of who allowed a call is the one field in the outcome group
 // the row will give up. It stands where the row has spare columns, and it
 // goes rather than take the target below what still names the act — which is
@@ -477,7 +443,7 @@ func TestActivityRow_EveryCellCarriesAToken(t *testing.T) {
 		"edit": {Kind: ActivityEdit, Verb: "edit", Target: "internal/agent/loop.go",
 			Outcome: OutcomeBy(OutcomeApproved, "you"), Counts: "+12 −4 · 2 hunks", Duration: "1.1s"},
 		"agent":    {Kind: ActivitySubagent, Verb: "agent", Target: "writer-1", Outcome: OutcomeOK, Duration: "48.0s"},
-		"think":    {Kind: ActivityThink, Verb: "think", Counts: "42 lines", Keys: GroupExpandKey},
+		"think":    {Kind: ActivityThink, Verb: "think", Counts: "42 lines"},
 		"queued":   {Kind: ActivityTool, Verb: "read", Target: "internal/agent/round.go", State: ActivityQueued, Outcome: OutcomeQueued, Duration: NoDuration},
 		"running":  {Kind: ActivityCommand, Verb: "run", Target: "go build ./cmd/shhh", State: ActivityRunning, Outcome: OutcomeRunning, Tail: "internal/ui/chat/model.go:1660:1: too many arguments"},
 		"checking": {Kind: ActivityCommand, Verb: "run", Target: "gofmt -w loop.go", State: ActivityChecking, Outcome: OutcomeChecking, Duration: "0.4s"},
@@ -571,28 +537,12 @@ func TestActivityRow_AReadingsVerdictIsNotASuccess(t *testing.T) {
 // where the row has no room left for what it is about, the offer takes a row
 // of its own under it rather than being clipped off the end of the outcome
 // field, and where it has room the row stays one line.
-func TestActivityRow_AHintedOfferIsDrawnGrey(t *testing.T) {
-	withColorProfile(t, colorprofile.ANSI256)
-	r := ActivityRow{Kind: ActivityThink, Verb: "think", Target: "weighing the cap against the tests",
-		Counts: "12 lines", Keys: GroupExpandKey, KeysHint: true}
-	// At 130 the hint stands on the row; at 60 it takes a row of its own.
-	for _, width := range []int{60, 130} {
-		view := r.View(width)
-		if !strings.Contains(view, sty.Hint.Render(GroupExpandKey)) {
-			t.Errorf("at %d the hint is not drawn in the hint grey: %q", width, view)
-		}
-		if strings.Contains(view, sty.Key.Render(GroupExpandKey)) {
-			t.Errorf("at %d the hint reads as a live offer: %q", width, view)
-		}
-	}
-}
-
 func TestActivityRow_EveryOfferTheRowActsOnIsDrawnWhole(t *testing.T) {
 	rows := map[string]ActivityRow{
 		"summary": {Kind: ActivitySummary, Verb: "summary", Target: "round 1",
-			Outcome: SummaryGlyph(SummaryUnclear) + " " + SummaryWord(SummaryUnclear), Counts: "1 line", Keys: GroupExpandKey},
+			Outcome: SummaryGlyph(SummaryUnclear) + " " + SummaryWord(SummaryUnclear), Counts: "1 line", Keys: "[ctrl+o] reading mode"},
 		"think": {Kind: ActivityThink, Verb: "think", Target: "weighing the cap against the tests",
-			Counts: "12 lines", Duration: "3.1s", Keys: GroupExpandKey},
+			Counts: "12 lines", Duration: "3.1s", Keys: "[ctrl+o] reading mode"},
 		"denied": {Kind: ActivityCommand, State: ActivityDenied, ByRule: true, Verb: "run", Target: "rm -rf build",
 			Outcome: OutcomeBlocked, Allowed: "auto", Keys: "/permissions why"},
 	}
@@ -613,7 +563,7 @@ func TestActivityRow_EveryOfferTheRowActsOnIsDrawnWhole(t *testing.T) {
 	}
 	// Where it fits, the offer stays on the row it belongs to.
 	wide := stripANSI(rows["summary"].View(130))
-	if lines := strings.Split(wide, "\n"); len(lines) != 1 || !strings.Contains(lines[0], GroupExpandKey) {
+	if lines := strings.Split(wide, "\n"); len(lines) != 1 || !strings.Contains(lines[0], rows["summary"].Keys) {
 		t.Errorf("a row with room keeps its offer on one line:\n%s", wide)
 	}
 }

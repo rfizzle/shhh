@@ -32,6 +32,10 @@ func longOutputModel(t *testing.T, n int) Model {
 	m.appendEntry(entry{kind: entryUser, text: "run the suite"})
 	m.appendEntry(entry{kind: entryCommand, text: "go test ./...",
 		toolResult: strings.TrimRight(out.String(), "\n"), exitCode: 1})
+	// The command is a card of its own, opened onto its row as the reader's
+	// enter leaves it: the row's depths are what these tests walk.
+	openCardRows(*m.entries(), 1)
+	m.invalidateRenderCache()
 	m.viewport.SetLines(m.renderHistoryLines())
 	updated, _ = m.Update(readingChord())
 	return updated.(Model)
@@ -170,7 +174,10 @@ func TestOutputDepths_ReadRowsOpenTheSameWay(t *testing.T) {
 	updated, _ = m.Update(readingChord())
 	m = updated.(Model)
 
+	// The first press opens the read's card onto its row; the two after it
+	// are the row's own depths.
 	updated, _ = m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
+	updated, _ = updated.(Model).updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
 	updated, _ = updated.(Model).updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state != stateOutputFull || m.fullOutput == nil {

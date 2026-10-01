@@ -14,22 +14,28 @@ setup printf 'package agent\n\nconst limit = 25\n\nfunc round() int {\n    retur
 snap 01-start "Some things worth doing first"
 keys "how is the round limit counted" Enter
 snap 02-turn "The limit is a checkpoint, not a wall"
-# Two rows opened through the pointer, one at a time — which is a press per
-# row, and what the one press below undoes: shift+↑ lights the pointer and
-# walks it up the pane, shift+→ opens the row it is on. The draft keeps the
-# keyboard throughout.
+# The two reads are one card, opened through the pointer and then its two
+# rows, one at a time — a press per thing opened, and what the one press
+# below undoes: shift+↑ lights the pointer and walks it up the pane to the
+# card, shift+→ opens the card onto its calls, and then each row the pointer
+# is walked to. The draft keeps the keyboard throughout.
 keys S-Up
 keys S-Up S-Up
 keys S-Right
+snap 03-card-open "⚙ read    round.go"
+keys S-Down
+keys S-Right
 keys S-Up
 keys S-Right
-snap 03-open "const limit = 25" "for round := 0; round < limit; round++"
+snap 04-open "const limit = 25" "for round := 0; round < limit; round++"
 # The pointer is the thing most recently put on screen, so it is what the
-# first esc leaves; the second is the one that folds.
+# first esc leaves; the second is the one that folds: the card and the two
+# rows the reader opened in it. The fold counts rows, and the card is kept on
+# its first call's row, so the card and that row are one of the two.
 keys Escape
 sleep 0.5
 keys Escape
-snap 04-folded "folded 2 rows"
+snap 05-folded "folded 2 rows"
 # And the chain goes on meaning what it always meant: the two presses of the
 # rewind gesture, unchanged, after the one that folded. The gap is the
 # terminal's, not the product's — two escapes written into the pty together
@@ -37,12 +43,12 @@ snap 04-folded "folded 2 rows"
 # own, because a process started between the presses can outlast the
 # gesture's half second on a loaded host.
 press 0.2 Escape Escape
-snap 05-rewind "pick a turn to return to"
+snap 06-rewind "pick a turn to return to"
 # Esc leaves the picker having changed nothing, and the session ends the way
 # every scene ends: the cancel chord, twice.
 keys Escape
 sleep 0.3
 keys C-c
-snap 06-quit-armed "again quits"
+snap 07-quit-armed "again quits"
 keys C-c
-snap 07-exit "that is everything the screen was holding"
+snap 08-exit "that is everything the screen was holding"

@@ -164,7 +164,7 @@ func TestProgram_ACardOnAnEmptyDraftAnswersToItsOwnKey(t *testing.T) {
 	if len(ran) != 1 {
 		t.Fatalf("the card's own key did not run the command, ran %v:\n%s", ran, frame)
 	}
-	frameHas(t, frame, "$ run", "echo hi from the script", "Done: the command printed a greeting")
+	frameHas(t, frame, "$ ran", "echo hi from the script", "Done: the command printed a greeting")
 }
 
 // [n] on a card refuses the call: nothing runs, the row says it was the
@@ -219,7 +219,8 @@ func TestProgram_AnEditCardAppliesTheEdit(t *testing.T) {
 	if err != nil || !strings.Contains(string(got), "const limit = 50") {
 		t.Fatalf("the allowed edit did not reach the file (%v): %q\n%s", err, got, frame)
 	}
-	frameHas(t, frame, "✎ edit", "approved by you", "The rounds are capped at the limit now")
+	// The read and the edit are one card, whose glyph is the write's.
+	frameHas(t, frame, "✎ read", "wrote 1 file", "The rounds are capped at the limit now")
 }
 
 // programKey is one keystroke spelled the way the register spells it —
@@ -291,8 +292,8 @@ func readingSession(dir string, turns ...programTurn) Model {
 
 var twelve = []string{"one.go", "two.go", "three.go", "four.go", "five.go", "six.go", "seven.go", "eight.go", "nine.go", "ten.go", "eleven.go", "twelve.go"}
 
-// A turn that only read folds its reads to one counted row, and reading
-// mode's cursor reaches that row and opens it in place.
+// A turn that only read is one card stating its reads, and reading mode's
+// cursor reaches the card and opens it onto them in place.
 func TestProgram_AFoldedRunOfReadsOpensInPlace(t *testing.T) {
 	files := map[string]string{}
 	for _, f := range twelve {
@@ -305,7 +306,7 @@ func TestProgram_AFoldedRunOfReadsOpensInPlace(t *testing.T) {
 	), 130, 40)
 
 	send(tm, "how is the round limit counted")
-	waitForAll(t, tm, "nowhere else", "12 reads")
+	waitForAll(t, tm, "nowhere else", "read 12 files")
 	programPress(t, tm, "ctrl+o", "k", "k", "enter")
 	waitForText(t, tm, "eleven.go")
 

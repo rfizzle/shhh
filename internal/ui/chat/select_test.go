@@ -797,6 +797,10 @@ func TestSelection_MovesWithARowPlacedAboveIt(t *testing.T) {
 		})
 		m.appendCallRow("call_1", read("call_1", "first.go"))
 		m.appendCallRow("call_3", read("call_3", "third.go"))
+		// The round's calls are one card, opened onto its rows: the rows
+		// are where these selections are made.
+		openCardRows(*m.entries(), 1)
+		m.invalidateRenderCache()
 		m.viewport.SetLines(m.renderHistoryLines())
 		return m
 	}
@@ -820,8 +824,10 @@ func TestSelection_MovesWithARowPlacedAboveIt(t *testing.T) {
 	})
 
 	t.Run("across", func(t *testing.T) {
+		// From above the card, since the card's header restates its calls
+		// and is redrawn when one lands in it.
 		m := build(t)
-		m = dragLines(t, m, lineOf(t, m, "first.go"), lineOf(t, m, "third.go"))
+		m = dragLines(t, m, lineOf(t, m, "read the three files"), lineOf(t, m, "third.go"))
 		m = place(m)
 		got := m.selectedText()
 		for _, path := range []string{"first.go", "go test ./second", "third.go"} {
@@ -843,10 +849,13 @@ func TestSelection_MovesWithARowPlacedAboveIt(t *testing.T) {
 	})
 
 	t.Run("redrawn", func(t *testing.T) {
-		// A third read between the two completes a run the step folds into
-		// one counted row, so the line the selection was on is gone.
+		// A card standing in for its calls restates them on its header, so
+		// a row placed inside it redraws the line the selection was on.
 		m := build(t)
-		line := lineOf(t, m, "third.go")
+		(*m.entries())[1].stepFold = foldAuto
+		m.invalidateRenderCache()
+		m.viewport.SetLines(m.renderHistoryLines())
+		line := lineOf(t, m, "read 2 files")
 		m = dragLines(t, m, line, line)
 		m = placeRow(m, read("call_2", "second.go"))
 		if m.sel.on {
@@ -943,8 +952,8 @@ func TestSelection_ConfinedToTheNormalTranscript(t *testing.T) {
 			}
 			// Opened, because the pane has to be taller than itself for the
 			// wheel to have anywhere to go: forty consecutive reads are one
-			// counted row until a reader opens them (fold.go).
-			entries[0].groupFold = foldOpen
+			// card (card.go).
+			openCardRows(entries, 0)
 			m := selectModel(t, c, entries...)
 			next, _ := m.enterFocusMode()
 			m = next.(Model)

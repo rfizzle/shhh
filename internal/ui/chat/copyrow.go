@@ -8,8 +8,8 @@ package chat
 //
 // What is copied is the row's *content*, never its rendering: an assistant
 // message as its markdown source, a command as `$ cmd` over its output, an
-// edit as the unified diff, a read as what the read returned, a folded group
-// as each member in order. ANSI is stripped the way the drag-selection strip
+// edit as the unified diff, a read as what the read returned, a card as
+// each of its calls in order. ANSI is stripped the way the drag-selection strip
 // does it — what a program painted is not part of what it said.
 
 import (
@@ -75,23 +75,40 @@ func (m Model) rowCopyText(es []entry, idx int) (text, what string) {
 	if idx < 0 || idx >= len(es) {
 		return "", ""
 	}
-	if _, ok := m.stepBlockAt(es, idx); ok {
-		// A step header is chrome about rows, not content of its own.
+	if blk, ok := m.cardTakesKey(es, idx); ok {
+		return m.cardCopyText(es, blk)
+	}
+	return m.entryCopyText(es[idx])
+}
+
+// cardCopyText is what a card copies: what its calls returned, each in
+// order — the card stands in for the rows, never for what they returned
+// (docs/interface/principles.md#fold-never-hide). A card of one call copies
+// that call, named the way its row would be.
+func (m Model) cardCopyText(es []entry, blk transcriptBlock) (text, what string) {
+	start, end := blk.members()
+	var parts []string
+	calls := 0
+	for i := start; i < end && i < len(es); i++ {
+		if !isActivityEntry(es[i]) {
+			continue
+		}
+		calls++
+		if t, w := m.entryCopyText(es[i]); t != "" {
+			parts, what = append(parts, t), w
+		}
+	}
+	if len(parts) == 0 {
 		return "", ""
 	}
-	if span := m.foldedGroupSpan(es, idx); span > 1 {
-		// A folded group copies each member in order — the fold hides the
-		// rows, never what they returned
-		// (docs/interface/principles.md#fold-never-hide).
-		var parts []string
-		for _, member := range es[idx : idx+span] {
-			if lines := outputLines(member); len(lines) > 0 {
-				parts = append(parts, ansi.Strip(strings.Join(lines, "\n")))
-			}
-		}
-		return strings.Join(parts, "\n"), fmt.Sprintf("%d rows", span)
+	if calls > 1 {
+		what = fmt.Sprintf("%d calls", calls)
 	}
-	e := es[idx]
+	return strings.Join(parts, "\n"), what
+}
+
+// entryCopyText is one entry's own content and the word it is named by.
+func (m Model) entryCopyText(e entry) (text, what string) {
 	switch e.kind {
 	case entryAssistant:
 		// The markdown source, not the rendered form: what the model said is
@@ -142,11 +159,9 @@ func (m Model) focusedCopyable() bool {
 	if m.focusIdx < 0 || m.focusIdx >= len(es) {
 		return false
 	}
-	if _, ok := m.stepBlockAt(es, m.focusIdx); ok {
-		return false
-	}
-	if m.foldedGroupSpan(es, m.focusIdx) > 1 {
-		return true
+	if blk, ok := m.cardTakesKey(es, m.focusIdx); ok {
+		text, _ := m.cardCopyText(es, blk)
+		return text != ""
 	}
 	e := es[m.focusIdx]
 	switch e.kind {
@@ -162,24 +177,6 @@ func (m Model) focusedCopyable() bool {
 		return len(outputLines(e)) > 0
 	}
 	return false
-}
-
-// foldedGroupSpan is how many rows the folded group at idx swallows, or 0
-// where idx does not head a folded group right now. An open run's anchor is
-// an ordinary row — its members are on screen with cursors of their own.
-func (m Model) foldedGroupSpan(es []entry, idx int) int {
-	for _, blk := range m.blocksOf(es) {
-		// The one block the row can be in, asked before its slots are built.
-		if !blk.holds(idx) || (blk.step != nil && blk.step.queued()) {
-			continue
-		}
-		for _, s := range m.blockSlots(es, blk) {
-			if s.idx == idx && s.group {
-				return s.span
-			}
-		}
-	}
-	return 0
 }
 
 // plainUnified is hunks as clipboard text: the unified diff with no colour

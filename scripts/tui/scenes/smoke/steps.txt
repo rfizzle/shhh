@@ -19,15 +19,16 @@ snap 04-keys "keys · the approval card" "refused: dim by you, red by a rule"
 keys Escape
 snap 05-card-again "[y] run it once"
 keys y
-snap 06-ran "Done: the command printed a greeting" "ok · 1 line · approved by you" "▎✎ changed no files"
+snap 06-ran "Done: the command printed a greeting" "▎$ ran echo hi from the scripted provider" "ok · approved by you" "▎✎ changed no files"
 keys "/ui verbosity low" Enter
-# Each rung is waited on by what the row draws at it: low drops the row's
-# count, normal puts it back, high opens the row onto its output.
-snap 07-low "ok · approved by you" "verbosity set to low"
+# Each rung is waited on by what the card draws at it: low its header alone,
+# normal the footer under it again, high the card open on the command's row
+# and its output.
+snap 07-low "verbosity set to low" "▎$ ran echo hi from the scripted provider"
 keys "/ui verbosity normal" Enter
-snap 08-normal "verbosity set to normal" "ok · 1 line · approved by you"
+snap 08-normal "verbosity set to normal" "    hi from the scripted provider"
 keys "/ui verbosity high" Enter
-snap 09-high "verbosity set to high" "    hi from the scripted provider"
+snap 09-high "verbosity set to high" "ok · 1 line · approved by you" "    hi from the scripted provider"
 keys C-c
 snap 10-quit-armed "again quits"
 keys C-c

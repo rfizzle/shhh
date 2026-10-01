@@ -302,7 +302,13 @@ func (m Model) resolveLiveTail(width int) string {
 			return m.spinner.View() + " Applying changes…"
 		}
 		// The running command renders as a live activity row whose tail is
-		// its last output line; spinner ticks keep it fresh.
+		// its last output line; spinner ticks keep it fresh. Where the step
+		// it belongs to is already a card, the card holds its tail and its
+		// clock, and a second row here would state the command twice
+		// (docs/interface/surfaces.md#the-step).
+		if m.liveCardHoldsCommand() {
+			return ""
+		}
 		return m.runningCommandRow(width)
 	case stateClassifying:
 		return m.spinner.View() + " Checking permission…"

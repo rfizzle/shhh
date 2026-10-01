@@ -181,6 +181,89 @@ colours, for the dark band's reason.
 When the artboard draws a band on either ground, where the two differ the
 artboard wins.
 
+## A card on a painted ground steps its band up
+
+*A gap.* The band a step card rests on is 234, `#1c1c1c`, and the dark
+theme's own ground is 234 as well. Left as it is, a card on that ground with
+the ground painted (`/theme ground`) has no band at all, and is its padding
+rows alone on a table that has a band to give it — the answer sixteen colours
+and mono take because they have no band, not because one would be wrong.
+
+So where the screen is painted with the band's own colour, the band steps one
+rung up the greyscale ramp, to 235, `#262626`: the same step off the ground
+the band takes off black when nothing is painted. The light and CharmTone
+bands already stand off their grounds and are left alone, and sixteen colours
+and mono still draw no band.
+
+## Enter walks a card through three depths
+
+*A disagreement.* The `Rows` catalogue draws a large step "after [enter]" as
+the card open on its calls; the `Cards` artboard draws a card "folded by the
+reader", with `▸` in the pointer column, and neither says what the other
+press does. The binary takes both: enter on a card opens it onto its calls,
+enter again folds it to its header, and a third press gives the card back —
+the three depths enter already walks on a row's output, a diff and a thought.
+A click folds a card and unfolds it, so the same cell pressed twice is where
+it started.
+
+An open card draws its calls as rows on its band, each a stop of its own,
+until the strip is the way to one call. A run of calls nothing titled is kept
+on its first call, so once it is open the stop there is that call's row, and
+enter acts on the row: the card folds back by `-`, or by a click on its own
+header, which always means the card.
+
+## A run nothing titled, and a refused call, are cards
+
+*A gap.* The catalogue draws a card titled by the model's prose and a card
+whose body is a reading; it does not draw a run of calls the model said
+nothing over and no reading followed. The binary draws that run as a card
+with no body, the footer under the header, and the step outline does not
+number it, since it was never a step anyone named. A reading that lands
+straight after such a run is taken into its card as the body, its verdict on
+the header.
+
+A refused call is a card of its own where nothing titled it, as the
+catalogue's refused cards are. Inside a step the model titled, a refusal does
+not split the step: it is the card's footer, the call as it was asked for and
+who refused it, because the header counts only what ran.
+
+## The strip starts at eight calls
+
+*A gap.* The catalogue ends a large step's footer in the strip — one glyph per
+call — and draws a step of seven calls without one and a step of twenty-two
+with one, without saying where large begins. The binary draws it from eight:
+past that, the counts on the header stop being enough to hold the order the
+calls came in.
+
+## A card's header keeps a column between its sides
+
+*A disagreement.* The `Cards` artboard's drop table gives, for each header,
+the narrowest pane that still draws a field, measured with the receipt and
+the right-hand run touching. The binary keeps at least one blank column
+between them, so each field goes one column earlier than the table says; a
+receipt that ran into its outcome would read as one word.
+
+## Where the verdict, a search's count and the window go
+
+*A gap.* The catalogue puts the reading's verdict on the header of a card
+with no footer and at the right of the footer of one that has one, without
+stating it as a rule; the binary takes it as one. Two facts the catalogue
+does not place: what a live search finds behind a card stands after the
+card's outcome and never drops, since a fold that hid the answer to the
+reader's question would be hiding rather than folding; and that the model no
+longer remembers a card's calls firsthand — `out of the window` — stands in
+the footer's right-hand run, which keeps its place at every width.
+
+## The narrow rollup counts what the wide one names
+
+*A gap.* A kind with one call names what it was about in the receipt (`ran
+git status --short .plan/`). Behind the header's verb, a name like that is
+what makes a rollup too long to keep, and the artboard's drop order would
+then give up the whole rollup for one command line. Once the directory clause
+has gone, the binary counts those calls instead (`ran 1 command`) and keeps
+the rest of the receipt; the call that leads keeps its name and is cut, as the
+artboard draws.
+
 ## A foreign colour arrives as a token and a foreign ground does not arrive
 
 *A gap.* No artboard draws a detail body a program painted itself. What the

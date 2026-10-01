@@ -393,7 +393,7 @@ while the agent is working, enter queues a steering message that joins the conve
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Reading},
-			text: `reading mode: select transcript rows (j/k, u/d half a page), expand/collapse (enter), y copies the row under the cursor — a command as $ cmd over its output, an edit as its unified diff, a message as markdown source, a folded group member by member — / searches the transcript and n/N walk what it found, pgup/pgdn page, ? lists every key the mode has, esc or typing returns to the prompt
+			text: `reading mode: select transcript rows (j/k, u/d half a page), expand/collapse (enter), y copies the row under the cursor — a command as $ cmd over its output, an edit as its unified diff, a message as markdown source, a card call by call — / searches the transcript and n/N walk what it found, pgup/pgdn page, ? lists every key the mode has, esc or typing returns to the prompt
 enter on an edit row cycles collapsed → expanded → full-screen diff, and on a command or read row the same three depths over its output, the whole of it scrollable at the last one. It opens over a running turn, which keeps streaming underneath; a transcript with nothing selectable opens as a plain pager. /step opens the in-flight step's detail from the prompt`,
 		},
 		{
