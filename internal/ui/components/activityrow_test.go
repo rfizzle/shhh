@@ -571,6 +571,22 @@ func TestActivityRow_AReadingsVerdictIsNotASuccess(t *testing.T) {
 // where the row has no room left for what it is about, the offer takes a row
 // of its own under it rather than being clipped off the end of the outcome
 // field, and where it has room the row stays one line.
+func TestActivityRow_AHintedOfferIsDrawnGrey(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	r := ActivityRow{Kind: ActivityThink, Verb: "think", Target: "weighing the cap against the tests",
+		Counts: "12 lines", Keys: GroupExpandKey, KeysHint: true}
+	// At 130 the hint stands on the row; at 60 it takes a row of its own.
+	for _, width := range []int{60, 130} {
+		view := r.View(width)
+		if !strings.Contains(view, sty.Hint.Render(GroupExpandKey)) {
+			t.Errorf("at %d the hint is not drawn in the hint grey: %q", width, view)
+		}
+		if strings.Contains(view, sty.Key.Render(GroupExpandKey)) {
+			t.Errorf("at %d the hint reads as a live offer: %q", width, view)
+		}
+	}
+}
+
 func TestActivityRow_EveryOfferTheRowActsOnIsDrawnWhole(t *testing.T) {
 	rows := map[string]ActivityRow{
 		"summary": {Kind: ActivitySummary, Verb: "summary", Target: "round 1",

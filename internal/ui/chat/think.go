@@ -153,7 +153,7 @@ func (m Model) thinkRowFor(e entry, width int) components.ActivityRow {
 		// collapsed diff row say it the same way, and a fold nobody knows is
 		// a fold is a row that looks like it had nothing to show.
 		if len(lines) > 0 {
-			row.Keys = components.GroupExpandKey
+			row.Keys, row.KeysHint = components.GroupExpandKey, true
 		}
 	}
 	return row

@@ -300,6 +300,11 @@ type ActivityRow struct {
 	// colour after the outcome — every key the interface offers is, so a key
 	// in any other colour is not an offer.
 	Keys string
+	// KeysHint draws Keys in the hint grey instead: they label what the row
+	// does under reading mode's cursor, the way GroupExpandKey does on a
+	// folded group, rather than standing open while the draft has the
+	// keyboard.
+	KeysHint bool
 	// ByRule colours a denial del (9) rather than dim (241): `⊘ denied · you`
 	// is a preference, `⊘ denied · auto` is a rule.
 	ByRule bool
@@ -584,9 +589,17 @@ func (r ActivityRow) outcomeField() string {
 		parts = append(parts, paintAccount(r.Allowed, sty.Dim))
 	}
 	if r.Keys != "" {
-		parts = append(parts, sty.Key.Render(r.Keys))
+		parts = append(parts, r.keysTone().Render(r.Keys))
 	}
 	return strings.Join(parts, sty.Dim.Render(" · "))
+}
+
+// keysTone is the tone Keys are drawn in: an offer's, or a hint's.
+func (r ActivityRow) keysTone() lipgloss.Style {
+	if r.KeysHint {
+		return sty.Hint
+	}
+	return sty.Key
 }
 
 // paintCounts paints a ` · `-joined count label, giving an edit's line counts
@@ -874,12 +887,12 @@ func (r ActivityRow) foldKeys(width int) (ActivityRow, []string) {
 	if room >= min(lipgloss.Width(r.Target), minTargetWidth) {
 		return r, nil
 	}
-	offer := r.Keys
+	offer, tone := r.Keys, r.keysTone()
 	r.Keys = ""
 	inner := max(width-detailIndent, 1)
 	var under []string
 	for _, line := range strings.Split(lipgloss.Wrap(offer, inner, ""), "\n") {
-		under = append(under, strings.Repeat(" ", detailIndent)+sty.Key.Render(line))
+		under = append(under, strings.Repeat(" ", detailIndent)+tone.Render(line))
 	}
 	return r, under
 }
