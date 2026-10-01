@@ -146,7 +146,7 @@ func (r *renderer) text(src []byte, raw bool) string {
 	return string(util.ResolveEntityNames(util.ResolveNumericReferences(util.UnescapePunctuations(src))))
 }
 
-// codeSpan keeps its backticks in mono and takes the accent in colour. The
+// codeSpan keeps its backticks in mono and takes the code token in colour. The
 // backticks are not decoration there: they are the only thing left saying the
 // words inside are a name rather than prose.
 func (r *renderer) codeSpan(out *[]Segment, c *gast.CodeSpan, link string) {

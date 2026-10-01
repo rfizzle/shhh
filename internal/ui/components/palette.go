@@ -102,6 +102,7 @@ type ColorTokens struct {
 	Bright  Token // headings, the focused row's text, the working label's crest
 	Subtle  Token // the one-shot rung a revise superseded; no colors.css counterpart
 	Body    Token // ordinary body text
+	Code    Token // a name in prose — inline code, and a code block nothing highlighted
 }
 
 // PaletteSize is how many tokens a table holds: every field of ColorTokens,
@@ -111,7 +112,7 @@ type ColorTokens struct {
 // sentence somewhere still reciting the old number — which is also why the
 // prose in docs/interface/principles.md#a-colour-is-three-values-and-a-ground
 // speaks of the palette's tokens and never of how many there are.
-const PaletteSize = 15
+const PaletteSize = 16
 
 // Palette is the live token set: whichever of the shipped tables the theme
 // resolves to, or the two-grey mono palette while mono conformance is on
@@ -122,8 +123,8 @@ var Palette = FullPalette
 // FullPalette is the coloured token set chosen against a dark ground — the
 // palette unless mono is on or another theme was asked for.
 //
-// Ten of the hexes are exactly the 256 index beside them, because the
-// cube and the greyscale ramp are colours a design can name. The other five —
+// Every hex but five is exactly the 256 index beside it, because the
+// cube and the greyscale ramp are colours a design can name. The five —
 // add, del, info, hunk and bright — live in the range a terminal theme owns,
 // where 10 is whatever green the user's config says it is and 12 is a blue
 // dark enough on some themes to lose a key the interface was offering. Those
@@ -147,6 +148,7 @@ var FullPalette = ColorTokens{
 	// is the exact value of 250 rather than a colour chosen for it.
 	Subtle: token("#bcbcbc", "250", "7"),
 	Body:   token("#d0d0d0", "252", "7"),
+	Code:   token("#d7af87", "180", "3"),
 }
 
 // LightPalette is the same jobs on a light ground.
@@ -168,7 +170,7 @@ var FullPalette = ColorTokens{
 //     what changes is which end of their theme is asked for, since on a
 //     light ground the readable half of sixteen colours is the un-bolded
 //     half and 15 is invisible where 0 is not.
-//   - Ten hexes that are exactly the 256 index beside them, for the same
+//   - Every other hex is exactly the 256 index beside it, for the same
 //     reason: the cube and the greyscale ramp are colours a design can name.
 //
 // One thing is deliberately inverted. Dim and Dimmer swap their relative
@@ -201,6 +203,7 @@ var LightPalette = ColorTokens{
 	// hex is the exact value of 239.
 	Subtle: token("#4e4e4e", "239", "8"),
 	Body:   token("#303030", "236", "0"),
+	Code:   token("#875f00", "94", "3"),
 }
 
 // CharmPalette is the same jobs done in CharmTone, the palette the
@@ -231,6 +234,7 @@ var CharmPalette = ColorTokens{
 	Bright:  tone(charmtone.Salt, "255", "15"),
 	Subtle:  tone(charmtone.Smoke, "250", "7"),
 	Body:    tone(charmtone.Ash, "253", "7"),
+	Code:    tone(charmtone.Cumin, "137", "3"),
 }
 
 // tone writes one row of the CharmTone table: the published hex, and the two

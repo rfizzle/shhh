@@ -38,6 +38,7 @@ var paletteTable = []struct {
 	{"bright", FullPalette.Bright, "#eaeaea", "15", "15"},
 	{"subtle", FullPalette.Subtle, "#bcbcbc", "250", "7"},
 	{"body", FullPalette.Body, "#d0d0d0", "252", "7"},
+	{"code", FullPalette.Code, "#d7af87", "180", "3"},
 }
 
 // The palette's size is counted here and written nowhere else. The struct
@@ -252,6 +253,8 @@ func tokenNamed(p ColorTokens, name string) Token {
 		return p.Subtle
 	case "body":
 		return p.Body
+	case "code":
+		return p.Code
 	}
 	return Token{}
 }
@@ -293,6 +296,7 @@ var lightTable = []struct {
 	{"bright", LightPalette.Bright, "#121212", "0", "0"},
 	{"subtle", LightPalette.Subtle, "#4e4e4e", "239", "8"},
 	{"body", LightPalette.Body, "#303030", "236", "0"},
+	{"code", LightPalette.Code, "#875f00", "94", "3"},
 }
 
 // The light column is written the same way the dark one is: three rungs per

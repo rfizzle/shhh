@@ -137,7 +137,7 @@ why a light terminal cannot be served by lightening them
 The second column belongs there and is not there yet, so the light table was
 chosen here instead, on the first column's own reasons: three rungs per token
 and nothing derived, the same five tokens deferring to the terminal's theme,
-ten hexes that are exactly the 256 index beside them, and the two chrome greys
+every other hex exactly the 256 index beside it, and the two chrome greys
 keeping their jobs by swapping their weight — the faint one is the one nearer
 the ground, which is the lighter grey on black and the darker grey on white.
 

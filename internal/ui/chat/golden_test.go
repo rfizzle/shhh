@@ -385,6 +385,23 @@ func TestGolden_ReadRun(t *testing.T) {
 	})
 }
 
+// TestGolden_ProseNames captures an answer that names things in code spans,
+// the way most answers do: a name in prose takes the code token rather than
+// the accent, which a read never spends
+// (docs/interface/principles.md#weight-tracks-risk).
+func TestGolden_ProseNames(t *testing.T) {
+	captureGolden(t, "prose-names", "an answer naming files in code spans", goldenWidths, func(width int) []golden.Panel {
+		m := frameModel(t, width, 40)
+		m.transcript = []entry{
+			{kind: entryUser, text: "where is the round ceiling read"},
+			{kind: entryAssistant, text: "The ceiling is declared in `round.go` and read by `loop` in " +
+				"`internal/agent/loop.go`. **Nothing else reads it**, so `go test ./internal/agent` covers it."},
+		}
+		m.invalidateRenderCache()
+		return []golden.Panel{{Label: "an answer with four names and one bold clause", View: m.renderHistory()}}
+	})
+}
+
 // TestGolden_ProgressUpdate captures the public status a long silent run is
 // asked for: the rung it is drawn at, the bound it folds to, and the two
 // places it has to stay under the work — above the group of calls it

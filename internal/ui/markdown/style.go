@@ -26,6 +26,11 @@ import (
 //
 // Strikethrough keeps the attribute and pays that cost, because nothing else
 // can say "struck" and `~~text~~` is rare enough for it not to matter.
+//
+// A name in prose has a token of its own rather than the accent. The accent
+// means decide and is on screen where a rail is, and an answer naming ten
+// files would otherwise spend it ten times on a read
+// (docs/interface/principles.md#weight-tracks-risk).
 type styles struct {
 	mono    bool
 	body    lipgloss.Style
@@ -56,7 +61,7 @@ func newStyles(mono bool, prose ProseTone) styles {
 		bold:    lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),
 		italic:  lipgloss.NewStyle().Italic(true),
 		strike:  lipgloss.NewStyle().Strikethrough(true).Foreground(p.Dim.Color()),
-		code:    lipgloss.NewStyle().Foreground(p.Accent.Color()),
+		code:    lipgloss.NewStyle().Foreground(p.Code.Color()),
 		link:    lipgloss.NewStyle().Foreground(p.Info.Color()),
 		url:     lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		rule:    lipgloss.NewStyle().Foreground(p.Dim.Color()),
