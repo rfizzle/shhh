@@ -5,7 +5,7 @@
 # it (docs/interface/surfaces.md#the-step). Twelve reads with no plan and no
 # prose over them: the run is one card all the same, counting them on its
 # header with a strip of twelve glyphs under it, and the reading cursor opens
-# it onto its rows in place.
+# it onto its group of reads in place.
 setup for f in one two three four five six seven eight nine ten eleven twelve; do printf 'package fixture\n' > "${f}.go"; done
 snap 01-start "Some things worth doing first"
 keys "how is the round limit counted" Enter
@@ -20,12 +20,13 @@ keys k
 keys k
 snap 04-on-the-card "[enter] open it" "❯ ⚙ read 12 files"
 keys Enter
-# Opened in place: every read back with its own target, on the card's band.
-snap 05-opened "eleven.go" "⚙ read    one.go" "⚙ read    twelve.go"
-# The open card's rows are stops of their own, and its first row is where
-# the card is kept: [-] there folds the whole card to its header.
+# Opened in place: the reads come back as one group under the card, listed
+# by name and counted past what the row holds, with the strip under them.
+snap 05-opened "./ one.go · two.go" "❯   ▾ read 12 files" "… +6"
+# The open card's group is a stop of its own: [-] there folds the group to
+# its head, the card staying open around it with its strip.
 keys "-"
-snap 06-refolded "[enter] unfold it" "read 12 files"
+snap 06-refolded "[enter] unfold it" "❯   ▸ read 12 files"
 # The way out of reading mode, and the session's.
 keys q
 snap 07-prompt "[enter] send"

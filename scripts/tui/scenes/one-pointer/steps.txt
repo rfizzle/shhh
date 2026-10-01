@@ -30,13 +30,13 @@ snap 05-reading "back to the prompt"
 keys k
 keys k
 snap 06-cursor "open it" "❯ ⚙ read 2 files"
-# Opening the card gives back the reads it stands for, which are the rows the
-# Reading artboard draws its cursor on.
+# Opening the card gives back the reads it stands for, as one group listed
+# by name — the row inside the card the cursor stands on. The bar used to
+# count the rows opened; it no longer does, so the wait is the group's own
+# listing, which only the open card draws, with the cursor on its head.
 keys Enter
 keys j
-keys Enter
-keys j
-snap 07-on-a-read "1 row expanded" "❯  ⚙ read"
+snap 07-on-a-read "./ loop.go · limit.go" "❯   ▾ read 2 files"
 keys q
 sleep 0.5
 # The palette's list, opened from the draft: the same pointer in the same

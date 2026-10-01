@@ -34,11 +34,11 @@ keys "/"
 keys "errors.go"
 snap 04-counted "match inside" "1 match inside"
 # Enter closes the query row; the next enter is the card's, and it opens the
-# card onto its calls: the path is on the screen, bold, on the row the cursor
-# has gone to.
+# card onto its calls: the reads are one group, its listing names the path,
+# bold, and the cursor has gone to the group's head.
 keys Enter
 keys Enter
-snap 05-reached "errors.go · 1/1" "❯  ⚙ read    errors.go"
+snap 05-reached "./ loop.go · round.go · errors.go · limit.go" "SEARCH · errors.go · 1/1" "❯   ▾ read 4 files"
 # The query row again — [/] reopens it over the query that is still standing —
 # and esc on the row clears it. The card the search opened goes back with it,
 # so the card stands in for its rows again, and the mode the reader was in is still

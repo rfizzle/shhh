@@ -35,9 +35,12 @@ keys y
 # writer-2 answers once that has landed, and its change meets writer-1's on
 # the same line: its patch is kept and an integration writer is started for
 # it, a lane of the same block. writer-2 holds its answer for most of half a
-# minute (replies.txt), longer than a snap waits.
+# minute (replies.txt), longer than a snap waits. The integrator's lane is
+# waited on once its patch is waiting: a lane with a request in front of the
+# reader draws that request where a working lane draws its task, and the
+# block's head counts it as the third agent of the fan-out.
 sleep 15
-snap 05-integration-lane "integrator-1 · Reconcile writer-2's patch"
+snap 05-integration-lane "◇ integrator-1 blocked · waiting approval: apply patch" "spawned 3 agents"
 # The integration writer's patch is the card: the condition that does both,
 # over the checkout as writer-1 left it. Overwriting writer-1's change is the
 # reconciliation, so the card says whose change it settles and stays medium.

@@ -6,7 +6,8 @@
 # The edit is the archetypal mutation and used to be the one row in the
 # transcript with no rail on it: the picture is looked at for the rail on its
 # card and, with the card opened, the rail in the gutter of its row, the ✎
-# beside it and the verb in the same column as the read above.
+# in the same column as the read's ⚙ above it, and the path followed by the
+# first line the edit changed rather than a verb column.
 #
 # The refusal below it is the other half. A call the queue would not put to
 # anybody is a card of its own — ⊘, `skipped` in the outcome with why beside
@@ -52,7 +53,7 @@ keys k
 keys k
 snap 06-on-the-card "[enter] open it"
 keys Enter
-snap 07-rows "+1 −1 · 1 hunk · approved by you" "edit    loop.go"
+snap 07-rows "+1 −1 · 1 hunk · approved by you" "▎✎ loop.go · - const limit = 25"
 keys q
 keys C-c
 snap 08-quit-armed "again quits"

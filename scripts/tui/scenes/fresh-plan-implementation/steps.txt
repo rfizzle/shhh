@@ -24,7 +24,9 @@ keys C-Space
 snap 04-card-live "[i] implement in a new session — accept edits mode"
 keys i
 # The execution turn's first reply announces step 1 and reads the file; the
-# request after it is held, so the step is on screen while it runs.
-snap 05-implementing "carried · 2 steps" "⏵⏵ accept edits"
+# request after it is held, so the step is on screen while it runs. The
+# carried plan is a notice line, and at this width it wraps after `carried ·`,
+# so the wait is the part of it that stays on one line.
+snap 05-implementing "· plan make the round limit recoverable · carried ·" "plan approved — executing in accept-edits mode" "⏵⏵ accept edits"
 snap 06-first-step "loop.go"
 snap 07-done "read at the top of the loop"

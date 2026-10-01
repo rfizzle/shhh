@@ -14,15 +14,17 @@ setup printf 'package agent\n\nconst limit = 25\n\nfunc round() int {\n    retur
 snap 01-start "Some things worth doing first"
 keys "how is the round limit counted" Enter
 snap 02-turn "The limit is a checkpoint, not a wall"
-# The two reads are one card, opened through the pointer and then its two
-# rows, one at a time — a press per thing opened, and what the one press
+# The read and the search are one card, opened through the pointer and then
+# its two rows, one at a time — a press per thing opened, and what the one press
 # below undoes: shift+↑ lights the pointer and walks it up the pane to the
 # card, shift+→ opens the card onto its calls, and then each row the pointer
-# is walked to. The draft keeps the keyboard throughout.
+# is walked to. The open card draws each call as a group of one under its
+# kind's glyph, so the search's row, `⚙ const limit`, is on screen only once
+# the card is open. The draft keeps the keyboard throughout.
 keys S-Up
 keys S-Up S-Up
 keys S-Right
-snap 03-card-open "⚙ read    round.go"
+snap 03-card-open "⚙ const limit" "⚙ loop.go"
 keys S-Down
 keys S-Right
 keys S-Up
