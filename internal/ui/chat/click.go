@@ -12,9 +12,9 @@ package chat
 // the button is down, so a drag that starts on a target still selects, and
 // the one button carries both gestures without either having to give ground.
 //
-// Six things are targets, and the test they pass is the same one six times:
-// the pointer names exactly one of them, and the thing it names already has a
-// key.
+// Seven things are targets, and the test they pass is the same one seven
+// times: the pointer names exactly one of them, and the thing it names already
+// has a key.
 //
 //   - An activity row. Its whole width is one row, and [enter] under reading
 //     mode's cursor already opens it. The row line opens and closes it; the
@@ -39,6 +39,11 @@ package chat
 //     that act on it are live only in the mode that says so on its own bar.
 //     The count of the chips the strip gave up names none of them and is
 //     not a target.
+//   - A sent attachment's row in the tray under a message. It names one
+//     attachment, and [enter] with reading mode's cursor on the row opens it:
+//     a picture onto its card, every click, and a paste in place
+//     (attachments.go). A document's row opens onto nothing under either
+//     input, so it is not one.
 //
 // Everything else on the screen fails that test. Prose under the pointer is a
 // selection surface first and has no single act behind it; the scroll gutter
@@ -229,10 +234,11 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 	if turn, ok := m.reviewableRow(idx); ok && es[idx].kind == entryTurnClose && offset == 1 {
 		return m.openReview(turn)
 	}
-	// A sent picture's fold row opens its card, from the row line or from
-	// the fold rows under it — the same press enter makes (openCursorRow).
-	if a, ok := foldPicture(es[idx]); ok {
-		return m.openFoldPicture(idx, a)
+	// A sent picture's row opens its card, every click — the same press
+	// enter makes (openCursorRow). The row has no open state, so a second
+	// click on it opens the card again rather than closing something.
+	if _, ok := trayPicture(es[idx]); ok {
+		return m.openTrayPicture(idx)
 	}
 	claimed, full, output := m.toggleRow(idx, g)
 	if !claimed {
@@ -350,20 +356,20 @@ func (m *Model) toggleRow(idx int, g rowGesture) (claimed bool, full *components
 		}
 		return true, nil, false
 	}
-	if len(es[idx].pastes) > 0 {
-		// A sent message's fold cycles the three depths a tool row does:
+	if f := es[idx].fold; f != nil && len(f.body) > 0 {
+		// A sent paste's row cycles the three depths a tool row does:
 		// closed, the bounded window in place, the whole paste full screen
 		// (attachments.go). The bytes are the row's own rather than the
 		// evidence store's, so the third depth is offered whenever the
 		// window did not hold all of them.
 		switch {
 		case g == gestureBody:
-			if es[idx].expanded && pasteFoldOverflows(es[idx]) {
+			if es[idx].expanded && trayOverflows(es[idx]) {
 				return true, nil, true
 			}
 		case !es[idx].expanded:
 			es[idx].expanded = true
-		case g == gestureCycle && pasteFoldOverflows(es[idx]):
+		case g == gestureCycle && trayOverflows(es[idx]):
 			return true, nil, true
 		default:
 			es[idx].expanded = false

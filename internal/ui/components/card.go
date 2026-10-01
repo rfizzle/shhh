@@ -79,6 +79,10 @@ func (t CardTone) style() lipgloss.Style {
 // there: both are a rectangle around something to read.
 type Card struct {
 	Title string
+	// Subtitle follows the title on the border in the chrome grey, after
+	// the separator every rail joins its fields with: what the card says
+	// about its subject rather than the subject itself. Empty draws nothing.
+	Subtitle string
 	// Chips sit at the right end of the top border, joined by ─ separators.
 	// They drop from the front as the terminal narrows, so the last chip —
 	// the one that leads the decision — is the one that survives.
@@ -152,13 +156,15 @@ func cardTop(c Card, border lipgloss.Style, width int) string {
 	lead, title := cardLeadIn, c.Title+" "
 	if c.Title == "" {
 		lead, title = cardLeadInBare, ""
+	} else if c.Subtitle != "" {
+		title = c.Title + chipSeparator + c.Subtitle + " "
 	}
 	room := max(0, width-1-lipgloss.Width(lead))
 	chips := c.Chips
 	for {
 		right := chipRun(chips)
 		if lipgloss.Width(title)+lipgloss.Width(right)+1 <= room {
-			return paintCardTop(border, lead, title, room-lipgloss.Width(title)-lipgloss.Width(right), right+"╮")
+			return paintCardTop(border, lead, title, c.heading(title), room-lipgloss.Width(title)-lipgloss.Width(right), right+"╮")
 		}
 		if len(chips) == 0 {
 			break
@@ -166,7 +172,18 @@ func cardTop(c Card, border lipgloss.Style, width int) string {
 		chips = chips[1:]
 	}
 	title = Clip(title, room)
-	return paintCardTop(border, lead, title, max(0, room-lipgloss.Width(title)), "╮")
+	return paintCardTop(border, lead, title, c.heading(title), max(0, room-lipgloss.Width(title)), "╮")
+}
+
+// heading is how much of the border's title, as it is about to be drawn, is
+// the card's own heading: all of it without a subtitle, the heading up to the
+// subtitle with one, and all of what is left when the clip reached into the
+// heading itself.
+func (c Card) heading(title string) int {
+	if c.Subtitle == "" || !strings.HasPrefix(title, c.Title) {
+		return len(title)
+	}
+	return len(c.Title)
 }
 
 // paintCardTop paints the parts of the top edge. The title is a heading and
@@ -189,10 +206,17 @@ func cardTop(c Card, border lipgloss.Style, width int) string {
 // that call too: a style renders a pair of escapes around an empty string,
 // and two runs where there is nothing between the title and the corner is one
 // of those for nothing.
-func paintCardTop(border lipgloss.Style, lead, title string, fill int, right string) string {
+//
+// heading is how many bytes of title are the heading; what follows it is the
+// subtitle, which is chrome and wears the grey. A title clipped into its own
+// heading is all heading.
+func paintCardTop(border lipgloss.Style, lead, title string, heading, fill int, right string) string {
 	head := border.Render(lead)
-	if title != "" {
-		head += sty.Bright.Bold(true).Render(title)
+	if title[:heading] != "" {
+		head += sty.Bright.Bold(true).Render(title[:heading])
+	}
+	if rest := title[heading:]; rest != "" {
+		head += sty.Dim.Render(rest)
 	}
 	if Mono() || fill <= 0 {
 		return head + border.Render(ruleRun(fill)+right)

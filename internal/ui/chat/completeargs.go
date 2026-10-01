@@ -298,6 +298,30 @@ func attachmentShowArgs(m *Model) []argOption {
 		out = append(out, argOption{value: attachmentArg(a),
 			desc: what + attachmentArgDesc(a)})
 	}
+	// Then what the session has already sent, newest message first, by the
+	// handle that reaches it (showAttachment). A handle staged again by a
+	// recall is offered once, as the staged chip it now is.
+	seen := map[string]bool{}
+	for _, o := range out {
+		seen[strings.ToLower(o.value)] = true
+	}
+	for i := len(m.transcript) - 1; i >= 0; i-- {
+		f := m.transcript[i].fold
+		if f == nil || f.label == "" || seen[strings.ToLower(f.label)] {
+			continue
+		}
+		what := "Look at this image · "
+		switch f.att.Kind {
+		case provider.AttachmentImage:
+		case provider.AttachmentText:
+			what = "Read this text · "
+		default:
+			continue
+		}
+		seen[strings.ToLower(f.label)] = true
+		out = append(out, argOption{value: f.label,
+			desc: what + attachmentArgDesc(f.att) + " · sent"})
+	}
 	return out
 }
 

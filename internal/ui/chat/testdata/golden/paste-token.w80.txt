@@ -35,16 +35,16 @@
 · sent · the transcript keeps the fold, not the flood
 ❯ this test log says the loop never stops — ⟨Paste#1 · 214 lines⟩ — and 
   ⟨Image#1 · 1440×900⟩ is the screen it hangs on; fix the exit condition
-   ▸ Paste#1 · 214 lines · 6.0k tokens · [enter] expand
-   ▸ Image#1 · 1440×900 · [enter] open
+  ⟨¶ Paste#1⟩  paste-1.txt · 214 lines · 6.0k tokens               23 KB  
+  ⟨▣ Image#1⟩  clipboard.png · 1440×900                            40 KB  
 ──────────────────────────────────────────────────────────────────────────
 
 
 · opened in the transcript · bounded, and the bound counts
 ❯ this test log says the loop never stops — ⟨Paste#1 · 214 lines⟩ — and 
   ⟨Image#1 · 1440×900⟩ is the screen it hangs on; fix the exit condition
-   ▾ Paste#1 · 214 lines · 6.0k tokens · [enter] fold it back up
-    === RUN   TestRoundLimit
+  ⟨¶ Paste#1⟩  paste-1.txt · 214 lines · 6.0k tokens               23 KB  
+    === RUN   TestRoundLimit                                              
         loop_test.go:44: round 26 reached after 2.1s, loop still running …
         loop_test.go:44: round 26 reached after 2.1s, loop still running …
         loop_test.go:44: round 26 reached after 2.1s, loop still running …
@@ -52,8 +52,8 @@
         loop_test.go:44: round 26 reached after 2.1s, loop still running …
         loop_test.go:44: round 26 reached after 2.1s, loop still running …
         loop_test.go:44: round 26 reached after 2.1s, loop still running …
-    … 206 lines more, [enter] opens the whole of it
-   ▾ Image#1 · 1440×900
+    … 206 more · [enter] again for the rest                               
+  ⟨▣ Image#1⟩  clipboard.png · 1440×900                            40 KB  
 ──────────────────────────────────────────────────────────────────────────
 
 
@@ -99,25 +99,25 @@
 · sent · the transcript keeps the fold, not the flood
 ␛[94m❯␛[m ␛[97mthis test log says the loop never stops — ␛[m␛[94m⟨Paste#1 · 214 lines⟩␛[m␛[94m␛[m␛[97m — and ␛[m
   ␛[97m␛[m␛[94m⟨Image#1 · 1440×900⟩␛[m␛[97m is the screen it hangs on; fix the exit condition␛[m
-   ␛[38;5;241m▸ Paste#1 · 214 lines · 6.0k tokens · ␛[m␛[38;5;103m[enter] expand␛[m
-   ␛[38;5;241m▸ Image#1 · 1440×900 · ␛[m␛[38;5;103m[enter] open␛[m
+␛[38;5;241;48;5;234m  ␛[m␛[94;48;5;234m⟨¶ Paste#1⟩  ␛[m␛[97;48;5;234mpaste-1.txt␛[m␛[38;5;241;48;5;234m · 214 lines · 6.0k tokens               23 KB  ␛[m
+␛[38;5;241;48;5;234m  ␛[m␛[94;48;5;234m⟨▣ Image#1⟩  ␛[m␛[97;48;5;234mclipboard.png␛[m␛[38;5;241;48;5;234m · 1440×900                            40 KB  ␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────────────────────────␛[m
 
 
 · opened in the transcript · bounded, and the bound counts
 ␛[94m❯␛[m ␛[97mthis test log says the loop never stops — ␛[m␛[94m⟨Paste#1 · 214 lines⟩␛[m␛[94m␛[m␛[97m — and ␛[m
   ␛[97m␛[m␛[94m⟨Image#1 · 1440×900⟩␛[m␛[97m is the screen it hangs on; fix the exit condition␛[m
-   ␛[38;5;241m▾ Paste#1 · 214 lines · 6.0k tokens · ␛[m␛[38;5;103m[enter] fold it back up␛[m
-    ␛[38;5;245m=== RUN   TestRoundLimit␛[m
-    ␛[38;5;245m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m
-    ␛[38;5;245m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m
-    ␛[38;5;245m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m
-    ␛[38;5;245m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m
-    ␛[38;5;245m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m
-    ␛[38;5;245m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m
-    ␛[38;5;245m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m
-    ␛[38;5;241m… 206 lines more, [enter] opens the whole of it␛[m
-   ␛[38;5;241m▾ Image#1 · 1440×900␛[m
+␛[38;5;241;48;5;234m  ␛[m␛[94;48;5;234m⟨¶ Paste#1⟩  ␛[m␛[97;48;5;234mpaste-1.txt␛[m␛[38;5;241;48;5;234m · 214 lines · 6.0k tokens               23 KB  ␛[m
+␛[38;5;241;48;5;234m    ␛[m␛[38;5;245;48;5;234m=== RUN   TestRoundLimit                                              ␛[m
+␛[38;5;241;48;5;234m    ␛[m␛[38;5;245;48;5;234m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m
+␛[38;5;241;48;5;234m    ␛[m␛[38;5;245;48;5;234m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m
+␛[38;5;241;48;5;234m    ␛[m␛[38;5;245;48;5;234m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m
+␛[38;5;241;48;5;234m    ␛[m␛[38;5;245;48;5;234m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m
+␛[38;5;241;48;5;234m    ␛[m␛[38;5;245;48;5;234m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m
+␛[38;5;241;48;5;234m    ␛[m␛[38;5;245;48;5;234m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m
+␛[38;5;241;48;5;234m    ␛[m␛[38;5;245;48;5;234m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m
+␛[38;5;241;48;5;234m    ␛[m␛[38;5;241;48;5;234m… 206 more · [enter] again for the rest                               ␛[m
+␛[38;5;241;48;5;234m  ␛[m␛[94;48;5;234m⟨▣ Image#1⟩  ␛[m␛[97;48;5;234mclipboard.png␛[m␛[38;5;241;48;5;234m · 1440×900                            40 KB  ␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────────────────────────␛[m
 
 

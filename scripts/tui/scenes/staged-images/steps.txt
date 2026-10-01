@@ -1,15 +1,29 @@
-# program test: TestProgram_StagedFilesLeadWithTheirHandles
+# program test: TestProgram_StagedFilesLeadWithTheirHandles,
+#   TestProgram_AClickOpensThePictureItsRowNames,
+#   TestProgram_ASecondClickOnASentPictureOpensItAgain
 #
 # Every chip on the staged rail leads with a handle of its kind and number
 # (docs/interface/surfaces.md#the-input-frame). Two pictures that are both
 # called clipboard.png and a text file are staged by path, one `/paste` each;
 # the strip reads Image#1, Image#2 and File#1, so the two pictures are two
 # words the paste verbs take rather than one name that reaches the first.
+# Then the three are sent, and each keeps a row under the message that opens
+# it (docs/interface/surfaces.md#a-staged-attachment). A click is the
+# terminal's own SGR mouse report, sent as literal bytes: a press then a
+# release in one cell, column and row counted from 1; Image#2's row is row 12
+# at 110 columns and row 16 at 60, where the staging notices wrap.
 #
 # What the capture is for: at 04 the strip above the box carries all three
 # chips, each handle ahead of its name, and the staging notice above it says
 # `attached File#1 (notes.txt, …)`. At 05 `/paste drop clipboard.png` is
-# refused naming both handles, and all three chips are still there.
+# refused naming both handles, and all three chips are still there. At 06 the
+# sent message has a tray of three rows, `⟨▣ Image#1⟩`, `⟨▣ Image#2⟩` and
+# `⟨¶ File#1⟩`, none printing a key. At 07 a click on Image#2's row has opened
+# its card, titled `clipboard.png · sent with turn 1`, with `[esc] back to the
+# draft`. At 10 reading mode's cursor stands on Image#2's row and the bar says
+# `[enter] open it`; at 11 and again at 13 enter on that same row opens the
+# card with `[esc] back to reading`. At 16 `/paste show Image#1` opens the first
+# picture's card by name.
 setup mkdir -p a b
 setup echo 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' | base64 -d > a/clipboard.png
 setup cp a/clipboard.png b/clipboard.png
@@ -20,11 +34,36 @@ snap 02-first "attached Image#1"
 keys "/paste b/clipboard.png" Enter
 snap 03-second "attached Image#2"
 keys "/paste notes.txt" Enter
-snap 04-strip "attached File#1" "Image#1" "Image#2" "File#1 notes.txt"
+wide 110 snap 04-strip "attached File#1" "Image#1" "Image#2" "File#1 notes.txt"
+narrow 110 snap 04-strip "attached File#1" "Image#1" "Image#2" "File#1 60 B"
 keys "/paste drop clipboard.png" Enter
-snap 05-shared-name "say which" "Image#1, Image#2" "File#1 notes.txt"
-# Nothing is sent, so the conversation has no turn and quitting leaves no
-# exit banner to wait for — a session with nothing to resume prints nothing.
+wide 110 snap 05-shared-name "say which" "Image#1, Image#2" "File#1 notes.txt"
+narrow 110 snap 05-shared-name "which: Image#1, Image#2" "File#1 60 B"
+keys "before and after the click" Enter
+snap 06-sent "Looked at both." "⟨▣ Image#1⟩  clipboard.png" "⟨▣ Image#2⟩  clipboard.png" "⟨¶ File#1⟩   notes.txt"
+wide 110 keys -l "$(printf '\033[<0;20;12M\033[<0;20;12m')"
+narrow 110 keys -l "$(printf '\033[<0;20;16M\033[<0;20;16m')"
+snap 07-click-opens "sent with turn 1" "back to the draft"
+keys Escape
+snap 08-back-to-the-draft "Looked at both."
+keys C-o
+snap 09-reading "[j/k] move"
+keys k k k
+snap 10-on-image-2 "[enter] open it" "❯ ⟨▣ Image#2⟩"
+keys Enter
+snap 11-enter-opens "sent with turn 1" "back to reading"
+keys Escape
+snap 12-back-on-the-row "[enter] open it" "❯ ⟨▣ Image#2⟩"
+keys Enter
+snap 13-opens-again "sent with turn 1" "back to reading"
+keys Escape
+snap 14-row-again "[enter] open it" "❯ ⟨▣ Image#2⟩"
+keys q
+snap 15-prompt "✓ done"
+keys "/paste show Image#1" Enter
+snap 16-by-name "sent with turn 1" "back to the draft"
+keys Escape
+snap 17-draft-again "✓ done"
 keys C-c
-snap 06-quit-armed "again quits"
+snap 18-quit-armed "again quits"
 keys C-c

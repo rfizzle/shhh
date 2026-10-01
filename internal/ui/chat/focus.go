@@ -29,11 +29,12 @@ func expandable(e entry) bool {
 	return e.kind == entryTool || e.kind == entryCommand || e.kind == entryDiff ||
 		e.kind == entryThink || e.kind == entrySummary || e.kind == entryTodoRun ||
 		(e.kind == entrySystem && len(outputLines(e)) > 0) ||
-		// A sent message counts when it kept a fold with something to open:
-		// the paste it folded is a body under the row like any other, a
-		// picture opens onto its card, and the row's own offer is what
-		// gives either back (attachments.go).
-		(e.kind == entryUser && foldOpens(e)) ||
+		// A sent attachment's row counts when it has something to open: a
+		// paste's lines are a body under the row like any other, and a
+		// picture opens onto its card. Each row is its own stop, so the
+		// second picture in a message is as reachable as the first
+		// (attachments.go).
+		trayOpens(e) ||
 		// A compaction receipt folds the summary under it, which is a body
 		// like any other — and the one that opens with the fold already open,
 		// because a reader who has just lost five turns is owed what replaced
@@ -263,8 +264,8 @@ func (m Model) openCursorRow(ret state) (tea.Model, tea.Cmd) {
 		return m.openReview(turn)
 	}
 	if es := *m.entries(); m.focusIdx >= 0 && m.focusIdx < len(es) {
-		if a, ok := foldPicture(es[m.focusIdx]); ok {
-			return m.openFoldPicture(m.focusIdx, a)
+		if _, ok := trayPicture(es[m.focusIdx]); ok {
+			return m.openTrayPicture(m.focusIdx)
 		}
 	}
 	claimed, full, output := m.toggleRow(m.focusIdx, gestureCycle)
@@ -962,7 +963,7 @@ func onGrid(e entry) bool {
 	case entryTool, entryCommand, entryDiff, entryThink, entrySummary,
 		entryTodoRun, entryAssistant, entrySystem, entryError,
 		entryTurnClose, entryFailure, entryStreamDrop, entryRoundPause,
-		entryFanout, entryRewound:
+		entryFanout, entryRewound, entryTray:
 		return true
 	case entryCompactSummary:
 		// The receipt is a row on the grid; a bare summary out of an older

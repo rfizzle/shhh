@@ -180,12 +180,21 @@ func (m *Model) restageRecalled(text string) string {
 		return text
 	}
 	for i := len(m.transcript) - 1; i >= 0; i-- {
-		for _, p := range m.transcript[i].pastes {
+		if m.transcript[i].kind != entryUser {
+			continue
+		}
+		// One message's attachments in the order they rode, which is the
+		// order the strip stages them back in.
+		for j := i + 1; j < len(m.transcript) && m.transcript[j].kind == entryTray; j++ {
+			p := m.transcript[j].fold
+			if p == nil || p.token == "" {
+				continue
+			}
 			token := p.token
 			if !strings.Contains(text, token) || m.stagedFold(token) {
 				continue
 			}
-			if staged, ok := m.restagePaste(p); ok {
+			if staged, ok := m.restagePaste(*p); ok {
 				text = strings.Replace(text, token, staged, 1)
 			}
 		}

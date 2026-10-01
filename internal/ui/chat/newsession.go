@@ -333,11 +333,11 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 				break
 			}
 			// A resumed turn is the row the send left: the bytes were saved
-			// with it, so the row that said "attached: shot.png" says it
-			// again, and a paste whose fold is in the words is that fold
-			// again — with the log behind it, which is what ↑ stages back
-			// from (recall.go).
-			m.appendEntry(userEntry(msg.Content, msg.Attachments))
+			// with it, so every attachment has its row again and a picture
+			// opens onto the same card — and a paste is that paste again,
+			// with the log behind it, which is what ↑ stages back from
+			// (recall.go).
+			m.appendSent(msg.Content, msg.Attachments)
 		case provider.RoleAssistant:
 			// The thinking that led to the turn comes back with it, above it,
 			// where it happened (think.go). A conversation that is still

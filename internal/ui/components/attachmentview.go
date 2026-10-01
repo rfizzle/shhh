@@ -53,6 +53,11 @@ type AttachmentView struct {
 	// top border rather than a caption row: the attachment is what the
 	// surface is for, so it gets every row the frame does not need.
 	Name, Size string
+	// Sent is what the card says when the attachment has already gone with
+	// a message — `sent with turn 3` — after the name on the border. A
+	// staged attachment leaves it empty: the strip it was opened from
+	// already says it is waiting to ride.
+	Sent string
 	// Pixels is the picture's real size, `1440×900`. It is the one fact the
 	// chip strip could never carry and the card can, and it is what says a
 	// preview is a thumbnail rather than the thing itself.
@@ -92,7 +97,7 @@ func (p *AttachmentView) SetSize(_, height int) { p.Height = height }
 // View draws the card.
 func (p AttachmentView) View(width int) string {
 	rows := p.body(width-cardFrameWidth, p.Height-viewChrome)
-	return Card{Title: p.Name, Chips: p.captions()}.Render(rows, width)
+	return Card{Title: p.Name, Subtitle: p.Sent, Chips: p.captions()}.Render(rows, width)
 }
 
 // captions are the top border's chips, in the order they are given up as the

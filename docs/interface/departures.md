@@ -811,9 +811,37 @@ things to learn where two and a familiar one will do. The two meanings never
 meet: `≡` on a row is an act the session took, `≡` on a chip is a file waiting
 above the draft, and no surface draws both at once.
 
+Once sent, they do meet: the tray under a message is read in the transcript,
+beside the summary row that wears `≡`. So a tray row marks text `¶` instead —
+the pilcrow, a mark for *written lines* that no row in the transcript uses —
+as the `Tray` artboard draws it, and keeps `▣` and `▤` as the chips have them.
+
 Colour reinforces nothing here. The chips are body text and the mark carries
 the whole distinction, which is what makes the strip read the same in mono
 ([invariant 1](principles.md#colour-never-carries-meaning-alone)).
+
+## A sent attachment's tray keeps the sentence's handle and the session's facts
+
+*A disagreement.* The `Tray` artboard draws a PDF's row as `⟨▤ Doc#1⟩`. The
+binary spells it `⟨▤ File#1⟩`, because the rule the artboard states is that
+the row spells the handle the way the sentence spells it, and the sentence,
+the strip and `/paste show` all call a PDF `File#1`; a row with a word of its
+own would be a fourth name for one file.
+
+The artboard draws a picture's source phrase on every row. The binary knows
+where a picture came from only in the session that staged it: the store keeps
+the bytes and the name, never the folder, so a reopened session's rows leave
+the phrase out — the same way a row too narrow for it does — rather than
+guessing it.
+
+The artboard puts reading mode's cursor on the message as well as on each
+row. The binary stops on the rows that open something and not on the message,
+which has nothing for enter to open; a message carrying only a PDF is
+therefore no stop at all, as it was before the tray.
+
+On the dark table with its ground painted, the ground and the band are the
+same grey, so the tray is its rows alone there, as it is in mono and in
+sixteen colours.
 
 ## Two surfaces draw with blocks rather than in them
 

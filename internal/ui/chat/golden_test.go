@@ -1028,8 +1028,9 @@ func TestGolden_PasteToken(t *testing.T) {
 	captureGolden(t, "paste-token", "the paste fold", goldenWidths, func(width int) []golden.Panel {
 		sent := func(open bool) string {
 			m := goldenModel(t, width)
-			m.transcript = []entry{userEntry(sentence, carried)}
-			m.transcript[0].expanded = open
+			m.transcript = m.sentEntries(sentence, carried)
+			// The paste's row is the one that opens in place.
+			m.transcript[1].expanded = open
 			m.invalidateRenderCache()
 			return m.renderHistory()
 		}
@@ -1044,7 +1045,7 @@ func TestGolden_PasteToken(t *testing.T) {
 		// (recall.go).
 		recalled := func() string {
 			m := goldenModel(t, width)
-			m.transcript = []entry{userEntry(sentence, carried)}
+			m.transcript = m.sentEntries(sentence, carried)
 			m.recordInput(sentence)
 			m.invalidateRenderCache()
 			back, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
@@ -3050,6 +3051,89 @@ func TestGolden_SummaryRow(t *testing.T) {
 			{Label: "off target · the row as it lands", View: row(off, false)},
 			{Label: "off target · the row opened", View: row(off, true)},
 			{Label: "on target, and longer than the rail's block · the row opened", View: row(long, true)},
+		}
+	})
+}
+
+// TestGolden_SentTray captures the tray a sent message leaves under its
+// words: one row per attachment, the handle spelled the way the sentence
+// spells it, the name, the facts and the size. A picture folded in the
+// words, two pictures with reading's cursor on the second, a picture staged
+// by path with no fold to match, a paste closed and opened, a PDF that opens
+// onto nothing, and the card a sent picture opens.
+//
+// Four widths, because the row gives its facts up from the end as the pane
+// narrows and the handle never: at 60 the source phrase goes first, then the
+// dimensions.
+func TestGolden_SentTray(t *testing.T) {
+	picture := func(handle, name string, size int) provider.Attachment {
+		return provider.Attachment{Kind: provider.AttachmentImage, Handle: handle, Name: name,
+			MediaType: "image/png", Data: fixedPNG(t, image.NewNRGBA(image.Rect(0, 0, 1440, 900)), size)}
+	}
+	first := picture("Image#1", "clipboard.png", 412<<10)
+	second := picture("Image#2", "clipboard.png", 380<<10)
+	byPath := picture("Image#2", "shot.png", 95<<10)
+	log := []byte("=== RUN   TestRoundLimit\n" +
+		strings.Repeat("    loop_test.go:41: round 25 reached, loop still running\n", 211) +
+		"--- FAIL: TestRoundLimit (2.14s)\nFAIL\n")
+	paste := provider.Attachment{Kind: provider.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt",
+		MediaType: "text/plain", Data: log}
+	pdf := provider.Attachment{Kind: provider.AttachmentDocument, Handle: "File#1", Name: "spec.pdf",
+		MediaType: "application/pdf", Data: append([]byte("%PDF-1.4\n"+
+			strings.Repeat("1 0 obj <</Type /Page>> endobj\n", 12)), make([]byte, 1258291)...)}
+	fold := func(a provider.Attachment) string {
+		p, _ := pasteOf(a)
+		return p.token
+	}
+	sent := func(width int, text string, atts ...provider.Attachment) Model {
+		m := frameModel(t, width, 40)
+		m.staged.from = map[string]string{"Image#1": "from the clipboard", "Image#2": "from the clipboard"}
+		if len(atts) == 1 && atts[0].Name == "shot.png" {
+			m.staged.from = map[string]string{"Image#2": "from ~/Desktop"}
+		}
+		m.transcript = m.sentEntries(text, atts)
+		m.transcript = append(m.transcript, entry{kind: entryAssistant, text: "Moving the caption to the bar."})
+		m.invalidateRenderCache()
+		return m
+	}
+	captureGolden(t, "sent-tray", "the sent tray", goldenWidths, func(width int) []golden.Panel {
+		one := sent(width, "the copy caption lands on the frame, see "+fold(first)+" — move it to the bar", first)
+		two := sent(width, "before "+fold(first)+" and after "+fold(second)+" the click", first, second)
+		reading := func() string {
+			next, _ := two.enterFocusMode()
+			rm := next.(Model)
+			rm.focusIdx = 2
+			rm.refreshFocusView()
+			return readingSurface(rm)
+		}
+		path := sent(width, "this is the chip strip at 32 columns", byPath)
+		pasted := sent(width, "this test log says the loop never stops — "+fold(paste)+" — fix the exit condition", paste)
+		opened := sent(width, "this test log says the loop never stops — "+fold(paste)+" — fix the exit condition", paste)
+		opened.transcript[1].expanded = true
+		opened.invalidateRenderCache()
+		doc := sent(width, "draw the heading row the way page 4 of "+fold(pdf)+" says", pdf)
+		card := func() string {
+			next, _ := two.openTrayPicture(1)
+			cm := next.(Model)
+			cm.preview.Height = 6
+			return cm.preview.View(width) + "\n" + cm.renderPreviewHint()
+		}
+		nothing := func() string {
+			m := sent(width, "before "+fold(first)+" and after "+fold(second)+" the click", first, second)
+			next, _ := m.runPaste([]string{"/paste", "show", "Image#3"})
+			nm := next.(Model)
+			return nm.renderHistory()
+		}
+		return []golden.Panel{
+			{Label: "one picture folded in the words · its row under them", View: one.renderHistory()},
+			{Label: "two pictures · a row each", View: two.renderHistory()},
+			{Label: "reading's cursor on the second picture's row", View: reading()},
+			{Label: "a picture staged by path · no fold in the words, still a row", View: path.renderHistory()},
+			{Label: "a text paste, closed", View: pasted.renderHistory()},
+			{Label: "a text paste, opened · eight lines, then the tray's one key", View: opened.renderHistory()},
+			{Label: "a PDF · its pages and its size, and nothing to open", View: doc.renderHistory()},
+			{Label: "the sent picture's card", View: card()},
+			{Label: "a handle that names nothing", View: nothing()},
 		}
 	})
 }

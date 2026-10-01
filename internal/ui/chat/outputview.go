@@ -41,10 +41,9 @@ func (m Model) rowOutputView(e entry) *components.OutputView {
 		// the supervisor rather than on the row (fanout.go).
 		return m.fanoutOutputView(e)
 	}
-	if len(e.pastes) > 0 {
-		// A sent message's body is the paste it folded, and it is on the
-		// row rather than in the store: nothing trimmed it and nothing can
-		// page it back (attachments.go).
+	if e.fold != nil {
+		// A sent paste's body is on its row rather than in the store:
+		// nothing trimmed it and nothing can page it back (attachments.go).
 		return pasteOutputView(e)
 	}
 	return &components.OutputView{

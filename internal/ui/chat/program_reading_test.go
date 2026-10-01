@@ -168,8 +168,8 @@ func TestProgram_StagedFilesLeadWithTheirHandles(t *testing.T) {
 }
 
 // A picture dragged into the middle of a sentence leaves its fold where it
-// landed, the sentence goes out folds and all, and the sent row keeps the
-// fold and draws a fold row for the picture under it.
+// landed, the sentence goes out folds and all, and the sent message keeps the
+// fold and draws a tray row for the picture under it.
 func TestProgram_ADraggedPictureLeavesAFoldInTheSentence(t *testing.T) {
 	shot := filepath.Join(t.TempDir(), "shot.png")
 	if err := os.WriteFile(shot, pictureToFold(t).Data, 0o600); err != nil {
@@ -186,7 +186,7 @@ func TestProgram_ADraggedPictureLeavesAFoldInTheSentence(t *testing.T) {
 	waitForText(t, tm, "clipped at the edge")
 
 	frame := finalFrame(t, tm)
-	frameHas(t, frame, "this is the error ⟨Image#1 · 32×16⟩ on the settings screen", "▸ Image#1 · 32×16")
+	frameHas(t, frame, "this is the error ⟨Image#1 · 32×16⟩ on the settings screen", "⟨▣ Image#1⟩  shot.png · 32×16")
 }
 
 // The palette and a picker both open from the draft and both give it back:

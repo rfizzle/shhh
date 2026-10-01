@@ -44,8 +44,8 @@ type stagedDoor struct {
 	// back is that the card or reader up now was opened from the strip, so
 	// its way out is back to the strip rather than to the draft.
 	back bool
-	// row is that the card up now was opened from a sent message's fold row
-	// in reading mode, so its way out is back to that row (foldPicture).
+	// row is that the card up now was opened from a sent attachment's row
+	// in reading mode, so its way out is back to that row (trayPicture).
 	row bool
 	// shows is the staged attachment the card is showing, which is what the
 	// card's own drop takes out.
@@ -53,6 +53,11 @@ type stagedDoor struct {
 	// opened is the strip cell a click opened a chip from, which the same
 	// click closes (click.go).
 	opened railOpening
+	// from is where each staged picture came from, by handle — `from the
+	// clipboard`, `from ~/Desktop` — which its row says once it is sent
+	// (attachments.go). It is the session's and never the store's: the
+	// bytes and the name are saved with a message, the folder is not.
+	from map[string]string
 }
 
 // stripReachable reports whether there is a strip for the cursor to reach:

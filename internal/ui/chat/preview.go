@@ -50,28 +50,91 @@ import (
 
 // showAttachment dispatches `/paste show`: the staged attachment a handle or
 // a name picks out (findStaged), or the only one the surface can open when
-// neither is given.
+// neither is given — and, by handle, one the session has already sent.
 //
-// A word that names nothing staged is said out loud with what is, the way
-// `/paste drop` says it — a command that quietly did nothing is worse here
-// than anywhere, because the whole point of asking was that the reader could
-// not tell the files apart.
+// A handle is unique for the whole session (seedHandles), so one that names
+// nothing staged can only mean a message that carried it, and the card it
+// opens is the one that message's row opens. This is the door for a picture
+// whose row has scrolled out of reach. Bare `/paste show` keeps meaning the
+// staging area: guessing which of a session's pictures was meant is the
+// mistake the handle exists to stop.
+//
+// A word that names nothing is said out loud with what is, the way `/paste
+// drop` says it — a command that quietly did nothing is worse here than
+// anywhere, because the whole point of asking was that the reader could not
+// tell the files apart — and with how the sent ones are reached.
 func (m Model) showAttachment(name string) (tea.Model, tea.Cmd) {
-	if len(m.attachments) == 0 {
-		return m.surfaceNotice("nothing is attached")
-	}
 	if name == "" {
+		if len(m.attachments) == 0 {
+			return m.surfaceNotice(m.nothingStaged())
+		}
 		only, ok := onlyPreviewable(m.attachments)
 		if !ok {
 			return m.surfaceNotice("/paste show needs a handle — " + describeAllStaged(m.attachments))
 		}
 		return m.openPreview(only)
 	}
-	i, refusal := m.findStaged(name)
-	if i < 0 {
-		return m.surfaceNotice(refusal)
+	refusal := ""
+	if len(m.attachments) > 0 {
+		var i int
+		if i, refusal = m.findStaged(name); i >= 0 {
+			return m.openPreview(m.attachments[i])
+		}
 	}
-	return m.openPreview(m.attachments[i])
+	if a, turn, ok := m.sentByHandle(name); ok {
+		return m.openSent(a, turn, false)
+	}
+	if refusal == "" {
+		return m.surfaceNotice(m.nothingStaged())
+	}
+	if sent := m.sentHandles(); len(sent) > 0 {
+		refusal += " · " + sentReach(sent)
+	}
+	return m.surfaceNotice(refusal)
+}
+
+// nothingStaged is the notice for a staging area with nothing in it, and how
+// the attachments the session has already sent are reached.
+func (m Model) nothingStaged() string {
+	sent := m.sentHandles()
+	if len(sent) == 0 {
+		return "nothing is attached"
+	}
+	return "nothing staged · " + sentReach(sent)
+}
+
+// sentReach names the handles that reach a sent attachment, in the order
+// they were sent.
+func sentReach(handles []string) string {
+	return "sent attachments are reached by handle: " + strings.Join(handles, ", ")
+}
+
+// sentByHandle is the sent attachment a handle names, newest message first —
+// a recalled paste rides again under the handle it had, so the latest send
+// is the one the reader last saw — and the turn that carried it.
+func (m Model) sentByHandle(handle string) (provider.Attachment, int, bool) {
+	for i := len(m.transcript) - 1; i >= 0; i-- {
+		f := m.transcript[i].fold
+		if f != nil && f.label != "" && strings.EqualFold(f.label, handle) {
+			return f.att, sentTurn(m.transcript, i), true
+		}
+	}
+	return provider.Attachment{}, 0, false
+}
+
+// sentHandles is every handle the session has sent, once each, in the order
+// it was first sent.
+func (m Model) sentHandles() []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, e := range m.transcript {
+		if e.fold == nil || e.fold.label == "" || seen[e.fold.label] {
+			continue
+		}
+		seen[e.fold.label] = true
+		out = append(out, e.fold.label)
+	}
+	return out
 }
 
 // onlyPreviewable is the one staged attachment this surface can open, when
@@ -169,7 +232,7 @@ func (m *Model) placePicture() tea.Cmd {
 // with the cursor on the chip, or the draft.
 func (m *Model) answerPreview(msg tea.KeyPressMsg) (bool, overlayAction) {
 	switch {
-	case keys.Match(msg, keys.Preview.Remove) && m.stagedIndex(m.staged.shows) < 0:
+	case keys.Match(msg, keys.Preview.Remove) && !m.previewDrops():
 		// A picture that has already been sent is not the staging area's to
 		// drop, and the card does not offer the key for it.
 		return false, overlayAction{}
@@ -209,6 +272,18 @@ func (m *Model) answerPreview(msg tea.KeyPressMsg) (bool, overlayAction) {
 	return false, overlayAction{}
 }
 
+// previewDrops reports whether the card's drop has something to take: the
+// card shows a staged attachment and was not opened on a sent one. A recall
+// stages a sent picture again under the handle and name it rode with, so the
+// staging area alone cannot tell the sent card from the staged one, and a
+// drop on the sent row's card would take the recalled chip out of the draft.
+func (m Model) previewDrops() bool {
+	if m.preview != nil && m.preview.Sent != "" {
+		return false
+	}
+	return m.stagedIndex(m.staged.shows) >= 0
+}
+
 // closePreview hands the pane back and releases whatever the terminal was
 // holding for it.
 func (m *Model) closePreview() overlayAction {
@@ -227,9 +302,14 @@ func (m Model) renderPreviewHint() string {
 	if m.staged.back {
 		back = segAs(keys.Preview.Back, "back to the strip")
 	}
-	// A picture opened from a sent message's fold row is no longer staged,
-	// so there is nothing for the card to drop and no drop to offer.
-	if m.stagedIndex(m.staged.shows) < 0 {
+	// A picture that has been sent is no longer staged, so there is nothing
+	// for the card to drop and no drop to offer; the way out says which of
+	// the two places it opened from it goes back to.
+	if !m.previewDrops() {
+		back = segAs(keys.Preview.Back, "back to the draft")
+		if m.staged.row {
+			back = segAs(keys.Preview.Back, "back to reading")
+		}
 		return joinSegs([]hintSeg{back})
 	}
 	return joinSegs([]hintSeg{seg(keys.Preview.Remove), back})
@@ -371,5 +451,24 @@ func (m Model) renderPasteReaderHint() string {
 	if m.staged.back {
 		leave = segAs(keys.Paste.Leave, "back to the strip")
 	}
+	// A paste reached by its handle after the send is no longer staged, so
+	// there is nothing for the drop to take.
+	if !m.pasteReadStaged() {
+		return joinSegs([]hintSeg{seg(keys.Paste.Scroll), leave})
+	}
 	return joinSegs([]hintSeg{seg(keys.Paste.Scroll), seg(keys.Paste.Remove), leave})
+}
+
+// pasteReadStaged reports whether the paste the reader shows is still in the
+// staging area, matched the way its drop matches it.
+func (m Model) pasteReadStaged() bool {
+	if m.pasteRead == nil {
+		return false
+	}
+	for _, a := range m.attachments {
+		if strings.EqualFold(a.Name, m.pasteRead.name) {
+			return true
+		}
+	}
+	return false
 }

@@ -100,6 +100,11 @@ func (m Model) readingModeKeys() []hintSeg {
 		// The row states what a turn changed, and enter opens that turn's
 		// review rather than a body (openCursorRow).
 		segs = append(segs, segAs(keys.Reading.Expand, reviewTurnWords))
+	} else if m.focusedTrayPicture() {
+		// A sent picture's row has no open state: enter opens its card,
+		// every time, so the bar says that and never offers to close it
+		// (attachments.go).
+		segs = append(segs, segAs(keys.Reading.Expand, openTrayWords))
 	} else if m.focusedExpands() {
 		segs = append(segs, seg(keys.Reading.Expand))
 		if m.focusedRowOpen() {
@@ -133,6 +138,20 @@ func (m Model) readingModeKeys() []hintSeg {
 	// it is the last thing a reader reaches for and the first the bar sheds.
 	segs = append(segs, seg(keys.Reading.List))
 	return append(segs, seg(keys.Reading.Back))
+}
+
+// openTrayWords is what enter does on a sent picture's row.
+const openTrayWords = "open it"
+
+// focusedTrayPicture reports whether the cursor stands on a sent picture's
+// row, which enter opens onto its card.
+func (m Model) focusedTrayPicture() bool {
+	es := *m.entries()
+	if m.focusIdx < 0 || m.focusIdx >= len(es) {
+		return false
+	}
+	_, ok := trayPicture(es[m.focusIdx])
+	return ok
 }
 
 // focusedExpands reports whether [enter] would open anything on the row

@@ -1,2 +1,2 @@
-# One reply per request. Nothing in this scene is sent, so none is asked for.
-Nothing was sent.
+# One reply per request: the one message the scene sends.
+Looked at both.

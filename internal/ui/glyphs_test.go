@@ -118,6 +118,7 @@ var additions = map[rune]string{
 	'⟩': "departures.md#the-paste-fold-is-written-in-angle-quotes",
 	'▣': "departures.md#the-attachment-chips-mark-what-kind-of-file-is-staged",
 	'▤': "departures.md#the-attachment-chips-mark-what-kind-of-file-is-staged",
+	'¶': "departures.md#the-attachment-chips-mark-what-kind-of-file-is-staged",
 	'▀': "departures.md#two-surfaces-draw-with-blocks-rather-than-in-them",
 	'░': "departures.md#two-surfaces-draw-with-blocks-rather-than-in-them",
 	'▒': "departures.md#two-surfaces-draw-with-blocks-rather-than-in-them",

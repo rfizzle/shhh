@@ -922,18 +922,42 @@ takes the token out of the draft with it — a fold standing for bytes that
 are no longer staged would be a sentence promising something it is not
 carrying.
 
-After the send the transcript keeps the fold and not the flood. The row is
-the sentence as it was typed, the token still in it, and under it `▸ Paste#1
-· 214 lines · 6.1k tokens · [enter] expand` — bounded the way every other
-body in the transcript is, because the paste is in the context window and
-does not have to be in the scrollback as well
-([fold, never hide](principles.md#fold-never-hide)). A picture's fold leaves
-a row of its own beside it, `▸ Image#1 · 1440×900 · [enter] open`, and
-opening the message opens the picture on the [preview
-card](#a-staged-attachment) with the row left open behind it, so esc comes
-back to the row and whatever text was folded beside the picture is there.
-The card offers no drop for a picture that has already gone. Anything else —
-a PDF, a recording — is a row that counts it and opens onto nothing.
+After the send the transcript keeps the fold and not the flood. The message
+is the sentence as it was typed, the token still in it, and under it a tray:
+one flush band, no padding, with a row for every attachment the message
+carried — `⟨▣ Image#1⟩ clipboard.png · 1440×900 · from the clipboard 412 KB`.
+Every attachment has its row whether its fold is in the words or not, so a
+picture attached by path, which put no fold in the sentence, is reached like
+any other, and its row names the folder it came from. The handle is spelled
+the way the sentence spells it, with the kind's mark inside the quotes — `▣`
+a picture, `▤` a document, `¶` text, since the transcript's summary row
+already wears the chip's `≡` — in the reader's colour and in a slot of its
+own, so the fold in the words and its row line up by eye; the name is bright,
+the facts dim, the size at the right. As the pane narrows a row gives up
+where the picture came from first, then its dimensions, and never the
+handle: three pictures can all be called clipboard.png, and the handle is
+what tells them apart and opens one by name. No key is printed on a row: the
+tray sits above a live draft, and reading mode's own bar says what enter
+does on the row under its cursor
+([invariant 5](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
+
+Each row that holds something is its own stop for reading mode's cursor and
+its own target for a click, by the rule every target obeys: the pointer names
+one attachment, and that attachment already has a key — enter under the
+cursor. So the second picture in a message is as reachable as the first. A
+picture's row has no open state: every press and every click opens it on the
+[preview card](#a-staged-attachment), and esc comes back to the row. A
+paste's row opens in place and folds back, bounded the way every other body
+in the transcript is, because the paste is in the context window and does not
+have to be in the scrollback as well
+([fold, never hide](principles.md#fold-never-hide)): eight lines on the band,
+then `… 206 more · [enter] again for the rest`, the one key the tray prints,
+in the hint grey because the draft holds enter while it is read; enter again
+takes the whole paste full screen. Anything else — a PDF, a recording — is a
+row that counts it, a document's pages where they can be read, and opens onto
+nothing: it is not a stop and not a target. A reopened session draws the same
+rows from the bytes saved with each turn, without the folder a picture came
+from, which is the session's to know and is never stored.
 
 Recalling that sentence brings the paste back with it. ↑ puts a line in the
 draft as it was sent, so the fold in it has to be a fold again or stop being
@@ -3237,6 +3261,17 @@ would be. That it is staged and unreadable is a fact about the message you are
 about to send, and a blank card would not have said it. A PDF does not open at
 all: shhh does not render one, so there is nothing the card could say that the
 chip has not said already.
+
+The same card opens on an attachment that has already been sent: from its
+row under the message ([the input frame](#the-input-frame)), or by handle,
+since a handle is the session's and is never handed out twice — the door for
+a picture whose row has scrolled out of reach. Its title says which turn
+carried it, `clipboard.png · sent with turn 3`; it offers no drop, because
+there is nothing staged to take back; and esc goes back to reading mode on
+the row it was opened from, or to the draft. Asked bare, the command still
+means the staging area. A handle that names nothing staged or sent says what
+is staged and lists the handles that reach what was sent, in the order they
+went.
 
 A paste asks it harder, and asks it of a surface of its own. It arrived with
 no name anybody chose and no file behind it to open in something else, so a

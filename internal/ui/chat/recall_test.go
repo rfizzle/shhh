@@ -295,12 +295,12 @@ func TestRecall_RestagesAPasteFromAReopenedSession(t *testing.T) {
 	})
 	folds := 0
 	for _, e := range m.transcript {
-		if e.kind == entryUser {
-			folds += len(e.pastes)
+		if e.kind == entryTray && e.fold != nil && len(e.fold.body) > 0 {
+			folds++
 		}
 	}
 	if folds != 1 {
-		t.Fatalf("the reopened row should keep its fold with the log behind it, got %d folds", folds)
+		t.Fatalf("the reopened row should keep its paste's row with the log behind it, got %d", folds)
 	}
 
 	m = pressUp(t, m)
@@ -347,7 +347,7 @@ func TestRecall_RenumbersAFoldWhoseNameIsTaken(t *testing.T) {
 	m.attachments = []provider.Attachment{{
 		Kind: provider.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte("some other paste\n")}}
 	sent := provider.Attachment{Kind: provider.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte(log)}
-	m.transcript = []entry{userEntry("sent "+components.PasteToken("Paste#1", "11 lines"), []provider.Attachment{sent})}
+	m.transcript = m.sentEntries("sent "+components.PasteToken("Paste#1", "11 lines"), []provider.Attachment{sent})
 
 	got := m.restageRecalled(components.PasteToken("Paste#1", "11 lines"))
 	if want := components.PasteToken("Paste#2", "11 lines"); got != want {

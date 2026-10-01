@@ -139,8 +139,8 @@ func TestAttachments_RideOnTheUserMessage(t *testing.T) {
 		t.Fatal("sending should empty the staging area — an attachment rides once")
 	}
 	view := stripANSI(next.View().Content)
-	if !strings.Contains(view, "attached: shot.png") {
-		t.Fatalf("the transcript should name the attachment:\n%s", view)
+	if !strings.Contains(view, "⟨▣ Image#1⟩  shot.png") {
+		t.Fatalf("the transcript should give the attachment its row:\n%s", view)
 	}
 }
 
@@ -771,23 +771,24 @@ func TestPasteFold_TheVitalsPriceIt(t *testing.T) {
 	}
 }
 
-// After the send the row keeps the fold rather than the flood, and the fold is
-// what reading mode's cursor can open.
+// After the send the transcript keeps the fold rather than the flood, and the
+// paste's row under the message is what reading mode's cursor can open.
 func TestPasteFold_TheTranscriptKeepsIt(t *testing.T) {
 	m := stagedLog(t, frameModel(t, 120, 40), 214)
 	sent := m.input.Value()
-	e := userEntry(sent, m.takeAttachments())
-	if len(e.pastes) != 1 {
-		t.Fatalf("the row kept %d folds, want one", len(e.pastes))
+	rows := m.sentEntries(sent, m.takeAttachments())
+	if len(rows) != 2 || rows[1].kind != entryTray {
+		t.Fatalf("the message left %d rows, want its words and one paste row", len(rows))
 	}
-	if len(e.attached) != 0 {
-		t.Fatalf("a fold in the words is also on the attached line: %v", e.attached)
-	}
+	e := rows[1]
 	if !expandable(e) {
-		t.Fatal("a row with a fold cannot be opened")
+		t.Fatal("the paste's row cannot be opened")
+	}
+	if words := stripANSI(m.renderEntry(rows[0], 120)); !strings.Contains(words, sent) {
+		t.Fatalf("the words lost their fold:\n%s", words)
 	}
 	row := stripANSI(m.renderEntry(e, 120))
-	for _, want := range []string{sent, "▸ Paste#1 · 214 lines", "tokens", "expand"} {
+	for _, want := range []string{"⟨¶ Paste#1⟩  paste-1.txt · 214 lines", "tokens"} {
 		if !strings.Contains(row, want) {
 			t.Fatalf("the row never says %q:\n%s", want, row)
 		}
@@ -798,18 +799,8 @@ func TestPasteFold_TheTranscriptKeepsIt(t *testing.T) {
 	if n := strings.Count(open, "round 26 reached"); n != maxToolResultLines {
 		t.Fatalf("the opened body shows %d lines, want the tool bound of %d", n, maxToolResultLines)
 	}
-	if !strings.Contains(open, "206 lines more") {
+	if !strings.Contains(open, "206 more") {
 		t.Fatalf("the bound does not count what it swallowed:\n%s", open)
-	}
-}
-
-// An attachment that is not a fold is named under the row as it always was:
-// the split is the sentence's, and a screenshot has nowhere in the words to be.
-func TestPasteFold_AScreenshotIsStillNamedUnderTheRow(t *testing.T) {
-	e := userEntry("look at this", []provider.Attachment{
-		{Kind: provider.AttachmentImage, Name: "shot.png", Data: pngHeader}})
-	if len(e.pastes) != 0 || len(e.attached) != 1 {
-		t.Fatalf("a screenshot became %d folds and %d names", len(e.pastes), len(e.attached))
 	}
 }
 
@@ -988,43 +979,5 @@ func TestFold_APicturesFoldIsDroppedLikeAPastes(t *testing.T) {
 	note := m.dropStagedAt(0)
 	if m.input.Value() != " shows it" || !strings.Contains(note, "dropped Image#1") {
 		t.Fatalf("the chip's drop left %q and said %q", m.input.Value(), note)
-	}
-}
-
-// After the send the row keeps the picture's fold in the sentence and draws a
-// fold row under it; enter on the row opens the card, and the card's way out
-// is back to the row, with nothing on it to drop.
-func TestFold_ASentPicturesRowOpensTheCard(t *testing.T) {
-	updated, _ := frameModel(t, 120, 40).handleAttachedFile(attachedFileMsg{attachment: pictureToFold(t), atCursor: true})
-	m := updated.(Model)
-	sent := m.input.Value() + " shows the error"
-	m.transcript = []entry{userEntry(sent, m.takeAttachments())}
-	m.input.Reset()
-	e := m.transcript[0]
-	if len(e.pastes) != 1 || len(e.attached) != 0 || !expandable(e) {
-		t.Fatalf("the row kept %d folds and %d names", len(e.pastes), len(e.attached))
-	}
-	row := stripANSI(m.renderEntry(e, 120))
-	for _, want := range []string{"⟨Image#1 · 32×16⟩ shows the error", "▸ Image#1 · 32×16", "open"} {
-		if !strings.Contains(row, want) {
-			t.Fatalf("the row never says %q:\n%s", want, row)
-		}
-	}
-
-	next, _ := m.enterFocusMode()
-	rm := next.(Model)
-	rm.focusIdx = 0
-	opened, _ := rm.openCursorRow(stateFocus)
-	card := opened.(Model)
-	if card.state != statePreview || card.preview == nil {
-		t.Fatalf("enter on the sent row did not open the card (state %d)", card.state)
-	}
-	if hint := stripANSI(card.renderPreviewHint()); strings.Contains(hint, "remove") {
-		t.Fatalf("a sent picture's card offers a drop: %q", hint)
-	}
-	back := pressOn(t, card, tea.KeyPressMsg{Code: tea.KeyEscape})
-	if back.state != stateFocus || back.focusIdx != 0 || !back.transcript[0].expanded {
-		t.Fatalf("the card came back to state %d, row %d, open %v",
-			back.state, back.focusIdx, back.transcript[0].expanded)
 	}
 }

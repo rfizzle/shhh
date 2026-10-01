@@ -255,13 +255,18 @@ func (m Model) renderEntryDetail(e entry, width int, sel rowSel, stepDetail bool
 		// spent Add — the token for a thing that landed — on a heading
 		// (docs/interface/surfaces.md#the-activity-row).
 		row := paintPasteFolds(promptMarked(renderReaderMarkdown(e.text, width))) + "\n"
-		for _, p := range e.pastes {
-			row += m.pasteFoldBlock(p, e.expanded, width)
-		}
-		if len(e.attached) > 0 {
-			row += sty.SystemMsg.Render(clipRow("attached: "+strings.Join(e.attached, " · "), width)) + "\n"
+		if e.trayed {
+			// The tray's last row closes the message (trayBlock).
+			return row
 		}
 		return row + promptRule(width) + "\n"
+	case entryTray:
+		// One attachment the message above carried, on the flush band
+		// under its words (attachments.go).
+		if e.fold == nil {
+			return ""
+		}
+		return trayBlock(e, width, sel)
 	case entryAssistant:
 		// Unless the session asked for it. A public status is the model's
 		// prose written to a request nobody typed, so it is drawn a rung
@@ -568,7 +573,7 @@ func marginLine(style lipgloss.Style, line string, inner, width int) string {
 func entryIsBlock(e entry) bool {
 	switch e.kind {
 	case entryUser, entryAssistant, entryCompactSummary,
-		entryTurnClose, entryFanout, entryTodoRun, entryRewound:
+		entryTurnClose, entryFanout, entryTodoRun, entryRewound, entryTray:
 		return true
 	case entrySystem, entryError:
 		return strings.Contains(strings.TrimSpace(e.text), "\n")
@@ -580,6 +585,12 @@ func entryIsBlock(e entry) bool {
 // line whenever either side is a block, and nothing between feed rows, so
 // activity rows and one-line notices pack tight while turns keep their air.
 func separatorBefore(prev, cur entry) string {
+	// A tray row sits flush under the message it came with, and under the
+	// row before it: the tray is one band, and a blank line inside it would
+	// be two (docs/interface/surfaces.md#the-input-frame).
+	if cur.kind == entryTray {
+		return ""
+	}
 	if entryIsBlock(prev) || entryIsBlock(cur) {
 		return "\n"
 	}

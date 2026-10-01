@@ -339,7 +339,7 @@ func (m *Model) injectSteering() bool {
 		m.agent.SetTurn(m.turnCount)
 		m.recordCheckpoint(item.text)
 		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: item.text, Attachments: item.atts})
-		m.appendEntry(userEntry(item.text, item.atts))
+		m.appendSent(item.text, item.atts)
 		// What the reader has just asked for is part of what this turn is
 		// serving, so it is part of what the readings judge it against
 		// (agent.ExtendTarget). The anchor is there to stop the run moving

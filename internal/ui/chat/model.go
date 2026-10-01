@@ -461,6 +461,11 @@ const (
 	// turns or reads verdicts off the transcript sees them; they are out of
 	// the window, and [r] on the fold puts them back.
 	entryRewound
+	// entryTray: one attachment a sent message carried, on its own row under
+	// the message (attachments.go). A row of its own rather than a line of
+	// the message's, because each one is a stop for reading mode's cursor
+	// and a target for a click, and both of those name an entry.
+	entryTray
 )
 
 // entry is one transcript item, stored raw so the history can be re-rendered
@@ -489,16 +494,14 @@ type entry struct {
 	// expanded shows the full tool/command output instead of the truncated
 	// block; toggled from focus mode.
 	expanded bool
-	// attached names what a user row's message carried — the names
-	// and sizes, never the bytes. The transcript shows a screenshot as the
-	// line "attached: shot.png (412 KB)" and nothing more.
-	attached []string
-	// pastes are the folds a sent message kept in its own words: a paste too
-	// big for the draft left a token in the sentence, and this is the row
-	// that stands under it saying what the token swallowed and offering it
-	// back (docs/interface/surfaces.md#the-input-frame). Empty on every
-	// other user row, which is nearly all of them.
-	pastes []pasteFold
+	// trayed marks a user row with attachment rows under it. The rule that
+	// closes the message is then drawn under the last of them rather than
+	// under the words, so the tray stays the message's own.
+	trayed bool
+	// fold is the attachment an entryTray row stands for: what the message
+	// carried, the bytes included, and — for text — the lines it opens to
+	// (docs/interface/surfaces.md#the-input-frame). Nil on every other row.
+	fold *pasteFold
 	// diff is the entryDiff viewer; a pointer so focus-mode
 	// expansion state survives re-renders.
 	diff *components.DiffView
@@ -2182,7 +2185,7 @@ func (m Model) sendUserMessageWith(text, shown string, atts []provider.Attachmen
 	m.openTurn(shown)
 	m.recordCheckpoint(shown)
 	m.agent.StartTurnWith(text, atts)
-	m.appendEntry(userEntry(shown, atts))
+	m.appendSent(shown, atts)
 	return m.streamOpenedTurn()
 }
 
