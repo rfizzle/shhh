@@ -11,40 +11,40 @@
 
 ── layout ──────────────────────────────────────────────────
 · the slot left behind, and the command that reopens it
-     session 2026-09-04 11:20:07                                     saved · shhh code --continue
+  · session 2026-09-04 11:20:07 · saved · shhh code --continue
 
 
 · with a backlog run kept at its checkpoint
-     session 2026-09-04 11:20:07                                     saved · shhh code --continue
-  paused the run on cache-ttl at implement — this session ended. /todo run cache-ttl continues it from
-  there
+  · session 2026-09-04 11:20:07 · saved · shhh code --continue
+  · paused the run on cache-ttl at implement — this session ended. /todo run cache-ttl continues it from
+    there
 
 
 · a conversation that was never written down
-     session                                                                              started
+  · session · started
 
 
 · with an approved plan carried over
-     session 2026-09-04 11:20:07                                     saved · shhh code --continue
-     plan    make the round limit recoverable                                   carried · 2 steps
+  · session 2026-09-04 11:20:07 · saved · shhh code --continue
+  · plan make the round limit recoverable · carried · 2 steps
 
 
 ── ansi ────────────────────────────────────────────────────
 · the slot left behind, and the command that reopens it
-     ␛[38;5;244msession␛[m ␛[38;5;244m2026-09-04 11:20:07␛[m                                     ␛[38;5;244msaved · shhh code --continue␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244msession 2026-09-04 11:20:07 · saved · shhh code --continue␛[m
 
 
 · with a backlog run kept at its checkpoint
-     ␛[38;5;244msession␛[m ␛[38;5;244m2026-09-04 11:20:07␛[m                                     ␛[38;5;244msaved · shhh code --continue␛[m
-  ␛[38;5;244mpaused the run on cache-ttl at implement — this session ended. /todo run cache-ttl continues it from␛[m
-  ␛[38;5;244mthere␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244msession 2026-09-04 11:20:07 · saved · shhh code --continue␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mpaused the run on cache-ttl at implement — this session ended. /todo run cache-ttl continues it from␛[m
+    ␛[38;5;244mthere␛[m
 
 
 · a conversation that was never written down
-     ␛[38;5;244msession␛[m                                                                              ␛[38;5;244mstarted␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244msession · started␛[m
 
 
 · with an approved plan carried over
-     ␛[38;5;244msession␛[m ␛[38;5;244m2026-09-04 11:20:07␛[m                                     ␛[38;5;244msaved · shhh code --continue␛[m
-     ␛[38;5;244mplan␛[m    ␛[38;5;244mmake the round limit recoverable␛[m                                   ␛[38;5;244mcarried · 2 steps␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244msession 2026-09-04 11:20:07 · saved · shhh code --continue␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mplan make the round limit recoverable · carried · 2 steps␛[m
 

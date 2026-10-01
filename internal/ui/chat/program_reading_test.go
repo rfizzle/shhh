@@ -111,10 +111,10 @@ func TestProgram_CompactLeavesAReceiptOverTheTurnsItFolded(t *testing.T) {
 	send(tm, "and who declares it")
 	waitForText(t, tm, "who owns it")
 	send(tm, "/compact")
-	waitForAll(t, tm, "folded turn", "out of the window")
+	waitForAll(t, tm, "compacted turn", "out of the window")
 
 	frame := finalFrame(t, tm)
-	frameHas(t, frame, "folded turn", "out of the window")
+	frameHas(t, frame, "compacted turn", "out of the window")
 }
 
 // A paste too big for the draft is staged as a token, its chip opens onto
@@ -238,7 +238,7 @@ func TestProgram_AStagedChipIsReachedOpenedAndDropped(t *testing.T) {
 	tm := runProgramAt(t, readingSession(dir, programTurn{text: "unused"}), 110, 40)
 
 	send(tm, "/paste shot.png")
-	waitForText(t, tm, "reaches it to look or drop")
+	waitForText(t, tm, "reaches it to look or")
 	tm.Send(tea.PasteMsg{Content: "this is the error I"})
 	programPress(t, tm, "ctrl+o", "j")
 	waitForText(t, tm, "chip 1 of 1")

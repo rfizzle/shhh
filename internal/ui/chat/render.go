@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -301,14 +303,15 @@ func (m Model) renderEntryDetail(e entry, width int, sel rowSel, stepDetail bool
 		// and so does the step around it.
 		return m.activityRowDetail(e, stepDetail, width).View(width) + "\n"
 	case entryThink:
-		// The round's reasoning, folded (think.go). Low verbosity draws no
-		// row at all, and an entry that renders to nothing is not a unit, so
-		// nothing downstream — spacing, line mapping, the reading cursor —
-		// has to know it was skipped.
+		// The round's reasoning, as prose on bare screen (think.go).
 		if !m.showThink() {
 			return ""
 		}
-		return m.thinkRowFor(e, width).View(width) + "\n"
+		block := m.thinkBlock(e.text, width)
+		if block == "" {
+			return ""
+		}
+		return block + "\n"
 	case entrySummary:
 		if e.reading == nil {
 			return ""
@@ -316,6 +319,10 @@ func (m Model) renderEntryDetail(e entry, width int, sel rowSel, stepDetail bool
 		return m.summaryLineFor(e, width).View(width) + "\n"
 	case entryRetry:
 		return components.RetryLine{NewModel: e.failModel}.View(width) + "\n"
+	case entryPicture:
+		// A picture a call returned, under the calls of the card that is
+		// open onto them (card.go).
+		return pictureRowFor(e, sel != rowUnselected).View(width) + "\n"
 	case entryTurnClose:
 		if e.close == nil {
 			return ""
@@ -405,7 +412,7 @@ func (m Model) systemRow(e entry, width int) string {
 		}
 		return strings.Join(lines, "\n")
 	}
-	row := m.wrapped(e.text, width)
+	row := m.sessionNotice(e.text, width)
 	if !e.expanded {
 		return row
 	}
@@ -417,6 +424,25 @@ func (m Model) systemRow(e entry, width int) string {
 		}
 	}
 	return row
+}
+
+// sessionNotice is a notice's own line: one flat dim line with the notice mark
+// in the glyph slot, wrapped under its first word — it happened to the
+// session, not in it, so it stands on bare screen and states no act
+// (docs/interface/surfaces.md#the-leading-columns). A notice that leads with
+// a mark of its own — a failure's `✗` — keeps it in that slot rather than
+// standing behind a second one. A notice that arrived as several lines laid
+// itself out, and is drawn as it came (wrapped).
+func (m Model) sessionNotice(text string, width int) string {
+	if strings.Contains(text, "\n") {
+		return m.wrapped(text, width)
+	}
+	mark, said := "", text
+	if r, size := utf8.DecodeRuneInString(text); size > 0 && strings.HasPrefix(text[size:], " ") &&
+		!unicode.IsLetter(r) && !unicode.IsDigit(r) && unicode.IsGraphic(r) && !unicode.IsSpace(r) {
+		mark, said = string(r), strings.TrimSpace(text[size:])
+	}
+	return components.NoticeLine{Mark: mark, Text: said}.View(width)
 }
 
 // noticeBody is what a notice folds: the sentence a reader opened it for,
@@ -576,7 +602,7 @@ func marginLine(style lipgloss.Style, line string, inner, width int) string {
 // its body costs, the way an opened tool row does.
 func entryIsBlock(e entry) bool {
 	switch e.kind {
-	case entryUser, entryAssistant, entryCompactSummary,
+	case entryUser, entryAssistant, entryThink, entryCompactSummary,
 		entryTurnClose, entryFanout, entryTodoRun, entryRewound, entryTray,
 		entryFailure, entryRetry:
 		return true

@@ -26,10 +26,11 @@ snap 03-card "classifier: the task asked for a release check" "not now — it ke
 sleep 1
 keys n
 # The reader's no is theirs: the turn goes on to its answer under it.
-snap 04-refused "Leaving the release alone"
+snap 04-refused "Leaving the release alone" "denied · you"
 # And the session goes on. The next command is judged, allowed and runs.
 keys "start the release notes instead" Enter
-snap 05-later-ran "The notes file is there" "ok · auto-allowed · classifier"
+wide 80 snap 05-later-ran "The notes file is there" "ok · auto-allowed · classifier"
+narrow 80 snap 05-later-ran "The notes file is there" "ran touch RELEASE_NOTES.md"
 keys C-c
 snap 06-quit-armed "again quits"
 keys C-c

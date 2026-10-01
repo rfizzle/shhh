@@ -25,7 +25,7 @@
 ◇ fan-out    3 agents                                                                                     2 done · 1 failed  2m04s
    ◇ agent   writer-1 · docs/loop.md                                                              ✓ done · 11 tools · $0.04  1m38s
     documented the sentinel and linked the test · 2 assumptions
-    ▾ report · 9 lines · [enter] fold it back up
+    ▾ report · 9 lines
     Documented the sentinel and linked the test.
     
     The sentinel is returned from one place and read in two, and the
@@ -37,7 +37,7 @@
     - docs/loop.md is the page, not the package comment.
    ◇ agent   reviewer-2 · read the round change                             ✓ done · approve with changes · 9 tools · $0.03    41s
     two findings, both in the round accounting
-    ▸ report · 3 lines · [enter] expand
+    ▸ report · 3 lines
    ◇ agent   patcher-3 · apply the patch                                                        ✗ failed · 12 tools · $0.05  2m04s
     round limit (25) reached · handoff handoff-130ebba38aed7
 
@@ -103,7 +103,7 @@
 ␛[94m◇␛[m ␛[38;5;252mfan-out␛[m    ␛[38;5;241m3 agents␛[m                                                                                     ␛[92m2 done␛[m␛[38;5;241m · ␛[m␛[91m1 failed␛[m  ␛[38;5;241m2m04s␛[m
    ␛[92m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-1␛[m␛[38;5;241m · docs/loop.md␛[m                                                              ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m11 tools · $0.04␛[m  ␛[38;5;241m1m38s␛[m
     ␛[38;5;245mdocumented the sentinel and linked the test · 2 assumptions␛[m
-    ␛[38;5;245m▾ report · 9 lines · ␛[m␛[38;5;241m[enter] fold it back up␛[m
+    ␛[38;5;245m▾ report · 9 lines␛[m
     ␛[38;5;245mDocumented the sentinel and linked the test.␛[m
     ␛[38;5;245m␛[m
     ␛[38;5;245mThe sentinel is returned from one place and read in two, and the␛[m
@@ -115,7 +115,7 @@
     ␛[38;5;245m- docs/loop.md is the page, not the package comment.␛[m
    ␛[92m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mreviewer-2␛[m␛[38;5;241m · read the round change␛[m                             ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;252mapprove with changes␛[m␛[38;5;241m · ␛[m␛[38;5;245m9 tools · $0.03␛[m    ␛[38;5;241m41s␛[m
     ␛[38;5;245mtwo findings, both in the round accounting␛[m
-    ␛[38;5;245m▸ report · 3 lines · ␛[m␛[38;5;241m[enter] expand␛[m
+    ␛[38;5;245m▸ report · 3 lines␛[m
    ␛[91m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mpatcher-3␛[m␛[38;5;241m · apply the patch␛[m                                                        ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m12 tools · $0.05␛[m  ␛[38;5;241m2m04s␛[m
     ␛[38;5;245mround limit (25) reached · handoff handoff-130ebba38aed7␛[m
 

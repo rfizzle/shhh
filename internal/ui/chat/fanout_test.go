@@ -561,7 +561,7 @@ func TestFanoutSettledLaneOpensOnTheReport(t *testing.T) {
 	waitFor(t, func() bool { a, _ := sup.ActiveCounts(); return a == 0 })
 
 	shut := ansi.Strip(m.renderHistory())
-	if !strings.Contains(shut, "▸ report · 6 lines · [enter] expand") {
+	if !strings.Contains(shut, "▸ report · 6 lines\n") {
 		t.Fatalf("a settled lane should offer the report as a fold:\n%s", shut)
 	}
 	// The first line and the count, and no continuation marker between them:

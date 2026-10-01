@@ -602,42 +602,29 @@ func TestActivityRow_NoRowIsWiderThanItsPane(t *testing.T) {
 	}
 }
 
-// The session's own lines sit on the grid a field short: the verb where every
-// verb is, the subject in the growing field, the outcome right-aligned, and
-// nothing in the glyph column, because the glyph says which kind of act a row
-// was and this is not one.
-func TestActivityNotice_IsARowOnTheGrid(t *testing.T) {
+// The session's own lines are notices: the notice mark in the glyph slot,
+// the verb, what it is about and what came of it after it, dim throughout,
+// and no mutation rail, because a notice changed nothing.
+func TestActivityNotice_IsANoticeLine(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
-	n := ActivityNotice{Verb: "resumed", Subject: "master · 3 changed"}
-	_, rail, verb, rest := fieldsOf(t, n.View(80))
-	if strings.TrimSpace(rail) != "" {
-		t.Fatalf("a notice changed nothing, so it carries no mutation rail: %q", n.View(80))
-	}
-	if strings.TrimSpace(verb) != "resumed" {
-		t.Fatalf("the verb belongs in the verb column, got %q", verb)
-	}
-	if !strings.HasPrefix(rest, "master · 3 changed") {
-		t.Fatalf("the subject should start in the target column, got %q", rest)
-	}
-	line := []rune(stripANSI(n.View(80)))
-	if glyph := strings.TrimSpace(string(line[ptrWidth+railWidth : ptrWidth+railWidth+glyphWidth])); glyph != "" {
-		t.Fatalf("the glyph column stays empty, got %q", glyph)
-	}
-	// Dim throughout: the session's bookkeeping is the quietest thing on the
-	// grid (docs/interface/principles.md#weight-tracks-risk).
 	full := ActivityNotice{Verb: "session", Subject: "2026-09-04 11:20:07", Outcome: "saved · shhh code --continue"}
-	for _, want := range []string{sty.Dim.Render("session"), sty.Dim.Render("2026-09-04 11:20:07"),
-		sty.Dim.Render("saved · shhh code --continue")} {
-		if !strings.Contains(full.View(80), want) {
-			t.Fatalf("every field of a notice is dim, want %q in:\n%q", want, full.View(80))
-		}
+	if got, want := stripANSI(full.View(80)), "  · session 2026-09-04 11:20:07 · saved · shhh code --continue"; got != want {
+		t.Fatalf("the notice line:\n got %q\nwant %q", got, want)
+	}
+	if !strings.Contains(full.View(80), sty.Dim.Render("session 2026-09-04 11:20:07 · saved · shhh code --continue")) {
+		t.Fatalf("every word of a notice is dim:\n%q", full.View(80))
 	}
 	for _, width := range []int{40, 60, 80, 110} {
-		if w := lipgloss.Width(stripANSI(full.View(width))); w > width {
-			t.Fatalf("width %d: the notice runs to %d cells", width, w)
+		for _, l := range strings.Split(stripANSI(full.View(width)), "\n") {
+			if w := lipgloss.Width(l); w > width {
+				t.Fatalf("width %d: the notice runs to %d cells", width, w)
+			}
+			if !strings.HasPrefix(l, "    ") && !strings.HasPrefix(l, "  · ") {
+				t.Fatalf("width %d: a wrapped notice keeps its words' column: %q", width, l)
+			}
 		}
 	}
-	// Opened, the body it folds indents under it rather than re-gridding.
+	// Opened, the body it folds indents under it at the words' column.
 	opened := full
 	opened.Detail, opened.Expanded = []string{"the reading the conversation was given"}, true
 	lines := strings.Split(stripANSI(opened.View(80)), "\n")

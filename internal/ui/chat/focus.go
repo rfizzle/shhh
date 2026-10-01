@@ -27,14 +27,14 @@ import (
 // press that does nothing.
 func expandable(e entry) bool {
 	return e.kind == entryTool || e.kind == entryCommand || e.kind == entryDiff ||
-		e.kind == entryThink || e.kind == entrySummary || e.kind == entryTodoRun ||
+		e.kind == entrySummary || e.kind == entryTodoRun ||
 		(e.kind == entrySystem && len(outputLines(e)) > 0) ||
 		// A sent attachment's row counts when it has something to open: a
 		// paste's lines are a body under the row like any other, and a
 		// picture opens onto its card. Each row is its own stop, so the
 		// second picture in a message is as reachable as the first
 		// (attachments.go).
-		trayOpens(e) ||
+		trayOpens(e) || e.kind == entryPicture ||
 		// A compaction receipt folds the summary under it, which is a body
 		// like any other — and the one that opens with the fold already open,
 		// because a reader who has just lost five turns is owed what replaced
@@ -52,8 +52,8 @@ func expandable(e entry) bool {
 // selectable reports whether focus mode can put its cursor on an entry. It is
 // expandable plus the rows that offer keys without expanding: a turn's close
 // block is passive, but its review and its commit are handled on it, and so are
-// a provider failure's own keys and a round-limit pause's — and an assistant
-// message, which expands nothing but is what [y] copies as markdown source
+// a provider failure's own keys and a round-limit pause's — and the model's
+// prose and its thinking, which expand nothing but are what [y] copies
 // (docs/interface/surfaces.md#reading-mode).
 //
 // An interruption's notice is the one system row on the list. It is a
@@ -65,12 +65,12 @@ func expandable(e entry) bool {
 func selectable(e entry) bool {
 	return expandable(e) || e.kind == entryTurnClose || e.kind == entryFailure ||
 		e.kind == entryStreamDrop || e.kind == entryRoundPause ||
-		e.kind == entryAssistant || e.kind == entryCompactSummary ||
+		e.kind == entryAssistant || e.kind == entryThink || e.kind == entryCompactSummary ||
 		e.intervened != nil
 }
 
 // selectableRow is selectable plus the one thing that depends on the session
-// rather than on the entry: a think row the verbosity is not drawing is not on
+// rather than on the entry: thinking the verbosity is not drawing is not on
 // screen to put a cursor on (think.go). A cursor that could land on a row
 // nobody can see is a cursor that vanishes.
 func (m Model) selectableRow(e entry) bool {
@@ -117,6 +117,9 @@ func (m Model) scanExpandable(es []entry) []int {
 		if isCardBlock(blk, es) {
 			if !m.cardOpen(blk, es) {
 				idxs = append(idxs, cardAnchor(blk))
+				// A picture the step's calls returned is a footer row of
+				// its own, and a stop, wherever the card draws its footer.
+				idxs = append(idxs, m.cardPictures(blk, es)...)
 				continue
 			}
 			if blk.step != nil {
@@ -174,7 +177,7 @@ func (m Model) rowOnScreen(idx int) bool {
 			// they are not on the screen to stand on. Open, a call is a stop
 			// only as its group's line or as a card's one call.
 			if !open {
-				return false
+				return slices.Contains(m.cardPictures(blk, es), idx)
 			}
 			if isActivityEntry(es[idx]) {
 				return slices.Contains(m.openCardStops(blk, es), idx)

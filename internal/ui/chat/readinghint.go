@@ -404,12 +404,6 @@ func (m Model) expandedRowCount() int {
 			if e.diff.Mode != components.DiffCollapsed {
 				n++
 			}
-		case e.kind == entryThink:
-			// The reader's own depth, not the one the verbosity is imposing:
-			// this count is what [-] acts on (think.go).
-			if e.thinkDepth == thinkTail || e.thinkDepth == thinkFull {
-				n++
-			}
 		case e.expanded:
 			n++
 		}
@@ -446,8 +440,6 @@ const (
 	openGroup
 	// openDiff is a diff showing its hunks inside the transcript.
 	openDiff
-	// openThink is a reasoning row showing part or all of its block.
-	openThink
 	// openBody is any other row showing what its call returned.
 	openBody
 )
@@ -490,14 +482,6 @@ func (m Model) focusedOpenKind() openKind {
 		}
 		return openDiff
 	}
-	if es[m.focusIdx].kind == entryThink {
-		// The reader's own depth, like every other row here: a row the
-		// verbosity opened is not a row [-] has anything to close.
-		if d := es[m.focusIdx].thinkDepth; d == thinkTail || d == thinkFull {
-			return openThink
-		}
-		return openNone
-	}
 	if es[m.focusIdx].expanded {
 		return openBody
 	}
@@ -535,8 +519,6 @@ func (m *Model) collapseFocused() bool {
 		m.toggleStepFold(m.focusIdx)
 	case openDiff:
 		es[m.focusIdx].diff.Mode = components.DiffCollapsed
-	case openThink:
-		es[m.focusIdx].thinkDepth = thinkClosed
 	default:
 		es[m.focusIdx].expanded = false
 	}
@@ -552,8 +534,8 @@ func (m *Model) collapseFocused() bool {
 // the openKinds it is showing because somebody asked for them, never the ones
 // a setting is holding open. It reads the entry's own overrides and nothing
 // else, which is what makes that distinction possible — the three fold
-// overrides and the think depth each have a value meaning "no answer of
-// mine", and no setting can write one (steps.go, detail.go, think.go).
+// overrides each have a value meaning "no answer of mine", and no setting
+// can write one (steps.go, detail.go).
 func readerOpened(e entry) []openKind {
 	var kinds []openKind
 	// The two step overrides are read and put back one at a time, even
@@ -576,9 +558,6 @@ func readerOpened(e entry) []openKind {
 	if e.diff != nil && e.diff.Mode == components.DiffExpanded {
 		kinds = append(kinds, openDiff)
 	}
-	if e.thinkDepth == thinkTail || e.thinkDepth == thinkFull {
-		kinds = append(kinds, openThink)
-	}
 	if e.expanded {
 		kinds = append(kinds, openBody)
 	}
@@ -586,8 +565,7 @@ func readerOpened(e entry) []openKind {
 }
 
 // restOpen puts one of those answers back to the value that means "no answer
-// of mine on record" — foldAuto for the three overrides, thinkAuto for the
-// think row — so a row is folded to what the setting says and never past it.
+// of mine on record" — foldAuto for the three overrides — so a row is folded to what the setting says and never past it.
 // Writing foldClosed instead would make `/ui verbosity high` quietly stop
 // meaning what it says, and a reader who ran it afterwards and saw nothing
 // open would have been lied to.
@@ -599,8 +577,6 @@ func restOpen(e *entry, k openKind) {
 		e.detailFold = foldAuto
 	case openDiff:
 		e.diff.Mode = components.DiffCollapsed
-	case openThink:
-		e.thinkDepth = thinkAuto
 	case openBody:
 		e.expanded = false
 	}
@@ -682,9 +658,6 @@ func (m Model) settingHoldsRowsOpen() bool {
 // settingShowsBody reports whether this row is showing a body only because
 // the verbosity says so — the caller has already established that it does.
 func (m Model) settingShowsBody(e entry) bool {
-	if e.kind == entryThink {
-		return e.thinkDepth == thinkAuto && strings.TrimSpace(e.text) != ""
-	}
 	return !e.expanded && strings.TrimSpace(e.toolResult) != ""
 }
 

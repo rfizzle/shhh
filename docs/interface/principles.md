@@ -407,11 +407,11 @@ How much the screen explains is one setting — `/ui verbosity`, kept as
 from this table rather than deciding its own density. The default is
 `normal`.
 
-| Rung | Cards | Glosses | Summary rows | Vitals | Think rows | Resolved queue lines | Activity feed |
+| Rung | Cards | Glosses | Summary rows | Vitals | Thinking | Resolved queue lines | Activity feed |
 |------|-------|---------|--------------|--------|------------|----------------------|---------------|
 | `low` | the offers row only, and the esc offer never drops | none | none | mode · context · spend | off | folded to a count | each step's card its header alone, no counts on a row |
-| `normal` | the readings: one row and its footnote | the ones about this call | the rows with something to say | the rail as the frame draws it | folded, counting their lines | as the surface draws them | each step a card of header, body and footer; a finished card does not fold |
-| `high` | every hint row | every gloss | every reading | every field | open to their tail | as the surface draws them | every card open on its rows, each with its bounded body |
+| `normal` | the readings: one row and its footnote | the ones about this call | the rows with something to say | the rail as the frame draws it | prose, whole | as the surface draws them | each step a card of header, body and footer; a finished card does not fold |
+| `high` | every hint row | every gloss | every reading | every field | prose, whole | as the surface draws them | every card open on its rows, each with its bounded body |
 
 A rung is inclusive of the ones below it: whatever `low` draws, `normal`
 draws, and whatever `normal` draws, `high` draws. A surface that draws

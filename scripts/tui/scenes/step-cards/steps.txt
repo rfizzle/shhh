@@ -29,6 +29,7 @@
 setup mkdir -p docs internal/ui && printf 'Scenes drive the built binary.\n' > docs/scenes.md
 setup for f in keys render reply click fold; do printf 'package ui\n' > internal/ui/$f.go; done
 setup printf 'notes nobody has committed\n' > notes.md
+setup printf 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' | base64 -d > shot.png
 snap 01-start "Some things worth doing first"
 keys "write the copy story" Enter
 # The write and the failing command are put to the reader; the reads and
@@ -84,7 +85,25 @@ keys Enter
 snap 17-card-again "[enter] open it" "Running the suite once more"
 keys q
 snap 18-prompt "╭─ ✓ done"
+# A read of a picture: the card's footer row names it and says it opens like
+# an attachment; the reading cursor stops on the row, and enter opens the
+# attachment card the way a picture the reader sent opens.
+keys "look at the capture" Enter
+wide 80 snap 19-picture "That is the capture" "▣ shot.png · 1×1" "opens like an attachment"
+narrow 80 snap 19-picture "That is the capture" "▣ shot.png · 1×1"
+keys C-o
+sleep 1
+keys k
+keys k
+sleep 1
+snap 20-on-the-picture "❯   ▣ shot.png"
+keys Enter
+snap 21-attachment-card "shot.png" "1×1"
+keys Escape
+sleep 1
+keys q
+snap 22-prompt "╭─ ✓ done"
 keys C-c
-snap 19-quit-armed "again quits"
+snap 23-quit-armed "again quits"
 keys C-c
-snap 20-exit "that is everything the screen was holding"
+snap 24-exit "that is everything the screen was holding"

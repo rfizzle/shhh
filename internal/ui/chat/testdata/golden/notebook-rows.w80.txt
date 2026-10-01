@@ -21,8 +21,8 @@
 
 
 · /notes on an empty notebook · the one line it prints
-  The notebook is empty. Agents write to it with write_note; /notes drop
-  <n> removes one.
+  · The notebook is empty. Agents write to it with write_note; /notes drop
+    <n> removes one.
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -37,6 +37,6 @@
 
 
 · /notes on an empty notebook · the one line it prints
-  ␛[38;5;241mThe notebook is empty. Agents write to it with write_note; /notes drop␛[m
-  ␛[38;5;241m<n> removes one.␛[m
+  ␛[38;5;241m·␛[m ␛[38;5;241mThe notebook is empty. Agents write to it with write_note; /notes drop␛[m
+    ␛[38;5;241m<n> removes one.␛[m
 

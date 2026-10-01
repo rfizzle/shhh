@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/mcp"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -288,6 +289,34 @@ func TestReceipt_AScopeIsWhereTheSubjectSaysItWasPut(t *testing.T) {
 			r := Build(Call{Name: tools.SearchName, Args: tc.args})
 			if r.Subject != tc.subject || r.Scope != tc.scope {
 				t.Errorf("subject %q scope %q, want %q %q", r.Subject, r.Scope, tc.subject, tc.scope)
+			}
+		})
+	}
+}
+
+// A picture the result carried reaches the receipt, so a front-end can draw
+// it and open it; a result with no image, or only text parts, carries none.
+func TestReceipt_CarriesThePictureTheResultCarried(t *testing.T) {
+	png := provider.Attachment{Kind: provider.AttachmentImage, Name: "shot.png", MediaType: "image/png", Data: []byte("x")}
+	text := provider.Attachment{Kind: provider.AttachmentText, Name: "notes.txt", Data: []byte("x")}
+	for _, tc := range []struct {
+		name string
+		atts []provider.Attachment
+		want string
+	}{
+		{"none", nil, ""},
+		{"text only", []provider.Attachment{text}, ""},
+		{"an image after text", []provider.Attachment{text, png}, "shot.png"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := Build(Call{Name: tools.ReadFileName, Args: `{"path":"shot.png"}`,
+				Result: "shot.png is an image", Attachments: tc.atts})
+			got := ""
+			if r.Picture != nil {
+				got = r.Picture.Name
+			}
+			if got != tc.want {
+				t.Fatalf("picture %q, want %q", got, tc.want)
 			}
 		})
 	}

@@ -189,8 +189,7 @@ func goldenTranscript() []entry {
 }
 
 // thinkingStep is one step that stopped to think between its rounds: the
-// title and its first call, the round's think row, then two more calls the
-// same step made.
+// title and its first call, the round's thought, then two more calls.
 func thinkingStep() []entry {
 	return []entry{
 		{kind: entryUser, text: "fix the round limit"},
@@ -277,8 +276,9 @@ func TestGolden_StepOutline(t *testing.T) {
 		}
 		arriving := live.renderHistory()
 		// A step that stopped to think between its rounds, landed the same
-		// way: the think row is a member, so the calls after it stay in the
-		// title's card and the card closes over the thought with them.
+		// way: the thought is prose on bare screen, so the titled card ends
+		// where it stands and the calls after it are a card of their own;
+		// folding the first card leaves the thought where it is.
 		thought := frameModel(t, width, 40)
 		thought.setTurnState(stateStreaming)
 		for _, e := range thinkingStep() {
@@ -296,16 +296,16 @@ func TestGolden_StepOutline(t *testing.T) {
 			{Label: "verbosity · high (every card open, every row with detail)", View: high},
 			{Label: "verbosity · low (each card its header alone)", View: low},
 			{Label: "row by row · a notice, then a batch with no prose over it, in one live card", View: arriving},
-			{Label: "row by row · a think row mid-step (the card closed over the calls after it too)", View: thinkOpen},
-			{Label: "row by row · a think row mid-step, folded (the thought folds with the card)", View: thinkFolded},
+			{Label: "row by row · a thought mid-step (the card ends at it, the calls after it a card of their own)", View: thinkOpen},
+			{Label: "row by row · a thought mid-step, the first card folded (the thought stays)", View: thinkFolded},
 		}
 	})
 }
 
-// densityTranscript is a two-step turn with a think row in each step: the
+// densityTranscript is a two-step turn with a thought in each step: the
 // first finished, with a run of reads, and the second broken, so it stays
-// open at every rung but the one that folds everything. It is what the think
-// row and the feed draw differently from one rung to the next.
+// open at every rung but the one that folds everything. It is what thinking
+// and the feed draw differently from one rung to the next.
 func densityTranscript() []entry {
 	return []entry{
 		{kind: entryUser, text: "fix the round limit"},
@@ -326,13 +326,13 @@ func densityTranscript() []entry {
 	}
 }
 
-// TestGolden_Density captures the think row and the activity feed once per
+// TestGolden_Density captures thinking and the activity feed once per
 // rung of the density ladder (docs/interface/principles.md#density-is-one-ladder):
 // the same turn at low, normal and high, each its own golden so a change to
 // one rung's cell is a diff in that rung's file alone.
 func TestGolden_Density(t *testing.T) {
 	for _, rung := range []verbosity{verbosityLow, verbosityNormal, verbosityHigh} {
-		captureGolden(t, "density-"+rung.String(), "the think row and the feed at one rung", goldenWidths, func(width int) []golden.Panel {
+		captureGolden(t, "density-"+rung.String(), "thinking and the feed at one rung", goldenWidths, func(width int) []golden.Panel {
 			m := frameModel(t, width, 40)
 			m.transcript = densityTranscript()
 			m.verbosity = rung

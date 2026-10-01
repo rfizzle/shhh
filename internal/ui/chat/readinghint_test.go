@@ -439,8 +439,8 @@ func TestReadingMoveAnswersEveryDeclaredKey(t *testing.T) {
 
 // escFoldModel is a pane with one of every way a row can be open, each on a
 // row of its own: a step unfolded, a body expanded, a second step's detail
-// opened by /step, a diff expanded in place, and a reasoning row opened
-// whole.
+// opened by /step, and a diff expanded in place. A thought stands after
+// them, which is prose with nothing to open.
 func escFoldModel(t *testing.T) Model {
 	t.Helper()
 	// A pane shorter than what the open rows render to, so folding them
@@ -461,7 +461,7 @@ func escFoldModel(t *testing.T) Model {
 			toolResult: "--- FAIL: TestRoundLimit", exitCode: 1, duration: 21400 * time.Millisecond},
 		{kind: entryDiff, diff: &components.DiffView{Path: "internal/agent/loop.go", Verb: "edit",
 			Hunks: diff.Compute("old line\n", "new line\n"), Mode: components.DiffExpanded}},
-		{kind: entryThink, text: "the cap is a checkpoint, not a wall", thinkDepth: thinkFull},
+		{kind: entryThink, text: "the cap is a checkpoint, not a wall"},
 	}
 	m.transcript[1].stepFold = foldOpen
 	m.transcript[3].expanded = true
@@ -495,8 +495,8 @@ func openRowCount(m Model) int {
 
 func TestEscFold_FoldsEveryRowTheReaderOpened(t *testing.T) {
 	m := escFoldModel(t)
-	if got := openRowCount(m); got != 5 {
-		t.Fatalf("the fixture has %d open rows, wanted one of each of the five", got)
+	if got := openRowCount(m); got != 4 {
+		t.Fatalf("the fixture has %d open rows, wanted one of each of the four", got)
 	}
 
 	m, _ = pressKey(t, m, escK)
@@ -504,7 +504,7 @@ func TestEscFold_FoldsEveryRowTheReaderOpened(t *testing.T) {
 	if got := openRowCount(m); got != 0 {
 		t.Errorf("one esc left %d rows open", got)
 	}
-	if m.foldNotice != "folded 5 rows" {
+	if m.foldNotice != "folded 4 rows" {
 		t.Errorf("the rail says %q, wanted the fold counted", m.foldNotice)
 	}
 	// Resting and not closed: a fold that wrote foldClosed would outrank the
@@ -512,9 +512,6 @@ func TestEscFold_FoldsEveryRowTheReaderOpened(t *testing.T) {
 	es := *m.entries()
 	if es[1].stepFold != foldAuto || es[6].detailFold != foldAuto || es[6].stepFold != foldAuto {
 		t.Error("a step was folded past its resting state")
-	}
-	if es[10].thinkDepth != thinkAuto {
-		t.Error("a think row was folded past its resting state")
 	}
 	if es[9].diff.Mode != components.DiffCollapsed || es[3].expanded {
 		t.Error("a diff or a body is still open")
@@ -569,8 +566,8 @@ func TestEscFold_ADraftWithTextIsClearedAndNoRowMoves(t *testing.T) {
 	if m.input.Value() != "" {
 		t.Fatal("esc with a draft must clear it")
 	}
-	if got := openRowCount(m); got != 5 {
-		t.Errorf("clearing the draft folded rows: %d of 5 left open", got)
+	if got := openRowCount(m); got != 4 {
+		t.Errorf("clearing the draft folded rows: %d of 4 left open", got)
 	}
 	if m.foldNotice != "" {
 		t.Errorf("clearing the draft said %q about folding", m.foldNotice)

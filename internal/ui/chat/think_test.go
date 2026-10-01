@@ -9,6 +9,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // thinkingStream is a provider that thinks out loud, then answers, then asks
@@ -48,10 +49,77 @@ func kindsOf(es []entry) []entryKind {
 	return out
 }
 
-// TestThinkRow_ComesBeforeTheRoundsWork is the placement the row exists for:
-// the model thought, then announced, then called a tool, and the transcript
-// says so in that order.
-func TestThinkRow_ComesBeforeTheRoundsWork(t *testing.T) {
+// numberedThought is a reasoning block of n numbered lines.
+func numberedThought(n int) string {
+	var b strings.Builder
+	for i := 1; i <= n; i++ {
+		fmt.Fprintf(&b, "line %d\n", i)
+	}
+	return b.String()
+}
+
+// TestThink_IsProseThatNeverFolds is the shape: what the model thought is
+// prose at the body column on bare screen — no glyph, no band, no count and
+// no fold — whole at every length, wrapped rather than clipped, and drawn
+// the same whatever reading mode presses on it
+// (docs/interface/surfaces.md#the-think-row).
+func TestThink_IsProseThatNeverFolds(t *testing.T) {
+	para := "The user wants the cheaper of the two approaches, and the second one " +
+		"reuses the row the transcript already draws, so it costs one field " +
+		"rather than a surface of its own, which is the whole argument."
+	for _, tc := range []struct {
+		name, text string
+		want       []string
+	}{
+		{"a paragraph wraps whole", para, strings.Fields(para)},
+		{"a long thought is every line of it", numberedThought(120), []string{"line 1", "line 60", "line 120"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := readyModel(t)
+			m.appendEntry(entry{kind: entryThink, text: tc.text})
+			const width = 80
+			raw := m.renderEntry(m.transcript[0], width)
+			view := stripANSI(raw)
+			for _, gone := range []string{"✻", "think", " lines", "…", "▎", "[enter]"} {
+				if strings.Contains(view, gone) {
+					t.Fatalf("a thought carries no %q:\n%s", gone, view)
+				}
+			}
+			for _, w := range tc.want {
+				if !strings.Contains(view, w) {
+					t.Fatalf("the thought should hold %q whole:\n%s", w, view)
+				}
+			}
+			indent := strings.Repeat(" ", components.GridDetailIndent)
+			for _, l := range strings.Split(strings.TrimRight(view, "\n"), "\n") {
+				if !strings.HasPrefix(l, indent) || strings.HasPrefix(l, indent+" ") {
+					t.Fatalf("every line starts on the body column: %q", l)
+				}
+				if len([]rune(l)) > width {
+					t.Fatalf("a wrapped line still fits the pane: %q", l)
+				}
+			}
+			if !strings.Contains(raw, "\x1b[3") {
+				t.Fatalf("a thought is slanted, the mark of model output nobody asked for:\n%q", raw)
+			}
+
+			// Enter under the cursor has nothing to open: the passage reads
+			// the same after it.
+			next, _ := m.enterFocusMode()
+			m = next.(Model)
+			next, _ = m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
+			m = next.(Model)
+			if got := stripANSI(m.renderEntry(m.transcript[0], width)); got != view {
+				t.Fatalf("enter on a thought changed it:\n%s", got)
+			}
+		})
+	}
+}
+
+// TestThink_ComesBeforeTheRoundsWork is the placement it exists for: the
+// model thought, then announced, then called a tool, and the transcript says
+// so in that order.
+func TestThink_ComesBeforeTheRoundsWork(t *testing.T) {
 	m := streamingModel(t)
 	m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 
@@ -64,40 +132,31 @@ func TestThinkRow_ComesBeforeTheRoundsWork(t *testing.T) {
 		reasoning: []provider.ReasoningBlock{{Text: "Weighing two approaches.", Signature: "sig"}},
 	})
 	m = updated.(Model)
-	// The result lands the way the tool loop lands it.
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file",
 		toolArgs: `{"path":"loop.go"}`, toolResult: "package agent"})
 
 	want := []entryKind{entryThink, entryAssistant, entryTool}
-	if got := kindsOf(m.transcript); len(got) != len(want) {
-		t.Fatalf("transcript should be think, announcement, call; got %v", got)
-	} else {
-		for i := range want {
-			if got[i] != want[i] {
-				t.Fatalf("transcript order %v, want %v", got, want)
-			}
-		}
+	if got := kindsOf(m.transcript); !slices.Equal(got, want) {
+		t.Fatalf("transcript order %v, want %v", got, want)
 	}
-
 	view := stripANSI(m.renderHistory())
-	think, read := strings.Index(view, "think"), strings.Index(view, "read")
+	think, read := strings.Index(view, "Weighing two approaches."), strings.Index(view, "read")
 	if think < 0 || read < 0 {
-		t.Fatalf("both rows should be on screen:\n%s", view)
+		t.Fatalf("both should be on screen:\n%s", view)
 	}
 	if think > read {
-		t.Fatalf("the think row belongs above the round's calls:\n%s", view)
+		t.Fatalf("the thought belongs above the round's card:\n%s", view)
 	}
-	// One round, one row: the terminal event carried the same reasoning the
-	// deltas did and must not say it twice.
-	if n := strings.Count(view, "✻"); n != 1 {
-		t.Fatalf("a round produces exactly one think row, got %d:\n%s", n, view)
+	// One round, one passage: the terminal event carried the same reasoning
+	// the deltas did and must not say it twice.
+	if n := strings.Count(view, "Weighing two approaches."); n != 1 {
+		t.Fatalf("a round's thought is drawn once, got %d:\n%s", n, view)
 	}
 }
 
-// TestThinkRow_OnlyWhereThereIsReasoning: a provider that returns none
-// produces no row rather than a fabricated `0 lines`
-// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
-func TestThinkRow_OnlyWhereThereIsReasoning(t *testing.T) {
+// TestThink_OnlyWhereThereIsReasoning: a provider that returns none produces
+// no passage, and neither does a block the provider redacted.
+func TestThink_OnlyWhereThereIsReasoning(t *testing.T) {
 	m := streamingModel(t)
 
 	updated, _ := m.Update(tokenMsg{text: "Straight to the answer."})
@@ -106,69 +165,40 @@ func TestThinkRow_OnlyWhereThereIsReasoning(t *testing.T) {
 		calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"a.go"}`}},
 	})
 	m = updated.(Model)
-
-	for _, e := range m.transcript {
-		if e.kind == entryThink {
-			t.Fatal("a round that did not think should produce no think row")
-		}
-	}
-	if view := stripANSI(m.renderHistory()); strings.Contains(view, "✻") {
-		t.Fatalf("nothing on screen should claim thinking:\n%s", view)
-	}
-
-	// A block the provider redacted has no readable half either, and an empty
-	// row would be a row about nothing.
 	m.thinkIdx = 0
 	m.recordReasoning([]provider.ReasoningBlock{{Redacted: "opaque"}})
-	for _, e := range m.transcript {
-		if e.kind == entryThink {
-			t.Fatal("a redacted block carries no words and so carries no row")
-		}
+	if slices.Contains(kindsOf(m.transcript), entryThink) {
+		t.Fatal("a round that did not think, or whose words were taken back, has no thought")
 	}
 }
 
-// TestThinkRow_StreamsOnTheTick: the count grows as the block arrives, and
+// TestThink_StreamsOnTheTick: the passage grows as the block arrives, and
 // the repaint rides the one tick rather than the chunk (spin.go).
-func TestThinkRow_StreamsOnTheTick(t *testing.T) {
+func TestThink_StreamsOnTheTick(t *testing.T) {
 	m := streamingModel(t)
 
 	updated, _ := m.Update(tokenMsg{think: "first line\n"})
 	m = updated.(Model)
-	if view := stripANSI(m.renderHistory()); !strings.Contains(view, "1 line") {
-		t.Fatalf("the row should count what has arrived:\n%s", view)
-	}
-	if !m.transcript[0].thinkStreaming {
-		t.Fatal("a row still being written is still running")
-	}
-
 	m.spinning = true
-	updated, _ = m.Update(tokenMsg{think: "second line\nthird line"})
+	updated, _ = m.Update(tokenMsg{think: "second line"})
 	m = updated.(Model)
 	if !m.streamDirty {
 		t.Fatal("a chunk that lands while the chain runs owes a repaint, it does not take one")
 	}
 	if got := len(m.transcript); got != 1 {
-		t.Fatalf("every chunk of a round lands on one row, got %d entries", got)
+		t.Fatalf("every chunk of a round lands on one entry, got %d entries", got)
 	}
-	if view := stripANSI(m.renderHistory()); !strings.Contains(view, "3 lines") {
-		t.Fatalf("the count should have grown with the block:\n%s", view)
-	}
-
-	// The answer starting is what settles the row: a model that is writing
-	// has stopped thinking.
-	updated, _ = m.Update(tokenMsg{text: "Here is the plan."})
-	m = updated.(Model)
-	if m.transcript[0].thinkStreaming {
-		t.Fatal("the first answer token settles the think row")
-	}
-	if view := stripANSI(m.renderHistory()); strings.Contains(view, "running…") {
-		t.Fatalf("a settled row reports no outcome of its own:\n%s", view)
+	view := stripANSI(m.renderHistory())
+	for _, want := range []string{"first line", "second line"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the passage should hold what has arrived:\n%s", view)
+		}
 	}
 }
 
-// TestThinkRow_NewRoundNewRow: reasoning belongs to the round that produced
-// it, so the next request's thinking does not extend the last one's row.
-func TestThinkRow_NewRoundNewRow(t *testing.T) {
+// TestThink_NewRoundNewPassage: reasoning belongs to the round that produced
+// it, so the next request's thinking does not extend the last one's.
+func TestThink_NewRoundNewPassage(t *testing.T) {
 	m := streamingModel(t)
 	updated, _ := m.Update(tokenMsg{think: "round one"})
 	m = updated.(Model)
@@ -177,24 +207,22 @@ func TestThinkRow_NewRoundNewRow(t *testing.T) {
 	close(events)
 	updated, _ = m.Update(streamStartedMsg{events: events})
 	m = updated.(Model)
-	if m.transcript[0].thinkStreaming {
-		t.Fatal("the previous round's row stops when the next request opens")
-	}
 	updated, _ = m.Update(tokenMsg{think: "round two"})
 	m = updated.(Model)
 
 	if got := len(m.transcript); got != 2 {
-		t.Fatalf("two rounds of thinking are two rows, got %d", got)
+		t.Fatalf("two rounds of thinking are two passages, got %d", got)
 	}
 	if m.transcript[0].text != "round one" || m.transcript[1].text != "round two" {
-		t.Fatalf("each row holds its own round's thinking: %q, %q",
+		t.Fatalf("each holds its own round's thinking: %q, %q",
 			m.transcript[0].text, m.transcript[1].text)
 	}
 }
 
-// TestThinkRow_NotDuringCompaction: a compaction is housekeeping, and the row
-// would either be wiped with the transcript it summarised or outlive it.
-func TestThinkRow_NotDuringCompaction(t *testing.T) {
+// TestThink_NotDuringCompaction: a compaction is housekeeping, and the
+// passage would either be wiped with the transcript it summarised or outlive
+// it.
+func TestThink_NotDuringCompaction(t *testing.T) {
 	m := streamingModel(t)
 	m.compacting = true
 
@@ -202,20 +230,16 @@ func TestThinkRow_NotDuringCompaction(t *testing.T) {
 	m = updated.(Model)
 
 	if len(m.transcript) != 0 {
-		t.Fatalf("a compaction's thinking is not a transcript row: %v", kindsOf(m.transcript))
+		t.Fatalf("a compaction's thinking is not a transcript entry: %v", kindsOf(m.transcript))
 	}
 }
 
-// TestThinkRow_SurvivesARebuild: /rewind, a compaction's kept turns and a
+// TestThink_SurvivesARebuild: /rewind, a compaction's kept turns and a
 // resumed conversation all rebuild the transcript from the messages, and the
-// reasoning is still being replayed to the model — so the rows come back too.
-//
-// The row follows what is replayed and nothing else, which is why the second
-// case has none: only a round that asked for tools keeps its blocks (the
-// agent drops the latch on a round that ended in text), and a rebuilt
-// transcript that drew a row there would be claiming something the request no
-// longer carries.
-func TestThinkRow_SurvivesARebuild(t *testing.T) {
+// reasoning is still being replayed to the model — so the passages come back
+// too. Only a round that asked for tools keeps its blocks, so a final answer
+// rebuilds with none.
+func TestThink_SurvivesARebuild(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		msgs []provider.Message
@@ -234,130 +258,19 @@ func TestThinkRow_SurvivesARebuild(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			m := readyModel(t)
 			m.appendMessageEntries(tc.msgs)
-
-			got := kindsOf(m.transcript)
-			if !slices.Equal(got, tc.want) {
+			if got := kindsOf(m.transcript); !slices.Equal(got, tc.want) {
 				t.Fatalf("rebuilt transcript %v, want %v", got, tc.want)
 			}
-			for _, e := range m.transcript {
-				if e.kind == entryThink && e.thinkStreaming {
-					t.Fatal("a rebuilt row is history, not a round in flight")
-				}
-			}
 		})
 	}
 }
 
-// thinkBlock is a reasoning block of n numbered lines.
-func thinkBlock(n int) string {
-	var b strings.Builder
-	for i := 1; i <= n; i++ {
-		fmt.Fprintf(&b, "line %d\n", i)
-	}
-	return b.String()
-}
-
-// bodyLines is how many lines a rendered row spends below its own.
-func bodyLines(view string) int {
-	return len(strings.Split(strings.TrimRight(view, "\n"), "\n")) - 1
-}
-
-// TestThinkRow_FoldCycle: three depths for a block that needs them, two for
-// one that does not — a tail window showing every line the next press would
-// show is a press that changes nothing.
-func TestThinkRow_FoldCycle(t *testing.T) {
-	tests := []struct {
-		name  string
-		lines int
-		want  []int // body lines after each press, ending back where it started
-	}{
-		{"fits in the cap", 5, []int{5, 0}},
-		{"needs a window", 500, []int{maxToolResultLines, 500, 0}},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			m := readyModel(t)
-			m.appendEntry(entry{kind: entryThink, text: thinkBlock(tc.lines)})
-
-			if got := bodyLines(m.renderEntry(m.transcript[0], 80)); got != 0 {
-				t.Fatalf("a row starts closed, got %d body lines", got)
-			}
-			for i, want := range tc.want {
-				m.cycleThink(0)
-				if got := bodyLines(m.renderEntry(m.transcript[0], 80)); got != want {
-					t.Fatalf("press %d: %d body lines, want %d", i+1, got, want)
-				}
-			}
-		})
-	}
-}
-
-// TestThinkRow_TailIsTheEnd: the middle depth keeps the end of the thought,
-// which is the part the reader is looking for.
-func TestThinkRow_TailIsTheEnd(t *testing.T) {
-	m := readyModel(t)
-	m.appendEntry(entry{kind: entryThink, text: thinkBlock(40), thinkDepth: thinkTail})
-
-	view := stripANSI(m.renderEntry(m.transcript[0], 80))
-	if !strings.Contains(view, "line 40") {
-		t.Fatalf("the tail window ends on the last line thought:\n%s", view)
-	}
-	if strings.Contains(view, "line 1\n") {
-		t.Fatalf("the tail window is a window, not the block:\n%s", view)
-	}
-	if !strings.Contains(view, "40 lines") {
-		t.Fatalf("an opened row still states what it holds:\n%s", view)
-	}
-}
-
-// TestThinkRow_WrapsRatherThanClips: reasoning arrives as prose, and a
-// paragraph is one physical line hundreds of characters long. A detail body
-// clips, which is right for a log line and wrong for a sentence — an opened
-// row that showed one clipped line would be the fold keeping what it said it
-// had (docs/interface/principles.md#fold-never-hide).
-func TestThinkRow_WrapsRatherThanClips(t *testing.T) {
-	m := readyModel(t)
-	para := "The user wants the cheaper of the two approaches, and the second one " +
-		"reuses the row the transcript already draws, so it costs one field " +
-		"rather than a surface of its own, which is the whole argument."
-	m.appendEntry(entry{kind: entryThink, text: para, thinkDepth: thinkFull})
-
-	const width = 80
-	view := stripANSI(m.renderEntry(m.transcript[0], width))
-	if strings.Contains(view, "…") {
-		t.Fatalf("an opened row wraps its prose, it does not clip it:\n%s", view)
-	}
-	body := strings.Split(strings.TrimRight(view, "\n"), "\n")[1:]
-	if len(body) < 3 {
-		t.Fatalf("a paragraph this long is several lines at %d columns:\n%s", width, view)
-	}
-	for _, line := range body {
-		if len([]rune(line)) > width {
-			t.Fatalf("a wrapped line still fits the pane: %q", line)
-		}
-	}
-	// Every word survives the wrap, which is the thing clipping lost.
-	joined := strings.Join(strings.Fields(strings.Join(body, " ")), " ")
-	if joined != para {
-		t.Fatalf("the body should hold the whole thought:\n%s", joined)
-	}
-	// And the count is of the lines the reader gets, so a closed row states
-	// what opening it costs.
-	m.transcript[0].thinkDepth = thinkClosed
-	closed := stripANSI(m.renderEntry(m.transcript[0], width))
-	if !strings.Contains(closed, lineCounts(len(body))) {
-		t.Fatalf("the folded row should count the %d lines it is holding:\n%s", len(body), closed)
-	}
-}
-
-// TestThinkRow_StaysInTheStepItWasThoughtIn: [title][call][think][call][call]
-// is one step. The think row is a member rather than a stop, so the two calls
-// after it stay under the title, the header counts the three calls and not
-// the thought, and folding the step folds the thought with them — nothing is
-// left standing under a header that no longer owns it
-// (docs/interface/surfaces.md#the-think-row). The rows arrive one at a time,
-// as a turn lands them, so the feed's cache is the one being read.
-func TestThinkRow_StaysInTheStepItWasThoughtIn(t *testing.T) {
+// TestThink_EndsTheStepItStandsIn: [title][call][think][call][call]. A card
+// has no place on its band for prose that is not its body, so the thought
+// stands between two cards where it was thought — the titled step's one call
+// before it, the two after it a card nothing titled — and folding the first
+// card leaves the thought on screen.
+func TestThink_EndsTheStepItStandsIn(t *testing.T) {
 	m := readyModel(t)
 	read := func(path string) entry {
 		return entry{kind: entryTool, toolName: "read_file",
@@ -375,149 +288,57 @@ func TestThinkRow_StaysInTheStepItWasThoughtIn(t *testing.T) {
 	}
 
 	blocks := m.blocksOf(m.transcript)
-	if len(blocks) != 1 || blocks[0].step == nil {
-		t.Fatalf("the title, the calls and the thought between them are one step: %+v", blocks)
+	if len(blocks) != 3 || blocks[0].step == nil || blocks[2].step != nil {
+		t.Fatalf("a titled step, the thought, a run nothing titled: %+v", blocks)
 	}
-	if g := blocks[0].step; g.start != 1 || g.end != 5 {
-		t.Fatalf("the step should run from the first call to the last (1..5), got %d..%d", g.start, g.end)
-	}
-	header := m.headerFor(blocks[0], m.transcript)
-	if header.Tools != 3 {
-		t.Fatalf("the header counts the step's three calls and not the thought, got %d", header.Tools)
-	}
-
-	m.transcript[0].stepFold = foldOpen
-	m.invalidateRenderCache()
-	view := stripANSI(m.renderHistory())
-	if strings.Count(view, "Reading the loop") != 1 || !strings.Contains(view, "read 3 files") {
-		t.Fatalf("one card, counting three calls:\n%s", view)
-	}
-	for _, want := range []string{"a.go", "✻", "d.go", "e.go"} {
-		if !strings.Contains(view, want) {
-			t.Fatalf("the opened step holds %s:\n%s", want, view)
-		}
+	if g := blocks[0].step; g.start != 1 || g.end != 2 {
+		t.Fatalf("the step ends at the thought (1..2), got %d..%d", g.start, g.end)
 	}
 
 	m.transcript[0].stepFold = foldClosed
 	m.invalidateRenderCache()
-	view = stripANSI(m.renderHistory())
-	for _, gone := range []string{"a.go", "✻", "d.go", "e.go"} {
-		if strings.Contains(view, gone) {
-			t.Fatalf("folding the step folds %s with it:\n%s", gone, view)
-		}
-	}
-	if !strings.Contains(view, "read 3 files") {
-		t.Fatalf("the folded header still counts what it swallowed:\n%s", view)
-	}
-	if slices.Contains(m.expandableIndices(), 2) {
-		t.Fatalf("a folded step offers its header, not the thought inside it: %v", m.expandableIndices())
+	view := stripANSI(m.renderHistory())
+	read1, thought, read2 := strings.Index(view, "read a.go"),
+		strings.Index(view, "Now for the other half."), strings.Index(view, "read 2 files")
+	if read1 < 0 || thought < 0 || read2 < 0 || read1 > thought || thought > read2 {
+		t.Fatalf("card, thought, card, in the order they happened:\n%s", view)
 	}
 }
 
-// TestThinkRow_CycleClosesAtHighVerbosity: the depth is an override, so a
-// reader outranks the verbosity rather than cycling a row they can never
-// close.
-func TestThinkRow_CycleClosesAtHighVerbosity(t *testing.T) {
-	m := readyModel(t)
-	m.verbosity = verbosityHigh
-	m.appendEntry(entry{kind: entryThink, text: thinkBlock(40)})
-
-	if got := bodyLines(m.renderEntry(m.transcript[0], 80)); got != maxToolResultLines {
-		t.Fatalf("high verbosity opens the bounded body, got %d lines", got)
-	}
-	// [-] is not offered on a row the reader did not open, exactly as it is
-	// not on a tool row high verbosity expanded.
-	if m.focusIdx = 0; m.focusedRowOpen() {
-		t.Fatal("a row the verbosity opened is not one [-] has anything to close")
-	}
-	for i, want := range []int{40, 0, maxToolResultLines} {
-		m.cycleThink(0)
-		if got := bodyLines(m.renderEntry(m.transcript[0], 80)); got != want {
-			t.Fatalf("press %d: %d body lines, want %d", i+1, got, want)
-		}
-	}
-}
-
-// TestThinkRow_Verbosity: low draws no row at all and offers the reading
-// cursor nothing to land on; high opens it to the bounded body, as it does
-// every other row.
-func TestThinkRow_Verbosity(t *testing.T) {
-	m := readyModel(t)
-	m.appendEntry(entry{kind: entryThink, text: thinkBlock(40)})
-
-	m.verbosity = verbosityNormal
-	if view := stripANSI(m.renderEntry(m.transcript[0], 80)); !strings.Contains(view, "think") {
-		t.Fatalf("the default shows the row folded:\n%s", view)
-	} else if bodyLines(view) != 0 {
-		t.Fatalf("the default shows it folded, not open:\n%s", view)
-	}
-	if len(m.expandableIndices()) != 1 {
-		t.Fatal("a drawn row is a row the reading cursor can reach")
-	}
-
-	m.verbosity = verbosityHigh
-	if got := bodyLines(m.renderEntry(m.transcript[0], 80)); got != maxToolResultLines {
-		t.Fatalf("high verbosity opens the bounded body, got %d lines", got)
-	}
-
-	m.verbosity = verbosityLow
-	if view := m.renderEntry(m.transcript[0], 80); view != "" {
-		t.Fatalf("low verbosity draws no think row at all: %q", view)
-	}
-	if got := len(m.expandableIndices()); got != 0 {
-		t.Fatalf("a row nobody can see is a row the cursor cannot land on, got %d targets", got)
+// TestThink_TheRungDecides: low draws no thought and offers the reading
+// cursor nothing to land on; normal and high draw it whole.
+func TestThink_TheRungDecides(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		verbosity verbosity
+		lines     int
+	}{
+		{"low drops it", verbosityLow, 0},
+		{"normal draws it whole", verbosityNormal, 40},
+		{"high draws it whole", verbosityHigh, 40},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := readyModel(t)
+			m.verbosity = tc.verbosity
+			m.appendEntry(entry{kind: entryThink, text: numberedThought(40)})
+			view := strings.TrimRight(m.renderEntry(m.transcript[0], 80), "\n")
+			got := 0
+			if view != "" {
+				got = len(strings.Split(view, "\n"))
+			}
+			if got != tc.lines {
+				t.Fatalf("%d lines drawn, want %d", got, tc.lines)
+			}
+			if stops := len(m.expandableIndices()); (stops > 0) != (tc.lines > 0) {
+				t.Fatalf("a thought on screen is a stop and one off it is not, got %d stops", stops)
+			}
+		})
 	}
 }
 
-// TestThinkRow_ReadingKeys: [enter] under the cursor cycles the depths and
-// [-] closes whatever they opened, the same two keys every other row answers.
-func TestThinkRow_ReadingKeys(t *testing.T) {
-	m := readyModel(t)
-	m.appendEntry(entry{kind: entryThink, text: thinkBlock(40)})
-	next, _ := m.enterFocusMode()
-	m = next.(Model)
-	if m.focusIdx != 0 {
-		t.Fatalf("reading mode should land on the row, got %d", m.focusIdx)
-	}
-
-	next, _ = m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = next.(Model)
-	if m.transcript[0].thinkDepth != thinkTail {
-		t.Fatalf("enter opens the tail window, got depth %d", m.transcript[0].thinkDepth)
-	}
-	if !m.focusedRowOpen() {
-		t.Fatal("an opened row reports itself open, which is what puts [-] on the bar")
-	}
-	next, _ = m.updateFocus(tea.KeyPressMsg{Code: '-', Text: "-"})
-	m = next.(Model)
-	if m.transcript[0].thinkDepth != thinkClosed {
-		t.Fatalf("[-] closes the row, got depth %d", m.transcript[0].thinkDepth)
-	}
-}
-
-// TestThinkRow_MonoTellsItFromATool is the first invariant on this row: with
-// the palette stripped to two greys the glyph and the verb still say which
-// row this is (docs/interface/principles.md#colour-never-carries-meaning-alone).
-func TestThinkRow_MonoTellsItFromATool(t *testing.T) {
-	m := readyModel(t)
-	think := stripANSI(m.renderEntry(entry{kind: entryThink, text: "a thought"}, 80))
-	tool := stripANSI(m.renderEntry(entry{kind: entryTool, toolName: "read_file",
-		toolArgs: `{"path":"a.go"}`, toolResult: "x"}, 80))
-
-	if !strings.Contains(think, "✻") || !strings.Contains(think, "think") {
-		t.Fatalf("the think row carries its own glyph and verb:\n%s", think)
-	}
-	if strings.Contains(think, "⚙") || strings.Contains(think, "▎") {
-		t.Fatalf("thinking is not a tool call and changed nothing:\n%s", think)
-	}
-	if think == tool {
-		t.Fatal("the two rows must not be distinguishable by colour alone")
-	}
-}
-
-// TestThinkRow_StreamOrder drives the whole thing through the stream reader
+// TestThink_StreamOrder drives the whole thing through the stream reader
 // the session uses, so the batching and the ordering are asserted together.
-func TestThinkRow_StreamOrder(t *testing.T) {
+func TestThink_StreamOrder(t *testing.T) {
 	events, cancel, err := thinkingStream("thought one\nthought two", "Answering.",
 		[]provider.ToolCall{{ID: "c1", Name: "search", Arguments: `{"pattern":"x"}`}})(nil, provider.ToolChoiceAuto)
 	if err != nil {
@@ -541,13 +362,10 @@ func TestThinkRow_StreamOrder(t *testing.T) {
 	}
 }
 
-// BenchmarkThinkStreaming measures what the row costs while it fills: 20k
-// characters of reasoning arriving in chunks, with the row drawn for each,
-// closed as it is while it streams and open as a reader watching it would
-// leave it. A row that re-parsed its block every chunk would show as the
-// quadratic the answer's own render was fixed for (streammd.go); what the
+// BenchmarkThinkStreaming measures what a thought costs while it fills: 20k
+// characters of reasoning arriving in chunks, drawn whole for each. What the
 // repaints actually cost is bounded by the tick they ride, which
-// TestThinkRow_StreamsOnTheTick is the assertion for.
+// TestThink_StreamsOnTheTick is the assertion for.
 func BenchmarkThinkStreaming(b *testing.B) {
 	var block strings.Builder
 	for i := 0; block.Len() < 20_000; i++ {
@@ -555,22 +373,15 @@ func BenchmarkThinkStreaming(b *testing.B) {
 	}
 	src := block.String()
 	var cuts []int
-	for i := 12; i < len(src); i += 12 {
+	for i := 1200; i < len(src); i += 1200 {
 		cuts = append(cuts, i)
 	}
 	cuts = append(cuts, len(src))
 
 	m := Model{verbosity: verbosityNormal}
-	for _, tc := range []struct {
-		name  string
-		depth thinkDepth
-	}{{"closed", thinkAuto}, {"tail", thinkTail}} {
-		b.Run(tc.name, func(b *testing.B) {
-			for b.Loop() {
-				for _, c := range cuts {
-					m.thinkRowFor(entry{kind: entryThink, text: src[:c], thinkDepth: tc.depth}, 80).View(80)
-				}
-			}
-		})
+	for b.Loop() {
+		for _, c := range cuts {
+			m.thinkBlock(src[:c], 80)
+		}
 	}
 }

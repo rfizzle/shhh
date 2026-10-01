@@ -809,6 +809,11 @@ func trayOpens(e entry) bool {
 // the row opens it: the row has no open state of its own, so there is never
 // a second press that only closes something.
 func trayPicture(e entry) (provider.Attachment, bool) {
+	if e.kind == entryPicture && e.picture != nil {
+		// A picture a call returned opens through the same door
+		// (card.go).
+		return *e.picture, true
+	}
 	if e.kind != entryTray || e.fold == nil || !e.fold.picture() {
 		return provider.Attachment{}, false
 	}
@@ -827,7 +832,12 @@ func (m Model) openTrayPicture(idx int) (tea.Model, tea.Cmd) {
 	if !ok {
 		return m, nil
 	}
-	return m.openSent(a, sentTurn(es, idx), m.state == stateFocus)
+	turn := sentTurn(es, idx)
+	if es[idx].kind == entryPicture {
+		// A call returned it; nobody sent it with a turn.
+		turn = 0
+	}
+	return m.openSent(a, turn, m.state == stateFocus)
 }
 
 // openSent opens an attachment that has already been sent on the card the

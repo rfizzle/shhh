@@ -7,7 +7,7 @@
 # to be a line starting `Error:`.
 snap 01-start "Some things worth doing first"
 keys "/copy" Enter
-snap 02-notice "nothing to copy yet"
+snap 02-notice "· nothing to copy yet"
 keys C-]
 # The popup is known by its title, not by the row for its own chord: the rows
 # are the keymap's order, and a key added to the DRAFT group moves that row

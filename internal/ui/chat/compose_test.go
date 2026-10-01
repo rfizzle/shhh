@@ -100,13 +100,35 @@ func TestComposeRow_KeepsTheTranscriptsSpacing(t *testing.T) {
 		t.Errorf("the arriving answer is a block too:\n%s", stripANSI(m.renderHistory()))
 	}
 
-	// Under a row: the round's own thinking, which is not a block.
+	// Under the round's own thinking, which is prose on bare screen and so
+	// a block as well.
 	m = composingModel(t)
 	m.appendEntry(entry{kind: entryThink, text: "weighing it"})
 	updated, _ = m.Update(fragment("call_1", 2000))
 	m = updated.(Model)
+	if !blank(stripANSI(m.renderHistory())) {
+		t.Errorf("a thought above the row is followed by a blank line:\n%s", stripANSI(m.renderHistory()))
+	}
+
+	// Under a notice, which is a flat line like the row itself.
+	m = composingModel(t)
+	m.appendEntry(entry{kind: entrySystem, text: "context trimmed: 1 older tool result elided"})
+	updated, _ = m.Update(fragment("call_1", 2000))
+	m = updated.(Model)
 	if blank(stripANSI(m.renderHistory())) {
-		t.Errorf("two rows sit against each other:\n%s", stripANSI(m.renderHistory()))
+		t.Errorf("two flat lines sit against each other:\n%s", stripANSI(m.renderHistory()))
+	}
+}
+
+// TestComposeRow_IsAFlatLine is the shape: `✻ compose 14 KB` at the glyph
+// column, dim and on no band — a reading of the round, not a card.
+func TestComposeRow_IsAFlatLine(t *testing.T) {
+	m := composingModel(t)
+	updated, _ := m.Update(fragment("call_1", 14*1024))
+	m = updated.(Model)
+	view := stripANSI(m.renderHistory())
+	if !strings.Contains(view, "\n  ✻ compose 14 KB\n") && !strings.HasPrefix(view, "  ✻ compose 14 KB\n") {
+		t.Fatalf("the row is one flat line at the glyph column:\n%q", view)
 	}
 }
 

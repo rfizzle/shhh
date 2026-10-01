@@ -18,9 +18,11 @@ The transcript is one column of text, and every kind of entry in it begins in
 the same place. A narrow gutter on the left is held back for a mark *about* an
 entry — the reader's own `❯`, a folded card's `▸`, reading mode's cursor — and
 everything that is not one of those marks starts in the first column past it:
-a paragraph's first word, a notice's first word, an activity row's mutation
-rail and the glyph beside it, a progress checkpoint, a reading of the session,
-and the line a turn closes on. A step's card is the one entry drawn into the
+a paragraph's first word, a notice's mark, an activity row's mutation rail
+and the glyph beside it, a reading of the session, and the line a turn closes
+on. The model's prose that nobody asked a question for — what it thought, and
+a progress checkpoint — starts one step further in, on the column a card's
+sentence starts on, a rung under the answer it is not. A step's card is the one entry drawn into the
 gutter, and only with a mark: its pointer column is one wide and its mutation
 rail stands in the second, so its glyph, the verb on its header and the body
 under it start one step in from the rows ([the step](#the-step)). An entry with no mark of its own leaves the
@@ -168,38 +170,28 @@ not be giving the row back.
 
 ### The think row
 
-What the model thought before it acted, folded into one row among the acts it
-led to. A round that reasoned gets one; a round that did not gets nothing,
-because a row reporting no thinking is a stat nobody measured.
+What the model thought before it acted, drawn as its own prose: dimmer than
+the answer and slanted, on the column a card's sentence starts on, on bare
+screen — no glyph, no band, no count and no fold. A round that reasoned gets
+a passage; a round that did not gets nothing, because a line reporting no
+thinking is a stat nobody measured.
 
-It is a row rather than a panel because thinking is one of the things a turn
-did, and the transcript has one shape for those. The row states how much it
-swallowed, so folding hides the words without hiding that there were words —
-it prints no key for opening it; reading mode's bar does — and it opens
-through the diff's three depths: closed, the end of the thought, then all of
-it. The end rather than the beginning, because a model that
-thought for four hundred lines is being read for where it arrived. A block
-short enough to fit the window skips that middle step.
+It was a row once, folded to the number of lines it held. It is prose now
+because it is the passage that says why the next card exists, and a fold over
+it was a key standing between the reader and that reason. What bounds a long
+thought is [the density rung](principles.md#density-is-one-ladder) instead:
+the least dense rung drops it, first of anything, because it is the one thing
+on the transcript that reports no act; the other two draw it whole
+([why](departures.md#thinking-is-prose-and-the-rung-bounds-it)). It wraps
+rather than clips: a paragraph is one line hundreds of characters long, and
+cutting it keeps a sentence and loses the thought.
 
-Opened, it wraps rather than clips. Every other body under a row is the
-output of a program, where the head of a line is the information and the tail
-can be cut; this one is prose, where a paragraph is a single line hundreds of
-characters long and cutting it keeps a sentence and loses the thought.
-
-The row sits inside the step it was thought in rather than ending it. The
-model stopping to think between two rounds of the same step is still that
-step's work, and what it does next is still what the title announced, so the
-calls after the row stay in the step's card, and the card stands in for the
-thought with them until it is opened. The card's receipt is the step's calls,
-and the row is not one of them: the receipt is of acts, and a thought ran
-nothing, read nothing and changed nothing. What ends a step is prose — a new
-title, or an explanation of several lines — never private reasoning.
-
-The row fills while the model thinks, so the wait is legible as work rather
-than as a spinner. Thinking is the model talking to itself: it changed
-nothing, ran nothing and read nothing, which is why it carries no rail and
-sits at the bottom of the weight order. The least dense verbosity drops it
-first, for the same reason.
+It stands where it was thought. A card has no place on its band for prose but
+its body, so a thought between two rounds of one step ends the step's card
+there, and the calls after it are a card of their own. The passage fills
+while the model thinks, so the wait is legible as work rather than as a
+spinner, and it carries no rail and sits at the bottom of the weight order,
+because thinking changed nothing, ran nothing and read nothing.
 
 What is shown is only what the provider let through. Reasoning that comes back
 redacted, or as a signature with no words, is carried into the next request
@@ -341,9 +333,16 @@ outline, the plan block and the plan command are reading one list rather than
 three that agree by coincidence; a step the run has not reached is the plan's
 own line, numbered and queued, until its first call makes a card of it. Work
 done off the plan is marked as such on the plan's own surfaces rather than
-renumbered into it. A step runs until the next prose: the notices a batch
-earns and the think rows between its rounds are members of it, so a step that
-paused to reason is one card, and the card counts the calls it made. A public
+renumbered into it. A step runs until the next prose, and what the model
+thought is prose: the notices a batch earns are members of it, and a thought
+between its rounds ends the card where it stands. A notice inside a card is
+behind the card with the calls while the card is closed, so the tree moving
+mid-step is said in the card's footer in the step's own words — `tree moved
+under me · 1 file I'd read changed`. A picture a call returned is a footer
+row of its card — `▣ name · W×H · size`, and on the right that it opens like
+an attachment — which enter or a click opens on the attachment card, the way
+a picture the reader sent opens; it is a stop of its own beside the card's
+header, so enter on the header still walks the card's depths. A public
 progress update short enough to be a title titles the following card while
 the rail continues to state only the immediate phase; one too long is drawn
 as [the checkpoint it is](#the-progress-checkpoint).
@@ -564,6 +563,14 @@ The other recovery rows — a dropped stream, a round-limit pause — are rows:
 the model, the class, the outcome, the provider's words under it, and the
 offered keys under those.
 
+What the session says about its own window is not a recovery row. A trim
+that elided the oldest results is a notice — one flat dim line at the glyph
+column, `·` in the slot, no band and no key — like the tree moving and a
+conversation reopened: they happened to the session rather than in it. A
+compaction is [its receipt](#the-compaction-receipt), a notice of the same
+shape, and the window filling past the alert line is the decision card,
+because that one needs an answer.
+
 The offered keys are bare letters, and they are answered the way a card is:
 through the handover. While the draft holds the keyboard a letter offered on
 the row is a letter of the sentence being typed, so the row draws its letters
@@ -605,20 +612,20 @@ dead.
 ### The compaction receipt
 
 Recovering the window is an act the session took on the conversation, and it
-is accounted for the way every other act is: one row, in the same seven
-fields. The glyph column carries the outcome directly — a compaction is not a
-call, so there is no kind glyph for it to override — the verb is `compact`,
-the growing field says which turns went, and the account beside the outcome
-says where the window stood before and where it stands after, with what the
-summary cost. There is no mutation rail: nothing on the machine was touched.
+happened to the session rather than in a step, so it is a notice: one flat
+dim line, `·` in the glyph slot, on bare screen. It says which turns went and
+what stands in for them, what they were holding, where the window stood
+either side and what the summary cost — `compacted turns 1–2 into a 7-line
+summary · 74k tokens · context 88% → 28% · $0.02` — and how long it took.
+There is no mutation rail: nothing on the machine was touched.
 
-Under the row, a fold: which turns are behind it, what they were holding, and
-how many lines stand in for them now. It opens read, because a reader who has
-just lost five turns is owed what replaced them without asking for it, and the
-same key closes it again. The summary inside is the model's own words, so it
-is the one italic run the transcript draws, and it is bounded like every other
-body under a row — the foot counts what the cap swallowed and says where the
-turns themselves went.
+Under the line, while it is open, the summary: the model's own words, so it
+is slanted, at the column a card's sentence starts on, and bounded like every
+other body — the foot counts what the cap swallowed and says where the turns
+themselves went. It opens read, because a reader who has just lost five turns
+is owed what replaced them without asking for it, and enter on the line closes
+it and gives it back. The line prints no key for that: it states what it holds
+in lines, and the hint bar names enter.
 
 They went nowhere. The turns a compaction folds keep their rows, and their
 cards say `out of the window`: the search still reaches them, the cards
@@ -629,9 +636,9 @@ about the model's memory.
 
 A compaction with nothing left to fold says so instead of pretending: what it
 freed, and what is still in the window that no summary can stand in for — a
-plan, a changeset, the turns it is keeping. That row is a break, because the
-act was asked to recover a window and did not, and it carries no fold, because
-there is nothing behind it.
+plan, a changeset, the turns it is keeping. That line is a break, `✗` in the
+slot, because the act was asked to recover a window and did not, and it
+carries no fold, because there is nothing behind it.
 
 ### The progress checkpoint
 
@@ -641,10 +648,10 @@ evidence it has, and the next action. The request is the session's, not the
 reader's, and that is the whole of what the rung says. The answer to a
 question somebody typed is the brightest prose in the pane after the question
 itself; a checkpoint is the session reporting on work still in flight, so it
-is drawn a rung under that — in the grey a body under a row is drawn in, and
-slanted the way a compaction's summary is, because the slant means model
-output nobody asked a question for and this is the second and last place it
-means it.
+is drawn a rung under that — flat prose on bare screen, at the column a
+card's sentence starts on, in the grey a body under a row is drawn in, and
+slanted the way a compaction's summary and the model's thinking are, because
+the slant means model output nobody asked a question for.
 
 Quieter than the answer is not quieter than the work. A checkpoint never
 outranks what is happening now: a command still running, a card waiting to be

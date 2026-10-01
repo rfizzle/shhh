@@ -1,5 +1,5 @@
 # golden:  density-normal.w110
-# surface: the think row and the feed at one rung
+# surface: thinking and the feed at one rung
 # width:   110 columns
 # palette: mono (two greys)
 # cursor:  none
@@ -15,13 +15,23 @@
 ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 
-  ⚙ read 2 files in internal/agent/ · searched ErrRoundLimit                                      0.9s
+  ⚙ read internal/agent/loop.go
     Locate the round accounting
 
 
+    The cap is counted in the loop, so the sentinel has to come from there.
+
+
+  ⚙ read internal/agent/round.go · searched ErrRoundLimit                                         0.5s
+
+
+  Thread the sentinel through the loop
+
+    One return path, then the test.
+    The test names the sentinel directly.
+
 
  ▎✗ wrote internal/agent/loop.go · ran go test ./internal/agent/...                       exit 1 · 22s
-    Thread the sentinel through the loop
     --- FAIL: TestRoundLimit                                                                    1 line
 
 
@@ -32,13 +42,23 @@
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 
-  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m␛[38;5;244m 2 files in internal/agent/ · searched ErrRoundLimit␛[m                                      ␛[38;5;244m0.9s␛[m
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/loop.go␛[m
     ␛[38;5;254mLocate the round accounting␛[m
 
 
+    ␛[3;38;5;244mThe cap is counted in the loop, so the sentinel has to come from there.␛[m
+
+
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/round.go␛[m␛[38;5;244m · searched ErrRoundLimit␛[m                                         ␛[38;5;244m0.5s␛[m
+
+
+  Thread the sentinel through the loop
+
+    ␛[3;38;5;244mOne return path, then the test.␛[m
+    ␛[3;38;5;244mThe test names the sentinel directly.␛[m
+
 
  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mwrote␛[m ␛[38;5;244minternal/agent/loop.go␛[m␛[38;5;244m · ran go test ./internal/agent/...␛[m                       ␛[38;5;254mexit 1␛[m␛[38;5;244m · ␛[m␛[38;5;244m22s␛[m
-    ␛[38;5;254mThread the sentinel through the loop␛[m
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                                                                    ␛[38;5;244m1 line␛[m
 
 

@@ -9,6 +9,8 @@ package chat
 // told what their agent was told.
 
 import (
+	"strings"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -81,7 +83,11 @@ func (m *Model) injectTreeNotice(turnStart bool) {
 		return
 	}
 	m.agent.AppendMachine(n.Message)
-	m.appendEntry(entry{kind: entrySystem, text: n.Notice})
+	e := entry{kind: entrySystem, text: n.Notice}
+	if !n.Unavailable {
+		e.tree = &treeMove{said: strings.TrimPrefix(n.Notice, treeMovedLead)}
+	}
+	m.appendEntry(e)
 	// The reading has already paid for knowing the branch moved — a switch
 	// made by a command, an editor or another terminal — so the header is
 	// asked again only then.
@@ -97,3 +103,12 @@ func (m *Model) injectTreeNotice(turnStart bool) {
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 }
+
+// treeMove is what a tree notice said after its lead — the head and branch
+// that moved, the paths that changed and whose they were, the files the
+// model had read that hold something else now — kept so a card it landed
+// in can say all of it in its footer.
+type treeMove struct{ said string }
+
+// treeMovedLead is how the tree reading's notice begins (internal/agent).
+const treeMovedLead = "tree moved — "

@@ -135,24 +135,27 @@ func TestTranscriptGrid_NoEntryStartsInsideTheMarkerGutter(t *testing.T) {
 }
 
 // TestTranscriptGrid_EveryKindSharesOneLeftEdge measures the entries the
-// story of a turn is told in — a public status note, a check-in, a steer, the
-// tree reading, an error, an arriving reply and the mutation rail a turn
-// closes on — and requires every one of them to begin in the same column at
-// every width.
+// story of a turn is told in — a check-in, a steer, the tree reading, an
+// error, an arriving reply and the mutation rail a turn closes on — and
+// requires every one of them to begin in the same column at every width. A
+// public status note is model prose a rung under the answer, and starts on
+// the body column a card's sentence does.
 func TestTranscriptGrid_EveryKindSharesOneLeftEdge(t *testing.T) {
 	// Each probe is a substring only one entry's first line carries, short
 	// enough to survive the narrowest pane's clip.
 	probes := map[string]string{
-		"the public status note": "The objective is one home",
-		"the check-in":           "Check-in —",
-		"the steer":              "Steered —",
-		"the tree reading":       "tree moved —",
-		"the error":              "✗ the notebook",
-		"the arriving reply":     "Re-running the suite",
+		"the check-in":       "Check-in —",
+		"the steer":          "Steered —",
+		"the tree reading":   "tree moved —",
+		"the error":          "✗ the notebook",
+		"the arriving reply": "Re-running the suite",
 	}
 	for _, width := range gridWidths {
 		m := gridModel(t, width, 40)
 		lines := strings.Split(ansi.Strip(m.renderHistory()), "\n")
+		if line, ok := lineWith(lines, "The objective is one home"); !ok || contentColumn(line) != components.GridDetailIndent {
+			t.Errorf("w%d: the public status note starts on the body column: %q", width, line)
+		}
 		for what, probe := range probes {
 			line, ok := lineWith(lines, probe)
 			if !ok {
@@ -183,8 +186,8 @@ func TestTranscriptGrid_EveryKindSharesOneLeftEdge(t *testing.T) {
 }
 
 // TestTranscriptGrid_WrappedProseReturnsToTheSameColumn is the other half of
-// one edge: a notice long enough to wrap puts its continuation under its own
-// first word rather than at the pane's edge.
+// one edge: a notice long enough to wrap puts its mark in the glyph slot and
+// its continuation under its own first word rather than at the pane's edge.
 func TestTranscriptGrid_WrappedProseReturnsToTheSameColumn(t *testing.T) {
 	for _, width := range gridWidths {
 		m := frameModel(t, width, 40)
@@ -193,13 +196,19 @@ func TestTranscriptGrid_WrappedProseReturnsToTheSameColumn(t *testing.T) {
 		m.invalidateRenderCache()
 		lines := strings.Split(strings.TrimRight(ansi.Strip(m.renderHistory()), "\n"), "\n")
 		var drawn int
-		for _, l := range lines {
+		for i, l := range lines {
 			col := contentColumn(l)
 			if col < 0 {
 				continue
 			}
 			drawn++
-			if col != components.GridPointerWidth {
+			if i == 0 {
+				if !strings.HasPrefix(l, strings.Repeat(" ", components.GridPointerWidth)+components.NoticeMark+" a tree") {
+					t.Errorf("w%d: the notice's mark and its first word: %q", width, l)
+				}
+				continue
+			}
+			if col != components.GridDetailIndent {
 				t.Errorf("w%d: a wrapped notice line starts at column %d: %q", width, col, l)
 			}
 		}

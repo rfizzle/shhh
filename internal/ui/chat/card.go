@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -344,6 +345,12 @@ func (m Model) stepCardFor(blk transcriptBlock, es []entry, width int, selected 
 		c.Keys = refused.Keys
 	}
 	c.Evidence = evidenceLine(c.Evidence)
+	if note := treeNoteIn(es, start, end); note != "" {
+		// The tree moved while the step ran: a line the session wrote about
+		// the step rather than one of the step's own, a footer row under any
+		// evidence the step has (docs/interface/surfaces.md#the-step).
+		c.Rows = append(c.Rows, components.CardNoteRow(note, width))
+	}
 	footer := c.Evidence != "" || len(c.Strip) > 0
 
 	// The reading's verdict sits in the footer beside the evidence it
@@ -532,4 +539,97 @@ func (m *Model) unfoldCard(es []entry, idx int) {
 	if !m.density(verbosityNormal) {
 		es[idx].stepFold = foldCard
 	}
+}
+
+// treeNoteIn is what a card's footer says about the tree having moved while
+// its step ran, in the step's own voice, or "" where it did not. The notice
+// stands among the step's calls, where the card is not drawing them.
+// See docs/interface/departures.md#a-cards-footer-says-the-tree-moved-in-the-steps-own-words.
+func treeNoteIn(es []entry, start, end int) string {
+	var said []string
+	for i := start; i < end && i < len(es); i++ {
+		if t := es[i].tree; t != nil && t.said != "" {
+			// The step speaks for itself, so a file the reader was told
+			// they had read is one the step had read.
+			w := strings.NewReplacer("files you have read", "files I'd read",
+				"file you have read", "file I'd read", "you read", "I'd read").Replace(t.said)
+			said = append(said, w)
+		}
+	}
+	if len(said) == 0 {
+		return ""
+	}
+	return "tree moved under me · " + strings.Join(said, " · ")
+}
+
+// appendPicture files the picture a call's result carried, straight after
+// the call's row, where its receipt says it carried one.
+func (m *Model) appendPicture(id string, rc receipt.Receipt) {
+	if rc.Picture == nil {
+		return
+	}
+	a := *rc.Picture
+	m.appendCallRow(id, entry{kind: entryPicture, picture: &a})
+}
+
+// pictureRowFor is a returned picture as its card's footer row: its name, its
+// dimensions and its size.
+func pictureRowFor(e entry, selected bool) components.CardPictureRow {
+	if e.picture == nil {
+		return components.CardPictureRow{Selected: selected}
+	}
+	a := *e.picture
+	facts := attachment.HumanSize(len(a.Data))
+	if fig := a.Figure(); fig != "" && fig != facts {
+		facts = fig + " · " + facts
+	}
+	return components.CardPictureRow{Name: a.Name, Facts: facts, Selected: selected}
+}
+
+// cardPictures is the pictures a card draws as footer rows: the ones its
+// calls returned, while the card is drawing its footer — not folded to its
+// header, not at the rung that draws headers alone, and not open, where
+// each is a row under the calls instead.
+func (m Model) cardPictures(blk transcriptBlock, es []entry) []int {
+	if !isCardBlock(blk, es) {
+		return nil
+	}
+	if d, folded := m.cardShape(blk, es); folded || d != components.CardNormal {
+		return nil
+	}
+	var idxs []int
+	start, end := blk.members()
+	for i := start; i < end && i < len(es); i++ {
+		if es[i].kind == entryPicture && es[i].picture != nil {
+			idxs = append(idxs, i)
+		}
+	}
+	return idxs
+}
+
+// pictureCardUnits is a card whose footer holds pictures: the card down to
+// its footer as one unit, kept on its anchor, and each picture's row a unit
+// of its own, kept on the picture's entry, so the reading cursor stops on it
+// and a click lands on it — enter on the header still walks the card's
+// depths; the card's closing padding row rides the last.
+// See docs/interface/departures.md#a-returned-picture-is-a-stop-of-its-own.
+func (m Model) pictureCardUnits(card components.StepCard, pics []int, es []entry, width int, focus bool, focusIdx, anchor int) []unit {
+	for _, p := range pics {
+		card.Rows = append(card.Rows, pictureRowFor(es[p], focus && focusIdx == p).View(width))
+	}
+	lines := strings.Split(card.View(width), "\n")
+	k := len(pics)
+	head := len(lines) - k - 1
+	block, tight := entry{kind: entryAssistant}, entry{kind: entryTool}
+	units := []unit{{idx: anchor, sepBefore: block, sepAfter: tight,
+		text: strings.Join(lines[:head], "\n") + "\n", cardHead: true}}
+	for j, p := range pics {
+		u := unit{idx: p, sepBefore: tight, sepAfter: tight, text: lines[head+j] + "\n"}
+		if j == k-1 {
+			u.text += lines[len(lines)-1] + "\n"
+			u.sepAfter = block
+		}
+		units = append(units, u)
+	}
+	return units
 }

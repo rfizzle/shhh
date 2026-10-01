@@ -11,8 +11,8 @@
 
 ── layout ──────────────────────────────────────────────────
 · the receipt, its fold open, and the turns it folded below
-   ✓ compact folded turns 1–2                     4.1s
-   ▾ turns 1–2 · compacted · [enter] fold it back up
+  · compacted turns 1–2 into a 10-line summary · 74k
+    tokens · ctx 88% → 28% · $0.02 · 4.1s
     Rounds are counted in the round loop; the limit
     lived in three places and disagreed. The first
     three turns established the loop as the owner, the
@@ -47,8 +47,8 @@
 
 
 · folded back up
-   ✓ compact folded turns 1–2                     4.1s
-   ▸ turns 1–2 · compacted · [enter] read the summary
+  · compacted turns 1–2 into a 10-line summary · 74k
+    tokens · ctx 88% → 28% · $0.02 · 4.1s
 
 ❯ fix the round limit
 ──────────────────────────────────────────────────────
@@ -73,7 +73,9 @@
 
 
 · the floor: nothing left that a summary could stand in for
-   ✗ compact freed 6% · what remains is the pl…   3.2s
+  ✗ compact freed 6% · what remains is the plan, the
+    changeset and turns 6–7 — none of it foldable ·
+    3.2s
 
 ❯ Move the round limit into the loop.
 ──────────────────────────────────────────────────────
@@ -84,8 +86,8 @@
 
 ── ansi ────────────────────────────────────────────────────
 · the receipt, its fold open, and the turns it folded below
-   ␛[38;5;254m✓␛[m ␛[38;5;254mcompact␛[m ␛[38;5;254mfolded turns 1–2␛[m                     ␛[38;5;244m4.1s␛[m
-   ␛[38;5;244m▾ turns 1–2 · compacted · ␛[m␛[38;5;254m[enter] fold it back up␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mcompacted turns 1–2 into a 10-line summary · 74k␛[m
+    ␛[38;5;244mtokens · ctx 88% → 28% · $0.02 · 4.1s␛[m
     ␛[3;38;5;244mRounds are counted in the round loop; the limit␛[m
     ␛[3;38;5;244mlived in three places and disagreed. The first␛[m
     ␛[3;38;5;244mthree turns established the loop as the owner, the␛[m
@@ -120,8 +122,8 @@
 
 
 · folded back up
-   ␛[38;5;254m✓␛[m ␛[38;5;254mcompact␛[m ␛[38;5;254mfolded turns 1–2␛[m                     ␛[38;5;244m4.1s␛[m
-   ␛[38;5;244m▸ turns 1–2 · compacted · ␛[m␛[38;5;254m[enter] read the summary␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mcompacted turns 1–2 into a 10-line summary · 74k␛[m
+    ␛[38;5;244mtokens · ctx 88% → 28% · $0.02 · 4.1s␛[m
 
 ␛[38;5;254m❯␛[m fix the round limit
 ␛[38;5;244m──────────────────────────────────────────────────────␛[m
@@ -146,7 +148,9 @@
 
 
 · the floor: nothing left that a summary could stand in for
-   ␛[38;5;254m✗␛[m ␛[38;5;254mcompact␛[m ␛[38;5;254mfreed 6% · what remains is the pl…␛[m   ␛[38;5;244m3.2s␛[m
+  ␛[38;5;244m✗␛[m ␛[38;5;244mcompact freed 6% · what remains is the plan, the␛[m
+    ␛[38;5;244mchangeset and turns 6–7 — none of it foldable ·␛[m
+    ␛[38;5;244m3.2s␛[m
 
 ␛[38;5;254m❯␛[m Move the round limit into the loop.
 ␛[38;5;244m──────────────────────────────────────────────────────␛[m

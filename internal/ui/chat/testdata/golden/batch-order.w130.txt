@@ -44,8 +44,8 @@
   ⚙ read internal/agent/loop.go                                              
                                                                              
 
-  classifier unavailable (the classifier could not evaluate this action: api
-  down); asking you instead
+  · classifier unavailable (the classifier could not evaluate this action:
+    api down); asking you instead
 
                                                                              
  ▎⊘ run go test ./internal/agent                               denied · you  
@@ -91,8 +91,8 @@
 ␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m                                              ␛[m
 ␛[48;5;234m                                                                             ␛[m
 
-  ␛[38;5;241mclassifier unavailable (the classifier could not evaluate this action: api␛[m
-  ␛[38;5;241mdown); asking you instead␛[m
+  ␛[38;5;241m·␛[m ␛[38;5;241mclassifier unavailable (the classifier could not evaluate this action:␛[m
+    ␛[38;5;241mapi down); asking you instead␛[m
 
 ␛[48;5;234m                                                                             ␛[m
 ␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;241m⊘␛[m␛[48;5;234m ␛[38;5;252mrun␛[m␛[48;5;234m ␛[38;5;245mgo test ./internal/agent␛[m␛[48;5;234m                               ␛[38;5;241mdenied · you␛[m␛[48;5;234m  ␛[m

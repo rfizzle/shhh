@@ -27,6 +27,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -73,6 +74,10 @@ type Call struct {
 	// about the change rather than the change.
 	Hunks []diff.Hunk
 	Path  string
+	// Attachments is what the result carried that is not text — a read of
+	// an image file hands the picture back beside its sentence. A front-end
+	// needs the bytes to open it, and the result string never holds them.
+	Attachments []provider.Attachment
 }
 
 // Receipt is what one call did, as a row states it.
@@ -111,6 +116,10 @@ type Receipt struct {
 	// Hunk is the head of the change an edit applied, and nil on a call that
 	// carried none.
 	Hunk *HunkHead
+	// Picture is the image the call's result carried, which a front-end
+	// opens the way it opens one the reader attached, and nil on a call that
+	// returned none.
+	Picture *provider.Attachment
 
 	tool    string
 	arg     string

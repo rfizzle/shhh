@@ -53,8 +53,8 @@
       Reading the round accounting first.                                                   │                                                   
                                                                                             │  AGENTS                                2 running  
                                                                                             │  ⊘ orchestrator                            $0.51  
-    The objective is where the round counter is read. The evidence is that loop.go reads    │    ready                                          
-    it once and round.go not at all. Next I will run the round tests.                       │❯ ◇ researcher-1                            $0.05  
+      The objective is where the round counter is read. The evidence is that loop.go reads  │    ready                                          
+      it once and round.go not at all. Next I will run the round tests.                     │❯ ◇ researcher-1                            $0.05  
                                                                                             │    ⠋ running                                      
                                                                                             │  └◇ reviewer-2                             $0.05  
     ⠋ read twice                                                                running…    │     ⠋ running                                     
@@ -117,8 +117,8 @@
       Reading the round accounting first.                                                   │                                                   
                                                                                             │  AGENTS                                2 running  
                                                                                             │  ⊘ orchestrator                            $0.51  
-    The objective is where the round counter is read. The evidence is that loop.go reads    │    ready                                          
-    it once and round.go not at all. Next I will run the round tests.                       │❯ ◇ researcher-1                            $0.05  
+      The objective is where the round counter is read. The evidence is that loop.go reads  │    ready                                          
+      it once and round.go not at all. Next I will run the round tests.                     │❯ ◇ researcher-1                            $0.05  
                                                                                             │    ⠋ running                                      
                                                                                             │  └◇ reviewer-2                             $0.05  
     ⠋ read twice                                                                running…    │     ⠋ running                                     
@@ -214,8 +214,8 @@
   ␛[48;5;234m    ␛[38;5;252mReading the round accounting first.␛[39m                                                 ␛[m  ␛[38;5;241m│␛[m                                                   
   ␛[48;5;234m                                                                                        ␛[m  ␛[38;5;241m│␛[m  ␛[94;1mAGENTS␛[m                                ␛[38;5;241m2 running␛[m  
                                                                                             ␛[38;5;241m│␛[m  ␛[38;5;241m⊘␛[m ␛[38;5;252morchestrator␛[m                            ␛[38;5;241m$0.51␛[m  
-    ␛[38;5;245;3mThe objective is where the round counter is read. The evidence is that loop.go reads␛[m    ␛[38;5;241m│␛[m    ␛[38;5;245mready␛[m                                          
-    ␛[38;5;245;3mit once and round.go not at all. Next I will run the round tests.␛[m                       ␛[38;5;241m│␛[94m❯␛[m ␛[94;48;5;62m◇␛[39m ␛[97mresearcher-1                            $0.05␛[m  
+      ␛[38;5;245;3mThe objective is where the round counter is read. The evidence is that loop.go reads␛[m  ␛[38;5;241m│␛[m    ␛[38;5;245mready␛[m                                          
+      ␛[38;5;245;3mit once and round.go not at all. Next I will run the round tests.␛[m                     ␛[38;5;241m│␛[94m❯␛[m ␛[94;48;5;62m◇␛[39m ␛[97mresearcher-1                            $0.05␛[m  
                                                                                             ␛[38;5;241m│␛[m    ␛[38;5;205m⠋ running␛[m                                      
   ␛[48;5;234m                                                                                        ␛[m  ␛[38;5;241m│␛[m  ␛[38;5;245m└␛[94m◇␛[m ␛[38;5;252mreviewer-2␛[m                             ␛[38;5;241m$0.05␛[m  
   ␛[48;5;234m  ␛[38;5;205m⠋␛[39m ␛[38;5;252mread␛[38;5;241m twice␛[39m                                                                ␛[38;5;205mrunning…␛[39m  ␛[m  ␛[38;5;241m│␛[m     ␛[38;5;205m⠋ running␛[m                                     
@@ -278,8 +278,8 @@
   ␛[48;5;234m    ␛[38;5;252mReading the round accounting first.␛[39m                                                 ␛[m  ␛[38;5;241m│␛[m                                                   
   ␛[48;5;234m                                                                                        ␛[m  ␛[38;5;241m│␛[m  ␛[94;1mAGENTS␛[m                                ␛[38;5;241m2 running␛[m  
                                                                                             ␛[38;5;241m│␛[m  ␛[38;5;241m⊘␛[m ␛[38;5;252morchestrator␛[m                            ␛[38;5;241m$0.51␛[m  
-    ␛[38;5;245;3mThe objective is where the round counter is read. The evidence is that loop.go reads␛[m    ␛[38;5;241m│␛[m    ␛[38;5;245mready␛[m                                          
-    ␛[38;5;245;3mit once and round.go not at all. Next I will run the round tests.␛[m                       ␛[38;5;241m│␛[94m❯␛[m ␛[94;48;5;62m◇␛[39m ␛[97mresearcher-1                            $0.05␛[m  
+      ␛[38;5;245;3mThe objective is where the round counter is read. The evidence is that loop.go reads␛[m  ␛[38;5;241m│␛[m    ␛[38;5;245mready␛[m                                          
+      ␛[38;5;245;3mit once and round.go not at all. Next I will run the round tests.␛[m                     ␛[38;5;241m│␛[94m❯␛[m ␛[94;48;5;62m◇␛[39m ␛[97mresearcher-1                            $0.05␛[m  
                                                                                             ␛[38;5;241m│␛[m    ␛[38;5;205m⠋ running␛[m                                      
   ␛[48;5;234m                                                                                        ␛[m  ␛[38;5;241m│␛[m  ␛[38;5;245m└␛[94m◇␛[m ␛[38;5;252mreviewer-2␛[m                             ␛[38;5;241m$0.05␛[m  
   ␛[48;5;234m  ␛[38;5;205m⠋␛[39m ␛[38;5;252mread␛[38;5;241m twice␛[39m                                                                ␛[38;5;205mrunning…␛[39m  ␛[m  ␛[38;5;241m│␛[m     ␛[38;5;205m⠋ running␛[m                                     

@@ -261,10 +261,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 	case streamStartedMsg:
 		m.events = msg.events
 		m.cancel = msg.cancel
-		// A round is a request: the row the last one's reasoning landed on is
-		// not the row this one's belongs to (think.go), and the call the last
-		// one was writing is not this one's either (activity.go).
-		m.settleThink()
+		// A round is a request: the passage the last one's reasoning landed
+		// in is not the one this one's belongs to (think.go), and the call
+		// the last one was writing is not this one's either (activity.go).
 		m.thinkIdx = 0
 		m.composed = 0
 		return m, waitForEvent(m.events), true
@@ -274,12 +273,6 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// the next one starts its own bounded count.
 		m.clearRetryChain()
 		m.appendThinking(msg.think)
-		if msg.text != "" {
-			// A model that has started writing has stopped thinking, so the
-			// round's think row settles here rather than spinning under the
-			// answer it already produced.
-			m.settleThink()
-		}
 		m.streaming += msg.text
 		// The repaint rides the spinner's tick rather than the chunk (the
 		// streaming render). A chunk that arrives while the loop is running only
@@ -442,7 +435,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			if m.noteStepsCall(r.Call) {
 				continue
 			}
-			m.appendCallRow(r.Call.ID, entry{kind: entryTool, toolName: r.Call.Name, toolArgs: r.Call.Arguments, toolResult: r.Result, duration: r.Duration})
+			m.appendCallRow(r.Call.ID, entry{kind: entryTool, toolName: r.Call.Name, toolArgs: r.Call.Arguments,
+				toolResult: r.Result, duration: r.Duration})
+			m.appendPicture(r.Call.ID, m.callReceipt(r.Call.Name, r.Call.Arguments, r.Result, r.Attachments...))
 		}
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()

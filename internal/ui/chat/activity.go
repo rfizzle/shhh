@@ -184,10 +184,10 @@ func (m Model) receiptOf(e entry) receipt.Receipt {
 
 // callReceipt is the receipt of one tool call, told what this session knows
 // about the server the tool belongs to, if any.
-func (m Model) callReceipt(name, args, result string) receipt.Receipt {
+func (m Model) callReceipt(name, args, result string, atts ...provider.Attachment) receipt.Receipt {
 	served := m.mcp.Has != nil && m.mcp.Has(name)
 	return receipt.Build(receipt.Call{Name: name, Args: args, Result: result,
-		Served: served, ReadOnly: served && m.mcp.ReadOnly(name)})
+		Served: served, ReadOnly: served && m.mcp.ReadOnly(name), Attachments: atts})
 }
 
 // activityKind is the glyph a kind of act draws with: ⚙ reads of every
@@ -1017,6 +1017,10 @@ func (m *Model) monoCommand(parts []string) string {
 // (docs/interface/principles.md#closed-vocabularies).
 const composeVerb = "compose"
 
+// composeMark is the row's mark: the round's own work in flight, the glyph
+// the model's reasoning wore when it was a row.
+const composeMark = "✻"
+
 // composeFloor is how much a round has to have written before the row is
 // drawn at all. It is measured against the calls not worth watching: a read,
 // a search or a glob is a path and a pattern, a couple of hundred bytes at
@@ -1075,11 +1079,10 @@ func (m Model) composeRowLine(width int, prev entry, havePrev bool) string {
 	if m.events == nil || m.composed < composeFloor || !m.showCompose() {
 		return ""
 	}
-	row := components.ActivityRow{
-		Kind:   components.ActivityThink,
-		Verb:   composeVerb,
-		Counts: attachment.HumanSize(m.composed),
-	}
+	// Flat and dim at the glyph column, on no band: it is a reading of the
+	// round and not a step, so it is drawn the way a notice is, `✻` in the
+	// slot (docs/interface/surfaces.md#the-step).
+	row := components.NoticeLine{Mark: composeMark, Text: composeVerb + " " + attachment.HumanSize(m.composed)}
 	// The spacing above the row is the transcript's own, so it is asked for
 	// rather than chosen here. The answer arriving is the one thing above it
 	// whose last line is still open — every finished entry ends its own — so

@@ -106,8 +106,8 @@
 
   Moving the caption to the bar.
 
-  nothing staged · sent attachments are reached by
-  handle: Image#1, Image#2
+  · nothing staged · sent attachments are reached by
+    handle: Image#1, Image#2
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -207,6 +207,6 @@
 
   Moving the caption to the bar.
 
-  ␛[38;5;244mnothing staged · sent attachments are reached by␛[m
-  ␛[38;5;244mhandle: Image#1, Image#2␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mnothing staged · sent attachments are reached by␛[m
+    ␛[38;5;244mhandle: Image#1, Image#2␛[m
 

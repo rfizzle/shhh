@@ -25,8 +25,8 @@ snap 03-built "The build is clean"
 # one step the screen does not mark.
 sleep 5
 keys "anything else?" Enter
-snap 04-notice "tree moved" "tree moved — 1 path changed outside this session"
-snap 05-answered "somebody else has it open"
+snap 04-notice "tree moved" "· tree moved — 1 path changed outside this session"
+snap 05-answered "so somebody else"
 keys C-c
 keys C-c
 snap 06-exit "that is everything the screen was holding"

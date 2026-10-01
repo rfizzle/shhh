@@ -376,6 +376,79 @@ has gone, the binary counts those calls instead (`ran 1 command`) and keeps
 the rest of the receipt; the call that leads keeps its name and is cut, as the
 artboard draws.
 
+## Thinking is prose and the rung bounds it
+
+The think row folded what the model thought into one line counting what it
+held and opened it through three depths. The catalogue draws thinking as
+dimmer italic prose that never folds, and the binary follows it: the thought
+is the passage that says why the next card exists, and a fold the reader had
+to open to learn why the work changed direction was the burial the cards were
+made to end. What bounds a forty-line thought is the density rung instead —
+`low` drops it, `normal` and `high` draw it whole — and a reader who finds it
+too long turns the screen down rather than opening and closing passages one
+at a time.
+
+The catalogue left open where a thought between two rounds of one step goes,
+since it gives prose no place on a card's band but the body. The binary draws
+it where it was thought: the card ends there, and the calls after it are a
+card of their own. The old row stood inside the step and was hidden with the
+calls whenever the card was closed.
+
+## Thinking and the checkpoint take the body column, the answer keeps its own
+
+The catalogue sets every paragraph of prose at the body column. The binary
+moves the two kinds of model prose nobody asked a question for there —
+thinking and the progress checkpoint, beside the compaction's summary that
+already sat there — and leaves the answer and a mid-turn paragraph on the
+content column every other entry starts on. Moving the answer moves every
+transcript there is, and is a change to the reply rather than to the rows
+the catalogue's eleventh screen settled.
+
+## A notice's words where the catalogue drew none
+
+The catalogue draws a notice as one sentence. The session's notices that sat
+on the grid — a conversation reopened, a session saved, a steer, a queued
+message cancelled — keep their verb first and join what they are about and
+what came of it with ` · `: `· resumed master · 3 changed`. A notice that
+leads with a mark of its own — a failure's `✗`, a child's verdict — keeps that
+mark in the slot rather than standing behind a `·`, and a notice that wraps
+ends a line on its separator rather than starting the next with one, which
+would read as a notice of its own.
+
+The catalogue's `context 71% · the oldest 12 rounds will be compacted at 80%`
+has no line to become: the session says nothing at its warning threshold but
+the rail's colour, and the alert threshold is a card with a decision. The
+context notice it has is the trim's, `· context trimmed: 3 older tool results
+elided`, and it is drawn as a notice, with no key.
+
+The catalogue counts a compaction in rounds and puts its summary on a row
+above the notice. The session counts it in turns, as every other surface
+does, and opens the summary under the line the way every body opens under
+what it belongs to; the line says how long the summary is, in lines, so the
+fold states what it holds without a key.
+
+## A card's footer says the tree moved in the step's own words
+
+The catalogue words one case, `tree moved under me · 1 file I'd read
+changed`. The binary keeps that lead and says after it everything the notice
+said — a head or a branch that moved, how many paths and whose, the files the
+step had read, what the ignore rules held back — since the card is the only
+place the notice is drawn while it is closed. The line is a footer row of its
+own, wrapped rather than cut, under any evidence the step has, so the verdict
+stays where the step's evidence puts it rather than right of the note.
+Open, the card draws the notice itself among its calls and the footer goes
+with the rest of the footer.
+
+## A returned picture is a stop of its own
+
+The catalogue says the picture row opens like an attachment and leaves open
+how a cursor reaches a row inside a card whose enter walks its depths. The
+binary makes the row a reading-mode stop of its own beside the card's header:
+enter on it, or a click, opens the attachment card; enter on the header still
+walks the card. The card opens it with no `sent with turn` line, since nobody
+sent it, and on a narrow pane the right-hand words go first and then the
+picture's facts, never its name.
+
 ## A foreign colour arrives as a token and a foreign ground does not arrive
 
 *A gap.* No artboard draws a detail body a program painted itself. What the

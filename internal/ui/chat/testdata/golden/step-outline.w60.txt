@@ -134,21 +134,35 @@
                                                       
 
 
-· row by row · a think row mid-step (the card closed over the calls after it too)
+· row by row · a thought mid-step (the card ends at it, the calls after it a card of their own)
 ❯ fix the round limit
 ──────────────────────────────────────────────────────
 
                                                       
-  ⠋ read 2 files · searched once                      
+  ⚙ read internal/agent/loop.go                       
     Locate the round accounting                       
                                                       
 
+    The cap is counted in the loop, so the sentinel
+    has to come from there.
 
-· row by row · a think row mid-step, folded (the thought folds with the card)
+                                                      
+  ⠋ read internal/agent/round.go · searched once      
+                                                      
+
+
+· row by row · a thought mid-step, the first card folded (the thought stays)
 ❯ fix the round limit
 ──────────────────────────────────────────────────────
 
-▸ ⠋ read 2 files · searched once                      
+▸ ⚙ read internal/agent/loop.go                       
+
+    The cap is counted in the loop, so the sentinel
+    has to come from there.
+
+                                                      
+  ⠋ read internal/agent/round.go · searched once      
+                                                      
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -276,19 +290,33 @@
 ␛[48;5;234m                                                      ␛[m
 
 
-· row by row · a think row mid-step (the card closed over the calls after it too)
+· row by row · a thought mid-step (the card ends at it, the calls after it a card of their own)
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m  ␛[38;5;205m⠋␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 2 files · searched once␛[m␛[48;5;234m                      ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m                       ␛[m
 ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                       ␛[m
 ␛[48;5;234m                                                      ␛[m
 
+    ␛[3;38;5;245mThe cap is counted in the loop, so the sentinel␛[m
+    ␛[3;38;5;245mhas to come from there.␛[m
 
-· row by row · a think row mid-step, folded (the thought folds with the card)
+␛[48;5;234m                                                      ␛[m
+␛[48;5;234m  ␛[38;5;205m⠋␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/round.go␛[m␛[48;5;234m␛[38;5;241m · searched once␛[m␛[48;5;234m      ␛[m
+␛[48;5;234m                                                      ␛[m
+
+
+· row by row · a thought mid-step, the first card folded (the thought stays)
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-␛[48;5;234m␛[38;5;241m▸␛[m␛[48;5;234m ␛[38;5;205m⠋␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 2 files · searched once␛[m␛[48;5;234m                      ␛[m
+␛[48;5;234m␛[38;5;241m▸␛[m␛[48;5;234m ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m                       ␛[m
+
+    ␛[3;38;5;245mThe cap is counted in the loop, so the sentinel␛[m
+    ␛[3;38;5;245mhas to come from there.␛[m
+
+␛[48;5;234m                                                      ␛[m
+␛[48;5;234m  ␛[38;5;205m⠋␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/round.go␛[m␛[48;5;234m␛[38;5;241m · searched once␛[m␛[48;5;234m      ␛[m
+␛[48;5;234m                                                      ␛[m
 

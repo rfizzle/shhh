@@ -433,9 +433,9 @@ const (
 	// renders instead of their separate rows. It holds only the
 	// batch number — the lanes are read off the supervisor every render.
 	entryFanout
-	// entryThink: the reasoning a round did, folded into one activity row
-	// (think.go). It holds the readable text; the blocks the next
-	// request replays are the agent's, not this row's.
+	// entryThink: the reasoning a round did, drawn as dimmer prose on bare
+	// screen (think.go). It holds the readable text; the blocks the next
+	// request replays are the agent's, not this entry's.
 	entryThink
 	// entrySummary: a session reading, folded into one activity row
 	// (summary.go). The rail draws the latest reading bounded to three lines;
@@ -470,6 +470,12 @@ const (
 	// reader's words would stand, saying what it asks again (failure.go).
 	// The model it names, where the retry is on another one, is failModel.
 	entryRetry
+	// entryPicture: a picture a call's result carried, filed straight after
+	// the call's row (card.go). An entry of its own rather than a field of
+	// the call's, because it is a stop for reading mode's cursor and a
+	// target for a click, and both of those name an entry; the card draws
+	// it as a footer row.
+	entryPicture
 )
 
 // entry is one transcript item, stored raw so the history can be re-rendered
@@ -645,10 +651,12 @@ type entry struct {
 	// this entry is the first of (cardopen.go): kept on the call the group
 	// starts at, as a card's fold is kept on the entry it starts at.
 	groupFolded bool
-	// thinkDepth is how much of an entryThink row's body is on screen — the
-	// reader's own answer to [enter], recorded on the entry so the row
-	// re-renders at any width like every other one.
-	thinkDepth thinkDepth
+	// picture is the image an entryPicture stands for: what a call's result
+	// carried beside its text (card.go).
+	picture *provider.Attachment
+	// tree marks the notice of the tree having moved, with what it counted,
+	// so a card it landed in can say so in its footer (card.go).
+	tree *treeMove
 	// reading is the session summary behind an entrySummary row (summary.go):
 	// the verdict as it landed, plus the target it was judged against. Both
 	// are stored rather than read back off the model, because the target is
@@ -668,11 +676,6 @@ type entry struct {
 	// are the record of how it got there, so they keep their first line and
 	// fold the rest. False on every checkpoint until the next one lands.
 	checkpointReplaced bool
-	// thinkStreaming says the reasoning is still being written, which is what
-	// spins the row. It is on the entry rather than on the Model for
-	// the reason a pending tool result is: what a row is doing is part of the
-	// row, and the render stays a function of the entry alone.
-	thinkStreaming bool
 	// elided marks a tool or command row the window trim has taken the body
 	// of (context.go): toolResult is the placeholder the model was left
 	// with, and this is what the row still says about what was there and

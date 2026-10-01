@@ -1,5 +1,5 @@
 # golden:  density-normal.w80
-# surface: the think row and the feed at one rung
+# surface: thinking and the feed at one rung
 # width:   80 columns
 # palette: color
 # cursor:  none
@@ -15,13 +15,24 @@
 ──────────────────────────────────────────────────────────────────────────
 
                                                                           
-  ⚙ read 2 files in internal/agent/ · searched ErrRoundLimit        0.9s  
+  ⚙ read internal/agent/loop.go                                           
     Locate the round accounting                                           
                                                                           
 
+    The cap is counted in the loop, so the sentinel has to come from
+    there.
+
+                                                                          
+  ⚙ read internal/agent/round.go · searched ErrRoundLimit           0.5s  
+                                                                          
+
+  Thread the sentinel through the loop
+
+    One return path, then the test.
+    The test names the sentinel directly.
+
                                                                           
  ▎✗ wrote internal/agent/loop.go · ran 1 command                  exit 1  
-    Thread the sentinel through the loop                                  
     --- FAIL: TestRoundLimit                                      1 line  
                                                                           
 
@@ -32,13 +43,24 @@
 ␛[38;5;243m──────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 2 files in internal/agent/ · searched ErrRoundLimit␛[m␛[48;5;234m        ␛[38;5;241m0.9s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m                                           ␛[m
 ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                                           ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
+    ␛[3;38;5;245mThe cap is counted in the loop, so the sentinel has to come from␛[m
+    ␛[3;38;5;245mthere.␛[m
+
+␛[48;5;234m                                                                          ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/round.go␛[m␛[48;5;234m␛[38;5;241m · searched ErrRoundLimit␛[m␛[48;5;234m           ␛[38;5;241m0.5s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                                          ␛[m
+
+  ␛[38;5;252mThread the sentinel through the loop␛[m
+
+    ␛[3;38;5;245mOne return path, then the test.␛[m
+    ␛[3;38;5;245mThe test names the sentinel directly.␛[m
+
 ␛[48;5;234m                                                                          ␛[m
 ␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m␛[38;5;241m · ran 1 command␛[m␛[48;5;234m                  ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[38;5;252mThread the sentinel through the loop␛[m␛[48;5;234m                                  ␛[m
 ␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                                      ␛[38;5;241m1 line␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 

@@ -567,14 +567,14 @@ func TestFanoutBlockedFloatsTheWholeGroup(t *testing.T) {
 }
 
 // A settled lane folds the child's own report under it, in the transcript's
-// own fold grammar and behind the transcript's own key: what the person acts
-// on is the child's words, not the first line of them.
+// own fold grammar, printing no key — the hint bar names enter: what the
+// person acts on is the child's words, not the first line of them.
 func TestFanoutSettledLaneFoldsItsReport(t *testing.T) {
 	report := []string{"Counted the rounds.", "", "The counter is read once."}
 	shut := FanoutLane{State: FanoutDone, Name: "reader-1", Summary: "Counted the rounds.",
 		Report: report}
 	view := ansi.Strip(shut.View(110))
-	if !strings.Contains(view, "▸ report · 3 lines · [enter] expand") {
+	if !strings.Contains(view, "▸ report · 3 lines") || strings.Contains(view, "[enter]") {
 		t.Fatalf("a settled lane should offer its report as a fold: %q", view)
 	}
 	if strings.Contains(view, "The counter is read once.") {

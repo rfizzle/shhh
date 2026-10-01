@@ -22,19 +22,19 @@
     --- FAIL: TestRoundLimit                  1 line  
                                                       
 
-  The objective is one home for the round limit. The
-  evidence is the failure above, which reads the
-  constant from the loop and not from the caller. Next
-    … 1 more line
+    The objective is one home for the round limit. The
+    evidence is the failure above, which reads the
+    constant from the loop and not from the caller.
+      … 2 more lines
 
-  Check-in — 36 rounds used. Taking stock, then
-  carrying on.
-  Steered — the reading says the edits have moved
-  outside the round loop. Say what you meant if that
-  is wrong.
+  · Check-in — 36 rounds used. Taking stock, then
+    carrying on.
+  · Steered — the reading says the edits have moved
+    outside the round loop. Say what you meant if that
+    is wrong.
     [u] take the steer back · [ctrl+o] to use them
-  tree moved — 14 paths changed outside this session ·
-  5,811 ignored
+  · tree moved — 14 paths changed outside this
+    session · 5,811 ignored
   ✗ the notebook is read-only, so nothing was written
   down
   ≡ The constant has one home and the      on target
@@ -50,18 +50,18 @@
 · the whole surface · the same edge in the pane it sits in
    shhh chat · gpt-4o                                       
   ────────────────────────────────────────────────────────  
-    evidence is the failure above, which reads the          
-    constant from the loop and not from the caller. Next    
-      … 1 more line                                         
+      evidence is the failure above, which reads the        
+      constant from the loop and not from the caller.       
+        … 2 more lines                                      
                                                             
-    Check-in — 36 rounds used. Taking stock, then           
-    carrying on.                                            
-    Steered — the reading says the edits have moved         
-    outside the round loop. Say what you meant if that      
-    is wrong.                                           ┃   
+    · Check-in — 36 rounds used. Taking stock, then         
+      carrying on.                                          
+    · Steered — the reading says the edits have moved       
+      outside the round loop. Say what you meant if that    
+      is wrong.                                         ┃   
       [u] take the steer back · [ctrl+o] to use them    ┃   
-    tree moved — 14 paths changed outside this session ·┃   
-    5,811 ignored                                       ┃   
+    · tree moved — 14 paths changed outside this        ┃   
+      session · 5,811 ignored                           ┃   
     ✗ the notebook is read-only, so nothing was written ┃   
     down                                                ┃   
     ≡ The constant has one home and the      on target  ┃   
@@ -91,19 +91,19 @@
     --- FAIL: TestRoundLimit                  1 line  
                                                       
 
-  The objective is one home for the round limit. The
-  evidence is the failure above, which reads the
-  constant from the loop and not from the caller. Next
-    … 1 more line
+    The objective is one home for the round limit. The
+    evidence is the failure above, which reads the
+    constant from the loop and not from the caller.
+      … 2 more lines
 
-  Check-in — 36 rounds used. Taking stock, then
-  carrying on.
-  Steered — the reading says the edits have moved
-  outside the round loop. Say what you meant if that
-  is wrong.
+  · Check-in — 36 rounds used. Taking stock, then
+    carrying on.
+  · Steered — the reading says the edits have moved
+    outside the round loop. Say what you meant if that
+    is wrong.
     [u] take the steer back
-  tree moved — 14 paths changed outside this session ·
-  5,811 ignored
+  · tree moved — 14 paths changed outside this
+    session · 5,811 ignored
   ✗ the notebook is read-only, so nothing was written
   down
   ≡ The constant has one home and the      on target
@@ -127,19 +127,19 @@
 ␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                  ␛[38;5;241m1 line␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
 
-  ␛[3;38;5;245mThe objective is one home for the round limit. The␛[m
-  ␛[3;38;5;245mevidence is the failure above, which reads the␛[m
-  ␛[3;38;5;245mconstant from the loop and not from the caller. Next␛[m
-    ␛[38;5;241m… 1 more line␛[m
+    ␛[3;38;5;245mThe objective is one home for the round limit. The␛[m
+    ␛[3;38;5;245mevidence is the failure above, which reads the␛[m
+    ␛[3;38;5;245mconstant from the loop and not from the caller.␛[m
+      ␛[38;5;241m… 2 more lines␛[m
 
-  ␛[38;5;241mCheck-in — 36 rounds used. Taking stock, then␛[m
-  ␛[38;5;241mcarrying on.␛[m
-  ␛[38;5;241mSteered — the reading says the edits have moved␛[m
-  ␛[38;5;241moutside the round loop. Say what you meant if that␛[m
-  ␛[38;5;241mis wrong.␛[m
+  ␛[38;5;241m·␛[m ␛[38;5;241mCheck-in — 36 rounds used. Taking stock, then␛[m
+    ␛[38;5;241mcarrying on.␛[m
+  ␛[38;5;241m·␛[m ␛[38;5;241mSteered — the reading says the edits have moved␛[m
+    ␛[38;5;241moutside the round loop. Say what you meant if that␛[m
+    ␛[38;5;241mis wrong.␛[m
     ␛[38;5;245m[u]␛[m␛[38;5;241m take the steer back␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
-  ␛[38;5;241mtree moved — 14 paths changed outside this session ·␛[m
-  ␛[38;5;241m5,811 ignored␛[m
+  ␛[38;5;241m·␛[m ␛[38;5;241mtree moved — 14 paths changed outside this␛[m
+    ␛[38;5;241msession · 5,811 ignored␛[m
   ␛[91m✗ the notebook is read-only, so nothing was written␛[m
   ␛[91mdown␛[m
   ␛[38;5;241m≡␛[m ␛[3;38;5;245mThe constant has one home and the␛[m      ␛[38;5;241mon target␛[m
@@ -155,18 +155,18 @@
 · the whole surface · the same edge in the pane it sits in
   ␛[97;1m shhh chat␛[38;5;241;22m · gpt-4o␛[m                                       
   ␛[38;5;241m────────────────────────────────────────────────────────␛[m  
-    ␛[38;5;245;3mevidence is the failure above, which reads the␛[m          
-    ␛[38;5;245;3mconstant from the loop and not from the caller. Next␛[m    
-      ␛[38;5;241m… 1 more line␛[m                                         
+      ␛[38;5;245;3mevidence is the failure above, which reads the␛[m        
+      ␛[38;5;245;3mconstant from the loop and not from the caller.␛[m       
+        ␛[38;5;241m… 2 more lines␛[m                                      
                                                             
-    ␛[38;5;241mCheck-in — 36 rounds used. Taking stock, then␛[m           
-    ␛[38;5;241mcarrying on.␛[m                                            
-    ␛[38;5;241mSteered — the reading says the edits have moved␛[m         
-    ␛[38;5;241moutside the round loop. Say what you meant if that␛[m      
-    ␛[38;5;241mis wrong.␛[m                                           ␛[38;5;241m┃␛[m   
+    ␛[38;5;241m·␛[m ␛[38;5;241mCheck-in — 36 rounds used. Taking stock, then␛[m         
+      ␛[38;5;241mcarrying on.␛[m                                          
+    ␛[38;5;241m·␛[m ␛[38;5;241mSteered — the reading says the edits have moved␛[m       
+      ␛[38;5;241moutside the round loop. Say what you meant if that␛[m    
+      ␛[38;5;241mis wrong.␛[m                                         ␛[38;5;241m┃␛[m   
       ␛[38;5;245m[u]␛[38;5;241m take the steer back · ␛[38;5;103m[ctrl+o]␛[38;5;252m to use them␛[m    ␛[38;5;241m┃␛[m   
-    ␛[38;5;241mtree moved — 14 paths changed outside this session ·┃␛[m   
-    ␛[38;5;241m5,811 ignored␛[m                                       ␛[38;5;241m┃␛[m   
+    ␛[38;5;241m·␛[m ␛[38;5;241mtree moved — 14 paths changed outside this␛[m        ␛[38;5;241m┃␛[m   
+      ␛[38;5;241msession · 5,811 ignored␛[m                           ␛[38;5;241m┃␛[m   
     ␛[91m✗ the notebook is read-only, so nothing was written␛[m ␛[38;5;241m┃␛[m   
     ␛[91mdown␛[m                                                ␛[38;5;241m┃␛[m   
     ␛[38;5;241m≡␛[m ␛[38;5;245;3mThe constant has one home and the␛[m      ␛[38;5;241mon target␛[m  ␛[38;5;241m┃␛[m   
@@ -196,19 +196,19 @@
 ␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                  ␛[38;5;241m1 line␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
 
-  ␛[3;38;5;245mThe objective is one home for the round limit. The␛[m
-  ␛[3;38;5;245mevidence is the failure above, which reads the␛[m
-  ␛[3;38;5;245mconstant from the loop and not from the caller. Next␛[m
-    ␛[38;5;241m… 1 more line␛[m
+    ␛[3;38;5;245mThe objective is one home for the round limit. The␛[m
+    ␛[3;38;5;245mevidence is the failure above, which reads the␛[m
+    ␛[3;38;5;245mconstant from the loop and not from the caller.␛[m
+      ␛[38;5;241m… 2 more lines␛[m
 
-  ␛[38;5;241mCheck-in — 36 rounds used. Taking stock, then␛[m
-  ␛[38;5;241mcarrying on.␛[m
-  ␛[38;5;241mSteered — the reading says the edits have moved␛[m
-  ␛[38;5;241moutside the round loop. Say what you meant if that␛[m
-  ␛[38;5;241mis wrong.␛[m
+  ␛[38;5;241m·␛[m ␛[38;5;241mCheck-in — 36 rounds used. Taking stock, then␛[m
+    ␛[38;5;241mcarrying on.␛[m
+  ␛[38;5;241m·␛[m ␛[38;5;241mSteered — the reading says the edits have moved␛[m
+    ␛[38;5;241moutside the round loop. Say what you meant if that␛[m
+    ␛[38;5;241mis wrong.␛[m
     ␛[38;5;245m[u]␛[m␛[38;5;241m take the steer back␛[m
-  ␛[38;5;241mtree moved — 14 paths changed outside this session ·␛[m
-  ␛[38;5;241m5,811 ignored␛[m
+  ␛[38;5;241m·␛[m ␛[38;5;241mtree moved — 14 paths changed outside this␛[m
+    ␛[38;5;241msession · 5,811 ignored␛[m
   ␛[91m✗ the notebook is read-only, so nothing was written␛[m
   ␛[91mdown␛[m
   ␛[38;5;241m≡␛[m ␛[3;38;5;245mThe constant has one home and the␛[m      ␛[38;5;241mon target␛[m

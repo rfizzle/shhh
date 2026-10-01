@@ -25,7 +25,7 @@ setup echo 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAICAIAAAB/FOjAAAAAHElEQVR4nGJhYGgQYGAg
 setup printf '%s' "$PWD/shot.png" > drag.txt
 snap 01-start "Some things worth doing first"
 keys "/paste shot.png" Enter
-snap 02-staged "reaches it to look or drop" "attached Image#1 (shot.png" "▣ Image#1 shot.png"
+snap 02-staged "reaches it to look or" "attached Image#1 (shot.png" "▣ Image#1 shot.png"
 keys "this is the error I"
 keys C-o
 keys j

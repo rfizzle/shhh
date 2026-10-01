@@ -88,9 +88,12 @@ const (
 )
 
 // checkpointBlock draws a public status: the model's own words at the rung a
-// body under a row is drawn at, on the content column every other entry
-// starts on (docs/interface/surfaces.md#the-leading-columns), bounded and
-// counted (docs/interface/principles.md#fold-never-hide).
+// body under a row is drawn at, on the body column a card's sentence and the
+// model's thinking start on — flat prose on bare screen, a rung under the
+// answer (docs/interface/surfaces.md#the-progress-checkpoint) — bounded and
+// counted (docs/interface/principles.md#fold-never-hide). The answer keeps
+// the content column; this, like thinking, is a rung under it.
+// See docs/interface/departures.md#thinking-and-the-checkpoint-take-the-body-column-the-answer-keeps-its-own.
 //
 // It is not the markdown render an answer gets. A checkpoint is a few
 // sentences of prose by construction, and passing it through the document
@@ -114,16 +117,17 @@ func (m Model) checkpointBlock(e entry, width int) string {
 		}
 		shown = body[:min(bound, len(body))]
 	}
-	inner := max(width-components.GridPointerWidth, 1)
+	inner := max(width-components.GridDetailIndent, 1)
+	indent := strings.Repeat(" ", components.GridDetailIndent)
 	lines := make([]string, 0, len(shown)+1)
 	for _, l := range shown {
-		lines = append(lines, marginLine(sty.Checkpoint, l, inner, width))
+		lines = append(lines, components.Clip(indent+sty.Checkpoint.Render(components.Clip(l, inner)), width))
 	}
 	if more := len(body) - len(shown); more > 0 {
-		// The foot every bounded body in the transcript carries, in the
-		// columns a detail body starts in: reading mode's [enter] on the row
-		// is how the rest is reached, the way it is on a tool result.
-		lines = append(lines, components.Clip(strings.Repeat(" ", components.GridDetailIndent)+
+		// The foot every bounded body in the transcript carries, a step in
+		// from the words it bounds: reading mode's [enter] on the note is
+		// how the rest is reached, the way it is on a tool result.
+		lines = append(lines, components.Clip(indent+"  "+
 			sty.SystemMsg.Render("… "+plural(more, "more line")), width))
 	}
 	return strings.Join(lines, "\n")
@@ -137,7 +141,7 @@ func (m Model) checkpointLines(text string, width int) []string {
 	if text == "" {
 		return nil
 	}
-	inner := max(width-components.GridPointerWidth, 1)
+	inner := max(width-components.GridDetailIndent, 1)
 	return strings.Split(strings.TrimRight(m.wordWrap(text, inner), "\n"), "\n")
 }
 

@@ -213,9 +213,6 @@ func (m *Model) finishStreaming() {
 	// Whatever repaint the arriving message still owed, it does not owe it any
 	// more: the message is about to be an entry like every other.
 	m.streamDirty = false
-	// The round's think row stops spinning here however the stream ended —
-	// finished, cancelled, or abandoned (think.go).
-	m.settleThink()
 	if m.compacting {
 		// A cancelled compaction discards the partial summary and keeps the
 		// conversation unchanged (the success path goes through

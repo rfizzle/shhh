@@ -359,7 +359,7 @@ const (
 )
 
 // toggleRow opens or closes whatever structure the row at idx is — a card's
-// fold, a think row's three depths, a diff's three modes, an output body's
+// fold, a diff's three modes, an output body's
 // — and reports whether it
 // was one of those at all. output reports that the row wants the full screen
 // (outputview.go), and full says the same for a diff.
@@ -384,20 +384,6 @@ func (m *Model) toggleRow(idx int, g rowGesture) (claimed bool, full *components
 		// A click folds a card to its header and unfolds it again, wherever
 		// on it the press landed: it is one target, and the same cell
 		// pressed twice is where it started.
-		return true, nil, false
-	}
-	if es[idx].kind == entryThink {
-		// A think row cycles its three depths the way a diff cycles its three
-		// modes (think.go), and for the same reason: the middle one is what a
-		// glance wants and the whole block is what a read does. All three are
-		// in place, so there is no deeper surface for a body click to open —
-		// the thought is prose, and prose under the pointer is read rather
-		// than pressed. The cycle wraps, so the row line alone still reaches
-		// every depth and closes it again.
-		if g == gestureBody {
-			return true, nil, false
-		}
-		m.cycleThink(idx)
 		return true, nil, false
 	}
 	if d := es[idx].diff; d != nil {

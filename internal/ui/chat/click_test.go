@@ -559,10 +559,9 @@ func TestClick_TheDiffBodyOpensFullScreen(t *testing.T) {
 	}
 }
 
-// The think row's three depths are all in place, so there is no deeper
-// surface a body click could open — and the cycle wraps, so the row line
-// alone still reaches every depth and closes it again.
-func TestClick_TheThinkRowCyclesFromItsRowLine(t *testing.T) {
+// Thinking is prose that never folds, so a click on it is a click on words:
+// it reads rather than presses, and the passage is drawn the same after it.
+func TestClick_ThinkingIsReadNotPressed(t *testing.T) {
 	m := focusModel(t)
 	m.appendEntry(entry{kind: entryThink, text: "the cap is a checkpoint, not a wall"})
 	m = m.WithMouse(true)
@@ -570,17 +569,12 @@ func TestClick_TheThinkRowCyclesFromItsRowLine(t *testing.T) {
 	m.viewport.GotoTop()
 	m.atBottom = false
 
-	line := lineOf(t, m, "✻ think")
-	x, y := at(t, m, line, 0)
-	depths := map[thinkDepth]bool{}
-	for range 3 {
-		m = click(t, m, x, y)
-		depths[m.thinkDepthOf((*m.entries())[3])] = true
-		line = lineOf(t, m, "✻ think")
-		x, y = at(t, m, line, 0)
-	}
-	if !depths[thinkClosed] {
-		t.Fatalf("the cycle should come back round to closed, saw %v", depths)
+	before := stripANSI(m.renderHistory())
+	line := lineOf(t, m, "the cap is a checkpoint")
+	x, y := at(t, m, line, 4)
+	m = click(t, m, x, y)
+	if after := stripANSI(m.renderHistory()); after != before {
+		t.Fatalf("a click on a thought changes nothing:\n%s", after)
 	}
 }
 

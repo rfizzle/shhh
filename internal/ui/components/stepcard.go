@@ -109,6 +109,11 @@ type StepCard struct {
 	Keys string
 	// Strip is every call in order, which ends the footer of a large step.
 	Strip []StripCell
+	// Rows are footer rows the host drew under the evidence line, already on
+	// the band: a picture a call returned (CardPictureRow), a notice that
+	// landed mid-step (CardNoteRow). A card drawn as its header alone or
+	// open onto its calls draws none, as it draws no footer.
+	Rows []string
 	// Calls are the open card's rows, already drawn at the pane's width.
 	// They stand where the footer stood, on the band.
 	Calls []string
@@ -156,8 +161,65 @@ func (c StepCard) View(width int) string {
 		if f, ok := c.footer(width); ok {
 			lines = append(lines, f)
 		}
+		for _, r := range c.Rows {
+			lines = append(lines, strings.Split(strings.TrimRight(r, "\n"), "\n")...)
+		}
 	}
 	lines = append(lines, cardPad(width))
+	return strings.Join(lines, "\n")
+}
+
+// CardPictureRow is a picture a step's call returned, as a footer row of its
+// card: the picture mark, the file's name, its facts, and on the right that
+// it opens the way an attachment the reader sent does — on the attachment
+// card (docs/interface/surfaces.md#the-step). The facts give way to the name
+// on a narrow pane, and the right-hand words before either.
+type CardPictureRow struct {
+	Name string
+	// Facts are the picture's size and dimensions, `1440×900 · 212 KB`.
+	Facts string
+	// Selected puts the reading cursor on the row.
+	Selected bool
+}
+
+// cardPictureOpens is what the row says on its right: not a key — the hint
+// bar names enter — but what pressing it will do.
+const cardPictureOpens = "opens like an attachment"
+
+// View draws the row at the pane's width.
+func (p CardPictureRow) View(width int) string {
+	inner := max(width-cardMargin-CardBodyIndent, 1)
+	mark := sty.Dim.Render(ChipImage.mark())
+	said := Clip(p.Name, max(inner-2, 1))
+	facts := ""
+	if p.Facts != "" && lipgloss.Width(said)+2+3+lipgloss.Width(p.Facts) <= inner {
+		facts = sty.Dim.Render(" · " + p.Facts)
+	}
+	left := mark + " " + sty.Dimmer.Render(said) + facts
+	right := ""
+	if lipgloss.Width(left)+closeMinNoteGap+lipgloss.Width(cardPictureOpens) <= inner {
+		right = sty.Dim.Render(cardPictureOpens)
+	}
+	gap := max(inner-lipgloss.Width(left)-lipgloss.Width(right), 1)
+	line := strings.Repeat(" ", CardBodyIndent) + left + strings.Repeat(" ", gap) + right
+	if p.Selected {
+		return cardLit(line, CardBodyIndent, width)
+	}
+	return onBand(Clip(line, width), width)
+}
+
+// CardNoteRow is a line the session wrote about the step rather than one of
+// the step's own — the tree moving under it — as a dim footer row of the
+// card it landed in. It wraps rather than clips: it is the only place the
+// card says what moved, and a fact cut off the edge is a fact hidden
+// (docs/interface/principles.md#fold-never-hide).
+func CardNoteRow(text string, width int) string {
+	inner := max(width-cardMargin-CardBodyIndent, 1)
+	var lines []string
+	for _, l := range strings.Split(lipgloss.Wrap(text, inner, ""), "\n") {
+		lines = append(lines, onBand(strings.Repeat(" ", CardBodyIndent)+
+			sty.Dimmer.Render(Clip(strings.TrimRight(l, " "), inner)), width))
+	}
 	return strings.Join(lines, "\n")
 }
 

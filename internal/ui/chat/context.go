@@ -13,7 +13,6 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -21,7 +20,6 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // DefaultContextWindow is the floor: the context size (in tokens) assumed for
@@ -893,56 +891,39 @@ func (m Model) compactFloor(turns compactTurns, was, now int) string {
 		" — none of it foldable"
 }
 
-// compactVerb is the receipt row's verb, out of the same closed vocabulary
-// every other row's verb comes from.
+// compactVerb is the receipt's verb where it reports a compaction that could
+// fold nothing, out of the same closed vocabulary every row's verb comes from.
 const compactVerb = "compact"
 
-// compactRowFor is the receipt as an activity row: the act the session took
-// on its own conversation, in the seven fields every other act is stated in
-// (docs/interface/surfaces.md#the-activity-row). It carries no kind glyph,
-// because a compaction is not a call — the column says how it came out
-// instead — and no mutation rail, because nothing on the machine was touched.
-func compactRowFor(r compactReceipt, word string) components.ActivityRow {
-	row := components.ActivityRow{
-		Kind:     components.ActivityCompaction,
-		Verb:     compactVerb,
-		Duration: activityDuration(r.duration),
-	}
-	if r.floor != "" {
-		// The whole of what happened goes in the one field that clips: the
-		// figure first, because that is the part a narrow pane has to keep,
-		// and the explanation behind it.
-		row.State, row.Target = components.ActivityFailed, r.floor
-		return row
-	}
-	row.Target = "folded " + turnsPhrase(r.first, r.last)
-	row.Allowed = r.account(word)
-	return row
-}
-
-// compactBlock draws the receipt: the act as a row, the fold line that counts
-// what it holds, and — while the fold is open — the summary the model wrote
-// in place of the turns.
+// compactBlock draws the receipt: one notice saying what the compaction did
+// — which turns went, what stands in for them, where the window stood either
+// side — and, while it is open, the summary the model wrote in place of the
+// turns. A compaction happened to the session rather than in it, so it is a
+// notice and not a card (docs/interface/surfaces.md#the-compaction-receipt);
+// the line states what it holds, and the hint bar names enter, so it prints
+// no key of its own
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // One block rather than three entries, because it is one act and reading mode
-// puts one cursor on it: [enter] on the row folds the summary away and gives
+// puts one cursor on it: [enter] on the line folds the summary away and gives
 // it back, the way [enter] folds every other body on the transcript.
 func (m Model) compactBlock(e entry, width int) string {
 	r := e.compact
 	if r == nil {
 		// A summary with no receipt behind it came out of a record written
 		// before receipts were rows. It keeps the quoted paragraph it always
-		// had rather than a row invented for it.
+		// had rather than a line invented for it.
 		return m.compactSummaryBlock(e, width)
 	}
-	lines := []string{compactRowFor(*r, m.contextWord()).View(width)}
 	if r.floor != "" {
-		// Nothing was folded, so there is nothing to fold back: the row is
-		// the whole of the receipt.
-		return strings.Join(lines, "\n")
+		// Nothing was folded, so there is nothing to fold back: the line is
+		// the whole of the receipt, and it is a break, because the act was
+		// asked to recover a window and did not.
+		return components.NoticeLine{Mark: "✗", Text: joinNonEmpty(compactVerb+" "+r.floor,
+			activityDuration(r.duration))}.View(width)
 	}
 	body := m.compactSummaryLines(e.text, width)
-	lines = append(lines, m.compactFoldLine(*r, len(body), e.expanded, width))
+	lines := []string{components.NoticeLine{Text: compactNotice(*r, len(body), m.contextWord())}.View(width)}
 	if !e.expanded {
 		return strings.Join(lines, "\n")
 	}
@@ -977,47 +958,23 @@ func (m Model) compactSummaryLines(text string, width int) []string {
 	return strings.Split(m.wordWrap(text, inner), "\n")
 }
 
-// compactFoldLine is the line under the receipt: which turns are behind it,
-// what they were holding, what stands in for them now, and the key that
-// closes it again. It sits on the grid a field short, the way the folded run
-// of read-only calls does — the fold mark takes the glyph column and what was
-// swallowed starts in the verb column — so the two fold rows line up
-// (docs/interface/principles.md#fold-never-hide).
-func (m Model) compactFoldLine(r compactReceipt, summaryLines int, open bool, width int) string {
-	mark, label := "▸", "read the summary"
-	if open {
-		mark, label = "▾", "fold it back up"
+// compactNotice is what the receipt's line says: which turns went and what
+// stands in for them, what they were holding, where the window stood either
+// side and what the summary cost, and how long it took. The size is what a
+// reader prices opening it by, so it is stated in lines.
+func compactNotice(r compactReceipt, summaryLines int, word string) string {
+	said := "compacted " + turnsPhrase(r.first, r.last)
+	if summaryLines > 0 {
+		said += " into " + summaryLength(summaryLines)
 	}
-	// Which turns, and that they were compacted: the fold's own identity, and
-	// the one part of the line that is never given up.
-	const sep = " · "
-	held := mark + " " + turnsPhrase(r.first, r.last) + sep + "compacted"
-	// What they were holding and what stands in for it. This is the clause
-	// that goes when the pane is tight — the turn range above already says
-	// what the fold swallowed, and a size cut down to `a 7-line su…` says
-	// less than no size at all (guidelines/layout-breakpoints: the word goes
-	// rather than being cut down).
 	var size string
-	if r.tokens > 0 && summaryLines > 0 {
-		size = sep + formatWindowSize(r.tokens) + " tokens → " + summaryLength(summaryLines)
+	if r.tokens > 0 {
+		size = formatWindowSize(r.tokens) + " tokens"
 	}
-	key := keys.Bracket(keys.Reading.Expand) + " " + label
-	lead := strings.Repeat(" ", components.GridVerbColumn-2)
-	room := width - lipgloss.Width(lead)
-	// Widest first: everything, then without the size, then without the offer
-	// as well. The size is what goes, because the turn range in front of it
-	// is already what the fold swallowed and this is only how big it was; the
-	// offer stays, because a fold row that does not say how to open it is a
-	// row the reader has to guess at.
-	for _, dim := range []string{held + size, held} {
-		if lipgloss.Width(dim)+lipgloss.Width(sep+key) <= room {
-			return lead + sty.SystemMsg.Render(dim+sep) + sty.Hint.Key.Render(key)
-		}
-	}
-	return components.Clip(lead+sty.SystemMsg.Render(held), width)
+	return joinNonEmpty(said, size, r.account(word), activityDuration(r.duration))
 }
 
-// summaryLength is what the fold line says stands in for the turns: a
+// summaryLength is what the receipt says stands in for the turns: a
 // paragraph the reader can price in lines before they open it.
 func summaryLength(n int) string {
 	if n == 1 {

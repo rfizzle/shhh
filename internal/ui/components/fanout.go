@@ -707,10 +707,10 @@ func (l FanoutLane) View(width int) string {
 
 // reportFold is the child's own words under a settled lane: the row that says
 // how much there is of them, and the report itself once the reader has opened
-// it. It is the transcript's own fold grammar and its own key — `▸ report · 14
-// lines · [enter] expand` — because a reader who has learned how a paste or a
-// run of calls opens has learned this
-// (docs/interface/principles.md#fold-never-hide).
+// it. It is the transcript's own fold grammar — `▸ report · 14 lines` — and
+// prints no key, because the hint bar names what enter does under the cursor
+// (docs/interface/principles.md#fold-never-hide,
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // It is here and not on the manager's row or the rail's for the same reason
 // the summary line is: the transcript is where a turn is read afterwards, and
@@ -720,11 +720,11 @@ func (l FanoutLane) reportFold(width int) []string {
 	if !l.State.settled() || len(l.Report) == 0 {
 		return nil
 	}
-	mark, key := "▸", keys.Bracket(keys.Reading.Expand)+" "+keys.Words(keys.Reading.Expand)
+	mark := "▸"
 	if l.ReportOpen {
-		mark, key = "▾", keys.Bracket(keys.Reading.Expand)+" fold it back up"
+		mark = "▾"
 	}
-	head := mark + " report" + detailSep + plural(len(l.Report), "line") + detailSep
+	head := mark + " report" + detailSep + plural(len(l.Report), "line")
 	var lines []string
 	for _, r := range l.Earlier {
 		// Folded, and only folded: the answer the reader acts on is the one
@@ -733,8 +733,7 @@ func (l FanoutLane) reportFold(width int) []string {
 			fmt.Sprintf("▸ turn %d report%s%s", r.Turn, detailSep, plural(len(r.Lines), "line")),
 			max(width-detailIndent, 1))))
 	}
-	lines = append(lines, strings.Repeat(" ", detailIndent)+
-		sty.Dimmer.Render(head)+sty.Hint.Render(key))
+	lines = append(lines, strings.Repeat(" ", detailIndent)+sty.Dimmer.Render(head))
 	if !l.ReportOpen {
 		return lines
 	}

@@ -362,10 +362,11 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 			}
 			for _, tc := range msg.ToolCalls {
 				var result string
+				var atts []provider.Attachment
 				if i+1 < len(msgs) {
 					for _, next := range msgs[i+1:] {
 						if next.Role == provider.RoleTool && next.ToolCallID == tc.ID {
-							result = next.Content
+							result, atts = next.Content, next.Attachments
 							break
 						}
 						if next.Role != provider.RoleTool {
@@ -374,6 +375,7 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 					}
 				}
 				m.appendEntry(entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: result})
+				m.appendPicture("", m.callReceipt(tc.Name, tc.Arguments, result, atts...))
 			}
 		}
 	}

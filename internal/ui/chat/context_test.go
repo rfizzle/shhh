@@ -1113,10 +1113,12 @@ func receiptModel(t *testing.T) Model {
 	return updated.(Model)
 }
 
-// The receipt is an act on the grid, not a sentence beside it: the verb where
-// every verb is, what it folded in the growing field, the window either side
-// of it in the account, and a duration.
-func TestCompactReceipt_IsAnActivityRowOnTheGrid(t *testing.T) {
+// The receipt is a notice, not a card: one flat dim line with the notice
+// mark, saying which turns went and what stands in for them, where the
+// window stood either side, and what they were holding — and no key, because
+// the hint bar names enter. The line the transcript carried while the
+// request was out is answered by it and comes back off.
+func TestCompactReceipt_IsANotice(t *testing.T) {
 	m := receiptModel(t)
 	m = driveCompact(t, m)
 	e, ok := m.compactEntry()
@@ -1130,42 +1132,32 @@ func TestCompactReceipt_IsAnActivityRowOnTheGrid(t *testing.T) {
 	if r.first != 1 || r.last != 1 {
 		t.Fatalf("the first turn went and the last two stayed, got turns %d–%d", r.first, r.last)
 	}
-	row := compactRowFor(r, "ctx")
-	if row.Kind != components.ActivityCompaction || row.Verb != compactVerb {
-		t.Fatalf("the receipt is a compaction row, got %+v", row)
-	}
-	if row.Target != "folded turn 1" {
-		t.Fatalf("the target says which turns went, got %q", row.Target)
-	}
-	if !strings.HasPrefix(row.Allowed, "ctx ") || !strings.Contains(row.Allowed, "→") {
-		t.Fatalf("the account says where the window was and where it is, got %q", row.Allowed)
-	}
 	if r.tokens <= 0 {
 		t.Fatalf("the receipt should say what the folded turn held, got %d", r.tokens)
-	}
-}
-
-// The line under the receipt counts what it holds and names the key that
-// closes it; the line the transcript carried while the request was out is
-// answered by the row and comes back off.
-func TestCompactReceipt_TheFoldCountsWhatItHoldsAndSaysWhatOpensIt(t *testing.T) {
-	m := driveCompact(t, receiptModel(t))
-	e, ok := m.compactEntry()
-	if !ok {
-		t.Fatal("a compaction leaves a receipt")
 	}
 	if !e.expanded {
 		t.Fatal("the summary opens read, because a reader who just lost a turn is owed it")
 	}
-	open := stripANSI(m.compactFoldLine(*e.compact, 4, true, 110))
-	for _, want := range []string{"▾", "turn 1", "compacted", "a 4-line summary", "fold it back up"} {
-		if !strings.Contains(open, want) {
-			t.Fatalf("the open fold should say %q, got %q", want, open)
+	block := strings.Split(stripANSI(m.compactBlock(e, 110)), "\n")
+	if !strings.HasPrefix(block[0], "  "+components.NoticeMark+" compacted turn 1 into a ") {
+		t.Fatalf("the notice says which turns went and into what, got %q", block[0])
+	}
+	for _, want := range []string{"tokens", "context ", "→"} {
+		if !strings.Contains(block[0], want) {
+			t.Fatalf("the notice should say %q, got %q", want, block[0])
 		}
 	}
-	closed := stripANSI(m.compactFoldLine(*e.compact, 4, false, 110))
-	if !strings.Contains(closed, "▸") || !strings.Contains(closed, "read the summary") {
-		t.Fatalf("the closed fold should offer the way in, got %q", closed)
+	for _, l := range block {
+		if strings.Contains(l, "[enter]") || strings.Contains(l, "fold it back up") {
+			t.Fatalf("the receipt prints no key: %q", l)
+		}
+	}
+	if len(block) < 2 {
+		t.Fatalf("open, the summary stands under the notice:\n%s", strings.Join(block, "\n"))
+	}
+	e.expanded = false
+	if closed := stripANSI(m.compactBlock(e, 110)); strings.Contains(closed, "\n") {
+		t.Fatalf("closed, the receipt is its one line:\n%s", closed)
 	}
 	for _, e := range m.transcript {
 		if e.kind == entrySystem && e.text == compactingNotice {
@@ -1281,11 +1273,10 @@ func TestCompactReceipt_TheFloorSaysWhatIsLeftAndCarriesNoSummary(t *testing.T) 
 	if !strings.Contains(e.compact.floor, "turn 3") {
 		t.Fatalf("the floor names what is still in the window, got %q", e.compact.floor)
 	}
-	row := compactRowFor(*e.compact, "ctx")
-	if row.State != components.ActivityFailed {
-		t.Fatalf("a compaction that recovered nothing is a break, got state %d", row.State)
-	}
 	block := stripANSI(m.compactBlock(e, 110))
+	if !strings.HasPrefix(block, "  ✗ compact freed ") {
+		t.Fatalf("a compaction that recovered nothing is a break, got %q", block)
+	}
 	if strings.Contains(block, "a summary nobody needed") || strings.Contains(block, "compacted") {
 		t.Fatalf("the floor case is one row with no fold under it, got:\n%s", block)
 	}

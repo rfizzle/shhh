@@ -14,10 +14,10 @@
 ❯ trace the checkpoint
 ─────────────────────────────────────────────────────────────────────────────
 
-  The objective is where the tool-round ceiling is read. The evidence is that
-  the counter moves in the agent while the ceiling is the session's, so a
-  raise for one turn never reaches the agent. Next I will read the pause row
-    … 1 more line
+    The objective is where the tool-round ceiling is read. The evidence is
+    that the counter moves in the agent while the ceiling is the session's,
+    so a raise for one turn never reaches the agent. Next I will read the
+      … 1 more line
 
 
   ⚙ searched resumeToolLoop · read 2 files                             1.0s
@@ -28,20 +28,20 @@
 ❯ trace the checkpoint
 ─────────────────────────────────────────────────────────────────────────────
 
-  The objective is where the tool-round ceiling is read. The evidence is that
-  the counter moves in the agent while the ceiling is the session's, so a
-  raise for one turn never reaches the agent. Next I will read the pause row
-  and the offer beside it.
+    The objective is where the tool-round ceiling is read. The evidence is
+    that the counter moves in the agent while the ceiling is the session's,
+    so a raise for one turn never reaches the agent. Next I will read the
+    pause row and the offer beside it.
 
 
 · beside a command that is still running
 ❯ trace the checkpoint
 ─────────────────────────────────────────────────────────────────────────────
 
-  The objective is where the tool-round ceiling is read. The evidence is that
-  the counter moves in the agent while the ceiling is the session's, so a
-  raise for one turn never reaches the agent. Next I will read the pause row
-    … 1 more line
+    The objective is where the tool-round ceiling is read. The evidence is
+    that the counter moves in the agent while the ceiling is the session's,
+    so a raise for one turn never reaches the agent. Next I will read the
+      … 1 more line
 
   ▎⠋ run     go test ./internal/agent/... -run TestRoundLimit                                                      running…
   ok  github.com/rfizzle/shhh/internal/agent  0.412s
@@ -50,16 +50,16 @@
 ❯ trace the checkpoint
 ─────────────────────────────────────────────────────────────────────────────
 
-  The objective is where the tool-round ceiling is read. The evidence is that
-    … 3 more lines
+    The objective is where the tool-round ceiling is read. The evidence is
+      … 3 more lines
 
 
   ⚙ searched resumeToolLoop · read internal/ui/chat/stream.go          0.7s
 
 
-  The objective is unchanged and the pause row is now the evidence: it
-  carries the grant and spends it where it is drawn. Next I will run the
-  round tests.
+    The objective is unchanged and the pause row is now the evidence: it
+    carries the grant and spends it where it is drawn. Next I will run the
+    round tests.
 
 
 · a status short enough to title the calls under it is the step's header
@@ -76,16 +76,16 @@
 ❯ trace the checkpoint
 ─────────────────────────────────────────────────────────────────────────────
 
-  The objective is where the tool-round ceiling is read. The evidence is that
-    … 3 more lines
+    The objective is where the tool-round ceiling is read. The evidence is
+      … 3 more lines
 
 
   ⚙ read internal/ui/chat/stream.go
 
 
-  The objective is unchanged and the pause row is now the evidence: it
-  carries the grant and spends it where it is drawn. Next I will run the
-  round tests.
+    The objective is unchanged and the pause row is now the evidence: it
+    carries the grant and spends it where it is drawn. Next I will run the
+    round tests.
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -93,10 +93,10 @@
 ␛[38;5;254m❯␛[m trace the checkpoint
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[3;38;5;244mThe objective is where the tool-round ceiling is read. The evidence is that␛[m
-  ␛[3;38;5;244mthe counter moves in the agent while the ceiling is the session's, so a␛[m
-  ␛[3;38;5;244mraise for one turn never reaches the agent. Next I will read the pause row␛[m
-    ␛[38;5;244m… 1 more line␛[m
+    ␛[3;38;5;244mThe objective is where the tool-round ceiling is read. The evidence is␛[m
+    ␛[3;38;5;244mthat the counter moves in the agent while the ceiling is the session's,␛[m
+    ␛[3;38;5;244mso a raise for one turn never reaches the agent. Next I will read the␛[m
+      ␛[38;5;244m… 1 more line␛[m
 
 
   ␛[38;5;254m⚙␛[m ␛[38;5;254msearched␛[m ␛[38;5;244mresumeToolLoop␛[m␛[38;5;244m · read 2 files␛[m                             ␛[38;5;244m1.0s␛[m
@@ -107,20 +107,20 @@
 ␛[38;5;254m❯␛[m trace the checkpoint
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[3;38;5;244mThe objective is where the tool-round ceiling is read. The evidence is that␛[m
-  ␛[3;38;5;244mthe counter moves in the agent while the ceiling is the session's, so a␛[m
-  ␛[3;38;5;244mraise for one turn never reaches the agent. Next I will read the pause row␛[m
-  ␛[3;38;5;244mand the offer beside it.␛[m
+    ␛[3;38;5;244mThe objective is where the tool-round ceiling is read. The evidence is␛[m
+    ␛[3;38;5;244mthat the counter moves in the agent while the ceiling is the session's,␛[m
+    ␛[3;38;5;244mso a raise for one turn never reaches the agent. Next I will read the␛[m
+    ␛[3;38;5;244mpause row and the offer beside it.␛[m
 
 
 · beside a command that is still running
 ␛[38;5;254m❯␛[m trace the checkpoint
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[3;38;5;244mThe objective is where the tool-round ceiling is read. The evidence is that␛[m
-  ␛[3;38;5;244mthe counter moves in the agent while the ceiling is the session's, so a␛[m
-  ␛[3;38;5;244mraise for one turn never reaches the agent. Next I will read the pause row␛[m
-    ␛[38;5;244m… 1 more line␛[m
+    ␛[3;38;5;244mThe objective is where the tool-round ceiling is read. The evidence is␛[m
+    ␛[3;38;5;244mthat the counter moves in the agent while the ceiling is the session's,␛[m
+    ␛[3;38;5;244mso a raise for one turn never reaches the agent. Next I will read the␛[m
+      ␛[38;5;244m… 1 more line␛[m
 
   ␛[38;5;254m▎␛[m␛[38;5;254m⠋␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/... -run TestRoundLimit␛[m                                                      ␛[38;5;254mrunning…␛[m
   ␛[38;5;244mok  github.com/rfizzle/shhh/internal/agent  0.412s␛[m
@@ -129,16 +129,16 @@
 ␛[38;5;254m❯␛[m trace the checkpoint
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[3;38;5;244mThe objective is where the tool-round ceiling is read. The evidence is that␛[m
-    ␛[38;5;244m… 3 more lines␛[m
+    ␛[3;38;5;244mThe objective is where the tool-round ceiling is read. The evidence is␛[m
+      ␛[38;5;244m… 3 more lines␛[m
 
 
   ␛[38;5;254m⚙␛[m ␛[38;5;254msearched␛[m ␛[38;5;244mresumeToolLoop␛[m␛[38;5;244m · read internal/ui/chat/stream.go␛[m          ␛[38;5;244m0.7s␛[m
 
 
-  ␛[3;38;5;244mThe objective is unchanged and the pause row is now the evidence: it␛[m
-  ␛[3;38;5;244mcarries the grant and spends it where it is drawn. Next I will run the␛[m
-  ␛[3;38;5;244mround tests.␛[m
+    ␛[3;38;5;244mThe objective is unchanged and the pause row is now the evidence: it␛[m
+    ␛[3;38;5;244mcarries the grant and spends it where it is drawn. Next I will run the␛[m
+    ␛[3;38;5;244mround tests.␛[m
 
 
 · a status short enough to title the calls under it is the step's header
@@ -155,14 +155,14 @@
 ␛[38;5;254m❯␛[m trace the checkpoint
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[3;38;5;244mThe objective is where the tool-round ceiling is read. The evidence is that␛[m
-    ␛[38;5;244m… 3 more lines␛[m
+    ␛[3;38;5;244mThe objective is where the tool-round ceiling is read. The evidence is␛[m
+      ␛[38;5;244m… 3 more lines␛[m
 
 
   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/ui/chat/stream.go␛[m
 
 
-  ␛[3;38;5;244mThe objective is unchanged and the pause row is now the evidence: it␛[m
-  ␛[3;38;5;244mcarries the grant and spends it where it is drawn. Next I will run the␛[m
-  ␛[3;38;5;244mround tests.␛[m
+    ␛[3;38;5;244mThe objective is unchanged and the pause row is now the evidence: it␛[m
+    ␛[3;38;5;244mcarries the grant and spends it where it is drawn. Next I will run the␛[m
+    ␛[3;38;5;244mround tests.␛[m
 

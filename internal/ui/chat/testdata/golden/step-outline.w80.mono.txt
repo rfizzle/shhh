@@ -129,21 +129,35 @@
 
 
 
-· row by row · a think row mid-step (the card closed over the calls after it too)
+· row by row · a thought mid-step (the card ends at it, the calls after it a card of their own)
 ❯ fix the round limit
 ──────────────────────────────────────────────────────────────────────────
 
 
-  ⠋ read 2 files in internal/agent/ · searched ErrRoundLimit        0.9s
+  ⚙ read internal/agent/loop.go
     Locate the round accounting
 
 
+    The cap is counted in the loop, so the sentinel has to come from
+    there.
 
-· row by row · a think row mid-step, folded (the thought folds with the card)
+
+  ⠋ read internal/agent/round.go · searched ErrRoundLimit           0.5s
+
+
+
+· row by row · a thought mid-step, the first card folded (the thought stays)
 ❯ fix the round limit
 ──────────────────────────────────────────────────────────────────────────
 
-▸ ⠋ read 2 files in internal/agent/ · searched ErrRoundLimit        0.9s
+▸ ⚙ read internal/agent/loop.go
+
+    The cap is counted in the loop, so the sentinel has to come from
+    there.
+
+
+  ⠋ read internal/agent/round.go · searched ErrRoundLimit           0.5s
+
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -266,19 +280,33 @@
 
 
 
-· row by row · a think row mid-step (the card closed over the calls after it too)
+· row by row · a thought mid-step (the card ends at it, the calls after it a card of their own)
 ␛[38;5;254m❯␛[m fix the round limit
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────␛[m
 
 
-  ␛[38;5;254m⠋␛[m ␛[38;5;254mread␛[m␛[38;5;244m 2 files in internal/agent/ · searched ErrRoundLimit␛[m        ␛[38;5;244m0.9s␛[m
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/loop.go␛[m
     ␛[38;5;254mLocate the round accounting␛[m
 
 
+    ␛[3;38;5;244mThe cap is counted in the loop, so the sentinel has to come from␛[m
+    ␛[3;38;5;244mthere.␛[m
 
-· row by row · a think row mid-step, folded (the thought folds with the card)
+
+  ␛[38;5;254m⠋␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/round.go␛[m␛[38;5;244m · searched ErrRoundLimit␛[m           ␛[38;5;244m0.5s␛[m
+
+
+
+· row by row · a thought mid-step, the first card folded (the thought stays)
 ␛[38;5;254m❯␛[m fix the round limit
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;244m▸␛[m ␛[38;5;254m⠋␛[m ␛[38;5;254mread␛[m␛[38;5;244m 2 files in internal/agent/ · searched ErrRoundLimit␛[m        ␛[38;5;244m0.9s␛[m
+␛[38;5;244m▸␛[m ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/loop.go␛[m
+
+    ␛[3;38;5;244mThe cap is counted in the loop, so the sentinel has to come from␛[m
+    ␛[3;38;5;244mthere.␛[m
+
+
+  ␛[38;5;254m⠋␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/round.go␛[m␛[38;5;244m · searched ErrRoundLimit␛[m           ␛[38;5;244m0.5s␛[m
+
 

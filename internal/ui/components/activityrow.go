@@ -916,28 +916,22 @@ func indented(s string, indent, width int) string {
 }
 
 // ActivityNotice is a line the session wrote about itself rather than an act
-// it took — a conversation reopened, a new one started. It sits on the grid
-// beside the acts: the verb it opens with in the verb column, what it is
-// about in the growing target, and what came of it right-aligned where every
-// other outcome is (docs/interface/principles.md#one-grid). Before this, the
-// session's own lines were sentences at column 0 that ran past the pane and
-// were broken by the terminal wherever they happened to run out.
-//
-// The glyph column is blank: the glyph says which kind of act a row was,
-// and this is not one.
-// It is dim throughout for the same reason — the session's bookkeeping is
-// chrome about the transcript rather than something that touched the
-// machine, which is the bottom of the weight order
+// it took — a conversation reopened, a new one started. It is a notice, so it
+// is drawn as one: the notice mark in the glyph slot and the words dim after
+// it, the verb first, what it is about, and what came of it after a ` · `
+// (NoticeLine). Dim throughout, because the session's bookkeeping is chrome
+// about the transcript rather than something that touched the machine,
+// which is the bottom of the weight order
 // (docs/interface/principles.md#weight-tracks-risk).
 //
 // A notice with no verb from a closed vocabulary to open with is prose, and
-// its host wraps it to the pane rather than laying it on the grid.
+// its host draws it as a NoticeLine of its own.
 type ActivityNotice struct {
-	// Verb is the closed verb vocabulary, padded or clipped to 8 columns.
+	// Verb is the closed verb vocabulary.
 	Verb string
-	// Subject is the growing field: what the notice is about.
+	// Subject is what the notice is about.
 	Subject string
-	// Outcome is the right-aligned field: what came of it.
+	// Outcome is what came of it.
 	Outcome string
 	// Detail is the body a reader opens the notice for, already wrapped by
 	// the host — a notice's body is a sentence, and a sentence clipped is
@@ -961,20 +955,11 @@ func (n ActivityNotice) View(width int) string {
 		row.Expanded, row.Detail = n.Expanded, n.Detail
 		return row.View(width)
 	}
-	lead := strings.Repeat(" ", ptrWidth+railWidth+glyphWidth) + verbFieldIn(n.Verb, sty.Dim)
-	// Rendered only when there is something to render: an empty field put
-	// through a style is escape bytes with no width, which the line's own
-	// trailing trim then cannot see to remove.
-	outcome := ""
+	said := strings.TrimSpace(n.Verb + " " + n.Subject)
 	if n.Outcome != "" {
-		outcome = sty.Dim.Render(n.Outcome)
+		said = strings.TrimSpace(said + " · " + n.Outcome)
 	}
-	lines := []string{gridLineWith(lead, n.Subject, func(s string) string {
-		if s == "" {
-			return ""
-		}
-		return sty.Dim.Render(s)
-	}, outcome, "", width)}
+	lines := []string{NoticeLine{Text: said}.View(width)}
 	if n.Expanded {
 		for _, d := range n.Detail {
 			lines = append(lines, indented(d, detailIndent, width))

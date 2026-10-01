@@ -21,15 +21,15 @@
     --- FAIL: TestRoundLimit                                      1 line
 
 
-  The objective is one home for the round limit. The evidence is the
-  failure above, which reads the constant from the loop and not from the
-  caller. Next I will move the declaration and run the suite again.
+    The objective is one home for the round limit. The evidence is the
+    failure above, which reads the constant from the loop and not from the
+    caller. Next I will move the declaration and run the suite again.
 
-  Check-in — 36 rounds used. Taking stock, then carrying on.
-  Steered — the reading says the edits have moved outside the round loop.
-  Say what you meant if that is wrong.
+  · Check-in — 36 rounds used. Taking stock, then carrying on.
+  · Steered — the reading says the edits have moved outside the round
+    loop. Say what you meant if that is wrong.
     [u] take the steer back · [ctrl+o] to use them
-  tree moved — 14 paths changed outside this session · 5,811 ignored
+  · tree moved — 14 paths changed outside this session · 5,811 ignored
   ✗ the notebook is read-only, so nothing was written down
   ≡ The constant has one home and the caller no longer passes  on target
     its own.
@@ -48,15 +48,15 @@
       --- FAIL: TestRoundLimit                                      1 line      
                                                                                 
                                                                                 
-    The objective is one home for the round limit. The evidence is the      ┃   
-    failure above, which reads the constant from the loop and not from the  ┃   
-    caller. Next I will move the declaration and run the suite again.       ┃   
+      The objective is one home for the round limit. The evidence is the    ┃   
+      failure above, which reads the constant from the loop and not from the┃   
+      caller. Next I will move the declaration and run the suite again.     ┃   
                                                                             ┃   
-    Check-in — 36 rounds used. Taking stock, then carrying on.              ┃   
-    Steered — the reading says the edits have moved outside the round loop. ┃   
-    Say what you meant if that is wrong.                                    ┃   
+    · Check-in — 36 rounds used. Taking stock, then carrying on.            ┃   
+    · Steered — the reading says the edits have moved outside the round     ┃   
+      loop. Say what you meant if that is wrong.                            ┃   
       [u] take the steer back · [ctrl+o] to use them                        ┃   
-    tree moved — 14 paths changed outside this session · 5,811 ignored      ┃   
+    · tree moved — 14 paths changed outside this session · 5,811 ignored    ┃   
     ✗ the notebook is read-only, so nothing was written down                ┃   
     ≡ The constant has one home and the caller no longer passes  on target  ┃   
       its own.                                                              ┃   
@@ -83,15 +83,15 @@
     --- FAIL: TestRoundLimit                                      1 line
 
 
-  The objective is one home for the round limit. The evidence is the
-  failure above, which reads the constant from the loop and not from the
-  caller. Next I will move the declaration and run the suite again.
+    The objective is one home for the round limit. The evidence is the
+    failure above, which reads the constant from the loop and not from the
+    caller. Next I will move the declaration and run the suite again.
 
-  Check-in — 36 rounds used. Taking stock, then carrying on.
-  Steered — the reading says the edits have moved outside the round loop.
-  Say what you meant if that is wrong.
+  · Check-in — 36 rounds used. Taking stock, then carrying on.
+  · Steered — the reading says the edits have moved outside the round
+    loop. Say what you meant if that is wrong.
     [u] take the steer back
-  tree moved — 14 paths changed outside this session · 5,811 ignored
+  · tree moved — 14 paths changed outside this session · 5,811 ignored
   ✗ the notebook is read-only, so nothing was written down
   ≡ The constant has one home and the caller no longer passes  on target
     its own.
@@ -113,15 +113,15 @@
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                                      ␛[38;5;244m1 line␛[m
 
 
-  ␛[3;38;5;244mThe objective is one home for the round limit. The evidence is the␛[m
-  ␛[3;38;5;244mfailure above, which reads the constant from the loop and not from the␛[m
-  ␛[3;38;5;244mcaller. Next I will move the declaration and run the suite again.␛[m
+    ␛[3;38;5;244mThe objective is one home for the round limit. The evidence is the␛[m
+    ␛[3;38;5;244mfailure above, which reads the constant from the loop and not from the␛[m
+    ␛[3;38;5;244mcaller. Next I will move the declaration and run the suite again.␛[m
 
-  ␛[38;5;244mCheck-in — 36 rounds used. Taking stock, then carrying on.␛[m
-  ␛[38;5;244mSteered — the reading says the edits have moved outside the round loop.␛[m
-  ␛[38;5;244mSay what you meant if that is wrong.␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mCheck-in — 36 rounds used. Taking stock, then carrying on.␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mSteered — the reading says the edits have moved outside the round␛[m
+    ␛[38;5;244mloop. Say what you meant if that is wrong.␛[m
     ␛[38;5;244m[u]␛[m␛[38;5;244m take the steer back␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
-  ␛[38;5;244mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m
   ␛[38;5;254m✗ the notebook is read-only, so nothing was written down␛[m
   ␛[38;5;244m≡␛[m ␛[3;38;5;244mThe constant has one home and the caller no longer passes␛[m  ␛[38;5;244mon target␛[m
     ␛[3;38;5;244mits own.␛[m
@@ -140,15 +140,15 @@
       ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                                      ␛[38;5;244m1 line␛[m      
                                                                                 
                                                                                 
-    ␛[38;5;244;3mThe objective is one home for the round limit. The evidence is the␛[m      ␛[38;5;244m┃␛[m   
-    ␛[38;5;244;3mfailure above, which reads the constant from the loop and not from the␛[m  ␛[38;5;244m┃␛[m   
-    ␛[38;5;244;3mcaller. Next I will move the declaration and run the suite again.␛[m       ␛[38;5;244m┃␛[m   
+      ␛[38;5;244;3mThe objective is one home for the round limit. The evidence is the␛[m    ␛[38;5;244m┃␛[m   
+      ␛[38;5;244;3mfailure above, which reads the constant from the loop and not from the␛[23m┃␛[m   
+      ␛[38;5;244;3mcaller. Next I will move the declaration and run the suite again.␛[m     ␛[38;5;244m┃␛[m   
                                                                             ␛[38;5;244m┃␛[m   
-    ␛[38;5;244mCheck-in — 36 rounds used. Taking stock, then carrying on.␛[m              ␛[38;5;244m┃␛[m   
-    ␛[38;5;244mSteered — the reading says the edits have moved outside the round loop.␛[m ␛[38;5;244m┃␛[m   
-    ␛[38;5;244mSay what you meant if that is wrong.␛[m                                    ␛[38;5;244m┃␛[m   
+    ␛[38;5;244m·␛[m ␛[38;5;244mCheck-in — 36 rounds used. Taking stock, then carrying on.␛[m            ␛[38;5;244m┃␛[m   
+    ␛[38;5;244m·␛[m ␛[38;5;244mSteered — the reading says the edits have moved outside the round␛[m     ␛[38;5;244m┃␛[m   
+      ␛[38;5;244mloop. Say what you meant if that is wrong.␛[m                            ␛[38;5;244m┃␛[m   
       ␛[38;5;244m[u] take the steer back · ␛[38;5;254m[ctrl+o] to use them␛[m                        ␛[38;5;244m┃␛[m   
-    ␛[38;5;244mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m      ␛[38;5;244m┃␛[m   
+    ␛[38;5;244m·␛[m ␛[38;5;244mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m    ␛[38;5;244m┃␛[m   
     ␛[38;5;254m✗ the notebook is read-only, so nothing was written down␛[m                ␛[38;5;244m┃␛[m   
     ␛[38;5;244m≡␛[m ␛[38;5;244;3mThe constant has one home and the caller no longer passes␛[m  ␛[38;5;244mon target␛[m  ␛[38;5;244m┃␛[m   
       ␛[38;5;244;3mits own.␛[m                                                              ␛[38;5;244m┃␛[m   
@@ -175,15 +175,15 @@
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                                      ␛[38;5;244m1 line␛[m
 
 
-  ␛[3;38;5;244mThe objective is one home for the round limit. The evidence is the␛[m
-  ␛[3;38;5;244mfailure above, which reads the constant from the loop and not from the␛[m
-  ␛[3;38;5;244mcaller. Next I will move the declaration and run the suite again.␛[m
+    ␛[3;38;5;244mThe objective is one home for the round limit. The evidence is the␛[m
+    ␛[3;38;5;244mfailure above, which reads the constant from the loop and not from the␛[m
+    ␛[3;38;5;244mcaller. Next I will move the declaration and run the suite again.␛[m
 
-  ␛[38;5;244mCheck-in — 36 rounds used. Taking stock, then carrying on.␛[m
-  ␛[38;5;244mSteered — the reading says the edits have moved outside the round loop.␛[m
-  ␛[38;5;244mSay what you meant if that is wrong.␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mCheck-in — 36 rounds used. Taking stock, then carrying on.␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mSteered — the reading says the edits have moved outside the round␛[m
+    ␛[38;5;244mloop. Say what you meant if that is wrong.␛[m
     ␛[38;5;244m[u]␛[m␛[38;5;244m take the steer back␛[m
-  ␛[38;5;244mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m
   ␛[38;5;254m✗ the notebook is read-only, so nothing was written down␛[m
   ␛[38;5;244m≡␛[m ␛[3;38;5;244mThe constant has one home and the caller no longer passes␛[m  ␛[38;5;244mon target␛[m
     ␛[3;38;5;244mits own.␛[m

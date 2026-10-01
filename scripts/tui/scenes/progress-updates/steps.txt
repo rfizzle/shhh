@@ -35,4 +35,4 @@ snap 08-exit "that is everything the screen was holding"
 # is put back from the stored messages alone, so a mark that lived only on the
 # frame would come back as an answer at an answer's weight. Wait for the
 # resume row, which is the proof the second process is the one on screen.
-snap 09-reopened "resumed master" "The objective is where the round limit is counted"
+snap 09-reopened "· resumed master" "The objective is where the round limit is counted"

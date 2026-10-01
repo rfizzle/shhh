@@ -140,13 +140,11 @@ func isActivityEntry(e entry) bool {
 // notices (an approval, an auto-allow) are part of the batch they sit in;
 // anything that reads as a standalone block ends the step.
 //
-// A think row is a member, not a stop. The model thinking between two rounds
-// of the same step is still that step's work, so the calls after it stay
-// under the title it announced, and folding the step folds the thought with
-// them. The header's count is its calls and does not count the thought: it
-// counts acts, and a thought ran, read and changed nothing
-// (docs/interface/surfaces.md#the-step). A think row trailing the step's last
-// call is trimmed off like a notice, and taken back when the next call lands.
+// A thought is a stop. It is prose on bare screen, and a card has no place
+// on its band for prose that is not its body, so a step the model stopped to
+// think in ends where the thought stands and the calls after it are a card
+// of their own (docs/interface/surfaces.md#the-think-row). Left inside, it
+// was drawn nowhere while the card stood for its calls.
 func isStepMember(e entry) bool {
 	return isActivityEntry(e) || (!entryIsBlock(e) && e.kind != entryAssistant)
 }
@@ -171,7 +169,7 @@ func callRun(es []entry, i int) int {
 		return 1
 	}
 	n := 0
-	for i+n < len(es) && isActivityEntry(es[i+n]) && !refusedCall(es[i+n]) {
+	for i+n < len(es) && (isActivityEntry(es[i+n]) && !refusedCall(es[i+n]) || es[i+n].kind == entryPicture) {
 		n++
 	}
 	if i+n < len(es) && es[i+n].kind == entrySummary {
@@ -237,8 +235,9 @@ func stepBlocks(es []entry, declared []plan.Step) []transcriptBlock {
 				j++
 			}
 			// Trailing notices belong to whatever comes next, not to this
-			// step: a step ends on its last call.
-			for j > i+1 && !isActivityEntry(es[j-1]) {
+			// step: a step ends on its last call, and on a picture that
+			// call returned.
+			for j > i+1 && !isActivityEntry(es[j-1]) && es[j-1].kind != entryPicture {
 				j--
 			}
 			if j > i+1 {
@@ -284,7 +283,7 @@ func stepBlocks(es []entry, declared []plan.Step) []transcriptBlock {
 	// drew its whole block a second time when the batch arrived: one header,
 	// one ordinal, twice.
 	tail := len(es)
-	for tail > 0 && isStepMember(es[tail-1]) && !isActivityEntry(es[tail-1]) {
+	for tail > 0 && isStepMember(es[tail-1]) && !isActivityEntry(es[tail-1]) && es[tail-1].kind != entryPicture {
 		tail--
 	}
 	for k := len(blocks) - 1; k >= 0; k-- {
@@ -679,7 +678,11 @@ func (m Model) cardUnits(blk transcriptBlock, es []entry, width int, focus bool,
 	// (separatorBefore).
 	block := entry{kind: entryAssistant}
 	if card.Folded || card.Density != components.CardHigh {
-		return []unit{{idx: anchor, sepBefore: block, sepAfter: block, text: card.View(width) + "\n", cardHead: true}}
+		pics := m.cardPictures(blk, es)
+		if len(pics) == 0 {
+			return []unit{{idx: anchor, sepBefore: block, sepAfter: block, text: card.View(width) + "\n", cardHead: true}}
+		}
+		return m.pictureCardUnits(card, pics, es, width, focus, focusIdx, anchor)
 	}
 	return m.openCardUnits(blk, es, width, focus, focusIdx, card)
 }
