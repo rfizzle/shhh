@@ -12,7 +12,7 @@ package chat
 // the button is down, so a drag that starts on a target still selects, and
 // the one button carries both gestures without either having to give ground.
 //
-// Seven things are targets, and the test they pass is the same one seven
+// Eight things are targets, and the test they pass is the same one eight
 // times: the pointer names exactly one of them, and the thing it names already
 // has a key.
 //
@@ -44,6 +44,11 @@ package chat
 //     a picture onto its card, every click, and a paste in place
 //     (attachments.go). A document's row opens onto nothing under either
 //     input, so it is not one.
+//   - A code block's heading row in a reply. It names exactly one block, and
+//     reading mode's [c] on that reply reaches the same block; the click
+//     copies it through the key's own handler (blockhead.go). The rest of
+//     the block is code under the pointer, which is a selection surface, and
+//     a sent message's headings have no key that copies them.
 //
 // Everything else on the screen fails that test. Prose under the pointer is a
 // selection surface first and has no single act behind it; the scroll gutter
@@ -126,6 +131,9 @@ func (m Model) clickAt(x, y int) (tea.Model, tea.Cmd) {
 			return m.clickOffer(pt.line)
 		}
 		if next, cmd, ok := m.clickRowOffer(pt); ok {
+			return next, cmd
+		}
+		if next, cmd, ok := m.clickBlockHeading(pt.line); ok {
 			return next, cmd
 		}
 		return m.clickRow(pt.line)

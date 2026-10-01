@@ -1,23 +1,42 @@
-# program test: TestProgram_ABlockIsCopiedFromTheCardAndFromReadingMode
+# program test: TestProgram_ABlockIsCopiedFromTheCardAndFromReadingMode,
+#   TestProgram_AClickOnTheHeadingCopiesThatBlock,
+#   TestProgram_ACopyClickLeavesTheDraftAlone
 #
 # One code block copied by itself (docs/interface/surfaces.md#reading-mode).
 # Two replies: an earlier one holding one block, and a later one holding
-# three. /copy code opens the numbered card over the later reply's blocks and
-# a digit takes the second; a number out of range answers with the range.
-# Reading mode then offers [c] beside [y] on a reply with a block: on the
-# later reply it opens the same card scoped to that reply, and on the earlier
-# one it copies the one block at once, with the caption on the bar.
+# three, each block headed by its language. A click on the later reply's
+# second heading copies that block from a half-typed draft. /copy code opens
+# the numbered card over the later reply's blocks and a digit takes the
+# third; a number out of range answers with the range. Reading mode then
+# offers [c] beside [y] on a reply with a block: on the later reply it opens
+# the same card scoped to that reply, and on the earlier one it copies the
+# one block at once, with the caption on the bar. A click on a heading there
+# moves the cursor to its reply and copies with the same caption.
 snap 01-start "Some things worth doing first"
 keys "where does the copy go in?" Enter
 snap 02-earlier "Build it first:"
 keys "show me the handler" Enter
 snap 03-reply "Its steps open the list"
+# The pointer, from a half-typed line: an SGR press and release on the
+# second block's heading row, its word at column 7 — row 24 at 110 columns,
+# row 25 below — copies that block through the key's own handler and leaves
+# the draft as it was.
+keys "then wire the same handler"
+snap 03a-draft "then wire the same handler"
+wide 110 keys -l $'\e[<0;7;24M' $'\e[<0;7;24m'
+narrow 110 keys -l $'\e[<0;7;25M' $'\e[<0;7;25m'
+snap 03b-clicked "copied block 2 · sh · 3 lines" "then wire the same handler"
+# Esc clears the draft; a second esc inside half a second is the rewind's,
+# so the next key waits that out.
+keys Escape
+sleep 0.6
 # From the draft: the card over the last reply's three blocks.
 keys "/copy code" Enter
 snap 04-list "copy which block?" "3 blocks" "[esc] keep nothing" "make build · sh · 3 lines"
-# A digit takes its row, and the notice names the block.
-keys 2
-snap 05-copied "copied block 2 · sh · 3 lines"
+# A digit takes its row, and the notice names the block: the third, since
+# the click has already drawn the second's notice.
+keys 3
+snap 05-copied "copied block 3 · code · 2 lines"
 keys "/copy code 4" Enter
 snap 06-usage "usage: /copy code [1-3]"
 # Reading mode, the cursor walked onto the later reply by a search for its
@@ -46,6 +65,11 @@ keys "Build it first"
 keys Enter
 keys c
 snap 11-earlier-caption "✓ copied block 1 · sh · 1 line"
+# The same click in reading mode moves the cursor to the reply it landed in
+# before it copies, so the caption is about the row the reader pointed at:
+# the later reply's second heading, row 24 at both widths.
+keys -l $'\e[<0;7;24M' $'\e[<0;7;24m'
+snap 11a-reading-click "✓ copied block 2 · sh · 3 lines" "❯ Here is the handler:"
 # The way out.
 keys q
 snap 12-prompt "╭─ ✓ done"

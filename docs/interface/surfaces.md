@@ -61,6 +61,24 @@ rather than a conversation being had, it has exactly two voices, and the
 brighter of the two is always the one that asked; a label saying so again
 spent a row per message on a fact the mark had already carried.
 
+A fenced code block in either is headed by a row of its own: one row above
+the block, at the block's indent, the fence's language word in the dim grey,
+and `code` where the fence named none. Nothing else is on the row, and no key
+is printed there. Once the fence lines are gone the indent is the only thing
+saying a block has started, and two blocks one after the other read as one;
+the heading is the start marker every block has. It goes where the block
+goes — into a list item's hang, behind a quote's rail — and it never folds,
+because it is one word, while the code under it folds at the column as it
+always has. In mono the word carries it alone, and the code stays
+unhighlighted. A fence still arriving draws its code and no heading until
+the line that closes it lands: a block with no end yet is not a block a copy
+can count. An indented block, which has no fence, has no heading either.
+Everything else in the markdown is drawn as it was.
+
+The heading names the block and is no part of it, so a drag that starts on
+it or crosses it catches the code alone, leaves the heading unlit, and
+strips the indent the code's own rows share.
+
 A call that never happened is one too. Something the queue refused before it
 could reach a decision — arguments that would not parse, a file that moved
 since it was read — is the call's own row saying it was skipped and why,
@@ -595,6 +613,18 @@ captions which block was caught, its language and its lines. The key is
 offered only while the cursor is on such a reply and is silent everywhere
 else, as the row copy is on a row with nothing to copy. `/copy code` reaches
 the same blocks from the draft, by number or from the same card.
+
+A click on a block's heading in a reply is the pointer twin of that key, by
+the rule every click target obeys: the heading names exactly one block, and
+the key already reaches it. It copies through the same handler, so the text,
+the failure and the confirmation are the key's — the rail's caption in
+reading mode, a notice from the draft. It is a click and not a press, so a
+drag that starts on the heading still selects; the rest of the block is code
+under the pointer, which is for selecting and is not a target. The click
+never takes the keyboard: a half-typed draft keeps every character, and in
+reading mode the cursor moves to the reply first, so the bar under it offers
+the key for the next time. A heading in a message the reader sent is drawn
+the same and is not a target, because no key copies a block from one.
 
 Half-page keys move the cursor through a long transcript at a pace that keeps
 context — half the pane per press, with the cursor following the pane rather

@@ -100,9 +100,16 @@ func fenceLexer(lang string) chroma.Lexer {
 	return lexer
 }
 
-// fenceSyntax highlights one line of a fenced block through the same palette
-// register the diff bodies use (syntaxTones), so a Go function reads the same
-// colour whether the model quoted it or changed it.
+// fenceSyntax highlights a fenced block through the same palette register
+// the diff bodies use (syntaxTones), so a Go function reads the same colour
+// whether the model quoted it or changed it.
+//
+// The block is tokenised once, whole, and the tokens are split back into its
+// lines. Lexing it a line at a time read every construct that spans lines as
+// code: the digits inside a three-line block comment came out as numbers, a
+// Python docstring's words as names, and a heredoc's body as shell. A token
+// that crosses a line break is cut at the break and each piece keeps the
+// token's tone.
 //
 // The style it builds per segment is the one style in this package that is
 // not a token on Styles, and it cannot be: which tone a segment takes is the
@@ -110,28 +117,41 @@ func fenceLexer(lang string) chroma.Lexer {
 // palette half is still built once — syntaxTones is the register, rebuilt by
 // applyPalette — and this only dresses a run of text in the tone that
 // register already chose.
-func fenceSyntax(lang, line string) []markdown.Segment {
+func fenceSyntax(lang string, lines []string) [][]markdown.Segment {
 	lexer := fenceLexer(lang)
 	if lexer == nil {
 		return nil
 	}
-	it, err := lexer.Tokenise(nil, line)
+	it, err := lexer.Tokenise(nil, strings.Join(lines, "\n")+"\n")
 	if err != nil {
 		return nil
 	}
-	var segs []markdown.Segment
+	out := make([][]markdown.Segment, 1, len(lines))
 	for _, tok := range it.Tokens() {
-		text := strings.TrimSuffix(tok.Value, "\n")
-		if text == "" {
-			continue
+		var style lipgloss.Style
+		tone, styled := syntaxTone(tok.Type)
+		if styled {
+			style = lipgloss.NewStyle().Foreground(tone.Color())
 		}
-		seg := markdown.Segment{Text: text}
-		if tone, ok := syntaxTone(tok.Type); ok {
-			seg.Style, seg.Styled = lipgloss.NewStyle().Foreground(tone.Color()), true
+		for i, piece := range strings.Split(tok.Value, "\n") {
+			if i > 0 {
+				out = append(out, nil)
+			}
+			if piece != "" {
+				n := len(out) - 1
+				out[n] = append(out[n], markdown.Segment{Text: piece, Style: style, Styled: styled})
+			}
 		}
-		segs = append(segs, seg)
 	}
-	return segs
+	// The newline the lexer was handed after the last line opens one more
+	// line than the block has, and it holds nothing.
+	if len(out) == len(lines)+1 && len(out[len(lines)]) == 0 {
+		out = out[:len(lines)]
+	}
+	if len(out) != len(lines) {
+		return nil
+	}
+	return out
 }
 
 // The syntax register (docs/interface/surfaces.md#the-diff-view). Diff

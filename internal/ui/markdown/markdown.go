@@ -35,6 +35,7 @@
 package markdown
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
@@ -43,6 +44,7 @@ import (
 	gast "github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	xast "github.com/yuin/goldmark/extension/ast"
+	gparser "github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 )
 
@@ -58,10 +60,15 @@ type Options struct {
 	// Mono drops every colour and puts the markdown's own marks back in
 	// their place.
 	Mono bool
-	// Syntax highlights one line of a fenced block, or is nil for a plain
-	// one. It is injected rather than owned so that the fence and the diff
-	// view highlight through the same register (chat/highlight.go).
-	Syntax func(lang, line string) []Segment
+	// Syntax highlights a fenced block, handed its lines and answering with
+	// each line's segments, or is nil for a plain one. It takes the whole
+	// block rather than a line at a time because a comment, a docstring, a
+	// raw string or a heredoc spans lines, and a line lexed alone reads the
+	// inside of one as code. It is injected rather than owned so that the
+	// fence and the diff view highlight through the same register
+	// (chat/highlight.go). An answer that is not one entry per line is
+	// ignored, and the block is drawn plain.
+	Syntax func(lang string, lines []string) [][]Segment
 	// Prose is the register a paragraph's plain text is drawn in.
 	Prose ProseTone
 }
@@ -100,11 +107,52 @@ func (o Options) FillWidth() int { return o.contentWidth() + Margin }
 // strikethrough and bare URLs, definition lists, and the emoji shortcodes a
 // model reaches for. Dropping one of these would not be a simplification, it
 // would be a document shhh renders worse than the thing it replaced.
-var parser = goldmark.New(goldmark.WithExtensions(
+var parser = goldmark.New(goldmark.WithParser(newParser()), goldmark.WithExtensions(
 	extension.GFM,
 	extension.DefinitionList,
 	emoji.New(),
 ))
+
+// newParser is goldmark's default parser with its fence parser told to
+// remember which fences closed. goldmark ends an unclosed fence at the end
+// of its container and keeps no record that it did, and the difference is
+// the one between a block and a block still arriving: a fence still open in
+// a stream has no end yet, so it is neither headed nor counted (code).
+func newParser() gparser.Parser {
+	blocks := gparser.DefaultBlockParsers()
+	for i, b := range blocks {
+		if b.Value == gparser.NewFencedCodeBlockParser() {
+			blocks[i].Value = closingFence{gparser.NewFencedCodeBlockParser()}
+		}
+	}
+	return gparser.NewParser(
+		gparser.WithBlockParsers(blocks...),
+		gparser.WithInlineParsers(gparser.DefaultInlineParsers()...),
+		gparser.WithParagraphTransformers(gparser.DefaultParagraphTransformers()...),
+	)
+}
+
+// closedAttr marks a fence whose closing line was read.
+const closedAttr = "shhh-closed"
+
+// closingFence is the fence parser, unchanged, except that it marks the
+// node when a line closes it: Continue answers Close for exactly that line
+// and for nothing else.
+type closingFence struct{ gparser.BlockParser }
+
+func (f closingFence) Continue(node gast.Node, reader text.Reader, pc gparser.Context) gparser.State {
+	st := f.BlockParser.Continue(node, reader, pc)
+	if st == gparser.Close {
+		node.SetAttributeString(closedAttr, true)
+	}
+	return st
+}
+
+// closed reports whether a fenced block's closing line was read.
+func closed(n gast.Node) bool {
+	_, ok := n.AttributeString(closedAttr)
+	return ok
+}
 
 // Render lays src out at the given width and returns the rows joined by
 // newlines, with no leading or trailing blank row.
@@ -115,6 +163,75 @@ func Render(src string, o Options) string {
 	return strings.Join(Blocks(src, o), "\n")
 }
 
+// Fence is where one fenced code block landed in a render: the heading row
+// above it and the half-open range of its code rows, as indexes into the
+// rows Layout returned.
+//
+// Index is the block's place among the headed blocks in source order,
+// counted from 0, and is the same count FenceTexts makes, so a row can be
+// resolved to the block a copy by number takes without parsing the source
+// again. Only a closed fence is headed and counted: one still open in a
+// stream has no end yet, and an indented block has no fence to head.
+type Fence struct {
+	Index      int
+	Heading    int
+	Start, End int
+}
+
+// FenceText is one headed block as the source wrote it: the fence's
+// language word, empty where it named none, and the body with no fence
+// lines, no indent its container gave it, and its tabs kept.
+type FenceText struct {
+	Lang, Body string
+}
+
+// FenceTexts returns the headed blocks of src in source order — the blocks
+// Layout reports, counted the same way.
+func FenceTexts(src string) []FenceText {
+	source := []byte(src)
+	doc := parser.Parser().Parse(text.NewReader(source))
+	var out []FenceText
+	_ = gast.Walk(doc, func(n gast.Node, entering bool) (gast.WalkStatus, error) {
+		f, ok := n.(*gast.FencedCodeBlock)
+		if !entering || !ok || !closed(f) {
+			return gast.WalkContinue, nil
+		}
+		lines := f.Lines()
+		body := make([]string, lines.Len())
+		for i := range lines.Len() {
+			seg := lines.At(i)
+			body[i] = strings.TrimRight(string(seg.Value(source)), "\n")
+		}
+		out = append(out, FenceText{Lang: string(f.Language(source)), Body: strings.Join(body, "\n")})
+		return gast.WalkSkipChildren, nil
+	})
+	return out
+}
+
+// Layout is Blocks with the fenced blocks it drew: which rows each one
+// occupies and which block it is. The ranges hold through everything that
+// shifts or prefixes a block's rows — a quote's rail, a list item's hang, a
+// fold — because they are read off the finished rows rather than added up.
+func Layout(src string, o Options) ([]string, []Fence) {
+	if o.Width <= 0 {
+		o.Width = 80
+	}
+	source := []byte(src)
+	doc := parser.Parser().Parse(text.NewReader(source))
+	r := &renderer{opt: o, src: source, sty: newStyles(o.Mono, o.Prose), headMark: headingMark(src)}
+	rows := r.children(doc, o.contentWidth())
+	var fences []Fence
+	for i, row := range rows {
+		if at := strings.Index(row, r.headMark); at >= 0 && len(fences) < len(r.fenceRows) {
+			row = row[:at] + row[at+len(r.headMark):]
+			n := len(fences)
+			fences = append(fences, Fence{Index: n, Heading: i, Start: i + 1, End: i + 1 + r.fenceRows[n]})
+		}
+		rows[i] = r.pad(row)
+	}
+	return rows, fences
+}
+
 // Blocks is Render as the rows it produced.
 //
 // The streaming cache (chat/streammd.go) needs this rather than a string: it
@@ -123,16 +240,7 @@ func Render(src string, o Options) string {
 // is one padded blank row, always — which is the whole reason the sentinel
 // paragraph that used to measure glamour's unpredictable seam is gone.
 func Blocks(src string, o Options) []string {
-	if o.Width <= 0 {
-		o.Width = 80
-	}
-	source := []byte(src)
-	doc := parser.Parser().Parse(text.NewReader(source))
-	r := &renderer{opt: o, src: source, sty: newStyles(o.Mono, o.Prose)}
-	rows := r.children(doc, o.contentWidth())
-	for i, row := range rows {
-		rows[i] = r.pad(row)
-	}
+	rows, _ := Layout(src, o)
 	return rows
 }
 
@@ -142,6 +250,29 @@ type renderer struct {
 	opt Options
 	src []byte
 	sty styles
+	// fenceRows is how many code rows each headed block drew, in the order
+	// they were drawn, which is source order.
+	fenceRows []int
+	// headMark is what a heading row is drawn behind (headingMark).
+	headMark string
+}
+
+// headingMark is what finds a heading row again once the containers around
+// its block have prefixed and shifted it. It is an escape string, which
+// every width function counts as nothing, so the row lays out as if it were
+// not there; Layout takes it out before any row leaves the package.
+//
+// It is chosen to be absent from the source. Every byte of a row that is not
+// the renderer's own comes from the source, so a mark the source does not
+// hold cannot be forged by it — a reply that quoted the mark would otherwise
+// have been read as one more heading than the render drew, and counted past
+// the end of the blocks.
+func headingMark(src string) string {
+	mark := "\x1b_shhh-fence\x1b\\"
+	for n := 0; strings.Contains(src, mark); n++ {
+		mark = "\x1b_shhh-fence-" + strconv.Itoa(n) + "\x1b\\"
+	}
+	return mark
 }
 
 // pad puts the left margin on a row and fills it out to the block width.
@@ -181,9 +312,9 @@ func (r *renderer) block(n gast.Node, width int) []string {
 	case *gast.Paragraph, *gast.TextBlock:
 		return r.wrap(r.inline(n), width)
 	case *gast.FencedCodeBlock:
-		return r.code(n, string(n.Language(r.src)), width)
+		return r.code(n, string(n.Language(r.src)), closed(n), width)
 	case *gast.CodeBlock:
-		return r.code(n, "", width)
+		return r.code(n, "", false, width)
 	case *gast.Blockquote:
 		return r.quote(n, width)
 	case *gast.List:
@@ -242,16 +373,35 @@ const tabWidth = 4
 
 // code renders a fenced or indented block: highlighted where a lexer claims
 // the language, folded rather than wrapped, and never reflowed.
-func (r *renderer) code(n gast.Node, lang string, width int) []string {
+//
+// A closed fence is headed by a row naming its language — `code` where the
+// fence named none — at the block's own indent, one row above it. Once the
+// fence lines are gone the indent alone says a block has started, and two
+// blocks one after the other read as one; the heading is the start marker,
+// and the row a pointer copies the block from
+// (docs/interface/surfaces.md#the-activity-row).
+func (r *renderer) code(n gast.Node, lang string, headed bool, width int) []string {
 	inner := max(width-codeIndent, 1)
-	var rows []string
 	lines := n.Lines()
+	text := make([]string, lines.Len())
 	for i := range lines.Len() {
 		seg := lines.At(i)
-		line := expandTabs(strings.TrimRight(string(seg.Value(r.src)), "\n"))
+		text[i] = expandTabs(strings.TrimRight(string(seg.Value(r.src)), "\n"))
+	}
+	var tones [][]Segment
+	if r.opt.Syntax != nil && !r.opt.Mono && len(text) > 0 {
+		if tones = r.opt.Syntax(lang, text); len(tones) != len(text) {
+			tones = nil
+		}
+	}
+	var rows []string
+	if headed {
+		rows = append(rows, r.headMark+strings.Repeat(" ", codeIndent)+r.fenceHeading(lang, inner))
+	}
+	for i, line := range text {
 		var segs []Segment
-		if r.opt.Syntax != nil && !r.opt.Mono {
-			segs = r.opt.Syntax(lang, line)
+		if tones != nil {
+			segs = tones[i]
 		}
 		if len(segs) == 0 {
 			segs = []Segment{{Text: line, Style: r.sty.code, Styled: !r.opt.Mono}}
@@ -260,7 +410,20 @@ func (r *renderer) code(n gast.Node, lang string, width int) []string {
 			rows = append(rows, strings.Repeat(" ", codeIndent)+row)
 		}
 	}
+	if headed {
+		r.fenceRows = append(r.fenceRows, len(rows)-1)
+	}
 	return rows
+}
+
+// fenceHeading is the word a heading row carries, in the dim tone, cut to
+// the room there is rather than folded: it is one word, and a second row of
+// it would read as the first line of the code.
+func (r *renderer) fenceHeading(lang string, width int) string {
+	if lang == "" {
+		lang = "code"
+	}
+	return Segment{Text: ansi.Truncate(lang, width, ""), Style: r.sty.fence, Styled: !r.opt.Mono}.Render()
 }
 
 // defIndent is how far a definition sits under its term. A description that

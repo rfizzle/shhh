@@ -44,6 +44,9 @@ type styles struct {
 	rule    lipgloss.Style
 	marker  lipgloss.Style
 	faint   lipgloss.Style
+	// fence is a code block's heading word: a label over the block rather
+	// than text of it, so it takes the tone the interface labels things in.
+	fence lipgloss.Style
 }
 
 func newStyles(mono bool, prose ProseTone) styles {
@@ -67,5 +70,6 @@ func newStyles(mono bool, prose ProseTone) styles {
 		rule:    lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		marker:  lipgloss.NewStyle().Foreground(p.Info.Color()),
 		faint:   lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
+		fence:   lipgloss.NewStyle().Foreground(p.Dim.Color()),
 	}
 }

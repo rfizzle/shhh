@@ -111,6 +111,19 @@ type selection struct {
 	// re-reads it every tick, because a stationary pointer at the bottom row
 	// names a further line each time the transcript moves under it.
 	px, py int
+	// heads is every code block heading in the transcript, keyed by line,
+	// as read at a line count: the highlight leaves them unlit, because the
+	// copy leaves them out (blockhead.go). Finding them walks the
+	// transcript, so it is done once a drag has moved and again only when
+	// the transcript's length changes under it, not per frame. It is held by
+	// pointer so a selection stays a value two states can be compared by.
+	heads *selectionHeads
+}
+
+// selectionHeads is the heading rows a selection was read against.
+type selectionHeads struct {
+	lines map[int]blockHeading
+	at    int
 }
 
 // empty reports whether the selection covers nothing — no selection at all,
@@ -293,6 +306,9 @@ func (m *Model) extendSelection(x, y int) {
 		return
 	}
 	m.sel.end = pt
+	if n := len(m.viewport.lines); !m.sel.empty() && (m.sel.heads == nil || m.sel.heads.at != n) {
+		m.sel.heads = &selectionHeads{lines: m.blockHeadings(0, n), at: n}
+	}
 	// Selecting is reading, and reading pauses the follow the same way
 	// scrolling away does: a transcript that jumped to its live end
 	// mid-drag would tear the selection off the text it was covering.
@@ -521,7 +537,8 @@ func (m *Model) selectedText() string {
 		return ""
 	}
 	start, end := m.sel.span()
-	return selectedTextFrom(m.renderHistoryRawLines(), start, end, m.transcriptWidth())
+	lines := m.renderHistoryRawLines()
+	return selectedTextFrom(lines, start, end, m.transcriptWidth(), m.blockHeadings(start.line, end.line))
 }
 
 // selectedTextFrom extracts the selected rectangle from rendered lines and
@@ -531,13 +548,27 @@ func (m *Model) selectedText() string {
 // styling and no colour reaches the clipboard — what is copied is the
 // characters that were on the screen inside the range, and nothing about how
 // they were drawn.
-func selectedTextFrom(lines []string, start, end selPoint, width int) string {
+//
+// A code block's heading row is left out wherever the range crosses one
+// (heads, by line). It names the block rather than being any of it, so a
+// drag that starts on it catches the code alone, and the shared indent the
+// dedent strips is read off the code's own rows.
+func selectedTextFrom(lines []string, start, end selPoint, width int, heads map[int]blockHeading) string {
 	if start.line < 0 || start.line >= len(lines) {
 		return ""
+	}
+	cutFirst := start.col > 0
+	if _, ok := heads[start.line]; ok {
+		// The row the drag began on is gone, so the first row kept begins
+		// at its own margin and is not a row the drag cut into.
+		cutFirst = false
 	}
 	last := min(end.line, len(lines)-1)
 	rows := make([]string, 0, last-start.line+1)
 	for y := start.line; y <= last; y++ {
+		if _, ok := heads[y]; ok {
+			continue
+		}
 		plain := ansi.Strip(lines[y])
 		lo, hi := 0, ansi.StringWidth(plain)
 		if y == start.line {
@@ -552,7 +583,7 @@ func selectedTextFrom(lines []string, start, end selPoint, width int) string {
 		}
 		rows = append(rows, ansi.Cut(plain, lo, hi))
 	}
-	return joinSelectedRows(rows, width, start.col > 0)
+	return joinSelectedRows(rows, width, cutFirst)
 }
 
 // joinSelectedRows turns screen rows back into text.
@@ -769,6 +800,12 @@ func (m Model) applySelectionHighlight(content []string) []string {
 	lines := slices.Clone(content)
 	last := min(end.line, len(lines)-1)
 	for y := start.line; y <= last; y++ {
+		if h := m.sel.heads; h != nil && h.at == len(content) && h.lines[y] != (blockHeading{}) {
+			// Unlit, because it is not copied (selectedTextFrom). Read at
+			// another length the lines name other rows, and lighting a
+			// heading beats leaving a line of code dark.
+			continue
+		}
 		lo := 0
 		if y == start.line {
 			lo = start.col

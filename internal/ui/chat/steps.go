@@ -634,12 +634,7 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 		}
 		units = append(units, unit{idx: idx, sepBefore: sepBefore, sepAfter: sepAfter, text: text})
 	}
-	entryWidth := func(e entry) int {
-		if focus && m.selectableRow(e) {
-			return gutterWidth(width, onGrid(e))
-		}
-		return width
-	}
+	entryWidth := func(e entry) int { return m.unitWidth(e, width, focus) }
 	addEntry := func(i int, detail bool) {
 		e := es[i]
 		// A row's own offers are live only under reading mode's cursor. Under
@@ -691,6 +686,16 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 	}
 	addSlots(header.Detail)
 	return units
+}
+
+// unitWidth is the width an entry's own unit is rendered at in a pane of
+// width: the pane's, less the cursor's two columns where reading mode's
+// gutter takes them from a selectable row that is not on the grid.
+func (m Model) unitWidth(e entry, width int, focus bool) int {
+	if focus && m.selectableRow(e) {
+		return gutterWidth(width, onGrid(e))
+	}
+	return width
 }
 
 // gutterWidth is what a selectable unit renders at once reading mode's cursor

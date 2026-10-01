@@ -1130,3 +1130,37 @@ departure is closed by the artboards
 agreeing that a gloss is drawn only where it is about the call — which every
 gloss they draw already is but one: `Commit` still glosses `push` with *shhh
 never pushes; the remote is yours*.
+
+## A code block's heading where the artboard left it open
+
+*A gap, and one disagreement.* The `Blocks` artboard and the Rows catalogue
+draw a heading row over every fenced block in a reply: the language word in
+dim, `code` for a bare fence, no key, the row itself the click target. They
+leave five things undrawn, and the binary decided them.
+
+An indented block — four spaces in, no fence — gets no heading and is not a
+target. It has no language to name, and the copy by number never counted it,
+so a heading over it would offer a block no key can reach.
+
+A fence that never closes is not headed and is not counted, in a stream or
+in a reply cut off before its closing line. The heading lands with the line
+that closes the fence. The copy by number counts exactly the blocks that are
+headed, read by the parser that draws them, so the n-th heading is always
+block n — which also means a block inside a quote, drawn and headed by the
+artboard, is one the copy reaches.
+
+A message the reader sent heads its blocks the same way, since the renderer
+draws a block one way wherever it is, but its headings are not targets: no
+key copies a block from a sent message, and a target only the pointer reaches
+is half the readers'. A backlog item's sections are drawn by the same
+renderer, so their blocks are headed too.
+
+There is no hover. The artboard has the hint bar name the act under the
+pointer; the terminal reports motion only while a button is down, so the bar
+that names it is reading mode's, which offers the block copy on the reply
+the click has just put the cursor on.
+
+The disagreement: the artboard draws the mono heading in the mono dim. Mono
+markdown carries no escapes at all, so the heading there is the word in the
+one grey the rest of the reply is in; the word is what carries it, which is
+the artboard's own rule for mono.

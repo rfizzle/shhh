@@ -285,3 +285,49 @@ func toneIn(t *testing.T, rendered, want string) string {
 	t.Fatalf("no run carries %q", want)
 	return ""
 }
+
+// A construct that spans lines is lexed as what it is: the block is
+// tokenised whole and split back into its lines, so the digits inside a
+// block comment are comment and not numbers, a raw string's are string, and
+// the code after a comment closes is code again.
+func TestFenceSyntax_AConstructSpanningLinesIsLexedWhole(t *testing.T) {
+	cases := []struct {
+		name  string
+		lang  string
+		lines []string
+		line  int
+		text  string
+		tone  components.Token
+	}{
+		{"digits inside a block comment", "go", []string{"/* the cap is", "   120 rounds */", "const n = 1"}, 1, "120", components.Palette.Dim},
+		{"code after the comment closes", "go", []string{"/* the cap is", "   120 rounds */", "const n = 1"}, 2, "const", components.Palette.Info},
+		{"digits inside a raw string", "go", []string{"s := `first", "42 second`"}, 1, "42", components.Palette.Accent},
+		{"words inside a docstring", "python", []string{"def f():", "    \"\"\"Return 7", "    things.\"\"\"", "    return 7"}, 2, "things", components.Palette.Accent},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			segs := fenceSyntax(tc.lang, tc.lines)
+			if len(segs) != len(tc.lines) {
+				t.Fatalf("%d lines came back for %d", len(segs), len(tc.lines))
+			}
+			var joined strings.Builder
+			found := false
+			for _, seg := range segs[tc.line] {
+				joined.WriteString(seg.Text)
+				if !strings.Contains(seg.Text, tc.text) {
+					continue
+				}
+				found = true
+				if !seg.Styled || seg.Style.GetForeground() != tc.tone.Color() {
+					t.Errorf("%q took %v, want %v", seg.Text, seg.Style.GetForeground(), tc.tone.Color())
+				}
+			}
+			if !found {
+				t.Errorf("no segment holds %q", tc.text)
+			}
+			if joined.String() != tc.lines[tc.line] {
+				t.Errorf("the segments say %q, the line is %q", joined.String(), tc.lines[tc.line])
+			}
+		})
+	}
+}

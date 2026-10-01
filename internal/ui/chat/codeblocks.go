@@ -1,6 +1,10 @@
 package chat
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/rfizzle/shhh/internal/ui/markdown"
+)
 
 // codeBlock is one fenced block from a response: the fence's info string
 // reduced to its language tag (empty when the fence carried none) and the
@@ -12,32 +16,18 @@ type codeBlock struct {
 
 // extractCodeBlockInfo returns the fenced code blocks (``` or ~~~) in
 // markdown text, in order of appearance, with each block's language tag.
+//
+// The blocks are the ones the transcript heads and counts, read by the same
+// parser that draws them, so block n here is the block a click on the n-th
+// heading names. A scan of its own disagreed with the drawing wherever a
+// fence was not at the start of a line: a block inside a quote was drawn and
+// skipped, and a longer fence holding a shorter one was cut at the inner
+// fence, so every block after either was copied under the wrong number. A
+// fence that never closed is not a block yet, here as on the screen.
 func extractCodeBlockInfo(text string) []codeBlock {
 	var blocks []codeBlock
-	var current []string
-	var fence, lang string
-	inBlock := false
-
-	for _, line := range strings.Split(text, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if !inBlock {
-			if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~") {
-				fence = trimmed[:3]
-				lang = ""
-				if info := strings.Fields(trimmed[3:]); len(info) > 0 {
-					lang = info[0]
-				}
-				inBlock = true
-				current = nil
-			}
-			continue
-		}
-		if strings.HasPrefix(trimmed, fence) {
-			inBlock = false
-			blocks = append(blocks, codeBlock{lang: lang, body: strings.Join(current, "\n")})
-			continue
-		}
-		current = append(current, line)
+	for _, f := range markdown.FenceTexts(text) {
+		blocks = append(blocks, codeBlock{lang: f.Lang, body: f.Body})
 	}
 	return blocks
 }

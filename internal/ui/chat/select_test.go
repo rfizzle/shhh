@@ -1098,7 +1098,7 @@ func TestSelectedTextFrom_SlicesByCell(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := selectedTextFrom(lines, tc.start, tc.end, 40); got != tc.want {
+			if got := selectedTextFrom(lines, tc.start, tc.end, 40, nil); got != tc.want {
 				t.Fatalf("got %q want %q", got, tc.want)
 			}
 		})

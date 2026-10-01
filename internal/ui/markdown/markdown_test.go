@@ -73,6 +73,8 @@ func TestCodeIsFoldedNotReflowed(t *testing.T) {
 	const line = `func main() { fmt.Println("a code line that is quite long and will exceed the width") }`
 	const width = 40
 	rows := strings.Split(Render("```go\n"+line+"\n```\n", Options{Width: width, Mono: true}), "\n")
+	// The first row is the heading naming the block; the code is under it.
+	rows = rows[1:]
 	if len(rows) < 2 {
 		t.Fatalf("expected the long line to fold, got %q", rows)
 	}

@@ -35,6 +35,8 @@ var streamCorpus = map[string]string{
 	"opens in a fence": "```go\nfunc main() {\n\tfmt.Println(\"hi\")\n}\n```\n",
 	"blank runs":       "Para.\n\n\n\nThree blank lines above.\n\n \n\nblank-with-space above.\n",
 	"paren ordered":    "1) paren ordered\n2) second\n\nafter\n",
+	"fences in containers": "1. Build:\n\n   ```sh\n   make build\n   ```\n2. Done.\n\n" +
+		"> The test:\n>\n> ```go\n> /* a comment\n>    of 2 lines */\n> x := 1\n> ```\n\nafter\n",
 	"long prose": strings.Repeat("A fairly long paragraph of prose that wraps at every width we test. ", 6) +
 		"\n\n" + strings.Repeat("And a second one, just as long, so the document is big enough to matter. ", 6) + "\n",
 }
@@ -278,4 +280,42 @@ func BenchmarkStreamingMarkdown(b *testing.B) {
 			}
 		}
 	})
+}
+
+// A fence still arriving draws its code and no heading: a heading says where
+// a block starts, and a block with no end yet is not one — the copy by number
+// does not count it either. The heading lands with the line that closes it,
+// and from then on the glued render is the whole message's.
+func TestStreamMarkdown_AnOpenFenceHasNoHeadingYet(t *testing.T) {
+	monoRestore(t)
+	components.SetMono(true)
+	const doc = "Build it first:\n\n```sh\nmake build\n```\n\nThen:\n\n```go\nx := 1\n```\n"
+	open := strings.Index(doc, "```go") + len("```go\nx := 1")
+	var s streamingMarkdown
+	for i := 1; i <= open; i++ {
+		s.Render(doc[:i], 60)
+	}
+	arriving := s.Render(doc[:open], 60)
+	heads := 0
+	for _, row := range strings.Split(arriving, "\n") {
+		switch strings.TrimSpace(row) {
+		case "sh":
+			heads++
+		case "go":
+			t.Fatalf("the open fence drew its heading:\n%s", arriving)
+		}
+	}
+	if heads != 1 || !strings.Contains(arriving, "x := 1") {
+		t.Fatalf("want the closed fence headed and the open one's code drawn:\n%s", arriving)
+	}
+	for i := open + 1; i <= len(doc); i++ {
+		s.Render(doc[:i], 60)
+	}
+	closed := s.Render(doc, 60)
+	if closed != renderMarkdown(doc, 60) {
+		t.Fatal("the glued render of the closed message is not the whole render")
+	}
+	if !strings.Contains(closed, "\n    go") {
+		t.Fatalf("the closed fence should be headed:\n%s", closed)
+	}
 }

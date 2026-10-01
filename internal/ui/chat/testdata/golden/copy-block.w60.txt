@@ -26,6 +26,7 @@
 
 ❯ Here is the handler:                                
                                                     
+    go                                              
     func copyBlock(src string, i int) {             
         if i < 1 {                                  
             return                                  
@@ -34,12 +35,14 @@
                                                     
   The scene builds once and captures at both widths:
                                                     
+    sh                                              
     make build                                      
     make tui-shot SCENE=copy-block COLS=110 ROWS=40 
     make tui-shot SCENE=copy-block COLS=60 ROWS=40  
                                                     
   Its steps open the list and take the second row:  
                                                     
+    code                                            
     keys "/copy code" Enter                         
     snap 01-list "copy which block?"
 
@@ -70,6 +73,7 @@
 
 ␛[94m❯␛[m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[97;48;5;62mHere is the handler:                                ␛[m␛[m
                                                     
+    ␛[38;5;241mgo␛[m                                              
     ␛[94mfunc␛[m␛[38;5;252m ␛[m␛[97mcopyBlock␛[m␛[38;5;245m(␛[m␛[38;5;252msrc ␛[m␛[94mstring␛[m␛[38;5;245m,␛[m␛[38;5;252m i ␛[m␛[94mint␛[m␛[38;5;245m)␛[m␛[38;5;252m ␛[m␛[38;5;245m{␛[m             
     ␛[38;5;252m    ␛[m␛[94mif␛[m␛[38;5;252m i ␛[m␛[38;5;245m<␛[m␛[38;5;252m ␛[m␛[38;5;214m1␛[m␛[38;5;252m ␛[m␛[38;5;245m{␛[m                                  
     ␛[38;5;252m        ␛[m␛[94mreturn␛[m                                  
@@ -78,12 +82,14 @@
                                                     
   ␛[38;5;252mThe scene builds once and captures at both widths:␛[m
                                                     
+    ␛[38;5;241msh␛[m                                              
     ␛[38;5;252mmake build␛[m                                      
     ␛[38;5;252mmake tui-shot SCENE␛[m␛[38;5;245m=␛[m␛[38;5;252mcopy-block COLS␛[m␛[38;5;245m=␛[m␛[38;5;214m110␛[m␛[38;5;252m ROWS␛[m␛[38;5;245m=␛[m␛[38;5;214m40␛[m 
     ␛[38;5;252mmake tui-shot SCENE␛[m␛[38;5;245m=␛[m␛[38;5;252mcopy-block COLS␛[m␛[38;5;245m=␛[m␛[38;5;214m60␛[m␛[38;5;252m ROWS␛[m␛[38;5;245m=␛[m␛[38;5;214m40␛[m  
                                                     
   ␛[38;5;252mIts steps open the list and take the second row:␛[m  
                                                     
+    ␛[38;5;241mcode␛[m                                            
     ␛[38;5;180mkeys "/copy code" Enter␛[m                         
     ␛[38;5;180msnap 01-list "copy which block?"␛[m
 
