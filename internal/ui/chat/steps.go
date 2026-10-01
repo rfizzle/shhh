@@ -603,6 +603,10 @@ type unit struct {
 	// idx with a row of its own, and a click has to say which it landed on
 	// (cardopen.go).
 	group, strip bool
+	// closesCard marks the last unit of an open card, whose last line is
+	// the card's closing padding row rather than the unit's own: a click
+	// there lands on the card, not on the call (click.go).
+	closesCard bool
 	// shadow marks a unit that shares its idx with the unit the reading
 	// cursor stands on for that entry and is not it: an open card's own
 	// lines where nothing titled it, its strip, a call row under the line

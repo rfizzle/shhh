@@ -289,8 +289,18 @@ folds or opens it, and the reader's answer outranks the rung
 its header alone, with `▸` in the pointer column, which is how it says it is
 a fold. Under reading mode's cursor the card is the stop, and enter walks it
 through three depths: open onto its calls, folded to its header, and the card
-again; a click folds and unfolds it, so the same cell pressed twice is where
-it started.
+again.
+
+The pointer's control on a card is its header. A click there folds the card
+to its header and unfolds it, open or not, so the same cell pressed twice is
+where it started — the rule every click target obeys: the header names one
+step, and enter already acts on it. The rest of the card is text: a click on
+its padding, its sentence or its evidence does nothing, because a sentence
+under the pointer is for selecting and has no single act behind it. Inside an
+open card each call's row is a row like any other, and a click on it opens
+that call as it would anywhere; a group's line and a strip glyph are targets
+of their own, below. A drag that starts on a card selects, header included,
+since nothing acts while the button is down.
 
 Open, a card lists its calls under the receipt's verbs, in the order the
 header counts them: one line per verb with the group's count and what its
@@ -348,8 +358,11 @@ the rail continues to state only the immediate phase; one too long is drawn
 as [the checkpoint it is](#the-progress-checkpoint).
 
 No key is printed on a card for what enter does: the hint bar says what enter
-does to the card under the cursor. A card prints a key only where it offers a
-live chord — a rule's refusal sending the reader to its own answer — in the
+does to the card under the cursor, and reading mode's `?` with the cursor on
+a card, a group's line or the strip lists the same acts in the same words —
+open it, fold it, along the strip, open that tool — beside the mode's
+register, then gives the strip back with its cursor where it was. A card
+prints a key only where it offers a live chord — a rule's refusal sending the reader to its own answer — in the
 key colour, under the rule that a key is inert until its surface holds the
 keyboard
 ([`principles.md`](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).

@@ -402,13 +402,17 @@ func spinTone(s Styles) lipgloss.Style   { return s.SpinText }
 // A compaction has no kind of its own, so its column says how it came out:
 // ✓ for a window that came back. One that hit the floor is ActivityFailed
 // and takes ✗ from the state table.
+//
+// Thinking is prose and wears no glyph (docs/interface/surfaces.md#the-think-row),
+// so ✻ is left marking the compose row, the model writing its calls, and
+// that is what the legend says it means.
 var kindGlyphs = [...]glyphRow{
 	ActivityTool:       {"⚙", dimTone, "a read: a file, a search, a listing"},
 	ActivityCommand:    {"$", accentTone, "a shell command"},
 	ActivityEdit:       {"✎", accentTone, "an edit, a write, a patch or a memory"},
 	ActivitySubagent:   {"◇", func(s Styles) lipgloss.Style { return s.Info }, "a sub-agent"},
 	ActivityRemote:     {"⇄", accentTone, "a call to a server not marked read-only"},
-	ActivityThink:      {"✻", dimTone, "the model's own reasoning"},
+	ActivityThink:      {"✻", dimTone, "the model writing its calls, counted as they arrive"},
 	ActivityReport:     {"⛁", dimTone, "a published report page"},
 	ActivitySummary:    {"≡", dimTone, "a reading of the session"},
 	ActivityCompaction: {"✓", func(s Styles) lipgloss.Style { return s.Add }, "a compaction that brought the window back"},

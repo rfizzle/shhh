@@ -1,6 +1,7 @@
 # program test: TestProgram_AnEditCardAppliesTheEdit,
 #   TestProgram_AFoldedRunOfReadsOpensInPlace,
 #   TestProgram_AClickOnAStripGlyphMovesTheCursor,
+#   TestProgram_AClickOnTheHeaderFoldsTheCard,
 #   TestProgram_TheQuitChordArmsThenLeaves
 #
 # Each step a card (docs/interface/surfaces.md#the-step), through the built
@@ -25,7 +26,9 @@
 # own view, esc comes back to the strip where it was, and esc again closes
 # the card. Then enter opens it,
 # folds it to its header with `▸` in the pointer column, and gives the card
-# back.
+# back. Last, the density ladder and the pointer: `/ui verbosity high` and
+# `low` against the `Cards` artboard's screens 10 and 8, and a click on a
+# header that gives a card back at low and folds it again.
 setup mkdir -p docs internal/ui && printf 'Scenes drive the built binary.\n' > docs/scenes.md
 setup for f in keys render reply click fold; do printf 'package ui\n' > internal/ui/$f.go; done
 setup printf 'notes nobody has committed\n' > notes.md
@@ -103,6 +106,34 @@ keys Escape
 sleep 1
 keys q
 snap 22-prompt "╭─ ✓ done"
+# The ladder: at high every card is open on its groups, the large step's
+# strip under them (read against the `Cards` artboard's screen 10); at low
+# each card is its header alone, one band row with one blank between, and
+# thinking is left out (screen 8).
+keys "/ui verbosity high" Enter
+# Below 80 columns the open step is taller than the pane, and its group
+# line has scrolled above the strip.
+wide 80 snap 22a-high "verbosity set to high" "▾ ran 2 commands" "in order ⚙⚙⚙⚙⚙⚙$✗"
+narrow 80 snap 22a-high "verbosity set to high" "▎✗ printf" "in order ⚙⚙⚙⚙⚙⚙$✗"
+keys "/ui verbosity low" Enter
+snap 22b-low "verbosity set to low" "⚙ read 2 files" "▎✎ wrote story.md"
+# The pointer: an SGR press and release on the write's header — row 10 at
+# every width, its verb at column 7 — gives the card back at low, the
+# reader's answer outranking the rung. The card grows round its header: at
+# 80 columns and up the padding row moves it to row 11; below, the pane is
+# full and follows its end, which leaves it at row 8. The second click there
+# folds it with ▸ in the pointer column, and the fold holds when the rung
+# goes back to normal.
+keys -l $'\e[<0;8;10M' $'\e[<0;8;10m'
+snap 22c-given-back "Writing the story now, appended after the" "+ # A code block is copied by itself"
+wide 80 keys -l $'\e[<0;8;11M' $'\e[<0;8;11m'
+narrow 80 keys -l $'\e[<0;8;8M' $'\e[<0;8;8m'
+snap 22d-folded "▸▎✎ wrote story.md"
+keys "/ui verbosity normal" Enter
+# Below 80 columns the cards at normal are taller than the pane, and the
+# folded one has scrolled above the large step.
+wide 80 snap 22e-normal "verbosity set to normal" "▸▎✎ wrote story.md" "Running the suite once more"
+narrow 80 snap 22e-normal "verbosity set to normal" "Running the suite once more"
 keys C-c
 snap 23-quit-armed "again quits"
 keys C-c

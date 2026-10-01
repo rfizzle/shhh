@@ -12,13 +12,20 @@ package chat
 // the button is down, so a drag that starts on a target still selects, and
 // the one button carries both gestures without either having to give ground.
 //
-// Ten things are targets, and the test they pass is the same one ten times:
-// the pointer names exactly one of them, and the thing it names already has a
-// key.
+// Eleven things are targets, and the test they pass is the same one eleven
+// times: the pointer names exactly one of them, and the thing it names
+// already has a key.
 //
+//   - A step card's header. It names one step, and [enter] with reading
+//     mode's cursor on the card walks its depths, [-] folds it; the click
+//     folds the card to its header and unfolds it again (card.go). The rest
+//     of the card — its padding, the sentence that titled the step, the
+//     evidence under it — is text, a selection surface with no single act
+//     behind it, and a click there does nothing.
 //   - An activity row. Its whole width is one row, and [enter] under reading
 //     mode's cursor already opens it. The row line opens and closes it; the
-//     body under the row opens that body whole (clickRow). A turn's close
+//     body under the row opens that body whole (clickRow). A call's row
+//     inside an open card is one, the same as anywhere. A turn's close
 //     is one too: the line stating what the turn changed opens that turn's
 //     review, which enter on the selected close opens as well.
 //   - The approval card's decision run. Each key owns its own cells inside
@@ -43,7 +50,8 @@ package chat
 //     attachment, and [enter] with reading mode's cursor on the row opens it:
 //     a picture onto its card, every click, and a paste in place
 //     (attachments.go). A document's row opens onto nothing under either
-//     input, so it is not one.
+//     input, so it is not one. A picture a call returned, on its card's
+//     footer, is the same door and the same target.
 //   - An open card's group line. It names one group of the card's calls,
 //     and [enter] with reading mode's cursor on the line folds and unfolds
 //     that group (cardopen.go). The directories under a group of reads name
@@ -246,11 +254,23 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 	// it: the click names the line it landed on, and enter after it acts
 	// there (cardopen.go).
 	m.strip = stripCursor{}
-	if u.cardHead && m.toggleCardFold(idx) {
-		// A click on a card's own lines folds it or unfolds it, open or
-		// not: a run nothing titled is kept on its first call, so the card
-		// and that call's row share an index, and the line says which one
-		// was meant (docs/interface/surfaces.md#the-step).
+	if u.closesCard && offset == strings.Count(u.text, "\n")-1 {
+		// An open card's closing padding row rides its last unit, but it
+		// is the card's line and not the call's: like the rest of the
+		// card around its header, a click there does nothing.
+		return m, nil
+	}
+	if u.cardHead {
+		// A click on a card's header folds it or unfolds it, open or not:
+		// a run nothing titled is kept on its first call, so the card and
+		// that call's row share an index, and the line says which one was
+		// meant. The card's other lines — its padding, the sentence, the
+		// evidence — are text to read and select, and a click there does
+		// nothing (docs/interface/surfaces.md#the-step).
+		// See docs/interface/departures.md#only-a-cards-header-answers-a-click.
+		if offset != m.cardHeaderOffset(idx) || !m.toggleCardFold(idx) {
+			return m, nil
+		}
 		m.invalidateRenderCache()
 		if m.state == stateFocus {
 			m.focusIdx = idx
@@ -380,10 +400,11 @@ func (m *Model) toggleRow(idx int, g rowGesture) (claimed bool, full *components
 			// (docs/interface/surfaces.md#the-step).
 			return true, nil, false
 		}
-	} else if _, ok := m.cardTakesKey(*m.entries(), idx); ok && m.toggleCardFold(idx) {
-		// A click folds a card to its header and unfolds it again, wherever
-		// on it the press landed: it is one target, and the same cell
-		// pressed twice is where it started.
+	} else if _, ok := m.cardTakesKey(*m.entries(), idx); ok {
+		// The pointer's control on a card is its header, answered before
+		// this (clickRow); a line of the card that reaches here is text,
+		// and the click does nothing rather than opening something the
+		// card shares its index with.
 		return true, nil, false
 	}
 	if d := es[idx].diff; d != nil {

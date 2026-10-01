@@ -59,8 +59,8 @@
                    its last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate
                    passing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id
                    its output was kept under where it was cut. It reads the rail's own alerts and changes nothing
-    /step          open the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui
-                   verbosity high is the same thing for every step at once)
+    /step          open the in-flight step's card onto its calls, every call with its output body, bounded; run it again to close
+                   (/ui verbosity high is the same thing for every card at once)
     /status        where this session is: what it is working on, what it has spent, and whether the last few turns are still on
                    the target you set it
     /sessions      the sessions running on this machine: the conversation each saves to, its checkout and branch, and whether it
@@ -70,9 +70,10 @@
                    without them
     /ui            screen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui
                    mouse <on|off>
-                   low hides counts, normal collapses rows, high expands rows. The mouse is on by default so the wheel scrolls the
-                   transcript, click-drag selects it, and clicks open rows or answer keys; off hands selection back to the
-                   terminal, and ctrl+x flips it and saves it
+                   low draws each step's card as its header alone and leaves thinking out, normal draws the header, the sentence
+                   and the evidence, high opens every card onto its calls; a card you folded or opened stays as you left it. The
+                   mouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, fold a
+                   card by its header or answer keys; off hands selection back to the terminal, and ctrl+x flips it and saves it
                    terminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications,
                               focus events, cell size
     /safety        the session's whole boundary on one screen (also /security): the mode and grants, where it may write, what
@@ -144,8 +145,8 @@
                    its last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate
                    passing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id
                    its output was kept under where it was cut. It reads the rail's own alerts and changes nothing
-    /step          open the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui
-                   verbosity high is the same thing for every step at once)
+    /step          open the in-flight step's card onto its calls, every call with its output body, bounded; run it again to close
+                   (/ui verbosity high is the same thing for every card at once)
     /steps         the session's own working list on one screen: every step it declared, the paths each said it would touch, which
                    it has marked done and the one it is on — and beside each, the calls the transcript titled for it, or not
                    started where there are none. It reads and changes nothing
@@ -158,9 +159,10 @@
                    without them
     /ui            screen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui
                    mouse <on|off>
-                   low hides counts, normal collapses rows, high expands rows. The mouse is on by default so the wheel scrolls the
-                   transcript, click-drag selects it, and clicks open rows or answer keys; off hands selection back to the
-                   terminal, and ctrl+x flips it and saves it
+                   low draws each step's card as its header alone and leaves thinking out, normal draws the header, the sentence
+                   and the evidence, high opens every card onto its calls; a card you folded or opened stays as you left it. The
+                   mouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, fold a
+                   card by its header or answer keys; off hands selection back to the terminal, and ctrl+x flips it and saves it
                    terminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications,
                               focus events, cell size
     /sandbox       containment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)
@@ -244,8 +246,8 @@
                    ␛[38;5;244mits last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate␛[m
                    ␛[38;5;244mpassing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id␛[m
                    ␛[38;5;244mits output was kept under where it was cut. It reads the rail's own alerts and changes nothing␛[m
-    ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui␛[m
-                   ␛[38;5;244mverbosity high is the same thing for every step at once)␛[m
+    ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's card onto its calls, every call with its output body, bounded; run it again to close␛[m
+                   ␛[38;5;244m(/ui verbosity high is the same thing for every card at once)␛[m
     ␛[38;5;254m/status␛[m        ␛[38;5;244mwhere this session is: what it is working on, what it has spent, and whether the last few turns are still on␛[m
                    ␛[38;5;244mthe target you set it␛[m
     ␛[38;5;254m/sessions␛[m      ␛[38;5;244mthe sessions running on this machine: the conversation each saves to, its checkout and branch, and whether it␛[m
@@ -255,9 +257,10 @@
                    ␛[38;5;244mwithout them␛[m
     ␛[38;5;254m/ui␛[m            ␛[38;5;244mscreen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui␛[m
                    ␛[38;5;244mmouse <on|off>␛[m
-                   ␛[38;5;244mlow hides counts, normal collapses rows, high expands rows. The mouse is on by default so the wheel scrolls the␛[m
-                   ␛[38;5;244mtranscript, click-drag selects it, and clicks open rows or answer keys; off hands selection back to the␛[m
-                   ␛[38;5;244mterminal, and ctrl+x flips it and saves it␛[m
+                   ␛[38;5;244mlow draws each step's card as its header alone and leaves thinking out, normal draws the header, the sentence␛[m
+                   ␛[38;5;244mand the evidence, high opens every card onto its calls; a card you folded or opened stays as you left it. The␛[m
+                   ␛[38;5;244mmouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, fold a␛[m
+                   ␛[38;5;244mcard by its header or answer keys; off hands selection back to the terminal, and ctrl+x flips it and saves it␛[m
                    ␛[38;5;244mterminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications,␛[m
                    ␛[38;5;244m           focus events, cell size␛[m
     ␛[38;5;254m/safety␛[m        ␛[38;5;244mthe session's whole boundary on one screen (also /security): the mode and grants, where it may write, what␛[m
@@ -329,8 +332,8 @@
                    ␛[38;5;244mits last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate␛[m
                    ␛[38;5;244mpassing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id␛[m
                    ␛[38;5;244mits output was kept under where it was cut. It reads the rail's own alerts and changes nothing␛[m
-    ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui␛[m
-                   ␛[38;5;244mverbosity high is the same thing for every step at once)␛[m
+    ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's card onto its calls, every call with its output body, bounded; run it again to close␛[m
+                   ␛[38;5;244m(/ui verbosity high is the same thing for every card at once)␛[m
     ␛[38;5;254m/steps␛[m         ␛[38;5;244mthe session's own working list on one screen: every step it declared, the paths each said it would touch, which␛[m
                    ␛[38;5;244mit has marked done and the one it is on — and beside each, the calls the transcript titled for it, or not␛[m
                    ␛[38;5;244mstarted where there are none. It reads and changes nothing␛[m
@@ -343,9 +346,10 @@
                    ␛[38;5;244mwithout them␛[m
     ␛[38;5;254m/ui␛[m            ␛[38;5;244mscreen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui␛[m
                    ␛[38;5;244mmouse <on|off>␛[m
-                   ␛[38;5;244mlow hides counts, normal collapses rows, high expands rows. The mouse is on by default so the wheel scrolls the␛[m
-                   ␛[38;5;244mtranscript, click-drag selects it, and clicks open rows or answer keys; off hands selection back to the␛[m
-                   ␛[38;5;244mterminal, and ctrl+x flips it and saves it␛[m
+                   ␛[38;5;244mlow draws each step's card as its header alone and leaves thinking out, normal draws the header, the sentence␛[m
+                   ␛[38;5;244mand the evidence, high opens every card onto its calls; a card you folded or opened stays as you left it. The␛[m
+                   ␛[38;5;244mmouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, fold a␛[m
+                   ␛[38;5;244mcard by its header or answer keys; off hands selection back to the terminal, and ctrl+x flips it and saves it␛[m
                    ␛[38;5;244mterminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications,␛[m
                    ␛[38;5;244m           focus events, cell size␛[m
     ␛[38;5;254m/sandbox␛[m       ␛[38;5;244mcontainment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)␛[m

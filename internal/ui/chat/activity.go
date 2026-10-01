@@ -730,7 +730,7 @@ func (m *Model) uiCommand(parts []string) string {
 	switch parts[1] {
 	case "verbosity":
 		if len(parts) == 2 {
-			return fmt.Sprintf("verbosity: %s — how much every surface explains\nusage: /ui verbosity <low|normal|high> — low shows step headers only and drops think rows, normal folds read-only groups, high expands every row\nfor one step rather than all of them, /step opens the detail of the step in flight", m.verbosity)
+			return fmt.Sprintf("verbosity: %s — how much every surface explains\nusage: /ui verbosity <low|normal|high> — low draws each card as its header alone and leaves thinking out, normal draws header, body and footer, high opens every card onto its calls; a card you folded or opened stays as you left it\nfor one step rather than all of them, /step opens the detail of the step in flight", m.verbosity)
 		}
 		if len(parts) != 3 {
 			return "usage: /ui verbosity <low|normal|high>"

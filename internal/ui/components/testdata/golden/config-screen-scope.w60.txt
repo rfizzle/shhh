@@ -92,7 +92,7 @@ $  a shell command
 ✎  an edit, a write, a patch or a memory
 ◇  a sub-agent
 ⇄  a call to a server not marked read-only
-✻  the model's own reasoning
+✻  the model writing its calls, counted as they arrive
 ⛁  a published report page
 ≡  a reading of the session
 ✓  a compaction that brought the window back
@@ -186,7 +186,7 @@ $  a shell command
 ␛[38;5;214m✎␛[m  ␛[38;5;241man edit, a write, a patch or a memory␛[m
 ␛[94m◇␛[m  ␛[38;5;241ma sub-agent␛[m
 ␛[38;5;214m⇄␛[m  ␛[38;5;241ma call to a server not marked read-only␛[m
-␛[38;5;241m✻␛[m  ␛[38;5;241mthe model's own reasoning␛[m
+␛[38;5;241m✻␛[m  ␛[38;5;241mthe model writing its calls, counted as they arrive␛[m
 ␛[38;5;241m⛁␛[m  ␛[38;5;241ma published report page␛[m
 ␛[38;5;241m≡␛[m  ␛[38;5;241ma reading of the session␛[m
 ␛[92m✓␛[m  ␛[38;5;241ma compaction that brought the window back␛[m

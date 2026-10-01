@@ -346,6 +346,46 @@ func TestProgram_AClickOnAStripGlyphMovesTheCursor(t *testing.T) {
 	frameHas(t, finalFrame(t, tm), "along the strip", "open that tool")
 }
 
+// The pointer's route to a card: from the draft, a click on a card's header
+// folds it to that header with ▸ in the pointer column, a click on the
+// sentence under a header does nothing, and a second click on the header
+// gives the card back (docs/interface/surfaces.md#the-step).
+func TestProgram_AClickOnTheHeaderFoldsTheCard(t *testing.T) {
+	dir := fixtureDir(t, map[string]string{"loop.go": "package agent\n", "round.go": "package agent\n"})
+	tm := runProgramAt(t, readingSession(dir,
+		programTurn{text: "Locate the round accounting\n", calls: reads("loop.go", "round.go")},
+		programTurn{text: "The limit is a checkpoint, not a wall."},
+	).WithMouse(true), 110, 40)
+
+	send(tm, "how is the round limit counted")
+	waitForAll(t, tm, "not a wall", "Locate the round accounting")
+	cell := func(frame, s string) (x, y int) {
+		for i, l := range strings.Split(frame, "\n") {
+			if at := strings.Index(l, s); at >= 0 {
+				return len([]rune(l[:at])), i
+			}
+		}
+		t.Fatalf("no %q on the frame:\n%s", s, frame)
+		return 0, 0
+	}
+	click := func(x, y int) {
+		tm.Send(tea.MouseClickMsg{Button: tea.MouseLeft, X: x, Y: y})
+		tm.Send(tea.MouseReleaseMsg{Button: tea.MouseNone, X: x, Y: y})
+	}
+
+	// The sentence first: nothing moves, so the header click after it is
+	// what the fold is waited on.
+	frame := waitForFrame(t, tm, "the card", func(f string) bool { return strings.Contains(f, "read 2 files") })
+	click(cell(frame, "Locate the round accounting"))
+	click(cell(frame, "read 2 files"))
+	frame = waitForFrame(t, tm, "the folded card", func(f string) bool {
+		return strings.Contains(f, "▸ ⚙ read 2 files") && !strings.Contains(f, "Locate the round accounting")
+	})
+	click(cell(frame, "read 2 files"))
+	waitForText(t, tm, "Locate the round accounting")
+	frameHas(t, finalFrame(t, tm), "  ⚙ read 2 files", "not a wall")
+}
+
 // The transcript's search counts what is folded away and walks into it: the
 // file is on a row two folds down, and the search still finds it.
 func TestProgram_TheSearchReachesInsideTheFolds(t *testing.T) {

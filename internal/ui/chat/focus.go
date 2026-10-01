@@ -442,7 +442,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// reason every bare letter on this bar is: nothing else is listening.
 		// It is the list every card's `?` opens, with the row under the
 		// cursor's own offers beside the mode's (keylist.go).
-		return m.openKeyList("reading mode", m.readingRowOffers())
+		return m.openKeyList("reading mode", m.readingListOffers())
 	case keys.Is(pressed, keys.Row.Withdraw, keys.Row.Rounds, keys.Row.Uncap):
 		if next, cmd, claimed := m.rowLetter(pressed); claimed {
 			return next, cmd

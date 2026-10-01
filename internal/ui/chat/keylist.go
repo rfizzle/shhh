@@ -46,6 +46,38 @@ func registerOffers(surface string) []components.KeyOffer {
 	return nil
 }
 
+// readingListOffers is what reading mode's key list draws beside the mode's
+// register for the row under the cursor: the row's own offers, and where the
+// cursor stands on a step's card, a group line in an open one or its strip,
+// what the mode's keys do there in the words the bar says them in — open it,
+// fold it, along the strip, open that tool. The register names enter and the
+// arrows once for every row; the card is where they mean something more
+// particular, and a list that did not say so would leave the card's acts to
+// the one line of bar at the foot (docs/interface/surfaces.md#the-step).
+// See docs/interface/departures.md#the-key-list-names-a-cards-acts-beside-the-register.
+func (m Model) readingListOffers() []components.KeyOffer {
+	var segs []hintSeg
+	if m.stripLive() {
+		segs = m.stripKeys()
+	} else if _, _, ok := m.groupAt(*m.entries(), m.focusIdx); ok {
+		words := cardFoldWords
+		if (*m.entries())[m.focusIdx].groupFolded {
+			words = cardUnfoldWords
+		}
+		segs = append(segs, segAs(keys.Reading.Expand, words))
+	} else if words, ok := m.focusedCardWords(); ok {
+		segs = append(segs, segAs(keys.Reading.Expand, words))
+		if m.focusedRowOpen() {
+			segs = append(segs, segAs(keys.Reading.Collapse, cardFoldWords))
+		}
+	}
+	offers := make([]components.KeyOffer, 0, len(segs))
+	for _, s := range segs {
+		offers = append(offers, components.KeyOffer{Key: "[" + s.key + "]", Label: s.label, Safe: s.safe})
+	}
+	return append(offers, m.readingRowOffers()...)
+}
+
 // openKeyList puts a surface's register on the pane. ret is the state the
 // list goes back to, which is the surface it was opened over.
 func (m Model) openKeyList(surface string, row []components.KeyOffer) (tea.Model, tea.Cmd) {

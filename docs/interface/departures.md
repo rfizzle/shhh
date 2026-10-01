@@ -203,8 +203,8 @@ reader", with `▸` in the pointer column, and neither says what the other
 press does. The binary takes both: enter on a card opens it onto its calls,
 enter again folds it to its header, and a third press gives the card back —
 the three depths enter already walks on a row's output, a diff and a thought.
-A click folds a card and unfolds it, so the same cell pressed twice is where
-it started.
+A click on its header folds a card and unfolds it, so the same cell pressed
+twice is where it started.
 
 An open card's stops are its group lines and the rows of its groups of one
 call. A run of calls nothing titled is kept on its first call, so once it is
@@ -1432,3 +1432,38 @@ The disagreement: the artboard draws the mono heading in the mono dim. Mono
 markdown carries no escapes at all, so the heading there is the word in the
 one grey the rest of the reply is in; the word is what carries it, which is
 the artboard's own rule for mono.
+
+## A card the reader gave back at low keeps that shape
+
+*A gap.* The `Cards` artboard draws the ladder at `low`, `normal` and `high`
+and says a card the reader folded or opened stays as they left it at any
+rung; it does not draw a card given back at `low`. At `low` a card is its
+header alone already, so the key and the click that would fold it give it
+back instead, and the binary gives it back as header, body and footer — the
+card, not the card opened onto its calls, because that is the next depth and
+the reader asked for one. The answer is kept like a fold: the card stays at
+that shape when the rung moves, so at `high` a card the reader gave back at
+`low` is drawn whole and not open. A fold made at any rung is the header with
+`▸` at every rung.
+
+## Only a card's header answers a click
+
+*A gap.* The artboards draw no pointer on a card. The binary makes the
+header the card's one control and every other line of it text: a click on
+the padding, the sentence, the evidence or a running command's tail does
+nothing, and neither does one on the strip's words or its count. A sentence
+is what a reader drags across to copy, and a press that folded the card
+under it would be a gamble on where the drag began; the header names one
+step and enter already acts on it, so it passes the rule every target
+passes.
+
+## The key list names a card's acts beside the register
+
+*A gap.* The `Cards` artboard puts the strip's keys on the hint bar and draws
+no key list over a card. Reading mode's `?` with the cursor on a card, a
+group's line or the strip lists what the mode's keys do there — `[enter]
+open it`, `fold it` or `unfold it`, `[←→] along the strip`, `[enter] open
+that tool` — in the words the bar uses, railed as the row's own offers are,
+under the mode's register; the register's own words for enter and the arrows
+stay the general ones every row shares. On the strip `?` keeps the strip's
+cursor, so closing the list comes back to the call it was on.

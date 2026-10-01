@@ -128,10 +128,11 @@
                    and the evidence id its output was kept
                    under where it was cut. It reads the
                    rail's own alerts and changes nothing
-    /step          open the in-flight step's detail: every
-                   row in it shows its output body, bounded;
-                   run it again to close (/ui verbosity high
-                   is the same thing for every step at once)
+    /step          open the in-flight step's card onto its
+                   calls, every call with its output body,
+                   bounded; run it again to close (/ui
+                   verbosity high is the same thing for
+                   every card at once)
     /status        where this session is: what it is working
                    on, what it has spent, and whether the
                    last few turns are still on the target
@@ -149,12 +150,17 @@
                    and mouse: /ui verbosity
                    <low|normal|high> · /ui mono <on|off> ·
                    /ui mouse <on|off>
-                   low hides counts, normal collapses rows,
-                   high expands rows. The mouse is on by
+                   low draws each step's card as its header
+                   alone and leaves thinking out, normal
+                   draws the header, the sentence and the
+                   evidence, high opens every card onto its
+                   calls; a card you folded or opened stays
+                   as you left it. The mouse is on by
                    default so the wheel scrolls the
                    transcript, click-drag selects it, and
-                   clicks open rows or answer keys; off
-                   hands selection back to the terminal, and
+                   clicks open rows, fold a card by its
+                   header or answer keys; off hands
+                   selection back to the terminal, and
                    ctrl+x flips it and saves it
                    terminal   what this terminal answered
                               when shhh asked what it can
@@ -327,10 +333,11 @@
                    and the evidence id its output was kept
                    under where it was cut. It reads the
                    rail's own alerts and changes nothing
-    /step          open the in-flight step's detail: every
-                   row in it shows its output body, bounded;
-                   run it again to close (/ui verbosity high
-                   is the same thing for every step at once)
+    /step          open the in-flight step's card onto its
+                   calls, every call with its output body,
+                   bounded; run it again to close (/ui
+                   verbosity high is the same thing for
+                   every card at once)
     /steps         the session's own working list on one
                    screen: every step it declared, the paths
                    each said it would touch, which it has
@@ -355,12 +362,17 @@
                    and mouse: /ui verbosity
                    <low|normal|high> · /ui mono <on|off> ·
                    /ui mouse <on|off>
-                   low hides counts, normal collapses rows,
-                   high expands rows. The mouse is on by
+                   low draws each step's card as its header
+                   alone and leaves thinking out, normal
+                   draws the header, the sentence and the
+                   evidence, high opens every card onto its
+                   calls; a card you folded or opened stays
+                   as you left it. The mouse is on by
                    default so the wheel scrolls the
                    transcript, click-drag selects it, and
-                   clicks open rows or answer keys; off
-                   hands selection back to the terminal, and
+                   clicks open rows, fold a card by its
+                   header or answer keys; off hands
+                   selection back to the terminal, and
                    ctrl+x flips it and saves it
                    terminal   what this terminal answered
                               when shhh asked what it can
@@ -560,10 +572,11 @@
                    ␛[38;5;244mand the evidence id its output was kept␛[m
                    ␛[38;5;244munder where it was cut. It reads the␛[m
                    ␛[38;5;244mrail's own alerts and changes nothing␛[m
-    ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every␛[m
-                   ␛[38;5;244mrow in it shows its output body, bounded;␛[m
-                   ␛[38;5;244mrun it again to close (/ui verbosity high␛[m
-                   ␛[38;5;244mis the same thing for every step at once)␛[m
+    ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's card onto its␛[m
+                   ␛[38;5;244mcalls, every call with its output body,␛[m
+                   ␛[38;5;244mbounded; run it again to close (/ui␛[m
+                   ␛[38;5;244mverbosity high is the same thing for␛[m
+                   ␛[38;5;244mevery card at once)␛[m
     ␛[38;5;254m/status␛[m        ␛[38;5;244mwhere this session is: what it is working␛[m
                    ␛[38;5;244mon, what it has spent, and whether the␛[m
                    ␛[38;5;244mlast few turns are still on the target␛[m
@@ -581,12 +594,17 @@
                    ␛[38;5;244mand mouse: /ui verbosity␛[m
                    ␛[38;5;244m<low|normal|high> · /ui mono <on|off> ·␛[m
                    ␛[38;5;244m/ui mouse <on|off>␛[m
-                   ␛[38;5;244mlow hides counts, normal collapses rows,␛[m
-                   ␛[38;5;244mhigh expands rows. The mouse is on by␛[m
+                   ␛[38;5;244mlow draws each step's card as its header␛[m
+                   ␛[38;5;244malone and leaves thinking out, normal␛[m
+                   ␛[38;5;244mdraws the header, the sentence and the␛[m
+                   ␛[38;5;244mevidence, high opens every card onto its␛[m
+                   ␛[38;5;244mcalls; a card you folded or opened stays␛[m
+                   ␛[38;5;244mas you left it. The mouse is on by␛[m
                    ␛[38;5;244mdefault so the wheel scrolls the␛[m
                    ␛[38;5;244mtranscript, click-drag selects it, and␛[m
-                   ␛[38;5;244mclicks open rows or answer keys; off␛[m
-                   ␛[38;5;244mhands selection back to the terminal, and␛[m
+                   ␛[38;5;244mclicks open rows, fold a card by its␛[m
+                   ␛[38;5;244mheader or answer keys; off hands␛[m
+                   ␛[38;5;244mselection back to the terminal, and␛[m
                    ␛[38;5;244mctrl+x flips it and saves it␛[m
                    ␛[38;5;244mterminal   what this terminal answered␛[m
                    ␛[38;5;244m           when shhh asked what it can␛[m
@@ -759,10 +777,11 @@
                    ␛[38;5;244mand the evidence id its output was kept␛[m
                    ␛[38;5;244munder where it was cut. It reads the␛[m
                    ␛[38;5;244mrail's own alerts and changes nothing␛[m
-    ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every␛[m
-                   ␛[38;5;244mrow in it shows its output body, bounded;␛[m
-                   ␛[38;5;244mrun it again to close (/ui verbosity high␛[m
-                   ␛[38;5;244mis the same thing for every step at once)␛[m
+    ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's card onto its␛[m
+                   ␛[38;5;244mcalls, every call with its output body,␛[m
+                   ␛[38;5;244mbounded; run it again to close (/ui␛[m
+                   ␛[38;5;244mverbosity high is the same thing for␛[m
+                   ␛[38;5;244mevery card at once)␛[m
     ␛[38;5;254m/steps␛[m         ␛[38;5;244mthe session's own working list on one␛[m
                    ␛[38;5;244mscreen: every step it declared, the paths␛[m
                    ␛[38;5;244meach said it would touch, which it has␛[m
@@ -787,12 +806,17 @@
                    ␛[38;5;244mand mouse: /ui verbosity␛[m
                    ␛[38;5;244m<low|normal|high> · /ui mono <on|off> ·␛[m
                    ␛[38;5;244m/ui mouse <on|off>␛[m
-                   ␛[38;5;244mlow hides counts, normal collapses rows,␛[m
-                   ␛[38;5;244mhigh expands rows. The mouse is on by␛[m
+                   ␛[38;5;244mlow draws each step's card as its header␛[m
+                   ␛[38;5;244malone and leaves thinking out, normal␛[m
+                   ␛[38;5;244mdraws the header, the sentence and the␛[m
+                   ␛[38;5;244mevidence, high opens every card onto its␛[m
+                   ␛[38;5;244mcalls; a card you folded or opened stays␛[m
+                   ␛[38;5;244mas you left it. The mouse is on by␛[m
                    ␛[38;5;244mdefault so the wheel scrolls the␛[m
                    ␛[38;5;244mtranscript, click-drag selects it, and␛[m
-                   ␛[38;5;244mclicks open rows or answer keys; off␛[m
-                   ␛[38;5;244mhands selection back to the terminal, and␛[m
+                   ␛[38;5;244mclicks open rows, fold a card by its␛[m
+                   ␛[38;5;244mheader or answer keys; off hands␛[m
+                   ␛[38;5;244mselection back to the terminal, and␛[m
                    ␛[38;5;244mctrl+x flips it and saves it␛[m
                    ␛[38;5;244mterminal   what this terminal answered␛[m
                    ␛[38;5;244m           when shhh asked what it can␛[m

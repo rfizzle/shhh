@@ -337,7 +337,17 @@ func TestGolden_Density(t *testing.T) {
 			m.transcript = densityTranscript()
 			m.verbosity = rung
 			m.invalidateRenderCache()
-			return []golden.Panel{{Label: "verbosity · " + rung.String(), View: m.renderHistory()}}
+			at := m.renderHistory()
+			// The reader's own fold outranks the rung: the first card,
+			// folded by hand, is its header with ▸ at every rung. At low a
+			// header-alone card's own key gives it back rather than folding
+			// it, so the fold is the one the reader made at another rung.
+			m.transcript[1].stepFold = foldClosed
+			m.invalidateRenderCache()
+			return []golden.Panel{
+				{Label: "verbosity · " + rung.String(), View: at},
+				{Label: "verbosity · " + rung.String() + ", step 1 folded by the reader (▸ in the pointer column)", View: m.renderHistory()},
+			}
 		})
 	}
 }
@@ -2361,9 +2371,19 @@ func TestGolden_KeyList(t *testing.T) {
 		card = pressOn(t, handover(t, card), tea.KeyPressMsg{Code: '?', Text: "?"})
 
 		reading := pressOn(t, readingModel(t, width), tea.KeyPressMsg{Code: '?', Text: "?"})
+		// The cursor on an open card, then on its strip: the list names
+		// what the mode's keys do there, in the words the bar says them in.
+		onCard := readingModel(t, width)
+		onCard.focusIdx = 6
+		onCard.refreshFocusView()
+		onStrip := pressOn(t, onCard, tea.KeyPressMsg{Code: tea.KeyLeft})
+		onCard = pressOn(t, onCard, tea.KeyPressMsg{Code: '?', Text: "?"})
+		onStrip = pressOn(t, onStrip, tea.KeyPressMsg{Code: '?', Text: "?"})
 		return []golden.Panel{
 			{Label: "over the approval card · after the handover", View: surface(card)},
 			{Label: "over reading mode · the cursor on a row with offers of its own", View: surface(reading)},
+			{Label: "over reading mode · the cursor on an open card", View: surface(onCard)},
+			{Label: "over reading mode · the cursor on the card's strip", View: surface(onStrip)},
 		}
 	})
 }

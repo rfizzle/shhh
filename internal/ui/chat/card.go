@@ -490,6 +490,21 @@ func (m Model) cardTakesKey(es []entry, idx int) (transcriptBlock, bool) {
 	return blk, true
 }
 
+// cardHeaderOffset is the line of the card kept on idx that its header is
+// drawn on: the first where the card is its header alone, and the one under
+// the padding row otherwise (components.StepCard).
+func (m Model) cardHeaderOffset(idx int) int {
+	es := *m.entries()
+	blk, ok := m.cardBlockAt(es, idx)
+	if !ok {
+		return 0
+	}
+	if d, folded := m.cardShape(blk, es); folded || d == components.CardLow {
+		return 0
+	}
+	return 1
+}
+
 // toggleCardFold folds a card to its header or unfolds it, recording the
 // choice on the entry the card is kept on. It is a click on the card and
 // [-] on it, and with cycleCard the only thing that folds a finished card.
@@ -534,6 +549,7 @@ func (m *Model) cycleCard(idx int) bool {
 // answer of its own, and it leaves nothing on record for esc's fold to put
 // back (readinghint.go); at low it is the reader's answer, and outranks the
 // rung.
+// See docs/interface/departures.md#a-card-the-reader-gave-back-at-low-keeps-that-shape.
 func (m *Model) unfoldCard(es []entry, idx int) {
 	es[idx].stepFold = foldAuto
 	if !m.density(verbosityNormal) {

@@ -137,12 +137,12 @@ revoke [commands|edits|hosts|agents]   take the grants back`,
 	"/reasoning": `how much thinking the model does before it answers: off (the default), low, medium, high, xhigh or max — ctrl+t cycles them
 [level]           set it for this session (also /think)
 default [level]   show or persist the level new sessions start on (provider.reasoning)`,
-	"/step":     `open the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui verbosity high is the same thing for every step at once)`,
+	"/step":     `open the in-flight step's card onto its calls, every call with its output body, bounded; run it again to close (/ui verbosity high is the same thing for every card at once)`,
 	"/status":   `where this session is: what it is working on, what it has spent, and whether the last few turns are still on the target you set it`,
 	"/sessions": `the sessions running on this machine: the conversation each saves to, its checkout and branch, and whether it is working`,
 	"/trust":    `let this checkout's own skills, agent profiles, wordings and quality suites load. A clone can carry instructions, so nothing of a checkout's runs until you say so; "off" withdraws it and the next session starts without them`,
 	"/ui": `screen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
-low hides counts, normal collapses rows, high expands rows. The mouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows or answer keys; off hands selection back to the terminal, and ctrl+x flips it and saves it
+low draws each step's card as its header alone and leaves thinking out, normal draws the header, the sentence and the evidence, high opens every card onto its calls; a card you folded or opened stays as you left it. The mouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, fold a card by its header or answer keys; off hands selection back to the terminal, and ctrl+x flips it and saves it
 terminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications, focus events, cell size`,
 	"/add-dir":          `the working scope: which directories this session may write to. Bare lists it; <path> adds one (contained commands can write there, and edits there stop asking about leaving the scope); drop <path> takes it back`,
 	"/sandbox":          `containment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)`,
@@ -394,7 +394,7 @@ while the agent is working, enter queues a steering message that joins the conve
 		{
 			binds: []keys.Binding{keys.Draft.Reading},
 			text: `reading mode: select transcript rows (j/k, u/d half a page), expand/collapse (enter), y copies the row under the cursor — a command as $ cmd over its output, an edit as its unified diff, a message as markdown source, a card call by call — / searches the transcript and n/N walk what it found, pgup/pgdn page, ? lists every key the mode has, esc or typing returns to the prompt
-enter on an edit row cycles collapsed → expanded → full-screen diff, and on a command or read row the same three depths over its output, the whole of it scrollable at the last one. It opens over a running turn, which keeps streaming underneath; a transcript with nothing selectable opens as a plain pager. /step opens the in-flight step's detail from the prompt`,
+enter on a step's card opens it onto its calls, folds it to its header and gives the card back, and - folds it; on an open card ←→ walk the strip of its calls and enter opens that tool, esc there coming back to the strip. enter on an edit row cycles collapsed → expanded → full-screen diff, and on a command or read row the same three depths over its output, the whole of it scrollable at the last one. It opens over a running turn, which keeps streaming underneath; a transcript with nothing selectable opens as a plain pager. /step opens the in-flight step's detail from the prompt`,
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Agents},
@@ -463,7 +463,7 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 		},
 		{
 			key:  "click",
-			text: `a press and release in the same cell opens the activity row under it, the way enter does in reading mode, or answers the key it lands on in an approval card's [y/n/a]. It never takes the keyboard: the draft keeps every character`,
+			text: `a press and release in the same cell opens the activity row under it, the way enter does in reading mode, or answers the key it lands on in an approval card's [y/n/a]. On a step's card the header is the target: a click there folds the card and unfolds it, a click on its sentence or evidence does nothing, and a click on a call's row inside an open card opens that call. It never takes the keyboard: the draft keeps every character`,
 		},
 		{
 			key:  "[y/n/a]",

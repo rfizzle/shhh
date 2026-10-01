@@ -36,7 +36,7 @@ $  a shell command
 ✎  an edit, a write, a patch or a memory
 ◇  a sub-agent
 ⇄  a call to a server not marked read-only
-✻  the model's own reasoning
+✻  the model writing its calls, counted as they arrive
 ⛁  a published report page
 ≡  a reading of the session
 ✓  a compaction that brought the window back
@@ -72,7 +72,7 @@ $  a shell command
 ✎  an edit, a write, a patch or a memory
 ◇  a sub-agent
 ⇄  a call to a server not marked read-only
-✻  the model's own reasoning
+✻  the model writing its calls, counted as they arrive
 ⛁  a published report page
 ≡  a reading of the session
 ✓  a compaction that brought the window back
@@ -81,6 +81,80 @@ $  a shell command
 ✦  the classifier is deciding
 ✗  failed
 ⊘  refused: dim by you, red by a rule
+keys · [esc] back to reading mode
+
+· over reading mode · the cursor on an open card
+keys · reading mode                                                                                                   [?] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+[j/k] move
+[←] along the strip, back
+[→] along the strip, on
+[enter] expand
+[-] collapse
+[y] copy the row
+[c] copy a block
+[/] search
+[n/N] match
+[u/d] half page
+[pgup] page up
+[pgdn] page down
+[q] back to the prompt
+▎[enter] fold it
+▎[-] fold it
+
+glyphs
+⚙  a read: a file, a search, a listing
+$  a shell command
+✎  an edit, a write, a patch or a memory
+◇  a sub-agent
+⇄  a call to a server not marked read-only
+✻  the model writing its calls, counted as they arrive
+⛁  a published report page
+≡  a reading of the session
+✓  a compaction that brought the window back
+·  accepted, not started
+▸  running
+✦  the classifier is deciding
+✗  failed
+⊘  refused: dim by you, red by a rule
+keys · [esc] back to reading mode
+
+· over reading mode · the cursor on the card's strip
+keys · reading mode                                                                                                   [?] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[j/k] move
+[←] along the strip, back
+[→] along the strip, on
+[enter] expand
+[-] collapse
+[y] copy the row
+[c] copy a block
+[/] search
+[n/N] match
+[u/d] half page
+[pgup] page up
+[pgdn] page down
+[q] back to the prompt
+▎[←→] along the strip
+▎[enter] open that tool
+▎[q] close the card
+
+glyphs
+⚙  a read: a file, a search, a listing
+$  a shell command
+✎  an edit, a write, a patch or a memory
+◇  a sub-agent
+⇄  a call to a server not marked read-only
+✻  the model writing its calls, counted as they arrive
+⛁  a published report page
+≡  a reading of the session
+✓  a compaction that brought the window back
+·  accepted, not started
+▸  running
+↓ 3 more · [↑↓/jk] read on
 keys · [esc] back to reading mode
 
 ── ansi ────────────────────────────────────────────────────
@@ -110,7 +184,7 @@ keys · [esc] back to reading mode
 ␛[38;5;214m✎␛[m  ␛[38;5;241man edit, a write, a patch or a memory␛[m
 ␛[94m◇␛[m  ␛[38;5;241ma sub-agent␛[m
 ␛[38;5;214m⇄␛[m  ␛[38;5;241ma call to a server not marked read-only␛[m
-␛[38;5;241m✻␛[m  ␛[38;5;241mthe model's own reasoning␛[m
+␛[38;5;241m✻␛[m  ␛[38;5;241mthe model writing its calls, counted as they arrive␛[m
 ␛[38;5;241m⛁␛[m  ␛[38;5;241ma published report page␛[m
 ␛[38;5;241m≡␛[m  ␛[38;5;241ma reading of the session␛[m
 ␛[92m✓␛[m  ␛[38;5;241ma compaction that brought the window back␛[m
@@ -146,7 +220,7 @@ keys · [esc] back to reading mode
 ␛[38;5;214m✎␛[m  ␛[38;5;241man edit, a write, a patch or a memory␛[m
 ␛[94m◇␛[m  ␛[38;5;241ma sub-agent␛[m
 ␛[38;5;214m⇄␛[m  ␛[38;5;241ma call to a server not marked read-only␛[m
-␛[38;5;241m✻␛[m  ␛[38;5;241mthe model's own reasoning␛[m
+␛[38;5;241m✻␛[m  ␛[38;5;241mthe model writing its calls, counted as they arrive␛[m
 ␛[38;5;241m⛁␛[m  ␛[38;5;241ma published report page␛[m
 ␛[38;5;241m≡␛[m  ␛[38;5;241ma reading of the session␛[m
 ␛[92m✓␛[m  ␛[38;5;241ma compaction that brought the window back␛[m
@@ -155,4 +229,78 @@ keys · [esc] back to reading mode
 ␛[38;5;205m✦␛[m  ␛[38;5;241mthe classifier is deciding␛[m
 ␛[91m✗␛[m  ␛[38;5;241mfailed␛[m
 ␛[38;5;241m⊘␛[m  ␛[38;5;241mrefused: dim by you, red by a rule␛[m
+␛[38;5;241mkeys · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to reading mode␛[m
+
+· over reading mode · the cursor on an open card
+␛[1;97mkeys␛[m␛[38;5;241m · reading mode␛[m                                                                                                   ␛[38;5;241m[?] back␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;103m[j/k]␛[m␛[38;5;241m move␛[m
+␛[38;5;103m[←]␛[m␛[38;5;241m along the strip, back␛[m
+␛[38;5;103m[→]␛[m␛[38;5;241m along the strip, on␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m expand␛[m
+␛[38;5;103m[-]␛[m␛[38;5;241m collapse␛[m
+␛[38;5;103m[y]␛[m␛[38;5;241m copy the row␛[m
+␛[38;5;103m[c]␛[m␛[38;5;241m copy a block␛[m
+␛[38;5;103m[/]␛[m␛[38;5;241m search␛[m
+␛[38;5;103m[n/N]␛[m␛[38;5;241m match␛[m
+␛[38;5;103m[u/d]␛[m␛[38;5;241m half page␛[m
+␛[38;5;103m[pgup]␛[m␛[38;5;241m page up␛[m
+␛[38;5;103m[pgdn]␛[m␛[38;5;241m page down␛[m
+␛[38;5;103m[q]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;214m▎␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m fold it␛[m
+␛[38;5;214m▎␛[m␛[38;5;103m[-]␛[m␛[38;5;241m fold it␛[m
+
+␛[38;5;241mglyphs␛[m
+␛[38;5;241m⚙␛[m  ␛[38;5;241ma read: a file, a search, a listing␛[m
+␛[38;5;214m$␛[m  ␛[38;5;241ma shell command␛[m
+␛[38;5;214m✎␛[m  ␛[38;5;241man edit, a write, a patch or a memory␛[m
+␛[94m◇␛[m  ␛[38;5;241ma sub-agent␛[m
+␛[38;5;214m⇄␛[m  ␛[38;5;241ma call to a server not marked read-only␛[m
+␛[38;5;241m✻␛[m  ␛[38;5;241mthe model writing its calls, counted as they arrive␛[m
+␛[38;5;241m⛁␛[m  ␛[38;5;241ma published report page␛[m
+␛[38;5;241m≡␛[m  ␛[38;5;241ma reading of the session␛[m
+␛[92m✓␛[m  ␛[38;5;241ma compaction that brought the window back␛[m
+␛[38;5;241m·␛[m  ␛[38;5;241maccepted, not started␛[m
+␛[38;5;205m▸␛[m  ␛[38;5;241mrunning␛[m
+␛[38;5;205m✦␛[m  ␛[38;5;241mthe classifier is deciding␛[m
+␛[91m✗␛[m  ␛[38;5;241mfailed␛[m
+␛[38;5;241m⊘␛[m  ␛[38;5;241mrefused: dim by you, red by a rule␛[m
+␛[38;5;241mkeys · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to reading mode␛[m
+
+· over reading mode · the cursor on the card's strip
+␛[1;97mkeys␛[m␛[38;5;241m · reading mode␛[m                                                                                                   ␛[38;5;241m[?] back␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;241m␛[m
+␛[38;5;103m[j/k]␛[m␛[38;5;241m move␛[m
+␛[38;5;103m[←]␛[m␛[38;5;241m along the strip, back␛[m
+␛[38;5;103m[→]␛[m␛[38;5;241m along the strip, on␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m expand␛[m
+␛[38;5;103m[-]␛[m␛[38;5;241m collapse␛[m
+␛[38;5;103m[y]␛[m␛[38;5;241m copy the row␛[m
+␛[38;5;103m[c]␛[m␛[38;5;241m copy a block␛[m
+␛[38;5;103m[/]␛[m␛[38;5;241m search␛[m
+␛[38;5;103m[n/N]␛[m␛[38;5;241m match␛[m
+␛[38;5;103m[u/d]␛[m␛[38;5;241m half page␛[m
+␛[38;5;103m[pgup]␛[m␛[38;5;241m page up␛[m
+␛[38;5;103m[pgdn]␛[m␛[38;5;241m page down␛[m
+␛[38;5;103m[q]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;214m▎␛[m␛[38;5;103m[←→]␛[m␛[38;5;241m along the strip␛[m
+␛[38;5;214m▎␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open that tool␛[m
+␛[38;5;214m▎␛[m␛[38;5;103m[q]␛[m␛[38;5;241m close the card␛[m
+
+␛[38;5;241mglyphs␛[m
+␛[38;5;241m⚙␛[m  ␛[38;5;241ma read: a file, a search, a listing␛[m
+␛[38;5;214m$␛[m  ␛[38;5;241ma shell command␛[m
+␛[38;5;214m✎␛[m  ␛[38;5;241man edit, a write, a patch or a memory␛[m
+␛[94m◇␛[m  ␛[38;5;241ma sub-agent␛[m
+␛[38;5;214m⇄␛[m  ␛[38;5;241ma call to a server not marked read-only␛[m
+␛[38;5;241m✻␛[m  ␛[38;5;241mthe model writing its calls, counted as they arrive␛[m
+␛[38;5;241m⛁␛[m  ␛[38;5;241ma published report page␛[m
+␛[38;5;241m≡␛[m  ␛[38;5;241ma reading of the session␛[m
+␛[92m✓␛[m  ␛[38;5;241ma compaction that brought the window back␛[m
+␛[38;5;241m·␛[m  ␛[38;5;241maccepted, not started␛[m
+␛[38;5;205m▸␛[m  ␛[38;5;241mrunning␛[m
+␛[38;5;241m↓ 3 more · [↑↓/jk] read on␛[m
 ␛[38;5;241mkeys · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to reading mode␛[m

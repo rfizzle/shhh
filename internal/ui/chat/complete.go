@@ -178,7 +178,7 @@ func buildSlashCommands() []slashCommand {
 		registeredSlash("/readings"),
 		registeredSlash("/turns"),
 		registeredSlash("/alerts"),
-		{name: "/step", desc: "open the in-flight step's detail (again closes it)"},
+		{name: "/step", desc: "open the in-flight step's card onto its calls (again closes it)"},
 		registeredSlash("/steps"),
 		{name: "/status", desc: "where the session is, and whether it is still on target"},
 		{name: "/sessions", desc: "the sessions running on this machine, and where each one is"},
@@ -199,9 +199,9 @@ func buildSlashCommands() []slashCommand {
 					{"terminal", "what this terminal can do"},
 				}},
 				{after: []string{"verbosity"}, options: []argOption{
-					{"low", "step headers only"},
-					{"normal", "read-only calls folded"},
-					{"high", "every row expanded"},
+					{"low", "each card its header alone, thinking left out"},
+					{"normal", "each card its header, sentence and evidence"},
+					{"high", "every card open on its calls"},
 				}},
 				{after: []string{"theme"}, options: []argOption{
 					{components.ThemeAuto, "The table chosen for the background this terminal reports"},

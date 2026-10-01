@@ -432,3 +432,192 @@ func TestCard_AClickOnAnOpenCardsHeaderFoldsIt(t *testing.T) {
 		t.Fatal("a second click should give the card back")
 	}
 }
+
+// The ladder for a card: low draws it as its header alone and leaves
+// thinking out, normal draws header, body and footer with thinking as prose,
+// high opens every card onto its groups; and a reader's own fold or open
+// outranks the rung (docs/interface/principles.md#density-is-one-ladder).
+func TestDensity_ACardAtEachRung(t *testing.T) {
+	const (
+		header  = "ran git status --short .plan/"
+		body    = "Confirming .plan/ is untracked"
+		footer  = "?? .plan/"
+		strip   = "in order "
+		thought = "weighing the cap against the tests"
+		// The write's card, kept on the sentence that titled it.
+		write, writeBody = 8, "Writing the epic and two stories now."
+		// The reads' card, the one the reader opens.
+		reads, readsGroup = 1, "▾ read 2 files"
+	)
+	cases := []struct {
+		name  string
+		rung  verbosity
+		folds map[int]foldState
+		has   []string
+		lacks []string
+		// folded is the header that has to start with ▸, where one does.
+		folded string
+	}{
+		{name: "low · each card its header alone, thinking left out", rung: verbosityLow,
+			has: []string{header}, lacks: []string{body, footer, strip, thought, writeBody}},
+		{name: "normal · header, body and footer, thinking as prose", rung: verbosityNormal,
+			has: []string{header, body, footer, thought, writeBody}, lacks: []string{strip, readsGroup}},
+		{name: "high · every card open with its groups", rung: verbosityHigh,
+			has: []string{header, body, strip, readsGroup, thought, writeBody}},
+		{name: "low · a card the reader folded draws ▸", rung: verbosityLow,
+			folds: map[int]foldState{write: foldClosed}, has: []string{header},
+			lacks: []string{writeBody}, folded: "wrote .plan/BACKLOG.md"},
+		{name: "high · the reader's fold outranks the rung", rung: verbosityHigh,
+			folds: map[int]foldState{write: foldClosed}, has: []string{header, strip},
+			lacks: []string{writeBody}, folded: "wrote .plan/BACKLOG.md"},
+		{name: "low · a card the reader gave back draws whole", rung: verbosityLow,
+			folds: map[int]foldState{write: foldCard}, has: []string{writeBody}, lacks: []string{body}},
+		{name: "low · a card the reader opened draws its groups", rung: verbosityLow,
+			folds: map[int]foldState{reads: foldOpen}, has: []string{readsGroup, strip}, lacks: []string{body}},
+		{name: "normal · a card the reader opened draws its groups", rung: verbosityNormal,
+			folds: map[int]foldState{reads: foldOpen}, has: []string{readsGroup, footer}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			m := cardModel(t)
+			m.transcript = append(m.transcript, entry{kind: entryThink, text: thought})
+			for idx, f := range tc.folds {
+				m.transcript[idx].stepFold = f
+			}
+			m.verbosity = tc.rung
+			m.invalidateRenderCache()
+			lines := cardLines(m)
+			view := strings.Join(lines, "\n")
+			for _, s := range tc.has {
+				if !strings.Contains(view, s) {
+					t.Errorf("no %q:\n%s", s, view)
+				}
+			}
+			for _, s := range tc.lacks {
+				if strings.Contains(view, s) {
+					t.Errorf("%q is drawn:\n%s", s, view)
+				}
+			}
+			if tc.folded != "" {
+				if h := cardLine(lines, tc.folded); !strings.HasPrefix(h, "▸") {
+					t.Errorf("the folded card does not draw ▸ in the pointer column: %q", h)
+				}
+			}
+			if tc.rung == verbosityLow && tc.folds == nil {
+				// One blank between two headers: at low a card has no
+				// padding rows, so it is one line on the band.
+				h := cardLine(lines, header)
+				for i, l := range lines {
+					if l == h && (i < 2 || lines[i-1] != "" || lines[i-2] == "") {
+						t.Errorf("a low card stands on more than one blank:\n%s", view)
+					}
+				}
+			}
+		})
+	}
+}
+
+// The pointer on a card: its header is the control, the rest of it is text.
+// A click on the header folds the card and a second unfolds it; a click on
+// the sentence or the evidence does nothing; a click on a call's row inside
+// an open card opens that call as the row's click does anywhere; and a drag
+// across the card still selects it (docs/interface/surfaces.md#the-step).
+func TestCard_TheHeaderIsThePointersControl(t *testing.T) {
+	const (
+		card   = 5 // the command's card, kept on its titling sentence
+		call   = 7 // the command inside it
+		header = "ran git status --short .plan/"
+	)
+	pointed := func(t *testing.T, c *clip, open bool) Model {
+		t.Helper()
+		m := selectModel(t, c, cardModel(t).transcript...)
+		if open {
+			(*m.entries())[card].stepFold = foldOpen
+			m.invalidateRenderCache()
+			m.viewport.SetLines(m.renderHistoryLines())
+		}
+		return m
+	}
+	cases := []struct {
+		name     string
+		open     bool
+		on       string
+		fold     foldState
+		expanded bool
+	}{
+		{name: "the header folds the card", on: header, fold: foldClosed},
+		{name: "the sentence does nothing", on: "Confirming .plan/ is untracked", fold: foldAuto},
+		{name: "the evidence does nothing", on: "?? .plan/", fold: foldAuto},
+		{name: "an open card's header folds it", open: true, on: header, fold: foldClosed},
+		{name: "an open card's sentence does nothing", open: true, on: "Confirming .plan/ is untracked", fold: foldOpen},
+		{name: "a call's row in an open card opens the call", open: true, on: "$ git status --short .plan/",
+			fold: foldOpen, expanded: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			m := pointed(t, &clip{}, tc.open)
+			x, y := rowCell(t, m, tc.on)
+			m = click(t, m, x, y)
+			es := *m.entries()
+			if es[card].stepFold != tc.fold {
+				t.Errorf("the card's fold is %v, want %v", es[card].stepFold, tc.fold)
+			}
+			if es[call].expanded != tc.expanded {
+				t.Errorf("the call's row open = %v, want %v", es[call].expanded, tc.expanded)
+			}
+		})
+	}
+
+	t.Run("a second click on the header gives the card back", func(t *testing.T) {
+		m := pointed(t, &clip{}, false)
+		x, y := rowCell(t, m, header)
+		m = click(t, m, x, y)
+		x, y = rowCell(t, m, header)
+		m = click(t, m, x, y)
+		if got := (*m.entries())[card].stepFold; got == foldClosed {
+			t.Fatal("a second click should give the card back")
+		}
+	})
+
+	t.Run("an open card's closing padding does nothing", func(t *testing.T) {
+		// The write's card has one call, so its closing padding rides that
+		// call's row, opened here onto a body long enough to want the
+		// screen.
+		const write, call = 8, 9
+		m := pointed(t, &clip{}, false)
+		es := *m.entries()
+		es[write].stepFold = foldOpen
+		es[call].toolResult = strings.Repeat("a line of output\n", 60)
+		es[call].expanded = true
+		m.invalidateRenderCache()
+		m.viewport.SetLines(m.renderHistoryLines())
+		pad := -1
+		for line := 0; line < len(contentLines(m)); line++ {
+			if u, off, ok := m.unitAt(line); ok && u.closesCard && off == strings.Count(u.text, "\n")-1 {
+				pad = line
+			}
+		}
+		if pad < 0 {
+			t.Fatal("no open card's closing padding on the screen")
+		}
+		m.viewport.SetYOffset(max(pad-5, 0))
+		x, y := at(t, m, pad, 4)
+		state := m.state
+		m = click(t, m, x, y)
+		if m.state != state || (*m.entries())[write].stepFold != foldOpen {
+			t.Errorf("a click on the closing padding acted: state %v → %v, fold %v", state, m.state, (*m.entries())[write].stepFold)
+		}
+	})
+
+	t.Run("a drag across the card selects it", func(t *testing.T) {
+		c := &clip{}
+		m := pointed(t, c, false)
+		m = dragLines(t, m, lineOf(t, m, header), lineOf(t, m, "?? .plan/"))
+		if !strings.Contains(c.text, "Confirming .plan/ is untracked") {
+			t.Errorf("the drag copied %q, not the card's lines", c.text)
+		}
+		if got := (*m.entries())[card].stepFold; got != foldAuto {
+			t.Errorf("the drag folded the card: %v", got)
+		}
+	})
+}

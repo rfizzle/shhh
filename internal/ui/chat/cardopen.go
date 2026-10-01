@@ -242,6 +242,7 @@ func (m Model) openCardUnits(blk transcriptBlock, es []entry, width int, focus b
 	last := &units[len(units)-1]
 	last.text += components.CardPad(width) + "\n"
 	last.sepAfter = block
+	last.closesCard = true
 	return units
 }
 
@@ -460,6 +461,10 @@ func (m Model) updateCardStrip(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		m.closeStripCard()
 		m.refreshFocusView()
 		return m, nil, true
+	case keys.Is(pressed, keys.Reading.List):
+		// The key list is read over the strip, names the strip's keys
+		// while the cursor is on it, and gives the strip back as it was.
+		return m, nil, false
 	}
 	// Anything else is the reading cursor's: it leaves the strip where it
 	// was, and the strip lets go of it.
