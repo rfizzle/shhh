@@ -112,7 +112,13 @@ func Build(c Call) Receipt {
 		Verb:    VerbOf(c.Name),
 		tool:    c.Name,
 		arg:     digest.Arg(c.Name, c.Args),
+		args:    c.Args,
+		path:    c.Path,
+		result:  c.Result,
 		gitVerb: gitVerbOf(c.Name, c.Args),
+	}
+	if len(c.Hunks) > 0 {
+		r.Hunk = hunkHead(r.Path(), c.Hunks)
 	}
 	// Only the writing half of git needs the arguments for its verb:
 	// `commit` is the word the reader scans a transcript for, and it is a
@@ -163,6 +169,7 @@ func command(c Call) Receipt {
 		Verb:    "run",
 		Subject: digest.FirstLine(c.Args),
 		Ended:   *c.Exec,
+		result:  c.Result,
 		command: true,
 	}
 	if r.Ended.Outcome == tools.ExecDidNotStart {

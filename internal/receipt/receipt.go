@@ -25,6 +25,8 @@ package receipt
 import (
 	"fmt"
 
+	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -108,6 +110,13 @@ type Call struct {
 	// read-only. They are inputs because the answer is the session's
 	// configuration, not anything the call or its name carries.
 	Served, ReadOnly bool
+	// Hunks is the change an edit applied, from the diff the caller already
+	// holds for it, and Path the file it was applied to where the caller
+	// holds the change rather than the arguments. A write's hunk head is read
+	// from these and never from the result, which is the tool's sentence
+	// about the change rather than the change.
+	Hunks []diff.Hunk
+	Path  string
 }
 
 // Receipt is what one call did, as a row states it.
@@ -143,9 +152,15 @@ type Receipt struct {
 	// Ended is how a command ended, resolved from the runner's answer. It is
 	// the zero value on every tool call.
 	Ended tools.ExecResult
+	// Hunk is the head of the change an edit applied, and nil on a call that
+	// carried none.
+	Hunk *HunkHead
 
 	tool    string
 	arg     string
+	args    string
+	path    string
+	result  string
 	gitVerb string
 	command bool
 	failed  bool
@@ -181,6 +196,17 @@ func (r Receipt) Title() string {
 		return r.Verb
 	}
 	return r.Verb + " " + r.arg
+}
+
+// Path is the file or directory the call named: the path the caller handed
+// in with a change, or else the path argument the model wrote. It is read on
+// asking rather than when the receipt is built, because every row is
+// rebuilt on every paint and only a step's rollup wants it.
+func (r Receipt) Path() string {
+	if r.path != "" {
+		return r.path
+	}
+	return digest.Path(r.args)
 }
 
 // IsGitWrite reports whether the call was the writing half of git.

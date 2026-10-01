@@ -93,14 +93,19 @@ func (m *Model) appendTurnClose() {
 }
 
 // turnCloseData assembles the close block from what the session already
-// tracks.
+// tracks. Its first row is the turn's receipt, the value the turn's total
+// line reads too, so the two cannot count the turn differently.
 func (m Model) turnCloseData() *components.TurnClose {
 	es := m.turnEntries()
+	total := m.turnTotal(es)
 	commit := turnCommitRow(es)
 	changes := m.turnChangesRow(commit != nil)
-	c := components.TurnClose{
-		State:   m.turnOutcome,
-		Elapsed: components.FormatElapsed(m.turnElapsed()),
+	return &components.TurnClose{
+		State:   closeState(total.End),
+		Steps:   total.Steps,
+		Tools:   total.Tools,
+		Elapsed: components.FormatElapsed(total.Elapsed),
+		Spend:   total.Spend,
 		Changes: changes,
 		// A commit row already answers what the turn wrote, so it is only
 		// with neither that an unvouched act is answered with nothing.
@@ -109,28 +114,61 @@ func (m Model) turnCloseData() *components.TurnClose {
 		Notes:        m.turnNotesClause(),
 		Checks:       turnChecksRow(es, m.gate.Manage != nil),
 	}
+}
+
+// turnTotal is the turn's receipt, read from the turn's entries, the vitals
+// history and the turn's clock: how it stands, what it took, and when it
+// ended.
+func (m Model) turnTotal(es []entry) receipt.Turn {
+	t := receipt.Turn{Elapsed: m.turnElapsed(), End: receipt.TurnWorking}
+	if !m.turnOpen {
+		t.End, t.At = turnEnd(m.turnOutcome), m.turnEnded
+	}
 	// The count is the steps this turn actually ran, so an approved plan's
 	// declared-but-not-started steps are not counted as work done.
 	for _, blk := range m.blocksOf(es) {
 		if blk.step != nil && !blk.step.queued() {
-			c.Steps++
+			t.Steps++
 		}
 	}
 	for _, e := range es {
 		if isActivityEntry(e) {
-			c.Tools++
+			t.Tools++
 		}
 	}
 	// The turn's own cost, priced per request as it went; an unpriced model
 	// reports tokens rather than a made-up zero.
-	if t, ok := m.vitals.lastTurn(); ok {
-		if t.Priced {
-			c.Spend = formatCost(t.Cost)
+	if v, ok := m.vitals.lastTurn(); ok {
+		if v.Priced {
+			t.Spend = formatCost(v.Cost)
 		} else {
-			c.Spend = m.freshRateLabel(t.In, t.Out)
+			t.Spend = m.freshRateLabel(v.In, v.Out)
 		}
 	}
-	return &c
+	return t
+}
+
+// turnEnd is how a closed turn ended, in the receipt's words.
+func turnEnd(s components.TurnState) receipt.TurnEnd {
+	switch s {
+	case components.TurnCancelled:
+		return receipt.TurnCancelled
+	case components.TurnFailed:
+		return receipt.TurnFailed
+	}
+	return receipt.TurnDone
+}
+
+// closeState is how the close row says a turn ended. A turn still working
+// has no close row, so it has no state of its own here.
+func closeState(e receipt.TurnEnd) components.TurnState {
+	switch e {
+	case receipt.TurnCancelled:
+		return components.TurnCancelled
+	case receipt.TurnFailed:
+		return components.TurnFailed
+	}
+	return components.TurnDone
 }
 
 // turnChangesRow is the changed-files row, read from the turn's changeset.
