@@ -705,18 +705,22 @@ func TestSummaryRow_OpensToTheWholeReading(t *testing.T) {
 	}
 }
 
-// Closed, the row states what the fold swallowed and how to open it — a fold
-// nobody knows is a fold reads as a row that had nothing to show.
+// Closed, the row states what the fold swallowed by its count, the way a tool
+// row does, and offers no key: enter belongs to the draft until reading mode
+// takes the keyboard.
 func TestSummaryRow_ClosedStatesItsFold(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	e := summaryRowEntry(agent.SummaryVerdict{
 		Text: strings.Repeat("still reading the loop. ", 10), State: agent.SummaryOffTarget, Round: 18,
 	}, "make the round limit a checkpoint")
 	got := ansi.Strip(m.renderEntry(e, 76))
-	for _, want := range []string{"summary", "round 18", "off target", "lines", "expand"} {
+	for _, want := range []string{"summary", "round 18", "off target", "lines"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("a closed row states %q:\n%s", want, got)
 		}
+	}
+	if strings.Contains(got, "[enter]") {
+		t.Fatalf("a closed row offers no key while the draft holds enter:\n%s", got)
 	}
 	// Closed is one line: the fold is the whole reason the row is tolerable
 	// every interval.

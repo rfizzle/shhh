@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · off target · the row as it lands
-   ≡ summary round 24        ⚠ off target · 1 line · [enter] expand
+   ≡ summary round 24                         ⚠ off target · 1 line
 
 
 · off target · the row opened
@@ -35,7 +35,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · off target · the row as it lands
-   ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 24␛[m        ␛[38;5;241m⚠ off target␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m␛[38;5;241m · ␛[m␛[94m[enter] expand␛[m
+   ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 24␛[m                         ␛[38;5;241m⚠ off target␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m
 
 
 · off target · the row opened

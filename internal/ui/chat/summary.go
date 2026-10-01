@@ -860,14 +860,16 @@ func (m Model) summaryRowFor(e entry, width int) components.ActivityRow {
 		Outcome: components.SummaryGlyph(tone) + " " + components.SummaryWord(tone),
 		Counts:  lineCounts(len(m.summaryTextLines(r.verdict.Text, width))),
 	}
+	// Closed, the row carries no offer: its count says what the fold holds,
+	// the way a tool row's does, and enter belongs to the draft until reading
+	// mode takes the keyboard
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 	if e.expanded {
 		row.Expanded = true
 		// Unbounded, unlike a tool result's body: a reading is a few
 		// sentences by construction, and a fold over a fold would be this
 		// row hiding the thing it exists to show.
 		row.Detail = lines
-	} else {
-		row.Keys = components.GroupExpandKey
 	}
 	return row
 }
