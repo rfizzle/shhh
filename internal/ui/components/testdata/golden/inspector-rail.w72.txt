@@ -402,7 +402,7 @@
   ␛[1;94mSUMMARY␛[m                                                 ␛[38;5;241mas of round 24␛[m
   ␛[38;5;252mWiring the round-limit pause into the chat model; the sentinel is in␛[m  
   ␛[38;5;252mand the tests have not been run yet.␛[m                                  
-  ␛[38;5;205m▸␛[m ␛[38;5;241mon target␛[m                                                           
+  ␛[38;5;241m▸␛[m ␛[38;5;241mon target␛[m                                                           
 
   ␛[1;94mTHIS TURN␛[m                                                             
   ␛[92m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;205m▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[92mstep 3 of 4␛[m          

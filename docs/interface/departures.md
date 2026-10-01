@@ -828,9 +828,10 @@ a session, on a rail whose whole job is to be read at a glance
 ([closed vocabularies](principles.md#closed-vocabularies)).
 
 Only the departure is drawn in the accent. A run that has found what it needs
-is not a warning, it is news, so it takes the reading weight and the healthy
-glyph colour, and the two `▸` verdicts differ in the weight of their words as
-well as in the words.
+is not a warning, it is news, so it takes the reading weight, and the two `▸`
+verdicts differ in the weight of their words as well as in the words. Their
+mark is chrome in both: a verdict is settled, and the spinner's colour means a
+thing in motion and nothing else.
 
 ## The drafter's rail marks a step nothing was asked at
 

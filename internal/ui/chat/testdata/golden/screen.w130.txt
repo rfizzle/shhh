@@ -370,7 +370,7 @@
   ␛[38;5;243m─────────────────────────────────────────────────────────────────────────────␛[m  ␛[38;5;241m│␛[m  ␛[38;5;252mWiring the round-limit pause into the chat␛[m    
                                                                                  ␛[38;5;241m│␛[m  ␛[38;5;252mmodel; the sentinel is in and nothing has␛[m     
   ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m   ␛[38;5;241m1.2s␛[m  ␛[38;5;241m│␛[m  ␛[38;5;252mrun the tests yet.␛[m                            
-                                                                                 ␛[38;5;241m│␛[m  ␛[38;5;205m▸␛[m ␛[38;5;241mon target␛[m                                   
+                                                                                 ␛[38;5;241m│␛[m  ␛[38;5;241m▸␛[m ␛[38;5;241mon target␛[m                                   
   ␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m──────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m    ␛[38;5;241m22s␛[m  ␛[38;5;241m│␛[m                                                
     ␛[38;5;214m▎✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                             ␛[38;5;245m1 line␛[m   ␛[38;5;241m1.1s␛[m  ␛[38;5;241m│␛[m  ␛[94;1mTHIS TURN␛[m                             ␛[38;5;241mstep 2␛[m  
     ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                       ␛[91mexit 1␛[m    ␛[38;5;241m21s␛[m  ␛[38;5;241m│␛[m  ␛[38;5;241m0 files this turn · 6 tools␛[m                   
@@ -402,7 +402,7 @@
   ␛[38;5;243m─────────────────────────────────────────────────────────────────────────────␛[m  ␛[38;5;241m│␛[m  ␛[38;5;252mWiring the round-limit pause into the chat␛[m    
                                                                                  ␛[38;5;241m│␛[m  ␛[38;5;252mmodel; the sentinel is in and nothing has␛[m     
   ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m   ␛[38;5;241m1.2s␛[m  ␛[38;5;241m│␛[m  ␛[38;5;252mrun the tests yet.␛[m                            
-                                                                                 ␛[38;5;241m│␛[m  ␛[38;5;205m▸␛[m ␛[38;5;241mon target␛[m                                   
+                                                                                 ␛[38;5;241m│␛[m  ␛[38;5;241m▸␛[m ␛[38;5;241mon target␛[m                                   
   ␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m──────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m    ␛[38;5;241m22s␛[m  ␛[38;5;241m│␛[m                                                
     ␛[38;5;214m▎✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                             ␛[38;5;245m1 line␛[m   ␛[38;5;241m1.1s␛[m  ␛[38;5;241m│␛[m  ␛[94;1mTHIS TURN␛[m                             ␛[38;5;241mstep 2␛[m  
     ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                       ␛[91mexit 1␛[m    ␛[38;5;241m21s␛[m  ␛[38;5;241m│␛[m  ␛[38;5;241m0 files this turn · 6 tools␛[m                   

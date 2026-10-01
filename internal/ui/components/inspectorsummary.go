@@ -150,15 +150,16 @@ func SummaryLabel(s SummaryTone) string {
 // (docs/interface/departures.md#the-summarys-fourth-verdict-shares-the-thirds-mark).
 //
 // Only the departure is drawn in the accent: a run that has found what it
-// needs is not a warning, it is news, so it takes the reading weight and the
-// healthy glyph colour.
+// needs is not a warning, it is news, so it takes the reading weight. Neither
+// ▸ verdict is in motion, so both marks are chrome: the spinner's colour
+// means a thing in motion and only that.
 func summaryTone(s SummaryTone) (string, string, lipgloss.Style) {
 	glyph, word := SummaryGlyph(s), SummaryWord(s)
 	switch s {
 	case SummaryOnTarget:
-		return sty.SpinText.Render(glyph), word, sty.Dim
+		return sty.Dim.Render(glyph), word, sty.Dim
 	case SummarySufficient:
-		return sty.SpinText.Render(glyph), word, sty.Body
+		return sty.Dim.Render(glyph), word, sty.Body
 	case SummaryOffTarget:
 		return sty.Accent.Render(glyph), word, sty.Body
 	}
