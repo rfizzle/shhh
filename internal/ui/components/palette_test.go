@@ -31,6 +31,7 @@ var paletteTable = []struct {
 	{"accent", FullPalette.Accent, "#ffaf00", "214", "11"},
 	{"info", FullPalette.Info, "#5f87ff", "12", "12"},
 	{"focusBg", FullPalette.FocusBg, "#5f5fd7", "62", "12"},
+	{"band", FullPalette.Band, "#1c1c1c", "234", noSixteen},
 	{"dim", FullPalette.Dim, "#626262", "241", "8"},
 	{"dimmer", FullPalette.Dimmer, "#8a8a8a", "245", "8"},
 	{"spin", FullPalette.Spin, "#ff5faf", "205", "13"},
@@ -41,6 +42,11 @@ var paletteTable = []struct {
 	{"code", FullPalette.Code, "#d7af87", "180", "3"},
 	{"key", FullPalette.Key, "#8787af", "103", "12"},
 }
+
+// noSixteen is the sixteen-colour rung of a token that draws nothing there:
+// the band, which at sixteen colours is its padding rows alone. It is the
+// empty string because that is what lipgloss.Color reads as no colour.
+const noSixteen = ""
 
 // The palette's size is counted here and written nowhere else. The struct
 // and the table above are two statements of it — a field added to one and
@@ -213,9 +219,32 @@ func TestPalette_MonoCollapsesOntoItsThreeShades(t *testing.T) {
 	}
 	shades := map[Token]bool{MonoFg: true, MonoDim: true, MonoBg: true}
 	for _, c := range paletteTable {
+		if c.name == "band" {
+			continue // no ground at all under mono; TestPalette_TheBandIsPaddingAloneWhereItWouldMislead
+		}
 		got := tokenNamed(MonoPalette, c.name)
 		if !shades[got] {
 			t.Errorf("mono %s is %+v, which is none of the three shades", c.name, got)
+		}
+	}
+}
+
+// The band draws nothing at sixteen colours on any table, and nothing at any
+// rung under mono: at sixteen the only grey between the ground and the
+// chrome grey would read as chrome, and mono's one background means
+// selection. A card there is its padding rows alone.
+func TestPalette_TheBandIsPaddingAloneWhereItWouldMislead(t *testing.T) {
+	for _, name := range ThemeNames() {
+		if name == ThemeAuto {
+			continue
+		}
+		if got := themes[name].tokens.Band.ANSI; got != (lipgloss.NoColor{}) {
+			t.Errorf("%s theme: the band is %s at sixteen colours, want no ground", name, sgr(got))
+		}
+	}
+	for _, rung := range []color.Color{MonoPalette.Band.TrueColor, MonoPalette.Band.ANSI256, MonoPalette.Band.ANSI} {
+		if rung != (lipgloss.NoColor{}) {
+			t.Errorf("mono: the band is %s, want no ground at every rung", sgr(rung))
 		}
 	}
 }
@@ -240,6 +269,8 @@ func tokenNamed(p ColorTokens, name string) Token {
 		return p.Info
 	case "focusBg":
 		return p.FocusBg
+	case "band":
+		return p.Band
 	case "dim":
 		return p.Dim
 	case "dimmer":
@@ -292,6 +323,7 @@ var lightTable = []struct {
 	{"accent", LightPalette.Accent, "#af5f00", "130", "3"},
 	{"info", LightPalette.Info, "#005fd7", "4", "4"},
 	{"focusBg", LightPalette.FocusBg, "#d7d7ff", "189", "7"},
+	{"band", LightPalette.Band, "#e4e4e4", "254", noSixteen},
 	{"dim", LightPalette.Dim, "#8a8a8a", "245", "8"},
 	{"dimmer", LightPalette.Dimmer, "#6c6c6c", "242", "8"},
 	{"spin", LightPalette.Spin, "#af005f", "125", "5"},

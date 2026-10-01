@@ -157,6 +157,30 @@ that normally defer to the terminal's own theme do not: a named palette that
 handed its green back to whatever the user's config says would not be that
 palette.
 
+## The band's light and CharmTone values were chosen in the binary
+
+*A gap.* The design system draws the band a step card rests on for the dark
+ground only: `#1c1c1c`, 234 at 256 colours. It also answers the two profiles
+where a band would mislead, and the binary takes that answer — at sixteen
+colours and under mono the band is no ground at all and a card is its padding
+rows alone, because sixteen colours has only bright-black between the ground
+and the chrome grey, so a band there reads as chrome, and mono collapses every
+background onto the selection ground, so a band there reads as a selected row.
+
+The light and CharmTone tables have no band on the artboard, so they were
+chosen here, each one step off its own ground the way the dark band is off
+black. The light band is `#e4e4e4`, 254: the dark band stands off black by
+1.23:1, and 254 is the named grey nearest that against white (1.27:1, where
+255 is 1.16:1) — the same mirroring that set the light table's chrome grey,
+and the same one step the light table's selection and intraline tints take
+off white. The CharmTone band is Charcoal, `#3a3943`, 237: the published grey
+next to Pepper, the ground that set is chosen against, rather than a grey of
+the dark table's that the set does not have. Neither draws anything at sixteen
+colours, for the dark band's reason.
+
+When the artboard draws a band on either ground, where the two differ the
+artboard wins.
+
 ## A foreign colour arrives as a token and a foreign ground does not arrive
 
 *A gap.* No artboard draws a detail body a program painted itself. What the

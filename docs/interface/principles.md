@@ -339,6 +339,11 @@ diff's two verdicts, the hunk heading, the block heading, and the crest. A user
 who set their green is looked at all day in their green, and the design's own
 hex is what a terminal that can show it gets.
 
+Four of the tokens are grounds rather than inks — the selection, a diff's two
+intraline tints, and the band, a ground one step off the screen's own that a
+step card rests on so the transcript reads as cards rather than as a run of
+lines.
+
 The ground is the other half of a colour. A table is chosen against a ground
 and is legible only on it: the same grey that is chrome on a black terminal is
 gone on a white one, and body text chosen to lead on one ends up behind the

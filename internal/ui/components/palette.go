@@ -99,6 +99,7 @@ type ColorTokens struct {
 	Accent  Token // the mutation rail and the glyphs beside it, ⚠ warnings, gated modes, ctx ≥70%
 	Info    Token // sub-agents, block headings, decision cards
 	FocusBg Token // selected option/row background, the cursor block
+	Band    Token // the ground a step card rests on; docs/interface/principles.md#a-colour-is-three-values-and-a-ground
 	Dim     Token // chrome, counts, hints, faint rules, empty meter cells, the scroll gutter's thumb
 	Dimmer  Token // tool output, live tails, detail bodies, sparklines
 	Spin    Token // anything in motion — spinner frames, ▸ running…, ✦ deciding
@@ -117,7 +118,7 @@ type ColorTokens struct {
 // sentence somewhere still reciting the old number — which is also why the
 // prose in docs/interface/principles.md#a-colour-is-three-values-and-a-ground
 // speaks of the palette's tokens and never of how many there are.
-const PaletteSize = 17
+const PaletteSize = 18
 
 // Palette is the live token set: whichever of the shipped tables the theme
 // resolves to, or the two-grey mono palette while mono conformance is on
@@ -144,6 +145,7 @@ var FullPalette = ColorTokens{
 	Accent:  token("#ffaf00", "214", "11"),
 	Info:    token("#5f87ff", "12", "12"),
 	FocusBg: token("#5f5fd7", "62", "12"),
+	Band:    band("#1c1c1c", "234"),
 	Dim:     token("#626262", "241", "8"),
 	Dimmer:  token("#8a8a8a", "245", "8"),
 	Spin:    token("#ff5faf", "205", "13"),
@@ -200,6 +202,7 @@ var LightPalette = ColorTokens{
 	Accent:  token("#af5f00", "130", "3"),
 	Info:    token("#005fd7", "4", "4"),
 	FocusBg: token("#d7d7ff", "189", "7"),
+	Band:    band("#e4e4e4", "254"),
 	Dim:     token("#8a8a8a", "245", "8"),
 	Dimmer:  token("#6c6c6c", "242", "8"),
 	Spin:    token("#af005f", "125", "5"),
@@ -234,6 +237,7 @@ var CharmPalette = ColorTokens{
 	Accent:  tone(charmtone.Tang, "209", "11"),
 	Info:    tone(charmtone.Malibu, "39", "12"),
 	FocusBg: tone(charmtone.Charple, "63", "12"),
+	Band:    band(charmtone.Charcoal.Hex(), "237"),
 	Dim:     tone(charmtone.Iron, "239", "8"),
 	Dimmer:  tone(charmtone.Squid, "245", "8"),
 	Spin:    tone(charmtone.Cheeky, "212", "13"),
@@ -243,6 +247,20 @@ var CharmPalette = ColorTokens{
 	Body:    tone(charmtone.Ash, "253", "7"),
 	Code:    tone(charmtone.Cumin, "137", "3"),
 	Key:     tone(charmtone.Hazy, "105", "12"),
+}
+
+// band writes the band's row: a grey one step off the table's ground, and no
+// sixteen-colour rung. Sixteen colours has only bright-black between the
+// ground and the chrome grey, so a band there would read as chrome, and a card
+// is its padding rows alone. The light table's is the nearest named grey that
+// stands off white by what the dark table's stands off black; CharmTone's is
+// the published grey one step up from that set's own ground.
+func band(hex, ansi256 string) Token {
+	return Token{
+		TrueColor: lipgloss.Color(hex),
+		ANSI256:   lipgloss.Color(ansi256),
+		ANSI:      lipgloss.NoColor{},
+	}
 }
 
 // tone writes one row of the CharmTone table: the published hex, and the two

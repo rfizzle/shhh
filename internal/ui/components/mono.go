@@ -17,6 +17,8 @@ package components
 import (
 	"os"
 	"strings"
+
+	"charm.land/lipgloss/v2"
 )
 
 // The mono palette's three shades, from tokens/colors.css. Two greys carry
@@ -32,6 +34,11 @@ var (
 	MonoBg  = token("#32363f", "237", "0")
 )
 
+// monoNoBand is the band under mono, which is no ground at all: every
+// background here collapses onto the selection ground, so a band would read
+// as a selected row, and a card is its padding rows alone.
+var monoNoBand = Token{TrueColor: lipgloss.NoColor{}, ANSI256: lipgloss.NoColor{}, ANSI: lipgloss.NoColor{}}
+
 // MonoPalette is the two-grey token set. Every token that means content,
 // state or emphasis collapses onto MonoFg; every token that means chrome
 // collapses onto MonoDim. Nothing is left that could distinguish two states
@@ -45,6 +52,7 @@ var MonoPalette = ColorTokens{
 	Accent:  MonoFg,
 	Info:    MonoFg,
 	FocusBg: MonoBg,
+	Band:    monoNoBand,
 	Dim:     MonoDim,
 	Dimmer:  MonoDim,
 	Spin:    MonoFg,
