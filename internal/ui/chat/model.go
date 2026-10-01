@@ -466,6 +466,10 @@ const (
 	// the message's, because each one is a stop for reading mode's cursor
 	// and a target for a click, and both of those name an entry.
 	entryTray
+	// entryRetry: the line a retry of a failed turn leaves where the
+	// reader's words would stand, saying what it asks again (failure.go).
+	// The model it names, where the retry is on another one, is failModel.
+	entryRetry
 )
 
 // entry is one transcript item, stored raw so the history can be re-rendered
@@ -520,6 +524,12 @@ type entry struct {
 	// text, so the row re-renders at any width and the offered keys stay
 	// derived from the class rather than parsed back out of a string.
 	fail *provider.Failure
+	// failAfter and failModel are what a failure card's header names, read
+	// when the failure landed: what the turn had done before it broke, and
+	// the model it was on. They are kept rather than read at render time
+	// because both move — a provider switch changes the model, and a retry
+	// adds calls to the turn — and the card states the failure as it was.
+	failAfter, failModel string
 	// resume is what a dropped stream kept behind an entryStreamDrop row: the
 	// partial text and the finished tool calls. It is a pointer so
 	// that taking the offer marks this row spent wherever it is rendered from.

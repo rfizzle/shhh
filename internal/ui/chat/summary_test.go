@@ -698,34 +698,29 @@ func TestSummaryRow_OpensToTheWholeReading(t *testing.T) {
 	if strings.Contains(got, "…") {
 		t.Fatalf("an opened reading is not bounded:\n%s", got)
 	}
-	// Every word of it survived the wrap.
-	flat := strings.Join(strings.Fields(ansi.Strip(got)), " ")
+	// Every word of it survived the wrap, the verdict standing right of its
+	// first line.
+	flat := strings.Join(strings.Fields(strings.Replace(ansi.Strip(got), "on target", "", 1)), " ")
 	if !strings.Contains(flat, strings.TrimSpace(long)) {
 		t.Fatalf("the opened row is missing part of the reading:\n%s", got)
 	}
 }
 
-// Closed, the row states what the fold swallowed by its count, the way a tool
-// row does, and offers no key: enter belongs to the draft until reading mode
-// takes the keyboard.
-func TestSummaryRow_ClosedStatesItsFold(t *testing.T) {
+// Closed, the row is the reading itself with its verdict on the right, and
+// offers no key: enter belongs to the draft until reading mode takes the
+// keyboard. What it was read against waits for the row to be opened.
+func TestSummaryRow_ClosedIsTheReadingAndItsVerdict(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	e := summaryRowEntry(agent.SummaryVerdict{
 		Text: strings.Repeat("still reading the loop. ", 10), State: agent.SummaryOffTarget, Round: 18,
 	}, "make the round limit a checkpoint")
 	got := ansi.Strip(m.renderEntry(e, 76))
-	for _, want := range []string{"summary", "round 18", "off target", "lines"} {
-		if !strings.Contains(got, want) {
-			t.Fatalf("a closed row states %q:\n%s", want, got)
-		}
+	first := strings.Split(got, "\n")[0]
+	if !strings.HasPrefix(first, "  ≡ still reading the loop.") || !strings.HasSuffix(strings.TrimRight(first, " "), "off target") {
+		t.Fatalf("a closed row is the reading, ≡ first and its verdict right:\n%s", got)
 	}
-	if strings.Contains(got, "[enter]") {
-		t.Fatalf("a closed row offers no key while the draft holds enter:\n%s", got)
-	}
-	// Closed is one line: the fold is the whole reason the row is tolerable
-	// every interval.
-	if n := len(strings.Split(strings.TrimRight(got, "\n"), "\n")); n != 1 {
-		t.Fatalf("a closed row is one line, got %d:\n%s", n, got)
+	if strings.Contains(got, "[enter]") || strings.Contains(got, "read against") {
+		t.Fatalf("a closed row offers no key and keeps its furniture for the open:\n%s", got)
 	}
 }
 
@@ -864,5 +859,86 @@ func TestSummary_AReadersSteerRetiresTheReadingInFlight(t *testing.T) {
 	}
 	if !m.finishSummary(driveSummaryDone(t, next)) {
 		t.Fatal("the reading asked after the steer is the one that lands")
+	}
+}
+
+// summaryTurn is a turn whose round either said something before its calls
+// or did not, with the reading the round earned after them.
+func summaryTurn(t *testing.T, said bool, state agent.SummaryState) Model {
+	t.Helper()
+	m := activityModel(t)
+	m.transcript = []entry{{kind: entryUser, text: "check it"}}
+	if said {
+		m.transcript = append(m.transcript, entry{kind: entryAssistant, text: "The tree is what I check first."})
+	}
+	m.transcript = append(m.transcript,
+		entry{kind: entryCommand, text: "git status --short", toolResult: "?? .plan/"},
+		entry{kind: entrySummary, reading: &summaryReading{verdict: agent.SummaryVerdict{
+			State: state, Round: 2, Text: "Checking the tree before it writes anything."}}},
+	)
+	m.invalidateRenderCache()
+	return m
+}
+
+// A reading appears once. Where the round said nothing the reading is the
+// card's body and its verdict sits on the card, and no row of its own
+// repeats it (docs/interface/surfaces.md#the-session-summary).
+func TestSummary_IsTheBodyWhenTheRoundSaidNothing(t *testing.T) {
+	m := summaryTurn(t, false, agent.SummaryOnTarget)
+	view := stripANSI(m.renderHistory())
+	if n := strings.Count(view, "Checking the tree before it writes anything."); n != 1 {
+		t.Fatalf("the reading is drawn %d times, want once:\n%s", n, view)
+	}
+	if strings.Contains(view, "≡ Checking") {
+		t.Fatalf("a reading that is a card's body has no row of its own:\n%s", view)
+	}
+	if n := strings.Count(view, "on target"); n != 1 {
+		t.Fatalf("the verdict is on the card once, got %d:\n%s", n, view)
+	}
+}
+
+// Where the round said something, the reading is a flat row of its own after
+// the card: `≡` in the glyph slot, the sentence, the verdict on the right.
+func TestSummary_IsItsOwnRowOtherwise(t *testing.T) {
+	m := summaryTurn(t, true, agent.SummaryOffTarget)
+	view := stripANSI(m.renderHistory())
+	if n := strings.Count(view, "Checking the tree before it writes anything."); n != 1 {
+		t.Fatalf("the reading is drawn %d times, want once:\n%s", n, view)
+	}
+	var row string
+	for _, l := range strings.Split(view, "\n") {
+		if strings.Contains(l, "Checking the tree") {
+			row = l
+		}
+	}
+	if !strings.HasPrefix(row, "  ≡ Checking the tree") || !strings.HasSuffix(strings.TrimRight(row, " "), "off target") {
+		t.Fatalf("the reading is its own row, ≡ first and the verdict right: %q", row)
+	}
+}
+
+// Of the four verdicts only `unclear` offers a key: a reading that cannot
+// tell is the one that asks the reader to step in, and reading mode is the
+// way in. The other three state their word and offer nothing.
+func TestSummary_OnlyUnclearOffersAKey(t *testing.T) {
+	for _, tc := range []struct {
+		state agent.SummaryState
+		word  string
+		offer bool
+	}{
+		{agent.SummaryOnTarget, "on target", false},
+		{agent.SummarySufficient, "has enough", false},
+		{agent.SummaryOffTarget, "off target", false},
+		{agent.SummaryUncertain, "unclear", true},
+	} {
+		t.Run(tc.word, func(t *testing.T) {
+			m := summaryTurn(t, true, tc.state)
+			view := stripANSI(m.renderHistory())
+			if !strings.Contains(view, tc.word) {
+				t.Fatalf("the row states its verdict %q:\n%s", tc.word, view)
+			}
+			if got := strings.Contains(view, "[ctrl+o] reading mode"); got != tc.offer {
+				t.Fatalf("offers [ctrl+o] reading mode = %v, want %v:\n%s", got, tc.offer, view)
+			}
+		})
 	}
 }

@@ -106,6 +106,7 @@ func (m Model) turnCloseData() *components.TurnClose {
 		Tools:   total.Tools,
 		Elapsed: components.FormatElapsed(total.Elapsed),
 		Spend:   total.Spend,
+		At:      total.At,
 		Changes: changes,
 		// A commit row already answers what the turn wrote, so it is only
 		// with neither that an unvouched act is answered with nothing.
@@ -137,8 +138,16 @@ func (m Model) turnTotal(es []entry) receipt.Turn {
 		}
 	}
 	// The turn's own cost, priced per request as it went; an unpriced model
-	// reports tokens rather than a made-up zero.
-	if v, ok := m.vitals.lastTurn(); ok {
+	// reports tokens rather than a made-up zero. A turn still working states
+	// what its requests have been billed so far, never an estimate of the
+	// one in flight, so the figure only ever moves to a number the close
+	// will keep.
+	v, ok := m.vitals.lastTurn()
+	if m.turnOpen && m.vitals.open {
+		v = m.vitals.current
+		ok = v.Priced || v.In+v.Out > 0
+	}
+	if ok {
 		if v.Priced {
 			t.Spend = formatCost(v.Cost)
 		} else {
@@ -146,6 +155,37 @@ func (m Model) turnTotal(es []entry) receipt.Turn {
 		}
 	}
 	return t
+}
+
+// liveTotal is the running turn's total line, under everything the turn has
+// drawn so far, or "" where no turn of the reader's is working. It is the
+// close's first row in its working state: the same receipt, so the line a
+// turn ends on is the line it was counting on while it ran
+// (docs/interface/surfaces.md#the-turns-close).
+func (m Model) liveTotal(width int) string {
+	if !m.turnOpen || m.attachedTo != "" {
+		return ""
+	}
+	switch m.turnState() {
+	case stateStreaming, stateRunningCmd, stateClassifying:
+	default:
+		return ""
+	}
+	t := m.turnTotal(m.turnEntries())
+	// A turn with no start stamp states no elapsed rather than counting from
+	// the zero time, as the frame's activity slot does (turnstatus.go).
+	elapsed := ""
+	if !m.turnStarted.IsZero() {
+		elapsed = components.FormatElapsed(t.Elapsed)
+	}
+	return components.TurnTotal{
+		State:   components.TurnWorking,
+		Elapsed: elapsed,
+		Tools:   t.Tools,
+		Spend:   t.Spend,
+		Spin:    m.spinnerWanted(),
+		Frame:   m.spinFrame,
+	}.View(width)
 }
 
 // turnEnd is how a closed turn ended, in the receipt's words.
@@ -173,7 +213,7 @@ func closeState(e receipt.TurnEnd) components.TurnState {
 
 // turnChangesRow is the changed-files row, read from the turn's changeset.
 // A turn that changed nothing has no such row: where it only read, the
-// summary row stands alone, and where it ran something that could have
+// total stands alone, and where it ran something that could have
 // written, the close says `wrote nothing` in its place (ranUnvouched).
 //
 // A turn that committed still opens its review and loses the undo offer. Undo

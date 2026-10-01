@@ -313,14 +313,16 @@ func (m Model) renderEntryDetail(e entry, width int, sel rowSel, stepDetail bool
 		if e.reading == nil {
 			return ""
 		}
-		return m.summaryRowFor(e, width).View(width) + "\n"
+		return m.summaryLineFor(e, width).View(width) + "\n"
+	case entryRetry:
+		return components.RetryLine{NewModel: e.failModel}.View(width) + "\n"
 	case entryTurnClose:
 		if e.close == nil {
 			return ""
 		}
 		return m.closeFor(*e.close, sel).View(width) + "\n"
 	case entryFailure:
-		return m.gateRecovery(e, m.failureRow(e), sel).View(width) + "\n"
+		return m.failureCardFor(e, sel).View(width) + "\n"
 	case entryStreamDrop:
 		return m.gateRecovery(e, m.dropRow(e), sel).View(width) + "\n"
 	case entryRoundPause:
@@ -575,7 +577,8 @@ func marginLine(style lipgloss.Style, line string, inner, width int) string {
 func entryIsBlock(e entry) bool {
 	switch e.kind {
 	case entryUser, entryAssistant, entryCompactSummary,
-		entryTurnClose, entryFanout, entryTodoRun, entryRewound, entryTray:
+		entryTurnClose, entryFanout, entryTodoRun, entryRewound, entryTray,
+		entryFailure, entryRetry:
 		return true
 	case entrySystem, entryError:
 		return strings.Contains(strings.TrimSpace(e.text), "\n")

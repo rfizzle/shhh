@@ -53,6 +53,7 @@ import (
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // The summary is turn-scoped, which is the one scope decision the rest of
@@ -740,14 +741,14 @@ func truncateRunes(s string, limit int) string {
 // three lines is then a sentence nobody can finish, and the reading before it
 // is gone entirely: the rail holds one, and only the current one.
 //
-// So a landed reading with something to say also lands in the transcript as
-// one folded activity row, the way a round's reasoning does (think.go); a
-// quiet one the rail already draws whole does not (quietReading, below).
-// Folded it is a line: the round it was taken at, its verdict, and how many
-// lines opening it costs. Opened it is the whole reading, the verdict in the
-// rail's own marks, the reason behind a departure, and the instruction it was
-// judged against — the last of which the rail never had room for at all and
-// only `/status` could answer.
+// So a landed reading with something to say also lands in the transcript; a
+// quiet one the rail already draws whole does not (quietReading, below). It
+// is in one place: the body of the card it read, where the round said
+// nothing about its calls (card.go), and otherwise a row of its own — the
+// sentence whole, dimmer and italic, its verdict on the right. Opened, the
+// row adds the reason behind a departure and the instruction it was judged
+// against — the last of which the rail never had room for at all and only
+// `/status` could answer.
 //
 // It is a row rather than a block for the reason everything else is: one
 // grid. And it is every such reading rather than the last one because the
@@ -847,8 +848,10 @@ func railDrawsWhole(text string) bool {
 	return slices.Equal(drawn, strings.Fields(text))
 }
 
-// summaryRowFor builds the row for a reading at the width it will be drawn
-// at, so the body re-wraps on a resize like every other entry.
+// summaryRowFor builds a reading as an activity row at the width it will be
+// drawn at, so the body re-wraps on a resize like every other entry. The
+// readings screen draws its preview from it; the transcript draws a reading
+// as summaryLineFor's row.
 func (m Model) summaryRowFor(e entry, width int) components.ActivityRow {
 	r := e.reading
 	tone := summaryTone(r.verdict.State)
@@ -872,6 +875,32 @@ func (m Model) summaryRowFor(e entry, width int) components.ActivityRow {
 		row.Detail = lines
 	}
 	return row
+}
+
+// summaryLineFor is a reading's row in the transcript: the sentence whole,
+// dimmer and italic, its verdict on the right in its colour. Only a reading
+// that cannot tell offers a key — it is the one that asks the reader to step
+// in, and reading mode is the way in — and only where that chord is live
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// Opened, it adds what the verdict was argued from and read against.
+// See docs/interface/departures.md#a-readings-row-opens-to-its-argument.
+func (m Model) summaryLineFor(e entry, width int) components.SummaryLine {
+	r := e.reading
+	line := components.SummaryLine{Text: r.verdict.Text, Tone: summaryTone(r.verdict.State)}
+	if line.Tone == components.SummaryUnclear && m.inputLive() && m.state != stateFocus {
+		line.Offer = components.KeyOffer{Key: keys.Bracket(keys.Draft.Reading), Label: keys.Words(keys.Draft.Reading)}
+	}
+	if e.expanded {
+		inner := max(width-components.CardBodyIndent, 1)
+		if reason := strings.TrimSpace(r.verdict.Reason); reason != "" {
+			line.Detail = append(line.Detail, strings.Split(m.wordWrap(reason, inner), "\n")...)
+		}
+		if target := strings.TrimSpace(r.target); target != "" {
+			quoted := truncateRunes(agent.TargetLine(target), summaryReadAgainstChars)
+			line.Detail = append(line.Detail, strings.Split(m.wordWrap("read against: "+quoted, inner), "\n")...)
+		}
+	}
+	return line
 }
 
 // summaryTextLines is the reading wrapped to the detail body's width. It is

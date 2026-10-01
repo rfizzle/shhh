@@ -290,6 +290,71 @@ the right-hand run touching. The binary keeps at least one blank column
 between them, so each field goes one column earlier than the table says; a
 receipt that ran into its outcome would read as one word.
 
+## What the turn's total says where the catalogue left it open
+
+*A gap.* The Rows catalogue draws the total working, done and failed, and
+the changed-files line under a done one. The binary decided the rest.
+
+A turn the reader stopped draws `⊘ cancelled`, counting as a failed one
+does: what it got through, how long, what it cost. A turn that broke or was
+stopped and changed nothing says `no files changed` on its total, and the
+`changed no files` line a command would otherwise earn under it is not drawn,
+since it would say the same thing twice; where it did change files, the
+changed-files line says so under the total as it does under a done one.
+
+While the turn works the spend is what its requests have been billed so far,
+never an estimate of the one in flight, so the figure only ever moves to a
+number the close will keep, and it is left out until the first request
+reports. The running total is drawn while the turn is in one of its working
+phases — thinking, streaming, acting, deciding — and not while it waits on
+a card, where the spinner would be a glyph that does not move. The frame's
+activity slot still counts the turn's clock beside its phase, so while a turn
+runs the clock is on the screen twice; the slot is the one a reader watching
+the prompt reads, and the total is the transcript's.
+
+## A failure card's header carries the class
+
+*A gap.* The catalogue's error card names the class on the header's right
+(`stream error`) and gives the body to what the failure means. The binary
+puts the class as the provider's status and class word there, and writes the
+body as one sentence per class — the fact that decides what to do next, which
+a failure row used to state on its right, and what the failure cost — so the
+key a rejected key needs, the wait a rate limit named and the window a long
+conversation is over are each said where the catalogue says what happened.
+
+The catalogue draws a break. A stall the session will come back from keeps
+`⚠` and the accent on its card, and a request the reader stopped keeps `⊘`,
+as their rows did: which of the three it is was always the reason all three
+marks exist. The provider's words are up to three lines of the footer. At a
+hundred and twenty columns and over, the ways out share the last of them
+where they fit beside it, and take their own line where they do not.
+
+A retry on another model than the failure says so in the same words: `↻ try
+again · same prompt, now on gpt-4.1`.
+
+## A reading's row opens to its argument
+
+*A gap.* The catalogue draws a reading's row closed. Opened, the row adds the
+reason behind a departure and the instruction the verdict was reached
+against, at the body column under the sentence; the verdict is already on the
+row's right, so it is not drawn again under it. `[ctrl+o] reading mode` is on
+an `unclear` row only while the draft holds the keyboard, since it is the way
+into reading mode and is not offered from inside it.
+
+A run of calls nothing titled takes the reading after it as its body even
+where a passage of prose stood above the run, because the passage did not
+title the calls; the reading is a row of its own after a card a sentence
+titled.
+
+## The turn's total and the retry draw two marks the pages do not list
+
+*A gap.* `∗` is the total of a turn that is done and `↻` the retry's line.
+The Rows catalogue and the Cards artboard draw both, and no glyph page lists
+either. Each is a mark of one line: `∗` is the done state of the one slot
+whose other states are the spinner, `✗` and `⊘`, dim because the line is an
+account and never an alarm; `↻` stands in the prompt's column because the
+retry stands where the reader's words would.
+
 ## Where the verdict, a search's count and the window go
 
 *A gap.* The catalogue puts the reading's verdict on the header of a card

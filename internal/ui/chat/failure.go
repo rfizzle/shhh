@@ -1,7 +1,10 @@
 package chat
 
 // Provider failures in the session (
-// docs/interface/surfaces.md#the-recovery-row).
+// docs/interface/surfaces.md#the-recovery-row). A failure is drawn as a card
+// the way a step is: the model and what the turn had done when it broke on
+// the header, what the failure means for the reader as the body, and the
+// provider's own words with the ways out as the footer.
 //
 // A stream that broke used to append `Error: <whatever Go said>` and hand the
 // input back. Everything a reader needed was missing: whether the key was the
@@ -21,6 +24,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -63,8 +67,82 @@ func classifyFailure(err error, providerName string) *provider.Failure {
 // appendFailureRecord puts an already-classified failure on the grid. The
 // pointer is kept as-is, because the retry wait identifies the row it stalled
 // on by it.
+//
+// The card's header is read here, as the failure lands: the model the turn
+// was on and what it had done, which a provider switch or a retry would
+// otherwise rewrite under a failure that happened before either.
 func (m *Model) appendFailureRecord(f *provider.Failure) {
-	m.appendEntry(entry{kind: entryFailure, fail: f, duration: m.turnElapsed()})
+	var acts []receipt.Act
+	for _, e := range m.turnEntries() {
+		if isActivityEntry(e) {
+			acts = append(acts, m.actOf(e))
+		}
+	}
+	m.appendEntry(entry{kind: entryFailure, fail: f, duration: m.turnElapsed(),
+		failAfter: receipt.BuildStep(acts).Counts(), failModel: m.failureSubject(f)})
+}
+
+// failureCardFor is a failure entry as its card, in the state the selection
+// puts its keys in (inertkeys.go). The note the row trailed its keys with is
+// the body's second sentence on the card, since what the failure cost is
+// part of what it means.
+func (m Model) failureCardFor(e entry, sel rowSel) components.FailureCard {
+	row := m.gateRecovery(e, m.failureRow(e), sel)
+	if e.failModel != "" {
+		row.Subject = e.failModel
+	}
+	sentence := failureSentence(e.fail)
+	if row.Note != "" {
+		sentence += " " + strings.ToUpper(row.Note[:1]) + row.Note[1:] + "."
+	} else if e.fail != nil {
+		// A row whose wait is draining under it hands its note and keys to
+		// the wait; the card still says what the failure cost.
+		note := failureNote(e.fail)
+		sentence += " " + strings.ToUpper(note[:1]) + note[1:] + "."
+	}
+	return components.FailureCard{
+		Row:      row,
+		After:    e.failAfter,
+		Sentence: sentence,
+		Selected: sel != rowUnselected,
+	}
+}
+
+// failureSentence is what a failure means for the reader, said as a
+// sentence: the fact about its class that decides what to do next, which
+// the row used to state in its outcome field and the card's header gives to
+// the class.
+func failureSentence(f *provider.Failure) string {
+	if f == nil {
+		return ""
+	}
+	switch f.Class {
+	case provider.ClassAuth:
+		if f.KeyTail == "" {
+			return "No key was sent, so the provider refused the request."
+		}
+		return "The provider rejected key ···" + f.KeyTail + "."
+	case provider.ClassRateLimit:
+		if f.RetryAfter > 0 {
+			return "The provider is limiting the rate and named a retry in " + components.FormatElapsed(f.RetryAfter) + "."
+		}
+		return "The provider is limiting the rate; a retry shortly should go through."
+	case provider.ClassQuota:
+		return "The account has run out of quota; it is the account, not the rate."
+	case provider.ClassOverloaded:
+		return "The provider is overloaded; the trouble is on its side."
+	case provider.ClassContextLength:
+		return "The conversation is over the model's context window."
+	case provider.ClassModelNotFound:
+		return "The provider serves no model by that id; the id is wrong, not the key."
+	case provider.ClassNetwork:
+		return "The request never reached the provider."
+	case provider.ClassMalformed:
+		return "The provider's reply could not be read."
+	case provider.ClassCancelled:
+		return "You stopped the request."
+	}
+	return "The provider refused the request; its own words are below."
 }
 
 // failureRow renders one failure on the column grid. The offers stay on the
@@ -284,6 +362,14 @@ func (m Model) retryTurn() (tea.Model, tea.Cmd) {
 	// asking the same question rather than asking twice. What restarts is the
 	// turn's own accounting: a retry is a turn, and /stats should say so.
 	m.clearRetryChain()
+	// The retry stands where the reader's words would, saying what it asks
+	// again: the same prompt, and the model it asks it of where a provider
+	// switch since the failure put the session on another one.
+	retry := entry{kind: entryRetry}
+	if was := m.lastFailureModel(); was != "" && m.modelName != "" && was != m.modelName {
+		retry.failModel = m.modelName
+	}
+	m.appendEntry(retry)
 	m.turnStarted, m.turnEnded = clock(), time.Time{}
 	m.turnOpen, m.turnOutcome = true, components.TurnDone
 	m.turnTokensIn, m.turnTokensOut = 0, 0
@@ -297,6 +383,16 @@ func (m Model) retryTurn() (tea.Model, tea.Cmd) {
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, m.requestStream()
+}
+
+// lastFailureModel is the model the newest failure in the transcript was on.
+func (m Model) lastFailureModel() string {
+	for i := len(m.transcript) - 1; i >= 0; i-- {
+		if e := m.transcript[i]; e.kind == entryFailure {
+			return e.failModel
+		}
+	}
+	return ""
 }
 
 // openProviderPick opens the generic picker over the registered providers

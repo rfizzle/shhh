@@ -51,7 +51,7 @@ func TestTurnsScreen_ThePreviewIsTheTurnsClose(t *testing.T) {
 		"/turns", "6 turns · 26 tools", "$0.1580 spent", "[q] back",
 		"▸ turn 6", "running", "✓ turn 5", "changed no files", "✓ turn 4", "· turn 2", "no figures kept",
 		"⊘ turn 1", "cancelled",
-		"Done · 2 steps · 9 tools · 1m 04s · $0.0870", "committed a1b2c3d on main",
+		"∗ worked 1m 04s · 9 tools · $0.0870", "committed a1b2c3d on main",
 		"internal/agent/loop_test.go", "[enter] review turn 4",
 	} {
 		if !strings.Contains(view, want) {

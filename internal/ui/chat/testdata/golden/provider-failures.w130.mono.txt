@@ -14,55 +14,68 @@
 ❯ rename the round-limit sentinel
 ─────────────────────────────────────────────────────────────────────────────
 
-   ✗ model   gpt-4o · 401 unauthorized            key ···4f9c rejected
+
+  ✗ model gpt-4o                                           401 unauthorized
+    The provider rejected key ···4f9c. Nothing in the turn was lost.
     Incorrect API key provided
-    [e] enter a new key · [p] switch provider for the last failure
-    [ctrl+space/ctrl+y] to use them
-    nothing in the turn was lost
+             [e] enter a new key · [p] switch provider for the last failure
+                                            [ctrl+space/ctrl+y] to use them
+
 
 
 · rate limit · a stall, with the wait the provider named
 ❯ rename the round-limit sentinel
 ─────────────────────────────────────────────────────────────────────────────
 
-   ⚠ model   gpt-4o · 429 rate limited                    retry in 38s
+
+  ⚠ model gpt-4o                                           429 rate limited
+    The provider is limiting the rate and named a retry in 38s. Nothing in
+    the turn was lost.
     Rate limit reached for gpt-4o. Please try again in 38s.
-    [r] retry the last failure · [p] switch provider for the last failure
-    [ctrl+space/ctrl+y] to use them
-    nothing in the turn was lost
+      [r] retry the last failure · [p] switch provider for the last failure
+                                            [ctrl+space/ctrl+y] to use them
+
 
 
 · context length · the only class with a remedy of its own
 ❯ rename the round-limit sentinel
 ─────────────────────────────────────────────────────────────────────────────
 
-   ✗ model   gpt-4o · 400 context too long             over the window
+
+  ✗ model gpt-4o                                       400 context too long
+    The conversation is over the model's context window. Compacting keeps
+    the plan and the recent turns.
     This model's maximum context length is 128000 tokens
-    [c] compact now · [r] retry the last failure
-    [ctrl+space/ctrl+y] to use them
-    compacting keeps the plan and the recent turns
+                               [c] compact now · [r] retry the last failure
+                                            [ctrl+space/ctrl+y] to use them
+
 
 
 · unclassified · the message is the whole point of the row
 ❯ rename the round-limit sentinel
 ─────────────────────────────────────────────────────────────────────────────
 
-   ✗ model   gpt-4o · 400 unclassified                   message below
+
+  ✗ model gpt-4o                                           400 unclassified
+    The provider refused the request; its own words are below. Nothing in
+    the turn was lost.
     Unknown parameter: 'reasoning.effort'
-    [r] retry the last failure · [p] switch provider for the last failure
-    [ctrl+space/ctrl+y] to use them
-    nothing in the turn was lost
+      [r] retry the last failure · [p] switch provider for the last failure
+                                            [ctrl+space/ctrl+y] to use them
+
 
 
 · a failure the session has moved past · every key grey until selected
 ❯ rename the round-limit sentinel
 ─────────────────────────────────────────────────────────────────────────────
 
-   ✗ model   gpt-4o · 400 unclassified                   message below
+
+  ✗ model gpt-4o                                           400 unclassified
+    The provider refused the request; its own words are below. Nothing in
+    the turn was lost.
     Unknown parameter: 'reasoning.effort'
-    [r] try again · [p] switch provider
-    [ctrl+o] to use them
-    nothing in the turn was lost
+                 [r] try again · [p] switch provider · [ctrl+o] to use them
+
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -70,53 +83,66 @@
 ␛[38;5;254m❯␛[m rename the round-limit sentinel
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-   ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 401 unauthorized␛[m            ␛[38;5;254mkey ···4f9c rejected␛[m
+
+  ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m ␛[38;5;244mgpt-4o␛[m                                           ␛[38;5;254m401 unauthorized␛[m
+    ␛[38;5;254mThe provider rejected key ···4f9c. Nothing in the turn was lost.␛[m
     ␛[38;5;244mIncorrect API key provided␛[m
-    ␛[38;5;244m[e]␛[m␛[38;5;244m enter a new key␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p]␛[m␛[38;5;244m switch provider for the last failure␛[m
-    ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
-    ␛[38;5;244mnothing in the turn was lost␛[m
+             ␛[38;5;244m[e]␛[m␛[38;5;244m enter a new key␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p]␛[m␛[38;5;244m switch provider for the last failure␛[m
+                                            ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
+
 
 
 · rate limit · a stall, with the wait the provider named
 ␛[38;5;254m❯␛[m rename the round-limit sentinel
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-   ␛[38;5;254m⚠␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 429 rate limited␛[m                    ␛[38;5;254mretry in 38s␛[m
+
+  ␛[38;5;254m⚠␛[m ␛[38;5;254mmodel␛[m ␛[38;5;244mgpt-4o␛[m                                           ␛[38;5;254m429 rate limited␛[m
+    ␛[38;5;254mThe provider is limiting the rate and named a retry in 38s. Nothing in␛[m
+    ␛[38;5;254mthe turn was lost.␛[m
     ␛[38;5;244mRate limit reached for gpt-4o. Please try again in 38s.␛[m
-    ␛[38;5;244m[r]␛[m␛[38;5;244m retry the last failure␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p]␛[m␛[38;5;244m switch provider for the last failure␛[m
-    ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
-    ␛[38;5;244mnothing in the turn was lost␛[m
+      ␛[38;5;244m[r]␛[m␛[38;5;244m retry the last failure␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p]␛[m␛[38;5;244m switch provider for the last failure␛[m
+                                            ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
+
 
 
 · context length · the only class with a remedy of its own
 ␛[38;5;254m❯␛[m rename the round-limit sentinel
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-   ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 400 context too long␛[m             ␛[38;5;254mover the window␛[m
+
+  ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m ␛[38;5;244mgpt-4o␛[m                                       ␛[38;5;254m400 context too long␛[m
+    ␛[38;5;254mThe conversation is over the model's context window. Compacting keeps␛[m
+    ␛[38;5;254mthe plan and the recent turns.␛[m
     ␛[38;5;244mThis model's maximum context length is 128000 tokens␛[m
-    ␛[38;5;244m[c]␛[m␛[38;5;244m compact now␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r]␛[m␛[38;5;244m retry the last failure␛[m
-    ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
-    ␛[38;5;244mcompacting keeps the plan and the recent turns␛[m
+                               ␛[38;5;244m[c]␛[m␛[38;5;244m compact now␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r]␛[m␛[38;5;244m retry the last failure␛[m
+                                            ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
+
 
 
 · unclassified · the message is the whole point of the row
 ␛[38;5;254m❯␛[m rename the round-limit sentinel
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-   ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 400 unclassified␛[m                   ␛[38;5;254mmessage below␛[m
+
+  ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m ␛[38;5;244mgpt-4o␛[m                                           ␛[38;5;254m400 unclassified␛[m
+    ␛[38;5;254mThe provider refused the request; its own words are below. Nothing in␛[m
+    ␛[38;5;254mthe turn was lost.␛[m
     ␛[38;5;244mUnknown parameter: 'reasoning.effort'␛[m
-    ␛[38;5;244m[r]␛[m␛[38;5;244m retry the last failure␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p]␛[m␛[38;5;244m switch provider for the last failure␛[m
-    ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
-    ␛[38;5;244mnothing in the turn was lost␛[m
+      ␛[38;5;244m[r]␛[m␛[38;5;244m retry the last failure␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p]␛[m␛[38;5;244m switch provider for the last failure␛[m
+                                            ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
+
 
 
 · a failure the session has moved past · every key grey until selected
 ␛[38;5;254m❯␛[m rename the round-limit sentinel
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-   ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 400 unclassified␛[m                   ␛[38;5;254mmessage below␛[m
+
+  ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m ␛[38;5;244mgpt-4o␛[m                                           ␛[38;5;254m400 unclassified␛[m
+    ␛[38;5;254mThe provider refused the request; its own words are below. Nothing in␛[m
+    ␛[38;5;254mthe turn was lost.␛[m
     ␛[38;5;244mUnknown parameter: 'reasoning.effort'␛[m
-    ␛[38;5;244m[r]␛[m␛[38;5;244m try again␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p]␛[m␛[38;5;244m switch provider␛[m
-    ␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
-    ␛[38;5;244mnothing in the turn was lost␛[m
+                 ␛[38;5;244m[r]␛[m␛[38;5;244m try again␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p]␛[m␛[38;5;244m switch provider␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
+
 

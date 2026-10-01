@@ -636,7 +636,9 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 		if text == "" {
 			continue
 		}
-		if focus && selectable {
+		// A failure is a card, and a card lights its own header for the
+		// cursor rather than taking the gutter on its padding row.
+		if focus && selectable && e.kind != entryFailure {
 			text = gutterPrefix(text, i == focusIdx, grid, gutterWidth(width, grid))
 		}
 		units = append(units, unit{idx: i, sepBefore: e, sepAfter: e, text: text})

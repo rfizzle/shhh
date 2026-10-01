@@ -3859,6 +3859,127 @@ func TestGolden_TurnCloseSelection(t *testing.T) {
 	})
 }
 
+// TestGolden_TurnTotal captures the turn's last line in its states
+// (docs/interface/surfaces.md#the-turns-close): counting under the turn while
+// it works, the close's first row once it is done with the files it changed
+// on the line under it, and a turn that broke saying so and what it left.
+func TestGolden_TurnTotal(t *testing.T) {
+	captureGolden(t, "turn-total", "the turn's total line", goldenWidths, func(width int) []golden.Panel {
+		turn := func() Model {
+			m := frameModel(t, width, 40)
+			m.turnCount = 1
+			m.appendEntry(entry{kind: entryUser, text: "raise the round cap"})
+			m.appendEntry(entry{kind: entryCommand, text: "go build ./...", toolResult: "", duration: 3 * time.Second})
+			return m
+		}
+		running := func() string {
+			m := turn()
+			m.turnOpen = true
+			m.turnStarted = goldenNow.Add(-(2*time.Minute + 10*time.Second))
+			m.vitals.startTurn()
+			m.vitals.record("gpt-4o", provider.Usage{PromptTokens: 41000, CompletionTokens: 1200}, 0.84, true)
+			m.setTurnState(stateStreaming)
+			m.invalidateRenderCache()
+			return m.renderHistory() + m.resolveLiveTail(m.transcriptWidth())
+		}
+		closed := func(c components.TurnClose) string {
+			m := turn()
+			m.appendEntry(entry{kind: entryTurnClose, turn: 1, close: &c})
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		return []golden.Panel{
+			{Label: "running · the spinner, the clock, the calls and the spend so far", View: running()},
+			{Label: "done · how long it worked and when it was done, the files under it", View: closed(components.TurnClose{
+				State: components.TurnDone, Tools: 13, Elapsed: "3m 29s", Spend: "$1.15", At: goldenNow,
+				Changes: &components.TurnChanges{Files: 1, Added: 41, Note: "all new to git", Back: "/undo 1 takes it back"},
+			})},
+			{Label: "failed · what it got through, and that it changed no file", View: closed(components.TurnClose{
+				State: components.TurnFailed, Tools: 13, Elapsed: "1m 38s", Spend: "$1.15", WroteNothing: true,
+			})},
+		}
+	})
+}
+
+// TestGolden_SummaryCard captures a reading in its two places, once each
+// (docs/interface/surfaces.md#the-session-summary): the body of a card the
+// round said nothing about, its verdict on the card; and a row of its own
+// after a card the round titled, closed, opened, and the one verdict that
+// offers a key.
+func TestGolden_SummaryCard(t *testing.T) {
+	captureGolden(t, "summary-card", "a reading in the card and on its own row", goldenWidths, func(width int) []golden.Panel {
+		build := func(title string, state agent.SummaryState, open bool) string {
+			m := frameModel(t, width, 40)
+			m.appendEntry(entry{kind: entryUser, text: "write the copy story"})
+			if title != "" {
+				m.appendEntry(entry{kind: entryAssistant, text: title})
+			}
+			m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":".plan/BACKLOG.md"}`, toolResult: "# Backlog", duration: 3100 * time.Millisecond})
+			m.appendEntry(entry{kind: entrySummary, expanded: open, reading: &summaryReading{
+				target: "write the copy story",
+				verdict: agent.SummaryVerdict{State: state, Round: 4, Reason: "the plan never named these files",
+					Text: "Both preconditions held up and nothing read so far contradicts the plan. Writing is next, no detours."},
+			}})
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		const title = "Reading the backlog's format before writing."
+		return []golden.Panel{
+			{Label: "the round said nothing · the reading is the card's body", View: build("", agent.SummaryOnTarget, false)},
+			{Label: "the round said something · the reading is a row of its own", View: build(title, agent.SummaryOnTarget, false)},
+			{Label: "its own row, opened · the reason and what it was read against", View: build(title, agent.SummaryOffTarget, true)},
+			{Label: "unclear · the one reading that offers a key", View: build(title, agent.SummaryUncertain, false)},
+		}
+	})
+}
+
+// TestGolden_FailureCard captures a turn that broke the way it reads end to
+// end (docs/interface/surfaces.md#the-recovery-row): the failure as a card in
+// del with what the turn had done on its header, the total that says the turn
+// failed and left the files alone, and the retry's line where the reader's
+// words would stand; and the same card under reading mode's cursor, its keys
+// live.
+func TestGolden_FailureCard(t *testing.T) {
+	captureGolden(t, "failure-card", "a failed turn, its card, its total and its retry", goldenWidths, func(width int) []golden.Panel {
+		build := func(sel rowSel, retried bool) string {
+			m := frameModel(t, width, 40)
+			m.modelName = "claude-opus-5-5"
+			m.providerName = "anthropic"
+			m.switchProviderFn = func(string) error { return nil }
+			m.turnOutcome = components.TurnFailed
+			m.turnCount = 1
+			m.appendEntry(entry{kind: entryUser, text: "write the copy story"})
+			m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":".plan/BACKLOG.md"}`, toolResult: "# Backlog"})
+			m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"docs/interface/surfaces.md"}`, toolResult: "# Surfaces"})
+			at := m.appendEntry(entry{kind: entryFailure, duration: 98 * time.Second,
+				failAfter: "read 2 files", failModel: "claude-opus-5-5", fail: &provider.Failure{
+					Class: provider.ClassUnclassified, Provider: "anthropic",
+					Message: "stream ID 17; INTERNAL_ERROR; received from peer",
+				}})
+			m.appendEntry(entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
+				State: components.TurnFailed, Tools: 2, Elapsed: "1m 38s", Spend: "$1.15",
+			}})
+			if retried {
+				m.turnOutcome = components.TurnDone
+				m.appendEntry(entry{kind: entryRetry})
+			}
+			switch sel {
+			case rowPointed:
+				m.pointer, m.focusIdx = true, at
+			case rowUnderCursor:
+				m.state, m.focusIdx = stateFocus, at
+			}
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		return []golden.Panel{
+			{Label: "the failure the turn ended on · grey keys beside the handover that reaches them", View: build(rowUnselected, false)},
+			{Label: "under reading mode's cursor · the card lit, its keys live", View: build(rowUnderCursor, false)},
+			{Label: "retried · the line the retry leaves where the prompt would stand", View: build(rowUnselected, true)},
+		}
+	})
+}
+
 // TestGolden_RecoverySelection captures the failure a turn ended on in the
 // three places the selection can stand, beside the closes above: nothing
 // selected, where it is the row the handover reaches and its retry and

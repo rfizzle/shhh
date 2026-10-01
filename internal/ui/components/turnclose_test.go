@@ -27,7 +27,7 @@ func TestTurnClose_ThreeRowsAnswerThreeQuestions(t *testing.T) {
 		t.Fatalf("expected three rows, got %d:\n%s", len(lines), strings.Join(lines, "\n"))
 	}
 	for i, want := range []string{
-		"✓ Done · 4 steps · 18 tools · 1m 04s · $0.14",
+		"∗ worked 1m 04s · 18 tools · $0.14",
 		"▎✎ 3 files changed +30 −4 · [enter] review turn · [ctrl+space/ctrl+y] commit",
 		"✓ go test ./internal/agent/... passing · 41 packages · 12.8s",
 	} {
@@ -42,11 +42,10 @@ func TestTurnClose_ThreeRowsAnswerThreeQuestions(t *testing.T) {
 
 func TestTurnClose_OnlyTheChangesRowCarriesTheMutationRail(t *testing.T) {
 	lines := strings.Split(ansi.Strip(closeFixture().View(130)), "\n")
-	// The close block holds the marker gutter back like every other entry in
-	// the transcript, so its rail and glyph are in the transcript's rail and
-	// glyph columns rather than one short of them
+	// The close block holds the pointer column back like a card, so its rail
+	// and glyph are in a card's rail and glyph columns
 	// (docs/interface/surfaces.md#the-leading-columns).
-	railCol, glyphCol := GridPointerWidth, GridPointerWidth+1
+	railCol, glyphCol := 1, 2
 	for i, l := range lines {
 		if got := []rune(l)[:railCol]; strings.TrimSpace(string(got)) != "" {
 			t.Errorf("row %d writes in the marker gutter: %q", i+1, l)
@@ -60,7 +59,7 @@ func TestTurnClose_OnlyTheChangesRowCarriesTheMutationRail(t *testing.T) {
 	}
 	// The rows line up: whatever the rail column holds, the glyph follows it.
 	for i, l := range lines {
-		if got := []rune(l)[glyphCol]; got != '✓' && got != '✎' && got != '✗' && got != '⊘' {
+		if got := []rune(l)[glyphCol]; got != '∗' && got != '✓' && got != '✎' && got != '✗' && got != '⊘' {
 			t.Errorf("row %d should carry its glyph in the glyph column, got %q in %q", i+1, got, l)
 		}
 	}
@@ -167,7 +166,7 @@ func TestTurnClose_TheChecksRowNamesTheCommandWhereItFits(t *testing.T) {
 
 func TestTurnClose_StateAndVerdictAreWordsAsWellAsGlyphs(t *testing.T) {
 	for state, word := range map[TurnState]string{
-		TurnDone: "Done", TurnCancelled: "Cancelled", TurnFailed: "Failed",
+		TurnDone: "worked", TurnCancelled: "cancelled", TurnFailed: "failed",
 	} {
 		c := closeFixture()
 		c.State = state

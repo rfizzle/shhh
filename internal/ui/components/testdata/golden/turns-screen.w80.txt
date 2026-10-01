@@ -23,8 +23,8 @@
 ────────────────────────────────────────────────────────────────────────────────
 turn 6                                                                   running
 
-   ▸ Running · step 2 · 7 tools
-  ▎✎ 1 file this turn +4 −1
+  ▸ Running · step 2 · 7 tools
+ ▎✎ 1 file this turn +4 −1
 
   files internal/agent/loop.go +4 −1
 
@@ -43,8 +43,8 @@ turn 6                                                                   running
 ────────────────────────────────────────────────────────────────────────────────
 turn 5                                                                      done
 
-   ✓ Done · 1 step · 3 tools · 12s · $0.0210
-  ▎✎ changed no files
+  ∗ worked 12s · 3 tools · $0.0210
+ ▎✎ changed no files
 
 [enter] review turn 5 · [esc] back to the prompt
 
@@ -61,9 +61,9 @@ turn 5                                                                      done
 ────────────────────────────────────────────────────────────────────────────────
 turn 4                                                                      done
 
-   ✓ Done · 2 steps · 9 tools · 1m 04s · $0.0870
-  ▎✎ 2 files changed +18 −6
-  ▎✓ committed a1b2c3d on main · raise the round cap
+  ∗ worked 1m 04s · 9 tools · $0.0870
+ ▎✎ 2 files changed +18 −6
+ ▎✓ committed a1b2c3d on main · raise the round cap
 
 … (+2 more rows)
 
@@ -82,9 +82,9 @@ turn 4                                                                      done
 ────────────────────────────────────────────────────────────────────────────────
 turn 3                                                                      done
 
-   ✓ Done · 1 step · 5 tools · 38s · $0.0440
-  ▎✎ 1 file changed +3 −3
-   ✗ go test ./internal/agent/... failing · 1/3 checks · 4.2s
+  ∗ worked 38s · 5 tools · $0.0440
+ ▎✎ 1 file changed +3 −3
+  ✗ go test ./internal/agent/... failing · 1/3 checks · 4.2s
 
   files internal/agent/policy.go +3 −3
 
@@ -103,8 +103,8 @@ turn 3                                                                      done
 ────────────────────────────────────────────────────────────────────────────────
 turn 2                                                           no figures kept
 
-   · no figures kept
-     the session kept its files and not its close
+  · no figures kept
+    the session kept its files and not its close
 
   files README.md +9 −0
         docs/loop.md +2 −1
@@ -125,8 +125,8 @@ turn 2                                                           no figures kept
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;97mturn 6␛[m                                                                   ␛[38;5;241mrunning␛[m
 
-   ␛[94m▸␛[m ␛[38;5;252mRunning␛[m␛[38;5;241m · step 2 · 7 tools␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;241m1 file this turn␛[m ␛[92m+4␛[m ␛[91m−1␛[m
+  ␛[94m▸␛[m ␛[38;5;252mRunning␛[m␛[38;5;241m · step 2 · 7 tools␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;241m1 file this turn␛[m ␛[92m+4␛[m ␛[91m−1␛[m
 
   ␛[38;5;243mfiles ␛[m␛[38;5;252minternal/agent/loop.go␛[m ␛[92m+4␛[m ␛[91m−1␛[m
 
@@ -145,8 +145,8 @@ turn 2                                                           no figures kept
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;97mturn 5␛[m                                                                      ␛[38;5;241mdone␛[m
 
-   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 1 step · 3 tools · 12s · $0.0210␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252mchanged no files␛[m
+  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 12s · 3 tools · $0.0210␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252mchanged no files␛[m
 
 ␛[38;5;245m[enter]␛[m␛[38;5;241m review turn 5␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
 
@@ -163,9 +163,9 @@ turn 2                                                           no figures kept
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;97mturn 4␛[m                                                                      ␛[38;5;241mdone␛[m
 
-   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 9 tools · 1m 04s · $0.0870␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m2 files changed ␛[m␛[92m+18␛[m ␛[91m−6␛[m
-  ␛[38;5;214m▎␛[m␛[92m✓␛[m ␛[38;5;252mcommitted a1b2c3d on main · raise the round cap␛[m
+  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 1m 04s · 9 tools · $0.0870␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m2 files changed ␛[m␛[92m+18␛[m ␛[91m−6␛[m
+ ␛[38;5;214m▎␛[m␛[92m✓␛[m ␛[38;5;252mcommitted a1b2c3d on main · raise the round cap␛[m
 
 ␛[38;5;241m… (+2 more rows)␛[m
 
@@ -184,9 +184,9 @@ turn 2                                                           no figures kept
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;97mturn 3␛[m                                                                      ␛[38;5;241mdone␛[m
 
-   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 1 step · 5 tools · 38s · $0.0440␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+3␛[m ␛[91m−3␛[m
-   ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · 1/3 checks · 4.2s␛[m
+  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 38s · 5 tools · $0.0440␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+3␛[m ␛[91m−3␛[m
+  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · 1/3 checks · 4.2s␛[m
 
   ␛[38;5;243mfiles ␛[m␛[38;5;252minternal/agent/policy.go␛[m ␛[92m+3␛[m ␛[91m−3␛[m
 
@@ -205,8 +205,8 @@ turn 2                                                           no figures kept
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;97mturn 2␛[m                                                           ␛[38;5;241mno figures kept␛[m
 
-   ␛[38;5;241m·␛[m ␛[38;5;252mno figures kept␛[m
-     ␛[38;5;245mthe session kept its files and not its close␛[m
+  ␛[38;5;241m·␛[m ␛[38;5;252mno figures kept␛[m
+    ␛[38;5;245mthe session kept its files and not its close␛[m
 
   ␛[38;5;243mfiles ␛[m␛[38;5;252mREADME.md␛[m ␛[92m+9␛[m ␛[91m−0␛[m
         ␛[38;5;252mdocs/loop.md␛[m ␛[92m+2␛[m ␛[91m−1␛[m

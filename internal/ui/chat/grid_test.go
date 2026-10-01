@@ -149,7 +149,6 @@ func TestTranscriptGrid_EveryKindSharesOneLeftEdge(t *testing.T) {
 		"the tree reading":       "tree moved —",
 		"the error":              "✗ the notebook",
 		"the arriving reply":     "Re-running the suite",
-		"the changed-files rail": "file changed",
 	}
 	for _, width := range gridWidths {
 		m := gridModel(t, width, 40)
@@ -163,6 +162,11 @@ func TestTranscriptGrid_EveryKindSharesOneLeftEdge(t *testing.T) {
 				t.Errorf("w%d: %s starts at column %d, not %d: %q",
 					width, what, col, components.GridPointerWidth, line)
 			}
+		}
+		// The turn's close is drawn on a card's columns, so its rail stands
+		// in the column a card's rail does.
+		if line, ok := lineWith(lines, "file changed"); !ok || contentColumn(line) != 1 {
+			t.Errorf("w%d: the changed-files rail is not in a card's rail column: %q", width, line)
 		}
 		// The reader's own message is the one entry with a mark of its own.
 		// It stands in the gutter, and the words start where every other

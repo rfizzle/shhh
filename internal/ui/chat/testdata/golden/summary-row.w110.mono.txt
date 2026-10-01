@@ -11,44 +11,36 @@
 
 ── layout ──────────────────────────────────────────────────
 · off target · the row as it lands
-   ≡ summary round 24                                                       ⚠ off target · 1 line
+  ≡ Rewriting the README instead of the round-limit pause.                                  off target
 
 
 · off target · the row opened
-   ≡ summary round 24                                                       ⚠ off target · 1 line
-    Rewriting the README instead of the round-limit pause.
-    ⚠ off target
-      docs were not asked for
+  ≡ Rewriting the README instead of the round-limit pause.                                  off target
+    docs were not asked for
     read against: fix the round limit
 
 
 · on target, and longer than the rail's block · the row opened
-   ≡ summary round 31                                                       ▸ on target · 3 lines
-    Wiring the round-limit pause into the chat model: the sentinel is returned from runRound, the loop
-    reads it at the round boundary and parks the turn, and the offer to continue is drawn on the frame.
-    Nothing has run the tests yet, and the changeset holds loop.go and rounds.go.
-    ▸ on target
+  ≡ Wiring the round-limit pause into the chat model: the sentinel is returned from          on target
+    runRound, the loop reads it at the round boundary and parks the turn, and the offer to continue is
+    drawn on the frame. Nothing has run the tests yet, and the changeset holds loop.go and rounds.go.
     read against: fix the round limit
 
 
 ── ansi ────────────────────────────────────────────────────
 · off target · the row as it lands
-   ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254mround 24␛[m                                                       ␛[38;5;244m⚠ off target␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m
+  ␛[38;5;244m≡␛[m ␛[3;38;5;244mRewriting the README instead of the round-limit pause.␛[m                                  ␛[38;5;254moff target␛[m
 
 
 · off target · the row opened
-   ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254mround 24␛[m                                                       ␛[38;5;244m⚠ off target␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m
-    ␛[38;5;244mRewriting the README instead of the round-limit pause.␛[m
-    ␛[38;5;244m⚠ off target␛[m
-    ␛[38;5;244m  docs were not asked for␛[m
+  ␛[38;5;244m≡␛[m ␛[3;38;5;244mRewriting the README instead of the round-limit pause.␛[m                                  ␛[38;5;254moff target␛[m
+    ␛[38;5;244mdocs were not asked for␛[m
     ␛[38;5;244mread against: fix the round limit␛[m
 
 
 · on target, and longer than the rail's block · the row opened
-   ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254mround 31␛[m                                                       ␛[38;5;244m▸ on target␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 lines␛[m
-    ␛[38;5;244mWiring the round-limit pause into the chat model: the sentinel is returned from runRound, the loop␛[m
-    ␛[38;5;244mreads it at the round boundary and parks the turn, and the offer to continue is drawn on the frame.␛[m
-    ␛[38;5;244mNothing has run the tests yet, and the changeset holds loop.go and rounds.go.␛[m
-    ␛[38;5;244m▸ on target␛[m
+  ␛[38;5;244m≡␛[m ␛[3;38;5;244mWiring the round-limit pause into the chat model: the sentinel is returned from␛[m          ␛[38;5;244mon target␛[m
+    ␛[3;38;5;244mrunRound, the loop reads it at the round boundary and parks the turn, and the offer to continue is␛[m
+    ␛[3;38;5;244mdrawn on the frame. Nothing has run the tests yet, and the changeset holds loop.go and rounds.go.␛[m
     ␛[38;5;244mread against: fix the round limit␛[m
 

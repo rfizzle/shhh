@@ -30,23 +30,21 @@
     [u] take the steer back · [ctrl+o] to use them
   tree moved — 14 paths changed outside this session · 5,811 ignored
   ✗ the notebook is read-only, so nothing was written down
-   ≡ summary round 36                                                        ▸ on target · 1 line
+  ≡ The constant has one home and the caller no longer passes its own.                       on target
 
-   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
-  ▎✎ 1 file changed +12 −4                                                            all tracked in git
-   ✗ go test ./internal/agent/... failing · exit 1 · 21s
+  ∗ worked 24.7s · 6 tools · $0.14
+ ▎✎ 1 file changed +12 −4 · all tracked in git
+  ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
   Re-running the suite now that the constant has one home.
 
 · the whole surface · the same edge in the pane it sits in
    shhh chat · gpt-4o                                                                                         
   ──────────────────────────────────────────────────────────────────────────────────────────────────────────  
+   ▎✗ read internal/agent/loop.go · ran go test ./internal/agent/...                        exit 1 · 21s      
+      The constant is declared in three files, so the loop is the only one of them that can own it.           
+      --- FAIL: TestRoundLimit                                                                    1 line      
                                                                                                               
-                                                                                                              
-   ▎✗ read internal/agent/loop.go · ran go test ./internal/agent/...                        exit 1 · 21s  ┃   
-      The constant is declared in three files, so the loop is the only one of them that can own it.       ┃   
-      --- FAIL: TestRoundLimit                                                                    1 line  ┃   
-                                                                                                          ┃   
                                                                                                           ┃   
     The objective is one home for the round limit. The evidence is the failure above, which reads the     ┃   
     constant from the loop and not from the caller. Next I will move the declaration and run the suite    ┃   
@@ -58,13 +56,15 @@
       [u] take the steer back · [ctrl+o] to use them                                                      ┃   
     tree moved — 14 paths changed outside this session · 5,811 ignored                                    ┃   
     ✗ the notebook is read-only, so nothing was written down                                              ┃   
-     ≡ summary round 36                                                        ▸ on target · 1 line       ┃   
+    ≡ The constant has one home and the caller no longer passes its own.                       on target  ┃   
                                                                                                           ┃   
-     ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                           ┃   
-    ▎✎ 1 file changed +12 −4                                                            all tracked in git┃   
-     ✗ go test ./internal/agent/... failing · exit 1 · 21s                                                ┃   
+    ∗ worked 24.7s · 6 tools · $0.14                                                                      ┃   
+   ▎✎ 1 file changed +12 −4 · all tracked in git                                                          ┃   
+    ✗ go test ./internal/agent/... failing · exit 1 · 21s                                                 ┃   
                                                                                                           ┃   
     Re-running the suite now that the constant has one home.                                              ┃   
+                                                                                                              
+    ⠋ working · 2 tools                                                                                       
   ╭─ ⠋ streaming… ─────────────────────────────────────────────────────────────────────────────────────────╮  
   │ ▸                                                                                                      │  
   ├─ ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ──────────────────────────────────────────────────────────────┤  
@@ -90,11 +90,11 @@
     [u] take the steer back
   tree moved — 14 paths changed outside this session · 5,811 ignored
   ✗ the notebook is read-only, so nothing was written down
-   ≡ summary round 36                                                        ▸ on target · 1 line
+  ≡ The constant has one home and the caller no longer passes its own.                       on target
 
-   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
-  ▎✎ 1 file changed +12 −4                                                            all tracked in git
-   ✗ go test ./internal/agent/... failing · exit 1 · 21s
+  ∗ worked 24.7s · 6 tools · $0.14
+ ▎✎ 1 file changed +12 −4 · all tracked in git
+  ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -118,23 +118,21 @@
     ␛[38;5;245m[u]␛[m␛[38;5;241m take the steer back␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
   ␛[38;5;241mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m
   ␛[91m✗ the notebook is read-only, so nothing was written down␛[m
-   ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 36␛[m                                                        ␛[38;5;241m▸ on target␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m
+  ␛[38;5;241m≡␛[m ␛[3;38;5;245mThe constant has one home and the caller no longer passes its own.␛[m                       ␛[38;5;241mon target␛[m
 
-   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m                                                            ␛[38;5;241mall tracked in git␛[m
-   ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
+  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 24.7s · 6 tools · $0.14␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · all tracked in git␛[m
+  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
   ␛[38;5;252mRe-running the suite now that the constant has one home.␛[m
 
 · the whole surface · the same edge in the pane it sits in
   ␛[97;1m shhh chat␛[38;5;241;22m · gpt-4o␛[m                                                                                         
   ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
-                                                                                                              
+  ␛[48;5;234m ␛[91m▎✗␛[39m ␛[38;5;252mread␛[39m ␛[38;5;245minternal/agent/loop.go␛[38;5;241m · ran go test ./internal/agent/...␛[39m                        ␛[91mexit 1␛[38;5;241m · 21s␛[39m  ␛[m    
+  ␛[48;5;234m    ␛[38;5;252mThe constant is declared in three files, so the loop is the only one of them that can own it.␛[39m       ␛[m    
+  ␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[39m                                                                    ␛[38;5;241m1 line␛[39m  ␛[m    
   ␛[48;5;234m                                                                                                        ␛[m    
-  ␛[48;5;234m ␛[91m▎✗␛[39m ␛[38;5;252mread␛[39m ␛[38;5;245minternal/agent/loop.go␛[38;5;241m · ran go test ./internal/agent/...␛[39m                        ␛[91mexit 1␛[38;5;241m · 21s␛[39m  ␛[38;5;241;49m┃␛[m   
-  ␛[48;5;234m    ␛[38;5;252mThe constant is declared in three files, so the loop is the only one of them that can own it.␛[39m       ␛[38;5;241;49m┃␛[m   
-  ␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[39m                                                                    ␛[38;5;241m1 line␛[39m  ␛[38;5;241;49m┃␛[m   
-  ␛[48;5;234m                                                                                                        ␛[38;5;241;49m┃␛[m   
                                                                                                           ␛[38;5;241m┃␛[m   
     ␛[38;5;245;3mThe objective is one home for the round limit. The evidence is the failure above, which reads the␛[m     ␛[38;5;241m┃␛[m   
     ␛[38;5;245;3mconstant from the loop and not from the caller. Next I will move the declaration and run the suite␛[m    ␛[38;5;241m┃␛[m   
@@ -146,13 +144,15 @@
       ␛[38;5;245m[u]␛[38;5;241m take the steer back · ␛[38;5;103m[ctrl+o]␛[38;5;252m to use them␛[m                                                      ␛[38;5;241m┃␛[m   
     ␛[38;5;241mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m                                    ␛[38;5;241m┃␛[m   
     ␛[91m✗ the notebook is read-only, so nothing was written down␛[m                                              ␛[38;5;241m┃␛[m   
-     ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 36␛[m                                                        ␛[38;5;241m▸ on target · ␛[38;5;245m1 line␛[m       ␛[38;5;241m┃␛[m   
+    ␛[38;5;241m≡␛[m ␛[38;5;245;3mThe constant has one home and the caller no longer passes its own.␛[m                       ␛[38;5;241mon target␛[m  ␛[38;5;241m┃␛[m   
                                                                                                           ␛[38;5;241m┃␛[m   
-     ␛[92m✓␛[m ␛[38;5;252mDone␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                           ␛[38;5;241m┃␛[m   
-    ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[m                                                            ␛[38;5;241mall tracked in git┃␛[m   
-     ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[m                                                ␛[38;5;241m┃␛[m   
+    ␛[38;5;241m∗␛[m ␛[38;5;241mworked 24.7s · 6 tools · $0.14␛[m                                                                      ␛[38;5;241m┃␛[m   
+   ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[38;5;241m · all tracked in git␛[m                                                          ␛[38;5;241m┃␛[m   
+    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[m                                                 ␛[38;5;241m┃␛[m   
                                                                                                           ␛[38;5;241m┃␛[m   
     ␛[38;5;252mRe-running the suite now that the constant has one home.␛[m                                              ␛[38;5;241m┃␛[m   
+                                                                                                              
+    ␛[38;5;205m⠋␛[m ␛[38;5;241mworking · 2 tools␛[m                                                                                       
   ␛[38;5;241m╭─␛[m ␛[38;5;205m⠋ streaming…␛[m ␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────╮␛[m  
   ␛[38;5;241m│␛[m ␛[38;5;205;1m▸␛[m ␛[38;5;252m                                                                                                    ␛[m ␛[38;5;241m│␛[m  
   ␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mcontext 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────┤␛[m  
@@ -178,9 +178,9 @@
     ␛[38;5;245m[u]␛[m␛[38;5;241m take the steer back␛[m
   ␛[38;5;241mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m
   ␛[91m✗ the notebook is read-only, so nothing was written down␛[m
-   ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 36␛[m                                                        ␛[38;5;241m▸ on target␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m
+  ␛[38;5;241m≡␛[m ␛[3;38;5;245mThe constant has one home and the caller no longer passes its own.␛[m                       ␛[38;5;241mon target␛[m
 
-   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m                                                            ␛[38;5;241mall tracked in git␛[m
-   ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
+  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 24.7s · 6 tools · $0.14␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · all tracked in git␛[m
+  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 

@@ -34,7 +34,7 @@ snap 03-command-card "[y] run it once" "gofmt -l ."
 hold 2.5
 keys y
 # The close: the answer, the turn's account and the row of files it changed.
-snap 04-close "1 file changed" "✓ Done · 3 steps"
+snap 04-close "1 file changed" "∗ worked"
 hold 2.5
 # Reading mode opens on the last row of the turn, which is the close, and the
 # close's commit offer is the handover there.

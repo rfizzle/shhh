@@ -324,8 +324,10 @@ func TestReadingMode_SurvivesMono(t *testing.T) {
 	if !strings.Contains(view, "[q] back to the prompt") {
 		t.Fatal("the hint bar is words before it is colours")
 	}
+	// The background's own parameters, which the row may carry inside a
+	// sequence that sets a glyph's grey as well.
 	litBg := ansi.NewStyle().BackgroundColor(components.MonoBg.Color()).String()
-	if !strings.Contains(m.View().Content, litBg) {
+	if !strings.Contains(m.View().Content, strings.TrimSuffix(strings.TrimPrefix(litBg, "\x1b["), "m")) {
 		t.Fatal("the lit row keeps a background in mono; the two greys are what it has")
 	}
 }

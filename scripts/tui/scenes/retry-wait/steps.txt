@@ -5,30 +5,31 @@
 # program; this scene is the same route through the built binary.
 #
 # A stall on a narrow terminal: the scripted endpoint refuses two requests
-# with a 503, so the session draws the failure row stalled and the retry wait
+# with a 503, so the session draws the failure card stalled and the retry wait
 # under it — the draining meter, the attempt against the bound and the `[esc]`
 # offer, whole at 60 columns — waits the stall out twice, and the third
-# request is answered. The first wait is two seconds or so of wall clock, so
+# request is answered, and the turn ends on its total. The first wait is two seconds or so of wall clock, so
 # each snap waits on the attempt only that wait carries. `[m]` is not on the
 # block: the scripted model has no price, and the session offers no cheaper
 # model it cannot name one for.
 #
-# Then a failure that is not waited out: a 400 ends the next turn on its row,
-# which, with nothing selected, is the row the handover reaches: it says so —
-# `[r] retry the last failure` — and draws its letters grey beside the
-# handover. The handover is pressed with half a sentence in the draft and
-# gives the row the keyboard, its `r` asks the turn again, the keyboard goes
-# back to the draft, and the sentence is still there.
+# Then a failure that is not waited out: a 400 ends the next turn on its card
+# and a total that says it failed, and the card, with nothing selected, is the
+# one the handover reaches: it says so — `[r] retry the last failure` — and
+# draws its letters grey beside the handover. The handover is pressed with
+# half a sentence in the draft and gives the card the keyboard, its `r` asks
+# the turn again and leaves the retry's line where the prompt would stand, the
+# keyboard goes back to the draft, and the sentence is still there.
 snap 01-start "Some things worth doing first"
 keys "why does the loop stop" Enter
-snap 02-wait "attempt 1 of 3" "⚠ model" "the provider's side" "retry in" "[esc] stop the turn"
+snap 02-wait "attempt 1 of 3" "⚠ model" "503 overloaded" "is overloaded" "retry in" "[esc] stop the turn"
 snap 03-again "attempt 2 of 3" "retry in" "[esc] stop the turn"
-snap 04-answered "and nowhere else" "nothing in the turn was lost" "✓ Done"
+snap 04-answered "and nowhere else" "Nothing in the turn was lost" "∗ worked"
 keys "and where is the cap set" Enter
-snap 05-last-failure "Unknown parameter" "[r] retry the last failure" "[ctrl+space/ctrl+y] to use them"
+snap 05-last-failure "Unknown parameter" "[r] retry the last failure" "[ctrl+space/ctrl+y] to use them" "✗ failed ·"
 keys "half a thought"
 sleep 0.3
 keys C-y
 snap 05b-row-holds-the-keyboard "[r] try again · [p] switch provider · [esc] nothing"
 keys r
-snap 06-retried "behavior.max_tool_rounds" "half a thought"
+snap 06-retried "behavior.max_tool_rounds" "half a thought" "↻ try again · same prompt, same model"

@@ -27,14 +27,14 @@
 
   answer two
 
-   ✓ Done · 0.0s
+  ∗ worked 0.0s · done 10:00 AM
 
 ❯ third question
 ────────────────────────────────────────────────────────────────────────────────
 
   answer three
 
-   ✓ Done · 0.0s
+  ∗ worked 0.0s · done 10:00 AM
 
 · spent · the session moved on, so nothing to put back
    ▸ turns 2–3 · rewound · 2 turns, 3 files' worth of work · [enter] read them
@@ -60,14 +60,14 @@
 
   answer two
 
-   ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 0.0s␛[m
+  ␛[38;5;244m∗␛[m ␛[38;5;244mworked 0.0s · done 10:00 AM␛[m
 
 ␛[38;5;254m❯␛[m third question
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
   answer three
 
-   ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 0.0s␛[m
+  ␛[38;5;244m∗␛[m ␛[38;5;244mworked 0.0s · done 10:00 AM␛[m
 
 · spent · the session moved on, so nothing to put back
    ␛[38;5;244m▸ turns 2–3 · rewound · 2 turns, 3 files' worth of work · ␛[m␛[38;5;254m[enter] read them␛[m

@@ -39,12 +39,12 @@ sleep 1
 keys C-Space
 sleep 0.3
 keys y
-# Two closes, each stating what its turn changed, and neither offering a key
-# until it is selected. The session's first reading
+# Two closes, each ending its turn on its total with what the turn changed
+# on the line under it, and neither offering a key until it is selected. The session's first reading
 # of its run landed in turn 1 and is quiet — an unclear verdict the rail would
 # draw whole — so it leaves no row, and the layout the click below is aimed at
 # is the two turns alone.
-snap 05-two-closes "Raised again" "✓ Done · 1 tool"
+snap 05-two-closes "Raised again" "∗ worked" "1 tool · "
 # The pointer's first press lands on the newest close, which then draws its
 # offers as the selected row's.
 keys S-Up

@@ -15,7 +15,7 @@ keys Enter
 # The step, while the model is still writing its answer: no card was put in
 # front of anybody for it.
 snap 02-read "⚙ looked up http://127.0.0.1"
-snap 03-answered "✓ Done"
+snap 03-answered "∗ worked"
 # Its row says why: the cursor opens on the turn's close, the step's card is
 # two stops above it, and enter opens the card onto the row.
 keys C-o

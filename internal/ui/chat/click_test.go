@@ -201,7 +201,7 @@ func TestClick_TheChangedFilesLineOpensItsTurnsReview(t *testing.T) {
 	m.viewport.GotoBottom()
 	m.input.SetValue("half a sentence")
 
-	x, y := rowCell(t, m, "✓ Done")
+	x, y := rowCell(t, m, "∗ worked")
 	if got := click(t, m, x, y); got.state == stateReview {
 		t.Fatal("the close's first line opened a review")
 	}

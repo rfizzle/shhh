@@ -64,6 +64,12 @@ type StepCard struct {
 	// — painted in the tone OutcomeState gives it. It never drops.
 	Outcome      string
 	OutcomeState ActivityState
+	// Mark, where set, is the glyph already painted, standing in for the
+	// one the state would draw, and OutcomeAccent paints the outcome in the
+	// accent with it: a failure the session will come back from is a stall,
+	// `⚠`, and not a break (FailureCard).
+	Mark          string
+	OutcomeAccent bool
 	// Verdict is the reading's verdict or the gate's word after the
 	// outcome, and VerdictAlert paints it in the accent. It drops second.
 	Verdict      string
@@ -283,6 +289,9 @@ func (c StepCard) headerRight(fit headerFit) string {
 // outcome paints the step's answer: a write's line counts in the diff's two
 // tokens, and anything else in the tone of how the step stands.
 func (c StepCard) outcome() string {
+	if c.OutcomeAccent {
+		return sty.Accent.Render(c.Outcome)
+	}
 	if painted, ok := paintLineCounts(c.Outcome); ok {
 		return painted
 	}
@@ -337,6 +346,9 @@ func (c StepCard) railCell() string {
 // row's glyph is dim: the card is the step's answer, and its mark is what
 // the eye runs down the transcript for.
 func (c StepCard) glyph() string {
+	if c.Mark != "" {
+		return c.Mark
+	}
 	switch c.State {
 	case ActivityRunning:
 		if c.Spin {

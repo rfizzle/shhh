@@ -26,10 +26,10 @@
     --- FAIL: TestRoundLimit                  1 line
 
 
-❯  ✓ Done · 2 steps · 6 tools · 24.7s · $0.14         
-  ▎✎ 1 file changed +12 −4          all tracked in git
-     [enter] review turn · [ctrl+space/ctrl+y] commit
-   ✗ go test ./internal/agent/... failing · exit 1 · …
+❯ ∗ worked 24.7s · 6 tools · $0.14                    
+ ▎✎ 1 file changed +12 −4           all tracked in git
+    [enter] review turn · [ctrl+space/ctrl+y] commit
+  ✗ go test ./internal/agent/... failing · exit 1 · 2…
 
 ────────────────────────────────────────────────────────
 [j/k] move · [enter] review turn · [q] prompt     3 of 3
@@ -52,9 +52,10 @@
     --- FAIL: TestRoundLimit                  1 line
 
 
-   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
-  ▎✎ 1 file changed +12 −4          all tracked in git
-   ✗ go test ./internal/agent/... failing · exit 1 · …
+  ∗ worked 24.7s · 6 tools · $0.14
+ ▎✎ 1 file changed +12 −4 · all tracked in git · /undo
+    1 takes it back
+  ✗ go test ./internal/agent/... failing · exit 1 · 2…
 
 ╭─ idle ───────────────────────────────────────────────╮
 │ ▸                                                    │
@@ -81,9 +82,10 @@
     in order ✎✗                              2 tools
 
 
-   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
-  ▎✎ 1 file changed +12 −4          all tracked in git
-   ✗ go test ./internal/agent/... failing · exit 1 · …
+  ∗ worked 24.7s · 6 tools · $0.14
+ ▎✎ 1 file changed +12 −4 · all tracked in git · /undo
+    1 takes it back
+  ✗ go test ./internal/agent/... failing · exit 1 · 2…
 
 ────────────────────────────────────────────────────────
 [j/k] move · [enter] expand · [q] prompt      row 3 of 5
@@ -112,9 +114,10 @@
     in order ✎✗                              2 tools
 
 
-   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
-  ▎✎ 1 file changed +12 −4          all tracked in git
-   ✗ go test ./internal/agent/... failing · exit 1 · …
+  ∗ worked 24.7s · 6 tools · $0.14
+ ▎✎ 1 file changed +12 −4 · all tracked in git · /undo
+    1 takes it back
+  ✗ go test ./internal/agent/... failing · exit 1 · 2…
 
 ────────────────────────────────────────────────────────
 [j/k] move · [-] collapse · [q] prompt    1 row expanded
@@ -152,10 +155,10 @@
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                  ␛[38;5;244m1 line␛[m
 
 
-␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m ␛[38;5;254m✓␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mDone · 2 steps · 6 tools · 24.7s · $0.14         ␛[m␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m          ␛[38;5;244mall tracked in git␛[m
-     ␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;244m commit␛[m
-   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · …␛[m
+␛[38;5;254m❯␛[m ␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m∗␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mworked 24.7s · 6 tools · $0.14                    ␛[m␛[m
+ ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m           ␛[38;5;244mall tracked in git␛[m
+    ␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;244m commit␛[m
+  ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 2…␛[m
 
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m[j/k]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m prompt␛[m     ␛[38;5;244m3 of 3␛[m
@@ -178,9 +181,10 @@
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                  ␛[38;5;244m1 line␛[m
 
 
-   ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m          ␛[38;5;244mall tracked in git␛[m
-   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · …␛[m
+  ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m
+ ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · all tracked in git · /undo␛[m
+    ␛[38;5;244m1 takes it back␛[m
+  ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 2…␛[m
 
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m───────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                  ␛[m ␛[38;5;244m│␛[m
@@ -207,9 +211,10 @@
     ␛[38;5;244min order ␛[m␛[38;5;254m✎␛[m␛[38;5;254m✗␛[m                              ␛[38;5;244m2 tools␛[m
 
 
-   ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m          ␛[38;5;244mall tracked in git␛[m
-   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · …␛[m
+  ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m
+ ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · all tracked in git · /undo␛[m
+    ␛[38;5;244m1 takes it back␛[m
+  ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 2…␛[m
 
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m[j/k]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m expand␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m prompt␛[m      ␛[38;5;244mrow 3 of 5␛[m
@@ -238,9 +243,10 @@
     ␛[38;5;244min order ␛[m␛[38;5;254m✎␛[m␛[38;5;254m✗␛[m                              ␛[38;5;244m2 tools␛[m
 
 
-   ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m          ␛[38;5;244mall tracked in git␛[m
-   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · …␛[m
+  ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m
+ ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · all tracked in git · /undo␛[m
+    ␛[38;5;244m1 takes it back␛[m
+  ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 2…␛[m
 
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m[j/k]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[-]␛[m␛[38;5;244m collapse␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m prompt␛[m    ␛[38;5;244m1 row expanded␛[m

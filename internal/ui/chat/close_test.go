@@ -71,7 +71,7 @@ func TestTurnClose_ATurnThatChangedNothingGetsTheSummaryRowOnly(t *testing.T) {
 	if strings.Count(view, "\n") != 0 {
 		t.Fatalf("the summary row should stand alone, got:\n%s", view)
 	}
-	if !strings.Contains(view, "✓ Done") || !strings.Contains(view, "s") {
+	if !strings.Contains(view, "∗ worked") || !strings.Contains(view, "s") {
 		t.Fatalf("the row should state the outcome and the elapsed time, got %q", view)
 	}
 }
@@ -224,7 +224,7 @@ func TestTurnClose_ACancelledTurnSaysSoAndStillReportsWhatItChanged(t *testing.T
 	if c.State != components.TurnCancelled {
 		t.Fatalf("ctrl+c ends the turn as cancelled, got %v", c.State)
 	}
-	if !strings.Contains(plainView(c, 100), "Cancelled") {
+	if !strings.Contains(plainView(c, 100), "cancelled") {
 		t.Fatalf("the row says so in words, not only in colour: %q", plainView(c, 100))
 	}
 	if c.Changes == nil || c.Changes.Files != 1 {
@@ -241,7 +241,7 @@ func TestTurnClose_AFailedTurnSaysSo(t *testing.T) {
 	if c.State != components.TurnFailed {
 		t.Fatalf("a turn whose stream broke is failed, got %v", c.State)
 	}
-	if !strings.Contains(plainView(c, 80), "Failed") {
+	if !strings.Contains(plainView(c, 80), "failed") {
 		t.Fatalf("the row says so in words: %q", plainView(c, 80))
 	}
 }
@@ -347,7 +347,7 @@ func TestTurnClose_RowsReRenderAtAnyWidth(t *testing.T) {
 	if strings.Contains(narrow, "round 3 of 25") || strings.Contains(narrow, "not a git repository") {
 		t.Fatalf("the notes drop before the statement does, got:\n%s", narrow)
 	}
-	if !strings.Contains(narrow, "Done") || !strings.Contains(narrow, "1 file changed") {
+	if !strings.Contains(narrow, "worked") || !strings.Contains(narrow, "1 file changed") {
 		t.Fatalf("what the rows state survives the squeeze, got:\n%s", narrow)
 	}
 	for _, line := range strings.Split(narrow, "\n") {
@@ -431,7 +431,7 @@ func TestTurnClose_IsAnOrdinaryTranscriptEntry(t *testing.T) {
 	m = finishTurn(t, m)
 
 	wide := ansi.Strip(m.renderHistory())
-	if !strings.Contains(wide, "✓ Done") || !strings.Contains(wide, "1 file changed") {
+	if !strings.Contains(wide, "∗ worked") || !strings.Contains(wide, "1 file changed") {
 		t.Fatalf("the close rows render in the feed:\n%s", wide)
 	}
 
@@ -439,7 +439,7 @@ func TestTurnClose_IsAnOrdinaryTranscriptEntry(t *testing.T) {
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 46, Height: 30})
 	m = updated.(Model)
 	narrow := ansi.Strip(m.renderHistory())
-	if !strings.Contains(narrow, "Done") || !strings.Contains(narrow, "1 file changed") {
+	if !strings.Contains(narrow, "worked") || !strings.Contains(narrow, "1 file changed") {
 		t.Fatalf("the rows should survive a resize:\n%s", narrow)
 	}
 	for _, line := range strings.Split(narrow, "\n") {
@@ -499,9 +499,9 @@ func TestTurnClose_TheCloseNamesWhatTheChildrenWroteDown(t *testing.T) {
 		State: components.TurnDone, Notes: "2 notes from reviewer-1",
 	}, 80)
 	line := strings.Split(view, "\n")[1]
-	// The marker gutter, then the rail and glyph columns blank
+	// The pointer column, then the rail and glyph columns blank
 	// (docs/interface/surfaces.md#the-leading-columns).
-	if !strings.HasPrefix(line, strings.Repeat(" ", components.GridPointerWidth)+"   2 notes from reviewer-1") {
+	if !strings.HasPrefix(line, "    2 notes from reviewer-1") {
 		t.Fatalf("the notes row carries a rail or a glyph: %q", line)
 	}
 	// And the notification, which has no glyphs at all, says it too.
@@ -555,5 +555,66 @@ func TestTurnClose_ASummaryFoldBesideItExpandsRatherThanReviews(t *testing.T) {
 	if r := updated.(Model); r.state != stateReview || r.reviewTurnN != m.transcript[closeAt].turn {
 		t.Fatalf("enter on the close should review its own turn, got state %v turn %d",
 			r.state, r.reviewTurnN)
+	}
+}
+
+// The total is one slot in four states and always the last line of its
+// turn: under everything while the turn works, counting with the spinner in
+// the glyph slot, and the close's first row once it ends, with the files it
+// changed on the line under it (docs/interface/surfaces.md#the-turns-close).
+func TestClose_TheTotalIsTheLastLine(t *testing.T) {
+	m := turnModel(t)
+	m = sendText(t, m, "write the file")
+	path := filepath.Join(t.TempDir(), "main.go")
+	m = applyWrite(t, m, path, "package main\n", "y")
+	m.setTurnState(stateStreaming)
+
+	tail := strings.Split(ansi.Strip(m.resolveLiveTail(m.paneWidth())), "\n")
+	last := strings.TrimSpace(tail[len(tail)-1])
+	if !strings.Contains(last, "working · ") || !strings.Contains(last, "1 tool") {
+		t.Fatalf("a working turn's last line is its running total, got %q", last)
+	}
+
+	m = finishTurn(t, m)
+	if live := m.resolveLiveTail(m.paneWidth()); strings.Contains(ansi.Strip(live), "working") {
+		t.Fatalf("a finished turn draws no running total: %q", live)
+	}
+	rows := strings.Split(plainView(lastClose(t, m), 100), "\n")
+	if !strings.HasPrefix(rows[0], "  ∗ worked ") || !strings.Contains(rows[0], "1 tool") || !strings.Contains(rows[0], " · done ") {
+		t.Fatalf("the close leads with the total, done and when, got %q", rows[0])
+	}
+	if len(rows) < 2 || !strings.HasPrefix(rows[1], " ▎✎ 1 file changed") || !strings.Contains(rows[1], "/undo") {
+		t.Fatalf("the changed-files line is the second line, its way back in its words:\n%s", strings.Join(rows, "\n"))
+	}
+	if strings.Contains(rows[1], "[enter]") {
+		t.Fatalf("nothing selects the close, so it offers nothing:\n%s", strings.Join(rows, "\n"))
+	}
+}
+
+// A turn that broke says so on its total, with what it got through and that
+// it left the files as they were, and says the last of those once.
+func TestClose_AFailedTurnSaysNoFilesChanged(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		ran  bool
+	}{
+		{"a turn that only asked", false},
+		{"a turn that ran a command first", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := sendText(t, readyModel(t), "do it")
+			if tc.ran {
+				m.appendEntry(entry{kind: entryCommand, text: "touch notes.txt", toolResult: "ok"})
+			}
+			updated, _ := m.Update(streamErrMsg{err: errors.New("upstream refused the request")})
+			m = updated.(Model)
+			view := plainView(lastClose(t, m), 100)
+			if !strings.HasPrefix(view, "  ✗ failed · ") || !strings.Contains(view, "no files changed") {
+				t.Fatalf("a failed turn's total says so and what it left, got:\n%s", view)
+			}
+			if strings.Contains(view, "changed no files") || strings.Contains(view, "\n") {
+				t.Fatalf("the total already says no file changed, so nothing under it says it again:\n%s", view)
+			}
+		})
 	}
 }

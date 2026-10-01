@@ -361,13 +361,29 @@ The question after an agent stops is never "what did it say", it is "what did
 it change". So a turn closes on what it did, what changed, and whether the
 tests still pass.
 
-The changed-files row carries the mutation rail, so the close of a turn looks
-like the rows that produced it. It also carries what git knew about those
-files when they were written — which is a statement about the past, not a
-promise about what can be undone; that promise is the approval card's job.
+What it did is the turn's total, and the total is one slot in four states. It
+is always the last line of its turn: flat, dim, on no band, at the column a
+card puts its glyph in, and only the glyph changes. While the turn works it
+counts under everything the turn has drawn — the spinner, how long the turn
+has run, the calls it has made and what its requests have been billed so far.
+Once it is done it says how long the turn worked, the calls, the spend and
+the time it finished, behind `∗`. A turn that broke says `failed` behind `✗`,
+and one the reader stopped says `cancelled` behind `⊘`; each counts what it
+got through and, where it changed nothing, says `no files changed` — the
+question a break raises first. The steps are not on it: the cards above are
+the steps. It is one receipt read once, so the line a turn counted on while it
+ran is the line it ends on, and the two cannot disagree.
+
+What changed is the line under the total. The changed-files line carries the
+mutation rail, so the close of a turn looks like the cards that produced it.
+It also carries what git knew about those files when they were written —
+which is a statement about the past, not a promise about what can be undone;
+that promise is the approval card's job — and it says it as words after what
+changed, with the way back after them, carried onto the next line at the same
+column where the pane is narrow rather than dropped.
 
 A turn that changed no file has no files to state, and what it says instead
-depends on what it did. A turn that only read closes on its one summary row:
+depends on what it did. A turn that only read closes on its total alone:
 nothing it did raised the question. A turn that ran a command, or called a
 server nobody marked read-only, did raise it — shhh cannot see what such an act
 wrote, so it assumes it wrote something
@@ -386,10 +402,10 @@ it is asked of the model, which has the edit tools and the card that goes with
 them.
 
 The changed-files row offers review and keep, in that order. Taking the
-change back is not a key on the row: it is a command, and the row's note says
-which one — `/undo 3 takes it back` beside what git knew about the files —
-where there is room, giving that up before the reading of the files when there
-is not. A letter on the row for an act that already has a command, and that
+change back is not a key on the row: it is a command, and the row says which
+one — `/undo 3 takes it back` after what git knew about the files. Selected,
+the offers take that place and the way back gives way to them, the reading of
+the files standing at the right while there is room for it. A letter on the row for an act that already has a command, and that
 the model can do as well, was a second path to keep correct beside the first,
 and it was the path nobody took.
 
@@ -520,13 +536,33 @@ letter on the row was a second one to keep correct beside it.
 
 ### The recovery row
 
-Most of a tool's reputation is made in its failures. Every one of them is an
-ordinary row plus one offered key.
+Most of a tool's reputation is made in its failures. Every one of them is
+drawn in the grammar the work around it is, plus the keys that get out of it.
 
-The row names the model and then the class; the outcome is the one thing that
-decides what to do next, never a repeat of the class. The provider's own words
-appear underneath, bounded — which is why "unclassified" is a class rather
-than an error path. A message we could not name still gets said.
+A provider's failure is a card, like a step. Its header names the model and
+what the turn had done when it broke — `model claude-opus-5-5 · after read 4
+files · searched 4 times` — with the class at the right and how long the turn
+had run; the glyph is `✗` in del for a break, `⚠` in the accent for a stall
+the session will come back from, `⊘` for a request the reader stopped. Its
+body is what the failure means for the reader, in a sentence: the one fact
+about the class that decides what to do next, and what the failure cost —
+almost always that nothing in the turn was lost. Its footer is the provider's
+own words, bounded — which is why "unclassified" is a class rather than an
+error path; a message we could not name still gets said — and the ways out at
+its right. A pane narrower than a hundred and twenty columns gives the ways out
+a line of their own under the words, right-aligned and wrapped between two
+offers, because cutting the provider's words to make room for the keys would
+cut the one thing that explains a failure nobody could name.
+
+The turn it broke ends on its total, which says it failed. A retry asks again
+from where the turn stood, and leaves a line where the reader's words would
+stand — at the prompt's column, dim, on no band — saying what it repeats: `↻
+try again · same prompt, same model`, or the model it is now asking where a
+provider switch since the failure moved the session to another.
+
+The other recovery rows — a dropped stream, a round-limit pause — are rows:
+the model, the class, the outcome, the provider's words under it, and the
+offered keys under those.
 
 The offered keys are bare letters, and they are answered the way a card is:
 through the handover. While the draft holds the keyboard a letter offered on
@@ -1665,16 +1701,24 @@ inverted: the approval classifier
 because a wrong yes is unsafe, and the summariser fails soft because a status
 block that vanishes when one request times out is a block nobody trusts again.
 
-**A reading with something to say is also a transcript row.** The rail holds
+**A reading with something to say is also in the transcript.** The rail holds
 one reading and bounds it to three lines, which is what a rail is for — it is
 a column of standing status, and a block that grew would push the counts under
 it off the screen. But a longer reading is then a sentence nobody can finish,
 and a reading that interrupted the turn is the reason for the steer below it.
-So those readings land in the activity feed as one folded row as well: closed
-it is the round it was taken at, its verdict and how many lines opening it
-costs; opened it is the reading whole, the verdict in the same marks the rail
-uses, the reason behind a departure, and the instruction the verdict was
-reached against — the last of which the rail never had room for at all.
+So those readings land in the transcript as well, in one of two places and
+never both. Where the round said nothing about its calls, the reading is the
+card's body, dimmer and italic, with its verdict on the card. Where the round
+did, the reading is a row of its own between cards: flat, `≡` in the glyph
+slot, the sentence whole in the same dimmer italic — it is the model talking
+about the round, so it wears the register thinking does, never a tool's — and
+its verdict at the right in the verdict's colour, `on target` and `has enough`
+dim, `off target` and `unclear` in the accent, the word carrying it so mono
+loses nothing. Only `unclear` offers a key, `[ctrl+o] reading mode`: a
+reading that cannot tell is the one that asks the reader to step in, and
+reading mode is the way in. Selected and opened, the row adds the reason
+behind a departure and the instruction the verdict was reached against — the
+last of which the rail never had room for at all.
 
 A quiet reading gets no row. It is quiet when its verdict is on target or
 unclear — the two that never interrupt a turn — and the rail's block draws it
@@ -2839,11 +2883,11 @@ summary](#the-session-summary)), newest first, one row each — the round it was
 taken at and its verdict in the rail's own marks (`▸ r 9 · on target`, `⚠ r 14
 · off target`), the turn it belongs to, and what became of it where it
 interrupted the turn: `steered`, or `withdrawn` once the reader took that steer
-back. Beside the reading under the pointer is the reading whole, drawn as the
-transcript's opened summary row draws it — the text, the verdict, the reason
-behind a departure and the instruction it was judged against as that
-instruction stood then — because a reading here and the same reading in the
-feed are one thing and are read the same way. A quiet reading, which earns no
+back. Beside the reading under the pointer is the reading whole — the text,
+the verdict in the rail's marks, the reason behind a departure and the
+instruction it was judged against as that instruction stood then — the same
+facts the transcript's opened reading states, because a reading here and the
+same reading in the feed are one thing. A quiet reading, which earns no
 transcript row, is kept here too: once the next reading replaces it on the
 rail, this screen is the only place it is still said. The header counts the
 readings and states what they have cost the session, which only `/status` said

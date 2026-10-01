@@ -302,3 +302,86 @@ func TestFocusMode_PutsTheCursorOnTheFailureRow(t *testing.T) {
 	}
 	t.Fatal("the failure row never rendered")
 }
+
+// failedTurn is a session whose turn read a file and then broke on an
+// unclassified 400.
+func failedTurn(t *testing.T) Model {
+	t.Helper()
+	m := failureModel(t)
+	m.modelName = "gpt-4o"
+	m = sendText(t, m, "rename the sentinel")
+	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"loop.go"}`, toolResult: "package agent"})
+	updated, _ := m.Update(streamErrMsg{err: &provider.Failure{
+		Class: provider.ClassUnclassified, Status: 400, Provider: "openai",
+		Message: "Unknown parameter: 'reasoning.effort'",
+	}})
+	return updated.(Model)
+}
+
+// A failure is a card: the model and what the turn had done on the header,
+// the class right; what it means as the body; the provider's own words and
+// the ways out as the footer — sharing a line at 120 columns and over, and
+// the keys on a line of their own, right-aligned, under it below that. The
+// keys are grey beside the handover until the card holds the keyboard.
+func TestFailure_IsACardWithItsKeys(t *testing.T) {
+	for _, tc := range []struct {
+		width int
+		share bool
+	}{{110, false}, {80, false}, {60, false}} {
+		m := failedTurn(t)
+		e := m.transcript[indexOfKind(t, m, entryFailure)]
+		lines := strings.Split(stripANSI(m.renderEntry(e, tc.width)), "\n")
+		header := cardLine(lines, "✗ model gpt-4o")
+		if header == "" || !strings.Contains(header, "400 unclassified") {
+			t.Fatalf("w%d: the header names the model and the class:\n%s", tc.width, strings.Join(lines, "\n"))
+		}
+		if tc.width >= 110 && !strings.Contains(header, "after read loop.go") {
+			t.Errorf("w%d: the header says what the turn had done: %q", tc.width, header)
+		}
+		if body := cardLine(lines, "The provider refused the request"); !strings.Contains(body, "Nothing in the turn was lost.") && tc.width > 100 {
+			t.Errorf("w%d: the body says what the failure means and what it cost: %q", tc.width, body)
+		}
+		words := cardLine(lines, "Unknown parameter")
+		if got := strings.Contains(words, "[r]"); got != tc.share {
+			t.Errorf("w%d: the keys share the provider's line = %v, want %v:\n%s", tc.width, got, tc.share, strings.Join(lines, "\n"))
+		}
+		if keys := strings.Join(lines, "\n"); !strings.Contains(keys, "[r] retry the last failure") || !strings.Contains(keys, "to use them") {
+			t.Errorf("w%d: unselected, the keys wait beside the handover that reaches them:\n%s", tc.width, strings.Join(lines, "\n"))
+		}
+	}
+
+	m := failedTurn(t)
+	view := stripANSI(m.renderEntryKeys(m.transcript[indexOfKind(t, m, entryFailure)], 130, rowUnderCursor))
+	if !strings.Contains(view, "❯ ✗ model gpt-4o") || strings.Contains(view, "to use them") {
+		t.Fatalf("under the cursor the card is lit and its keys are live:\n%s", view)
+	}
+	if words := cardLine(strings.Split(view, "\n"), "Unknown parameter"); !strings.Contains(words, "[r] try again") {
+		t.Fatalf("at 120 columns and over the keys share the provider's line:\n%s", view)
+	}
+}
+
+// A retry leaves a line where the reader's words would stand, at the
+// prompt's column, saying what it asks again: the same prompt, of the same
+// model, or of the model a provider switch since put the session on.
+func TestRetry_RowSaysWhatItRepeats(t *testing.T) {
+	for _, tc := range []struct {
+		name, model, want string
+	}{
+		{"the same model", "gpt-4o", "↻ try again · same prompt, same model"},
+		{"after a switch", "gpt-4.1", "↻ try again · same prompt, now on gpt-4.1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := failedTurn(t)
+			m.modelName = tc.model
+			next, _ := m.retryTurn()
+			m = next.(Model)
+			at := indexOfKind(t, m, entryRetry)
+			if at < indexOfKind(t, m, entryFailure) {
+				t.Fatal("the retry line stands after the failure it retries")
+			}
+			if got := stripANSI(m.renderEntry(m.transcript[at], 80)); !strings.HasPrefix(got, tc.want) {
+				t.Fatalf("the retry line reads %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

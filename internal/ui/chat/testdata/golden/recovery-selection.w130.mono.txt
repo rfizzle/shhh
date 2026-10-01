@@ -14,32 +14,40 @@
 ❯ rename the round-limit sentinel
 ─────────────────────────────────────────────────────────────────────────────
 
-   ✗ model   gpt-4o · 400 context too long             over the window
+
+  ✗ model gpt-4o                                       400 context too long
+    The conversation is over the model's context window. Compacting keeps
+    the plan and the recent turns.
     This model's maximum context length is 128000 tokens
-    [c] compact now · [r] retry the last failure
-    [ctrl+space/ctrl+y] to use them
-    compacting keeps the plan and the recent turns
+                               [c] compact now · [r] retry the last failure
+                                            [ctrl+space/ctrl+y] to use them
+
 
 
 · the pointer on it · its letters wait on the handover
 ❯ rename the round-limit sentinel
 ─────────────────────────────────────────────────────────────────────────────
 
-❯  ✗ model   gpt-4o · 400 context too long             over the window       
+
+❯ ✗ model gpt-4o                                       400 context too long  
+    The conversation is over the model's context window. Compacting keeps
+    the plan and the recent turns.
     This model's maximum context length is 128000 tokens
-    [c] compact now · [r] then try again
-    [ctrl+space/ctrl+y] to use them
-    compacting keeps the plan and the recent turns
+     [c] compact now · [r] then try again · [ctrl+space/ctrl+y] to use them
+
 
 
 · reading mode's cursor on it · its letters are live
 ❯ rename the round-limit sentinel
 ─────────────────────────────────────────────────────────────────────────────
 
-❯  ✗ model   gpt-4o · 400 context too long             over the window       
+
+❯ ✗ model gpt-4o                                       400 context too long  
+    The conversation is over the model's context window. Compacting keeps
+    the plan and the recent turns.
     This model's maximum context length is 128000 tokens
-    [c] compact now · [r] then try again
-    compacting keeps the plan and the recent turns
+                                       [c] compact now · [r] then try again
+
 
 
 · a dropped stream, nothing selected · its retry is labelled the same way
@@ -58,32 +66,40 @@
 ␛[38;5;254m❯␛[m rename the round-limit sentinel
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-   ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 400 context too long␛[m             ␛[38;5;254mover the window␛[m
+
+  ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m ␛[38;5;244mgpt-4o␛[m                                       ␛[38;5;254m400 context too long␛[m
+    ␛[38;5;254mThe conversation is over the model's context window. Compacting keeps␛[m
+    ␛[38;5;254mthe plan and the recent turns.␛[m
     ␛[38;5;244mThis model's maximum context length is 128000 tokens␛[m
-    ␛[38;5;244m[c]␛[m␛[38;5;244m compact now␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r]␛[m␛[38;5;244m retry the last failure␛[m
-    ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
-    ␛[38;5;244mcompacting keeps the plan and the recent turns␛[m
+                               ␛[38;5;244m[c]␛[m␛[38;5;244m compact now␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r]␛[m␛[38;5;244m retry the last failure␛[m
+                                            ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
+
 
 
 · the pointer on it · its letters wait on the handover
 ␛[38;5;254m❯␛[m rename the round-limit sentinel
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel   gpt-4o · 400 context too long             over the window       ␛[m␛[m
+
+␛[38;5;254m❯␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel gpt-4o                                       400 context too long  ␛[m␛[m
+    ␛[38;5;254mThe conversation is over the model's context window. Compacting keeps␛[m
+    ␛[38;5;254mthe plan and the recent turns.␛[m
     ␛[38;5;244mThis model's maximum context length is 128000 tokens␛[m
-    ␛[38;5;244m[c]␛[m␛[38;5;244m compact now␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r]␛[m␛[38;5;244m then try again␛[m
-    ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
-    ␛[38;5;244mcompacting keeps the plan and the recent turns␛[m
+     ␛[38;5;244m[c]␛[m␛[38;5;244m compact now␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r]␛[m␛[38;5;244m then try again␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
+
 
 
 · reading mode's cursor on it · its letters are live
 ␛[38;5;254m❯␛[m rename the round-limit sentinel
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel   gpt-4o · 400 context too long             over the window       ␛[m␛[m
+
+␛[38;5;254m❯␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel gpt-4o                                       400 context too long  ␛[m␛[m
+    ␛[38;5;254mThe conversation is over the model's context window. Compacting keeps␛[m
+    ␛[38;5;254mthe plan and the recent turns.␛[m
     ␛[38;5;244mThis model's maximum context length is 128000 tokens␛[m
-    ␛[38;5;254m[c]␛[m␛[38;5;244m compact now␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m then try again␛[m
-    ␛[38;5;244mcompacting keeps the plan and the recent turns␛[m
+                                       ␛[38;5;254m[c]␛[m␛[38;5;244m compact now␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m then try again␛[m
+
 
 
 · a dropped stream, nothing selected · its retry is labelled the same way
