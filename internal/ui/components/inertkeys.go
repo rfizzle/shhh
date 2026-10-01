@@ -41,7 +41,7 @@ const handoverWord = "read"
 func keyOffers(keys []TurnKey) string {
 	var parts []string
 	for _, k := range keys {
-		tone := sty.Info
+		tone := sty.Key
 		switch {
 		case k.Inert:
 			tone = sty.Dimmer
@@ -76,10 +76,10 @@ func inertOffers(keys []TurnKey) string {
 }
 
 // handoverOffer is the one live key on a row whose own keys are not: the key
-// in info, its words in body text, so the live half of the run is the half
+// in Key, its words in body text, so the live half of the run is the half
 // that reads as an offer.
 func handoverOffer(key, words string) string {
-	return sty.Info.Render("["+key+"]") + sty.Body.Render(" "+words)
+	return sty.Key.Render("["+key+"]") + sty.Body.Render(" "+words)
 }
 
 // chorded reports that every offer in the run carries the chord that reaches

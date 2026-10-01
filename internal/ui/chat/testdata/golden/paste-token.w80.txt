@@ -99,15 +99,15 @@
 · sent · the transcript keeps the fold, not the flood
 ␛[94m❯␛[m ␛[97mthis test log says the loop never stops — ␛[m␛[94m⟨Paste#1 · 214 lines⟩␛[m␛[94m␛[m␛[97m — and ␛[m
   ␛[97m␛[m␛[94m⟨Image#1 · 1440×900⟩␛[m␛[97m is the screen it hangs on; fix the exit condition␛[m
-   ␛[38;5;241m▸ Paste#1 · 214 lines · 6.0k tokens · ␛[m␛[94m[enter] expand␛[m
-   ␛[38;5;241m▸ Image#1 · 1440×900 · ␛[m␛[94m[enter] open␛[m
+   ␛[38;5;241m▸ Paste#1 · 214 lines · 6.0k tokens · ␛[m␛[38;5;103m[enter] expand␛[m
+   ␛[38;5;241m▸ Image#1 · 1440×900 · ␛[m␛[38;5;103m[enter] open␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────────────────────────␛[m
 
 
 · opened in the transcript · bounded, and the bound counts
 ␛[94m❯␛[m ␛[97mthis test log says the loop never stops — ␛[m␛[94m⟨Paste#1 · 214 lines⟩␛[m␛[94m␛[m␛[97m — and ␛[m
   ␛[97m␛[m␛[94m⟨Image#1 · 1440×900⟩␛[m␛[97m is the screen it hangs on; fix the exit condition␛[m
-   ␛[38;5;241m▾ Paste#1 · 214 lines · 6.0k tokens · ␛[m␛[94m[enter] fold it back up␛[m
+   ␛[38;5;241m▾ Paste#1 · 214 lines · 6.0k tokens · ␛[m␛[38;5;103m[enter] fold it back up␛[m
     ␛[38;5;245m=== RUN   TestRoundLimit␛[m
     ␛[38;5;245m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m
     ␛[38;5;245m    loop_test.go:44: round 26 reached after 2.1s, loop still running …␛[m

@@ -327,7 +327,7 @@ func (c *ChatScreen) hiddenRows(width int) []string {
 		return nil
 	}
 	row := sty.Dim.Render(plural(hidden, "conversation")+" hidden by the filter · ") +
-		sty.Info.Render(keys.Bracket(keys.Screen.ClearQ)) + sty.Dim.Render(" clear it")
+		sty.Key.Render(keys.Bracket(keys.Screen.ClearQ)) + sty.Dim.Render(" clear it")
 	return []string{screenRule(width), Clip(row, width)}
 }
 

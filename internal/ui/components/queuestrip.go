@@ -121,7 +121,7 @@ func (q QueueStrip) header(width int) string {
 	dots := sty.Err.Render("●") + sty.Dim.Render(strings.Repeat("○", len(q.Items)-1))
 	head := dots + sty.Dim.Render("  "+strconv.Itoa(len(q.Items))+" pending")
 	if q.Note != "" {
-		head += sty.Dim.Render("  ·  ") + sty.Info.Render(q.Note)
+		head += sty.Dim.Render("  ·  ") + sty.Key.Render(q.Note)
 	}
 	return queueIndent + Clip(head, max(width-len(queueIndent), 0))
 }
@@ -166,7 +166,7 @@ func (item QueueItem) right(current bool) string {
 		if b.Len() > 0 {
 			b.WriteString("  ")
 		}
-		b.WriteString(sty.Info.Render(queueMarkKey))
+		b.WriteString(sty.Key.Render(queueMarkKey))
 	}
 	return b.String()
 }

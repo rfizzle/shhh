@@ -129,7 +129,7 @@
   ␛[38;5;241mSteered — the reading says the edits have moved␛[m
   ␛[38;5;241moutside the round loop. Say what you meant if that␛[m
   ␛[38;5;241mis wrong.␛[m
-    ␛[38;5;245m[u]␛[m␛[38;5;241m take the steer back␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
+    ␛[38;5;245m[u]␛[m␛[38;5;241m take the steer back␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
   ␛[38;5;241mtree moved — 14 paths changed outside this session ·␛[m
   ␛[38;5;241m5,811 ignored␛[m
   ␛[91m✗ the notebook is read-only, so nothing was written␛[m
@@ -158,7 +158,7 @@
     ␛[38;5;241mSteered — the reading says the edits have moved␛[m     ␛[38;5;241m┃␛[m   
     ␛[38;5;241moutside the round loop. Say what you meant if that␛[m  ␛[38;5;241m┃␛[m   
     ␛[38;5;241mis wrong.␛[m                                           ␛[38;5;241m┃␛[m   
-      ␛[38;5;245m[u]␛[38;5;241m take the steer back · ␛[94m[ctrl+o]␛[38;5;252m to use them␛[m    ␛[38;5;241m┃␛[m   
+      ␛[38;5;245m[u]␛[38;5;241m take the steer back · ␛[38;5;103m[ctrl+o]␛[38;5;252m to use them␛[m    ␛[38;5;241m┃␛[m   
     ␛[38;5;241mtree moved — 14 paths changed outside this session ·┃␛[m   
     ␛[38;5;241m5,811 ignored␛[m                                       ␛[38;5;241m┃␛[m   
     ␛[91m✗ the notebook is read-only, so nothing was written␛[m ␛[38;5;241m┃␛[m   

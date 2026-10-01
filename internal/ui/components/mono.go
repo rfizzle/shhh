@@ -53,6 +53,7 @@ var MonoPalette = ColorTokens{
 	Subtle:  MonoDim,
 	Body:    MonoFg,
 	Code:    MonoFg,
+	Key:     MonoFg,
 }
 
 var (

@@ -114,8 +114,8 @@ $  a shell command
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
   ␛[38;5;241m↓ 10 more␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m reset to default␛[m    ␛[38;5;241m14 settings␛[m
-␛[94m[g]␛[m␛[38;5;241m write yours␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m reset to default␛[m    ␛[38;5;241m14 settings␛[m
+␛[38;5;103m[g]␛[m␛[38;5;241m write yours␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave␛[m
 
 · your file · [g] offers the checkout's
 ␛[1;97mshhh config␛[m␛[38;5;241m · your file␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m         ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -128,8 +128,8 @@ $  a shell command
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
   ␛[38;5;241m↓ 10 more␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m reset to default␛[m    ␛[38;5;241m14 settings␛[m
-␛[94m[g]␛[m␛[38;5;241m write the checkout's␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m reset to default␛[m    ␛[38;5;241m14 settings␛[m
+␛[38;5;103m[g]␛[m␛[38;5;241m write the checkout's␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave␛[m
 
 · your file behind the table · one word beside the path, outliving it
 ␛[1;97mshhh config␛[m␛[38;5;241m · your file␛[m␛[91m · behind␛[m                             ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -142,8 +142,8 @@ $  a shell command
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
   ␛[38;5;241m↓ 10 more␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m reset to default␛[m    ␛[38;5;241m14 settings␛[m
-␛[94m[g]␛[m␛[38;5;241m write the checkout's␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m reset to default␛[m    ␛[38;5;241m14 settings␛[m
+␛[38;5;103m[g]␛[m␛[38;5;241m write the checkout's␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave␛[m
 
 · a key the checkout may not decide · refused naming [g]
 ␛[1;97mshhh config␛[m␛[38;5;241m · the checkout's file␛[m␛[38;5;241m · .shhh/config.toml␛[m        ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -155,8 +155,8 @@ $  a shell command
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
   ␛[38;5;241m↓ 11 more␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m reset to default␛[m    ␛[38;5;241m14 settings␛[m
-␛[94m[g]␛[m␛[38;5;241m write yours␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m reset to default␛[m    ␛[38;5;241m14 settings␛[m
+␛[38;5;103m[g]␛[m␛[38;5;241m write yours␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave␛[m
 ␛[38;5;241mconfig key provider.api_key is not read from a checkout's file — a credential i…␛[m
 
 · [?] · the switch is in the register
@@ -167,16 +167,16 @@ $  a shell command
   ␛[94m❯␛[m ␛[1;97;48;5;62mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run      user␛[m
   ␛[38;5;241m↓ 13 more␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move between settings␛[m
-␛[94m[enter]␛[m␛[38;5;241m change the setting under the pointer␛[m
-␛[94m[/]␛[m␛[38;5;241m filter the settings by name␛[m
-␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter, or the field being typed into␛[m
-␛[94m[backspace]␛[m␛[38;5;241m delete a character from either␛[m
-␛[94m[r]␛[m␛[38;5;241m reset this setting to its default␛[m
-␛[94m[w]␛[m␛[38;5;241m write every staged change to the checkout's .shhh/config.toml␛[m
-␛[94m[g]␛[m␛[38;5;241m switch the write between the checkout's file and yours␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move between settings␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m change the setting under the pointer␛[m
+␛[38;5;103m[/]␛[m␛[38;5;241m filter the settings by name␛[m
+␛[38;5;103m[ctrl+u]␛[m␛[38;5;241m clear the filter, or the field being typed into␛[m
+␛[38;5;103m[backspace]␛[m␛[38;5;241m delete a character from either␛[m
+␛[38;5;103m[r]␛[m␛[38;5;241m reset this setting to its default␛[m
+␛[38;5;103m[w]␛[m␛[38;5;241m write every staged change to the checkout's .shhh/config.toml␛[m
+␛[38;5;103m[g]␛[m␛[38;5;241m switch the write between the checkout's file and yours␛[m
 ␛[92m[esc]␛[m␛[38;5;241m leave the picker, or leave the screen writing nothing␛[m
-␛[94m[q]␛[m␛[38;5;241m leave the screen writing nothing␛[m
+␛[38;5;103m[q]␛[m␛[38;5;241m leave the screen writing nothing␛[m
 
 ␛[38;5;241mglyphs␛[m
 ␛[38;5;241m⚙␛[m  ␛[38;5;241ma read: a file, a search, a listing␛[m
@@ -193,4 +193,4 @@ $  a shell command
 ␛[38;5;205m✦␛[m  ␛[38;5;241mthe classifier is deciding␛[m
 ␛[91m✗␛[m  ␛[38;5;241mfailed␛[m
 ␛[38;5;241m⊘␛[m  ␛[38;5;241mrefused: dim by you, red by a rule␛[m
-␛[94m[?]␛[m␛[38;5;241m hide the keys␛[m
+␛[38;5;103m[?]␛[m␛[38;5;241m hide the keys␛[m

@@ -388,7 +388,7 @@ func packOffersIn(offers []KeyOffer, width int, live bool) []string {
 // off its own list spent three rows to say what two could.
 //
 // The run arrives as offers rather than as sentences, so the row can be
-// painted the way every key row in the product is painted: the key in Info
+// painted the way every key row in the product is painted: the key in Key
 // because it is a key this surface will answer, the words beside it in Dim
 // because they are the surface talking about itself
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).

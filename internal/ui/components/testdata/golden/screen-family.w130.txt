@@ -243,11 +243,11 @@ definitions not loaded                                   │   costs     its too
 
 ␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[91m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[91m✗␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62mmodel   anthropic · claude-opus-5 · no key in any of the four places                                            no key       ␛[m␛[m
     ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[m
-    ␛[94m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+    ␛[38;5;103m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
   ␛[38;5;241m↓ 9 more · binary · config · store · sandbox · engine · git · tools · memory · update␛[m
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · metrics · the spend rides with the one key the screen has
 ␛[1;97mshhh metrics␛[m␛[38;5;241m · last 30 days · 251 requests · 4 models␛[m                                                 ␛[38;5;252m$18.42␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -273,7 +273,7 @@ definitions not loaded                                   │   costs     its too
     ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                                                                       ␛[38;5;252msession model␛[m
   ␛[38;5;241m↓ 14 more␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[94m[w]␛[m␛[38;5;241m write the file␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m discard, after asking␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[38;5;103m[w]␛[m␛[38;5;241m write the file␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m discard, after asking␛[m
 
 · history · the subject, and a foot key row that states the way out
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m                                                                               ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -286,7 +286,7 @@ definitions not loaded                                   │   costs     its too
   ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;241m· mon␛[m             ␛[38;5;241m │ ␛[m    ␛[38;5;245m-delete␛[m
   ␛[38;5;252m· count the log lines by level␛[m    ␛[38;5;252mnot run␛[m ␛[38;5;241m· Aug 14␛[m            ␛[38;5;241m │ ␛[m  ␛[38;5;245m↑ 412 · ↓ 38 tokens␛[m
 
-␛[94m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m             ␛[38;5;241mnothing is re-run until [enter]␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m             ␛[38;5;241mnothing is re-run until [enter]␛[m
 
 · rate · the same header over one card
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 1 of 5␛[m                                                                                             ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -298,7 +298,7 @@ definitions not loaded                                   │   costs     its too
 ␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7 -delete␛[m                                                              ␛[92mexit 0␛[m        ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m stop␛[m
+␛[38;5;103m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[38;5;103m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m stop␛[m
 
 · context · the occupancy is the tally beside the keys
 ␛[1;97m/context␛[m␛[38;5;241m · this session · 1m window␛[m                                                                  ␛[92m~312.4k␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -325,7 +325,7 @@ definitions not loaded                                   │   costs     its too
   ␛[38;5;241m┄ in your own words␛[m
     ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;62mw␛[m␛[m␛[38;5;252m␛[38;5;241mhat it is for␛[m␛[m␛[38;5;252m                                                                                                              ␛[m
 
-  ␛[94m[enter]␛[m␛[38;5;241m draft from what you typed␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m nothing is drafted␛[m
+  ␛[38;5;103m[enter]␛[m␛[38;5;241m draft from what you typed␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m nothing is drafted␛[m
 
 · snippets · the list, the command it would run, and the promise that it will not
 ␛[1;97mshhh snippets␛[m␛[38;5;241m · 3 snippets␛[m                                                                                     ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -336,7 +336,7 @@ definitions not loaded                                   │   costs     its too
   ␛[38;5;252mprune␛[m      ␛[38;5;241mdrop every merged branch␛[m    ␛[38;5;252mtue␛[m␛[38;5;241m │ ␛[m
                                             ␛[38;5;241m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mlsof -nP -iTCP -sTCP:LISTEN␛[m
 
-␛[94m[enter]␛[m␛[38;5;241m run it␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy it␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m   ␛[38;5;241mnothing is run until [enter]␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m   ␛[38;5;241mnothing is run until [enter]␛[m
 
 · the saved-chat browser · a row another session holds says so in a word
 ␛[1;97mshhh chats␛[m␛[38;5;241m · 3 conversations␛[m                                                                                   ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -350,7 +350,7 @@ definitions not loaded                                   │   costs     its too
                                                                 ␛[38;5;241m │ ␛[m  ␛[38;5;241m"held" is open in another session — its conversation is still␛[m
                                                                 ␛[38;5;241m │ ␛[m  ␛[38;5;241mbeing written there.␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m                        ␛[38;5;241mopen in another session␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m                        ␛[38;5;241mopen in another session␛[m
 
 · sources · the list is grouped under the hosts it read
 ␛[1;97m/sources␛[m␛[38;5;241m · 2 pages · 1 host · 1 search␛[m                                                                         ␛[38;5;241m[?] keys · [q] back␛[m
@@ -364,7 +364,7 @@ definitions not loaded                                   │   costs     its too
                                                                 ␛[38;5;241m │ ␛[m  ␛[38;5;243masked for ␛[m␛[38;5;252mhttps://docs.rs/tokio␛[m
                                                                 ␛[38;5;241m │ ␛[m  ␛[38;5;243mstatus ␛[m␛[38;5;252m200␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the page that was kept␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m               ␛[38;5;241mrecorded by the tool, not by the model␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read the page that was kept␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m               ␛[38;5;241mrecorded by the tool, not by the model␛[m
 
 · safety · the reading, its subject beside the title and the way back on the right
 ␛[1;97m/safety␛[m␛[38;5;241m · manual · sandbox-exec␛[m                                                                                ␛[38;5;241m[?] keys · [q] back␛[m
@@ -378,7 +378,7 @@ definitions not loaded                                   │   costs     its too
 ␛[38;5;252m    config     2 command patterns from behavior.command_allowlist — not this session's to revoke␛[m
 ␛[38;5;241m↓ 7 more · where it may write · containment · web · what the checkout was let load · mcp · secrets · tools␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                      ␛[38;5;241ma reading · nothing here changes it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                      ␛[38;5;241ma reading · nothing here changes it␛[m
 
 · steps · the session's own list, the run the transcript titled for the step beside it
 ␛[1;97m/steps␛[m␛[38;5;241m · 1 of 7␛[m                                                                                                ␛[38;5;241m[?] keys · [q] back␛[m
@@ -392,7 +392,7 @@ definitions not loaded                                   │   costs     its too
   ␛[38;5;241m6. ␛[m␛[38;5;252m· Run the whole suite␛[m                   ␛[38;5;241mnot started␛[m␛[38;5;241m │ ␛[m␛[38;5;245m  in the transcript · 2 tools · 4.1s␛[m
   ␛[38;5;241m7. ␛[m␛[38;5;252m· Write the report␛[m                      ␛[38;5;241mnot started␛[m␛[38;5;241m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/round.go␛[m            ␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;245m · ␛[m␛[38;5;245m2 hunks␛[m   ␛[38;5;241m1.1s␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                           ␛[38;5;241mthe agent's own list, not a plan␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                           ␛[38;5;241mthe agent's own list, not a plan␛[m
 
 · readings · every reading the session took, the one under the pointer whole beside it
 ␛[1;97m/readings␛[m␛[38;5;241m · 5 readings␛[m                                                                         ␛[38;5;241m$0.0142 spent␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -406,7 +406,7 @@ definitions not loaded                                   │   costs     its too
                                                 ␛[38;5;241m │ ␛[m    ␛[38;5;245m  the instruction was the exporter; docs were not asked for␛[m
                                                 ␛[38;5;241m │ ␛[m    ␛[38;5;245mread against: fix the CSV exporter's quoting␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                ␛[38;5;241ma reader's account of the run, newest first␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                ␛[38;5;241ma reader's account of the run, newest first␛[m
 
 · turns · every turn the session ran, the close of the one under the pointer beside it
 ␛[1;97m/turns␛[m␛[38;5;241m · 6 turns␛[m␛[38;5;241m · 26 tools␛[m                                                                    ␛[38;5;241m$0.1580 spent␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -420,7 +420,7 @@ definitions not loaded                                   │   costs     its too
   ␛[38;5;252m⊘ turn 1␛[m  ␛[38;5;241mcancelled␛[m                            ␛[38;5;241m$0.0060␛[m␛[38;5;241m │ ␛[m
                                                         ␛[38;5;241m │ ␛[m  ␛[38;5;243mfiles ␛[m␛[38;5;252minternal/agent/loop.go␛[m ␛[92m+12␛[m ␛[91m−4␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m review turn 4␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                ␛[38;5;241meach turn as its close row reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m review turn 4␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                ␛[38;5;241meach turn as its close row reads it␛[m
 
 · alerts · every command the session broke, standing first, the one under the pointer's account beside it
 ␛[1;97m/alerts␛[m␛[38;5;241m · 2 standing␛[m␛[38;5;241m · 2 superseded␛[m                                                                            ␛[38;5;241m[?] keys · [q] back␛[m
@@ -433,7 +433,7 @@ definitions not loaded                                   │   costs     its too
                                                               ␛[38;5;241m │ ␛[m  ␛[38;5;243mbroke     ␛[m␛[38;5;252mturn 3␛[m
                                                               ␛[38;5;241m │ ␛[m  ␛[38;5;243manswered  ␛[m␛[91mnot yet␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m show each run␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mevery command this session broke, as the rail reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m show each run␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mevery command this session broke, as the rail reads it␛[m
 
 · spend · the session's bill by model, by child and by turn, the row under the pointer's account beside it
 ␛[1;97m/stats␛[m␛[38;5;241m · 2 models␛[m␛[38;5;241m · 2 children␛[m␛[38;5;241m · 3 turns␛[m                                                       ␛[38;5;241m$0.4210 spent␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -447,7 +447,7 @@ definitions not loaded                                   │   costs     its too
   ␛[38;5;252m◇ writer-1␛[m␛[38;5;241m · ␛[m␛[38;5;241mclaude-opus-5-5␛[m                       ␛[38;5;241m$0.0520␛[m␛[38;5;241m │ ␛[m
 ␛[38;5;241m↓ 4 more␛[m                                                    ␛[38;5;241m │ ␛[m  ␛[38;5;243mby kind of request␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;245m[enter]␛[m␛[38;5;241m open the turn␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mthe session's bill, as the rail's SPEND block reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;245m[enter]␛[m␛[38;5;241m open the turn␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mthe session's bill, as the rail's SPEND block reads it␛[m
 
 · tools · where the session's tools came from, the source under the pointer's account beside it
 ␛[1;97m/mcp␛[m␛[38;5;241m · 3 servers␛[m␛[38;5;241m · 2 of 4 up␛[m                                                                                   ␛[38;5;241m[?] keys · [q] back␛[m
@@ -461,4 +461,4 @@ definitions not loaded                                   │   costs     its too
 ␛[1;94mdefinitions not loaded␛[m                                  ␛[38;5;241m │ ␛[m  ␛[38;5;243mcosts     ␛[m␛[38;5;252mits tools are not in this session␛[m
 ␛[38;5;241m↓ 7 more␛[m                                                ␛[38;5;241m │ ␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                 ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                 ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m

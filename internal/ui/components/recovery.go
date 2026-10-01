@@ -284,7 +284,7 @@ func (w RetryWait) View(width int) string {
 	return strings.Join(lines, "\n")
 }
 
-// keyLine renders the offers and the note as one line: the keys in info, the
+// keyLine renders the offers and the note as one line: the keys in Key, the
 // words for them and the note in dim — or, where the row does not hold the
 // keyboard, the keys grey beside the one key that hands it over.
 func (r RecoveryRow) keyLine() string {

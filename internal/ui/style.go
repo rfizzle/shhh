@@ -72,10 +72,10 @@ func newStyles(p components.ColorTokens) Styles {
 		Label:       lipgloss.NewStyle().Foreground(p.Status.Color()).MarginTop(1),
 		ExplainBody: lipgloss.NewStyle().Foreground(p.Body.Color()),
 
-		// Every key the interface offers is Info; the default and the
+		// Every key the interface offers is Key; the default and the
 		// deliberate one carry their tone as well, and both say it in words
 		// too.
-		Key:        lipgloss.NewStyle().Foreground(p.Info.Color()),
+		Key:        lipgloss.NewStyle().Foreground(p.Key.Color()),
 		KeyLabel:   lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		PrimaryKey: lipgloss.NewStyle().Foreground(p.Add.Color()),
 		DangerKey:  lipgloss.NewStyle().Foreground(p.Del.Color()),

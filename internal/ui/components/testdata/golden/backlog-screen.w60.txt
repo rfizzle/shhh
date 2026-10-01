@@ -269,7 +269,7 @@ $  a shell command
 ␛[38;5;241m**As a** reader, **I want** the queue beside the turn.␛[m
 ␛[38;5;241m… (+5 more rows)␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m new␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m
 
 · a waiting item · both ends of the edge on its header row
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -291,7 +291,7 @@ $  a shell command
 
 ␛[38;5;241m… (+4 more rows)␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m new␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m
 
 · a file that will not parse · a row in warning tone, the reason as its body
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -310,7 +310,7 @@ $  a shell command
 ␛[91mno title in the header␛[m
 ␛[38;5;241m.shhh/todo/half-written.md is still on disk; [e] opens it␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m fix the header␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m fix the header␛[m
 
 · [/] · the query row, with the header saying what it left
 ␛[1;97mbacklog␛[m                   ␛[38;5;241m1 of 6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -320,7 +320,7 @@ $  a shell command
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 ␛[94m❯ ␛[m␛[91m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[91m!␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62msprint-file  MM  blocked  The sprint is a file that nam…␛[m␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[38;5;241m5 hidden · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear it␛[m
+␛[38;5;241m5 hidden · ␛[m␛[38;5;103m[ctrl+u]␛[m␛[38;5;241m clear it␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 ␛[1;97msprint-file␛[m
 ␛[38;5;241mThe sprint is a file that names its items␛[m
@@ -331,7 +331,7 @@ $  a shell command
 
 ␛[38;5;241mWaiting on a decision about where the file lives.␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter, then close it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+u]␛[m␛[38;5;241m clear the filter, then close it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m
 
 · [s] · the status filter in words, and what it hid under the list
 ␛[1;97mbacklog␛[m␛[38;5;241m · open␛[m            ␛[38;5;241m4 of 6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -342,7 +342,7 @@ $  a shell command
   ␛[38;5;241m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;241mL-␛[m␛[38;5;241m  ready  Dropping an item says w…␛[m
   ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;241m  will not load␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[38;5;241m2 hidden · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear it␛[m
+␛[38;5;241m2 hidden · ␛[m␛[38;5;103m[ctrl+u]␛[m␛[38;5;241m clear it␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 ␛[1;97mscreen-over-items␛[m
 ␛[38;5;241mA screen over the whole backlog, with the body beside the␛[m
@@ -353,7 +353,7 @@ $  a shell command
 
 ␛[38;5;241m… (+4 more rows)␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m new␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m
 
 · [enter] · the body with the surface to itself
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -372,7 +372,7 @@ $  a shell command
 ␛[38;5;241m- [x] four rows and a count␛[m
 ␛[38;5;241m- [ ] the running item first␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[pgup/pgdn]␛[m␛[38;5;241m page the body␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[38;5;103m[pgup/pgdn]␛[m␛[38;5;241m page the body␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back to the list␛[m
 
 · [tab] · the archive, each item's report as its body
@@ -390,7 +390,7 @@ $  a shell command
 ␛[38;5;241mSixty-eight literals came out of twenty files; the register␛[m
 ␛[38;5;241mis the one place a key is written down.␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[o]␛[m␛[38;5;241m put it back␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[o]␛[m␛[38;5;241m put it back␛[m
 
 · [x] · the one confirm that names what it loses
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -431,7 +431,7 @@ $  a shell command
 ␛[38;5;241m1 item waits on this: screen-over-items␛[m
 ␛[38;5;241m… (+8 more rows)␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
 ␛[38;5;241mthe turn is running; these change the files it may be worki…␛[m
 ␛[38;5;245m[e]␛[m␛[38;5;241m open it in $EDITOR␛[m␛[38;5;241m · ␛[m␛[38;5;245m[R]␛[m␛[38;5;241m run it␛[m
 ␛[38;5;245m[g]␛[m␛[38;5;241m read it against the tree␛[m␛[38;5;241m · ␛[m␛[38;5;245m[b]␛[m␛[38;5;241m block it␛[m␛[38;5;241m · ␛[m␛[38;5;245m[d]␛[m␛[38;5;241m archive it␛[m
@@ -445,28 +445,28 @@ $  a shell command
 ␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;205m▸␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mrail-todo-block  HM  in progress  The backlog block on …␛[m␛[m
 ␛[38;5;241m… (+1 more rows)␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move between items␛[m
-␛[94m[enter]␛[m␛[38;5;241m read the body in the pane␛[m
-␛[94m[pgup/pgdn]␛[m␛[38;5;241m page the body while reading it␛[m
-␛[94m[tab]␛[m␛[38;5;241m the backlog, the sprint, or what shipped␛[m
-␛[94m[/]␛[m␛[38;5;241m filter by slug or title␛[m
-␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter; clear it again to close it␛[m
-␛[94m[backspace]␛[m␛[38;5;241m delete a character from the filter␛[m
-␛[94m[s]␛[m␛[38;5;241m cycle the status filter␛[m
-␛[94m[p]␛[m␛[38;5;241m cycle the priority filter␛[m
-␛[94m[k]␛[m␛[38;5;241m cycle the kind or size filter␛[m
-␛[94m[r]␛[m␛[38;5;241m only what can be started now␛[m
-␛[94m[w]␛[m␛[38;5;241m jump to what this one waits on␛[m
-␛[94m[e]␛[m␛[38;5;241m open the file in your editor␛[m
-␛[94m[R]␛[m␛[38;5;241m work it through to a commit␛[m
-␛[94m[b]␛[m␛[38;5;241m mark it blocked, after confirming it␛[m
-␛[94m[o]␛[m␛[38;5;241m reopen it, from the archive as well␛[m
-␛[94m[d]␛[m␛[38;5;241m archive it, after confirming it␛[m
-␛[94m[x]␛[m␛[38;5;241m delete the file, after confirming it␛[m
-␛[94m[n]␛[m␛[38;5;241m start a new item␛[m
-␛[94m[S]␛[m␛[38;5;241m add it to the cockpit sprint, or drop it␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;241m move between items␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m read the body in the pane␛[m
+␛[38;5;103m[pgup/pgdn]␛[m␛[38;5;241m page the body while reading it␛[m
+␛[38;5;103m[tab]␛[m␛[38;5;241m the backlog, the sprint, or what shipped␛[m
+␛[38;5;103m[/]␛[m␛[38;5;241m filter by slug or title␛[m
+␛[38;5;103m[ctrl+u]␛[m␛[38;5;241m clear the filter; clear it again to close it␛[m
+␛[38;5;103m[backspace]␛[m␛[38;5;241m delete a character from the filter␛[m
+␛[38;5;103m[s]␛[m␛[38;5;241m cycle the status filter␛[m
+␛[38;5;103m[p]␛[m␛[38;5;241m cycle the priority filter␛[m
+␛[38;5;103m[k]␛[m␛[38;5;241m cycle the kind or size filter␛[m
+␛[38;5;103m[r]␛[m␛[38;5;241m only what can be started now␛[m
+␛[38;5;103m[w]␛[m␛[38;5;241m jump to what this one waits on␛[m
+␛[38;5;103m[e]␛[m␛[38;5;241m open the file in your editor␛[m
+␛[38;5;103m[R]␛[m␛[38;5;241m work it through to a commit␛[m
+␛[38;5;103m[b]␛[m␛[38;5;241m mark it blocked, after confirming it␛[m
+␛[38;5;103m[o]␛[m␛[38;5;241m reopen it, from the archive as well␛[m
+␛[38;5;103m[d]␛[m␛[38;5;241m archive it, after confirming it␛[m
+␛[38;5;103m[x]␛[m␛[38;5;241m delete the file, after confirming it␛[m
+␛[38;5;103m[n]␛[m␛[38;5;241m start a new item␛[m
+␛[38;5;103m[S]␛[m␛[38;5;241m add it to the cockpit sprint, or drop it␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
-␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;103m[q]␛[m␛[38;5;241m back to the prompt␛[m
 ␛[38;5;241mletters  priority H high · M medium · L low — size S M L␛[m
 ␛[38;5;241m- unset␛[m
 
@@ -485,4 +485,4 @@ $  a shell command
 ␛[38;5;205m✦␛[m  ␛[38;5;241mthe classifier is deciding␛[m
 ␛[91m✗␛[m  ␛[38;5;241mfailed␛[m
 ␛[38;5;241m⊘␛[m  ␛[38;5;241mrefused: dim by you, red by a rule␛[m
-␛[94m[?]␛[m␛[38;5;241m hide the keys␛[m
+␛[38;5;103m[?]␛[m␛[38;5;241m hide the keys␛[m

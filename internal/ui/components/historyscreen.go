@@ -341,7 +341,7 @@ func (h *HistoryScreen) hiddenRows(width int) []string {
 		return nil
 	}
 	row := sty.Dim.Render(entries(hidden)+" hidden by the filter · ") +
-		sty.Info.Render("[ctrl+u]") + sty.Dim.Render(" clear it")
+		sty.Key.Render("[ctrl+u]") + sty.Dim.Render(" clear it")
 	return []string{screenRule(width), Clip(row, width)}
 }
 

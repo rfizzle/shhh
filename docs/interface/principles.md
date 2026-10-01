@@ -179,6 +179,15 @@ It is checkable the same way: cover the colours, and if two surfaces are on
 screen and neither names the keyboard's owner *in words*, the screen is
 under-specified.
 
+A live key has a colour of its own, and it is quieter than the information
+around it. A key is how to act on what the screen says, not something the
+screen is saying: a reader learns the keys once and stops reading them, and a
+row of offers drawn as loud as a heading competes with every fact on the screen
+for the rest of the session. So the colour is chosen to be told from the words
+beside it and from the grey of a key that is not live yet, and no more than
+that. Nothing else is drawn in it, which is what keeps a bracket in that colour
+a promise that the press will be answered.
+
 Every key in the product is declared once, in a single register, so a hint and
 its handler cannot disagree. Declaring it once is also what lets it move: a
 [keymap file](../capabilities/configuration.md#the-keymap-file) rewrites the
@@ -326,7 +335,7 @@ motion is the red a failure already owns, so three states arrive as one hue on
 the profile invariant 1 exists for.
 
 Five of the palette's tokens are the terminal's own theme colours by choice — the
-diff's two verdicts, the hunk heading, the key offer, and the crest. A user
+diff's two verdicts, the hunk heading, the block heading, and the crest. A user
 who set their green is looked at all day in their green, and the design's own
 hex is what a terminal that can show it gets.
 

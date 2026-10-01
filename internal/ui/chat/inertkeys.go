@@ -16,7 +16,7 @@ package chat
 //, a dropped stream's, and a round-limit pause's. They are transcript
 // entries, not takeovers. Their keys are handled by reading mode on the row
 // (focus.go), so while the draft below has the keyboard `r` is a letter, `[r]
-// try again` is an offer nothing accepts, and the row was painting it in info —
+// try again` is an offer nothing accepts, and the row was painting it in Key —
 // the colour that means "you can press this".
 //
 // So a transcript row renders its keys live only while reading mode's cursor

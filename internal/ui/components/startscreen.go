@@ -59,7 +59,7 @@ type StartScreen struct {
 	// Hint is the key row under the list, and it arrives as offers rather
 	// than as a sentence the host has already joined. A pre-joined run can
 	// only wear one tone, and this row is painted the way every key row in
-	// the product is painted: the key in Info because this screen will
+	// the product is painted: the key in Key because this screen will
 	// answer it, the words beside it in Dim because they are the screen
 	// talking about itself, and the answer that costs nothing in Add
 	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).

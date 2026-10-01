@@ -897,7 +897,7 @@ func (c *ApprovalCard) ScrollBounds(width int) (maxBody, maxPan int) {
 // press yet are noise, so only the keys and the handover are shown.
 //
 // The run is the bracket grammar every other key row in the product is
-// written in: the key in Info, the imperative after it in Body, the answer
+// written in: the key in Key, the imperative after it in Body, the answer
 // that costs nothing in Add, and a key that is not offered left on the card
 // with its reason in Dim (Footnote). The compact `[y/n/a]` prompt this card
 // used to print was the one place two notations sat a row apart — the offers
@@ -1080,14 +1080,14 @@ const waitingWords = "leave it waiting, nothing is denied"
 // is left standing, for a run whose last row has no room for more.
 const waitWord = "wait"
 
-// offerSegment is one offer in the card's grammar: the key in Info, the
+// offerSegment is one offer in the card's grammar: the key in Key, the
 // imperative after it in Body. The mark arrives already bracketed, because
 // the register is what spells a key and this only paints it.
 func offerSegment(mark, label string) string {
 	if label == "" {
-		return sty.Info.Render(mark)
+		return sty.Key.Render(mark)
 	}
-	return sty.Info.Render(mark) + " " + sty.Body.Render(label)
+	return sty.Key.Render(mark) + " " + sty.Body.Render(label)
 }
 
 // safeSegment is the same offer for the answer that costs nothing: one run in

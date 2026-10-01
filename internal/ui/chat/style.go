@@ -231,7 +231,7 @@ func newSearchStyles(p components.ColorTokens) searchStyles {
 
 // hintStyles is the key rows' own group, with the mutation rail that shares
 // their file. One group because there is one grammar: a key this surface
-// will answer is Info, the words beside it are Dim, and the safe answer is
+// will answer is Key, the words beside it are Dim, and the safe answer is
 // Add wherever one is offered
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 type hintStyles struct {
@@ -243,7 +243,7 @@ type hintStyles struct {
 
 func newHintStyles(p components.ColorTokens) hintStyles {
 	return hintStyles{
-		Key:          lipgloss.NewStyle().Foreground(p.Info.Color()),
+		Key:          lipgloss.NewStyle().Foreground(p.Key.Color()),
 		Safe:         lipgloss.NewStyle().Foreground(p.Add.Color()),
 		Dim:          lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		MutationRail: lipgloss.NewStyle().Foreground(p.Accent.Color()),

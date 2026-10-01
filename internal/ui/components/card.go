@@ -367,7 +367,7 @@ const handoverImperative = " answer it"
 // are going until it is pressed — in the words a card that took the keyboard
 // by arriving says the same thing in, because it is the same handover.
 func handoverRow(key string, inner int) string {
-	head := sty.Info.Render("["+key+"]") + sty.Body.Render(handoverImperative)
+	head := sty.Key.Render("["+key+"]") + sty.Body.Render(handoverImperative)
 	tail := sty.Dim.Render(" · " + arrivalDraftWords)
 	if lipgloss.Width(head)+lipgloss.Width(tail) > inner {
 		return Clip(head, inner)

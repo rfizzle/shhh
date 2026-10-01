@@ -75,7 +75,7 @@ shhh chats · 3 conversations                                 [?] keys · [q] qu
   ␛[38;5;252mgreen and the flake still unexplained.␛[m
 ␛[38;5;241m… (+2 more rows)␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · titled only
@@ -91,7 +91,7 @@ shhh chats · 3 conversations                                 [?] keys · [q] qu
 
   ␛[38;5;252m4 turns␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · neither
@@ -106,5 +106,5 @@ shhh chats · 3 conversations                                 [?] keys · [q] qu
 
   ␛[38;5;252m1 turn␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m

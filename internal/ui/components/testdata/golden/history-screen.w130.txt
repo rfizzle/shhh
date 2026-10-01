@@ -148,7 +148,7 @@ $  a shell command
   ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;241m· mon␛[m             ␛[38;5;241m │ ␛[m    ␛[38;5;245m-delete␛[m
   ␛[38;5;252m· count the log lines by level␛[m    ␛[38;5;252mnot run␛[m ␛[38;5;241m· Aug 14␛[m            ␛[38;5;241m │ ␛[m  ␛[38;5;245m↑ 412 · ↓ 38 tokens␛[m
 
-␛[94m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m             ␛[38;5;241mnothing is re-run until [enter]␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m             ␛[38;5;241mnothing is re-run until [enter]␛[m
 
 · the pointer moved · the preview follows, and has no cursor of its own
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m                                                                               ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -161,7 +161,7 @@ $  a shell command
   ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;241m· mon␛[m             ␛[38;5;241m │ ␛[m    ␛[38;5;245m--force-with-lease␛[m
   ␛[38;5;252m· count the log lines by level␛[m    ␛[38;5;252mnot run␛[m ␛[38;5;241m· Aug 14␛[m            ␛[38;5;241m │ ␛[m  ␛[38;5;245m↑ 502 · ↓ 41 tokens␛[m
 
-␛[94m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m             ␛[38;5;241mnothing is re-run until [enter]␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m             ␛[38;5;241mnothing is re-run until [enter]␛[m
 
 · a long command · continued under the row, never clipped away
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m                                                                               ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -175,7 +175,7 @@ $  a shell command
   ␛[38;5;252m· count the log lines by level␛[m    ␛[38;5;252mnot run␛[m ␛[38;5;241m· Aug 14␛[m            ␛[38;5;241m │ ␛[m    ␛[38;5;245minternal/agent internal/ui | sort -u␛[m
                                                                 ␛[38;5;241m │ ␛[m  ␛[38;5;245m↑ 470 · ↓ 66 tokens␛[m
 
-␛[94m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m             ␛[38;5;241mnothing is re-run until [enter]␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m             ␛[38;5;241mnothing is re-run until [enter]␛[m
 
 · filtered · both counts on the query row, and what it hid under the list
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m                                                                               ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -186,9 +186,9 @@ $  a shell command
 ␛[94m❯␛[m ␛[1;97;48;5;62m$ delete every log file older than a week  exit 0         1.4s␛[m␛[38;5;241m │ ␛[m
   ␛[38;5;252m· count the ␛[m␛[1;38;5;252mlog␛[m␛[38;5;252m lines by level␛[m    ␛[38;5;252mnot run␛[m ␛[38;5;241m· Aug 14␛[m            ␛[38;5;241m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7␛[m       ␛[92mexit 0␛[m   ␛[38;5;241m1.4s␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m    ␛[38;5;245m-delete␛[m
-␛[38;5;241m4 entries hidden by the filter · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear it␛[m              ␛[38;5;241m │ ␛[m  ␛[38;5;245m↑ 412 · ↓ 38 tokens␛[m
+␛[38;5;241m4 entries hidden by the filter · ␛[m␛[38;5;103m[ctrl+u]␛[m␛[38;5;241m clear it␛[m              ␛[38;5;241m │ ␛[m  ␛[38;5;245m↑ 412 · ↓ 38 tokens␛[m
 
-␛[94m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter, then close it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m             ␛[38;5;241mnothing is re-run until [enter]␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+u]␛[m␛[38;5;241m clear the filter, then close it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m             ␛[38;5;241mnothing is re-run until [enter]␛[m
 
 · a filter that matched nothing · a row, not an empty pane
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m                                                                               ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -198,9 +198,9 @@ $  a shell command
 ␛[38;5;241m────────────────────────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m
 ␛[38;5;241m  no match for "kubectl"␛[m                                        ␛[38;5;241m │ ␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m
-␛[38;5;241m6 entries hidden by the filter · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear it␛[m              ␛[38;5;241m │ ␛[m
+␛[38;5;241m6 entries hidden by the filter · ␛[m␛[38;5;103m[ctrl+u]␛[m␛[38;5;241m clear it␛[m              ␛[38;5;241m │ ␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter, then close it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+u]␛[m␛[38;5;241m clear the filter, then close it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · [x] · the inline confirm, naming what it would take, defaulting to no
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m                                                                               ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -226,7 +226,7 @@ $  a shell command
   ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;241m· mon␛[m             ␛[38;5;241m │ ␛[m  ␛[38;5;245m↑ 388 · ↓ 24 tokens␛[m
   ␛[38;5;252m· count the log lines by level␛[m    ␛[38;5;252mnot run␛[m ␛[38;5;241m· Aug 14␛[m            ␛[38;5;241m │ ␛[m
 
-␛[94m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m             ␛[38;5;241mnothing is re-run until [enter]␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m             ␛[38;5;241mnothing is re-run until [enter]␛[m
 ␛[38;5;241mcopied the command to the clipboard␛[m
 
 · [?] · every key the screen has, including the ones the row sheds
@@ -235,16 +235,16 @@ $  a shell command
 
 ␛[94m❯␛[m ␛[1;97;48;5;62m$ delete every log file older than a week  exit 0         1.4s␛[m␛[38;5;241m │ ␛[m␛[1;97m4m ago␛[m␛[38;5;241m · openai/gpt-5.2␛[m                                     ␛[38;5;241mrun␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move between entries␛[m
-␛[94m[enter]␛[m␛[38;5;241m run the command under the pointer again␛[m
-␛[94m[c]␛[m␛[38;5;241m copy the command to the clipboard␛[m
-␛[94m[s]␛[m␛[38;5;241m save the command as a snippet␛[m
-␛[94m[x]␛[m␛[38;5;241m delete the entry, after confirming it␛[m
-␛[94m[/]␛[m␛[38;5;241m filter by what was asked or by what came back␛[m
-␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter; clear it again to close it␛[m
-␛[94m[backspace]␛[m␛[38;5;241m delete a character from the filter␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move between entries␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m run the command under the pointer again␛[m
+␛[38;5;103m[c]␛[m␛[38;5;241m copy the command to the clipboard␛[m
+␛[38;5;103m[s]␛[m␛[38;5;241m save the command as a snippet␛[m
+␛[38;5;103m[x]␛[m␛[38;5;241m delete the entry, after confirming it␛[m
+␛[38;5;103m[/]␛[m␛[38;5;241m filter by what was asked or by what came back␛[m
+␛[38;5;103m[ctrl+u]␛[m␛[38;5;241m clear the filter; clear it again to close it␛[m
+␛[38;5;103m[backspace]␛[m␛[38;5;241m delete a character from the filter␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
-␛[94m[q]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[q]␛[m␛[38;5;241m back to the shell␛[m
 
 ␛[38;5;241mglyphs␛[m
 ␛[38;5;241m⚙␛[m  ␛[38;5;241ma read: a file, a search, a listing␛[m
@@ -261,4 +261,4 @@ $  a shell command
 ␛[38;5;205m✦␛[m  ␛[38;5;241mthe classifier is deciding␛[m
 ␛[91m✗␛[m  ␛[38;5;241mfailed␛[m
 ␛[38;5;241m⊘␛[m  ␛[38;5;241mrefused: dim by you, red by a rule␛[m
-␛[94m[?]␛[m␛[38;5;241m hide the keys␛[m
+␛[38;5;103m[?]␛[m␛[38;5;241m hide the keys␛[m

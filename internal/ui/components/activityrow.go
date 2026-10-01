@@ -296,9 +296,9 @@ type ActivityRow struct {
 	MaxDetail int
 	// Tail is a running command's last output line, shown live beneath the row.
 	Tail string
-	// Keys are the keys the row offers (`/mode why`), rendered in info (12)
-	// after the outcome — every key the interface offers is info, so a key in
-	// any other colour is not an offer.
+	// Keys are the keys the row offers (`/mode why`), rendered in the key
+	// colour after the outcome — every key the interface offers is, so a key
+	// in any other colour is not an offer.
 	Keys string
 	// ByRule colours a denial del (9) rather than dim (241): `⊘ denied · you`
 	// is a preference, `⊘ denied · auto` is a rule.
@@ -563,7 +563,7 @@ func (r ActivityRow) outcomeStyle() lipgloss.Style {
 // outcomeField joins outcome, counts, account and keys into the one
 // right-aligned field. Four tones, one per job: what came of the call in the
 // state's token, what it counted dimmer, how it came to be allowed dim, and
-// the keys it offers in info.
+// the keys it offers in Key.
 //
 // The act comes before the decision about it: `+12 −4 · 2 hunks · approved
 // by you`, `ok · 1 line · auto-allowed · classifier 2.1s`. What the call did
@@ -584,7 +584,7 @@ func (r ActivityRow) outcomeField() string {
 		parts = append(parts, paintAccount(r.Allowed, sty.Dim))
 	}
 	if r.Keys != "" {
-		parts = append(parts, sty.Info.Render(r.Keys))
+		parts = append(parts, sty.Key.Render(r.Keys))
 	}
 	return strings.Join(parts, sty.Dim.Render(" · "))
 }
@@ -879,7 +879,7 @@ func (r ActivityRow) foldKeys(width int) (ActivityRow, []string) {
 	inner := max(width-detailIndent, 1)
 	var under []string
 	for _, line := range strings.Split(lipgloss.Wrap(offer, inner, ""), "\n") {
-		under = append(under, strings.Repeat(" ", detailIndent)+sty.Info.Render(line))
+		under = append(under, strings.Repeat(" ", detailIndent)+sty.Key.Render(line))
 	}
 	return r, under
 }
@@ -915,7 +915,7 @@ func indented(s string, indent, width int) string {
 }
 
 // GroupExpandKey is what a folded group row says opens it. It is drawn in the
-// hint treatment rather than in info, the way the collapsed diff row's has
+// hint treatment rather than in the key colour, the way the collapsed diff row's has
 // always been: enter belongs to the draft below until reading mode takes the
 // keyboard, so on a transcript row this is a label for what the row does
 // under the cursor, not an offer standing open

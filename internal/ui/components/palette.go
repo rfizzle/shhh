@@ -79,8 +79,12 @@ func token(hex, ansi256, ansi16 string) Token {
 // The assignments below are reconciled with tokens/colors.css in the shhh
 // Design System project: same token set, one documented job each.
 // Three of them carry the redesign — Spin means anything in motion and only
-// that, Accent additionally means the mutation rail, and Info marks every key
+// that, Accent additionally means the mutation rail, and Key marks every key
 // the interface offers, so a key written in any other color is not an offer.
+// Key is quieter than Info on purpose: a key is how to act on what the screen
+// says rather than something it is saying, and a reader who has learned the
+// keys stops reading them
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // colors.css also defines canvas-only shades (--screen, --page, --rule-faint,
 // --meter-empty, --win-*) that let the artboards be drawn in a browser. They
@@ -93,7 +97,7 @@ type ColorTokens struct {
 	DelBg   Token // intraline emphasis background for deletions
 	Hunk    Token // @@ hunk headers and nothing else
 	Accent  Token // the mutation rail and the glyphs beside it, ⚠ warnings, gated modes, ctx ≥70%
-	Info    Token // sub-agents, block headings, and every key the interface offers
+	Info    Token // sub-agents, block headings, decision cards
 	FocusBg Token // selected option/row background, the cursor block
 	Dim     Token // chrome, counts, hints, faint rules, empty meter cells, the scroll gutter's thumb
 	Dimmer  Token // tool output, live tails, detail bodies, sparklines
@@ -103,6 +107,7 @@ type ColorTokens struct {
 	Subtle  Token // the one-shot rung a revise superseded; no colors.css counterpart
 	Body    Token // ordinary body text
 	Code    Token // a name in prose — inline code, and a code block nothing highlighted
+	Key     Token // every key the interface offers, live; an inert one is Dimmer
 }
 
 // PaletteSize is how many tokens a table holds: every field of ColorTokens,
@@ -112,7 +117,7 @@ type ColorTokens struct {
 // sentence somewhere still reciting the old number — which is also why the
 // prose in docs/interface/principles.md#a-colour-is-three-values-and-a-ground
 // speaks of the palette's tokens and never of how many there are.
-const PaletteSize = 16
+const PaletteSize = 17
 
 // Palette is the live token set: whichever of the shipped tables the theme
 // resolves to, or the two-grey mono palette while mono conformance is on
@@ -127,7 +132,7 @@ var Palette = FullPalette
 // cube and the greyscale ramp are colours a design can name. The five —
 // add, del, info, hunk and bright — live in the range a terminal theme owns,
 // where 10 is whatever green the user's config says it is and 12 is a blue
-// dark enough on some themes to lose a key the interface was offering. Those
+// dark enough on some themes to lose what it marks. Those
 // five are the design system's own colours on a truecolor terminal, and the
 // index they were chosen for everywhere else.
 var FullPalette = ColorTokens{
@@ -149,6 +154,7 @@ var FullPalette = ColorTokens{
 	Subtle: token("#bcbcbc", "250", "7"),
 	Body:   token("#d0d0d0", "252", "7"),
 	Code:   token("#d7af87", "180", "3"),
+	Key:    token("#8787af", "103", "12"),
 }
 
 // LightPalette is the same jobs on a light ground.
@@ -204,6 +210,7 @@ var LightPalette = ColorTokens{
 	Subtle: token("#4e4e4e", "239", "8"),
 	Body:   token("#303030", "236", "0"),
 	Code:   token("#875f00", "94", "3"),
+	Key:    token("#5f5f87", "60", "4"),
 }
 
 // CharmPalette is the same jobs done in CharmTone, the palette the
@@ -235,6 +242,7 @@ var CharmPalette = ColorTokens{
 	Subtle:  tone(charmtone.Smoke, "250", "7"),
 	Body:    tone(charmtone.Ash, "253", "7"),
 	Code:    tone(charmtone.Cumin, "137", "3"),
+	Key:     tone(charmtone.Hazy, "105", "12"),
 }
 
 // tone writes one row of the CharmTone table: the published hex, and the two
@@ -520,6 +528,7 @@ type Styles struct {
 	Bright   lipgloss.Style
 	Accent   lipgloss.Style
 	Info     lipgloss.Style
+	Key      lipgloss.Style // a key this surface will answer, and nothing else
 	Err      lipgloss.Style
 	SpinText lipgloss.Style
 
@@ -599,6 +608,7 @@ func newStyles(p ColorTokens) Styles {
 		Bright:   lipgloss.NewStyle().Foreground(p.Bright.Color()),
 		Accent:   lipgloss.NewStyle().Foreground(p.Accent.Color()),
 		Info:     lipgloss.NewStyle().Foreground(p.Info.Color()),
+		Key:      lipgloss.NewStyle().Foreground(p.Key.Color()),
 		Err:      lipgloss.NewStyle().Foreground(p.Del.Color()),
 		SpinText: lipgloss.NewStyle().Foreground(p.Spin.Color()),
 

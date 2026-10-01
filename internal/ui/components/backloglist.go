@@ -85,7 +85,7 @@ func (b *BacklogScreen) hiddenRows(width int) []string {
 		return nil
 	}
 	row := sty.Dim.Render(fmt.Sprintf("%d hidden · ", hidden)) +
-		sty.Info.Render(keys.Bracket(keys.Backlog.ClearQ)) + sty.Dim.Render(" clear it")
+		sty.Key.Render(keys.Bracket(keys.Backlog.ClearQ)) + sty.Dim.Render(" clear it")
 	return []string{screenRule(width), Clip(row, width)}
 }
 

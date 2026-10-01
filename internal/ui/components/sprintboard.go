@@ -203,7 +203,7 @@ func (b *BacklogScreen) planRows(width, budget int) []string {
 	p := b.Plan
 	p.sync()
 	rows := []string{Clip(sty.Dim.Render("nothing is written until ")+
-		sty.Info.Render(keys.Bracket(keys.Sprint.Take)), width)}
+		sty.Key.Render(keys.Bracket(keys.Sprint.Take)), width)}
 	if goal := strings.TrimSpace(p.Goal); goal != "" {
 		rows = append(rows, wrapDim(goal, width)...)
 	}
@@ -238,10 +238,10 @@ func (p *SprintPlan) leftRows(width int) []string {
 	}
 	if !p.open {
 		head := fmt.Sprintf("%s left out · %s", plural(len(p.Left), "item"), leftWords(p.Left))
-		return []string{"", sty.Dim.Render(Clip(head, width)) + " " + sty.Info.Render(keys.Bracket(keys.Sprint.Left))}
+		return []string{"", sty.Dim.Render(Clip(head, width)) + " " + sty.Key.Render(keys.Bracket(keys.Sprint.Left))}
 	}
 	out := []string{"", sty.Dim.Render(Clip(plural(len(p.Left), "item")+" left out", width)) +
-		" " + sty.Info.Render(keys.Bracket(keys.Sprint.Left))}
+		" " + sty.Key.Render(keys.Bracket(keys.Sprint.Left))}
 	word := leftWordWidth(p.Left)
 	for _, l := range p.Left {
 		rest := strings.TrimSpace(l.Slug + "  " + l.Title)

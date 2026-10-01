@@ -15,7 +15,7 @@ package chat
 // surface draws for itself is built from — the frame's bottom rail, the one
 // line a full-screen viewer leaves where the draft was, the query rows'
 // two keys. One composer means one notation and one set of tones: brackets,
-// the key in Info, the words in Dim, the safe answer in Add
+// the key in Key, the words in Dim, the safe answer in Add
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 
 import (
@@ -51,7 +51,7 @@ type hintSeg struct {
 // givesUp is the segment with its place in that order.
 func (s hintSeg) givesUp(n int) hintSeg { s.give = n; return s }
 
-// render paints one segment: the key in info as every offered key is,
+// render paints one segment: the key in Key as every offered key is,
 // its imperative in dim, and the safe answer in add where there is one
 // (invariant 3).
 func (s hintSeg) render() string {

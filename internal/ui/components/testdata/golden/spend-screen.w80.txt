@@ -219,7 +219,7 @@ nothing selected
   ␛[38;5;243mspent        ␛[m␛[38;5;252m$0.2870␛[m
   ␛[38;5;243mtook         ␛[m␛[38;5;252m2m 10s␛[m
 
-␛[94m[enter]␛[m␛[38;5;241m open the turn␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m open the turn␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
 
 · empty · a session that has spent nothing
 ␛[1;97m/stats␛[m                                                       ␛[38;5;241m[?] keys · [q] back␛[m
@@ -229,4 +229,4 @@ nothing selected
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;241mnothing selected␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m

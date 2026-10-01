@@ -89,7 +89,7 @@ REVIEW turn 7                        3 files │ internal/agent/loop.go  1 hunk 
                                             ␛[38;5;241m │ ␛[m
                                             ␛[38;5;241m │ ␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m[n/p]␛[m␛[38;5;241m hunk␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave, change nothing␛[m
+␛[38;5;103m[n/p]␛[m␛[38;5;241m hunk␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave, change nothing␛[m
 
 · a turn's review · the second file focused
 ␛[1;94mREVIEW␛[m␛[38;5;241m turn 7␛[m                        ␛[38;5;241m3 files␛[m␛[38;5;241m │ ␛[m␛[1;97minternal/ui/chat/model.go␛[m␛[38;5;241m  1 hunk · ␛[m␛[92m+2␛[m ␛[91m−1␛[m
@@ -109,7 +109,7 @@ REVIEW turn 7                        3 files │ internal/agent/loop.go  1 hunk 
                                             ␛[38;5;241m │ ␛[m
                                             ␛[38;5;241m │ ␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m[n/p]␛[m␛[38;5;241m hunk␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave, change nothing␛[m
+␛[38;5;103m[n/p]␛[m␛[38;5;241m hunk␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave, change nothing␛[m
 
 · layout · side-by-side forced
 ␛[1;94mREVIEW␛[m␛[38;5;241m turn 7␛[m                        ␛[38;5;241m3 files␛[m␛[38;5;241m │ ␛[m␛[1;97minternal/agent/loop.go␛[m␛[38;5;241m  1 hunk · ␛[m␛[92m+2␛[m ␛[91m−1␛[m
@@ -129,4 +129,4 @@ REVIEW turn 7                        3 files │ internal/agent/loop.go  1 hunk 
                                             ␛[38;5;241m │ ␛[m
                                             ␛[38;5;241m │ ␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m[n/p]␛[m␛[38;5;241m hunk␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave, change nothing␛[m
+␛[38;5;103m[n/p]␛[m␛[38;5;241m hunk␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave, change nothing␛[m

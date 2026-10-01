@@ -175,7 +175,7 @@
 ␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mexecute_command␛[m  ␛[38;5;252mexecute␛[m  ␛[38;5;241mone shell command␛[m        ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;241m[ ]␛[m ␛[38;5;252mweb_fetch      ␛[m  ␛[38;5;252mweb    ␛[m  ␛[38;5;241mone page, read as text␛[m   ␛[94m│␛[m
 ␛[94m│␛[m       ␛[38;5;241malways         ␛[m           ␛[38;5;241mnavigation · notebook ·…␛[m ␛[94m│␛[m
-␛[94m│␛[m ␛[94m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select (9)␛[m       ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m select (9)␛[m       ␛[94m│␛[m
 ␛[94m│␛[m ␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                             ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -217,7 +217,7 @@
 ␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252msearch      ␛[m  ␛[38;5;252mread␛[m  ␛[38;5;241mtext across the tree␛[m           ␛[94m│␛[m
 ␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mweb_fetch   ␛[m  ␛[38;5;252mweb ␛[m  ␛[38;5;241mone page, read as text␛[m         ␛[94m│␛[m
 ␛[94m│␛[m       ␛[38;5;241malways      ␛[m        ␛[38;5;241mnavigation · notebook · skill…␛[m ␛[94m│␛[m
-␛[94m│␛[m ␛[94m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select (7)␛[m       ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m select (7)␛[m       ␛[94m│␛[m
 ␛[94m│␛[m ␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                             ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -259,6 +259,6 @@
 ␛[94m│␛[m       ␛[38;5;241malways         ␛[m           ␛[38;5;241mnavigation · notebook ·…␛[m ␛[94m│␛[m
 ␛[94m│␛[m ␛[91m⚠ tools: "web_fetch" needs the "web" permission, which␛[m   ␛[94m│␛[m
 ␛[94m│␛[m ␛[91m  this profile does not grant␛[m                            ␛[94m│␛[m
-␛[94m│␛[m ␛[94m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select (10)␛[m      ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m select (10)␛[m      ␛[94m│␛[m
 ␛[94m│␛[m ␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                             ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m

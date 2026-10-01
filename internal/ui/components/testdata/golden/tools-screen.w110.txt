@@ -119,7 +119,7 @@ web                                                     │
   ␛[38;5;252m✓ fetch␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 tool␛[m                                 ␛[38;5;241m │ ␛[m
   ␛[38;5;252m⊘ search␛[m  ␛[38;5;241moff␛[m␛[38;5;241m · ␛[m␛[38;5;241mno web search␛[m                        ␛[38;5;241m │ ␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m
 
 · a project server · waiting on the checkout, [a] answers after asking
 ␛[1;97m/mcp␛[m␛[38;5;241m · 3 servers␛[m␛[38;5;241m · 2 of 4 up␛[m                                                               ␛[38;5;241m[?] keys · [q] back␛[m
@@ -142,7 +142,7 @@ web                                                     │
   ␛[38;5;252m✓ fetch␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 tool␛[m                                 ␛[38;5;241m │ ␛[m
   ␛[38;5;252m⊘ search␛[m  ␛[38;5;241moff␛[m␛[38;5;241m · ␛[m␛[38;5;241mno web search␛[m                        ␛[38;5;241m │ ␛[m
 
-␛[94m[a]␛[m␛[38;5;241m trust this checkout␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m  ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m
+␛[38;5;103m[a]␛[m␛[38;5;241m trust this checkout␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m  ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m
 
 · a server that did not start · what it costs, and /mcp's words for what would move it
 ␛[1;97m/mcp␛[m␛[38;5;241m · 3 servers␛[m␛[38;5;241m · 2 of 4 up␛[m                                                               ␛[38;5;241m[?] keys · [q] back␛[m
@@ -165,7 +165,7 @@ web                                                     │
   ␛[38;5;252m✓ fetch␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 tool␛[m                                 ␛[38;5;241m │ ␛[m    ␛[38;5;241mprints what it says␛[m
   ␛[38;5;252m⊘ search␛[m  ␛[38;5;241moff␛[m␛[38;5;241m · ␛[m␛[38;5;241mno web search␛[m                        ␛[38;5;241m │ ␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m
 
 · nothing outside shhh · the session's own tools and the web
 ␛[1;97m/mcp␛[m                                                                                       ␛[38;5;241m[?] keys · [q] back␛[m
@@ -183,4 +183,4 @@ web                                                     │
                                                        ␛[38;5;241m │ ␛[m    ␛[38;5;252msteps, question, remember, evidence, report,␛[m
                                                        ␛[38;5;241m │ ␛[m    ␛[38;5;252mquery␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m

@@ -428,7 +428,7 @@ $  a shell command
   ␛[38;5;243ma docs keeper who updates the documentation a change made stale, and nothing else␛[m
   ␛[38;5;243ma migrator who applies one mechanical refactor across the tree and verifies the build␛[m
 
-  ␛[94m[enter]␛[m␛[38;5;241m draft from what you typed␛[m␛[38;5;241m · ␛[m␛[94m[↑↓]␛[m␛[38;5;241m the field or a starting point␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m nothing is drafted␛[m
+  ␛[38;5;103m[enter]␛[m␛[38;5;241m draft from what you typed␛[m␛[38;5;241m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;241m the field or a starting point␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m nothing is drafted␛[m
 
 · the drafter's first question, asked on its own
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                                                                              ␛[38;5;241m[esc] leave␛[m
@@ -442,7 +442,7 @@ $  a shell command
   ␛[38;5;241m┄ your answer␛[m
     ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;62me␛[m␛[m␛[38;5;252m␛[38;5;241mnter alone says you have no preference␛[m␛[m␛[38;5;252m                                                                                     ␛[m
 
-  ␛[94m[enter]␛[m␛[38;5;241m answer it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m nothing is drafted␛[m
+  ␛[38;5;103m[enter]␛[m␛[38;5;241m answer it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m nothing is drafted␛[m
 
 · the second, with the first answer still above it
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                                                                        ␛[38;5;241m[esc] back a step␛[m
@@ -459,7 +459,7 @@ $  a shell command
   ␛[38;5;241m┄ your answer␛[m
     ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;62me␛[m␛[m␛[38;5;252m␛[38;5;241mnter alone says you have no preference␛[m␛[m␛[38;5;252m                                                                                     ␛[m
 
-  ␛[94m[enter]␛[m␛[38;5;241m answer it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the last answer␛[m
+  ␛[38;5;103m[enter]␛[m␛[38;5;241m answer it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the last answer␛[m
 
 · the draft in sections · Purpose selected, the one the drafter left empty marked
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                                                       ␛[38;5;241m[?] keys · [esc] discard the draft␛[m
@@ -493,14 +493,14 @@ $  a shell command
   ␛[38;5;252mModel␛[m
     ␛[38;5;252minherited from this session␛[m␛[38;5;241m · 8.0k tokens␛[m
 
-  ␛[94m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m refine it with a note␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m edit it yourself␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m clear it␛[m␛[38;5;241m · ␛[m␛[94m[R]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m the card␛[m
+  ␛[38;5;103m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m refine it with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit it yourself␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m clear it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m
   ␛[92m[esc]␛[m␛[38;5;241m discard the draft␛[m
 
 ␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m/repo/.shhh/agents␛[m                                                                                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                                                                         ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m[tab]␛[m␛[38;5;241m the card␛[m                                                                                                                 ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m                                                                                                                 ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · one selected further down · its keys on the row under the sections
@@ -535,14 +535,14 @@ $  a shell command
   ␛[38;5;252mModel␛[m
     ␛[38;5;252minherited from this session␛[m␛[38;5;241m · 8.0k tokens␛[m
 
-  ␛[94m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m refine it with a note␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m edit it yourself␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m clear it␛[m␛[38;5;241m · ␛[m␛[94m[R]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m the card␛[m
+  ␛[38;5;103m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m refine it with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit it yourself␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m clear it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m
   ␛[92m[esc]␛[m␛[38;5;241m discard the draft␛[m
 
 ␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m/repo/.shhh/agents␛[m                                                                                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                                                                         ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m[tab]␛[m␛[38;5;241m the card␛[m                                                                                                                 ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m                                                                                                                 ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a section refining · the note under it, the other seven sent as fixed context
@@ -578,13 +578,13 @@ $  a shell command
     ␛[38;5;241mnone stated␛[m␛[38;5;241m · the session's own command lists apply␛[m
   ␛[38;5;241m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[94m[enter]␛[m␛[38;5;241m refine it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave it as it is␛[m
+  ␛[38;5;103m[enter]␛[m␛[38;5;241m refine it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave it as it is␛[m
 
 ␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m/repo/.shhh/agents␛[m                                                                                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                                                                         ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m[tab]␛[m␛[38;5;241m the card␛[m                                                                                                                 ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m                                                                                                                 ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the wait, on that section · the other sections stand
@@ -655,14 +655,14 @@ $  a shell command
 
   ␛[38;5;241m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[94m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m refine it with a note␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m edit it yourself␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m clear it␛[m␛[38;5;241m · ␛[m␛[94m[R]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m the card␛[m
+  ␛[38;5;103m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m refine it with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit it yourself␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m clear it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m
   ␛[92m[esc]␛[m␛[38;5;241m take back its last revision␛[m
 
 ␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m/repo/.shhh/agents␛[m                                                                                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                                                                         ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m[tab]␛[m␛[38;5;241m the card␛[m                                                                                                                 ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m                                                                                                                 ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a section written in the editor · marked as the person's own
@@ -697,14 +697,14 @@ $  a shell command
 
   ␛[38;5;241m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[94m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m refine it with a note␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m edit it yourself␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m clear it␛[m␛[38;5;241m · ␛[m␛[94m[R]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m the card␛[m
+  ␛[38;5;103m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m refine it with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit it yourself␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m clear it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m
   ␛[92m[esc]␛[m␛[38;5;241m discard the draft␛[m
 
 ␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m/repo/.shhh/agents␛[m                                                                                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                                                                         ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m[tab]␛[m␛[38;5;241m the card␛[m                                                                                                                 ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m                                                                                                                 ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a save the loader refused · the draft stays, the refusal over it
@@ -746,7 +746,7 @@ $  a shell command
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. Save to this project  /repo/.shhh/agents                                                                                 ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                                                                         ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m the sections␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                                                         ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the sections␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                                                         ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · [?] on the draft · the drafter's keys and the glyph legend
@@ -780,18 +780,18 @@ $  a shell command
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. Save to this project  /repo/.shhh/agents                                                                                 ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                                                                         ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m the sections␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                                                         ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the sections␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                                                         ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m
-␛[94m[enter]␛[m␛[38;5;241m take it␛[m
-␛[94m[enter]␛[m␛[38;5;241m refine it with a note␛[m
-␛[94m[R]␛[m␛[38;5;241m refine the whole draft with one note␛[m
-␛[94m[e]␛[m␛[38;5;241m edit it yourself␛[m
-␛[94m[x]␛[m␛[38;5;241m clear it␛[m
-␛[94m[tab]␛[m␛[38;5;241m the sections or the card␛[m
-␛[94m[shift+↑]␛[m␛[38;5;241m scroll the profile up␛[m
-␛[94m[shift+↓]␛[m␛[38;5;241m scroll the profile␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m take it␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m refine it with a note␛[m
+␛[38;5;103m[R]␛[m␛[38;5;241m refine the whole draft with one note␛[m
+␛[38;5;103m[e]␛[m␛[38;5;241m edit it yourself␛[m
+␛[38;5;103m[x]␛[m␛[38;5;241m clear it␛[m
+␛[38;5;103m[tab]␛[m␛[38;5;241m the sections or the card␛[m
+␛[38;5;103m[shift+↑]␛[m␛[38;5;241m scroll the profile up␛[m
+␛[38;5;103m[shift+↓]␛[m␛[38;5;241m scroll the profile␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back a step␛[m
 
 ␛[38;5;241mglyphs␛[m
@@ -809,4 +809,4 @@ $  a shell command
 ␛[38;5;205m✦␛[m  ␛[38;5;241mthe classifier is deciding␛[m
 ␛[91m✗␛[m  ␛[38;5;241mfailed␛[m
 ␛[38;5;241m⊘␛[m  ␛[38;5;241mrefused: dim by you, red by a rule␛[m
-␛[94m[?]␛[m␛[38;5;241m hide the keys␛[m
+␛[38;5;103m[?]␛[m␛[38;5;241m hide the keys␛[m

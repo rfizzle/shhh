@@ -198,7 +198,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
    ␛[92m✓␛[m ␛[38;5;252mconfig␛[m  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 sett…␛[m  ␛[38;5;241mok␛[m
 ␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[91m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[91m✗␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62mmodel   anthropic · claude-opus-5 · no …  no key       ␛[m␛[m
     ␛[38;5;245mno session will start until a key is found — every one …␛[m
-    ␛[94m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+    ␛[38;5;103m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
    ␛[92m✓␛[m ␛[38;5;252mstore␛[m   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[m␛[38;5;241m · opene…␛[m  ␛[38;5;241mok␛[m
    ␛[91m✗␛[m ␛[38;5;252msandbox␛[m ␛[38;5;252mno containment mechanism␛[m␛[38;5;241m ·…␛[m  ␛[91muncontained␛[m   ␛[38;5;241m0.1s␛[m
     ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
@@ -213,8 +213,8 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
     ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m
-␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m
+␛[38;5;103m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · the fix open · under the row it belongs to, one indent past the consequence
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -228,7 +228,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
       ␛[38;5;243mconfig␛[m    ␛[38;5;252m~/.config/shhh/config.toml — no provider ap…␛[m
       ␛[38;5;243mprofiles␛[m  ␛[38;5;252mno .toml in ~/.config/shhh/providers␛[m
       ␛[38;5;243mlocal␛[m     ␛[38;5;252mlocalhost:11434 — nothing listening␛[m
-    ␛[94m[f]␛[m␛[38;5;241m hide it␛[m
+    ␛[38;5;103m[f]␛[m␛[38;5;241m hide it␛[m
    ␛[92m✓␛[m ␛[38;5;252mstore␛[m   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[m␛[38;5;241m · opene…␛[m  ␛[38;5;241mok␛[m
    ␛[91m✗␛[m ␛[38;5;252msandbox␛[m ␛[38;5;252mno containment mechanism␛[m␛[38;5;241m ·…␛[m  ␛[91muncontained␛[m   ␛[38;5;241m0.1s␛[m
     ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
@@ -243,8 +243,8 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
     ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m
-␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m
+␛[38;5;103m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · the pointer moved · the next check that needs something takes the live key
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -258,7 +258,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
    ␛[92m✓␛[m ␛[38;5;252mstore␛[m   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[m␛[38;5;241m · opene…␛[m  ␛[38;5;241mok␛[m
 ␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[91m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[91m✗␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62msandbox no containment mechanism ·…  uncontained   0.1s␛[m␛[m
     ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
-    ␛[94m[f]␛[m␛[38;5;241m show the fix for this host␛[m
+    ␛[38;5;103m[f]␛[m␛[38;5;241m show the fix for this host␛[m
    ␛[38;5;214m⚠␛[m ␛[38;5;252mengine␛[m  ␛[38;5;252mpodman␛[m␛[38;5;241m · no sandbox image con…␛[m  ␛[38;5;214mno image␛[m
     ␛[38;5;245mthe engine is there, so only the image stands between t…␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
@@ -269,8 +269,8 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
     ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m
-␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m
+␛[38;5;103m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · still going · what has answered, one running, the rest queued
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · ␛[m␛[38;5;205m▸ running␛[m           ␛[38;5;245m0.3s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -280,7 +280,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
    ␛[92m✓␛[m ␛[38;5;252mconfig␛[m  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 sett…␛[m  ␛[38;5;241mok␛[m
 ␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[91m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[91m✗␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62mmodel   anthropic · claude-opus-5 · no …  no key       ␛[m␛[m
     ␛[38;5;245mno session will start until a key is found — every one …␛[m
-    ␛[94m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+    ␛[38;5;103m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
    ␛[38;5;205m▸␛[m ␛[38;5;252mstore␛[m   ␛[38;5;252mthe local store␛[m␛[38;5;241m␛[m                 ␛[38;5;205mrunning…␛[m
    ␛[38;5;241m·␛[m ␛[38;5;252msandbox␛[m ␛[38;5;252mnot started␛[m␛[38;5;241m␛[m                       ␛[38;5;241mqueued␛[m      ␛[38;5;241m—␛[m
    ␛[38;5;241m·␛[m ␛[38;5;252mengine␛[m  ␛[38;5;252mnot started␛[m␛[38;5;241m␛[m                       ␛[38;5;241mqueued␛[m      ␛[38;5;241m—␛[m
@@ -290,7 +290,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
    ␛[38;5;241m·␛[m ␛[38;5;252mupdate␛[m  ␛[38;5;252mnot started␛[m␛[38;5;241m␛[m                       ␛[38;5;241mqueued␛[m      ␛[38;5;241m—␛[m
 
   ␛[91m✗␛[m ␛[91m1 failed␛[m␛[38;5;241m · ␛[m␛[38;5;252m2 passed␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m␛[38;5;241m · ␛[m␛[38;5;241m6 queued␛[m
-␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · a short terminal · the passes go first, and the marker names them
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -298,7 +298,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 
 ␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[91m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[91m✗␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62mmodel   anthropic · claude-opus-5 · no …  no key       ␛[m␛[m
     ␛[38;5;245mno session will start until a key is found — every one …␛[m
-    ␛[94m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+    ␛[38;5;103m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
    ␛[91m✗␛[m ␛[38;5;252msandbox␛[m ␛[38;5;252mno containment mechanism␛[m␛[38;5;241m ·…␛[m  ␛[91muncontained␛[m   ␛[38;5;241m0.1s␛[m
     ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show the fix for this host␛[m
@@ -308,8 +308,8 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
   ␛[38;5;241m↓ 7 more · binary · config · store · git · tools · memory…␛[m
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m
-␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m
+␛[38;5;103m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · the keys · [?] over a screen that has five of them
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -319,7 +319,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
    ␛[92m✓␛[m ␛[38;5;252mconfig␛[m  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 sett…␛[m  ␛[38;5;241mok␛[m
 ␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[91m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[91m✗␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62mmodel   anthropic · claude-opus-5 · no …  no key       ␛[m␛[m
     ␛[38;5;245mno session will start until a key is found — every one …␛[m
-    ␛[94m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+    ␛[38;5;103m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
    ␛[92m✓␛[m ␛[38;5;252mstore␛[m   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[m␛[38;5;241m · opene…␛[m  ␛[38;5;241mok␛[m
    ␛[91m✗␛[m ␛[38;5;252msandbox␛[m ␛[38;5;252mno containment mechanism␛[m␛[38;5;241m ·…␛[m  ␛[91muncontained␛[m   ␛[38;5;241m0.1s␛[m
     ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
@@ -333,12 +333,12 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
    ␛[38;5;214m⚠␛[m ␛[38;5;252mupdate␛[m  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this m…␛[m  ␛[38;5;214mout of date␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move between the checks that need something␛[m
-␛[94m[f]␛[m␛[38;5;241m show the fix for the check under the pointer␛[m
-␛[94m[c]␛[m␛[38;5;241m copy the whole report as text␛[m
-␛[94m[r]␛[m␛[38;5;241m run every check again␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move between the checks that need something␛[m
+␛[38;5;103m[f]␛[m␛[38;5;241m show the fix for the check under the pointer␛[m
+␛[38;5;103m[c]␛[m␛[38;5;241m copy the whole report as text␛[m
+␛[38;5;103m[r]␛[m␛[38;5;241m run every check again␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
-␛[94m[q]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[q]␛[m␛[38;5;241m back to the shell␛[m
 
 ␛[38;5;241mglyphs␛[m
 ␛[38;5;241m⚙␛[m  ␛[38;5;241ma read: a file, a search, a listing␛[m
@@ -355,7 +355,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 ␛[38;5;205m✦␛[m  ␛[38;5;241mthe classifier is deciding␛[m
 ␛[91m✗␛[m  ␛[38;5;241mfailed␛[m
 ␛[38;5;241m⊘␛[m  ␛[38;5;241mrefused: dim by you, red by a rule␛[m
-␛[94m[?]␛[m␛[38;5;241m hide the keys␛[m
+␛[38;5;103m[?]␛[m␛[38;5;241m hide the keys␛[m
 
 · a clean run · no pointer, no fix key, and nothing to act on
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 3 checks␛[m            ␛[38;5;245m0.9s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -366,5 +366,5 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
    ␛[92m✓␛[m ␛[38;5;252mgit␛[m     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · clean␛[m                    ␛[38;5;241mok␛[m   ␛[38;5;241m0.2s␛[m
 
   ␛[92m✓␛[m ␛[38;5;252m3 passed␛[m
-␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
+␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m run the checks again␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m

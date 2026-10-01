@@ -127,7 +127,7 @@ func TestStartScreen_NoteDetailMovesUnderItsValue(t *testing.T) {
 }
 
 // The one screen a new reader sees first writes its keys in the notation
-// every other surface uses: the key in Info because this screen answers it,
+// every other surface uses: the key in Key because this screen answers it,
 // the words beside it in Dim, and the answer that costs nothing in Add. It is
 // the shared painter that decides all three, so the screen cannot drift from
 // the rest of the product on its own.
@@ -139,8 +139,8 @@ func TestStartScreen_KeyRowsWearTheBracketGrammar(t *testing.T) {
 	}
 	view := s.View(110)
 	for _, want := range []struct{ what, run string }{
-		{"the list's own key", sty.Info.Render("[↑↓]") + sty.Dim.Render(" choose")},
-		{"a navigation key", sty.Info.Render(keys.Bracket(keys.Draft.PageUp)) + sty.Dim.Render(" scroll")},
+		{"the list's own key", sty.Key.Render("[↑↓]") + sty.Dim.Render(" choose")},
+		{"a navigation key", sty.Key.Render(keys.Bracket(keys.Draft.PageUp)) + sty.Dim.Render(" scroll")},
 		{"the safe answer", sty.Add.Render("[esc]") + sty.Dim.Render(" "+backToPrompt)},
 		{"the clause that is not a key", sty.Dim.Render("or just type what you want")},
 	} {

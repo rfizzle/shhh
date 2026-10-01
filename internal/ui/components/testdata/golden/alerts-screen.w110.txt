@@ -78,7 +78,7 @@ nothing this session ran has come back broken           │ no alert selected
                                                        ␛[38;5;241m │ ␛[m  ␛[38;5;243mbroke     ␛[m␛[38;5;252mturn 3␛[m
                                                        ␛[38;5;241m │ ␛[m  ␛[38;5;243manswered  ␛[m␛[91mnot yet␛[m
 
-␛[94m[enter]␛[m␛[38;5;241m show each run␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m        ␛[38;5;241mevery command this session broke, as the rail reads it␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m show each run␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m        ␛[38;5;241mevery command this session broke, as the rail reads it␛[m
 
 · superseded · the linter the quality gate answered, and the turn it did
 ␛[1;97m/alerts␛[m␛[38;5;241m · 2 standing␛[m␛[38;5;241m · 2 superseded␛[m                                                        ␛[38;5;241m[?] keys · [q] back␛[m
@@ -91,7 +91,7 @@ nothing this session ran has come back broken           │ no alert selected
                                                        ␛[38;5;241m │ ␛[m  ␛[38;5;243mbroke     ␛[m␛[38;5;252mturn 2␛[m
                                                        ␛[38;5;241m │ ␛[m  ␛[38;5;243manswered  ␛[m␛[38;5;252mquality gate default passed · turn 4␛[m
 
-␛[94m[enter]␛[m␛[38;5;241m show each run␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m        ␛[38;5;241mevery command this session broke, as the rail reads it␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m show each run␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m        ␛[38;5;241mevery command this session broke, as the rail reads it␛[m
 
 · one episode opened · each run, its ending, its time and the evidence id its output was kept under
 ␛[1;97m/alerts␛[m␛[38;5;241m · 2 standing␛[m␛[38;5;241m · 2 superseded␛[m                                                        ␛[38;5;241m[?] keys · [q] back␛[m
@@ -113,7 +113,7 @@ nothing this session ran has come back broken           │ no alert selected
                                                        ␛[38;5;241m │ ␛[m    ␛[38;5;245mmake test␛[m
                                                        ␛[38;5;241m │ ␛[m    ␛[38;5;241moutput kept as ev-7b21c0de9f8a3e44␛[m
 
-␛[94m[enter]␛[m␛[38;5;241m open its output␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m      ␛[38;5;241mevery command this session broke, as the rail reads it␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m open its output␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m      ␛[38;5;241mevery command this session broke, as the rail reads it␛[m
 
 · empty · a session that has broken nothing
 ␛[1;97m/alerts␛[m                                                                                    ␛[38;5;241m[?] keys · [q] back␛[m
@@ -121,4 +121,4 @@ nothing this session ran has come back broken           │ no alert selected
 
 ␛[38;5;241mnothing this session ran has come back broken␛[m          ␛[38;5;241m │ ␛[m␛[38;5;241mno alert selected␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m

@@ -130,7 +130,7 @@ turn 2                                                           no figures kept
 
   ␛[38;5;243mfiles ␛[m␛[38;5;252minternal/agent/loop.go␛[m ␛[92m+4␛[m ␛[91m−1␛[m
 
-␛[94m[enter]␛[m␛[38;5;241m review turn 6␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m review turn 6␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
 
 · a turn that wrote nothing · the review offered grey
 ␛[1;97m/turns␛[m␛[38;5;241m · 6 turns␛[m␛[38;5;241m · 26 tools␛[m                  ␛[38;5;241m$0.1580 spent␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -169,7 +169,7 @@ turn 2                                                           no figures kept
 
 ␛[38;5;241m… (+2 more rows)␛[m
 
-␛[94m[enter]␛[m␛[38;5;241m review turn 4␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m review turn 4␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
 
 · a failing check · the close's verdict, none of the row's keys
 ␛[1;97m/turns␛[m␛[38;5;241m · 6 turns␛[m␛[38;5;241m · 26 tools␛[m                  ␛[38;5;241m$0.1580 spent␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -190,7 +190,7 @@ turn 2                                                           no figures kept
 
   ␛[38;5;243mfiles ␛[m␛[38;5;252minternal/agent/policy.go␛[m ␛[92m+3␛[m ␛[91m−3␛[m
 
-␛[94m[enter]␛[m␛[38;5;241m review turn 3␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m review turn 3␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
 
 · a restored turn · its files, and no figures kept
 ␛[1;97m/turns␛[m␛[38;5;241m · 6 turns␛[m␛[38;5;241m · 26 tools␛[m                  ␛[38;5;241m$0.1580 spent␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -211,4 +211,4 @@ turn 2                                                           no figures kept
   ␛[38;5;243mfiles ␛[m␛[38;5;252mREADME.md␛[m ␛[92m+9␛[m ␛[91m−0␛[m
         ␛[38;5;252mdocs/loop.md␛[m ␛[92m+2␛[m ␛[91m−1␛[m
 
-␛[94m[enter]␛[m␛[38;5;241m review turn 2␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m review turn 2␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m

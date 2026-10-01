@@ -112,7 +112,7 @@
   ␛[38;5;241mCheck-in — 36 rounds used. Taking stock, then carrying on.␛[m
   ␛[38;5;241mSteered — the reading says the edits have moved outside the round loop.␛[m
   ␛[38;5;241mSay what you meant if that is wrong.␛[m
-    ␛[38;5;245m[u]␛[m␛[38;5;241m take the steer back␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
+    ␛[38;5;245m[u]␛[m␛[38;5;241m take the steer back␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
   ␛[38;5;241mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m
   ␛[91m✗ the notebook is read-only, so nothing was written down␛[m
    ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 36␛[m                          ␛[38;5;241m▸ on target␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m
@@ -141,7 +141,7 @@
     ␛[38;5;241mCheck-in — 36 rounds used. Taking stock, then carrying on.␛[m                  
     ␛[38;5;241mSteered — the reading says the edits have moved outside the round loop.␛[m     
     ␛[38;5;241mSay what you meant if that is wrong.␛[m                                        
-      ␛[38;5;245m[u]␛[38;5;241m take the steer back · ␛[94m[ctrl+o]␛[38;5;252m to use them␛[m                            
+      ␛[38;5;245m[u]␛[38;5;241m take the steer back · ␛[38;5;103m[ctrl+o]␛[38;5;252m to use them␛[m                            
     ␛[38;5;241mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m          
     ␛[91m✗ the notebook is read-only, so nothing was written down␛[m                    
      ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 36␛[m                          ␛[38;5;241m▸ on target · ␛[38;5;245m1 line␛[m           
