@@ -745,7 +745,7 @@ func goldenKeys() report.Report {
 	for gi, g := range kb {
 		for ai, a := range g.Acts {
 			if a.Name == "reading.copy" {
-				kb[gi].Acts[ai].Keys = []string{"c"}
+				kb[gi].Acts[ai].Keys = []string{"x"}
 			}
 		}
 	}

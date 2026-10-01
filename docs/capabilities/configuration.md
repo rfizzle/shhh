@@ -744,7 +744,7 @@ supporting screen moves its pointer with is four lines:
 
 ```toml
 [reading]
-copy = "c"
+copy = "x"
 [screen]
 move = ["shift+up", "shift+down"]
 ```
@@ -817,6 +817,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `reading.expand` | `enter` | expand | yes |
 | `reading.collapse` | `-` | collapse | yes |
 | `reading.copy` | `y` | copy the row | yes |
+| `reading.copy_block` | `c` | copy a block | yes |
 | `reading.search` | `/` | search | yes |
 | `reading.match` | `N`, `n` | match | yes |
 | `reading.half` | `u`, `d` | half page | yes |

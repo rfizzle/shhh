@@ -420,6 +420,14 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// row with nothing to copy hands the letter back to the draft, the
 		// way [-] does with nothing open.
 		return m.copyFocusedRow(msg)
+	case keys.Is(pressed, keys.Reading.CopyBlock):
+		// [c] shares its letter with a dropped stream's "continue from
+		// here", which answers on its own row first; on a reply it copies
+		// one of the reply's blocks (copyblock.go).
+		if next, cmd, claimed := m.rowLetter(pressed); claimed {
+			return next, cmd
+		}
+		return m.copyFocusedBlock(msg)
 	case keys.Is(pressed, keys.Reading.Half):
 		// Half the viewport at a time, so the reader keeps context while
 		// moving quickly; the cursor follows the pane rather than pinning

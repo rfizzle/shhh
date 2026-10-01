@@ -584,6 +584,18 @@ what was caught and how far it ran, until the next key says the reader has
 moved on. Copy is why a message is an addressable row here at all: it expands
 nothing, and it holds the one thing most worth carrying away.
 
+Beside it, on a reply that holds a fenced code block, a second key copies one
+block rather than the whole message, because what a reader pastes is almost
+always one block and seldom every block of the answer. One block is copied at
+once; several open the numbered card `/run` opens over several blocks, scoped
+to that reply's blocks rather than the last reply's, and the row taken is
+copied alone. What is copied is the block as the message wrote it — no
+indent, no fold, tabs kept, no fence lines and no language tag — and the rail
+captions which block was caught, its language and its lines. The key is
+offered only while the cursor is on such a reply and is silent everywhere
+else, as the row copy is on a row with nothing to copy. `/copy code` reaches
+the same blocks from the draft, by number or from the same card.
+
 Half-page keys move the cursor through a long transcript at a pace that keeps
 context — half the pane per press, with the cursor following the pane rather
 than staying lit on a row nobody can see.

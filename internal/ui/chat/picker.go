@@ -16,10 +16,12 @@ package chat
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -103,6 +105,7 @@ func (m Model) openPickerWith(title string, opts []components.SelectOption, focu
 	m.pickerAll = opts
 	m.pickerIndex = identityIndex(len(opts))
 	m.pickerApply = apply
+	m.pickerFromReading = m.state == stateFocus
 	m.enterSurface(statePick)
 	m.syncViewport()
 	return m, nil
@@ -225,6 +228,9 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	m.closePicker()
 	if sel.Canceled {
 		m.syncViewport()
+		if m.state == stateFocus {
+			m.refreshFocusView()
+		}
 		return m, nil
 	}
 	// The card answers with a row of what it was showing; the apply was
@@ -241,6 +247,12 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.appendEntry(entry{kind: entrySystem, text: note})
 	}
 	m.syncViewport()
+	if m.state == stateFocus {
+		// A card opened over reading mode leaves the cursor where it was,
+		// and the pane where the reader had scrolled it.
+		m.refreshFocusView()
+		return m, cmd
+	}
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, cmd
@@ -564,41 +576,77 @@ func (m Model) openRunPick() (tea.Model, tea.Cmd, bool) {
 	if len(blocks) < 2 {
 		return m, nil, false
 	}
+	model, cmd := m.openBlockPick("Run a code block", "take none", blocks, func(m *Model, idx int) (string, tea.Cmd) {
+		m.pendingRun = blocks[idx].body
+		m.pendingBlast = m.resolveRadius(nil)
+		m.setTurnState(stateConfirmRun)
+		return "", nil
+	})
+	return model, cmd, true
+}
+
+// openBlockPick is the numbered card over a reply's code blocks, which /run
+// and /copy code both open: one dressing for one question — which of these
+// blocks — whatever is then done with the answer
+// (docs/interface/surfaces.md#selectors). The rows are a handful and fixed,
+// so the card carries no filter, and each row's number is its own key, so
+// the key row spends nothing repeating them; the lit row's whole block rides
+// under it, flattened, because a first line alone rarely tells two shell
+// blocks apart. cancel is what esc leaves, in the caller's words.
+func (m Model) openBlockPick(title, cancel string, blocks []codeBlock, apply func(*Model, int) (string, tea.Cmd)) (tea.Model, tea.Cmd) {
+	opts := blockPickOptions(blocks, m.contentWidth())
+	next, cmd := m.openPickerWith(title, opts, 0, pickerAlt{}, false, func(m *Model, idx int, _ bool) (string, tea.Cmd) {
+		return apply(m, idx)
+	})
+	pm := next.(Model)
+	pm.picker.Filterable = false
+	pm.picker.FocusDesc = true
+	pm.picker.Tone = components.CardDecision
+	pm.picker.Chips = []string{plural(len(blocks), "block")}
+	pm.picker.CancelLabel = cancel
+	pm.picker.HintKeys = []components.KeyOffer{
+		components.Offer(keys.Select.Move), components.Offer(keys.Select.Take),
+	}
+	pm.syncViewport()
+	return pm, cmd
+}
+
+// blockPickOptions are the card's rows: a block's first line, then its
+// language, then how many lines it holds, with the block flattened under the
+// lit one. The first line is what gives way on a narrow card, cut short of
+// where the row would overrun, so the language and the count are never the
+// part that is lost: they are what tells two blocks apart once the first
+// lines start to look alike.
+func blockPickOptions(blocks []codeBlock, width int) []components.SelectOption {
+	// The numbering column and the space after it, as the card lays them.
+	numbered := len(strconv.Itoa(len(blocks))) + 2
 	opts := make([]components.SelectOption, len(blocks))
 	for i, b := range blocks {
+		head := blockHead(b.body)
+		if head == "" {
+			head = "(empty block)"
+		}
+		facts := blockWord(b.lang) + " · " + plural(blockLines(b.body), "line")
+		room := components.Card{}.Inner(width) - components.GridPointerWidth - numbered - lipgloss.Width(" · "+facts)
+		if room > 0 && lipgloss.Width(head) > room {
+			head = components.Clip(head, room)
+		}
 		// A one-line block's preview is just its label again, so it gets no
 		// description row.
 		desc := runPickPreview(b.body)
 		if desc == blockHead(b.body) {
 			desc = ""
 		}
-		opts[i] = components.SelectOption{Label: runPickLabel(b), Desc: desc}
+		opts[i] = components.SelectOption{
+			Label: head,
+			Detail: []components.DetailSpan{
+				{Text: blockWord(b.lang), Tone: components.ToneNeutral},
+				{Text: " · " + plural(blockLines(b.body), "line"), Tone: components.ToneQuiet},
+			},
+			Desc: desc,
+		}
 	}
-	model, cmd := m.openPicker("Run a code block", opts, 0, func(m *Model, idx int) string {
-		m.pendingRun = blocks[idx].body
-		m.pendingBlast = m.resolveRadius(nil)
-		m.setTurnState(stateConfirmRun)
-		return ""
-	})
-	return model, cmd, true
-}
-
-// runPickLabel is a block's picker row: its first line, then the fence's
-// language tag when it carried one, then how many lines it holds.
-func runPickLabel(b codeBlock) string {
-	head := blockHead(b.body)
-	if head == "" {
-		head = "(empty block)"
-	}
-	n := blockLines(b.body)
-	meta := fmt.Sprintf("%d lines", n)
-	if n == 1 {
-		meta = "1 line"
-	}
-	if b.lang != "" {
-		meta = b.lang + " · " + meta
-	}
-	return head + "  ·  " + meta
+	return opts
 }
 
 // runPickPreview flattens a block onto the description row: blank lines

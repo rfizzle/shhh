@@ -1,0 +1,7 @@
+# One reply per request. The first is the earlier reply, holding one block;
+# the second holds three — two languages and a bare fence — which is what the
+# card is drawn over. Spaces rather than tabs inside the blocks: a tab is
+# re-expanded by the terminal against the pane's own columns, and the capture
+# would read as a column that drifted.
+Build it first:\n```sh\nmake build\n```
+Here is the handler:\n```go\nfunc copyBlock(src string, i int) {\n    if i < 1 {\n        return\n    }\n}\n```\nThe scene builds once and captures at both widths:\n```sh\nmake build\nmake tui-shot SCENE=copy-block COLS=110 ROWS=40\nmake tui-shot SCENE=copy-block COLS=60 ROWS=40\n```\nIts steps open the list and take the second row:\n```\nkeys "/copy code" Enter\nsnap 01-list "copy which block?"\n```

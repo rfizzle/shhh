@@ -141,7 +141,10 @@ func buildSlashCommands() []slashCommand {
 				{after: []string{"show"}, dynamic: attachmentShowArgs},
 			}},
 		{name: "/copy", args: "[code]", desc: "copy the last response (or just its code blocks)",
-			argSpecs: staticArgs(argOption{"code", "only the code blocks"})},
+			argSpecs: []argSpec{
+				{options: []argOption{{"code", "only the code blocks"}}},
+				{after: []string{"code"}, options: []argOption{{"all", "every block, joined"}}},
+			}},
 		{name: "/run", args: "[n]", desc: "run a code block from the last response",
 			enabled:  func(m *Model) bool { return m.runFn != nil },
 			idleOnly: "it runs a command in this session"},

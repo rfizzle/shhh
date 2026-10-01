@@ -1284,8 +1284,8 @@ type Model struct {
 	// it ends (grant.go). It lives here and is cleared where the other two
 	// are, and only one of the three is ever open.
 	grantChoice *grantChoice
-	// readingCopied is the reading rail's note about the last [y]: what was
-	// copied and how far it ran. It stands until the next key in the mode,
+	// readingCopied is the reading rail's note about the last [y] or [c]:
+	// what was copied and how far it ran. It stands until the next key in the mode,
 	// which is the moment the reader has moved on from the copy it captions.
 	readingCopied string
 	// The staged attachment preview: preview is the card while it has the
@@ -1364,11 +1364,16 @@ type Model struct {
 	// pickerAll is the list the picker opened over and pickerIndex maps the
 	// rows it is showing back onto it, so a choice made through the filter row
 	// still reaches an apply written against the whole list.
-	picker       *components.Select
-	pickerApply  func(*Model, int, bool) (string, tea.Cmd)
-	pickerAll    []components.SelectOption
-	pickerIndex  []int
-	modelOptions []string
+	picker      *components.Select
+	pickerApply func(*Model, int, bool) (string, tea.Cmd)
+	pickerAll   []components.SelectOption
+	pickerIndex []int
+	// pickerFromReading is a picker opened over reading mode — the block
+	// card [c] opens on a reply — which goes back to the mode when it
+	// closes, taken or not: the reader asked from a row they were standing
+	// on, and the cursor is still on it.
+	pickerFromReading bool
+	modelOptions      []string
 	// chats is the saved-chat picker's housekeeping — chats.go.
 	chats chatOps
 	// The command palette: the open palette's query and candidates,

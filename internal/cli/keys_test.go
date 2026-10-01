@@ -89,7 +89,7 @@ func TestKeysCheck(t *testing.T) {
 	pointConfigAt(t, "")
 	dir := t.TempDir()
 	good := filepath.Join(dir, "good.toml")
-	must(t, os.WriteFile(good, []byte("[reading]\ncopy = \"c\"\n"), 0o600))
+	must(t, os.WriteFile(good, []byte("[reading]\ncopy = \"x\"\n"), 0o600))
 	bad := filepath.Join(dir, "bad.toml")
 	must(t, os.WriteFile(bad, []byte("[draft]\npalette = \"p\"\n"), 0o600))
 

@@ -409,33 +409,40 @@ var Search = SearchKeys{
 // ReadingKeys are reading mode's own. It is a takeover, so its letters
 // are live because nothing else is listening.
 type ReadingKeys struct {
-	Move     Binding
-	Expand   Binding
-	Collapse Binding
-	Copy     Binding
-	Search   Binding
-	Match    Binding
-	Half     Binding
-	PageUp   Binding
-	PageDown Binding
-	List     Binding
-	Back     Binding
+	Move      Binding
+	Expand    Binding
+	Collapse  Binding
+	Copy      Binding
+	CopyBlock Binding
+	Search    Binding
+	Match     Binding
+	Half      Binding
+	PageUp    Binding
+	PageDown  Binding
+	List      Binding
+	Back      Binding
 }
 
 // All is reading mode's keys in the order it offers them, which is the order
 // `?` lists them in.
 func (k ReadingKeys) All() []Binding {
-	return []Binding{k.Move, k.Expand, k.Collapse, k.Copy, k.Search, k.Match,
-		k.Half, k.PageUp, k.PageDown, k.List, k.Back}
+	return []Binding{k.Move, k.Expand, k.Collapse, k.Copy, k.CopyBlock, k.Search,
+		k.Match, k.Half, k.PageUp, k.PageDown, k.List, k.Back}
 }
 
 var Reading = ReadingKeys{
 	Move:     bind("j/k", "move", "k", "j", "up", "down"),
 	Expand:   bind("enter", "expand", "enter"),
 	Collapse: bind("-", "collapse", "-"),
-	// Copy is [y] rather than [c], because c is "continue from here" on a
-	// dropped stream's row (RowKeys) and a key is declared once.
+	// Copy is [y] rather than [c]: the row is the whole message, and c is
+	// the narrower copy beside it.
 	Copy: bind("y", "copy the row", "y"),
+	// CopyBlock is [c], one fenced block of the reply under the cursor. It
+	// shares the letter with a dropped stream's "continue from here"
+	// (RowKeys) the way Half shares u with a steer's withdraw: the two are
+	// offered on different rows — a drop row is never a reply with a block —
+	// and the dispatch asks the row first.
+	CopyBlock: bind("c", "copy a block", "c"),
 	// Search is the slash every pager in the terminal opens a query with, and
 	// it is free here for the reason the bare letters are: nothing else on
 	// this surface is listening. On the input it is the palette's other door,

@@ -55,6 +55,7 @@ keys · reading mode                             [?] back
 [enter] expand
 [-] collapse
 [y] copy the row
+[c] copy a block
 [/] search
 [n/N] match
 [u/d] half page
@@ -126,6 +127,7 @@ keys · [esc] back to reading mode
 ␛[38;5;254m[enter]␛[m␛[38;5;244m expand␛[m
 ␛[38;5;254m[-]␛[m␛[38;5;244m collapse␛[m
 ␛[38;5;254m[y]␛[m␛[38;5;244m copy the row␛[m
+␛[38;5;254m[c]␛[m␛[38;5;244m copy a block␛[m
 ␛[38;5;254m[/]␛[m␛[38;5;244m search␛[m
 ␛[38;5;254m[n/N]␛[m␛[38;5;244m match␛[m
 ␛[38;5;254m[u/d]␛[m␛[38;5;244m half page␛[m

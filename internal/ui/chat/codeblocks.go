@@ -75,3 +75,14 @@ func blockLines(body string) int {
 	}
 	return strings.Count(body, "\n") + 1
 }
+
+// blockWord is what a block is called by its language: the fence's tag, or
+// `code` where the fence named none, so a bare fence still has a word in the
+// card's row and in the copy's confirmation rather than a gap between two
+// separators.
+func blockWord(lang string) string {
+	if lang == "" {
+		return "code"
+	}
+	return lang
+}

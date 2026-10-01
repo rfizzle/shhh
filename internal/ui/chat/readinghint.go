@@ -115,6 +115,12 @@ func (m Model) readingModeKeys() []hintSeg {
 	if m.focusedCopyable() {
 		segs = append(segs, seg(keys.Reading.Copy))
 	}
+	// [c] beside it, on a reply holding a fenced block: [y] takes the whole
+	// message and [c] one block of it. Off such a row it is not offered at
+	// all, the way [y] is not on a row with nothing to copy.
+	if _, blocks := m.focusedBlocks(); len(blocks) > 0 {
+		segs = append(segs, seg(keys.Reading.CopyBlock))
+	}
 	// [/] stands whether or not a search is open: it opens the query row, or
 	// reopens it on the query already in it. The step pair joins it only once
 	// there is something to step through, the way [-] joins once a row is
@@ -255,6 +261,12 @@ func dropAbsentKey(segs []hintSeg) []hintSeg {
 // find in `?`, shed before the mode's own movement and exits.
 func dropCopyKey(segs []hintSeg) []hintSeg {
 	return withoutSeg(segs, keys.Shown(keys.Reading.Copy))
+}
+
+// dropCopyBlockKey goes just before [y]: it is the narrower of the two
+// copies, and the row copy still carries the block inside the message.
+func dropCopyBlockKey(segs []hintSeg) []hintSeg {
+	return withoutSeg(segs, keys.Shown(keys.Reading.CopyBlock))
 }
 
 // dropSearchKey goes before the copy, because the two are different kinds of
@@ -710,15 +722,16 @@ func stackSegs(segs []hintSeg, rail string, width, budget int) []string {
 func (m Model) readingKeyLine(width int) string {
 	full := m.readingModeKeys()
 	// The settled order: [?] goes first, then a key stated absent with its
-	// reason, then [q] gives up its words, then [/], then [y], then [n/N],
-	// then a live [enter] goes whole.
+	// reason, then [q] gives up its words, then [/], then [c], then [y],
+	// then [n/N], then a live [enter] goes whole.
 	noList := dropKeyListKey(full)
 	noAbsent := dropAbsentKey(noList)
 	short := shortenBackKey(noAbsent)
 	noSearch := dropSearchKey(short)
-	noCopy := dropCopyKey(noSearch)
+	noBlock := dropCopyBlockKey(noSearch)
+	noCopy := dropCopyKey(noBlock)
 	noMatch := dropMatchKey(noCopy)
-	forms := [][]hintSeg{full, noList, noAbsent, short, noSearch, noCopy, noMatch,
+	forms := [][]hintSeg{full, noList, noAbsent, short, noSearch, noBlock, noCopy, noMatch,
 		dropExpandKey(noMatch)}
 	positions := m.readingPositionFields()
 	for _, form := range forms {

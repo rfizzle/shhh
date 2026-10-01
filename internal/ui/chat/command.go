@@ -657,7 +657,7 @@ func slashBranches(m *Model, parts []string) string {
 }
 
 // copyCommand is /copy: the last response onto the clipboard, or with
-// `code`, only the code blocks in it.
+// `code`, one of the code blocks in it or all of them (copyCode).
 //
 // The terminal is offered the text before any tool on this machine
 // (copyText), which is what carries the copy back over ssh to the reader
@@ -669,21 +669,10 @@ func (m Model) copyCommand(parts []string) (tea.Model, tea.Cmd) {
 	if text == "" {
 		return m.systemNotice("nothing to copy yet")
 	}
-	what := "response"
 	if len(parts) > 1 && parts[1] == "code" {
-		blocks := extractCodeBlocks(text)
-		if len(blocks) == 0 {
-			return m.systemNotice("no code blocks in the last response")
-		}
-		text = strings.Join(blocks, "\n")
-		what = "code"
+		return m.copyCode(text, parts[2:])
 	}
-	res, write := m.copyText(text)
-	if note := copyFailure(res); note != "" {
-		return m.systemNotice(note)
-	}
-	next, cmd := m.systemNotice("copied last " + what + " to clipboard")
-	return next, tea.Batch(cmd, write)
+	return m.copyWhole(text, "response")
 }
 
 func slashSave(m *Model, parts []string) string {

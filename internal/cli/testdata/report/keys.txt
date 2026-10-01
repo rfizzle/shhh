@@ -45,17 +45,18 @@
 
   READING
 
-  · move       k j up down · move  [shipped]
-  · expand     enter · expand  [shipped]
-  · collapse   - · collapse  [shipped]
-  ✓ copy       c · copy the row · shipped as y  [moved]
-  · search     / · search  [shipped]
-  · match      N n · match  [shipped]
-  · half       u d · half page  [shipped]
-  · page_up    pgup · page up  [shipped]
-  · page_down  pgdown · page down  [shipped]
-  · list       ? · keys  [shipped]
-  · back       q esc ctrl+c · back to the prompt  [shipped]
+  · move        k j up down · move  [shipped]
+  · expand      enter · expand  [shipped]
+  · collapse    - · collapse  [shipped]
+  ✓ copy        x · copy the row · shipped as y  [moved]
+  · copy_block  c · copy a block  [shipped]
+  · search      / · search  [shipped]
+  · match       N n · match  [shipped]
+  · half        u d · half page  [shipped]
+  · page_up     pgup · page up  [shipped]
+  · page_down   pgdown · page down  [shipped]
+  · list        ? · keys  [shipped]
+  · back        q esc ctrl+c · back to the prompt  [shipped]
 
   FIND
 
@@ -347,4 +348,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  254 keys · 1 moved
+  255 keys · 1 moved

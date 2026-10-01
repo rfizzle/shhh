@@ -59,7 +59,7 @@ func TestLoad_AValidMoveReachesTheRegister(t *testing.T) {
 	was := Words(Reading.Copy)
 	path := keymapFile(t, `
 [reading]
-copy = "c"
+copy = "x"
 
 [draft]
 history_search = ["ctrl+r", "alt+r"]
@@ -67,11 +67,11 @@ history_search = ["ctrl+r", "alt+r"]
 	if err := Load(path); err != nil {
 		t.Fatalf("a valid keymap was refused: %v", err)
 	}
-	if !Is("c", Reading.Copy) || Is("y", Reading.Copy) {
-		t.Errorf("the copy key answers %v, want c alone", Reading.Copy.Keys())
+	if !Is("x", Reading.Copy) || Is("y", Reading.Copy) {
+		t.Errorf("the copy key answers %v, want x alone", Reading.Copy.Keys())
 	}
-	if got := Shown(Reading.Copy); got != "c" {
-		t.Errorf("the hint prints %q, want c", got)
+	if got := Shown(Reading.Copy); got != "x" {
+		t.Errorf("the hint prints %q, want x", got)
 	}
 	if got := Words(Reading.Copy); got != was {
 		t.Errorf("the words moved with the key: %q, want %q", got, was)
@@ -91,7 +91,7 @@ history_search = ["ctrl+r", "alt+r"]
 			continue
 		}
 		for _, b := range s.Bindings {
-			if Words(b) == was && Shown(b) != "c" {
+			if Words(b) == was && Shown(b) != "x" {
 				t.Errorf("reading mode still offers %q", Shown(b))
 			}
 		}
@@ -221,7 +221,7 @@ func TestLoad_RefusesANotedAnswerOnItsPlainAnswersKey(t *testing.T) {
 // a document that describes neither their file nor the register.
 func TestLoad_RefusesTheWholeFileNotTheBadLine(t *testing.T) {
 	restoreRegister(t)
-	path := keymapFile(t, "[reading]\ncopy = \"c\"\n\n[agent]\nkill = \"j\"\n")
+	path := keymapFile(t, "[reading]\ncopy = \"x\"\n\n[agent]\nkill = \"j\"\n")
 	if err := Load(path); err == nil {
 		t.Fatal("the file should be refused")
 	}
@@ -258,11 +258,11 @@ func TestLoad_NoFileIsNotAnError(t *testing.T) {
 	if err := Load(missing); err != nil {
 		t.Errorf("a machine with no keymap is not an error: %v", err)
 	}
-	present := keymapFile(t, "[reading]\ncopy = \"c\"\n")
+	present := keymapFile(t, "[reading]\ncopy = \"x\"\n")
 	if err := Load(missing, present); err != nil {
 		t.Fatalf("the second path should have been read: %v", err)
 	}
-	if !Is("c", Reading.Copy) {
+	if !Is("x", Reading.Copy) {
 		t.Errorf("the file that exists was not applied: %v", Reading.Copy.Keys())
 	}
 }
@@ -472,7 +472,7 @@ func TestEveryDeclaredGroupIsListed(t *testing.T) {
 // as the process held it, whatever the file said.
 func TestCheck_LeavesTheRegisterAsItWas(t *testing.T) {
 	restoreRegister(t)
-	if err := Load(keymapFile(t, "[reading]\ncopy = \"c\"\n")); err != nil {
+	if err := Load(keymapFile(t, "[reading]\ncopy = \"x\"\n")); err != nil {
 		t.Fatal(err)
 	}
 	held := Keyboard()
@@ -496,7 +496,7 @@ func TestCheck_LeavesTheRegisterAsItWas(t *testing.T) {
 // keeps what it read and what it said for the surfaces that ask later.
 func TestKeyboard_MarksAMovedKey(t *testing.T) {
 	restoreRegister(t)
-	path := keymapFile(t, "[reading]\ncopy = \"c\"\n")
+	path := keymapFile(t, "[reading]\ncopy = \"x\"\n")
 	if err := Load(path); err != nil {
 		t.Fatal(err)
 	}
@@ -510,7 +510,7 @@ func TestKeyboard_MarksAMovedKey(t *testing.T) {
 				continue
 			}
 			moved++
-			if a.Name != "reading.copy" || !slices.Equal(a.Keys, []string{"c"}) || !slices.Equal(a.Shipped, []string{"y"}) {
+			if a.Name != "reading.copy" || !slices.Equal(a.Keys, []string{"x"}) || !slices.Equal(a.Shipped, []string{"y"}) {
 				t.Errorf("the mark is on %s: %v shipped as %v", a.Name, a.Keys, a.Shipped)
 			}
 		}
@@ -526,11 +526,11 @@ func TestKeyboard_MarksAMovedKey(t *testing.T) {
 // refusal, which is what keeps a typo from being quietly ignored.
 func TestLoad_ReadsAFileNamingARetiredKey(t *testing.T) {
 	restoreRegister(t)
-	path := keymapFile(t, "[row]\nUndo = \"u\"\n\n[rowchord]\ncommit = \"alt+g\"\nretry = \"alt+r\"\n\n[draft]\nopen_paste = \"alt+v\"\n\n[reading]\ncopy = \"c\"\n")
+	path := keymapFile(t, "[row]\nUndo = \"u\"\n\n[rowchord]\ncommit = \"alt+g\"\nretry = \"alt+r\"\n\n[draft]\nopen_paste = \"alt+v\"\n\n[reading]\ncopy = \"x\"\n")
 	if err := Load(path); err != nil {
 		t.Fatalf("a file naming a retired key was refused: %v", err)
 	}
-	if !Is("c", Reading.Copy) {
+	if !Is("x", Reading.Copy) {
 		t.Errorf("the file's live line did not apply: copy answers %v", Reading.Copy.Keys())
 	}
 	if got, want := Dead(), []string{"draft.open_paste", "row.Undo", "rowchord.commit", "rowchord.retry"}; !slices.Equal(got, want) {

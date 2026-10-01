@@ -272,7 +272,11 @@ it on the drafter — `e` is the letter `backlog.edit` and `profile.edit` spend
 on the editor. The drafter's draft step spends the same `m` for
 `profile.migrate` over a profile opened in that shape. `m` is
 `wait.fallback`'s on the retry countdown, a takeover never up at the same time
-as either.
+as either. Reading mode spends `c` for `reading.copy_block`, one code block of
+the reply under the cursor; `row.continue` answers the same letter on a
+dropped stream's row inside the same mode, and the two never stand on one row,
+because a drop row is not a reply, so the row under the cursor says which one
+the letter is.
 
 One key at the input spends nothing from the free set because it takes an
 arrow in the one state where the arrow does nothing: `draft.take_suggestion`

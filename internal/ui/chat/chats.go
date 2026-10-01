@@ -458,5 +458,12 @@ func (m *Model) closePicker() {
 	// The entries stay for the apply that runs after this; everything
 	// else about the housekeeping goes with the picker.
 	m.chats = chatOps{entries: m.chats.entries}
+	if m.pickerFromReading {
+		// Back to the mode the card was opened over, rather than through
+		// it to the turn: the turn is still where the mode will hand back.
+		m.pickerFromReading = false
+		m.state = stateFocus
+		return
+	}
 	m.leaveSurface()
 }

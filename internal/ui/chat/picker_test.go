@@ -585,7 +585,7 @@ func TestRunPick_MultipleBlocksOpensPicker(t *testing.T) {
 	if m.picker.Focus != 0 {
 		t.Fatalf("the first block should be focused, got %d", m.picker.Focus)
 	}
-	first := m.picker.Options[0].Label
+	first := pickRowText(m.picker.Options[0])
 	if !strings.HasPrefix(first, "echo one") || !strings.Contains(first, "bash") || !strings.Contains(first, "1 line") {
 		t.Fatalf("row should carry first line, language, and line count, got %q", first)
 	}
@@ -593,12 +593,25 @@ func TestRunPick_MultipleBlocksOpensPicker(t *testing.T) {
 		t.Fatalf("a one-line block's preview repeats its label, so it gets no description, got %q", m.picker.Options[0].Desc)
 	}
 	second := m.picker.Options[1]
-	if !strings.Contains(second.Label, "python") || !strings.Contains(second.Label, "2 lines") {
-		t.Fatalf("second row should be a 2-line python block, got %q", second.Label)
+	if row := pickRowText(second); !strings.Contains(row, "python") || !strings.Contains(row, "2 lines") {
+		t.Fatalf("second row should be a 2-line python block, got %q", row)
 	}
 	if !strings.Contains(second.Desc, `print("a") ↵ print("b")`) {
 		t.Fatalf("description should preview the block, got %q", second.Desc)
 	}
+}
+
+// pickRowText is a block card's row as the card lays it: the first line,
+// then the facts the row carries beside it.
+func pickRowText(o components.SelectOption) string {
+	row := o.Label
+	if len(o.Detail) > 0 {
+		row += " · "
+		for _, d := range o.Detail {
+			row += d.Text
+		}
+	}
+	return row
 }
 
 func TestRunPick_SelectingEntersConfirm(t *testing.T) {
