@@ -229,12 +229,11 @@ func TestSpin_OneFrameAcrossTheThreeSurfaces(t *testing.T) {
 		t.Fatalf("the status line should be on frame %q, got %q", want, got)
 	}
 
+	// A running call's row is still: the frame's status is what
+	// animates for the turn.
 	row := m.activityRowFor(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"a.go"}`, toolResult: pendingToolResult})
-	if !row.Spin || row.Frame != m.spinFrame {
-		t.Fatalf("a running row should animate from the one frame, got spin=%v frame=%d", row.Spin, row.Frame)
-	}
-	if got := stripANSI(row.View(80)); !strings.Contains(got, want) {
-		t.Fatalf("the running row should be on frame %q, got %q", want, got)
+	if got := stripANSI(row.View(80)); row.Spin || strings.Contains(got, want) || !strings.Contains(got, "▸") {
+		t.Fatalf("a running row should keep the still ▸, got spin=%v %q", row.Spin, got)
 	}
 }
 

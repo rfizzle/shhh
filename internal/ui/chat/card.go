@@ -169,8 +169,8 @@ func (m Model) liveCardHoldsCommand() bool {
 }
 
 // liveCardTicks reports whether a card on the transcript is moving: the
-// live step's spinner and its clock. The transcript repaints on the tick
-// for it, as it does for an arriving message.
+// live step's clock. The transcript repaints on the tick for it, as it does
+// for an arriving message.
 func (m Model) liveCardTicks() bool {
 	if m.turnState() == stateInput || m.attachedTo != "" || !m.spinnerWanted() {
 		return false
@@ -228,7 +228,6 @@ func (m Model) stepCardFor(blk transcriptBlock, es []entry, width int, selected 
 		Density:  density,
 		Folded:   folded,
 		Selected: selected,
-		Frame:    m.spinFrame,
 	}
 	switch s.Lead.State {
 	case receipt.StateFailed:
@@ -238,7 +237,6 @@ func (m Model) stepCardFor(blk transcriptBlock, es []entry, width int, selected 
 	}
 	if s.Running || (m.cardLive(blk) && c.State == components.ActivityDone) {
 		c.State = components.ActivityRunning
-		c.Spin = m.spinnerWanted()
 	}
 	if m.cardHoldsCommand(blk) {
 		// The duration ticks with the command still running, and the
@@ -300,7 +298,10 @@ func (m Model) stepCardFor(blk transcriptBlock, es []entry, width int, selected 
 		}
 	case s.Added+s.Removed > 0:
 		c.Outcome = lineChange(s.Added, s.Removed)
-	case len(ran) == 1 && es[ran[0]].kind != entryDiff:
+	case len(ran) == 1 && es[ran[0]].kind != entryDiff && !m.cardHoldsCommand(blk):
+		// A card holding a command still running is not a step of one call:
+		// the first call's `ok` would read as the answer of a step that has
+		// not come out yet.
 		answer(m.activityRowFor(es[ran[0]]))
 	}
 

@@ -3,3 +3,10 @@
 # it while the frame's rail reports the turn.
 tool:execute_command:{"command":"for f in agent/loop.go agent/round.go ui/chat/frame.go ui/chat/turnstatus.go ui/components/activityrow.go; do echo \"ok  github.com/rfizzle/shhh/internal/$f  0.412s\"; sleep 1; done"}
 The command finished and its row settled.
+# The second turn is one step titled by its sentence: a status check, then a
+# slow command, so the step is a card while the command still runs and the
+# card holds its tail and its clock.
+Running the UI tests once more on their own card.
++tool:execute_command:{"command":"git status --short"}
++tool:execute_command:{"command":"for n in 1 2 3 4 5; do echo \"ok  github.com/rfizzle/shhh/internal/ui  0.41${n}s\"; sleep 1; done"}
+The tests passed and the card settled.

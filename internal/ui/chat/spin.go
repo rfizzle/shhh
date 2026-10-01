@@ -126,8 +126,8 @@ func (m Model) spinTick(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.easeCounts()
 	// The tick is also what the streaming transcript is repainted on (
 	// the streaming render) — the one clock, spent on the one other thing that
-	// wants one. The live step's card is on it too: its spinner and its
-	// clock move with no row landing to repaint them (card.go).
+	// wants one. The live step's card is on it too: its clock moves with no
+	// row landing to repaint it (card.go).
 	if m.liveCardTicks() {
 		m.streamDirty = true
 	}

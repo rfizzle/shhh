@@ -4,7 +4,7 @@ package components
 // the band for each step a turn took — a header that is the step's receipt,
 // a body that is what the model said when it took the step, and a footer of
 // evidence where the step has some. Live and after are the same card; a
-// running step has the spinner in the glyph slot.
+// running step keeps its kind's glyph and its duration ticks.
 //
 // The card is drawn from facts the caller has already read: what the step
 // did comes from the step's receipt and is handed over as words, so this
@@ -127,10 +127,6 @@ type StepCard struct {
 	Folded  bool
 	// Selected puts the reading cursor on the header and lights it.
 	Selected bool
-	// Spin and Frame animate a running card's glyph from the host's one
-	// frame, as they do a running row's.
-	Spin  bool
-	Frame int
 }
 
 // cardMargin is the run held back at the band's right end, so the
@@ -413,16 +409,16 @@ func (c StepCard) railCell() string {
 // act otherwise. A read keeps the accent on a card's header, where a read
 // row's glyph is dim: the card is the step's answer, and its mark is what
 // the eye runs down the transcript for.
+//
+// A running step keeps its kind's mark, still: the frame's status already
+// says the turn is working, so a spinner here would be a second animation
+// telling the same fact, and the ticking duration is what says this step is
+// the live one. See docs/interface/surfaces.md#the-step.
 func (c StepCard) glyph() string {
 	if c.Mark != "" {
 		return c.Mark
 	}
 	switch c.State {
-	case ActivityRunning:
-		if c.Spin {
-			return sty.SpinText.Render(Spinner{Frame: c.Frame}.Glyph())
-		}
-		return sty.SpinText.Render(stateGlyphs[ActivityRunning].mark)
 	case ActivityDenied:
 		if c.ByRule {
 			return sty.Del.Render(stateGlyphs[ActivityDenied].mark)

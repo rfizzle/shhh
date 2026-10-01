@@ -12,13 +12,13 @@
 ── layout ──────────────────────────────────────────────────
 · a child's rows · one host waited out, another still running
 
-  ▸ looked up twice                           waiting 8s · docs.rs asked
+  ⚙ looked up twice                           waiting 8s · docs.rs asked
 
 
 
 · the last second of the wait
 
-  ▸ looked up twice                           waiting 1s · docs.rs asked
+  ⚙ looked up twice                           waiting 1s · docs.rs asked
 
 
 
@@ -28,13 +28,13 @@
 ── ansi ────────────────────────────────────────────────────
 · a child's rows · one host waited out, another still running
 
-  ␛[38;5;254m▸␛[m ␛[38;5;254mlooked up␛[m␛[38;5;244m twice␛[m                           ␛[38;5;254mwaiting 8s · docs.rs asked␛[m
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mlooked up␛[m␛[38;5;244m twice␛[m                           ␛[38;5;254mwaiting 8s · docs.rs asked␛[m
 
 
 
 · the last second of the wait
 
-  ␛[38;5;254m▸␛[m ␛[38;5;254mlooked up␛[m␛[38;5;244m twice␛[m                           ␛[38;5;254mwaiting 1s · docs.rs asked␛[m
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mlooked up␛[m␛[38;5;244m twice␛[m                           ␛[38;5;254mwaiting 1s · docs.rs asked␛[m
 
 
 

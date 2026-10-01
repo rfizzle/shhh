@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -279,6 +280,70 @@ func TestFrame_GutterAndHintsSwapWhileWorking(t *testing.T) {
 	}
 	if strings.Contains(view, "[enter] send") {
 		t.Fatalf("working frame should swap out the idle hints:\n%s", view)
+	}
+}
+
+// While a turn runs a step, the frame's pinned status is the one thing on
+// this screen that animates: the running card keeps its kind's glyph, a
+// command no card holds yet keeps the still `▸`, and no total line counts
+// the turn under the transcript, because the status and the cockpit already
+// do. The inspector's
+// THIS TURN block still counts it (docs/interface/surfaces.md#the-turns-close).
+func TestFrame_TheStatusIsTheOnlySpinner(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		width  int
+		carded bool
+	}{
+		{"a card holds the command, with the rail", 144, true},
+		{"a card holds the command", 80, true},
+		{"no card holds the command yet", 80, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := inspectorModel(t, tc.width, 40)
+			m.transcript = []entry{
+				{kind: entryUser, text: "run the ui tests", turn: 1},
+				{kind: entryAssistant, text: "Running the UI tests once more."},
+			}
+			if tc.carded {
+				m.transcript = append(m.transcript, entry{kind: entryCommand, text: "go vet ./internal/ui/",
+					toolResult: "ok", duration: 4 * time.Second, turn: 1})
+			}
+			m.turnOpen = true
+			m.turnStarted = clock().Add(-64 * time.Second)
+			m.setTurnState(stateRunningCmd)
+			m.pendingApproval = &approvalRequest{kind: approvalExec}
+			m.runningCommand = "go test ./internal/ui/"
+			m.runStart = clock().Add(-8 * time.Second)
+			m.runTail = &commandTail{}
+			m.runTail.Set("ok  github.com/rfizzle/shhh/internal/ui  0.412s")
+			for frame := range len(components.SpinnerFrames) {
+				m.spinFrame = frame
+				m.invalidateRenderCache()
+				m.viewport.SetLines(m.renderHistoryLines())
+				m.viewport.GotoBottom()
+				view := stripANSI(m.View().Content)
+				var spun []string
+				for _, l := range strings.Split(view, "\n") {
+					if strings.ContainsAny(l, brailleFrames) {
+						spun = append(spun, l)
+					}
+				}
+				if len(spun) != 1 || spun[0] != frameTopRail(view) {
+					t.Fatalf("frame %d: only the frame's status may draw a spinner, got %d rows:\n%s\n\nscreen:\n%s",
+						frame, len(spun), strings.Join(spun, "\n"), view)
+				}
+				if !strings.Contains(view, "ok  github.com/rfizzle/shhh/internal/ui") {
+					t.Fatalf("frame %d: the running command's tail is not on screen:\n%s", frame, view)
+				}
+				if strings.Contains(view, "working ·") {
+					t.Fatalf("frame %d: a running turn draws a total line:\n%s", frame, view)
+				}
+				if tc.width >= 130 && !strings.Contains(view, "THIS TURN") {
+					t.Fatalf("frame %d: the rail's THIS TURN block is gone:\n%s", frame, view)
+				}
+			}
+		})
 	}
 }
 

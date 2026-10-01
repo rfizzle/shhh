@@ -36,9 +36,9 @@
     Listed .plan and read the backlog's format; both earlier copy stories are closed. On course to write the epic.
 
 
-· running · the spinner, the command's tail, the clock
+· running · the kind's glyph held still, the command's tail, the clock
 
- ▎⠸ ran go test ./internal/ui/...                                                                                            42s
+ ▎$ ran go test ./internal/ui/...                                                                                            42s
     Confirming .plan/ is untracked, so nothing I write gets committed.
     --- FAIL: TestReplyGolden (0.42s)
 
@@ -100,9 +100,9 @@
     ␛[3;38;5;244mListed .plan and read the backlog's format; both earlier copy stories are closed. On course to write the epic.␛[m
 
 
-· running · the spinner, the command's tail, the clock
+· running · the kind's glyph held still, the command's tail, the clock
 
- ␛[38;5;254m▎␛[m␛[38;5;254m⠸␛[m ␛[38;5;254mran␛[m ␛[38;5;244mgo test ./internal/ui/...␛[m                                                                                            ␛[38;5;244m42s␛[m
+ ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mran␛[m ␛[38;5;244mgo test ./internal/ui/...␛[m                                                                                            ␛[38;5;244m42s␛[m
     ␛[38;5;254mConfirming .plan/ is untracked, so nothing I write gets committed.␛[m
     ␛[38;5;244m--- FAIL: TestReplyGolden (0.42s)␛[m
 

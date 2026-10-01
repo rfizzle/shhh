@@ -134,15 +134,18 @@ record, so the refusal and what was said about it are still together after the
 turn has moved on, and the frame above carries neither
 ([`../capabilities/approvals-and-safety.md`](../capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason)).
 
-A call still in flight is drawn once. Inside a step that is already a card,
-the card draws it: the spinner is its mark, its time counts the command still
-running, and the command's last line out stands under its body. A command
-whose step is not a card yet, or one the reader ran themselves, is a row under
-the transcript: the outcome field says it is running, the duration field
-ticks that call's own clock, and the last line it has printed sits under it
-until it finishes. The [frame](#the-input-frame) below states the phase the
-turn is in and leaves the command here, where the field that grows has the
-width of the pane behind it.
+A call still in flight is drawn once, and drawn still. Inside a step that is
+already a card, the card draws it: its mark is its kind's own, its time counts
+the command still running, and the command's last line out stands under its
+body. A command whose step is not a card yet, or one the reader ran
+themselves, is a row under the transcript behind the still `▸`: the outcome
+field says it is running, the duration field ticks that call's own clock, and
+the last line it has printed sits under it until it finishes. The
+[frame](#the-input-frame) below states the phase the turn is in, and its
+status is what animates for the turn, so no step or call it is running
+spins in the transcript; it
+leaves the command here, where the field that grows has the width of the pane
+behind it.
 
 A row prints no key for what enter does on it: reading mode's hint bar says
 that for the row under its cursor, and a key written on a row above a live
@@ -278,10 +281,13 @@ on bare screen with its own air. The band is a token
 sixteen colours and in mono there is no band, and a card is its padding rows
 alone.
 
-Live and after are one card. A running step is the same card with the
-spinner in the mark's place, the running command's last line under the body
-and the time counting with it, and the row under the transcript does not
-draw the command a second time. A card the turn has finished does not fold
+Live and after are one card. A running step is the same card, static: its
+kind's own mark — `⚙`, `$`, `✎`, `◇` — stands in the mark's place, never a
+spinner, because the frame's status already says the turn is working and a
+second animation would only say it again. The running command's last line
+stands under the body and the time counts with it, which is what says the
+card is the live one, and the row under the transcript does not draw the
+command a second time. A card the turn has finished does not fold
 on its own; it stays as the density ladder draws it — its header alone at
 low, header, body and footer at normal, open at high — until the reader
 folds or opens it, and the reader's answer outranks the rung
@@ -374,18 +380,19 @@ The question after an agent stops is never "what did it say", it is "what did
 it change". So a turn closes on what it did, what changed, and whether the
 tests still pass.
 
-What it did is the turn's total, and the total is one slot in four states. It
-is always the last line of its turn: flat, dim, on no band, at the column a
-card puts its glyph in, and only the glyph changes. While the turn works it
-counts under everything the turn has drawn — the spinner, how long the turn
-has run, the calls it has made and what its requests have been billed so far.
-Once it is done it says how long the turn worked, the calls, the spend and
-the time it finished, behind `∗`. A turn that broke says `failed` behind `✗`,
-and one the reader stopped says `cancelled` behind `⊘`; each counts what it
-got through and, where it changed nothing, says `no files changed` — the
-question a break raises first. The steps are not on it: the cards above are
-the steps. It is one receipt read once, so the line a turn counted on while it
-ran is the line it ends on, and the two cannot disagree.
+What it did is the turn's total, and the total is one slot in three states. It
+is the last line of its turn, and it appears when the turn ends: flat, dim, on
+no band, at the column a card puts its glyph in, and only the glyph changes.
+While the turn works there is no total under the transcript — the frame's
+status already says the turn is working and how long it has run, and the
+cockpit counts its calls and its spend, so a line under the cards would be a
+second account of the same facts and a second animation beside the frame's;
+the transcript ends on what the turn is doing now. Once it is done the total
+says how long the turn worked, the calls, the spend and the time it finished,
+behind `∗`. A turn that broke says `failed` behind `✗`, and one the reader
+stopped says `cancelled` behind `⊘`; each counts what it got through and,
+where it changed nothing, says `no files changed` — the question a break
+raises first. The steps are not on it: the cards above are the steps.
 
 What changed is the line under the total. The changed-files line carries the
 mutation rail, so the close of a turn looks like the cards that produced it.

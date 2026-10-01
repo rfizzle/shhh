@@ -169,7 +169,7 @@ func TestCard_NoKeyOnTheCard(t *testing.T) {
 func TestGolden_StepCards(t *testing.T) {
 	captureBoundedGolden(t, "step-cards", "a step as a card", goldenWidths, func(width int) []golden.Panel {
 		running := commandStep()
-		running.State, running.Spin, running.Frame = ActivityRunning, true, 3
+		running.State = ActivityRunning
 		running.Subject, running.Outcome, running.Verdict = "go test ./internal/ui/...", "", ""
 		running.Evidence, running.EvidenceRight = "", ""
 		running.Duration, running.Tail = "42s", "--- FAIL: TestReplyGolden (0.42s)"
@@ -198,7 +198,7 @@ func TestGolden_StepCards(t *testing.T) {
 			{Label: "finished · a write, its hunk head and the verdict beside it", View: write.View(width)},
 			{Label: "no body · the footer follows the header", View: noBody.View(width)},
 			{Label: "no footer · a reading's sentence for a body, its verdict on the header", View: noFooter.View(width)},
-			{Label: "running · the spinner, the command's tail, the clock", View: running.View(width)},
+			{Label: "running · the kind's glyph held still, the command's tail, the clock", View: running.View(width)},
 			{Label: "failed · the failure over the write, and the strip", View: largeStep().View(width)},
 			{Label: "folded by the reader · ▸ in the pointer column", View: folded.View(width)},
 			{Label: "low · the header alone", View: low.View(width)},

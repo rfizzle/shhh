@@ -558,21 +558,51 @@ func TestTurnClose_ASummaryFoldBesideItExpandsRatherThanReviews(t *testing.T) {
 	}
 }
 
-// The total is one slot in four states and always the last line of its
-// turn: under everything while the turn works, counting with the spinner in
-// the glyph slot, and the close's first row once it ends, with the files it
-// changed on the line under it (docs/interface/surfaces.md#the-turns-close).
-func TestClose_TheTotalIsTheLastLine(t *testing.T) {
+// A running turn draws no total line: the frame's status and the cockpit
+// already count it. The turn's last line appears once it ends, as the
+// close's first row, with the files it changed on the line under it
+// (docs/interface/surfaces.md#the-turns-close).
+func TestClose_NoTotalWhileTheTurnRuns(t *testing.T) {
 	m := turnModel(t)
 	m = sendText(t, m, "write the file")
 	path := filepath.Join(t.TempDir(), "main.go")
 	m = applyWrite(t, m, path, "package main\n", "y")
-	m.setTurnState(stateStreaming)
 
-	tail := strings.Split(ansi.Strip(m.resolveLiveTail(m.paneWidth())), "\n")
-	last := strings.TrimSpace(tail[len(tail)-1])
-	if !strings.Contains(last, "working · ") || !strings.Contains(last, "1 tool") {
-		t.Fatalf("a working turn's last line is its running total, got %q", last)
+	for _, tc := range []struct {
+		name string
+		st   state
+		cmd  bool
+	}{
+		{"streaming", stateStreaming, false},
+		{"classifying", stateClassifying, false},
+		{"running a command", stateRunningCmd, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := m
+			r.setTurnState(tc.st)
+			if tc.cmd {
+				r.pendingApproval = &approvalRequest{kind: approvalExec}
+				r.runningCommand = "go test ./..."
+				r.runStart = clock()
+				r.runTail = &commandTail{}
+				r.runTail.Set("ok  ./internal/ui")
+			}
+			r.invalidateRenderCache()
+			screen := ansi.Strip(r.renderHistory() + "\n" + r.resolveLiveTail(r.paneWidth()))
+			if strings.Contains(screen, "working") || strings.Contains(screen, "1 tool") {
+				t.Fatalf("a running turn draws a total line:\n%s", screen)
+			}
+			// The live tail ends on the running card: the card holds the
+			// command's last line, and nothing is drawn under it.
+			if tc.cmd {
+				if tail := r.resolveLiveTail(r.paneWidth()); tail != "" {
+					t.Fatalf("something is drawn under the running card:\n%s", ansi.Strip(tail))
+				}
+				if !strings.Contains(screen, "ok  ./internal/ui") {
+					t.Fatalf("the running card does not hold the command's last line:\n%s", screen)
+				}
+			}
+		})
 	}
 
 	m = finishTurn(t, m)

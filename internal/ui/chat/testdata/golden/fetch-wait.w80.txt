@@ -12,13 +12,13 @@
 ── layout ──────────────────────────────────────────────────
 · a child's rows · one host waited out, another still running
                                                                           
-  ▸ looked up twice                           waiting 8s · docs.rs asked  
+  ⚙ looked up twice                           waiting 8s · docs.rs asked  
                                                                           
 
 
 · the last second of the wait
                                                                           
-  ▸ looked up twice                           waiting 1s · docs.rs asked  
+  ⚙ looked up twice                           waiting 1s · docs.rs asked  
                                                                           
 
 
@@ -28,13 +28,13 @@
 ── ansi ────────────────────────────────────────────────────
 · a child's rows · one host waited out, another still running
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m  ␛[38;5;205m▸␛[m␛[48;5;234m ␛[38;5;252mlooked up␛[m␛[48;5;234m␛[38;5;241m twice␛[m␛[48;5;234m                           ␛[38;5;205mwaiting 8s · docs.rs asked␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mlooked up␛[m␛[48;5;234m␛[38;5;241m twice␛[m␛[48;5;234m                           ␛[38;5;205mwaiting 8s · docs.rs asked␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
 
 · the last second of the wait
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m  ␛[38;5;205m▸␛[m␛[48;5;234m ␛[38;5;252mlooked up␛[m␛[48;5;234m␛[38;5;241m twice␛[m␛[48;5;234m                           ␛[38;5;205mwaiting 1s · docs.rs asked␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mlooked up␛[m␛[48;5;234m␛[38;5;241m twice␛[m␛[48;5;234m                           ␛[38;5;205mwaiting 1s · docs.rs asked␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
 

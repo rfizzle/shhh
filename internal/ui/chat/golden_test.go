@@ -3881,9 +3881,9 @@ func TestGolden_TurnCloseSelection(t *testing.T) {
 }
 
 // TestGolden_TurnTotal captures the turn's last line in its states
-// (docs/interface/surfaces.md#the-turns-close): counting under the turn while
-// it works, the close's first row once it is done with the files it changed
-// on the line under it, and a turn that broke saying so and what it left.
+// (docs/interface/surfaces.md#the-turns-close): absent while the turn works,
+// the close's first row once it is done with the files it changed on the line
+// under it, and a turn that broke saying so and what it left.
 func TestGolden_TurnTotal(t *testing.T) {
 	captureGolden(t, "turn-total", "the turn's total line", goldenWidths, func(width int) []golden.Panel {
 		turn := func() Model {
@@ -3910,7 +3910,7 @@ func TestGolden_TurnTotal(t *testing.T) {
 			return m.renderHistory()
 		}
 		return []golden.Panel{
-			{Label: "running · the spinner, the clock, the calls and the spend so far", View: running()},
+			{Label: "running · no total line, the turn's last line waits for its end", View: running()},
 			{Label: "done · how long it worked and when it was done, the files under it", View: closed(components.TurnClose{
 				State: components.TurnDone, Tools: 13, Elapsed: "3m 29s", Spend: "$1.15", At: goldenNow,
 				Changes: &components.TurnChanges{Files: 1, Added: 41, Note: "all new to git", Back: "/undo 1 takes it back"},

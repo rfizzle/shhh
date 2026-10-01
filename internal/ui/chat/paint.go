@@ -271,21 +271,15 @@ func (m Model) liveTail(width int) string {
 }
 
 // resolveLiveTail is the block itself, rendered once per frame: what the
-// turn is doing now, and under it the turn's running total, which is always
-// the last line of its turn.
+// turn is doing now, and nothing under it. A running turn draws no total
+// line: the frame's status and the cockpit already count it, and the turn's
+// last line appears when the turn ends
+// (docs/interface/surfaces.md#the-turns-close).
 func (m Model) resolveLiveTail(width int) string {
-	block := m.liveBlock(width)
-	total := m.liveTotal(width)
-	switch {
-	case total == "":
-		return block
-	case block == "":
-		return "\n" + total
-	}
-	return block + "\n\n" + total
+	return m.liveBlock(width)
 }
 
-// liveBlock is the live tail above the total.
+// liveBlock is what the turn is doing now, under the transcript.
 func (m Model) liveBlock(width int) string {
 	if m.attachedTo != "" {
 		return ""

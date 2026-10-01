@@ -37,9 +37,9 @@
     closed. On course to write the epic.                                        
                                                                                 
 
-· running · the spinner, the command's tail, the clock
+· running · the kind's glyph held still, the command's tail, the clock
                                                                                 
- ▎⠸ ran go test ./internal/ui/...                                          42s  
+ ▎$ ran go test ./internal/ui/...                                          42s  
     Confirming .plan/ is untracked, so nothing I write gets committed.          
     --- FAIL: TestReplyGolden (0.42s)                                           
                                                                                 
@@ -103,9 +103,9 @@
 ␛[48;5;234m    ␛[3;38;5;245mclosed. On course to write the epic.␛[m␛[48;5;234m                                        ␛[m
 ␛[48;5;234m                                                                                ␛[m
 
-· running · the spinner, the command's tail, the clock
+· running · the kind's glyph held still, the command's tail, the clock
 ␛[48;5;234m                                                                                ␛[m
-␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;205m⠸␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mgo test ./internal/ui/...␛[m␛[48;5;234m                                          ␛[38;5;241m42s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mgo test ./internal/ui/...␛[m␛[48;5;234m                                          ␛[38;5;241m42s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mConfirming .plan/ is untracked, so nothing I write gets committed.␛[m␛[48;5;234m          ␛[m
 ␛[48;5;234m    ␛[38;5;245m--- FAIL: TestReplyGolden (0.42s)␛[m␛[48;5;234m                                           ␛[m
 ␛[48;5;234m                                                                                ␛[m

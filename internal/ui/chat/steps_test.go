@@ -129,8 +129,8 @@ func TestSteps_LiveStepRunsOpen(t *testing.T) {
 
 	view := stripANSI(m.renderHistory())
 	live := stepLine(t, view, "ran go test")
-	if strings.Contains(live, "✎ ") || strings.Contains(live, "$ ") {
-		t.Fatalf("the live card has the running glyph in its glyph slot: %q", live)
+	if !strings.Contains(live, "▎✎ ") || strings.ContainsAny(live, brailleFrames) {
+		t.Fatalf("the live card keeps its own glyph, still: %q", live)
 	}
 	if !strings.Contains(view, "Thread the sentinel through the loop") {
 		t.Fatalf("a running card shows its body:\n%s", view)

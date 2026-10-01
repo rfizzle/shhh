@@ -10,15 +10,14 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· running · the spinner, the clock, the calls and the spend so far
+· running · no total line, the turn's last line waits for its end
 ❯ raise the round cap
 ──────────────────────────────────────────────────────────────────────────
 
                                                                           
- ▎⠋ ran go build ./...                                         ok · 3.0s  
+ ▎$ ran go build ./...                                         ok · 3.0s  
                                                                           
 
-  ⠋ working · 2m 10s · 1 tool · $0.84
 
 · done · how long it worked and when it was done, the files under it
 ❯ raise the round cap
@@ -44,15 +43,14 @@
 
 
 ── ansi ────────────────────────────────────────────────────
-· running · the spinner, the clock, the calls and the spend so far
+· running · no total line, the turn's last line waits for its end
 ␛[94m❯␛[m ␛[97mraise the round cap␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;205m⠋␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mgo build ./...␛[m␛[48;5;234m                                         ␛[92mok␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m3.0s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mgo build ./...␛[m␛[48;5;234m                                         ␛[92mok␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m3.0s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
-  ␛[38;5;205m⠋␛[m ␛[38;5;241mworking · 2m 10s · 1 tool · $0.84␛[m
 
 · done · how long it worked and when it was done, the files under it
 ␛[94m❯␛[m ␛[97mraise the round cap␛[m

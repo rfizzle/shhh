@@ -31,9 +31,6 @@ const (
 	TurnDone      TurnState = iota // ✓ the turn ran to completion
 	TurnCancelled                  // ⊘ you stopped it
 	TurnFailed                     // ✗ it broke
-	// TurnWorking is a turn still running. It has no close block, only the
-	// total line it draws while it works.
-	TurnWorking
 )
 
 // wroteNothing is the changed-files row's statement for a turn that ran
@@ -176,16 +173,16 @@ func (s TurnState) Word() string {
 		return "Cancelled"
 	case TurnFailed:
 		return "Failed"
-	case TurnWorking:
-		return "Working"
 	}
 	return "Done"
 }
 
-// TurnTotal is the turn's last line: one slot in four states, the glyph the
-// only thing that changes — the spinner while it works, `∗` once it is done,
-// `✗` where it failed, `⊘` where it was stopped — and the rest dim, because
-// it is the turn's own account of itself and never something to act on
+// TurnTotal is the turn's last line: one slot in three states, the glyph the
+// only thing that changes — `∗` once it is done, `✗` where it failed, `⊘`
+// where it was stopped — and the rest dim, because it is the turn's own
+// account of itself and never something to act on. A turn still running has
+// no total line: the frame's status and the cockpit already count it, and a
+// line under the transcript would be a second account of the same facts
 // (docs/interface/surfaces.md#the-turns-close).
 type TurnTotal struct {
 	State TurnState
@@ -202,21 +199,12 @@ type TurnTotal struct {
 	NoFiles bool
 	// Note is the right-aligned aside, the first thing a narrow pane drops.
 	Note string
-	// Spin and Frame animate a working total's glyph from the host's one
-	// frame, as they do a running card's.
-	Spin  bool
-	Frame int
 }
 
 // glyph is the state's mark. The word after it says the state too, so
 // colour never carries it alone (invariant 1).
 func (t TurnTotal) glyph() string {
 	switch t.State {
-	case TurnWorking:
-		if t.Spin {
-			return sty.SpinText.Render(Spinner{Frame: t.Frame}.Glyph())
-		}
-		return sty.SpinText.Render(stateGlyphs[ActivityRunning].mark)
 	case TurnCancelled:
 		return sty.Dim.Render("⊘")
 	case TurnFailed:
@@ -243,8 +231,6 @@ func (t TurnTotal) text() string {
 		}
 	}
 	switch t.State {
-	case TurnWorking:
-		add("working", t.Elapsed, tools, t.Spend)
 	case TurnFailed, TurnCancelled:
 		add(strings.ToLower(t.State.Word()), tools, t.Elapsed, t.Spend)
 		if t.NoFiles {

@@ -253,9 +253,9 @@ func TestCard_OneBlankBetweenCards(t *testing.T) {
 	}
 }
 
-// A running step is the same card: the spinner in the glyph slot, the
-// running command's last line under the body, and the clock with it. The
-// row under the transcript does not draw the command a second time.
+// A running step is the same card: its own glyph, the running command's
+// last line under the body, and the clock with it. The row under the
+// transcript does not draw the command a second time.
 func TestCard_RunningIsTheSameCard(t *testing.T) {
 	m := cardModel(t)
 	m.state = stateRunningCmd
@@ -268,8 +268,8 @@ func TestCard_RunningIsTheSameCard(t *testing.T) {
 	m.invalidateRenderCache()
 	lines := cardLines(m)
 	h := cardLine(lines, "wrote .plan/BACKLOG.md")
-	if glyph := []rune(h)[2]; glyph == '✎' || glyph == ' ' {
-		t.Errorf("the running card has the spinner in the glyph slot: %q", h)
+	if !strings.HasPrefix(h, " ▎✎ wrote") {
+		t.Errorf("the running card keeps its own glyph: %q", h)
 	}
 	if !strings.Contains(h, "43s") {
 		t.Errorf("the running card's clock counts the command still running: %q", h)
@@ -286,6 +286,70 @@ func TestCard_RunningIsTheSameCard(t *testing.T) {
 	m.invalidateRenderCache()
 	if h := cardLine(cardLines(m), "wrote .plan/BACKLOG.md"); !strings.HasPrefix(h, " ▎✎ wrote") {
 		t.Errorf("the finished card is the same card with its own glyph: %q", h)
+	}
+}
+
+// brailleFrames are the spinner's frames, which nothing but the input
+// frame's status draws while a turn runs.
+const brailleFrames = "⠋⠙⠹⠸⠼⠴⠦⠧"
+
+// A running step's card draws its kind's own glyph, held still: the frame's
+// status already says the turn is working, so a spinner in the glyph slot
+// would be a second animation telling it again. The duration still ticks and
+// the running command's tail still stands under the body
+// (docs/interface/surfaces.md#the-step).
+func TestCard_ARunningCardHasNoSpinner(t *testing.T) {
+	holdClock(t)
+	m := activityModel(t)
+	m.transcript = []entry{
+		{kind: entryUser, text: "run the ui tests"},
+		{kind: entryAssistant, text: "Running the UI tests once more."},
+		{kind: entryCommand, text: "go test ./internal/ui/", toolResult: "ok", duration: 4 * time.Second},
+	}
+	m.state = stateRunningCmd
+	m.turnStarted = goldenNow.Add(-time.Minute)
+	m.pendingApproval = &approvalRequest{kind: approvalExec}
+	m.runningCommand = "go test ./internal/ui/"
+	m.runStart = goldenNow.Add(-8 * time.Second)
+	m.runTail = &commandTail{}
+	m.runTail.Set("ok  github.com/rfizzle/shhh/internal/ui  0.412s")
+	for frame := range 3 {
+		m.spinFrame = frame
+		m.invalidateRenderCache()
+		lines := cardLines(m)
+		// The receipt, then the clock flush right: the first command's `ok`
+		// is not the answer of a step with a command still running.
+		h := strings.TrimRight(cardLine(lines, "ran go test"), " ")
+		if !strings.HasPrefix(h, " ▎$ ran go test ./internal/ui/ ") || !strings.HasSuffix(h, " 12s") ||
+			strings.Join(strings.Fields(h), " ") != "▎$ ran go test ./internal/ui/ 12s" {
+			t.Errorf("frame %d: the running card's header is %q, want the $ glyph, the receipt and 12s", frame, h)
+		}
+		if l := cardLine(lines, "ok  github.com"); !strings.HasPrefix(l, strings.Repeat(" ", components.CardBodyIndent)+"ok") {
+			t.Errorf("frame %d: the command's tail stands under the body: %q", frame, l)
+		}
+		if card := strings.Join(lines, "\n"); strings.ContainsAny(card, brailleFrames) {
+			t.Errorf("frame %d: the running card draws a spinner frame:\n%s", frame, card)
+		}
+	}
+
+	// Every kind keeps its own mark while its step runs.
+	for _, tc := range []struct {
+		kind components.ActivityKind
+		want string
+	}{
+		{components.ActivityTool, "⚙"},
+		{components.ActivityCommand, "$"},
+		{components.ActivityEdit, "✎"},
+		{components.ActivitySubagent, "◇"},
+	} {
+		c := components.StepCard{Kind: tc.kind, State: components.ActivityRunning, Verb: "ran", Subject: "x", Duration: "3s"}
+		view := stripANSI(c.View(80))
+		if h := strings.Split(view, "\n")[1]; !strings.HasPrefix(strings.TrimLeft(h, " "), tc.want+" ran") {
+			t.Errorf("a running %s card's header should lead with its own glyph: %q", tc.want, h)
+		}
+		if strings.ContainsAny(view, brailleFrames) {
+			t.Errorf("a running %s card draws a spinner frame:\n%s", tc.want, view)
+		}
 	}
 }
 

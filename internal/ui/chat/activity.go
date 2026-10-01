@@ -531,11 +531,9 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 			if outcome, counts, ok := m.fetchWaitFields(e.toolName, e.toolArgs); ok {
 				row.Outcome, row.Counts = outcome, counts
 			}
-			// The row animates from the session's one frame, and only
-			// while the loop that advances it is running: a call left pending
-			// by a cancelled turn keeps the still `▸` rather than standing on
-			// one braille frame, which would read as a hang.
-			row.Spin = m.spinnerWanted()
+			// The row keeps the still `▸`: the frame's status is what
+			// animates for the turn
+			// (docs/interface/surfaces.md#the-step).
 			result = ""
 		case result == cancelledToolResult:
 			// Ctrl+C during a turn: you stopped it, so it reads as your
@@ -693,14 +691,14 @@ func (m Model) fetchWaitRow(width int) (string, bool) {
 		Target:  rc.Subject,
 		Outcome: outcome,
 		Counts:  counts,
-		Spin:    m.spinnerWanted(),
-		Frame:   m.spinFrame,
 	}
 	return row.View(width), true
 }
 
 // runningCommandRow renders the in-flight command as a live activity row with
-// its output tail; spinner ticks keep it re-rendering while the command runs.
+// its output tail; spinner ticks keep its clock and tail fresh while the
+// command runs. Its glyph is the still `▸`: the frame's status is what
+// animates for the turn (docs/interface/surfaces.md#the-step).
 func (m Model) runningCommandRow(width int) string {
 	row := components.ActivityRow{
 		Kind:    components.ActivityCommand,
@@ -708,8 +706,6 @@ func (m Model) runningCommandRow(width int) string {
 		Verb:    "run",
 		Target:  firstLine(m.runningCommand),
 		Outcome: components.OutcomeRunning,
-		Spin:    m.spinnerWanted(),
-		Frame:   m.spinFrame,
 	}
 	if !m.runStart.IsZero() {
 		row.Duration = activityDuration(clock().Sub(m.runStart))

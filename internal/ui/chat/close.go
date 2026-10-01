@@ -157,37 +157,6 @@ func (m Model) turnTotal(es []entry) receipt.Turn {
 	return t
 }
 
-// liveTotal is the running turn's total line, under everything the turn has
-// drawn so far, or "" where no turn of the reader's is working. It is the
-// close's first row in its working state: the same receipt, so the line a
-// turn ends on is the line it was counting on while it ran
-// (docs/interface/surfaces.md#the-turns-close).
-func (m Model) liveTotal(width int) string {
-	if !m.turnOpen || m.attachedTo != "" {
-		return ""
-	}
-	switch m.turnState() {
-	case stateStreaming, stateRunningCmd, stateClassifying:
-	default:
-		return ""
-	}
-	t := m.turnTotal(m.turnEntries())
-	// A turn with no start stamp states no elapsed rather than counting from
-	// the zero time, as the frame's activity slot does (turnstatus.go).
-	elapsed := ""
-	if !m.turnStarted.IsZero() {
-		elapsed = components.FormatElapsed(t.Elapsed)
-	}
-	return components.TurnTotal{
-		State:   components.TurnWorking,
-		Elapsed: elapsed,
-		Tools:   t.Tools,
-		Spend:   t.Spend,
-		Spin:    m.spinnerWanted(),
-		Frame:   m.spinFrame,
-	}.View(width)
-}
-
 // turnEnd is how a closed turn ended, in the receipt's words.
 func turnEnd(s components.TurnState) receipt.TurnEnd {
 	switch s {

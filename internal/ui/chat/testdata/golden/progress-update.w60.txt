@@ -44,7 +44,7 @@
     the agent while the ceiling is the session's, so a
       … 2 more lines
 
-  ▎⠋ run     go test ./internal/agent/... …  running…
+  ▎▸ run     go test ./internal/agent/... …  running…
   ok  github.com/rfizzle/shhh/internal/agent  0.412s
 
 · a second status, and the one it replaced folded to its first line
@@ -127,7 +127,7 @@
     ␛[3;38;5;245mthe agent while the ceiling is the session's, so a␛[m
       ␛[38;5;241m… 2 more lines␛[m
 
-  ␛[38;5;214m▎␛[m␛[38;5;205m⠋␛[m ␛[97mrun␛[m     ␛[97mgo test ./internal/agent/... …␛[m  ␛[38;5;205mrunning…␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;205m▸␛[m ␛[97mrun␛[m     ␛[97mgo test ./internal/agent/... …␛[m  ␛[38;5;205mrunning…␛[m
   ␛[38;5;245mok  github.com/rfizzle/shhh/internal/agent  0.412s␛[m
 
 · a second status, and the one it replaced folded to its first line

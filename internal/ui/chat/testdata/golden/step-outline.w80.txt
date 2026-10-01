@@ -124,7 +124,7 @@
 ──────────────────────────────────────────────────────────────────────────
 
                                                                           
-  ⠋ read 2 files in internal/agent/ · searched ErrRoundLimit        0.9s  
+  ⚙ read 2 files in internal/agent/ · searched ErrRoundLimit        0.9s  
     Locate the round accounting                                           
                                                                           
 
@@ -142,7 +142,7 @@
     there.
 
                                                                           
-  ⠋ read internal/agent/round.go · searched ErrRoundLimit           0.5s  
+  ⚙ read internal/agent/round.go · searched ErrRoundLimit           0.5s  
                                                                           
 
 
@@ -156,7 +156,7 @@
     there.
 
                                                                           
-  ⠋ read internal/agent/round.go · searched ErrRoundLimit           0.5s  
+  ⚙ read internal/agent/round.go · searched ErrRoundLimit           0.5s  
                                                                           
 
 
@@ -275,7 +275,7 @@
 ␛[38;5;243m──────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m  ␛[38;5;205m⠋␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 2 files in internal/agent/ · searched ErrRoundLimit␛[m␛[48;5;234m        ␛[38;5;241m0.9s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 2 files in internal/agent/ · searched ErrRoundLimit␛[m␛[48;5;234m        ␛[38;5;241m0.9s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                                           ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
@@ -293,7 +293,7 @@
     ␛[3;38;5;245mthere.␛[m
 
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m  ␛[38;5;205m⠋␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/round.go␛[m␛[48;5;234m␛[38;5;241m · searched ErrRoundLimit␛[m␛[48;5;234m           ␛[38;5;241m0.5s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/round.go␛[m␛[48;5;234m␛[38;5;241m · searched ErrRoundLimit␛[m␛[48;5;234m           ␛[38;5;241m0.5s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
 
@@ -307,6 +307,6 @@
     ␛[3;38;5;245mthere.␛[m
 
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m  ␛[38;5;205m⠋␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/round.go␛[m␛[48;5;234m␛[38;5;241m · searched ErrRoundLimit␛[m␛[48;5;234m           ␛[38;5;241m0.5s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/round.go␛[m␛[48;5;234m␛[38;5;241m · searched ErrRoundLimit␛[m␛[48;5;234m           ␛[38;5;241m0.5s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 

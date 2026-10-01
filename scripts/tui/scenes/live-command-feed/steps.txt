@@ -11,14 +11,35 @@
 # card holds it yet and the row under the transcript is where it runs; once
 # it lands it is a card (docs/interface/surfaces.md#the-step), its first line
 # out under the header.
+#
+# The frame's status is what animates for the turn: the
+# row's glyph is the still `▸`, and no total line counts the turn under the
+# transcript — the turn's last line appears only when it ends
+# (docs/interface/surfaces.md#the-turns-close). The second turn runs its
+# command inside a step that is already a card: the card keeps `$` in its
+# glyph slot, its clock counts the command still running, and the command's
+# last line out stands under its body, the last thing above the frame. Grep
+# the captures for a braille frame: only the frame's top rail draws one.
 snap 01-start "Some things worth doing first"
 keys "run the checks" Enter
 snap 02-card "[y] run it once"
 keys y
-snap 03-running "running…"
-snap 04-tail "0.412s" "acting… · turn"
-snap 05-settled "The command finished and its row settled" "▎$ ran for f in" "ok  github.com/rfizzle/shhh/internal/agent/loop.go"
+snap 03-running "running…" "▸ run"
+# Below 80 columns the tail is cut before its time, so the snap waits on the
+# second line's file instead.
+wide 80 snap 04-tail "0.412s" "acting… · turn" "▸ run"
+narrow 80 snap 04-tail "internal/agent/round.go" "acting… · turn" "▸ run"
+wide 80 snap 05-settled "The command finished and its row settled" "▎$ ran for f in" "ok  github.com/rfizzle/shhh/internal/agent/loop.go"
+narrow 80 snap 05-settled "The command finished and its row settled" "▎$ ran for f in" "ok  github.com/rfizzle/shhh/internal/ag"
+keys "run them on a card" Enter
+snap 06-card "[y] run it once"
+sleep 1
+keys y
+# The third line out is two seconds into the command, so the card's clock
+# has a time to show.
+snap 07-running-card "internal/ui  0.413s" "▎$ ran git status --short" "Running the UI tests once more"
+snap 08-card-settled "The tests passed and the card settled" "▎$ ran 2 commands"
 keys C-c
-snap 06-quit-armed "again quits"
+snap 09-quit-armed "again quits"
 keys C-c
-snap 07-exit "that is everything the screen was holding"
+snap 10-exit "that is everything the screen was holding"

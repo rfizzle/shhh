@@ -292,8 +292,8 @@ receipt that ran into its outcome would read as one word.
 
 ## What the turn's total says where the catalogue left it open
 
-*A gap.* The Rows catalogue draws the total working, done and failed, and
-the changed-files line under a done one. The binary decided the rest.
+*A gap.* The Rows catalogue draws the total done and failed, and the
+changed-files line under a done one. The binary decided the rest.
 
 A turn the reader stopped draws `⊘ cancelled`, counting as a failed one
 does: what it got through, how long, what it cost. A turn that broke or was
@@ -302,15 +302,14 @@ stopped and changed nothing says `no files changed` on its total, and the
 since it would say the same thing twice; where it did change files, the
 changed-files line says so under the total as it does under a done one.
 
-While the turn works the spend is what its requests have been billed so far,
-never an estimate of the one in flight, so the figure only ever moves to a
-number the close will keep, and it is left out until the first request
-reports. The running total is drawn while the turn is in one of its working
-phases — thinking, streaming, acting, deciding — and not while it waits on
-a card, where the spinner would be a glyph that does not move. The frame's
-activity slot still counts the turn's clock beside its phase, so while a turn
-runs the clock is on the screen twice; the slot is the one a reader watching
-the prompt reads, and the total is the transcript's.
+A turn still running draws no total at all. The frame's status states the
+phase and counts the turn's clock, and the cockpit counts the calls and the
+spend, so a running total under the transcript was the same facts told a
+second time, with a spinner of its own beside the frame's; with the running
+card's own spinner gone too, the frame's status is what moves for the turn,
+and the transcript ends on the running card and its
+command's last line. The total appears once, when the turn ends, in the state
+it ended in.
 
 ## A failure card's header carries the class
 
@@ -351,7 +350,7 @@ titled.
 *A gap.* `∗` is the total of a turn that is done and `↻` the retry's line.
 The Rows catalogue and the Cards artboard draw both, and no glyph page lists
 either. Each is a mark of one line: `∗` is the done state of the one slot
-whose other states are the spinner, `✗` and `⊘`, dim because the line is an
+whose other states are `✗` and `⊘`, dim because the line is an
 account and never an alarm; `↻` stands in the prompt's column because the
 retry stands where the reader's words would.
 
