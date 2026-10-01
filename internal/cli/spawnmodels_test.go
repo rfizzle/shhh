@@ -249,7 +249,10 @@ func TestSpawnModelListFollowsAProviderSwitch(t *testing.T) {
 		},
 		{
 			name: "a /model switch",
-			move: func(_ *testing.T, env *sessionEnv, _ *agentProfiles) error { env.switchModel("picked-model"); return nil },
+			move: func(_ *testing.T, env *sessionEnv, _ *agentProfiles) error {
+				env.switchModel("picked-model")
+				return nil
+			},
 			want: "picked-model",
 		},
 		{
