@@ -341,11 +341,18 @@ func (m Model) renderEntryDetail(e entry, width int, sel rowSel, stepDetail bool
 		}
 		return m.gateRow(e, row, sel).View(width) + "\n"
 	case entryFanout:
-		block := m.fanoutBlockFor(e)
+		// Its card, with no sentence to take as its body: the one that
+		// titled it is taken where the block is tiled (blockUnits).
+		block := m.fanoutCardFor(e, "", sel)
 		if len(block.Lanes) == 0 {
 			return ""
 		}
 		return block.View(width) + "\n"
+	case entryPlan:
+		if e.plan == nil {
+			return ""
+		}
+		return m.plannedCardFor(e, sel).View(width) + "\n"
 	case entryTodoRun:
 		if e.todorun == nil {
 			return ""
@@ -604,7 +611,7 @@ func entryIsBlock(e entry) bool {
 	switch e.kind {
 	case entryUser, entryAssistant, entryThink, entryCompactSummary,
 		entryTurnClose, entryFanout, entryTodoRun, entryRewound, entryTray,
-		entryFailure, entryRetry:
+		entryFailure, entryRetry, entryPlan:
 		return true
 	case entrySystem, entryError:
 		return strings.Contains(strings.TrimSpace(e.text), "\n")
@@ -843,8 +850,9 @@ func (m *Model) renderHistoryRawLines() []string {
 	// A live fan-out is the one entry that keeps changing without a row
 	// landing in it, so its block cannot be frozen either.
 	// A run's row is the other one: it redraws from the machine's state on
-	// every transition, and a transition lands no row of its own.
-	freeze := min(lastLiveBlock(blocks), m.liveFanoutBlock(blocks), m.liveTodoRunBlock(blocks))
+	// every transition, and a transition lands no row of its own. So is a
+	// running plan's card, whose rows tick as the run reaches each step.
+	freeze := min(lastLiveBlock(blocks), m.liveFanoutBlock(blocks), m.liveTodoRunBlock(blocks), m.livePlanBlock(blocks))
 	// Back to the settled lines and no further: what the frozen blocks wrote
 	// stays written, and only the tail after them is built again.
 	m.cached.rewind()

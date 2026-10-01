@@ -491,17 +491,18 @@ func TestGolden_ProgressUpdate(t *testing.T) {
 	})
 }
 
-// TestGolden_PlanChecklist captures the outline an approved plan numbers
-// : declared steps carrying the plan's own numbers and titles in the
-// order the run reached them, one group the plan never named marked off it,
-// and the declared-but-not-started steps trailing as queued headers. It is
-// the one shape of the outline that does not come from the prose.
+// TestGolden_PlanChecklist captures the outline an approved plan numbers:
+// the plan's card under the message that approved it, a row per declared
+// step ticking as the run reaches it, the steps the run took as cards in the
+// order it took them, and under each finished one the flat line that ticks
+// it off. It is the one shape of the outline that does not come from the
+// prose.
 func TestGolden_PlanChecklist(t *testing.T) {
 	captureGolden(t, "plan-checklist", "plan checklist outline", goldenWidths, func(width int) []golden.Panel {
 		build := func(st state) string {
 			m := frameModel(t, width, 40)
-			m.transcript = []entry{{kind: entryUser, text: planApprovedMessage}}
-			m.planRun = newPlanRun(plan.Parse(planFixture), 0)
+			m.appendEntry(entry{kind: entryUser, text: planApprovedMessage})
+			m.beginPlanRun(plan.Parse(planFixture))
 			for _, a := range []struct {
 				title  string
 				d      time.Duration

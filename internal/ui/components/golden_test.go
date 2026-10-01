@@ -1394,9 +1394,15 @@ func TestGolden_AgentList(t *testing.T) {
 // the report the child wrote, with the assumptions it stated instead of asking
 // counted on its detail line, and a reviewing lane carrying the verdict it
 // ended on beside `✓ done`.
+//
+// The batch is a card: the spawn's receipt as the header, the sentence that
+// titled it as the body where the model wrote one, and a footer row per
+// child, the blocked one the only row with a key.
 func TestGolden_FanoutBlock(t *testing.T) {
+	const titled = "Documenting and verifying in parallel while I keep the loop change here."
 	captureGolden(t, "fanout-block", "fan-out block", goldenWidths, func(width int) []golden.Panel {
 		flight := FanoutBlock{
+			Body:       titled,
 			Elapsed:    "1m12s",
 			Spawned:    4,
 			SpawnLimit: 32,
@@ -1414,6 +1420,7 @@ func TestGolden_FanoutBlock(t *testing.T) {
 			},
 		}
 		settled := FanoutBlock{
+			Body:       titled,
 			Elapsed:    "2m04s",
 			Spawned:    3,
 			SpawnLimit: 32,
@@ -1551,6 +1558,55 @@ func TestGolden_FanoutBlock(t *testing.T) {
 			{Label: "writers on their own plans · steps in words and the budget's share, never one bar", View: planned.View(width)},
 			{Label: "writers queued behind a claim · each waits for the writer it overlaps, in spawn order", View: claimed.View(width)},
 			{Label: "writers taking turns at the check slots · two run their tests, two hold for a slot", View: slotted.View(width)},
+			{Label: "folded by the reader · the header alone", View: func() string {
+				folded := flight
+				folded.Folded = true
+				return folded.View(width)
+			}()},
+		}
+	})
+}
+
+// TestGolden_PlannedCard captures an approved plan as the card the
+// transcript draws where it was approved, and the flat line each step the run
+// finishes leaves under its own card. The plan of seven is past the card's
+// ceiling, so the rows stand around the step in flight and the rest are
+// counted with whether any of them write; the plan of four draws every step.
+func TestGolden_PlannedCard(t *testing.T) {
+	seven := PlannedCard{
+		Files: 5, Reversible: "reversible", ReversibleTone: ToneSafe, Frame: 2,
+		Body: "Here is the order I will take. The three edits stop for you; everything else is read-only.",
+		Steps: []PlannedStep{
+			{Number: 1, Title: "Locate the round accounting", State: PlanStepDone, Does: "read only"},
+			{Number: 2, Title: "Add a RoundsExhausted sentinel", State: PlanStepDone, Writes: true, File: "errors.go"},
+			{Number: 3, Title: "Return it from runRound and handle it in Run", State: PlanStepRunning, Writes: true, File: "loop.go"},
+			{Number: 4, Title: "Thread the sentinel through the loop", Writes: true, File: "loop.go"},
+			{Number: 5, Title: "Survey the callers", Does: "read only"},
+			{Number: 6, Title: "Run the agent tests", Does: "$ runs"},
+			{Number: 7, Title: "Read the result back", Does: "read only"},
+		},
+	}
+	four := PlannedCard{
+		Files: 3, Reversible: "partly reversible", ReversibleTone: ToneNeutral,
+		Body: "make the round limit recoverable",
+		Steps: []PlannedStep{
+			{Number: 1, Title: "Locate the round accounting", State: PlanStepDone, Does: "read only"},
+			{Number: 2, Title: "Add a RoundsExhausted sentinel", State: PlanStepFailed, Writes: true, File: "errors.go"},
+			{Number: 3, Title: "Return it from runRound", Writes: true, File: "loop.go", More: 1},
+			{Number: 4, Title: "Drop the old round shim", Writes: true, Delete: true, File: "shim.go"},
+		},
+	}
+	captureGolden(t, "planned-card", "planned card", goldenWidths, func(width int) []golden.Panel {
+		folded := seven
+		folded.Folded = true
+		return []golden.Panel{
+			{Label: "a plan of seven mid-run · the rows around the step in flight, the rest counted", View: seven.View(width)},
+			{Label: "a plan of four · every step, one failed, a delete in del", View: four.View(width)},
+			{Label: "folded by the reader · the header alone", View: folded.View(width)},
+			{Label: "a step ticked · the flat line under its card", View: PlanTick{Number: 3, Of: 7,
+				Title: "Return it from runRound and handle it in Run", WritesLeft: 2}.View(width)},
+			{Label: "a step that broke · the same line, its mark in del", View: PlanTick{Number: 2, Of: 4,
+				Title: "Add a RoundsExhausted sentinel", WritesLeft: 1, Failed: true}.View(width)},
 		}
 	})
 }

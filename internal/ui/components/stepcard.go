@@ -70,6 +70,9 @@ type StepCard struct {
 	// `⚠`, and not a break (FailureCard).
 	Mark          string
 	OutcomeAccent bool
+	// OutcomePainted marks an outcome already painted run by run: a
+	// fan-out's tally, whose clauses each carry their own tone.
+	OutcomePainted bool
 	// Verdict is the reading's verdict or the gate's word after the
 	// outcome, and VerdictAlert paints it in the accent. It drops second.
 	Verdict      string
@@ -351,6 +354,9 @@ func (c StepCard) headerRight(fit headerFit) string {
 // outcome paints the step's answer: a write's line counts in the diff's two
 // tokens, and anything else in the tone of how the step stands.
 func (c StepCard) outcome() string {
+	if c.OutcomePainted {
+		return c.Outcome
+	}
 	if c.OutcomeAccent {
 		return sty.Accent.Render(c.Outcome)
 	}

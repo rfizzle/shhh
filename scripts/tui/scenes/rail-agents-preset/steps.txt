@@ -20,7 +20,7 @@
 # preset first — and the four queued writers are behind `… 4 more · 4
 # running`, in the heading's own words, with CONTEXT and SPEND still on the
 # rail under it. Below 130 there is no rail, so the snap names only what the
-# transcript's lanes carry.
+# fan-out card's rows carry.
 setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
 snap 01-start "Some things worth doing first"
 keys "survey the round accounting" Enter
@@ -42,4 +42,4 @@ keys Escape
 sleep 2
 # The snap waits on the map's own row for writer-1, which only the rail draws.
 wide 130 snap 05-past-the-preset "⚠ writer-1" "… 4 more · 4 running" "f12 agents"
-narrow 130 snap 05-past-the-preset "needs you"
+narrow 130 snap 05-past-the-preset "blocked · "

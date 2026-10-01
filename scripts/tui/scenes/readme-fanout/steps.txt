@@ -13,11 +13,11 @@ snap 02-spawn-card "Start 3 writers"
 sleep 1
 keys y
 sleep 4
-snap 03-lanes "3 agents"
+snap 03-lanes "spawned 3 agents"
 sleep 4
 keys Escape
 sleep 2
-snap 04-blocked "needs you"
+snap 04-blocked "blocked · " "[f12] agents"
 keys C-Space
 sleep 2
 keys y
@@ -28,4 +28,4 @@ keys y
 sleep 5
 keys Escape
 sleep 2
-snap 05-three-states "✓ done" "⚠ needs you" "1 of 3 steps ·" "· Run gofmt"
+snap 05-three-states "✓ done" "blocked · " "1 of 3 steps ·" "· Run gofmt"

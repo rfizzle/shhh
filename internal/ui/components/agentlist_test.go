@@ -472,9 +472,10 @@ func TestAgentListKeepsTodaysSemantics(t *testing.T) {
 	}
 }
 
-// TestAgentListTallyIsTheFanoutHeader: the manager's title rail, the fan-out
-// header and the rail's map heading count the same children the same way, and
-// only the manager's border leads with who needs you
+// TestAgentListTallyIsTheFanoutHeader: the manager's title rail and the
+// rail's map heading count the same children the same way, the fan-out card's
+// header says they are working together, and only the manager's border leads
+// with who needs you
 // (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
 func TestAgentListTallyIsTheFanoutHeader(t *testing.T) {
 	rows := managerRows()
@@ -488,8 +489,8 @@ func TestAgentListTallyIsTheFanoutHeader(t *testing.T) {
 	if got := ansi.Strip((&AgentList{Rows: rows}).tally()); got != "1 needs you · 2 running" {
 		t.Fatalf("manager tally = %q, want the ask first and the live children counted", got)
 	}
-	if got := ansi.Strip(block.headerOutcome()); got != "2 running" {
-		t.Fatalf("fan-out header = %q, want the count alone", got)
+	if got := ansi.Strip(block.headerOutcome()); got != "in parallel" {
+		t.Fatalf("fan-out header = %q, want the children working together and no ask", got)
 	}
 	if got := ansi.Strip(rail.childTally()); got != "2 running" {
 		t.Fatalf("rail heading = %q, want the count alone", got)

@@ -11,156 +11,182 @@
 
 ── layout ──────────────────────────────────────────────────
 · mid-flight · one child is waiting on you, the session's spawn count on the header
-◇ fan-out    4 agents · 4 of 32 spawned     3 running  1m12s
-   ◇ agent   scout-3 · other ErrRoundLi…  ⚠ needs you    18s
-    waiting approval: read ../shhh-plugins/registry.go
-    [f12] agents · the other two keep running
-   ◇ agent   writer-1 · docs/loop.md        ▰▰▱▱▱ 2/5    12s
-    started from 5 uncommitted files in your tree
-   ◇ agent   tester-2 · internal/agent …  ▰▰▰▰▰ ✓ 5/5    41s
-    all four packages pass
-   ◇ agent   reader-4 · survey internal/ui     queued   1.0s
+
+  ◇ spawned 4 agents · 4 of 32 in the session  in parallel
+    Documenting and verifying in parallel while I keep the
+    loop change here.
+    ◇ scout-3   blocked · waiting appr… [f12] agents · 18s
+    ◇ writer-1  docs/loop.md     ▰▰▱▱▱ 2/5 · 6 tools · 12s
+      started from 5 uncommitted files in your tree
+    ◇ tester-2  all four packages pass   ▰▰▰▰▰ ✓ 5/5 · 41s
+    ◇ reader-4  survey internal/ui           queued · 1.0s
+
 
 · settled · one lane open on its report, one carrying a verdict, one failed naming its handoff, and no spawn count once nothing is live
-◇ fan-out    3 agents               2 done · 1 failed  2m04s
-   ◇ agent   writer-1 · docs/loop.md           ✓ done  1m38s
-    documented the sentinel and linked the test · 2 assumpt…
-    ▾ report · 9 lines
-    Documented the sentinel and linked the test.
-    
-    The sentinel is returned from one place and read in two…
-    paragraph names both.
-    
-    ## Assumptions
-    
-    - The loop's own callers are out of scope.
-    - docs/loop.md is the page, not the package comment.
-   ◇ agent   reviewer-2 · read the round cha…  ✓ done    41s
-    two findings, both in the round accounting
-    ▸ report · 3 lines
-   ◇ agent   patcher-3 · apply the patch     ✗ failed  2m04s
-    round limit (25) reached · handoff handoff-130ebba38aed7
+
+  ◇ spawned 3 agents             2 done · 1 failed · 2m04s
+    Documenting and verifying in parallel while I keep the
+    loop change here.
+    ◇ writer-1  documented the sentinel an… ✓ done · 1m38s
+      ▾ report · 9 lines
+      Documented the sentinel and linked the test.
+      
+      The sentinel is returned from one place and read in…
+      paragraph names both.
+      
+      ## Assumptions
+      
+      - The loop's own callers are out of scope.
+      - docs/loop.md is the page, not the package comment.
+    ◇ reviewer-2 two findings, both in the r… ✓ done · 41s
+      ▸ report · 3 lines
+    ◇ patcher-3 round limit (25) reached… ✗ failed · 2m04s
+
 
 · no declared step count · every lane spins
-◇ fan-out    2 agents                       2 running    22s
-   ◇ agent   researcher-1 · survey the ro…  ⠹ working    22s
-    steered from parent
-   ◇ agent   researcher-2 · survey the fo…  ⠹ working    19s
-    steered ×2 · 1 yours · last read off target
+
+  ◇ spawned 2 agents                     in parallel · 22s
+    ◇ researcher-1 survey the round accou… ⠹ working · 22s
+      steered from parent
+    ◇ researcher-2 survey the fold state   ⠹ working · 19s
+      steered ×2 · 1 yours · last read off target
+
 
 · held · two children parked where you stopped them
-◇ fan-out    3 agents              2 held · 1 running    48s
-   ◇ agent   writer-1 · docs/loop.md           ⏸ held    48s
-   ◇ agent   writer-2 · internal/agent/round…  ⏸ held    44s
-   ◇ agent   reader-3 · survey internal/ui  ⠹ working    39s
+
+  ◇ spawned 3 agents              2 held · 1 running · 48s
+    ◇ writer-1  docs/loop.md        ⏸ held · 7 tools · 48s
+    ◇ writer-2  internal/agent/round.go       ⏸ held · 44s
+    ◇ reader-3  survey internal/ui         ⠹ working · 39s
+
 
 · a child that delegated · its lane says how many are under it
-◇ fan-out    4 agents                       3 running  1m40s
-   ◇ agent   writer-1 · docs/loop.md        ▰▰▰▱▱ 3/5  1m40s
-    2 agents under it
-  └◇ agent   reviewer-1a · read the rou…  ⚠ needs you    22s
-    waiting approval: read internal/agent/loop.go
-    [f12] agents · the other two keep running
-  └◇ agent   tester-1b · run the package …  ⠹ working     9s
-   ◇ agent   reader-2 · survey internal/ui     ✓ done    55s
-    the rails and the frame are one component
+
+  ◇ spawned 4 agents                   in parallel · 1m40s
+    ◇ writer-1  docs/loop.md  ▰▰▰▱▱ 3/5 · 14 tools · 1m40s
+      2 agents under it
+   └◇ reviewer-1a blocked · waiting ap… [f12] agents · 22s
+   └◇ tester-1b run the package tests       ⠹ working · 9s
+    ◇ reader-2  the rails and the frame are … ✓ done · 55s
+
 
 · writers on their own plans · steps in words and the budget's share, never one bar
-◇ fan-out    3 agents                       2 running  2m05s
-   ◇ agent   writer-1 · wire the flag    3 of 7 steps  2m05s
-   ◇ agent   writer-2 · internal/age…  ✓ 5 of 7 steps  1m52s
-    the round cap is a pause
-   ◇ agent   reader-3 · survey internal/ui  ⠹ working    58s
+
+  ◇ spawned 3 agents                   in parallel · 2m05s
+    ◇ writer-1  docs… · wire the flag 3 of 7 steps · 2m05s
+    ◇ writer-2  the round cap is a… ✓ 5 of 7 steps · 1m52s
+    ◇ reader-3  survey internal/ui         ⠹ working · 58s
+
 
 · writers queued behind a claim · each waits for the writer it overlaps, in spawn order
-◇ fan-out    3 agents                       3 running    31s
-   ◇ agent   writer-1 · docs/loop.md        ⠹ working    31s
-   ◇ agent   writer-2 · docs…  queued behind writer-1    31s
-   ◇ agent   writer-3 · docs…  queued behind writer-2    31s
+
+  ◇ spawned 3 agents                     in parallel · 31s
+    ◇ writer-1  docs/loop.md     ⠹ working · 5 tools · 31s
+    ◇ writer-2  docs/loop.md  queued behind writer-1 · 31s
+    ◇ writer-3  docs/loop.md  queued behind writer-2 · 31s
+
 
 · writers taking turns at the check slots · two run their tests, two hold for a slot
-◇ fan-out    4 agents           2 waiting · 2 running  1m12s
-   ◇ agent   writer-1 · internal/agent/lo…  ⠹ working  1m12s
-   ◇ agent   writer-2 · internal/agent/ro…  ⠹ working  1m10s
-   ◇ agent   writer-3 · docs/loop.md        ⏸ waiting  1m08s
-    waiting for a check slot (2 running)
-   ◇ agent   writer-4 · internal/ui/rail.…  ⏸ waiting  1m05s
-    waiting for a check slot (2 running)
+
+  ◇ spawned 4 agents         2 waiting · 2 running · 1m12s
+    ◇ writer-1  internal/agent/loop.go   ⠹ working · 1m12s
+    ◇ writer-2  internal/agent/round.go  ⠹ working · 1m10s
+    ◇ writer-3  docs/loop.md   ⏸ waiting · 5 tools · 1m08s
+      waiting for a check slot (2 running)
+    ◇ writer-4  internal/ui/rail.go      ⏸ waiting · 1m05s
+      waiting for a check slot (2 running)
+
+
+· folded by the reader · the header alone
+▸ ◇ spawned 4 agents · 4 of 32 in the session  in parallel
 
 ── ansi ────────────────────────────────────────────────────
 · mid-flight · one child is waiting on you, the session's spawn count on the header
-␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents · 4 of 32 spawned␛[m     ␛[38;5;244m3 running␛[m  ␛[38;5;244m1m12s␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mscout-3␛[m␛[38;5;244m · other ErrRoundLi…␛[m  ␛[38;5;254m⚠ needs you␛[m    ␛[38;5;244m18s␛[m
-    ␛[38;5;244mwaiting approval: read ../shhh-plugins/registry.go␛[m
-    ␛[38;5;254m[f12]␛[m␛[38;5;244m agents␛[m␛[38;5;244m · ␛[m␛[38;5;244mthe other two keep running␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1␛[m␛[38;5;244m · docs/loop.md␛[m        ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱␛[m ␛[38;5;244m2/5␛[m    ␛[38;5;244m12s␛[m
-    ␛[38;5;244mstarted from 5 uncommitted files in your tree␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mtester-2␛[m␛[38;5;244m · internal/agent …␛[m  ␛[38;5;254m▰▰▰▰▰␛[m ␛[38;5;254m✓ 5/5␛[m    ␛[38;5;244m41s␛[m
-    ␛[38;5;244mall four packages pass␛[m
-   ␛[38;5;244m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mreader-4␛[m␛[38;5;244m · survey internal/ui␛[m     ␛[38;5;244mqueued␛[m   ␛[38;5;244m1.0s␛[m
+
+  ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[m␛[38;5;244m 4 agents · 4 of 32 in the session␛[m  ␛[38;5;244min parallel␛[m
+    ␛[38;5;254mDocumenting and verifying in parallel while I keep the␛[m
+    ␛[38;5;254mloop change here.␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mscout-3␛[m   ␛[38;5;254mblocked␛[m␛[38;5;244m · waiting appr…␛[m ␛[38;5;254m[f12]␛[m␛[38;5;244m agents␛[m␛[38;5;244m · 18s␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m  ␛[38;5;244mdocs/loop.md␛[m     ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱␛[m ␛[38;5;244m2/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools␛[m␛[38;5;244m · 12s␛[m
+      ␛[38;5;244mstarted from 5 uncommitted files in your tree␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mtester-2␛[m  ␛[38;5;244mall four packages pass␛[m   ␛[38;5;254m▰▰▰▰▰␛[m ␛[38;5;254m✓ 5/5␛[m␛[38;5;244m · 41s␛[m
+    ␛[38;5;244m◇␛[m ␛[38;5;254mreader-4␛[m  ␛[38;5;244msurvey internal/ui␛[m           ␛[38;5;244mqueued␛[m␛[38;5;244m · 1.0s␛[m
+
 
 · settled · one lane open on its report, one carrying a verdict, one failed naming its handoff, and no spawn count once nothing is live
-␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m3 agents␛[m               ␛[38;5;254m2 done␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 failed␛[m  ␛[38;5;244m2m04s␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1␛[m␛[38;5;244m · docs/loop.md␛[m           ␛[38;5;254m✓ done␛[m  ␛[38;5;244m1m38s␛[m
-    ␛[38;5;244mdocumented the sentinel and linked the test · 2 assumpt…␛[m
-    ␛[38;5;244m▾ report · 9 lines␛[m
-    ␛[38;5;244mDocumented the sentinel and linked the test.␛[m
-    ␛[38;5;244m␛[m
-    ␛[38;5;244mThe sentinel is returned from one place and read in two…␛[m
-    ␛[38;5;244mparagraph names both.␛[m
-    ␛[38;5;244m␛[m
-    ␛[38;5;244m## Assumptions␛[m
-    ␛[38;5;244m␛[m
-    ␛[38;5;244m- The loop's own callers are out of scope.␛[m
-    ␛[38;5;244m- docs/loop.md is the page, not the package comment.␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mreviewer-2␛[m␛[38;5;244m · read the round cha…␛[m  ␛[38;5;254m✓ done␛[m    ␛[38;5;244m41s␛[m
-    ␛[38;5;244mtwo findings, both in the round accounting␛[m
-    ␛[38;5;244m▸ report · 3 lines␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mpatcher-3␛[m␛[38;5;244m · apply the patch␛[m     ␛[38;5;254m✗ failed␛[m  ␛[38;5;244m2m04s␛[m
-    ␛[38;5;244mround limit (25) reached · handoff handoff-130ebba38aed7␛[m
+
+  ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[m␛[38;5;244m 3 agents␛[m             ␛[38;5;254m2 done␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m2m04s␛[m
+    ␛[38;5;254mDocumenting and verifying in parallel while I keep the␛[m
+    ␛[38;5;254mloop change here.␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m  ␛[38;5;244mdocumented the sentinel an…␛[m ␛[38;5;254m✓ done␛[m␛[38;5;244m · 1m38s␛[m
+      ␛[38;5;244m▾ report · 9 lines␛[m
+      ␛[38;5;244mDocumented the sentinel and linked the test.␛[m
+      ␛[38;5;244m␛[m
+      ␛[38;5;244mThe sentinel is returned from one place and read in…␛[m
+      ␛[38;5;244mparagraph names both.␛[m
+      ␛[38;5;244m␛[m
+      ␛[38;5;244m## Assumptions␛[m
+      ␛[38;5;244m␛[m
+      ␛[38;5;244m- The loop's own callers are out of scope.␛[m
+      ␛[38;5;244m- docs/loop.md is the page, not the package comment.␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mreviewer-2␛[m ␛[38;5;244mtwo findings, both in the r…␛[m ␛[38;5;254m✓ done␛[m␛[38;5;244m · 41s␛[m
+      ␛[38;5;244m▸ report · 3 lines␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mpatcher-3␛[m ␛[38;5;244mround limit (25) reached…␛[m ␛[38;5;254m✗ failed␛[m␛[38;5;244m · 2m04s␛[m
+
 
 · no declared step count · every lane spins
-␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m2 agents␛[m                       ␛[38;5;244m2 running␛[m    ␛[38;5;244m22s␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-1␛[m␛[38;5;244m · survey the ro…␛[m  ␛[38;5;254m⠹ working␛[m    ␛[38;5;244m22s␛[m
-    ␛[38;5;244msteered from parent␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-2␛[m␛[38;5;244m · survey the fo…␛[m  ␛[38;5;254m⠹ working␛[m    ␛[38;5;244m19s␛[m
-    ␛[38;5;244msteered ×2 · 1 yours · last read off target␛[m
+
+  ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[m␛[38;5;244m 2 agents␛[m                     ␛[38;5;244min parallel␛[m␛[38;5;244m · ␛[m␛[38;5;244m22s␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mresearcher-1␛[m ␛[38;5;244msurvey the round accou…␛[m ␛[38;5;254m⠹ working␛[m␛[38;5;244m · 22s␛[m
+      ␛[38;5;244msteered from parent␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mresearcher-2␛[m ␛[38;5;244msurvey the fold state␛[m   ␛[38;5;254m⠹ working␛[m␛[38;5;244m · 19s␛[m
+      ␛[38;5;244msteered ×2 · 1 yours · last read off target␛[m
+
 
 · held · two children parked where you stopped them
-␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m3 agents␛[m              ␛[38;5;244m2 held␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 running␛[m    ␛[38;5;244m48s␛[m
-   ␛[38;5;244m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1␛[m␛[38;5;244m · docs/loop.md␛[m           ␛[38;5;244m⏸ held␛[m    ␛[38;5;244m48s␛[m
-   ␛[38;5;244m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-2␛[m␛[38;5;244m · internal/agent/round…␛[m  ␛[38;5;244m⏸ held␛[m    ␛[38;5;244m44s␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mreader-3␛[m␛[38;5;244m · survey internal/ui␛[m  ␛[38;5;254m⠹ working␛[m    ␛[38;5;244m39s␛[m
+
+  ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[m␛[38;5;244m 3 agents␛[m              ␛[38;5;244m2 held␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 running␛[m␛[38;5;244m · ␛[m␛[38;5;244m48s␛[m
+    ␛[38;5;244m◇␛[m ␛[38;5;254mwriter-1␛[m  ␛[38;5;244mdocs/loop.md␛[m        ␛[38;5;244m⏸ held␛[m␛[38;5;244m · ␛[m␛[38;5;244m7 tools␛[m␛[38;5;244m · 48s␛[m
+    ␛[38;5;244m◇␛[m ␛[38;5;254mwriter-2␛[m  ␛[38;5;244minternal/agent/round.go␛[m       ␛[38;5;244m⏸ held␛[m␛[38;5;244m · 44s␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mreader-3␛[m  ␛[38;5;244msurvey internal/ui␛[m         ␛[38;5;254m⠹ working␛[m␛[38;5;244m · 39s␛[m
+
 
 · a child that delegated · its lane says how many are under it
-␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents␛[m                       ␛[38;5;244m3 running␛[m  ␛[38;5;244m1m40s␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1␛[m␛[38;5;244m · docs/loop.md␛[m        ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;244m3/5␛[m  ␛[38;5;244m1m40s␛[m
-    ␛[38;5;244m2 agents under it␛[m
-  ␛[38;5;244m└␛[m␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mreviewer-1a␛[m␛[38;5;244m · read the rou…␛[m  ␛[38;5;254m⚠ needs you␛[m    ␛[38;5;244m22s␛[m
-    ␛[38;5;244mwaiting approval: read internal/agent/loop.go␛[m
-    ␛[38;5;254m[f12]␛[m␛[38;5;244m agents␛[m␛[38;5;244m · ␛[m␛[38;5;244mthe other two keep running␛[m
-  ␛[38;5;244m└␛[m␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mtester-1b␛[m␛[38;5;244m · run the package …␛[m  ␛[38;5;254m⠹ working␛[m     ␛[38;5;244m9s␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mreader-2␛[m␛[38;5;244m · survey internal/ui␛[m     ␛[38;5;254m✓ done␛[m    ␛[38;5;244m55s␛[m
-    ␛[38;5;244mthe rails and the frame are one component␛[m
+
+  ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[m␛[38;5;244m 4 agents␛[m                   ␛[38;5;244min parallel␛[m␛[38;5;244m · ␛[m␛[38;5;244m1m40s␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m  ␛[38;5;244mdocs/loop.md␛[m  ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;244m3/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m14 tools␛[m␛[38;5;244m · 1m40s␛[m
+      ␛[38;5;244m2 agents under it␛[m
+   ␛[38;5;244m└␛[m␛[38;5;254m◇␛[m ␛[38;5;254mreviewer-1a␛[m ␛[38;5;254mblocked␛[m␛[38;5;244m · waiting ap…␛[m ␛[38;5;254m[f12]␛[m␛[38;5;244m agents␛[m␛[38;5;244m · 22s␛[m
+   ␛[38;5;244m└␛[m␛[38;5;254m◇␛[m ␛[38;5;254mtester-1b␛[m ␛[38;5;244mrun the package tests␛[m       ␛[38;5;254m⠹ working␛[m␛[38;5;244m · 9s␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mreader-2␛[m  ␛[38;5;244mthe rails and the frame are …␛[m ␛[38;5;254m✓ done␛[m␛[38;5;244m · 55s␛[m
+
 
 · writers on their own plans · steps in words and the budget's share, never one bar
-␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m3 agents␛[m                       ␛[38;5;244m2 running␛[m  ␛[38;5;244m2m05s␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1␛[m␛[38;5;244m · wire the flag␛[m    ␛[38;5;244m3 of 7 steps␛[m  ␛[38;5;244m2m05s␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-2␛[m␛[38;5;244m · internal/age…␛[m  ␛[38;5;254m✓ 5 of 7 steps␛[m  ␛[38;5;244m1m52s␛[m
-    ␛[38;5;244mthe round cap is a pause␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mreader-3␛[m␛[38;5;244m · survey internal/ui␛[m  ␛[38;5;254m⠹ working␛[m    ␛[38;5;244m58s␛[m
+
+  ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[m␛[38;5;244m 3 agents␛[m                   ␛[38;5;244min parallel␛[m␛[38;5;244m · ␛[m␛[38;5;244m2m05s␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m  ␛[38;5;244mdocs… · wire the flag␛[m ␛[38;5;244m3 of 7 steps␛[m␛[38;5;244m · 2m05s␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-2␛[m  ␛[38;5;244mthe round cap is a…␛[m ␛[38;5;254m✓ 5 of 7 steps␛[m␛[38;5;244m · 1m52s␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mreader-3␛[m  ␛[38;5;244msurvey internal/ui␛[m         ␛[38;5;254m⠹ working␛[m␛[38;5;244m · 58s␛[m
+
 
 · writers queued behind a claim · each waits for the writer it overlaps, in spawn order
-␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m3 agents␛[m                       ␛[38;5;244m3 running␛[m    ␛[38;5;244m31s␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1␛[m␛[38;5;244m · docs/loop.md␛[m        ␛[38;5;254m⠹ working␛[m    ␛[38;5;244m31s␛[m
-   ␛[38;5;244m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-2␛[m␛[38;5;244m · docs…␛[m  ␛[38;5;244mqueued behind writer-1␛[m    ␛[38;5;244m31s␛[m
-   ␛[38;5;244m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-3␛[m␛[38;5;244m · docs…␛[m  ␛[38;5;244mqueued behind writer-2␛[m    ␛[38;5;244m31s␛[m
+
+  ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[m␛[38;5;244m 3 agents␛[m                     ␛[38;5;244min parallel␛[m␛[38;5;244m · ␛[m␛[38;5;244m31s␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m  ␛[38;5;244mdocs/loop.md␛[m     ␛[38;5;254m⠹ working␛[m␛[38;5;244m · ␛[m␛[38;5;244m5 tools␛[m␛[38;5;244m · 31s␛[m
+    ␛[38;5;244m◇␛[m ␛[38;5;254mwriter-2␛[m  ␛[38;5;244mdocs/loop.md␛[m  ␛[38;5;244mqueued behind writer-1␛[m␛[38;5;244m · 31s␛[m
+    ␛[38;5;244m◇␛[m ␛[38;5;254mwriter-3␛[m  ␛[38;5;244mdocs/loop.md␛[m  ␛[38;5;244mqueued behind writer-2␛[m␛[38;5;244m · 31s␛[m
+
 
 · writers taking turns at the check slots · two run their tests, two hold for a slot
-␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents␛[m           ␛[38;5;244m2 waiting␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 running␛[m  ␛[38;5;244m1m12s␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1␛[m␛[38;5;244m · internal/agent/lo…␛[m  ␛[38;5;254m⠹ working␛[m  ␛[38;5;244m1m12s␛[m
-   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-2␛[m␛[38;5;244m · internal/agent/ro…␛[m  ␛[38;5;254m⠹ working␛[m  ␛[38;5;244m1m10s␛[m
-   ␛[38;5;244m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-3␛[m␛[38;5;244m · docs/loop.md␛[m        ␛[38;5;244m⏸ waiting␛[m  ␛[38;5;244m1m08s␛[m
-    ␛[38;5;244mwaiting for a check slot (2 running)␛[m
-   ␛[38;5;244m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-4␛[m␛[38;5;244m · internal/ui/rail.…␛[m  ␛[38;5;244m⏸ waiting␛[m  ␛[38;5;244m1m05s␛[m
-    ␛[38;5;244mwaiting for a check slot (2 running)␛[m
+
+  ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[m␛[38;5;244m 4 agents␛[m         ␛[38;5;244m2 waiting␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 running␛[m␛[38;5;244m · ␛[m␛[38;5;244m1m12s␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m  ␛[38;5;244minternal/agent/loop.go␛[m   ␛[38;5;254m⠹ working␛[m␛[38;5;244m · 1m12s␛[m
+    ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-2␛[m  ␛[38;5;244minternal/agent/round.go␛[m  ␛[38;5;254m⠹ working␛[m␛[38;5;244m · 1m10s␛[m
+    ␛[38;5;244m◇␛[m ␛[38;5;254mwriter-3␛[m  ␛[38;5;244mdocs/loop.md␛[m   ␛[38;5;244m⏸ waiting␛[m␛[38;5;244m · ␛[m␛[38;5;244m5 tools␛[m␛[38;5;244m · 1m08s␛[m
+      ␛[38;5;244mwaiting for a check slot (2 running)␛[m
+    ␛[38;5;244m◇␛[m ␛[38;5;254mwriter-4␛[m  ␛[38;5;244minternal/ui/rail.go␛[m      ␛[38;5;244m⏸ waiting␛[m␛[38;5;244m · 1m05s␛[m
+      ␛[38;5;244mwaiting for a check slot (2 running)␛[m
+
+
+· folded by the reader · the header alone
+␛[38;5;244m▸␛[m ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[m␛[38;5;244m 4 agents · 4 of 32 in the session␛[m  ␛[38;5;244min parallel␛[m

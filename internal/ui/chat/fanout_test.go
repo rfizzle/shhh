@@ -93,7 +93,7 @@ func TestTwoSpawnsBecomeOneBlock(t *testing.T) {
 	}
 
 	view := ansi.Strip(m.renderHistory())
-	for _, want := range []string{"fan-out", "3 agents", "researcher-1", "researcher-2", "researcher-3"} {
+	for _, want := range []string{"spawned 3 agents", "researcher-1", "researcher-2", "researcher-3"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("rendered history missing %q:\n%s", want, view)
 		}
@@ -260,7 +260,7 @@ func TestFanoutLanesUpdateInPlace(t *testing.T) {
 	// freeze into the render cache.
 	m.appendEntry(entry{kind: entryAssistant, text: "Now wait for them"})
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"loop.go"}`, toolResult: "x"})
-	if running := ansi.Strip(m.renderHistory()); !strings.Contains(running, "2 running") {
+	if running := ansi.Strip(m.renderHistory()); !strings.Contains(running, "in parallel") {
 		t.Fatalf("live block does not report its running children:\n%s", running)
 	}
 
@@ -268,7 +268,7 @@ func TestFanoutLanesUpdateInPlace(t *testing.T) {
 	waitFor(t, func() bool { a, _ := sup.ActiveCounts(); return a == 0 })
 
 	stopped := ansi.Strip(m.renderHistory())
-	if strings.Contains(stopped, "2 running") {
+	if strings.Contains(stopped, "in parallel") {
 		t.Fatalf("the block froze with its children still shown as running:\n%s", stopped)
 	}
 	if !strings.Contains(stopped, "failed") {
@@ -349,15 +349,15 @@ func TestFanoutBlockedLaneStatesWhatItNeeds(t *testing.T) {
 	waitFor(t, func() bool { _, blocked := sup.ActiveCounts(); return blocked == 2 })
 
 	view := ansi.Strip(m.renderHistory())
-	if !strings.Contains(view, "⚠ needs you") {
+	if !strings.Contains(view, "blocked · ") {
 		t.Fatalf("a blocked child's lane does not say it needs you:\n%s", view)
 	}
 	if !strings.Contains(view, "echo hi") {
 		t.Fatalf("a blocked child's lane does not say what it is waiting for:\n%s", view)
 	}
-	// The header counts the two with the running and leaves the ask to the
-	// lanes (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
-	if !strings.Contains(view, "2 running") || strings.Contains(view, "2 needs you") {
+	// The header says the two work together and leaves the ask to their
+	// rows (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
+	if !strings.Contains(view, "in parallel") || strings.Contains(view, "2 needs you") {
 		t.Fatalf("the header should count the blocked lanes, not restate the ask:\n%s", view)
 	}
 }
@@ -443,9 +443,136 @@ func TestFanoutDrawsADescendantUnderTheLaneThatSpawnedIt(t *testing.T) {
 	if !strings.Contains(view, "1 agent under it") {
 		t.Fatalf("the parent's lane should say how many are under it:\n%s", view)
 	}
-	if !strings.Contains(view, "  └◇ agent   reviewer-1") {
+	if !strings.Contains(view, "   └◇ reviewer-1") {
 		t.Fatalf("the grandchild's lane should draw behind the corner:\n%s", view)
 	}
+}
+
+// TestCard_AFanOutIsACardWithAChildPerRow: a fan-out is a card — the spawn's
+// receipt as the header, the sentence that titled it as the body and nowhere
+// else, a footer row per child — running and once every child has returned,
+// when the header tallies how they ended and enter opens the reports as it
+// opened them from the block. The header folds the card on a click, as every
+// card's does, and a child's row does what the lane's click did.
+func TestCard_AFanOutIsACardWithAChildPerRow(t *testing.T) {
+	const titled = "Documenting and verifying in parallel"
+	spawned := func(t *testing.T, env subagent.EnvFactory, settled bool) Model {
+		t.Helper()
+		sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: env})
+		t.Cleanup(sup.Close)
+		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+			WithSubagents(sup).WithMouse(true)
+		updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
+		m = updated.(Model)
+		m.appendEntry(entry{kind: entryAssistant, text: titled})
+		m.beginSpawnBatch()
+		for _, task := range []string{"one", "two"} {
+			spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
+			m.appendSpawnEntry(spawnRowEntry(task))
+		}
+		waitFor(t, func() bool { a, _ := sup.ActiveCounts(); return (a == 0) == settled })
+		m.invalidateRenderCache()
+		m.viewport.SetLines(m.renderHistoryLines())
+		m.viewport.GotoTop()
+		m.atBottom = false
+		return m
+	}
+	fanoutAt := func(m Model) int {
+		for i, e := range m.transcript {
+			if e.kind == entryFanout {
+				return i
+			}
+		}
+		t.Fatal("the two spawns did not become a fan-out")
+		return -1
+	}
+	for _, tc := range []struct {
+		name    string
+		env     subagent.EnvFactory
+		settled bool
+		header  []string
+		row     string
+	}{
+		{"running", blockingEnv(), false, []string{"◇ spawned 2 agents", "in parallel"}, "researcher-"},
+		{"returned", reportingEnv(childReportText), true, []string{"◇ spawned 2 agents", "2 done"}, "✓ done"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := spawned(t, tc.env, tc.settled)
+			lines := contentLines(m)
+			head := lineOf(t, m, "spawned 2 agents")
+			for _, want := range tc.header {
+				if !strings.Contains(lines[head], want) {
+					t.Errorf("the header %q lacks %q", lines[head], want)
+				}
+			}
+			if got := strings.TrimSpace(lines[head+1]); got != titled {
+				t.Errorf("the body = %q, want the sentence that titled the spawn", got)
+			}
+			if n := strings.Count(strings.Join(lines, "\n"), titled); n != 1 {
+				t.Errorf("the sentence is drawn %d times, want once, as the card's body", n)
+			}
+			rows := 0
+			for _, l := range lines[head+2:] {
+				if strings.HasPrefix(l, "    ◇ researcher-") {
+					rows++
+					if !strings.Contains(l, tc.row) {
+						t.Errorf("a child's row %q lacks %q", l, tc.row)
+					}
+				}
+			}
+			if rows != 2 {
+				t.Errorf("the card draws %d child rows, want 2:\n%s", rows, strings.Join(lines, "\n"))
+			}
+		})
+	}
+
+	t.Run("enter opens the reports from the card", func(t *testing.T) {
+		m := spawned(t, reportingEnv(childReportText), true)
+		m.focusIdx = fanoutAt(m)
+		updated, _ := m.openCursorRow(stateFocus)
+		m = updated.(Model)
+		if open := ansi.Strip(m.renderHistory()); !strings.Contains(open, "Nothing else reads the counter.") {
+			t.Fatalf("enter on the card did not open the reports:\n%s", open)
+		}
+	})
+
+	t.Run("a click on the header folds the card and gives it back", func(t *testing.T) {
+		m := spawned(t, blockingEnv(), false)
+		idx := fanoutAt(m)
+		x, y := rowCell(t, m, "spawned 2 agents")
+		m = click(t, m, x, y)
+		if got := (*m.entries())[idx].stepFold; got != foldClosed {
+			t.Fatalf("the header click left the fold at %v, want it folded", got)
+		}
+		if lines := contentLines(m); strings.Contains(strings.Join(lines, "\n"), "researcher-1") {
+			t.Fatalf("a folded fan-out still draws its rows:\n%s", strings.Join(lines, "\n"))
+		}
+		x, y = rowCell(t, m, "spawned 2 agents")
+		m = click(t, m, x, y)
+		if got := (*m.entries())[idx].stepFold; got == foldClosed {
+			t.Fatal("a second click on the header should give the card back")
+		}
+	})
+
+	t.Run("a click on a child's row opens the reports, and the body does nothing", func(t *testing.T) {
+		m := spawned(t, reportingEnv(childReportText), true)
+		idx := fanoutAt(m)
+		x, y := rowCell(t, m, titled)
+		m = click(t, m, x, y)
+		if es := *m.entries(); es[idx].expanded || es[idx].stepFold != foldAuto {
+			t.Fatal("a click on the card's body should do nothing")
+		}
+		x, y = rowCell(t, m, "◇ researcher-1")
+		m = click(t, m, x, y)
+		if !(*m.entries())[idx].expanded {
+			t.Fatal("a click on a child's row should open the reports, as the lane's did")
+		}
+		x, y = rowCell(t, m, "◇ researcher-1")
+		m = click(t, m, x, y)
+		if (*m.entries())[idx].expanded {
+			t.Fatal("a second click on the row should close them again")
+		}
+	})
 }
 
 // TestFanoutRerendersOnResize is the last criterion: the block is a passive

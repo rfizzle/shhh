@@ -1467,3 +1467,62 @@ that tool` — in the words the bar uses, railed as the row's own offers are,
 under the mode's register; the register's own words for enter and the arrows
 stay the general ones every row shares. On the strip `?` keeps the strip's
 cursor, so closing the list comes back to the call it was on.
+
+## A fan-out lane sets its name in a slot
+
+*A disagreement, with the manager.* The `Rows` artboard draws a fan-out's
+children as a card's footer rows, the name in a ten-column slot and what the
+child is doing after it, and the binary draws them so. The manager and the
+rail's map keep the separator between a name and its task, because a list
+of rows that is the whole surface has no card's columns to line up with. A
+name longer than the slot is never cut: it takes what it needs and one more
+column, and the facts after it start there, because two children of one
+profile cut to the slot are one name.
+
+## A fan-out child's row answers the click its lane did
+
+*A gap.* The artboard draws no pointer on a fan-out's card. Its header folds
+it, as every card's header does. A child's row is the lane, and it does what
+a click on the block's header did before the block was a card: it opens the
+children's reports and closes them again, the fold enter on the card walks.
+A line of an open report is the report, and a click there opens the whole of
+it full screen where the bound held some back. The padding and the sentence
+are text, and a click there does nothing. The plan's card has a header that
+folds it and rows that are text: a plan's step is not a thing to open.
+
+## A fan-out's rows keep their words and their costs
+
+*A disagreement.* The artboard draws a returned child's state as its bare
+mark, `✓ · 1m 12s`, a running one as the role's own verb, `⠋ writing`, and
+leaves out what each child cost. The binary keeps the state in words beside
+its mark — `✓ done`, `✗ failed`, `⠹ working`, `⏸ held` — since a glyph never
+carries a state alone, and keeps the calls and the spend after it, giving
+them up first as the pane narrows, as the manager's row does. The lane's
+colour is its state's tone, the one the lane always wore: the palette has no
+colour per child, and the kit's lanes in theirs would be colour carrying a
+name. The line that said how many of the others keep running is gone; the
+header says they work in parallel, and each row says how it stands.
+
+## A fan-out's card and a plan's card are drawn whole at every rung
+
+*A gap.* [The ladder](principles.md#density-is-one-ladder) draws a step's
+card as its header alone at `low`. A fan-out's card and a plan's card
+are not drawn that way: a child waiting on you is a row of the one, and an
+answer cannot wait behind a rung, and the other is the run's map, drawn once.
+Each folds to its header only where the reader folded it, and enter on the
+fan-out's card walks its reports as it did the block's, rather than the
+step card's depths, since its rows are not calls the strip could reach.
+
+## A plan's card says what can be put back on the right
+
+*A disagreement.* The artboard draws `reversible` at the end of the plan's
+receipt and the count of writes on the right. The binary draws both on the
+right, `reversible · 3 writes`, the answer where a step's card puts its
+outcome, in the tone the approval card gives it: it is the answer the plan
+was approved on, and the receipt is the plan's size. The body is the plan's
+own sentence, its title line, since an approved plan carries no other. Past
+the ceiling the card draws its four rows around the step in flight, with `…
+N earlier` above them where the window has moved down. A finished step's line
+names the step by the plan's number; `writes left` counts the steps that
+write which the run had not reached when it took this one, and a step that
+broke ticks with `✗`.

@@ -21,11 +21,14 @@ package chat
 //     folds the card to its header and unfolds it again (card.go). The rest
 //     of the card — its padding, the sentence that titled the step, the
 //     evidence under it — is text, a selection surface with no single act
-//     behind it, and a click there does nothing.
+//     behind it, and a click there does nothing. The fan-out's card and the
+//     plan's are cards, and their headers fold them the same way.
 //   - An activity row. Its whole width is one row, and [enter] under reading
 //     mode's cursor already opens it. The row line opens and closes it; the
 //     body under the row opens that body whole (clickRow). A call's row
-//     inside an open card is one, the same as anywhere. A turn's close
+//     inside an open card is one, the same as anywhere, and so is a child's
+//     row on a fan-out's card, which opens the children's reports as
+//     [enter] on the card does. A turn's close
 //     is one too: the line stating what the turn changed opens that turn's
 //     review, which enter on the selected close opens as well.
 //   - The approval card's decision run. Each key owns its own cells inside
@@ -305,6 +308,45 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 	g := gestureHeader
 	if offset > 0 {
 		g = gestureBody
+	}
+	if u.lines != nil {
+		// A card whose footer is a list — the fan-out's, the plan's — folds
+		// on its header as every card does. A child's row is the lane, and
+		// does what the lane's click did: it opens the reports and closes
+		// them again; a line of a report is the report, and opens it whole.
+		// The rest of the card is text, and a click there does nothing.
+		// See docs/interface/departures.md#a-fan-out-childs-row-answers-the-click-its-lane-did.
+		role := components.CardLineText
+		if offset < len(u.lines) {
+			role = u.lines[offset]
+		}
+		switch {
+		case role == components.CardLineHeader:
+			if es[idx].stepFold == foldClosed {
+				es[idx].stepFold = foldAuto
+			} else {
+				es[idx].stepFold = foldClosed
+			}
+			m.invalidateRenderCache()
+			if m.state == stateFocus {
+				if m.selectableRow(es[idx]) {
+					m.focusIdx = idx
+				}
+				m.refreshFocusView()
+				return m, nil
+			}
+			m.viewport.SetLines(m.renderHistoryLines())
+			if m.atBottom {
+				m.viewport.GotoBottom()
+			}
+			return m, nil
+		case role == components.CardLineChild && es[idx].kind == entryFanout:
+			g = gestureHeader
+		case role == components.CardLineReport:
+			g = gestureBody
+		default:
+			return m, nil
+		}
 	}
 	if m.state == stateFocus {
 		// Inside reading mode the cursor is the reader's place in the rows, so

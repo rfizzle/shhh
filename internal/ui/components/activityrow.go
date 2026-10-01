@@ -773,18 +773,11 @@ func durationField(d string) string {
 	return strings.Repeat(" ", pad) + sty.Dim.Render(d)
 }
 
-// gridLine assembles one line on the grid: a lead already padded to
+// gridLineWith assembles one line on the grid: a lead already padded to
 // leadWidth, then the target, the outcome field and the duration. The target
 // grows into whatever the fixed fields leave and clips with … so the outcome
 // does not have to — it is the reason to read the line, and it gives way to
-// nothing but the pane. The activity row and the notice are this shape,
-// which is why they line up.
-func gridLine(lead, target, outcome, duration string, width int) string {
-	return gridLineWith(lead, target, func(s string) string { return sty.Dim.Render(s) }, outcome, duration, width)
-}
-
-// gridLineWith is gridLine with the target's painting under the caller's
-// control. A recovery row leads its target with the model in body text and
+// nothing but the pane. The target's painting is the caller's: a recovery row leads its target with the model in body text and
 // dims only the class behind it, which one style over the whole field cannot
 // express; paint is handed the already-clipped text so the column arithmetic
 // stays in one place.

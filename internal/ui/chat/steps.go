@@ -230,6 +230,13 @@ func stepBlocks(es []entry, declared []plan.Step) []transcriptBlock {
 	claimed := map[int]bool{}
 	for i := 0; i < len(es); {
 		if title, ok := stepTitle(es[i]); ok {
+			// A sentence straight before a fan-out is what titled the spawn,
+			// and the fan-out's card takes it as its body (fanout.go).
+			if i+1 < len(es) && es[i+1].kind == entryFanout {
+				blocks = append(blocks, transcriptBlock{start: i, end: i + 2})
+				i += 2
+				continue
+			}
 			j := i + 1
 			for j < len(es) && isStepMember(es[j]) {
 				j++
@@ -610,9 +617,13 @@ type unit struct {
 	// shadow marks a unit that shares its idx with the unit the reading
 	// cursor stands on for that entry and is not it: an open card's own
 	// lines where nothing titled it, its strip, a call row under the line
-	// of its group. The cursor's line and a row's place are read off the
-	// other one.
+	// of its group, a plan's line under the step's card. The cursor's line
+	// and a row's place are read off the other one.
 	shadow bool
+	// lines is what each line of a card with a list in its footer is — the
+	// fan-out's and the plan's — so a click can tell the header that folds
+	// it from a child's row (click.go). Nil on every other unit.
+	lines []components.CardLine
 }
 
 // blockUnits renders one block. In focus mode selectable units carry the
@@ -624,15 +635,23 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 	if isCardBlock(blk, es) {
 		return m.cardUnits(blk, es, width, focus, focusIdx)
 	}
-	var units []unit
 	if blk.step != nil {
-		// A declared step nobody has started is the plan's outline row and
-		// nothing else: no calls to make a card of, so nothing for focus mode
-		// to select either.
-		header := m.headerFor(blk, es)
-		return append(units, unit{idx: blk.step.titleIdx, sepBefore: entry{kind: entryAssistant},
-			sepAfter: entry{kind: entryTool}, text: header.View(width) + "\n"})
+		// A declared step nobody has started has no calls to make a card of,
+		// and the plan's card above the run already lists it as queued
+		// (plannedcard.go): the transcript draws nothing for it here.
+		return nil
 	}
+	if at, title, ok := fanoutCardOf(blk, es); ok {
+		if u, ok := m.fanoutCardUnit(es, at, title, width, focus, focusIdx); ok {
+			return []unit{u}
+		}
+	}
+	if blk.end-blk.start == 1 && blk.start < len(es) && es[blk.start].kind == entryPlan && es[blk.start].plan != nil {
+		e := es[blk.start]
+		card := m.plannedCardFor(e, rowUnselected)
+		return []unit{{idx: blk.start, sepBefore: e, sepAfter: e, text: card.View(width) + "\n", lines: card.Lines(width)}}
+	}
+	var units []unit
 	for i := blk.start; i < blk.end; i++ {
 		e := es[i]
 		text, selectable, grid := m.entryUnitText(i, es, width, focus, focusIdx, false)
@@ -671,6 +690,20 @@ func (m Model) entryUnitText(i int, es []entry, width int, focus bool, focusIdx 
 // on it as a whole — until it is open, when its calls are rows of their own
 // on the card's band so the cursor can stand on each.
 func (m Model) cardUnits(blk transcriptBlock, es []entry, width int, focus bool, focusIdx int) []unit {
+	units := m.cardOwnUnits(blk, es, width, focus, focusIdx)
+	// A step of the approved plan the run has finished says so under its
+	// card, on one flat line: the plan's card is drawn once, and progress
+	// through it costs a line rather than a redraw (plannedcard.go).
+	if tick, ok := m.planTickFor(blk, es); ok {
+		block := entry{kind: entryAssistant}
+		units = append(units, unit{idx: cardAnchor(blk), sepBefore: block, sepAfter: block,
+			text: tick.View(width) + "\n", shadow: true})
+	}
+	return units
+}
+
+// cardOwnUnits is the card's own lines, as cardUnits lays them out.
+func (m Model) cardOwnUnits(blk transcriptBlock, es []entry, width int, focus bool, focusIdx int) []unit {
 	anchor := cardAnchor(blk)
 	// A run nothing titled is kept on its first call, which is a row of its own
 	// once the card is open: the cursor there is on the row, not the card.

@@ -2,14 +2,14 @@ package components
 
 // Fan-out lanes (docs/interface/surfaces.md#the-agent-manager). Three
 // children streaming their rows into one transcript reads as one confused
-// feed, so a spawn of two or more collapses into a single block with a lane
-// per child: its name, what it was asked to do, how far it has got, what it
-// has cost, and what state it is in.
+// feed, so a spawn of two or more collapses into a single card with a footer
+// row per child: its name, what it was asked to do, how far it has got, what
+// it has cost, and what state it is in.
 //
-// Three rules the block enforces rather than documents. A blocked lane sorts
-// to the top and says `⚠ needs you` in words in its outcome field, because
-// the only thing a fan-out can need from you is an answer and it must never
-// be the thing you scroll past. A lane draws a progress bar only when the
+// Three rules the card enforces rather than documents. A blocked lane sorts
+// to the top and says `blocked` in words on its row, beside the one key in
+// the card, because the only thing a fan-out can need from you is an answer
+// and it must never be the thing you scroll past. A lane draws a progress bar only when the
 // spawn declared a step count — without one it gets the spinner, never a
 // ratio nobody supplied. And a finished lane's bar stops measuring and starts
 // stating: full, with `✓ 5/5` beside it, over the first line of what the
@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // FanoutState is one lane's lifecycle state. It mirrors the supervisor's
@@ -273,17 +272,22 @@ type LaneReport struct {
 	Lines []string
 }
 
-// FanoutBlock is the whole batch — the header stating how many children are
-// running and how many need you, then one lane each.
+// FanoutBlock is the whole batch, drawn as a card: the header stating how
+// many children were spawned and how they stand, the sentence that titled
+// the spawn, and one footer row per child.
 type FanoutBlock struct {
 	Lanes []FanoutLane
 	// Elapsed is the batch's own duration field: the longest-lived lane's.
 	Elapsed string
-	// Keys are the offers the block makes while a child is waiting on you.
-	// They render once, under the last lane that needs you, followed by how
-	// many of the others are still running, and wrap rather than clip on a
-	// narrow terminal (packOffers).
+	// Keys are the offers a child waiting on you makes, on that child's row
+	// and on no other: it is the one row in the card with a key on it.
 	Keys []TurnKey
+	// Body is the prose that titled the spawn, the card's body; empty, the
+	// rows follow the header.
+	Body string
+	// Folded is the reader's fold: the header alone. Selected puts the
+	// reading cursor on the header and lights it.
+	Folded, Selected bool
 	// Spawned and SpawnLimit are the session's spawn count against its cap,
 	// stated on the header while any lane is still working; a zero limit
 	// states nothing.
@@ -302,37 +306,6 @@ func spawnedCount(started, limit int) string {
 	return fmt.Sprintf("%d of %d spawned", started, limit)
 }
 
-// fanoutLead is the gutter a lane shares with an activity row: the pointer
-// column, the mutation rail (a child's progress is a report, never an act),
-// the state glyph, and the verb. The verb is `agent` — the vocabulary's name
-// for a child's mirrored row in the parent transcript — because a lane is
-// that row, one per child. The child's own name goes in the target field,
-// which is the only field that grows: a name is not a word from a closed
-// vocabulary and must never be clipped to eight columns, where `researcher-1`
-// and `researcher-2` become the same string.
-func fanoutLead(glyph string, depth int) string {
-	return laneNesting(depth) + glyph + " " + verbField("agent")
-}
-
-// laneNesting is the lane's gutter: blank for a child of the session, and the
-// corner hard against the glyph for one a child spawned — the same corner in
-// the same place as the rail's map draws for the same child. It goes in the
-// pointer column and the mutation rail, the two columns a lane never uses: a
-// lane is a report and never an act, and nothing points at it.
-//
-// The gutter is three columns and the corner takes the last of them, so every
-// depth past the first draws in that one column. The lane is a row on the
-// grid and the columns past the gutter are the grid's — a lane that indented
-// into the verb field would move the edge the whole transcript is read down
-// (docs/interface/principles.md#one-grid). What the corner says here is that
-// the lane is under something; how far under, the rail's map counts in full.
-func laneNesting(depth int) string {
-	if depth < 2 {
-		return strings.Repeat(" ", ptrWidth+railWidth)
-	}
-	return strings.Repeat(" ", ptrWidth+railWidth-1) + AgentNesting(2)
-}
-
 // AgentNesting is the column a child spawned by another child is drawn in
 // behind: one space per level below the first, then the corner. The corner is
 // the frame's own, so a nested row borrows a mark the reader has already
@@ -349,21 +322,6 @@ func AgentNesting(depth int) string {
 		return ""
 	}
 	return strings.Repeat(" ", depth-2) + sty.Dimmer.Render("└")
-}
-
-// headerLead is the same gutter one level out — the block heads its lanes the
-// way a step header heads its rows, so the nesting is visible without a rule.
-// It still fills leadWidth, so the header's target and duration land in the
-// same columns as its lanes': only the gutter moves.
-//
-// The mark takes the marker gutter's own first column, where a step header's
-// fold caret and a sent message's ❯ go, rather than landing one column into
-// it. That gutter is the edge the whole transcript is read down, and a mark
-// half inside it lines up with nothing above or below the block
-// (docs/interface/surfaces.md#the-leading-columns).
-func headerLead() string {
-	return sty.Info.Render("◇") + strings.Repeat(" ", ptrWidth-1) +
-		verbField("fan-out") + strings.Repeat(" ", railWidth+glyphWidth)
 }
 
 // glyph is the kind glyph, and on a lane it is the kind glyph in every state:
@@ -582,97 +540,6 @@ func (l FanoutLane) progressOf() AgentProgress {
 func (l FanoutLane) glyph() string        { return l.progressOf().glyph() }
 func (l FanoutLane) outcomeField() string { return l.progressOf().outcomeField() }
 
-// fittedOutcome is as much of the outcome field as this width can carry,
-// which is a question of what gives way first. The costs give way until the
-// growing field holds whole — the name, the task and, on a running lane that
-// names the step it is on, that step — because what the child was asked to do
-// is read before what it has spent, and a finished lane beside a running one
-// keeps its words by the same rule. Past that the task clips: fittedTarget
-// keeps a step where there is one, and the grid clips the tail where there is
-// not.
-//
-// The costs go in a fixed order: what the child inherited, the token count,
-// the budget's share, then the tool count. Every one of them is bookkeeping
-// the manager's row states for the same child. The verdict goes last of all,
-// and only where `✓ done` and the word together would squeeze the name past
-// minTargetWidth — a name clipped to an ellipsis is a lane the reader cannot
-// tell from the one under it — and it is still a key away in the report it
-// was read off, which is more than the costs have.
-func (l FanoutLane) fittedOutcome(width int) string {
-	p := l.progressOf()
-	fits := func() bool { return targetRoom(width, p.outcomeField()) >= lipgloss.Width(l.target()) }
-	if p.Inherited > 0 && !fits() {
-		p.Inherited = 0
-	}
-	if p.Spend != "" && !fits() {
-		p.Spend = ""
-	}
-	if p.BudgetPct > 0 && !fits() {
-		p.BudgetPct = 0
-	}
-	if p.Tools > 0 && !fits() {
-		p.Tools = 0
-	}
-	if p.ReportVerdict == "" || fits() {
-		return p.outcomeField()
-	}
-	if bare := (AgentProgress{State: p.State, Step: p.Step, Steps: p.Steps, Planned: p.Planned,
-		Frame: p.Frame, ReportVerdict: p.ReportVerdict}); fitsBesideName(width, bare.outcomeField()) {
-		return bare.outcomeField()
-	}
-	p.ReportVerdict = ""
-	return p.outcomeField()
-}
-
-// targetRoom is the width the growing field is left beside an outcome field,
-// by the same arithmetic gridLineWith clips it with.
-func targetRoom(width int, field string) int {
-	room := width - leadWidth - durGap - durWidth
-	if w := lipgloss.Width(field); w > 0 {
-		room -= w + 2
-	}
-	return room
-}
-
-// fitsBesideName reports whether an outcome field of this width leaves the
-// lane's name enough of the growing field to still be a name.
-func fitsBesideName(width int, field string) bool {
-	return width-leadWidth-durGap-durWidth-lipgloss.Width(field)-2 >= minTargetWidth
-}
-
-// target is the lane's growing field: the child's name, then what it was
-// asked to do, joined with the separator every row in the product joins two
-// facts with (docs/interface/principles.md#one-grid). Two spaces read as a
-// column that is not there — the tasks under them never line up, because the
-// names are not one width.
-func (l FanoutLane) target() string {
-	target := l.Name
-	if l.Task != "" {
-		target += detailSep + l.Task
-	}
-	if title := l.stepTitle(); title != "" {
-		target += detailSep + title
-	}
-	return target
-}
-
-// fittedTarget is the growing field for this much room. The step the child is
-// on is what the row keeps once the costs have gone, so where the name, the
-// task and the step will not all fit, the task clips between the other two;
-// with no room left for any of the task it goes whole, and the step clips
-// only after that.
-func (l FanoutLane) fittedTarget(room int) string {
-	target, title := l.target(), l.stepTitle()
-	if title == "" || l.Task == "" || lipgloss.Width(target) <= room {
-		return target
-	}
-	tail := detailSep + title
-	if taskRoom := room - lipgloss.Width(l.Name+detailSep) - lipgloss.Width(tail); taskRoom > 1 {
-		return l.Name + detailSep + Clip(l.Task, taskRoom) + tail
-	}
-	return l.Name + tail
-}
-
 // stepTitle is the step a running child with its own plan says it is on,
 // and empty for every other lane.
 func (l FanoutLane) stepTitle() string {
@@ -680,79 +547,6 @@ func (l FanoutLane) stepTitle() string {
 		return ""
 	}
 	return l.StepTitle
-}
-
-// paintTarget leads the field with the name in body text and dims the task
-// behind it. A field too narrow to hold the name whole goes dim entirely
-// rather than emphasising half a name — the same rule the recovery rows keep.
-func (l FanoutLane) paintTarget(s string) string {
-	if l.Name != "" && strings.HasPrefix(s, l.Name) {
-		return sty.Body.Render(l.Name) + sty.Dim.Render(strings.TrimPrefix(s, l.Name))
-	}
-	return sty.Dim.Render(s)
-}
-
-// View renders one lane plus whatever it has to say underneath: what a
-// blocked child is waiting for, or the first line of a finished child's
-// report — and, under that, the fold the rest of the report is behind.
-func (l FanoutLane) View(width int) string {
-	outcome := l.fittedOutcome(width)
-	lines := []string{gridLineWith(fanoutLead(l.glyph(), l.Depth), l.fittedTarget(targetRoom(width, outcome)),
-		l.paintTarget, outcome, l.Elapsed, width)}
-	if note := l.note(); note != "" {
-		lines = append(lines, indented(note, detailIndent, width))
-	}
-	return strings.Join(append(lines, l.reportFold(width)...), "\n")
-}
-
-// reportFold is the child's own words under a settled lane: the row that says
-// how much there is of them, and the report itself once the reader has opened
-// it. It is the transcript's own fold grammar — `▸ report · 14 lines` — and
-// prints no key, because the hint bar names what enter does under the cursor
-// (docs/interface/principles.md#fold-never-hide,
-// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-//
-// It is here and not on the manager's row or the rail's for the same reason
-// the summary line is: the transcript is where a turn is read afterwards, and
-// a report is the last thing that happened in the turn. The manager is a list
-// of things to act on now.
-func (l FanoutLane) reportFold(width int) []string {
-	if !l.State.settled() || len(l.Report) == 0 {
-		return nil
-	}
-	mark := "▸"
-	if l.ReportOpen {
-		mark = "▾"
-	}
-	head := mark + " report" + detailSep + plural(len(l.Report), "line")
-	var lines []string
-	for _, r := range l.Earlier {
-		// Folded, and only folded: the answer the reader acts on is the one
-		// under them, and an earlier one is a heading to remember it by.
-		lines = append(lines, strings.Repeat(" ", detailIndent)+sty.Dimmer.Render(Clip(
-			fmt.Sprintf("▸ turn %d report%s%s", r.Turn, detailSep, plural(len(r.Lines), "line")),
-			max(width-detailIndent, 1))))
-	}
-	lines = append(lines, strings.Repeat(" ", detailIndent)+sty.Dimmer.Render(head))
-	if !l.ReportOpen {
-		return lines
-	}
-	body, dropped := l.Report, 0
-	if l.MaxReport > 0 && len(body) > l.MaxReport {
-		body, dropped = body[:l.MaxReport], len(body)-l.MaxReport
-	}
-	for _, line := range body {
-		lines = append(lines, indented(line, detailIndent, width))
-	}
-	if dropped > 0 {
-		// The bound is a fold like any other, so it counts what it swallowed,
-		// and names the key that opens the whole of it on its own screen, the
-		// way a paste's bound does.
-		lines = append(lines, strings.Repeat(" ", detailIndent)+
-			sty.Dim.Render(Clip(countedTail(dropped)+", "+keys.Bracket(keys.Reading.Expand)+
-				" opens the whole of it", max(width-detailIndent, 1))))
-	}
-	return lines
 }
 
 // note is the line under the lane: a blocked child's reason, a finished
@@ -1044,12 +838,6 @@ func (b FanoutBlock) counts() (running, blocked, held, done, failed int) {
 	return tallyStates(b.states())
 }
 
-// headerOutcome counts the batch. It is a count and not the tally the
-// manager's border carries: the lane that needs you says so itself.
-func (b FanoutBlock) headerOutcome() string {
-	return waitingTally(b.states(), b.slotWaits(), false)
-}
-
 // slotWaits counts the held lanes whose hold is a wait for a check slot.
 func (b FanoutBlock) slotWaits() int {
 	n := 0
@@ -1059,77 +847,4 @@ func (b FanoutBlock) slotWaits() int {
 		}
 	}
 	return n
-}
-
-// View renders the block at the given width: the header, then every lane in
-// sort order, then the offers a blocked lane makes.
-func (b FanoutBlock) View(width int) string {
-	if len(b.Lanes) == 0 {
-		return ""
-	}
-	lanes := b.sorted()
-	outcome := b.headerOutcome()
-	target := plural(len(lanes), "agent")
-	// The count rides the header only while the batch is live: that is when
-	// the next spawn is being planned, and a finished batch frozen into the
-	// transcript would otherwise carry a number that has since moved. It is
-	// given up whole where it does not fit, since half a count is a
-	// different number.
-	if running, blocked, held, _, _ := b.counts(); running+blocked+held > 0 {
-		sep := 0
-		if outcome != "" {
-			sep = 2
-		}
-		room := width - leadWidth - durGap - durWidth - lipgloss.Width(outcome) - sep
-		if count := spawnedCount(b.Spawned, b.SpawnLimit); count != "" && lipgloss.Width(target+" · "+count) <= room {
-			target += " · " + count
-		}
-	}
-	lines := []string{gridLine(
-		headerLead(),
-		target,
-		outcome, b.Elapsed, width)}
-	// The offers go under the lane that needs you and nowhere else: a key
-	// under the block's header would sit beside lanes with nothing to
-	// answer. Blocked lanes float to the top, so where several need you the
-	// line closes their run rather than repeating under each.
-	last := -1
-	for i, l := range lanes {
-		if l.State == FanoutBlocked {
-			last = i
-		}
-	}
-	for i, l := range lanes {
-		lines = append(lines, l.View(width))
-		if i == last {
-			lines = append(lines, b.keyLines(width)...)
-		}
-	}
-	return strings.Join(lines, "\n")
-}
-
-// keyLines is the line under the lane that needs you: the offers, then how
-// many of the other lanes are still working. The answer itself is not offered
-// here — a routed ask is a card over the frame and the card owns it
-// (docs/interface/departures.md#a-fan-out-offers-the-manager-not-the-answer).
-func (b FanoutBlock) keyLines(width int) []string {
-	room := max(width-detailIndent, 1)
-	rows := packOffers(b.Keys, room)
-	if running, _, _, _, _ := b.counts(); running > 0 {
-		rest := "the other " + spellNumber(running) + " keep running"
-		if running == 1 {
-			rest = "the other one keeps running"
-		}
-		switch sep := sty.Dim.Render(" · "); {
-		case len(rows) > 0 && lipgloss.Width(rows[len(rows)-1]+sep+rest) <= room:
-			rows[len(rows)-1] += sep + sty.Dim.Render(rest)
-		default:
-			rows = append(rows, sty.Dim.Render(rest))
-		}
-	}
-	out := make([]string, len(rows))
-	for i, r := range rows {
-		out[i] = detailLine(r, width)
-	}
-	return out
 }

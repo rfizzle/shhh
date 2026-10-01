@@ -175,9 +175,10 @@ func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 	m.agent.StartTurn(planApprovedMessage)
 	m.appendEntry(entry{kind: entryUser, text: planApprovedMessage})
 	// From here the approved plan is the transcript's step list, the rail's
-	// PLAN block and what /plan answers with. A plan that never
-	// adopted the step shape has no list to keep, and newPlanRun says so.
-	m.planRun = newPlanRun(doc, len(m.transcript))
+	// PLAN block and what /plan answers with, and the transcript draws it as
+	// a card under the message that approved it. A plan that never adopted
+	// the step shape has no list to keep, and newPlanRun says so.
+	m.beginPlanRun(doc)
 	// And it is what the readings judge the turn against
 	// (docs/capabilities/coding-agent.md#an-approved-plan-is-what-a-reading-judges-against).
 	// The anchor rule holds: only the person moves the target, and approving
@@ -355,8 +356,8 @@ func (m Model) implementPlanInNewSession() (tea.Model, tea.Cmd) {
 	m.agent.StartTurn(planApprovedMessage)
 	m.appendEntry(entry{kind: entryUser, text: planApprovedMessage})
 	// The approved plan is the checklist here as it is in the same-session
-	// answer: the outline's steps, the rail's PLAN block and /plan.
-	m.planRun = newPlanRun(doc, len(m.transcript))
+	// answer: the outline's steps, the rail's PLAN block, /plan and the card.
+	m.beginPlanRun(doc)
 	m.invalidateRenderCache()
 	next, stream := m.streamOpenedTurn()
 	nm := next.(Model)
@@ -736,6 +737,9 @@ func (m *Model) stampStep(e entry) entry {
 	}
 	e.planStep = m.planRun.claim(title)
 	m.noteOffPlan(e.planStep)
+	if e.planStep > 0 {
+		e.planTick = m.planRun.tickFor(e.planStep)
+	}
 	return e
 }
 
@@ -743,11 +747,28 @@ func (m *Model) stampStep(e entry) entry {
 // stores nothing: a step's state is its group's state, so the checklist and
 // the outline cannot disagree about what happened.
 func (m Model) planChecklist() []components.InspectorPlanStep {
-	run := m.planRun
+	return m.planChecklistOf(m.planRun)
+}
+
+// planChecklistOf is planChecklist for a run that may no longer be the one
+// running: the plan card keeps drawing its run after the next instruction
+// retires it.
+func (m Model) planChecklistOf(run *planRun) []components.InspectorPlanStep {
 	if run == nil {
 		return nil
 	}
-	es := m.planEntries()
+	var es []entry
+	if run.start <= len(m.transcript) {
+		es = m.transcript[run.start:]
+	}
+	// A later plan's card ends this run's entries: its steps are stamped
+	// with numbers of their own, and read here they would be this plan's.
+	for i, e := range es {
+		if e.kind == entryPlan && e.plan != nil && e.plan.run != run {
+			es = es[:i]
+			break
+		}
+	}
 	type observed struct {
 		state stepState
 		label string
@@ -756,6 +777,12 @@ func (m Model) planChecklist() []components.InspectorPlanStep {
 	for _, blk := range m.blocksOf(es) {
 		g := blk.step
 		if g == nil || g.offPlan || g.queued() {
+			continue
+		}
+		// Only a step the plan's run stamped: once the run is retired, a
+		// later turn's steps are numbered by their own count, and a count is
+		// not a step of this plan.
+		if g.titleIdx < 0 || g.titleIdx >= len(es) || es[g.titleIdx].planStep <= 0 {
 			continue
 		}
 		h := m.headerFor(blk, es)

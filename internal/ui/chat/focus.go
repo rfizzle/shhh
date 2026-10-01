@@ -137,8 +137,11 @@ func (m Model) scanExpandable(es []entry) []int {
 			}
 			continue
 		}
+		// The sentence a fan-out's card took as its body is drawn inside
+		// the card, which is the stop.
+		title := m.absorbedTitle(blk, es)
 		for i := blk.start; i < blk.end; i++ {
-			if m.selectableRow(es[i]) {
+			if i != title && m.selectableRow(es[i]) {
 				idxs = append(idxs, i)
 			}
 		}
@@ -184,7 +187,7 @@ func (m Model) rowOnScreen(idx int) bool {
 			}
 			return m.selectableRow(es[idx])
 		}
-		return m.selectableRow(es[idx])
+		return idx != m.absorbedTitle(blk, es) && m.selectableRow(es[idx])
 	}
 	return false
 }
@@ -943,7 +946,7 @@ func (m *Model) frozenGutterBlocks(es []entry, w int, blocks []transcriptBlock) 
 	if n := len(m.gutter.blocks); n > 0 && (n > len(blocks) || blocks[n-1].end != m.gutter.count) {
 		m.gutter.reset()
 	}
-	freeze := min(lastLiveBlock(blocks), m.liveFanoutBlock(blocks), m.liveTodoRunBlock(blocks))
+	freeze := min(lastLiveBlock(blocks), m.liveFanoutBlock(blocks), m.liveTodoRunBlock(blocks), m.livePlanBlock(blocks))
 	for bi := len(m.gutter.blocks); bi < freeze; bi++ {
 		m.gutter.blocks = append(m.gutter.blocks, newGutterBlock(m.blockUnits(blocks[bi], es, w, true, noFocusRow)))
 		m.gutter.count = blocks[bi].end
@@ -1012,7 +1015,7 @@ func onGrid(e entry) bool {
 	case entryTool, entryCommand, entryDiff, entryThink, entrySummary,
 		entryTodoRun, entryAssistant, entrySystem, entryError,
 		entryTurnClose, entryFailure, entryStreamDrop, entryRoundPause,
-		entryFanout, entryRewound, entryTray:
+		entryFanout, entryRewound, entryTray, entryPlan:
 		return true
 	case entryCompactSummary:
 		// The receipt is a row on the grid; a bare summary out of an older

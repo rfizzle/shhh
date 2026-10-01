@@ -37,6 +37,16 @@ func plainLines(view string) []string {
 	return strings.Split(ansi.Strip(view), "\n")
 }
 
+// cardHeader is the fan-out card's header line: the one under its padding
+// row, or the whole of a folded card.
+func cardHeader(view string) string {
+	lines := plainLines(view)
+	if len(lines) == 1 {
+		return lines[0]
+	}
+	return lines[1]
+}
+
 // TestFanoutLanePerChild covers the first criterion: one lane per child, each
 // carrying its name, its task, its progress, its tool count, its spend and
 // its elapsed.
@@ -50,11 +60,11 @@ func TestFanoutLanePerChild(t *testing.T) {
 			t.Fatalf("lane missing %q:\n%s", want, ansi.Strip(view))
 		}
 	}
-	// Five children, five lanes, plus the header and the notes under three of
-	// them and the offers line.
+	// Five children, five rows in the card's footer, under the header and
+	// the notes under them.
 	lanes := 0
 	for _, line := range plainLines(view) {
-		if strings.Contains(line, "agent   ") {
+		if strings.HasPrefix(line, "    ◇ ") {
 			lanes++
 		}
 	}
@@ -68,23 +78,22 @@ func TestFanoutLanePerChild(t *testing.T) {
 // so in words, not only in colour.
 func TestFanoutBlockedSortsToTheTop(t *testing.T) {
 	lines := plainLines(fanoutFixture().View(110))
-	if len(lines) < 2 {
+	if len(lines) < 3 {
 		t.Fatalf("block too short:\n%s", strings.Join(lines, "\n"))
 	}
-	if !strings.Contains(lines[1], "scout-3") {
-		t.Fatalf("the blocked lane is not first: %q", lines[1])
+	if !strings.Contains(lines[2], "scout-3") {
+		t.Fatalf("the blocked lane is not first: %q", lines[2])
 	}
-	if !strings.Contains(lines[1], "⚠ needs you") {
-		t.Fatalf("the blocked lane does not say what it needs: %q", lines[1])
+	if !strings.Contains(lines[2], "blocked") {
+		t.Fatalf("the blocked lane does not say what it needs: %q", lines[2])
 	}
 	if !strings.Contains(lines[2], "waiting approval") {
 		t.Fatalf("the blocked lane does not say what it is waiting for: %q", lines[2])
 	}
-	// The header is a count, the blocked lane among the running: the lane is
-	// what says it needs you
-	// (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
-	if !strings.Contains(lines[0], "3 running") || strings.Contains(lines[0], "needs you") {
-		t.Fatalf("the header should count the live lanes and leave the ask to the lane: %q", lines[0])
+	// The header leaves the ask to the lane: the lane is what says it needs
+	// you (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
+	if !strings.Contains(lines[1], "in parallel") || strings.Contains(lines[1], "needs you") {
+		t.Fatalf("the header should say the children work together and leave the ask to the lane: %q", lines[1])
 	}
 }
 
@@ -95,30 +104,25 @@ func TestFanoutOffersOnlyWhileBlocked(t *testing.T) {
 	if !strings.Contains(ansi.Strip(blocked.View(110)), "[ctrl+a] agents") {
 		t.Fatal("a blocked block should offer the manager")
 	}
-	// The offer sits under the lane that needs you — its row, then its
-	// reason, then the keys — and says how many of the others run on. The
-	// answer itself is the routed card's, so no key here offers it
+	// The offer is on the row of the lane that needs you and on no other:
+	// it is the one row in the card with a key. The answer itself is the
+	// routed card's, so no key here offers it
 	// (docs/interface/departures.md#a-fan-out-offers-the-manager-not-the-answer).
 	lines := strings.Split(ansi.Strip(blocked.View(110)), "\n")
-	lane := -1
-	for i, l := range lines {
-		if strings.Contains(l, "scout-3") {
-			lane = i
+	keyed := 0
+	for _, l := range lines {
+		if strings.Contains(l, "[ctrl+a] agents") {
+			keyed++
+			if !strings.Contains(l, "scout-3") {
+				t.Fatalf("the offer is off the blocked lane's row: %q", l)
+			}
 		}
 	}
-	if lane < 0 || lane+2 >= len(lines) {
-		t.Fatalf("no blocked lane with room under it:\n%s", strings.Join(lines, "\n"))
-	}
-	if got := strings.TrimSpace(lines[lane+2]); got != "[ctrl+a] agents · the other two keep running" {
-		t.Fatalf("the line under the blocked lane's reason = %q", got)
+	if keyed != 1 {
+		t.Fatalf("the offer should be on one row, it is on %d:\n%s", keyed, strings.Join(lines, "\n"))
 	}
 	if strings.Contains(strings.Join(lines, "\n"), "answer it here") {
 		t.Fatal("the block offered the answer the routed card owns")
-	}
-	one := fanoutFixture()
-	one.Lanes = one.Lanes[1:]
-	if !strings.Contains(ansi.Strip(one.View(110)), "the other one keeps running") {
-		t.Fatalf("one running lane should be said in the singular:\n%s", ansi.Strip(one.View(110)))
 	}
 
 	var running FanoutBlock
@@ -243,22 +247,26 @@ func TestAgentRowFollowsTheOutcomeTable(t *testing.T) {
 	}
 }
 
-// A lane joins the child's name to what it was asked to do with the separator
-// every row in the product joins two facts with.
-func TestFanoutLaneJoinsNameAndTaskWithTheSeparator(t *testing.T) {
-	lane := FanoutLane{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md"}
-	if view := ansi.Strip(lane.View(110)); !strings.Contains(view, "writer-1 · docs/loop.md") {
-		t.Fatalf("the lane should join its name and task with ` · `: %q", view)
+// A lane's name stands in a slot of its own, so what each child is doing
+// starts in one column down the card's footer.
+func TestFanoutLaneSetsItsNameInASlot(t *testing.T) {
+	for _, name := range []string{"writer-1", "researcher-12"} {
+		lane := FanoutLane{State: FanoutRunning, Name: name, Task: "docs/loop.md"}
+		view := ansi.Strip(lane.View(110))
+		at := strings.Index(view, "docs/loop.md") - strings.Index(view, name)
+		if want := max(laneNameSlot, len(name)+1); at != want {
+			t.Fatalf("%s: the task starts %d columns after the name, want %d: %q", name, at, want, view)
+		}
 	}
 }
 
-// The block's header mark sits in the marker gutter's own first column, where
-// a step header's fold caret and a sent message's ❯ sit
+// The card's header is a step card's: its glyph in the glyph column, the
+// spawn's verb where every card's verb starts
 // (docs/interface/surfaces.md#the-leading-columns).
-func TestFanoutHeaderTakesThePointerColumn(t *testing.T) {
-	head := plainLines(fanoutFixture().View(110))[0]
-	if !strings.HasPrefix(head, "◇ ") {
-		t.Fatalf("the header should start in the pointer column: %q", head)
+func TestFanoutHeaderIsACardHeader(t *testing.T) {
+	head := cardHeader(fanoutFixture().View(110))
+	if !strings.HasPrefix(head, "  ◇ spawned 5 agents") {
+		t.Fatalf("the header should lead with the glyph and the spawn's verb: %q", head)
 	}
 }
 
@@ -307,7 +315,7 @@ func TestFanoutHeaderSettles(t *testing.T) {
 	settled := FanoutBlock{Lanes: []FanoutLane{
 		{State: FanoutDone, Name: "a"}, {State: FanoutDone, Name: "b"}, {State: FanoutFailed, Name: "c"},
 	}}
-	header := plainLines(settled.View(110))[0]
+	header := cardHeader(settled.View(110))
 	if !strings.Contains(header, "2 done") || !strings.Contains(header, "1 failed") {
 		t.Fatalf("a settled block should report its tally: %q", header)
 	}
@@ -325,14 +333,14 @@ func TestFanoutHeaderCountsTheParksAsTheyLand(t *testing.T) {
 		{State: FanoutHeld, Name: "a"}, {State: FanoutHeld, Name: "b"},
 		{State: FanoutRunning, Name: "c"},
 	}}
-	header := plainLines(block.View(110))[0]
+	header := cardHeader(block.View(110))
 	if !strings.Contains(header, "2 held · 1 running") {
 		t.Fatalf("the header should count the parks beside what is still going: %q", header)
 	}
 	// A child that asks for an answer while the parks land is a live child,
 	// and the header counts it with the running: the ask is said on its lane.
 	block.Lanes = append(block.Lanes, FanoutLane{State: FanoutBlocked, Name: "d"})
-	header = plainLines(block.View(110))[0]
+	header = cardHeader(block.View(110))
 	if !strings.Contains(header, "2 held · 2 running") || strings.Contains(header, "needs you") {
 		t.Fatalf("the header should count the parks beside the live children: %q", header)
 	}
@@ -345,12 +353,12 @@ func TestFanoutHeaderCountsASlotWaitAsWaiting(t *testing.T) {
 		{State: FanoutHeld, Name: "a", SlotWait: 2}, {State: FanoutHeld, Name: "b", SlotWait: 2},
 		{State: FanoutRunning, Name: "c"},
 	}}
-	header := plainLines(block.View(110))[0]
+	header := cardHeader(block.View(110))
 	if !strings.Contains(header, "2 waiting · 1 running") || strings.Contains(header, "held") {
 		t.Fatalf("a slot wait should be counted as waiting, not held: %q", header)
 	}
 	block.Lanes[2] = FanoutLane{State: FanoutHeld, Name: "c"}
-	header = plainLines(block.View(110))[0]
+	header = cardHeader(block.View(110))
 	if !strings.Contains(header, "1 held · 2 waiting") {
 		t.Fatalf("a park and a slot wait should be counted apart, the park first: %q", header)
 	}
@@ -504,11 +512,11 @@ func TestFanoutLaneSaysWhatItStartedFrom(t *testing.T) {
 // that gutter blank.
 func TestFanoutLaneDrawsADescendantUnderItsParent(t *testing.T) {
 	child := FanoutLane{State: FanoutRunning, Name: "writer-1", Depth: 1}
-	if line := ansi.Strip(child.View(110)); !strings.HasPrefix(line, "   ◇ agent") {
+	if line := ansi.Strip(child.View(110)); !strings.HasPrefix(line, "    ◇ writer-1") {
 		t.Fatalf("a child of the session should keep the gutter blank: %q", line)
 	}
 	grandchild := FanoutLane{State: FanoutRunning, Name: "reviewer-1a", Depth: 2}
-	if line := ansi.Strip(grandchild.View(110)); !strings.HasPrefix(line, "  └◇ agent") {
+	if line := ansi.Strip(grandchild.View(110)); !strings.HasPrefix(line, "   └◇ reviewer-1a") {
 		t.Fatalf("a lane a child spawned should draw behind the corner: %q", line)
 	}
 	// The columns past the gutter are the grid's, so the nesting costs the
@@ -746,11 +754,11 @@ func TestFanoutCountsAreDimAndTheStateIsTheGlyph(t *testing.T) {
 	}}
 	view := block.View(110)
 	for _, want := range []struct{ what, render string }{
-		{"the header's running count in dim", sty.Dim.Render("3 running")},
+		{"the header's word for children working together in dim", sty.Dim.Render("in parallel")},
 		{"a running bar's count in dim", sty.Dim.Render("2/5")},
 		{"a planned lane's step count in dim", sty.Dim.Render("1 of 3 steps")},
 		{"a running lane's glyph in info", sty.Info.Render("◇")},
-		{"the ask in del", sty.Err.Render("⚠ needs you")},
+		{"the ask in del", sty.Err.Render("blocked")},
 		{"a finished lane's glyph in add", sty.Add.Render("◇")},
 	} {
 		if !strings.Contains(view, want.render) {
@@ -780,10 +788,10 @@ func TestFanoutLaneKeepsItsStepLast(t *testing.T) {
 		kept, gone []string
 	}{
 		{200, []string{"written and read", "2% of budget", "2 tools", "~26.2k tok", "Run gofmt"}, nil},
-		{140, []string{"written and read", "2% of budget", "2 tools", "Run gofmt"}, []string{"~26.2k tok"}},
-		{120, []string{"written and read", "2 tools", "Run gofmt"}, []string{"~26.2k tok", "of budget"}},
-		{100, []string{"writer-1 · Find every", "1 of 3", "Run gofmt"}, []string{"~26.2k tok", "of budget", "tools"}},
-		{80, []string{"writer-1 · Find", "… · Run gofmt"}, []string{"~26.2k tok", "of budget", "tools"}},
+		{130, []string{"written and read", "2% of budget", "2 tools", "Run gofmt"}, []string{"~26.2k tok"}},
+		{115, []string{"written and read", "2 tools", "Run gofmt"}, []string{"~26.2k tok", "of budget"}},
+		{100, []string{"writer-1  Find every", "1 of 3", "Run gofmt"}, []string{"~26.2k tok", "of budget", "tools"}},
+		{80, []string{"writer-1  Find", "… · Run gofmt"}, []string{"~26.2k tok", "of budget", "tools"}},
 	}
 	for _, c := range cases {
 		view := ansi.Strip(lane.View(c.width))
@@ -812,8 +820,8 @@ func TestFanoutSettledLaneKeepsItsTaskBeforeItsCosts(t *testing.T) {
 		kept, gone []string
 	}{
 		{200, []string{"lifetime should be", "3% of budget", "2 tools", "~39.3k tok"}, nil},
-		{120, []string{"lifetime should be", "✓ done"}, []string{"~39.3k tok"}},
-		{80, []string{"writer-2 · Decide", "✓ done"}, []string{"~39.3k tok", "of budget", "tools"}},
+		{110, []string{"lifetime should be", "✓ done"}, []string{"~39.3k tok"}},
+		{80, []string{"writer-2  Decide", "✓ done"}, []string{"~39.3k tok", "of budget", "tools"}},
 	}
 	for _, c := range cases {
 		view := ansi.Strip(lane.View(c.width))

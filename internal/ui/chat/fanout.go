@@ -3,8 +3,9 @@ package chat
 // Fan-out lanes in the transcript (
 // docs/interface/surfaces.md#the-agent-manager). A round that
 // spawned one child keeps today's inline `◇ spawn` row; a round that spawned
-// two or more turns those rows into a single block with a lane per child, so
-// three agents read as three things rather than as one interleaved feed.
+// two or more turns those rows into a single card with a footer row per
+// child, so three agents read as three things rather than as one interleaved
+// feed. The sentence that titled the spawn is the card's body.
 //
 // The block stores nothing but the batch number. Everything it draws is read
 // off the supervisor's live snapshot at render time, which is what lets the
@@ -285,6 +286,71 @@ func (m Model) childReport(st subagent.Status) string {
 	return strings.TrimSpace(report)
 }
 
+// fanoutCardOf reports the fan-out a block draws as its card: the entry, and
+// the sentence straight before it that titled the spawn, or -1 where nothing
+// did (stepBlocks).
+func fanoutCardOf(blk transcriptBlock, es []entry) (at, title int, ok bool) {
+	if blk.step != nil || blk.end > len(es) {
+		return 0, -1, false
+	}
+	switch n := blk.end - blk.start; {
+	case n == 1 && es[blk.start].kind == entryFanout:
+		return blk.start, -1, true
+	case n == 2 && es[blk.start+1].kind == entryFanout:
+		return blk.start + 1, blk.start, true
+	}
+	return 0, -1, false
+}
+
+// absorbedTitle is the sentence a fan-out's card took as its body, which is
+// drawn there and nowhere else, so it is no stop of its own; -1 where the
+// block holds none, or where the card has no children to draw and the
+// sentence stands on its own (fanoutCardUnit).
+func (m Model) absorbedTitle(blk transcriptBlock, es []entry) int {
+	at, title, ok := fanoutCardOf(blk, es)
+	if !ok || title < 0 || len(m.fanoutStatuses(es[at].fanout)) == 0 {
+		return -1
+	}
+	return title
+}
+
+// fanoutCardFor is the batch as its card: the block read off the live
+// snapshot, with the sentence that titled it, the reader's fold and the
+// cursor.
+func (m Model) fanoutCardFor(e entry, body string, sel rowSel) components.FanoutBlock {
+	block := m.fanoutBlockFor(e)
+	block.Body = body
+	block.Folded = e.stepFold == foldClosed
+	block.Selected = sel != rowUnselected
+	return block
+}
+
+// fanoutCardUnit is the fan-out's card as one unit, kept on the fan-out's
+// entry: the cursor stands on it as a whole and lights its header, as it
+// does a step's card. False where the supervisor knows none of its children,
+// which leaves the sentence to stand on its own. The rung does not fold it:
+// a child waiting on you is one of its rows.
+// See docs/interface/departures.md#a-fan-outs-card-and-a-plans-card-are-drawn-whole-at-every-rung.
+func (m Model) fanoutCardUnit(es []entry, at, title, width int, focus bool, focusIdx int) (unit, bool) {
+	sel := rowUnselected
+	if focus && at == focusIdx {
+		sel = rowPointed
+		if m.state == stateFocus {
+			sel = rowUnderCursor
+		}
+	}
+	body := ""
+	if title >= 0 {
+		body, _ = stepTitle(es[title])
+	}
+	card := m.fanoutCardFor(es[at], body, sel)
+	if len(card.Lanes) == 0 {
+		return unit{}, false
+	}
+	return unit{idx: at, sepBefore: es[at], sepAfter: es[at], text: card.View(width) + "\n",
+		lines: card.Lines(width)}, true
+}
+
 // fanoutBlockFor builds the block for one entry from the live snapshot.
 func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 	var block components.FanoutBlock
@@ -364,8 +430,8 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 	block.Elapsed = turnDuration(longest)
 	// The manager is where a blocked child is answered, and it opens
 	// mid-turn; the answer happens in the list itself, without a detour
-	// through the child's session. The block draws the offer under the lane
-	// that needs you. It is the one spelling from the pointer and from
+	// through the child's session. The card draws the offer on the row of
+	// the lane that needs you. It is the one spelling from the pointer and from
 	// reading mode's cursor alike, because the manager has a chord and no
 	// letter — the chord answers in both places (focus.go).
 	block.Keys = []components.TurnKey{{Key: keys.Bracket(keys.Draft.Agents), Label: "agents"}}

@@ -407,19 +407,18 @@ func TestPlanChecklist_QueuedStepsAreNotSelectableInFocus(t *testing.T) {
 	}
 }
 
-func TestPlanOutline_RenderIncludesQueuedHeaders(t *testing.T) {
+// The step the run reached is a card, its announcement the body; the ones it
+// has not are rows of the plan's card, and no outline row trails the work.
+func TestPlanOutline_QueuedStepsDrawNoRowAfterTheWork(t *testing.T) {
 	m := runningPlanModel(t, 130)
 	announce(t, &m, "Locate the round accounting", time.Second, false)
 	out := ansi.Strip(m.renderHistory())
-	for _, want := range []string{
-		// The step the run reached is a card, its announcement the body;
-		// the ones it has not are the plan's outline rows.
-		"    Locate the round accounting",
-		"4  Offer more rounds in the chat model",
-		components.OutcomeQueued,
-	} {
-		if !strings.Contains(out, want) {
-			t.Fatalf("the outline should render %q, got:\n%s", want, out)
+	if !strings.Contains(out, "    Locate the round accounting") {
+		t.Fatalf("the step the run reached should be a card, got:\n%s", out)
+	}
+	for _, gone := range []string{"Offer more rounds in the chat model", components.OutcomeQueued} {
+		if strings.Contains(out, gone) {
+			t.Fatalf("a step not reached should draw no outline row, found %q in:\n%s", gone, out)
 		}
 	}
 }

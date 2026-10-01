@@ -476,6 +476,10 @@ const (
 	// target for a click, and both of those name an entry; the card draws
 	// it as a footer row.
 	entryPicture
+	// entryPlan: the approved plan, drawn as a card where it was approved
+	// (planrun.go). It holds the run rather than a copy of its steps, so
+	// the rows tick as the run reaches them.
+	entryPlan
 )
 
 // entry is one transcript item, stored raw so the history can be re-rendered
@@ -548,6 +552,8 @@ type entry struct {
 	// not stored: they are read off the supervisor at render time, which is
 	// what keeps them live and what lets the block re-render at any width.
 	fanout *fanoutBatch
+	// plan is the approved plan behind an entryPlan card.
+	plan *planCard
 	// intervened is the interruption behind a steer or check-in notice
 	// (intervene.go): the message the machinery appended, so the row can take
 	// it back, and whether the reader already has. A pointer for the reason a
@@ -709,6 +715,9 @@ type entry struct {
 	// entry is appended, so every reader of the outline stays a pure function
 	// of the transcript.
 	planStep int
+	// planTick is what the line under that step's card says once the step
+	// is finished, stamped with planStep (planrun.go).
+	planTick planTick
 	// callSeq is the place the call this row is about had in the round the
 	// model asked for it in, counted from one: what decides where the row
 	// goes rather than anything the row says (queue.go). Zero on every entry

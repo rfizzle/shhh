@@ -340,8 +340,9 @@ it would have done happened, and its card says so — `⊘`, the call as it was
 asked for, who refused it, and why as its footer. Where the session declared
 a plan, the steps are the plan's — same numbers, same titles — so the
 outline, the plan block and the plan command are reading one list rather than
-three that agree by coincidence; a step the run has not reached is the plan's
-own line, numbered and queued, until its first call makes a card of it. Work
+three that agree by coincidence; a step the run has not reached is a queued
+row of [the plan's card](#the-progress-checkpoint) and has no line of its own
+after the work, until its first call makes a card of it. Work
 done off the plan is marked as such on the plan's own surfaces rather than
 renumbered into it. A step runs until the next prose, and what the model
 thought is prose: the notices a batch earns are members of it, and a thought
@@ -713,6 +714,25 @@ A checkpoint short enough to title the batch of calls that follows it is drawn
 as that step's card's body instead. That is not an exception to any of this —
 the card is where a title belongs, and a note that is already a title is
 already one line and already folds with its card.
+
+An approved plan is the other way a run reports where it is, and it is drawn
+once, as a card under the message that approved it: `▸ planned 7 steps · 5
+files` as the header, with whether its files can be put back and how many of
+its steps write on the right — the approval card's own answers, made before
+the first edit — the plan's own sentence as the body, and a footer row per
+step, its state's glyph (`✓` done, the spinner running, `·` not reached, `✗`
+broken), its number, its title, bright while it runs and dim until it is
+reached, and what it will write on the right (`✎ errors.go`, or `read only`).
+Past four rows the card draws the four around the step in flight and counts
+the rest, saying whether any of them write — `… 3 more, none of them write`;
+a plan one step longer than that draws every step. The card's rows tick as
+the run reaches each step, and the steps themselves are the cards the run
+draws below it. Under each step's card, once the step is finished, one flat
+dim line at the glyph column says so — `✓ plan · 3 of 7 · <the step> · 2
+writes left` — so progress through a plan costs a line where it happened
+rather than a redraw of the plan; a step that broke says it with `✗`. The
+header folds the card, as every card's header does; its rows are text. A step
+not reached has no line of its own after the work: it is a row of the card.
 
 ## Panels
 
@@ -1776,11 +1796,25 @@ root is the same kind of thing.
 A child's approvals route to wherever you are, so detaching does not mean
 missing a decision.
 
+**In the transcript a fan-out is a card whose footer is a list.** A round
+that spawned two or more children is one step, and it is drawn on the step's
+grammar: `◇ spawned 3 agents` as the header, with `in parallel` and the
+batch's time on the right while the children work and the tally of how they
+ended once they have all returned — `2 done · 1 failed · 2m 04s` — the
+sentence that titled the spawn as the body, and a footer row per child, each
+the lane the child runs in: its `◇` in the colour its state wears, its name
+in a slot of its own, what it is doing — the task, the step of its own plan
+it is on, what it found once it has returned — and how it stands on the
+right. A child waiting on you leads its row with `blocked` and what it waits
+for, and is the one row in the card with a key on it. The header folds the
+card, as every card's header does; a child's row opens the children's reports
+as enter on the card does, and a line of a report opens the whole of it.
+
 **A child is drawn twice, and the two drawings disagree about one column on
-purpose.** In the transcript a fan-out gives each child a lane; in the manager
-and in the rail's map the same child is a row. A lane keeps `◇` in every state
-it has, in the colour the state wears, and says how the child is doing in
-words in the field on the right — `▰▰▰▱▱ 2/5`, `✓ 5/5`, `⚠ needs you`: a child
+purpose.** In the transcript a fan-out gives each child a lane, a row of its
+card; in the manager and in the rail's map the same child is a row. A lane
+keeps `◇` in every state it has, in the colour the state wears, and says how
+the child is doing in words — `▰▰▰▱▱ 2/5`, `✓ 5/5`, `blocked`: a child
 is a child from the moment it is queued until it stops being one, and it will
 be many acts before it is anything. A row is that same child as one thing you
 are about to act on, so it keeps the rule every other row in the product
@@ -1814,9 +1848,9 @@ to report of its own is otherwise a lane that has stopped for no stated
 reason.
 
 **A lane that has stopped folds open on the report its child wrote.** The
-first line of it stays on the lane's detail line, and under that is the fold
-every other body in the transcript wears — `▸ report · 14 lines · [enter]
-expand` — opened by the reading key that opens all of them. Open, it is
+first line of it stands on the lane's row in place of the task, and under the
+row is the fold every other body in the transcript wears — `▸ report · 14
+lines` — opened by the reading key that opens all of them. Open, it is
 bounded the way a tool's output is, and a report longer than the bound has the
 same third depth: the tail counts what it held back and says `[enter] opens
 the whole of it`, and that key or a click on the report takes the whole of it
@@ -1846,11 +1880,11 @@ says less than no corner at all, and the deepest column of the lane's gutter
 is one column wide, so how far down a tree runs is a question the rail's map
 answers and a lane does not.
 
-A fan-out offers the manager once, on a line under the lane that needs you —
-`[f12] agents · the other two keep running`, the key from the pointer and
-from reading mode's cursor alike, since the manager has no letter — and
-nowhere at all while no lane is waiting, so the key sits where there is
-something to answer
+A fan-out offers the manager on the row of the lane that needs you —
+`[f12] agents` on the right, where the child's state would stand, the key
+from the pointer and from reading mode's cursor alike, since the manager has
+no letter — and nowhere at all while no lane is waiting, so the key sits
+where there is something to answer
 ([and not the answer itself](departures.md#a-fan-out-offers-the-manager-not-the-answer)).
 
 **A row joins the child's name to its task the way every row joins two
@@ -1859,8 +1893,11 @@ artboard draws the manager's two as adjacent columns and the manager does not
 keep that. A column needs a fixed width, and a name is not a word from a
 closed vocabulary — clipped to one, two children of the same profile become
 the same string, and left unclipped the tasks beside them never line up, which
-is a rule drawn where there is no rule. The lane above it reads the same way,
-so a reader who has learned the separator on one has learned it on the other.
+is a rule drawn where there is no rule. The lane on a fan-out's card does not
+read that way: it is a row of a card's list, where the name has the slot a
+card's header gives its glyph and verb, and a name longer than the slot takes
+the room it needs
+([the slot is the list's](departures.md#a-fan-out-lane-sets-its-name-in-a-slot)).
 
 **The key row states what the list can do, and not what the pointer is on.**
 Answering a blocked child in place is offered whenever any child is blocked;

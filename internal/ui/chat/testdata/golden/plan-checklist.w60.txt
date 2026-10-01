@@ -16,9 +16,20 @@
 ──────────────────────────────────────────────────────
 
                                                       
+  ▸ planned 4 steps · 3 files         not reversible  
+    make the round limit recoverable                  
+    ✓ 1  Locate the round accounting       read only  
+    · 2  Add a RoundsExhausted sentinel  ✎ errors.go  
+    ✗ 3  Return it from runRound           ✎ loop.go  
+    · 4  Offer more rounds in the chat m… ✎ model.go  
+                                                      
+
+                                                      
   ⚙ read a.go                                   6.2s  
     Now let me locate the round accounting            
                                                       
+
+  ✓ plan · 1 of 4 · Locate the roun… · 3 writes left
 
                                                       
  ▎✗ ran go test ./...                   exit 1 · 38s  
@@ -26,14 +37,12 @@
     FAIL                                      1 line  
                                                       
 
+  ✗ plan · 3 of 4 · Return it from … · 2 writes left
+
                                                       
   ⠋ read a.go                                   3.9s  
     Rebuild the changeset store                       
                                                       
-
-· 2  Add a RoundsExhausted sentinel ── · queued      —
-
-· 4  Offer more rounds in the chat … ─ · queued      —
 
 
 · turn over (every step settled)
@@ -42,9 +51,20 @@
 ──────────────────────────────────────────────────────
 
                                                       
+  ▸ planned 4 steps · 3 files         not reversible  
+    make the round limit recoverable                  
+    ✓ 1  Locate the round accounting       read only  
+    · 2  Add a RoundsExhausted sentinel  ✎ errors.go  
+    ✗ 3  Return it from runRound           ✎ loop.go  
+    · 4  Offer more rounds in the chat m… ✎ model.go  
+                                                      
+
+                                                      
   ⚙ read a.go                                   6.2s  
     Now let me locate the round accounting            
                                                       
+
+  ✓ plan · 1 of 4 · Locate the roun… · 3 writes left
 
                                                       
  ▎✗ ran go test ./...                   exit 1 · 38s  
@@ -52,14 +72,12 @@
     FAIL                                      1 line  
                                                       
 
+  ✗ plan · 3 of 4 · Return it from … · 2 writes left
+
                                                       
   ⚙ read a.go                                   3.9s  
     Rebuild the changeset store                       
                                                       
-
-· 2  Add a RoundsExhausted sentinel ── · queued      —
-
-· 4  Offer more rounds in the chat … ─ · queued      —
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -69,9 +87,20 @@
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                      ␛[m
+␛[48;5;234m  ␛[38;5;241m▸␛[m␛[48;5;234m ␛[38;5;252mplanned␛[m␛[48;5;234m␛[38;5;241m 4 steps · 3 files␛[m␛[48;5;234m         ␛[91mnot reversible␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;252mmake the round limit recoverable␛[m␛[48;5;234m                  ␛[m
+␛[48;5;234m    ␛[92m✓␛[m␛[48;5;234m ␛[38;5;241m1  ␛[m␛[48;5;234m␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m       ␛[38;5;241mread only␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;241m·␛[m␛[48;5;234m ␛[38;5;241m2  ␛[m␛[48;5;234m␛[38;5;241mAdd a RoundsExhausted sentinel␛[m␛[48;5;234m  ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;241m errors.go␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[91m✗␛[m␛[48;5;234m ␛[38;5;241m3  ␛[m␛[48;5;234m␛[38;5;252mReturn it from runRound␛[m␛[48;5;234m           ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;241m loop.go␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;241m·␛[m␛[48;5;234m ␛[38;5;241m4  ␛[m␛[48;5;234m␛[38;5;241mOffer more rounds in the chat m…␛[m␛[48;5;234m ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;241m model.go␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                      ␛[m
+
+␛[48;5;234m                                                      ␛[m
 ␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245ma.go␛[m␛[48;5;234m                                   ␛[38;5;241m6.2s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mNow let me locate the round accounting␛[m␛[48;5;234m            ␛[m
 ␛[48;5;234m                                                      ␛[m
+
+  ␛[92m✓␛[m ␛[38;5;241mplan · 1 of 4 · Locate the roun… · 3 writes left␛[m
 
 ␛[48;5;234m                                                      ␛[m
 ␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mgo test ./...␛[m␛[48;5;234m                   ␛[91mexit 1␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m38s␛[m␛[48;5;234m  ␛[m
@@ -79,14 +108,12 @@
 ␛[48;5;234m    ␛[38;5;245mFAIL␛[m␛[48;5;234m                                      ␛[38;5;241m1 line␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
 
+  ␛[91m✗␛[m ␛[38;5;241mplan · 3 of 4 · Return it from … · 2 writes left␛[m
+
 ␛[48;5;234m                                                      ␛[m
 ␛[48;5;234m  ␛[38;5;205m⠋␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245ma.go␛[m␛[48;5;234m                                   ␛[38;5;241m3.9s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mRebuild the changeset store␛[m␛[48;5;234m                       ␛[m
 ␛[48;5;234m                                                      ␛[m
-
-␛[38;5;241m·␛[m ␛[38;5;241m2 ␛[m ␛[38;5;241mAdd a RoundsExhausted sentinel␛[m ␛[38;5;241m──␛[m ␛[38;5;241m·␛[m ␛[38;5;241mqueued␛[m      ␛[38;5;241m—␛[m
-
-␛[38;5;241m·␛[m ␛[38;5;241m4 ␛[m ␛[38;5;241mOffer more rounds in the chat …␛[m ␛[38;5;241m─␛[m ␛[38;5;241m·␛[m ␛[38;5;241mqueued␛[m      ␛[38;5;241m—␛[m
 
 
 · turn over (every step settled)
@@ -95,9 +122,20 @@
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                      ␛[m
+␛[48;5;234m  ␛[38;5;241m▸␛[m␛[48;5;234m ␛[38;5;252mplanned␛[m␛[48;5;234m␛[38;5;241m 4 steps · 3 files␛[m␛[48;5;234m         ␛[91mnot reversible␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;252mmake the round limit recoverable␛[m␛[48;5;234m                  ␛[m
+␛[48;5;234m    ␛[92m✓␛[m␛[48;5;234m ␛[38;5;241m1  ␛[m␛[48;5;234m␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m       ␛[38;5;241mread only␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;241m·␛[m␛[48;5;234m ␛[38;5;241m2  ␛[m␛[48;5;234m␛[38;5;241mAdd a RoundsExhausted sentinel␛[m␛[48;5;234m  ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;241m errors.go␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[91m✗␛[m␛[48;5;234m ␛[38;5;241m3  ␛[m␛[48;5;234m␛[38;5;252mReturn it from runRound␛[m␛[48;5;234m           ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;241m loop.go␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;241m·␛[m␛[48;5;234m ␛[38;5;241m4  ␛[m␛[48;5;234m␛[38;5;241mOffer more rounds in the chat m…␛[m␛[48;5;234m ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;241m model.go␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                      ␛[m
+
+␛[48;5;234m                                                      ␛[m
 ␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245ma.go␛[m␛[48;5;234m                                   ␛[38;5;241m6.2s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mNow let me locate the round accounting␛[m␛[48;5;234m            ␛[m
 ␛[48;5;234m                                                      ␛[m
+
+  ␛[92m✓␛[m ␛[38;5;241mplan · 1 of 4 · Locate the roun… · 3 writes left␛[m
 
 ␛[48;5;234m                                                      ␛[m
 ␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mgo test ./...␛[m␛[48;5;234m                   ␛[91mexit 1␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m38s␛[m␛[48;5;234m  ␛[m
@@ -105,12 +143,10 @@
 ␛[48;5;234m    ␛[38;5;245mFAIL␛[m␛[48;5;234m                                      ␛[38;5;241m1 line␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
 
+  ␛[91m✗␛[m ␛[38;5;241mplan · 3 of 4 · Return it from … · 2 writes left␛[m
+
 ␛[48;5;234m                                                      ␛[m
 ␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245ma.go␛[m␛[48;5;234m                                   ␛[38;5;241m3.9s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mRebuild the changeset store␛[m␛[48;5;234m                       ␛[m
 ␛[48;5;234m                                                      ␛[m
-
-␛[38;5;241m·␛[m ␛[38;5;241m2 ␛[m ␛[38;5;241mAdd a RoundsExhausted sentinel␛[m ␛[38;5;241m──␛[m ␛[38;5;241m·␛[m ␛[38;5;241mqueued␛[m      ␛[38;5;241m—␛[m
-
-␛[38;5;241m·␛[m ␛[38;5;241m4 ␛[m ␛[38;5;241mOffer more rounds in the chat …␛[m ␛[38;5;241m─␛[m ␛[38;5;241m·␛[m ␛[38;5;241mqueued␛[m      ␛[38;5;241m—␛[m
 

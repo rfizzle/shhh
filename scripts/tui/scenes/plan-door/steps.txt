@@ -14,6 +14,13 @@
 # the pane and the rail, headed /plan, the first step done beside its read and
 # the second queued, and the departure under the list; at 06 the same cell has
 # put the rail back; at 07 bare /plan, the key twin, opens the same screen.
+#
+# The transcript draws the plan as a card under the message that approved it
+# (docs/interface/surfaces.md#the-progress-checkpoint): `▸ planned 2 steps` as
+# the header, a row per step, and under the card of the step the run finished
+# a flat `✓ plan · 1 of 2` line. Under the rail's 130 columns the PLAN heading
+# is not drawn, so the door's steps are run only where it is, and the card and
+# the line are what the narrower captures are read for.
 setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go; printf 'package agent\n\nconst limit = 150\n' > round.go
 snap 01-start "Some things worth doing first"
 keys BTab
@@ -25,17 +32,24 @@ keys "plan the round counter change" Enter
 snap 03-plan-card "Plan · make the round limit recoverable"
 keys C-Space
 keys Enter
-snap 04-executing "read at the top of the loop" "PLAN" "off plan"
+wide 130 snap 04-executing "read at the top of the loop" "PLAN" "off plan" "✓ plan · 1 of 2 · Locate the round"
+narrow 130 snap 04-executing "read at the top of the loop" "✓ plan · 1 of 2 · Locate the round"
 # The rail's first column is 85 and the PLAN heading is on row 11.
-keys -l "$(printf '\033[<0;85;11M\033[<0;85;11m')"
-snap 05-heading-opens "/plan" "1 step off the plan"
-keys -l "$(printf '\033[<0;85;11M\033[<0;85;11m')"
-snap 06-cell-closes "PLAN" "/plan for the whole list"
+wide 130 keys -l "$(printf '\033[<0;85;11M\033[<0;85;11m')"
+wide 130 snap 05-heading-opens "/plan" "1 step off the plan"
+wide 130 keys -l "$(printf '\033[<0;85;11M\033[<0;85;11m')"
+wide 130 snap 06-cell-closes "PLAN" "/plan for the whole list"
 keys "/plan" Enter
 snap 07-key-twin "/plan" "1 step off the plan"
 keys Escape
-snap 08-back "PLAN" "/plan for the whole list"
+wide 130 snap 08-back "PLAN" "/plan for the whole list"
+# The plan's card, scrolled to: its header, its body, a row per step with the
+# first ticked and what each will write.
+narrow 130 snap 08-back "✓ plan · 1 of 2"
+keys PgUp
+snap 09-plan-card "▸ planned 2 steps · 1 file" "make the round limit recoverable" "✓ 1  Locate the round accounting" "· 2  Return a sentinel" "✎ loop.go"
+keys End
 keys C-c
-snap 09-quit-armed "again quits"
+snap 10-quit-armed "again quits"
 keys C-c
-snap 10-exit "that is everything the screen was holding"
+snap 11-exit "that is everything the screen was holding"

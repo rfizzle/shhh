@@ -37,7 +37,7 @@ sleep 3
 # through is the order they get anywhere.
 keys Escape
 sleep 2
-snap 03-blocked "needs you"
+snap 03-blocked "blocked · "
 # writer-1 runs its command and then asks the model again, and its queue keeps
 # it waiting: that child is the one still working, for the rest of the scene.
 keys C-Space
@@ -56,7 +56,7 @@ sleep 5
 # over a card.
 keys Escape
 sleep 3
-snap 04-three-states "needs you"
+snap 04-three-states "blocked · "
 # The manager, with the pointer where it opens: on the orchestrator, which can
 # neither be answered nor retried. Both list-wide offers are on the row
 # anyway, which is the whole of what this scene is for. Under the three
