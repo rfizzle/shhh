@@ -23,6 +23,7 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -1295,7 +1296,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		return card
 	}
 
-	card.ActGlyph, card.Act = actGlyph(m.activityKind(req.call.Name)), req.title
+	card.ActGlyph, card.Act = actGlyph(m.toolKind(req.call.Name)), req.title
 	// A spawn is read off the request rather than off the kind: it arrives as
 	// a generic gated call like every other tool, and what makes it its own
 	// variant is the child it would start.
@@ -1322,7 +1323,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		m.applySpawnCard(card, req)
 	default:
 		card.Variant = components.ApprovalGeneric
-		card.Title, card.Answer = genericCardWords(req.call.Name)
+		card.Title, card.Answer = receipt.ApprovalWords(req.call.Name)
 		// The row the card would draw, against the row it already has: a
 		// summary of several lines is compared by the line the card would
 		// take from it, because the act above was taken from that same line

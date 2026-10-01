@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -32,35 +33,13 @@ type slot struct {
 	group bool
 }
 
-// groupNouns names a verb in a counted label. A verb with no entry here
-// pluralizes by suffix, which is the signal that this table has fallen behind
-// the closed verb table rather than a wrong word in the feed.
-var groupNouns = map[string][2]string{
-	"read":   {"read", "reads"},
-	"search": {"search", "searches"},
-	"glob":   {"glob", "globs"},
-	"lsp":    {"lookup", "lookups"},
-	"web":    {"fetch", "fetches"},
-}
-
-func groupNoun(verb string, n int) string {
-	forms, ok := groupNouns[verb]
-	if !ok {
-		forms = [2]string{verb, verb + "s"}
-	}
-	if n == 1 {
-		return forms[0]
-	}
-	return forms[1]
-}
-
 // groupLabel counts what the group swallowed, by verb, in the order the calls
 // came: `6 reads · 2 searches`.
 func groupLabel(es []entry) string {
 	var order []string
 	counts := map[string]int{}
 	for _, e := range es {
-		v := activityVerb(e.toolName)
+		v := receipt.VerbOf(e.toolName)
 		if counts[v] == 0 {
 			order = append(order, v)
 		}
@@ -68,7 +47,7 @@ func groupLabel(es []entry) string {
 	}
 	parts := make([]string, 0, len(order))
 	for _, v := range order {
-		parts = append(parts, fmt.Sprintf("%d %s", counts[v], groupNoun(v, counts[v])))
+		parts = append(parts, fmt.Sprintf("%d %s", counts[v], receipt.GroupNoun(v, counts[v])))
 	}
 	return strings.Join(parts, " · ")
 }

@@ -261,7 +261,7 @@ func (m *Model) elideTranscript(was []string) {
 		e.elided = &elidedRow{
 			state:    was.State,
 			outcome:  was.Outcome,
-			counts:   activityCounts(e.toolName, e.toolResult),
+			counts:   m.receiptOf(*e).Counts(),
 			evidence: id,
 			verdict:  gateVerdictLine(*e),
 		}

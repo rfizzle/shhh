@@ -35,6 +35,11 @@ assembles it, because a second assembly is a second set of answers to every
 question about containment, trust and refusals, and the two would agree only
 on the day the second was written.
 
+What a call did — the kind of act, its verb, what it was about and how it
+came out — is one vocabulary, read from the call and its result once, below
+every front-end, so that each draws the same account of a call and none keeps
+a list of tools of its own.
+
 See [`capabilities/headless.md`](capabilities/headless.md).
 
 ## Tiers, not permissions

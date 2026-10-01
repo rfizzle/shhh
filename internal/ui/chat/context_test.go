@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -737,7 +738,7 @@ func TestTrimContext_ElidesTheTranscriptCopy(t *testing.T) {
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"big.txt"}`, toolResult: big})
 	m.contextTokens = 30000
 
-	want := activityCounts("read_file", big)
+	want := receipt.Build(receipt.Call{Name: "read_file", Result: big}).Counts()
 	if n := m.trimContext(); n != 1 {
 		t.Fatalf("want 1 elided result, got %d", n)
 	}

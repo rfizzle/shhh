@@ -16,20 +16,9 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/attachment"
-	"github.com/rfizzle/shhh/internal/digest"
-	"github.com/rfizzle/shhh/internal/evidence"
-	"github.com/rfizzle/shhh/internal/lsp"
-	"github.com/rfizzle/shhh/internal/mcp"
-	"github.com/rfizzle/shhh/internal/memory"
-	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
-	"github.com/rfizzle/shhh/internal/quality"
-	"github.com/rfizzle/shhh/internal/reports"
-	"github.com/rfizzle/shhh/internal/skill"
-	"github.com/rfizzle/shhh/internal/structural"
-	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -165,243 +154,56 @@ const (
 	classifierRule = "classifier"
 )
 
-// wholeTreeScope is what a search that named no directory was put against.
-// It is a place to a reading grouping calls by where they went and is not
-// one to a row: the target of such a call is its pattern and nothing else,
-// so there is nothing behind the subject to draw.
-const wholeTreeScope = "."
-
-// activityVerbs is the one table mapping tool names onto the closed verb
-// vocabulary of docs/interface/principles.md#closed-vocabularies — read,
-// search, glob, lsp, web, edit, write, patch, run, memory, spawn, fan-out,
-// agent, report, steer, retry, asked, and the four git writes — add, commit,
-// branch, switch. A tool
-// that maps onto none of them is a hole in this table, not a new verb invented
-// at the call site: it renders as itself, clipped to the verb column, which is
-// the signal that the table is stale.
-//
-// The writing half of git is the one tool whose entry here is a default rather
-// than an answer. Its four verbs are four different acts, so the row reads the
-// verb out of the call (activityVerbFor); this entry is what a call whose
-// arguments could not be read falls back to, which is a call that is about to
-// be a failed row anyway.
-var activityVerbs = map[string]string{
-	"read_file":                 "read",
-	"list_directory":            "read",
-	evidence.ToolName:           "read",
-	"search":                    "search",
-	structural.AstGrepToolName:  "search",
-	tools.QueryName:             "search",
-	tools.SqliteName:            "search",
-	structural.TokeiToolName:    "search",
-	structural.GitToolName:      "read",
-	structural.GitWriteToolName: "commit",
-	"glob":                      "glob",
-	structural.FdToolName:       "glob",
-	lsp.DefinitionToolName:      "lsp",
-	lsp.ReferencesToolName:      "lsp",
-	lsp.WorkspaceSymbolToolName: "lsp",
-	lsp.DocumentSymbolToolName:  "lsp",
-	lsp.HoverToolName:           "lsp",
-	lsp.DiagnosticsToolName:     "lsp",
-	web.FetchToolName:           "web",
-	web.SearchToolName:          "web",
-	"edit_file":                 "edit",
-	"write_file":                "write",
-	structural.SdToolName:       "patch",
-	tools.ExecCommandName:       "run",
-	process.ToolName:            "run",
-	quality.ToolName:            "run",
-	memory.RememberToolName:     "memory",
-	ask.ToolName:                "asked",
-	skill.ToolName:              "read",
-	subagent.SpawnToolName:      "spawn",
-	subagent.ReportToolName:     "agent",
-	subagent.SteerToolName:      "steer",
-	subagent.RetryToolName:      "retry",
-	reports.ToolName:            "report",
-}
-
-// gateTarget adds to a quality-gate row's subject the one thing about the
-// suite that only the verdict knows: how many checks it is. The arguments say
-// which suite was asked for, so `quality gate · default` is what the row reads
-// while the checks run; the verdict says what that suite turned out to be, so
-// the finished row reads `quality gate · default · 5 checks` and a reader
-// scanning the column knows how much was verified without opening anything
-// (docs/interface/principles.md#one-grid).
-//
-// The suite comes off the verdict rather than off the call once there is a
-// verdict to read, because a run that named no suite fell back to the
-// configured default and the row would otherwise never say which one that was.
-// Everything else — a re-report, a run still in flight, a call that was
-// refused — has no verdict, and keeps the subject the arguments gave it.
-func gateTarget(target, tool, result string) string {
-	if tool != quality.ToolName {
-		return target
-	}
-	s, ok := quality.Summarize(result)
-	if !ok || s.Suite == "" {
-		return target
-	}
-	target = digest.GateSubject + " · " + s.Suite
-	if s.Total > 0 {
-		target += " · " + countPhrase(s.Total, false, "check", "checks")
-	}
-	return target
-}
-
-// genericCardWords is the title and the yes of a card for a call that is
-// neither a command nor an edit nor a spawn, named for the act the reader is
-// asked to allow: a person asked to approve a web fetch reads "tool" as a
-// word about the program, not about the page it is about to read. Anything
-// that is not a fetch or a server's tool keeps the general words.
-func genericCardWords(tool string) (title, answer string) {
-	if tool == web.FetchToolName {
-		return "Approve fetch", "fetch it"
-	}
-	if _, ok := mcp.SplitName(tool); ok {
-		return "Approve server call", "call it"
-	}
-	return "Approve tool", "allow it"
-}
-
-func activityVerb(tool string) string {
-	if v, ok := activityVerbs[tool]; ok {
-		return v
-	}
-	if _, ok := mcp.SplitName(tool); ok {
-		return "mcp"
-	}
-	return tool
-}
-
-// activityVerbFor is activityVerb for a caller that has the call's arguments
-// to hand. Only the writing half of git needs them: `commit` is the word the
-// reader scans a transcript for, and it is a field of the call rather than
-// part of the tool's name. Everything that names a call to the person uses
-// this rather than the name-only form — the row, the running status line, the
-// output screen's title, the copied label — because a running `add` reported
-// as `commit` is a worse answer than no answer.
-func activityVerbFor(tool, args string) string {
-	if tool == structural.GitWriteToolName {
-		if v := digest.GitVerb(args); v != "" {
-			return v
+// receiptOf is what the entry's call did, read the one way every front-end
+// reads a call. The screen holds no table of tools: what a row states about
+// one — its kind, verb, subject, how it came out and how much it found — is
+// the receipt's, and the screen's part is how that is drawn.
+// See docs/architecture.md#one-agent-several-front-ends.
+func (m Model) receiptOf(e entry) receipt.Receipt {
+	if e.kind == entryCommand {
+		ended := e.commandResult
+		if ended.Outcome == "" {
+			ended = tools.InferExecResult(e.toolResult, e.exitCode)
 		}
+		return receipt.Build(receipt.Call{Args: e.text, Result: e.toolResult, Exec: &ended})
 	}
-	return activityVerb(tool)
+	return m.callReceipt(e.toolName, e.toolArgs, e.toolResult)
 }
 
-// activityKind picks the row's glyph and, with it, whether the row carries
-// the mutation rail: ⚙ reads, $ commands, ✎ anything that
-// persists, ◇ sub-agents, ⇄ a server call the user did not mark read-only.
-func (m Model) activityKind(tool string) components.ActivityKind {
-	switch {
-	case m.mcp.Has != nil && m.mcp.Has(tool):
-		// A read-only server's call is a read and draws as one; every
-		// other server's call is an act shhh cannot see the far side of
-		// (docs/capabilities/mcp.md#a-call-is-a-command-unless-you-said-otherwise).
-		if m.mcp.ReadOnly(tool) {
-			return components.ActivityTool
-		}
-		return components.ActivityRemote
-	case tool == subagent.SpawnToolName || tool == subagent.ReportToolName ||
-		tool == subagent.SteerToolName || tool == subagent.RetryToolName:
-		return components.ActivitySubagent
-	case tool == reports.ToolName:
-		return components.ActivityReport
-	case tool == tools.ExecCommandName || tool == process.ToolName || tool == quality.ToolName ||
-		tool == structural.GitWriteToolName:
-		// A git write draws as a command, with the accent rail: it is the
-		// same act a `git commit` line would have been, and the tier it is
-		// approved at does not change what the reader is looking at.
+// callReceipt is the receipt of one tool call, told what this session knows
+// about the server the tool belongs to, if any.
+func (m Model) callReceipt(name, args, result string) receipt.Receipt {
+	served := m.mcp.Has != nil && m.mcp.Has(name)
+	return receipt.Build(receipt.Call{Name: name, Args: args, Result: result,
+		Served: served, ReadOnly: served && m.mcp.ReadOnly(name)})
+}
+
+// activityKind is the glyph a kind of act draws with: ⚙ reads of every
+// sort, $ commands, ✎ anything that persists, ◇ sub-agents, ⇄ a server call
+// the user did not mark read-only. The glyph carries the mutation rail with
+// it, so the kinds that draw alike agree on the rail.
+func activityKind(k receipt.Kind) components.ActivityKind {
+	switch k {
+	case receipt.KindRun:
 		return components.ActivityCommand
-	case tools.IsMutating(tool) || tool == memory.RememberToolName || tool == structural.SdToolName:
+	case receipt.KindWrite:
 		return components.ActivityEdit
+	case receipt.KindSpawn:
+		return components.ActivitySubagent
+	case receipt.KindRemote:
+		return components.ActivityRemote
+	case receipt.KindReport:
+		return components.ActivityReport
+	case receipt.KindSummary:
+		return components.ActivitySummary
 	}
 	return components.ActivityTool
 }
 
-// activityCounts summarizes a result's size with a tool-appropriate noun
-// (matches found, items listed, lines read).
-//
-// The number is of what the call found, not of what it printed
-// (docs/interface/principles.md#one-grid). For a search those are different
-// numbers: the result carries context lines around every match and a notice
-// when the tool stopped at its cap, so counting lines described a truncated
-// fifty-match answer as `298 matches` — six times the finding, and
-// exhaustive-sounding at the moment the tool was saying it had been cut
-// short. So search is measured by the tool that wrote the format, and a
-// result it cut short reads `50+`.
-//
-// A path list is the case that hid this: `glob`, `list_directory` and `fd`
-// really are one line per item. What they share with every other bounded
-// reader is the last line, which is the tool's own notice and not a thing it
-// found — a paged read is `2000+ lines` and not 2001. `ast_grep` is the case
-// that cannot be measured at all: its output is ast-grep's own, with its own
-// context lines, so its row says how many lines came back, which is the only
-// thing that is true.
-func activityCounts(tool, result string) string {
-	if strings.TrimSpace(result) == "" || foundNothingResult(result) {
-		return ""
-	}
-	if tool == structural.GitWriteToolName || tool == ask.ToolName {
-		// A git write answers with a receipt and the boundaries of the act,
-		// not with output. `2 lines` about it would be a measurement of the
-		// sentence rather than of anything that happened — and an answered
-		// question is the same: what came back is one decision, not a
-		// quantity of anything.
-		return ""
-	}
-	if tool == tools.SearchName {
-		size := tools.MeasureSearch(result)
-		if size.Files {
-			return countPhrase(size.N, size.Truncated, "file", "files")
-		}
-		return countPhrase(size.N, size.Truncated, "match", "matches")
-	}
-	lines := strings.Split(strings.TrimRight(result, "\n"), "\n")
-	more := tools.TruncationNotice(lines[len(lines)-1])
-	if more {
-		lines = lines[:len(lines)-1]
-	}
-	// A read of part of a file opens with the whole file's size, which is
-	// the tool's own line about the file and not one of the lines it read.
-	if tool == tools.ReadFileName && len(lines) > 1 && tools.IsSizeLine(lines[0]) {
-		lines = lines[1:]
-	}
-	switch tool {
-	case tools.GlobName, tools.ListDirectoryName, structural.FdToolName:
-		return countPhrase(len(lines), more, "item", "items")
-	}
-	return countPhrase(len(lines), more, "line", "lines")
-}
-
-// foundNothingResult reports whether a result is a reader's "nothing here"
-// sentence — search's, glob's and fd's, and ast_grep's. The field is left
-// blank rather than counting the sentence, which read as `1 match`: the
-// opposite of what the call found. Blank and not `0` for the reason duration
-// is blank below its threshold — a column of zeroes is noise, and the row
-// still carries the sentence for whoever opens it.
-func foundNothingResult(result string) bool {
-	switch strings.TrimSpace(result) {
-	case tools.NoMatchesFound, tools.NoFilesMatched, structural.NoMatches:
-		return true
-	}
-	return false
-}
-
-// countPhrase renders the counts field. `+` is how a result the tool stopped
-// short of finishing says so — `50+ matches` — because the one thing worth
-// saying about a truncated answer is that there is more of it, and it is the
-// one thing this field never said.
-func countPhrase(n int, more bool, singular, plural string) string {
-	if more {
-		return fmt.Sprintf("%d+ %s", n, plural)
-	}
-	if n == 1 {
-		return "1 " + singular
-	}
-	return fmt.Sprintf("%d %s", n, plural)
+// toolKind is the glyph of a call to the named tool, for a caller that has
+// no result to read: the card a call is put to.
+func (m Model) toolKind(name string) components.ActivityKind {
+	return activityKind(m.callReceipt(name, "", "").Kind)
 }
 
 func formatDuration(d time.Duration) string {
@@ -462,35 +264,6 @@ func approvalAccount(req *approvalRequest) string {
 		return allowedLabel(req.autoRule, req.autoCost)
 	}
 	return components.ApprovedBy(decidedByYou)
-}
-
-// prereqWord is a harness prerequisite as the command row names it: the
-// category in the reader's words, after `did not start ·`. The codes are the
-// record's and the event stream's spelling (tools.ExecPrereq); these are the
-// same five, spaced for a person. An unclassified failure has none, and the
-// row then says only that the command did not start.
-//
-// The working directory is `working dir` because the category is the word
-// this row exists to state: spelled out, `did not start · working directory`
-// is wider than a 60-column row leaves the outcome field, and the grid clips
-// the field's tail, so the frame cut the one word that says what was missing
-// (docs/interface/principles.md#fold-never-hide). The words are the category
-// column of the table in
-// docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed.
-func prereqWord(p tools.ExecPrereq) string {
-	switch p {
-	case tools.PrereqWorkingDir:
-		return "working dir"
-	case tools.PrereqShell:
-		return "execution shell"
-	case tools.PrereqContainment:
-		return "containment"
-	case tools.PrereqPermission:
-		return "permission"
-	case tools.PrereqSpawn:
-		return "spawn"
-	}
-	return ""
 }
 
 // commandEnd is how a command ended where its exit code cannot say: the word
@@ -604,14 +377,11 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 		row.MaxDetail = maxExpandedResultLines
 	}
 	result := e.toolResult
+	rc := m.receiptOf(e)
+	row.Kind, row.Verb = activityKind(rc.Kind), rc.Verb
 	if e.kind == entryCommand {
-		row.Kind = components.ActivityCommand
-		row.Verb = "run"
-		row.Target = firstLine(e.text)
-		ended := e.commandResult
-		if ended.Outcome == "" {
-			ended = tools.InferExecResult(e.toolResult, e.exitCode)
-		}
+		row.Target = rc.Subject
+		ended := rc.Ended
 		switch {
 		case ended.Outcome == tools.ExecDidNotStart:
 			// Nothing ran, so the row says which prerequisite was missing in
@@ -623,7 +393,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 			// See docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed.
 			row.State = components.ActivityFailed
 			row.Outcome = components.OutcomeDidNotStart
-			if word := prereqWord(ended.Prereq); word != "" {
+			if word := rc.Account; word != "" {
 				row.Outcome += " · " + word
 			}
 			row.Duration = components.NoDuration
@@ -665,24 +435,10 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 			row.Outcome += " · " + components.OutcomeLocal
 		}
 	} else {
-		row.Kind = m.activityKind(e.toolName)
-		row.Verb = activityVerbFor(e.toolName, e.toolArgs)
-		row.Target = gateTarget(digest.Arg(e.toolName, e.toolArgs), e.toolName, result)
-		// A search's target is its pattern and then where it was put, and
-		// only the pattern is the subject: the place goes dim behind it, so
-		// the column reads as one question asked somewhere
+		// A search's place goes dim behind its pattern, so the column reads
+		// as one question asked somewhere
 		// (docs/interface/principles.md#one-grid).
-		//
-		// Only where the target is actually carrying it. A call that named
-		// no directory is answered with the whole tree — a scope like any
-		// other to a reading that groups calls by where they were put, but
-		// not a place the target spends a column marking — and a row told to
-		// look for one would find the tail of a pattern that happened to end
-		// the same way and dim half the subject.
-		if scope, ok := digest.SearchScope(e.toolName, e.toolArgs); ok &&
-			scope != wholeTreeScope && strings.HasSuffix(row.Target, " "+scope) {
-			row.Scope = scope
-		}
+		row.Target, row.Scope = rc.Subject, rc.Scope
 		switch {
 		case e.skipped != "":
 			// A call the queue refused before it could reach a card
@@ -776,10 +532,10 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 			row.Outcome = components.OutcomeBy(components.OutcomeDenied, decidedByYou)
 			row.Duration = components.NoDuration
 			result = ""
-		case strings.HasPrefix(result, "error:"):
+		case rc.Failed():
 			row.State = components.ActivityFailed
-			row.Outcome = "error"
-		case e.toolName == structural.GitWriteToolName:
+			row.Outcome = rc.Outcome
+		case rc.IsGitWrite():
 			// The receipt is the outcome, the field the target clips for: the
 			// sha is the one part of a commit nobody can reconstruct from
 			// the call, and a row that kept it in a one-line body would make
@@ -791,8 +547,8 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 			// is stated where the reader already is rather than behind a
 			// keystroke; a row wide enough to carry it in the outcome field
 			// would be wider than eighty columns.
-			receipt, rest, _ := strings.Cut(strings.TrimRight(result, "\n"), "\n")
-			row.Outcome, result = receipt, strings.TrimSpace(rest)
+			_, rest, _ := strings.Cut(strings.TrimRight(result, "\n"), "\n")
+			row.Outcome, result = rc.Outcome, strings.TrimSpace(rest)
 			if result != "" {
 				row.Expanded = true
 			}
@@ -809,11 +565,10 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 			// is the body, and the outcome column is where the reader looks
 			// for what happened (docs/interface/surfaces.md#the-activity-row).
 			row.Outcome = components.OutcomeBy(components.OutcomeAnswered, string(e.answered))
-		case e.toolName == reports.ToolName:
+		case rc.IsReport():
 			// The link is the outcome — the field the target clips for —
-			// and the page is the body, so the row keeps nothing else. The
-			// result's first line is the URL by the tool's own contract.
-			row.Outcome = "→ " + firstLine(result)
+			// and the page is the body, so the row keeps nothing else.
+			row.Outcome = rc.Outcome
 			result = ""
 		}
 	}
@@ -849,7 +604,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 	if strings.TrimSpace(result) != "" {
 		row.Detail = strings.Split(strings.TrimRight(result, "\n"), "\n")
 		if !row.Failed() && m.density(verbosityNormal) {
-			row.Counts = activityCounts(e.toolName, result)
+			row.Counts = rc.Counts()
 		}
 	}
 	if e.elided != nil {
@@ -887,7 +642,7 @@ func (m Model) WithFetchWaits(waiting func(host string) (time.Duration, bool), a
 // the running spinner is already asking for, and it reads the remaining wait
 // off the fetcher each time.
 func (m Model) fetchWaitFields(toolName, toolArgs string) (outcome, counts string, ok bool) {
-	if toolName != web.FetchToolName || m.fetchWaiting == nil {
+	if !receipt.IsFetch(toolName) || m.fetchWaiting == nil {
 		return "", "", false
 	}
 	host := web.FetchHost(json.RawMessage(toolArgs))
@@ -918,11 +673,12 @@ func (m Model) fetchWaitRow(width int) (string, bool) {
 	if !ok {
 		return "", false
 	}
+	rc := m.callReceipt(call.Name, call.Arguments, "")
 	row := components.ActivityRow{
-		Kind:    m.activityKind(call.Name),
+		Kind:    activityKind(rc.Kind),
 		State:   components.ActivityRunning,
-		Verb:    activityVerbFor(call.Name, call.Arguments),
-		Target:  digest.Arg(call.Name, call.Arguments),
+		Verb:    rc.Verb,
+		Target:  rc.Subject,
 		Outcome: outcome,
 		Counts:  counts,
 		Spin:    m.spinnerWanted(),

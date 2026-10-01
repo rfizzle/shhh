@@ -17,8 +17,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/digest"
-	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -172,8 +171,8 @@ func (m Model) ranUnvouched(es []entry) bool {
 			if e.deniedBy != "" || e.skipped != "" {
 				continue
 			}
-			switch m.activityKind(e.toolName) {
-			case components.ActivityCommand, components.ActivityRemote:
+			switch m.receiptOf(e).Kind {
+			case receipt.KindRun, receipt.KindRemote:
 				return true
 			}
 		}
@@ -188,17 +187,14 @@ func (m Model) ranUnvouched(es []entry) bool {
 func turnCommitRow(es []entry) *components.TurnCommit {
 	for i := len(es) - 1; i >= 0; i-- {
 		e := es[i]
-		if e.kind != entryTool || e.toolName != structural.GitWriteToolName {
+		if e.kind != entryTool || !receipt.Build(receipt.Call{Name: e.toolName, Args: e.toolArgs}).IsCommit() {
 			continue
 		}
-		if digest.GitVerb(e.toolArgs) != structural.CommitVerb {
+		line := firstLine(e.toolResult)
+		if line == "" || strings.HasPrefix(line, "error:") {
 			continue
 		}
-		receipt := firstLine(e.toolResult)
-		if receipt == "" || strings.HasPrefix(receipt, "error:") {
-			continue
-		}
-		return &components.TurnCommit{Receipt: receipt}
+		return &components.TurnCommit{Receipt: line}
 	}
 	return nil
 }

@@ -16,6 +16,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/receipt"
 )
 
 // Gate wires the quality gate into the chat TUI. Manage backs the
@@ -232,7 +233,7 @@ func (m Model) finishCloseGate(msg closeGateMsg) (tea.Model, tea.Cmd) {
 // asked for it.
 func hasGateRow(es []entry) bool {
 	for _, e := range es {
-		if e.kind == entryTool && e.toolName == quality.ToolName {
+		if e.kind == entryTool && receipt.IsGate(e.toolName) {
 			return true
 		}
 	}

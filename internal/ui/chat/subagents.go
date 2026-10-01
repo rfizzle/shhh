@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -455,7 +456,7 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 		card.Answer = "apply the patch to your workspace"
 	default:
 		card.Variant = components.ApprovalGeneric
-		title, answer := genericCardWords(ask.Tool)
+		title, answer := receipt.ApprovalWords(ask.Tool)
 		card.Title = prefix + title
 		card.ActGlyph = "⚙"
 		card.Summary = firstLine(ask.Summary)

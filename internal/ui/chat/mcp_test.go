@@ -318,10 +318,10 @@ func TestResourceToolAutoRunsAndDrawsAsARead(t *testing.T) {
 	if m.requiresApproval(call) {
 		t.Fatal("a resource read asked for approval")
 	}
-	if got := m.activityKind("mcp_resource"); got != components.ActivityTool {
+	if got := m.toolKind("mcp_resource"); got != components.ActivityTool {
 		t.Fatalf("resource row kind = %v, want the read's", got)
 	}
-	if got := m.activityKind("docs__search"); got != components.ActivityRemote {
+	if got := m.toolKind("docs__search"); got != components.ActivityRemote {
 		t.Fatalf("a server call's row kind = %v", got)
 	}
 }

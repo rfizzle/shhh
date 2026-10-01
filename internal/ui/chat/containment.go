@@ -1,6 +1,6 @@
 package chat
 
-import "github.com/rfizzle/shhh/internal/process"
+import "github.com/rfizzle/shhh/internal/receipt"
 
 // Containment is the process-containment setup for assistant commands.
 // When Run is set, approved and waved-through execute_command calls run
@@ -104,7 +104,7 @@ func (m Model) containmentRefusal(req *approvalRequest) string {
 	if m.containment.Refusal == "" || req == nil || req.command == "" {
 		return ""
 	}
-	if req.kind != approvalExec && req.call.Name != process.ToolName {
+	if req.kind != approvalExec && !receipt.IsProcess(req.call.Name) {
 		return ""
 	}
 	return m.containment.Refusal

@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -85,7 +86,7 @@ func (v verification) settled(i int) bool { return v >= 0 && i < int(v) }
 // and says the opposite forever. A verdict outlives the text it was written
 // in (context.go).
 func gateVerdict(e entry) (quality.Summary, bool) {
-	if e.kind != entryTool || e.toolName != quality.ToolName {
+	if e.kind != entryTool || !receipt.IsGate(e.toolName) {
 		return quality.Summary{}, false
 	}
 	if e.elided != nil && e.elided.verdict != "" {

@@ -19,14 +19,12 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/sandbox"
-	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
-	"github.com/rfizzle/shhh/internal/web"
 )
 
 // Safety is what the reading needs that the chat cannot reach itself: the
@@ -242,7 +240,7 @@ func (m Model) safetyContainment() components.SafetySection {
 // the words the card that made it used.
 func (m Model) safetyWeb() components.SafetySection {
 	sec := components.SafetySection{Title: "web", ChangedBy: "/permissions revoke hosts"}
-	if !m.hasTool(web.FetchToolName) {
+	if !m.hasToolThat(receipt.IsFetch) {
 		sec.Lines, sec.Absent = []string{"this session has no web tools, so it reaches no host"}, true
 		return sec
 	}
@@ -350,13 +348,13 @@ func (m Model) safetyTools() components.SafetySection {
 		switch name := d.Name; {
 		case m.mcp.Has != nil && m.mcp.Has(name):
 			served++
-		case tools.IsMutating(name) || name == structural.GitWriteToolName:
+		case tools.IsMutating(name) || receipt.IsGitWrite(name):
 			write = append(write, name)
-		case name == tools.ExecCommandName || name == process.ToolName:
+		case name == tools.ExecCommandName || receipt.IsProcess(name):
 			exec = append(exec, name)
 		// A conversation answers its own fetches without a card, so the one
 		// tool that asks everywhere else is a read here.
-		case m.conversation && name == web.FetchToolName:
+		case m.conversation && receipt.IsFetch(name):
 			read = append(read, name)
 		case m.requiresApproval(provider.ToolCall{Name: name}):
 			asks = append(asks, name)
@@ -382,6 +380,17 @@ func (m Model) safetyTools() components.SafetySection {
 		sec.Lines = append(sec.Lines, "  "+padRight("servers", 10)+" "+plural(served, "tool")+" — see mcp above")
 	}
 	return sec
+}
+
+// hasToolThat reports whether the session registered a tool the question
+// answers yes for.
+func (m Model) hasToolThat(is func(name string) bool) bool {
+	for _, d := range m.toolDefs {
+		if is(d.Name) {
+			return true
+		}
+	}
+	return false
 }
 
 // hasTool reports whether the session registered a tool by that name.

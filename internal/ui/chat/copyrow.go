@@ -129,7 +129,7 @@ func (m Model) rowCopyText(es []entry, idx int) (text, what string) {
 		if len(lines) == 0 {
 			return "", ""
 		}
-		return ansi.Strip(strings.Join(lines, "\n")), activityVerbFor(e.toolName, e.toolArgs) + " result"
+		return ansi.Strip(strings.Join(lines, "\n")), m.receiptOf(e).Verb + " result"
 	}
 	return "", ""
 }

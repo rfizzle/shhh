@@ -21,7 +21,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -121,7 +121,7 @@ func checksStale(es []entry) bool {
 		switch {
 		case e.kind == entryDiff:
 			lastEdit = i
-		case e.kind == entryTool && e.toolName == quality.ToolName:
+		case e.kind == entryTool && receipt.IsGate(e.toolName):
 			lastCheck = i
 		case e.kind == entryCommand && isTestCommand(e.text):
 			lastCheck = i

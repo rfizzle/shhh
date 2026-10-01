@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -48,12 +47,8 @@ func (m Model) rowOutputView(e entry) *components.OutputView {
 		// page it back (attachments.go).
 		return pasteOutputView(e)
 	}
-	title := activityVerbFor(e.toolName, e.toolArgs) + " " + digest.Arg(e.toolName, e.toolArgs)
-	if e.kind == entryCommand {
-		title = "$ " + firstLine(e.text)
-	}
 	return &components.OutputView{
-		Title: strings.TrimSpace(title),
+		Title: strings.TrimSpace(m.receiptOf(e).Title()),
 		Lines: m.rowOutputLines(e),
 	}
 }

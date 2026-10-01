@@ -14,9 +14,8 @@ import (
 	"charm.land/lipgloss/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/layout"
-	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -222,7 +221,7 @@ func (m *Model) rereadHeaderBranch() {
 // noteBranchSwitch rereads the header's branch when the call that just
 // landed was the git tool switching branches.
 func (m *Model) noteBranchSwitch(tool, args string) {
-	if tool == structural.GitWriteToolName && digest.GitVerb(args) == "switch" {
+	if receipt.Build(receipt.Call{Name: tool, Args: args}).SwitchesBranch() {
 		m.rereadHeaderBranch()
 	}
 }

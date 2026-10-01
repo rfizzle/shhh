@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
 	"slices"
 	"strings"
 	"testing"
@@ -23,7 +22,7 @@ import (
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
-	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -162,53 +161,6 @@ func TestActivityRow_SearchesOfOnePackageReadAsTheirPatterns(t *testing.T) {
 	}
 }
 
-// TestActivityVerbs_ClosedVocabulary pins the closed verb table: every tool
-// this session can call maps onto one of the verbs the list holds, and an
-// unmapped name falls through as itself — the signal that the table is stale.
-func TestActivityVerbs_ClosedVocabulary(t *testing.T) {
-	closed := map[string]bool{"read": true, "search": true, "glob": true, "lsp": true,
-		"web": true, "edit": true, "write": true, "patch": true, "run": true,
-		"memory": true, "spawn": true, "fan-out": true, "agent": true,
-		"report": true, "steer": true, "retry": true, "asked": true,
-		// The four git writes. They are acts rather than tools, which is why
-		// the row reads them out of the call rather than off the name.
-		"add": true, "commit": true, "branch": true, "switch": true}
-	for tool, verb := range activityVerbs {
-		if !closed[verb] {
-			t.Fatalf("%s maps onto %q, which is not one of the closed verbs", tool, verb)
-		}
-	}
-	for tool, want := range map[string]string{
-		"list_directory": "read", "ast_grep": "search", "fd": "glob",
-		"references": "lsp", "workspace_symbol": "lsp", "document_symbol": "lsp",
-		"hover": "lsp", "diagnostics": "lsp", "web_fetch": "web", "web_search": "web",
-		"sd": "patch", "quality_gate": "run", "process": "run", "query": "search",
-		"remember": "memory", "spawn_agent": "spawn", "agent_report": "agent",
-		"agent_steer": "steer", "agent_retry": "retry", "report": "report",
-	} {
-		if got := activityVerb(tool); got != want {
-			t.Fatalf("%s should render as %q, got %q", tool, want, got)
-		}
-	}
-	if got := activityVerb("mystery_tool"); got != "mystery_tool" {
-		t.Fatalf("an unmapped tool renders as itself, got %q", got)
-	}
-	// The writing half of git is the one tool whose verb is a field of the
-	// call: `commit` is the word a reader scans for, and it is not in the
-	// tool's name.
-	for args, want := range map[string]string{
-		`{"verb":"commit","message":"feat: x"}`: "commit",
-		`{"verb":"add","paths":["a.go"]}`:       "add",
-		`{"verb":"branch","branch":"topic"}`:    "branch",
-		`{"verb":"switch","branch":"master"}`:   "switch",
-		`not json`:                              "commit",
-	} {
-		if got := activityVerbFor(structural.GitWriteToolName, args); got != want {
-			t.Fatalf("%s should render as %q, got %q", args, got, want)
-		}
-	}
-}
-
 // TestActivityKinds_GlyphPerAct pins which glyph — and so which rows carry
 // the mutation rail — each tool gets.
 func TestActivityKinds_GlyphPerAct(t *testing.T) {
@@ -224,7 +176,7 @@ func TestActivityKinds_GlyphPerAct(t *testing.T) {
 		"agent_report": components.ActivitySubagent,
 		"report":       components.ActivityReport,
 	} {
-		if got := (Model{}).activityKind(tool); got != want {
+		if got := (Model{}).toolKind(tool); got != want {
 			t.Fatalf("%s should render as kind %d, got %d", tool, want, got)
 		}
 	}
@@ -275,13 +227,13 @@ func TestActivityKinds_ServerCallsDrawByTheUsersWord(t *testing.T) {
 		Has:      func(name string) bool { return strings.HasPrefix(name, "docs__") || strings.HasPrefix(name, "gh__") },
 		ReadOnly: func(name string) bool { return strings.HasPrefix(name, "docs__") },
 	})
-	if got := m.activityKind("docs__search"); got != components.ActivityTool {
+	if got := m.toolKind("docs__search"); got != components.ActivityTool {
 		t.Fatalf("read-only server call kind = %d, want a read", got)
 	}
-	if got := m.activityKind("gh__create_issue"); got != components.ActivityRemote {
+	if got := m.toolKind("gh__create_issue"); got != components.ActivityRemote {
 		t.Fatalf("gated server call kind = %d, want remote", got)
 	}
-	if got := activityVerb("gh__create_issue"); got != "mcp" {
+	if got := m.callReceipt("gh__create_issue", "", "").Verb; got != "mcp" {
 		t.Fatalf("verb = %q", got)
 	}
 	if got := digest.Arg("gh__create_issue", `{"title":"Bug","body":"long\ntext"}`); got != "gh create_issue body=long text title=Bug" {
@@ -332,59 +284,6 @@ func TestActivityRow_FailedAutoExpandsBounded(t *testing.T) {
 	}
 	if n := strings.Count(view, "error detail line"); n >= 20 {
 		t.Fatalf("failure auto-expansion must stay bounded, got %d detail lines", n)
-	}
-}
-
-// TestActivityCounts_CountsWhatWasFound is the row against the tool: a search
-// prints context around every match and a notice when it stopped early, so
-// the height of the result is not the size of the answer, and the row must
-// not report the one as the other.
-func TestActivityCounts_CountsWhatWasFound(t *testing.T) {
-	var sweep strings.Builder
-	for i := 1; i <= 50; i++ {
-		fmt.Fprintf(&sweep, "a.go:%d- above\na.go:%d: needle\na.go:%d- below\n--\n", i*10-1, i*10, i*10+1)
-	}
-	sweep.WriteString("… (truncated at 50 matches; narrow the pattern or path, " +
-		"or raise limit to at most 500, or use files_only to see which files are involved)")
-	if lines := strings.Count(sweep.String(), "\n") + 1; lines < 200 {
-		t.Fatalf("the fixture must print far more lines than it found, got %d", lines)
-	}
-
-	cases := []struct {
-		name, tool, result, want string
-	}{
-		{"a truncated sweep is its matches and says there are more",
-			"search", sweep.String(), "50+ matches"},
-		{"context lines are not matches",
-			"search", "a.go:9- above\na.go:10: needle\na.go:11- below", "1 match"},
-		{"files_only counts files",
-			"search", "a.go: 1 match\nb.go: 12 matches", "2 files"},
-		{"a search that found nothing claims nothing",
-			"search", tools.NoMatchesFound, ""},
-		{"a path list really is one line per item",
-			"glob", "a.go\nb.go\nc.go", "3 items"},
-		{"but its notice is not one of them",
-			"glob", "a.go\nb.go\n… (truncated at 2 files; narrow the pattern or path to see more)", "2+ items"},
-		{"fd's cap notice is the same shape",
-			structural.FdToolName, "a.go\n… (results capped at 1; narrow the pattern or path to see more)", "1+ items"},
-		{"a listing that found nothing",
-			structural.FdToolName, tools.NoFilesMatched, ""},
-		{"a paged read is its window, not its window plus the notice",
-			"read_file", "package a\nfunc A() {}\n" +
-				"… (truncated: showing lines 1-2 of 90; call read_file again with start_line=3 to continue)",
-			"2+ lines"},
-		{"nor is the size line a partial read opens with",
-			"read_file", "a.log: 90 lines, 1,204 bytes; showing lines 89-90\n89\tlast but one\n90\tlast",
-			"2 lines"},
-		{"a foreign tool's output is measured in what it is",
-			structural.AstGrepToolName, "a.go\n12│\tneedle\n13│\tbelow", "3 lines"},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := activityCounts(tc.tool, tc.result); got != tc.want {
-				t.Errorf("activityCounts(%s) = %q, want %q", tc.tool, got, tc.want)
-			}
-		})
 	}
 }
 
@@ -1166,15 +1065,15 @@ func TestCommandEnding_NamesWhatEndedTheCommand(t *testing.T) {
 // twice and what the call touched not at all
 // (docs/interface/principles.md#one-grid).
 //
-// The walk is over the verb table because that is the row's own register of
-// every tool it can draw — a tool missing from it renders as itself and is a
+// The walk is over the receipt's verb table because that is the row's own
+// register of every tool it can draw — a tool missing from it renders as itself and is a
 // hole in the table — so a tool registered tomorrow is covered by this the
 // day its verb is added. Both refusals a call can meet before it runs are put
 // through it: the ordinary row, and the row the queue leaves behind when the
 // arguments cannot be honoured at all.
 func TestActivityRow_NoTargetIsTheToolsOwnName(t *testing.T) {
 	m := activityModel(t)
-	names := slices.Sorted(maps.Keys(activityVerbs))
+	names := receipt.Names()
 	// A server's tool goes through a branch of its own and is the one name
 	// the table cannot hold, since the server half is not known until it
 	// connects.

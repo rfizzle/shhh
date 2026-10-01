@@ -126,6 +126,7 @@ internal/
   secret/          the vault and the scrub
   observe/         the session record's contract and closed vocabularies
   evidence/        store for reduced and elided output
+  receipt/         what one call did, in the words every front-end draws
   todo/, todo/run/ the project backlog and its runner
   rpc/             the JSON-RPC surface behind `shhh serve`
 ```
@@ -157,4 +158,6 @@ internal/
 - **Chat geometry is rectangles in `internal/ui/chat/layout.go`.** Add one to
   the split rather than a `width - n` in a renderer.
 - **A new optional tool joins `registrableDefinitions`**
-  (`internal/cli/registrable.go`) in the change that registers it.
+  (`internal/cli/registrable.go`) in the change that registers it, and its
+  receipt (its verb and kind in `internal/receipt`) is settled in the same
+  change; the screen names no tool.
