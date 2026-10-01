@@ -24,9 +24,10 @@ import (
 // registrableDefinitions is every optional tool definition a surface can put
 // in front of a model, beyond the base toolset BuildAgent describes itself.
 // A registration joins this list in the same change that adds it, because
-// the list is what the toolbox and the argument descriptions are held to: a
-// tool registered anywhere else reaches the model as whatever its schema
-// says, and nothing fails when that is a bare schema.
+// the list is what the toolbox, the argument descriptions and the declared
+// receipts are held to: a tool registered anywhere else reaches the model as
+// whatever its schema says and the screen as its bare name, and nothing fails
+// when that is a bare schema.
 //
 // It opens nothing. Each definition is built the way its surface builds it,
 // from inputs that need no language server, binary, key, store or listener:

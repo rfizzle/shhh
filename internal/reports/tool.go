@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // ToolName is the model-facing report tool. It runs on the auto-run path
@@ -82,6 +83,11 @@ func (p *Publisher) ToolDefinition() provider.Tool {
 			"required": ["title", "blocks"]
 		}`),
 	}
+}
+
+// Describers is how a call to the report tool reads, by tool name.
+func Describers() map[string]describe.Describer {
+	return map[string]describe.Describer{ToolName: {Kind: describe.KindReport, Verb: "report"}}
 }
 
 // Publisher executes report tool calls against one store, and against one

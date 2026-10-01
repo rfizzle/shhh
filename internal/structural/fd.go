@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -32,6 +33,10 @@ var fdTool = provider.Tool{
 		}
 	}`),
 }
+
+// fdReceipt is how an fd call reads: a glob, counted in the paths it found,
+// one line each.
+var fdReceipt = describe.Describer{Kind: describe.KindSearch, Verb: "glob", Count: tools.CountItems}
 
 type fdArgs struct {
 	Pattern    string `json:"pattern"`

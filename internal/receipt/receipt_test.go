@@ -20,11 +20,26 @@ var closedVerbs = map[string]bool{"read": true, "search": true, "glob": true, "l
 	"report": true, "steer": true, "retry": true, "asked": true,
 	"add": true, "commit": true, "branch": true, "switch": true}
 
-// Every tool the table names maps onto a verb the list holds and a kind the
-// set holds, and every tool of the base toolset is one the table names: a
-// base tool that rendered as its own name would be the table falling behind
-// on the tools every session has. A name the table does not hold falls
-// through as itself, which is the signal that it is stale.
+// A tool is declared once, by the package that defines it. Two packages
+// declaring one name would leave the reading to whichever the lookup merged
+// last, which is an order nobody chose.
+func TestReceipt_NoToolIsDeclaredTwice(t *testing.T) {
+	by := map[string]int{}
+	for i, set := range sources() {
+		for name := range set {
+			if j, ok := by[name]; ok {
+				t.Errorf("%s is declared by source %d and by source %d", name, j, i)
+			}
+			by[name] = i
+		}
+	}
+}
+
+// Every tool that declared a word maps onto a verb the list holds and a kind
+// the set holds, and every tool of the base toolset declared one: a base tool
+// that rendered as its own name would be the vocabulary falling behind on the
+// tools every session has. A name nothing declared falls through as itself,
+// which is the signal that it is stale.
 func TestReceipt_EveryBuiltInToolHasAKindAndAVerb(t *testing.T) {
 	for _, name := range Names() {
 		r := Build(Call{Name: name})
@@ -40,7 +55,7 @@ func TestReceipt_EveryBuiltInToolHasAKindAndAVerb(t *testing.T) {
 		base = append(base, d.Tool.Name)
 	}
 	for _, name := range base {
-		if _, ok := words[name]; !ok {
+		if declared[name].Verb == "" {
 			t.Errorf("the base tool %s has no word, so its row reads as its own name", name)
 		}
 	}

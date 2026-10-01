@@ -10,6 +10,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // Request is one drafting turn. The first carries the brief; a later one
@@ -193,6 +194,13 @@ func DraftTool() provider.Tool {
 		Description: "Return the drafted profile, or the questions you need answered first.",
 		Parameters:  draftSchema,
 	}
+}
+
+// Describers is how a call to the drafting tool reads, by tool name. It is
+// the answer to one request and is drawn on no transcript, so it has no word
+// and reads as its own name.
+func Describers() map[string]describe.Describer {
+	return map[string]describe.Describer{DraftToolName: describe.Unworded}
 }
 
 // Draft runs one drafting turn.

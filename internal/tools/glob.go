@@ -9,9 +9,12 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 var globFiles = Definition{
+	Receipt: describe.Describer{Kind: describe.KindSearch, Verb: "glob", Count: CountItems,
+		Does: "paths by pattern"},
 	Tool: provider.Tool{
 		Name:        GlobName,
 		Description: "Find files by glob pattern, e.g. **/*.go or cmd/*/main.go. Use ** to match any number of directories. Returns matching file paths relative to the search root, each with its size after a tab, so a file can be sized before it is opened. Hidden files are matched; .git, node_modules, vendor and anything .gitignore names are not.",

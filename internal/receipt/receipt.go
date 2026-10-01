@@ -27,71 +27,27 @@ import (
 
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // Kind is what sort of act a call was: the closed set a front-end chooses a
-// glyph and the mutation rail by. Three kinds of read are told apart — a read
-// of something, a search through something, a lookup of something — because
-// a step is accounted for by them separately; a front-end that draws all
-// three alike draws them with one glyph, and the verb says which it was.
-type Kind int
+// glyph and the mutation rail by. It is declared where the tools that are
+// those acts can import it.
+type Kind = describe.Kind
 
+// The kinds, each described where it is declared.
 const (
-	// KindRead read something: a file, a listing, a stored result, git's
-	// history, a skill's text.
-	KindRead Kind = iota
-	// KindSearch looked through many things for some: a pattern, a glob, a
-	// query over structured files.
-	KindSearch
-	// KindLookup asked something that answers: a language server, the web,
-	// the person.
-	KindLookup
-	// KindRun ran a program — a command, a supervised process, the project's
-	// own checks, a git write — whose effects shhh cannot see.
-	KindRun
-	// KindWrite changed a file, or persisted something: an edit, a write, a
-	// patch, a memory.
-	KindWrite
-	// KindSpawn is a sub-agent: started, read, steered or retried.
-	KindSpawn
-	// KindRemote is a call to a server the person did not mark read-only.
-	// shhh cannot see the far side of it, so it is assumed to have acted
-	// (docs/capabilities/mcp.md#a-call-is-a-command-unless-you-said-otherwise).
-	KindRemote
-	// KindReport published a report page into shhh's own store.
-	KindReport
-	// KindSummary is the one kind no tool call has: the summariser's reading
-	// of the session, which a front-end accounts for beside the calls.
-	KindSummary
+	KindRead    = describe.KindRead
+	KindSearch  = describe.KindSearch
+	KindLookup  = describe.KindLookup
+	KindRun     = describe.KindRun
+	KindWrite   = describe.KindWrite
+	KindSpawn   = describe.KindSpawn
+	KindRemote  = describe.KindRemote
+	KindReport  = describe.KindReport
+	KindSummary = describe.KindSummary
 )
-
-var kindWords = [...]string{
-	KindRead:    "read",
-	KindSearch:  "search",
-	KindLookup:  "lookup",
-	KindRun:     "run",
-	KindWrite:   "write",
-	KindSpawn:   "spawn",
-	KindRemote:  "remote",
-	KindReport:  "report",
-	KindSummary: "summary",
-}
-
-func (k Kind) String() string {
-	if k >= 0 && int(k) < len(kindWords) {
-		return kindWords[k]
-	}
-	return fmt.Sprintf("Kind(%d)", int(k))
-}
-
-// Rail reports whether the act carries the mutation rail: it changed the
-// workspace, or shhh cannot know that it did not and so assumes it did. A
-// report's store is shhh's own state rather than the workspace, so it does
-// not (docs/interface/principles.md#weight-tracks-risk).
-func (k Kind) Rail() bool {
-	return k == KindRun || k == KindWrite || k == KindRemote
-}
 
 // Call is one call as a receipt is read from it.
 type Call struct {
@@ -124,8 +80,8 @@ type Receipt struct {
 	Kind Kind
 	// Verb is the act in the closed verb vocabulary
 	// (docs/interface/principles.md#closed-vocabularies). A tool with no
-	// word of its own is its own name, which is the signal that the table
-	// has fallen behind.
+	// word of its own is its own name, which is the signal that it declared
+	// none or that the vocabulary has a hole where it is.
 	Verb string
 	// Subject is what the act was about: a path, a pattern and its place, a
 	// command line, a server and its tool.

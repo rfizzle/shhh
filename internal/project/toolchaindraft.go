@@ -16,6 +16,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // ToolchainGrammar is the declaration's grammar and rules in prose: the four
@@ -27,6 +29,19 @@ import (
 //
 //go:embed toolchain_grammar.md
 var ToolchainGrammar string
+
+// ToolchainDraftToolName is the tool a drafting answers through. Its
+// definition is the command line's, which sits above every package that
+// reads a call; the name and how a call to it reads are declared here, with
+// the rest of what a drafting is made from, so that they can be read.
+const ToolchainDraftToolName = "draft_toolchain"
+
+// Describers is how a call to the drafting tool reads, by tool name. It is
+// the answer to one request and is drawn on no transcript, so it has no word
+// and reads as its own name.
+func Describers() map[string]describe.Describer {
+	return map[string]describe.Describer{ToolchainDraftToolName: describe.Unworded}
+}
 
 // Render writes the declaration in the file's own grammar: the four keys in
 // the order the documentation states them, an empty one left out, a list

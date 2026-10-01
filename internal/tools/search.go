@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // What one search is worth.
@@ -33,6 +34,8 @@ import (
 // flag the model otherwise reaches for through a command.
 // See docs/capabilities/coding-agent.md#finding-things.
 var search = Definition{
+	Receipt: describe.Describer{Kind: describe.KindSearch, Verb: "search", Count: countSearch,
+		Does: "text across the tree"},
 	Tool: provider.Tool{
 		Name: SearchName,
 		Description: "Search file contents with a regular expression (RE2 syntax). Case-insensitive by default. " +

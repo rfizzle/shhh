@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // RememberToolName is the model-facing memory-proposal tool. It is
@@ -29,6 +30,12 @@ func ToolDefinition() provider.Tool {
 			"required": ["text", "kind"]
 		}`),
 	}
+}
+
+// Describers is how a call to remember reads, by tool name: a memory, which
+// persists.
+func Describers() map[string]describe.Describer {
+	return map[string]describe.Describer{RememberToolName: {Kind: describe.KindWrite, Verb: "memory"}}
 }
 
 // Draft is a proposed memory parsed from a remember tool call, awaiting the

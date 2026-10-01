@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // ToolName is the activation tool. It reads a file the model could read
@@ -34,6 +35,12 @@ func ToolDefinition(c *Catalog) provider.Tool {
 			"required": ["name"]
 		}`, names)),
 	}
+}
+
+// Describers is how a call to the skill tool reads, by tool name: a read of
+// the skill's text.
+func Describers() map[string]describe.Describer {
+	return map[string]describe.Describer{ToolName: {Kind: describe.KindRead, Verb: "read"}}
 }
 
 // Execute activates one skill by name.

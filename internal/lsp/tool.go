@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -105,6 +106,20 @@ func (t *Toolset) Definitions() []provider.Tool {
 				}
 			}`),
 		},
+	}
+}
+
+// Describers is how a call to each language-server tool reads, by tool
+// name: a lookup. The outline is not here: it is the tools package's
+// definition, which a language server answers rather than defines again.
+func Describers() map[string]describe.Describer {
+	lookup := describe.Describer{Kind: describe.KindLookup, Verb: "lsp"}
+	return map[string]describe.Describer{
+		DefinitionToolName:      lookup,
+		ReferencesToolName:      lookup,
+		WorkspaceSymbolToolName: lookup,
+		HoverToolName:           lookup,
+		DiagnosticsToolName:     lookup,
 	}
 }
 

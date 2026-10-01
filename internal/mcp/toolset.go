@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	calldescribe "github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -632,6 +633,24 @@ func ResourceDefinition() provider.Tool {
 			"section of your instructions lists what each server publishes.",
 		Parameters: json.RawMessage(resourceSchema),
 	}
+}
+
+// Describers is how a call to the resource tool reads, by tool name. It has
+// no word in the closed vocabulary yet, so it reads as its own name.
+func Describers() map[string]calldescribe.Describer {
+	return map[string]calldescribe.Describer{ResourceToolName: calldescribe.Unworded}
+}
+
+// ServerReceipt is how a call to a server's own tool reads. Every server's
+// tools share it, because their names and schemas are the server's and
+// nothing here knows them: a read-only server's call is a read and draws as
+// one; every other server's call is an act shhh cannot see the far side of
+// (docs/capabilities/mcp.md#a-call-is-a-command-unless-you-said-otherwise).
+func ServerReceipt(readOnly bool) calldescribe.Describer {
+	if readOnly {
+		return calldescribe.Describer{Kind: calldescribe.KindRead, Verb: "mcp"}
+	}
+	return calldescribe.Describer{Kind: calldescribe.KindRemote, Verb: "mcp"}
 }
 
 // Execute runs one registered tool. Unknown names are an error rather than

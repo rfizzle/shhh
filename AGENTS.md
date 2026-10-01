@@ -158,6 +158,8 @@ internal/
 - **Chat geometry is rectangles in `internal/ui/chat/layout.go`.** Add one to
   the split rather than a `width - n` in a renderer.
 - **A new optional tool joins `registrableDefinitions`**
-  (`internal/cli/registrable.go`) in the change that registers it, and its
-  receipt (its verb and kind in `internal/receipt`) is settled in the same
-  change; the screen names no tool.
+  (`internal/cli/registrable.go`) with its describer, in the change that
+  registers it: how a call reads (kind, verb, subject, count) is declared
+  beside the definition, in its package's `Describers`, and a package's
+  first tool joins `sources` in `internal/receipt/build.go`. The screen
+  names no tool.

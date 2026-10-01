@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // ToolName is the model-facing evidence tool. It is read-only over the
@@ -50,6 +51,12 @@ func ToolDefinition() provider.Tool {
 			"required": ["action", "id"]
 		}`),
 	}
+}
+
+// Describers is how a call to the evidence tool reads, by tool name: a read
+// of a stored result.
+func Describers() map[string]describe.Describer {
+	return map[string]describe.Describer{ToolName: {Kind: describe.KindRead, Verb: "read"}}
 }
 
 type toolArgs struct {

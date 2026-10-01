@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // ToolName is the model-facing process tool. Only its start action is
@@ -41,6 +42,11 @@ func Definition() provider.Tool {
 			"required": ["action"]
 		}`),
 	}
+}
+
+// Describers is how a call to the process tool reads, by tool name: a run.
+func Describers() map[string]describe.Describer {
+	return map[string]describe.Describer{ToolName: {Kind: describe.KindRun, Verb: "run"}}
 }
 
 type toolArgs struct {

@@ -28,6 +28,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // QueryName is the structured-data reader. It is a constant beside the other
@@ -69,6 +70,8 @@ var (
 // line.
 // See docs/capabilities/coding-agent.md#structured-files-are-read-in-one-call.
 var query = Definition{
+	Receipt: describe.Describer{Kind: describe.KindSearch, Verb: "search",
+		Does: "structured files, read with jq"},
 	Tool: provider.Tool{
 		Name: QueryName,
 		Description: "Read structured data files — JSON, JSONL, YAML, TOML, XML, CSV and TSV — with a jq expression, in-process; it reads and never writes. " +

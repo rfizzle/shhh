@@ -27,7 +27,7 @@ import (
 
 // toolchainDraftToolName is the tool a drafting answers through. It is
 // offered in that one request and registered nowhere else.
-const toolchainDraftToolName = "draft_toolchain"
+const toolchainDraftToolName = project.ToolchainDraftToolName
 
 // Bounds on one drafting. The ceiling carries the thought and the answer
 // together, as every bounded call's does: a declaration is short, and the

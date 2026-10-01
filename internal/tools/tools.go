@@ -18,11 +18,15 @@ import (
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 type Definition struct {
 	Tool    provider.Tool
 	Execute func(args json.RawMessage) (string, error)
+	// Receipt is how a call to the tool reads on a receipt. It sits beside
+	// the schema rather than in it: no model reads it.
+	Receipt describe.Describer
 }
 
 // The read-only tool names. They are constants because two other decisions
@@ -185,6 +189,12 @@ func ExecCommandTool() provider.Tool { return execCommandTool(true) }
 // commands are its only way to change a file, and its prompt says so.
 func ExecCommandToolNoEdits() provider.Tool { return execCommandTool(false) }
 
+// execCommandReceipt is how a command the model asked for reads: a run. It
+// is declared beside the two definitions rather than in a Definition because
+// neither is one: the approval path runs the command, not Execute.
+var execCommandReceipt = describe.Describer{Kind: describe.KindRun, Verb: "run",
+	Does: "one shell command"}
+
 func execCommandTool(edits bool) provider.Tool {
 	jobs := "It is for building, testing and running programs, not for working with files: " +
 		"read a file, a range of it or its end with read_file (not cat, head, tail or wc), " +
@@ -315,6 +325,8 @@ func UnknownTool(name string, registered []string) error {
 // the size line and the over-ceiling answer take those here.
 // See docs/capabilities/coding-agent.md#finding-things.
 var readFile = Definition{
+	Receipt: describe.Describer{Kind: describe.KindRead, Verb: "read", Count: countRead,
+		Does: "one file, or a run of its lines"},
 	Tool: provider.Tool{
 		Name: ReadFileName,
 		Description: "Read the contents of a file. Each line is returned as `<line number>\t<text>`; the number is a reading aid, not part of the file. " +
@@ -761,6 +773,8 @@ func numberLines(content string, start int) string {
 }
 
 var listDirectory = Definition{
+	Receipt: describe.Describer{Kind: describe.KindRead, Verb: "read", Count: CountItems,
+		Does: "a directory's entries"},
 	Tool: provider.Tool{
 		Name: ListDirectoryName,
 		Description: "List files and directories at a given path. Returns one entry per line with type prefix (file: or dir:), and each file's size after a tab, so a file can be sized before it is opened. " +

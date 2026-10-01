@@ -8,8 +8,10 @@ import (
 
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // Every tool a surface can register has a note in the toolbox. A tool with
@@ -26,6 +28,27 @@ func TestToolboxHasANoteForEveryToolThatCanBeRegistered(t *testing.T) {
 	for _, d := range defs {
 		if !strings.Contains(box, "- "+d.Name+" — ") {
 			t.Errorf("%s can be registered and has no note saying what it is for", d.Name)
+		}
+	}
+}
+
+// Every tool a surface can register declares how a call to it reads, beside
+// its definition. One that declared nothing still draws — as its own name, a
+// read, counted in lines — and nothing on the screen looks broken, which is
+// why this fails instead: the generic reading is the signal that a tool was
+// registered without saying what its calls are
+// (docs/interface/principles.md#closed-vocabularies). The base toolset is
+// walked with the registrable set, since BuildAgent registers it and
+// registrableDefinitions leaves it out.
+func TestReceipt_EveryRegisteredToolDeclaresItself(t *testing.T) {
+	defs := append(registrable(t), tools.Definitions()...)
+	defs = append(defs, tools.ExecCommandTool())
+	for _, d := range tools.Mutating() {
+		defs = append(defs, d.Tool)
+	}
+	for _, d := range defs {
+		if !receipt.Declared(d.Name) {
+			t.Errorf("%s can be registered and declares nothing about how its calls read", d.Name)
 		}
 	}
 }

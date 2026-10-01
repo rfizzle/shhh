@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -187,6 +188,14 @@ func (t *Toolset) Definitions() []provider.Tool {
 		})
 	}
 	return defs
+}
+
+// Describers is how a call to each web tool reads, by tool name: a lookup.
+func Describers() map[string]describe.Describer {
+	return map[string]describe.Describer{
+		FetchToolName:  {Kind: describe.KindLookup, Verb: "web", Does: "one page, read as text"},
+		SearchToolName: {Kind: describe.KindLookup, Verb: "web", Does: "search the web"},
+	}
 }
 
 // Has reports whether name is a web tool this session registered.

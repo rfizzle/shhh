@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -54,6 +55,17 @@ var gitWriteTool = provider.Tool{
 		"required": ["verb"]
 	}`),
 }
+
+// gitWriteReceipt is how the writing half of git reads. Its verb is a
+// default rather than an answer: its four verbs are four different acts, so
+// the receipt reads the verb out of the call, and this is what a call whose
+// arguments could not be read falls back to, which is a call that is about
+// to be a failed row anyway. It is a run, with the rail, because it is the
+// same act a `git commit` line would have been, and the tier it is approved
+// at does not change what the reader is looking at. It answers with a
+// receipt and the boundaries of the act, not with output, so `2 lines` about
+// it would measure the sentence rather than anything that happened.
+var gitWriteReceipt = describe.Describer{Kind: describe.KindRun, Verb: CommitVerb, Count: describe.Uncounted}
 
 type gitWriteArgs struct {
 	Verb    string   `json:"verb"`

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // The how of a bounded answer lives here, beside the tool: output past
@@ -41,6 +42,11 @@ var astGrepTool = provider.Tool{
 		"required": ["pattern"]
 	}`),
 }
+
+// astGrepReceipt is how an ast_grep call reads: a search. Its output is
+// ast-grep's own, with its own context lines, so its count is how many lines
+// came back, which is the only thing that is true.
+var astGrepReceipt = describe.Describer{Kind: describe.KindSearch, Verb: "search"}
 
 // NoMatches is what ast_grep returns when the pattern matched nothing. It is
 // named for the same reason search's and glob's sentences are: anything

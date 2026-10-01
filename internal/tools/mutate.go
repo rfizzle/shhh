@@ -12,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // WriteFileName and EditFileName are the file-modification tools the chat UI
@@ -172,6 +173,8 @@ func (r *Recorder) PreviewMutation(name string, raw json.RawMessage) (Mutation, 
 // own edits as pending.
 // See docs/capabilities/approvals-and-safety.md#the-five-modes.
 var writeFile = Definition{
+	Receipt: describe.Describer{Kind: describe.KindWrite, Verb: "write",
+		Does: "a new file, or one written whole"},
 	Tool: provider.Tool{
 		Name: WriteFileName,
 		Description: "Create or overwrite a file with the given content. content is written verbatim — never include read_file's line-number prefixes. " +
@@ -238,6 +241,8 @@ func (r *Recorder) executeWriteFile(raw json.RawMessage) (string, error) {
 }
 
 var editFile = Definition{
+	Receipt: describe.Describer{Kind: describe.KindWrite, Verb: "edit",
+		Does: "a change to part of a file"},
 	Tool: provider.Tool{
 		Name: EditFileName,
 		Description: "Change an existing file: replace exact text snippets in it, or add text to its end. Give one replacement as old_text/new_text, several as edits — one entry per place — or the text to add as append, and never two of these in the same call. " +

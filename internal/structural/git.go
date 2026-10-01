@@ -12,6 +12,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // The verbs. This is the whole vocabulary: a git subcommand that is not one
@@ -103,6 +104,9 @@ var gitTool = provider.Tool{
 		"required": ["verb"]
 	}`),
 }
+
+// gitReceipt is how the reading half of git reads: a read of the history.
+var gitReceipt = describe.Describer{Kind: describe.KindRead, Verb: "read"}
 
 type gitArgs struct {
 	Verb      string   `json:"verb"`

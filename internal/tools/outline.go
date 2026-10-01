@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // DocumentSymbolName is the outline tool. It is named here rather than in the
@@ -30,6 +31,8 @@ const DocumentSymbolName = "document_symbol"
 // call first; what reaches this definition is a file no server answers for.
 // See docs/capabilities/coding-agent.md#finding-things.
 var documentSymbol = Definition{
+	Receipt: describe.Describer{Kind: describe.KindLookup, Verb: "lsp",
+		Does: "a file's outline"},
 	Tool: provider.Tool{
 		Name: DocumentSymbolName,
 		Description: "Outline one file: every declaration or heading in it with its line, nested as it is nested. " +

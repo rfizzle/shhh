@@ -15,6 +15,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // ToolName is the model-facing question tool. It is registered only where
@@ -383,6 +384,13 @@ func ToolDefinition() provider.Tool {
 			}
 		}`),
 	}
+}
+
+// Describers is how a question to the person reads, by tool name: a lookup.
+// What came back is one decision, not a quantity of anything, so it is not
+// counted.
+func Describers() map[string]describe.Describer {
+	return map[string]describe.Describer{ToolName: {Kind: describe.KindLookup, Verb: "asked", Count: describe.Uncounted}}
 }
 
 // questionProperties is one question's own fields. It is written once and

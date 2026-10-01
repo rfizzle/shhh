@@ -43,6 +43,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -280,6 +281,19 @@ func Registrable() []provider.Tool {
 		bins[name] = ""
 	}
 	return (&Toolset{bins: bins}).Definitions()
+}
+
+// Describers is what every tool this package defines declares about how its
+// calls read, by tool name, whichever of them this machine has.
+func Describers() map[string]describe.Describer {
+	return map[string]describe.Describer{
+		FdToolName:       fdReceipt,
+		AstGrepToolName:  astGrepReceipt,
+		SdToolName:       sdReceipt,
+		TokeiToolName:    tokeiReceipt,
+		GitToolName:      gitReceipt,
+		GitWriteToolName: gitWriteReceipt,
+	}
 }
 
 // Has reports whether name is a structural tool this session registered.

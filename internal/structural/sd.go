@@ -10,6 +10,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // The preview is a diff, computed here rather than printed by sd: with no
@@ -43,6 +44,9 @@ var sdTool = provider.Tool{
 		"required": ["pattern", "replacement", "paths"]
 	}`),
 }
+
+// sdReceipt is how an sd call reads: a patch, which writes.
+var sdReceipt = describe.Describer{Kind: describe.KindWrite, Verb: "patch"}
 
 // MaxSdFileBytes bounds one file's preview. The preview of a file is the
 // whole file as sd would write it, held only to be diffed, so this is a bound

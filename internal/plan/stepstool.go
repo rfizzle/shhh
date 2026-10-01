@@ -7,6 +7,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // StepsToolName is the tool an agent keeps its working checklist with.
@@ -47,6 +48,12 @@ func StepsToolDefinition() provider.Tool {
 			"required": ["steps"]
 		}`, MaxWorkingSteps)),
 	}
+}
+
+// Describers is how a call to the steps tool reads, by tool name. It has no
+// word in the closed vocabulary yet, so it reads as its own name.
+func Describers() map[string]describe.Describer {
+	return map[string]describe.Describer{StepsToolName: describe.Unworded}
 }
 
 // stepsCall is the tool's arguments as the model sends them.

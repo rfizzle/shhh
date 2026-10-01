@@ -26,6 +26,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // SqliteName is the SQLite reader. It is a constant beside the other
@@ -73,6 +74,8 @@ var sqliteRowHook func()
 // See docs/capabilities/coding-agent.md#structured-files-are-read-in-one-call
 // and docs/capabilities/approvals-and-safety.md#a-closed-verb-set-is-what-makes-a-read-a-read.
 var sqliteTool = Definition{
+	Receipt: describe.Describer{Kind: describe.KindSearch, Verb: "search",
+		Does: "a SQLite database, read-only"},
 	Tool: provider.Tool{
 		Name: SqliteName,
 		Description: "Read a SQLite database file — an app's database, a test fixture, shhh's own session record — in-process and read-only. " +

@@ -16,6 +16,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/persona"
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -54,26 +55,6 @@ var personaTierWords = map[string]string{
 	config.PermissionWrite:   "edit files · it works in its own copy of the tree and hands back a patch",
 	config.PermissionExecute: "run commands · in the same copy",
 	config.PermissionWeb:     "fetch pages and search",
-}
-
-// personaToolWords is what each tool a profile may name does, in a clause.
-// A name with no entry is still offered, under its tier and without one.
-var personaToolWords = map[string]string{
-	"read_file":            "one file, or a run of its lines",
-	"list_directory":       "a directory's entries",
-	"search":               "text across the tree",
-	"glob":                 "paths by pattern",
-	"query":                "structured files, read with jq",
-	"sqlite":               "a SQLite database, read-only",
-	"document_symbol":      "a file's outline",
-	config.QualityGateTool: "the project's own checks, by suite",
-	config.SpawnAgentTool:  "start an agent of its own",
-	config.ReportAgentTool: "read what that agent reported",
-	"write_file":           "a new file, or one written whole",
-	"edit_file":            "a change to part of a file",
-	"execute_command":      "one shell command",
-	"web_fetch":            "one page, read as text",
-	"web_search":           "search the web",
 }
 
 // personaAlwaysOn is the row naming what every child gets whatever its
@@ -151,8 +132,12 @@ func (m Model) personaPicker(d persona.Draft) (*personaPick, *components.MultiSe
 		if len(d.Tools) == 0 {
 			on = config.CheckGrant(d.Permissions, []string{name}) == nil
 		}
-		add(personaPickRow{tool: name, tier: tier, desc: personaToolWords[name]},
-			components.SelectOption{Label: name, Value: tier, Desc: personaToolWords[name]}, on, false)
+		// What each tool does is the clause it declared beside its
+		// definition; a tool that declared none is still offered, under its
+		// tier and without one.
+		does := receipt.Does(name)
+		add(personaPickRow{tool: name, tier: tier, desc: does},
+			components.SelectOption{Label: name, Value: tier, Desc: does}, on, false)
 	}
 	for _, name := range d.Tools {
 		switch {

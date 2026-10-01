@@ -7,6 +7,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // The notebook's two tools, and there is deliberately no third. Both
@@ -91,6 +92,12 @@ func Definitions() []provider.Tool {
 			}`),
 		},
 	}
+}
+
+// Describers is how a call to each notebook tool reads, by tool name. Neither
+// has a word in the closed vocabulary yet, so each reads as its own name.
+func Describers() map[string]describe.Describer {
+	return map[string]describe.Describer{WriteToolName: describe.Unworded, ReadToolName: describe.Unworded}
 }
 
 // WrapExecutor routes the notebook tools to the store, signed by author,

@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // ExtractToolName is the tool the model is asked to call with its proposals.
@@ -415,6 +416,13 @@ func ExtractTool(profile Profile) provider.Tool {
 		Description: "Propose the backlog items a session leaves behind.",
 		Parameters:  extractSchema(profile),
 	}
+}
+
+// Describers is how a call to the proposals tool reads, by tool name. It is
+// the answer to one request and is drawn on no transcript, so it has no word
+// and reads as its own name.
+func Describers() map[string]describe.Describer {
+	return map[string]describe.Describer{ExtractToolName: describe.Unworded}
 }
 
 // readProposals runs the one reading. The instruction and the digest travel

@@ -1,6 +1,7 @@
 package receipt
 
 import (
+	"maps"
 	"slices"
 	"strings"
 
@@ -10,82 +11,82 @@ import (
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/memory"
+	"github.com/rfizzle/shhh/internal/notebook"
+	"github.com/rfizzle/shhh/internal/persona"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/process"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
-// word is one tool's entry in the table: the verb a row reads and the kind
-// of act it is.
-type word struct {
-	verb string
-	kind Kind
+// sources is what every package that defines a tool declares about how a
+// call to it reads, each set declared beside the definitions it describes.
+// The receipt holds no word of its own for any tool: a verb, a kind, how a
+// subject and a count are read are the tool's to say where it is defined, so
+// a new tool reaches every front-end without a table here being edited. A
+// package that defines its first tool joins this list.
+func sources() []map[string]describe.Describer {
+	return []map[string]describe.Describer{
+		tools.Describers(),
+		structural.Describers(),
+		lsp.Describers(),
+		web.Describers(),
+		subagent.Describers(),
+		quality.Describers(),
+		process.Describers(),
+		memory.Describers(),
+		ask.Describers(),
+		skill.Describers(),
+		reports.Describers(),
+		evidence.Describers(),
+		notebook.Describers(),
+		plan.Describers(),
+		todo.Describers(),
+		persona.Describers(),
+		mcp.Describers(),
+		project.Describers(),
+	}
 }
 
-// words is the one table mapping tool names onto the closed verb vocabulary
-// of docs/interface/principles.md#closed-vocabularies — read, search, glob,
-// lsp, web, edit, write, patch, run, memory, spawn, fan-out, agent, report,
-// steer, retry, asked, and the four git writes — add, commit, branch,
-// switch — and onto the kind of act each is. A tool that maps onto none of
-// them is a hole in this table, not a new verb invented at the call site: it
-// renders as itself, clipped to the verb column, which is the signal that the
-// table is stale.
-//
-// The writing half of git is the one tool whose verb here is a default rather
-// than an answer. Its four verbs are four different acts, so the verb is read
-// out of the call (Build); this entry is what a call whose arguments could
-// not be read falls back to, which is a call that is about to be a failed row
-// anyway. It is a run, with the rail, because it is the same act a
-// `git commit` line would have been, and the tier it is approved at does not
-// change what the reader is looking at.
-var words = map[string]word{
-	tools.ReadFileName:          {"read", KindRead},
-	tools.ListDirectoryName:     {"read", KindRead},
-	evidence.ToolName:           {"read", KindRead},
-	tools.SearchName:            {"search", KindSearch},
-	structural.AstGrepToolName:  {"search", KindSearch},
-	tools.QueryName:             {"search", KindSearch},
-	tools.SqliteName:            {"search", KindSearch},
-	structural.TokeiToolName:    {"search", KindSearch},
-	structural.GitToolName:      {"read", KindRead},
-	structural.GitWriteToolName: {"commit", KindRun},
-	tools.GlobName:              {"glob", KindSearch},
-	structural.FdToolName:       {"glob", KindSearch},
-	lsp.DefinitionToolName:      {"lsp", KindLookup},
-	lsp.ReferencesToolName:      {"lsp", KindLookup},
-	lsp.WorkspaceSymbolToolName: {"lsp", KindLookup},
-	lsp.DocumentSymbolToolName:  {"lsp", KindLookup},
-	lsp.HoverToolName:           {"lsp", KindLookup},
-	lsp.DiagnosticsToolName:     {"lsp", KindLookup},
-	web.FetchToolName:           {"web", KindLookup},
-	web.SearchToolName:          {"web", KindLookup},
-	tools.EditFileName:          {"edit", KindWrite},
-	tools.WriteFileName:         {"write", KindWrite},
-	structural.SdToolName:       {"patch", KindWrite},
-	tools.ExecCommandName:       {"run", KindRun},
-	process.ToolName:            {"run", KindRun},
-	quality.ToolName:            {"run", KindRun},
-	memory.RememberToolName:     {"memory", KindWrite},
-	ask.ToolName:                {"asked", KindLookup},
-	skill.ToolName:              {"read", KindRead},
-	subagent.SpawnToolName:      {"spawn", KindSpawn},
-	subagent.ReportToolName:     {"agent", KindSpawn},
-	subagent.SteerToolName:      {"steer", KindSpawn},
-	subagent.RetryToolName:      {"retry", KindSpawn},
-	reports.ToolName:            {"report", KindReport},
+// declared is every tool's describer by name: the lookup over what the tool
+// packages declared. A name it does not hold reads as the generic describer —
+// its own name as the verb, a read, counted in lines — which is the signal
+// that a tool was registered without declaring itself
+// (docs/interface/principles.md#closed-vocabularies).
+var declared = func() map[string]describe.Describer {
+	all := map[string]describe.Describer{}
+	for _, set := range sources() {
+		maps.Copy(all, set)
+	}
+	return all
+}()
+
+// Declared reports whether tool declared how its calls read.
+func Declared(tool string) bool {
+	_, ok := declared[tool]
+	return ok
 }
 
-// Names is every tool the table has a word for, sorted: the register a
-// front-end's tests walk to cover each tool it can draw.
+// Does is what tool does, in a clause, for a screen that offers the tool
+// rather than draws a call to it; empty for a tool that said nothing.
+func Does(tool string) string { return declared[tool].Does }
+
+// Names is every tool that declared a word of its own, sorted: the register
+// a front-end's tests walk to cover each tool it can draw.
 func Names() []string {
-	names := make([]string, 0, len(words))
-	for name := range words {
-		names = append(names, name)
+	var names []string
+	for name, d := range declared {
+		if d.Verb != "" {
+			names = append(names, name)
+		}
 	}
 	slices.Sort(names)
 	return names
@@ -107,6 +108,7 @@ func Build(c Call) Receipt {
 	if c.Exec != nil {
 		return command(c)
 	}
+	d := declared[c.Name]
 	r := Receipt{
 		Kind:    kindOf(c),
 		Verb:    VerbOf(c.Name),
@@ -129,7 +131,11 @@ func Build(c Call) Receipt {
 	if r.gitVerb != "" {
 		r.Verb = r.gitVerb
 	}
-	r.Subject = gateSubject(r.arg, c.Name, c.Result)
+	read := describe.Call{Name: c.Name, Args: c.Args, Arg: r.arg, Result: c.Result}
+	r.Subject = r.arg
+	if d.Subject != nil {
+		r.Subject = d.Subject(read)
+	}
 	// A search's subject is its pattern and then where it was put, and only
 	// the pattern is the subject proper: the place is the scope behind it,
 	// so the column reads as one question asked somewhere
@@ -157,7 +163,7 @@ func Build(c Call) Receipt {
 		// the tool's own contract.
 		r.Outcome = "→ " + digest.FirstLine(c.Result)
 	}
-	r.Count, r.Noun, r.Short = count(c.Name, c.Result)
+	r.Count, r.Noun, r.Short = count(d, read)
 	return r
 }
 
@@ -175,7 +181,7 @@ func command(c Call) Receipt {
 	if r.Ended.Outcome == tools.ExecDidNotStart {
 		r.Account = prereqWord(r.Ended.Prereq)
 	}
-	r.Count, r.Noun, r.Short = count("", c.Result)
+	r.Count, r.Noun, r.Short = count(describe.Describer{}, describe.Call{Args: c.Args, Result: c.Result})
 	return r
 }
 
@@ -183,16 +189,10 @@ func command(c Call) Receipt {
 // whether the row carries the mutation rail.
 func kindOf(c Call) Kind {
 	if c.Served {
-		// A read-only server's call is a read and draws as one; every
-		// other server's call is an act shhh cannot see the far side of
-		// (docs/capabilities/mcp.md#a-call-is-a-command-unless-you-said-otherwise).
-		if c.ReadOnly {
-			return KindRead
-		}
-		return KindRemote
+		return mcp.ServerReceipt(c.ReadOnly).Kind
 	}
-	if w, ok := words[c.Name]; ok {
-		return w.kind
+	if d, ok := declared[c.Name]; ok {
+		return d.Kind
 	}
 	if tools.IsMutating(c.Name) {
 		return KindWrite
@@ -205,11 +205,11 @@ func kindOf(c Call) Kind {
 // its receipt's Verb, which is the git write's own act rather than its
 // default.
 func VerbOf(tool string) string {
-	if w, ok := words[tool]; ok {
-		return w.verb
+	if d := declared[tool]; d.Verb != "" {
+		return d.Verb
 	}
 	if _, ok := mcp.SplitName(tool); ok {
-		return "mcp"
+		return mcp.ServerReceipt(false).Verb
 	}
 	return tool
 }
@@ -221,96 +221,24 @@ func gitVerbOf(tool, args string) string {
 	return digest.GitVerb(args)
 }
 
-// gateSubject adds to a quality gate's subject the one thing about the suite
-// that only the verdict knows: how many checks it is. The arguments say
-// which suite was asked for, so `quality gate · default` is what the row reads
-// while the checks run; the verdict says what that suite turned out to be, so
-// the finished row reads `quality gate · default · 5 checks` and a reader
-// scanning the column knows how much was verified without opening anything
-// (docs/interface/principles.md#one-grid).
-//
-// The suite comes off the verdict rather than off the call once there is a
-// verdict to read, because a run that named no suite fell back to the
-// configured default and the row would otherwise never say which one that was.
-// Everything else — a re-report, a run still in flight, a call that was
-// refused — has no verdict, and keeps the subject the arguments gave it.
-func gateSubject(subject, tool, result string) string {
-	if tool != quality.ToolName {
-		return subject
-	}
-	s, ok := quality.Summarize(result)
-	if !ok || s.Suite == "" {
-		return subject
-	}
-	subject = digest.GateSubject + " · " + s.Suite
-	if s.Total > 0 {
-		subject += " · " + countPhrase(s.Total, false, "check", "checks")
-	}
-	return subject
-}
-
-// count measures a result with a tool-appropriate noun (matches found, items
-// listed, lines read).
+// count measures a result with the noun its tool declared (matches found,
+// items listed, lines read), or in lines where it declared none.
 //
 // The number is of what the call found, not of what it printed
-// (docs/interface/principles.md#one-grid). For a search those are different
-// numbers: the result carries context lines around every match and a notice
-// when the tool stopped at its cap, so counting lines described a truncated
-// fifty-match answer as `298 matches` — six times the finding, and
-// exhaustive-sounding at the moment the tool was saying it had been cut
-// short. So search is measured by the tool that wrote the format, and a
-// result it cut short reads `50+`.
-//
-// A path list is the case that hid this: `glob`, `list_directory` and `fd`
-// really are one line per item. What they share with every other bounded
-// reader is the last line, which is the tool's own notice and not a thing it
-// found — a paged read is `2000+ lines` and not 2001. `ast_grep` is the case
-// that cannot be measured at all: its output is ast-grep's own, with its own
-// context lines, so its count is how many lines came back, which is the only
-// thing that is true.
-func count(tool, result string) (n int, noun string, short bool) {
-	if strings.TrimSpace(result) == "" || foundNothing(result) {
+// (docs/interface/principles.md#one-grid), which is why the tool that wrote
+// the format is the one that says how it is counted. What every tool shares
+// is the reader's "nothing here" sentence, which is left blank rather than
+// counted as `1 match`, and the last line of a bounded reader, which is the
+// tool's own notice and not a thing it found.
+func count(d describe.Describer, c describe.Call) (n int, noun string, short bool) {
+	if strings.TrimSpace(c.Result) == "" || foundNothing(c.Result) {
 		return 0, "", false
 	}
-	if tool == structural.GitWriteToolName || tool == ask.ToolName {
-		// A git write answers with a receipt and the boundaries of the act,
-		// not with output. `2 lines` about it would be a measurement of the
-		// sentence rather than of anything that happened — and an answered
-		// question is the same: what came back is one decision, not a
-		// quantity of anything.
-		return 0, "", false
+	if d.Count != nil {
+		return d.Count(c)
 	}
-	if tool == tools.SearchName {
-		size := tools.MeasureSearch(result)
-		if size.Files {
-			return measured(size.N, size.Truncated, "file", "files")
-		}
-		return measured(size.N, size.Truncated, "match", "matches")
-	}
-	lines := strings.Split(strings.TrimRight(result, "\n"), "\n")
-	more := tools.TruncationNotice(lines[len(lines)-1])
-	if more {
-		lines = lines[:len(lines)-1]
-	}
-	// A read of part of a file opens with the whole file's size, which is
-	// the tool's own line about the file and not one of the lines it read.
-	if tool == tools.ReadFileName && len(lines) > 1 && tools.IsSizeLine(lines[0]) {
-		lines = lines[1:]
-	}
-	switch tool {
-	case tools.GlobName, tools.ListDirectoryName, structural.FdToolName:
-		return measured(len(lines), more, "item", "items")
-	}
-	return measured(len(lines), more, "line", "lines")
-}
-
-// measured is a count with the noun that agrees with it: the plural for a
-// count the tool stopped short of, since `50+` is always more than one.
-func measured(n int, more bool, singular, plural string) (int, string, bool) {
-	if n == 1 && !more {
-		return n, singular, more
-	}
-	return n, plural, more
+	lines, more := tools.ResultLines(c.Result)
+	return describe.Measured(len(lines), more, "line", "lines")
 }
 
 // foundNothing reports whether a result is a reader's "nothing here"
@@ -323,13 +251,6 @@ func foundNothing(result string) bool {
 		return true
 	}
 	return false
-}
-
-// countPhrase is a count and its noun as one phrase, `+` marking a count the
-// tool stopped short of.
-func countPhrase(n int, more bool, singular, plural string) string {
-	n, noun, more := measured(n, more, singular, plural)
-	return Receipt{Count: n, Noun: noun, Short: more}.Counts()
 }
 
 // prereqWord is a harness prerequisite as a command's account names it: the

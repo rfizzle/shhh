@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 // ToolName is the model-facing quality-gate tool. It runs on the auto-run
@@ -34,6 +36,39 @@ func ToolDefinition() provider.Tool {
 			"required": ["action"]
 		}`),
 	}
+}
+
+// Describers is how a call to the gate reads, by tool name: a run, about the
+// suite it ran.
+func Describers() map[string]describe.Describer {
+	return map[string]describe.Describer{ToolName: {Kind: describe.KindRun, Verb: "run", Subject: gateSubject,
+		Does: "the project's own checks, by suite"}}
+}
+
+// gateSubject adds to a gate's subject the one thing about the suite that
+// only the verdict knows: how many checks it is. The arguments say which
+// suite was asked for, so `quality gate · default` is what the row reads
+// while the checks run; the verdict says what that suite turned out to be, so
+// the finished row reads `quality gate · default · 5 checks` and a reader
+// scanning the column knows how much was verified without opening anything
+// (docs/interface/principles.md#one-grid).
+//
+// The suite comes off the verdict rather than off the call once there is a
+// verdict to read, because a run that named no suite fell back to the
+// configured default and the row would otherwise never say which one that was.
+// Everything else — a re-report, a run still in flight, a call that was
+// refused — has no verdict, and keeps the subject the arguments gave it.
+func gateSubject(c describe.Call) string {
+	s, ok := Summarize(c.Result)
+	if !ok || s.Suite == "" {
+		return c.Arg
+	}
+	subject := digest.GateSubject + " · " + s.Suite
+	if s.Total > 0 {
+		n, noun, _ := describe.Measured(s.Total, false, "check", "checks")
+		subject += fmt.Sprintf(" · %d %s", n, noun)
+	}
+	return subject
 }
 
 type toolArgs struct {

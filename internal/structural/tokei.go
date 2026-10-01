@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 var tokeiTool = provider.Tool{
@@ -23,6 +24,9 @@ var tokeiTool = provider.Tool{
 		}
 	}`),
 }
+
+// tokeiReceipt is how a tokei call reads: a search over the tree.
+var tokeiReceipt = describe.Describer{Kind: describe.KindSearch, Verb: "search"}
 
 type tokeiArgs struct {
 	Path     string   `json:"path"`

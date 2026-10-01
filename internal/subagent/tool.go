@@ -15,6 +15,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt/describe"
 )
 
 const (
@@ -219,6 +220,16 @@ func Definitions(profiles Profiles, offer Offer) []provider.Tool {
 				"required": ["name"]
 			}`),
 		},
+	}
+}
+
+// Describers is how a call to each sub-agent tool reads, by tool name.
+func Describers() map[string]describe.Describer {
+	return map[string]describe.Describer{
+		SpawnToolName:  {Kind: describe.KindSpawn, Verb: "spawn", Does: "start an agent of its own"},
+		ReportToolName: {Kind: describe.KindSpawn, Verb: "agent", Does: "read what that agent reported"},
+		SteerToolName:  {Kind: describe.KindSpawn, Verb: "steer"},
+		RetryToolName:  {Kind: describe.KindSpawn, Verb: "retry"},
 	}
 }
 
