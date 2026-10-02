@@ -98,3 +98,24 @@ sleep 1
 keys Enter
 sleep 2
 snap 07-report-open "▾ report · 6 lines" "## Assumptions"
+# The card has a step card's two depths and no fold: enter again closes it to
+# the card with each report counted, and a click on its header, found on the
+# screen rather than counted to, opens it and closes it the same way. Nothing
+# draws it as its header alone at normal.
+keys Enter
+snap 08-enter-closes "▸ report · 6 lines" "❯ ◇ spawned 3 agents" "◇ writer-2"
+keys q
+sleep 1
+keys -l "$(r=$(tmux -L "$SOCK" capture-pane -p -t scene | grep -n -m1 'spawned 3 agents' | cut -d: -f1); printf '\033[<0;8;%sM\033[<0;8;%sm' "$r" "$r")"
+snap 09-header-opens "## Assumptions" "▾ report · 6 lines" "◇ writer-2"
+keys -l "$(r=$(tmux -L "$SOCK" capture-pane -p -t scene | grep -n -m1 'spawned 3 agents' | cut -d: -f1); printf '\033[<0;8;%sM\033[<0;8;%sm' "$r" "$r")"
+snap 10-header-closes "▸ report · 6 lines" "◇ spawned 3 agents" "◇ writer-2"
+# At low the closed card is its header alone on one inset band row, which
+# says who needs you first since the row with the key is not drawn; a click
+# on it opens it whole and the same click gives the row back.
+keys "/ui verbosity low" Enter
+snap 11-low "verbosity set to low" "◇ spawned 3 agents" "1 needs you"
+keys -l "$(r=$(tmux -L "$SOCK" capture-pane -p -t scene | grep -n -m1 'spawned 3 agents' | cut -d: -f1); printf '\033[<0;8;%sM\033[<0;8;%sm' "$r" "$r")"
+snap 12-low-open "◇ writer-2" "◇ spawned 3 agents" "▾ report · 6 lines"
+keys -l "$(r=$(tmux -L "$SOCK" capture-pane -p -t scene | grep -n -m1 'spawned 3 agents' | cut -d: -f1); printf '\033[<0;8;%sM\033[<0;8;%sm' "$r" "$r")"
+snap 13-low-closed "1 needs you" "◇ spawned 3 agents"

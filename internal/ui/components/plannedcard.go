@@ -54,10 +54,17 @@ type PlannedCard struct {
 	ReversibleTone FieldTone
 	// Body is the plan's own sentence.
 	Body string
-	// Folded is the reader's fold and Selected the reading cursor on the
-	// header.
-	Folded, Selected bool
+	// Open draws every step, where the ceiling would count the ones past
+	// it. Low is the low rung's closed card: the header alone on one inset
+	// band row, as a step's card is there. Selected is the reading cursor
+	// on the header.
+	Open, Low, Selected bool
 }
+
+// Windowed reports whether the closed card counts steps rather than drawing
+// them: the plan is longer than the ceiling lets the card draw, so opening
+// it has rows to add.
+func (c PlannedCard) Windowed() bool { return len(c.Steps) > plannedCeiling+1 }
 
 // View draws the card at the pane's width.
 func (c PlannedCard) View(width int) string {
@@ -96,13 +103,13 @@ func (c PlannedCard) cardLines(width int) ([]string, []CardLine) {
 		OutcomePainted: c.Reversible != "",
 		Duration:       plural(writes, "write"),
 		Body:           c.Body,
-		Folded:         c.Folded,
 		Selected:       c.Selected,
 	}
 	if c.Reversible == "" {
 		card.Outcome = ""
 	}
-	if c.Folded {
+	if c.Low {
+		card.Density = CardLow
 		return []string{card.View(width)}, []CardLine{CardLineHeader}
 	}
 	roles := []CardLine{CardLineText, CardLineHeader}
@@ -127,12 +134,13 @@ func (c PlannedCard) cardLines(width int) ([]string, []CardLine) {
 }
 
 // window is the run of steps the card draws rows for: all of them under the
-// ceiling, and otherwise the ceiling's worth around the step the run is on —
-// one finished step above it where there is one, so the row the reader is
-// watching is never the first or the last thing the card says.
+// ceiling or on the card the reader opened, and otherwise the ceiling's
+// worth around the step the run is on — one finished step above it where
+// there is one, so the row the reader is watching is never the first or the
+// last thing the card says.
 func (c PlannedCard) window() (from, to int) {
 	n := len(c.Steps)
-	if n <= plannedCeiling+1 {
+	if c.Open || !c.Windowed() {
 		return 0, n
 	}
 	at := n - 1

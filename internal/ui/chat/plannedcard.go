@@ -63,7 +63,10 @@ func (r *planRun) tickFor(number int) planTick {
 
 // plannedCardFor is the plan's card: each declared step with its state as
 // the checklist reads it — the reading the rail's PLAN block takes — and
-// what it said it would write.
+// what it said it would write. It has the step card's two depths: closed,
+// the padded card counting the steps past its ceiling at normal and up and
+// its header alone at low, and open, every step drawn, at every rung
+// (docs/interface/surfaces.md#the-progress-checkpoint).
 func (m Model) plannedCardFor(e entry, sel rowSel) components.PlannedCard {
 	run := e.plan.run
 	states := m.planChecklistOf(run)
@@ -71,7 +74,8 @@ func (m Model) plannedCardFor(e entry, sel rowSel) components.PlannedCard {
 		Body:           run.doc.Title,
 		Reversible:     e.plan.reversible.Text,
 		ReversibleTone: e.plan.reversible.Tone,
-		Folded:         e.stepFold == foldClosed,
+		Open:           e.expanded,
+		Low:            !e.expanded && !m.density(verbosityNormal),
 		Selected:       sel != rowUnselected,
 	}
 	files := map[string]bool{}
@@ -94,6 +98,21 @@ func (m Model) plannedCardFor(e entry, sel rowSel) components.PlannedCard {
 	}
 	card.Files = len(files)
 	return card
+}
+
+// planOpens reports whether the plan's card has more to draw than it is
+// drawing closed: steps past the ceiling, or, at low, everything under its
+// header. A card with nothing more is no stop and its header no target,
+// since a key offered on a row that will not honour it reads as broken
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func (m Model) planOpens(e entry) bool {
+	if e.kind != entryPlan || e.plan == nil || e.plan.run == nil {
+		return false
+	}
+	if !m.density(verbosityNormal) {
+		return true
+	}
+	return components.PlannedCard{Steps: make([]components.PlannedStep, len(e.plan.run.doc.Steps))}.Windowed()
 }
 
 // planTickFor is the flat line under a step of the plan the run has

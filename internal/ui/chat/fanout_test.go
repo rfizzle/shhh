@@ -448,44 +448,55 @@ func TestFanoutDrawsADescendantUnderTheLaneThatSpawnedIt(t *testing.T) {
 	}
 }
 
+// fanoutTitle is the sentence that titled the spawn in spawnedFanout.
+const fanoutTitle = "Documenting and verifying in parallel"
+
+// spawnedFanout is a session wide enough for a card's rows that titled two
+// spawns and filed them as a fan-out, with every child returned or every
+// child still running, and the pane at its top so a click can reach it.
+func spawnedFanout(t *testing.T, env subagent.EnvFactory, settled bool) Model {
+	t.Helper()
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: env})
+	t.Cleanup(sup.Close)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+		WithSubagents(sup).WithMouse(true)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
+	m = updated.(Model)
+	m.appendEntry(entry{kind: entryAssistant, text: fanoutTitle})
+	m.beginSpawnBatch()
+	for _, task := range []string{"one", "two"} {
+		spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
+		m.appendSpawnEntry(spawnRowEntry(task))
+	}
+	waitFor(t, func() bool { a, _ := sup.ActiveCounts(); return (a == 0) == settled })
+	m.invalidateRenderCache()
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoTop()
+	m.atBottom = false
+	return m
+}
+
+// fanoutIndex is the entry the fan-out's card is kept on.
+func fanoutIndex(t *testing.T, m Model) int {
+	t.Helper()
+	for i, e := range m.transcript {
+		if e.kind == entryFanout {
+			return i
+		}
+	}
+	t.Fatal("the two spawns did not become a fan-out")
+	return -1
+}
+
 // TestCard_AFanOutIsACardWithAChildPerRow: a fan-out is a card — the spawn's
 // receipt as the header, the sentence that titled it as the body and nowhere
 // else, a footer row per child — running and once every child has returned,
 // when the header tallies how they ended and enter opens the reports as it
-// opened them from the block. The header folds the card on a click, as every
-// card's does, and a child's row does what the lane's click did.
+// opened them from the block. A child's row does what the lane's click did.
 func TestCard_AFanOutIsACardWithAChildPerRow(t *testing.T) {
-	const titled = "Documenting and verifying in parallel"
-	spawned := func(t *testing.T, env subagent.EnvFactory, settled bool) Model {
-		t.Helper()
-		sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: env})
-		t.Cleanup(sup.Close)
-		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-			WithSubagents(sup).WithMouse(true)
-		updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
-		m = updated.(Model)
-		m.appendEntry(entry{kind: entryAssistant, text: titled})
-		m.beginSpawnBatch()
-		for _, task := range []string{"one", "two"} {
-			spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
-			m.appendSpawnEntry(spawnRowEntry(task))
-		}
-		waitFor(t, func() bool { a, _ := sup.ActiveCounts(); return (a == 0) == settled })
-		m.invalidateRenderCache()
-		m.viewport.SetLines(m.renderHistoryLines())
-		m.viewport.GotoTop()
-		m.atBottom = false
-		return m
-	}
-	fanoutAt := func(m Model) int {
-		for i, e := range m.transcript {
-			if e.kind == entryFanout {
-				return i
-			}
-		}
-		t.Fatal("the two spawns did not become a fan-out")
-		return -1
-	}
+	const titled = fanoutTitle
+	spawned := spawnedFanout
+	fanoutAt := func(m Model) int { return fanoutIndex(t, m) }
 	for _, tc := range []struct {
 		name    string
 		env     subagent.EnvFactory
@@ -536,24 +547,6 @@ func TestCard_AFanOutIsACardWithAChildPerRow(t *testing.T) {
 		}
 	})
 
-	t.Run("a click on the header folds the card and gives it back", func(t *testing.T) {
-		m := spawned(t, blockingEnv(), false)
-		idx := fanoutAt(m)
-		x, y := rowCell(t, m, "spawned 2 agents")
-		m = click(t, m, x, y)
-		if got := (*m.entries())[idx].stepFold; got != foldClosed {
-			t.Fatalf("the header click left the fold at %v, want it folded", got)
-		}
-		if lines := contentLines(m); strings.Contains(strings.Join(lines, "\n"), "researcher-1") {
-			t.Fatalf("a folded fan-out still draws its rows:\n%s", strings.Join(lines, "\n"))
-		}
-		x, y = rowCell(t, m, "spawned 2 agents")
-		m = click(t, m, x, y)
-		if got := (*m.entries())[idx].stepFold; got == foldClosed {
-			t.Fatal("a second click on the header should give the card back")
-		}
-	})
-
 	t.Run("a click on a child's row opens the reports, and the body does nothing", func(t *testing.T) {
 		m := spawned(t, reportingEnv(childReportText), true)
 		idx := fanoutAt(m)
@@ -571,6 +564,73 @@ func TestCard_AFanOutIsACardWithAChildPerRow(t *testing.T) {
 		m = click(t, m, x, y)
 		if (*m.entries())[idx].expanded {
 			t.Fatal("a second click on the row should close them again")
+		}
+	})
+}
+
+// TestCard_AFanOutHasTwoDepths: a fan-out's card is closed — the padded card,
+// a row per child, each report counted on its fold line — or open, the
+// reports under their rows. Enter and a click on the header take it from one
+// to the other; neither draws it as its header alone. A card whose children
+// are all still running has nothing more to show, so its header does
+// nothing, and a child's row still opens the reports as the lane's did.
+func TestCard_AFanOutHasTwoDepths(t *testing.T) {
+	const report = "Nothing else reads the counter."
+	closedCard := func(t *testing.T, m Model) {
+		t.Helper()
+		out := strings.Join(contentLines(m), "\n")
+		if strings.Contains(out, report) || !strings.Contains(out, "▸ report") {
+			t.Fatalf("the closed card should count each report on its fold line:\n%s", out)
+		}
+		if !strings.Contains(out, "◇ researcher-1") || strings.Contains(out, "▸ ◇ spawned") {
+			t.Fatalf("the closed card is the card with its rows, never its header alone:\n%s", out)
+		}
+	}
+	openCard := func(t *testing.T, m Model) {
+		t.Helper()
+		out := strings.Join(contentLines(m), "\n")
+		if !strings.Contains(out, report) || !strings.Contains(out, "◇ researcher-1") {
+			t.Fatalf("the open card should draw the reports under their rows:\n%s", out)
+		}
+	}
+	for _, tc := range []struct {
+		name  string
+		press func(t *testing.T, m Model) Model
+	}{
+		{"enter", func(t *testing.T, m Model) Model {
+			m.focusIdx = fanoutIndex(t, m)
+			next, _ := m.openCursorRow(stateFocus)
+			return next.(Model)
+		}},
+		{"a click on the header", func(t *testing.T, m Model) Model {
+			x, y := rowCell(t, m, "spawned 2 agents")
+			return click(t, m, x, y)
+		}},
+		{"a click on a child's row", func(t *testing.T, m Model) Model {
+			x, y := rowCell(t, m, "◇ researcher-1")
+			return click(t, m, x, y)
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := spawnedFanout(t, reportingEnv(childReportText), true)
+			closedCard(t, m)
+			m = tc.press(t, m)
+			openCard(t, m)
+			m = tc.press(t, m)
+			closedCard(t, m)
+		})
+	}
+
+	t.Run("a card with nothing to open keeps its rows on a header click", func(t *testing.T) {
+		m := spawnedFanout(t, blockingEnv(), false)
+		idx := fanoutIndex(t, m)
+		x, y := rowCell(t, m, "spawned 2 agents")
+		m = click(t, m, x, y)
+		if e := (*m.entries())[idx]; e.expanded || e.stepFold != foldAuto {
+			t.Fatal("a running fan-out has nothing more to show; the header click should do nothing")
+		}
+		if out := strings.Join(contentLines(m), "\n"); !strings.Contains(out, "◇ researcher-1") {
+			t.Fatalf("the card should still draw its rows:\n%s", out)
 		}
 	})
 }

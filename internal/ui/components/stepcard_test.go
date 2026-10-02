@@ -55,7 +55,7 @@ func commandStep() StepCard {
 // header is the card's header line with the colour taken off.
 func header(c StepCard, width int) string {
 	lines := strings.Split(stripANSI(c.View(width)), "\n")
-	if c.Folded || c.Density == CardLow {
+	if c.Density == CardLow {
 		return lines[0]
 	}
 	return lines[1]

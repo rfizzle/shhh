@@ -90,8 +90,14 @@ func (m Model) fanoutStatuses(b *fanoutBatch) []subagent.Status {
 // does not stop on it. A key offered on a row that will not honour it is a key
 // that reads as broken
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// At low the card is its header alone, so its children's rows are what it
+// opens onto, reported or not (docs/interface/surfaces.md#the-agent-manager).
 func (m Model) fanoutOpens(e entry) bool {
-	for _, st := range m.fanoutStatuses(e.fanout) {
+	statuses := m.fanoutStatuses(e.fanout)
+	if len(statuses) > 0 && !m.density(verbosityNormal) {
+		return true
+	}
+	for _, st := range statuses {
 		if m.childReport(st) != "" {
 			return true
 		}
@@ -99,11 +105,14 @@ func (m Model) fanoutOpens(e entry) bool {
 	return false
 }
 
-// rowExpands is expandable plus the one row whose body is not on the entry
-// at all: a fan-out block, whose reports live on the supervisor. Every
-// surface that asks whether a row opens asks this, so the key, the pointer
-// and the bar cannot disagree about which rows do.
-func (m Model) rowExpands(e entry) bool { return expandable(e) || m.fanoutOpens(e) }
+// rowExpands is expandable plus the two cards whose more is not on the entry
+// at all: a fan-out block, whose reports live on the supervisor, and a
+// plan's card, whose steps live on the run. Every surface that asks whether
+// a row opens asks this, so the key, the pointer and the bar cannot disagree
+// about which rows do.
+func (m Model) rowExpands(e entry) bool {
+	return expandable(e) || m.fanoutOpens(e) || m.planOpens(e)
+}
 
 // fanoutReports is every settled child's report in the block, in the order
 // the block nests its lanes, each as the lines its fold counts.
@@ -327,12 +336,16 @@ func (m Model) absorbedTitle(blk transcriptBlock, es []entry) int {
 }
 
 // fanoutCardFor is the batch as its card: the block read off the live
-// snapshot, with the sentence that titled it, the reader's fold and the
-// cursor.
+// snapshot, with the sentence that titled it, the cursor, and the depth. The
+// card has the step card's two: closed, which is the padded card at normal
+// and up and its header alone at low, and open, which draws the children's
+// reports under their rows at every rung. The reader's open is the block's
+// one report flag, so enter, a click on the header and a click on a child's
+// row all open the same thing (docs/interface/surfaces.md#the-agent-manager).
 func (m Model) fanoutCardFor(e entry, body string, sel rowSel) components.FanoutBlock {
 	block := m.fanoutBlockFor(e)
 	block.Body = body
-	block.Folded = e.stepFold == foldClosed
+	block.Low = !e.expanded && !m.density(verbosityNormal)
 	block.Selected = sel != rowUnselected
 	return block
 }
@@ -340,8 +353,9 @@ func (m Model) fanoutCardFor(e entry, body string, sel rowSel) components.Fanout
 // fanoutCardUnit is the fan-out's card as one unit, kept on the fan-out's
 // entry: the cursor stands on it as a whole and lights its header, as it
 // does a step's card. False where the supervisor knows none of its children,
-// which leaves the sentence to stand on its own. The rung does not fold it:
-// a child waiting on you is one of its rows.
+// which leaves the sentence to stand on its own. At low a closed card is its
+// header alone, and the header says a child is waiting on you where the row
+// that would have said it is not drawn.
 // See docs/interface/departures.md#a-fan-outs-card-and-a-plans-card-are-drawn-whole-at-every-rung.
 func (m Model) fanoutCardUnit(es []entry, at, title, width int, focus bool, focusIdx int) (unit, bool) {
 	sel := rowUnselected

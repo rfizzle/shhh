@@ -764,8 +764,14 @@ draws below it. Under each step's card, once the step is finished, one flat
 dim line at the glyph column says so — `✓ plan · 3 of 7 · <the step> · 2
 writes left` — so progress through a plan costs a line where it happened
 rather than a redraw of the plan; a step that broke says it with `✗`. The
-header folds the card, as every card's header does; its rows are text. A step
-not reached has no line of its own after the work: it is a row of the card.
+card has a step card's two depths, closed and open, and no fold: past the
+ceiling, enter or a click on its header opens it onto every step and the same
+again gives back the counted card, while a plan the card already draws whole
+has nothing more to show, so its header does nothing and the cursor does not
+stop on it. At `low` the closed card is its header alone on one inset band
+row, and enter or a click opens it whole as at any rung. Its rows are text:
+a step's own card further down is where its work is. A step not reached has
+no line of its own after the work: it is a row of the card.
 
 ## Panels
 
@@ -1841,9 +1847,16 @@ the lane the child runs in: its `◇` in the colour its state wears, its name
 in a slot of its own, what it is doing — the task, the step of its own plan
 it is on, what it found once it has returned — and how it stands on the
 right. A child waiting on you leads its row with `blocked` and what it waits
-for, and is the one row in the card with a key on it. The header folds the
-card, as every card's header does; a child's row opens the children's reports
-as enter on the card does, and a line of a report opens the whole of it.
+for, and is the one row in the card with a key on it. The card has a step
+card's two depths and no fold: closed, every child's row with its report
+counted on the fold line under it, and open, the reports under their rows.
+Once a child has reported, enter, a click on the header and a click on a
+child's row each open the card and close it again; while every child still
+works there is nothing more to show, and the header does nothing. At `low` the
+closed card is its header alone on one inset band row, which says `1 needs
+you` first where a child is waiting on you, since the row with the key is not
+drawn, and enter or a click opens it whole. A line of a report opens the whole
+of it.
 
 **A child is drawn twice, and the two drawings disagree about one column on
 purpose.** In the transcript a fan-out gives each child a lane, a row of its

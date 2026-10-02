@@ -18,8 +18,27 @@ import (
 // is on its third.
 func plannedRun(t *testing.T, m Model) Model {
 	t.Helper()
+	return plannedRunOf(t, m, planFixture)
+}
+
+// longPlanFixture is planFixture with three more steps, past the card's
+// ceiling, so the closed card counts the last of them rather than drawing
+// them.
+const longPlanFixture = planFixture + `5. Survey the callers
+   files: internal/agent/run.go
+   action: read
+6. Run the agent tests
+   action: run
+7. Read the result back
+   files: internal/agent/loop.go
+   action: read
+`
+
+// plannedRunOf is plannedRun with the plan the session approved.
+func plannedRunOf(t *testing.T, m Model, doc string) Model {
+	t.Helper()
 	m.appendEntry(entry{kind: entryUser, text: planApprovedMessage})
-	m.beginPlanRun(plan.Parse(planFixture))
+	m.beginPlanRun(plan.Parse(doc))
 	if m.planRun == nil {
 		t.Fatal("the fixture plan should parse into steps")
 	}
@@ -77,36 +96,172 @@ func TestCard_APlanIsACardWithAStepPerRow(t *testing.T) {
 		t.Errorf("a step not reached should be a row of the card, not an outline row:\n%s", strings.Join(lines, "\n"))
 	}
 
-	t.Run("a click on the header folds the card and gives it back", func(t *testing.T) {
+}
+
+// planIndex is the entry the plan's card is kept on.
+func planIndex(t *testing.T, m Model) int {
+	t.Helper()
+	for i, e := range m.transcript {
+		if e.kind == entryPlan {
+			return i
+		}
+	}
+	t.Fatal("no plan card was filed")
+	return -1
+}
+
+// TestCard_APlanHasTwoDepths: a plan longer than the card's ceiling counts
+// the steps past it, and enter or a click on the header opens the card onto
+// every step and closes it back to the counted card; nothing draws it as its
+// header alone or puts a fold mark in its pointer column. A plan the ceiling
+// already draws whole has nothing more to show, so it is no stop and its
+// header no target, and a click on a step's row does nothing, as enter has
+// no act on one.
+func TestCard_APlanHasTwoDepths(t *testing.T) {
+	const header, last, counted = "planned 7 steps", "7  Read the result back", "… 3 more"
+	closedCard := func(t *testing.T, m Model) {
+		t.Helper()
+		lines := contentLines(m)
+		out := strings.Join(lines, "\n")
+		if !strings.Contains(out, counted) || strings.Contains(out, last) {
+			t.Fatalf("the closed card should count the steps past its ceiling:\n%s", out)
+		}
+		if h := lines[indexOfLine(lines, header)]; !strings.HasPrefix(h, "  ▸ planned") {
+			t.Errorf("the header %q should keep a blank pointer column and the plan's mark", h)
+		}
+		if indexOfLine(lines, "Locate the round accounting") < 0 {
+			t.Errorf("the closed card is the card, not its header alone:\n%s", out)
+		}
+	}
+	openCard := func(t *testing.T, m Model) {
+		t.Helper()
+		out := strings.Join(contentLines(m), "\n")
+		if !strings.Contains(out, last) || strings.Contains(out, counted) {
+			t.Fatalf("the open card should draw every step:\n%s", out)
+		}
+	}
+	for _, tc := range []struct {
+		name  string
+		press func(t *testing.T, m Model) Model
+	}{
+		{"enter", func(t *testing.T, m Model) Model {
+			m.focusIdx = planIndex(t, m)
+			next, _ := m.openCursorRow(stateFocus)
+			return next.(Model)
+		}},
+		{"a click on the header", func(t *testing.T, m Model) Model {
+			x, y := rowCell(t, m, header)
+			return click(t, m, x, y)
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := plannedRunOf(t, selectModel(t, &clip{}), longPlanFixture)
+			m.viewport.SetLines(m.renderHistoryLines())
+			m.viewport.GotoTop()
+			m.atBottom = false
+			if !m.selectableRow(m.transcript[planIndex(t, m)]) {
+				t.Fatal("a plan past the ceiling should be a stop for the cursor")
+			}
+			closedCard(t, m)
+			m = tc.press(t, m)
+			openCard(t, m)
+			m = tc.press(t, m)
+			closedCard(t, m)
+		})
+	}
+
+	t.Run("a plan the ceiling draws whole and a step's row do nothing", func(t *testing.T) {
 		m := plannedRun(t, selectModel(t, &clip{}))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoTop()
 		m.atBottom = false
-		at := -1
-		for i, e := range m.transcript {
-			if e.kind == entryPlan {
-				at = i
+		at := planIndex(t, m)
+		if m.selectableRow(m.transcript[at]) {
+			t.Error("a plan with nothing past the ceiling should be no stop")
+		}
+		before := strings.Join(contentLines(m), "\n")
+		for _, row := range []string{"planned 4 steps", "Add a RoundsExhausted sentinel"} {
+			x, y := rowCell(t, m, row)
+			m = click(t, m, x, y)
+			if e := (*m.entries())[at]; e.expanded || e.stepFold != foldAuto {
+				t.Fatalf("a click on %q changed the card", row)
 			}
 		}
-		x, y := rowCell(t, m, "planned 4 steps")
-		m = click(t, m, x, y)
-		if got := (*m.entries())[at].stepFold; got != foldClosed {
-			t.Fatalf("the header click left the fold at %v, want it folded", got)
-		}
-		if strings.Contains(strings.Join(contentLines(m), "\n"), "Add a RoundsExhausted sentinel") {
-			t.Fatal("a folded plan card still draws its rows")
-		}
-		x, y = rowCell(t, m, "planned 4 steps")
-		m = click(t, m, x, y)
-		if got := (*m.entries())[at].stepFold; got == foldClosed {
-			t.Fatal("a second click on the header should give the card back")
-		}
-		x, y = rowCell(t, m, "Add a RoundsExhausted sentinel")
-		m = click(t, m, x, y)
-		if got := (*m.entries())[at].stepFold; got == foldClosed {
-			t.Fatal("a click on a step's row should do nothing")
+		if after := strings.Join(contentLines(m), "\n"); after != before {
+			t.Errorf("the clicks moved the card:\n%s", after)
 		}
 	})
+}
+
+// TestDensity_LowOpensAFanOutAndAPlan: at low a fan-out's card and a plan's
+// are each their header alone on one band row, inset as a normal header is,
+// with a blank either side; enter or a click on that row opens the card whole,
+// and the same again gives the row back.
+func TestDensity_LowOpensAFanOutAndAPlan(t *testing.T) {
+	for _, tc := range []struct {
+		name, header, inside string
+		model                func(t *testing.T) (Model, int)
+	}{
+		{"a plan", "planned 4 steps", "Add a RoundsExhausted sentinel", func(t *testing.T) (Model, int) {
+			m := plannedRun(t, selectModel(t, &clip{}))
+			return m, planIndex(t, m)
+		}},
+		{"a fan-out still running", "spawned 2 agents", "◇ researcher-1", func(t *testing.T) (Model, int) {
+			m := spawnedFanout(t, blockingEnv(), false)
+			return m, fanoutIndex(t, m)
+		}},
+	} {
+		for _, press := range []string{"enter", "click"} {
+			t.Run(tc.name+" by "+press, func(t *testing.T) {
+				m, at := tc.model(t)
+				m.verbosity = verbosityLow
+				m.invalidateRenderCache()
+				m.viewport.SetLines(m.renderHistoryLines())
+				m.viewport.GotoTop()
+				m.atBottom = false
+				row := func(m Model) []string {
+					lines := contentLines(m)
+					h := indexOfLine(lines, tc.header)
+					if h < 0 || !strings.HasPrefix(lines[h], "  ") || strings.Contains(lines[h], "▸ ▸") {
+						t.Fatalf("no inset header row for %q:\n%s", tc.header, strings.Join(lines, "\n"))
+					}
+					// The first line of the pane has nothing above it to be blank.
+					above := ""
+					if h > 0 {
+						above = lines[h-1]
+					}
+					return append([]string{above}, lines[h:min(h+2, len(lines))]...)
+				}
+				low := row(m)
+				if strings.TrimSpace(low[0]) != "" || (len(low) > 2 && strings.TrimSpace(low[2]) != "") {
+					t.Fatalf("at low the card is one row with a blank either side:\n%s", strings.Join(low, "\n"))
+				}
+				if lineAt := indexOfLine(contentLines(m), tc.inside); lineAt >= 0 {
+					t.Fatalf("at low the closed card should not draw %q", tc.inside)
+				}
+				if !m.selectableRow(m.transcript[at]) {
+					t.Fatal("at low the card opens, so it is a stop")
+				}
+				toggle := func(m Model) Model {
+					if press == "click" {
+						x, y := rowCell(t, m, tc.header)
+						return click(t, m, x, y)
+					}
+					m.focusIdx = at
+					next, _ := m.openCursorRow(stateFocus)
+					return next.(Model)
+				}
+				m = toggle(m)
+				if indexOfLine(contentLines(m), tc.inside) < 0 {
+					t.Fatalf("%s at low should open the card whole:\n%s", press, strings.Join(contentLines(m), "\n"))
+				}
+				m = toggle(m)
+				if indexOfLine(contentLines(m), tc.inside) >= 0 {
+					t.Fatalf("%s again should give the one row back:\n%s", press, strings.Join(contentLines(m), "\n"))
+				}
+			})
+		}
+	}
 }
 
 func TestPlan_ATickedStepIsAFlatLine(t *testing.T) {

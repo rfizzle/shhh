@@ -1558,10 +1558,10 @@ func TestGolden_FanoutBlock(t *testing.T) {
 			{Label: "writers on their own plans · steps in words and the budget's share, never one bar", View: planned.View(width)},
 			{Label: "writers queued behind a claim · each waits for the writer it overlaps, in spawn order", View: claimed.View(width)},
 			{Label: "writers taking turns at the check slots · two run their tests, two hold for a slot", View: slotted.View(width)},
-			{Label: "folded by the reader · the header alone", View: func() string {
-				folded := flight
-				folded.Folded = true
-				return folded.View(width)
+			{Label: "at low · the header alone on one inset band row, saying who needs you", View: func() string {
+				low := flight
+				low.Low = true
+				return low.View(width)
 			}()},
 		}
 	})
@@ -1597,12 +1597,13 @@ func TestGolden_PlannedCard(t *testing.T) {
 		},
 	}
 	captureGolden(t, "planned-card", "planned card", goldenWidths, func(width int) []golden.Panel {
-		folded := seven
-		folded.Folded = true
+		open, low := seven, seven
+		open.Open, low.Low = true, true
 		return []golden.Panel{
 			{Label: "a plan of seven mid-run · the rows around the step in flight, the rest counted", View: seven.View(width)},
 			{Label: "a plan of four · every step, one failed, a delete in del", View: four.View(width)},
-			{Label: "folded by the reader · the header alone", View: folded.View(width)},
+			{Label: "opened · every step of the seven", View: open.View(width)},
+			{Label: "at low · the header alone on one inset band row", View: low.View(width)},
 			{Label: "a step ticked · the flat line under its card", View: PlanTick{Number: 3, Of: 7,
 				Title: "Return it from runRound and handle it in Run", WritesLeft: 2}.View(width)},
 			{Label: "a step that broke · the same line, its mark in del", View: PlanTick{Number: 2, Of: 4,

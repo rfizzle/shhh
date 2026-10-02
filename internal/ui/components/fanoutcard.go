@@ -23,7 +23,7 @@ type CardLine int
 const (
 	// CardLineText is the card's own text: a padding row, its body.
 	CardLineText CardLine = iota
-	// CardLineHeader is the header, which folds the card.
+	// CardLineHeader is the header, which opens the card and closes it.
 	CardLineHeader
 	// CardLineChild is one entry of the list: a child's row, a plan's step.
 	CardLineChild
@@ -302,10 +302,10 @@ func (b FanoutBlock) cardLines(width int) ([]string, []CardLine) {
 		OutcomePainted: true,
 		Duration:       b.Elapsed,
 		Body:           b.Body,
-		Folded:         b.Folded,
 		Selected:       b.Selected,
 	}
-	if b.Folded {
+	if b.Low {
+		card.Density = CardLow
 		return []string{card.View(width)}, []CardLine{CardLineHeader}
 	}
 	roles := []CardLine{CardLineText, CardLineHeader}
@@ -336,10 +336,17 @@ func (b FanoutBlock) live() bool {
 // the one fact a count of them would repeat; a hold or a wait for a check
 // slot is counted, because it is what the reader is watching land; and once
 // nothing runs it is the tally of how they ended. A child waiting on you is
-// said on its own row — the one row with a key — and not here
+// said on its own row — the one row with a key — and not here, except on the
+// low rung's header alone, which has no rows
 // (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
 func (b FanoutBlock) headerOutcome() string {
-	_, _, held, _, _ := b.counts()
+	_, blocked, held, _, _ := b.counts()
+	if b.Low && blocked > 0 {
+		// The low rung's card is its header alone, so the row that says a
+		// child is waiting on you is not drawn; the header says it instead,
+		// first, because an answer cannot wait behind a rung.
+		return waitingTally(b.states(), b.slotWaits(), true)
+	}
 	if b.live() && held == 0 && b.slotWaits() == 0 {
 		return sty.Dim.Render("in parallel")
 	}

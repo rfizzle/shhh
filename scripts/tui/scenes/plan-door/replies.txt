@@ -1,9 +1,10 @@
 # The plan turn answers in the shape the card prices. The execution turn
 # carries out step 1, a read and a command it asks for and that takes four seconds, then does a piece of work the plan never named, then
-# ends the turn with step 2 still to come. The readings have a queue of their
+# ends the turn with step 2 still to come. The plan is six steps, past the
+# card's ceiling, so the closed card counts the last two. The readings have a queue of their
 # own so they never take a reply meant for the turn.
 [session]
-Here is what I would do.\n\n## Plan: make the round limit recoverable\n\n1. Locate the round accounting\n   files: loop.go\n   action: read\n2. Return a sentinel when the rounds run out\n   files: loop.go\n   action: edit\n   note: no signature changes
+Here is what I would do.\n\n## Plan: make the round limit recoverable\n\n1. Locate the round accounting\n   files: loop.go\n   action: read\n2. Return a sentinel when the rounds run out\n   files: loop.go\n   action: edit\n   note: no signature changes\n3. Thread the sentinel through Run\n   files: loop.go\n   action: edit\n4. Offer more rounds in the chat\n   files: chat.go\n   action: edit\n5. Document the new limit\n   files: README.md\n   action: edit\n6. Read the result back\n   files: loop.go\n   action: read
 Locate the round accounting
 +tool:read_file:{"path":"loop.go"}
 +tool:execute_command:{"command":"grep -n round loop.go && sleep 4"}

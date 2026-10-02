@@ -78,8 +78,9 @@ func (m Model) selectableRow(e entry) bool {
 		return false
 	}
 	// A fan-out block joins the list once a child has reported: what it opens
-	// is that report, under the lane the child ran in (fanout.go).
-	return selectable(e) || m.fanoutOpens(e)
+	// is that report, under the lane the child ran in (fanout.go). A plan's
+	// card joins it where it has steps it is not drawing (plannedcard.go).
+	return selectable(e) || m.fanoutOpens(e) || m.planOpens(e)
 }
 
 // expandableIndices lists the transcript indices focus mode can select,

@@ -45,7 +45,7 @@ type foldState int
 const (
 	foldAuto   foldState = iota // as the density rung draws it; never folded by finishing
 	foldOpen                    // you opened it onto its calls
-	foldClosed                  // you folded it: a fan-out's or a plan's card, or a step's detail
+	foldClosed                  // you closed it: a step's detail
 	// foldSearch is a fold the transcript search opened to reach a match it
 	// had counted behind it (search.go). It draws exactly like foldOpen and
 	// is a value of its own for one reason: clearing the query puts it back,
@@ -646,7 +646,16 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 	}
 	if blk.end-blk.start == 1 && blk.start < len(es) && es[blk.start].kind == entryPlan && es[blk.start].plan != nil {
 		e := es[blk.start]
-		card := m.plannedCardFor(e, rowUnselected)
+		// The card is one stop where it has more to draw, and lights its
+		// header for the cursor as a step's card does.
+		sel := rowUnselected
+		if focus && blk.start == focusIdx {
+			sel = rowPointed
+			if m.state == stateFocus {
+				sel = rowUnderCursor
+			}
+		}
+		card := m.plannedCardFor(e, sel)
 		return []unit{{idx: blk.start, sepBefore: e, sepAfter: e, text: card.View(width) + "\n", lines: card.Lines(width)}}
 	}
 	var units []unit

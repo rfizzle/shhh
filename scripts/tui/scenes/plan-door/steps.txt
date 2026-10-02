@@ -14,15 +14,15 @@
 # in flight, a still `▸` and never a spinner, the frame's status the one
 # thing that moves (docs/interface/surfaces.md#the-progress-checkpoint); at
 # 04 the plan has run its first step and one step it never named, and the
-# rail's PLAN block reads 1 of 2 with the departure; at 05 a click on the PLAN heading has put the steps screen over
+# rail's PLAN block reads 1 of 6 with the departure; at 05 a click on the PLAN heading has put the steps screen over
 # the pane and the rail, headed /plan, the first step done beside its read and
 # the second queued, and the departure under the list; at 06 the same cell has
 # put the rail back; at 07 bare /plan, the key twin, opens the same screen.
 #
 # The transcript draws the plan as a card under the message that approved it
-# (docs/interface/surfaces.md#the-progress-checkpoint): `▸ planned 2 steps` as
-# the header, a row per step, and under the card of the step the run finished
-# a flat `✓ plan · 1 of 2` line. Under the rail's 130 columns the PLAN heading
+# (docs/interface/surfaces.md#the-progress-checkpoint): `▸ planned 6 steps` as
+# the header, a row per step up to its ceiling and the rest counted, and under
+# the card of the step the run finished a flat `✓ plan · 1 of 6` line. Under the rail's 130 columns the PLAN heading
 # is not drawn, so the door's steps are run only where it is, and the card and
 # the line are what the narrower captures are read for.
 setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go; printf 'package agent\n\nconst limit = 150\n' > round.go
@@ -40,8 +40,8 @@ snap 04-step-asks "[y] run it once" "▸ 1  Locate the round accounting"
 sleep 1
 keys y
 snap 04-step-in-flight "acting…" "▸ 1  Locate the round accounting"
-wide 130 snap 04-executing "read at the top of the loop" "PLAN" "off plan" "✓ plan · 1 of 2 · Locate the round"
-narrow 130 snap 04-executing "read at the top of the loop" "✓ plan · 1 of 2 · Locate the round"
+wide 130 snap 04-executing "read at the top of the loop" "PLAN" "off plan" "✓ plan · 1 of 6 · Locate the"
+narrow 130 snap 04-executing "read at the top of the loop" "✓ plan · 1 of 6 · Locate the"
 # The rail's first column is 85 and the PLAN heading is on row 11.
 wide 130 keys -l "$(printf '\033[<0;85;11M\033[<0;85;11m')"
 wide 130 snap 05-heading-opens "/plan" "1 step off the plan"
@@ -53,11 +53,45 @@ keys Escape
 wide 130 snap 08-back "PLAN" "/plan for the whole list"
 # The plan's card, scrolled to: its header, its body, a row per step with the
 # first ticked and what each will write.
-narrow 130 snap 08-back "✓ plan · 1 of 2"
+narrow 130 snap 08-back "✓ plan · 1 of 6"
 keys PgUp
-snap 09-plan-card "▸ planned 2 steps · 1 file" "make the round limit recoverable" "✓ 1  Locate the round accounting" "· 2  Return a sentinel" "✎ loop.go"
+# Under 80 columns the plan's reply wraps and the page lands on the card's
+# header, so three wheel notches bring its rows up.
+narrow 80 snap 09-plan-header "▸ planned 6 steps · 3 files"
+narrow 80 keys -l "$(printf '\033[<65;10;10M\033[<65;10;10M\033[<65;10;10M')"
+snap 09-plan-card "… 2 more, 1 of them writes" "▸ planned 6 steps · 3 files" "make the round limit recoverable" "✓ 1  Locate the round accounting" "· 2  Return a sentinel" "✎ loop.go"
+# The card has a step card's two depths and no fold. A click on its header,
+# found on the screen rather than counted to, opens it onto every step, the
+# two the closed card counted included; the same click gives the counted
+# card back. Nothing draws it as its header alone at normal.
+keys -l "$(r=$(tmux -L "$SOCK" capture-pane -p -t scene | grep -n -m1 'planned 6 steps' | cut -d: -f1); printf '\033[<0;8;%sM\033[<0;8;%sm' "$r" "$r")"
+snap 10-plan-open "6  Read the result back" "▸ planned 6 steps" "5  Document the new limit"
+keys -l "$(r=$(tmux -L "$SOCK" capture-pane -p -t scene | grep -n -m1 'planned 6 steps' | cut -d: -f1); printf '\033[<0;8;%sM\033[<0;8;%sm' "$r" "$r")"
+snap 11-plan-closed "… 2 more, 1 of them writes" "▸ planned 6 steps" "✓ 1  Locate the round accounting"
+# Enter with reading mode's cursor on the card does the same. The first stop
+# is the reply that wrote the plan, then its turn's close, and the card.
+keys C-o
+snap 12-reading "[j/k] move"
+keys k k k k k k k k k k k k
+sleep 1
+keys j j
+snap 13-on-the-plan "❯ ▸ planned 6 steps"
+keys Enter
+snap 14-enter-opens "6  Read the result back" "❯ ▸ planned 6 steps"
+keys Enter
+snap 15-enter-closes "… 2 more, 1 of them writes" "❯ ▸ planned 6 steps"
+keys q
+# At low the closed card is its header alone on one inset band row, and a
+# click on it opens it whole; the same click gives the row back.
+keys "/ui verbosity low" Enter
+snap 16-low "verbosity set to low" "▸ planned 6 steps"
+keys -l "$(r=$(tmux -L "$SOCK" capture-pane -p -t scene | grep -n -m1 'planned 6 steps' | cut -d: -f1); printf '\033[<0;8;%sM\033[<0;8;%sm' "$r" "$r")"
+snap 17-low-open "6  Read the result back" "✓ 1  Locate the round accounting"
+keys -l "$(r=$(tmux -L "$SOCK" capture-pane -p -t scene | grep -n -m1 'planned 6 steps' | cut -d: -f1); printf '\033[<0;8;%sM\033[<0;8;%sm' "$r" "$r")"
+sleep 1
+snap 18-low-closed "▸ planned 6 steps"
 keys End
 keys C-c
-snap 10-quit-armed "again quits"
+snap 19-quit-armed "again quits"
 keys C-c
-snap 11-exit "that is everything the screen was holding"
+snap 20-exit "that is everything the screen was holding"

@@ -1530,14 +1530,16 @@ profile cut to the slot are one name.
 
 ## A fan-out child's row answers the click its lane did
 
-*A gap.* The artboard draws no pointer on a fan-out's card. Its header folds
-it, as every card's header does. A child's row is the lane, and it does what
-a click on the block's header did before the block was a card: it opens the
-children's reports and closes them again, the fold enter on the card walks.
-A line of an open report is the report, and a click there opens the whole of
-it full screen where the bound held some back. The padding and the sentence
-are text, and a click there does nothing. The plan's card has a header that
-folds it and rows that are text: a plan's step is not a thing to open.
+*A gap.* The artboard draws no pointer on a fan-out's card. Its header opens
+it and closes it, as every card's header does. A child's row is the lane, and
+it does what a click on the block's header did before the block was a card:
+it opens the children's reports and closes them again, the same two depths
+the header and enter walk. A line of an open report is the report, and a
+click there opens the whole of it full screen where the bound held some back.
+The padding and the sentence are text, and a click there does nothing. The
+plan's card has a header that opens it where it has steps past its ceiling,
+and rows that are text: a plan's step is not a thing to open, and enter has
+no act on one.
 
 ## A fan-out's rows keep their words and their costs
 
@@ -1554,13 +1556,24 @@ header says they work in parallel, and each row says how it stands.
 
 ## A fan-out's card and a plan's card are drawn whole at every rung
 
-*A gap.* [The ladder](principles.md#density-is-one-ladder) draws a step's
-card as its header alone at `low`. A fan-out's card and a plan's card
-are not drawn that way: a child waiting on you is a row of the one, and an
-answer cannot wait behind a rung, and the other is the run's map, drawn once.
-Each folds to its header only where the reader folded it, and enter on the
-fan-out's card walks its reports as it did the block's, rather than the
-step card's depths, since its rows are not calls the strip could reach.
+*Withdrawn: the two cards have the step card's two depths.* The binary once
+drew both whole at every rung and let a click on the header fold either to
+that header with `▸` in the pointer column. Readers expected the three card
+kinds to behave as one, so neither folds any more. Closed is the padded card
+at `normal` and `high` and the header alone on one inset band row at `low`;
+open draws what the card has more of — the fan-out's children's reports, the
+plan's steps past its ceiling — and at `low` everything under the header. Enter
+and a click on the header take a card from one to the other where there is
+more to draw, and do nothing where there is not. `high` does not open them:
+it opens a step onto its calls, and a fan-out's reports and a plan's whole
+list are not calls. At `low` a child waiting on you would hide behind the
+rung, so the header alone says `1 needs you` first, in del, and the chord that
+reaches the manager answers it from anywhere. Enter on an open fan-out whose
+report the bound cut still opens the whole of it full screen, as it did, and
+`-` or a click on the header closes the card; without that the lines the
+bound held back would be the mouse's alone. The plan's header keeps the plan's
+own dim `▸` in its glyph column, which is the plan's mark and not a fold. The
+heading keeps its name for the citations that point here.
 
 ## A plan's card says what can be put back on the right
 

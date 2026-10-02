@@ -287,9 +287,11 @@ type FanoutBlock struct {
 	// Body is the prose that titled the spawn, the card's body; empty, the
 	// rows follow the header.
 	Body string
-	// Folded is the reader's fold: the header alone. Selected puts the
-	// reading cursor on the header and lights it.
-	Folded, Selected bool
+	// Low is the low rung's closed card: the header alone on one inset band
+	// row, as a step's card is there. A card the reader opened is drawn
+	// whole at every rung, so the host sets it only on a closed card.
+	// Selected puts the reading cursor on the header and lights it.
+	Low, Selected bool
 	// Spawned and SpawnLimit are the session's spawn count against its cap,
 	// stated on the header while any lane is still working; a zero limit
 	// states nothing.

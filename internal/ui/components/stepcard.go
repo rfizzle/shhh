@@ -122,12 +122,10 @@ type StepCard struct {
 	// Calls are the open card's rows, already drawn at the pane's width.
 	// They stand where the footer stood, on the band.
 	Calls []string
-	// Density is how much of the card is drawn. Folded is the reader's
-	// fold of a fan-out's card or a plan's, which outranks it: the header
-	// alone, with ▸ in the pointer column so the fold says it is one. A
-	// step's card has no fold; its header alone is the low rung's.
+	// Density is how much of the card is drawn. No card has a fold of the
+	// reader's: its header alone is the low rung's closed card and nothing
+	// else, so the pointer column carries no fold mark.
 	Density CardDensity
-	Folded  bool
 	// Selected puts the reading cursor on the header and lights it.
 	Selected bool
 }
@@ -147,7 +145,7 @@ const CardBodyIndent = cardVerbColumn
 
 // View draws the card at the pane's width.
 func (c StepCard) View(width int) string {
-	if c.Folded || c.Density == CardLow {
+	if c.Density == CardLow {
 		return c.header(width)
 	}
 	lines := c.top(width)
@@ -309,7 +307,7 @@ func (c StepCard) header(width int) string {
 	if c.Selected {
 		return sty.FocusPointer.Render("❯") + LitRowKeeping(rest, 0, -1, max(width-1, 0))
 	}
-	return onBand(c.pointer()+rest, width)
+	return onBand(" "+rest, width)
 }
 
 // headerWidth is how many columns the header takes with the fields fit
@@ -385,15 +383,6 @@ func (c StepCard) verdict(v string) string {
 		return sty.Accent.Render(v)
 	}
 	return paintAccount(v, sty.Dim)
-}
-
-// pointer is the card's one-column marker: ▸ where the reader folded it,
-// blank otherwise. The reading cursor takes it while it is on the card.
-func (c StepCard) pointer() string {
-	if c.Folded {
-		return sty.Dim.Render("▸")
-	}
-	return " "
 }
 
 // railCell is the mutation rail's column: accent, or del on a step that

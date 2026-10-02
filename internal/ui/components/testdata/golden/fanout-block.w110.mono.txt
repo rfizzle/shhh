@@ -95,8 +95,8 @@
       waiting for a check slot (2 running)
 
 
-· folded by the reader · the header alone
-▸ ◇ spawned 4 agents · 4 of 32 in the session                                            in parallel · 1m12s
+· at low · the header alone on one inset band row, saying who needs you
+  ◇ spawned 4 agents · 4 of 32 in the session                                1 needs you · 3 running · 1m12s
 
 ── ansi ────────────────────────────────────────────────────
 · mid-flight · one child is waiting on you, the session's spawn count on the header
@@ -184,5 +184,5 @@
       ␛[38;5;244mwaiting for a check slot (2 running)␛[m
 
 
-· folded by the reader · the header alone
-␛[38;5;244m▸␛[m ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[m␛[38;5;244m 4 agents · 4 of 32 in the session␛[m                                            ␛[38;5;244min parallel␛[m␛[38;5;244m · ␛[m␛[38;5;244m1m12s␛[m
+· at low · the header alone on one inset band row, saying who needs you
+  ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[m␛[38;5;244m 4 agents · 4 of 32 in the session␛[m                                ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 running␛[m␛[38;5;244m · ␛[m␛[38;5;244m1m12s␛[m

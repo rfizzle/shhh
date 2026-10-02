@@ -31,8 +31,21 @@
     · 4  Drop the old round shim                                                                   ✎ shim.go
 
 
-· folded by the reader · the header alone
-▸ ▸ planned 7 steps · 5 files                                                          reversible · 3 writes
+· opened · every step of the seven
+
+  ▸ planned 7 steps · 5 files                                                          reversible · 3 writes
+    Here is the order I will take. The three edits stop for you; everything else is read-only.
+    ✓ 1  Locate the round accounting                                                               read only
+    ✓ 2  Add a RoundsExhausted sentinel                                                          ✎ errors.go
+    ▸ 3  Return it from runRound and handle it in Run                                              ✎ loop.go
+    · 4  Thread the sentinel through the loop                                                      ✎ loop.go
+    · 5  Survey the callers                                                                        read only
+    · 6  Run the agent tests                                                                          $ runs
+    · 7  Read the result back                                                                      read only
+
+
+· at low · the header alone on one inset band row
+  ▸ planned 7 steps · 5 files                                                          reversible · 3 writes
 
 · a step ticked · the flat line under its card
   ✓ plan · 3 of 7 · Return it from runRound and handle it in Run · 2 writes left
@@ -62,8 +75,21 @@
     ␛[38;5;244m·␛[m ␛[38;5;244m4  ␛[m␛[38;5;244mDrop the old round shim␛[m                                                                   ␛[38;5;254m✎␛[m␛[38;5;244m shim.go␛[m
 
 
-· folded by the reader · the header alone
-␛[38;5;244m▸␛[m ␛[38;5;244m▸␛[m ␛[38;5;254mplanned␛[m␛[38;5;244m 7 steps · 5 files␛[m                                                          ␛[38;5;254mreversible␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 writes␛[m
+· opened · every step of the seven
+
+  ␛[38;5;244m▸␛[m ␛[38;5;254mplanned␛[m␛[38;5;244m 7 steps · 5 files␛[m                                                          ␛[38;5;254mreversible␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 writes␛[m
+    ␛[38;5;254mHere is the order I will take. The three edits stop for you; everything else is read-only.␛[m
+    ␛[38;5;254m✓␛[m ␛[38;5;244m1  ␛[m␛[38;5;254mLocate the round accounting␛[m                                                               ␛[38;5;244mread only␛[m
+    ␛[38;5;254m✓␛[m ␛[38;5;244m2  ␛[m␛[38;5;254mAdd a RoundsExhausted sentinel␛[m                                                          ␛[38;5;254m✎␛[m␛[38;5;244m errors.go␛[m
+    ␛[38;5;254m▸␛[m ␛[38;5;244m3  ␛[m␛[38;5;254mReturn it from runRound and handle it in Run␛[m                                              ␛[38;5;254m✎␛[m␛[38;5;244m loop.go␛[m
+    ␛[38;5;244m·␛[m ␛[38;5;244m4  ␛[m␛[38;5;244mThread the sentinel through the loop␛[m                                                      ␛[38;5;254m✎␛[m␛[38;5;244m loop.go␛[m
+    ␛[38;5;244m·␛[m ␛[38;5;244m5  ␛[m␛[38;5;244mSurvey the callers␛[m                                                                        ␛[38;5;244mread only␛[m
+    ␛[38;5;244m·␛[m ␛[38;5;244m6  ␛[m␛[38;5;244mRun the agent tests␛[m                                                                          ␛[38;5;244m$ runs␛[m
+    ␛[38;5;244m·␛[m ␛[38;5;244m7  ␛[m␛[38;5;244mRead the result back␛[m                                                                      ␛[38;5;244mread only␛[m
+
+
+· at low · the header alone on one inset band row
+  ␛[38;5;244m▸␛[m ␛[38;5;254mplanned␛[m␛[38;5;244m 7 steps · 5 files␛[m                                                          ␛[38;5;254mreversible␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 writes␛[m
 
 · a step ticked · the flat line under its card
   ␛[38;5;254m✓␛[m ␛[38;5;244mplan · 3 of 7 · Return it from runRound and handle it in Run · 2 writes left␛[m

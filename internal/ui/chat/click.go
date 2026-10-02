@@ -16,14 +16,17 @@ package chat
 // times: the pointer names exactly one of them, and the thing it names
 // already has a key.
 //
-//   - A step card's header. It names one step, and [enter] with reading
-//     mode's cursor on the card opens it onto its calls and closes it again,
-//     [-] closes an open one; the click does the same, opening a closed card
-//     and closing an open one (card.go). The rest of the card — its padding,
-//     the sentence that titled the step, the evidence under it — is text, a
-//     selection surface with no single act behind it, and a click there
-//     does nothing. The fan-out's card and the plan's are cards, and their
-//     headers fold them to their header.
+//   - A card's header: a step's, a fan-out's, a plan's. It names one card,
+//     and [enter] with reading mode's cursor on the card opens it and closes
+//     it again, [-] closes an open one; the click does the same, opening a
+//     closed card and closing an open one (card.go). Each has two depths and
+//     no fold: a step's opens onto its calls, a fan-out's onto its
+//     children's reports, a plan's onto the steps past its ceiling, and at
+//     low each opens from its header alone. A fan-out or a plan with nothing
+//     more to draw is no stop for the cursor, and its header no target. The
+//     rest of the card — its padding, the sentence that titled the step, the
+//     evidence under it, a plan's step rows — is text, a selection surface
+//     with no single act behind it, and a click there does nothing.
 //   - An activity row. Its whole width is one row, and [enter] under reading
 //     mode's cursor already opens it. The row line opens and closes it; the
 //     body under the row opens that body whole (clickRow). A call's row
@@ -330,11 +333,16 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 		g = gestureBody
 	}
 	if u.lines != nil {
-		// A card whose footer is a list — the fan-out's, the plan's — folds
-		// on its header as every card does. A child's row is the lane, and
-		// does what the lane's click did: it opens the reports and closes
-		// them again; a line of a report is the report, and opens it whole.
-		// The rest of the card is text, and a click there does nothing.
+		// A card whose footer is a list — the fan-out's, the plan's — has
+		// the step card's two depths, and its header opens it and closes it
+		// as enter does, where it has more to draw: the fan-out's reports,
+		// the plan's steps past its ceiling, and at low everything under the
+		// header. Nothing folds it to its header alone. A child's row is the
+		// lane, and does what the lane's click did: it opens the reports
+		// and closes them again; a line of a report is the report, and opens
+		// it whole. A plan's step row is text, as enter has no act on it:
+		// the step's own card further down is where its work is. The rest
+		// of the card is text, and a click there does nothing.
 		// See docs/interface/departures.md#a-fan-out-childs-row-answers-the-click-its-lane-did.
 		role := components.CardLineText
 		if offset < len(u.lines) {
@@ -342,11 +350,10 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 		}
 		switch {
 		case role == components.CardLineHeader:
-			if es[idx].stepFold == foldClosed {
-				es[idx].stepFold = foldAuto
-			} else {
-				es[idx].stepFold = foldClosed
+			if !m.rowExpands(es[idx]) {
+				return m, nil
 			}
+			es[idx].expanded = !es[idx].expanded
 			m.invalidateRenderCache()
 			if m.state == stateFocus {
 				if m.selectableRow(es[idx]) {
