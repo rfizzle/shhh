@@ -149,6 +149,13 @@ const cardVerbColumn = 4
 // `running…` carries. See docs/interface/surfaces.md#the-step.
 const CardRunning = "running"
 
+// CardWaiting is what a live card's outcome slot says while a call in its
+// step waits for the person's approval: the step has stopped on the reader,
+// and `running` over it would send them looking for work that is not being
+// done. It is drawn in the accent a gated decision wears.
+// See docs/interface/surfaces.md#the-step.
+const CardWaiting = "waiting for you"
+
 // CardBodyIndent is where a card's body, tail and footer start: the verb's
 // column.
 const CardBodyIndent = cardVerbColumn

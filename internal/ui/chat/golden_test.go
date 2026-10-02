@@ -270,13 +270,22 @@ func TestGolden_StepOutline(t *testing.T) {
 		m.invalidateRenderCache()
 		low := m.renderHistory()
 		// The same outline built the way a turn builds one, a row at a time,
-		// so the panel is drawn from the cache the feed actually keeps.
+		// so the panel is drawn from the cache the feed actually keeps. Each
+		// row lands as its call ends, on a held clock that moves by what the
+		// call took, so the live card's clock runs from its first call.
+		holdClock(t)
+		now := goldenNow
+		clock = func() time.Time { return now }
+		land := func(m *Model, es []entry) {
+			for _, e := range es {
+				now = now.Add(e.duration)
+				m.appendEntry(e)
+				_ = m.renderHistory()
+			}
+		}
 		live := frameModel(t, width, 40)
 		live.setTurnState(stateStreaming)
-		for _, e := range arrivingStep() {
-			live.appendEntry(e)
-			_ = live.renderHistory()
-		}
+		land(&live, arrivingStep())
 		arriving := live.renderHistory()
 		// A step that stopped to think between its rounds, landed the same
 		// way: the thought is prose on bare screen, so the titled card ends
@@ -284,10 +293,7 @@ func TestGolden_StepOutline(t *testing.T) {
 		// opening the first card leaves the thought where it is.
 		thought := frameModel(t, width, 40)
 		thought.setTurnState(stateStreaming)
-		for _, e := range thinkingStep() {
-			thought.appendEntry(e)
-			_ = thought.renderHistory()
-		}
+		land(&thought, thinkingStep())
 		thinkOpen := thought.renderHistory()
 		toggleCardAt(t, &thought, 1)
 		thought.invalidateRenderCache()
@@ -3085,6 +3091,27 @@ func TestGolden_AgentRows(t *testing.T) {
 			{Label: "four children working · a row each, and the frame's count",
 				View: m.renderAgentRows(m.paneWidth()) + "\n" + promptSurface(m)},
 		}
+	})
+}
+
+// TestGolden_LiveCardWords captures the live card's right side as the step's
+// state has it: a call waiting on the approval card says `waiting for you`,
+// a command running after one that broke says `running` with the failure
+// held back, and a step of reads between calls shows its own clock from its
+// first call (docs/interface/surfaces.md#the-step).
+func TestGolden_LiveCardWords(t *testing.T) {
+	captureGolden(t, "live-card-words", "a live card's word and time", goldenWidths, func(width int) []golden.Panel {
+		// The two command cards are drawn at goldenNow, before the reading
+		// step's rows move the clock on.
+		advance := movableClock(t)
+		waiting, failed := waitingCardModel(t, width), failedLeadCardModel(t, width)
+		panels := []golden.Panel{
+			{Label: "a call waiting on the approval card", View: waiting.renderHistory()},
+			{Label: "a command running after one that broke", View: failed.renderHistory()},
+		}
+		reading := readingCardModel(t, width, advance)
+		return append(panels, golden.Panel{Label: "a step of reads between calls, its clock from its first call",
+			View: reading.renderHistory()})
 	})
 }
 

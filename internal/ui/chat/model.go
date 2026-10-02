@@ -505,6 +505,11 @@ type entry struct {
 	// duration is how long the tool call or command ran, shown on its
 	// activity row; zero hides it.
 	duration time.Duration
+	// started is when a call began on the held clock, stamped as its row
+	// lands: its duration back from then. A live card's clock runs from its
+	// step's first call, which a sum of durations cannot say while the step
+	// sits between calls. Zero on a row that did not land in this session.
+	started time.Time
 	// expanded shows the full tool/command output instead of the truncated
 	// block; toggled from focus mode.
 	expanded bool

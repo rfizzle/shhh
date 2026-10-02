@@ -1077,6 +1077,46 @@ func TestChildAskOffersNoGrantOnAFlaggedCommand(t *testing.T) {
 	}
 }
 
+// The compact row above the input says what a working child is doing in
+// the word its lane says for the same child: a writer is `writing` on both,
+// a reader `running` on both, so one child's state is never named two ways
+// one screen apart (docs/interface/surfaces.md#the-input-frame).
+func TestAgents_TheCompactRowSaysTheLanesWord(t *testing.T) {
+	// A writer works in a copy of a checkout, so the root is a repository.
+	sup := subagent.New(context.Background(), subagent.Options{Root: keptRepo(t), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	spawnInto(t, sup, `{"role":"writer","task":"docs/loop.md","name":"writer-1"}`)
+	spawnInto(t, sup, `{"role":"researcher","task":"survey internal/ui","name":"reader-3"}`)
+	for _, name := range []string{"writer-1", "reader-3"} {
+		waitFor(t, func() bool { st, ok := sup.Get(name); return ok && st.State == subagent.StateRunning })
+	}
+	m := goldenModel(t, 110).WithSubagents(sup)
+	rows := strings.Split(ansi.Strip(m.renderAgentRows(110)), "\n")
+	for _, tc := range []struct {
+		name, row, word string
+	}{
+		{"writer-1", "◇ writer-1 · docs/loop.md writing", "writing"},
+		{"reader-3", "◇ reader-3 · survey internal/ui running", "running"},
+	} {
+		var row string
+		for _, r := range rows {
+			if strings.Contains(r, tc.name) {
+				row = strings.Join(strings.Fields(r), " ")
+			}
+		}
+		if row != tc.row {
+			t.Errorf("%s: the compact row is %q, want %q", tc.name, row, tc.row)
+		}
+		st, _ := sup.Get(tc.name)
+		p := m.childProgress(st)
+		lane := components.FanoutLane{State: p.State, Name: st.Name, Task: firstLine(st.Task), Writes: p.Writes, Elapsed: "41s"}
+		got := strings.Join(strings.Fields(ansi.Strip(strings.Split(lane.View(110), "\n")[0])), " ")
+		if want := "◇ " + tc.name + " " + firstLine(st.Task) + " " + tc.word + " · 41s"; got != want {
+			t.Errorf("%s: the lane is %q, want %q", tc.name, got, want)
+		}
+	}
+}
+
 // Attached to one child, another child's request is nowhere on the screen —
 // the card is narrowed to the agent whose transcript this is. The rail is
 // where the session says so, with the chord that reaches the manager beside

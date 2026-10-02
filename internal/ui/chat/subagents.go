@@ -825,7 +825,7 @@ func (m Model) renderAgentRows(width int) string {
 	var rows []string
 	for _, st := range statuses {
 		glyph := sty.Tool.Render("◇")
-		detail := sty.StatusBar.Render(st.Detail)
+		detail := sty.StatusBar.Render(m.agentRowDetail(st))
 		if st.State == subagent.StateBlocked {
 			glyph = sty.Error.Render("⚠")
 			detail = sty.Error.Render(st.Detail)
@@ -848,6 +848,21 @@ func (m Model) renderAgentRows(width int) string {
 		rows = append(rows, sty.ToolArgs.Render(fmt.Sprintf("… +%d more agents", overflow)))
 	}
 	return strings.Join(rows, "\n")
+}
+
+// agentRowDetail is a working child's status as its compact row says it: the
+// supervisor's words, with the lane's word for a child still working in
+// place of its `running`, so a writer says `writing` here as it does on its
+// lane one screen up. See docs/interface/surfaces.md#the-input-frame.
+func (m Model) agentRowDetail(st subagent.Status) string {
+	if st.State != subagent.StateRunning || st.Held {
+		return st.Detail
+	}
+	rest, ok := strings.CutPrefix(st.Detail, components.LaneWord(false))
+	if !ok || (rest != "" && !strings.HasPrefix(rest, " ")) {
+		return st.Detail
+	}
+	return components.LaneWord(m.childWrites(st)) + rest
 }
 
 // joinRow left-aligns left and right within width, clipping left when needed.

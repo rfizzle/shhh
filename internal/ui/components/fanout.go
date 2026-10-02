@@ -473,7 +473,14 @@ func (p AgentProgress) progress() string {
 // until the child's patch lands
 // (docs/interface/departures.md#only-the-frames-status-moves).
 func (p AgentProgress) runningWord() string {
-	if p.Writes {
+	return LaneWord(p.Writes)
+}
+
+// LaneWord is the word a working child says wherever it is drawn: `writing`
+// for a role that can change files and `running` for one that cannot, so the
+// lane and the compact row above the input never name one state two ways.
+func LaneWord(writes bool) string {
+	if writes {
 		return "writing"
 	}
 	return "running"

@@ -154,12 +154,12 @@
                    alone and leaves thinking out, normal
                    draws the header, the sentence and the
                    evidence, high opens every card onto its
-                   calls; a card you folded or opened stays
+                   calls; a card you opened or closed stays
                    as you left it. The mouse is on by
                    default so the wheel scrolls the
                    transcript, click-drag selects it, and
-                   clicks open rows, fold a card by its
-                   header or answer keys; off hands
+                   clicks open rows, open or close a card by
+                   its header, or answer keys; off hands
                    selection back to the terminal, and
                    ctrl+x flips it and saves it
                    terminal   what this terminal answered
@@ -366,12 +366,12 @@
                    alone and leaves thinking out, normal
                    draws the header, the sentence and the
                    evidence, high opens every card onto its
-                   calls; a card you folded or opened stays
+                   calls; a card you opened or closed stays
                    as you left it. The mouse is on by
                    default so the wheel scrolls the
                    transcript, click-drag selects it, and
-                   clicks open rows, fold a card by its
-                   header or answer keys; off hands
+                   clicks open rows, open or close a card by
+                   its header, or answer keys; off hands
                    selection back to the terminal, and
                    ctrl+x flips it and saves it
                    terminal   what this terminal answered
@@ -598,12 +598,12 @@
                    ␛[38;5;241malone and leaves thinking out, normal␛[m
                    ␛[38;5;241mdraws the header, the sentence and the␛[m
                    ␛[38;5;241mevidence, high opens every card onto its␛[m
-                   ␛[38;5;241mcalls; a card you folded or opened stays␛[m
+                   ␛[38;5;241mcalls; a card you opened or closed stays␛[m
                    ␛[38;5;241mas you left it. The mouse is on by␛[m
                    ␛[38;5;241mdefault so the wheel scrolls the␛[m
                    ␛[38;5;241mtranscript, click-drag selects it, and␛[m
-                   ␛[38;5;241mclicks open rows, fold a card by its␛[m
-                   ␛[38;5;241mheader or answer keys; off hands␛[m
+                   ␛[38;5;241mclicks open rows, open or close a card by␛[m
+                   ␛[38;5;241mits header, or answer keys; off hands␛[m
                    ␛[38;5;241mselection back to the terminal, and␛[m
                    ␛[38;5;241mctrl+x flips it and saves it␛[m
                    ␛[38;5;241mterminal   what this terminal answered␛[m
@@ -810,12 +810,12 @@
                    ␛[38;5;241malone and leaves thinking out, normal␛[m
                    ␛[38;5;241mdraws the header, the sentence and the␛[m
                    ␛[38;5;241mevidence, high opens every card onto its␛[m
-                   ␛[38;5;241mcalls; a card you folded or opened stays␛[m
+                   ␛[38;5;241mcalls; a card you opened or closed stays␛[m
                    ␛[38;5;241mas you left it. The mouse is on by␛[m
                    ␛[38;5;241mdefault so the wheel scrolls the␛[m
                    ␛[38;5;241mtranscript, click-drag selects it, and␛[m
-                   ␛[38;5;241mclicks open rows, fold a card by its␛[m
-                   ␛[38;5;241mheader or answer keys; off hands␛[m
+                   ␛[38;5;241mclicks open rows, open or close a card by␛[m
+                   ␛[38;5;241mits header, or answer keys; off hands␛[m
                    ␛[38;5;241mselection back to the terminal, and␛[m
                    ␛[38;5;241mctrl+x flips it and saves it␛[m
                    ␛[38;5;241mterminal   what this terminal answered␛[m

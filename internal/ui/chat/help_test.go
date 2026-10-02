@@ -212,3 +212,34 @@ func TestHelp_TheWordMovesFollowTheDesk(t *testing.T) {
 		})
 	}
 }
+
+// /help and /ui verbosity say what a click on a card's header does — it opens
+// a card and closes it — and that the header alone is the low rung's shape,
+// never a fold a reader makes (docs/interface/surfaces.md#the-step).
+func TestHelp_SaysOpenAndClose(t *testing.T) {
+	m := activityModel(t)
+	for _, tc := range []struct {
+		name, text string
+		want       []string
+	}{
+		{"/help /ui", helpCommands["/ui"], []string{
+			"low draws each step's card as its header alone",
+			"a card you opened or closed stays as you left it",
+			"open or close a card by its header",
+		}},
+		{"/ui verbosity", m.uiCommand([]string{"/ui", "verbosity"}), []string{
+			"low draws each card as its header alone",
+			"a click on a card's header opens or closes it",
+			"a card you opened or closed stays as you left it",
+		}},
+	} {
+		for _, w := range tc.want {
+			if !strings.Contains(tc.text, w) {
+				t.Errorf("%s does not say %q:\n%s", tc.name, w, tc.text)
+			}
+		}
+		if strings.Contains(tc.text, "fold") {
+			t.Errorf("%s still promises a fold:\n%s", tc.name, tc.text)
+		}
+	}
+}

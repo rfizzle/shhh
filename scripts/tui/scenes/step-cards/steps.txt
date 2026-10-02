@@ -48,7 +48,10 @@ keys "write the copy story" Enter
 snap 02-write-card "[y] apply the change"
 sleep 1
 keys y
-snap 03-command-card "[y] run it once" "Running the suite once more"
+# While the failing command waits on its card, the step's card says
+# `waiting for you` where its outcome will go, not `running`
+# (docs/interface/surfaces.md#the-step).
+snap 03-command-card "[y] run it once" "Running the suite once more" "waiting for you"
 sleep 1
 keys y
 # The failing command prints its line and sits before it exits: the running

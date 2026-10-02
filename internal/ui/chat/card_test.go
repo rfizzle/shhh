@@ -520,6 +520,190 @@ func TestCard_RunningReadsInMono(t *testing.T) {
 	}
 }
 
+// movableClock holds the clock at goldenNow and returns a way to move it, so
+// a test can watch a live card's time go by.
+func movableClock(t *testing.T) (advance func(time.Duration)) {
+	t.Helper()
+	holdClock(t)
+	now := goldenNow
+	clock = func() time.Time { return now }
+	return func(d time.Duration) { now = now.Add(d) }
+}
+
+// waitingCardModel is a turn whose step ran a command twelve seconds ago and
+// has asked to run it again, the approval card up for the second run.
+func waitingCardModel(t *testing.T, width int) Model {
+	t.Helper()
+	m := activityModel(t)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+	m = updated.(Model)
+	m.transcript = []entry{
+		{kind: entryUser, text: "run the ui tests"},
+		{kind: entryAssistant, text: "Running the UI tests twice."},
+		{kind: entryCommand, text: "go test ./internal/ui/", toolResult: "ok", duration: 2 * time.Second,
+			started: goldenNow.Add(-12 * time.Second)},
+	}
+	m.state = stateConfirmRun
+	m.turnStarted = goldenNow.Add(-time.Minute)
+	m.pendingApproval = &approvalRequest{kind: approvalExec, command: "go test ./internal/ui/"}
+	m.invalidateRenderCache()
+	return m
+}
+
+// While a call in the live step waits for the reader's approval, the card's
+// slot says so in the gate's accent rather than `running`: the step has
+// stopped on the reader. Once the call is approved and runs, the slot says
+// `running` again, the clock having gone on from the step's first call
+// (docs/interface/surfaces.md#the-step).
+func TestCard_AWaitingCardSaysWaiting(t *testing.T) {
+	advance := movableClock(t)
+	const width = 110
+	m := waitingCardModel(t, width)
+	h := strings.TrimRight(cardLine(cardLines(m), "ran go test"), " ")
+	const want = " ▎$ ran go test ./internal/ui/                                            waiting for you · 12s"
+	if squeezed(h) != squeezed(want) || !strings.HasPrefix(h, " ▎$ ran go test ./internal/ui/ ") ||
+		!strings.HasSuffix(h, " waiting for you · 12s") || strings.Contains(h, components.CardRunning) {
+		t.Errorf("the waiting card's header is\n%q, want\n%q", h, want)
+	}
+
+	// The word wears the accent a gated decision wears, not the colour of
+	// motion: nothing is moving.
+	themeRestore(t)
+	was := components.Profile()
+	components.SetProfile(colorprofile.TrueColor)
+	m.invalidateRenderCache()
+	view := m.renderHistory()
+	components.SetProfile(was)
+	if accent := lipgloss.NewStyle().Foreground(components.Palette.Accent.Color()).Render(components.CardWaiting); !strings.Contains(view, accent) {
+		t.Errorf("the waiting word should be drawn in the accent as %q:\n%s", accent, view)
+	}
+
+	// Approved: the command runs on the card, and the slot is `running`.
+	advance(2 * time.Second)
+	m.state = stateRunningCmd
+	m.runningCommand = "go test ./internal/ui/"
+	m.runStart = clock()
+	m.runTail = &commandTail{}
+	m.runTail.Set("ok  github.com/rfizzle/shhh/internal/ui  0.412s")
+	m.invalidateRenderCache()
+	ran := strings.TrimRight(cardLine(cardLines(m), "ran go test"), " ")
+	if !strings.HasSuffix(ran, " running · 14s") || strings.Contains(ran, components.CardWaiting) {
+		t.Errorf("once approved the header is %q, want running · 14s", ran)
+	}
+	if lipgloss.Width(ran) != lipgloss.Width(h) {
+		t.Errorf("the waiting and running headers end at columns %d and %d", lipgloss.Width(h), lipgloss.Width(ran))
+	}
+}
+
+// failedLeadCardModel is a step whose first command broke twelve seconds
+// ago and whose second has been running for three.
+func failedLeadCardModel(t *testing.T, width int) Model {
+	t.Helper()
+	m := activityModel(t)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+	m = updated.(Model)
+	m.transcript = []entry{
+		{kind: entryUser, text: "run the ui tests"},
+		{kind: entryAssistant, text: "Running the UI tests, then the goldens."},
+		{kind: entryCommand, text: "go test ./internal/ui/", exitCode: 1,
+			toolResult: "--- FAIL: TestReplyGolden: reply_copy.golden differs\nFAIL", duration: 4 * time.Second,
+			started: goldenNow.Add(-12 * time.Second)},
+	}
+	m.state = stateRunningCmd
+	m.turnStarted = goldenNow.Add(-time.Minute)
+	m.pendingApproval = &approvalRequest{kind: approvalExec}
+	m.runningCommand = "go test ./internal/ui/ -update-golden"
+	m.runStart = goldenNow.Add(-3 * time.Second)
+	m.runTail = &commandTail{}
+	m.runTail.Set("ok  github.com/rfizzle/shhh/internal/ui  0.412s")
+	m.invalidateRenderCache()
+	return m
+}
+
+// A step whose first command broke and whose second is still running is a
+// step still running: the slot says `running` and the glyph is the kind's,
+// and the failure is the step's word again once the step ends
+// (docs/interface/surfaces.md#the-step).
+func TestCard_RunningOutranksAnEarlierFailureWhileLive(t *testing.T) {
+	movableClock(t)
+	const width = 110
+	m := failedLeadCardModel(t, width)
+	live := strings.TrimRight(cardLine(cardLines(m), "ran go test"), " ")
+	if !strings.HasPrefix(live, " ▎$ ran go test") || !strings.HasSuffix(live, " running · 12s") ||
+		strings.Contains(live, "exit 1") || strings.Contains(live, "✗") {
+		t.Errorf("the live card with a failure behind it is %q, want the $ glyph and running · 12s", live)
+	}
+
+	// The step ends: the failure is its word, and its mark.
+	m.transcript = append(m.transcript, entry{kind: entryCommand, text: "go test ./internal/ui/ -update-golden",
+		toolResult: "ok", duration: 3 * time.Second, started: goldenNow.Add(-3 * time.Second)})
+	m.state, m.pendingApproval, m.runTail, m.runningCommand = stateInput, nil, nil, ""
+	m.invalidateRenderCache()
+	done := strings.TrimRight(cardLine(cardLines(m), "ran 2 commands"), " ")
+	if !strings.Contains(done, "✗") || !strings.HasSuffix(done, " exit 1 · 7.0s") || strings.Contains(done, components.CardRunning) {
+		t.Errorf("the finished card is %q, want ✗ and exit 1 · 7.0s", done)
+	}
+}
+
+// readingCardModel is a step of three reads still going, landed a row at a
+// time on the clock advance moves: reads of 0.4s each, landing 0.4s, 1.7s
+// and 3.0s into the step, so they took 1.2s between them, and a second
+// later the step has been going four.
+func readingCardModel(t *testing.T, width int, advance func(time.Duration)) Model {
+	t.Helper()
+	m := activityModel(t)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+	m = updated.(Model)
+	m.setTurnState(stateStreaming)
+	m.appendEntry(entry{kind: entryUser, text: "survey the ui"})
+	m.appendEntry(entry{kind: entryAssistant, text: "Reading the views."})
+	gap := 400 * time.Millisecond
+	for _, path := range []string{"internal/ui/view.go", "internal/ui/pane.go", "internal/ui/frame.go"} {
+		advance(gap)
+		m.appendEntry(readEntry(path, 400*time.Millisecond))
+		gap = 1300 * time.Millisecond
+	}
+	advance(time.Second)
+	return m
+}
+
+// A live step with no command running still shows its time going by: the
+// clock runs from the step's first call to now, not over what the calls took,
+// and it is on the tick at every rung (docs/interface/surfaces.md#the-step).
+func TestCard_ADurationTicksWhileAStepReads(t *testing.T) {
+	advance := movableClock(t)
+	const width = 110
+	m := readingCardModel(t, width, advance)
+	for _, tc := range []struct {
+		after time.Duration
+		want  string
+	}{
+		{0, " running · 4.0s"},
+		{2 * time.Second, " running · 6.0s"},
+	} {
+		advance(tc.after)
+		m.invalidateRenderCache()
+		h := strings.TrimRight(cardLine(cardLines(m), "read 3 files"), " ")
+		if !strings.HasPrefix(h, "  ⚙ read 3 files in internal/ui/ ") || !strings.HasSuffix(h, tc.want) {
+			t.Errorf("the reading card's header is %q, want %q on its right", h, tc.want)
+		}
+	}
+	for _, rung := range []verbosity{verbosityLow, verbosityNormal, verbosityHigh} {
+		m.verbosity = rung
+		if !m.liveCardTicks() {
+			t.Errorf("at %s the live card's clock is not on the tick", rung)
+		}
+	}
+
+	// The step ends: its time is what the calls took.
+	m.setTurnState(stateInput)
+	m.invalidateRenderCache()
+	if h := strings.TrimRight(cardLine(cardLines(m), "read 3 files"), " "); !strings.HasSuffix(h, " 1.2s") ||
+		strings.Contains(h, components.CardRunning) {
+		t.Errorf("the finished card's header is %q, want 1.2s", h)
+	}
+}
+
 // openCloseModel is a finished step of reads with a reading taken between
 // its rounds: two files under .plan/ and a search, three seconds and a tenth
 // in all.

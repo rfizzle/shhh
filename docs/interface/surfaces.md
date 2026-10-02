@@ -303,13 +303,22 @@ second animation would only say it again. The card's right side is the word
 `running` where its outcome will go, in the colour of anything in motion, and
 the duration beside it, `running · 12s`: the word is what finds the live card
 in a column of finished ones, and it is a word rather than a colour or a
-motion so that mono, which has neither, still finds it. An earlier call's
-`ok` or line count is not the step's answer while the step is still going,
-so the slot says `running` until the step ends and then says what it came to,
-`ok · 14s` or `exit 1 · 4.0s`. Every rung draws the same right side: the one
-row at low and the open card's header at high. The running command's last
-line stands under the body and the time counts with it, and the row under
-the transcript does not draw the command a second time.
+motion so that mono, which has neither, still finds it. The word follows
+the step's state rather than its calls': while a call the step asked for
+waits on the approval card the slot says `waiting for you`, in the accent a
+gated decision wears, because the step has stopped on the reader and
+`running` over it would send them looking for work nobody is doing; once the
+call is approved the slot says `running` again. An earlier call's `ok`, line
+count or failure is not the step's answer while the step is still going —
+a command that broke and a command after it still running is a step still
+running — so the slot says `running` until the step ends and then says what
+it came to, `ok · 14s` or `exit 1 · 4.0s`, the failure's `✗` with it. The
+time beside the word is the step's own clock, from its first call to now,
+so it moves while the step reads or thinks between calls as well as while a
+command runs; once the step ends it is what the calls took. Every rung draws
+the same right side: the one row at low and the open card's header at high.
+The running command's last line stands under the body, and the row under the
+transcript does not draw the command a second time.
 
 A card has two depths: closed and open. Closed is the shape the density
 ladder draws — header, body and footer on their padding rows at normal, the
@@ -1119,7 +1128,10 @@ attachment](#a-staged-attachment)).
 Above all of that, while children are working, one compact row apiece: the
 child's name joined to what it was asked to do with the separator every other
 row joins two facts with ([one grid](principles.md#one-grid)), then what it is
-doing now and what it has spent. Six of them, and then a count of the rest.
+doing now and what it has spent. What it is doing is said in the word its
+lane says for the same child — `writing` where its role changes files,
+`running` where it does not — so the two drawings of one child one screen
+apart never name its state two ways. Six of them, and then a count of the rest.
 They go while a child's request is on the card, because the card's title rail
 names the child asking and its lane in the transcript already says why it
 stopped — a row between the two states a third time the very thing the reader

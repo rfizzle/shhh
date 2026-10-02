@@ -33,7 +33,10 @@ narrow 80 snap 04-tail "internal/agent/round.go" "acting… · turn" "▸ run"
 wide 80 snap 05-settled "The command finished and its row settled" "▎$ ran for f in" "ok  github.com/rfizzle/shhh/internal/agent/loop.go"
 narrow 80 snap 05-settled "The command finished and its row settled" "▎$ ran for f in" "ok  github.com/rfizzle/shhh/internal/ag"
 keys "run them on a card" Enter
-snap 06-card "[y] run it once"
+# The second command waits on its card, and the step's card above says so
+# where its outcome will go rather than `running`: the step has stopped on
+# the reader (docs/interface/surfaces.md#the-step).
+snap 06-card "[y] run it once" "waiting for you"
 sleep 1
 keys y
 # The third line out is two seconds into the command, so the card's clock

@@ -71,9 +71,10 @@
     /ui            screen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui
                    mouse <on|off>
                    low draws each step's card as its header alone and leaves thinking out, normal draws the header, the sentence
-                   and the evidence, high opens every card onto its calls; a card you folded or opened stays as you left it. The
-                   mouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, fold a
-                   card by its header or answer keys; off hands selection back to the terminal, and ctrl+x flips it and saves it
+                   and the evidence, high opens every card onto its calls; a card you opened or closed stays as you left it. The
+                   mouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, open
+                   or close a card by its header, or answer keys; off hands selection back to the terminal, and ctrl+x flips it
+                   and saves it
                    terminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications,
                               focus events, cell size
     /safety        the session's whole boundary on one screen (also /security): the mode and grants, where it may write, what
@@ -160,9 +161,10 @@
     /ui            screen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui
                    mouse <on|off>
                    low draws each step's card as its header alone and leaves thinking out, normal draws the header, the sentence
-                   and the evidence, high opens every card onto its calls; a card you folded or opened stays as you left it. The
-                   mouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, fold a
-                   card by its header or answer keys; off hands selection back to the terminal, and ctrl+x flips it and saves it
+                   and the evidence, high opens every card onto its calls; a card you opened or closed stays as you left it. The
+                   mouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, open
+                   or close a card by its header, or answer keys; off hands selection back to the terminal, and ctrl+x flips it
+                   and saves it
                    terminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications,
                               focus events, cell size
     /sandbox       containment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)
@@ -258,9 +260,10 @@
     ␛[38;5;254m/ui␛[m            ␛[38;5;244mscreen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui␛[m
                    ␛[38;5;244mmouse <on|off>␛[m
                    ␛[38;5;244mlow draws each step's card as its header alone and leaves thinking out, normal draws the header, the sentence␛[m
-                   ␛[38;5;244mand the evidence, high opens every card onto its calls; a card you folded or opened stays as you left it. The␛[m
-                   ␛[38;5;244mmouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, fold a␛[m
-                   ␛[38;5;244mcard by its header or answer keys; off hands selection back to the terminal, and ctrl+x flips it and saves it␛[m
+                   ␛[38;5;244mand the evidence, high opens every card onto its calls; a card you opened or closed stays as you left it. The␛[m
+                   ␛[38;5;244mmouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, open␛[m
+                   ␛[38;5;244mor close a card by its header, or answer keys; off hands selection back to the terminal, and ctrl+x flips it␛[m
+                   ␛[38;5;244mand saves it␛[m
                    ␛[38;5;244mterminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications,␛[m
                    ␛[38;5;244m           focus events, cell size␛[m
     ␛[38;5;254m/safety␛[m        ␛[38;5;244mthe session's whole boundary on one screen (also /security): the mode and grants, where it may write, what␛[m
@@ -347,9 +350,10 @@
     ␛[38;5;254m/ui␛[m            ␛[38;5;244mscreen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui␛[m
                    ␛[38;5;244mmouse <on|off>␛[m
                    ␛[38;5;244mlow draws each step's card as its header alone and leaves thinking out, normal draws the header, the sentence␛[m
-                   ␛[38;5;244mand the evidence, high opens every card onto its calls; a card you folded or opened stays as you left it. The␛[m
-                   ␛[38;5;244mmouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, fold a␛[m
-                   ␛[38;5;244mcard by its header or answer keys; off hands selection back to the terminal, and ctrl+x flips it and saves it␛[m
+                   ␛[38;5;244mand the evidence, high opens every card onto its calls; a card you opened or closed stays as you left it. The␛[m
+                   ␛[38;5;244mmouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, open␛[m
+                   ␛[38;5;244mor close a card by its header, or answer keys; off hands selection back to the terminal, and ctrl+x flips it␛[m
+                   ␛[38;5;244mand saves it␛[m
                    ␛[38;5;244mterminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications,␛[m
                    ␛[38;5;244m           focus events, cell size␛[m
     ␛[38;5;254m/sandbox␛[m       ␛[38;5;244mcontainment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)␛[m

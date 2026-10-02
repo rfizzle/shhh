@@ -14,6 +14,7 @@ package chat
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
@@ -159,6 +160,24 @@ func (m Model) cardHoldsCommand(blk transcriptBlock) bool {
 		m.pendingApproval != nil && m.pendingApproval.kind == approvalExec
 }
 
+// cardWaits reports whether the live card's step has stopped on the reader:
+// a call it asked for is on the approval card, waiting for an answer.
+func (m Model) cardWaits(blk transcriptBlock) bool {
+	return m.cardLive(blk) && m.turnState() == stateConfirmRun && m.pendingApproval != nil
+}
+
+// stepStarted is when the first of a step's calls began, where its rows
+// carry a start.
+func stepStarted(es []entry, at []int) (time.Time, bool) {
+	var from time.Time
+	for _, i := range at {
+		if s := es[i].started; !s.IsZero() && (from.IsZero() || s.Before(from)) {
+			from = s
+		}
+	}
+	return from, !from.IsZero()
+}
+
 // liveCardHoldsCommand reports whether the transcript's live card has taken
 // the running command, so the row under the transcript does not draw it a
 // second time.
@@ -175,7 +194,8 @@ func (m Model) liveCardHoldsCommand() bool {
 
 // liveCardTicks reports whether a card on the transcript is moving: the
 // live step's clock. The transcript repaints on the tick for it, as it does
-// for an arriving message.
+// for an arriving message. The one row at low carries the same clock as the
+// normal header, so it ticks at every rung.
 func (m Model) liveCardTicks() bool {
 	if m.turnState() == stateInput || m.attachedTo != "" || !m.spinnerWanted() {
 		return false
@@ -184,7 +204,7 @@ func (m Model) liveCardTicks() bool {
 	blocks := m.blocksOf(es)
 	for i := len(blocks) - 1; i >= 0; i-- {
 		if blocks[i].last {
-			return isCardBlock(blocks[i], es) && m.cardShape(blocks[i], es) != components.CardLow
+			return isCardBlock(blocks[i], es)
 		}
 	}
 	return false
@@ -238,13 +258,26 @@ func (m Model) stepCardFor(blk transcriptBlock, es []entry, width int, selected 
 	case receipt.StateRefused:
 		c.State = components.ActivityDenied
 	}
-	if s.Running || (m.cardLive(blk) && c.State == components.ActivityDone) {
+	// A step still going outranks an earlier call's failure: the step has
+	// not come out yet, and the failure is its word again once it has. A
+	// step whose every call was refused did nothing and says so.
+	// See docs/interface/surfaces.md#the-step.
+	if s.Running || (m.cardLive(blk) && c.State != components.ActivityDenied) {
 		c.State = components.ActivityRunning
 	}
+	if c.State == components.ActivityRunning && m.cardLive(blk) {
+		// The live step's clock is the wall's, from its first call to now,
+		// so it moves while the step reads, thinks or waits between calls
+		// as well as while a command runs. A step whose calls carry no
+		// start counts what they took, and the command still running.
+		if from, ok := stepStarted(es, at); ok {
+			c.Duration = turnDuration(clock().Sub(from))
+		} else if m.cardHoldsCommand(blk) {
+			c.Duration = turnDuration(s.Duration + clock().Sub(m.runStart))
+		}
+	}
 	if m.cardHoldsCommand(blk) {
-		// The duration ticks with the command still running, and the
-		// command's last line out stands under the body.
-		c.Duration = turnDuration(s.Duration + clock().Sub(m.runStart))
+		// The command's last line out stands under the body.
 		c.Tail = m.runTail.Line()
 	}
 
@@ -286,6 +319,10 @@ func (m Model) stepCardFor(blk transcriptBlock, es []entry, width int, selected 
 		// call would have carried; and why it was refused is the footer.
 		c.Duration, c.Rail = "", true
 		c.Evidence = refusalReason(es[at[len(at)-1]])
+	case c.State == components.ActivityRunning && m.cardWaits(blk):
+		// The step has stopped on the reader: a call it asked for is on the
+		// approval card, and `running` would say it is working.
+		c.Outcome, c.OutcomeAccent = components.CardWaiting, true
 	case c.State == components.ActivityRunning:
 		// A step still going has no answer yet: the card says `running`
 		// where the answer will go, and an earlier call's `ok` or line
