@@ -344,11 +344,40 @@ func (b FanoutBlock) headerOutcome() string {
 	if b.Low && blocked > 0 {
 		// The low rung's card is its header alone, so the row that says a
 		// child is waiting on you is not drawn; the header says it instead,
-		// first, because an answer cannot wait behind a rung.
-		return waitingTally(b.states(), b.slotWaits(), true)
+		// because an answer cannot wait behind a rung.
+		return b.lowTally()
 	}
 	if b.live() && held == 0 && b.slotWaits() == 0 {
 		return sty.Dim.Render("in parallel")
 	}
 	return waitingTally(b.states(), b.slotWaits(), false)
+}
+
+// lowTally is the low rung's header where a child is waiting on you: the
+// whole batch, each child counted in the one state it is in. With no rows
+// under it the header is the only account of the batch, so the finished are
+// said beside the live rather than left to rows that are not drawn, and a
+// child waiting on you is not also counted among the running — `1 done · 1
+// needs you · 1 running` over three children, where counting the blocked
+// child twice added up to four. It reads from how they ended, through who
+// needs you, to what is still working, and says every clause, since a
+// clause dropped here is children the card no longer accounts for
+// (docs/interface/surfaces.md#the-agent-manager).
+func (b FanoutBlock) lowTally() string {
+	running, blocked, held, done, failed := b.counts()
+	waiting := min(b.slotWaits(), held)
+	held -= waiting
+	var parts []string
+	add := func(n int, word string, style lipgloss.Style) {
+		if n > 0 {
+			parts = append(parts, style.Render(fmt.Sprintf("%d %s", n, word)))
+		}
+	}
+	add(done, "done", sty.Add)
+	add(failed, "failed", sty.Err)
+	add(blocked, "needs you", sty.Err)
+	add(held, "held", sty.Dim)
+	add(waiting, "waiting", sty.Dim)
+	add(running, "running", sty.Dim)
+	return strings.Join(parts, sty.Dim.Render(" · "))
 }

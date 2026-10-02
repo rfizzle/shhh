@@ -300,6 +300,50 @@ func TestFanoutFitsItsWidth(t *testing.T) {
 	}
 }
 
+// TestFanout_TheTallyCountsEachChildOnce: at low the header is the whole
+// card, so it counts every child in the one state it is in — a child waiting
+// on you is not also running, and the finished are said beside the live
+// (docs/interface/surfaces.md#the-agent-manager).
+func TestFanout_TheTallyCountsEachChildOnce(t *testing.T) {
+	three := []FanoutLane{
+		{State: FanoutDone, Name: "reader-1", Task: "survey internal/ui", Elapsed: "21s"},
+		{State: FanoutRunning, Name: "writer-2", Task: "docs/loop.md", Elapsed: "37s"},
+		{State: FanoutBlocked, Name: "scout-3", Task: "other callers", Elapsed: "18s",
+			Waiting: "waiting approval: read ../plugins/registry.go"},
+	}
+	tests := []struct {
+		name  string
+		lanes []FanoutLane
+		want  string
+	}{
+		{"one done, one running, one blocked", three, "1 done · 1 needs you · 1 running"},
+		{"a failed child beside a blocked one", []FanoutLane{
+			{State: FanoutFailed, Name: "patcher-1", Elapsed: "9s"},
+			{State: FanoutBlocked, Name: "scout-2", Elapsed: "8s"},
+		}, "1 failed · 1 needs you"},
+		{"a slot wait beside a hold", []FanoutLane{
+			{State: FanoutBlocked, Name: "scout-1", Elapsed: "9s"},
+			{State: FanoutHeld, Name: "writer-2", Elapsed: "8s"},
+			{State: FanoutHeld, Name: "writer-3", Elapsed: "7s", SlotWait: 2},
+			{State: FanoutRunning, Name: "writer-4", Elapsed: "6s"},
+		}, "1 needs you · 1 held · 1 waiting · 1 running"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := FanoutBlock{Elapsed: "37s", Low: true, Lanes: tt.lanes}
+			if got := ansi.Strip(b.headerOutcome()); got != tt.want {
+				t.Fatalf("the low header's tally = %q, want %q", got, tt.want)
+			}
+		})
+	}
+	// The header's two sides, the card's gap between them.
+	head := cardHeader(FanoutBlock{Elapsed: "37s", Low: true, Lanes: three}.View(110))
+	left, right, _ := strings.Cut(strings.TrimSpace(head), "  ")
+	if left != "◇ spawned 3 agents" || strings.TrimSpace(right) != "1 done · 1 needs you · 1 running · 37s" {
+		t.Fatalf("the low header reads %q", head)
+	}
+}
+
 // TestFanoutEmptyRendersNothing keeps a batch whose children the supervisor
 // no longer knows about from leaving a header with no lanes under it.
 func TestFanoutEmptyRendersNothing(t *testing.T) {

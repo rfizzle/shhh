@@ -1512,6 +1512,12 @@ that says which server or file the row is about is never the one dropped. A file
 still on screen in turn 8: "what has this session done to my machine" does not
 reset when the agent starts a new turn.
 
+The turn's block counts the calls the turn has made, and a retried turn's
+count starts at the retry, the same stretch [its total](#the-turns-close)
+counts: the attempt that failed has already said what it got through on its
+own `✗ failed` line, and a count that went on adding its calls would state
+22 tools beside a total saying 9.
+
 The session's changes are a reading of the changeset and not the changeset,
 so the block is bounded by a preset rather than by whatever height the rail
 happens to have: a handful of files are drawn, and past that the rest fold
@@ -1877,9 +1883,13 @@ counted on the fold line under it, and open, the reports under their rows.
 Once a child has reported, enter, a click on the header and a click on a
 child's row each open the card and close it again; while every child still
 works there is nothing more to show, and the header does nothing. At `low` the
-closed card is its header alone on one inset band row, which says `1 needs
-you` first where a child is waiting on you, since the row with the key is not
-drawn, and enter or a click opens it whole. A line of a report opens the whole
+closed card is its header alone on one inset band row. Where a child is
+waiting on you the header says so, since the row with the key is not drawn,
+and with no rows under it the header is the whole account of the batch: it
+counts every child once, in the one state it is in, from how they ended to
+who needs you to what still works — `1 done · 1 needs you · 1 running` over
+three children, the child waiting on you not counted among the running as
+well. Enter or a click opens it whole. A line of a report opens the whole
 of it.
 
 **A child is drawn twice, and the two drawings disagree about one column on

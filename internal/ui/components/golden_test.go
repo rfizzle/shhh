@@ -1563,6 +1563,15 @@ func TestGolden_FanoutBlock(t *testing.T) {
 				low.Low = true
 				return low.View(width)
 			}()},
+			{Label: "at low · one done, one running, one blocked, each counted in its one state", View: FanoutBlock{
+				Elapsed: "37s", Low: true,
+				Lanes: []FanoutLane{
+					{State: FanoutDone, Name: "reader-1", Task: "survey internal/ui", Elapsed: "21s"},
+					{State: FanoutRunning, Writes: true, Name: "writer-2", Task: "docs/loop.md", Elapsed: "37s"},
+					{State: FanoutBlocked, Name: "scout-3", Task: "other callers", Elapsed: "18s",
+						Waiting: "waiting approval: read ../plugins/registry.go"},
+				},
+			}.View(width)},
 		}
 	})
 }

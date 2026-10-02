@@ -96,7 +96,10 @@
 
 
 · at low · the header alone on one inset band row, saying who needs you
-  ◇ spawned 4 agents · 4 of 32 in the session                                1 needs you · 3 running · 1m12s
+  ◇ spawned 4 agents · 4 of 32 in the session                       1 done · 1 needs you · 2 running · 1m12s
+
+· at low · one done, one running, one blocked, each counted in its one state
+  ◇ spawned 3 agents                                                  1 done · 1 needs you · 1 running · 37s
 
 ── ansi ────────────────────────────────────────────────────
 · mid-flight · one child is waiting on you, the session's spawn count on the header
@@ -185,4 +188,7 @@
 
 
 · at low · the header alone on one inset band row, saying who needs you
-  ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[m␛[38;5;244m 4 agents · 4 of 32 in the session␛[m                                ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 running␛[m␛[38;5;244m · ␛[m␛[38;5;244m1m12s␛[m
+  ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[m␛[38;5;244m 4 agents · 4 of 32 in the session␛[m                       ␛[38;5;254m1 done␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 running␛[m␛[38;5;244m · ␛[m␛[38;5;244m1m12s␛[m
+
+· at low · one done, one running, one blocked, each counted in its one state
+  ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[m␛[38;5;244m 3 agents␛[m                                                  ␛[38;5;254m1 done␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 running␛[m␛[38;5;244m · ␛[m␛[38;5;244m37s␛[m

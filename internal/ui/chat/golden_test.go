@@ -3983,6 +3983,7 @@ func TestGolden_TurnTotal(t *testing.T) {
 				State: components.TurnFailed, Tools: 13, Elapsed: "1m 38s", Spend: "$1.15", WroteNothing: true,
 			})},
 			{Label: "retried · the failed attempt's total, the retry's line, and the retry's own total", View: retriedTotals(t, width)},
+			{Label: "retried · the rail's THIS TURN block counts the retry's own calls", View: retriedRail(t, width)},
 		}
 	})
 }
@@ -3992,6 +3993,21 @@ func TestGolden_TurnTotal(t *testing.T) {
 // own accounting: the retry's total counts its two calls, its clock and its
 // spend, and the failed attempt's total stands above the retry's line.
 func retriedTotals(t *testing.T, width int) string {
+	m := retriedTurn(t, width)
+	return m.renderHistory()
+}
+
+// retriedRail is the same turn's THIS TURN block, at the rail's own width
+// where the terminal is wide enough to show it: it counts the retry's two
+// calls, as the retry's total does.
+func retriedRail(t *testing.T, width int) string {
+	m := retriedTurn(t, width)
+	rail := components.InspectorRail{Turn: m.inspectorTurn(nil)}
+	return rail.View(min(width, components.InspectorWidth), 0)
+}
+
+// retriedTurn is the session behind retriedTotals and retriedRail.
+func retriedTurn(t *testing.T, width int) Model {
 	m := frameModel(t, width, 40)
 	m.turnCount = 1
 	attempt := func(outcome components.TurnState, took time.Duration, cost float64, paths ...string) {
@@ -4011,7 +4027,7 @@ func retriedTotals(t *testing.T, width int) string {
 	m.appendEntry(entry{kind: entryRetry})
 	attempt(components.TurnDone, 124*time.Second, 0.71, "internal/agent/loop.go", "internal/agent/round.go")
 	m.invalidateRenderCache()
-	return m.renderHistory()
+	return m
 }
 
 // TestGolden_SummaryCard captures a reading in its two places, once each

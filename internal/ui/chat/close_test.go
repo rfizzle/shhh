@@ -702,3 +702,45 @@ func TestClose_ARetriedTurnCountsOnlyTheRetry(t *testing.T) {
 		t.Errorf("the failed attempt counted %d tools and the retry %d, want 13 and 9", failed.Tools, retried.Tools)
 	}
 }
+
+// The rail's THIS TURN block counts a retried turn the way its total does:
+// the calls since the retry began, while the retry runs and once it is done
+// (docs/interface/surfaces.md#the-inspector-rail).
+func TestRail_ThisTurnCountsOnlyTheRetry(t *testing.T) {
+	now := time.Date(2026, 9, 4, 13, 37, 0, 0, time.UTC)
+	was := clock
+	clock = func() time.Time { return now }
+	t.Cleanup(func() { clock = was })
+	calls := func(m Model, n int) Model {
+		for range n {
+			m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"loop.go"}`, toolResult: "package agent"})
+		}
+		return m
+	}
+	block := func(m Model) string {
+		rail := components.InspectorRail{Turn: m.inspectorTurn(nil)}
+		return strings.TrimSpace(ansi.Strip(rail.View(components.InspectorWidth, 0)))
+	}
+
+	m := calls(sendText(t, readyModel(t), "raise the round cap"), 13)
+	now = now.Add(98 * time.Second)
+	updated, _ := m.Update(streamErrMsg{err: &provider.Failure{Class: provider.ClassUnclassified, Provider: "openai", Message: "stream reset"}})
+	m = updated.(Model)
+	now = now.Add(22 * time.Second)
+	next, _ := m.retryTurn()
+	m = calls(next.(Model), 9)
+	running := block(m)
+	now = now.Add(2*time.Minute + 4*time.Second)
+	done := block(finishTurn(t, m))
+
+	tests := []struct{ name, got string }{{"running", running}, {"done", done}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lines := strings.Split(tt.got, "\n")
+			if len(lines) != 2 || strings.TrimSpace(lines[0]) != "THIS TURN" ||
+				strings.TrimSpace(lines[1]) != "0 files this turn · 9 tools" {
+				t.Fatalf("THIS TURN reads\n%s\nwant the retry's own 9 tools", tt.got)
+			}
+		})
+	}
+}

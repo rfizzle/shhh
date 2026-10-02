@@ -247,7 +247,12 @@ func (m Model) inspectorTurn(steps []components.InspectorPlanStep) *components.I
 			}
 		}
 	}
-	for _, e := range es {
+	// A retry is a turn of its own, so the count starts at the retry line as
+	// the turn's total does: the failed attempt's calls are already counted
+	// on its own total above that line, and counting them here as well would
+	// state 22 tools beside a close row saying 9.
+	// See docs/interface/surfaces.md#the-turns-close.
+	for _, e := range sinceRetry(es) {
 		if isActivityEntry(e) {
 			t.Tools++
 		}

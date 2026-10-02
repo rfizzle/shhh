@@ -61,6 +61,10 @@
   ∗ worked 2m 04s · 2 tools · $0.71 · done 10:00 AM
 
 
+· retried · the rail's THIS TURN block counts the retry's own calls
+  THIS TURN                                   
+  0 files this turn · 2 tools                 
+
 ── ansi ────────────────────────────────────────────────────
 · running · no total line, the turn's last line waits for its end
 ␛[94m❯␛[m ␛[97mraise the round cap␛[m
@@ -112,3 +116,7 @@
 
   ␛[38;5;241m∗␛[m ␛[38;5;241mworked 2m 04s · 2 tools · $0.71 · done 10:00 AM␛[m
 
+
+· retried · the rail's THIS TURN block counts the retry's own calls
+  ␛[1;94mTHIS TURN␛[m                                   
+  ␛[38;5;241m0 files this turn␛[m␛[38;5;241m · ␛[m␛[38;5;241m2 tools␛[m                 

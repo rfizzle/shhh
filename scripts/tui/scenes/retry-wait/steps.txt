@@ -22,14 +22,18 @@
 # keyboard goes back to the draft, and the sentence is still there. The
 # retry ends on a total of its own under its line, counting the one read it
 # made, while the failed attempt's total above the line keeps its two
-# (docs/interface/surfaces.md#the-turns-close).
+# (docs/interface/surfaces.md#the-turns-close). From 130 columns the rail's
+# THIS TURN block counts the same one call, not the three of both attempts
+# (docs/interface/surfaces.md#the-inspector-rail).
 setup printf '[behavior]\nmax_tool_rounds = 40\n' > config.toml
 setup printf 'package agent\n' > loop.go
 snap 01-start "Some things worth doing first"
 keys "why does the loop stop" Enter
 snap 02-wait "attempt 1 of 3" "⚠ model" "503 overloaded" "is overloaded" "retry in" "[esc] stop the turn"
 snap 03-again "attempt 2 of 3" "retry in" "[esc] stop the turn"
-snap 04-answered "and nowhere" "Nothing in the turn was lost" "∗ worked"
+narrow 130 snap 04-answered "and nowhere" "Nothing in the turn was lost" "∗ worked"
+# Beside the rail the failure card's sentence wraps before "turn".
+wide 130 snap 04-answered "and nowhere" "Nothing in the" "turn was lost" "∗ worked"
 keys "and where is the cap set" Enter
 snap 05-last-failure "Unknown parameter" "[r] retry the last failure" "[ctrl+space/ctrl+y] to use them" "✗ failed · 2 tools ·"
 keys "half a thought"
@@ -39,3 +43,4 @@ snap 05b-row-holds-the-keyboard "[r] try again · [p] switch provider · [esc] n
 keys r
 snap 06-retried "behavior.max_tool_rounds" "half a thought" "↻ try again · same prompt, same model"
 snap 07-retry-total "· 1 tool ·" "∗ worked" "↻ try again · same prompt, same model" "half a thought"
+wide 130 snap 08-rail-counts-the-retry "0 files this turn · 1 tool" "THIS TURN" "· 1 tool ·"
