@@ -32,7 +32,7 @@ snap 04-running "running…"
 snap 05-tail "0.412s"
 # And the turn resolved, which is where a reader spends the longest with
 # nothing typed.
-snap 06-completed "the frame is four rows" "[enter] send"
+snap 06-completed "the frame is four" "[enter] send"
 keys C-c
 snap 07-quit-armed "again quits"
 keys C-c

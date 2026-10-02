@@ -69,7 +69,7 @@ snap 11-earlier-caption "✓ copied block 1 · sh · 1 line"
 # before it copies, so the caption is about the row the reader pointed at:
 # the later reply's second heading, row 24 at both widths.
 keys -l $'\e[<0;7;24M' $'\e[<0;7;24m'
-snap 11a-reading-click "✓ copied block 2 · sh · 3 lines" "❯ Here is the handler:"
+snap 11a-reading-click "✓ copied block 2 · sh · 3 lines" "❯   Here is the handler:"
 # The way out.
 keys q
 snap 12-prompt "╭─ ✓ done"

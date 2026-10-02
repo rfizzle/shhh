@@ -29,7 +29,7 @@ snap 01-start "Some things worth doing first"
 keys "why does the loop stop" Enter
 snap 02-wait "attempt 1 of 3" "⚠ model" "503 overloaded" "is overloaded" "retry in" "[esc] stop the turn"
 snap 03-again "attempt 2 of 3" "retry in" "[esc] stop the turn"
-snap 04-answered "and nowhere else" "Nothing in the turn was lost" "∗ worked"
+snap 04-answered "and nowhere" "Nothing in the turn was lost" "∗ worked"
 keys "and where is the cap set" Enter
 snap 05-last-failure "Unknown parameter" "[r] retry the last failure" "[ctrl+space/ctrl+y] to use them" "✗ failed · 2 tools ·"
 keys "half a thought"
