@@ -67,8 +67,8 @@ about a narrower thing.
 Both lists match the same way: the leading words of a command against the
 words of an entry, so `git push` covers `git push origin main` and does not
 cover `git pushall`. They read a chain differently, and deliberately. The
-allowlist refuses to match a line carrying shell punctuation at all, because
-a prefix it could be talked into misreading would be a grant; over-reading
+allowlist refuses to match a line carrying shell punctuation the shell would
+act on, because a prefix it could be talked into misreading would be a grant; over-reading
 there costs one prompt. The deny list reads every command the line will
 actually run, because a refusal it could be talked into missing would be the
 hole it was written to close. Over-reading here costs a refusal the reader
@@ -87,6 +87,37 @@ with editing instructions would be handing over the way around it. Neither
 list is reachable by any tool. A checkout can add to either through its own
 settings file, and only add — a repository may refuse one more command here
 and may never take away a refusal the person holds everywhere.
+
+### The allowlist reads quotes the way the shell does
+
+An allowlist entry, and the inspection list the two read-only modes run, is a
+prefix, and the one thing a prefix must never do is carry a second command:
+`git status; rm -rf ~` begins with `git status`. So the guard refuses a line
+in which the shell would act on any of `;`, `&`, `|`, `<`, `>`, `(`, `)`, `$`
+or a backtick — a chain, a pipe, a redirect, a subshell or a substitution.
+
+It reads the line's quoting as the shell will. Inside single quotes every
+character is text. Inside double quotes the punctuation is text too, except
+`$` and the backtick, which still substitute there and are refused. Outside
+quotes a backslash makes the next character text, which is also how a quote
+character can stand outside any quoted part. So `go list -f
+'{{.ImportPath}}|{{len .GoFiles}}' ./...` is a `go list`, because the shell
+never sees that pipe, while `git status "$(rm -rf ~)"`, `` git status `id` ``
+and `cat a | sh` match nothing. A line whose quote never closes matches
+nothing, and neither does a line that runs past a newline, quoted or not: a
+`#` in front of the quote makes it a comment and the next line a command, and
+telling the two apart is not worth the prompt it would save. The reading is
+for the POSIX shell commands run through; on Windows, whose shells quote
+otherwise, any of the punctuation anywhere still refuses the line.
+
+The deny list is not given the same leniency, and that is the agreement
+rather than a break in it. A line the allowlist reads as one command, the deny
+list reads that command in too; a line the shell would run as two, the
+allowlist refuses and the deny list reads both. Where the deny list over-reads
+a quoted string as a command, it costs a refusal the reader can see is wrong.
+
+The inspection list's own flag guards read the same unquoted words the
+program will be handed, so `find . '-delete'` is the `-delete` it is.
 
 ## A host is granted once
 
@@ -788,7 +819,8 @@ field to arrive in, and refs are restricted to a plain branch, tag or commit
 so a value cannot become an option on its way through.
 
 That leaves the reader without the shell's way of keeping a big answer small.
-The inspection allowlist refuses any line carrying shell punctuation, so in
+The inspection allowlist refuses any line carrying shell punctuation the
+shell would act on, so in
 the two read-only modes `git diff --stat … && git diff …` and `git log … |
 head` are refused before the analysis starts. The tool's own arguments do the
 same work as separate calls: a per-file summary first, then the patch
@@ -832,9 +864,10 @@ Reading history became a tool because a read that asks is a read the agent
 skips. Committing became one for the opposite reason: it is the act that
 always asks, however many times you have said yes to it.
 
-The allowlist cannot help. It refuses any line carrying shell punctuation —
-that refusal is what keeps a pre-approved shape from becoming a chain — and a
-commit message is quoted text. So `git commit -m "…"` is a classifier round in
+The allowlist cannot help. An entry for `git commit` would pre-approve every
+flag a commit takes, and a message in double quotes that mentions a `$` or a
+backtick is refused anyway — that refusal is what keeps a pre-approved shape
+from becoming a chain. So `git commit -m "…"` is a classifier round in
 auto mode and a card everywhere else, every single time, and the last thing a
 turn does is the thing it interrupts you for.
 

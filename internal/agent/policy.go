@@ -5,6 +5,7 @@ package agent
 
 import (
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/safety"
@@ -12,16 +13,106 @@ import (
 
 // allowlistUnsafe are shell metacharacters that could chain a second command
 // onto an allowlisted prefix (e.g. "git status; rm -rf ~" prefix-matching the
-// entry "git status"), so commands containing any of them never match.
+// entry "git status"), so a line in which the shell would act on any of them
+// never matches.
 const allowlistUnsafe = ";&|`$()<>\n"
+
+// posixShell is whether commands run through a POSIX shell, whose quoting
+// shellWords reads. Windows runs them through PowerShell or cmd, which quote
+// differently (cmd not at all), so there a metacharacter anywhere still
+// disqualifies the line, quoted or not.
+var posixShell = runtime.GOOS != "windows"
 
 // AllowlistMatches reports whether command's leading words exactly match all
 // words of some allowlist entry ("go test" matches "go test ./...").
+//
+// A line matches only when it is one command as the shell reads it. A
+// metacharacter the shell would act on refuses it and one the shell takes as
+// text does not, so `go list -f '{{.A}}|{{.B}}'` is a `go list` while
+// `git status "$(id)"` is two commands. Over-reading here costs a prompt;
+// under-reading would let an entry carry a second command.
+// See docs/capabilities/approvals-and-safety.md#the-allowlist-reads-quotes-the-way-the-shell-does.
 func AllowlistMatches(allowlist []string, command string) bool {
-	if strings.ContainsAny(command, allowlistUnsafe) {
+	if _, ok := shellWords(command, posixShell); !ok {
 		return false
 	}
 	return anyPrefix(allowlist, command)
+}
+
+// shellWords is command's words as the shell will pass them, quotes removed
+// and escapes resolved, or false where the line is not one plain command: an
+// unterminated quote, a trailing backslash, or any of allowlistUnsafe where
+// the shell would act on it. That is unquoted anywhere, or a `$` or a
+// backtick inside double quotes, where both still expand; inside single
+// quotes everything is text, and inside double quotes the rest is.
+//
+// A newline disqualifies a line even inside quotes. Quoted it is text, but an
+// unquoted `#` in front of the quote makes it a comment and the next line a
+// command, and reading comments is not worth the prompt it would save.
+//
+// With posix false the shell's quoting is not trusted to protect anything:
+// any metacharacter anywhere disqualifies the line, quotes still come off the
+// words, and a backslash is an ordinary character.
+func shellWords(command string, posix bool) ([]string, bool) {
+	if strings.Contains(command, "\n") || !posix && strings.ContainsAny(command, allowlistUnsafe) {
+		return nil, false
+	}
+	var words []string
+	var word strings.Builder
+	inWord := false
+	var quote byte // 0, or the quote character the scan is inside
+	for i := 0; i < len(command); i++ {
+		c := command[i]
+		switch {
+		case quote == '\'':
+			if c == '\'' {
+				quote = 0
+			} else {
+				word.WriteByte(c)
+			}
+		case quote == '"':
+			switch {
+			case c == '"':
+				quote = 0
+			case c == '$' || c == '`':
+				return nil, false
+			case c == '\\' && posix && i+1 < len(command) && strings.IndexByte("$`\"\\", command[i+1]) >= 0:
+				// Only these four are escaped inside double quotes; before
+				// anything else the backslash is itself.
+				i++
+				word.WriteByte(command[i])
+			default:
+				word.WriteByte(c)
+			}
+		case c == ' ' || c == '\t':
+			if inWord {
+				words = append(words, word.String())
+				word.Reset()
+				inWord = false
+			}
+		case c == '\'' || c == '"':
+			quote, inWord = c, true
+		case c == '\\' && posix:
+			if i+1 == len(command) {
+				return nil, false
+			}
+			i++
+			word.WriteByte(command[i])
+			inWord = true
+		case strings.IndexByte(allowlistUnsafe, c) >= 0:
+			return nil, false
+		default:
+			word.WriteByte(c)
+			inWord = true
+		}
+	}
+	if quote != 0 {
+		return nil, false
+	}
+	if inWord {
+		words = append(words, word.String())
+	}
+	return words, true
 }
 
 // ExactMatches reports whether command is one of the entries, as it stands.

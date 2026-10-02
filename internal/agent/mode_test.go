@@ -279,6 +279,53 @@ func TestReadOnlyAllowed_Guards(t *testing.T) {
 	}
 }
 
+// What Go work reads runs in a read-only session, and each entry stays a
+// read: the flags that would write, or run a program named on the line, are
+// refused however they are quoted.
+func TestReadOnlyAllowed_GoWork(t *testing.T) {
+	cases := []struct {
+		command string
+		want    bool
+	}{
+		{"gofmt -l .", true},
+		{"gofmt -l -w .", false},
+		{"gofmt -l --w=true .", false},
+		{"gofmt -w .", false},
+		{"go vet ./...", true},
+		{"go vet -vettool=/tmp/x ./...", false},
+		{"go vet '-vettool=/tmp/x' ./...", false},
+		{"go vet -toolexec /tmp/x ./...", false},
+		{"go vet -mod=mod ./...", false},
+		{"go vet -fix ./...", false},
+		{"go vet -gcflags=-cpuprofile=/tmp/x ./...", false},
+		{"go vet -debug-trace=/tmp/x ./...", false},
+		{"gofmt -l -cpuprofile /tmp/x .", false},
+		{"go build -n ./...", true},
+		{"go build ./...", false},
+		{"go build -n -n=false ./...", false},
+		{"go build -n -o bin/x ./cmd/x", false},
+		{"go build -n -toolexec=/tmp/x ./...", false},
+		{"golangci-lint --version", true},
+		{"golangci-lint --version run --fix", false},
+		{"golangci-lint run", false},
+		// make -n still runs a + recipe line and remakes an included
+		// makefile, so it is not a read.
+		{"make -n", false},
+		{"make", false},
+		{"go env GOPATH", true},
+		{"go env -w GOFLAGS=-vettool=/tmp/x", false},
+		{"find . '-delete'", false},
+	}
+	if !posixShell {
+		t.Skip("commands run through a shell that does not quote the POSIX way")
+	}
+	for _, c := range cases {
+		if got := ReadOnlyAllowed(c.command, nil); got != c.want {
+			t.Errorf("ReadOnlyAllowed(%q) = %v, want %v", c.command, got, c.want)
+		}
+	}
+}
+
 func TestDecide_ReadOnlyNeverPrompts(t *testing.T) {
 	inspect := Action{Kind: ActionCommand, Command: "git status"}
 	for _, mode := range []Mode{ModeManual, ModeAcceptEdits, ModeAuto} {

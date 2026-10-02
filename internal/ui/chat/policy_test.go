@@ -36,6 +36,8 @@ func TestAllowlistMatches(t *testing.T) {
 		{"go test | tee out", false},            // pipe
 		{"go test $(evil)", false},              // substitution
 		{"git status\nrm -rf ~", false},         // newline
+		{"go test -run 'A|B' ./...", true},      // a quoted pipe is text
+		{`git status "$(id)"`, false},           // substitution inside double quotes
 	}
 	for _, c := range cases {
 		if got := allowlistMatches(allowlist, c.command); got != c.want {

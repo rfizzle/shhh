@@ -565,9 +565,12 @@ func (p ModePolicy) readOnly(a Action) bool {
 // AllowlistMatches, so chained or redirected commands never qualify, and a
 // safety-flagged command is never matched against it at all.
 //
-// Entries are deliberately conservative. Anything that compiles or runs
-// project code (go build, go test, go vet, make, npm run) stays out: it
-// executes the repository's own code, which is not a read.
+// Entries are deliberately conservative. Anything that runs project code
+// (go test, go run, make, npm run) stays out: it executes the repository's
+// own code, which is not a read. make -n is no exception — it still runs a
+// recipe line marked + and remakes an included makefile. The Go entries that
+// compile (go vet, go build -n) write nothing but the build cache, and
+// readOnlyGuards keeps each to that.
 func ReadOnlyCommands() []string {
 	return []string{
 		// Filesystem inspection.
@@ -586,6 +589,8 @@ func ReadOnlyCommands() []string {
 		"go version", "go env", "go list", "go doc", "go mod graph", "go mod why",
 		"node --version", "npm ls", "python --version", "python3 --version",
 		"cargo --version", "rustc --version",
+		// What Go work reads: each prints, and writes nothing but a build cache.
+		"gofmt -l", "go vet", "go build -n", "golangci-lint --version",
 		// Environment.
 		"whoami", "hostname", "uname", "date", "env", "printenv", "id",
 	}
@@ -603,25 +608,38 @@ var readOnlyGuards = map[string][]string{
 	"git branch": {"-d", "-D", "-m", "-M", "-c", "-C", "--delete", "--move", "--copy", "--set-upstream-to", "-u", "--unset-upstream", "--edit-description"},
 	// env with operands runs a command; bare env just prints the environment.
 	"env": {},
+	// go env -w writes the Go environment file, and a GOFLAGS written there
+	// would hand go vet the very flags it is guarded against.
+	"go env":   {"-w", "--w", "-u", "--u"},
+	"gofmt -l": {"-w", "--w", "-cpuprofile", "--cpuprofile"},
+	// A vet tool, a toolexec or an exec wrapper is a program run by name; the
+	// module flags can rewrite go.mod; -fix writes the vet's fixes back; the
+	// tool flags and the debug traces each name a file to write.
+	"go vet": {"-vettool", "--vettool", "-toolexec", "--toolexec", "-exec", "--exec",
+		"-mod", "--mod", "-modfile", "--modfile", "-fix", "--fix", "-o", "--o",
+		"-gcflags", "--gcflags", "-asmflags", "--asmflags", "-ldflags", "--ldflags",
+		"-gccgoflags", "--gccgoflags", "-compiler", "--compiler", "-pkgdir", "--pkgdir",
+		"-debug-actiongraph", "--debug-actiongraph", "-debug-trace", "--debug-trace",
+		"-debug-runtime-trace", "--debug-runtime-trace"},
+	// A second -n can say -n=false, which is a real build.
+	"go build -n": {"-n", "--n", "-toolexec", "--toolexec", "-mod", "--mod",
+		"-modfile", "--modfile", "-o", "--o", "-pkgdir", "--pkgdir",
+		"-debug-actiongraph", "--debug-actiongraph", "-debug-trace", "--debug-trace",
+		"-debug-runtime-trace", "--debug-runtime-trace"},
+	"golangci-lint --version": {},
 }
 
 // guardedReadOnly applies readOnlyGuards to a command already known to match
-// the built-in allowlist.
+// the built-in allowlist. It reads the words the program will be handed, so a
+// quoted '-delete' is the -delete it unquotes to.
 func guardedReadOnly(command string) bool {
-	words := strings.Fields(command)
+	words, ok := shellWords(command, posixShell)
+	if !ok {
+		return false
+	}
 	for prefix, banned := range readOnlyGuards {
 		pattern := strings.Fields(prefix)
-		if len(pattern) > len(words) {
-			continue
-		}
-		match := true
-		for i, w := range pattern {
-			if words[i] != w {
-				match = false
-				break
-			}
-		}
-		if !match {
+		if !hasWords(words, pattern) {
 			continue
 		}
 		rest := words[len(pattern):]
@@ -635,6 +653,19 @@ func guardedReadOnly(command string) bool {
 					return false
 				}
 			}
+		}
+	}
+	return true
+}
+
+// hasWords reports whether words begins with every word of pattern.
+func hasWords(words, pattern []string) bool {
+	if len(pattern) > len(words) {
+		return false
+	}
+	for i, w := range pattern {
+		if words[i] != w {
+			return false
 		}
 	}
 	return true

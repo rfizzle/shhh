@@ -46,6 +46,110 @@ func TestGrantPrefixIsMatchedByTheAllowlistItJoins(t *testing.T) {
 	}
 }
 
+// A metacharacter disqualifies a line only where the shell would act on it,
+// so a quoted literal is no chain and every spelling of a chain still is.
+func TestAllowlistMatches_HonoursQuotes(t *testing.T) {
+	if !posixShell {
+		t.Skip("commands run through a shell that does not quote the POSIX way")
+	}
+	list := []string{"go list", "git status", "cat", "grep", "find"}
+	cases := []struct {
+		line string
+		want bool
+	}{
+		{`go list -f '{{.ImportPath}}|{{len .GoFiles}}' ./...`, true},
+		{`go list -f '{{.ImportPath}} {{len .GoFiles}}' ./...`, true},
+		{`grep -E 'a|b;c&d(e)<f>' internal`, true},
+		{`grep "a|b;c&d(e)<f>" internal`, true},
+		{`grep 'a$b' internal`, true},
+		{"grep 'a`id`b' internal", true},
+		{`grep "a\"; rm -rf ~; \"b" internal`, true},
+		{`grep a\|b internal`, true},
+		{`find . -exec rm {} \;`, true}, // one command; the read-only guard refuses -exec
+		{`git status; rm -rf ~`, false},
+		{`git status "$(rm -rf ~)"`, false},
+		{`git status $(id)`, false},
+		{"git status `id`", false},
+		{"git status \"`id`\"", false},
+		{`git status "$HOME"`, false},
+		{`cat a | sh`, false},
+		{`git status 'unterminated`, false},
+		{`git status "unterminated`, false},
+		{`git status "a\"; rm -rf ~`, false},
+		{`git status \`, false},
+		// A backslash outside quotes makes the quote after it literal, so
+		// what looks quoted here is a chain to the shell.
+		{`git status \'; rm -rf ~; echo \'`, false},
+		{`git status \"; rm -rf ~; echo \"`, false},
+		// Inside single quotes a backslash is itself, so the quote closes.
+		{`git status 'a\'; rm -rf ~; echo '`, false},
+		// A newline is refused even quoted: after a `#` the quote is a
+		// comment and the next line a command.
+		{"git status '\nrm -rf ~\n'", false},
+		{"git status #'\nrm -rf ~\n'", false},
+		{`git status ''; rm -rf ~`, false},
+		{`git status 'a'|sh`, false},
+	}
+	for _, c := range cases {
+		if got := AllowlistMatches(list, c.line); got != c.want {
+			t.Errorf("AllowlistMatches(%q) = %v, want %v", c.line, got, c.want)
+		}
+	}
+}
+
+// Where the execution shell does not quote the POSIX way, a quoted
+// metacharacter is not trusted to be text.
+func TestShellWordsTrustsNoQuotesOffPOSIX(t *testing.T) {
+	for _, line := range []string{`go list -f '{{.A}}|{{.B}}'`, `grep "a;b"`, `git status "$(id)"`} {
+		if _, ok := shellWords(line, false); ok {
+			t.Errorf("shellWords(%q, false) read one command", line)
+		}
+	}
+	if words, ok := shellWords(`grep 'a b' C:\dir`, false); !ok || len(words) != 3 || words[1] != "a b" || words[2] != `C:\dir` {
+		t.Errorf("shellWords off POSIX = %q, %v", words, ok)
+	}
+}
+
+// The two gates are asked about the same line. Where the allowlist reads one
+// command, the deny list finds that command in it; where the shell would run
+// a second command, the allowlist refuses the line and the deny list finds
+// the second command.
+func TestDenylistAndAllowlistReadALineTheSameWay(t *testing.T) {
+	if !posixShell {
+		t.Skip("commands run through a shell that does not quote the POSIX way")
+	}
+	cases := []struct {
+		line, first, second string // second is "" for one command
+	}{
+		{`go list -f '{{.ImportPath}}|{{len .GoFiles}}' ./...`, "go list", ""},
+		{`grep "a;b" internal`, "grep", ""},
+		{`git status; rm -rf ~`, "git status", "rm -rf"},
+		{`git status "$(rm -rf ~)"`, "git status", "rm -rf"},
+		{`git status $(id)`, "git status", "id"},
+		{"git status `id`", "git status", "id"},
+		{`cat a | sh`, "cat", "sh"},
+		{`git status \'; rm -rf ~; echo \'`, "git status", "rm -rf"},
+	}
+	for _, c := range cases {
+		if !DenylistMatches([]string{c.first}, c.line) {
+			t.Errorf("the deny list does not find %q in %q", c.first, c.line)
+		}
+		one := AllowlistMatches([]string{c.first}, c.line)
+		if c.second == "" {
+			if !one {
+				t.Errorf("the allowlist does not read %q as one %q", c.line, c.first)
+			}
+			continue
+		}
+		if one {
+			t.Errorf("the allowlist reads %q as one command; the shell also runs %q", c.line, c.second)
+		}
+		if !DenylistMatches([]string{c.second}, c.line) {
+			t.Errorf("the deny list does not find %q in %q", c.second, c.line)
+		}
+	}
+}
+
 func TestPathUnder(t *testing.T) {
 	dirs := []string{"internal/ui"}
 	for _, in := range []string{"internal/ui/chat/model.go", "internal/ui/card.go"} {
