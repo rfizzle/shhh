@@ -40,7 +40,7 @@
     in order ⚙⚙                                                  2 tools
 
 
-  Thread the sentinel through the loop
+    Thread the sentinel through the loop
 
     One return path, then the test.
     The test names the sentinel directly.
@@ -82,7 +82,7 @@
     in order ⚙⚙                                                  2 tools
 
 
-  Thread the sentinel through the loop
+    Thread the sentinel through the loop
 
     One return path, then the test.
     The test names the sentinel directly.
@@ -130,7 +130,7 @@
     ␛[38;5;244min order ␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m                                                  ␛[38;5;244m2 tools␛[m
 
 
-  Thread the sentinel through the loop
+    Thread the sentinel through the loop
 
     ␛[3;38;5;244mOne return path, then the test.␛[m
     ␛[3;38;5;244mThe test names the sentinel directly.␛[m
@@ -172,7 +172,7 @@
     ␛[38;5;244min order ␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m                                                  ␛[38;5;244m2 tools␛[m
 
 
-  Thread the sentinel through the loop
+    Thread the sentinel through the loop
 
     ␛[3;38;5;244mOne return path, then the test.␛[m
     ␛[3;38;5;244mThe test names the sentinel directly.␛[m

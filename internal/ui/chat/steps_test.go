@@ -388,3 +388,70 @@ func TestStepHeader_TonesFollowTheDesignSystem(t *testing.T) {
 		t.Fatal("the stretched rule and the tool count are dim")
 	}
 }
+
+// TestDensity_LowKeepsAStepWholeAcrossADroppedThought: at low, where the
+// rung drops thinking, a thought between a step's title and its calls, or
+// between two rounds of it, does not split the step — the step is one card
+// with every call that followed the thought. At normal and high the thought
+// is drawn and ends the card it stands in, as before
+// (docs/interface/surfaces.md#the-think-row).
+func TestDensity_LowKeepsAStepWholeAcrossADroppedThought(t *testing.T) {
+	think := entry{kind: entryThink, text: "The cap is counted in the loop."}
+	read := func(p string) entry {
+		return entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"` + p + `"}`, toolResult: "a"}
+	}
+	// card is one card the tiling drew: its title, or "" for a run nothing
+	// titled, and how many calls it holds.
+	type card struct {
+		title string
+		calls int
+	}
+	for _, tc := range []struct {
+		name  string
+		es    []entry
+		rung  verbosity
+		cards []card
+	}{
+		{"the density turn at low: two steps, each whole", densityTranscript(), verbosityLow,
+			[]card{{"Locate the round accounting", 3}, {"Thread the sentinel through the loop", 2}}},
+		{"the density turn at normal: each thought ends its card", densityTranscript(), verbosityNormal,
+			[]card{{"Locate the round accounting", 1}, {"", 2}, {"", 2}}},
+		{"the density turn at high: as at normal", densityTranscript(), verbosityHigh,
+			[]card{{"Locate the round accounting", 1}, {"", 2}, {"", 2}}},
+		{"a run nothing titled, at low: one card", []entry{read("a.go"), think, read("b.go")}, verbosityLow,
+			[]card{{"", 2}}},
+		{"a run nothing titled, at normal: two", []entry{read("a.go"), think, read("b.go")}, verbosityNormal,
+			[]card{{"", 1}, {"", 1}}},
+		{"a thought after a step's last call stays out of it", []entry{
+			{kind: entryAssistant, text: "Read the two files"}, read("a.go"), read("b.go"), think,
+			{kind: entryAssistant, text: "Done."}}, verbosityLow,
+			[]card{{"Read the two files", 2}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := activityModel(t)
+			m.transcript = tc.es
+			m.verbosity = tc.rung
+			m.invalidateRenderCache()
+			var got []card
+			for _, blk := range m.blocksOf(m.transcript) {
+				if !isCardBlock(blk, m.transcript) {
+					continue
+				}
+				c := card{}
+				if blk.step != nil {
+					c.title = blk.step.title
+				}
+				start, end := blk.members()
+				for _, e := range m.transcript[start:end] {
+					if isActivityEntry(e) {
+						c.calls++
+					}
+				}
+				got = append(got, c)
+			}
+			if fmt.Sprint(got) != fmt.Sprint(tc.cards) {
+				t.Fatalf("cards %v, want %v", got, tc.cards)
+			}
+		})
+	}
+}

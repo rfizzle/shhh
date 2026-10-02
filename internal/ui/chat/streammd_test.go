@@ -315,7 +315,7 @@ func TestStreamMarkdown_AnOpenFenceHasNoHeadingYet(t *testing.T) {
 	if closed != renderMarkdown(doc, 60) {
 		t.Fatal("the glued render of the closed message is not the whole render")
 	}
-	if !strings.Contains(closed, "\n    go") {
+	if !strings.Contains(closed, "\n      go") {
 		t.Fatalf("the closed fence should be headed:\n%s", closed)
 	}
 }

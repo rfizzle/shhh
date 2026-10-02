@@ -39,7 +39,7 @@ type blockHeading struct {
 func (m Model) entryFences(e entry, width int) []markdown.Fence {
 	switch {
 	case e.kind == entryAssistant && !e.checkpoint:
-		_, fences := markdown.Layout(e.text, mdOptions(width))
+		_, fences := markdown.Layout(e.text, replyOptions(width))
 		return fences
 	case e.kind == entryUser:
 		o := mdOptions(width)
@@ -87,7 +87,7 @@ func (m Model) blockHeadings(from, to int) map[int]blockHeading {
 		if havePrev {
 			at += strings.Count(separatorBefore(prev, entry{kind: entryAssistant}), "\n")
 		}
-		_, fences := markdown.Layout(m.streaming, mdOptions(width))
+		_, fences := markdown.Layout(m.streaming, replyOptions(width))
 		for _, f := range fences {
 			if line := at + f.Heading; line >= from && line <= to {
 				heads[line] = blockHeading{idx: -1, n: f.Index + 1}

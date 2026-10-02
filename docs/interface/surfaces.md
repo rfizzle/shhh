@@ -18,11 +18,12 @@ The transcript is one column of text, and every kind of entry in it begins in
 the same place. A narrow gutter on the left is held back for a mark *about* an
 entry — the reader's own `❯`, a folded card's `▸`, reading mode's cursor — and
 everything that is not one of those marks starts in the first column past it:
-a paragraph's first word, a notice's mark, an activity row's mutation rail
-and the glyph beside it, a reading of the session, and the line a turn closes
-on. The model's prose that nobody asked a question for — what it thought, and
-a progress checkpoint — starts one step further in, on the column a card's
-sentence starts on, a rung under the answer it is not. A step's card is the one entry drawn into the
+a notice's mark, an activity row's mutation rail and the glyph beside it, a
+reading of the session, and the line a turn closes on. The model's prose
+starts one step further in, on the column a card's sentence starts on: the
+reply, a paragraph it wrote between its calls, what it thought and a progress
+checkpoint, so every passage of prose on the screen shares one left edge with
+the card bodies around it. A step's card is the one entry drawn into the
 gutter, and only with a mark: its pointer column is one wide and its mutation
 rail stands in the second, so its glyph, the verb on its header and the body
 under it start one step in from the rows ([the step](#the-step)). An entry with no mark of its own leaves the
@@ -61,7 +62,8 @@ Two things in the transcript are not rows, and they are what the rows sit
 between. A message the reader sent is a `❯` row: the mark in the pointer
 column the rows keep clear, the words beside it in the brightest grey the
 pane has, and a faint rule under them saying where the message stops. A reply
-is prose and nothing else — indented, in body grey, no mark and no rule.
+is prose and nothing else — at the body column, in body grey, no mark and no
+rule.
 Neither carries a speaker's name. A transcript is a record of what happened
 rather than a conversation being had, it has exactly two voices, and the
 brighter of the two is always the one that asked; a label saying so again
@@ -193,7 +195,10 @@ cutting it keeps a sentence and loses the thought.
 
 It stands where it was thought. A card has no place on its band for prose but
 its body, so a thought between two rounds of one step ends the step's card
-there, and the calls after it are a card of their own. The passage fills
+there, and the calls after it are a card of their own. Where the rung drops
+the thought nothing stands there, and the step is one card with the calls
+that followed it: a card split at a passage the screen does not draw would
+leave its title above a card with no body. The passage fills
 while the model thinks, so the wait is legible as work rather than as a
 spinner, and it carries no rail and sits at the bottom of the weight order,
 because thinking changed nothing, ran nothing and read nothing.

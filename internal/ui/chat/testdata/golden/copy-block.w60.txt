@@ -24,27 +24,29 @@
 ❯ show me the handler
 ──────────────────────────────────────────────────────
 
-❯ Here is the handler:                                
+❯   Here is the handler:                              
                                                     
-    go                                              
-    func copyBlock(src string, i int) {             
-        if i < 1 {                                  
-            return                                  
-        }                                           
-    }                                               
+      go                                            
+      func copyBlock(src string, i int) {           
+          if i < 1 {                                
+              return                                
+          }                                         
+      }                                             
                                                     
-  The scene builds once and captures at both widths:
+    The scene builds once and captures at both      
+    widths:                                         
                                                     
-    sh                                              
-    make build                                      
-    make tui-shot SCENE=copy-block COLS=110 ROWS=40 
-    make tui-shot SCENE=copy-block COLS=60 ROWS=40  
+      sh                                            
+      make build                                    
+      make tui-shot SCENE=copy-block COLS=110 ROWS= 
+      40                                            
+      make tui-shot SCENE=copy-block COLS=60 ROWS=40
                                                     
-  Its steps open the list and take the second row:  
+    Its steps open the list and take the second row:
                                                     
-    code                                            
-    keys "/copy code" Enter                         
-    snap 01-list "copy which block?"
+      code                                          
+      keys "/copy code" Enter                       
+      snap 01-list "copy which block?"
 
 ────────────────────────────────────────────────────────
 [j/k] move · [y] copy the row · [q] prompt    row 1 of 1
@@ -71,27 +73,29 @@
 ␛[94m❯␛[m ␛[97mshow me the handler␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[97;48;5;62mHere is the handler:                                ␛[m␛[m
+␛[94m❯␛[m ␛[38;5;252m␛[m␛[48;5;62m  ␛[38;5;252m␛[m␛[48;5;62m␛[97;48;5;62mHere is the handler:                              ␛[m␛[m
                                                     
-    ␛[38;5;241mgo␛[m                                              
-    ␛[94mfunc␛[m␛[38;5;252m ␛[m␛[97mcopyBlock␛[m␛[38;5;245m(␛[m␛[38;5;252msrc ␛[m␛[94mstring␛[m␛[38;5;245m,␛[m␛[38;5;252m i ␛[m␛[94mint␛[m␛[38;5;245m)␛[m␛[38;5;252m ␛[m␛[38;5;245m{␛[m             
-    ␛[38;5;252m    ␛[m␛[94mif␛[m␛[38;5;252m i ␛[m␛[38;5;245m<␛[m␛[38;5;252m ␛[m␛[38;5;214m1␛[m␛[38;5;252m ␛[m␛[38;5;245m{␛[m                                  
-    ␛[38;5;252m        ␛[m␛[94mreturn␛[m                                  
-    ␛[38;5;252m    ␛[m␛[38;5;245m}␛[m                                           
-    ␛[38;5;245m}␛[m                                               
+      ␛[38;5;241mgo␛[m                                            
+      ␛[94mfunc␛[m␛[38;5;252m ␛[m␛[97mcopyBlock␛[m␛[38;5;245m(␛[m␛[38;5;252msrc ␛[m␛[94mstring␛[m␛[38;5;245m,␛[m␛[38;5;252m i ␛[m␛[94mint␛[m␛[38;5;245m)␛[m␛[38;5;252m ␛[m␛[38;5;245m{␛[m           
+      ␛[38;5;252m    ␛[m␛[94mif␛[m␛[38;5;252m i ␛[m␛[38;5;245m<␛[m␛[38;5;252m ␛[m␛[38;5;214m1␛[m␛[38;5;252m ␛[m␛[38;5;245m{␛[m                                
+      ␛[38;5;252m        ␛[m␛[94mreturn␛[m                                
+      ␛[38;5;252m    ␛[m␛[38;5;245m}␛[m                                         
+      ␛[38;5;245m}␛[m                                             
                                                     
-  ␛[38;5;252mThe scene builds once and captures at both widths:␛[m
+    ␛[38;5;252mThe scene builds once and captures at both ␛[m     
+    ␛[38;5;252mwidths:␛[m                                         
                                                     
-    ␛[38;5;241msh␛[m                                              
-    ␛[38;5;252mmake build␛[m                                      
-    ␛[38;5;252mmake tui-shot SCENE␛[m␛[38;5;245m=␛[m␛[38;5;252mcopy-block COLS␛[m␛[38;5;245m=␛[m␛[38;5;214m110␛[m␛[38;5;252m ROWS␛[m␛[38;5;245m=␛[m␛[38;5;214m40␛[m 
-    ␛[38;5;252mmake tui-shot SCENE␛[m␛[38;5;245m=␛[m␛[38;5;252mcopy-block COLS␛[m␛[38;5;245m=␛[m␛[38;5;214m60␛[m␛[38;5;252m ROWS␛[m␛[38;5;245m=␛[m␛[38;5;214m40␛[m  
+      ␛[38;5;241msh␛[m                                            
+      ␛[38;5;252mmake build␛[m                                    
+      ␛[38;5;252mmake tui-shot SCENE␛[m␛[38;5;245m=␛[m␛[38;5;252mcopy-block COLS␛[m␛[38;5;245m=␛[m␛[38;5;214m110␛[m␛[38;5;252m ROWS␛[m␛[38;5;245m=␛[m 
+      ␛[38;5;214m40␛[m                                            
+      ␛[38;5;252mmake tui-shot SCENE␛[m␛[38;5;245m=␛[m␛[38;5;252mcopy-block COLS␛[m␛[38;5;245m=␛[m␛[38;5;214m60␛[m␛[38;5;252m ROWS␛[m␛[38;5;245m=␛[m␛[38;5;214m40␛[m
                                                     
-  ␛[38;5;252mIts steps open the list and take the second row:␛[m  
+    ␛[38;5;252mIts steps open the list and take the second row:␛[m
                                                     
-    ␛[38;5;241mcode␛[m                                            
-    ␛[38;5;180mkeys "/copy code" Enter␛[m                         
-    ␛[38;5;180msnap 01-list "copy which block?"␛[m
+      ␛[38;5;241mcode␛[m                                          
+      ␛[38;5;180mkeys "/copy code" Enter␛[m                       
+      ␛[38;5;180msnap 01-list "copy which block?"␛[m
 
 ␛[38;5;241m────────────────────────────────────────────────────────␛[m
 ␛[38;5;103m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[y]␛[m␛[38;5;241m copy the row␛[m␛[38;5;241m · ␛[m␛[38;5;103m[q]␛[m␛[38;5;241m prompt␛[m    ␛[38;5;241mrow 1 of 1␛[m

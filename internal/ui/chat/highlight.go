@@ -20,6 +20,20 @@ func mdOptions(width int) markdown.Options {
 	return markdown.Options{Width: width, Mono: components.Mono(), Syntax: fenceSyntax}
 }
 
+// replyOptions is the same render set at the body column, where the
+// catalogue puts every block of prose: the reply and a paragraph the model
+// wrote between its calls start where a card's sentence and a thought do,
+// four columns in, rather than at the markdown margin a sent message keeps
+// for its prompt mark (docs/interface/surfaces.md#the-leading-columns). Every
+// render of the model's own prose takes it, the answer still arriving and
+// the layout its headings are found in included, so the glued stream and
+// the finished reply are the same rows.
+func replyOptions(width int) markdown.Options {
+	o := mdOptions(width)
+	o.Indent = components.GridDetailIndent - markdown.Margin
+	return o
+}
+
 func renderMarkdown(text string, width int) string {
 	return trimBlankLines(renderMarkdownRaw(text, width))
 }
@@ -69,7 +83,7 @@ func dropLeadingBlankLines(s string) string {
 // mono has nothing holding it, and the seam between two blocks is exactly
 // where the difference shows (streammd.go).
 func renderMarkdownRaw(text string, width int) string {
-	return strings.Join(markdown.Blocks(text, mdOptions(width)), "\n")
+	return strings.Join(markdown.Blocks(text, replyOptions(width)), "\n")
 }
 
 // fenceLexerCache memoizes fenceLexer, for the reason lexerCache exists: the

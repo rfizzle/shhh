@@ -11,86 +11,86 @@
 
 ── layout ──────────────────────────────────────────────────
 · a tagged block · a comment spanning three lines lexed as one
-  The limit is checked once per round:                                     
+    The limit is checked once per round:                                   
                                                                            
-    go                                                                     
-    /* The cap is 120 rounds,                                              
-       raised from 60 in 2 steps. */                                       
-    const limit = 120
+      go                                                                   
+      /* The cap is 120 rounds,                                            
+         raised from 60 in 2 steps. */                                     
+      const limit = 120
 
 
 · a bare block · called code
-  Then run:                                                                
+    Then run:                                                              
                                                                            
-    code                                                                   
-    make tui-shot SCENE=copy-block
+      code                                                                 
+      make tui-shot SCENE=copy-block
 
 
 · a block that folds · the heading stays one word
-  The scene runs at both widths:                                           
+    The scene runs at both widths:                                         
                                                                            
-    sh                                                                     
-    make tui-shot SCENE=copy-block COLS=110 ROWS=40 && make tui-shot SCENE=
-    copy-block COLS=60 ROWS=40
+      sh                                                                   
+      make tui-shot SCENE=copy-block COLS=110 ROWS=40 && make tui-shot SCEN
+      E=copy-block COLS=60 ROWS=40
 
 
 · inside a list item · the heading in the item's hang
-  Two checks:                                                              
+    Two checks:                                                            
                                                                            
-  1. Capture the scene:                                                    
+    1. Capture the scene:                                                  
                                                                            
-       sh                                                                  
-       make tui-shot SCENE=copy-block                                      
+         sh                                                                
+         make tui-shot SCENE=copy-block                                    
                                                                            
-  2. Read every golden.
+    2. Read every golden.
 
 
 · inside a quote · the heading behind the rail
-  | The test:                                                              
-  |                                                                        
-  |   go                                                                   
-  |   func TestCopy(t *testing.T) {}
+    | The test:                                                            
+    |                                                                      
+    |   go                                                                 
+    |   func TestCopy(t *testing.T) {}
 
 
 ── ansi ────────────────────────────────────────────────────
 · a tagged block · a comment spanning three lines lexed as one
-  The limit is checked once per round:                                     
+    The limit is checked once per round:                                   
                                                                            
-    go                                                                     
-    /* The cap is 120 rounds,                                              
-       raised from 60 in 2 steps. */                                       
-    const limit = 120
+      go                                                                   
+      /* The cap is 120 rounds,                                            
+         raised from 60 in 2 steps. */                                     
+      const limit = 120
 
 
 · a bare block · called code
-  Then run:                                                                
+    Then run:                                                              
                                                                            
-    code                                                                   
-    make tui-shot SCENE=copy-block
+      code                                                                 
+      make tui-shot SCENE=copy-block
 
 
 · a block that folds · the heading stays one word
-  The scene runs at both widths:                                           
+    The scene runs at both widths:                                         
                                                                            
-    sh                                                                     
-    make tui-shot SCENE=copy-block COLS=110 ROWS=40 && make tui-shot SCENE=
-    copy-block COLS=60 ROWS=40
+      sh                                                                   
+      make tui-shot SCENE=copy-block COLS=110 ROWS=40 && make tui-shot SCEN
+      E=copy-block COLS=60 ROWS=40
 
 
 · inside a list item · the heading in the item's hang
-  Two checks:                                                              
+    Two checks:                                                            
                                                                            
-  1. Capture the scene:                                                    
+    1. Capture the scene:                                                  
                                                                            
-       sh                                                                  
-       make tui-shot SCENE=copy-block                                      
+         sh                                                                
+         make tui-shot SCENE=copy-block                                    
                                                                            
-  2. Read every golden.
+    2. Read every golden.
 
 
 · inside a quote · the heading behind the rail
-  | The test:                                                              
-  |                                                                        
-  |   go                                                                   
-  |   func TestCopy(t *testing.T) {}
+    | The test:                                                            
+    |                                                                      
+    |   go                                                                 
+    |   func TestCopy(t *testing.T) {}
 

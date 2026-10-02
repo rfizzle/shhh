@@ -665,13 +665,13 @@ func (m Model) declaredSteps() []plan.Step {
 // every caller tiles as it always did.
 func (m Model) blocksOf(es []entry) []transcriptBlock {
 	if m.framed == nil {
-		return stepBlocks(es, m.declaredSteps())
+		return stepBlocks(es, m.declaredSteps(), !m.showThink())
 	}
 	key := runOf(es)
 	if blocks, ok := m.framed.blocks[key]; ok {
 		return blocks
 	}
-	blocks := stepBlocks(es, m.declaredSteps())
+	blocks := stepBlocks(es, m.declaredSteps(), !m.showThink())
 	if m.framed.blocks == nil {
 		m.framed.blocks = map[blockRun][]transcriptBlock{}
 	}

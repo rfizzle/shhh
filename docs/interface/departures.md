@@ -437,17 +437,17 @@ The catalogue left open where a thought between two rounds of one step goes,
 since it gives prose no place on a card's band but the body. The binary draws
 it where it was thought: the card ends there, and the calls after it are a
 card of their own. The old row stood inside the step and was hidden with the
-calls whenever the card was closed.
+calls whenever the card was closed. At `low`, where the thought is dropped,
+nothing stands there to end the card, and the step stays one card.
 
 ## Thinking and the checkpoint take the body column, the answer keeps its own
 
-The catalogue sets every paragraph of prose at the body column. The binary
-moves the two kinds of model prose nobody asked a question for there —
-thinking and the progress checkpoint, beside the compaction's summary that
-already sat there — and leaves the answer and a mid-turn paragraph on the
-content column every other entry starts on. Moving the answer moves every
-transcript there is, and is a change to the reply rather than to the rows
-the catalogue's eleventh screen settled.
+*Withdrawn: every block of prose is at the body column.* The catalogue sets
+every paragraph of prose at the body column, and the binary once moved only
+thinking and the progress checkpoint there, leaving the answer and a mid-turn
+paragraph on the content column. The answer and the paragraph are at the body
+column now too, with the code blocks inside them, so nothing is left of the
+departure. The heading keeps its name for the citations that point here.
 
 ## A notice's words where the catalogue drew none
 

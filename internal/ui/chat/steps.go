@@ -146,7 +146,16 @@ func isActivityEntry(e entry) bool {
 // think in ends where the thought stands and the calls after it are a card
 // of their own (docs/interface/surfaces.md#the-think-row). Left inside, it
 // was drawn nowhere while the card stood for its calls.
-func isStepMember(e entry) bool {
+//
+// Unless the rung drops it (dropThink, at low). Then nothing stands there,
+// and a stop at an empty line split the step in two: the title as bare
+// prose above a card with no body, or a first card and a second nothing
+// titled. A thought not drawn is taken into the step like a notice, and
+// draws nothing there either.
+func isStepMember(e entry, dropThink bool) bool {
+	if e.kind == entryThink && dropThink {
+		return true
+	}
 	return isActivityEntry(e) || (!entryIsBlock(e) && e.kind != entryAssistant)
 }
 
@@ -161,7 +170,7 @@ func isStepMember(e entry) bool {
 // taken into it as well, and ends it: where the model said nothing about the
 // calls, the reading's sentence is what the card has for a body
 // (docs/interface/surfaces.md#the-step).
-func callRun(es []entry, i int) int {
+func callRun(es []entry, i int, dropThink bool) int {
 	// A call that was refused is a card of its own: it is a call a step
 	// asked for and nothing it would have done happened, so a card counting
 	// what ran around it would read as its answer.
@@ -169,9 +178,16 @@ func callRun(es []entry, i int) int {
 	if !isActivityEntry(es[i]) || refusedCall(es[i]) {
 		return 1
 	}
+	// A thought the rung drops does not end the run either, for the reason
+	// it does not end a step (isStepMember); one the run ends on is left
+	// for whatever comes after it, as a step leaves a trailing notice.
 	n := 0
-	for i+n < len(es) && (isActivityEntry(es[i+n]) && !refusedCall(es[i+n]) || es[i+n].kind == entryPicture) {
+	for i+n < len(es) && (isActivityEntry(es[i+n]) && !refusedCall(es[i+n]) || es[i+n].kind == entryPicture ||
+		dropThink && es[i+n].kind == entryThink) {
 		n++
+	}
+	for es[i+n-1].kind == entryThink {
+		n--
 	}
 	if i+n < len(es) && es[i+n].kind == entrySummary {
 		n++
@@ -225,7 +241,10 @@ const checkpointTitleMaxRunes = 120
 // the number stamped on its title entry rather than the running count, the
 // steps nobody has reached are appended as headers with no rows, and a group
 // the plan never declared is marked off it.
-func stepBlocks(es []entry, declared []plan.Step) []transcriptBlock {
+//
+// dropThink is the rung not drawing thinking (showThink), under which a
+// thought no longer ends the step it stands in (isStepMember).
+func stepBlocks(es []entry, declared []plan.Step, dropThink bool) []transcriptBlock {
 	var blocks []transcriptBlock
 	ordinal := 0
 	claimed := map[int]bool{}
@@ -239,7 +258,7 @@ func stepBlocks(es []entry, declared []plan.Step) []transcriptBlock {
 				continue
 			}
 			j := i + 1
-			for j < len(es) && isStepMember(es[j]) {
+			for j < len(es) && isStepMember(es[j], dropThink) {
 				j++
 			}
 			// Trailing notices belong to whatever comes next, not to this
@@ -276,7 +295,7 @@ func stepBlocks(es []entry, declared []plan.Step) []transcriptBlock {
 		// it has anything to say about them is the deepest burial there is,
 		// and it is exactly the turn with no step to stand them under
 		// (card.go).
-		run := callRun(es, i)
+		run := callRun(es, i, dropThink)
 		blocks = append(blocks, transcriptBlock{start: i, end: i + run})
 		i += run
 	}
@@ -291,7 +310,7 @@ func stepBlocks(es []entry, declared []plan.Step) []transcriptBlock {
 	// drew its whole block a second time when the batch arrived: one header,
 	// one ordinal, twice.
 	tail := len(es)
-	for tail > 0 && isStepMember(es[tail-1]) && !isActivityEntry(es[tail-1]) && es[tail-1].kind != entryPicture {
+	for tail > 0 && isStepMember(es[tail-1], dropThink) && !isActivityEntry(es[tail-1]) && es[tail-1].kind != entryPicture {
 		tail--
 	}
 	for k := len(blocks) - 1; k >= 0; k-- {

@@ -182,6 +182,32 @@ func TestGluedBlocksAreTheWholeRender(t *testing.T) {
 	}
 }
 
+// An indent sets every row further in on the left alone: the words start
+// that much past the margin, wrap that much sooner, the padding still runs
+// to the right margin, and the seam is padded to the same column.
+func TestIndentSetsTheDocumentIn(t *testing.T) {
+	const src = "A paragraph long enough to wrap at this width, twice over at least.\n\n```go\nx := 1\n```\n"
+	for _, indent := range []int{0, 2} {
+		o := Options{Width: 40, Indent: indent}
+		rows, fences := Layout(src, o)
+		lead := strings.Repeat(" ", Margin+indent)
+		for i, row := range rows {
+			if w := ansi.StringWidth(row); w != o.FillWidth() || w != o.Width-Margin {
+				t.Errorf("indent %d row %d is %d wide, want %d", indent, i, w, o.Width-Margin)
+			}
+			if strings.TrimSpace(row) != "" && !strings.HasPrefix(ansi.Strip(row), lead) {
+				t.Errorf("indent %d row %d does not start past %d columns: %q", indent, i, len(lead), row)
+			}
+		}
+		if len(fences) != 1 || strings.TrimSpace(ansi.Strip(rows[fences[0].Heading])) != "go" {
+			t.Fatalf("indent %d: the fence's heading is not where Layout says: %v %q", indent, fences, rows)
+		}
+		if got := ansi.Strip(rows[fences[0].Heading]); !strings.HasPrefix(got, lead+"  go") {
+			t.Errorf("indent %d: the heading moves with the block: %q", indent, got)
+		}
+	}
+}
+
 // A pane too narrow to lay anything out still returns rows rather than
 // panicking or looping: the floor is a floor, not a layout.
 func TestNarrowPaneStillRenders(t *testing.T) {

@@ -538,7 +538,7 @@ func isLinkRefDefinition(line string) bool {
 // padded blank row between any two top-level blocks, always. So the seam is
 // simply written.
 func renderContinuation(text string, width int) string {
-	rows := markdown.Blocks(text, mdOptions(width))
+	rows := markdown.Blocks(text, replyOptions(width))
 	if len(rows) == 0 {
 		return ""
 	}
@@ -558,5 +558,5 @@ func seamRow(width int) string {
 	if width <= 0 {
 		width = 80
 	}
-	return strings.Repeat(" ", markdown.Options{Width: width}.FillWidth())
+	return strings.Repeat(" ", replyOptions(width).FillWidth())
 }

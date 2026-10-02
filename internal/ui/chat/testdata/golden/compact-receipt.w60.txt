@@ -42,8 +42,8 @@
 ❯ Move the round limit into the loop.
 ──────────────────────────────────────────────────────
 
-  Moved it, and the limit is read from one place    
-  now.
+    Moved it, and the limit is read from one place  
+    now.
 
 
 · folded back up
@@ -68,8 +68,8 @@
 ❯ Move the round limit into the loop.
 ──────────────────────────────────────────────────────
 
-  Moved it, and the limit is read from one place    
-  now.
+    Moved it, and the limit is read from one place  
+    now.
 
 
 · the floor: nothing left that a summary could stand in for
@@ -80,8 +80,8 @@
 ❯ Move the round limit into the loop.
 ──────────────────────────────────────────────────────
 
-  Moved it, and the limit is read from one place    
-  now.
+    Moved it, and the limit is read from one place  
+    now.
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -117,8 +117,8 @@
 ␛[94m❯␛[m ␛[97mMove the round limit into the loop.␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252mMoved it, and the ␛[m␛[3;38;5;252mlimit␛[m␛[38;5;252m is read from one place ␛[m   
-  ␛[38;5;252mnow.␛[m
+    ␛[38;5;252mMoved it, and the ␛[m␛[3;38;5;252mlimit␛[m␛[38;5;252m is read from one place ␛[m 
+    ␛[38;5;252mnow.␛[m
 
 
 · folded back up
@@ -143,8 +143,8 @@
 ␛[94m❯␛[m ␛[97mMove the round limit into the loop.␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252mMoved it, and the ␛[m␛[3;38;5;252mlimit␛[m␛[38;5;252m is read from one place ␛[m   
-  ␛[38;5;252mnow.␛[m
+    ␛[38;5;252mMoved it, and the ␛[m␛[3;38;5;252mlimit␛[m␛[38;5;252m is read from one place ␛[m 
+    ␛[38;5;252mnow.␛[m
 
 
 · the floor: nothing left that a summary could stand in for
@@ -155,6 +155,6 @@
 ␛[94m❯␛[m ␛[97mMove the round limit into the loop.␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252mMoved it, and the ␛[m␛[3;38;5;252mlimit␛[m␛[38;5;252m is read from one place ␛[m   
-  ␛[38;5;252mnow.␛[m
+    ␛[38;5;252mMoved it, and the ␛[m␛[3;38;5;252mlimit␛[m␛[38;5;252m is read from one place ␛[m 
+    ␛[38;5;252mnow.␛[m
 

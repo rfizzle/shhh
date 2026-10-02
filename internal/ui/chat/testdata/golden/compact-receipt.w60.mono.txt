@@ -42,8 +42,8 @@
 ❯ Move the round limit into the loop.
 ──────────────────────────────────────────────────────
 
-  Moved it, and the *limit* is read from one place  
-  now.
+    Moved it, and the *limit* is read from one place
+    now.
 
 
 · folded back up
@@ -68,8 +68,8 @@
 ❯ Move the round limit into the loop.
 ──────────────────────────────────────────────────────
 
-  Moved it, and the *limit* is read from one place  
-  now.
+    Moved it, and the *limit* is read from one place
+    now.
 
 
 · the floor: nothing left that a summary could stand in for
@@ -80,8 +80,8 @@
 ❯ Move the round limit into the loop.
 ──────────────────────────────────────────────────────
 
-  Moved it, and the *limit* is read from one place  
-  now.
+    Moved it, and the *limit* is read from one place
+    now.
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -117,8 +117,8 @@
 ␛[38;5;254m❯␛[m Move the round limit into the loop.
 ␛[38;5;244m──────────────────────────────────────────────────────␛[m
 
-  Moved it, and the *limit* is read from one place  
-  now.
+    Moved it, and the *limit* is read from one place
+    now.
 
 
 · folded back up
@@ -143,8 +143,8 @@
 ␛[38;5;254m❯␛[m Move the round limit into the loop.
 ␛[38;5;244m──────────────────────────────────────────────────────␛[m
 
-  Moved it, and the *limit* is read from one place  
-  now.
+    Moved it, and the *limit* is read from one place
+    now.
 
 
 · the floor: nothing left that a summary could stand in for
@@ -155,6 +155,6 @@
 ␛[38;5;254m❯␛[m Move the round limit into the loop.
 ␛[38;5;244m──────────────────────────────────────────────────────␛[m
 
-  Moved it, and the *limit* is read from one place  
-  now.
+    Moved it, and the *limit* is read from one place
+    now.
 

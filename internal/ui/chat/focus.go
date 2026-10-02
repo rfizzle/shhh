@@ -1001,8 +1001,8 @@ func appendRendered(lines []string, s string) []string {
 // Every kind the cursor can stand on does: the calls, commands, diffs,
 // thoughts, summaries and run headers that are literally activity rows; the
 // recovery rows a provider failure, a dropped stream and a round-limit pause
-// are drawn as; the block a turn closes on; the model's prose, inset by
-// exactly the gutter (internal/ui/markdown's margin); and a notice, which
+// are drawn as; the block a turn closes on; the model's prose, inset past
+// the gutter to the body column (highlight.go); and a notice, which
 // starts on the content column with them (render.go).
 //
 // The list is still a list rather than a `return true` because the answer is

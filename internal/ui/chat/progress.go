@@ -91,8 +91,8 @@ const (
 // body under a row is drawn at, on the body column a card's sentence and the
 // model's thinking start on — flat prose on bare screen, a rung under the
 // answer (docs/interface/surfaces.md#the-progress-checkpoint) — bounded and
-// counted (docs/interface/principles.md#fold-never-hide). The answer keeps
-// the content column; this, like thinking, is a rung under it.
+// counted (docs/interface/principles.md#fold-never-hide). The answer stands
+// on the same column; this, like thinking, is a rung under it in weight.
 // See docs/interface/departures.md#thinking-and-the-checkpoint-take-the-body-column-the-answer-keeps-its-own.
 //
 // It is not the markdown render an answer gets. A checkpoint is a few

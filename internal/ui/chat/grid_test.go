@@ -136,25 +136,27 @@ func TestTranscriptGrid_NoEntryStartsInsideTheMarkerGutter(t *testing.T) {
 
 // TestTranscriptGrid_EveryKindSharesOneLeftEdge measures the entries the
 // story of a turn is told in — a check-in, a steer, the tree reading, an
-// error, an arriving reply and the mutation rail a turn closes on — and
-// requires every one of them to begin in the same column at every width. A
-// public status note is model prose a rung under the answer, and starts on
-// the body column a card's sentence does.
+// error and the mutation rail a turn closes on — and requires every one of
+// them to begin in the same column at every width. The model's prose — the
+// arriving reply, and a public status note a rung under it — starts on the
+// body column a card's sentence does.
 func TestTranscriptGrid_EveryKindSharesOneLeftEdge(t *testing.T) {
 	// Each probe is a substring only one entry's first line carries, short
 	// enough to survive the narrowest pane's clip.
 	probes := map[string]string{
-		"the check-in":       "Check-in —",
-		"the steer":          "Steered —",
-		"the tree reading":   "tree moved —",
-		"the error":          "✗ the notebook",
-		"the arriving reply": "Re-running the suite",
+		"the check-in":     "Check-in —",
+		"the steer":        "Steered —",
+		"the tree reading": "tree moved —",
+		"the error":        "✗ the notebook",
 	}
 	for _, width := range gridWidths {
 		m := gridModel(t, width, 40)
 		lines := strings.Split(ansi.Strip(m.renderHistory()), "\n")
 		if line, ok := lineWith(lines, "The objective is one home"); !ok || contentColumn(line) != components.GridDetailIndent {
 			t.Errorf("w%d: the public status note starts on the body column: %q", width, line)
+		}
+		if line, ok := lineWith(lines, "Re-running the suite"); !ok || contentColumn(line) != components.GridDetailIndent {
+			t.Errorf("w%d: the arriving reply starts on the body column: %q", width, line)
 		}
 		for what, probe := range probes {
 			line, ok := lineWith(lines, probe)

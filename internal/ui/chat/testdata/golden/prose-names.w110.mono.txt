@@ -14,8 +14,8 @@
 ❯ where is the round ceiling read
 ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-  The ceiling is declared in `round.go` and read by `loop` in `internal/agent/loop.go`. **Nothing else
-  reads it**, so `go test ./internal/agent` covers it.
+    The ceiling is declared in `round.go` and read by `loop` in `internal/agent/loop.go`. **Nothing   
+    else reads it**, so `go test ./internal/agent` covers it.
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -23,6 +23,6 @@
 ␛[38;5;254m❯␛[m where is the round ceiling read
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  The ceiling is declared in `round.go` and read by `loop` in `internal/agent/loop.go`. **Nothing else
-  reads it**, so `go test ./internal/agent` covers it.
+    The ceiling is declared in `round.go` and read by `loop` in `internal/agent/loop.go`. **Nothing   
+    else reads it**, so `go test ./internal/agent` covers it.
 

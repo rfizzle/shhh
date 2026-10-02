@@ -941,8 +941,8 @@ func (m Model) wordWrap(text string, width int) string {
 // promptMarked writes the ❯ into the first row of a sent message, in the two
 // columns internal/ui/markdown holds every document back from the edge by.
 // The mark lands in the transcript's own pointer column that way, so a sent
-// message and the activity rows under it share one left edge and the reply
-// keeps the plain indent (the `Main` artboard's first two rows).
+// message and the activity rows under it share one left edge (the `Main`
+// artboard's first two rows).
 func promptMarked(doc string) string {
 	first, rest, multi := strings.Cut(doc, "\n")
 	marked := sty.PromptMark.Render("❯") + " " + strings.TrimPrefix(first, strings.Repeat(" ", markdown.Margin))

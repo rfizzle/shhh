@@ -1,15 +1,18 @@
 package chat
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/alecthomas/chroma/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
 var ansiRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
@@ -330,4 +333,144 @@ func TestFenceSyntax_AConstructSpanningLinesIsLexedWhole(t *testing.T) {
 			}
 		})
 	}
+}
+
+// proseTurn is a turn the way the Rows catalogue's model screen draws it: a
+// thought, a step, a paragraph the model wrote between its calls, the write
+// it led to, and the reply with a list and a code block in it.
+func proseTurn() []entry {
+	return []entry{
+		{kind: entryUser, text: "add the block copy to the backlog"},
+		{kind: entryThink, text: "Both checks should be cheap: one grep for the fence marker in docs, " +
+			"one look at the scene driver's event list."},
+		{kind: entryAssistant, text: "Checking the docs and the scene driver"},
+		searchEntry("```", 300*time.Millisecond),
+		readEntry("scripts/tui/drive.sh", 200*time.Millisecond),
+		{kind: entryAssistant, text: "Both checks pass. The reply renderer already knows where a fenced " +
+			"block starts and ends, so copying one needs no new parse.\n\n" +
+			"I'll write the epic with two stories."},
+		{kind: entryTool, toolName: "write_file", toolArgs: `{"path":".plan/BACKLOG.md"}`,
+			toolResult: "wrote .plan/BACKLOG.md", duration: 1100 * time.Millisecond},
+		{kind: entryAssistant, text: "I've added the request to .plan/BACKLOG.md as a new epic, " +
+			"A Code Block Is Copied by Itself, with two stories.\n\n" +
+			"- [c] on a focused code block copies it, keyboard first.\n" +
+			"- Clicking a code block copies it; the block flashes once.\n\n" +
+			"The copy itself is three lines in keys.go:\n\n" +
+			"```go\ncase \"c\":\n\treturn m, m.copyBlock(m.focusedBlock())\n```"},
+	}
+}
+
+// proseLines renders proseTurn at a width and returns its rows, unstyled.
+func proseLines(t *testing.T, width int) []string {
+	t.Helper()
+	m := frameModel(t, width, 40)
+	m.transcript = proseTurn()
+	m.invalidateRenderCache()
+	return strings.Split(ansi.Strip(m.renderHistory()), "\n")
+}
+
+// paragraphFrom is the rows from the first one carrying probe up to the next
+// blank row: one paragraph of the render.
+func paragraphFrom(t *testing.T, lines []string, probe string) []string {
+	t.Helper()
+	for i, l := range lines {
+		if !strings.Contains(l, probe) {
+			continue
+		}
+		var rows []string
+		for _, r := range lines[i:] {
+			if strings.TrimSpace(r) == "" {
+				break
+			}
+			rows = append(rows, r)
+		}
+		return rows
+	}
+	t.Fatalf("the render holds no %q:\n%s", probe, strings.Join(lines, "\n"))
+	return nil
+}
+
+// onBodyColumn reports whether a row's words start exactly at the body
+// column.
+func onBodyColumn(row string) bool {
+	body := strings.Repeat(" ", components.GridDetailIndent)
+	return strings.HasPrefix(row, body) && !strings.HasPrefix(row, body+" ")
+}
+
+// TestReply_SitsAtTheBodyColumn: the reply starts four columns in, on the
+// column a card's sentence and a thought start on, wraps back to it, keeps
+// the markdown's right margin, and carries its list and its code block with
+// it (docs/interface/surfaces.md#the-leading-columns).
+func TestReply_SitsAtTheBodyColumn(t *testing.T) {
+	const first = "    I've added the request to .plan/BACKLOG.md as a new epic"
+	body := strings.Repeat(" ", components.GridDetailIndent)
+	for _, width := range goldenWidths {
+		t.Run(fmt.Sprint(width), func(t *testing.T) {
+			lines := proseLines(t, width)
+			rows := paragraphFrom(t, lines, "I've added the request")
+			// The narrowest pane wraps inside the literal, after "as a"; its
+			// first row is still the literal's opening.
+			want := first
+			if width < 80 {
+				want = strings.TrimSuffix(first, " new epic")
+			}
+			if !strings.HasPrefix(rows[0], want) {
+				t.Errorf("the reply's first row: %q, want it to open %q", rows[0], want)
+			}
+			for _, r := range rows {
+				if !onBodyColumn(r) {
+					t.Errorf("a reply row is off the body column: %q", r)
+				}
+				if w := ansi.StringWidth(strings.TrimRight(r, " ")); w > width-2 {
+					t.Errorf("a reply row reaches into the right margin (%d of %d): %q", w, width, r)
+				}
+			}
+			for _, tc := range []struct{ what, row string }{
+				{"a list item", body + "· [c] on a focused"},
+				{"the paragraph after the list", body + "The copy itself"},
+				{"the code block's heading, two further in", body + "  go"},
+				{"the code, under its heading", body + "  case \"c\":"},
+			} {
+				found := false
+				for _, l := range lines {
+					if strings.HasPrefix(l, tc.row) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("%s does not open %q:\n%s", tc.what, tc.row, strings.Join(lines, "\n"))
+				}
+			}
+		})
+	}
+}
+
+// TestParagraph_SitsAtTheBodyColumn: a paragraph the model wrote between its
+// calls is the reply's prose, at the reply's column, wrapped there.
+func TestParagraph_SitsAtTheBodyColumn(t *testing.T) {
+	for _, width := range goldenWidths {
+		t.Run(fmt.Sprint(width), func(t *testing.T) {
+			lines := proseLines(t, width)
+			for _, probe := range []string{"Both checks pass.", "I'll write the epic"} {
+				for _, r := range paragraphFrom(t, lines, probe) {
+					if !onBodyColumn(r) {
+						t.Errorf("a paragraph row is off the body column: %q", r)
+					}
+				}
+			}
+		})
+	}
+}
+
+// TestGolden_ProseColumn: the model's prose at the body column — a thought,
+// a paragraph between calls and the reply under the last card — beside the
+// cards whose sentences start on the same column.
+func TestGolden_ProseColumn(t *testing.T) {
+	captureBoundedGolden(t, "prose-column", "the model's prose at the body column", goldenWidths, func(width int) []golden.Panel {
+		m := frameModel(t, width, 40)
+		m.transcript = proseTurn()
+		m.invalidateRenderCache()
+		return []golden.Panel{{Label: "a thought, a step, a paragraph mid-turn, and the reply", View: m.renderHistory()}}
+	})
 }

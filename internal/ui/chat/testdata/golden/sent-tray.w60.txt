@@ -16,7 +16,7 @@
   ⟨▣ Image#1⟩  clipboard.png · 1440×900       412 KB  
 ──────────────────────────────────────────────────────
 
-  Moving the caption to the bar.
+    Moving the caption to the bar.
 
 
 · two pictures · a row each
@@ -26,7 +26,7 @@
   ⟨▣ Image#2⟩  clipboard.png · 1440×900       380 KB  
 ──────────────────────────────────────────────────────
 
-  Moving the caption to the bar.
+    Moving the caption to the bar.
 
 
 · reading's cursor on the second picture's row
@@ -37,7 +37,7 @@
 ❯ ⟨▣ Image#2⟩  clipboard.png · 1440×900       380 KB  
 ──────────────────────────────────────────────────────
 
-  Moving the caption to the bar.
+    Moving the caption to the bar.
 
 ────────────────────────────────────────────────────────
 [j/k] move · [enter] open it · [q] prompt     row 2 of 3
@@ -49,7 +49,7 @@
   ⟨▣ Image#2⟩  shot.png · 1440×900             95 KB  
 ──────────────────────────────────────────────────────
 
-  Moving the caption to the bar.
+    Moving the caption to the bar.
 
 
 · a text paste, closed
@@ -58,7 +58,7 @@
   ⟨¶ Paste#1⟩  paste-1.txt · 214 lines         12 KB  
 ──────────────────────────────────────────────────────
 
-  Moving the caption to the bar.
+    Moving the caption to the bar.
 
 
 · a text paste, opened · eight lines, then the tray's one key
@@ -76,7 +76,7 @@
     … 206 more · [enter] again for the rest           
 ──────────────────────────────────────────────────────
 
-  Moving the caption to the bar.
+    Moving the caption to the bar.
 
 
 · a PDF · its pages and its size, and nothing to open
@@ -85,7 +85,7 @@
   ⟨▤ File#1⟩   spec.pdf · 12 pages            1.2 MB  
 ──────────────────────────────────────────────────────
 
-  Moving the caption to the bar.
+    Moving the caption to the bar.
 
 
 · the sent picture's card
@@ -104,7 +104,7 @@
   ⟨▣ Image#2⟩  clipboard.png · 1440×900       380 KB  
 ──────────────────────────────────────────────────────
 
-  Moving the caption to the bar.
+    Moving the caption to the bar.
 
   · nothing staged · sent attachments are reached by
     handle: Image#1, Image#2
@@ -117,7 +117,7 @@
 ␛[38;5;241;48;5;234m  ␛[m␛[94;48;5;234m⟨▣ Image#1⟩  ␛[m␛[97;48;5;234mclipboard.png␛[m␛[38;5;241;48;5;234m · 1440×900       412 KB  ␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252mMoving the caption to the bar.␛[m
+    ␛[38;5;252mMoving the caption to the bar.␛[m
 
 
 · two pictures · a row each
@@ -127,7 +127,7 @@
 ␛[38;5;241;48;5;234m  ␛[m␛[94;48;5;234m⟨▣ Image#2⟩  ␛[m␛[97;48;5;234mclipboard.png␛[m␛[38;5;241;48;5;234m · 1440×900       380 KB  ␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252mMoving the caption to the bar.␛[m
+    ␛[38;5;252mMoving the caption to the bar.␛[m
 
 
 · reading's cursor on the second picture's row
@@ -138,7 +138,7 @@
 ␛[94m❯␛[m ␛[38;5;241m␛[m␛[97m␛[m␛[97m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97m⟨▣ ␛[m␛[48;5;62m␛[97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mImage#2⟩  clipboard.png · 1440×900       380 KB  ␛[m␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252mMoving the caption to the bar.␛[m
+    ␛[38;5;252mMoving the caption to the bar.␛[m
 
 ␛[38;5;241m────────────────────────────────────────────────────────␛[m
 ␛[38;5;103m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[q]␛[m␛[38;5;241m prompt␛[m     ␛[38;5;241mrow 2 of 3␛[m
@@ -150,7 +150,7 @@
 ␛[38;5;241;48;5;234m  ␛[m␛[94;48;5;234m⟨▣ Image#2⟩  ␛[m␛[97;48;5;234mshot.png␛[m␛[38;5;241;48;5;234m · 1440×900             95 KB  ␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252mMoving the caption to the bar.␛[m
+    ␛[38;5;252mMoving the caption to the bar.␛[m
 
 
 · a text paste, closed
@@ -159,7 +159,7 @@
 ␛[38;5;241;48;5;234m  ␛[m␛[94;48;5;234m⟨¶ Paste#1⟩  ␛[m␛[97;48;5;234mpaste-1.txt␛[m␛[38;5;241;48;5;234m · 214 lines         12 KB  ␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252mMoving the caption to the bar.␛[m
+    ␛[38;5;252mMoving the caption to the bar.␛[m
 
 
 · a text paste, opened · eight lines, then the tray's one key
@@ -177,7 +177,7 @@
 ␛[38;5;241;48;5;234m    ␛[m␛[38;5;241;48;5;234m… 206 more · [enter] again for the rest           ␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252mMoving the caption to the bar.␛[m
+    ␛[38;5;252mMoving the caption to the bar.␛[m
 
 
 · a PDF · its pages and its size, and nothing to open
@@ -186,7 +186,7 @@
 ␛[38;5;241;48;5;234m  ␛[m␛[94;48;5;234m⟨▤ File#1⟩   ␛[m␛[97;48;5;234mspec.pdf␛[m␛[38;5;241;48;5;234m · 12 pages            1.2 MB  ␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252mMoving the caption to the bar.␛[m
+    ␛[38;5;252mMoving the caption to the bar.␛[m
 
 
 · the sent picture's card
@@ -205,7 +205,7 @@
 ␛[38;5;241;48;5;234m  ␛[m␛[94;48;5;234m⟨▣ Image#2⟩  ␛[m␛[97;48;5;234mclipboard.png␛[m␛[38;5;241;48;5;234m · 1440×900       380 KB  ␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252mMoving the caption to the bar.␛[m
+    ␛[38;5;252mMoving the caption to the bar.␛[m
 
   ␛[38;5;241m·␛[m ␛[38;5;241mnothing staged · sent attachments are reached by␛[m
     ␛[38;5;241mhandle: Image#1, Image#2␛[m

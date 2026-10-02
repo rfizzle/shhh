@@ -30,20 +30,18 @@
   ⚙ read 2 files in internal/agent/             0.8s
 
 
-  The loop owns the count; round.go only declares   
-  the constant.
+    The loop owns the count; round.go only declares 
+    the constant.
 
 
 · low · the rung drops thinking
 ❯ fix the round limit
 ──────────────────────────────────────────────────────
 
-  ⚙ read internal/agent/loop.go
+  ⚙ read 3 files in internal/agent/             1.2s
 
-  ⚙ read 2 files in internal/agent/             0.8s
-
-  The loop owns the count; round.go only declares   
-  the constant.
+    The loop owns the count; round.go only declares 
+    the constant.
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -67,18 +65,16 @@
   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m␛[38;5;244m 2 files in internal/agent/␛[m             ␛[38;5;244m0.8s␛[m
 
 
-  The loop owns the count; round.go only declares   
-  the constant.
+    The loop owns the count; round.go only declares 
+    the constant.
 
 
 · low · the rung drops thinking
 ␛[38;5;254m❯␛[m fix the round limit
 ␛[38;5;244m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/loop.go␛[m
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m␛[38;5;244m 3 files in internal/agent/␛[m             ␛[38;5;244m1.2s␛[m
 
-  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m␛[38;5;244m 2 files in internal/agent/␛[m             ␛[38;5;244m0.8s␛[m
-
-  The loop owns the count; round.go only declares   
-  the constant.
+    The loop owns the count; round.go only declares 
+    the constant.
 

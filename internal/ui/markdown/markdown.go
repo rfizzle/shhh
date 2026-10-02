@@ -71,6 +71,12 @@ type Options struct {
 	Syntax func(lang string, lines []string) [][]Segment
 	// Prose is the register a paragraph's plain text is drawn in.
 	Prose ProseTone
+	// Indent sets the whole document further in than the margin, on the
+	// left alone: every row starts Indent columns past it and wraps that
+	// much sooner, and the right margin is unchanged. It is a field rather
+	// than a second margin because the rows are padded to the column they
+	// filled, and a caller that shifted them afterwards would pad past it.
+	Indent int
 }
 
 // ProseTone selects the grey a document's plain text takes. Everything else
@@ -91,15 +97,15 @@ const (
 )
 
 // contentWidth is the widest a row's own content may be.
-func (o Options) contentWidth() int { return max(o.Width-2*Margin, 1) }
+func (o Options) contentWidth() int { return max(o.Width-2*Margin-o.Indent, 1) }
 
 // FillWidth is the column a row is padded out to: the content plus the left
-// margin, leaving the right margin empty.
+// margin and the indent, leaving the right margin empty.
 //
 // It is exported because the streaming cache writes the seam between two
 // blocks itself, and a seam padded to anything else would break the rule that
 // a glued render is the render of the whole message (chat/streammd.go).
-func (o Options) FillWidth() int { return o.contentWidth() + Margin }
+func (o Options) FillWidth() int { return o.contentWidth() + Margin + o.Indent }
 
 // parser is built once. goldmark's parser holds no per-document state.
 //
@@ -280,7 +286,7 @@ func headingMark(src string) string {
 // The fill is written as bare spaces on purpose. A styled space costs eleven
 // bytes and says nothing: the colour of a space is the colour of nothing.
 func (r *renderer) pad(row string) string {
-	row = strings.Repeat(" ", Margin) + row
+	row = strings.Repeat(" ", Margin+r.opt.Indent) + row
 	if n := r.opt.FillWidth() - ansi.StringWidth(row); n > 0 {
 		row += strings.Repeat(" ", n)
 	}

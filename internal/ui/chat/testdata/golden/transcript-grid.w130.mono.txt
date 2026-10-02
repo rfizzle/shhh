@@ -38,7 +38,7 @@
  ▎✎ 1 file changed +12 −4 · all tracked in git
   ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
-  Re-running the suite now that the constant has one home.
+    Re-running the suite now that the constant has one home.
 
 · the whole surface · the same edge in the pane it sits in
    shhh chat · gpt-4o                                                                                                             
@@ -66,7 +66,7 @@
    ▎✎ 1 file changed +12 −4 · all tracked in git                               ┃ │                                                
     ✗ go test ./internal/agent/... failing · exit 1 · 21s                      ┃ │                                                
                                                                                ┃ │                                                
-    Re-running the suite now that the constant has one home.                   ┃ │                                                
+      Re-running the suite now that the constant has one home.                 ┃ │                                                
   ╭─ ⠋ streaming… ─────────────────────────────────────────────────────────────────────────────────────────────────────────────╮  
   │ ▸                                                                                                                          │  
   ├─ ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ──────────────────────────────────────────────────────────────────────────────────┤  
@@ -130,7 +130,7 @@
  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · all tracked in git␛[m
   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 21s␛[m
 
-  Re-running the suite now that the constant has one home.
+    Re-running the suite now that the constant has one home.
 
 · the whole surface · the same edge in the pane it sits in
   ␛[38;5;254;1m shhh chat␛[38;5;244;22m · gpt-4o␛[m                                                                                                             
@@ -158,7 +158,7 @@
    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · all tracked in git␛[m                               ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m                                                
     ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 21s␛[m                      ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m                                                
                                                                                ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m                                                
-    Re-running the suite now that the constant has one home.                   ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m                                                
+      Re-running the suite now that the constant has one home.                 ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m                                                
   ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ streaming…␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m  
   ␛[38;5;244m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m                                                                                                                        ␛[m ␛[38;5;244m│␛[m  
   ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────┤␛[m  
