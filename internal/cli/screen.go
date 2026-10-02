@@ -36,6 +36,10 @@ type takeover[R any] interface {
 type screenModel[R any] struct {
 	screen takeover[R]
 	width  int
+	// height is the terminal's rows, which the ground is laid down to: a
+	// screen whose render stops short of the foot still stands on the ground
+	// to the window's last row. Zero until the terminal says.
+	height int
 	answer func(done bool, result R) tea.Cmd
 	// begin is what the program starts by doing, for a screen a command has
 	// to feed — the doctor's first probe and its spinner. nil starts nothing.
@@ -51,18 +55,28 @@ func newScreenModel[R any](screen takeover[R], width int, answer func(bool, R) t
 	return screenModel[R]{screen: screen, width: width, answer: answer}
 }
 
+// Init asks the terminal what its own background is, as the chat does: under
+// the auto theme the answer decides which table the screen draws with and
+// whether its ground is painted, and a screen that never asked would stand on
+// the dark table's ground on a light terminal the chat leaves alone
+// (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
 func (m screenModel[R]) Init() tea.Cmd {
 	if m.begin == nil {
-		return nil
+		return tea.RequestBackgroundColor
 	}
-	return m.begin()
+	return tea.Batch(tea.RequestBackgroundColor, m.begin())
 }
 
 func (m screenModel[R]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
+		m.width, m.height = msg.Width, msg.Height
 		m.screen.SetSize(msg.Width, msg.Height)
+		return m, nil
+	case tea.BackgroundColorMsg:
+		// Every frame is rendered afresh from the palette, so there is no
+		// cache to drop when the answer moves it.
+		components.SetGround(msg.IsDark())
 		return m, nil
 	case tea.KeyPressMsg:
 		return m, m.answer(m.screen.Update(msg))
@@ -73,11 +87,10 @@ func (m screenModel[R]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, m.other(msg)
 }
 
-// View is the frame: the screen, on the alt screen it takes over. In v2 that
-// state is a field on the view rather than an option the host passes to
-// NewProgram.
+// View is the frame: the screen, on the alt screen it takes over and on the
+// theme's ground, through the one door every full screen takes
+// (components.FullScreen), so leaving the chat for one of these does not
+// change the colour of the window.
 func (m screenModel[R]) View() tea.View {
-	v := tea.NewView(m.screen.View(m.width))
-	v.AltScreen = true
-	return v
+	return components.FullScreen(components.GroundFrame(m.screen.View(m.width), m.width, m.height))
 }

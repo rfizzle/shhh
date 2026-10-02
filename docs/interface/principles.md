@@ -366,6 +366,16 @@ background belongs to them and to every other program on that screen, which
 is why the light and CharmTone themes, whose bands are steps off their
 grounds rather than half of a pair, leave it alone until asked.
 
+The ground is the whole binary's, not the chat's. Every screen that takes the
+terminal — the session, every surface over it, and the screens a command
+opens on its own, from the saved-chat browser and the history to the settings
+and the doctor — stands on the same ground, painted the same way, and asks the
+terminal the same question about its own background before it chooses a
+table. A ground that stopped at the chat's edge would make leaving it a jump
+in colour on every terminal whose own background is not the theme's, which is
+the very terminal the ground is painted for. The switch is one switch for the
+same reason: turned off, no screen paints it.
+
 The exact rungs are the design system's. What is fixed here is that there are
 three of them, that five defer to the terminal, that the dark ground is
 painted and the others are asked for, and that no surface may reach for a
