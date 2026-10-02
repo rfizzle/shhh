@@ -561,19 +561,9 @@ func onBand(line string, width int) string {
 	return bg + strings.ReplaceAll(line, ansiReset, ansiReset+bg) + strings.Repeat(" ", pad) + ansiReset
 }
 
-// CardBand is the ground a card is drawn on: the palette's band, stepped one
-// rung up where the screen is painted with the same colour, which the dark
-// theme's own ground is. A band the colour of the ground under it is no
-// band at all, and the card would be its padding rows alone on a table that
-// has a band to give it.
+// CardBand is the ground a card is drawn on: the palette's band, the same
+// whether or not the screen under it is painted. The dark band is half of
+// the catalogue's pair with the dark ground, so stepping it off whatever
+// ground stood under it would draw a card the catalogue does not.
 // See docs/interface/departures.md#a-card-on-a-painted-ground-steps-its-band-up.
-func CardBand() Token {
-	if ground := GroundColor(); ground != nil && sameColor(ground, Palette.Band.Color()) {
-		return steppedBand
-	}
-	return Palette.Band
-}
-
-// steppedBand is the band one rung up the greyscale ramp from 234, which is
-// the one band a painted ground can hide.
-var steppedBand = band("#262626", "235")
+func CardBand() Token { return Palette.Band }

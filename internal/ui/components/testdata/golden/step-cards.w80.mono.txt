@@ -68,11 +68,13 @@
     ?? .plan/
 
 
-· on a painted ground · the band a rung up
+· on the painted ground · the catalogue's pair, the band on the screen
+
 
  ▎✎ wrote .plan/BACKLOG.md                                         +41 · 1m04s
     Writing the epic and two stories now, appended after the last one.
     + ## A Code Block Is Copied by Itself              ≡ on target · 2 stories
+
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -134,9 +136,11 @@
     ␛[38;5;244m?? .plan/␛[m
 
 
-· on a painted ground · the band a rung up
+· on the painted ground · the catalogue's pair, the band on the screen
+
 
  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254mwrote␛[m ␛[38;5;244m.plan/BACKLOG.md␛[m                                         ␛[38;5;254m+41␛[m␛[38;5;244m · ␛[m␛[38;5;244m1m04s␛[m
     ␛[38;5;254mWriting the epic and two stories now, appended after the last one.␛[m
     ␛[38;5;244m+ ## A Code Block Is Copied by Itself␛[m              ␛[38;5;244m≡ on target␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 stories␛[m
+
 

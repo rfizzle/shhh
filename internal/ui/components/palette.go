@@ -86,10 +86,12 @@ func token(hex, ansi256, ansi16 string) Token {
 // keys stops reading them
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
-// colors.css also defines canvas-only shades (--screen, --page, --rule-faint,
+// colors.css also defines canvas-only shades (--page, --rule-faint,
 // --meter-empty, --win-*) that let the artboards be drawn in a browser. They
-// have no ANSI counterpart: in the terminal the screen is the terminal's own
-// background, and faint rules and empty meter cells (▱) are Dim.
+// have no ANSI counterpart: faint rules and empty meter cells (▱) are Dim.
+// The one canvas shade the terminal does take is --screen, and it is not a
+// token: it is the dark theme's ground (themes, below), because the band is
+// drawn against it.
 type ColorTokens struct {
 	Add     Token // diff additions, ✓, [x], permissive mode, staged hunks, healthy context
 	Del     Token // diff deletions, ✗, failures, blocked agents, a rule's denial, ctx ≥90%
@@ -311,8 +313,8 @@ const (
 // theme is one shipped table and the ground it was chosen against. The table
 // is the whole of the theme — PaletteSize tokens, no more, so a surface cannot
 // reach for a colour a theme forgot to bring — and the ground is beside it
-// rather than in it because nothing draws with it: it is what the screen
-// would be painted with if the reader asked for that (GroundColor), and the
+// rather than in it because no surface draws with it: it is what the screen
+// is painted with where the screen is painted (GroundColor), and the
 // terminal's own otherwise.
 type theme struct {
 	tokens ColorTokens
@@ -322,9 +324,23 @@ type theme struct {
 // themes is every table that ships. A theme is added by adding a row here and
 // a word to ThemeNames; nothing else in the product knows how many there are.
 var themes = map[string]theme{
-	ThemeDark:  {FullPalette, token("#1c1c1c", "234", "0")},
+	ThemeDark:  {FullPalette, darkGround},
 	ThemeLight: {LightPalette, token("#ffffff", "231", "15")},
 	ThemeCharm: {CharmPalette, tone(charmtone.Pepper, "235", "0")},
+}
+
+// darkGround is the design system's screen, #0f1117, and 233 for it at 256
+// colours: the ground the band was chosen against, so a card on it is the
+// catalogue's pair, #1c1c1c on #0f1117, rather than a band on whatever the
+// terminal's own ground happens to be. It has no sixteen-colour rung, for
+// the band's own reason turned round: sixteen colours has no band to stand
+// off a ground, and painting the theme's black would replace the reader's
+// ground with a colour their theme chose for text, which is often not the
+// one it chose for the screen.
+var darkGround = Token{
+	TrueColor: lipgloss.Color("#0f1117"),
+	ANSI256:   lipgloss.Color("233"),
+	ANSI:      lipgloss.NoColor{},
 }
 
 // ThemeNames is the words a reader may choose between, auto first because it
@@ -343,8 +359,20 @@ var (
 	// should be the one that was right for every terminal before the
 	// question was asked.
 	lightGround bool
-	// paintGround is the switch, off by default. See GroundColor.
-	paintGround bool
+	// paintGround is the reader's answer to the switch, where it departs
+	// from the theme's own default; groundDefault until then. See
+	// GroundColor.
+	paintGround = groundDefault
+)
+
+// groundAnswer is the switch's state: no answer, so the theme's own default
+// stands, or the reader's on or off.
+type groundAnswer int
+
+const (
+	groundDefault groundAnswer = iota
+	groundOn
+	groundOff
 )
 
 // ThemeName is the theme that was asked for, by name.
@@ -395,39 +423,67 @@ func SetGround(dark bool) bool {
 	return true
 }
 
-// PaintGround turns the theme's own background on for the whole screen, and
-// reports whether that changed anything. See GroundColor for why it is a
-// switch.
+// PaintGround turns the theme's own background on or off for the whole
+// screen, and reports whether that changed anything. An answer that is the
+// theme's own default is no answer at all, so the default stands again for
+// whichever theme comes next. See GroundColor for why it is a switch.
 func PaintGround(on bool) bool {
-	if on == paintGround {
-		return false
+	changed := on != GroundPainted()
+	switch {
+	case on == groundPaintedByDefault():
+		paintGround = groundDefault
+	case on:
+		paintGround = groundOn
+	default:
+		paintGround = groundOff
 	}
-	paintGround = on
-	return true
+	return changed
 }
 
 // GroundPainted reports whether the screen is painted with the theme's
 // background rather than left on the terminal's own.
-func GroundPainted() bool { return paintGround }
+func GroundPainted() bool {
+	switch paintGround {
+	case groundOn:
+		return true
+	case groundOff:
+		return false
+	}
+	return groundPaintedByDefault()
+}
+
+// groundPaintedByDefault is the theme's own answer: the dark table paints
+// its ground, and the other two leave the terminal's. See GroundColor.
+func groundPaintedByDefault() bool { return resolveTheme(themeName) == ThemeDark }
 
 // GroundColor is the colour the whole screen is painted with, or nil for the
-// terminal's own — which is the default and stays it.
+// terminal's own.
 //
-// A theme repaints the ground it was chosen against, and doing that by
-// default would take a decision the reader already made: the terminal's
-// background is theirs, it is what every other program on that screen sits
-// on, and a session that overpainted it would be the one window that does not
-// match. So it is offered — a light theme on a dark terminal is legible
-// either way, and only the reader knows whether they wanted shhh to look like
-// their terminal or like itself.
+// The dark table paints its ground unless the reader turns it off, because
+// its band is half of a pair: the design draws a card's band #1c1c1c on the
+// screen #0f1117, and a band laid on a ground the binary does not control is
+// whatever that ground makes of it — the band's own grey on a terminal whose
+// background is #1c1c1c, which is no card at all. A step off the ground would
+// be a different card on every terminal; painting the ground is the one way
+// the pair is the pair. The light and CharmTone tables leave the terminal's
+// own unless asked: the terminal's background belongs to the reader and to
+// every other program on that screen, and those bands were chosen as a step
+// off their grounds rather than as half of a pair the catalogue draws.
+// See docs/interface/principles.md#a-colour-is-three-values-and-a-ground.
 //
 // Under mono there is nothing to paint: a third shade is exactly what two
-// greys have given up.
+// greys have given up. A profile with no rung for the ground — the dark
+// ground at sixteen colours, any ground with no colour at all — paints
+// nothing either.
 func GroundColor() color.Color {
-	if !paintGround || mono {
+	if !GroundPainted() || mono {
 		return nil
 	}
-	return themes[resolveTheme(themeName)].ground.Color()
+	c := themes[resolveTheme(themeName)].ground.Color()
+	if c == nil || c == (lipgloss.NoColor{}) {
+		return nil
+	}
+	return c
 }
 
 // resolveTheme is the table a name names. Everything but auto names itself.

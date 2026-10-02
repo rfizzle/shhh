@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/colorprofile"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
@@ -114,7 +115,7 @@ func TestCard_HeaderDropOrder(t *testing.T) {
 // A card rests on the band: a padding row inside it above and below, every
 // row carried to the pane's edge on the band's ground. Where the palette has
 // no band the card is its padding rows alone, empty rows with nothing on
-// them, and a ground painted the band's own colour steps the band up a rung.
+// them, and the painted ground under it leaves the band as it is.
 func TestCard_BandIsATokenOrThePaddingRowsAlone(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	card := commandStep()
@@ -132,8 +133,8 @@ func TestCard_BandIsATokenOrThePaddingRowsAlone(t *testing.T) {
 		was := GroundPainted()
 		PaintGround(true)
 		t.Cleanup(func() { PaintGround(was) })
-		if !strings.Contains(card.View(80), "48;5;235") {
-			t.Error("a ground painted the band's colour hides the band; the card's band steps up")
+		if view := card.View(80); !strings.Contains(view, "48;5;234") || strings.Contains(view, "48;5;235") {
+			t.Errorf("on the painted ground the band is 234 and takes no step:\n%q", view)
 		}
 	})
 
@@ -149,6 +150,60 @@ func TestCard_BandIsATokenOrThePaddingRowsAlone(t *testing.T) {
 			t.Error("mono draws no ground under a card")
 		}
 	})
+}
+
+// The rail is drawn on a card's header row and nowhere else on it: not on
+// the padding rows, not down the body or the footer, as the catalogue draws
+// it. A failed card's rail is del, on that one row.
+func TestCard_TheRailIsOnTheHeaderOnly(t *testing.T) {
+	withColorProfile(t, colorprofile.TrueColor)
+	wrote := StepCard{Kind: ActivityEdit, Rail: true, Verb: "wrote", Subject: ".plan/BACKLOG.md",
+		Outcome: "+41", Duration: "1m04s",
+		Body: "Writing the epic and two stories now, appended after the last one."}
+	failed := commandStep()
+	failed.State = ActivityFailed
+	accent := ansi.NewStyle().ForegroundColor(Palette.Accent.Color()).String()
+	del := ansi.NewStyle().ForegroundColor(Palette.Del.Color()).String()
+	cases := []struct {
+		name string
+		card StepCard
+		rail string
+		want []string
+	}{
+		{"a write", wrote, accent, []string{
+			"",
+			"▎✎ wrote .plan/BACKLOG.md +41 · 1m04s",
+			"Writing the epic and two stories now, appended after the last one.",
+			"",
+		}},
+		{"a failed command", failed, del, nil},
+	}
+	for _, c := range cases {
+		for _, width := range goldenWidths {
+			lines := strings.Split(c.card.View(width), "\n")
+			// At 60 the body wraps onto a second row, which carries no rail
+			// either; the literal four rows are the ones a wider pane draws.
+			if c.want != nil && width >= 80 {
+				var got []string
+				for _, l := range lines {
+					got = append(got, strings.Join(strings.Fields(stripANSI(l)), " "))
+				}
+				if strings.Join(got, "\n") != strings.Join(c.want, "\n") {
+					t.Errorf("%s at %d: the rows are\n%s\nwant\n%s", c.name, width,
+						strings.Join(got, "\n"), strings.Join(c.want, "\n"))
+				}
+			}
+			for i, l := range lines {
+				has := strings.Contains(l, "▎")
+				if i == 1 && (!has || !strings.Contains(l, c.rail+"▎")) {
+					t.Errorf("%s at %d: the header has no rail in its colour: %q", c.name, width, l)
+				}
+				if i != 1 && has {
+					t.Errorf("%s at %d: row %d carries the rail: %q", c.name, width, i, l)
+				}
+			}
+		}
+	}
 }
 
 // A card prints no key: what enter does on it is the hint bar's to say.
@@ -191,7 +246,7 @@ func TestGolden_StepCards(t *testing.T) {
 			was := GroundPainted()
 			PaintGround(true)
 			defer PaintGround(was)
-			return write.View(width)
+			return onGround(write.View(width), width)
 		}
 		return []golden.Panel{
 			{Label: "finished · header, body and footer", View: commandStep().View(width)},
@@ -203,7 +258,18 @@ func TestGolden_StepCards(t *testing.T) {
 			{Label: "folded by the reader · ▸ in the pointer column", View: folded.View(width)},
 			{Label: "low · the header alone", View: low.View(width)},
 			{Label: "high · the card open on its calls", View: open.View(width)},
-			{Label: "on a painted ground · the band a rung up", View: painted()},
+			{Label: "on the painted ground · the catalogue's pair, the band on the screen", View: painted()},
 		}
 	})
+}
+
+// onGround lays a card between two rows of the painted ground, the way the
+// screen holds it: the ground is the screen's to paint and not the card's,
+// so the golden draws a blank row of it above and below to show the pair.
+func onGround(view string, width int) string {
+	row := ""
+	if bg := backgroundSeq(themes[resolveTheme(themeName)].ground); bg != "" && GroundColor() != nil {
+		row = bg + strings.Repeat(" ", width) + ansiReset
+	}
+	return row + "\n" + view + "\n" + row
 }

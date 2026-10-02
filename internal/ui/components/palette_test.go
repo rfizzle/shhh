@@ -593,11 +593,12 @@ func TestPalette_AutoFollowsTheGroundAndANamedThemeDoesNot(t *testing.T) {
 	}
 }
 
-// The ground is offered and never assumed: nothing is painted until it is
-// asked for, and under mono there is nothing to paint — a third shade is
+// The light ground is offered and never assumed: nothing is painted until it
+// is asked for, and under mono there is nothing to paint — a third shade is
 // exactly what two greys have given up.
 func TestPalette_TheGroundIsOfferedNeverTheDefault(t *testing.T) {
 	themeRestore(t)
+	withColorProfile(t, colorprofile.ANSI256)
 	SetMono(false)
 	if err := SetTheme(ThemeLight); err != nil {
 		t.Fatal(err)
@@ -614,6 +615,78 @@ func TestPalette_TheGroundIsOfferedNeverTheDefault(t *testing.T) {
 	if PaintGround(true) {
 		t.Error("the switch is idempotent")
 	}
+	SetMono(true)
+	if GroundColor() != nil {
+		t.Error("mono has no ground to paint")
+	}
+}
+
+// The dark table paints the ground it was chosen against unless the reader
+// turns it off, because its band is half of the catalogue's pair with that
+// ground: #1c1c1c on #0f1117, 234 on 233, and no step in between. The light
+// and CharmTone tables keep the terminal's own until asked, and a profile
+// with no rung for the ground paints nothing.
+func TestPalette_TheDarkGroundIsPaintedByDefault(t *testing.T) {
+	themeRestore(t)
+	SetMono(false)
+	cases := []struct {
+		profile      colorprofile.Profile
+		ground, band color.Color
+	}{
+		{colorprofile.TrueColor, lipgloss.Color("#0f1117"), lipgloss.Color("#1c1c1c")},
+		{colorprofile.ANSI256, lipgloss.Color("233"), lipgloss.Color("234")},
+		{colorprofile.ANSI, nil, lipgloss.NoColor{}},
+	}
+	for _, theme := range []string{ThemeAuto, ThemeDark} {
+		if err := SetTheme(theme); err != nil {
+			t.Fatal(err)
+		}
+		if !GroundPainted() {
+			t.Fatalf("%s: the dark ground is not painted by default", theme)
+		}
+		for _, c := range cases {
+			withColorProfile(t, c.profile)
+			if got := GroundColor(); !sameColor(got, c.ground) {
+				t.Errorf("%s at %v: the ground is %v, want %v", theme, c.profile, got, c.ground)
+			}
+			if got := CardBand().Color(); !sameColor(got, c.band) {
+				t.Errorf("%s at %v: the card's band is %v, want %v and no step", theme, c.profile, got, c.band)
+			}
+		}
+	}
+
+	withColorProfile(t, colorprofile.ANSI256)
+	for _, theme := range []string{ThemeLight, ThemeCharm} {
+		if err := SetTheme(theme); err != nil {
+			t.Fatal(err)
+		}
+		if GroundPainted() || GroundColor() != nil {
+			t.Errorf("%s: the terminal's own ground is overpainted by default", theme)
+		}
+	}
+
+	if err := SetTheme(ThemeDark); err != nil {
+		t.Fatal(err)
+	}
+	if !PaintGround(false) {
+		t.Error("turning the dark ground off reports no change")
+	}
+	if GroundColor() != nil {
+		t.Error("the switch is off and the dark ground is still painted")
+	}
+	if err := SetTheme(ThemeLight); err != nil {
+		t.Fatal(err)
+	}
+	if err := SetTheme(ThemeDark); err != nil {
+		t.Fatal(err)
+	}
+	if GroundPainted() {
+		t.Error("the reader's off did not outlast a change of theme")
+	}
+	if !PaintGround(true) || !GroundPainted() {
+		t.Error("the switch does not turn the dark ground back on")
+	}
+
 	SetMono(true)
 	if GroundColor() != nil {
 		t.Error("mono has no ground to paint")

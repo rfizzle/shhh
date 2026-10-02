@@ -519,15 +519,13 @@ func TestProgress_TheRungIsReadableInEveryPalette(t *testing.T) {
 	components.SetProfile(colorprofile.TrueColor)
 	t.Cleanup(func() { components.SetProfile(wasProfile) })
 	// The ground a table was chosen against is the thing a ratio is computed
-	// from; painting it is how the test gets to read it, and is off again
-	// before the next test draws anything.
-	was := components.GroundPainted()
-	components.PaintGround(true)
-	t.Cleanup(func() { components.PaintGround(was) })
+	// from; painting it is how the test gets to read it, and themeRestore
+	// puts the default back before the next test draws anything.
 	for _, name := range []string{components.ThemeDark, components.ThemeLight, components.ThemeCharm} {
 		if err := components.SetTheme(name); err != nil {
 			t.Fatal(err)
 		}
+		components.PaintGround(true)
 		ground := components.GroundColor()
 		if ground == nil {
 			t.Fatalf("%s: the table has no ground to be read against", name)

@@ -37,10 +37,13 @@ import (
 // and this file holds the only test in the package that answers at all.
 func themeRestore(t *testing.T) {
 	t.Helper()
-	wasMono, wasTheme := components.Mono(), components.ThemeName()
+	wasMono, wasTheme, wasPainted := components.Mono(), components.ThemeName(), components.GroundPainted()
 	t.Cleanup(func() {
 		components.SetGround(true)
 		_ = components.SetTheme(wasTheme)
+		// After the theme, because an answer that is the theme's own default
+		// is no answer: the ground goes back to the default it started on.
+		components.PaintGround(wasPainted)
 		components.SetMono(wasMono)
 	})
 }
@@ -220,10 +223,17 @@ func TestUICommand_GroundIsOfferedAndSessionOnly(t *testing.T) {
 		t.Errorf("the screen ground is a session switch and must not be written to the config file (%s=%s)", key, value)
 		return nil
 	}
-	t.Cleanup(func() { components.PaintGround(false) })
+	// Light, because its ground is left to the terminal until asked; the
+	// dark table's is painted by default (TestPalette_TheDarkGroundIsPaintedByDefault).
+	if err := components.SetTheme(components.ThemeLight); err != nil {
+		t.Fatal(err)
+	}
+	was := components.Profile()
+	components.SetProfile(colorprofile.ANSI256)
+	t.Cleanup(func() { components.SetProfile(was) })
 
 	if _, result := m.handleSlashCommand("/ui ground"); !strings.Contains(result, "the terminal's own") {
-		t.Fatalf("the ground starts on the terminal's own, got %q", result)
+		t.Fatalf("the light ground starts on the terminal's own, got %q", result)
 	}
 	if bg := m.View().BackgroundColor; bg != nil {
 		t.Fatalf("the frame paints a background nobody asked for: %v", bg)
@@ -236,6 +246,9 @@ func TestUICommand_GroundIsOfferedAndSessionOnly(t *testing.T) {
 	}
 	if m.View().BackgroundColor == nil {
 		t.Error("the switch is on and the frame still paints no background")
+	}
+	if _, result := m.handleSlashCommand("/ui ground off"); !strings.Contains(result, "the terminal's own") {
+		t.Fatalf("off should hand the terminal's own back, got %q", result)
 	}
 	if _, result := m.handleSlashCommand("/ui ground sepia"); !strings.Contains(result, "unknown ground setting") {
 		t.Fatalf("an unknown setting should be an error, got %q", result)

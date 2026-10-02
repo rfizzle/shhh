@@ -7,6 +7,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -684,4 +685,58 @@ func TestCard_TheHeaderIsThePointersControl(t *testing.T) {
 			t.Errorf("the drag folded the card: %v", got)
 		}
 	})
+}
+
+// The band and the screen under it reach the terminal as the catalogue's
+// pair: #1c1c1c on #0f1117 where the terminal shows truecolour, 234 on 233
+// where it shows 256, and never the 235 a band once stepped to. It is read
+// off the frame the terminal is sent, through the profile the palette
+// resolves against, rather than off the tokens: a token that is right and a
+// screen that draws something else is the failure this holds.
+func TestCard_TheBandAndTheGroundAreTheCataloguesPair(t *testing.T) {
+	cases := []struct {
+		profile             colorprofile.Profile
+		band, ground, never string
+	}{
+		{colorprofile.TrueColor, "48;2;28;28;28", "48;2;15;17;23", "48;2;38;38;38"},
+		{colorprofile.ANSI256, "48;5;234", "48;5;233", "48;5;235"},
+	}
+	for _, c := range cases {
+		themeRestore(t)
+		components.SetMono(false)
+		was := components.Profile()
+		components.SetProfile(c.profile)
+		m := cardModel(t)
+		m.syncViewport()
+		m.viewport.SetLines(m.renderHistoryLines())
+		m.viewport.GotoBottom()
+		screen := m.View().Content
+		components.SetProfile(was)
+
+		lines := strings.Split(screen, "\n")
+		header, blank := -1, -1
+		for i, l := range lines {
+			plain := stripANSI(l)
+			if header < 0 && strings.Contains(plain, "wrote .plan/BACKLOG.md") {
+				header = i
+			}
+			if blank < 0 && i > 2 && strings.TrimSpace(plain) == "" {
+				blank = i
+			}
+		}
+		if header < 0 || blank < 0 {
+			t.Fatalf("%v: no write card and no blank row on the screen:\n%s", c.profile, stripANSI(screen))
+		}
+		for _, row := range []int{header - 1, header} {
+			if !strings.Contains(lines[row], c.band) {
+				t.Errorf("%v: card row %d is not on the band %s: %q", c.profile, row, c.band, lines[row])
+			}
+		}
+		if !strings.Contains(lines[blank], c.ground) || strings.Contains(lines[blank], c.band) {
+			t.Errorf("%v: the screen under the transcript is not the ground %s: %q", c.profile, c.ground, lines[blank])
+		}
+		if strings.Contains(screen, c.never) {
+			t.Errorf("%v: the band stepped to %s", c.profile, c.never)
+		}
+	}
 }

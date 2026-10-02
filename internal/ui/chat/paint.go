@@ -8,6 +8,7 @@ package chat
 // cells; nothing here decides anything about the session.
 
 import (
+	"image/color"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -47,10 +48,11 @@ func (m Model) View() tea.View {
 	if m.mouseOn {
 		v.MouseMode = tea.MouseModeCellMotion
 	}
-	// The screen's own ground, which is nil unless the reader asked the theme
-	// to paint the background it was chosen against (/ui ground). Nil is the
-	// default and means the terminal's own background stands, which is what
-	// every other program on that screen sits on.
+	// The screen's own ground: the dark theme's by default, nil where the
+	// theme leaves the terminal's own background standing or the reader
+	// turned it off (/ui ground). The cells carry it too (paintGround); this
+	// is the terminal's default background, which is what it fills the
+	// window's margin with, outside every cell.
 	v.BackgroundColor = components.GroundColor()
 	// And the two states outside the rectangle, for the third and fourth
 	// times the same argument: the tab's name and the tab's progress light
@@ -113,8 +115,33 @@ func (m Model) paint(cur *cursorSink) string {
 	}
 
 	m.drawBottomPanel(scr, s.bottom, cur)
+	paintGround(scr, components.GroundColor())
 
 	return renderScreen(scr)
+}
+
+// paintGround lays the theme's ground under every cell that drew no
+// background of its own. It is written into the cells rather than left to
+// the terminal's default background alone, because a terminal draws its
+// default background and a cell's own through two different paths — one
+// that a window's opacity, blur or theme may change, and one it draws as
+// sent — and the band is a cell's own: the band and the ground under it
+// reach the screen as the same kind of colour, the catalogue's pair, or not
+// at all. A cell that already has a ground — the band, a lit row, a diff's
+// tint — keeps it. Nil paints nothing.
+// See docs/interface/principles.md#a-colour-is-three-values-and-a-ground.
+func paintGround(scr uv.ScreenBuffer, ground color.Color) {
+	if ground == nil {
+		return
+	}
+	for y := range scr.Height() {
+		line := scr.Line(y)
+		for x := range line {
+			if c := line.At(x); c != nil && !c.IsZero() && c.Style.Bg == nil {
+				c.Style.Bg = ground
+			}
+		}
+	}
 }
 
 // headerRow is the title row: the surface's name, then in dim the facts that

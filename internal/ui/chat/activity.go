@@ -917,9 +917,11 @@ func groundStatus() string {
 }
 
 // groundCommand handles /ui ground: whether the theme repaints the whole
-// screen with the background it was chosen against. Off is the default and
-// the reason is the reader's, not the palette's — their terminal's background
-// is what every other program on that screen sits on.
+// screen with the background it was chosen against. The dark theme does by
+// default, because its band is half of a pair with that ground; the others
+// leave the terminal's own, which is what every other program on that screen
+// sits on. Either way the reader may answer otherwise, for this session
+// (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
 func (m *Model) groundCommand(parts []string) string {
 	if len(parts) == 2 {
 		return fmt.Sprintf("screen ground: %s\n%s", groundStatus(), groundUsage)
@@ -938,7 +940,7 @@ func (m *Model) groundCommand(parts []string) string {
 	if on {
 		return "screen ground: the theme's own — shhh paints the background it was drawn against, for this session"
 	}
-	return "screen ground: the terminal's own — shhh paints no background, which is where it starts"
+	return "screen ground: the terminal's own — shhh paints no background, for this session"
 }
 
 const groundUsage = "usage: /ui ground <on|off> — on paints the whole screen with the background the theme was chosen against; off leaves the terminal's own. It lasts for this session"

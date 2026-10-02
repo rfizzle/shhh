@@ -160,7 +160,8 @@ palette.
 ## The band's light and CharmTone values were chosen in the binary
 
 *A gap.* The design system draws the band a step card rests on for the dark
-ground only: `#1c1c1c`, 234 at 256 colours. It also answers the two profiles
+ground only: `#1c1c1c`, 234 at 256 colours, on its screen `#0f1117`, 233,
+which is the dark theme's painted ground. It also answers the two profiles
 where a band would mislead, and the binary takes that answer — at sixteen
 colours and under mono the band is no ground at all and a card is its padding
 rows alone, because sixteen colours has only bright-black between the ground
@@ -168,8 +169,8 @@ and the chrome grey, so a band there reads as chrome, and mono collapses every
 background onto the selection ground, so a band there reads as a selected row.
 
 The light and CharmTone tables have no band on the artboard, so they were
-chosen here, each one step off its own ground the way the dark band is off
-black. The light band is `#e4e4e4`, 254: the dark band stands off black by
+chosen here, each one step off its own ground the way the dark band is one
+step off its screen. The light band is `#e4e4e4`, 254: the dark band stands off black by
 1.23:1, and 254 is the named grey nearest that against white (1.27:1, where
 255 is 1.16:1) — the same mirroring that set the light table's chrome grey,
 and the same one step the light table's selection and intraline tints take
@@ -183,17 +184,38 @@ artboard wins.
 
 ## A card on a painted ground steps its band up
 
-*A gap.* The band a step card rests on is 234, `#1c1c1c`, and the dark
-theme's own ground is 234 as well. Left as it is, a card on that ground with
-the ground painted (`/theme ground`) has no band at all, and is its padding
-rows alone on a table that has a band to give it — the answer sixteen colours
-and mono take because they have no band, not because one would be wrong.
+*Withdrawn.* The band no longer steps. The dark theme's ground was once
+`#1c1c1c`, 234, the band's own grey, and with that ground painted the band
+stepped one rung up to 235, `#262626`, so a card would not vanish into it. The
+ground is now the `Rows` catalogue's screen, `#0f1117`, 233, and it is
+painted by default (`/ui ground off` keeps the terminal's own), so the band is
+the catalogue's `#1c1c1c`, 234, on it: at truecolour the two reach the
+terminal as `48;2;28;28;28` on `48;2;15;17;23`, at 256 colours as `48;5;234`
+on `48;5;233`. The ground is written into every cell that has no ground of its
+own as well as set as the terminal's default background, so the band and the
+screen arrive as colours of the same kind. At sixteen colours the dark ground,
+like the band, has no rung, and the terminal's own stands; mono paints
+neither. The light ground stays `#ffffff`, 231, and the CharmTone ground
+Pepper, `#201f26`, 235, both left to the terminal until asked, under their
+bands of `#e4e4e4`, 254, and Charcoal, `#3a3943`, 237.
 
-So where the screen is painted with the band's own colour, the band steps one
-rung up the greyscale ramp, to 235, `#262626`: the same step off the ground
-the band takes off black when nothing is painted. The light and CharmTone
-bands already stand off their grounds and are left alone, and sixteen colours
-and mono still draw no band.
+Why the step went. A terminal measured with its own background at `#1c1c1c`
+showed the card as `#292c33`, a blue-grey that is in no table. The binary
+cannot have sent that colour. On that terminal, which names itself Ghostty in
+`TERM`, the profile is truecolour, so the band went out as `48;2;28;28;28`,
+the terminal's own background grey. It was not a sixteen-colour downsample to
+bright black, because the band has no sixteen-colour rung and a terminal of
+sixteen colours draws no band at all. It was not a 256 index that a theme
+remapped, because a truecolour profile sends no index. And it was not the
+step to 235, which only happened with the ground painted, and the ground was
+off by default. What the terminal showed was its own treatment of a cell's
+background next to its default one. A terminal draws the two through
+different paths, and settings such as opacity, blur or a generated palette
+reach one of them and not the other. The binary sent the right band, but it
+sent it onto a ground it did not control, so the card was whatever that
+terminal made of the difference: nothing, if the two were drawn alike, and a
+grey from no table if they were not. Painting the ground in the cells sends
+both halves of the pair the same way.
 
 ## Enter walks a card through three depths
 
@@ -1106,9 +1128,8 @@ row. The binary stops on the rows that open something and not on the message,
 which has nothing for enter to open; a message carrying only a PDF is
 therefore no stop at all, as it was before the tray.
 
-On the dark table with its ground painted, the ground and the band are the
-same grey, so the tray is its rows alone there, as it is in mono and in
-sixteen colours.
+On the dark table the tray's band is the card's, `#1c1c1c` on the painted
+`#0f1117`; in mono and in sixteen colours it is its rows alone.
 
 ## Two surfaces draw with blocks rather than in them
 

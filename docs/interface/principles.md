@@ -340,9 +340,8 @@ who set their green is looked at all day in their green, and the design's own
 hex is what a terminal that can show it gets.
 
 Four of the tokens are grounds rather than inks — the selection, a diff's two
-intraline tints, and the band, a ground one step off the screen's own that a
-step card rests on so the transcript reads as cards rather than as a run of
-lines.
+intraline tints, and the band, a ground one step off the screen's that a step
+card rests on so the transcript reads as cards rather than as a run of lines.
 
 The ground is the other half of a colour. A table is chosen against a ground
 and is legible only on it: the same grey that is chrome on a black terminal is
@@ -353,14 +352,24 @@ greys swap their relative weight between them — what is faint is what has
 least contrast with the ground, which is the lighter grey on one and the
 darker grey on the other.
 
-A theme repaints the ground it was chosen against only if asked. The terminal's
-background belongs to the reader and to every other program on that screen;
-a session that overpainted it by default would be the one window that does not
-match.
+The dark theme paints the ground it was chosen against by default, and the
+others only if asked. The dark band is not a step off whatever ground happens
+to be under it: it is half of a pair the design draws, a band on a screen,
+and a pair holds only where both halves are drawn. Left on the terminal's own
+background, the same band is a card on one terminal and nothing on another —
+on a terminal whose background is the band's own grey there is no card at
+all — and no step the binary could take off a ground it cannot read would be
+the design's card either. So the dark theme sends both, the ground and the
+band, as colours of the same kind, and the terminal draws the pair as sent. A
+reader can still turn the ground off and keep their terminal's: the
+background belongs to them and to every other program on that screen, which
+is why the light and CharmTone themes, whose bands are steps off their
+grounds rather than half of a pair, leave it alone until asked.
 
 The exact rungs are the design system's. What is fixed here is that there are
-three of them, that five defer to the terminal, that a ground is asked for,
-and that no surface may reach for a colour outside the palette.
+three of them, that five defer to the terminal, that the dark ground is
+painted and the others are asked for, and that no surface may reach for a
+colour outside the palette.
 
 ### Closed vocabularies
 

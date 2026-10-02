@@ -13,7 +13,10 @@
 # dim, the answer on the right; the sentence that titled the step under it at
 # the body column; a footer only where the step has evidence — the command's
 # first line out, the write's first line, the failure's line — and none under
-# the step that only read. The answer stands on bare screen under the cards.
+# the step that only read. The answer stands on the screen under the cards.
+# The `.ansi` at 04 holds the catalogue's pair: the band and the painted
+# ground under it, 28;28;28 on 15;17;23 where the pane shows truecolour, and
+# the rail on each header row and on no padding or body row.
 #
 # Then reading mode: the cursor stops on a card as a whole, the bar says what
 # enter does to it, and enter opens the large step onto its calls — the reads
