@@ -151,6 +151,15 @@ the row. The label is what the model did: `alone` (answered, or read for six
 rounds, without asking for a child), `spawned` (one child) or `divided` (two
 or more in one round).
 
+`kind = "read-only"` is a table whose call is the coding prompt in read-only
+mode: each row puts its `instruction` to the run's model with a coding
+session's tools over a workspace of `files`, under the paragraph the mode
+adds. The read-only tools run; a command on the inspection list runs
+contained, the way a reading child's does; anything else is answered with the
+refusal the session would give. The label is what the model ran, over up to
+eight rounds: `listed` (every command on the inspection list, or none) or
+`off-list` (one or more the mode refused).
+
 ## Writing a scripted case
 
 A scripted case is a table too, and its kind names the mechanism:

@@ -518,19 +518,88 @@ Your commands are required to run contained, and this machine has no containment
 //
 // It exists because the alternative is the model learning the bound one
 // refused call at a time — a round spent on an edit that was never going to
-// apply, then another, for as long as the turn has rounds.
-const ReadOnlyModeInstructions = `# Read-only mode
-You are in read-only mode: nothing you do can change the workspace.
-- Read, search and the read-only inspection commands (e.g. ls, wc) work as usual, each run on its own with no pipe or chain. File edits and every other command are refused and no approval can run one.
-- Answer in words. Do not make a call you know will be refused, and do not wait for a permission this mode has no way to give.`
+// apply, then another, for as long as the turn has rounds. commands is the
+// inspection list in force and tools the session's toolset by name. The list
+// is printed rather than described, because "e.g. ls, wc" left the model to
+// guess at the rest, and each guess was a refused round.
+// See docs/capabilities/approvals-and-safety.md#the-model-is-told-what-read-only-mode-runs.
+func ReadOnlyModeInstructions(commands, tools []string) string {
+	return "# Read-only mode\n" +
+		"You are in read-only mode: nothing you do can change the workspace.\n" +
+		inspectionLines(commands, tools) +
+		"- Answer in words. Do not make a call you know will be refused, and do not wait for a permission this mode has no way to give."
+}
 
 // PlanModeInstructions is appended to the system prompt while the session is
 // in plan mode: research read-only, present a plan, and wait for the
-// user's decision instead of implementing.
-const PlanModeInstructions = `# Plan mode
-You are in plan mode: a read-only research phase. Your job is to produce a concrete implementation plan, not to make changes.
-- Research with the read-only tools (read_file, list_directory, search, glob) and read-only inspection commands (e.g. ls, wc), each run on its own with no pipe or chain; file edits and any other commands are disabled and will be refused.
-- When you have enough context, present the plan as a normal response in the shape below, so it can be rendered as priced steps rather than as a paragraph.
+// user's decision instead of implementing. What it may run is said in the
+// read-only paragraph's own lines, from the same list, because the two modes
+// are one policy.
+// See docs/capabilities/approvals-and-safety.md#the-model-is-told-what-read-only-mode-runs.
+func PlanModeInstructions(commands, tools []string) string {
+	return "# Plan mode\n" +
+		"You are in plan mode: a read-only research phase. Your job is to produce a concrete implementation plan, not to make changes.\n" +
+		inspectionLines(commands, tools) + planShape
+}
+
+// InspectionListCap is how many inspection commands a read-only paragraph or
+// refusal prints before it says how many more there are. It sits above the
+// built-in list's length, so the built-in list is always printed whole and
+// only a long behavior.read_only_commands is cut: the paragraph rides every
+// request in the mode, and a list of hundreds would be paid for on each.
+// See docs/capabilities/approvals-and-safety.md#the-model-is-told-what-read-only-mode-runs.
+const InspectionListCap = 80
+
+// InspectionList is commands as the read-only paragraphs and the refusal
+// print them: comma-separated, cut at InspectionListCap with the count of
+// the rest.
+func InspectionList(commands []string) string {
+	if len(commands) <= InspectionListCap {
+		return strings.Join(commands, ", ")
+	}
+	return strings.Join(commands[:InspectionListCap], ", ") +
+		fmt.Sprintf(", and %d more", len(commands)-InspectionListCap)
+}
+
+// readOnlyReaders are the tools a read-only paragraph sends the model to
+// instead of a command, in the order it names them. Each is named only where
+// the toolset holds it, as the toolbox names a tool: a paragraph that
+// promised the git tool to a session without one would send the model to it.
+var readOnlyReaders = []string{"search", "glob", "git", "sqlite", "read_file"}
+
+// inspectionLines is what a read-only mode runs and what it refuses, in the
+// same words for both modes. A toolset without execute_command is told
+// nothing about commands, because it has none to run.
+func inspectionLines(commands, tools []string) string {
+	var readers []string
+	for _, r := range readOnlyReaders {
+		if slices.Contains(tools, r) {
+			readers = append(readers, r)
+		}
+	}
+	readWith := ""
+	if len(readers) > 0 {
+		readWith = "; read with " + joinAnd(readers) + " instead"
+	}
+	if !slices.Contains(tools, "execute_command") {
+		return "- Every write is refused and no approval can run one" + readWith + ".\n"
+	}
+	return "- These inspection commands run, matched on their leading words: " + InspectionList(commands) + ".\n" +
+		"- Run each on its own: a pipe, chain or redirect outside quotes is refused, and inside single quotes it is only text.\n" +
+		"- Any other command (make, go test, a linter, a build) and every write is refused, and no approval can run one" + readWith + ".\n"
+}
+
+// joinAnd is words as a sentence lists them: "a", "a and b", "a, b and c".
+func joinAnd(words []string) string {
+	if len(words) < 2 {
+		return strings.Join(words, "")
+	}
+	return strings.Join(words[:len(words)-1], ", ") + " and " + words[len(words)-1]
+}
+
+// planShape is plan mode's work after the research, and the shape its plan
+// is written in.
+const planShape = `- When you have enough context, present the plan as a normal response in the shape below, so it can be rendered as priced steps rather than as a paragraph.
 - Do not start implementing, and do not include full file contents or large code blocks — the plan describes the changes.
 - After you present the plan, the user decides: approve it (this session then continues straight into execution), keep planning (they send feedback to refine it), or reject it.
 

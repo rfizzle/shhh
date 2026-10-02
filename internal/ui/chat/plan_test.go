@@ -285,7 +285,9 @@ func TestPlan_RequestStreamInjectsInstructions(t *testing.T) {
 func TestMode_ReadOnlyRequestCarriesItsOwnInstructions(t *testing.T) {
 	var captured []provider.Message
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, recordingStream(&captured))
+	m := New(msgs, recordingStream(&captured)).
+		WithToolDefinitions([]ToolTokens{{Name: "read_file"}, {Name: "search"}, {Name: "execute_command"}}).
+		WithReadOnlyCommands([]string{"tokei"}, false)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.policy.mode = agent.ModeReadOnly
@@ -296,6 +298,12 @@ func TestMode_ReadOnlyRequestCarriesItsOwnInstructions(t *testing.T) {
 
 	if len(captured) == 0 || !strings.Contains(captured[0].Content, "# Read-only mode") {
 		t.Fatal("read-only requests should carry the read-only instructions in the system prompt")
+	}
+	// The paragraph is the one a child in the mode reads: the person's list
+	// and the session's toolset, through the one function.
+	want := "sys\n\n" + agent.ModeInstructions(agent.ModeReadOnly, []string{"tokei"}, []string{"read_file", "search", "execute_command"})
+	if captured[0].Content != want {
+		t.Fatalf("the session reads\n%s\nwant\n%s", captured[0].Content, want)
 	}
 	if strings.Contains(captured[0].Content, "# Plan mode") {
 		t.Fatal("read-only mode must not ask the model for a plan")

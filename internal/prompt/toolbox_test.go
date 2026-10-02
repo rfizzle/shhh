@@ -1,6 +1,7 @@
 package prompt
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -269,9 +270,10 @@ func TestToolboxSpawnLineStatesTheDelegationPolicy(t *testing.T) {
 }
 
 // A read-only or plan session is refused a chained or piped git command, so
-// what it is told must lead to the git tool where the session has one and to
-// no git command at all: the mode paragraphs name no git command, and only
-// the toolbox line — present only beside the tool — says to use the tool.
+// what it is told must lead to the git tool where the session has one: the
+// mode paragraphs name the tool only beside it, a git command only as the
+// inspection list a toolset with commands can run, and only the toolbox line
+// — present only beside the tool — says to prefer the tool.
 // A read-only child with no execute_command is the case the paragraphs used
 // to get most wrong.
 func TestReadOnlyAndPlanPromptsSendHistoryReadsToTheGitTool(t *testing.T) {
@@ -285,17 +287,23 @@ func TestReadOnlyAndPlanPromptsSendHistoryReadsToTheGitTool(t *testing.T) {
 		{"read-only child with git", []string{"read_file", "list_directory", "search", "glob", "git"}, true},
 		{"read-only child without git", []string{"read_file", "list_directory", "search", "glob"}, false},
 	}
-	modes := map[string]string{"read-only": ReadOnlyModeInstructions, "plan": PlanModeInstructions}
+	modes := map[string]func(commands, tools []string) string{"read-only": ReadOnlyModeInstructions, "plan": PlanModeInstructions}
+	inspection := []string{"ls", "cat", "git status", "git log", "git diff"}
 
-	for mode, block := range modes {
-		if strings.Contains(strings.ToLower(block), "git") {
-			t.Errorf("the %s paragraph names git, which the session may not have:\n%s", mode, block)
-		}
+	for mode, paragraph := range modes {
 		for _, ts := range toolsets {
+			block := paragraph(inspection, ts.tools)
+			// The git tool is named as a reader only where it is held.
+			if named := strings.Contains(block, ", git,") || strings.Contains(block, " git and "); named != ts.git {
+				t.Errorf("%s, %s: the paragraph names the git tool = %v, want %v:\n%s", mode, ts.name, named, ts.git, block)
+			}
+			// A git command is printed only as the inspection list, and only
+			// to a toolset that can run one.
+			commands := slices.Contains(ts.tools, "execute_command")
 			got := BuildAgent(testShell(), Toolbox(toolList(ts.tools...), false)) + "\n\n" + block
 			for _, cmd := range []string{"git status", "git diff", "git log"} {
-				if strings.Contains(got, cmd) {
-					t.Errorf("%s, %s: the prompt suggests %q", mode, ts.name, cmd)
+				if strings.Contains(got, cmd) != commands {
+					t.Errorf("%s, %s: the prompt names %q = %v, want %v", mode, ts.name, cmd, !commands, commands)
 				}
 			}
 			line := strings.Contains(got, "- git — ") && strings.Contains(got, "Prefer it over Git shell commands and pipelines")

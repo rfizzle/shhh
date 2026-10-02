@@ -144,7 +144,7 @@ func TestBuiltinReviewerRefusesAnEditInReadOnlyWords(t *testing.T) {
 			result = m.Content
 		}
 	}
-	if result != agent.ReadOnlyModeResult {
+	if result != agent.ReadOnlyModeResult("", nil) {
 		t.Fatalf("the reviewer's edit came back as %q, want read-only mode's refusal", result)
 	}
 }

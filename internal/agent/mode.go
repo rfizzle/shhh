@@ -7,6 +7,7 @@ package agent
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/logs"
@@ -104,14 +105,18 @@ func (m Mode) ReadOnly() bool { return m == ModeReadOnly || m == ModePlan }
 // or empty for the modes that add none. Every other mode is a statement about
 // what runs without asking, which the model has no part in. It is the one
 // selector the session and a sub-agent both read, so the two cannot come to
-// tell a model in the same mode different things.
+// tell a model in the same mode different things. extra is the person's
+// behavior.read_only_commands and tools the toolset's names: the paragraph
+// prints the inspection list the policy reads, so it cannot promise a command
+// the policy refuses or leave out one it runs.
 // See docs/capabilities/approvals-and-safety.md#the-five-modes.
-func ModeInstructions(m Mode) string {
+// See docs/capabilities/approvals-and-safety.md#the-model-is-told-what-read-only-mode-runs.
+func ModeInstructions(m Mode, extra, tools []string) string {
 	switch m {
 	case ModeReadOnly:
-		return prompt.ReadOnlyModeInstructions
+		return prompt.ReadOnlyModeInstructions(ReadOnlyRuns(extra), tools)
 	case ModePlan:
-		return prompt.PlanModeInstructions
+		return prompt.PlanModeInstructions(ReadOnlyRuns(extra), tools)
 	}
 	return ""
 }
@@ -444,8 +449,13 @@ func UnattendedRefusedResult(what, reason string) string {
 
 // PlanModeResult is the tool result recorded for a gated call refused in
 // plan mode, so the model learns why nothing ran instead of the call being
-// silently dropped.
-const PlanModeResult = "error: this session is in plan mode; the call was not executed. Present your plan as a message, or ask the user to switch modes (Shift+Tab or /permissions)."
+// silently dropped. command is the refused command line, or empty for a call
+// that was not one; extra is the person's behavior.read_only_commands.
+func PlanModeResult(command string, extra []string) string {
+	return "error: this session is in plan mode; " + refusedWhat(command) +
+		" Plan mode runs: " + prompt.InspectionList(ReadOnlyRuns(extra)) +
+		"; every other command and every write is refused. Present your plan as a message, or ask the user to switch modes (Shift+Tab or /permissions)."
+}
 
 // ReadOnlyModeResult is the same for read-only mode, and it is a different
 // sentence because the two modes want different next rounds. Plan mode's
@@ -454,18 +464,61 @@ const PlanModeResult = "error: this session is in plan mode; the call was not ex
 // back with an answer in words. A model told to present a plan in a mode with
 // nothing to approve spends the rest of the turn on a document nobody asked
 // for.
-const ReadOnlyModeResult = "error: this session is in read-only mode; the call was not executed and no approval can run it. Answer with what you can read, or ask the user to switch modes (Shift+Tab or /permissions)."
+//
+// Both repeat the inspection list the paragraph printed, because the refusal
+// is read at the moment the model is choosing its next command, and a list
+// the prompt said once, many messages back, is the one it already guessed
+// past.
+// See docs/capabilities/approvals-and-safety.md#the-model-is-told-what-read-only-mode-runs.
+func ReadOnlyModeResult(command string, extra []string) string {
+	return "error: this session is in read-only mode; " + refusedWhat(command) +
+		" Read-only runs: " + prompt.InspectionList(ReadOnlyRuns(extra)) +
+		"; every other command and every write is refused and no approval can run one. Answer with what you can read, or ask the user to switch modes (Shift+Tab or /permissions)."
+}
+
+// refusedQuoteMax bounds the refused command a refusal quotes back. The model
+// wrote the line and needs only enough of it to know which call this was; a
+// heredoc quoted whole would be its own bytes paid again.
+const refusedQuoteMax = 80
+
+// refusedWhat is the clause naming what a read-only mode refused: the command
+// line, where the call was one, and otherwise the call.
+func refusedWhat(command string) string {
+	command = strings.TrimSpace(command)
+	if command == "" {
+		return "the call was not executed."
+	}
+	if r := []rune(command); len(r) > refusedQuoteMax {
+		command = string(r[:refusedQuoteMax]) + "…"
+	}
+	return fmt.Sprintf("%q is not an inspection command.", command)
+}
 
 // ModeRefusedResult is the sentence for a call one of the read-only modes
 // refused, chosen by the reason the policy answered with. It is a function
-// rather than two constants at each call site because the two modes share a
-// policy: a site that matched on plan mode alone would hand a read-only
-// session plan mode's instructions.
-func ModeRefusedResult(reason string) string {
+// rather than two at each call site because the two modes share a policy: a
+// site that matched on plan mode alone would hand a read-only session plan
+// mode's instructions. command is the refused command line, empty for a call
+// that was not one.
+func ModeRefusedResult(reason, command string, extra []string) string {
 	if reason == ModeReadOnly.String()+" mode" {
-		return ReadOnlyModeResult
+		return ReadOnlyModeResult(command, extra)
 	}
-	return PlanModeResult
+	return PlanModeResult(command, extra)
+}
+
+// ReadOnlyRuns is every command prefix a read-only mode runs: the built-in
+// inspection list, then the person's own entries it does not already hold,
+// in the order they were written. It is what the paragraph and the refusal
+// print, so it is the list the policy reads and nothing else.
+func ReadOnlyRuns(extra []string) []string {
+	runs := ReadOnlyCommands()
+	for _, e := range extra {
+		if e = strings.TrimSpace(e); e != "" && !slices.Contains(runs, e) {
+			runs = append(runs, e)
+		}
+	}
+	return runs
 }
 
 // ModePolicy is the session approval-policy state: the active mode plus the

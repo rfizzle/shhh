@@ -66,6 +66,10 @@ type Options struct {
 	// so the harness makes the requests itself and needs somewhere to send
 	// them.
 	Provider provider.Provider
+	// Commands runs a read-only case's inspection commands, contained the way
+	// a child's are. Nil leaves such a case unable to run, which it reports
+	// rather than running a model's command bare.
+	Commands CommandRunner
 	// Progress, when set, is called as each attempt finishes, so a run that
 	// takes minutes says something while it does.
 	Progress func(c Case, attempt int, a Attempt)
@@ -310,7 +314,7 @@ func tableAttempt(ctx context.Context, c Case, opts Options) Attempt {
 		if runCtx.Err() != nil {
 			break
 		}
-		ans := askRow(runCtx, opts.Provider, opts.Model, c.Kind, row)
+		ans := askRow(runCtx, opts.Provider, opts.Model, c.Kind, row, opts.Commands)
 		a.Score.Answers = append(a.Score.Answers, ans)
 		a.TokensIn += ans.Usage.PromptTokens
 		a.TokensOut += ans.Usage.CompletionTokens

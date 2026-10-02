@@ -1549,17 +1549,18 @@ func TestAChildInAReadOnlyModeIsToldTheMode(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "task"},
 	}
+	defs := tools.DefinitionsFull()
 	for _, tc := range []struct {
 		mode agent.Mode
 		want string
 	}{
-		{agent.ModeReadOnly, prompt.ReadOnlyModeInstructions},
-		{agent.ModePlan, prompt.PlanModeInstructions},
+		{agent.ModeReadOnly, agent.ModeInstructions(agent.ModeReadOnly, nil, toolNames(defs))},
+		{agent.ModePlan, agent.ModeInstructions(agent.ModePlan, nil, toolNames(defs))},
 		{agent.ModeManual, ""},
 		{agent.ModeAcceptEdits, ""},
 		{agent.ModeAuto, ""},
 	} {
-		got := withModeInstructions(conversation, tc.mode)
+		got := withModeInstructions(conversation, tc.mode, nil, defs)
 		want := "sys"
 		if tc.want != "" {
 			want += "\n\n" + tc.want
@@ -1569,6 +1570,27 @@ func TestAChildInAReadOnlyModeIsToldTheMode(t *testing.T) {
 		}
 		if conversation[0].Content != "sys" {
 			t.Fatalf("%s: the paragraph was written into the conversation: %q", tc.mode, conversation[0].Content)
+		}
+	}
+}
+
+// A child in read-only mode reads the paragraph the session reads: the one
+// function of the person's inspection list and the toolset, here the child's
+// own, so the list it is told is the list its policy runs and a reader it
+// does not hold is not named to it.
+func TestAChildReadsTheSameReadOnlyParagraph(t *testing.T) {
+	conversation := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	extra := []string{"tokei"}
+	for _, defs := range [][]provider.Tool{tools.DefinitionsFull(), tools.DefinitionsWithExec()} {
+		got := withModeInstructions(conversation, agent.ModeReadOnly, extra, defs)[0].Content
+		want := "sys\n\n" + agent.ModeInstructions(agent.ModeReadOnly, extra, toolNames(defs))
+		if got != want {
+			t.Fatalf("the child reads\n%s\nwhere the session reads\n%s", got, want)
+		}
+		for _, line := range []string{"These inspection commands run", "gofmt -l, go vet", ", tokei.", "a pipe, chain or redirect outside quotes is refused"} {
+			if !strings.Contains(got, line) {
+				t.Errorf("the child's paragraph does not say %q:\n%s", line, got)
+			}
 		}
 	}
 }

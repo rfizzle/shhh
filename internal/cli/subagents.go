@@ -861,10 +861,12 @@ func (a *agentProfiles) runsCommands(role subagent.Role) bool {
 // system prompt, the way a session's request carries it: a child in
 // read-only or plan mode that is not told so spends its rounds on edits and
 // commands the mode refuses one at a time. The conversation is left as it
-// was, so a child whose mode is lifted stops being told.
+// was, so a child whose mode is lifted stops being told. It is the session's
+// paragraph built from the child's own toolset and the same inspection list,
+// so the list a child reads is the one its policy runs.
 // See docs/capabilities/subagents.md#a-child-answers-to-the-session.
-func withModeInstructions(msgs []provider.Message, mode agent.Mode) []provider.Message {
-	return withSystemParagraph(msgs, agent.ModeInstructions(mode))
+func withModeInstructions(msgs []provider.Message, mode agent.Mode, extra []string, defs []provider.Tool) []provider.Message {
+	return withSystemParagraph(msgs, agent.ModeInstructions(mode, extra, toolNames(defs)))
 }
 
 // withRefusedCommands is a writer's request with the paragraph saying its
@@ -1059,7 +1061,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 				if m, ok := sup.AgentMode(spec.Name); ok {
 					mode = m
 				}
-				msgs = withModeInstructions(msgs, mode)
+				msgs = withModeInstructions(msgs, mode, cfg.Behavior.ReadOnlyCommands, streamDefs)
 			}
 			if commandsRefused && choice != provider.ToolChoiceNone {
 				msgs = withRefusedCommands(msgs)

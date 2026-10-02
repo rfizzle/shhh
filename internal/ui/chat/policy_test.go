@@ -493,7 +493,7 @@ func TestMode_ReadOnlyRefusesAnEditInItsOwnWords(t *testing.T) {
 	}
 	msgs := m.Messages()
 	last := msgs[len(msgs)-1]
-	if last.Role != provider.RoleTool || last.Content != agent.ReadOnlyModeResult {
+	if last.Role != provider.RoleTool || last.Content != agent.ReadOnlyModeResult("", nil) {
 		t.Fatalf("the refusal should be read-only mode's own, got %+v", last)
 	}
 	if strings.Contains(last.Content, "plan") {

@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -205,9 +206,9 @@ func TestReadOnlyAllowed(t *testing.T) {
 // they refuse in different words: plan mode's refusal sends it to a plan, and
 // read-only mode has no plan to send it to.
 func TestModeRefusedResult(t *testing.T) {
-	planned := ModeRefusedResult(ModePlan.String() + " mode")
-	readOnly := ModeRefusedResult(ModeReadOnly.String() + " mode")
-	if planned != PlanModeResult || readOnly != ReadOnlyModeResult {
+	planned := ModeRefusedResult(ModePlan.String()+" mode", "make", nil)
+	readOnly := ModeRefusedResult(ModeReadOnly.String()+" mode", "make", nil)
+	if planned != PlanModeResult("make", nil) || readOnly != ReadOnlyModeResult("make", nil) {
 		t.Fatalf("the refusals are crossed: plan = %q, read-only = %q", planned, readOnly)
 	}
 	if strings.Contains(readOnly, "plan") {
@@ -215,8 +216,131 @@ func TestModeRefusedResult(t *testing.T) {
 	}
 	// An unrecognised reason still carries a refusal the model can read: a
 	// call refused with an empty result is a call it retries.
-	if ModeRefusedResult("") != PlanModeResult {
+	if ModeRefusedResult("", "", nil) != PlanModeResult("", nil) {
 		t.Error("an unknown reason should fall back to a refusal, not to nothing")
+	}
+}
+
+// The refusal is read at the moment the model picks its next command, so it
+// names the command it refused and the list that would have run, from the
+// list the policy reads, cut where the paragraph is cut. A call that was not
+// a command is refused without a command to quote.
+func TestReadOnlyRefusalNamesTheList(t *testing.T) {
+	got := ReadOnlyModeResult("golangci-lint --version --verbose", []string{"tokei"})
+	want := `error: this session is in read-only mode; "golangci-lint --version --verbose" is not an inspection command. ` +
+		"Read-only runs: " + prompt.InspectionList(ReadOnlyRuns([]string{"tokei"})) +
+		"; every other command and every write is refused and no approval can run one. " +
+		"Answer with what you can read, or ask the user to switch modes (Shift+Tab or /permissions)."
+	if got != want {
+		t.Fatalf("the refusal is\n%s\nwant\n%s", got, want)
+	}
+	for _, c := range ReadOnlyCommands() {
+		if !strings.Contains(got, c) {
+			t.Errorf("the refusal leaves out %q", c)
+		}
+	}
+	if !strings.Contains(got, ", tokei;") {
+		t.Errorf("the refusal leaves out the person's own entry: %s", got)
+	}
+	if plan := PlanModeResult("make", nil); !strings.Contains(plan, `"make" is not an inspection command. Plan mode runs: ls, pwd, cat`) ||
+		!strings.Contains(plan, "Present your plan as a message") {
+		t.Errorf("plan mode's refusal does not name the list: %s", plan)
+	}
+	if edit := ReadOnlyModeResult("", nil); !strings.Contains(edit, "read-only mode; the call was not executed. Read-only runs: ls,") {
+		t.Errorf("an edit's refusal: %s", edit)
+	}
+	// A heredoc quoted back whole would be the model's own bytes paid again.
+	long := ReadOnlyModeResult("cat <<EOF\n"+strings.Repeat("x", 500)+"\nEOF", nil)
+	if strings.Count(long, "x") > refusedQuoteMax {
+		t.Errorf("the refused command is quoted whole: %d bytes", len(long))
+	}
+	// The cap is the paragraph's: a long list is cut with its count.
+	extra := make([]string, 200)
+	for i := range extra {
+		extra[i] = fmt.Sprintf("tool-%d --version", i)
+	}
+	if cut := ReadOnlyModeResult("make", extra); !strings.Contains(cut, fmt.Sprintf(", and %d more;", len(ReadOnlyRuns(extra))-prompt.InspectionListCap)) {
+		t.Errorf("a long list is not cut at the cap: %s", cut)
+	}
+}
+
+// The paragraph is what the model knows of the mode, so it prints the list
+// the policy reads, the person's entries included, and says how a command is
+// read; a command it prints is one the policy runs.
+func TestReadOnlyInstructionsNameTheInspectionList(t *testing.T) {
+	toolset := []string{"read_file", "search", "glob", "git", "sqlite", "execute_command", "edit_file"}
+	extra := []string{"tokei", "ls"}
+	for _, mode := range []Mode{ModeReadOnly, ModePlan} {
+		got := ModeInstructions(mode, extra, toolset)
+		for _, c := range ReadOnlyCommands() {
+			if !strings.Contains(got, c) {
+				t.Errorf("%s: the paragraph leaves out %q", mode, c)
+			}
+			if !ReadOnlyAllowed(c, nil) {
+				t.Errorf("%s: the paragraph prints %q, which the policy refuses", mode, c)
+			}
+		}
+		for _, want := range []string{
+			"These inspection commands run, matched on their leading words: ls, pwd, cat, head, tail, wc,",
+			"go list, go doc, go mod graph", "gofmt -l, go vet", ", tokei.",
+			"Run each on its own: a pipe, chain or redirect outside quotes is refused",
+			"Any other command (make, go test, a linter, a build) and every write is refused",
+			"read with search, glob, git, sqlite and read_file instead.",
+		} {
+			if !strings.Contains(got, want) {
+				t.Errorf("%s: the paragraph does not say %q:\n%s", mode, want, got)
+			}
+		}
+		_, list, _ := strings.Cut(got, "leading words: ")
+		list, _, _ = strings.Cut(list, ".\n")
+		if n := strings.Count(", "+list+", ", ", ls, "); n != 1 {
+			t.Errorf("%s: an entry the built-in list holds is printed twice:\n%s", mode, got)
+		}
+	}
+	// A reader is named only where the toolset holds it, and a toolset with
+	// no command is told nothing about commands.
+	bare := ModeInstructions(ModeReadOnly, nil, []string{"read_file", "search", "edit_file"})
+	if strings.Contains(bare, "inspection commands") || strings.Contains(bare, "git") || strings.Contains(bare, "sqlite") {
+		t.Errorf("a toolset without commands or git is told of them:\n%s", bare)
+	}
+	if !strings.Contains(bare, "read with search and read_file instead") {
+		t.Errorf("the readers it holds are not named:\n%s", bare)
+	}
+}
+
+// The paragraph rides every request in the mode, so what it costs is bounded
+// the way the toolbox is: the built-in list makes it no more than
+// readOnlyParagraphBytes, and a person's list past the cap grows it by the
+// count of the rest and nothing more, however long the list.
+func TestReadOnlyInstructionsAreBounded(t *testing.T) {
+	// The paragraph as it was written before it printed the list was 430
+	// bytes; the built-in list printed is 587 more. The figure leaves the
+	// built-in list room for a dozen entries before the bound is revisited.
+	const readOnlyParagraphBytes = 1300
+	toolset := []string{"read_file", "search", "glob", "git", "sqlite", "execute_command"}
+	if n := len(ReadOnlyCommands()); n > prompt.InspectionListCap {
+		t.Fatalf("the built-in list holds %d entries, more than the %d the paragraph prints", n, prompt.InspectionListCap)
+	}
+	base := len(ModeInstructions(ModeReadOnly, nil, toolset))
+	t.Logf("the read-only paragraph is %d bytes over the built-in list", base)
+	if base > readOnlyParagraphBytes {
+		t.Errorf("the read-only paragraph is %d bytes, more than %d", base, readOnlyParagraphBytes)
+	}
+	entries := func(n int) []string {
+		out := make([]string, n)
+		for i := range out {
+			out[i] = fmt.Sprintf("tool-%d --version", i)
+		}
+		return out
+	}
+	room := prompt.InspectionListCap - len(ReadOnlyCommands())
+	atCap := len(ModeInstructions(ModeReadOnly, entries(room), toolset))
+	for _, n := range []int{room + 1, 500, 10000} {
+		got := len(ModeInstructions(ModeReadOnly, entries(n), toolset))
+		tail := len(fmt.Sprintf(", and %d more", n-room))
+		if got-atCap > tail {
+			t.Errorf("%d entries grew the paragraph by %d bytes past the cap, more than the %d of its count", n, got-atCap, tail)
+		}
 	}
 }
 
@@ -743,17 +867,18 @@ func TestDecide_ARefusalIsWrittenDownWithItsRule(t *testing.T) {
 // The two modes that bound the session are the two that say so to the model;
 // the rest are about what runs without asking and add nothing.
 func TestModeInstructions(t *testing.T) {
+	toolset := []string{"read_file", "execute_command"}
 	for _, tc := range []struct {
 		mode Mode
 		want string
 	}{
-		{ModeReadOnly, prompt.ReadOnlyModeInstructions},
-		{ModePlan, prompt.PlanModeInstructions},
+		{ModeReadOnly, prompt.ReadOnlyModeInstructions(ReadOnlyCommands(), toolset)},
+		{ModePlan, prompt.PlanModeInstructions(ReadOnlyCommands(), toolset)},
 		{ModeManual, ""},
 		{ModeAcceptEdits, ""},
 		{ModeAuto, ""},
 	} {
-		if got := ModeInstructions(tc.mode); got != tc.want {
+		if got := ModeInstructions(tc.mode, nil, toolset); got != tc.want {
 			t.Errorf("%s: got %q, want %q", tc.mode, got, tc.want)
 		}
 	}

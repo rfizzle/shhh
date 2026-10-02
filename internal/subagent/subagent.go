@@ -5248,7 +5248,11 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused: " + title + " — " + reason})
 			return agent.ScopeRefusedResult(reason)
 		}
-		return agent.ModeRefusedResult(reason)
+		refused := ""
+		if action.Kind == agent.ActionCommand {
+			refused = action.Command
+		}
+		return agent.ModeRefusedResult(reason, refused, policy.ReadOnlyExtra)
 	}
 	// Whether the classifier is what decided, because from here the rule has
 	// a name of its own and a duration behind it — which the policy's reason

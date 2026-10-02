@@ -61,7 +61,7 @@ const (
 // table of rows put to a call, and the only thing that differs is that the
 // call is the harness's own and no model is asked.
 func (k Kind) IsTable() bool {
-	return k == KindClassifier || k == KindSummary || k == KindInherit || k == KindDelegation || k.Scripted()
+	return k == KindClassifier || k == KindSummary || k == KindInherit || k == KindDelegation || k == KindReadOnly || k.Scripted()
 }
 
 // Labels is the closed set this kind's answers come from. A row expecting
@@ -77,6 +77,8 @@ func (k Kind) Labels() []string {
 		return []string{LabelActed, LabelReread, LabelMissed}
 	case KindDelegation:
 		return []string{LabelAlone, LabelSpawned, LabelDivided}
+	case KindReadOnly:
+		return []string{LabelListed, LabelOffList}
 	}
 	return scriptedLabels(k)
 }
@@ -309,7 +311,7 @@ func (s Score) Misses() []Answer {
 // score is only worth writing down if two people who run the suite can
 // compare theirs, and a run that quietly took one reader's overridden prompt
 // or ceiling would produce a number nobody else could reproduce.
-func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, row Row) Answer {
+func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, row Row, run CommandRunner) Answer {
 	switch {
 	case kind == KindClassifier:
 		return askClassifier(ctx, p, model, row)
@@ -319,6 +321,8 @@ func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, r
 		return askInherit(ctx, p, model, row)
 	case kind == KindDelegation:
 		return askDelegation(ctx, p, model, row)
+	case kind == KindReadOnly:
+		return askReadOnly(ctx, p, model, row, run)
 	case kind.Scripted():
 		return askScripted(ctx, kind, row)
 	}

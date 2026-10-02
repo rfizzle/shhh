@@ -10,6 +10,7 @@ package cli
 // See docs/capabilities/evals.md.
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,6 +22,7 @@ import (
 	"github.com/rfizzle/shhh/internal/eval"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"
 )
@@ -145,6 +147,16 @@ func newEvalCmd() *cobra.Command {
 				Args:     sessionArgs(resolved),
 				Model:    resolved.Model,
 				Provider: prov,
+				// A read-only case's inspection commands run the way a
+				// reading child's do: contained in the case's workspace,
+				// and refused where containment is required and absent.
+				Commands: func(ctx context.Context, dir, command string) tools.ExecResult {
+					run := childCommandRunnerUnbounded(cfg, dir, nil, false)
+					if run == nil {
+						return tools.ExecResult{Output: childRefusal(cfg, childContainment()), ExitCode: -1, Outcome: tools.ExecDidNotStart}
+					}
+					return run(ctx, command)
+				},
 				Price: func(model string, in, out int) (float64, bool) {
 					if prices == nil {
 						return 0, false

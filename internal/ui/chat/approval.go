@@ -530,7 +530,7 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 		m.pendingApproval = nil
 		m.pendingRun = ""
 		m.pendingScope = scopeReach{}
-		m.agent.ResolveApproval(m.refusedResult(req.call, denialResult(reason)))
+		m.agent.ResolveApproval(m.refusedResult(req.call, denialResult(reason, req.command, m.policy.readOnlyExtra)))
 		m.appendCallRow(req.call.ID, deniedEntry(req, decidedByAuto, reason, 0))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
@@ -685,7 +685,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		m.pendingApproval = nil
 		m.pendingRun = ""
 		m.pendingScope = scopeReach{}
-		m.agent.ResolveApproval(m.refusedResult(req.call, denialResult(reason)))
+		m.agent.ResolveApproval(m.refusedResult(req.call, denialResult(reason, req.command, m.policy.readOnlyExtra)))
 		// The outcome column names the rule, not the judgement: it is a
 		// closed vocabulary and the classifier's sentence is prose
 		// (docs/interface/principles.md#closed-vocabularies). The sentence
@@ -764,14 +764,14 @@ func (m *Model) refusedResult(tc provider.ToolCall, content string) string {
 // denialResult is the tool result for a call the session refused without
 // asking: the refusing mode's own sentence, the scope's when the path is one
 // no grant can reach, and the classifier's reason otherwise.
-func denialResult(reason string) string {
+func denialResult(reason, command string, extra []string) string {
 	switch {
 	case reason == agent.DenyReasonDenylist, agent.IsIrreplaceable(reason):
 		return agent.RuleRefusedResult(reason)
 	case reason == agent.DenyReasonHost:
 		return agent.DeniedHostResult
 	case reason == agent.ModePlan.String()+" mode", reason == agent.ModeReadOnly.String()+" mode":
-		return agent.ModeRefusedResult(reason)
+		return agent.ModeRefusedResult(reason, command, extra)
 	case strings.HasPrefix(reason, "outside the working scope"):
 		return agent.ScopeRefusedResult(reason)
 	}

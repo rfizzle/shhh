@@ -119,6 +119,42 @@ a quoted string as a command, it costs a refusal the reader can see is wrong.
 The inspection list's own flag guards read the same unquoted words the
 program will be handed, so `find . '-delete'` is the `-delete` it is.
 
+## The model is told what read-only mode runs
+
+A read-only session refuses every command but inspection, and a model that
+does not know which commands those are learns them the expensive way: it
+tries a linter, a build, `make`, a test run, and each guess is a refused call,
+a card in the feed and a round of the turn. One turn has been seen to spend
+five of them before it answered. So the paragraph the two read-only modes add
+to the prompt prints the inspection list itself — the built-in commands and
+the person's own additions — together with one line of the quoting rule above:
+each command runs on its own, and a pipe or a chain outside quotes is
+refused. One sentence says what is refused by its shape, any other command and
+every write, and names the reading tools as the way to read instead, each only
+where the session holds it, as the toolbox does.
+
+**The list is generated, not written.** A paragraph that described the list in
+prose ("e.g. `ls`, `wc`") was a second copy of it, and a second copy drifts:
+an entry added to the list would never be offered, and one taken off would
+go on being promised and refused. Printed from the list the policy reads, the
+paragraph cannot name a command that will be refused or leave out one that
+would run. A child in a read-only mode reads the same paragraph, from the same
+list, with its own toolset.
+
+**The refusal repeats it.** The paragraph is read once, near the top of a long
+conversation; the refusal is read at the moment the model is choosing its next
+command, which is when it needs the list. So a refused command comes back
+named, with the list that would have run and the fact that no approval can run
+anything else. A model that has just been told what runs picks from it rather
+than guessing again.
+
+**The list is capped.** The paragraph rides every request the mode makes, so
+its size is paid for on each of them. The cap is above the built-in list's
+length, so the built-in list is always printed whole; only a person's long
+list of additions is cut, and what is cut is counted ("and 40 more") rather
+than dropped silently, so the model knows the printed list is not the whole of
+it. The paragraph's growth is held by a test the way the toolbox's is.
+
 ## A host is granted once
 
 In a coding session a fetch is asked about like any act that leaves the
