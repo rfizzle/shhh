@@ -75,7 +75,12 @@ func (m Model) paint(cur *cursorSink) string {
 		return ""
 	}
 	if !m.ready {
-		return "Initializing…"
+		// The frame before the terminal's size has arrived stands on the
+		// ground too, or a launch flashes from the terminal's own background
+		// to the theme's. With no size yet it is painted as far as it
+		// reaches, and the terminal's default background covers the rest.
+		// See docs/interface/principles.md#a-colour-is-three-values-and-a-ground.
+		return components.GroundFrame("Initializing…", m.width, m.height)
 	}
 
 	// One frame's geometry and one render of each block whose size decides

@@ -373,8 +373,11 @@ and the doctor — stands on the same ground, painted the same way, and asks the
 terminal the same question about its own background before it chooses a
 table. A ground that stopped at the chat's edge would make leaving it a jump
 in colour on every terminal whose own background is not the theme's, which is
-the very terminal the ground is painted for. The switch is one switch for the
-same reason: turned off, no screen paints it.
+the very terminal the ground is painted for. It holds from the first frame:
+the one drawn at launch, before the terminal has said how large it is, is
+painted as far as it reaches like every later one, or starting a session
+would flash from the terminal's colour to the ground. The switch is one
+switch for the same reason: turned off, no screen paints it.
 
 The exact rungs are the design system's. What is fixed here is that there are
 three of them, that five defer to the terminal, that the dark ground is

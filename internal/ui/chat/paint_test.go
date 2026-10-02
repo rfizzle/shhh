@@ -6,8 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -168,5 +170,69 @@ func TestScreens_StandOnThePaintedGround(t *testing.T) {
 				})
 			}
 		}
+	}
+}
+
+// TestScreens_TheFirstFrameIsPainted: the frame drawn before the terminal has
+// said its size stands on the ground like every later one — every cell it
+// draws carries the ground and the terminal's default background is the same,
+// in the one write — so a launch does not flash from the terminal's own
+// background to the theme's. Its text and place do not move, and turned off,
+// and under the light and CharmTone tables, nothing is painted.
+func TestScreens_TheFirstFrameIsPainted(t *testing.T) {
+	themeRestore(t)
+	wasProfile := components.Profile()
+	t.Cleanup(func() { components.SetProfile(wasProfile) })
+	t.Cleanup(func() { components.PaintGround(true) })
+	components.SetMono(false)
+
+	view := func() (string, color.Color) {
+		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+		v := m.View()
+		return v.Content, v.BackgroundColor
+	}
+	for _, p := range []struct {
+		profile colorprofile.Profile
+		ground  string
+	}{
+		{colorprofile.TrueColor, "48;2;15;17;23"},
+		{colorprofile.ANSI256, "48;5;233"},
+	} {
+		t.Run(p.profile.String(), func(t *testing.T) {
+			components.SetProfile(p.profile)
+			_ = components.SetTheme(components.ThemeDark)
+			components.PaintGround(true)
+			frame, bg := view()
+			ground := components.GroundColor()
+			if !strings.Contains(frame, p.ground) || !sameColor(bg, ground) {
+				t.Fatalf("the first frame is not on the ground %s: default background %v, frame %q", p.ground, bg, frame)
+			}
+			if got := stripANSI(frame); got != "Initializing…" {
+				t.Fatalf("the first frame reads %q, want %q", got, "Initializing…")
+			}
+			scr := uv.NewScreenBuffer(lipgloss.Width(frame), lipgloss.Height(frame))
+			uv.NewStyledString(frame).Draw(scr, scr.Bounds())
+			for y := range scr.Height() {
+				for x := range scr.Width() {
+					if c := scr.CellAt(x, y); c != nil && !c.IsZero() && !sameColor(c.Style.Bg, ground) {
+						t.Fatalf("cell %d,%d (%q): background %v, want %v", x, y, c.Content, c.Style.Bg, ground)
+					}
+				}
+			}
+
+			// Every table but the dark one leaves the ground to the
+			// terminal unless asked, and the dark one turned off paints none.
+			for _, tc := range []struct{ name, theme string }{
+				{"light", components.ThemeLight},
+				{"CharmTone", components.ThemeCharm},
+				{"the ground turned off", components.ThemeDark},
+			} {
+				_ = components.SetTheme(tc.theme)
+				components.PaintGround(false)
+				if frame, bg := view(); bg != nil || frame != "Initializing…" {
+					t.Errorf("%s: the first frame is painted: default background %v, frame %q", tc.name, bg, frame)
+				}
+			}
+		})
 	}
 }
