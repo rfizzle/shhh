@@ -678,10 +678,10 @@ func TestEscFold_AClosedStepHidesTheSettingsRowsToo(t *testing.T) {
 		t.Fatal("the fixture starts with rows the verbosity is holding open")
 	}
 
-	// Both steps folded by hand: the pane is headers and nothing else.
+	// Both steps closed by hand: the pane is closed cards and nothing else.
 	for i := range m.transcript {
 		if m.transcript[i].kind == entryAssistant {
-			m.transcript[i].stepFold = foldClosed
+			m.transcript[i].stepFold = foldCard
 		}
 	}
 	m.invalidateRenderCache()

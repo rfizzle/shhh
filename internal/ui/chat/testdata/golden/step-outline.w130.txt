@@ -30,11 +30,20 @@
   ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 
-· verbosity · normal, step 1 folded by the reader (its header, ▸ in the pointer column)
+· verbosity · normal, step 1 opened by the reader (its groups under the body)
 ❯ fix the round limit
 ─────────────────────────────────────────────────────────────────────────────
 
-▸ ⚙ read 3 files in internal/agent/ · searched ErrRoundLimit           1.2s  
+                                                                             
+  ⚙ read 3 files in internal/agent/ · searched ErrRoundLimit           1.2s  
+    Locate the round accounting                                              
+                                                                             
+    ▾ read 3 files                                                     0.9s  
+      internal/agent/ loop.go · tools.go · context.go                        
+      ⚙ ErrRoundLimit                                             2 matches  
+                                                                             
+    in order ⚙⚙⚙⚙                                                   4 tools  
+                                                                             
 
                                                                              
  ▎✗ wrote internal/agent/loop.go · ran go test ./internal/agent/...  exit 1  
@@ -87,7 +96,26 @@
 ❯ fix the round limit
 ─────────────────────────────────────────────────────────────────────────────
 
-▸ ⚙ read 3 files in internal/agent/ · searched ErrRoundLimit           1.2s  
+                                                                             
+  ⚙ read 3 files in internal/agent/ · searched ErrRoundLimit           1.2s  
+    Locate the round accounting                                              
+                                                                             
+    ▾ read 3 files                                                     0.9s  
+      ⚙ internal/agent/loop.go                                      3 lines  
+        a                                                                    
+        b                                                                    
+        c                                                                    
+      ⚙ internal/agent/tools.go                                     2 lines  
+        a                                                                    
+        b                                                                    
+      ⚙ internal/agent/context.go                                    1 line  
+        a                                                                    
+      ⚙ ErrRoundLimit                                             2 matches  
+        internal/agent/loop.go:88:         return ErrRoundLimit              
+        internal/agent/agent.go:12: // ErrRoundLimit ends a turn.            
+                                                                             
+    in order ⚙⚙⚙⚙                                                   4 tools  
+                                                                             
 
                                                                              
  ▎✗ wrote internal/agent/loop.go · ran go test ./internal/agent/...  exit 1  
@@ -110,7 +138,7 @@
 ❯ fix the round limit
 ─────────────────────────────────────────────────────────────────────────────
 
-▸ ⚙ read 3 files in internal/agent/ · searched ErrRoundLimit           1.2s  
+  ⚙ read 3 files in internal/agent/ · searched ErrRoundLimit           1.2s  
 
  ▎✗ wrote internal/agent/loop.go · ran go test ./internal/agent/...  exit 1  
 
@@ -145,11 +173,16 @@
                                                                              
 
 
-· row by row · a thought mid-step, the first card folded (the thought stays)
+· row by row · a thought mid-step, the first card opened (the thought stays)
 ❯ fix the round limit
 ─────────────────────────────────────────────────────────────────────────────
 
-▸ ⚙ read internal/agent/loop.go                                              
+                                                                             
+  ⚙ read internal/agent/loop.go                                              
+    Locate the round accounting                                              
+                                                                             
+      ⚙ internal/agent/loop.go                                      3 lines  
+                                                                             
 
     The cap is counted in the loop, so the sentinel has to come from there.
 
@@ -179,11 +212,20 @@
   ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
 
-· verbosity · normal, step 1 folded by the reader (its header, ▸ in the pointer column)
+· verbosity · normal, step 1 opened by the reader (its groups under the body)
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
 ␛[38;5;243m─────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[48;5;234m␛[38;5;241m▸␛[m␛[48;5;234m ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 3 files in internal/agent/ · searched ErrRoundLimit␛[m␛[48;5;234m           ␛[38;5;241m1.2s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                                             ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 3 files in internal/agent/ · searched ErrRoundLimit␛[m␛[48;5;234m           ␛[38;5;241m1.2s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                                              ␛[m
+␛[48;5;234m                                                                             ␛[m
+␛[48;5;234m    ␛[38;5;241m▾ read 3 files␛[m␛[48;5;234m                                                     ␛[38;5;241m0.9s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;245minternal/agent/␛[m␛[48;5;234m ␛[38;5;241mloop.go · tools.go · context.go␛[m␛[48;5;234m                        ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245mErrRoundLimit␛[m␛[48;5;234m                                             ␛[38;5;245m2 matches␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                                             ␛[m
+␛[48;5;234m    ␛[38;5;241min order ␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m                                                   ␛[38;5;241m4 tools␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                                             ␛[m
 
 ␛[48;5;234m                                                                             ␛[m
 ␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m␛[38;5;241m · ran go test ./internal/agent/...␛[m␛[48;5;234m  ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
@@ -236,7 +278,26 @@
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
 ␛[38;5;243m─────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[48;5;234m␛[38;5;241m▸␛[m␛[48;5;234m ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 3 files in internal/agent/ · searched ErrRoundLimit␛[m␛[48;5;234m           ␛[38;5;241m1.2s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                                             ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 3 files in internal/agent/ · searched ErrRoundLimit␛[m␛[48;5;234m           ␛[38;5;241m1.2s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                                              ␛[m
+␛[48;5;234m                                                                             ␛[m
+␛[48;5;234m    ␛[38;5;241m▾ read 3 files␛[m␛[48;5;234m                                                     ␛[38;5;241m0.9s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m                                      ␛[38;5;245m3 lines␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;245ma␛[m␛[48;5;234m                                                                    ␛[m
+␛[48;5;234m        ␛[38;5;245mb␛[m␛[48;5;234m                                                                    ␛[m
+␛[48;5;234m        ␛[38;5;245mc␛[m␛[48;5;234m                                                                    ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245minternal/agent/tools.go␛[m␛[48;5;234m                                     ␛[38;5;245m2 lines␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;245ma␛[m␛[48;5;234m                                                                    ␛[m
+␛[48;5;234m        ␛[38;5;245mb␛[m␛[48;5;234m                                                                    ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245minternal/agent/context.go␛[m␛[48;5;234m                                    ␛[38;5;245m1 line␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;245ma␛[m␛[48;5;234m                                                                    ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245mErrRoundLimit␛[m␛[48;5;234m                                             ␛[38;5;245m2 matches␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;245minternal/agent/loop.go:88:         return ErrRoundLimit␛[m␛[48;5;234m              ␛[m
+␛[48;5;234m        ␛[38;5;245minternal/agent/agent.go:12: // ErrRoundLimit ends a turn.␛[m␛[48;5;234m            ␛[m
+␛[48;5;234m                                                                             ␛[m
+␛[48;5;234m    ␛[38;5;241min order ␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m                                                   ␛[38;5;241m4 tools␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                                             ␛[m
 
 ␛[48;5;234m                                                                             ␛[m
 ␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m␛[38;5;241m · ran go test ./internal/agent/...␛[m␛[48;5;234m  ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
@@ -259,7 +320,7 @@
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
 ␛[38;5;243m─────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[48;5;234m␛[38;5;241m▸␛[m␛[48;5;234m ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 3 files in internal/agent/ · searched ErrRoundLimit␛[m␛[48;5;234m           ␛[38;5;241m1.2s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 3 files in internal/agent/ · searched ErrRoundLimit␛[m␛[48;5;234m           ␛[38;5;241m1.2s␛[m␛[48;5;234m  ␛[m
 
 ␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m␛[38;5;241m · ran go test ./internal/agent/...␛[m␛[48;5;234m  ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
 
@@ -294,11 +355,16 @@
 ␛[48;5;234m                                                                             ␛[m
 
 
-· row by row · a thought mid-step, the first card folded (the thought stays)
+· row by row · a thought mid-step, the first card opened (the thought stays)
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
 ␛[38;5;243m─────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[48;5;234m␛[38;5;241m▸␛[m␛[48;5;234m ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m                                              ␛[m
+␛[48;5;234m                                                                             ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m                                              ␛[m
+␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                                              ␛[m
+␛[48;5;234m                                                                             ␛[m
+␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m                                      ␛[38;5;245m3 lines␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                                             ␛[m
 
     ␛[3;38;5;245mThe cap is counted in the loop, so the sentinel has to come from there.␛[m
 

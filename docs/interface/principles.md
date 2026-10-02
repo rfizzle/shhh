@@ -418,9 +418,9 @@ from this table rather than deciding its own density. The default is
 
 | Rung | Cards | Glosses | Summary rows | Vitals | Thinking | Resolved queue lines | Step cards | Activity feed |
 |------|-------|---------|--------------|--------|------------|----------------------|------------|---------------|
-| `low` | the offers row only, and the esc offer never drops | none | none | mode · context · spend | off | folded to a count | its header alone, one row on the band with no padding rows | no compose row, no counts on a row |
-| `normal` | the readings: one row and its footnote | the ones about this call | the rows with something to say | the rail as the frame draws it | prose, whole | as the surface draws them | header, body and footer; a finished card does not fold | the compose row while a round writes its calls |
-| `high` | every hint row | every gloss | every reading | every field | prose, whole | as the surface draws them | open, its calls in groups under the receipt's verbs, each with its bounded body; a card of one call shows that call's row | the compose row while a round writes its calls |
+| `low` | the offers row only, and the esc offer never drops | none | none | mode · context · spend | off | folded to a count | closed, its header alone: one row on the band with no padding rows, inset as a normal header is; enter or a click opens it like any card | no compose row, no counts on a row |
+| `normal` | the readings: one row and its footnote | the ones about this call | the rows with something to say | the rail as the frame draws it | prose, whole | as the surface draws them | closed, header, body and footer on padding rows; enter or a click opens it | the compose row while a round writes its calls |
+| `high` | every hint row | every gloss | every reading | every field | prose, whole | as the surface draws them | open, its calls in groups under the receipt's verbs, each with its bounded body; a card of one call shows that call's row; enter or a click closes it to the padded card | the compose row while a round writes its calls |
 
 A rung is inclusive of the ones below it: whatever `low` draws, `normal`
 draws, and whatever `normal` draws, `high` draws. A surface that draws
@@ -440,6 +440,12 @@ included, because a card that stopped saying what Esc does breaks
 which is why `low` is not the default either. And nothing a rung takes off
 the screen is lost: a fold still counts what it swallowed
 ([fold, never hide](#fold-never-hide)), and a reader's own open or fold on
-a row or a step's card outranks the rung: a card the reader folded is its
-header with `▸` at every rung, and one they opened or gave back stays as
-they left it when the rung changes.
+a row or a step's card outranks the rung: a card they opened or closed stays
+as they left it when the rung changes.
+
+A step's card has two depths at every rung, closed and open, and no rung has
+a folded state: the header alone is what `low` draws a closed card as, never
+a shape a reader's press lands in at `normal` or `high`. The closed card
+at `low` keeps the inset a normal header has — the pointer column, the rail
+column and the glyph before the words — because text set against the band's
+edge reads as bordered rather than padded.

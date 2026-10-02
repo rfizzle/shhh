@@ -21,13 +21,15 @@ import (
 
 // CardDensity is how much of a card is drawn: the rung of the density ladder
 // (docs/interface/principles.md#density-is-one-ladder) after the reader's own
-// fold or open has been read over it. The zero value is the default rung.
+// open or close has been read over it. The zero value is the default rung.
 type CardDensity int
 
 const (
 	// CardNormal is the header, the body and the footer.
 	CardNormal CardDensity = iota
-	// CardLow is the header alone, with no padding rows: the outline.
+	// CardLow is the header alone, with no padding rows: the low rung's
+	// closed card. The header keeps its pointer, rail and glyph columns, so
+	// its text stands in from the band's edge as a padded card's does.
 	CardLow
 	// CardHigh is the card open: the header, the body and the calls under
 	// it, in place of the footer that summarised them.
@@ -120,9 +122,10 @@ type StepCard struct {
 	// Calls are the open card's rows, already drawn at the pane's width.
 	// They stand where the footer stood, on the band.
 	Calls []string
-	// Density is how much of the card is drawn. Folded is the reader's own
-	// fold, which outranks it: the header alone, with ▸ in the pointer
-	// column so the fold says it is one.
+	// Density is how much of the card is drawn. Folded is the reader's
+	// fold of a fan-out's card or a plan's, which outranks it: the header
+	// alone, with ▸ in the pointer column so the fold says it is one. A
+	// step's card has no fold; its header alone is the low rung's.
 	Density CardDensity
 	Folded  bool
 	// Selected puts the reading cursor on the header and lights it.

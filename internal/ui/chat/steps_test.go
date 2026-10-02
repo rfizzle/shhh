@@ -319,22 +319,19 @@ func TestSteps_FocusFoldsAndUnfolds(t *testing.T) {
 		t.Fatalf("an open card offers its rows too, got %v", got)
 	}
 
-	// Enter again folds it to its header, which still says what it holds.
+	// Enter again closes it to the card, whose header still says what it
+	// holds; there is no third depth.
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	view := stripANSI(m.renderHistory())
-	if strings.Contains(view, "Locate the round accounting") {
-		t.Fatalf("enter should fold the card to its header:\n%s", view)
+	if strings.Contains(view, "⚙ ErrRoundLimit") || !strings.Contains(view, "Locate the round accounting") {
+		t.Fatalf("enter again should close the card to its header and body:\n%s", view)
 	}
 	if !strings.Contains(stepLine(t, view, "searched ErrRoundLimit"), "read internal/agent/loop.go") {
-		t.Fatal("a folded header still states what it swallowed")
+		t.Fatal("the closed card's header still states what it holds")
 	}
-
-	// And a third time gives the card back.
-	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = updated.(Model)
-	if !strings.Contains(stripANSI(m.renderHistory()), "Locate the round accounting") {
-		t.Fatal("enter on a folded card should unfold it")
+	if got := m.expandableIndices(); fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Fatalf("a closed card offers no rows, got %v", got)
 	}
 }
 

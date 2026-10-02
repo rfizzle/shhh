@@ -40,7 +40,7 @@ func isCardBlock(blk transcriptBlock, es []entry) bool {
 }
 
 // cardAnchor is the entry a card is kept on: the prose that titled it, or
-// the first call of a run nothing titled. The reader's fold is written
+// the first call of a run nothing titled. The reader's open or close is written
 // there and the reading cursor stands there, so the card holds no state of
 // its own and re-renders from the entries on a resize.
 func cardAnchor(blk transcriptBlock) int {
@@ -67,39 +67,44 @@ func (m Model) cardBlockAt(es []entry, idx int) (transcriptBlock, bool) {
 	return transcriptBlock{}, false
 }
 
-// cardShape is how much of a card is drawn, and whether the reader folded
-// it. A finished card does not fold on its own: it stays as the rung draws
-// it — the header alone at low, header, body and footer at normal, open at
-// high — until the reader folds or opens it, and their answer outranks the
-// rung (docs/interface/surfaces.md#the-step).
-func (m Model) cardShape(blk transcriptBlock, es []entry) (density components.CardDensity, folded bool) {
+// cardShape is how much of a card is drawn. A card has two depths: closed,
+// which is the shape the rung draws a card in — its header alone at low, its
+// header, body and footer at normal — and open onto its calls, which high
+// draws every card as. The reader's open or close outranks the rung; nothing
+// the reader does folds a card past the closed shape, so the header alone is
+// the low rung's and no other (docs/interface/surfaces.md#the-step).
+func (m Model) cardShape(blk transcriptBlock, es []entry) components.CardDensity {
 	a := cardAnchor(blk)
 	if a < 0 || a >= len(es) {
-		return components.CardNormal, false
+		return components.CardNormal
 	}
 	switch es[a].stepFold {
-	case foldClosed:
-		return components.CardLow, true
 	case foldOpen, foldSearch:
 		// Opened onto its calls, by the reader or by the search reaching a
 		// match it counted behind the card.
-		return components.CardHigh, false
+		return components.CardHigh
 	case foldCard:
-		return components.CardNormal, false
+		// Closed by the reader where the rung would draw it open.
+		return m.closedCard()
 	}
-	switch {
-	case m.cardDetailOpen(blk, es):
-		return components.CardHigh, false
-	case m.density(verbosityNormal):
-		return components.CardNormal, false
+	if m.cardDetailOpen(blk, es) {
+		return components.CardHigh
 	}
-	return components.CardLow, false
+	return m.closedCard()
+}
+
+// closedCard is the shape the rung draws a card in when it is not open: the
+// padded card at normal and up, the header alone at low.
+func (m Model) closedCard() components.CardDensity {
+	if m.density(verbosityNormal) {
+		return components.CardNormal
+	}
+	return components.CardLow
 }
 
 // cardOpen reports whether the card is drawing its calls.
 func (m Model) cardOpen(blk transcriptBlock, es []entry) bool {
-	d, folded := m.cardShape(blk, es)
-	return !folded && d == components.CardHigh
+	return m.cardShape(blk, es) == components.CardHigh
 }
 
 // cardHidesRows reports whether the card stands in for its calls rather
@@ -179,8 +184,7 @@ func (m Model) liveCardTicks() bool {
 	blocks := m.blocksOf(es)
 	for i := len(blocks) - 1; i >= 0; i-- {
 		if blocks[i].last {
-			d, folded := m.cardShape(blocks[i], es)
-			return isCardBlock(blocks[i], es) && !folded && d != components.CardLow
+			return isCardBlock(blocks[i], es) && m.cardShape(blocks[i], es) != components.CardLow
 		}
 	}
 	return false
@@ -205,7 +209,7 @@ func (m Model) cardActs(blk transcriptBlock, es []entry) (acts []receipt.Act, at
 
 // stepCardFor builds the card for a block at the width it will be drawn at.
 func (m Model) stepCardFor(blk transcriptBlock, es []entry, width int, selected bool) components.StepCard {
-	density, folded := m.cardShape(blk, es)
+	density := m.cardShape(blk, es)
 	start, end := blk.members()
 	acts, at, reading := m.cardActs(blk, es)
 	s := receipt.BuildStep(acts)
@@ -226,7 +230,6 @@ func (m Model) stepCardFor(blk transcriptBlock, es []entry, width int, selected 
 		Bare:     h.Bare,
 		Duration: turnDuration(s.Duration),
 		Density:  density,
-		Folded:   folded,
 		Selected: selected,
 	}
 	switch s.Lead.State {
@@ -482,7 +485,7 @@ func joinNonEmpty(parts ...string) string {
 // cardTakesKey reports whether the entry at idx is a card the reader is
 // standing on, rather than a call inside one. A run nothing titled is kept
 // on its first call, so once it is open the stop there is that call's row:
-// the card has no line of its own to stand on until it is folded again.
+// the card has no line of its own to stand on until it is closed again.
 func (m Model) cardTakesKey(es []entry, idx int) (transcriptBlock, bool) {
 	blk, ok := m.cardBlockAt(es, idx)
 	if !ok || (blk.step == nil && m.cardOpen(blk, es)) {
@@ -500,60 +503,37 @@ func (m Model) cardHeaderOffset(idx int) int {
 	if !ok {
 		return 0
 	}
-	if d, folded := m.cardShape(blk, es); folded || d == components.CardLow {
+	if m.cardShape(blk, es) == components.CardLow {
 		return 0
 	}
 	return 1
 }
 
-// toggleCardFold folds a card to its header or unfolds it, recording the
-// choice on the entry the card is kept on. It is a click on the card and
-// [-] on it, and with cycleCard the only thing that folds a finished card.
-func (m *Model) toggleCardFold(idx int) bool {
-	es := *m.entries()
-	blk, ok := m.cardBlockAt(es, idx)
-	if !ok {
-		return false
-	}
-	if d, folded := m.cardShape(blk, es); folded || d == components.CardLow {
-		m.unfoldCard(es, idx)
-	} else {
-		es[idx].stepFold = foldClosed
-	}
-	return true
-}
-
-// cycleCard is enter on a card: the card opens onto its calls, folds to its
-// header, and comes back to the card, the three depths a row's own enter
-// walks (docs/interface/surfaces.md#the-step). The artboards draw an open
-// card and a folded one and leave the key between them to the binary.
+// toggleCard is enter on a card and a click on its header: a closed card
+// opens onto its calls, and an open one closes back to the shape the rung
+// draws. Two depths and not three, so the press that opened a card is the
+// press that gives it back, from the keyboard and the pointer alike
+// (docs/interface/surfaces.md#the-step).
 // See docs/interface/departures.md#enter-walks-a-card-through-three-depths.
-func (m *Model) cycleCard(idx int) bool {
+func (m *Model) toggleCard(blk transcriptBlock, idx int) {
 	es := *m.entries()
-	blk, ok := m.cardTakesKey(es, idx)
-	if !ok {
-		return false
+	if m.cardOpen(blk, es) {
+		m.closeCard(blk, idx)
+		return
 	}
-	switch d, folded := m.cardShape(blk, es); {
-	case folded || d == components.CardLow:
-		m.unfoldCard(es, idx)
-	case d == components.CardHigh:
-		es[idx].stepFold = foldClosed
-	default:
-		es[idx].stepFold = foldOpen
-	}
-	return true
+	es[idx].stepFold = foldOpen
 }
 
-// unfoldCard takes a card back from its header alone. Where the rung draws
-// the card anyway, that is taking the reader's fold back rather than an
-// answer of its own, and it leaves nothing on record for esc's fold to put
-// back (readinghint.go); at low it is the reader's answer, and outranks the
-// rung.
-// See docs/interface/departures.md#a-card-the-reader-gave-back-at-low-keeps-that-shape.
-func (m *Model) unfoldCard(es []entry, idx int) {
+// closeCard closes the card kept on idx to the shape the rung draws. Where
+// the rung draws it closed anyway the reader's answer is taken back rather
+// than recorded, so esc's fold has nothing of theirs to put back
+// (readinghint.go); at high, where the rung opens every card, the close is
+// the reader's answer and outranks it. It is [-] on an open card, enter and
+// the header's click on one, and the strip's way back.
+func (m *Model) closeCard(blk transcriptBlock, idx int) {
+	es := *m.entries()
 	es[idx].stepFold = foldAuto
-	if !m.density(verbosityNormal) {
+	if m.cardOpen(blk, es) {
 		es[idx].stepFold = foldCard
 	}
 }
@@ -604,14 +584,14 @@ func pictureRowFor(e entry, selected bool) components.CardPictureRow {
 }
 
 // cardPictures is the pictures a card draws as footer rows: the ones its
-// calls returned, while the card is drawing its footer — not folded to its
-// header, not at the rung that draws headers alone, and not open, where
+// calls returned, while the card is drawing its footer — not at the rung
+// that draws headers alone, and not open, where
 // each is a row under the calls instead.
 func (m Model) cardPictures(blk transcriptBlock, es []entry) []int {
 	if !isCardBlock(blk, es) {
 		return nil
 	}
-	if d, folded := m.cardShape(blk, es); folded || d != components.CardNormal {
+	if m.cardShape(blk, es) != components.CardNormal {
 		return nil
 	}
 	var idxs []int
@@ -627,8 +607,8 @@ func (m Model) cardPictures(blk transcriptBlock, es []entry) []int {
 // pictureCardUnits is a card whose footer holds pictures: the card down to
 // its footer as one unit, kept on its anchor, and each picture's row a unit
 // of its own, kept on the picture's entry, so the reading cursor stops on it
-// and a click lands on it — enter on the header still walks the card's
-// depths; the card's closing padding row rides the last.
+// and a click lands on it — enter on the header still opens and closes the
+// card; the card's closing padding row rides the last.
 // See docs/interface/departures.md#a-returned-picture-is-a-stop-of-its-own.
 func (m Model) pictureCardUnits(card components.StepCard, pics []int, es []entry, width int, focus bool, focusIdx, anchor int) []unit {
 	for _, p := range pics {

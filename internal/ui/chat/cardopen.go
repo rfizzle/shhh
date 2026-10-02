@@ -181,7 +181,7 @@ func (m Model) openCardUnits(blk transcriptBlock, es []entry, width int, focus b
 		first := oc.groupFirst(g)
 		if !lined(g) {
 			on := cursorOn(first) || (onStrip && lit == g.Calls[0])
-			add(unit{idx: first, text: m.cardCallText(oc, g.Calls[0], width, detail, on)})
+			add(unit{idx: first, text: m.cardCallText(oc, g.Calls[0], width, detail, on), call: true})
 			continue
 		}
 		folded := es[first].groupFolded
@@ -206,7 +206,7 @@ func (m Model) openCardUnits(blk transcriptBlock, es []entry, width int, focus b
 				continue
 			}
 			add(unit{idx: oc.at[p], text: m.cardCallText(oc, p, width, detail, onStrip && lit == p),
-				shadow: oc.at[p] == first})
+				shadow: oc.at[p] == first, call: true})
 		}
 	}
 
@@ -482,13 +482,20 @@ func (m Model) openStripCall() (tea.Model, tea.Cmd) {
 	if !ok || m.strip.call < 0 || m.strip.call >= len(oc.at) || cardAnchor(blk) != m.strip.anchor {
 		return m, nil
 	}
-	idx := oc.at[m.strip.call]
+	return m.openCallView(oc.at[m.strip.call], stateFocus)
+}
+
+// openCallView opens one call of an open card in its own view: the diff's
+// full screen for an edit, the output's for anything else. esc there comes
+// back to ret, with the card still open behind it.
+func (m Model) openCallView(idx int, ret state) (tea.Model, tea.Cmd) {
+	es := *m.entries()
 	if d := es[idx].diff; d != nil {
 		d.Mode = components.DiffFull
 		d.Offset = 0
-		return m.openDiffFull(d, stateFocus)
+		return m.openDiffFull(d, ret)
 	}
-	return m.openOutputFull(m.rowOutputView(es[idx]), idx, stateFocus)
+	return m.openOutputFull(m.rowOutputView(es[idx]), idx, ret)
 }
 
 // closeStripCard is the way back from the strip: the card closes to the card
@@ -498,10 +505,7 @@ func (m *Model) closeStripCard() {
 	anchor := m.strip.anchor
 	m.strip = stripCursor{}
 	if blk, ok := m.cardBlockAt(es, anchor); ok {
-		es[anchor].stepFold = foldAuto
-		if m.cardOpen(blk, es) {
-			es[anchor].stepFold = foldCard
-		}
+		m.closeCard(blk, anchor)
 		m.focusIdx = anchor
 	}
 	m.invalidateRenderCache()

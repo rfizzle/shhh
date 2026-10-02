@@ -102,20 +102,24 @@ func rowCell(t *testing.T, m Model, want string) (x, y int) {
 	return at(t, m, lineOf(t, m, want), 0)
 }
 
+// A call's row inside an open card opens that call's own view, the one enter
+// on the strip opens, and esc there comes back to the card, still open.
 func TestClick_OpensTheRowUnderIt(t *testing.T) {
 	m := clickModel(t)
-	if (*m.entries())[1].expanded {
-		t.Fatal("the search row starts collapsed")
-	}
 	x, y := rowCell(t, m, "⚙ x ")
 	m = click(t, m, x, y)
-	if !(*m.entries())[1].expanded {
-		t.Fatal("a click on an activity row should open it, the way [enter] does")
+	if m.state != stateOutputFull || m.fullOutput == nil || m.outputIdx != 1 {
+		t.Fatalf("a click on a call's row should open its view, got state %d on %d", m.state, m.outputIdx)
 	}
-	// And close it again: the pointer reaches the same toggle the key does.
-	m = click(t, m, x, y)
 	if (*m.entries())[1].expanded {
-		t.Fatal("a second click should close the row again")
+		t.Fatal("the row opened in place under its group as well")
+	}
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = updated.(Model)
+	es := *m.entries()
+	blk, ok := m.cardBlockAt(es, 1)
+	if m.state != stateInput || !ok || !m.cardOpen(blk, es) {
+		t.Fatalf("esc should come back to the open card, got state %d", m.state)
 	}
 }
 
@@ -183,11 +187,13 @@ func TestClick_ReadingModeMovesTheCursor(t *testing.T) {
 	if m.focusIdx != 1 {
 		t.Fatalf("a click should put the cursor on the row it opened, got %d", m.focusIdx)
 	}
-	if !(*m.entries())[1].expanded {
-		t.Fatal("the clicked row should have opened")
+	if m.state != stateOutputFull {
+		t.Fatal("the clicked row should have opened its view")
 	}
-	if m.state != stateFocus {
-		t.Fatal("a click must not close reading mode")
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = updated.(Model)
+	if m.state != stateFocus || m.focusIdx != 1 {
+		t.Fatalf("esc should come back to reading mode on the row, got state %d at %d", m.state, m.focusIdx)
 	}
 }
 
@@ -448,64 +454,39 @@ func deepClickModel(t *testing.T) Model {
 	return m
 }
 
-// The complaint the split answers: a click that opened a row has to be
-// undoable by the identical click. The keyboard's third depth takes the whole
-// screen, and a pointer that walked the same cycle would have taken it here
-// instead of giving the row back.
-func TestClick_TheRowLineToggles(t *testing.T) {
-	m := deepClickModel(t)
-	x, y := rowCell(t, m, "⚙ main.go")
-	m = click(t, m, x, y)
-	if !(*m.entries())[3].expanded {
-		t.Fatal("a click on the row line should open it")
+// A call inside an open card is reached for its own view, wherever on it the
+// click lands: the row line, or a line of a body enter left open under it.
+// The view holds the whole output, past what the in-place window shows, and
+// the row it came from is left as it was behind it.
+func TestClick_ACallInAnOpenCardOpensItsView(t *testing.T) {
+	cases := []struct {
+		name, on string
+		// open leaves the call's body open under its row, as enter would.
+		open bool
+	}{
+		{name: "the row line", on: "⚙ main.go"},
+		{name: "a line of its open body", on: "deep line 2", open: true},
 	}
-	x, y = rowCell(t, m, "⚙ main.go")
-	m = click(t, m, x, y)
-	if (*m.entries())[3].expanded {
-		t.Fatal("the same cell pressed twice should give the row back")
-	}
-	if m.state == stateOutputFull {
-		t.Fatal("the row line never takes the screen, however much output is behind it")
-	}
-}
-
-// The other half of the cell: the body is content, and a click on content
-// asks for that content whole.
-func TestClick_TheBodyOpensItWhole(t *testing.T) {
-	m := deepClickModel(t)
-	x, y := rowCell(t, m, "⚙ main.go")
-	m = click(t, m, x, y)
-	bx, by := rowCell(t, m, "deep line 2")
-	m = click(t, m, bx, by)
-	if m.state != stateOutputFull || m.fullOutput == nil {
-		t.Fatalf("a click in the body should open the full screen, got state %d", m.state)
-	}
-	if len(m.fullOutput.Lines) != maxExpandedResultLines*2 {
-		t.Fatalf("the full screen holds the whole output, got %d lines", len(m.fullOutput.Lines))
-	}
-	if !(*m.entries())[3].expanded {
-		t.Fatal("the row it came from stays open behind it: esc never destroys")
-	}
-}
-
-// A window already showing everything has no screen past it — the same
-// judgement the key makes when it skips that depth. What matters is the other
-// half: the click must not fall through and close the body being read.
-func TestClick_ABodyWithNothingDeeperStaysPut(t *testing.T) {
-	m := clickModel(t)
-	x, y := rowCell(t, m, "⚙ x ")
-	m = click(t, m, x, y)
-	before := m.renderHistoryRaw()
-	bx, by := rowCell(t, m, "result line 3")
-	m = click(t, m, bx, by)
-	if m.state == stateOutputFull {
-		t.Fatal("a body that fits its window has nothing deeper to open")
-	}
-	if !(*m.entries())[1].expanded {
-		t.Fatal("a click on the body must not close the row under the pointer")
-	}
-	if m.renderHistoryRaw() != before {
-		t.Fatal("a click on a body with nothing behind it should change nothing")
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			m := deepClickModel(t)
+			if tc.open {
+				(*m.entries())[3].expanded = true
+				m.invalidateRenderCache()
+				m.viewport.SetLines(m.renderHistoryLines())
+			}
+			x, y := rowCell(t, m, tc.on)
+			m = click(t, m, x, y)
+			if m.state != stateOutputFull || m.fullOutput == nil {
+				t.Fatalf("the click should open the call's view, got state %d", m.state)
+			}
+			if len(m.fullOutput.Lines) != maxExpandedResultLines*2 {
+				t.Fatalf("the view holds the whole output, got %d lines", len(m.fullOutput.Lines))
+			}
+			if (*m.entries())[3].expanded != tc.open {
+				t.Fatal("the row it came from should stay as it was behind the view")
+			}
+		})
 	}
 }
 
@@ -525,30 +506,25 @@ func diffClickModel(t *testing.T) Model {
 	return m
 }
 
-// A diff's three modes split the same way: the row line is the toggle, and
-// the change itself is what the full screen is for.
-func TestClick_TheDiffRowLineToggles(t *testing.T) {
+// An edit inside an open card opens the diff's own view, the full screen
+// enter on the strip opens for it, from its row line as from its change.
+func TestClick_TheDiffRowLineOpensItsView(t *testing.T) {
 	m := diffClickModel(t)
 	x, y := rowCell(t, m, "✎ internal/agent/loop.go ")
 	m = click(t, m, x, y)
-	d := (*m.entries())[3].diff
-	if d.Mode != components.DiffExpanded {
-		t.Fatalf("a click on the row line should expand the diff, got mode %d", d.Mode)
+	if m.state != stateDiffFull {
+		t.Fatalf("a click on the edit's row should open its view, got state %d", m.state)
 	}
-	x, y = rowCell(t, m, "✎ internal/agent/loop.go ")
-	m = click(t, m, x, y)
-	if d.Mode != components.DiffCollapsed {
-		t.Fatalf("the same cell should collapse it again, got mode %d", d.Mode)
-	}
-	if m.state == stateDiffFull {
-		t.Fatal("the row line never takes the screen")
+	if d := (*m.entries())[3].diff; d.Mode != components.DiffFull {
+		t.Fatalf("the view should be in its full mode, got %d", d.Mode)
 	}
 }
 
 func TestClick_TheDiffBodyOpensFullScreen(t *testing.T) {
 	m := diffClickModel(t)
-	x, y := rowCell(t, m, "✎ internal/agent/loop.go ")
-	m = click(t, m, x, y)
+	(*m.entries())[3].diff.Mode = components.DiffExpanded
+	m.invalidateRenderCache()
+	m.viewport.SetLines(m.renderHistoryLines())
 	bx, by := rowCell(t, m, "new line")
 	m = click(t, m, bx, by)
 	if m.state != stateDiffFull {

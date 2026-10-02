@@ -79,6 +79,17 @@ func slicesContain(idxs []int, idx int) bool {
 	return false
 }
 
+// toggleCardAt is enter on the card kept on idx: it opens a closed card and
+// closes an open one.
+func toggleCardAt(t *testing.T, m *Model, idx int) {
+	t.Helper()
+	blk, ok := m.cardBlockAt(*m.entries(), idx)
+	if !ok {
+		t.Fatalf("no card is kept on entry %d", idx)
+	}
+	m.toggleCard(blk, idx)
+}
+
 // cardLines renders the transcript with the colour taken off, one line each.
 func cardLines(m Model) []string {
 	return strings.Split(stripANSI(m.renderHistory()), "\n")
@@ -354,46 +365,187 @@ func TestCard_ARunningCardHasNoSpinner(t *testing.T) {
 	}
 }
 
-// A finished card does not fold on its own. It folds to its header only on
-// the reader's enter or click, and opens again the same way.
-func TestCard_FoldsOnlyWhenAsked(t *testing.T) {
-	m := cardModel(t)
-	if v := stripANSI(m.renderHistory()); !strings.Contains(v, "Writing the epic and two stories now.") ||
-		!strings.Contains(v, "Listing .plan and reading") {
-		t.Fatalf("a finished card folded on its own:\n%s", v)
-	}
-	if !m.toggleCardFold(8) {
-		t.Fatal("the write's card is kept on its titling entry")
+// openCloseModel is a finished step of reads with a reading taken between
+// its rounds: two files under .plan/ and a search, three seconds and a tenth
+// in all.
+func openCloseModel(t *testing.T) Model {
+	t.Helper()
+	m := activityModel(t)
+	m.transcript = []entry{
+		{kind: entryUser, text: "write the copy story"},
+		{kind: entryAssistant, text: "Listing .plan and reading the backlog's format before I write anything."},
+		readEntry(".plan/BACKLOG.md", 1200*time.Millisecond),
+		readEntry(".plan/NOTES.md", 1100*time.Millisecond),
+		{kind: entrySummary, reading: &summaryReading{
+			verdict: agent.SummaryVerdict{State: agent.SummaryOnTarget, Round: 1, Text: "Reading before it writes."}}},
+		searchEntry("copy", 800*time.Millisecond),
 	}
 	m.invalidateRenderCache()
-	lines := cardLines(m)
-	if strings.Contains(strings.Join(lines, "\n"), "Writing the epic and two stories now.") {
-		t.Errorf("the folded card still draws its body:\n%s", strings.Join(lines, "\n"))
-	}
-	if h := cardLine(lines, "wrote .plan/BACKLOG.md"); !strings.HasPrefix(h, "▸▎✎ wrote") {
-		t.Errorf("a folded card draws ▸ in the pointer column: %q", h)
-	}
-	m.toggleCardFold(8)
+	return m
+}
+
+// openCloseHeader is that step's header as every rung draws it, its words
+// with the runs of spaces between them closed to one.
+const openCloseHeader = "⚙ read 2 files in .plan/ · searched copy ≡ on target · 3.1s"
+
+// squeezed is a rendered line with its runs of spaces closed to one and the
+// reading cursor taken off, so a header reads as its words.
+func squeezed(l string) string {
+	return strings.Join(strings.Fields(strings.TrimPrefix(strings.TrimSpace(l), "❯")), " ")
+}
+
+// A card has two depths. Enter opens a normal card onto its groups under
+// its body, and enter again closes it back to the normal card; a finished
+// card does neither on its own, and no press draws it as its header alone
+// at normal (docs/interface/surfaces.md#the-step).
+func TestCard_EnterOpensThenCloses(t *testing.T) {
+	const (
+		body  = "Listing .plan and reading the backlog's format"
+		group = "▾ read 2 files"
+	)
+	m := openCloseModel(t)
+	m.viewport.SetLines(m.renderHistoryLines())
+	updated, _ := m.Update(readingChord())
+	m = updated.(Model)
+	m.focusIdx = 1
 	m.invalidateRenderCache()
-	if !strings.Contains(stripANSI(m.renderHistory()), "Writing the epic and two stories now.") {
-		t.Error("the card did not open again")
+	normal := cardLines(m)
+	enter := func() {
+		t.Helper()
+		updated, _ := m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
+		m = updated.(Model)
+	}
+	// headerAt is the header's line and the lines under it.
+	headerAt := func(lines []string) int {
+		for i, l := range lines {
+			if squeezed(l) == openCloseHeader {
+				return i
+			}
+		}
+		t.Fatalf("no header %q:\n%s", openCloseHeader, strings.Join(lines, "\n"))
+		return -1
 	}
 
-	// At low a card is its header alone, and the reader's open outranks it.
+	h := headerAt(normal)
+	if !strings.HasPrefix(squeezed(normal[h+1]), body) || strings.Contains(strings.Join(normal, "\n"), group) {
+		t.Fatalf("the normal card is its header with its body under it, no groups:\n%s", strings.Join(normal, "\n"))
+	}
+	if strings.HasPrefix(strings.TrimLeft(normal[h], " "), "▸") {
+		t.Errorf("the normal card draws a fold mark: %q", normal[h])
+	}
+
+	enter()
+	open := cardLines(m)
+	h = headerAt(open)
+	g := -1
+	for i := h; i < len(open); i++ {
+		if strings.Contains(open[i], group) {
+			g = i
+			break
+		}
+	}
+	if !strings.HasPrefix(squeezed(open[h+1]), body) || g < 0 || squeezed(open[g]) != "▾ read 2 files 2.3s" {
+		t.Fatalf("after enter the same header stands over its body and its groups:\n%s", strings.Join(open, "\n"))
+	}
+
+	enter()
+	if again := cardLines(m); strings.Join(again, "\n") != strings.Join(normal, "\n") {
+		t.Errorf("enter again should close the card to the normal card:\n%s\nwant:\n%s",
+			strings.Join(again, "\n"), strings.Join(normal, "\n"))
+	}
+	if got := m.transcript[1].stepFold; got != foldAuto {
+		t.Errorf("a card closed at normal leaves no answer on record, got %v", got)
+	}
+
+	// [-] closes an open card too, and on a closed one is not offered.
+	enter()
+	if !m.collapseFocused() {
+		t.Fatal("[-] on an open card should close it")
+	}
+	if again := cardLines(m); strings.Join(again, "\n") != strings.Join(normal, "\n") {
+		t.Errorf("[-] should close the card to the normal card:\n%s", strings.Join(again, "\n"))
+	}
+	if m.collapseFocused() {
+		t.Error("[-] on a closed card has nothing to close")
+	}
+}
+
+// At low a card is its header alone on one band row, and enter or a click
+// opens it to its groups like any card; closing it gives back the one row.
+func TestDensity_LowOpensLikeAnyCard(t *testing.T) {
+	const group = "▾ read 2 files"
+	m := openCloseModel(t)
 	m.verbosity = verbosityLow
 	m.invalidateRenderCache()
-	if strings.Contains(stripANSI(m.renderHistory()), "Writing the epic") {
-		t.Error("at low a card is its header alone")
+	low := cardLines(m)
+	h := -1
+	for i, l := range low {
+		if strings.Contains(l, " ⚙ read 2 files in .plan/ · searched copy") {
+			h = i
+		}
 	}
-	m.toggleCardFold(8)
+	if h < 1 || squeezed(low[h]) != openCloseHeader || strings.TrimSpace(low[h-1]) != "" ||
+		(h+1 < len(low) && strings.TrimSpace(low[h+1]) != "") {
+		t.Fatalf("at low the card is its header alone on one row, a blank either side:\n%s", strings.Join(low, "\n"))
+	}
+
+	toggleCardAt(t, &m, 1)
 	m.invalidateRenderCache()
-	if !strings.Contains(stripANSI(m.renderHistory()), "Writing the epic") {
-		t.Error("the reader's open outranks the rung")
+	open := strings.Join(cardLines(m), "\n")
+	if !strings.Contains(open, group) || !strings.Contains(open, "Listing .plan and reading") {
+		t.Fatalf("enter at low opens the card to its groups:\n%s", open)
+	}
+	toggleCardAt(t, &m, 1)
+	m.invalidateRenderCache()
+	if again := cardLines(m); strings.Join(again, "\n") != strings.Join(low, "\n") {
+		t.Errorf("closing at low gives back the one row:\n%s", strings.Join(again, "\n"))
+	}
+
+	// The pointer opens it the same way: a click on the one row.
+	c := selectModel(t, &clip{}, openCloseModel(t).transcript...)
+	c.verbosity = verbosityLow
+	c.invalidateRenderCache()
+	c.viewport.SetLines(c.renderHistoryLines())
+	x, y := rowCell(t, c, "read 2 files")
+	c = click(t, c, x, y)
+	if got := (*c.entries())[1].stepFold; got != foldOpen {
+		t.Fatalf("a click on the low row should open the card, its answer is %v", got)
+	}
+	x, y = rowCell(t, c, "read 2 files")
+	c = click(t, c, x, y)
+	if got := (*c.entries())[1].stepFold; got != foldAuto {
+		t.Errorf("a second click should close it back to the row, its answer is %v", got)
+	}
+}
+
+// The low row keeps a normal header's inset: the pointer column, the rail
+// column and the glyph, so its text never starts at the band's first column.
+// It is the normal card's header line, cell for cell.
+func TestCard_LowKeepsItsInset(t *testing.T) {
+	m := cardModel(t)
+	normal := cardLines(m)
+	m.verbosity = verbosityLow
+	m.invalidateRenderCache()
+	low := cardLines(m)
+	for _, s := range []string{"read 2 files", "ran git status --short .plan/", "wrote .plan/BACKLOG.md"} {
+		n, l := cardLine(normal, s), cardLine(low, s)
+		if l == "" || l != n {
+			t.Errorf("the low row for %q is %q, want the normal header %q", s, l, n)
+		}
+		if l != "" && l[0] != ' ' {
+			t.Errorf("the low row's text starts at the band's first column: %q", l)
+		}
+	}
+	if h := cardLine(low, "wrote .plan/BACKLOG.md"); !strings.HasPrefix(h, " ▎✎ wrote") {
+		t.Errorf("the low row keeps the pointer column, the rail and the glyph: %q", h)
+	}
+	if h := cardLine(low, "read 2 files"); !strings.HasPrefix(h, "  ⚙ read") {
+		t.Errorf("a read's low row keeps the pointer and rail columns blank: %q", h)
 	}
 }
 
 // Reading mode's unit is the card: the cursor steps from card to card, enter
-// folds and unfolds the one it is on, and the outline still names the same
+// opens and closes the one it is on, and the outline still names the same
 // steps.
 func TestReading_TheCursorStopsOnACard(t *testing.T) {
 	m := cardModel(t)
@@ -422,8 +574,7 @@ func TestReading_TheCursorStopsOnACard(t *testing.T) {
 	if h := cardLine(cardLines(m), "wrote .plan/BACKLOG.md"); !strings.HasPrefix(h, "❯") {
 		t.Errorf("the cursor stands on the card's header: %q", h)
 	}
-	// Enter walks the card's depths: open onto its calls, folded to its
-	// header, and the card again.
+	// Enter opens the card onto its calls, and enter again closes it.
 	enter := func() {
 		updated, _ = m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
 		m = updated.(Model)
@@ -433,12 +584,8 @@ func TestReading_TheCursorStopsOnACard(t *testing.T) {
 		t.Errorf("open, the card's call is a stop and the cursor stays on the card: %v at %d", m.expandableIndices(), m.focusIdx)
 	}
 	enter()
-	if strings.Contains(stripANSI(m.renderHistory()), "Writing the epic") {
-		t.Error("enter on the open card did not fold it")
-	}
-	enter()
-	if !strings.Contains(stripANSI(m.renderHistory()), "Writing the epic") {
-		t.Error("enter on the folded card did not unfold it")
+	if slicesContain(m.expandableIndices(), 9) || !strings.Contains(stripANSI(m.renderHistory()), "Writing the epic") {
+		t.Error("enter on the open card did not close it to the card")
 	}
 	m.moveFocus(-1)
 	if m.focusIdx != 5 {
@@ -477,31 +624,39 @@ func TestCard_NoHintKeyOnARow(t *testing.T) {
 }
 
 // A run nothing titled is kept on its first call, so open, the card and that
-// call's row share an index. A click on the card's own header still folds the
-// card rather than opening the call under it, and a click on the folded
-// header gives the card back.
-func TestCard_AClickOnAnOpenCardsHeaderFoldsIt(t *testing.T) {
+// call's row share an index. A click on the card's own header still closes
+// the card rather than opening the call under it, and a second click on the
+// header opens it again.
+func TestCard_AClickOnAnOpenCardsHeaderClosesIt(t *testing.T) {
 	m := clickModel(t)
+	open := func() bool {
+		es := *m.entries()
+		blk, ok := m.cardBlockAt(es, 1)
+		return ok && m.cardOpen(blk, es)
+	}
+	if !open() {
+		t.Fatal("the run starts open at this rung")
+	}
 	x, y := rowCell(t, m, "searched x · ran go test")
 	m = click(t, m, x, y)
-	es := *m.entries()
-	if es[1].stepFold != foldClosed {
-		t.Fatalf("the click should fold the open card, its fold is %v", es[1].stepFold)
+	if open() {
+		t.Fatalf("the click should close the open card, its answer is %v", (*m.entries())[1].stepFold)
 	}
-	if es[1].expanded {
-		t.Fatal("the click opened the first call's body instead of folding the card")
+	if (*m.entries())[1].expanded || m.state == stateOutputFull {
+		t.Fatal("the click opened the first call instead of closing the card")
 	}
 	x, y = rowCell(t, m, "searched x · ran go test")
 	m = click(t, m, x, y)
-	if got := (*m.entries())[1].stepFold; got == foldClosed {
-		t.Fatal("a second click should give the card back")
+	if !open() {
+		t.Fatal("a second click should open the card again")
 	}
 }
 
 // The ladder for a card: low draws it as its header alone and leaves
 // thinking out, normal draws header, body and footer with thinking as prose,
-// high opens every card onto its groups; and a reader's own fold or open
-// outranks the rung (docs/interface/principles.md#density-is-one-ladder).
+// high opens every card onto its groups; a reader's own open or close
+// outranks the rung, and no rung draws a fold mark
+// (docs/interface/principles.md#density-is-one-ladder).
 func TestDensity_ACardAtEachRung(t *testing.T) {
 	const (
 		header  = "ran git status --short .plan/"
@@ -520,8 +675,6 @@ func TestDensity_ACardAtEachRung(t *testing.T) {
 		folds map[int]foldState
 		has   []string
 		lacks []string
-		// folded is the header that has to start with ▸, where one does.
-		folded string
 	}{
 		{name: "low · each card its header alone, thinking left out", rung: verbosityLow,
 			has: []string{header}, lacks: []string{body, footer, strip, thought, writeBody}},
@@ -529,14 +682,9 @@ func TestDensity_ACardAtEachRung(t *testing.T) {
 			has: []string{header, body, footer, thought, writeBody}, lacks: []string{strip, readsGroup}},
 		{name: "high · every card open with its groups", rung: verbosityHigh,
 			has: []string{header, body, strip, readsGroup, thought, writeBody}},
-		{name: "low · a card the reader folded draws ▸", rung: verbosityLow,
-			folds: map[int]foldState{write: foldClosed}, has: []string{header},
-			lacks: []string{writeBody}, folded: "wrote .plan/BACKLOG.md"},
-		{name: "high · the reader's fold outranks the rung", rung: verbosityHigh,
-			folds: map[int]foldState{write: foldClosed}, has: []string{header, strip},
-			lacks: []string{writeBody}, folded: "wrote .plan/BACKLOG.md"},
-		{name: "low · a card the reader gave back draws whole", rung: verbosityLow,
-			folds: map[int]foldState{write: foldCard}, has: []string{writeBody}, lacks: []string{body}},
+		{name: "high · a card the reader closed is the padded card", rung: verbosityHigh,
+			folds: map[int]foldState{reads: foldCard}, has: []string{header, strip, writeBody, "Listing .plan and reading"},
+			lacks: []string{readsGroup}},
 		{name: "low · a card the reader opened draws its groups", rung: verbosityLow,
 			folds: map[int]foldState{reads: foldOpen}, has: []string{readsGroup, strip}, lacks: []string{body}},
 		{name: "normal · a card the reader opened draws its groups", rung: verbosityNormal,
@@ -563,9 +711,9 @@ func TestDensity_ACardAtEachRung(t *testing.T) {
 					t.Errorf("%q is drawn:\n%s", s, view)
 				}
 			}
-			if tc.folded != "" {
-				if h := cardLine(lines, tc.folded); !strings.HasPrefix(h, "▸") {
-					t.Errorf("the folded card does not draw ▸ in the pointer column: %q", h)
+			for _, l := range lines {
+				if strings.HasPrefix(l, "▸") {
+					t.Errorf("a card draws a fold mark in the pointer column: %q", l)
 				}
 			}
 			if tc.rung == verbosityLow && tc.folds == nil {
@@ -583,10 +731,10 @@ func TestDensity_ACardAtEachRung(t *testing.T) {
 }
 
 // The pointer on a card: its header is the control, the rest of it is text.
-// A click on the header folds the card and a second unfolds it; a click on
+// A click on the header opens the card and a second closes it; a click on
 // the sentence or the evidence does nothing; a click on a call's row inside
-// an open card opens that call as the row's click does anywhere; and a drag
-// across the card still selects it (docs/interface/surfaces.md#the-step).
+// an open card opens that call's own view; and a drag across the card still
+// selects it (docs/interface/surfaces.md#the-step).
 func TestCard_TheHeaderIsThePointersControl(t *testing.T) {
 	const (
 		card   = 5 // the command's card, kept on its titling sentence
@@ -604,19 +752,20 @@ func TestCard_TheHeaderIsThePointersControl(t *testing.T) {
 		return m
 	}
 	cases := []struct {
-		name     string
-		open     bool
-		on       string
-		fold     foldState
-		expanded bool
+		name string
+		open bool
+		on   string
+		fold foldState
+		// view is whether the click opened a call's own view.
+		view bool
 	}{
-		{name: "the header folds the card", on: header, fold: foldClosed},
+		{name: "the header opens the card", on: header, fold: foldOpen},
 		{name: "the sentence does nothing", on: "Confirming .plan/ is untracked", fold: foldAuto},
 		{name: "the evidence does nothing", on: "?? .plan/", fold: foldAuto},
-		{name: "an open card's header folds it", open: true, on: header, fold: foldClosed},
+		{name: "an open card's header closes it", open: true, on: header, fold: foldAuto},
 		{name: "an open card's sentence does nothing", open: true, on: "Confirming .plan/ is untracked", fold: foldOpen},
-		{name: "a call's row in an open card opens the call", open: true, on: "$ git status --short .plan/",
-			fold: foldOpen, expanded: true},
+		{name: "a call's row in an open card opens the call's view", open: true, on: "$ git status --short .plan/",
+			fold: foldOpen, view: true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -625,22 +774,25 @@ func TestCard_TheHeaderIsThePointersControl(t *testing.T) {
 			m = click(t, m, x, y)
 			es := *m.entries()
 			if es[card].stepFold != tc.fold {
-				t.Errorf("the card's fold is %v, want %v", es[card].stepFold, tc.fold)
+				t.Errorf("the card's answer is %v, want %v", es[card].stepFold, tc.fold)
 			}
-			if es[call].expanded != tc.expanded {
-				t.Errorf("the call's row open = %v, want %v", es[call].expanded, tc.expanded)
+			if es[call].expanded {
+				t.Error("the call's row opened in place under its group")
+			}
+			if view := m.state == stateOutputFull; view != tc.view {
+				t.Errorf("the call's own view open = %v, want %v", view, tc.view)
 			}
 		})
 	}
 
-	t.Run("a second click on the header gives the card back", func(t *testing.T) {
+	t.Run("a second click on the header closes the card", func(t *testing.T) {
 		m := pointed(t, &clip{}, false)
 		x, y := rowCell(t, m, header)
 		m = click(t, m, x, y)
 		x, y = rowCell(t, m, header)
 		m = click(t, m, x, y)
-		if got := (*m.entries())[card].stepFold; got == foldClosed {
-			t.Fatal("a second click should give the card back")
+		if got := (*m.entries())[card].stepFold; got != foldAuto {
+			t.Fatalf("a second click should close the card, its answer is %v", got)
 		}
 	})
 

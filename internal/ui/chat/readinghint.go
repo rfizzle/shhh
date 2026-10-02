@@ -103,9 +103,9 @@ func (m Model) readingModeKeys() []hintSeg {
 	segs := []hintSeg{seg(keys.Reading.Move)}
 	if _, _, ok := m.groupAt(*m.entries(), m.focusIdx); ok {
 		// A group line folds and unfolds its group.
-		words := cardFoldWords
+		words := groupFoldWords
 		if (*m.entries())[m.focusIdx].groupFolded {
-			words = cardUnfoldWords
+			words = groupUnfoldWords
 		}
 		segs = append(segs, segAs(keys.Reading.Expand, words))
 		if m.focusedRowOpen() {
@@ -165,27 +165,31 @@ func (m Model) readingModeKeys() []hintSeg {
 // openTrayWords is what enter does on a sent picture's row.
 const openTrayWords = "open it"
 
-// The words for what enter does to a card, one per depth it walks.
+// The words for what enter does to a card, one per depth: a card is closed
+// or open, and enter takes it to the other.
 const (
-	cardOpenWords   = "open it"
-	cardFoldWords   = "fold it"
-	cardUnfoldWords = "unfold it"
+	cardOpenWords  = "open it"
+	cardCloseWords = "close it"
+)
+
+// The words for what enter does to an open card's group line, which folds
+// its group and unfolds it.
+const (
+	groupFoldWords   = "fold it"
+	groupUnfoldWords = "unfold it"
 )
 
 // focusedCardWords is what enter does to the card under the cursor, if the
-// cursor is on one: open it onto its calls, fold an open one to its header,
-// unfold one drawn as its header alone (cycleCard).
+// cursor is on one: open a closed one onto its calls, close an open one
+// (toggleCard).
 func (m Model) focusedCardWords() (string, bool) {
 	es := *m.entries()
 	blk, ok := m.cardTakesKey(es, m.focusIdx)
 	if !ok {
 		return "", false
 	}
-	switch d, folded := m.cardShape(blk, es); {
-	case folded || d == components.CardLow:
-		return cardUnfoldWords, true
-	case d == components.CardHigh:
-		return cardFoldWords, true
+	if m.cardOpen(blk, es) {
+		return cardCloseWords, true
 	}
 	return cardOpenWords, true
 }
@@ -464,14 +468,13 @@ func (m Model) focusedOpenKind() openKind {
 		return openNone
 	}
 	if blk, ok := m.cardTakesKey(es, m.focusIdx); ok {
-		d, folded := m.cardShape(blk, es)
 		switch {
-		case !folded && d == components.CardHigh:
+		case m.cardOpen(blk, es):
 			return openStep
 		case es[m.focusIdx].detailFold == foldOpen:
-			// A header folded over an open detail: the rows are not on
+			// A card closed over an open detail: the rows are not on
 			// screen, but the answer that would show their bodies is still
-			// on record, and [-] answers both with the one toggle below.
+			// on record, and [-] takes it back.
 			return openDetail
 		}
 		return openNone
@@ -515,8 +518,12 @@ func (m *Model) collapseFocused() bool {
 	switch kind {
 	case openGroup:
 		es[m.focusIdx].groupFolded = true
-	case openStep, openDetail:
-		m.toggleStepFold(m.focusIdx)
+	case openStep:
+		if blk, ok := m.cardBlockAt(es, m.focusIdx); ok {
+			m.closeCard(blk, m.focusIdx)
+		}
+	case openDetail:
+		es[m.focusIdx].detailFold = foldClosed
 	case openDiff:
 		es[m.focusIdx].diff.Mode = components.DiffCollapsed
 	default:
@@ -539,14 +546,14 @@ func (m *Model) collapseFocused() bool {
 func readerOpened(e entry) []openKind {
 	var kinds []openKind
 	// The two step overrides are read and put back one at a time, even
-	// though /step writes both at once: a reader who then folds the header
-	// has said foldClosed on one of them and nothing on the other, and a
-	// fold that treated them as one answer would overwrite that no.
-	// Which also means a detail answer standing behind a folded header is
-	// still put back — nothing on screen reports it, and an answer nothing
-	// reports is one that springs the bodies open the next time the header
-	// opens.
-	if e.stepFold == foldOpen || e.stepFold == foldCard {
+	// though /step writes both at once: a reader who then closes the card
+	// has said no on one of them and nothing on the other, and a fold that
+	// treated them as one answer would overwrite that no. Which also means
+	// a detail answer standing behind a closed card is still put back —
+	// nothing on screen reports it, and an answer nothing reports is one
+	// that springs the bodies open the next time the card opens. A card the
+	// reader closed at high is a no, not an open, and is left alone.
+	if e.stepFold == foldOpen {
 		kinds = append(kinds, openStep)
 	}
 	if e.detailFold == foldOpen {

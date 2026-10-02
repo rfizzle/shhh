@@ -17,18 +17,20 @@ package chat
 // already has a key.
 //
 //   - A step card's header. It names one step, and [enter] with reading
-//     mode's cursor on the card walks its depths, [-] folds it; the click
-//     folds the card to its header and unfolds it again (card.go). The rest
-//     of the card — its padding, the sentence that titled the step, the
-//     evidence under it — is text, a selection surface with no single act
-//     behind it, and a click there does nothing. The fan-out's card and the
-//     plan's are cards, and their headers fold them the same way.
+//     mode's cursor on the card opens it onto its calls and closes it again,
+//     [-] closes an open one; the click does the same, opening a closed card
+//     and closing an open one (card.go). The rest of the card — its padding,
+//     the sentence that titled the step, the evidence under it — is text, a
+//     selection surface with no single act behind it, and a click there
+//     does nothing. The fan-out's card and the plan's are cards, and their
+//     headers fold them to their header.
 //   - An activity row. Its whole width is one row, and [enter] under reading
 //     mode's cursor already opens it. The row line opens and closes it; the
 //     body under the row opens that body whole (clickRow). A call's row
-//     inside an open card is one, the same as anywhere, and so is a child's
-//     row on a fan-out's card, which opens the children's reports as
-//     [enter] on the card does. A turn's close
+//     inside an open card opens that call's own view, as [enter] on the
+//     strip does with the call under its cursor; a child's row on a
+//     fan-out's card opens the children's reports as [enter] on the card
+//     does. A turn's close
 //     is one too: the line stating what the turn changed opens that turn's
 //     review, which enter on the selected close opens as well.
 //   - The approval card's decision run. Each key owns its own cells inside
@@ -87,7 +89,10 @@ package chat
 // cell, pressed twice, is where it started. That last one is why the pointer
 // does not walk the keyboard's three-depth cycle, where the second press
 // would take the whole screen instead of giving the row back; it reads the
-// half of the row it landed in instead. A modifier would have been the other
+// half of the row it landed in instead. A call's row inside an open card is
+// the one row that takes the screen on a click: the card's groups already say
+// what the call did, so what is left to open is its own view, and esc gives
+// the card back as the strip's enter does. A modifier would have been the other
 // way to say it, and it is not available here: every terminal worth naming
 // keeps shift-click for its own selection, and hands the application
 // nothing.
@@ -223,7 +228,7 @@ func (m Model) unitAt(line int) (u unit, offset int, ok bool) {
 
 // clickRow opens the transcript row a rendered line belongs to. It is
 // [enter]'s act reached from the other input, so it takes the same branches
-// in the same order — a card folds, a diff opens — and a row with nothing
+// in the same order — a card opens or closes, a diff opens — and a row with nothing
 // to open does nothing at all.
 //
 // What it does not share with [enter] is the *cycle*. The key has one row
@@ -264,16 +269,19 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	if u.cardHead {
-		// A click on a card's header folds it or unfolds it, open or not:
-		// a run nothing titled is kept on its first call, so the card and
-		// that call's row share an index, and the line says which one was
-		// meant. The card's other lines — its padding, the sentence, the
-		// evidence — are text to read and select, and a click there does
-		// nothing (docs/interface/surfaces.md#the-step).
+		// A click on a card's header opens a closed card and closes an
+		// open one, as enter does: a run nothing titled is kept on its
+		// first call, so the card and that call's row share an index, and
+		// the line says which one was meant. The card's other lines — its
+		// padding, the sentence, the evidence — are text to read and
+		// select, and a click there does nothing
+		// (docs/interface/surfaces.md#the-step).
 		// See docs/interface/departures.md#only-a-cards-header-answers-a-click.
-		if offset != m.cardHeaderOffset(idx) || !m.toggleCardFold(idx) {
+		blk, ok := m.cardBlockAt(es, idx)
+		if !ok || offset != m.cardHeaderOffset(idx) {
 			return m, nil
 		}
+		m.toggleCard(blk, idx)
 		m.invalidateRenderCache()
 		if m.state == stateFocus {
 			m.focusIdx = idx
@@ -304,6 +312,18 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 			m.viewport.GotoBottom()
 		}
 		return m, nil
+	}
+	if u.call {
+		// A call inside an open card is reached for its own view: the
+		// click opens it, as enter on the strip opens the call under the
+		// strip's cursor, and esc there comes back to the open card. The
+		// card's groups already say what each call did, so a row opening
+		// in place under its group would be a third depth of the same
+		// card (docs/interface/surfaces.md#the-step).
+		if m.state == stateFocus {
+			m.focusIdx = m.cursorStopFor(es, idx)
+		}
+		return m.openCallView(idx, m.state)
 	}
 	g := gestureHeader
 	if offset > 0 {
@@ -436,10 +456,10 @@ func (m *Model) toggleRow(idx int, g rowGesture) (claimed bool, full *components
 		return false, nil, false
 	}
 	if g == gestureCycle {
-		if m.cycleCard(idx) {
-			// Enter walks a card through its depths: open onto its calls,
-			// folded to its header, and the card again
-			// (docs/interface/surfaces.md#the-step).
+		if blk, ok := m.cardTakesKey(es, idx); ok {
+			// Enter opens a closed card onto its calls and closes an open
+			// one (docs/interface/surfaces.md#the-step).
+			m.toggleCard(blk, idx)
 			return true, nil, false
 		}
 	} else if _, ok := m.cardTakesKey(*m.entries(), idx); ok {

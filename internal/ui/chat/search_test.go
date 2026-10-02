@@ -119,14 +119,12 @@ func TestSearch_EnterOpensTheFoldOntoTheMatch(t *testing.T) {
 // so it goes back. A fold the reader opened is theirs.
 func TestSearch_ClearingTheQueryPutsBackOnlyTheFoldsItOpened(t *testing.T) {
 	m := foldedSearchModel(t)
-	// The reader's own: the second step, folded by hand before any search
-	// — enter opens a card, and enter again folds it.
+	// The reader's own: the second step, opened by hand before any search.
 	m.focusIdx = 6
 	m.refreshFocusView()
 	m, _ = pressKey(t, m, enter)
-	m, _ = pressKey(t, m, enter)
-	if got := (*m.entries())[6].stepFold; got != foldClosed {
-		t.Fatalf("the second step's fold is %v, want the reader's own", got)
+	if got := (*m.entries())[6].stepFold; got != foldOpen {
+		t.Fatalf("the second step's answer is %v, want the reader's own", got)
 	}
 
 	m.focusIdx = 1
@@ -146,8 +144,8 @@ func TestSearch_ClearingTheQueryPutsBackOnlyTheFoldsItOpened(t *testing.T) {
 	if es[1].stepFold != foldAuto {
 		t.Fatalf("the search's fold is %v, want it back at rest", es[1].stepFold)
 	}
-	if es[6].stepFold != foldClosed {
-		t.Fatalf("the reader's fold is %v, want it left alone", es[6].stepFold)
+	if es[6].stepFold != foldOpen {
+		t.Fatalf("the reader's open is %v, want it left alone", es[6].stepFold)
 	}
 }
 

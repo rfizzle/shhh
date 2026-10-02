@@ -237,17 +237,18 @@ func goldenModel(t *testing.T, width int) Model {
 // TestGolden_StepOutline captures the transcript's steps as cards at each
 // breakpoint (docs/interface/surfaces.md#the-step): each step's receipt on
 // its header, the prose that titled it for a body, the failure in its
-// footer, and the card the reader folded, opened and left to the rung.
+// footer, and the card the reader opened and left to the rung.
 func TestGolden_StepOutline(t *testing.T) {
 	captureGolden(t, "step-outline", "transcript step outline", goldenWidths, func(width int) []golden.Panel {
 		m := goldenModel(t, width)
 		normal := m.renderHistory()
-		// A finished card does not fold on its own; the reader's fold is
-		// what draws step 1 as its header alone.
-		m.toggleStepFold(1)
+		// A finished card does not open or fold on its own; the reader's
+		// enter is what opens step 1 onto its calls, and enter again
+		// closes it.
+		toggleCardAt(t, &m, 1)
 		m.invalidateRenderCache()
 		opened := m.renderHistory()
-		m.toggleStepFold(1)
+		toggleCardAt(t, &m, 1)
 		// /step on step 1: the card opens on its calls, every one of them
 		// with its bounded body — one step deep, with step 2 beside it
 		// untouched.
@@ -259,7 +260,9 @@ func TestGolden_StepOutline(t *testing.T) {
 		m.invalidateRenderCache()
 		detail := m.renderHistory()
 		m.toggleStepDetail(blk.step)
-		m.toggleStepFold(1)
+		// Back to the rung's own answer, so high and low draw step 1 as
+		// they draw every step.
+		m.transcript[1].stepFold, m.transcript[1].detailFold = foldAuto, foldAuto
 		m.verbosity = verbosityHigh
 		m.invalidateRenderCache()
 		high := m.renderHistory()
@@ -278,7 +281,7 @@ func TestGolden_StepOutline(t *testing.T) {
 		// A step that stopped to think between its rounds, landed the same
 		// way: the thought is prose on bare screen, so the titled card ends
 		// where it stands and the calls after it are a card of their own;
-		// folding the first card leaves the thought where it is.
+		// opening the first card leaves the thought where it is.
 		thought := frameModel(t, width, 40)
 		thought.setTurnState(stateStreaming)
 		for _, e := range thinkingStep() {
@@ -286,26 +289,25 @@ func TestGolden_StepOutline(t *testing.T) {
 			_ = thought.renderHistory()
 		}
 		thinkOpen := thought.renderHistory()
-		thought.toggleStepFold(1)
+		toggleCardAt(t, &thought, 1)
 		thought.invalidateRenderCache()
-		thinkFolded := thought.renderHistory()
+		thinkOpened := thought.renderHistory()
 		return []golden.Panel{
 			{Label: "verbosity · normal (each step a card, none folded on its own)", View: normal},
-			{Label: "verbosity · normal, step 1 folded by the reader (its header, ▸ in the pointer column)", View: opened},
+			{Label: "verbosity · normal, step 1 opened by the reader (its groups under the body)", View: opened},
 			{Label: "/step · step 1's detail, the card open on its calls", View: detail},
 			{Label: "verbosity · high (every card open, every row with detail)", View: high},
 			{Label: "verbosity · low (each card its header alone)", View: low},
 			{Label: "row by row · a notice, then a batch with no prose over it, in one live card", View: arriving},
 			{Label: "row by row · a thought mid-step (the card ends at it, the calls after it a card of their own)", View: thinkOpen},
-			{Label: "row by row · a thought mid-step, the first card folded (the thought stays)", View: thinkFolded},
+			{Label: "row by row · a thought mid-step, the first card opened (the thought stays)", View: thinkOpened},
 		}
 	})
 }
 
 // densityTranscript is a two-step turn with a thought in each step: the
-// first finished, with a run of reads, and the second broken, so it stays
-// open at every rung but the one that folds everything. It is what thinking
-// and the feed draw differently from one rung to the next.
+// first finished, with a run of reads, and the second broken. It is what
+// thinking and the feed draw differently from one rung to the next.
 func densityTranscript() []entry {
 	return []entry{
 		{kind: entryUser, text: "fix the round limit"},
@@ -338,15 +340,19 @@ func TestGolden_Density(t *testing.T) {
 			m.verbosity = rung
 			m.invalidateRenderCache()
 			at := m.renderHistory()
-			// The reader's own fold outranks the rung: the first card,
-			// folded by hand, is its header with ▸ at every rung. At low a
-			// header-alone card's own key gives it back rather than folding
-			// it, so the fold is the one the reader made at another rung.
-			m.transcript[1].stepFold = foldClosed
+			// The reader's enter outranks the rung: the first card opens
+			// onto its groups at low and normal, and closes back to the
+			// rung's closed card at high, where every card is open. No rung
+			// has a folded card.
+			toggleCardAt(t, &m, 1)
 			m.invalidateRenderCache()
+			did := "opened"
+			if rung == verbosityHigh {
+				did = "closed"
+			}
 			return []golden.Panel{
 				{Label: "verbosity · " + rung.String(), View: at},
-				{Label: "verbosity · " + rung.String() + ", step 1 folded by the reader (▸ in the pointer column)", View: m.renderHistory()},
+				{Label: "verbosity · " + rung.String() + ", step 1 " + did + " by the reader's enter", View: m.renderHistory()},
 			}
 		})
 	}

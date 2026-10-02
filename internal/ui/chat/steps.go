@@ -45,7 +45,7 @@ type foldState int
 const (
 	foldAuto   foldState = iota // as the density rung draws it; never folded by finishing
 	foldOpen                    // you opened it onto its calls
-	foldClosed                  // you folded it to its header
+	foldClosed                  // you folded it: a fan-out's or a plan's card, or a step's detail
 	// foldSearch is a fold the transcript search opened to reach a match it
 	// had counted behind it (search.go). It draws exactly like foldOpen and
 	// is a value of its own for one reason: clearing the query puts it back,
@@ -53,8 +53,9 @@ const (
 	// search writes it, so "who opened this" is answered by the entry rather
 	// than by a list somebody has to keep in step with the entries.
 	foldSearch
-	// foldCard is the card itself — header, body and footer — where the
-	// rung would draw its header alone: the reader unfolded a card at low.
+	// foldCard is a step's card closed to the shape the rung draws closed —
+	// header, body and footer, or the header alone at low — where the rung
+	// would draw it open: the reader closed a card at high.
 	foldCard
 )
 
@@ -362,12 +363,6 @@ func (m Model) stepStats(g *stepGroup, es []entry) (state stepState, tools int, 
 	return stepDone, tools, d
 }
 
-// toggleStepFold flips a card between its header alone and the card,
-// recording the choice on the entry the card is kept on (card.go).
-func (m *Model) toggleStepFold(idx int) {
-	m.toggleCardFold(idx)
-}
-
 // stepHeader is what a step's outline states about it: its ordinal and
 // title, how it stands, its calls and what they took, and whether it is
 // drawn as its header alone. The transcript draws a step that has begun as a
@@ -552,15 +547,14 @@ func (m Model) stepStateFor(blk transcriptBlock, es []entry) stepState {
 	return state
 }
 
-// stepHeaderOnly reports whether a step's card is drawn as its header alone:
-// the reader folded it, or the rung draws headers only. A declared step
+// stepHeaderOnly reports whether a step's card is drawn as its header alone,
+// which is the low rung's closed card and nothing else. A declared step
 // nobody has started is its header and nothing else, and is not folded.
 func (m Model) stepHeaderOnly(blk transcriptBlock, es []entry) bool {
 	if blk.step != nil && blk.step.queued() {
 		return false
 	}
-	d, folded := m.cardShape(blk, es)
-	return folded || d == components.CardLow
+	return m.cardShape(blk, es) == components.CardLow
 }
 
 // headerFor builds the header for a step from its rows.
@@ -614,6 +608,10 @@ type unit struct {
 	// the card's closing padding row rather than the unit's own: a click
 	// there lands on the card, not on the call (click.go).
 	closesCard bool
+	// call marks a call's row inside an open card, with whatever of its
+	// body is drawn under it: a click there opens that call's own view, as
+	// enter on the strip does (click.go).
+	call bool
 	// shadow marks a unit that shares its idx with the unit the reading
 	// cursor stands on for that entry and is not it: an open card's own
 	// lines where nothing titled it, its strip, a call row under the line
@@ -714,7 +712,7 @@ func (m Model) cardOwnUnits(blk transcriptBlock, es []entry, width int, focus bo
 	// rather than two: the separator rule reads the card as a block
 	// (separatorBefore).
 	block := entry{kind: entryAssistant}
-	if card.Folded || card.Density != components.CardHigh {
+	if card.Density != components.CardHigh {
 		pics := m.cardPictures(blk, es)
 		if len(pics) == 0 {
 			return []unit{{idx: anchor, sepBefore: block, sepAfter: block, text: card.View(width) + "\n", cardHead: true}}

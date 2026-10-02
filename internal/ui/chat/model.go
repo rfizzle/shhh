@@ -642,7 +642,7 @@ type entry struct {
 	// machine — and this is how the row says the line was not the model's.
 	// Empty on every command nobody amended, which is nearly all of them.
 	amendedFrom string
-	// stepFold is your fold override for the card this entry is kept on —
+	// stepFold is your open or close of the card this entry is kept on —
 	// the step it titles, or the run of calls it begins where nothing titled
 	// them (docs/interface/surfaces.md#the-step); cards keep no layout state
 	// of their own, so it lives on the raw entry and survives a resize.

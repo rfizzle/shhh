@@ -346,11 +346,36 @@ func TestProgram_AClickOnAStripGlyphMovesTheCursor(t *testing.T) {
 	frameHas(t, finalFrame(t, tm), "along the strip", "open that tool")
 }
 
+// frameCell is the cell where s starts on a frame, by rune.
+func frameCell(t *testing.T, frame, s string) (x, y int) {
+	t.Helper()
+	for i, l := range strings.Split(frame, "\n") {
+		if at := strings.Index(l, s); at >= 0 {
+			return len([]rune(l[:at])), i
+		}
+	}
+	t.Fatalf("no %q on the frame:\n%s", s, frame)
+	return 0, 0
+}
+
+// programClick is a press and a release on one cell.
+func programClick(tm *program, x, y int) {
+	tm.Send(tea.MouseClickMsg{Button: tea.MouseLeft, X: x, Y: y})
+	tm.Send(tea.MouseReleaseMsg{Button: tea.MouseNone, X: x, Y: y})
+}
+
+// clickText clicks the cell where s starts on the frame.
+func clickText(t *testing.T, tm *program, frame, s string) {
+	t.Helper()
+	x, y := frameCell(t, frame, s)
+	programClick(tm, x, y)
+}
+
 // The pointer's route to a card: from the draft, a click on a card's header
-// folds it to that header with ▸ in the pointer column, a click on the
-// sentence under a header does nothing, and a second click on the header
-// gives the card back (docs/interface/surfaces.md#the-step).
-func TestProgram_AClickOnTheHeaderFoldsTheCard(t *testing.T) {
+// opens it onto its groups, a click on the sentence under a header does
+// nothing, and a second click on the header closes it back to the normal
+// card (docs/interface/surfaces.md#the-step).
+func TestProgram_AClickOnTheHeaderOpensThenCloses(t *testing.T) {
 	dir := fixtureDir(t, map[string]string{"loop.go": "package agent\n", "round.go": "package agent\n"})
 	tm := runProgramAt(t, readingSession(dir,
 		programTurn{text: "Locate the round accounting\n", calls: reads("loop.go", "round.go")},
@@ -359,31 +384,58 @@ func TestProgram_AClickOnTheHeaderFoldsTheCard(t *testing.T) {
 
 	send(tm, "how is the round limit counted")
 	waitForAll(t, tm, "not a wall", "Locate the round accounting")
-	cell := func(frame, s string) (x, y int) {
-		for i, l := range strings.Split(frame, "\n") {
-			if at := strings.Index(l, s); at >= 0 {
-				return len([]rune(l[:at])), i
-			}
-		}
-		t.Fatalf("no %q on the frame:\n%s", s, frame)
-		return 0, 0
-	}
-	click := func(x, y int) {
-		tm.Send(tea.MouseClickMsg{Button: tea.MouseLeft, X: x, Y: y})
-		tm.Send(tea.MouseReleaseMsg{Button: tea.MouseNone, X: x, Y: y})
-	}
 
 	// The sentence first: nothing moves, so the header click after it is
-	// what the fold is waited on.
+	// what the open is waited on.
 	frame := waitForFrame(t, tm, "the card", func(f string) bool { return strings.Contains(f, "read 2 files") })
-	click(cell(frame, "Locate the round accounting"))
-	click(cell(frame, "read 2 files"))
-	frame = waitForFrame(t, tm, "the folded card", func(f string) bool {
-		return strings.Contains(f, "▸ ⚙ read 2 files") && !strings.Contains(f, "Locate the round accounting")
+	clickText(t, tm, frame, "Locate the round accounting")
+	clickText(t, tm, frame, "read 2 files")
+	frame = waitForFrame(t, tm, "the open card", func(f string) bool {
+		return strings.Contains(f, "▾ read 2 files") && strings.Contains(f, "Locate the round accounting")
 	})
-	click(cell(frame, "read 2 files"))
-	waitForText(t, tm, "Locate the round accounting")
-	frameHas(t, finalFrame(t, tm), "  ⚙ read 2 files", "not a wall")
+	if strings.Contains(frame, "▸ ⚙") {
+		t.Errorf("the open card draws a fold mark:\n%s", frame)
+	}
+	clickText(t, tm, frame, "  ⚙ read 2 files")
+	frame = waitForFrame(t, tm, "the closed card", func(f string) bool {
+		return !strings.Contains(f, "▾ read 2 files") && strings.Contains(f, "Locate the round accounting")
+	})
+	frameHas(t, frame, "  ⚙ read 2 files", "not a wall")
+	if strings.Contains(frame, "▸ ⚙") {
+		t.Errorf("the closed card draws a fold mark:\n%s", frame)
+	}
+}
+
+// The pointer's route to one call: a click on the header opens the card, a
+// click on a call's row inside it opens that call's own view — the same
+// view enter on the strip opens — and esc comes back to the card, still
+// open (docs/interface/surfaces.md#the-step).
+func TestProgram_AClickOnACallRowOpensItsView(t *testing.T) {
+	dir := fixtureDir(t, map[string]string{"loop.go": "package agent\n", "round.go": "package agent\n"})
+	calls := append(reads("loop.go", "round.go"), call("g0-glob", tools.GlobName, `{"pattern":"*.go"}`))
+	tm := runProgramAt(t, readingSession(dir,
+		programTurn{text: "Locate the round accounting\n", calls: calls},
+		programTurn{text: "The limit is a checkpoint, not a wall."},
+	).WithMouse(true), 110, 40)
+
+	send(tm, "how is the round limit counted")
+	waitForAll(t, tm, "not a wall", "Locate the round accounting")
+	frame := waitForFrame(t, tm, "the card", func(f string) bool { return strings.Contains(f, "read 2 files") })
+	clickText(t, tm, frame, "read 2 files")
+	frame = waitForFrame(t, tm, "the open card", func(f string) bool {
+		return strings.Contains(f, "▾ read 2 files") && strings.Contains(f, "in order ")
+	})
+	// The glob's row is the call's own: a group of one has no line over it.
+	clickText(t, tm, frame, "glob *.go")
+	view := waitForFrame(t, tm, "the call's view", func(f string) bool {
+		return strings.Contains(f, "round.go") && !strings.Contains(f, "▾ read 2 files")
+	})
+	frameHas(t, view, "loop.go", "round.go")
+	programPress(t, tm, "esc")
+	back := waitForFrame(t, tm, "the open card again", func(f string) bool {
+		return strings.Contains(f, "▾ read 2 files") && strings.Contains(f, "not a wall")
+	})
+	frameHas(t, back, "in order ")
 }
 
 // The transcript's search counts what is folded away and walks into it: the

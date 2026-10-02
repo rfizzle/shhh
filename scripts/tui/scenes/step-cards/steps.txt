@@ -1,7 +1,8 @@
 # program test: TestProgram_AnEditCardAppliesTheEdit,
 #   TestProgram_AFoldedRunOfReadsOpensInPlace,
 #   TestProgram_AClickOnAStripGlyphMovesTheCursor,
-#   TestProgram_AClickOnTheHeaderFoldsTheCard,
+#   TestProgram_AClickOnTheHeaderOpensThenCloses,
+#   TestProgram_AClickOnACallRowOpensItsView,
 #   TestProgram_TheQuitChordArmsThenLeaves
 #
 # Each step a card (docs/interface/surfaces.md#the-step), through the built
@@ -27,11 +28,14 @@
 # and on again, its glyph lit and its row lit with it, the bar naming the
 # strip's keys (read 08 and 10 against screen 11); enter opens that call's
 # own view, esc comes back to the strip where it was, and esc again closes
-# the card. Then enter opens it,
-# folds it to its header with `▸` in the pointer column, and gives the card
-# back. Last, the density ladder and the pointer: `/ui verbosity high` and
-# `low` against the `Cards` artboard's screens 10 and 8, and a click on a
-# header that gives a card back at low and folds it again.
+# the card. Then a card has two depths: enter opens it and enter again
+# closes it to the normal card, with no fold mark anywhere; a click on a
+# call's row inside the open card opens that call's own view, and esc comes
+# back to the card, still open. Last, the density ladder: `/ui verbosity
+# high` against the `Cards` artboard's screen 10, and `low`, where each card
+# is its header alone on one band row, inset as a normal header is, and
+# enter opens the one-row card onto its groups and closes it back to the
+# row.
 setup mkdir -p docs internal/ui && printf 'Scenes drive the built binary.\n' > docs/scenes.md
 setup for f in keys render reply click fold; do printf 'package ui\n' > internal/ui/$f.go; done
 setup printf 'notes nobody has committed\n' > notes.md
@@ -70,7 +74,7 @@ keys k
 snap 06-on-the-card "[enter] open it" "Running the suite once more"
 keys Enter
 # Below 80 columns the bar sheds enter's words before collapse's.
-wide 80 snap 07-open "[enter] fold it" "▾ read " "▾ ran 2 commands" "▎✗ printf"
+wide 80 snap 07-open "[enter] close it" "▾ read " "▾ ran 2 commands" "▎✗ printf"
 narrow 80 snap 07-open "[-] collapse" "▾ read " "▾ ran 2 commands"
 # The first arrow puts the strip's cursor on the last call, the failed
 # command; the next two walk it back one call and on again.
@@ -86,20 +90,35 @@ keys Escape
 snap 12-back-on-the-strip "tool 8 of 8" "❯    ▎✗ printf"
 keys Escape
 snap 13-closed "[enter] open it" "Running the suite once more"
+# Two depths: enter opens the card, and enter again closes it to the normal
+# card — header, body and footer — never to its header alone.
 keys Enter
-wide 80 snap 14-open-again "[enter] fold it" "▾ ran 2 commands"
+wide 80 snap 14-open-again "[enter] close it" "▾ ran 2 commands"
 narrow 80 snap 14-open-again "[-] collapse" "▾ ran 2 commands"
 keys Enter
-snap 15-folded "[enter] unfold it" "❯▎✗ read"
-# The cursor stands in the pointer column, so the fold's own mark shows once
-# it moves off the card.
-keys k
-snap 16-folded-mark "▸▎✗ read"
-keys j
+snap 15-closed-again "[enter] open it" "Running the suite once more" "--- FAIL: TestReplyGolden"
+# A click on a call's row inside the open card opens that call's own view,
+# the one enter on the strip opens, and esc comes back to the card, still
+# open, the reading cursor on the line of the clicked call's group; up two
+# is the card's header, and enter there closes it. The status check's row is
+# row 31 at every width, its command from column 12.
 keys Enter
-snap 17-card-again "[enter] open it" "Running the suite once more"
+wide 80 snap 15b-open-for-the-click "[enter] close it" "▎$ git status --short notes.md"
+narrow 80 snap 15b-open-for-the-click "[-] collapse" "▎$ git status --short notes.md"
+keys -l $'\e[<0;12;31M' $'\e[<0;12;31m'
+snap 16-the-clicked-call "output · [j/k] scroll" "$ git status --short notes.md" "?? notes.md" "[esc] back"
+keys Escape
+wide 80 snap 17-back-on-the-open-card "[enter] fold it" "❯   ▾ ran 2 commands" "▎$ git status"
+narrow 80 snap 17-back-on-the-open-card "[-] collapse" "❯   ▾ ran 2 commands" "▎$ git status"
+keys k
+keys k
+wide 80 snap 17a-on-the-header "[enter] close it" "❯▎✗ read"
+narrow 80 snap 17a-on-the-header "[-] collapse" "❯▎✗ read"
+keys Enter
+snap 17b-closed "[enter] open it" "Running the suite once more" "--- FAIL: TestReplyGolden"
 keys q
 snap 18-prompt "╭─ ✓ done"
+
 # A read of a picture: the card's footer row names it and says it opens like
 # an attachment; the reading cursor stops on the row, and enter opens the
 # attachment card the way a picture the reader sent opens.
@@ -129,23 +148,25 @@ wide 80 snap 22a-high "verbosity set to high" "▾ ran 2 commands" "in order ⚙
 narrow 80 snap 22a-high "verbosity set to high" "▎✗ printf" "in order ⚙⚙⚙⚙⚙⚙$✗"
 keys "/ui verbosity low" Enter
 snap 22b-low "verbosity set to low" "⚙ read 2 files" "▎✎ wrote story.md"
-# The pointer: an SGR press and release on the write's header — row 10 at
-# every width, its verb at column 7 — gives the card back at low, the
-# reader's answer outranking the rung. The card grows round its header: at
-# 80 columns and up the padding row moves it to row 11; below, the pane is
-# full and follows its end, which leaves it at row 8. The second click there
-# folds it with ▸ in the pointer column, and the fold holds when the rung
-# goes back to normal.
-keys -l $'\e[<0;8;10M' $'\e[<0;8;10m'
-snap 22c-given-back "Writing the story now, appended after the" "+ # A code block is copied by itself"
-wide 80 keys -l $'\e[<0;8;11M' $'\e[<0;8;11m'
-narrow 80 keys -l $'\e[<0;8;8M' $'\e[<0;8;8m'
-snap 22d-folded "▸▎✎ wrote story.md"
-keys "/ui verbosity normal" Enter
-# Below 80 columns the cards at normal are taller than the pane, and the
-# folded one has scrolled above the large step.
-wide 80 snap 22e-normal "verbosity set to normal" "▸▎✎ wrote story.md" "Running the suite once more"
-narrow 80 snap 22e-normal "verbosity set to normal" "Running the suite once more"
+# At low a card is its header alone on one band row, inset as a normal
+# header is, and enter opens it onto its groups like any card; enter again
+# gives back the one row. Reading mode opens on the last notice, and up
+# five is the first turn's large step.
+keys C-o
+snap 22c-reading-at-low "[j/k] move"
+keys k
+keys k
+keys k
+keys k
+keys k
+snap 22d-on-the-low-card "[enter] open it" "❯▎✗ read"
+keys Enter
+wide 80 snap 22e-low-open "[enter] close it" "▾ read 6 files" "▾ ran 2 commands" "Running the suite once more"
+narrow 80 snap 22e-low-open "[-] collapse" "▾ ran 2 commands"
+keys Enter
+snap 22f-low-closed "[enter] open it" "❯▎✗ read"
+keys q
+snap 22g-prompt "╭─ ✓ done"
 keys C-c
 snap 23-quit-armed "again quits"
 keys C-c

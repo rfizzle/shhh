@@ -52,10 +52,7 @@
     --- FAIL: TestReplyGolden: reply_copy.golden differs (+3 −0) · go test ./interna… ⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙$⚙⚙⚙⚙⚙⚙⚙✎$✎✗
 
 
-· folded by the reader · ▸ in the pointer column
-▸▎$ ran git status --short .plan/                                                ok · approved by you · 0.1s
-
-· low · the header alone
+· low · the header alone, inset as a normal header
  ▎$ ran git status --short .plan/                                                ok · approved by you · 0.1s
 
 · high · the card open on its calls
@@ -119,10 +116,7 @@
     ␛[38;5;244m--- FAIL: TestReplyGolden: reply_copy.golden differs (+3 −0) · go test ./interna…␛[m ␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;254m$␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;244m⚙␛[m␛[38;5;254m✎␛[m␛[38;5;254m$␛[m␛[38;5;254m✎␛[m␛[38;5;254m✗␛[m
 
 
-· folded by the reader · ▸ in the pointer column
-␛[38;5;244m▸␛[m␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mran␛[m ␛[38;5;244mgit status --short .plan/␛[m                                                ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;254mapproved␛[m␛[38;5;244m by you␛[m␛[38;5;244m · ␛[m␛[38;5;244m0.1s␛[m
-
-· low · the header alone
+· low · the header alone, inset as a normal header
  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mran␛[m ␛[38;5;244mgit status --short .plan/␛[m                                                ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;254mapproved␛[m␛[38;5;244m by you␛[m␛[38;5;244m · ␛[m␛[38;5;244m0.1s␛[m
 
 · high · the card open on its calls

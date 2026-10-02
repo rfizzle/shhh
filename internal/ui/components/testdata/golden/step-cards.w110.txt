@@ -52,10 +52,7 @@
     --- FAIL: TestReplyGolden: reply_copy.golden differs (+3 −0) · go test ./interna… ⚙⚙⚙⚙⚙⚙⚙⚙⚙⚙$⚙⚙⚙⚙⚙⚙⚙✎$✎✗  
                                                                                                               
 
-· folded by the reader · ▸ in the pointer column
-▸▎$ ran git status --short .plan/                                                ok · approved by you · 0.1s  
-
-· low · the header alone
+· low · the header alone, inset as a normal header
  ▎$ ran git status --short .plan/                                                ok · approved by you · 0.1s  
 
 · high · the card open on its calls
@@ -119,10 +116,7 @@
 ␛[48;5;234m    ␛[38;5;245m--- FAIL: TestReplyGolden: reply_copy.golden differs (+3 −0) · go test ./interna…␛[m␛[48;5;234m ␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m␛[38;5;214m✎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                              ␛[m
 
-· folded by the reader · ▸ in the pointer column
-␛[48;5;234m␛[38;5;241m▸␛[m␛[48;5;234m␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mgit status --short .plan/␛[m␛[48;5;234m                                                ␛[92mok␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[92mapproved␛[m␛[48;5;234m␛[38;5;241m by you␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m0.1s␛[m␛[48;5;234m  ␛[m
-
-· low · the header alone
+· low · the header alone, inset as a normal header
 ␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mgit status --short .plan/␛[m␛[48;5;234m                                                ␛[92mok␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[92mapproved␛[m␛[48;5;234m␛[38;5;241m by you␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m0.1s␛[m␛[48;5;234m  ␛[m
 
 · high · the card open on its calls

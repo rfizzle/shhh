@@ -169,7 +169,9 @@ position instead: the row line opens and closes the window, and a click in the
 body under it takes that body whole. A pointer has a cell to spend where the
 key has only another press, and spending it this way is what keeps a click
 undoable by the identical click — a second press that took the screen would
-not be giving the row back.
+not be giving the row back. A call's row inside an open card is the
+exception: its group already says what the call did, so a click there opens
+the call's own view, and esc gives the card back ([the step](#the-step)).
 
 ### The think row
 
@@ -287,26 +289,31 @@ spinner, because the frame's status already says the turn is working and a
 second animation would only say it again. The running command's last line
 stands under the body and the time counts with it, which is what says the
 card is the live one, and the row under the transcript does not draw the
-command a second time. A card the turn has finished does not fold
-on its own; it stays as the density ladder draws it — its header alone at
-low, header, body and footer at normal, open at high — until the reader
-folds or opens it, and the reader's answer outranks the rung
-([`principles.md`](principles.md#density-is-one-ladder)). Folded, a card is
-its header alone, with `▸` in the pointer column, which is how it says it is
-a fold. Under reading mode's cursor the card is the stop, and enter walks it
-through three depths: open onto its calls, folded to its header, and the card
-again.
+command a second time.
 
-The pointer's control on a card is its header. A click there folds the card
-to its header and unfolds it, open or not, so the same cell pressed twice is
+A card has two depths: closed and open. Closed is the shape the density
+ladder draws — header, body and footer on their padding rows at normal, the
+header alone on one band row at low, inset as a normal header is — and open
+is the card with its groups and its strip under the body, which is how high
+draws every card. A card the turn has finished does not open or close on its
+own; it stays as the rung draws it until the reader opens or closes it, and
+the reader's answer outranks the rung
+([`principles.md`](principles.md#density-is-one-ladder)). Under reading
+mode's cursor the card is the stop: enter opens a closed card and closes an
+open one, and `-` closes an open one. Nothing a reader does folds a card to
+its header alone; that shape is the low rung's and no other.
+
+The pointer's control on a card is its header. A click there opens a closed
+card and closes an open one, as enter does, so the same cell pressed twice is
 where it started — the rule every click target obeys: the header names one
 step, and enter already acts on it. The rest of the card is text: a click on
 its padding, its sentence or its evidence does nothing, because a sentence
 under the pointer is for selecting and has no single act behind it. Inside an
-open card each call's row is a row like any other, and a click on it opens
-that call as it would anywhere; a group's line and a strip glyph are targets
-of their own, below. A drag that starts on a card selects, header included,
-since nothing acts while the button is down.
+open card a click on a call's row, or on the body under it, opens that call's
+own view — the view enter on the strip opens for it, the diff's for an edit —
+and esc there comes back to the card, still open; a group's line and a strip
+glyph are targets of their own, below. A drag that starts on a card selects,
+header included, since nothing acts while the button is down.
 
 Open, a card lists its calls under the receipt's verbs, in the order the
 header counts them: one line per verb with the group's count and what its
@@ -359,7 +366,7 @@ under me · 1 file I'd read changed`. A picture a call returned is a footer
 row of its card — `▣ name · W×H · size`, and on the right that it opens like
 an attachment — which enter or a click opens on the attachment card, the way
 a picture the reader sent opens; it is a stop of its own beside the card's
-header, so enter on the header still walks the card's depths. A public
+header, so enter on the header still opens and closes the card. A public
 progress update short enough to be a title titles the following card while
 the rail continues to state only the immediate phase; one too long is drawn
 as [the checkpoint it is](#the-progress-checkpoint).
@@ -367,7 +374,7 @@ as [the checkpoint it is](#the-progress-checkpoint).
 No key is printed on a card for what enter does: the hint bar says what enter
 does to the card under the cursor, and reading mode's `?` with the cursor on
 a card, a group's line or the strip lists the same acts in the same words —
-open it, fold it, along the strip, open that tool — beside the mode's
+open it, close it, fold a group, along the strip, open that tool — beside the mode's
 register, then gives the strip back with its cursor where it was. A card
 prints a key only where it offers a live chord — a rule's refusal sending the reader to its own answer — in the
 key colour, under the rule that a key is inert until its surface holds the

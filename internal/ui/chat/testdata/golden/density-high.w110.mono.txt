@@ -56,11 +56,14 @@
 
 
 
-· verbosity · high, step 1 folded by the reader (▸ in the pointer column)
+· verbosity · high, step 1 closed by the reader's enter
 ❯ fix the round limit
 ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-▸ ⚙ read internal/agent/loop.go
+
+  ⚙ read internal/agent/loop.go
+    Locate the round accounting
+
 
     The cap is counted in the loop, so the sentinel has to come from there.
 
@@ -141,11 +144,14 @@
 
 
 
-· verbosity · high, step 1 folded by the reader (▸ in the pointer column)
+· verbosity · high, step 1 closed by the reader's enter
 ␛[38;5;254m❯␛[m fix the round limit
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;244m▸␛[m ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/loop.go␛[m
+
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/loop.go␛[m
+    ␛[38;5;254mLocate the round accounting␛[m
+
 
     ␛[3;38;5;244mThe cap is counted in the loop, so the sentinel has to come from there.␛[m
 

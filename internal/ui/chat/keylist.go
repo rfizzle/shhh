@@ -50,7 +50,7 @@ func registerOffers(surface string) []components.KeyOffer {
 // register for the row under the cursor: the row's own offers, and where the
 // cursor stands on a step's card, a group line in an open one or its strip,
 // what the mode's keys do there in the words the bar says them in — open it,
-// fold it, along the strip, open that tool. The register names enter and the
+// close it, fold a group, along the strip, open that tool. The register names enter and the
 // arrows once for every row; the card is where they mean something more
 // particular, and a list that did not say so would leave the card's acts to
 // the one line of bar at the foot (docs/interface/surfaces.md#the-step).
@@ -60,15 +60,15 @@ func (m Model) readingListOffers() []components.KeyOffer {
 	if m.stripLive() {
 		segs = m.stripKeys()
 	} else if _, _, ok := m.groupAt(*m.entries(), m.focusIdx); ok {
-		words := cardFoldWords
+		words := groupFoldWords
 		if (*m.entries())[m.focusIdx].groupFolded {
-			words = cardUnfoldWords
+			words = groupUnfoldWords
 		}
 		segs = append(segs, segAs(keys.Reading.Expand, words))
 	} else if words, ok := m.focusedCardWords(); ok {
 		segs = append(segs, segAs(keys.Reading.Expand, words))
 		if m.focusedRowOpen() {
-			segs = append(segs, segAs(keys.Reading.Collapse, cardFoldWords))
+			segs = append(segs, segAs(keys.Reading.Collapse, cardCloseWords))
 		}
 	}
 	offers := make([]components.KeyOffer, 0, len(segs))

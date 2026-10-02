@@ -394,7 +394,7 @@ while the agent is working, enter queues a steering message that joins the conve
 		{
 			binds: []keys.Binding{keys.Draft.Reading},
 			text: `reading mode: select transcript rows (j/k, u/d half a page), expand/collapse (enter), y copies the row under the cursor — a command as $ cmd over its output, an edit as its unified diff, a message as markdown source, a card call by call — / searches the transcript and n/N walk what it found, pgup/pgdn page, ? lists every key the mode has, esc or typing returns to the prompt
-enter on a step's card opens it onto its calls, folds it to its header and gives the card back, and - folds it; on an open card ←→ walk the strip of its calls and enter opens that tool, esc there coming back to the strip. enter on an edit row cycles collapsed → expanded → full-screen diff, and on a command or read row the same three depths over its output, the whole of it scrollable at the last one. It opens over a running turn, which keeps streaming underneath; a transcript with nothing selectable opens as a plain pager. /step opens the in-flight step's detail from the prompt`,
+enter on a step's card opens it onto its calls and enter again closes it, as - does; on an open card ←→ walk the strip of its calls and enter opens that tool, esc there coming back to the strip, and a click on a call's row opens it the same way. enter on an edit row cycles collapsed → expanded → full-screen diff, and on a command or read row the same three depths over its output, the whole of it scrollable at the last one. It opens over a running turn, which keeps streaming underneath; a transcript with nothing selectable opens as a plain pager. /step opens the in-flight step's detail from the prompt`,
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Agents},
@@ -463,7 +463,7 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 		},
 		{
 			key:  "click",
-			text: `a press and release in the same cell opens the activity row under it, the way enter does in reading mode, or answers the key it lands on in an approval card's [y/n/a]. On a step's card the header is the target: a click there folds the card and unfolds it, a click on its sentence or evidence does nothing, and a click on a call's row inside an open card opens that call. It never takes the keyboard: the draft keeps every character`,
+			text: `a press and release in the same cell opens the activity row under it, the way enter does in reading mode, or answers the key it lands on in an approval card's [y/n/a]. On a step's card the header is the target: a click there opens the card and a second closes it, a click on its sentence or evidence does nothing, and a click on a call's row inside an open card opens that call's own view, which esc closes. It never takes the keyboard: the draft keeps every character`,
 		},
 		{
 			key:  "[y/n/a]",

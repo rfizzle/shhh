@@ -100,8 +100,8 @@ keys · reading mode                                                 [?] back
 [pgup] page up
 [pgdn] page down
 [q] back to the prompt
-▎[enter] fold it
-▎[-] fold it
+▎[enter] close it
+▎[-] close it
 
 glyphs
 ⚙  a read: a file, a search, a listing
@@ -248,8 +248,8 @@ keys · [esc] back to reading mode
 ␛[38;5;254m[pgup]␛[m␛[38;5;244m page up␛[m
 ␛[38;5;254m[pgdn]␛[m␛[38;5;244m page down␛[m
 ␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m fold it␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m[-]␛[m␛[38;5;244m fold it␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m close it␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m[-]␛[m␛[38;5;244m close it␛[m
 
 ␛[38;5;244mglyphs␛[m
 ␛[38;5;244m⚙␛[m  ␛[38;5;244ma read: a file, a search, a listing␛[m
