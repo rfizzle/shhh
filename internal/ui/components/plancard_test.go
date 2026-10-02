@@ -239,3 +239,43 @@ func TestPlanCard_RowsNeverExceedTheWidth(t *testing.T) {
 		}
 	}
 }
+
+// TestPlan_TheRunningStepIsStatic: the approved plan's card draws the step in
+// flight with a still `▸` in the spin colour, the done steps `✓` and the
+// queued ones `·`, and never a spinner frame: the frame's status is the one
+// thing on screen that animates.
+func TestPlan_TheRunningStepIsStatic(t *testing.T) {
+	card := PlannedCard{
+		Files: 2, Reversible: "reversible", ReversibleTone: ToneSafe,
+		Body: "Here is the order I will take.",
+		Steps: []PlannedStep{
+			{Number: 1, Title: "Locate the round accounting", State: PlanStepDone, Does: "read only"},
+			{Number: 2, Title: "Add a RoundsExhausted sentinel", State: PlanStepDone, Writes: true, File: "errors.go"},
+			{Number: 3, Title: "Return it from runRound and handle it in Run", State: PlanStepRunning, Writes: true, File: "loop.go"},
+			{Number: 4, Title: "Thread the sentinel through the loop", Writes: true, File: "loop.go"},
+		},
+	}
+	for _, width := range []int{80, 110} {
+		raw := card.View(width)
+		view := stripANSI(raw)
+		if strings.ContainsAny(view, "⠋⠙⠹⠸⠼⠴⠦⠧") {
+			t.Fatalf("at %d the plan card draws a spinner frame:\n%s", width, view)
+		}
+		rows := map[string]bool{}
+		for _, l := range strings.Split(view, "\n") {
+			rows[strings.Join(strings.Fields(l), " ")] = true
+		}
+		for _, want := range []string{
+			"▸ 3 Return it from runRound and handle it in Run ✎ loop.go",
+			"✓ 1 Locate the round accounting read only",
+			"· 4 Thread the sentinel through the loop ✎ loop.go",
+		} {
+			if !rows[want] {
+				t.Errorf("at %d the plan card lacks the row %q:\n%s", width, want, view)
+			}
+		}
+		if !strings.Contains(raw, sty.SpinText.Render("▸")) {
+			t.Errorf("at %d the running step's mark is not in the spin colour:\n%s", width, raw)
+		}
+	}
+}

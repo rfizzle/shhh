@@ -23,7 +23,7 @@ type InspectorAgent struct {
 	Spend  string
 	Tools  int
 	// Step and Steps drive the five-cell lane meter. Steps == 0 means the
-	// child declared no total, so the lane shows the spinner beside what it
+	// child declared no total, so the lane shows a still `▸` beside what it
 	// is doing instead of a bar drawn against a denominator nobody supplied.
 	// Planned marks them as the child's own plan, which the row states in
 	// words with the budget's share beside it (AgentProgress.Planned).
@@ -53,7 +53,7 @@ type InspectorAgent struct {
 	// child that named no step count still has a bar to draw once it is close
 	// enough to the ceiling for the bar to be news
 	// (docs/interface/surfaces.md#the-inspector-rail). Zero Budget is a child
-	// nothing bounded, which is the spinner's case either way.
+	// nothing bounded, which is the still mark's case either way.
 	Fresh, Budget int64
 	// Steers is how many times this turn the child has been told it looks to
 	// have left its task. The row states it from two, never from one: one
@@ -100,14 +100,14 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 	shown, folded := r.mappedAgents()
 	rows := make([][]railLine, len(shown))
 	for i, a := range shown {
-		rows[i] = a.railLines(r.Frame, width)
+		rows[i] = a.railLines(width)
 	}
 	orderGiving(shown, rows)
 	for _, group := range rows {
 		b.rows = append(b.rows, group...)
 	}
 	for _, a := range folded {
-		b.hidden = append(b.hidden, a.railLines(r.Frame, width)...)
+		b.hidden = append(b.hidden, a.railLines(width)...)
 	}
 	if hint := r.AgentsHint; hint != "" && r.hasChild() {
 		// The trailer goes before anything else the block owns, because a map
@@ -438,7 +438,7 @@ func agentsFold(hidden []railLine, agents []InspectorAgent, width int) string {
 
 // railLines is one session's rows: who it is, how it is and what it has
 // spent, and under that what it is doing or what it found.
-func (a InspectorAgent) railLines(frame, width int) []railLine {
+func (a InspectorAgent) railLines(width int) []railLine {
 	// The mark sits in the indent every other row spends on nothing, so a
 	// marked row starts in the same column as an unmarked one. The mark is
 	// ❯ and the row is lit under it, the way the keyboard's place is said on
@@ -478,7 +478,7 @@ func (a InspectorAgent) railLines(frame, width int) []railLine {
 		counted: true,
 		target:  target,
 	}}
-	if detail := a.detailRow(frame, width); detail != "" {
+	if detail := a.detailRow(width); detail != "" {
 		rows = append(rows, railLine{text: detail, pinned: pinned, target: target})
 	}
 	return rows
@@ -527,14 +527,14 @@ func outcomeStyle(s FanoutState) lipgloss.Style {
 }
 
 // detailRow is the line under a session. A session that has stopped moving
-// gets neither a bar nor a spinner: a bar against a finished child measures
-// nothing, and motion beside one is motion where there is none.
+// gets neither a bar nor the running mark: a bar against a finished child
+// measures nothing, and `▸` beside one says it is running when it is not.
 //
 // The meter leads this line rather than sitting on the name row: its head is
 // the one slot saying how a child is moving, shared with the budget's bar and
-// the spinner, and the name row is what has to survive the rail's narrowest
+// the running mark, and the name row is what has to survive the rail's narrowest
 // width (docs/interface/departures.md#the-agents-blocks-meter-is-on-the-detail-row).
-func (a InspectorAgent) detailRow(frame, width int) string {
+func (a InspectorAgent) detailRow(width int) string {
 	if a.State == FanoutHeld && a.SlotWait == 0 {
 		// A parked row says `held` once, in the outcome field on its name
 		// row. The detail a host has for a parked child is the supervisor's
@@ -575,7 +575,7 @@ func (a InspectorAgent) detailRow(frame, width int) string {
 		// Nobody declared a step count, but somebody set a ceiling, and the
 		// child is close enough to it for the distance to be news. The bar
 		// is the budget's rather than a step count's, and it takes the
-		// spinner's place: a child near its ceiling is doing one thing worth
+		// running mark's place: a child near its ceiling is doing one thing worth
 		// watching, and it is not the fact that it is still moving.
 		parts = append(parts, detailField{text: a.budgetMeter().View()})
 		if a.Detail != "" {
@@ -584,12 +584,14 @@ func (a InspectorAgent) detailRow(frame, width int) string {
 	case a.Detail == "":
 	case a.State != FanoutRunning:
 		// Waiting on an answer, waiting for a slot, or waiting to be
-		// steered: none of them is running, so none of them gets motion.
+		// steered: none of them is running, so none of them gets the mark.
 		parts = append(parts, detailField{text: sty.Dimmer.Render(a.Detail)})
 	default:
-		// No declared total: motion beside the word naming what is
-		// running, never a fabricated ratio.
-		parts = append(parts, detailField{text: Spinner{Frame: frame, Label: a.Detail}.View()})
+		// No declared total: the still running mark beside the words naming
+		// what is running, never a fabricated ratio. It does not move: the
+		// frame's status is the one thing on screen that animates
+		// (docs/interface/surfaces.md#the-inspector-rail).
+		parts = append(parts, detailField{text: sty.SpinText.Render("▸ " + a.Detail)})
 	}
 	if a.PatchKept {
 		// The same words the manager's row carries for the same child, and

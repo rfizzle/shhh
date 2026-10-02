@@ -137,10 +137,6 @@ type InspectorRail struct {
 	Tools      *InspectorTools
 	Context    *InspectorContext
 	Spend      *InspectorSpend
-	// Frame is the host's spinner frame index, for the lanes of children that
-	// declared no step count. The rail stays passive: it animates nothing, it
-	// just draws the frame it is handed.
-	Frame int
 	// Doors names the blocks, by their Rail* heading, that have a surface
 	// behind them holding the whole of what the block bounds. Their heading
 	// and fold marker point at the block; every other block's point at

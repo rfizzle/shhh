@@ -136,20 +136,19 @@ func TestInspectorRail_OmitsEmptyBlocks(t *testing.T) {
 }
 
 func TestInspectorRail_AgentLaneOnlyMetersDeclaredSteps(t *testing.T) {
-	// No declared step count: the lane moves rather than drawing a ratio
-	// nobody supplied.
+	// No declared step count: the lane says it is running, still, rather
+	// than drawing a ratio nobody supplied.
 	r := InspectorRail{
 		Agents: []InspectorAgent{
 			{Name: "writer-1", Detail: "editing docs/loop.md", Tools: 4, State: FanoutRunning},
 		},
-		Frame: 2,
 	}
 	view := stripANSI(r.View(InspectorWidth, 0))
 	if strings.Contains(view, "▰") {
 		t.Fatalf("no bar without a declared step count:\n%s", view)
 	}
-	if !strings.Contains(view, "⠹ editing docs/loop.md") {
-		t.Fatalf("the spinner names what is running:\n%s", view)
+	if !strings.Contains(view, "▸ editing docs/loop.md") {
+		t.Fatalf("the running mark names what is running:\n%s", view)
 	}
 	// A declared count earns the five-cell lane meter, and the meter states
 	// the count beside it.
@@ -158,15 +157,15 @@ func TestInspectorRail_AgentLaneOnlyMetersDeclaredSteps(t *testing.T) {
 	if !strings.Contains(view, "▰▰▱▱▱ step 2 of 4") {
 		t.Fatalf("a declared count draws the lane meter:\n%s", view)
 	}
-	if strings.Contains(view, "⠹") {
-		t.Fatalf("a lane with a bar does not also spin:\n%s", view)
+	if strings.Contains(view, "▸ editing") {
+		t.Fatalf("a lane with a bar does not also carry the running mark:\n%s", view)
 	}
 	// A child waiting on the user is not running, so it gets neither.
 	r.Agents[0].Step, r.Agents[0].Steps = 0, 0
 	r.Agents[0].State = FanoutBlocked
 	view = stripANSI(r.View(InspectorWidth, 0))
-	if strings.Contains(view, "⠹") || strings.Contains(view, "▰") {
-		t.Fatalf("a blocked lane shows no motion and no bar:\n%s", view)
+	if strings.Contains(view, "▸ editing") || strings.Contains(view, "▰") {
+		t.Fatalf("a blocked lane shows no running mark and no bar:\n%s", view)
 	}
 	if !strings.Contains(view, "⚠ writer-1") {
 		t.Fatalf("a blocked lane says so:\n%s", view)
@@ -184,7 +183,6 @@ func mapRail() InspectorRail {
 			{Name: "runner-3", Detail: "go test ./...", Spend: "$0.01", State: FanoutRunning},
 			{Name: "reader-4", Detail: "no such path", Spend: "$0.01", Outcome: "failed", State: FanoutFailed},
 		},
-		Frame: 2,
 	}
 }
 
@@ -212,8 +210,8 @@ func TestInspectorRail_AgentsMapEveryStateInSpawnOrder(t *testing.T) {
 	if !strings.Contains(view, "done") || !strings.Contains(view, "failed") {
 		t.Fatalf("a finished child states its outcome:\n%s", view)
 	}
-	if strings.Contains(view, "\u2839 wrote 2 files") {
-		t.Fatalf("a finished child does not spin:\n%s", view)
+	if strings.Contains(view, "▸ wrote 2 files") {
+		t.Fatalf("a finished child does not carry the running mark:\n%s", view)
 	}
 	// The heading tallies the children and leaves the orchestrator out of it:
 	// two are running, and the finished ones are left to the rows.

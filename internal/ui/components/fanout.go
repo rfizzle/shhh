@@ -10,8 +10,8 @@ package components
 // to the top and says `blocked` in words on its row, beside the one key in
 // the card, because the only thing a fan-out can need from you is an answer
 // and it must never be the thing you scroll past. A lane draws a progress bar only when the
-// spawn declared a step count — without one it gets the spinner, never a
-// ratio nobody supplied. And a finished lane's bar stops measuring and starts
+// spawn declared a step count — without one it says in a still word that it
+// is working, never a ratio nobody supplied. And a finished lane's bar stops measuring and starts
 // stating: full, with `✓ 5/5` beside it, over the first line of what the
 // child found.
 //
@@ -57,9 +57,11 @@ type AgentProgress struct {
 	Step, Steps int
 	Tools       int
 	Spend       string
-	// Frame is the spinner frame for a child with no declared step count;
-	// the host ticks it.
-	Frame int
+	// Writes marks a child whose role can change files. A running child
+	// with no declared step count says `writing` rather than `running`,
+	// which is the one thing about it a reader watching the checkout wants
+	// from the word.
+	Writes bool
 	// ReportVerdict is the word a reviewing child ended its report on, which
 	// is the one thing the parent acts on and the one thing no count of
 	// rounds, tools or money says. It is beside the state rather than in
@@ -158,7 +160,8 @@ type FanoutLane struct {
 	// that grows, and the only one that clips.
 	Task string
 	// Step and Steps are progress against a declared step count. Steps of
-	// zero means none was declared and the lane spins instead. Planned,
+	// zero means none was declared and the lane says its state in a word
+	// instead. Planned,
 	// StepTitle and BudgetPct are AgentProgress's.
 	Step, Steps int
 	Planned     bool
@@ -260,9 +263,8 @@ type FanoutLane struct {
 	// that wrote the task. A count with no author leaves the one question
 	// worth asking of it unanswered.
 	SteerFrom string
-	// Frame is the spinner frame for a lane with no declared step count; the
-	// host ticks it.
-	Frame int
+	// Writes is AgentProgress.Writes.
+	Writes bool
 }
 
 // LaneReport is one earlier report on a lane: the turn it closed and its
@@ -385,7 +387,7 @@ func (p AgentProgress) kindTone() lipgloss.Style {
 }
 
 // progress is the left-hand status field: the meter when the spawn declared a
-// step count, the spinner when it did not, and the state's own mark and word
+// step count, a still word when it did not, and the state's own mark and word
 // once the child has stopped moving. The mark stands here rather than in the
 // glyph column, which says what the child is; this says how it is doing.
 //
@@ -458,7 +460,21 @@ func (p AgentProgress) progress() string {
 	if p.State == FanoutDone {
 		return p.withVerdict(sty.Add.Render("✓ done"))
 	}
-	return Spinner{Frame: p.Frame, Label: "working"}.View()
+	return sty.SpinText.Render(p.runningWord())
+}
+
+// runningWord is what a child still working with no declared step count says
+// it is doing. It is a word and not a spinner: the frame's status is the one
+// thing on screen that animates, and a lane that moved beside it would count
+// the turn a second time (docs/interface/surfaces.md#the-agent-manager). It
+// is the word alone, with no count of files written: the session has none
+// until the child's patch lands
+// (docs/interface/departures.md#only-the-frames-status-moves).
+func (p AgentProgress) runningWord() string {
+	if p.Writes {
+		return "writing"
+	}
+	return "running"
 }
 
 // countedMeter is a running child's bar with its count beside it in dim. The
@@ -532,7 +548,7 @@ func (p AgentProgress) outcomeField() string {
 // the manager row for the same child draw from one renderer.
 func (l FanoutLane) progressOf() AgentProgress {
 	return AgentProgress{State: l.State, Step: l.Step, Steps: l.Steps,
-		Tools: l.Tools, Spend: l.Spend, Frame: l.Frame,
+		Tools: l.Tools, Spend: l.Spend, Writes: l.Writes,
 		ReportVerdict: l.ReportVerdict, Inherited: l.Inherited, Reseeding: l.Reseeding, SlotWait: l.SlotWait, Behind: l.Behind,
 		Planned: l.Planned, StepTitle: l.StepTitle, BudgetPct: l.BudgetPct}
 }

@@ -38,8 +38,10 @@ import (
 // turn passes through: the frame's activity slot while the turn thinks,
 // decides, runs a tool or streams; the same slot while an attached child
 // works; the model picker's wait on the provider's catalog; and the agent
-// lanes of a fan-out, which keep moving after the parent's own turn has gone
-// quiet on a decision.
+// lanes of a fan-out, whose clocks and counts keep moving after the parent's
+// own turn has gone quiet on a decision. A lane draws no spinner of its own —
+// the frame's status is the one thing that animates — but its elapsed field
+// is read off the clock at each paint, and the tick is what repaints it.
 func (m Model) spinnerWanted() bool {
 	switch m.turnState() {
 	case stateStreaming, stateRunningCmd, stateClassifying:
@@ -60,8 +62,8 @@ func (m Model) spinnerWanted() bool {
 	if m.frameWorking() {
 		return true
 	}
-	// A child still working keeps the lanes and the rail's agent block moving
-	// even while the parent waits on an approval.
+	// A child still working keeps the lanes' clocks and the rail's agent
+	// block current even while the parent waits on an approval.
 	if m.childrenRunning() {
 		return true
 	}

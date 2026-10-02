@@ -1310,7 +1310,7 @@ func TestGolden_AgentList(t *testing.T) {
 		}
 		following := append([]AgentRow{}, rows...)
 		following[3] = AgentRow{State: AgentRunning, Name: "reader-3", Task: "survey internal/ui",
-			Progress: progress(AgentProgress{State: FanoutRunning, Tools: 12, Spend: "$0.04", Frame: 2}),
+			Progress: progress(AgentProgress{State: FanoutRunning, Tools: 12, Spend: "$0.04"}),
 			Note:     "follow-up · which component owns the rail?"}
 		// A reviewer handed the orchestrator's last turns, beside the rows as
 		// they were: the figure is the only thing that differs.
@@ -1408,7 +1408,7 @@ func TestGolden_FanoutBlock(t *testing.T) {
 			SpawnLimit: 32,
 			Keys:       []TurnKey{{Key: keys.Bracket(keys.Draft.Agents), Label: "agents"}},
 			Lanes: []FanoutLane{
-				{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md",
+				{State: FanoutRunning, Writes: true, Name: "writer-1", Task: "docs/loop.md",
 					Step: 2, Steps: 5, Tools: 6, Spend: "$0.02", Elapsed: "12s", Seeded: 5},
 				{State: FanoutDone, Name: "tester-2", Task: "internal/agent tests",
 					Step: 5, Steps: 5, Tools: 9, Spend: "$0.03", Elapsed: "41s",
@@ -1463,9 +1463,9 @@ func TestGolden_FanoutBlock(t *testing.T) {
 			Elapsed: "22s",
 			Lanes: []FanoutLane{
 				{State: FanoutRunning, Name: "researcher-1", Task: "survey the round accounting",
-					Tools: 4, Spend: "$0.01", Elapsed: "22s", Frame: 2, SteerFrom: "parent"},
+					Tools: 4, Spend: "$0.01", Elapsed: "22s", SteerFrom: "parent"},
 				{State: FanoutRunning, Name: "researcher-2", Task: "survey the fold state",
-					Tools: 2, Spend: "$0.01", Elapsed: "19s", Frame: 2, Steers: 1, Yours: 1,
+					Tools: 2, Spend: "$0.01", Elapsed: "19s", Steers: 1, Yours: 1,
 					SteerFrom: "reading", Verdict: "off target"},
 			},
 		}
@@ -1483,7 +1483,7 @@ func TestGolden_FanoutBlock(t *testing.T) {
 				{State: FanoutHeld, Name: "writer-2", Task: "internal/agent/round.go",
 					Tools: 4, Spend: "$0.02", Elapsed: "44s"},
 				{State: FanoutRunning, Name: "reader-3", Task: "survey internal/ui",
-					Tools: 2, Spend: "$0.01", Elapsed: "39s", Frame: 2},
+					Tools: 2, Spend: "$0.01", Elapsed: "39s"},
 			},
 		}
 		// A batch one of whose children delegated: the grandchildren are drawn
@@ -1497,13 +1497,13 @@ func TestGolden_FanoutBlock(t *testing.T) {
 				{State: FanoutDone, Name: "reader-2", Task: "survey internal/ui", Depth: 1,
 					Tools: 8, Spend: "$0.02", Elapsed: "55s",
 					Summary: "the rails and the frame are one component"},
-				{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md", Depth: 1, Under: 2,
+				{State: FanoutRunning, Writes: true, Name: "writer-1", Task: "docs/loop.md", Depth: 1, Under: 2,
 					Step: 3, Steps: 5, Tools: 14, Spend: "$0.05", Elapsed: "1m40s"},
 				{State: FanoutBlocked, Name: "reviewer-1a", Task: "read the round change", Depth: 2,
 					Tools: 2, Spend: "$0.01", Elapsed: "22s",
 					Waiting: "waiting approval: read internal/agent/loop.go"},
 				{State: FanoutRunning, Name: "tester-1b", Task: "run the package tests", Depth: 2,
-					Tools: 1, Spend: "$0.01", Elapsed: "9s", Frame: 2},
+					Tools: 1, Spend: "$0.01", Elapsed: "9s"},
 			},
 		}
 		// Writers counting their own plans: one mid-way with the step it is on
@@ -1513,14 +1513,14 @@ func TestGolden_FanoutBlock(t *testing.T) {
 		planned := FanoutBlock{
 			Elapsed: "2m05s",
 			Lanes: []FanoutLane{
-				{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md",
+				{State: FanoutRunning, Writes: true, Name: "writer-1", Task: "docs/loop.md",
 					Step: 3, Steps: 7, Planned: true, StepTitle: "wire the flag", BudgetPct: 41,
 					Tools: 11, Spend: "$0.04", Elapsed: "2m05s"},
 				{State: FanoutDone, Name: "writer-2", Task: "internal/agent/round.go",
 					Step: 5, Steps: 7, Planned: true, BudgetPct: 63,
 					Tools: 19, Spend: "$0.06", Elapsed: "1m52s", Summary: "the round cap is a pause"},
 				{State: FanoutRunning, Name: "reader-3", Task: "survey internal/ui",
-					BudgetPct: 12, Tools: 4, Spend: "$0.01", Elapsed: "58s", Frame: 2},
+					BudgetPct: 12, Tools: 4, Spend: "$0.01", Elapsed: "58s"},
 			},
 		}
 		// Three writers handed over at once over one file: the first runs and
@@ -1528,8 +1528,8 @@ func TestGolden_FanoutBlock(t *testing.T) {
 		claimed := FanoutBlock{
 			Elapsed: "31s",
 			Lanes: []FanoutLane{
-				{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md",
-					Tools: 5, Spend: "$0.02", Elapsed: "31s", Frame: 2},
+				{State: FanoutRunning, Writes: true, Name: "writer-1", Task: "docs/loop.md",
+					Tools: 5, Spend: "$0.02", Elapsed: "31s"},
 				{State: FanoutQueued, Name: "writer-2", Task: "docs/loop.md", Elapsed: "31s", Behind: "writer-1"},
 				{State: FanoutQueued, Name: "writer-3", Task: "docs/loop.md", Elapsed: "31s", Behind: "writer-2"},
 			},
@@ -1539,10 +1539,10 @@ func TestGolden_FanoutBlock(t *testing.T) {
 		slotted := FanoutBlock{
 			Elapsed: "1m12s",
 			Lanes: []FanoutLane{
-				{State: FanoutRunning, Name: "writer-1", Task: "internal/agent/loop.go",
-					Tools: 9, Spend: "$0.03", Elapsed: "1m12s", Frame: 2},
-				{State: FanoutRunning, Name: "writer-2", Task: "internal/agent/round.go",
-					Tools: 7, Spend: "$0.02", Elapsed: "1m10s", Frame: 2},
+				{State: FanoutRunning, Writes: true, Name: "writer-1", Task: "internal/agent/loop.go",
+					Tools: 9, Spend: "$0.03", Elapsed: "1m12s"},
+				{State: FanoutRunning, Writes: true, Name: "writer-2", Task: "internal/agent/round.go",
+					Tools: 7, Spend: "$0.02", Elapsed: "1m10s"},
 				{State: FanoutHeld, Name: "writer-3", Task: "docs/loop.md", SlotWait: 2,
 					Tools: 5, Spend: "$0.02", Elapsed: "1m08s"},
 				{State: FanoutHeld, Name: "writer-4", Task: "internal/ui/rail.go", SlotWait: 2,
@@ -1574,7 +1574,7 @@ func TestGolden_FanoutBlock(t *testing.T) {
 // counted with whether any of them write; the plan of four draws every step.
 func TestGolden_PlannedCard(t *testing.T) {
 	seven := PlannedCard{
-		Files: 5, Reversible: "reversible", ReversibleTone: ToneSafe, Frame: 2,
+		Files: 5, Reversible: "reversible", ReversibleTone: ToneSafe,
 		Body: "Here is the order I will take. The three edits stop for you; everything else is read-only.",
 		Steps: []PlannedStep{
 			{Number: 1, Title: "Locate the round accounting", State: PlanStepDone, Does: "read only"},
@@ -1882,7 +1882,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 					Outcome: "done", State: FanoutDone},
 			},
 			AgentsHint: railAgentsHint,
-			Frame:      2,
 		}
 		// The map with everything a child can be about to want from you: one
 		// waiting on an answer, which is why it is drawn directly under the
@@ -1908,7 +1907,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 					Tools: 3, Depth: 2, State: FanoutRunning},
 			},
 			AgentsHint: railAgentsHint,
-			Frame:      2,
 		}
 		// A writer killed with work in its copy of the checkout: the patch is
 		// kept rather than discarded with the copy, and the line under the
@@ -1924,7 +1922,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 					Tools: 3, Depth: 1, State: FanoutRunning},
 			},
 			AgentsHint: railAgentsHint,
-			Frame:      2,
 		}
 		// The same map with a queued child added and the rail three rows
 		// short of it: the trailer goes first, then the child that never
@@ -1959,7 +1956,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 					Depth: 1, State: FanoutRunning},
 			},
 			AgentsHint: railAgentsHint,
-			Frame:      2,
 		}
 		// Two writers' test runs holding the session's two check slots and a
 		// third parked in front of its own: the row says it is waiting, and
@@ -1976,7 +1972,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 					Outcome: "waiting", SlotWait: 2, Depth: 1, State: FanoutHeld},
 			},
 			AgentsHint: railAgentsHint,
-			Frame:      2,
 		}
 		// A failed sibling beside a nested pair whose grandchild is waiting on
 		// an answer. The request floats the pair to the top as one subtree,
@@ -1996,7 +1991,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 					Depth: 2, State: FanoutBlocked},
 			},
 			AgentsHint: railAgentsHint,
-			Frame:      2,
 		}
 		// A writer counting its own plan: the steps in words, where a declared
 		// count draws its bar, and the share of its budget beside them.
@@ -2011,7 +2005,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 					Step: 1, Steps: 4, Depth: 1, State: FanoutRunning},
 			},
 			AgentsHint: railAgentsHint,
-			Frame:      2,
 		}
 		// A reader that had answered, handed a follow-up: its row is running
 		// again, and the line under it is the question rather than the task.
@@ -2025,7 +2018,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 					Outcome: "done", Depth: 1, State: FanoutDone},
 			},
 			AgentsHint: railAgentsHint,
-			Frame:      2,
 		}
 		// A fan-out of nine writers: the map draws the three newest, which is
 		// the preset, and the marker counts the six older ones and says they
@@ -2045,7 +2037,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 				return writers
 			}()...),
 			AgentsHint: railAgentsHint,
-			Frame:      2,
 		}
 		// Three writers working and two reviewers waiting on an answer. The
 		// waiting rows never fold and take their places in the preset first,
@@ -2067,7 +2058,6 @@ func TestGolden_InspectorRail(t *testing.T) {
 					Depth: 1, State: FanoutBlocked},
 			},
 			AgentsHint: railAgentsHint,
-			Frame:      2,
 		}
 		// The block on its own, at the three shapes it has: one thing broken
 		// and nothing behind it; the cap, with an older live alert and eight

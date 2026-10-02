@@ -183,7 +183,7 @@
 │   ⚠ runner-2 · go test ./...                   ⚠ needs you · 3 tools · $0.01 │
 │     waiting approval: run go test ./internal/agent/...                       │
 │   ◇ writer-1 · docs/loop.md                      ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
-│ ❯ ◇ reader-3 · survey internal/ui               ⠹ working · 12 tools · $0.04 │
+│ ❯ ◇ reader-3 · survey internal/ui                 running · 12 tools · $0.04 │
 │     follow-up · which component owns the rail?                               │
 │   ✗ patcher-4 · apply patch                        ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                 │
@@ -196,7 +196,7 @@
 │   ● orchestrator · this session                  round 7 · streaming…  $0.12 │
 │   ⚠ runner-2 · go test ./...                   ⚠ needs you · 3 tools · $0.01 │
 │     waiting approval: run go test ./internal/agent/...                       │
-│ ❯ ◇ reviewer-1 · review the round change         ⠋ working · 4 tools · $0.02 │
+│ ❯ ◇ reviewer-1 · review the round change           running · 4 tools · $0.02 │
 │   ◇ reader-3 · survey internal/ui                  ✓ done · 12 tools · $0.04 │
 │     the rails and the frame are one component                                │
 │   ✗ patcher-4 · apply patch                        ✗ failed · 1 tool · $0.01 │
@@ -436,7 +436,7 @@
 ␛[94m│␛[m   ␛[91m⚠␛[m runner-2␛[38;5;245m · go test ./...␛[m                   ␛[91m⚠ needs you␛[m␛[38;5;241m · ␛[m␛[38;5;245m3 tools · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mwaiting approval: run go test ./internal/agent/...␛[m                       ␛[94m│␛[m
 ␛[94m│␛[m   ␛[94m◇␛[m writer-1␛[38;5;245m · docs/loop.md␛[m                      ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[38;5;241m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
-␛[94m│␛[m ␛[94m❯␛[m ␛[94m␛[m␛[38;5;245m␛[m␛[38;5;205m␛[m␛[38;5;241m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[94m◇␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[38;5;205m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mreader-3 · survey internal/ui               ⠹ working · 12 tools · $0.04␛[m␛[m ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[94m␛[m␛[38;5;245m␛[m␛[38;5;205m␛[m␛[38;5;241m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[94m◇␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[38;5;205m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mreader-3 · survey internal/ui                 running · 12 tools · $0.04␛[m␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mfollow-up · which component owns the rail?␛[m                               ␛[94m│␛[m
 ␛[94m│␛[m   ␛[91m✗␛[m patcher-4␛[38;5;245m · apply patch␛[m                        ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                                                 ␛[94m│␛[m
@@ -449,7 +449,7 @@
 ␛[94m│␛[m   ␛[1;94m●␛[m orchestrator␛[38;5;245m · this session␛[m                  ␛[38;5;241mround 7 · streaming…␛[m  ␛[38;5;243m$0.12␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[91m⚠␛[m runner-2␛[38;5;245m · go test ./...␛[m                   ␛[91m⚠ needs you␛[m␛[38;5;241m · ␛[m␛[38;5;245m3 tools · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mwaiting approval: run go test ./internal/agent/...␛[m                       ␛[94m│␛[m
-␛[94m│␛[m ␛[94m❯␛[m ␛[94m␛[m␛[38;5;245m␛[m␛[38;5;205m␛[m␛[38;5;241m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[94m◇␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[38;5;205m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mreviewer-1 · review the round change         ⠋ working · 4 tools · $0.02␛[m␛[m ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[94m␛[m␛[38;5;245m␛[m␛[38;5;205m␛[m␛[38;5;241m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[94m◇␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[38;5;205m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mreviewer-1 · review the round change           running · 4 tools · $0.02␛[m␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[92m◇␛[m reader-3␛[38;5;245m · survey internal/ui␛[m                  ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m12 tools · $0.04␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mthe rails and the frame are one component␛[m                                ␛[94m│␛[m
 ␛[94m│␛[m   ␛[91m✗␛[m patcher-4␛[38;5;245m · apply patch␛[m                        ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m

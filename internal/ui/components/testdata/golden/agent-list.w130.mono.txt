@@ -179,7 +179,7 @@
 │   ⚠ runner-2 · go test ./...                                                                     ⚠ needs you · 3 tools · $0.01 │
 │     waiting approval: run go test ./internal/agent/...                                                                         │
 │   ◇ writer-1 · docs/loop.md                                                                        ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
-│ ❯ ◇ reader-3 · survey internal/ui                                                                 ⠹ working · 12 tools · $0.04 │
+│ ❯ ◇ reader-3 · survey internal/ui                                                                   running · 12 tools · $0.04 │
 │     follow-up · which component owns the rail?                                                                                 │
 │   ✗ patcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                                                   │
@@ -192,7 +192,7 @@
 │   ● orchestrator · this session                                                                    round 7 · streaming…  $0.12 │
 │   ⚠ runner-2 · go test ./...                                                                     ⚠ needs you · 3 tools · $0.01 │
 │     waiting approval: run go test ./internal/agent/...                                                                         │
-│ ❯ ◇ reviewer-1 · review the round change                                           ⠋ working · inherited 12k · 4 tools · $0.02 │
+│ ❯ ◇ reviewer-1 · review the round change                                             running · inherited 12k · 4 tools · $0.02 │
 │   ◇ reader-3 · survey internal/ui                                                                    ✓ done · 12 tools · $0.04 │
 │     the rails and the frame are one component                                                                                  │
 │   ✗ patcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01 │
@@ -428,7 +428,7 @@
 ␛[38;5;254m│␛[m   ␛[38;5;254m⚠␛[m runner-2␛[38;5;244m · go test ./...␛[m                                                                     ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mwaiting approval: run go test ./internal/agent/...␛[m                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m writer-1␛[38;5;244m · docs/loop.md␛[m                                                                        ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱␛[m ␛[38;5;244m2/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mreader-3 · survey internal/ui                                                                 ⠹ working · 12 tools · $0.04␛[m␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mreader-3 · survey internal/ui                                                                   running · 12 tools · $0.04␛[m␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mfollow-up · which component owns the rail?␛[m                                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                                          ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                                                   ␛[38;5;254m│␛[m
@@ -441,7 +441,7 @@
 ␛[38;5;254m│␛[m   ␛[1;38;5;254m●␛[m orchestrator␛[38;5;244m · this session␛[m                                                                    ␛[38;5;244mround 7 · streaming…␛[m  ␛[38;5;244m$0.12␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m⚠␛[m runner-2␛[38;5;244m · go test ./...␛[m                                                                     ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mwaiting approval: run go test ./internal/agent/...␛[m                                                                         ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mreviewer-1 · review the round change                                           ⠋ working · inherited 12k · 4 tools · $0.02␛[m␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mreviewer-1 · review the round change                                             running · inherited 12k · 4 tools · $0.02␛[m␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m reader-3␛[38;5;244m · survey internal/ui␛[m                                                                    ␛[38;5;254m✓ done␛[m␛[38;5;244m · ␛[m␛[38;5;244m12 tools · $0.04␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                                          ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m

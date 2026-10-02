@@ -867,22 +867,19 @@ func TestRailMemo_IsKeyedRatherThanRebuilt(t *testing.T) {
 	m := inspectorModel(t, 160, 40)
 	m.framed = &frame{}
 
-	first := m.inspectorData()
+	m.inspectorData()
 	held := m.framed.rail
 	if held == nil {
 		t.Fatal("the rail should have been resolved onto the frame")
 	}
-	if got := m.inspectorData(); m.framed.rail != held {
-		t.Fatalf("a second reader should have been handed the resolved rail, got %+v", got.Frame)
+	if m.inspectorData(); m.framed.rail != held {
+		t.Fatal("a second reader should have been handed the resolved rail")
 	}
 
 	// The spinner ticking is a reading that moved, and the rail draws it.
 	m.spinFrame++
 	if m.inspectorData(); m.framed.rail == held {
 		t.Fatal("a spinner tick should have resolved the rail again")
-	}
-	if m.framed.rail.rail.Frame != first.Frame+1 {
-		t.Fatalf("the rebuilt rail should carry the new frame, got %d", m.framed.rail.rail.Frame)
 	}
 }
 

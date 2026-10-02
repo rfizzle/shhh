@@ -1,0 +1,1 @@
+printf '\n[hooks.entries.hold]\nevent = "pre_compact"\ncommand = "sleep 3"\n' >> $XDG_CONFIG_HOME/shhh/config.toml && $SHHH_BIN code

@@ -23,9 +23,9 @@
                                                                                             │❯ ⊘ orchestrator                            $0.51  
                                                                                             │    ready                                          
    ▎✗ wrote internal/agent/loop.go · ran go test ./internal/agent/...       exit 1 · 22s    │  ◇ researcher-1                            $0.05  
-      Thread the sentinel through the loop                                                  │    ⠋ running                                      
+      Thread the sentinel through the loop                                                  │    ▸ running                                      
       --- FAIL: TestRoundLimit                                                    1 line    │  └◇ reviewer-2                             $0.05  
-                                                                                            │     ⠋ running                                     
+                                                                                            │     ▸ running                                     
                                                                                             │  ✗ reviewer-1                      failed  $0.05  
     ∗ worked 24.7s · 6 tools · $0.14                                                        │    cancelled                                      
    ▎✎ 1 file changed +12 −4 · all tracked in git · /undo 1 takes it back                    │  f12 agents · shift+f8 next · click to attach     
@@ -55,9 +55,9 @@
                                                                                             │  ⊘ orchestrator                            $0.51  
       The objective is where the round counter is read. The evidence is that loop.go reads  │    ready                                          
       it once and round.go not at all. Next I will run the round tests.                     │❯ ◇ researcher-1                            $0.05  
-                                                                                            │    ⠋ running                                      
+                                                                                            │    ▸ running                                      
                                                                                             │  └◇ reviewer-2                             $0.05  
-    ⚙ read twice                                                                running…    │     ⠋ running                                     
+    ⚙ read twice                                                                running…    │     ▸ running                                     
                                                                                             │  ✗ reviewer-1                      failed  $0.05  
                                                                                             │    cancelled                                      
                                                                                             │  f12 agents · shift+f8 next · click to attach     
@@ -87,9 +87,9 @@
                                                                                             │  ⊘ orchestrator                            $0.51  
                                                                                             │    ready                                          
                                                                                             │  ◇ researcher-1                            $0.05  
-                                                                                            │    ⠋ running                                      
+                                                                                            │    ▸ running                                      
                                                                                             │❯ └◇ reviewer-2                             $0.05  
-                                                                                            │     ⠋ running                                     
+                                                                                            │     ▸ running                                     
                                                                                             │  ✗ reviewer-1                      failed  $0.05  
                                                                                             │    cancelled                                      
                                                                                             │  f12 agents · shift+f8 next · click to attach     
@@ -119,9 +119,9 @@
                                                                                             │  ⊘ orchestrator                            $0.51  
       The objective is where the round counter is read. The evidence is that loop.go reads  │    ready                                          
       it once and round.go not at all. Next I will run the round tests.                     │❯ ◇ researcher-1                            $0.05  
-                                                                                            │    ⠋ running                                      
+                                                                                            │    ▸ running                                      
                                                                                             │  └◇ reviewer-2                             $0.05  
-    ⚙ read twice                                                                running…    │     ⠋ running                                     
+    ⚙ read twice                                                                running…    │     ▸ running                                     
                                                                                             │  ✗ reviewer-1                      failed  $0.05  
                                                                                             │    cancelled                                      
                                                                                             │  f12 agents · shift+f8 next · click to attach     
@@ -184,9 +184,9 @@
                                                                                             ␛[38;5;244m│␛[38;5;254m❯␛[m ␛[38;5;244;48;5;237m⊘␛[39m ␛[38;5;254morchestrator                            $0.51␛[m  
                                                                                             ␛[38;5;244m│␛[m    ␛[38;5;244mready␛[m                                          
    ␛[38;5;254m▎✗␛[m ␛[38;5;254mwrote␛[m ␛[38;5;244minternal/agent/loop.go · ran go test ./internal/agent/...␛[m       ␛[38;5;254mexit 1␛[38;5;244m · 22s␛[m    ␛[38;5;244m│␛[m  ␛[38;5;254m◇␛[m ␛[38;5;254mresearcher-1␛[m                            ␛[38;5;244m$0.05␛[m  
-      ␛[38;5;254mThread the sentinel through the loop␛[m                                                  ␛[38;5;244m│␛[m    ␛[38;5;254m⠋ running␛[m                                      
+      ␛[38;5;254mThread the sentinel through the loop␛[m                                                  ␛[38;5;244m│␛[m    ␛[38;5;254m▸ running␛[m                                      
       ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                                                    ␛[38;5;244m1 line␛[m    ␛[38;5;244m│␛[m  ␛[38;5;244m└␛[38;5;254m◇␛[m ␛[38;5;254mreviewer-2␛[m                             ␛[38;5;244m$0.05␛[m  
-                                                                                            ␛[38;5;244m│␛[m     ␛[38;5;254m⠋ running␛[m                                     
+                                                                                            ␛[38;5;244m│␛[m     ␛[38;5;254m▸ running␛[m                                     
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254mreviewer-1␛[m                      ␛[38;5;254mfailed␛[m  ␛[38;5;244m$0.05␛[m  
     ␛[38;5;244m∗␛[m ␛[38;5;244mworked 24.7s · 6 tools · $0.14␛[m                                                        ␛[38;5;244m│␛[m    ␛[38;5;244mcancelled␛[m                                      
    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · all tracked in git · /undo 1 takes it back␛[m                    ␛[38;5;244m│␛[m  ␛[38;5;244mf12 agents · shift+f8 next · click to attach␛[m     
@@ -216,9 +216,9 @@
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;244m⊘␛[m ␛[38;5;254morchestrator␛[m                            ␛[38;5;244m$0.51␛[m  
       ␛[38;5;244;3mThe objective is where the round counter is read. The evidence is that loop.go reads␛[m  ␛[38;5;244m│␛[m    ␛[38;5;244mready␛[m                                          
       ␛[38;5;244;3mit once and round.go not at all. Next I will run the round tests.␛[m                     ␛[38;5;244m│␛[38;5;254m❯␛[m ␛[38;5;254;48;5;237m◇␛[39m ␛[38;5;254mresearcher-1                            $0.05␛[m  
-                                                                                            ␛[38;5;244m│␛[m    ␛[38;5;254m⠋ running␛[m                                      
+                                                                                            ␛[38;5;244m│␛[m    ␛[38;5;254m▸ running␛[m                                      
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;244m└␛[38;5;254m◇␛[m ␛[38;5;254mreviewer-2␛[m                             ␛[38;5;244m$0.05␛[m  
-    ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[38;5;244m twice␛[m                                                                ␛[38;5;254mrunning…␛[m    ␛[38;5;244m│␛[m     ␛[38;5;254m⠋ running␛[m                                     
+    ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[38;5;244m twice␛[m                                                                ␛[38;5;254mrunning…␛[m    ␛[38;5;244m│␛[m     ␛[38;5;254m▸ running␛[m                                     
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254mreviewer-1␛[m                      ␛[38;5;254mfailed␛[m  ␛[38;5;244m$0.05␛[m  
                                                                                             ␛[38;5;244m│␛[m    ␛[38;5;244mcancelled␛[m                                      
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;244mf12 agents · shift+f8 next · click to attach␛[m     
@@ -248,9 +248,9 @@
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;244m⊘␛[m ␛[38;5;254morchestrator␛[m                            ␛[38;5;244m$0.51␛[m  
                                                                                             ␛[38;5;244m│␛[m    ␛[38;5;244mready␛[m                                          
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;254m◇␛[m ␛[38;5;254mresearcher-1␛[m                            ␛[38;5;244m$0.05␛[m  
-                                                                                            ␛[38;5;244m│␛[m    ␛[38;5;254m⠋ running␛[m                                      
+                                                                                            ␛[38;5;244m│␛[m    ␛[38;5;254m▸ running␛[m                                      
                                                                                             ␛[38;5;244m│␛[38;5;254m❯␛[m ␛[38;5;244;48;5;237m└␛[38;5;254m◇␛[39m ␛[38;5;254mreviewer-2                             $0.05␛[m  
-                                                                                            ␛[38;5;244m│␛[m     ␛[38;5;254m⠋ running␛[m                                     
+                                                                                            ␛[38;5;244m│␛[m     ␛[38;5;254m▸ running␛[m                                     
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254mreviewer-1␛[m                      ␛[38;5;254mfailed␛[m  ␛[38;5;244m$0.05␛[m  
                                                                                             ␛[38;5;244m│␛[m    ␛[38;5;244mcancelled␛[m                                      
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;244mf12 agents · shift+f8 next · click to attach␛[m     
@@ -280,9 +280,9 @@
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;244m⊘␛[m ␛[38;5;254morchestrator␛[m                            ␛[38;5;244m$0.51␛[m  
       ␛[38;5;244;3mThe objective is where the round counter is read. The evidence is that loop.go reads␛[m  ␛[38;5;244m│␛[m    ␛[38;5;244mready␛[m                                          
       ␛[38;5;244;3mit once and round.go not at all. Next I will run the round tests.␛[m                     ␛[38;5;244m│␛[38;5;254m❯␛[m ␛[38;5;254;48;5;237m◇␛[39m ␛[38;5;254mresearcher-1                            $0.05␛[m  
-                                                                                            ␛[38;5;244m│␛[m    ␛[38;5;254m⠋ running␛[m                                      
+                                                                                            ␛[38;5;244m│␛[m    ␛[38;5;254m▸ running␛[m                                      
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;244m└␛[38;5;254m◇␛[m ␛[38;5;254mreviewer-2␛[m                             ␛[38;5;244m$0.05␛[m  
-    ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[38;5;244m twice␛[m                                                                ␛[38;5;254mrunning…␛[m    ␛[38;5;244m│␛[m     ␛[38;5;254m⠋ running␛[m                                     
+    ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[38;5;244m twice␛[m                                                                ␛[38;5;254mrunning…␛[m    ␛[38;5;244m│␛[m     ␛[38;5;254m▸ running␛[m                                     
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254mreviewer-1␛[m                      ␛[38;5;254mfailed␛[m  ␛[38;5;244m$0.05␛[m  
                                                                                             ␛[38;5;244m│␛[m    ␛[38;5;244mcancelled␛[m                                      
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;244mf12 agents · shift+f8 next · click to attach␛[m     

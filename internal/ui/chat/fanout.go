@@ -186,7 +186,7 @@ func (m Model) childProgress(st subagent.Status) components.AgentProgress {
 		BudgetPct: components.BudgetPct(st.Tokens.Fresh, st.Budget),
 		Tools:     st.ToolCalls,
 		Spend:     m.childSpendLabel(st),
-		Frame:     m.spinFrame,
+		Writes:    m.childWrites(st),
 		// What it was handed of the parent's conversation, on the line that
 		// says what it has cost (docs/capabilities/subagents.md#what-they-share).
 		Inherited: st.Inheritance,
@@ -232,6 +232,18 @@ func (m Model) childProgress(st subagent.Status) components.AgentProgress {
 		p.State = components.FanoutRunning
 	}
 	return p
+}
+
+// childWrites reports whether the child's role can change files, read off
+// its profile so a role a checkout defined is answered the way a shipped one
+// is. A role the supervisor no longer knows is taken as not writing: the word
+// it decides is `writing` or `running`, and neither is a claim worth guarding.
+func (m Model) childWrites(st subagent.Status) bool {
+	if m.subagents == nil {
+		return false
+	}
+	p, err := m.subagents.Profiles().Parse(string(st.Role))
+	return err == nil && p.Writes
 }
 
 // childNote is the line under a child wherever it is drawn: what a blocked
@@ -385,7 +397,7 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 			FromParent: st.ParentSteers,
 			Verdict:    st.Verdict,
 			SteerFrom:  string(st.SteerFrom),
-			Frame:      p.Frame,
+			Writes:     p.Writes,
 			Handoff:    st.Handoff,
 		}
 		if note := childNote(st); note != "" {

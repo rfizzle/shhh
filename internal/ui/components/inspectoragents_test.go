@@ -22,7 +22,6 @@ func TestInspectorRail_AgentsMapFloatsBlockedChildrenUnderTheRoot(t *testing.T) 
 			{Name: "runner-3", Detail: "the package tests", State: FanoutIdle},
 			{Name: "reviewer-4", Detail: "waiting approval: delete a file", State: FanoutBlocked},
 		},
-		Frame: 2,
 	}
 	view := stripANSI(r.View(InspectorMaxWidth, 0))
 	at := func(name string) int { return strings.Index(view, name) }
@@ -50,7 +49,6 @@ func TestInspectorRail_AgentsMapGivesUpItsRowsInOrder(t *testing.T) {
 			{Name: "reader-4", Detail: "waiting for a slot", State: FanoutQueued},
 		},
 		AgentsHint: railAgentsHint,
-		Frame:      2,
 	}
 	everything := stripANSI(r.View(InspectorMaxWidth, 0))
 	full := len(r.Lines(InspectorMaxWidth, 0))
@@ -146,7 +144,6 @@ func TestInspectorRail_AgentsTrailerNamesTheKeys(t *testing.T) {
 			{Name: "writer-1", Detail: "docs/loop.md", State: FanoutRunning},
 		},
 		AgentsHint: railAgentsHint,
-		Frame:      2,
 	}
 	// The trailer is drawn whole at the narrowest rail there is rather than
 	// clipping: it is a row of keys, and a clipped key is one nobody can
@@ -171,19 +168,18 @@ func TestInspectorRail_AgentsTrailerNamesTheKeys(t *testing.T) {
 
 // TestInspectorRail_AgentLaneDrawsTheBudgetPastHalf: the one denominator
 // nobody has to declare. Under half its budget a child with no step count
-// spins; past it the lane is the budget, and the bar takes the spinner's
-// place rather than standing beside it.
+// carries the running mark; past it the lane is the budget, and the bar
+// takes the mark's place rather than standing beside it.
 func TestInspectorRail_AgentLaneDrawsTheBudgetPastHalf(t *testing.T) {
 	r := InspectorRail{
 		Agents: []InspectorAgent{
 			{Name: "writer-1", Detail: "docs/loop.md", Tools: 4, State: FanoutRunning,
 				Fresh: 120_000, Budget: 300_000},
 		},
-		Frame: 2,
 	}
 	view := stripANSI(r.View(InspectorMaxWidth, 0))
-	if strings.Contains(view, "▰") || !strings.Contains(view, "⠹ docs/loop.md") {
-		t.Fatalf("under half its budget the lane still spins:\n%s", view)
+	if strings.Contains(view, "▰") || !strings.Contains(view, "▸ docs/loop.md") {
+		t.Fatalf("under half its budget the lane keeps the running mark:\n%s", view)
 	}
 	// Exactly half is the first reading that draws: half spent is half left,
 	// which is the point the distance to the ceiling becomes a decision.
@@ -196,8 +192,8 @@ func TestInspectorRail_AgentLaneDrawsTheBudgetPastHalf(t *testing.T) {
 	if !strings.Contains(view, "▱ 210k of 300k · docs/loop.md · 4 tools") {
 		t.Fatalf("past half the lane draws the budget:\n%s", view)
 	}
-	if strings.Contains(view, "⠹") {
-		t.Fatalf("a lane with a bar does not also spin:\n%s", view)
+	if strings.Contains(view, "▸ docs/loop.md") {
+		t.Fatalf("a lane with a bar does not also carry the running mark:\n%s", view)
 	}
 	// A declared step count still wins: it is what the child said it was
 	// doing, and the budget is what somebody set around it.
@@ -221,7 +217,6 @@ func TestInspectorRail_AgentsMapWarnsFromTheSecondSteer(t *testing.T) {
 			{Name: "runner-2", Detail: "the package tests", Tools: 12,
 				State: FanoutRunning, Steers: 1},
 		},
-		Frame: 2,
 	}
 	if view := stripANSI(r.View(InspectorMaxWidth, 0)); strings.Contains(view, "off task") {
 		t.Fatalf("one steer is not news:\n%s", view)
@@ -301,7 +296,6 @@ func TestInspectorRail_AgentsMapNestsAChildsChild(t *testing.T) {
 			{Name: "writer-1", Detail: "docs/loop.md", Depth: 1, State: FanoutRunning},
 			{Name: "reader-2", Detail: "round.go", Depth: 2, State: FanoutRunning},
 		},
-		Frame: 2,
 	}
 	var parent, nested, under string
 	for _, line := range r.Lines(InspectorMaxWidth, 0) {
@@ -425,7 +419,7 @@ func TestInspectorRail_AgentsMapShedsAChildWithItsParent(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			r := InspectorRail{Agents: tc.agents, Frame: 2}
+			r := InspectorRail{Agents: tc.agents}
 			full := len(r.Lines(InspectorMaxWidth, 0))
 			childShed := false
 			for h := full; h >= 3; h-- {
@@ -484,7 +478,7 @@ func TestInspectorRail_RunningChildrenFoldAtThePreset(t *testing.T) {
 			agents = append(agents, InspectorAgent{Name: fmt.Sprintf("writer-%d", i), Detail: "pkg", Depth: 1, State: FanoutRunning})
 		}
 		agents = append(agents, InspectorAgent{Name: "writer-10", Detail: "wrote a file", Outcome: "done", Depth: 1, State: FanoutDone})
-		r := InspectorRail{Agents: agents, Frame: 2}
+		r := InspectorRail{Agents: agents}
 		got := shown(r)
 		for i := 1; i <= 9; i++ {
 			name := fmt.Sprintf("writer-%d", i)
@@ -510,7 +504,7 @@ func TestInspectorRail_RunningChildrenFoldAtThePreset(t *testing.T) {
 			}
 			agents = append(agents, InspectorAgent{Name: fmt.Sprintf("writer-%d", i), Detail: "pkg", Depth: 1, State: state})
 		}
-		r := InspectorRail{Agents: agents, Frame: 2}
+		r := InspectorRail{Agents: agents}
 		got := shown(r)
 		for i := 1; i <= 9; i++ {
 			name := fmt.Sprintf("writer-%d", i)
@@ -530,7 +524,7 @@ func TestInspectorRail_RunningChildrenFoldAtThePreset(t *testing.T) {
 			{Name: "writer-3", Detail: "pkg", Depth: 1, State: FanoutRunning},
 			{Name: "reviewer-4", Detail: "waiting approval", Depth: 1, State: FanoutBlocked},
 			{Name: "writer-5", Detail: "pkg", Depth: 1, State: FanoutRunning},
-		}, Frame: 2}
+		}}
 		got := shown(r)
 		for name, want := range map[string]bool{
 			"reviewer-2": true, "reviewer-4": true, "writer-5": true, "writer-1": false, "writer-3": false,
@@ -579,4 +573,48 @@ func TestInspectorRail_RunningChildrenFoldAtThePreset(t *testing.T) {
 			t.Fatalf("finished children fold behind a bare count:\n%s", view)
 		}
 	})
+}
+
+// TestRail_AgentRowsAreStatic: the AGENTS block draws a running child as its
+// kind glyph and a still `▸` in the spin colour beside what it is doing —
+// the mark the kit's glyph table gives running — and never a spinner frame,
+// whatever the child is doing. The budget's bar still takes the mark's place
+// past half, and a stopped child carries neither.
+func TestRail_AgentRowsAreStatic(t *testing.T) {
+	r := InspectorRail{Agents: []InspectorAgent{
+		{Name: "orchestrator", Detail: "round 3 · streaming…", Self: true, State: FanoutRunning},
+		{Name: "writer-1", Detail: "docs/loop.md", Tools: 4, State: FanoutRunning, Depth: 1},
+		{Name: "reader-3", Detail: "survey internal/ui", State: FanoutRunning, Depth: 1,
+			Fresh: 210_000, Budget: 300_000},
+		{Name: "tester-4", Detail: "go test ./internal/agent", State: FanoutRunning, Depth: 1,
+			Step: 2, Steps: 5},
+	}}
+	raw := r.View(InspectorMaxWidth, 0)
+	view := stripANSI(raw)
+	if strings.ContainsAny(view, "⠋⠙⠹⠸⠼⠴⠦⠧") {
+		t.Fatalf("the AGENTS block draws a spinner frame:\n%s", view)
+	}
+	lines := strings.Split(view, "\n")
+	has := func(want string) bool {
+		for _, l := range lines {
+			if strings.Join(strings.Fields(l), " ") == want {
+				return true
+			}
+		}
+		return false
+	}
+	for _, want := range []string{
+		"◇ writer-1", "▸ docs/loop.md · 4 tools", "▸ round 3 · streaming…",
+		"◇ reader-3", "◇ tester-4",
+	} {
+		if !has(want) {
+			t.Errorf("the rail lacks the row %q:\n%s", want, view)
+		}
+	}
+	if !strings.Contains(raw, sty.SpinText.Render("▸ docs/loop.md")) {
+		t.Errorf("the running mark is in the spin colour:\n%s", raw)
+	}
+	if strings.Contains(view, "▸ survey internal/ui") || strings.Contains(view, "▸ go test") {
+		t.Errorf("a lane with a bar does not also carry the running mark:\n%s", view)
+	}
 }

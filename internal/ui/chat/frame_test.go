@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -283,67 +284,116 @@ func TestFrame_GutterAndHintsSwapWhileWorking(t *testing.T) {
 	}
 }
 
-// While a turn runs a step, the frame's pinned status is the one thing on
+// Whatever a turn is doing, the frame's pinned status is the one thing on
 // this screen that animates: the running card keeps its kind's glyph, a
-// command no card holds yet keeps the still `▸`, and no total line counts
-// the turn under the transcript, because the status and the cockpit already
-// do. The inspector's
-// THIS TURN block still counts it (docs/interface/surfaces.md#the-turns-close).
+// command no card holds yet keeps the still `▸`, a plan's step in flight and
+// the rail's running children keep a still `▸`, a fan-out's running lanes say
+// so in a word, the wait lines under the transcript are still notices, and no
+// total line counts the turn under the transcript, because the status and the
+// cockpit already do. The inspector's THIS TURN block still counts it
+// (docs/interface/surfaces.md#the-turns-close).
 func TestFrame_TheStatusIsTheOnlySpinner(t *testing.T) {
-	for _, tc := range []struct {
-		name   string
-		width  int
-		carded bool
-	}{
-		{"a card holds the command, with the rail", 144, true},
-		{"a card holds the command", 80, true},
-		{"no card holds the command yet", 80, false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			m := inspectorModel(t, tc.width, 40)
-			m.transcript = []entry{
-				{kind: entryUser, text: "run the ui tests", turn: 1},
-				{kind: entryAssistant, text: "Running the UI tests once more."},
-			}
-			if tc.carded {
+	// Children that stay running for as long as the test looks at them.
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	batch := sup.BeginBatch()
+	for _, task := range []string{"Say where the round counter is read.", "Say where the loop exits."} {
+		spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
+	}
+	waitFor(t, func() bool { running, _ := sup.ActiveCounts(); return running == 2 })
+
+	command := func(carded bool) func(*Model) {
+		return func(m *Model) {
+			if carded {
 				m.transcript = append(m.transcript, entry{kind: entryCommand, text: "go vet ./internal/ui/",
 					toolResult: "ok", duration: 4 * time.Second, turn: 1})
 			}
-			m.turnOpen = true
-			m.turnStarted = clock().Add(-64 * time.Second)
 			m.setTurnState(stateRunningCmd)
 			m.pendingApproval = &approvalRequest{kind: approvalExec}
 			m.runningCommand = "go test ./internal/ui/"
 			m.runStart = clock().Add(-8 * time.Second)
 			m.runTail = &commandTail{}
 			m.runTail.Set("ok  github.com/rfizzle/shhh/internal/ui  0.412s")
-			for frame := range len(components.SpinnerFrames) {
-				m.spinFrame = frame
-				m.invalidateRenderCache()
-				m.viewport.SetLines(m.renderHistoryLines())
-				m.viewport.GotoBottom()
-				view := stripANSI(m.View().Content)
-				var spun []string
-				for _, l := range strings.Split(view, "\n") {
-					if strings.ContainsAny(l, brailleFrames) {
-						spun = append(spun, l)
+		}
+	}
+	states := []struct {
+		name  string
+		setup func(*Model)
+		// shows is what the state draws, so a state that drew nothing
+		// cannot pass for one that drew no spinner.
+		shows []string
+	}{
+		{"a card holds the command", command(true), []string{"ok github.com/rfizzle/shhh/internal/ui"}},
+		{"no card holds the command yet", command(false), []string{"ok github.com/rfizzle/shhh/internal/ui"}},
+		{"streaming", func(m *Model) {
+			m.setTurnState(stateStreaming)
+			m.streaming = "The counter is read at the top of the loop"
+		}, []string{"streaming…"}},
+		{"classifying", func(m *Model) {
+			m.setTurnState(stateClassifying)
+		}, []string{"deciding…"}},
+		{"a running plan", func(m *Model) {
+			m.transcript = m.transcript[:1]
+			m.beginPlanRun(plan.Parse(planFixture))
+			announce(t, m, "Now let me locate the round accounting", 6200*time.Millisecond, false)
+			m.appendEntry(m.stampStep(entry{kind: entryAssistant, text: "Adding a RoundsExhausted sentinel"}))
+			m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"errors.go"}`,
+				toolResult: "ok", duration: time.Second})
+			m.setTurnState(stateStreaming)
+		}, []string{"▸ 2 Add a RoundsExhausted sentinel ✎ errors.go"}},
+		{"a fan-out with running children", func(m *Model) {
+			*m = m.WithSubagents(sup)
+			m.transcript = append(m.transcript, entry{kind: entryFanout, fanout: &fanoutBatch{batch: batch}})
+			m.setTurnState(stateStreaming)
+		}, []string{"◇ researcher-1 Say where the round counter is read. running"}},
+		{"compacting", func(m *Model) {
+			m.compacting = true
+			m.setTurnState(stateStreaming)
+			m.appendEntry(entry{kind: entrySystem, text: compactingNotice})
+		}, []string{"· Compacting conversation…"}},
+	}
+	for _, width := range []int{144, 80} {
+		for _, tc := range states {
+			t.Run(fmt.Sprintf("%s at %d", tc.name, width), func(t *testing.T) {
+				m := inspectorModel(t, width, 40)
+				m.transcript = []entry{
+					{kind: entryUser, text: "run the ui tests", turn: 1},
+					{kind: entryAssistant, text: "Running the UI tests once more."},
+				}
+				m.turnOpen = true
+				m.turnStarted = clock().Add(-64 * time.Second)
+				tc.setup(&m)
+				for frame := range len(components.SpinnerFrames) {
+					m.spinFrame = frame
+					m.invalidateRenderCache()
+					m.viewport.SetLines(m.renderHistoryLines())
+					m.viewport.GotoBottom()
+					view := stripANSI(m.View().Content)
+					var spun []string
+					for _, l := range strings.Split(view, "\n") {
+						if strings.ContainsAny(l, brailleFrames) {
+							spun = append(spun, l)
+						}
+					}
+					if len(spun) != 1 || spun[0] != frameTopRail(view) {
+						t.Fatalf("frame %d: only the frame's status may draw a spinner, got %d rows:\n%s\n\nscreen:\n%s",
+							frame, len(spun), strings.Join(spun, "\n"), view)
+					}
+					flat := strings.Join(strings.Fields(view), " ")
+					for _, want := range tc.shows {
+						if !strings.Contains(flat, want) {
+							t.Fatalf("frame %d: the screen does not draw %q:\n%s", frame, want, view)
+						}
+					}
+					if strings.Contains(view, "working ·") {
+						t.Fatalf("frame %d: a running turn draws a total line:\n%s", frame, view)
+					}
+					if width >= 130 && !strings.Contains(view, "THIS TURN") {
+						t.Fatalf("frame %d: the rail's THIS TURN block is gone:\n%s", frame, view)
 					}
 				}
-				if len(spun) != 1 || spun[0] != frameTopRail(view) {
-					t.Fatalf("frame %d: only the frame's status may draw a spinner, got %d rows:\n%s\n\nscreen:\n%s",
-						frame, len(spun), strings.Join(spun, "\n"), view)
-				}
-				if !strings.Contains(view, "ok  github.com/rfizzle/shhh/internal/ui") {
-					t.Fatalf("frame %d: the running command's tail is not on screen:\n%s", frame, view)
-				}
-				if strings.Contains(view, "working ·") {
-					t.Fatalf("frame %d: a running turn draws a total line:\n%s", frame, view)
-				}
-				if tc.width >= 130 && !strings.Contains(view, "THIS TURN") {
-					t.Fatalf("frame %d: the rail's THIS TURN block is gone:\n%s", frame, view)
-				}
-			}
-		})
+			})
+		}
 	}
 }
 

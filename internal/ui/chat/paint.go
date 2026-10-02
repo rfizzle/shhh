@@ -279,14 +279,14 @@ func (m Model) paneView(area uv.Rectangle) string {
 }
 
 // liveTail is the block the turn draws under the transcript while it works:
-// the running command's own activity row, the retry countdown, the spinner
+// the running command's own activity row, the retry countdown, the notice
 // for the housekeeping the status rail does not report. It is the one part
 // of the pane whose height is not fixed, so the layout asks it rather than
 // assuming — the row it takes used to be spent without being budgeted for,
 // which put the bottom of the frame one row past the bottom of the terminal.
 //
 // Attached, the child's session fills the pane and its liveness shows in the
-// child-scoped status bar, not a parent spinner.
+// child-scoped status bar, not a parent notice.
 func (m Model) liveTail(width int) string {
 	if m.framed == nil {
 		return m.resolveLiveTail(width)
@@ -317,14 +317,11 @@ func (m Model) liveBlock(width int) string {
 			return ""
 		}
 		// What the turn is doing is the status rail's to say, once, above
-		// the prompt (turnstatus.go): a spinner here would name the same
-		// phase a second time, in a second vocabulary, a few rows apart.
-		// Compaction is the exception — it is housekeeping rather than a
-		// phase of a turn, the rail does not report it, and nothing else on
-		// screen would say the history is being rewritten.
-		if m.compacting {
-			return m.spinner.View() + " Compacting…"
-		}
+		// the prompt (turnstatus.go): a line here would name the same phase
+		// a second time, in a second vocabulary, a few rows apart. That
+		// holds for a compaction too: the transcript's last row is already
+		// its `· Compacting conversation…` notice (context.go), and a
+		// second line under it would say so twice.
 		return ""
 	case stateRunningCmd:
 		// A fetch that is sitting out a host's refusal says so on its own
@@ -335,7 +332,7 @@ func (m Model) liveBlock(width int) string {
 			return row
 		}
 		if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
-			return m.spinner.View() + " Applying changes…"
+			return waitNotice("Applying changes…", width)
 		}
 		// The running command renders as a live activity row whose tail is
 		// its last output line; spinner ticks keep it fresh. Where the step
@@ -347,9 +344,12 @@ func (m Model) liveBlock(width int) string {
 		}
 		return m.runningCommandRow(width)
 	case stateClassifying:
-		return m.spinner.View() + " Checking permission…"
+		// The frame's status already says `deciding…`, which is this wait
+		// in the turn's own vocabulary; a line here would be the same fact
+		// twice, a few rows apart.
+		return ""
 	case stateCloseGate:
-		return m.closeGateBlock()
+		return m.closeGateBlock(width)
 	case stateRetryWait:
 		if m.retry == nil {
 			return ""
@@ -358,9 +358,17 @@ func (m Model) liveBlock(width int) string {
 		// it that drains. A wait is a meter, never a spinner.
 		return m.retryWaitBlock(width)
 	case stateModelList:
-		return m.spinner.View() + " Listing models…"
+		return waitNotice("Listing models…", width)
 	}
 	return ""
+}
+
+// waitNotice is a wait the frame's status does not name, as a still notice
+// line: the frame's status is the one thing on screen that animates, and a
+// spinner under the transcript would count the turn beside it
+// (docs/interface/surfaces.md#the-input-frame).
+func waitNotice(text string, width int) string {
+	return components.NoticeLine{Text: text}.View(width)
 }
 
 // liveTailHeight is what that block costs the transcript. It is measured

@@ -325,12 +325,12 @@ func (m *Model) cancelCloseGate() {
 // closeGateBlock is the live tail while the run is going. The gate is the one
 // thing a turn does after the model has stopped talking, so without a line of
 // its own the session would look finished for as long as the suite takes.
-func (m Model) closeGateBlock() string {
+func (m Model) closeGateBlock(width int) string {
 	suite, _ := m.closeGateSuite()
 	if suite == "" {
-		return m.spinner.View() + " Running the quality gate…"
+		return waitNotice("Running the quality gate…", width)
 	}
-	return fmt.Sprintf("%s Running the %q quality-gate suite…", m.spinner.View(), suite)
+	return waitNotice(fmt.Sprintf("Running the %q quality-gate suite…", suite), width)
 }
 
 // gateToggle answers /gate on and /gate off, and reports whether it did. The

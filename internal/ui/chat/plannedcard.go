@@ -73,7 +73,6 @@ func (m Model) plannedCardFor(e entry, sel rowSel) components.PlannedCard {
 		ReversibleTone: e.plan.reversible.Tone,
 		Folded:         e.stepFold == foldClosed,
 		Selected:       sel != rowUnselected,
-		Frame:          m.spinFrame,
 	}
 	files := map[string]bool{}
 	for i, s := range run.doc.Steps {

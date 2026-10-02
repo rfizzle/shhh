@@ -32,6 +32,12 @@ keys "survey the round accounting" Enter
 snap 02-spawn-card "Start 3 writers"
 sleep 1
 keys y
+# For the seconds the second and third children are reading, before any of
+# them has asked for anything, their lanes declare no step count and say so
+# in a still word, `writing`, in the spin colour: nothing on the card moves,
+# because the frame's status is the one thing on screen that animates
+# (docs/interface/surfaces.md#the-agent-manager).
+snap 03-writing "writing · " "spawned 3 agents"
 sleep 4
 # Three rows as the card opens, before anything has been asked of the
 # reader: the spawn's receipt as the header, the sentence that titled it as

@@ -138,7 +138,7 @@ func TestFanoutOffersOnlyWhileBlocked(t *testing.T) {
 }
 
 // TestFanoutProgressNeedsADeclaredCount is the meter rule on a lane: a bar
-// only where the spawn declared a step count, the spinner everywhere else,
+// only where the spawn declared a step count, a still word everywhere else,
 // and never a ratio nobody supplied.
 func TestFanoutProgressNeedsADeclaredCount(t *testing.T) {
 	declared := FanoutLane{State: FanoutRunning, Name: "writer-1", Step: 2, Steps: 5}
@@ -147,13 +147,13 @@ func TestFanoutProgressNeedsADeclaredCount(t *testing.T) {
 		t.Fatalf("a declared step count should draw its bar and its number: %q", bar)
 	}
 
-	none := FanoutLane{State: FanoutRunning, Name: "writer-1", Frame: 2}
-	spun := ansi.Strip(none.View(110))
-	if strings.Contains(spun, "▰") || strings.Contains(spun, "▱") {
-		t.Fatalf("a lane with no declared count drew a bar: %q", spun)
+	none := FanoutLane{State: FanoutRunning, Name: "writer-1", Writes: true}
+	still := ansi.Strip(none.View(110))
+	if strings.Contains(still, "▰") || strings.Contains(still, "▱") {
+		t.Fatalf("a lane with no declared count drew a bar: %q", still)
 	}
-	if !strings.Contains(spun, SpinnerFrames[2]) || !strings.Contains(spun, "working") {
-		t.Fatalf("a lane with no declared count should spin beside a word: %q", spun)
+	if strings.ContainsAny(still, strings.Join(SpinnerFrames, "")) || !strings.Contains(still, "writing") {
+		t.Fatalf("a lane with no declared count should say it is writing, still: %q", still)
 	}
 }
 
@@ -835,5 +835,53 @@ func TestFanoutSettledLaneKeepsItsTaskBeforeItsCosts(t *testing.T) {
 				t.Errorf("at %d %q should have given way: %q", c.width, g, view)
 			}
 		}
+	}
+}
+
+// TestFanout_ARunningLaneIsStatic: a child still working with no declared
+// step count says so in a still word beside its kind glyph — `writing` for a
+// child whose role changes files, `running` for any other — and never draws
+// a spinner frame, because the frame's status is the one thing on screen
+// that animates. A declared count keeps its meter, and a blocked child keeps
+// its word and its mark.
+func TestFanout_ARunningLaneIsStatic(t *testing.T) {
+	row := func(l FanoutLane) string {
+		return strings.Join(strings.Fields(ansi.Strip(strings.Split(l.View(110), "\n")[0])), " ")
+	}
+	for _, tc := range []struct {
+		name string
+		lane FanoutLane
+		want string
+	}{
+		{"a writer", FanoutLane{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md",
+			Writes: true, Elapsed: "41s"}, "◇ writer-1 docs/loop.md writing · 41s"},
+		{"a reader", FanoutLane{State: FanoutRunning, Name: "reader-3", Task: "survey internal/ui",
+			Tools: 2, Elapsed: "39s"}, "◇ reader-3 survey internal/ui running · 2 tools · 39s"},
+		{"a declared count", FanoutLane{State: FanoutRunning, Name: "writer-2", Task: "internal/agent/round.go",
+			Writes: true, Step: 2, Steps: 5, Elapsed: "1m10s"}, "◇ writer-2 internal/agent/round.go ▰▰▱▱▱ 2/5 · 1m10s"},
+		{"a blocked child", FanoutLane{State: FanoutBlocked, Name: "writer-3", Waiting: "approve a write",
+			Writes: true, Elapsed: "12s"}, ""},
+	} {
+		got := row(tc.lane)
+		if tc.lane.State == FanoutBlocked {
+			if !strings.Contains(got, "blocked") || !strings.Contains(got, "⚠ needs you") {
+				t.Errorf("%s: a blocked lane says so in words: %q", tc.name, got)
+			}
+		} else if got != tc.want {
+			t.Errorf("%s: the running lane is %q, want %q", tc.name, got, tc.want)
+		}
+		if strings.ContainsAny(got, "⠋⠙⠹⠸⠼⠴⠦⠧") {
+			t.Errorf("%s: a lane draws a spinner frame: %q", tc.name, got)
+		}
+	}
+	if raw := (FanoutLane{State: FanoutRunning, Name: "writer-1", Writes: true}).View(110); !strings.Contains(raw, sty.SpinText.Render("writing")) {
+		t.Errorf("the running word is in the spin colour: %q", raw)
+	}
+	block := FanoutBlock{Elapsed: "41s", Body: "Fanning two out.", Lanes: []FanoutLane{
+		{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md", Writes: true, Elapsed: "41s"},
+		{State: FanoutRunning, Name: "reader-3", Task: "survey internal/ui", Elapsed: "39s"},
+	}}
+	if view := ansi.Strip(block.View(80)); strings.ContainsAny(view, "⠋⠙⠹⠸⠼⠴⠦⠧") {
+		t.Errorf("the running fan-out card draws a spinner frame:\n%s", view)
 	}
 }

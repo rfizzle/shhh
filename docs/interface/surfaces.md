@@ -749,9 +749,13 @@ once, as a card under the message that approved it: `▸ planned 7 steps · 5
 files` as the header, with whether its files can be put back and how many of
 its steps write on the right — the approval card's own answers, made before
 the first edit — the plan's own sentence as the body, and a footer row per
-step, its state's glyph (`✓` done, the spinner running, `·` not reached, `✗`
+step, its state's glyph (`✓` done, `▸` running, `·` not reached, `✗`
 broken), its number, its title, bright while it runs and dim until it is
 reached, and what it will write on the right (`✎ errors.go`, or `read only`).
+Nothing on the card animates: the step in flight is told by its still `▸` in
+the spin colour and its bright title, because the frame's status is the one
+thing on screen that moves while the turn runs, and a spinner on the plan
+would count the turn a second time beside it.
 Past four rows the card draws the four around the step in flight and counts
 the rest, saying whether any of them write — `… 3 more, none of them write`;
 a plan one step longer than that draws every step. The card's rows tick as
@@ -1639,14 +1643,16 @@ already been read once. Between two blocks of the same length the lower one
 gives first, because the rail is read downwards and the block nearer the top
 is nearer the turn it is about.
 
-An agent that declared no step count draws motion beside what it is doing,
-since a bar against a denominator nobody supplied is a number the interface
-invented. There is one denominator nobody had to declare: the fresh tokens
+An agent that declared no step count draws a still `▸` in the spin colour
+beside what it is doing, since a bar against a denominator nobody supplied is
+a number the interface invented. Nothing in the rail animates: the frame's
+status is the one thing on screen that moves, and an agent's row that moved
+beside it would be the turn counted twice. There is one denominator nobody had to declare: the fresh tokens
 the agent was given to spend. Once half of them are gone the lane draws
 that instead — the bar, the intake and the budget, in the same five cells a
 declared step count gets — so a ceiling is something seen coming rather than
-read about afterwards in the word the agent died on. Under half it stays the
-spinner: a quarter spent is not news.
+read about afterwards in the word the agent died on. Under half it keeps the
+mark: a quarter spent is not news.
 
 Two things the line under an agent says that its state cannot. An agent told
 twice in one turn that it has left its task carries that count in the weight
@@ -1845,7 +1851,11 @@ card; in the manager and in the rail's map the same child is a row. A lane
 keeps `◇` in every state it has, in the colour the state wears, and says how
 the child is doing in words — `▰▰▰▱▱ 2/5`, `✓ 5/5`, `blocked`: a child
 is a child from the moment it is queued until it stops being one, and it will
-be many acts before it is anything. A row is that same child as one thing you
+be many acts before it is anything. Nothing on the card or in the manager
+animates. A child still working against no declared step count says so in a
+still word in the spin colour — `writing` where its role changes files,
+`running` where it does not — and a declared count keeps its meter, because
+the frame's status is the one thing on screen that moves. A row is that same child as one thing you
 are about to act on, so it keeps the rule every other row in the product
 keeps: `⚠ ✗ ▸ ⊘ ✦` take the lead column from the kind mark and `✓` never does.
 A blocked child leads its row with `⚠` and says what it is waiting for

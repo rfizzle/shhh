@@ -497,6 +497,37 @@ func TestGolden_ProgressUpdate(t *testing.T) {
 	})
 }
 
+// TestGolden_WaitLines captures what the session draws under the transcript
+// while it waits on something the frame's status does not name: a still
+// notice line, never a spinner, because the frame's status is the one thing
+// on screen that animates. A compaction draws its notice in the transcript
+// and nothing under it.
+func TestGolden_WaitLines(t *testing.T) {
+	captureGolden(t, "wait-lines", "the wait lines under the transcript", goldenWidths, func(width int) []golden.Panel {
+		build := func(st state, mut func(*Model)) string {
+			m := frameModel(t, width, 40)
+			m.transcript = []entry{{kind: entryUser, text: "make the round limit recoverable", turn: 1}}
+			m.turnOpen, m.state = true, st
+			if mut != nil {
+				mut(&m)
+			}
+			m.invalidateRenderCache()
+			return m.renderHistory() + "\n" + m.liveTail(width)
+		}
+		return []golden.Panel{
+			{Label: "applying an approved change", View: build(stateRunningCmd, func(m *Model) {
+				m.pendingApproval = &approvalRequest{kind: approvalDiff}
+			})},
+			{Label: "listing the provider's models", View: build(stateModelList, nil)},
+			{Label: "running the quality gate the turn owes", View: build(stateCloseGate, nil)},
+			{Label: "compacting · the transcript's notice and nothing under it", View: build(stateStreaming, func(m *Model) {
+				m.compacting = true
+				m.appendEntry(entry{kind: entrySystem, text: compactingNotice})
+			})},
+		}
+	})
+}
+
 // TestGolden_PlanChecklist captures the outline an approved plan numbers:
 // the plan's card under the message that approved it, a row per declared
 // step ticking as the run reaches it, the steps the run took as cards in the

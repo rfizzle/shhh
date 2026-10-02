@@ -15,6 +15,12 @@
 # one place two tokens sit side by side: the window it was in del, the window
 # it is in add, the label and the arrow between them dim.
 #
+# The compaction waits three seconds on a hook in front of it (`launch`), so
+# 04-compacting can catch the wait: the transcript's own still notice line,
+# `· Compacting conversation…`, and nothing under it that moves — the frame's
+# status is the one thing on screen that animates
+# (docs/interface/surfaces.md#the-input-frame).
+#
 # Spaces rather than tabs in the fixtures: a tab is re-expanded by the
 # terminal against the pane's own columns, not the row's, and the capture
 # would read as a column that drifted.
@@ -28,6 +34,7 @@ snap 03-second "disagree about who owns it"
 # The compaction itself: the receipt row, and under it the summary the
 # provider answered the compaction's own request with.
 keys "/compact" Enter
+snap 04-compacting "Compacting conversation…"
 snap 04-receipt "compacted turn" "· compacted turn 1 into a "
 snap 05-summary "established loop.go as the owner"
 # The turn the summary stands in for is still here, and its card says which

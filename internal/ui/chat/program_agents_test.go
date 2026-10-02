@@ -275,7 +275,7 @@ func TestProgram_TheManagerAsksAFinishedChildAFollowUp(t *testing.T) {
 	programPress(t, tm, "enter")
 	waitForText(t, tm, "follow-up · and where is the limit read")
 
-	frameHas(t, finalFrame(t, tm), "reader-1", "working")
+	frameHas(t, finalFrame(t, tm), "reader-1", "running")
 }
 
 // Attaching by name moves the keyboard into a child: the frame is the

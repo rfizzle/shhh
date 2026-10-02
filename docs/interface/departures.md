@@ -336,6 +336,27 @@ and the transcript ends on the running card and its
 command's last line. The total appears once, when the turn ends, in the state
 it ended in.
 
+## Only the frame's status moves
+
+*A disagreement, and a gap.* The catalogue's running fan-out lane reads
+`◇ writer-1 docs/loop.md · ✎ 1 file writing · 41s`. The binary draws the
+lane's `◇`, the task and the still word, with the costs and the clock on the
+right, and no `✎ 1 file`: the session has no count of the files a child has
+written until its patch lands, and a count drawn from what it was asked to
+touch would be a claim about work it has not done. The word is `writing` for
+a child whose role changes files and `running` for any other, in the spin
+colour, and the manager's row says the same word, since the two are one
+renderer.
+
+The rest is a gap the binary closed. A plan's step in flight and the rail's
+running agents draw the kit's still `▸`; nothing on a card, a lane or the
+rail animates. The lines the session drew under the transcript while it waited
+are still notice lines, `·` and the words — `Applying changes…`, `Listing
+models…`, `Running the quality gate…` — or are not drawn where something on
+screen already says the same: a permission check is the frame's `deciding…`,
+and a compaction is the transcript's own `· Compacting conversation…` row
+directly above where the line stood.
+
 ## A failure card's header carries the class
 
 *A gap.* The catalogue's error card names the class on the header's right

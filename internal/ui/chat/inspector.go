@@ -227,7 +227,6 @@ func (m Model) resolveInspector() components.InspectorRail {
 		Tools:      m.inspectorTools(),
 		Context:    m.inspectorContext(),
 		Spend:      m.inspectorSpend(),
-		Frame:      m.spinFrame,
 		Doors:      railDoorSet(),
 	}
 }

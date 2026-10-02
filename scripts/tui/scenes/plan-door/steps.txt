@@ -8,9 +8,13 @@
 # is drawn at. A click is the terminal's own SGR mouse report, sent as literal
 # bytes, column and row counted from 1.
 #
-# What the captures are read for: at 04 the plan has run its first step and
-# one step it never named, and the rail's PLAN block reads 1 of 2 with the
-# departure; at 05 a click on the PLAN heading has put the steps screen over
+# What the captures are read for: at 04-step-asks step 1 has stopped on its
+# command for approval, and at 04-step-in-flight that command is running
+# under the frame's `acting…`, so the plan's card draws the step as the one
+# in flight, a still `▸` and never a spinner, the frame's status the one
+# thing that moves (docs/interface/surfaces.md#the-progress-checkpoint); at
+# 04 the plan has run its first step and one step it never named, and the
+# rail's PLAN block reads 1 of 2 with the departure; at 05 a click on the PLAN heading has put the steps screen over
 # the pane and the rail, headed /plan, the first step done beside its read and
 # the second queued, and the departure under the list; at 06 the same cell has
 # put the rail back; at 07 bare /plan, the key twin, opens the same screen.
@@ -32,6 +36,10 @@ keys "plan the round counter change" Enter
 snap 03-plan-card "Plan · make the round limit recoverable"
 keys C-Space
 keys Enter
+snap 04-step-asks "[y] run it once" "▸ 1  Locate the round accounting"
+sleep 1
+keys y
+snap 04-step-in-flight "acting…" "▸ 1  Locate the round accounting"
 wide 130 snap 04-executing "read at the top of the loop" "PLAN" "off plan" "✓ plan · 1 of 2 · Locate the round"
 narrow 130 snap 04-executing "read at the top of the loop" "✓ plan · 1 of 2 · Locate the round"
 # The rail's first column is 85 and the PLAN heading is on row 11.

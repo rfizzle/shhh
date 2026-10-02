@@ -54,10 +54,9 @@ type PlannedCard struct {
 	ReversibleTone FieldTone
 	// Body is the plan's own sentence.
 	Body string
-	// Folded is the reader's fold, Selected the reading cursor on the
-	// header, and Frame the host's spinner frame for the step in flight.
+	// Folded is the reader's fold and Selected the reading cursor on the
+	// header.
 	Folded, Selected bool
-	Frame            int
 }
 
 // View draws the card at the pane's width.
@@ -188,7 +187,10 @@ func (c PlannedCard) countRow(text string, width int) string {
 
 // stepRow is one step: its state's glyph, its number, its title — bright
 // while it runs, body once done, dim while it waits — and what it will write
-// on the right.
+// on the right. The step in flight is a still `▸` in the spin colour, the
+// mark the rail's PLAN block gives the same step: the frame's status is the
+// one thing on screen that animates, and a second spinner here would count
+// the turn beside it (docs/interface/surfaces.md#the-progress-checkpoint).
 func (c PlannedCard) stepRow(s PlannedStep, width int) string {
 	inner := max(width-cardMargin, 1)
 	glyph, title := sty.Dim.Render("·"), sty.Dim
@@ -198,7 +200,7 @@ func (c PlannedCard) stepRow(s PlannedStep, width int) string {
 	case PlanStepFailed:
 		glyph, title = sty.Err.Render("✗"), sty.Body
 	case PlanStepRunning:
-		glyph, title = sty.SpinText.Render(Spinner{Frame: c.Frame}.Glyph()), sty.Bright
+		glyph, title = sty.SpinText.Render("▸"), sty.Bright
 	}
 	num := fmt.Sprintf("%-*d", plannedNumberSlot, s.Number)
 	head := strings.Repeat(" ", CardBodyIndent) + glyph + " " + sty.Dim.Render(num)
