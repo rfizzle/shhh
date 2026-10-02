@@ -21,7 +21,7 @@ wait:0.8
 +tool:edit_file:{"path":"retry.go","old_text":"const maxAttempts = 3","new_text":"const maxAttempts = 5"}
 wait:0.6
 +Checking the file is still formatted.
-+tool:execute_command:{"command":"gofmt -l ."}
++tool:execute_command:{"command":"gofmt -w ."}
 wait:0.6
 +The retry loop now makes up to five attempts before giving up. `maxAttempts` is read in one place, the loop in retry.go, so nothing else changes behaviour; the backoff still doubles from 200ms, so the last wait is 3.2s.
 

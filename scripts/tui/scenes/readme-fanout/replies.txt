@@ -19,20 +19,20 @@ tool:steps:{"steps":[{"title":"Read cache.go"},{"title":"Run gofmt"},{"title":"R
 +tool:read_file:{"path":"cache.go"}
 wait:1
 +tool:steps:{"steps":[{"title":"Read cache.go","done":true},{"title":"Run gofmt"},{"title":"Report every reader of an entry"}]}
-+tool:execute_command:{"command":"gofmt -l cache.go"}
++tool:execute_command:{"command":"gofmt -w cache.go"}
 wait:40
 +Entries are read in Get alone.
 
 [writer-2]
 tool:read_file:{"path":"cache.go"}
 wait:2
-+tool:execute_command:{"command":"gofmt -l cache.go"}
++tool:execute_command:{"command":"gofmt -w cache.go"}
 Put is where a lifetime belongs: it stores the entry and nothing else touches it.\n\n## Assumptions\n\n- A lifetime is per cache, not per entry.\n- The clock can be the wall clock; no test needs to fake it yet.
 
 [writer-3]
 tool:read_file:{"path":"cache.go"}
 wait:3
-+tool:execute_command:{"command":"gofmt -l cache.go"}
++tool:execute_command:{"command":"gofmt -w cache.go"}
 Nothing evicts an entry today; Put only ever adds.
 
 [reading]

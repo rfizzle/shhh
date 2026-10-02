@@ -30,7 +30,7 @@ hold 2.5
 keys y
 # The formatting check is a command, so it has a card of its own: what it
 # touches, how it would be undone, the network and the containment in force.
-snap 03-command-card "[y] run it once" "gofmt -l ."
+snap 03-command-card "[y] run it once" "gofmt -w ."
 hold 2.5
 keys y
 # The close: the answer, the turn's account and the row of files it changed.
