@@ -37,4 +37,4 @@ snap 05-both-parked "2 held" "⏸ held"
 # One press lets them all go, because the hold was asked of the session and
 # letting them out one at a time would be a list nobody could keep.
 keys C-p
-snap 06-released "in parallel" "running"
+snap 06-released "in parallel" "writing"
