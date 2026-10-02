@@ -3924,8 +3924,36 @@ func TestGolden_TurnTotal(t *testing.T) {
 			{Label: "failed · what it got through, and that it changed no file", View: closed(components.TurnClose{
 				State: components.TurnFailed, Tools: 13, Elapsed: "1m 38s", Spend: "$1.15", WroteNothing: true,
 			})},
+			{Label: "retried · the failed attempt's total, the retry's line, and the retry's own total", View: retriedTotals(t, width)},
 		}
 	})
+}
+
+// retriedTotals is a turn that failed after one read and was retried, the
+// retry making two of its own, each attempt closed by the session's
+// own accounting: the retry's total counts its two calls, its clock and its
+// spend, and the failed attempt's total stands above the retry's line.
+func retriedTotals(t *testing.T, width int) string {
+	m := frameModel(t, width, 40)
+	m.turnCount = 1
+	attempt := func(outcome components.TurnState, took time.Duration, cost float64, paths ...string) {
+		m.vitals.startTurn()
+		for _, p := range paths {
+			m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: fmt.Sprintf(`{"path":%q}`, p),
+				toolResult: "package agent", duration: 300 * time.Millisecond})
+		}
+		m.vitals.record("gpt-4o", provider.Usage{PromptTokens: 41000, CompletionTokens: 1200}, cost, true)
+		m.vitals.endTurn(took)
+		m.turnStarted, m.turnEnded = goldenNow.Add(-took), goldenNow
+		m.turnOutcome = outcome
+		m.appendEntry(entry{kind: entryTurnClose, turn: 1, close: m.turnCloseData()})
+	}
+	m.appendEntry(entry{kind: entryUser, text: "raise the round cap"})
+	attempt(components.TurnFailed, 98*time.Second, 1.15, "internal/agent/loop.go")
+	m.appendEntry(entry{kind: entryRetry})
+	attempt(components.TurnDone, 124*time.Second, 0.71, "internal/agent/loop.go", "internal/agent/round.go")
+	m.invalidateRenderCache()
+	return m.renderHistory()
 }
 
 // TestGolden_SummaryCard captures a reading in its two places, once each
@@ -4003,6 +4031,26 @@ func TestGolden_FailureCard(t *testing.T) {
 			{Label: "the failure the turn ended on · grey keys beside the handover that reaches them", View: build(rowUnselected, false)},
 			{Label: "under reading mode's cursor · the card lit, its keys live", View: build(rowUnderCursor, false)},
 			{Label: "retried · the line the retry leaves where the prompt would stand", View: build(rowUnselected, true)},
+		}
+	})
+}
+
+// TestGolden_FailedCommandCard captures a step whose command failed under
+// make (docs/interface/surfaces.md#the-step): the footer is the line that
+// says what failed, never the directory trailer make printed after it.
+func TestGolden_FailedCommandCard(t *testing.T) {
+	captureGolden(t, "failed-command-card", "a failed command's card under make", goldenWidths, func(width int) []golden.Panel {
+		m := frameModel(t, width, 40)
+		m.appendEntry(entry{kind: entryUser, text: "write the copy story"})
+		m.appendEntry(entry{kind: entryAssistant, text: "Running the suite once more before I stop."})
+		m.appendEntry(entry{kind: entryCommand, text: "make test", exitCode: 2, duration: 4200 * time.Millisecond,
+			toolResult: "make[1]: Entering directory '/src/shhh'\n" +
+				"--- FAIL: TestReplyGolden: reply_copy.golden differs\n" +
+				"ok  \tgithub.com/rfizzle/shhh/internal/ui/components\t0.41s\n" +
+				"make[1]: Leaving directory '/src/shhh'\n"})
+		m.invalidateRenderCache()
+		return []golden.Panel{
+			{Label: "failed · the footer is the failure line, past make's trailer", View: m.renderHistory()},
 		}
 	})
 }

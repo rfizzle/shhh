@@ -42,6 +42,25 @@
   ✗ failed · 13 tools · 1m 38s · $1.15 · no files changed
 
 
+· retried · the failed attempt's total, the retry's line, and the retry's own total
+❯ raise the round cap
+─────────────────────────────────────────────────────────────────────────────
+
+
+  ⚙ read internal/agent/loop.go
+
+
+  ✗ failed · 1 tool · 1m 38s · $1.15 · no files changed
+
+↻ try again · same prompt, same model
+
+
+  ⚙ read 2 files in internal/agent/                                    0.6s
+
+
+  ∗ worked 2m 04s · 2 tools · $0.71 · done 10:00 AM
+
+
 ── ansi ────────────────────────────────────────────────────
 · running · no total line, the turn's last line waits for its end
 ␛[38;5;254m❯␛[m raise the round cap
@@ -73,4 +92,23 @@
 
 
   ␛[38;5;254m✗␛[m ␛[38;5;244mfailed · 13 tools · 1m 38s · $1.15 · no files changed␛[m
+
+
+· retried · the failed attempt's total, the retry's line, and the retry's own total
+␛[38;5;254m❯␛[m raise the round cap
+␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
+
+
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/loop.go␛[m
+
+
+  ␛[38;5;254m✗␛[m ␛[38;5;244mfailed · 1 tool · 1m 38s · $1.15 · no files changed␛[m
+
+␛[38;5;244m↻ try again · same prompt, same model␛[m
+
+
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m␛[38;5;244m 2 files in internal/agent/␛[m                                    ␛[38;5;244m0.6s␛[m
+
+
+  ␛[38;5;244m∗␛[m ␛[38;5;244mworked 2m 04s · 2 tools · $0.71 · done 10:00 AM␛[m
 

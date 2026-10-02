@@ -121,6 +121,7 @@ func (m Model) turnCloseData() *components.TurnClose {
 // history and the turn's clock: how it stands, what it took, and when it
 // ended.
 func (m Model) turnTotal(es []entry) receipt.Turn {
+	es = sinceRetry(es)
 	t := receipt.Turn{Elapsed: m.turnElapsed(), End: receipt.TurnWorking}
 	if !m.turnOpen {
 		t.End, t.At = turnEnd(m.turnOutcome), m.turnEnded
@@ -155,6 +156,22 @@ func (m Model) turnTotal(es []entry) receipt.Turn {
 		}
 	}
 	return t
+}
+
+// sinceRetry is the part of a turn's entries its last attempt made: those
+// after the newest retry line, or all of them where the turn was never
+// retried. A retry restarts the turn's clock and its spend, and the failed
+// attempt's own total already stands above the retry line, so a retry's
+// total that also counted the failed attempt's calls would state 22 tools
+// beside the time and the cost of the 9 it made.
+// See docs/interface/surfaces.md#the-turns-close.
+func sinceRetry(es []entry) []entry {
+	for i := len(es) - 1; i >= 0; i-- {
+		if es[i].kind == entryRetry {
+			return es[i+1:]
+		}
+	}
+	return es
 }
 
 // turnEnd is how a closed turn ended, in the receipt's words.

@@ -70,10 +70,12 @@ func classifyFailure(err error, providerName string) *provider.Failure {
 //
 // The card's header is read here, as the failure lands: the model the turn
 // was on and what it had done, which a provider switch or a retry would
-// otherwise rewrite under a failure that happened before either.
+// otherwise rewrite under a failure that happened before either. What it
+// had done is the attempt that failed, from the retry where there was one,
+// as the duration beside it is.
 func (m *Model) appendFailureRecord(f *provider.Failure) {
 	var acts []receipt.Act
-	for _, e := range m.turnEntries() {
+	for _, e := range sinceRetry(m.turnEntries()) {
 		if isActivityEntry(e) {
 			acts = append(acts, m.actOf(e))
 		}

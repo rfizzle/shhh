@@ -16,7 +16,7 @@
 
                                                                              
  ▎✗ ran 2 commands                                            exit 1 · 4.2s  
-    loop_test.go:214: want 3 rounds, got 4                          2 lines  
+    --- FAIL: TestLoopRounds                                        2 lines  
                                                                              
 
   ∗ worked 1m 12s · 6 tools · $0.18
@@ -30,7 +30,7 @@
 
                                                                              
  ▎✗ ran go test ./internal/agent/...                          exit 1 · 4.2s  
-    loop_test.go:214: want 3 rounds, got 4                          2 lines  
+    --- FAIL: TestLoopRounds                                        2 lines  
                                                                              
 
   ∗ worked 1m 12s · 6 tools · $0.18
@@ -45,7 +45,7 @@
 
 ␛[48;5;234m                                                                             ␛[m
 ␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m␛[38;5;241m 2 commands␛[m␛[48;5;234m                                            ␛[91mexit 1␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m4.2s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[38;5;245mloop_test.go:214: want 3 rounds, got 4␛[m␛[48;5;234m                          ␛[38;5;241m2 lines␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245m--- FAIL: TestLoopRounds␛[m␛[48;5;234m                                        ␛[38;5;241m2 lines␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                             ␛[m
 
   ␛[38;5;241m∗␛[m ␛[38;5;241mworked 1m 12s · 6 tools · $0.18␛[m
@@ -59,7 +59,7 @@
 
 ␛[48;5;234m                                                                             ␛[m
 ␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mgo test ./internal/agent/...␛[m␛[48;5;234m                          ␛[91mexit 1␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m4.2s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[38;5;245mloop_test.go:214: want 3 rounds, got 4␛[m␛[48;5;234m                          ␛[38;5;241m2 lines␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245m--- FAIL: TestLoopRounds␛[m␛[48;5;234m                                        ␛[38;5;241m2 lines␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                             ␛[m
 
   ␛[38;5;241m∗␛[m ␛[38;5;241mworked 1m 12s · 6 tools · $0.18␛[m

@@ -4,8 +4,10 @@
 # that read and then ran a command, a step that wrote, and a large step of
 # eight calls whose last command failed — six reads, a status check and the
 # failing command, which is the strip's last glyph. The failing command
-# prints its line and then sits for four seconds before it exits, so the
-# running card can be captured with its tail under it. The last line is the
+# prints its line and then sits for four seconds, so the running card can be
+# captured with its tail under it, and prints make's directory trailer after
+# it before it exits, so the failed card's footer has a later line to pass
+# over on its way to the one that says what failed. The last line is the
 # answer, prose on bare screen under the cards, and it repeats once the steps
 # run out.
 [session]
@@ -25,7 +27,7 @@ Running the suite once more before I stop.
 +tool:read_file:{"path":"internal/ui/fold.go"}
 +tool:read_file:{"path":"docs/scenes.md"}
 +tool:execute_command:{"command":"git status --short notes.md"}
-+tool:execute_command:{"command":"printf -- '--- FAIL: %s\\n' 'TestReplyGolden: reply_copy.golden differs' && sleep 4 && exit 1"}
++tool:execute_command:{"command":"printf -- '--- FAIL: %s\\n' 'TestReplyGolden: reply_copy.golden differs' && sleep 4 && printf 'make[1]: Leaving directory %s\\n' /src/shhh && exit 1"}
 The story is written; the suite still fails on the golden.
 Reading the capture the scene left.
 +tool:read_file:{"path":"shot.png"}

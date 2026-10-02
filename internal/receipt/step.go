@@ -436,21 +436,62 @@ func cut(line string) string {
 	return line[:n]
 }
 
-// errorLine is the line a call that broke said it with. A command's is its
-// last line of output, because the tail is where a program says how it went;
-// a tool's is its `error:` line, which leads its answer.
+// errorLine is the line a call that broke said it with. A tool's is its
+// `error:` line, which leads its answer. A command's is the last line of its
+// output that reads as a failure, and only where none does its last line:
+// the tail is where a program says how it went, but not always what went
+// wrong — `make` ends a failed `go test` on `Leaving directory`, which names
+// a directory and nothing that failed, so make's directory trailers are
+// never the line.
+// See docs/interface/surfaces.md#the-step.
 func errorLine(r Receipt) string {
 	body, ok := output(r)
 	if !ok {
 		return firstLine(r.result)
 	}
 	lines := strings.Split(body, "\n")
+	last := ""
 	for i := len(lines) - 1; i >= 0; i-- {
-		if l := strings.TrimSpace(lines[i]); l != "" && !tools.TruncationNotice(l) {
+		l := strings.TrimSpace(lines[i])
+		if l == "" || tools.TruncationNotice(l) || makeTrailer(l) {
+			continue
+		}
+		if readsAsFailure(l) {
 			return l
 		}
+		if last == "" {
+			last = l
+		}
 	}
-	return ""
+	return last
+}
+
+// readsAsFailure reports whether a line of a command's output is one a
+// program says it failed with: a test's `--- FAIL` and `FAIL`, an
+// `error:`, a panic, git's `fatal:`, an `Error` that opens a line or labels
+// one, and a non-zero `exit status`. Make's own lines are left out: `make:
+// *** [test] Error 1` says the recipe failed, which the card's glyph already
+// says, where the line above it says what did.
+func readsAsFailure(l string) bool {
+	if strings.HasPrefix(l, "make:") || strings.HasPrefix(l, "make[") {
+		return false
+	}
+	switch {
+	case strings.HasPrefix(l, "--- FAIL"), strings.HasPrefix(l, "FAIL"),
+		strings.HasPrefix(l, "panic:"), strings.HasPrefix(l, "fatal:"),
+		strings.HasPrefix(l, "Error"), strings.Contains(l, "error:"),
+		strings.Contains(l, "Error:"):
+		return true
+	}
+	_, code, ok := strings.Cut(l, "exit status ")
+	return ok && code != "" && code != "0"
+}
+
+// makeTrailer reports whether a line is make's note that it entered or left
+// a directory, which it prints around every recursive run.
+func makeTrailer(l string) bool {
+	return strings.HasPrefix(l, "make") &&
+		(strings.Contains(l, ": Entering directory") || strings.Contains(l, ": Leaving directory"))
 }
 
 // firstOutputLine is the first line a command, or a call to a server,

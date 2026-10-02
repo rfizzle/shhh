@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/notebook"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -646,5 +647,58 @@ func TestClose_AFailedTurnSaysNoFilesChanged(t *testing.T) {
 				t.Fatalf("the total already says no file changed, so nothing under it says it again:\n%s", view)
 			}
 		})
+	}
+}
+
+// A retry is a turn of its own: its total counts the calls, the time and
+// the spend since the retry began, and the attempt that failed keeps its own
+// total above the retry's line (docs/interface/surfaces.md#the-turns-close).
+func TestClose_ARetriedTurnCountsOnlyTheRetry(t *testing.T) {
+	now := time.Date(2026, 9, 4, 13, 37, 0, 0, time.UTC)
+	was := clock
+	clock = func() time.Time { return now }
+	t.Cleanup(func() { clock = was })
+	calls := func(m Model, n int) Model {
+		for range n {
+			m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"loop.go"}`, toolResult: "package agent"})
+		}
+		return m
+	}
+
+	m := sendText(t, readyModel(t), "raise the round cap")
+	m = calls(m, 13)
+	m.vitals.record("gpt-4o", provider.Usage{PromptTokens: 41000, CompletionTokens: 1200}, 1.15, true)
+	now = now.Add(98 * time.Second)
+	updated, _ := m.Update(streamErrMsg{err: &provider.Failure{Class: provider.ClassUnclassified, Provider: "openai", Message: "stream reset"}})
+	m = updated.(Model)
+	failed := lastClose(t, m)
+
+	now = now.Add(22 * time.Second)
+	next, _ := m.retryTurn()
+	m = calls(next.(Model), 9)
+	m.vitals.record("gpt-4o", provider.Usage{PromptTokens: 30000, CompletionTokens: 900}, 0.71, true)
+	now = now.Add(2*time.Minute + 4*time.Second)
+	m = finishTurn(t, m)
+	retried := lastClose(t, m)
+
+	var rows []string
+	for _, e := range m.transcript {
+		switch e.kind {
+		case entryTurnClose:
+			rows = append(rows, strings.TrimSpace(plainView(e.close, 110)))
+		case entryRetry:
+			rows = append(rows, strings.TrimSpace(ansi.Strip(components.RetryLine{NewModel: e.failModel}.View(110))))
+		}
+	}
+	want := []string{
+		"✗ failed · 13 tools · 1m 38s · $1.15 · no files changed",
+		"↻ try again · same prompt, same model",
+		"∗ worked 2m 04s · 9 tools · $0.71 · done 1:41 PM",
+	}
+	if strings.Join(rows, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("the turn's lines read\n%s\nwant\n%s", strings.Join(rows, "\n"), strings.Join(want, "\n"))
+	}
+	if failed.Tools != 13 || retried.Tools != 9 {
+		t.Errorf("the failed attempt counted %d tools and the retry %d, want 13 and 9", failed.Tools, retried.Tools)
 	}
 }

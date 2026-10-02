@@ -265,6 +265,43 @@ func TestStepReceipt_EvidenceIsPickedByPrecedence(t *testing.T) {
 	}
 }
 
+// A failed command's footer is the last line that says it failed, not the
+// last line it printed: make closes a failed run on a directory trailer that
+// names nothing that failed. Only where no line reads as a failure is the
+// last line the one.
+func TestStepReceipt_FailureEvidenceIsTheFailureLine(t *testing.T) {
+	cases := []struct {
+		name, out, want string
+	}{
+		{"a go test under make, its trailers either side",
+			"make[1]: Entering directory '/src/shhh'\n=== RUN   TestReplyGolden\n" +
+				"--- FAIL: TestReplyGolden: reply_copy.golden differs\n" +
+				"ok  \tgithub.com/rfizzle/shhh/internal/ui/components\t0.41s\n" +
+				"make[1]: Leaving directory '/src/shhh'\n",
+			"--- FAIL: TestReplyGolden: reply_copy.golden differs"},
+		{"the last failure line, not the first",
+			"--- FAIL: TestReplyGolden (0.42s)\nFAIL\tgithub.com/rfizzle/shhh/internal/ui\t0.9s\nmake: Leaving directory '/src'",
+			"FAIL\tgithub.com/rfizzle/shhh/internal/ui\t0.9s"},
+		{"make's own error line is not the failure",
+			"main.go:3:2: error: undefined: x\nmake: *** [build] Error 1\n", "main.go:3:2: error: undefined: x"},
+		{"a panic", "goroutine 1 [running]:\npanic: runtime error\n\tmain.go:4", "panic: runtime error"},
+		{"git's fatal", "fatal: not a git repository\nhint: run git init", "fatal: not a git repository"},
+		{"an Error that opens a line", "Error: Cannot find module 'x'\n    at require (node:1)", "Error: Cannot find module 'x'"},
+		{"a non-zero exit status", "building\nexit status 2\ncleanup done", "exit status 2"},
+		{"a zero exit status is not a failure", "building\nexit status 0\ncleanup done", "cleanup done"},
+		{"no failure line: the last line, past make's trailer",
+			"compiling\nkilled\nmake[2]: Leaving directory '/src'\n", "killed"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			acts := []Act{commandAct("make test", tc.out, tools.ExecExited)}
+			if got := BuildStep(acts).Evidence; got != (Evidence{Line: tc.want, Call: 0}) {
+				t.Errorf("evidence %+v, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 // A step that only read, and has nothing one line could add to its header,
 // has no footer.
 func TestStepReceipt_AQuietReadHasNoEvidence(t *testing.T) {

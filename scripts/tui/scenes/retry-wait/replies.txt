@@ -3,10 +3,17 @@
 # replies are the session's queue, and the title and the standing account the
 # session asks for after a turn are answered by the provider's own line —
 # known by the tool each offers — rather than taking the 400 the second turn
-# is written for.
+# is written for. The second turn reads two files before the 400 ends it, and
+# its retry reads one of its own before it answers, so the two totals count
+# different calls.
 [session]
 status:503:The upstream model is overloaded, try again shortly
 status:503:The upstream model is overloaded, try again shortly
 The loop stops at the round cap, and nowhere else.
+Looking for where the cap is set.
++tool:read_file:{"path":"config.toml"}
++tool:read_file:{"path":"loop.go"}
 status:400:Unknown parameter: 'reasoning.effort'
+Reading the settings once more.
++tool:read_file:{"path":"config.toml"}
 The cap is set in config, as behavior.max_tool_rounds.

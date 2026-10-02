@@ -275,6 +275,14 @@ among calls that ran is the footer too, the call as it was asked for and who
 refused it, because the header counts only what ran and a refusal anywhere
 else would read as the answer of the calls it names.
 
+A failed command's failing line is the last line of its output that says it
+failed — a test's `--- FAIL` or `FAIL`, an `error:`, a panic, a `fatal:`, a
+non-zero `exit status` — and only where no line does, the last line it
+printed. The tail is where a program says how it went but not always what
+went wrong: `make` closes a failed run on `Leaving directory`, which names a
+directory and nothing that failed, so make's own directory lines are never
+the footer.
+
 A padding row inside the band opens and closes every card, and one blank line
 stands between two cards and between a card and anything beside it. Prose
 with no calls behind it — a reply, an explanation of several lines — stands
@@ -400,6 +408,13 @@ behind `∗`. A turn that broke says `failed` behind `✗`, and one the reader
 stopped says `cancelled` behind `⊘`; each counts what it got through and,
 where it changed nothing, says `no files changed` — the question a break
 raises first. The steps are not on it: the cards above are the steps.
+
+A retried turn has two totals, one an attempt. The attempt that failed keeps
+its `✗ failed` line above the retry's `↻` line, and the retry's own total,
+once it ends, counts the calls, the time and the spend since the retry began
+and nothing before it: the failed attempt has already said what it got
+through, and a total that added its calls to the retry's clock and cost
+would state three figures about two different stretches of work.
 
 What changed is the line under the total. The changed-files line carries the
 mutation rail, so the close of a turn looks like the cards that produced it.
