@@ -286,25 +286,21 @@ func (m Model) stepCardFor(blk transcriptBlock, es []entry, width int, selected 
 		// call would have carried; and why it was refused is the footer.
 		c.Duration, c.Rail = "", true
 		c.Evidence = refusalReason(es[at[len(at)-1]])
-	case s.Running:
-		// A call still in flight says how it stands — running, waiting a
-		// host out — and that is the step's answer until it lands: the one
-		// with something to say beyond running, where there is one.
+	case c.State == components.ActivityRunning:
+		// A step still going has no answer yet: the card says `running`
+		// where the answer will go, and an earlier call's `ok` or line
+		// count waits for the step to come out. A call with something to
+		// say beyond running — a host being waited out — says that instead.
+		// See docs/interface/surfaces.md#the-step.
 		for i := range at {
 			row := m.activityRowFor(es[at[i]])
-			if row.State != components.ActivityRunning {
-				continue
-			}
-			if c.Outcome == "" || row.Outcome != components.OutcomeRunning {
+			if row.State == components.ActivityRunning && row.Outcome != components.OutcomeRunning {
 				c.Outcome, c.OutcomeState = joinNonEmpty(row.Outcome, row.Counts), components.ActivityRunning
 			}
 		}
 	case s.Added+s.Removed > 0:
 		c.Outcome = lineChange(s.Added, s.Removed)
-	case len(ran) == 1 && es[ran[0]].kind != entryDiff && !m.cardHoldsCommand(blk):
-		// A card holding a command still running is not a step of one call:
-		// the first call's `ok` would read as the answer of a step that has
-		// not come out yet.
+	case len(ran) == 1 && es[ran[0]].kind != entryDiff:
 		answer(m.activityRowFor(es[ran[0]]))
 	}
 

@@ -128,9 +128,12 @@ func TestSteps_LiveStepRunsOpen(t *testing.T) {
 	m.invalidateRenderCache()
 
 	view := stripANSI(m.renderHistory())
-	live := stepLine(t, view, "ran go test")
+	live := stepLine(t, view, "wrote internal/agent/loop.go")
 	if !strings.Contains(live, "▎✎ ") || strings.ContainsAny(live, brailleFrames) {
 		t.Fatalf("the live card keeps its own glyph, still: %q", live)
+	}
+	if !strings.HasSuffix(strings.TrimRight(live, " "), " running") {
+		t.Fatalf("the live card says running where its outcome will go: %q", live)
 	}
 	if !strings.Contains(view, "Thread the sentinel through the loop") {
 		t.Fatalf("a running card shows its body:\n%s", view)
@@ -139,9 +142,9 @@ func TestSteps_LiveStepRunsOpen(t *testing.T) {
 	m.setTurnState(stateInput)
 	m.invalidateRenderCache()
 	view = stripANSI(m.renderHistory())
-	done := stepLine(t, view, "ran go test")
-	if !strings.Contains(done, "▎✎") {
-		t.Fatalf("a finished card takes its own glyph: %q", done)
+	done := stepLine(t, view, "wrote internal/agent/loop.go")
+	if !strings.Contains(done, "▎✎") || strings.Contains(done, components.CardRunning) {
+		t.Fatalf("a finished card takes its own glyph and its outcome: %q", done)
 	}
 	if !strings.Contains(view, "Thread the sentinel through the loop") {
 		t.Fatalf("a finished card does not fold on its own:\n%s", view)

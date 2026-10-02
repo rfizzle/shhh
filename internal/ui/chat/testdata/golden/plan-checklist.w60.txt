@@ -40,7 +40,7 @@
   ✗ plan · 3 of 4 · Return it from … · 2 writes left
 
                                                       
-  ⚙ read a.go                                   3.9s  
+  ⚙ read a.go                         running · 3.9s  
     Rebuild the changeset store                       
                                                       
 
@@ -111,7 +111,7 @@
   ␛[91m✗␛[m ␛[38;5;241mplan · 3 of 4 · Return it from … · 2 writes left␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245ma.go␛[m␛[48;5;234m                                   ␛[38;5;241m3.9s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245ma.go␛[m␛[48;5;234m                         ␛[38;5;205mrunning␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m3.9s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mRebuild the changeset store␛[m␛[48;5;234m                       ␛[m
 ␛[48;5;234m                                                      ␛[m
 

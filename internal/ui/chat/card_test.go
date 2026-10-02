@@ -7,6 +7,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -329,12 +330,13 @@ func TestCard_ARunningCardHasNoSpinner(t *testing.T) {
 		m.spinFrame = frame
 		m.invalidateRenderCache()
 		lines := cardLines(m)
-		// The receipt, then the clock flush right: the first command's `ok`
-		// is not the answer of a step with a command still running.
+		// The receipt, then `running` and the clock flush right: the first
+		// command's `ok` is not the answer of a step with a command still
+		// running.
 		h := strings.TrimRight(cardLine(lines, "ran go test"), " ")
-		if !strings.HasPrefix(h, " ▎$ ran go test ./internal/ui/ ") || !strings.HasSuffix(h, " 12s") ||
-			strings.Join(strings.Fields(h), " ") != "▎$ ran go test ./internal/ui/ 12s" {
-			t.Errorf("frame %d: the running card's header is %q, want the $ glyph, the receipt and 12s", frame, h)
+		if !strings.HasPrefix(h, " ▎$ ran go test ./internal/ui/ ") || !strings.HasSuffix(h, " running · 12s") ||
+			strings.Join(strings.Fields(h), " ") != "▎$ ran go test ./internal/ui/ running · 12s" {
+			t.Errorf("frame %d: the running card's header is %q, want the $ glyph, the receipt and running · 12s", frame, h)
 		}
 		if l := cardLine(lines, "ok  github.com"); !strings.HasPrefix(l, strings.Repeat(" ", components.CardBodyIndent)+"ok") {
 			t.Errorf("frame %d: the command's tail stands under the body: %q", frame, l)
@@ -361,6 +363,159 @@ func TestCard_ARunningCardHasNoSpinner(t *testing.T) {
 		}
 		if strings.ContainsAny(view, brailleFrames) {
 			t.Errorf("a running %s card draws a spinner frame:\n%s", tc.want, view)
+		}
+	}
+}
+
+// runningCardModel is a turn still working on one step: five reads under
+// internal/ui/ and a command, with a second run of the command going for
+// eight seconds, which the card holds. The step's clock stands at twelve
+// seconds.
+func runningCardModel(t *testing.T, width int) Model {
+	t.Helper()
+	m := activityModel(t)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+	m = updated.(Model)
+	m.transcript = []entry{
+		{kind: entryUser, text: "run the ui tests"},
+		{kind: entryAssistant, text: "Reading the views, then running the UI tests."},
+		readEntry("internal/ui/view.go", 400*time.Millisecond),
+		readEntry("internal/ui/pane.go", 400*time.Millisecond),
+		readEntry("internal/ui/frame.go", 400*time.Millisecond),
+		readEntry("internal/ui/card.go", 400*time.Millisecond),
+		readEntry("internal/ui/band.go", 400*time.Millisecond),
+		{kind: entryCommand, text: "go test ./internal/ui/", toolResult: "ok", duration: 2 * time.Second},
+	}
+	m.state = stateRunningCmd
+	m.turnStarted = goldenNow.Add(-time.Minute)
+	m.pendingApproval = &approvalRequest{kind: approvalExec}
+	m.runningCommand = "go test ./internal/ui/"
+	m.runStart = goldenNow.Add(-8 * time.Second)
+	m.runTail = &commandTail{}
+	m.runTail.Set("ok  github.com/rfizzle/shhh/internal/ui  0.412s")
+	m.invalidateRenderCache()
+	return m
+}
+
+// A running card says so in a word where its outcome will go, with its clock
+// beside it, flush right: the live step is found at a glance without a
+// second animation beside the frame's status. When the step ends the slot is
+// the outcome again (docs/interface/surfaces.md#the-step).
+func TestCard_ARunningCardSaysRunning(t *testing.T) {
+	holdClock(t)
+	const width = 110
+	m := runningCardModel(t, width)
+	lines := cardLines(m)
+	h := strings.TrimRight(cardLine(lines, "read 5 files"), " ")
+	const want = " ▎$ read 5 files in internal/ui/ · ran go test ./internal/ui/     running · 12s"
+	if squeezed(h) != squeezed(want) || !strings.HasPrefix(h, " ▎$ read 5 files in internal/ui/ · ran go test ./internal/ui/ ") ||
+		!strings.HasSuffix(h, " running · 12s") {
+		t.Errorf("the running card's header is\n%q, want\n%q", h, want)
+	}
+	if card := strings.Join(lines, "\n"); strings.ContainsAny(card, brailleFrames) {
+		t.Errorf("the running card draws a spinner frame:\n%s", card)
+	}
+
+	// A step that has only read so far, the turn still going: the reads'
+	// receipt, and running where the answer will go.
+	reads := components.StepCard{Kind: components.ActivityTool, State: components.ActivityRunning,
+		Verb: "read", Rollup: "3 files in internal/ui/", Bare: "3 files", Duration: "4s"}
+	got := strings.TrimRight(stripANSI(strings.Split(reads.View(width), "\n")[1]), " ")
+	if wantReads := "  ⚙ read 3 files in internal/ui/"; !strings.HasPrefix(got, wantReads+" ") ||
+		!strings.HasSuffix(got, " running · 4s") || lipgloss.Width(got) != width-2 ||
+		squeezed(got) != "⚙ read 3 files in internal/ui/ running · 4s" {
+		t.Errorf("a running step of reads is %q, want %q and running · 4s flush right", got, wantReads)
+	}
+
+	// The step ends: the slot is its outcome as today, and the running
+	// header's right side ended where this one's does, flush right.
+	for _, tc := range []struct {
+		name     string
+		exitCode int
+		outcome  string
+	}{
+		{"a step that came out", 0, "ok · 4.0s"},
+		{"a step that broke", 1, "exit 1 · 4.0s"},
+	} {
+		m := runningCardModel(t, width)
+		m.transcript = []entry{m.transcript[0], m.transcript[1], m.transcript[len(m.transcript)-1]}
+		m.transcript[2].duration, m.transcript[2].exitCode = 4*time.Second, tc.exitCode
+		m.state, m.pendingApproval, m.runTail, m.runningCommand = stateInput, nil, nil, ""
+		m.invalidateRenderCache()
+		done := strings.TrimRight(cardLine(cardLines(m), "ran go test"), " ")
+		if !strings.HasSuffix(done, " "+tc.outcome) || strings.Contains(done, components.CardRunning) {
+			t.Errorf("%s: the header is %q, want its outcome %q and no running", tc.name, done, tc.outcome)
+		}
+		if lipgloss.Width(h) != lipgloss.Width(done) {
+			t.Errorf("%s: the running header ends at column %d and the finished one at %d:\n%q\n%q",
+				tc.name, lipgloss.Width(h), lipgloss.Width(done), h, done)
+		}
+	}
+}
+
+// Every rung draws the running card's right side: the one row at low, the
+// normal card, and the open card's header at high, each the normal header
+// cell for cell. Where the pane is too narrow for the clock the clock goes
+// first, as it does from every header, and the word stays. The frame's
+// status is still the one thing that moves
+// (TestFrame_TheStatusIsTheOnlySpinner).
+func TestDensity_ARunningCardSaysRunningAtEveryRung(t *testing.T) {
+	holdClock(t)
+	for _, width := range []int{60, 80, 110, 130} {
+		m := runningCardModel(t, width)
+		normal := strings.TrimRight(cardLine(cardLines(m), "read 5 files"), " ")
+		right := " running"
+		if width >= 110 {
+			right = " running · 12s"
+		}
+		if !strings.HasPrefix(normal, " ▎$ read 5 files") || !strings.HasSuffix(normal, right) {
+			t.Errorf("normal at %d: the running card's header is %q, want %q on its right", width, normal, right)
+		}
+		for _, tc := range []struct {
+			name string
+			rung verbosity
+		}{
+			{"low", verbosityLow},
+			{"high", verbosityHigh},
+		} {
+			m := runningCardModel(t, width)
+			m.verbosity = tc.rung
+			m.invalidateRenderCache()
+			lines := cardLines(m)
+			if h := strings.TrimRight(cardLine(lines, "read 5 files"), " "); h != normal {
+				t.Errorf("%s at %d: the running card's header is %q, want the normal header %q", tc.name, width, h, normal)
+			}
+			if card := strings.Join(lines, "\n"); strings.ContainsAny(card, brailleFrames) {
+				t.Errorf("%s at %d: the running card draws a spinner frame:\n%s", tc.name, width, card)
+			}
+		}
+	}
+}
+
+// In mono the word is drawn in the mono foreground, so the live card is
+// still found by its word where the colour of motion is gone; out of mono it
+// is the spin colour
+// (docs/interface/principles.md#colour-never-carries-meaning-alone).
+func TestCard_RunningReadsInMono(t *testing.T) {
+	holdClock(t)
+	for _, tc := range []struct {
+		name string
+		mono bool
+		fg   func() components.Token
+	}{
+		{"colour", false, func() components.Token { return components.Palette.Spin }},
+		{"mono", true, func() components.Token { return components.MonoFg }},
+	} {
+		themeRestore(t)
+		was := components.Profile()
+		components.SetProfile(colorprofile.TrueColor)
+		components.SetMono(tc.mono)
+		m := runningCardModel(t, 110)
+		view := m.renderHistory()
+		want := lipgloss.NewStyle().Foreground(tc.fg().Color()).Render(components.CardRunning)
+		components.SetProfile(was)
+		if !strings.Contains(view, want) {
+			t.Errorf("%s: the running card's word should be drawn as %q:\n%s", tc.name, want, view)
 		}
 	}
 }

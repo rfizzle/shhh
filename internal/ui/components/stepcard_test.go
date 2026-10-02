@@ -219,8 +219,8 @@ func TestCard_NoKeyOnTheCard(t *testing.T) {
 
 // TestGolden_StepCards captures the card in every state the catalogue draws
 // that the transcript renders: finished with header, body and footer; with
-// no body; with no footer; running; failed with its strip; the header alone
-// at low; open at high; and on a painted ground. A step's card has no fold of
+// no body; with no footer; running, at each rung; failed with its strip; the
+// header alone at low; open at high; and on a painted ground. A step's card has no fold of
 // its own: its header alone is the low rung's and nothing else.
 func TestGolden_StepCards(t *testing.T) {
 	captureBoundedGolden(t, "step-cards", "a step as a card", goldenWidths, func(width int) []golden.Panel {
@@ -229,6 +229,11 @@ func TestGolden_StepCards(t *testing.T) {
 		running.Subject, running.Outcome, running.Verdict = "go test ./internal/ui/...", "", ""
 		running.Evidence, running.EvidenceRight = "", ""
 		running.Duration, running.Tail = "42s", "--- FAIL: TestReplyGolden (0.42s)"
+		runningLow, runningOpen := running, running
+		runningLow.Density = CardLow
+		runningOpen.Density = CardHigh
+		runningOpen.Calls = []string{ActivityRow{Kind: ActivityTool, Verb: "read",
+			Target: "internal/ui/view.go", Counts: "218 lines"}.View(width)}
 		noBody := commandStep()
 		noBody.Body = ""
 		noFooter := readStep()
@@ -253,6 +258,8 @@ func TestGolden_StepCards(t *testing.T) {
 			{Label: "no body · the footer follows the header", View: noBody.View(width)},
 			{Label: "no footer · a reading's sentence for a body, its verdict on the header", View: noFooter.View(width)},
 			{Label: "running · the kind's glyph held still, the command's tail, the clock", View: running.View(width)},
+			{Label: "running at low · the one row says running and the clock", View: runningLow.View(width)},
+			{Label: "running at high · the open card's header says running and the clock", View: runningOpen.View(width)},
 			{Label: "failed · the failure over the write, and the strip", View: largeStep().View(width)},
 			{Label: "low · the header alone, inset as a normal header", View: low.View(width)},
 			{Label: "high · the card open on its calls", View: open.View(width)},

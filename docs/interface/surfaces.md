@@ -137,10 +137,10 @@ turn has moved on, and the frame above carries neither
 ([`../capabilities/approvals-and-safety.md`](../capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason)).
 
 A call still in flight is drawn once, and drawn still. Inside a step that is
-already a card, the card draws it: its mark is its kind's own, its time counts
-the command still running, and the command's last line out stands under its
-body. A command whose step is not a card yet, or one the reader ran
-themselves, is a row under the transcript behind the still `▸`: the outcome
+already a card, the card draws it: its mark is its kind's own, its outcome
+says `running`, its time counts the command still running, and the command's
+last line out stands under its body. A command whose step is not a card
+yet, or one the reader ran themselves, is a row under the transcript behind the still `▸`: the outcome
 field says it is running, the duration field ticks that call's own clock, and
 the last line it has printed sits under it until it finishes. The
 [frame](#the-input-frame) below states the phase the turn is in, and its
@@ -299,10 +299,17 @@ alone.
 Live and after are one card. A running step is the same card, static: its
 kind's own mark — `⚙`, `$`, `✎`, `◇` — stands in the mark's place, never a
 spinner, because the frame's status already says the turn is working and a
-second animation would only say it again. The running command's last line
-stands under the body and the time counts with it, which is what says the
-card is the live one, and the row under the transcript does not draw the
-command a second time.
+second animation would only say it again. The card's right side is the word
+`running` where its outcome will go, in the colour of anything in motion, and
+the duration beside it, `running · 12s`: the word is what finds the live card
+in a column of finished ones, and it is a word rather than a colour or a
+motion so that mono, which has neither, still finds it. An earlier call's
+`ok` or line count is not the step's answer while the step is still going,
+so the slot says `running` until the step ends and then says what it came to,
+`ok · 14s` or `exit 1 · 4.0s`. Every rung draws the same right side: the one
+row at low and the open card's header at high. The running command's last
+line stands under the body and the time counts with it, and the row under
+the transcript does not draw the command a second time.
 
 A card has two depths: closed and open. Closed is the shape the density
 ladder draws — header, body and footer on their padding rows at normal, the

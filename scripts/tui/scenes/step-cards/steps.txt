@@ -52,12 +52,14 @@ snap 03-command-card "[y] run it once" "Running the suite once more"
 sleep 1
 keys y
 # The failing command prints its line and sits before it exits: the running
-# card keeps its kind's glyph, its line out stands under the body, and no
-# total line counts the turn under it — the frame's status is what
+# card keeps its kind's glyph and says `running` where its outcome will go,
+# its line out stands under the body, and no total line counts the turn
+# under it — the frame's status is what
 # animates for the turn (docs/interface/surfaces.md#the-turns-close). The snap waits
-# on the line out, then the scene sits two seconds so the card's clock has a
-# time to show.
-snap 03b-tail "FAIL: TestReplyGolden" "Running the suite once more"
+# on the line out, and the card's word is compared there, while the command
+# is certainly still running; then the scene sits two seconds so the card's
+# clock has a time to show.
+snap 03b-tail "FAIL: TestReplyGolden" "Running the suite once more" "running"
 sleep 2
 snap 03c-running "FAIL: TestReplyGolden" "Running the suite once more"
 # At 80 columns and up every header keeps its whole receipt; below, the

@@ -330,11 +330,10 @@ changed-files line says so under the total as it does under a done one.
 A turn still running draws no total at all. The frame's status states the
 phase and counts the turn's clock, and the cockpit counts the calls and the
 spend, so a running total under the transcript was the same facts told a
-second time, with a spinner of its own beside the frame's; with the running
-card's own spinner gone too, the frame's status is what moves for the turn,
-and the transcript ends on the running card and its
-command's last line. The total appears once, when the turn ends, in the state
-it ended in.
+second time, with a spinner of its own beside the frame's. The frame's
+status is what moves for the turn, and the transcript ends on the running
+card, which says `running` where its outcome will go, and its command's last
+line. The total appears once, when the turn ends, in the state it ended in.
 
 ## Only the frame's status moves
 
@@ -350,8 +349,16 @@ renderer.
 
 The rest is a gap the binary closed. A plan's step in flight and the rail's
 running agents draw the kit's still `▸`; nothing on a card, a lane or the
-rail animates. The lines the session drew under the transcript while it waited
-are still notice lines, `·` and the words — `Applying changes…`, `Listing
+rail animates. A running step's card says `running` in the outcome slot, in
+the spin colour, with its duration beside it, and its kind's own glyph held
+still: the lane's word, on the card that holds the work. It is `running` and
+not the `running…` a row under the transcript says, because the slot is
+where the step's answer will stand, and an answer carries no ellipsis; and
+an earlier call's `ok` or a write's line count waits for the step to end
+rather than standing as the answer of a step still going. Where a call in
+flight has more to say than that it runs — a host being waited out — the
+slot says that instead. The lines the session drew under the transcript
+while it waited are still notice lines, `·` and the words — `Applying changes…`, `Listing
 models…`, `Running the quality gate…` — or are not drawn where something on
 screen already says the same: a permission check is the frame's `deciding…`,
 and a compaction is the transcript's own `· Compacting conversation…` row

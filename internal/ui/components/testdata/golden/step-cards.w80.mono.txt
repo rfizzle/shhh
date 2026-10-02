@@ -39,9 +39,21 @@
 
 · running · the kind's glyph held still, the command's tail, the clock
 
- ▎$ ran go test ./internal/ui/...                                          42s
+ ▎$ ran go test ./internal/ui/...                                running · 42s
     Confirming .plan/ is untracked, so nothing I write gets committed.
     --- FAIL: TestReplyGolden (0.42s)
+
+
+· running at low · the one row says running and the clock
+ ▎$ ran go test ./internal/ui/...                                running · 42s
+
+· running at high · the open card's header says running and the clock
+
+ ▎$ ran go test ./internal/ui/...                                running · 42s
+    Confirming .plan/ is untracked, so nothing I write gets committed.
+    --- FAIL: TestReplyGolden (0.42s)
+
+   ⚙ read    internal/ui/view.go                                218 lines
 
 
 · failed · the failure over the write, and the strip
@@ -104,9 +116,21 @@
 
 · running · the kind's glyph held still, the command's tail, the clock
 
- ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mran␛[m ␛[38;5;244mgo test ./internal/ui/...␛[m                                          ␛[38;5;244m42s␛[m
+ ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mran␛[m ␛[38;5;244mgo test ./internal/ui/...␛[m                                ␛[38;5;254mrunning␛[m␛[38;5;244m · ␛[m␛[38;5;244m42s␛[m
     ␛[38;5;254mConfirming .plan/ is untracked, so nothing I write gets committed.␛[m
     ␛[38;5;244m--- FAIL: TestReplyGolden (0.42s)␛[m
+
+
+· running at low · the one row says running and the clock
+ ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mran␛[m ␛[38;5;244mgo test ./internal/ui/...␛[m                                ␛[38;5;254mrunning␛[m␛[38;5;244m · ␛[m␛[38;5;244m42s␛[m
+
+· running at high · the open card's header says running and the clock
+
+ ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mran␛[m ␛[38;5;244mgo test ./internal/ui/...␛[m                                ␛[38;5;254mrunning␛[m␛[38;5;244m · ␛[m␛[38;5;244m42s␛[m
+    ␛[38;5;254mConfirming .plan/ is untracked, so nothing I write gets committed.␛[m
+    ␛[38;5;244m--- FAIL: TestReplyGolden (0.42s)␛[m
+
+   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/ui/view.go␛[m                                ␛[38;5;244m218 lines␛[m
 
 
 · failed · the failure over the write, and the strip

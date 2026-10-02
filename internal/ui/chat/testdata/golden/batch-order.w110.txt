@@ -20,7 +20,7 @@
                                                                                                         
 
                                                                                                         
-  ⚙ read internal/ui/chat/turn.go                                                                       
+  ⚙ read internal/ui/chat/turn.go                                                              running  
                                                                                                         
 
 
@@ -35,7 +35,7 @@
                                                                                                         
 
                                                                                                         
-  ⚙ read internal/ui/chat/turn.go                                                                       
+  ⚙ read internal/ui/chat/turn.go                                                              running  
                                                                                                         
 
 
@@ -51,7 +51,7 @@
                                                                                                         
 
                                                                                                         
-  ⚙ read internal/ui/chat/turn.go                                                                       
+  ⚙ read internal/ui/chat/turn.go                                                              running  
                                                                                                         
 
 
@@ -66,7 +66,7 @@
 ␛[48;5;234m                                                                                                        ␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/ui/chat/turn.go␛[m␛[48;5;234m                                                                       ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/ui/chat/turn.go␛[m␛[48;5;234m                                                              ␛[38;5;205mrunning␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 
@@ -81,7 +81,7 @@
 ␛[48;5;234m                                                                                                        ␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/ui/chat/turn.go␛[m␛[48;5;234m                                                                       ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/ui/chat/turn.go␛[m␛[48;5;234m                                                              ␛[38;5;205mrunning␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 
@@ -97,6 +97,6 @@
 ␛[48;5;234m                                                                                                        ␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/ui/chat/turn.go␛[m␛[48;5;234m                                                                       ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/ui/chat/turn.go␛[m␛[48;5;234m                                                              ␛[38;5;205mrunning␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 

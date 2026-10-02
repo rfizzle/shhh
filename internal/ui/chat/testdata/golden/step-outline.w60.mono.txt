@@ -157,7 +157,7 @@
 ──────────────────────────────────────────────────────
 
 
-  ⚙ read 2 files · searched once
+  ⚙ read 2 files · searched once             running
     Locate the round accounting
 
 
@@ -175,7 +175,7 @@
     has to come from there.
 
 
-  ⚙ read internal/agent/round.go · searched once
+  ⚙ read internal/agent/round.go             running
 
 
 
@@ -194,7 +194,7 @@
     has to come from there.
 
 
-  ⚙ read internal/agent/round.go · searched once
+  ⚙ read internal/agent/round.go             running
 
 
 
@@ -346,7 +346,7 @@
 ␛[38;5;244m──────────────────────────────────────────────────────␛[m
 
 
-  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m␛[38;5;244m 2 files · searched once␛[m
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m␛[38;5;244m 2 files · searched once␛[m             ␛[38;5;254mrunning␛[m
     ␛[38;5;254mLocate the round accounting␛[m
 
 
@@ -364,7 +364,7 @@
     ␛[3;38;5;244mhas to come from there.␛[m
 
 
-  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/round.go␛[m␛[38;5;244m · searched once␛[m
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/round.go␛[m             ␛[38;5;254mrunning␛[m
 
 
 
@@ -383,6 +383,6 @@
     ␛[3;38;5;244mhas to come from there.␛[m
 
 
-  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/round.go␛[m␛[38;5;244m · searched once␛[m
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/agent/round.go␛[m             ␛[38;5;254mrunning␛[m
 
 

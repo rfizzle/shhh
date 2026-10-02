@@ -4,7 +4,8 @@ package components
 // the band for each step a turn took — a header that is the step's receipt,
 // a body that is what the model said when it took the step, and a footer of
 // evidence where the step has some. Live and after are the same card; a
-// running step keeps its kind's glyph and its duration ticks.
+// running step keeps its kind's glyph, says `running` where its outcome
+// will go, and its duration ticks.
 //
 // The card is drawn from facts the caller has already read: what the step
 // did comes from the step's receipt and is handed over as words, so this
@@ -63,7 +64,8 @@ type StepCard struct {
 	// clause first and then the rollup whole.
 	Rollup, Bare string
 	// Outcome is the step's answer on the right — `exit 1`, `+88 −5`, `ok`
-	// — painted in the tone OutcomeState gives it. It never drops.
+	// — painted in the tone OutcomeState gives it. It never drops. A running
+	// step with none says CardRunning there.
 	Outcome      string
 	OutcomeState ActivityState
 	// Mark, where set, is the glyph already painted, standing in for the
@@ -138,6 +140,14 @@ const cardMargin = 2
 // and the glyph before it, one column, one column and two. It is the body
 // column too, so the verb and the sentence under it start in one place.
 const cardVerbColumn = 4
+
+// CardRunning is what a running card's outcome slot says until the step
+// comes out: a word and not a motion, in the colour of anything in motion,
+// so the live card is found at a glance without a second animation beside
+// the frame's status, and still found in mono, where the colour is gone. It
+// is the word a fan-out's lane says, without the ellipsis a row's
+// `running…` carries. See docs/interface/surfaces.md#the-step.
+const CardRunning = "running"
 
 // CardBodyIndent is where a card's body, tail and footer start: the verb's
 // column.
@@ -333,8 +343,11 @@ func (c StepCard) headerWidth(fit headerFit, subjectW int) int {
 // duration that fit leaves standing, joined the way every outcome field is.
 func (c StepCard) headerRight(fit headerFit) string {
 	var parts []string
-	if c.Outcome != "" {
+	switch {
+	case c.Outcome != "":
 		parts = append(parts, c.outcome())
+	case c.State == ActivityRunning:
+		parts = append(parts, sty.SpinText.Render(CardRunning))
 	}
 	if c.Matches != "" {
 		parts = append(parts, sty.Dim.Render(c.Matches))
@@ -404,8 +417,8 @@ func (c StepCard) railCell() string {
 //
 // A running step keeps its kind's mark, still: the frame's status already
 // says the turn is working, so a spinner here would be a second animation
-// telling the same fact, and the ticking duration is what says this step is
-// the live one. See docs/interface/surfaces.md#the-step.
+// telling the same fact, and the word in the outcome slot is what says this
+// step is the live one. See docs/interface/surfaces.md#the-step.
 func (c StepCard) glyph() string {
 	if c.Mark != "" {
 		return c.Mark

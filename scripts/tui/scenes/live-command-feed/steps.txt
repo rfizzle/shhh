@@ -17,7 +17,8 @@
 # transcript — the turn's last line appears only when it ends
 # (docs/interface/surfaces.md#the-turns-close). The second turn runs its
 # command inside a step that is already a card: the card keeps `$` in its
-# glyph slot, its clock counts the command still running, and the command's
+# glyph slot, says `running` where its outcome will go, its clock counts the
+# command still running, and the command's
 # last line out stands under its body, the last thing above the frame. Grep
 # the captures for a braille frame: only the frame's top rail draws one.
 snap 01-start "Some things worth doing first"
@@ -37,7 +38,7 @@ sleep 1
 keys y
 # The third line out is two seconds into the command, so the card's clock
 # has a time to show.
-snap 07-running-card "internal/ui  0.413s" "▎$ ran git status --short" "Running the UI tests once more"
+snap 07-running-card "internal/ui  0.413s" "▎$ ran git status --short" "Running the UI tests once more" "running · "
 snap 08-card-settled "The tests passed and the card settled" "▎$ ran 2 commands"
 keys C-c
 snap 09-quit-armed "again quits"
