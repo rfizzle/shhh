@@ -30,8 +30,7 @@ func TestHeadlessApprover_AnIrreplaceableTargetHoldsUnderYes(t *testing.T) {
 	}
 	var ran, codes []string
 	record := func(decision, reason string) { codes = append(codes, decision+"/"+reason) }
-	resolve := headlessApprover(context.Background(), printOpts{yes: true}, []string{"rm"}, nil,
-		fakeRun(&ran), "", nil, record, nil, newTestProcessSupervisor(t), nil, sc, nil, nil, unattended{})
+	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, allowlist: []string{"rm"}, run: fakeRun(&ran), record: record, procSup: newTestProcessSupervisor(t), scope: sc})
 
 	for _, tc := range []struct {
 		name, want string
@@ -56,8 +55,7 @@ func TestHeadlessApprover_AnIrreplaceableTargetHoldsUnderYes(t *testing.T) {
 		}
 	}
 	// The deny list is the person's own answer and still names itself first.
-	denied := headlessApprover(context.Background(), printOpts{yes: true}, nil, []string{"rm"},
-		fakeRun(&ran), "", nil, nil, nil, nil, nil, sc, nil, nil, unattended{})
+	denied := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, denylist: []string{"rm"}, run: fakeRun(&ran), scope: sc})
 	if got := denied(execCall("rm -rf ~")); got != agent.DenylistResult {
 		t.Fatalf("the deny list answered second: %q", got)
 	}

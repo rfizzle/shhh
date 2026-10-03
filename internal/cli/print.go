@@ -1403,9 +1403,22 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// per tool in the turn. The runner is wrapped so the line follows a
 	// command that ran and never a refusal (nudge.Turn.Ran).
 	nudges := &nudge.Turn{}
-	resolve := headlessApprover(cmd.Context(), opts, allowlist, cfg.Behavior.CommandDenylist, nudges.Ran(run), containRefusal, red, verdict.wrap(obs.decision),
-		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
-		unattended{sup: sup, judge: judge, at: obs.pos, conversation: conversationReads(session.conversation, cfg.Web.DenyHosts)})
+	resolve := headlessApprover(cmd.Context(), headlessApproval{
+		opts:           opts,
+		allowlist:      allowlist,
+		denylist:       cfg.Behavior.CommandDenylist,
+		run:            nudges.Ran(run),
+		containRefusal: containRefusal,
+		red:            red,
+		record:         verdict.wrap(obs.decision),
+		webTools:       session.web,
+		procSup:        procSup,
+		mutationHook:   chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)),
+		scope:          sc,
+		mcpTools:       session.mcpTools,
+		structTools:    session.structural,
+		un:             unattended{sup: sup, judge: judge, at: obs.pos, conversation: conversationReads(session.conversation, cfg.Web.DenyHosts)},
+	})
 	// The gated tier is where an unattended run circles: the test command
 	// that fails the same way every round, the edit a policy refuses every
 	// time it is proposed. Neither reaches the executor chain — the approver
@@ -2079,6 +2092,29 @@ func headlessWrites(session chatSession, own *writtenByCalls) *structural.Writes
 	return &structural.Writes{Files: own.paths, Hooks: projectTrust().RunsOwnPrograms()}
 }
 
+// headlessApproval is what the unattended approver answers a call with: the
+// run's flags and its two lists, the containment refusal, the runner, the
+// reducer and the record, the toolsets whose calls it runs, and what the run
+// has beyond its flags. It is one value because three surfaces build the
+// approver — a scripted run, and a served session twice over — and a
+// signature with a parameter per toolset was one where two nils swapped in a
+// call still compiled. A zero field is a run that was not handed that thing.
+type headlessApproval struct {
+	opts                printOpts
+	allowlist, denylist []string
+	run                 func(context.Context, string) tools.ExecResult
+	containRefusal      string
+	red                 *evidence.Reducer
+	record              func(decision, reason string)
+	webTools            *web.Toolset
+	procSup             *process.Supervisor
+	mutationHook        chat.MutationHook
+	scope               *scope.Scope
+	mcpTools            *mcp.Toolset
+	structTools         *structural.Toolset
+	un                  unattended
+}
+
 // headlessApprover resolves approval-gated tool calls without a prompt:
 // policy decides. Safety-flagged commands are always denied — there is no
 // human to confirm them in a headless run. Approved results run through the
@@ -2096,7 +2132,10 @@ func headlessWrites(session chatSession, own *writtenByCalls) *structural.Writes
 // un is what this run has beyond its flags: the supervisor a spawn is handed
 // to, and the judge a call the flags did not answer is put to (approvals.go).
 // A zero value is the surface exactly as it was — flags, or a refusal.
-func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist []string, run func(context.Context, string) tools.ExecResult, containRefusal string, red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook, sc *scope.Scope, mcpTools *mcp.Toolset, structTools *structural.Toolset, un unattended) func(provider.ToolCall) string {
+func headlessApprover(ctx context.Context, r headlessApproval) func(provider.ToolCall) string {
+	opts, allowlist, denylist, run, containRefusal := r.opts, r.allowlist, r.denylist, r.run, r.containRefusal
+	red, record, webTools, procSup, mutationHook := r.red, r.record, r.webTools, r.procSup, r.mutationHook
+	sc, mcpTools, structTools, un := r.scope, r.mcpTools, r.structTools, r.un
 	note := func(decision, reason string) {
 		if record != nil {
 			record(decision, reason)
@@ -2148,7 +2187,36 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 		}
 		return agent.UnattendedRefusedResult(what, why), false
 	}
+	// answers is which calls this run has an answer for: the tools it was
+	// handed, and the command and the two file tools, which it always answers
+	// for. It is this surface's statement of what it holds and nothing more:
+	// the tier each call sits at, and the action the verdict is built on, are
+	// the classifier's, so this run cannot come to read a call's tier
+	// differently from the session beside it.
+	// See docs/capabilities/approvals-and-safety.md#one-classifier-names-a-calls-tier.
+	answers := func(name string) bool {
+		switch {
+		case un.sup != nil && name == subagent.SpawnToolName,
+			mcpTools != nil && mcpTools.Has(name),
+			webTools != nil && name == web.FetchToolName,
+			procSup != nil && name == process.ToolName,
+			structTools != nil && name == structural.GitWriteToolName,
+			name == tools.ExecCommandName,
+			tools.IsMutating(name):
+			return true
+		}
+		return false
+	}
+	holds := agent.Answers{Has: answers}
+	if procSup != nil {
+		holds.Command = process.CommandOf
+	}
 	return func(tc provider.ToolCall) string {
+		call, callErr := agent.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), holds)
+		switch {
+		case !answers(tc.Name):
+			// A call this run holds nothing for is refused below, whatever
+			// its tier.
 		// Starting a child is a gated call and is answered like the rest:
 		// --yes is the blanket yes a person gave the whole run, auto mode
 		// puts it to the classifier, and a run given neither refuses it.
@@ -2158,7 +2226,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 		// second card to draw for the calls it goes on to make, so this is
 		// the decision — and the only one.
 		// See docs/capabilities/subagents.md#spawning-is-a-decision.
-		if un.sup != nil && tc.Name == subagent.SpawnToolName {
+		case call.Action.Kind == agent.ActionOther && tc.Name == subagent.SpawnToolName:
 			// A model the session cannot run is refused ahead of the
 			// verdict, as the session refuses it ahead of its card: no
 			// classifier round is spent on a spawn that cannot start.
@@ -2166,7 +2234,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			if _, err := un.sup.CheckModel(json.RawMessage(tc.Arguments)); err != nil {
 				return "error: " + err.Error()
 			}
-			reason, ok := answer(tc, agent.Action{Kind: agent.ActionOther},
+			reason, ok := answer(tc, call.Action,
 				opts.yes, observe.ReasonHeadlessYes, "spawning an agent", "sub-agents by default (run with --yes)")
 			if !ok {
 				return reason
@@ -2175,28 +2243,26 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			return red.Process(tc.Name, agent.ExecuteWith(func(_ string, args json.RawMessage) (string, error) {
 				return un.sup.Spawn(args)
 			}, tc))
-		}
 		// A server call is an external action like a fetch: --yes opts
 		// in, the default denies.
-		if mcpTools != nil && mcpTools.Has(tc.Name) {
-			reason, ok := answer(tc, agent.Action{Kind: agent.ActionOther},
+		case call.Action.Kind == agent.ActionOther:
+			reason, ok := answer(tc, call.Action,
 				opts.yes, observe.ReasonHeadlessYes, tc.Name, "external actions by default (run with --yes)")
 			if !ok {
 				return reason
 			}
 			note(observe.DecisionAllow, reason)
 			return red.Process(tc.Name, agent.ExecuteWith(mcpTools.Execute, tc))
-		}
 		// web_fetch is an external action: --yes opts in, the default
 		// denies like every other gated call.
-		if webTools != nil && tc.Name == web.FetchToolName {
+		case call.Action.Kind == agent.ActionFetch:
 			// The host is on the action because it is the unit a fetch is
 			// judged on: the classifier is being asked whether this page is
 			// an outbound channel worth stopping for, and where the request
 			// goes is most of that question.
 			// The reading comes from the function every surface asks, so an
 			// unattended run judges a host the way the session beside it does.
-			fetchAction := agent.Action{Kind: agent.ActionFetch, Reading: web.ReadFetch(json.RawMessage(tc.Arguments))}
+			fetchAction := call.Action
 			if plan, err := webTools.FetchPlan(json.RawMessage(tc.Arguments)); err == nil {
 				fetchAction.Host = plan.Host
 			}
@@ -2225,18 +2291,17 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 				return webTools.Execute(web.Orchestrator, name, args)
 			}
 			return red.Process(tc.Name, agent.ExecuteWith(fetch, tc))
-		}
 		// A process start is approved like a command: safety-flagged
 		// commands are always denied headless; --yes or an allowlist match
 		// opts in.
-		if procSup != nil && tc.Name == process.ToolName {
+		case call.Action.Kind == agent.ActionCommand && tc.Name == process.ToolName:
 			if containRefusal != "" {
 				return containRefusal
 			}
-			_, command, err := process.StartSummary(json.RawMessage(tc.Arguments))
-			if err != nil {
-				return "error: " + err.Error()
+			if callErr != nil {
+				return "error: " + callErr.Error()
 			}
+			command := call.Action.Command
 			if result, code, refused := ruleRefused(denylist, ruleAction(sc, command, false)); refused {
 				refuse(tc, command, code)
 				return result
@@ -2250,7 +2315,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 				return "error: process start denied (" + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
 			}
 			byFlag, flagReason := headlessCommandFlags(opts, allowlist, command)
-			reason, ok := answer(tc, agent.Action{Kind: agent.ActionCommand, Command: command},
+			reason, ok := answer(tc, call.Action,
 				byFlag, flagReason, "process start", "commands by default (run with --yes or --allow)")
 			if !ok {
 				return reason
@@ -2264,39 +2329,36 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			note(observe.DecisionAllow, reason)
 			exec := func(_ string, args json.RawMessage) (string, error) { return procSup.Execute(args) }
 			return red.Process(tc.Name, agent.ExecuteWith(exec, tc))
-		}
-		if tc.Name == tools.ExecCommandName {
+		case call.Action.Kind == agent.ActionCommand:
 			// Refused before the approval it would otherwise be given: a run
 			// that requires containment has nothing to approve where none is
 			// in force, and the refusal is the result the model reads.
 			if containRefusal != "" {
 				return containRefusal
 			}
-			var args struct {
-				Command string `json:"command"`
-			}
-			if err := json.Unmarshal([]byte(tc.Arguments), &args); err != nil || strings.TrimSpace(args.Command) == "" {
+			if callErr != nil {
 				return "error: invalid command arguments"
 			}
+			command := call.Action.Command
 			// Before --yes and before the allowlist: a deny list that a flag
 			// could out-rank would be a preference and not a rule. A
 			// destroying command pointed at something this run may not
 			// destroy is answered in the same place, through the function
 			// the session's policy asks.
-			if result, code, refused := ruleRefused(denylist, ruleAction(sc, args.Command, true)); refused {
-				refuse(tc, args.Command, code)
+			if result, code, refused := ruleRefused(denylist, ruleAction(sc, command, true)); refused {
+				refuse(tc, command, code)
 				return result
 			}
-			if warnings := safety.Check(args.Command); len(warnings) > 0 {
+			if warnings := safety.Check(command); len(warnings) > 0 {
 				risks := make([]string, 0, len(warnings))
 				for _, w := range warnings {
 					risks = append(risks, w.Risk)
 				}
-				refuse(tc, args.Command, observe.ReasonSafety)
+				refuse(tc, command, observe.ReasonSafety)
 				return "error: command denied (" + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
 			}
-			byFlag, flagReason := headlessCommandFlags(opts, allowlist, args.Command)
-			reason, ok := answer(tc, agent.Action{Kind: agent.ActionCommand, Command: args.Command},
+			byFlag, flagReason := headlessCommandFlags(opts, allowlist, command)
+			reason, ok := answer(tc, call.Action,
 				byFlag, flagReason, "command", "commands by default (run with --yes or --allow)")
 			if !ok {
 				return reason
@@ -2304,8 +2366,8 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			// The working scope is checked before the grant is
 			// spent: an allowlisted command shape is not a licence to
 			// write outside the directories this run was given.
-			if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(args.Command)); !ok {
-				refuse(tc, args.Command, observe.ReasonOutOfScope)
+			if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(command)); !ok {
+				refuse(tc, command, observe.ReasonOutOfScope)
 				return deny
 			}
 			note(observe.DecisionAllow, reason)
@@ -2314,20 +2376,19 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			// read keeps that, on the status line the transcript, the stream
 			// and the record all read.
 			// See docs/capabilities/headless.md#the-stream-is-the-record-as-it-happens.
-			result := run(ctx, args.Command)
+			result := run(ctx, command)
 			result.Output = red.Process(tools.ExecCommandName, result.Output)
 			// The store is handed to the formatter as well as to the
 			// reduction: the pipeline fails open on a result it would barely
 			// shrink, and the cap below it still has a middle to put
 			// somewhere the model can ask for it.
 			return tools.FormatExecResultKeeping(result, red.Keep)
-		}
 		// A git write sits at the write tier, so it is answered where a file
 		// modification is answered — after the deny list, which reads the
 		// command line the call stands for, because a person who refused
 		// `git commit` refused the act and not the spelling.
-		if structTools != nil && tc.Name == structural.GitWriteToolName {
-			line := structural.WriteLine(json.RawMessage(tc.Arguments))
+		case call.Tier == agent.TierWrite && tc.Name == structural.GitWriteToolName:
+			line := call.Action.Command
 			if agent.DenylistMatches(denylist, line) {
 				refuse(tc, line, observe.ReasonDenylist)
 				return agent.DenylistResult
@@ -2335,17 +2396,16 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			// The line the call stands for travels with it, so the judge
 			// reads `git commit` rather than a tool name and a blob of
 			// arguments — the same reading the deny list just took.
-			reason, ok := answer(tc, agent.Action{Kind: agent.ActionOther, Command: line},
+			reason, ok := answer(tc, call.Action,
 				opts.yes, observe.ReasonHeadlessYes, "git write", "writes by default (run with --yes)")
 			if !ok {
 				return reason
 			}
 			note(observe.DecisionAllow, reason)
 			return red.Process(tc.Name, agent.ExecuteWith(structTools.Execute, tc))
-		}
-		if tools.IsMutating(tc.Name) {
+		case call.Tier == agent.TierWrite:
 			mut, mutErr := un.seen.PreviewMutation(tc.Name, json.RawMessage(tc.Arguments))
-			edit := agent.Action{Kind: agent.ActionEdit}
+			edit := call.Action
 			if mutErr == nil {
 				edit.Path = mut.Path
 			}

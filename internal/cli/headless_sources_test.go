@@ -71,10 +71,9 @@ func TestHeadlessRun_TheTranscriptListsWhatItRead(t *testing.T) {
 	var lines bytes.Buffer
 	obs := headlessObserver{rounds: a.Rounds, stream: newJSONLStream(&lines), sources: newSourceFeed(ledger)}
 	h := &agent.Headless{
-		Agent: a,
-		Gate:  unattendedGate(webTools, nil, nil, nil),
-		Resolve: headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, obs.decision,
-			webTools, nil, nil, nil, nil, nil, unattended{at: obs.pos}),
+		Agent:        a,
+		Gate:         unattendedGate(webTools, nil, nil, nil),
+		Resolve:      headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&[]string{}), record: obs.decision, webTools: webTools, un: unattended{at: obs.pos}}),
 		OnToolResult: obs.toolResult,
 	}
 	final, err := h.Run("read the style guide")
@@ -144,10 +143,9 @@ func TestHeadlessRun_TheLedgerFollowsTheSlot(t *testing.T) {
 	webTools.UseLedger(ledger)
 	a := fetchTurn(t, url)
 	h := &agent.Headless{
-		Agent: a,
-		Gate:  unattendedGate(webTools, nil, nil, nil),
-		Resolve: headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil,
-			webTools, nil, nil, nil, nil, nil, unattended{}),
+		Agent:   a,
+		Gate:    unattendedGate(webTools, nil, nil, nil),
+		Resolve: headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&[]string{}), webTools: webTools}),
 	}
 	if _, err := h.Run("read the style guide"); err != nil {
 		t.Fatalf("run: %v", err)
@@ -200,10 +198,9 @@ func TestAServedSessionsClientIsToldWhatItRead(t *testing.T) {
 	}
 	l.obs = headlessObserver{rounds: a.Rounds, turn: l.turnNow, stream: l.events, sources: newSourceFeed(ledger)}
 	l.headless = &agent.Headless{
-		Agent: a,
-		Gate:  unattendedGate(webTools, nil, nil, nil),
-		Resolve: headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "",
-			nil, nil, webTools, nil, nil, nil, nil, nil, unattended{at: l.obs.pos}),
+		Agent:        a,
+		Gate:         unattendedGate(webTools, nil, nil, nil),
+		Resolve:      headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&[]string{}), webTools: webTools, un: unattended{at: l.obs.pos}}),
 		OnToolResult: l.obs.toolResult,
 	}
 	if _, err := l.Run(1, "read the style guide"); err != nil {
@@ -261,10 +258,9 @@ func TestAServedSessionsLedgerFollowsItsSlot(t *testing.T) {
 	}
 	l.obs = headlessObserver{rounds: a.Rounds, turn: l.turnNow, stream: l.events, sources: newSourceFeed(ledger)}
 	l.headless = &agent.Headless{
-		Agent: a,
-		Gate:  unattendedGate(webTools, nil, nil, nil),
-		Resolve: headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "",
-			nil, nil, webTools, nil, nil, nil, nil, nil, unattended{at: l.obs.pos}),
+		Agent:        a,
+		Gate:         unattendedGate(webTools, nil, nil, nil),
+		Resolve:      headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&[]string{}), webTools: webTools, un: unattended{at: l.obs.pos}}),
 		OnToolResult: l.obs.toolResult,
 	}
 	if _, err := l.Run(1, "read the style guide"); err != nil {

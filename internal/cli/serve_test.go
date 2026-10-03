@@ -450,8 +450,7 @@ func TestAServedSessionKeepsHowACommandEnded(t *testing.T) {
 				Agent: a,
 				Gate:  func(tc provider.ToolCall) bool { return tc.Name == tools.ExecCommandName },
 				// What a call the client allowed is run through (serve.go).
-				Resolve: headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, run, "",
-					nil, nil, nil, nil, nil, nil, nil, nil, unattended{at: l.obs.pos}),
+				Resolve:      headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: run, un: unattended{at: l.obs.pos}}),
 				OnToolResult: l.obs.toolResult,
 			}
 			if _, err := l.Run(1, "build it"); err != nil {

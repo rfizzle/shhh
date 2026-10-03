@@ -343,8 +343,7 @@ func TestSpawnRefusalTakesNoSlotAndRaisesNoCard(t *testing.T) {
 			// Run with neither --yes nor a classifier, so a spawn that
 			// reached the verdict is refused in the verdict's own words.
 			var ran []string
-			resolve := headlessApprover(t.Context(), printOpts{}, nil, nil, fakeRun(&ran), "", nil, nil,
-				nil, nil, nil, nil, nil, nil, unattended{sup: sup})
+			resolve := headlessApprover(t.Context(), headlessApproval{run: fakeRun(&ran), un: unattended{sup: sup}})
 			result := resolve(provider.ToolCall{ID: "s1", Name: subagent.SpawnToolName, Arguments: tc.args})
 			if reachedVerdict := strings.Contains(result, "headless mode denies"); tc.refused == reachedVerdict {
 				t.Fatalf("an unattended run's verdict: %s", result)
