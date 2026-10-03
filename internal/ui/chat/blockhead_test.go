@@ -133,7 +133,7 @@ func TestSelect_TheHeadingIsNotCopiedWithTheBlock(t *testing.T) {
 			updated, _ = updated.(Model).Update(mouseMotion(x1, y1))
 			dragged := updated.(Model)
 			lit, raw := dragged.renderHistoryLines(), dragged.renderHistoryRawLines()
-			if _, ok := dragged.sel.heads.lines[head]; !ok {
+			if _, ok := dragged.pointer.sel.heads.lines[head]; !ok {
 				t.Fatalf("the drag did not find the heading at line %d", head)
 			}
 			if from == head && lit[head] != raw[head] {

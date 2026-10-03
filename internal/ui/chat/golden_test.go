@@ -3929,7 +3929,7 @@ func TestGolden_TurnCloseSelection(t *testing.T) {
 			}
 			switch sel {
 			case rowPointed:
-				m.pointer, m.focusIdx = true, 1
+				m.pointer.lit, m.focusIdx = true, 1
 			case rowUnderCursor:
 				m.state, m.focusIdx = stateFocus, 1
 			}
@@ -4094,7 +4094,7 @@ func TestGolden_FailureCard(t *testing.T) {
 			}
 			switch sel {
 			case rowPointed:
-				m.pointer, m.focusIdx = true, at
+				m.pointer.lit, m.focusIdx = true, at
 			case rowUnderCursor:
 				m.state, m.focusIdx = stateFocus, at
 			}
@@ -4149,7 +4149,7 @@ func TestGolden_RecoverySelection(t *testing.T) {
 			at := m.appendEntry(last)
 			switch sel {
 			case rowPointed:
-				m.pointer, m.focusIdx = true, at
+				m.pointer.lit, m.focusIdx = true, at
 			case rowUnderCursor:
 				m.state, m.focusIdx = stateFocus, at
 			}

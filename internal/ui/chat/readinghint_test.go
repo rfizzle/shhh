@@ -504,8 +504,8 @@ func TestEscFold_FoldsEveryRowTheReaderOpened(t *testing.T) {
 	if got := openRowCount(m); got != 0 {
 		t.Errorf("one esc left %d rows open", got)
 	}
-	if m.foldNotice != "folded 4 rows" {
-		t.Errorf("the rail says %q, wanted the fold counted", m.foldNotice)
+	if m.pointer.foldNotice != "folded 4 rows" {
+		t.Errorf("the rail says %q, wanted the fold counted", m.pointer.foldNotice)
 	}
 	// Resting and not closed: a fold that wrote foldClosed would outrank the
 	// setting instead of deferring to it.
@@ -525,8 +525,8 @@ func TestEscFold_SaysNothingWithThePaneAlreadyAtRest(t *testing.T) {
 
 	m, _ = pressKey(t, m, escK)
 
-	if m.foldNotice != "" {
-		t.Errorf("a press that folded nothing said %q", m.foldNotice)
+	if m.pointer.foldNotice != "" {
+		t.Errorf("a press that folded nothing said %q", m.pointer.foldNotice)
 	}
 }
 
@@ -548,8 +548,8 @@ func TestEscFold_LeavesWhatTheVerbosityOpenedAndNamesIt(t *testing.T) {
 	if !m.settingHoldsRowsOpen() {
 		t.Error("esc folded rows the verbosity had opened")
 	}
-	if m.foldNotice != verbosityHoldsNotice {
-		t.Errorf("the rail says %q, wanted it to name the setting", m.foldNotice)
+	if m.pointer.foldNotice != verbosityHoldsNotice {
+		t.Errorf("the rail says %q, wanted it to name the setting", m.pointer.foldNotice)
 	}
 	// Not claimed: the chain went on and armed the rewind gesture, which is
 	// what this press has always meant on an empty idle draft.
@@ -569,8 +569,8 @@ func TestEscFold_ADraftWithTextIsClearedAndNoRowMoves(t *testing.T) {
 	if got := openRowCount(m); got != 4 {
 		t.Errorf("clearing the draft folded rows: %d of 4 left open", got)
 	}
-	if m.foldNotice != "" {
-		t.Errorf("clearing the draft said %q about folding", m.foldNotice)
+	if m.pointer.foldNotice != "" {
+		t.Errorf("clearing the draft said %q about folding", m.pointer.foldNotice)
 	}
 }
 
@@ -636,12 +636,12 @@ func TestEscFold_TheNoticeLastsOnePress(t *testing.T) {
 	m := escFoldModel(t)
 
 	m, _ = pressKey(t, m, escK)
-	if m.foldNotice == "" {
+	if m.pointer.foldNotice == "" {
 		t.Fatal("the fold said nothing")
 	}
 	m = typeChars(t, m, "a")
-	if m.foldNotice != "" {
-		t.Errorf("the account of the last press outlived it: %q", m.foldNotice)
+	if m.pointer.foldNotice != "" {
+		t.Errorf("the account of the last press outlived it: %q", m.pointer.foldNotice)
 	}
 }
 
@@ -688,7 +688,7 @@ func TestEscFold_AClosedStepHidesTheSettingsRowsToo(t *testing.T) {
 
 	m, _ = pressKey(t, m, escK)
 
-	if m.foldNotice != "" {
-		t.Errorf("a pane whose rows are all folded shut said %q", m.foldNotice)
+	if m.pointer.foldNotice != "" {
+		t.Errorf("a pane whose rows are all folded shut said %q", m.pointer.foldNotice)
 	}
 }

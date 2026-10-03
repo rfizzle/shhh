@@ -534,7 +534,7 @@ func TestTurnClose_ASummaryFoldBesideItExpandsRatherThanReviews(t *testing.T) {
 	m.appendEntry(summaryRowEntry(agent.SummaryVerdict{
 		Text: "Capped the rounds and nothing else.", State: agent.SummaryOnTarget, Round: 3}, ""))
 	at := len(m.transcript) - 1
-	m.pointer, m.focusIdx = true, at
+	m.pointer.lit, m.focusIdx = true, at
 	m.refreshCursorView()
 
 	if _, ok := m.reviewableRow(at); ok {

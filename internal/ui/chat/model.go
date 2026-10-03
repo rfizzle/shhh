@@ -1013,11 +1013,6 @@ type Model struct {
 	// keyList is what `?` opened over a card or reading mode (keylist.go),
 	// and the surface it goes back to; nil while no list is open.
 	keyList *keyListView
-	// mouseOn turns terminal mouse reporting on (ctrl+x, /ui mouse). It is
-	// on by default so the wheel scrolls the transcript, click-drag selects
-	// text, and clicks open rows or answer cards. Turning it off hands
-	// selection back to the terminal's native selector.
-	mouseOn bool
 	// caps is what this terminal told shhh it can do — inline images,
 	// desktop notifications, focus events. It is asked once,
 	// when the program hands over its environment, and the replies land
@@ -1037,41 +1032,11 @@ type Model struct {
 	// answer to the only question asked of them — may shhh assume nobody is
 	// looking? — and the answer to both is no.
 	away bool
-	// Application-owned transcript selection (select.go). sel is the
-	// selection itself — anchor, endpoint, and whether the button is still
-	// down — in rendered-transcript coordinates. selScrollDir and
-	// selScrollSeq drive the edge auto-scroll: the direction a drag held at
-	// the edge of the pane is asking for, and the fence that stops a tick
-	// which outlived its drag. selNotice is the notice rail's line after a
-	// successful copy.
-	sel          selection
-	selScrollDir int
-	selScrollSeq int
-	selNotice    string
-	// foldNotice is the notice rail's line after esc folded the rows the
-	// reader had opened, or after it found only the verbosity's open
-	// (readinghint.go). It lasts exactly one press: the next key clears it on
-	// the way in, the way an armed two-press window is consumed, because it
-	// is an account of the press just made and not a state of the session.
-	foldNotice string
-	// press is the cell the primary button last went down in (
-	// click.go). A click is a press and a release in the same cell, which is
-	// what lets one button carry both the selection drag and the targets.
-	press pointerPress
-	// pointer is whether the pane's pointer is lit from the prompt: reading
-	// mode's cursor (focusIdx) drawn while the draft holds the keyboard
-	// (pointer.go). A flag beside the index rather than a state of its own,
-	// because the keyboard does not move.
-	pointer bool
-	// rowHeld is whether reading mode was opened by the handover on a
-	// recovery or round-limit row (keyroute.go). The row was handed the
-	// keyboard the way a card is, so answering it hands the keyboard back
-	// the way answering a card does (focus.go's rowLetter), rather than
-	// leaving the reader in a mode they never asked to read in.
-	rowHeld bool
-	// railOpened is the rail cell a surface was opened from, and the surface
-	// (railclick.go).
-	railOpened railOpening
+	// pointer is what the mouse and the pane's pointer are doing: mouse
+	// reporting, the press, the drag selection and its edge scroll, the
+	// rail cell a surface was opened from, the lit pointer, and the notices
+	// a copy or a fold leaves (pointerstate.go).
+	pointer pointerState
 	// writeConfig persists one config key to the user's file. The CLI
 	// installs it; a session without one cannot make a setting stick and
 	// says so rather than pretending it did.

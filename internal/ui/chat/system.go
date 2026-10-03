@@ -91,7 +91,7 @@ func (m Model) updateSystem(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// gesture over the conversation move the three-line prompt box
 		//. Press, drag and release own the transcript's text
 		// selection (select.go).
-		if !m.mouseOn {
+		if !m.pointer.mouseOn {
 			return m, nil, true
 		}
 		return answered(m.updateMouse(msg))
@@ -100,7 +100,7 @@ func (m Model) updateSystem(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// A wheel flood merged at the program boundary (wheel.go): one scroll
 		// for the whole run, through the same per-surface switch a single
 		// notch takes, then the message the flush was triggered by.
-		if m.mouseOn {
+		if m.pointer.mouseOn {
 			m.scrollLines(msg.lines)
 		}
 		if msg.then != nil {

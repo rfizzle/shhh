@@ -598,7 +598,7 @@ func TestClick_RailFileOpensItsDiff(t *testing.T) {
 	if m.state == stateDiffFull {
 		t.Fatal("the same cell should close the diff again")
 	}
-	if m.fullDiff != nil || m.railOpened.live {
+	if m.fullDiff != nil || m.pointer.railOpened.live {
 		t.Fatal("closing the diff should leave nothing holding the cell")
 	}
 }

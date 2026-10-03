@@ -113,7 +113,7 @@ func TestRailDoors_AHeadingOrAMarkerOpensItsSurfaceAndTheCellClosesIt(t *testing
 			if door.surface(closed) != nil {
 				t.Fatalf("the cell that opened %s should close it, got state %d", c.command, closed.state)
 			}
-			if closed.railOpened.live {
+			if closed.pointer.railOpened.live {
 				t.Fatal("closing the surface should leave nothing holding the cell")
 			}
 			if closed.state != m.state || closed.inspectorHidden() {
@@ -218,7 +218,7 @@ func TestRailDoors_TheCellClosesOnlyWhatItOpened(t *testing.T) {
 	if typed.state != stateReview {
 		t.Fatalf("/diff should open the review, got state %d", typed.state)
 	}
-	if typed.railOpened.showing(typed) {
+	if typed.pointer.railOpened.showing(typed) {
 		t.Fatal("a review /diff opened is not the one the cell remembered")
 	}
 }

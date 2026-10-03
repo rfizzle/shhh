@@ -48,7 +48,7 @@ func (m Model) View() tea.View {
 	// Reporting is on for the session by default — the wheel scrolls the
 	// transcript, shhh selects text itself and clicks open rows. `/ui mouse off`
 	// hands selection back to the terminal.
-	if m.mouseOn {
+	if m.pointer.mouseOn {
 		v.MouseMode = tea.MouseModeCellMotion
 	}
 	// And the two states outside the rectangle, for the third and fourth

@@ -147,7 +147,7 @@ const wrappedProse = "The parser walks the token stream once and keeps a stack o
 func TestSelection_IgnoredWhileMouseReportingIsOff(t *testing.T) {
 	c := &clip{}
 	m := selectModel(t, c, entry{kind: entryUser, text: "a question about the parser"})
-	m.mouseOn = false
+	m.pointer.mouseOn = false
 
 	for _, msg := range []tea.MouseMsg{mousePress(4, 3), mouseMotion(20, 4), mouseRelease(20, 4)} {
 		updated, cmd := m.Update(msg)
@@ -201,7 +201,7 @@ func TestSelection_DragHighlightsAndCopiesOnRelease(t *testing.T) {
 	if !m.hasSelection() {
 		t.Fatal("a released selection stays lit until esc or the next press")
 	}
-	if m.selNotice == "" {
+	if m.pointer.selNotice == "" {
 		t.Fatal("a successful copy should say so on the notice rail")
 	}
 }
@@ -276,7 +276,7 @@ func TestSelection_PressOutsideTheTranscriptStartsNothing(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			updated, _ := m.Update(mousePress(tc.x, tc.y))
 			pm := updated.(Model)
-			if pm.sel.dragging || pm.sel.on {
+			if pm.pointer.sel.dragging || pm.pointer.sel.on {
 				t.Fatalf("a press at (%d,%d) should not anchor a selection", tc.x, tc.y)
 			}
 			updated, _ = pm.Update(mouseMotion(tc.x+20, tc.y))
@@ -478,7 +478,7 @@ func TestSelection_TheTerminalTakesItWithNoToolOnPath(t *testing.T) {
 	if got := notifyRaw(t, cmd); got != want {
 		t.Errorf("wrote %q, want %q", got, want)
 	}
-	if m.selNotice == "" {
+	if m.pointer.selNotice == "" {
 		t.Fatal("a copy that went should caption the notice rail")
 	}
 }
@@ -503,7 +503,7 @@ func tallModel(t *testing.T, c *clip) Model {
 // tick dispatches the edge-scroll tick the model is currently waiting on.
 func scrollTick(t *testing.T, m Model) (Model, bool) {
 	t.Helper()
-	seq := m.selScrollSeq
+	seq := m.pointer.scrollSeq
 	updated, cmd := m.Update(selectionScrollMsg{seq: seq})
 	return updated.(Model), cmd != nil
 }
@@ -522,11 +522,11 @@ func TestSelection_BottomEdgeAutoScrollsAndExtends(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("a drag at the bottom edge should start the auto-scroll")
 	}
-	if m.selScrollDir != 1 {
-		t.Fatalf("the edge should ask to scroll down, got %d", m.selScrollDir)
+	if m.pointer.scrollDir != 1 {
+		t.Fatalf("the edge should ask to scroll down, got %d", m.pointer.scrollDir)
 	}
 
-	offsetBefore, endBefore := m.viewport.YOffset(), m.sel.end.line
+	offsetBefore, endBefore := m.viewport.YOffset(), m.pointer.sel.end.line
 	for i := 0; i < 8; i++ {
 		var more bool
 		m, more = scrollTick(t, m)
@@ -537,10 +537,10 @@ func TestSelection_BottomEdgeAutoScrollsAndExtends(t *testing.T) {
 	if m.viewport.YOffset() <= offsetBefore {
 		t.Fatalf("the transcript should have scrolled, offset %d → %d", offsetBefore, m.viewport.YOffset())
 	}
-	if m.sel.end.line <= endBefore {
-		t.Fatalf("the selection should have extended over what scrolled into view, %d → %d", endBefore, m.sel.end.line)
+	if m.pointer.sel.end.line <= endBefore {
+		t.Fatalf("the selection should have extended over what scrolled into view, %d → %d", endBefore, m.pointer.sel.end.line)
 	}
-	if m.sel.end.line < offsetBefore+m.paneRows() {
+	if m.pointer.sel.end.line < offsetBefore+m.paneRows() {
 		t.Fatal("the selection should now cover content that started below the viewport")
 	}
 
@@ -564,11 +564,11 @@ func TestSelection_TopEdgeAutoScrollsUpward(t *testing.T) {
 
 	updated, cmd := m.Update(mouseMotion(10, m.transcriptOrigin().Y))
 	m = updated.(Model)
-	if cmd == nil || m.selScrollDir != -1 {
-		t.Fatalf("a drag at the top edge should scroll up, dir %d cmd %v", m.selScrollDir, cmd != nil)
+	if cmd == nil || m.pointer.scrollDir != -1 {
+		t.Fatalf("a drag at the top edge should scroll up, dir %d cmd %v", m.pointer.scrollDir, cmd != nil)
 	}
 
-	offsetBefore, endBefore := m.viewport.YOffset(), m.sel.end.line
+	offsetBefore, endBefore := m.viewport.YOffset(), m.pointer.sel.end.line
 	for i := 0; i < 8; i++ {
 		var more bool
 		m, more = scrollTick(t, m)
@@ -579,8 +579,8 @@ func TestSelection_TopEdgeAutoScrollsUpward(t *testing.T) {
 	if m.viewport.YOffset() >= offsetBefore {
 		t.Fatalf("the transcript should have scrolled up, offset %d → %d", offsetBefore, m.viewport.YOffset())
 	}
-	if m.sel.end.line >= endBefore {
-		t.Fatalf("the selection should have extended upward, %d → %d", endBefore, m.sel.end.line)
+	if m.pointer.sel.end.line >= endBefore {
+		t.Fatalf("the selection should have extended upward, %d → %d", endBefore, m.pointer.sel.end.line)
 	}
 }
 
@@ -610,10 +610,10 @@ func TestSelection_StationaryPointerKeepsScrolling(t *testing.T) {
 	}
 
 	// And it stops itself at the end rather than burning a timer forever.
-	for i := 0; i < 500 && m.selScrollDir != 0; i++ {
+	for i := 0; i < 500 && m.pointer.scrollDir != 0; i++ {
 		m, _ = scrollTick(t, m)
 	}
-	if m.selScrollDir != 0 {
+	if m.pointer.scrollDir != 0 {
 		t.Fatal("the chain should end when the transcript runs out")
 	}
 }
@@ -650,13 +650,13 @@ func TestSelection_ReleaseAndEscStopPendingTicks(t *testing.T) {
 			m = updated.(Model)
 			updated, _ = m.Update(mouseMotion(10, bottomRow(m)))
 			m = updated.(Model)
-			stale := m.selScrollSeq
-			if m.selScrollDir == 0 {
+			stale := m.pointer.scrollSeq
+			if m.pointer.scrollDir == 0 {
 				t.Fatal("the fixture should be auto-scrolling")
 			}
 
 			m = tc.stop(t, m)
-			if m.selScrollDir != 0 {
+			if m.pointer.scrollDir != 0 {
 				t.Fatalf("%s should stop the auto-scroll", tc.name)
 			}
 
@@ -691,8 +691,8 @@ func TestSelection_EscCancelsAndLeavesTheDraftAlone(t *testing.T) {
 	if m.input.Value() != "half a sentence" {
 		t.Fatalf("the esc that cancelled the selection must not clear the draft, got %q", m.input.Value())
 	}
-	if m.selNotice != "" {
-		t.Fatalf("the copy notice should go with it, got %q", m.selNotice)
+	if m.pointer.selNotice != "" {
+		t.Fatalf("the copy notice should go with it, got %q", m.pointer.selNotice)
 	}
 	// A second esc means what esc always meant.
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
@@ -727,10 +727,10 @@ func TestSelection_MouseOffClearsIt(t *testing.T) {
 
 			m = tc.off(m)
 
-			if m.mouseOn {
+			if m.pointer.mouseOn {
 				t.Fatal("reporting should be off")
 			}
-			if m.hasSelection() || m.sel.on {
+			if m.hasSelection() || m.pointer.sel.on {
 				t.Fatal("turning reporting off should give the selection back to the terminal")
 			}
 			if strings.Contains(m.renderHistory(), "\x1b[7m") {
@@ -756,7 +756,7 @@ func TestSelection_SurvivesStreaming(t *testing.T) {
 	x1, y1 := at(t, m, line, endOf(m, line))
 	updated, _ = m.Update(mouseMotion(x1, y1))
 	m = updated.(Model)
-	span := m.sel
+	span := m.pointer.sel
 
 	m.setTurnState(stateStreaming)
 	for i := 0; i < 5; i++ {
@@ -764,8 +764,8 @@ func TestSelection_SurvivesStreaming(t *testing.T) {
 		m = updated.(Model)
 	}
 
-	if m.sel != span {
-		t.Fatalf("streaming should not disturb the selection: %+v → %+v", span, m.sel)
+	if m.pointer.sel != span {
+		t.Fatalf("streaming should not disturb the selection: %+v → %+v", span, m.pointer.sel)
 	}
 	if m.atBottom {
 		t.Fatal("the follow should stay paused while a drag is live")
@@ -820,7 +820,7 @@ func TestSelection_MovesWithARowPlacedAboveIt(t *testing.T) {
 		line := lineOf(t, m, "third.go")
 		m = dragLines(t, m, line, line)
 		m = place(m)
-		if m.sel.on {
+		if m.pointer.sel.on {
 			t.Fatalf("a selection on a card the placed row redrew should be dropped, still covers %q", m.selectedText())
 		}
 	})
@@ -829,10 +829,10 @@ func TestSelection_MovesWithARowPlacedAboveIt(t *testing.T) {
 		m := build(t)
 		line := lineOf(t, m, "read the three files")
 		m = dragLines(t, m, line, line)
-		span := m.sel
+		span := m.pointer.sel
 		m = place(m)
-		if m.sel != span {
-			t.Fatalf("a selection above the placed row names the same lines: %+v → %+v", span, m.sel)
+		if m.pointer.sel != span {
+			t.Fatalf("a selection above the placed row names the same lines: %+v → %+v", span, m.pointer.sel)
 		}
 	})
 
@@ -846,7 +846,7 @@ func TestSelection_MovesWithARowPlacedAboveIt(t *testing.T) {
 		line := lineOf(t, m, "read 2 files")
 		m = dragLines(t, m, line, line)
 		m = placeRow(m, read("call_2", "second.go"))
-		if m.sel.on {
+		if m.pointer.sel.on {
 			t.Fatalf("a selection on lines the placed row redrew should be dropped, still covers %q", m.selectedText())
 		}
 	})
@@ -865,7 +865,7 @@ func TestSelection_ResizePolicy(t *testing.T) {
 		updated, _ := m.Update(tea.WindowSizeMsg{Width: 60, Height: 24})
 		m = updated.(Model)
 
-		if m.hasSelection() || m.sel.on {
+		if m.hasSelection() || m.pointer.sel.on {
 			t.Fatal("a width change should drop the selection")
 		}
 		if strings.Contains(m.renderHistory(), "\x1b[7m") {
@@ -890,7 +890,7 @@ func TestSelection_ResizePolicy(t *testing.T) {
 		if !m.hasSelection() {
 			t.Fatal("the same lines are at the same indices; the range should survive")
 		}
-		if m.sel.dragging {
+		if m.pointer.sel.dragging {
 			t.Fatal("but the drag should end rather than track a pane that moved")
 		}
 	})
@@ -994,8 +994,8 @@ func TestSelection_CopyFailureIsSaidOutLoudAndKeepsTheSelection(t *testing.T) {
 	if c.calls != 1 {
 		t.Fatalf("the copy should have been attempted once, got %d", c.calls)
 	}
-	if m.selNotice != "" {
-		t.Fatalf("a failed copy must not claim success, got notice %q", m.selNotice)
+	if m.pointer.selNotice != "" {
+		t.Fatalf("a failed copy must not claim success, got notice %q", m.pointer.selNotice)
 	}
 	view := ansi.Strip(m.renderHistoryRaw())
 	if !strings.Contains(view, "no clipboard tool found") {
@@ -1148,14 +1148,14 @@ func TestSelection_TakeoverSurfaceEndsTheDrag(t *testing.T) {
 	m = updated.(Model)
 	updated, _ = m.Update(mouseMotion(10, m.transcriptOrigin().Y+m.paneRows()-1))
 	m = updated.(Model)
-	stale := m.selScrollSeq
-	if m.selScrollDir == 0 || !m.sel.dragging {
+	stale := m.pointer.scrollSeq
+	if m.pointer.scrollDir == 0 || !m.pointer.sel.dragging {
 		t.Fatal("the fixture should be mid-drag with the auto-scroll running")
 	}
 
 	m.enterSurface(stateDiffFull)
 
-	if m.sel.on || m.selScrollDir != 0 {
+	if m.pointer.sel.on || m.pointer.scrollDir != 0 {
 		t.Fatal("a takeover surface should end the selection and the scroll")
 	}
 	offset := m.viewport.YOffset()
@@ -1197,10 +1197,10 @@ func TestSelection_WorksInBothLayouts(t *testing.T) {
 
 			// The rail beyond the pane is not the transcript.
 			if tc.twoPane {
-				before := m.sel
+				before := m.pointer.sel
 				updated, _ = m.Update(mousePress(m.transcriptOrigin().X+m.transcriptWidth()+2, m.transcriptOrigin().Y+1))
-				if pm := updated.(Model); pm.sel != before {
-					t.Fatalf("a press on the inspector rail should change nothing: %+v → %+v", before, pm.sel)
+				if pm := updated.(Model); pm.pointer.sel != before {
+					t.Fatalf("a press on the inspector rail should change nothing: %+v → %+v", before, pm.pointer.sel)
 				}
 			}
 		})
@@ -1277,7 +1277,7 @@ func TestSelection_RepeatedMotionOnTheSameCellIsANoOp(t *testing.T) {
 	x1, y1 := at(t, m, line, 6)
 	updated, _ = m.Update(mouseMotion(x1, y1))
 	m = updated.(Model)
-	before := m.sel
+	before := m.pointer.sel
 
 	for i := 0; i < 5; i++ {
 		updated, cmd := m.Update(mouseMotion(x1, y1))
@@ -1286,7 +1286,7 @@ func TestSelection_RepeatedMotionOnTheSameCellIsANoOp(t *testing.T) {
 			t.Fatal("a motion that changed nothing should schedule nothing")
 		}
 	}
-	if m.sel != before {
-		t.Fatalf("a repeated cell should leave the selection alone: %+v → %+v", before, m.sel)
+	if m.pointer.sel != before {
+		t.Fatalf("a repeated cell should leave the selection alone: %+v → %+v", before, m.pointer.sel)
 	}
 }

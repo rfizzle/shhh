@@ -34,17 +34,17 @@ func TestPointer_ACloseDoesNotMoveIt(t *testing.T) {
 	unlit = applyWrite(t, unlit, filepath.Join(t.TempDir(), "two.go"), "package main\n", "y")
 	focus := unlit.focusIdx
 	unlit = finishTurn(t, unlit)
-	if unlit.pointer || unlit.focusIdx != focus {
-		t.Fatalf("a close moved the pointer: lit %v, focus %d → %d", unlit.pointer, focus, unlit.focusIdx)
+	if unlit.pointer.lit || unlit.focusIdx != focus {
+		t.Fatalf("a close moved the pointer: lit %v, focus %d → %d", unlit.pointer.lit, focus, unlit.focusIdx)
 	}
 
 	// Lit on the older close mid-turn: the new close lands under it and the
 	// pointer stays on the row the reader put it on.
 	lit := sendText(t, m, "write file 2")
 	lit = applyWrite(t, lit, filepath.Join(t.TempDir(), "two.go"), "package main\n", "y")
-	lit.pointer, lit.focusIdx = true, first
+	lit.pointer.lit, lit.focusIdx = true, first
 	lit = finishTurn(t, lit)
-	if !lit.pointer || lit.focusIdx != first {
-		t.Fatalf("a close moved the lit pointer: lit %v, focus %d, want %d", lit.pointer, lit.focusIdx, first)
+	if !lit.pointer.lit || lit.focusIdx != first {
+		t.Fatalf("a close moved the lit pointer: lit %v, focus %d, want %d", lit.pointer.lit, lit.focusIdx, first)
 	}
 }

@@ -205,14 +205,14 @@ func (m Model) rowOnScreen(idx int) bool {
 // nothing to open onto, and it still says so.
 func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 	m.staged.onStrip = false
-	m.rowHeld = false
+	m.pointer.rowHeld = false
 	if m.stripReachable() && len(m.expandableIndices()) == 0 {
 		// Nothing above the strip to stand on — the first screenshot of a
 		// session, pasted into its first sentence — so the mode opens on the
 		// strip, which is the one thing on screen it can reach
 		// (docs/interface/surfaces.md#a-staged-attachment).
 		m.enterSurface(stateFocus)
-		m.pointer = false
+		m.pointer.lit = false
 		m.syncViewport()
 		m.enterStrip()
 		return m, nil
@@ -239,21 +239,21 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 	if m.stripLive() {
 		// A click put the strip's cursor on a call before the mode opened:
 		// that is where the reader is, so the mode opens on its card.
-		m.pointer = false
+		m.pointer.lit = false
 		m.focusIdx = m.cursorStopFor(*m.entries(), m.strip.anchor)
 		m.refreshFocusView()
 		return m, nil
 	}
 	m.strip = stripCursor{}
-	if m.pointer && slices.Contains(idxs, m.focusIdx) {
+	if m.pointer.lit && slices.Contains(idxs, m.focusIdx) {
 		// A pointer lit from the prompt is where the reader already is, so
 		// the mode opens on it; the flag goes, because in here the cursor
 		// is the state (pointer.go).
-		m.pointer = false
+		m.pointer.lit = false
 		m.refreshFocusView()
 		return m, nil
 	}
-	m.pointer = false
+	m.pointer.lit = false
 	if len(idxs) == 0 {
 		m.focusIdx = -1
 		m.invalidateRenderCache()
@@ -336,7 +336,7 @@ func (m Model) openCursorRow(ret state) (tea.Model, tea.Cmd) {
 // themselves, the mode stays up around the act. A letter the row does not
 // answer changes nothing, the mode included.
 func (m Model) rowLetter(pressed string) (tea.Model, tea.Cmd, bool) {
-	if !m.rowHeld {
+	if !m.pointer.rowHeld {
 		return m.rowKey(pressed)
 	}
 	at := m.focusIdx
@@ -627,7 +627,7 @@ func (m Model) focusedClose() (entry, bool) {
 // exitFocusMode returns to the input, keeping expansion state; the render
 // cache is rebuilt without the selection gutter.
 func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
-	m.rowHeld = false
+	m.pointer.rowHeld = false
 	// The copy caption closes with the mode — it captions a mode that is
 	// ending.
 	m.readingCopied = ""
@@ -644,7 +644,7 @@ func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
 	m.leaveSurface()
 	// The pointer is not left lit behind the mode: esc from here returns to
 	// the prompt, and the prompt the reader left had no gutter on it.
-	m.pointer = false
+	m.pointer.lit = false
 	// The feed's cache is the render without the gutter, and the reader is
 	// back on it; the gutter's own units are unchanged and stay (render.go).
 	m.cached.reset()

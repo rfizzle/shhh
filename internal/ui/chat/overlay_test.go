@@ -247,7 +247,7 @@ func TestRegisterDerivedTablesOpenFromAZeroModel(t *testing.T) {
 	if !m.inspectorHidden() {
 		t.Fatal("the rail should stand hidden under a pane surface before a paint")
 	}
-	m.mouseOn, m.ready = true, true
+	m.pointer.mouseOn, m.ready = true, true
 	if m.selectableSurface() {
 		t.Fatal("the transcript should not be selectable under a pane surface before a paint")
 	}

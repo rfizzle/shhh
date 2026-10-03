@@ -49,7 +49,7 @@ func (m *Model) appendEntry(e entry) int {
 	// insert are what move, and only the two renders side by side say by
 	// how much.
 	var drawn []string
-	if m.sel.on {
+	if m.pointer.sel.on {
 		drawn = slices.Clone(m.renderHistoryRawLines())
 	}
 	m.transcript = slices.Insert(m.transcript, at, e)
@@ -64,7 +64,7 @@ func (m *Model) appendEntry(e entry) int {
 	if m.focusIdx >= at {
 		m.focusIdx++
 	}
-	if m.sel.on {
+	if m.pointer.sel.on {
 		m.shiftSelection(drawn, m.renderHistoryRawLines())
 	}
 	return at

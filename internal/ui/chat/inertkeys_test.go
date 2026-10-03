@@ -318,7 +318,7 @@ func pressAnswer(t *testing.T, m Model) Model {
 // does from the prompt: the draft keeps the keyboard and the row is selected.
 func pointAt(t *testing.T, m Model, kind entryKind) Model {
 	t.Helper()
-	m.pointer = true
+	m.pointer.lit = true
 	m.focusIdx = indexOfKind(t, m, kind)
 	m.refreshCursorView()
 	if !m.pointerLit() {
@@ -397,7 +397,7 @@ func TestRowHandover_ASelectedRowThatOffersNothingKeepsIt(t *testing.T) {
 	if at < 0 {
 		t.Fatal("the fixture should have a row other than the close to point at")
 	}
-	m.pointer, m.focusIdx = true, at
+	m.pointer.lit, m.focusIdx = true, at
 	m.refreshCursorView()
 	before := snapshot(m)
 	if after := snapshot(pressAnswer(t, m)); after != before {

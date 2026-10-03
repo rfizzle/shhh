@@ -24,7 +24,7 @@ package chat
 // pointerLit reports whether the pointer is on screen: lit, on a row that is
 // still there to point at, while the draft holds the keyboard.
 func (m Model) pointerLit() bool {
-	if !m.pointer || m.state == stateFocus || m.attachedTo != "" || !m.inputLive() {
+	if !m.pointer.lit || m.state == stateFocus || m.attachedTo != "" || !m.inputLive() {
 		return false
 	}
 	return m.rowOnScreen(m.focusIdx)
@@ -51,7 +51,7 @@ func (m *Model) movePointer(dir int) {
 		// coordinates were taken before it did — the same reason reading
 		// mode drops one on the way in (enterSurface).
 		m.cancelSelection()
-		m.pointer = true
+		m.pointer.lit = true
 		m.focusIdx = m.openingCursor(idxs)
 		m.refreshCursorView()
 		return
@@ -103,7 +103,7 @@ func (m *Model) dropPointer() bool {
 	if !m.pointerLit() {
 		return false
 	}
-	m.pointer = false
+	m.pointer.lit = false
 	m.cached.reset()
 	// The way out is where a repaint the gutter held is paid for: a stream
 	// that landed rows while the reader was scrolled up owes one, and the

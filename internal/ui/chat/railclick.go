@@ -189,9 +189,9 @@ func (m Model) closeContextScreen() (tea.Model, tea.Cmd) {
 func (m Model) throughDoor(door railDoor, open func(Model) (tea.Model, tea.Cmd), x, y int) (tea.Model, tea.Cmd) {
 	next, cmd := open(m)
 	if nm, ok := next.(Model); ok {
-		nm.railOpened = railOpening{}
+		nm.pointer.railOpened = railOpening{}
 		if s := door.surface(nm); s != nil {
-			nm.railOpened = railOpening{pointerPress: pointerPress{x: x, y: y, live: true}, door: door, surface: s}
+			nm.pointer.railOpened = railOpening{pointerPress: pointerPress{x: x, y: y, live: true}, door: door, surface: s}
 		}
 		return nm, cmd
 	}
@@ -231,11 +231,11 @@ func (m Model) railTargetAt(area uv.Rectangle, x, y int) components.RailTarget {
 // the surfaces underneath would make the rail's quiet rows do whatever
 // happened to be behind them.
 func (m Model) clickRail(x, y int) (tea.Model, tea.Cmd, bool) {
-	if o := m.railOpened; o.x == x && o.y == y && o.showing(m) {
+	if o := m.pointer.railOpened; o.x == x && o.y == y && o.showing(m) {
 		// The surface this cell opened is covering the rail, so the row is
 		// not there to be found — but the cell is, and a click that opened a
 		// thing closes it again (click.go). The cell means what it meant.
-		m.railOpened = railOpening{}
+		m.pointer.railOpened = railOpening{}
 		next, cmd := o.door.close(m)
 		return next, cmd, true
 	}

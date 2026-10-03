@@ -59,8 +59,8 @@ func (m Model) rowHandoverKey() (tea.Model, tea.Cmd, bool) {
 // one state in which a row's letters are keys.
 func (m Model) giveRowKeyboard(idx int) (tea.Model, tea.Cmd) {
 	m.enterSurface(stateFocus)
-	m.pointer = false
-	m.rowHeld = true
+	m.pointer.lit = false
+	m.pointer.rowHeld = true
 	m.focusIdx = idx
 	m.refreshFocusView()
 	return m, nil
@@ -95,19 +95,11 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	// handlers below read the captured value and re-arm as their answer.
 	armed := m.armed
 	m.disarm()
-	// And every key clears the fold's account of the press before it
-	// (readinghint.go). It says what one press did, so it lasts exactly as
-	// long as that press is the last thing the reader did.
-	m.foldNotice = ""
-	// Mouse reporting is the one setting with a chord of its own (
-	// reading mode), and the only key answered before the surfaces are: what it
-	// costs — the terminal's own click-drag selection — is discovered at
-	// the moment of wanting to copy something, with a mouse already in
-	// hand and no appetite for a slash command. That moment arrives just
-	// as often over the full-screen diff or a transcript being read as it
-	// does over the draft, so the chord is answered above all of them.
-	// Nothing else claims it, so nothing is taken away by that.
-	if keys.Match(msg, keys.Draft.Mouse) {
+	// And every key clears the fold's account of the press before it, and
+	// the mouse chord is answered ahead of every surface (pointerstate.go).
+	pointer, pointerAct := m.pointer.update(msg)
+	m.pointer = pointer
+	if pointerAct == pointerToggleMouse {
 		return answered(m.toggleMouse())
 	}
 	// The redraw is answered here for a related reason (terminal.go): a
@@ -526,7 +518,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 				n := m.foldOpenedRows()
 				m.refreshTranscript()
 				m.anchorTo(anchor, follow)
-				m.foldNotice = foldedNotice(n)
+				m.pointer.foldNotice = foldedNotice(n)
 				// A fold answers nothing and abandons nothing, so it is
 				// not the press that spends a two-press window
 				// (cancel.go) — the judgement the inert press below makes,
@@ -540,7 +532,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			// mean what it has always meant. The rail still says why,
 			// where every open row on screen is the setting's.
 			if m.settingHoldsRowsOpen() {
-				m.foldNotice = verbosityHoldsNotice
+				m.pointer.foldNotice = verbosityHoldsNotice
 			}
 		}
 		// Empty draft while the turn streams: nothing at all. Esc is

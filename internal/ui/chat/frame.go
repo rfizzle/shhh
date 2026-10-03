@@ -765,8 +765,8 @@ func (m Model) noticeLine() string {
 	// explained in. It rides the rail rather than the transcript for the
 	// reason the copy caption does — appending a row would scroll the reader
 	// away from what they just put back.
-	if m.foldNotice != "" {
-		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(m.foldNotice)})
+	if m.pointer.foldNotice != "" {
+		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(m.pointer.foldNotice)})
 	}
 	if m.keysNotice != "" && !handover {
 		// The rebind notice (keysnotice.go): shown for one session after a
@@ -818,8 +818,8 @@ func (m Model) noticeLine() string {
 	// It rides here rather than in the transcript because a copy is not part
 	// of the conversation, and because appending a row would scroll the pane
 	// away from the selection the reader is still looking at.
-	if m.selNotice != "" {
-		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(m.selNotice)})
+	if m.pointer.selNotice != "" {
+		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(m.pointer.selNotice)})
 	}
 	// A child waiting on the reader has no part here. Its lane says so, and
 	// the frame's title counts its ask among the decisions waiting

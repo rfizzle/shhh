@@ -143,7 +143,7 @@ func TestCommitOffer_TheHandoverReachesOnlyASelectedRow(t *testing.T) {
 		t.Fatal("the handover with nothing selected should not open the card")
 	}
 	pointed := m
-	pointed.pointer = true
+	pointed.pointer.lit = true
 	pointed.focusIdx = focusLastClose(t, m).focusIdx
 	pointed.state = stateInput
 	opened, _ := handOverRow(t, pointed)

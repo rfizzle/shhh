@@ -97,7 +97,7 @@ func TestApplySelectionHighlight_DoesNotWriteThroughToTheCache(t *testing.T) {
 	m.viewport.SetLines(m.renderHistoryLines())
 	before := append([]string(nil), m.cached.lines...)
 
-	m.sel = selection{on: true, width: m.transcriptWidth(),
+	m.pointer.sel = selection{on: true, width: m.transcriptWidth(),
 		anchor: selPoint{line: 1, col: 0}, end: selPoint{line: 3, col: 4}}
 	lit := m.renderHistoryLines()
 

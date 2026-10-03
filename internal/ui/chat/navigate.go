@@ -55,14 +55,14 @@ const wheelLines = 3
 // It is the chord's whole job, and the same path /ui mouse takes, so the two
 // cannot drift into different states or different notices.
 func (m Model) toggleMouse() (tea.Model, tea.Cmd) {
-	note := m.setMouse(!m.mouseOn)
+	note := m.setMouse(!m.pointer.mouseOn)
 	return m.systemNotice(note)
 }
 
 // WithMouse sets whether the session starts with terminal mouse reporting on
 // (appearance.mouse). On is the default.
 func (m Model) WithMouse(on bool) Model {
-	m.mouseOn = on
+	m.pointer.mouseOn = on
 	return m
 }
 
@@ -549,7 +549,7 @@ func (m Model) readingPosition() (pos, total int) {
 
 // mouseStatus describes the current mouse-reporting state for /ui.
 func (m Model) mouseStatus() string {
-	if m.mouseOn {
+	if m.pointer.mouseOn {
 		return "on"
 	}
 	return "off"
@@ -574,7 +574,7 @@ func (m *Model) mouseCommand(parts []string) string {
 	if !ok {
 		return failed("ui", fmt.Sprintf("unknown mouse setting %q (on, off)", parts[2]))
 	}
-	if on == m.mouseOn {
+	if on == m.pointer.mouseOn {
 		return "mouse reporting is already " + m.mouseStatus()
 	}
 	return m.setMouse(on)
@@ -584,7 +584,7 @@ func (m *Model) mouseCommand(parts []string) string {
 // the process that made it. A session with no writer still flips — the
 // setting is real either way — and says only what it could not do.
 func (m *Model) setMouse(on bool) string {
-	m.mouseOn = on
+	m.pointer.mouseOn = on
 	// Reporting off hands the selection back to the terminal, so shhh's own
 	// has to let go of it — including any edge scroll still running under a
 	// drag the reader never released.

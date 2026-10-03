@@ -79,7 +79,7 @@ func (f *WheelFilter) Filter(model tea.Model, msg tea.Msg) tea.Msg {
 		// With reporting off the wheel event should behave exactly as it
 		// does today — reach the model and be ignored there — so the filter
 		// steps aside rather than duplicating the model's answer.
-		if m, ok := model.(Model); ok && !m.mouseOn {
+		if m, ok := model.(Model); ok && !m.pointer.mouseOn {
 			return msg
 		}
 		var delta int

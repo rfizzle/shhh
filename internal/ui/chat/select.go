@@ -147,7 +147,7 @@ func (s selection) span() (start, end selPoint) {
 
 // hasSelection reports whether something is selected and lit.
 func (m Model) hasSelection() bool {
-	return !m.sel.empty()
+	return !m.pointer.sel.empty()
 }
 
 // selectableSurface reports whether the normal chat transcript is what the
@@ -161,7 +161,7 @@ func (m Model) hasSelection() bool {
 //     viewport, so a selection anchored in one would name lines in
 //     the other the moment the reader detached.
 func (m Model) selectableSurface() bool {
-	if !m.mouseOn || !m.ready {
+	if !m.pointer.mouseOn || !m.ready {
 		return false
 	}
 	if m.attachedTo != "" {
@@ -255,7 +255,7 @@ func (m Model) beginSelection(x, y int) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.clearSelection()
-	m.sel = selection{
+	m.pointer.sel = selection{
 		on:       true,
 		dragging: true,
 		anchor:   pt,
@@ -276,20 +276,20 @@ func (m Model) beginSelection(x, y int) (tea.Model, tea.Cmd) {
 // of its own. A direction that has not changed is therefore the no-op — the
 // running chain already knows it — and only a change bumps the fence.
 func (m Model) dragSelection(x, y int) (tea.Model, tea.Cmd) {
-	if !m.sel.dragging {
+	if !m.pointer.sel.dragging {
 		return m, nil
 	}
 	m.extendSelection(x, y)
 	dir := m.edgeDir(y)
-	if dir == m.selScrollDir {
+	if dir == m.pointer.scrollDir {
 		return m, nil
 	}
-	m.selScrollDir = dir
-	m.selScrollSeq++
+	m.pointer.scrollDir = dir
+	m.pointer.scrollSeq++
 	if dir == 0 {
 		return m, nil
 	}
-	return m, selectionScrollCmd(m.selScrollSeq)
+	return m, selectionScrollCmd(m.pointer.scrollSeq)
 }
 
 // extendSelection moves the endpoint and re-renders if it actually moved.
@@ -300,19 +300,19 @@ func (m Model) dragSelection(x, y int) (tea.Model, tea.Cmd) {
 func (m *Model) extendSelection(x, y int) {
 	// The pointer is stored on every event even when the endpoint did not
 	// move, because the edge scroll reads it back each tick.
-	m.sel.px, m.sel.py = x, y
+	m.pointer.sel.px, m.pointer.sel.py = x, y
 	pt := m.clampedPoint(x, y)
-	if pt == m.sel.end {
+	if pt == m.pointer.sel.end {
 		return
 	}
-	m.sel.end = pt
-	if n := len(m.viewport.lines); !m.sel.empty() && (m.sel.heads == nil || m.sel.heads.at != n) {
-		m.sel.heads = &selectionHeads{lines: m.blockHeadings(0, n), at: n}
+	m.pointer.sel.end = pt
+	if n := len(m.viewport.lines); !m.pointer.sel.empty() && (m.pointer.sel.heads == nil || m.pointer.sel.heads.at != n) {
+		m.pointer.sel.heads = &selectionHeads{lines: m.blockHeadings(0, n), at: n}
 	}
 	// Selecting is reading, and reading pauses the follow the same way
 	// scrolling away does: a transcript that jumped to its live end
 	// mid-drag would tear the selection off the text it was covering.
-	if !m.sel.empty() {
+	if !m.pointer.sel.empty() {
 		m.atBottom = false
 	}
 	m.refreshTranscript()
@@ -326,13 +326,13 @@ func (m *Model) extendSelection(x, y int) {
 // because "one cell is not a selection" is this file's rule and not a
 // consequence of who happens to call it.
 func (m Model) releaseSelection(x, y int) (tea.Model, tea.Cmd) {
-	if !m.sel.dragging {
+	if !m.pointer.sel.dragging {
 		return m, nil
 	}
 	m.extendSelection(x, y)
-	m.sel.dragging = false
+	m.pointer.sel.dragging = false
 	m.stopEdgeScroll()
-	if m.sel.empty() {
+	if m.pointer.sel.empty() {
 		m.clearSelection()
 		m.refreshTranscript()
 		return m, nil
@@ -367,10 +367,10 @@ func (m Model) copySelection() (tea.Model, tea.Cmd) {
 	}
 	res, write := m.copyText(text)
 	if note := copyFailure(res); note != "" {
-		m.selNotice = ""
+		m.pointer.selNotice = ""
 		return m.systemNotice(note)
 	}
-	m.selNotice = copiedNotice(text)
+	m.pointer.selNotice = copiedNotice(text)
 	// The caption stands as soon as the write leaves, because a write to the
 	// terminal draws no reply to wait for.
 	return m, write
@@ -392,7 +392,7 @@ func copiedNotice(text string) string {
 // showing esc cancels it and nothing else, and with none it goes on to mean
 // what it always meant.
 func (m *Model) cancelSelection() bool {
-	had := m.sel.on || m.selScrollDir != 0
+	had := m.pointer.sel.on || m.pointer.scrollDir != 0
 	m.clearSelection()
 	return had
 }
@@ -400,8 +400,8 @@ func (m *Model) cancelSelection() bool {
 // clearSelection forgets the selection and fences off any tick still in
 // flight for it.
 func (m *Model) clearSelection() {
-	m.sel = selection{}
-	m.selNotice = ""
+	m.pointer.sel = selection{}
+	m.pointer.selNotice = ""
 	m.stopEdgeScroll()
 }
 
@@ -409,9 +409,9 @@ func (m *Model) clearSelection() {
 // stops it: the pending tick still arrives, sees a number that is no longer
 // current, and does nothing.
 func (m *Model) stopEdgeScroll() {
-	if m.selScrollDir != 0 {
-		m.selScrollDir = 0
-		m.selScrollSeq++
+	if m.pointer.scrollDir != 0 {
+		m.pointer.scrollDir = 0
+		m.pointer.scrollSeq++
 	}
 }
 
@@ -426,12 +426,12 @@ func (m *Model) stopEdgeScroll() {
 // pointer's relation to the pane moved under it, and continuing would extend
 // the selection to somewhere the reader never pointed.
 func (m *Model) resizeSelection(width int) {
-	if m.sel.on && m.sel.width != width {
+	if m.pointer.sel.on && m.pointer.sel.width != width {
 		m.cancelSelection()
 		return
 	}
-	if m.sel.dragging {
-		m.sel.dragging = false
+	if m.pointer.sel.dragging {
+		m.pointer.sel.dragging = false
 		m.stopEdgeScroll()
 	}
 }
@@ -460,7 +460,7 @@ func (m *Model) shiftSelection(before, after []string) {
 	}
 	moved := len(before) - tail
 	redrawn := func(p selPoint) bool { return p.line >= head && p.line < moved }
-	if redrawn(m.sel.anchor) || redrawn(m.sel.end) {
+	if redrawn(m.pointer.sel.anchor) || redrawn(m.pointer.sel.end) {
 		m.cancelSelection()
 		return
 	}
@@ -470,8 +470,8 @@ func (m *Model) shiftSelection(before, after []string) {
 			p.line += delta
 		}
 	}
-	shift(&m.sel.anchor)
-	shift(&m.sel.end)
+	shift(&m.pointer.sel.anchor)
+	shift(&m.pointer.sel.end)
 }
 
 // selectionScrollCmd schedules the next edge-scroll tick.
@@ -488,7 +488,7 @@ func selectionScrollCmd(seq int) tea.Cmd {
 // that moved nothing has nothing left to reveal, and continuing would burn a
 // timer to keep re-selecting the same last line.
 func (m Model) updateSelectionScroll(msg selectionScrollMsg) (tea.Model, tea.Cmd) {
-	if msg.seq != m.selScrollSeq || m.selScrollDir == 0 || !m.sel.dragging {
+	if msg.seq != m.pointer.scrollSeq || m.pointer.scrollDir == 0 || !m.pointer.sel.dragging {
 		return m, nil
 	}
 	// The transcript stopped being what is on screen between the tick being
@@ -500,7 +500,7 @@ func (m Model) updateSelectionScroll(msg selectionScrollMsg) (tea.Model, tea.Cmd
 		return m, nil
 	}
 	before := m.viewport.YOffset()
-	m.scrollLines(m.selScrollDir)
+	m.scrollLines(m.pointer.scrollDir)
 	if m.viewport.YOffset() == before {
 		m.stopEdgeScroll()
 		return m, nil
@@ -508,7 +508,7 @@ func (m Model) updateSelectionScroll(msg selectionScrollMsg) (tea.Model, tea.Cmd
 	// The pointer has not moved; the text under it has. Re-reading the stored
 	// position against the new offset is what makes a held pointer keep
 	// extending instead of pinning the selection to the row it started on.
-	m.extendSelection(m.sel.px, m.sel.py)
+	m.extendSelection(m.pointer.sel.px, m.pointer.sel.py)
 	return m, selectionScrollCmd(msg.seq)
 }
 
@@ -533,10 +533,10 @@ func (m *Model) refreshTranscript() {
 // rewrite, and a transcript that shrank copies as much as is left. Nothing
 // here can name a line that no longer exists.
 func (m *Model) selectedText() string {
-	if m.sel.empty() {
+	if m.pointer.sel.empty() {
 		return ""
 	}
-	start, end := m.sel.span()
+	start, end := m.pointer.sel.span()
 	lines := m.renderHistoryRawLines()
 	return selectedTextFrom(lines, start, end, m.transcriptWidth(), m.blockHeadings(start.line, end.line))
 }
@@ -787,10 +787,10 @@ func leadingSpaces(row string) int {
 // invalidated by a selection, so moving the pointer restyles the rows the
 // selection covers and re-renders nothing at all.
 func (m Model) applySelectionHighlight(content []string) []string {
-	if m.sel.empty() || m.sel.width != m.transcriptWidth() {
+	if m.pointer.sel.empty() || m.pointer.sel.width != m.transcriptWidth() {
 		return content
 	}
-	start, end := m.sel.span()
+	start, end := m.pointer.sel.span()
 	if start.line >= len(content) {
 		return content
 	}
@@ -800,7 +800,7 @@ func (m Model) applySelectionHighlight(content []string) []string {
 	lines := slices.Clone(content)
 	last := min(end.line, len(lines)-1)
 	for y := start.line; y <= last; y++ {
-		if h := m.sel.heads; h != nil && h.at == len(content) && h.lines[y] != (blockHeading{}) {
+		if h := m.pointer.sel.heads; h != nil && h.at == len(content) && h.lines[y] != (blockHeading{}) {
 			// Unlit, because it is not copied (selectedTextFrom). Read at
 			// another length the lines name other rows, and lighting a
 			// heading beats leaving a line of code dark.

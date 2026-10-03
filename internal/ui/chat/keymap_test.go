@@ -177,7 +177,7 @@ func TestRewind_AnOpenRowCostsTheGestureAThirdPress(t *testing.T) {
 	m.checkpoints = []checkpoint{{index: 1, preview: "make it fast"}}
 
 	m, _ = pressKey(t, m, escK)
-	if m.foldNotice == "" {
+	if m.pointer.foldNotice == "" {
 		t.Fatal("the first press should have folded the open rows")
 	}
 	if m.armed.open(armRewind) {

@@ -99,10 +99,10 @@ func TestResizeMovesRectanglesImmediately(t *testing.T) {
 // taken over lines the new width no longer describes.
 func TestResizeClearsSelection(t *testing.T) {
 	m := resizeTestModel(t, 20)
-	m.sel = selection{on: true, width: m.transcriptWidth()}
+	m.pointer.sel = selection{on: true, width: m.transcriptWidth()}
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 70, Height: 40})
 	m = updated.(Model)
-	if m.sel.on {
+	if m.pointer.sel.on {
 		t.Fatal("selection survived the width change")
 	}
 }

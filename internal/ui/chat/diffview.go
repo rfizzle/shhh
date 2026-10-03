@@ -194,8 +194,8 @@ func (m Model) closeDiffFull() (tea.Model, tea.Cmd) {
 	// diff is a row again (railclick.go). Only a memo held for this diff is
 	// cleared — a diff opened from inside a surface a rail cell opened goes
 	// back to that surface, and the cell still closes it.
-	if m.railOpened.surface == any(m.fullDiff) {
-		m.railOpened = railOpening{}
+	if m.pointer.railOpened.surface == any(m.fullDiff) {
+		m.pointer.railOpened = railOpening{}
 	}
 	m.fullDiff = nil
 	// A diff opened from focus mode goes back to it; anything else hands the

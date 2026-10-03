@@ -159,7 +159,7 @@ func TestConfig_IsOneRegisterRow(t *testing.T) {
 	if !m.inspectorHidden() {
 		t.Error("the rail is still drawn under a surface that takes both panes")
 	}
-	m.mouseOn, m.ready = true, true
+	m.pointer.mouseOn, m.ready = true, true
 	if m.selectableSurface() {
 		t.Error("the transcript's selection is live over a surface that replaced it")
 	}

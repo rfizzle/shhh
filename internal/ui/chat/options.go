@@ -60,7 +60,7 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		atBottom:  true,
 		copyFn:    clipboard.Copy,
 		// On unless the config says otherwise (WithMouse).
-		mouseOn: true,
+		pointer: pointerState{mouseOn: true},
 		// On unless the config says otherwise (WithNotify): unlike mouse
 		// reporting, a notification takes nothing away, and it cannot fire
 		// while anyone is looking at the screen.

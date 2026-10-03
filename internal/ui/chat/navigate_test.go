@@ -111,7 +111,7 @@ func TestWheel_ReachesTheFullScreenDiff(t *testing.T) {
 
 func TestWheel_IgnoredWhileMouseReportingIsOff(t *testing.T) {
 	m := proseModel(t)
-	m.mouseOn = false
+	m.pointer.mouseOn = false
 	before := m.viewport.YOffset()
 
 	updated, _ := m.Update(wheel(-1))
@@ -482,7 +482,7 @@ func TestUICommand_MouseTogglesReporting(t *testing.T) {
 	if _, result := m.handleSlashCommand("/ui mouse off"); !strings.Contains(result, "click-drag selection") {
 		t.Fatalf("turning it off should say so, got %q", result)
 	}
-	if m.mouseOn {
+	if m.pointer.mouseOn {
 		t.Fatal("/ui mouse off should turn reporting off")
 	}
 	if _, result := m.handleSlashCommand("/ui mouse"); !strings.Contains(result, "mouse reporting: off") {
@@ -491,7 +491,7 @@ func TestUICommand_MouseTogglesReporting(t *testing.T) {
 	if _, result := m.handleSlashCommand("/ui mouse on"); !strings.Contains(result, "wheel scrolls") {
 		t.Fatalf("the reply should say what turning it on buys, got %q", result)
 	}
-	if !m.mouseOn {
+	if !m.pointer.mouseOn {
 		t.Fatal("/ui mouse on should turn reporting on")
 	}
 	if _, result := m.handleSlashCommand("/ui mouse sometimes"); !strings.Contains(result, "unknown mouse setting") {
@@ -506,7 +506,7 @@ func TestUICommand_MouseTogglesReporting(t *testing.T) {
 // what the model believes.
 func TestUICommand_MouseSendsTheTerminalACommand(t *testing.T) {
 	m := readyModel(t)
-	if !m.mouseOn {
+	if !m.pointer.mouseOn {
 		t.Fatal("ready model starts with mouse on")
 	}
 	if m.View().MouseMode != tea.MouseModeCellMotion {
@@ -554,7 +554,7 @@ func TestMouse_OnByDefaultAndToggledByChord(t *testing.T) {
 		wrote = append(wrote, [2]string{k, v})
 		return nil
 	})
-	if !m.mouseOn {
+	if !m.pointer.mouseOn {
 		t.Fatal("a session starts with reporting on")
 	}
 
@@ -564,7 +564,7 @@ func TestMouse_OnByDefaultAndToggledByChord(t *testing.T) {
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
 	off := updated.(Model)
-	if off.mouseOn {
+	if off.pointer.mouseOn {
 		t.Fatal("ctrl+x should turn reporting off")
 	}
 	if off.View().MouseMode != tea.MouseModeNone {
@@ -576,7 +576,7 @@ func TestMouse_OnByDefaultAndToggledByChord(t *testing.T) {
 	}
 
 	updated, _ = off.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
-	if !updated.(Model).mouseOn {
+	if !updated.(Model).pointer.mouseOn {
 		t.Fatal("ctrl+x again should turn it back on")
 	}
 	if len(wrote) != 2 || wrote[1] != [2]string{"appearance.mouse", "true"} {
@@ -600,8 +600,8 @@ func TestMouse_ChordWorksFromEverySurface(t *testing.T) {
 			state := m.state
 			updated, _ := m.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
 			next := updated.(Model)
-			if next.mouseOn || next.View().MouseMode != tea.MouseModeNone {
-				t.Fatalf("ctrl+x should flip reporting off here too, on=%v", next.mouseOn)
+			if next.pointer.mouseOn || next.View().MouseMode != tea.MouseModeNone {
+				t.Fatalf("ctrl+x should flip reporting off here too, on=%v", next.pointer.mouseOn)
 			}
 			if next.state != state {
 				t.Errorf("the chord is a setting, not a way out: state %v → %v", state, next.state)
@@ -616,7 +616,7 @@ func TestMouse_WithoutAWriterSaysSo(t *testing.T) {
 	m := readyModel(t)
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
 	next := updated.(Model)
-	if next.mouseOn {
+	if next.pointer.mouseOn {
 		t.Fatal("the flip is not conditional on being able to save it")
 	}
 	last := next.transcript[len(next.transcript)-1]

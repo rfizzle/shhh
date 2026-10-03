@@ -121,15 +121,15 @@ type pointerPress struct {
 
 // beginClick records the cell a press landed on.
 func (m *Model) beginClick(x, y int) {
-	m.press = pointerPress{x: x, y: y, live: true}
+	m.pointer.press = pointerPress{x: x, y: y, live: true}
 }
 
 // endClick reports whether a release completes a click, and forgets the press
 // either way. A release anywhere but the cell the press landed in is a drag,
 // and the drag's own release is what answers it.
 func (m *Model) endClick(x, y int) bool {
-	p := m.press
-	m.press = pointerPress{}
+	p := m.pointer.press
+	m.pointer.press = pointerPress{}
 	return p.live && p.x == x && p.y == y
 }
 

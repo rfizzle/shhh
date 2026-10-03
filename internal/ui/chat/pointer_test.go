@@ -289,7 +289,7 @@ func TestPointer_WithACardWaitingTheChordIsTheDraftsUntilTheHandover(t *testing.
 	m = handover(t, m)
 	updated, _ = m.Update(shiftKey(tea.KeyDown))
 	m = updated.(Model)
-	if m.pointer {
+	if m.pointer.lit {
 		t.Fatal("with the card holding the keyboard the chord is the card's, not the pointer's")
 	}
 }
