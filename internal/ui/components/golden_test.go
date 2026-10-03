@@ -3781,7 +3781,8 @@ func TestGolden_ScreenFamily(t *testing.T) {
 					}).View(width)},
 				{Label: "the saved-chat browser · a row another session holds says so in a word",
 					View: (&ChatScreen{
-						Rows: chatRows(), Subject: "3 conversations", Focus: 1, MaxLines: 12,
+						listScreen: listScreen[ChatRow]{Focus: 1},
+						Rows:       chatRows(), Subject: "3 conversations", MaxLines: 12,
 					}).View(width)},
 				{Label: "sources · the list is grouped under the hosts it read",
 					View: (&SourcesScreen{

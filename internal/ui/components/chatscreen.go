@@ -20,7 +20,6 @@ package components
 // held slot means belongs to whoever holds it.
 
 import (
-	"strconv"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -125,10 +124,11 @@ type ChatResult struct {
 // ChatScreen is `shhh chats`: a takeover surface, full width, no inspector
 // rail, owning the keyboard for as long as it is up.
 type ChatScreen struct {
+	// The pointer is an index into Rows and survives the host rebuilding
+	// them; the rows showing are the ones the query left.
+	listScreen[ChatRow]
 	// Rows are the conversations in the order the host read them.
 	Rows []ChatRow
-	// Focus is an index into Rows and survives the host rebuilding them.
-	Focus int
 	// Subject is what the header says the screen is over — `9 conversations`.
 	// The host counts it, because counting is a reading of the store.
 	Subject string
@@ -141,11 +141,8 @@ type ChatScreen struct {
 	// where it stood. It clears on the next keystroke (see Update).
 	Notice string
 
-	list    Select
-	shown   []int
 	confirm *Confirm
 	rename  *lineEdit
-	keys    bool
 }
 
 // Update is the screen's whole keyboard. The confirm and the rename row
@@ -166,7 +163,7 @@ func (c *ChatScreen) Update(msg tea.KeyPressMsg) (done bool, result ChatResult) 
 	}
 	pressed := msg.String()
 	switch {
-	case c.moved(pressed):
+	case c.walked(pressed):
 		return false, ChatResult{}
 	case keys.Is(pressed, keys.Screen.Take):
 		return c.open()
@@ -178,13 +175,8 @@ func (c *ChatScreen) Update(msg tea.KeyPressMsg) (done bool, result ChatResult) 
 	// makes. ctrl+u clears it, and clearing a filter that is already empty
 	// closes it, which is how the row keys are got back without leaving the
 	// screen.
-	if c.list.Filtering {
-		if keys.Is(pressed, keys.Screen.ClearQ) && c.list.Query == "" {
-			c.list.Filtering = false
-			return false, ChatResult{}
-		}
-		c.list.editQuery(msg)
-		if c.list.QueryChanged() {
+	if open, changed := c.filterKey(msg); open {
+		if changed {
 			c.refilter()
 		}
 		return false, ChatResult{}
@@ -197,14 +189,14 @@ func (c *ChatScreen) Update(msg tea.KeyPressMsg) (done bool, result ChatResult) 
 	case keys.Is(pressed, keys.Screen.List):
 		c.keys = !c.keys
 	case keys.Is(pressed, keys.Screen.Rename):
-		if row := c.current(); row != nil {
+		if row := c.currentShown(c.Rows); row != nil {
 			c.rename = &lineEdit{value: []rune(row.Name), lead: "rename", hint: "type a name"}
 		}
 	case keys.Is(pressed, keys.Screen.Delete):
 		// The one key here that destroys something asks first, and the prompt
 		// names what it would take — the conversation and whatever branches go
 		// with it — rather than saying "this chat".
-		if row := c.current(); row != nil {
+		if row := c.currentShown(c.Rows); row != nil {
 			with := ""
 			if row.Deleting != "" {
 				with = " " + row.Deleting
@@ -221,7 +213,7 @@ func (c *ChatScreen) Update(msg tea.KeyPressMsg) (done bool, result ChatResult) 
 // is on a row they can still rename or delete, and leaving to report the
 // refusal would take that row off the screen along with every other one.
 func (c *ChatScreen) open() (bool, ChatResult) {
-	row := c.current()
+	row := c.currentShown(c.Rows)
 	switch {
 	case row == nil:
 		return false, ChatResult{}
@@ -237,7 +229,7 @@ func (c *ChatScreen) open() (bool, ChatResult) {
 // one under the pointer when it is answered.
 func (c *ChatScreen) updateConfirm(msg tea.KeyPressMsg) (bool, ChatResult) {
 	if answered, yes := confirmed(&c.confirm, msg); answered && yes {
-		if row := c.current(); row != nil {
+		if row := c.currentShown(c.Rows); row != nil {
 			return false, ChatResult{Do: &ChatCommand{Act: ChatDelete, ID: row.ID}}
 		}
 	}
@@ -255,7 +247,7 @@ func (c *ChatScreen) updateRename(msg tea.KeyPressMsg) (bool, ChatResult) {
 	case keys.Is(pressed, keys.Screen.Take):
 		name := strings.TrimSpace(string(c.rename.value))
 		c.rename = nil
-		row := c.current()
+		row := c.currentShown(c.Rows)
 		if row == nil || name == "" || name == row.Name {
 			return false, ChatResult{}
 		}
@@ -271,26 +263,37 @@ func (c *ChatScreen) SetSize(_, height int) { c.MaxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves and the rename row, when one is open, under them.
-func (c *ChatScreen) View(width int) string {
-	if width <= 0 {
-		return ""
-	}
-	c.sync()
-	panes := screenPanes{
-		stackAt: chatStackWidth, listMin: chatListMin,
-		listMax: chatListMax, minPreview: chatMinPreview,
-		list:    c.listRows,
-		preview: c.previewRows,
+func (c *ChatScreen) View(width int) string { return c.view(width, c) }
+
+// chrome is the header over the panes, the rename row under them, the keys,
+// and the line the last key left. The confirm borrows the foot row while it
+// is up.
+func (c *ChatScreen) chrome(width int) screenChrome {
+	foot := c.footer(c.offers(), c.keyList(), c.footField())
+	if c.confirm != nil {
+		foot.taken = c.confirm.View(width)
 	}
 	return screenChrome{
 		header:   c.header(),
-		foot:     c.footer(width).rows(width),
+		foot:     foot.rows(width),
 		notice:   c.Notice,
 		maxLines: c.MaxLines,
-		reserve:  len(c.renameRows(width)),
-	}.view(width, func(budget int) []string {
-		return append(panes.rows(width, budget), c.renameRows(width)...)
-	})
+		tail:     c.renameRows(width),
+	}
+}
+
+// panes is the body, split the way every screen with a list and a preview
+// splits it (screenpanes.go): on the left the filter row pinned above the
+// window, and under it what the filter hid and the key that clears it.
+func (c *ChatScreen) panes() screenPanes {
+	return screenPanes{
+		stackAt: chatStackWidth, listMin: chatListMin,
+		listMax: chatListMax, minPreview: chatMinPreview,
+		list: func(width, budget int) []string {
+			return c.queryListRows(len(c.Rows), func(n int) string { return plural(n, "conversation") }, width, budget)
+		},
+		preview: c.previewRows,
+	}
 }
 
 // renameRows is the open rename row, or nothing. It sits under the panes so
@@ -302,35 +305,6 @@ func (c *ChatScreen) renameRows(width int) []string {
 	return []string{Clip(c.rename.view(), width)}
 }
 
-// listRows is the left pane: the filter row pinned above the selector window,
-// the window itself with its markers, and — under it — what the filter hid
-// and the key that clears it.
-func (c *ChatScreen) listRows(width, budget int) []string {
-	head := c.list.queryRows(cardWidthFor(width))
-	if len(head) > 0 {
-		head = append(head, screenRule(width))
-	}
-	tail := c.hiddenRows(width)
-	body, _ := c.list.visibleRows(cardWidthFor(width), listBudget(budget, len(head)+len(tail)), false)
-	return append(append(head, body...), tail...)
-}
-
-// hiddenRows is the line under the list saying what the filter took out of
-// it. It is only ever drawn while something is hidden — a filter that hid
-// nothing has nothing to confess (invariant 4).
-func (c *ChatScreen) hiddenRows(width int) []string {
-	if !c.list.Filtering {
-		return nil
-	}
-	hidden := len(c.Rows) - len(c.shown)
-	if hidden <= 0 {
-		return nil
-	}
-	row := sty.dim.Render(plural(hidden, "conversation")+" hidden by the filter · ") +
-		sty.key.Render(keys.Bracket(keys.Screen.ClearQ)) + sty.dim.Render(" clear it")
-	return []string{screenRule(width), Clip(row, width)}
-}
-
 // previewRows is the right pane: the conversation the pointer is on. The name
 // leads it with when it was last written right-aligned, the title sits under
 // that and the standing account under the title, and the last line is how
@@ -339,7 +313,7 @@ func (c *ChatScreen) hiddenRows(width int) []string {
 // It is a preview, not a second list: nothing in it is focusable and no key
 // reaches it.
 func (c *ChatScreen) previewRows(width int) []string {
-	row := c.current()
+	row := c.currentShown(c.Rows)
 	if row == nil {
 		return []string{sty.dim.Render(Clip("no conversation selected", width))}
 	}
@@ -373,20 +347,8 @@ func (c *ChatScreen) header() screenHeader {
 	if c.Subject != "" {
 		head.left = append(head.left, screenField(c.Subject))
 	}
-	if query := strings.TrimSpace(c.list.Query); query != "" {
-		head.left = append(head.left, screenField("filtered by "+strconv.Quote(query)))
-	}
+	head.left = c.filteredBy(head.left)
 	return head
-}
-
-// footer is the keys the screen offers and the field that annotates them.
-func (c *ChatScreen) footer(width int) keyFooter {
-	f := keyFooter{offers: c.offers(), register: c.keyList(), showing: c.keys,
-		field: c.footField()}
-	if c.confirm != nil {
-		f.taken = c.confirm.View(width)
-	}
-	return f
 }
 
 // offers is the key row for whichever surface holds the keyboard. While the
@@ -404,13 +366,13 @@ func (c *ChatScreen) offers() []KeyOffer {
 	// A conversation another session holds is not opened, so the key that
 	// would open it is not offered on that row (invariant 5). Everything else
 	// on the row still is.
-	if row := c.current(); row != nil && row.Refused == "" {
+	if row := c.currentShown(c.Rows); row != nil && row.Refused == "" {
 		offers = append(offers, keyOfferAs(keys.Screen.Take, "open it"))
 	}
 	if c.list.Filtering {
 		offers = append(offers, keyOfferAs(keys.Screen.ClearQ, "clear the filter, then close it"))
 	} else {
-		if c.current() != nil {
+		if c.currentShown(c.Rows) != nil {
 			offers = append(offers, keyOffer(keys.Screen.Rename), keyOffer(keys.Screen.Delete))
 		}
 		offers = append(offers, keyOffer(keys.Screen.Filter))
@@ -437,7 +399,7 @@ func (c *ChatScreen) keyList() []KeyOffer {
 // open, which is the one thing about this screen a reader cannot work out
 // from the row itself.
 func (c *ChatScreen) footField() string {
-	if row := c.current(); row != nil && row.Mark != "" && c.rename == nil {
+	if row := c.currentShown(c.Rows); row != nil && row.Mark != "" && c.rename == nil {
 		return row.Mark
 	}
 	return ""
@@ -447,7 +409,7 @@ func (c *ChatScreen) footField() string {
 // View because the host replaces Rows after each command, and the window and
 // the query the list is showing have to survive that.
 func (c *ChatScreen) sync() {
-	c.shown = c.match()
+	c.shown = c.match(c.Rows, chatFields)
 	opts := make([]SelectOption, 0, len(c.shown))
 	for _, i := range c.shown {
 		row := c.Rows[i]
@@ -455,12 +417,7 @@ func (c *ChatScreen) sync() {
 			Label: row.Name, Desc: chatDesc(row), Meta: row.Mark,
 		})
 	}
-	c.list.Options = opts
-	c.list.Total = len(c.Rows)
-	c.list.Filterable = true
-	c.list.Unnumbered = true
-	c.list.QueryHint = "type to filter by name or by what it was about"
-	c.list.Focus = c.optIndex(c.Focus)
+	c.showFiltered(opts, len(c.Rows), "type to filter by name or by what it was about")
 }
 
 // chatDesc is the row's continuation: what the conversation was about, how
@@ -476,83 +433,27 @@ func chatDesc(row ChatRow) string {
 	return strings.Join(fields, " · ")
 }
 
-// match is the conversations the query left showing. One is found by its name
-// or by what it was about, which is the pair a reader looking for a
-// conversation they half remember has to work with.
-func (c *ChatScreen) match() []int {
-	query := strings.ToLower(strings.TrimSpace(c.list.Query))
-	out := make([]int, 0, len(c.Rows))
-	for i, row := range c.Rows {
-		if matches(query, row.Name, row.Title) {
-			out = append(out, i)
-		}
-	}
-	return out
-}
+// chatFields are what a conversation is found by: its name or what it was
+// about, which is the pair a reader looking for a conversation they half
+// remember has to work with.
+func chatFields(row ChatRow) []string { return []string{row.Name, row.Title} }
 
-// refilter re-runs the match after a keystroke changed the query, and puts
-// the pointer on the first conversation that survived it — the rows under it
-// are not the rows that were there a moment ago.
+// refilter re-runs the match after a keystroke changed the query: the
+// pointer goes to the first conversation that survived it, and the delete
+// question asked about the row that was under it goes.
 func (c *ChatScreen) refilter() {
 	c.confirm = nil
-	if shown := c.match(); len(shown) > 0 {
-		c.Focus = shown[0]
-	}
+	c.refocus(c.Rows, chatFields)
 	c.sync()
 }
 
-// moved walks the pointer over the conversations the filter left showing and
-// reports whether the keystroke was the screen's own movement key. The
-// pointer is the conversation's place in the whole list rather than in the
-// filtered one, so what moves is a List over what is showing (list.go).
-func (c *ChatScreen) moved(pressed string) bool {
-	if len(c.shown) == 0 {
+// walked walks the pointer over the conversations the filter left showing,
+// and puts away whatever was open on the row it left.
+func (c *ChatScreen) walked(pressed string) bool {
+	if !c.movedShown(pressed, keys.Screen.Move) {
 		return false
 	}
-	l := List[int]{Items: c.shown, Focus: c.at()}
-	moved := false
-	if c.list.Filtering {
-		moved = l.moveTyping(pressed, keys.Screen.Move)
-	} else {
-		moved = l.Move(pressed, keys.Screen.Move)
-	}
-	if !moved {
-		return false
-	}
-	c.Focus = c.shown[l.Focus]
 	c.confirm, c.rename = nil, nil
 	c.sync()
 	return true
-}
-
-// at is where the pointer is among the conversations the filter left showing.
-func (c *ChatScreen) at() int {
-	for i, row := range c.shown {
-		if row == c.Focus {
-			return i
-		}
-	}
-	return 0
-}
-
-// current is the conversation under the pointer, or nil when the filter left
-// none.
-func (c *ChatScreen) current() *ChatRow {
-	for _, i := range c.shown {
-		if i == c.Focus {
-			return &c.Rows[i]
-		}
-	}
-	return nil
-}
-
-// optIndex maps a row index to its place in the list the card is drawing. A
-// row the filter hid takes the first one showing.
-func (c *ChatScreen) optIndex(row int) int {
-	for i, at := range c.shown {
-		if at == row {
-			return i
-		}
-	}
-	return 0
 }

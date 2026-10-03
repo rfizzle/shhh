@@ -217,7 +217,9 @@ func accountRows() []ChatRow {
 func TestGolden_ChatScreen(t *testing.T) {
 	captureGolden(t, "chat-screen", "the saved-chat browser", goldenWidths, func(width int) []golden.Panel {
 		screen := func(focus int) string {
-			return (&ChatScreen{Rows: accountRows(), Subject: "3 conversations", Focus: focus, MaxLines: 20}).View(width)
+			c := &ChatScreen{Rows: accountRows(), Subject: "3 conversations", MaxLines: 20}
+			c.Focus = focus
+			return c.View(width)
 		}
 		return []golden.Panel{
 			{Label: "titled and summarised · the account under the title", View: screen(0)},
