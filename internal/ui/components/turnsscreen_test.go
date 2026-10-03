@@ -40,7 +40,7 @@ func turnsFixture() []TurnsItem {
 // turnsScreen is the screen over the fixture with the pointer on one turn.
 func turnsScreen(focus int) *TurnsScreen {
 	return &TurnsScreen{Turns: turnsFixture(), Focus: focus,
-		Subject: "6 turns", Tools: "26 tools", Spend: "$0.1580 spent", MaxLines: 20}
+		Subject: "6 turns", Tools: "26 tools", Spend: "$0.1580 spent", maxLines: 20}
 }
 
 // The list is one row per turn in the close's own marks and words, and the
@@ -96,7 +96,7 @@ func TestTurnsScreen_ARestoredTurnReportsNoFabricatedFigures(t *testing.T) {
 // turn that wrote nothing, and enter there does nothing.
 func TestTurnsScreen_EnterReviewsOnlyATurnWithChanges(t *testing.T) {
 	s := turnsScreen(1)
-	if view := s.View(130); !strings.Contains(view, sty.Dimmer.Render("[enter]")) {
+	if view := s.View(130); !strings.Contains(view, sty.dimmer.Render("[enter]")) {
 		t.Errorf("the review on a turn that wrote nothing was not grey:\n%s", ansi.Strip(view))
 	}
 	if done, res := s.Update(tea.KeyPressMsg{Code: tea.KeyEnter}); done || res.Review != 0 {
@@ -114,7 +114,7 @@ func TestTurnsScreen_EnterReviewsOnlyATurnWithChanges(t *testing.T) {
 // Stacked, both panes stay and nothing runs past the terminal.
 func TestTurnsScreen_NarrowStacksThePanes(t *testing.T) {
 	s := turnsScreen(2)
-	s.MaxLines = 30
+	s.maxLines = 30
 	view := s.View(60)
 	plain := ansi.Strip(view)
 	if !strings.Contains(plain, "turn 4") || !strings.Contains(plain, "committed a1b2c3d") {

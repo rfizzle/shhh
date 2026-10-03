@@ -63,9 +63,9 @@ func confirmed(c **Confirm, msg tea.KeyPressMsg) (answered, yes bool) {
 
 func (c *Confirm) View(width int) string {
 	if c.NotYetLive {
-		return Clip(sty.Body.Render(c.Prompt), width)
+		return Clip(sty.body.Render(c.Prompt), width)
 	}
-	return Clip(sty.Body.Render(c.Prompt)+"  "+c.withKeyList(confirmKeys(), width-lipgloss.Width(c.Prompt)-2), width)
+	return Clip(sty.body.Render(c.Prompt)+"  "+c.withKeyList(confirmKeys(), width-lipgloss.Width(c.Prompt)-2), width)
 }
 
 // withKeyList is an answer set with `[?] keys` after it where the confirm
@@ -74,7 +74,7 @@ func (c *Confirm) withKeyList(answers string, room int) string {
 	if !c.KeyList {
 		return answers
 	}
-	with := answers + sty.Dim.Render(" · ") + keyListSegment()
+	with := answers + sty.dim.Render(" · ") + keyListSegment()
 	if lipgloss.Width(with) > room {
 		return answers
 	}
@@ -102,20 +102,20 @@ func confirmKeys() string {
 // of them for a key spelled differently on purpose.
 func confirmPair(shown ...string) string {
 	var b strings.Builder
-	b.WriteString(sty.Dim.Render("["))
+	b.WriteString(sty.dim.Render("["))
 	for i, s := range shown {
 		if i > 0 {
-			b.WriteString(sty.Dim.Render("/"))
+			b.WriteString(sty.dim.Render("/"))
 		}
 		// The first rune decides, and it has to be a letter that has a
 		// lower case: `esc` and `+` are neither upper nor lower, and a
 		// comparison against ToUpper would call them the default.
 		if r := []rune(s); len(r) > 0 && unicode.IsUpper(r[0]) {
-			b.WriteString(sty.Bright.Bold(true).Render(s))
+			b.WriteString(sty.bright.Bold(true).Render(s))
 			continue
 		}
-		b.WriteString(sty.Dim.Render(s))
+		b.WriteString(sty.dim.Render(s))
 	}
-	b.WriteString(sty.Dim.Render("]"))
+	b.WriteString(sty.dim.Render("]"))
 	return b.String()
 }

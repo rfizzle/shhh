@@ -94,11 +94,11 @@ func TestPicture_MonoAsksForNoColourAtAll(t *testing.T) {
 	t.Cleanup(func() { SetMono(was) })
 
 	SetMono(false)
-	if !PictureInColour() {
+	if !pictureInColour() {
 		t.Fatal("a coloured palette on a 256-colour terminal should draw in colour")
 	}
 	SetMono(true)
-	if PictureInColour() {
+	if pictureInColour() {
 		t.Fatal("mono must not draw a picture in colour")
 	}
 	rows := AttachmentView{Image: testPicture(64, 40), Height: 9}.body(40, 7)
@@ -127,7 +127,7 @@ func TestPicture_NoColourProfileIsTheRamp(t *testing.T) {
 		{colorprofile.TrueColor, true},
 	} {
 		SetProfile(c.profile)
-		if PictureInColour() != c.colour {
+		if pictureInColour() != c.colour {
 			t.Errorf("%v: drawn in colour = %v, want %v", c.profile, !c.colour, c.colour)
 		}
 	}

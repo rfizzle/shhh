@@ -26,7 +26,7 @@ func snippetRows() []SnippetRow {
 }
 
 func snippetScreen() *SnippetScreen {
-	return &SnippetScreen{Rows: snippetRows(), Subject: "3 snippets", MaxLines: 18}
+	return &SnippetScreen{Rows: snippetRows(), Subject: "3 snippets", maxLines: 18}
 }
 
 func pressKey(s *SnippetScreen, r rune) (bool, SnippetResult) {
@@ -49,7 +49,7 @@ func TestSnippetScreen_EnterRunsTheSnippetUnderThePointer(t *testing.T) {
 	if !done || !result.Run {
 		t.Fatalf("enter did not close the screen with something to run: %+v", result)
 	}
-	if result.ID != "2" || result.Command != "du -ah . | sort -rh | head -10" {
+	if result.iD != "2" || result.Command != "du -ah . | sort -rh | head -10" {
 		t.Fatalf("the wrong snippet was taken: %+v", result)
 	}
 	if view := ansi.Strip(snippetScreen().View(130)); !strings.Contains(view, "nothing is run until [enter]") {
@@ -194,7 +194,7 @@ func TestSnippetScreen_LeavingRunsNothing(t *testing.T) {
 	} {
 		s := snippetScreen()
 		done, result := s.Update(press)
-		if !done || !result.Canceled || result.Run {
+		if !done || !result.canceled || result.Run {
 			t.Fatalf("%v left with something to run: %+v", press, result)
 		}
 	}
@@ -203,7 +203,7 @@ func TestSnippetScreen_LeavingRunsNothing(t *testing.T) {
 // A screen over nothing still renders: the header, the rule and a pane that
 // says there is nothing under the pointer.
 func TestSnippetScreen_EmptyRenders(t *testing.T) {
-	s := &SnippetScreen{Subject: "no snippets", MaxLines: 12}
+	s := &SnippetScreen{Subject: "no snippets", maxLines: 12}
 	view := ansi.Strip(s.View(80))
 	if !strings.Contains(view, "shhh snippets") || !strings.Contains(view, "no snippet selected") {
 		t.Fatalf("an empty screen does not say so:\n%s", view)

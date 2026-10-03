@@ -22,7 +22,7 @@ func TestMeterCells(t *testing.T) {
 		{-5, 8, 0}, {150, 8, 8},
 	}
 	for _, c := range cases {
-		bar := stripANSI(Meter{Pct: c.pct, Cells: c.cells}.Bar())
+		bar := stripANSI(Meter{pctValue: c.pct, cellCount: c.cells}.bar())
 		if got := strings.Count(bar, "▰"); got != c.filled {
 			t.Fatalf("a bar of %d cells at %d%% filled %d, want %d (%q)", c.cells, c.pct, got, c.filled, bar)
 		}
@@ -34,7 +34,7 @@ func TestMeterCells(t *testing.T) {
 
 func TestMeterStatesItsValueBesideTheBar(t *testing.T) {
 	for _, pct := range []int{0, 1, 50, 99, 100} {
-		view := stripANSI(Meter{Pct: pct, Cells: MeterCellsVitals, Label: "ctx"}.View())
+		view := stripANSI(Meter{pctValue: pct, cellCount: meterCellsVitals, labelText: "ctx"}.View())
 		if !strings.HasPrefix(view, "ctx ▰") && !strings.HasPrefix(view, "ctx ▱") {
 			t.Fatalf("the label leads the bar at %d%%: %q", pct, view)
 		}
@@ -44,12 +44,12 @@ func TestMeterStatesItsValueBesideTheBar(t *testing.T) {
 	}
 	// A host-supplied count replaces the percent — the rule is that something
 	// states the value, not that it has to be a percentage.
-	stepped := stripANSI(Meter{Pct: 75, Cells: MeterCellsRail, Tone: MeterProgress, Text: "step 3 of 4"}.View())
+	stepped := stripANSI(Meter{pctValue: 75, cellCount: meterCellsRail, tone: meterProgress, Text: "step 3 of 4"}.View())
 	if !strings.HasSuffix(stepped, "step 3 of 4") || !strings.Contains(stepped, "▰") {
 		t.Fatalf("a counted meter states its count beside its bar: %q", stepped)
 	}
 	// Bar is the bar alone, for a row that states the value at its own edge.
-	if bar := stripANSI(Meter{Pct: 50, Cells: 8}.Bar()); bar != "▰▰▰▰▱▱▱▱" {
+	if bar := stripANSI(Meter{pctValue: 50, cellCount: 8}.bar()); bar != "▰▰▰▰▱▱▱▱" {
 		t.Fatalf("Bar renders the run alone, got %q", bar)
 	}
 }
@@ -63,25 +63,25 @@ func TestMeterTrackIsChrome(t *testing.T) {
 	// The unfilled run is the shape the fill is measured against rather than a
 	// quantity of its own, so it is the same neutral grey under every tone —
 	// never bold, never in the fill's own colour.
-	for _, tone := range []MeterTone{
-		MeterPressure, MeterProgress, MeterAgent, MeterCountdown, MeterCategory, MeterUnasked,
+	for _, tone := range []meterTone{
+		meterPressure, meterProgress, meterAgent, meterCountdown, MeterCategory, MeterUnasked,
 	} {
-		bar := Meter{Pct: 95, Cells: 8, Tone: tone, Running: 2}.Bar()
-		if want := sty.Dim.Render("▱"); !strings.HasSuffix(bar, want) {
+		bar := Meter{pctValue: 95, cellCount: 8, tone: tone, running: 2}.bar()
+		if want := sty.dim.Render("▱"); !strings.HasSuffix(bar, want) {
 			t.Fatalf("tone %d draws its track %q, want it to end %q", tone, bar, want)
 		}
 	}
 	// The pressure meter is the one that carried its fill's colour all the way
 	// to the end of the run, in bold del once compaction was due.
-	if bar := (Meter{Pct: 95, Cells: 22, Tone: MeterPressure}).Bar(); strings.Contains(bar, sty.Err.Bold(true).Render("▱")) {
+	if bar := (Meter{pctValue: 95, cellCount: 22, tone: meterPressure}).bar(); strings.Contains(bar, sty.err.Bold(true).Render("▱")) {
 		t.Fatalf("an alerting meter still paints its track in del: %q", bar)
 	}
 	// View draws the same bar, so the vitals rail's track is chrome too.
-	if view := (Meter{Pct: 95, Cells: 8, Label: "ctx", Tone: MeterPressure}).View(); !strings.Contains(view, sty.Dim.Render("▱")) {
+	if view := (Meter{pctValue: 95, cellCount: 8, labelText: "ctx", tone: meterPressure}).View(); !strings.Contains(view, sty.dim.Render("▱")) {
 		t.Fatalf("the stated meter's track is not dim: %q", view)
 	}
 	// A full bar has no track at all — not a styled run of nothing.
-	if bar := (Meter{Pct: 100, Cells: 8}).Bar(); strings.Contains(bar, sty.Dim.Render("")) {
+	if bar := (Meter{pctValue: 100, cellCount: 8}).bar(); strings.Contains(bar, sty.dim.Render("")) {
 		t.Fatalf("a full bar writes escapes for a track it has not got: %q", bar)
 	}
 }
@@ -96,14 +96,14 @@ func TestMeterWithNoLabelStartsOnItsBar(t *testing.T) {
 	// empty label writes a pair of escapes, which is not the empty string the
 	// row's join drops. THIS TURN's bar sits on the rail's own indent, the
 	// column CONTEXT's bar starts on, because of this.
-	for _, tone := range []MeterTone{MeterProgress, MeterPressure, MeterAgent, MeterCountdown} {
-		view := stripANSI(Meter{Pct: 50, Cells: 8, Tone: tone}.View())
+	for _, tone := range []meterTone{meterProgress, meterPressure, meterAgent, meterCountdown} {
+		view := stripANSI(Meter{pctValue: 50, cellCount: 8, tone: tone}.View())
 		if !strings.HasPrefix(view, "▰") {
 			t.Fatalf("tone %d with no label renders %q, want it to open on the bar", tone, view)
 		}
 	}
 	// A label that is there still leads, one space from the bar.
-	if view := stripANSI(Meter{Pct: 50, Cells: 8, Tone: MeterProgress, Label: "ctx"}.View()); !strings.HasPrefix(view, "ctx ▰") {
+	if view := stripANSI(Meter{pctValue: 50, cellCount: 8, tone: meterProgress, labelText: "ctx"}.View()); !strings.HasPrefix(view, "ctx ▰") {
 		t.Fatalf("a labelled meter leads with its label: %q", view)
 	}
 }
@@ -114,16 +114,16 @@ func TestMeterWithNoLabelStartsOnItsBar(t *testing.T) {
 // changes — so the rule the bar is never the only carrier of its value holds
 // either way.
 func TestMeterStatesItsValueBeforeTheBarWhenAsked(t *testing.T) {
-	m := Meter{Pct: 62, Cells: 8, Tone: MeterPressure, Label: "ctx", ValueFirst: true}
+	m := Meter{pctValue: 62, cellCount: 8, tone: meterPressure, labelText: "ctx", valueFirst: true}
 	if view := stripANSI(m.View()); view != "ctx 62% ▰▰▰▰▱▱▱▱" {
 		t.Fatalf("the number leads the bar and nothing follows it, got %q", view)
 	}
-	after := Meter{Pct: 62, Cells: 8, Tone: MeterPressure, Label: "ctx"}
+	after := Meter{pctValue: 62, cellCount: 8, tone: meterPressure, labelText: "ctx"}
 	if view := stripANSI(after.View()); view != "ctx ▰▰▰▰▱▱▱▱ 62%" {
 		t.Fatalf("without it the number still follows the bar, got %q", view)
 	}
 	// A host that supplies its own text keeps it, on whichever side.
-	counted := Meter{Pct: 50, Cells: 4, Tone: MeterAgent, Text: "2 of 4", ValueFirst: true}
+	counted := Meter{pctValue: 50, cellCount: 4, tone: meterAgent, Text: "2 of 4", valueFirst: true}
 	if view := stripANSI(counted.View()); view != "2 of 4 ▰▰▱▱" {
 		t.Fatalf("the host's own count leads too, got %q", view)
 	}
@@ -140,7 +140,7 @@ func TestMeterThresholdColours(t *testing.T) {
 		want Token
 		bold bool
 	}{{40, Palette.Add, false}, {62, Palette.Accent, false}, {95, Palette.Del, true}} {
-		style := Meter{Pct: c.pct, Warn: 60, Alert: 80}.Style()
+		style := Meter{pctValue: c.pct, warn: 60, alert: 80}.style()
 		if got := style.GetForeground(); got != c.want.Color() {
 			t.Fatalf("context at %d%% uses %v, want %v", c.pct, got, c.want)
 		}
@@ -157,53 +157,53 @@ func TestMeterThresholdColours(t *testing.T) {
 	}
 	// The other tones do not colour by value at all.
 	for _, c := range []struct {
-		tone MeterTone
+		tone meterTone
 		want Token
-	}{{MeterProgress, Palette.Add}, {MeterAgent, Palette.Info}, {MeterCountdown, Palette.Accent}} {
-		if got := (Meter{Pct: 95, Tone: c.tone}).Style().GetForeground(); got != c.want.Color() {
+	}{{meterProgress, Palette.Add}, {meterAgent, Palette.Info}, {meterCountdown, Palette.Accent}} {
+		if got := (Meter{pctValue: 95, tone: c.tone}).style().GetForeground(); got != c.want.Color() {
 			t.Fatalf("tone %d at 95%% uses %v, want %v", c.tone, got, c.want)
 		}
 	}
 }
 
 func TestStepMeterNeedsADeclaredTotal(t *testing.T) {
-	if _, ok := StepMeter(3, 0, MeterCellsRail, true); ok {
+	if _, ok := stepMeter(3, 0, meterCellsRail, true); ok {
 		t.Fatal("no declared total, no ratio")
 	}
 	if _, ok := AgentMeter(2, 0); ok {
 		t.Fatal("an agent lane without a step count gets no bar")
 	}
-	m, ok := StepMeter(3, 4, MeterCellsRail, true)
+	m, ok := stepMeter(3, 4, meterCellsRail, true)
 	if !ok {
 		t.Fatal("a declared total earns a meter")
 	}
-	if m.Text != "step 3 of 4" || m.Pct != 75 {
+	if m.Text != "step 3 of 4" || m.pctValue != 75 {
 		t.Fatalf("step 3 of 4 is 75%%: %+v", m)
 	}
 	// The step in flight owns its own slice of cells, so the bar shows what is
 	// done and what is moving as two different things.
-	if m.Running != MeterCellsRail/4 {
-		t.Fatalf("the running step takes its slice of cells, got %d", m.Running)
+	if m.running != meterCellsRail/4 {
+		t.Fatalf("the running step takes its slice of cells, got %d", m.running)
 	}
-	if done, _ := StepMeter(4, 4, MeterCellsRail, false); done.Running != 0 {
-		t.Fatalf("a finished turn has nothing in flight, got %d", done.Running)
+	if done, _ := stepMeter(4, 4, meterCellsRail, false); done.running != 0 {
+		t.Fatalf("a finished turn has nothing in flight, got %d", done.running)
 	}
 	// An overrun ordinal is clamped rather than drawn past the end.
-	over, _ := StepMeter(9, 4, MeterCellsRail, false)
-	if over.Pct != 100 || over.Text != "step 4 of 4" {
+	over, _ := stepMeter(9, 4, meterCellsRail, false)
+	if over.pctValue != 100 || over.Text != "step 4 of 4" {
 		t.Fatalf("an overrun step is clamped: %+v", over)
 	}
 	lane, _ := AgentMeter(2, 4)
-	if lane.Cells != MeterCellsAgent || lane.Tone != MeterAgent {
+	if lane.cellCount != meterCellsAgent || lane.tone != meterAgent {
 		t.Fatalf("an agent lane is five info cells: %+v", lane)
 	}
-	if got := strings.Count(stripANSI(lane.Bar()), "▰"); got != 2 {
+	if got := strings.Count(stripANSI(lane.bar()), "▰"); got != 2 {
 		t.Fatalf("step 2 of 4 fills 2 of 5 cells, got %d", got)
 	}
 }
 
 func TestSparkline(t *testing.T) {
-	if got := (Sparkline{}).View(); got != "" {
+	if got := (sparkline{}).view(); got != "" {
 		t.Fatalf("an empty series renders nothing, got %q", got)
 	}
 	if got := sparkCells(nil, 8); got != "" {
@@ -229,8 +229,8 @@ func TestSparkline(t *testing.T) {
 	for i := range long {
 		long[i] = float64(i)
 	}
-	if got := stripANSI((Sparkline{Values: long}).View()); len([]rune(got)) != SparkCells {
-		t.Fatalf("the sparkline is %d cells wide, got %q", SparkCells, got)
+	if got := stripANSI((sparkline{values: long}).view()); len([]rune(got)) != sparkCellCount {
+		t.Fatalf("the sparkline is %d cells wide, got %q", sparkCellCount, got)
 	}
 }
 
@@ -238,11 +238,11 @@ func TestSpinnerNamesWhatIsRunning(t *testing.T) {
 	if strings.Join(SpinnerFrames, "") != "⠋⠙⠹⠸⠼⠴⠦⠧" {
 		t.Fatalf("the frame set is fixed, got %q", SpinnerFrames)
 	}
-	if got := (Spinner{Frame: 2, Label: "running go test", Elapsed: "3s"}); !strings.Contains(stripANSI(got.View()), "⠹ running go test · 3s") {
-		t.Fatalf("the spinner renders frame, label and elapsed: %q", got.View())
+	if got := (Spinner{Frame: 2, label: "running go test", elapsed: "3s"}); !strings.Contains(stripANSI(got.view()), "⠹ running go test · 3s") {
+		t.Fatalf("the spinner renders frame, label and elapsed: %q", got.view())
 	}
 	// Motion with no subject says only that the program is alive.
-	if got := (Spinner{Frame: 1}).View(); got != "" {
+	if got := (Spinner{Frame: 1}).view(); got != "" {
 		t.Fatalf("a spinner without a label renders nothing, got %q", got)
 	}
 	// Frames wrap in both directions, so a host can hand it any tick count.

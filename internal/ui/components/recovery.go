@@ -43,12 +43,12 @@ type KeyOffer struct {
 	// (keyoffers.go), so a surface cannot forget it
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 	Safe bool
-	// Inert marks an offer that cannot act where it stands — the turns
+	// inert marks an offer that cannot act where it stands — the turns
 	// screen's review on a turn that changed nothing. It keeps its place in
 	// the row, grey with its words, the treatment a key that is not live
 	// takes everywhere (inertOffers), so the row does not change shape under
 	// a pointer walking a list.
-	Inert bool
+	inert bool
 }
 
 // TurnKey is the turn close's name for the same thing; the two were
@@ -126,11 +126,11 @@ type RecoveryRow struct {
 func (r RecoveryRow) glyph() string {
 	switch r.State {
 	case RecoveryStalled:
-		return sty.Accent.Render("⚠") + " "
+		return sty.accent.Render("⚠") + " "
 	case RecoveryStopped:
-		return sty.Dim.Render("⊘") + " "
+		return sty.dim.Render("⊘") + " "
 	}
-	return sty.Err.Render("✗") + " "
+	return sty.err.Render("✗") + " "
 }
 
 // target assembles the growing field: the subject in body text, the qualifier
@@ -150,9 +150,9 @@ func (r RecoveryRow) target() string {
 // entirely rather than emphasising half a model name.
 func (r RecoveryRow) paintTarget(s string) string {
 	if r.Subject != "" && strings.HasPrefix(s, r.Subject) {
-		return sty.Body.Render(r.Subject) + sty.Dim.Render(strings.TrimPrefix(s, r.Subject))
+		return sty.body.Render(r.Subject) + sty.dim.Render(strings.TrimPrefix(s, r.Subject))
 	}
-	return sty.Dim.Render(s)
+	return sty.dim.Render(s)
 }
 
 // outcomeField colours the right-aligned field by state: a stall is accent, a
@@ -164,11 +164,11 @@ func (r RecoveryRow) outcomeField() string {
 	}
 	switch r.State {
 	case RecoveryStalled:
-		return sty.Accent.Render(r.Outcome)
+		return sty.accent.Render(r.Outcome)
 	case RecoveryStopped:
-		return sty.Dim.Render(r.Outcome)
+		return sty.dim.Render(r.Outcome)
 	}
-	return sty.Del.Render(r.Outcome)
+	return sty.del.Render(r.Outcome)
 }
 
 // View renders the row, its detail body and its offered keys at the given
@@ -203,7 +203,7 @@ func (r RecoveryRow) View(width int) string {
 func (r RecoveryRow) keyLines(width int) []string {
 	note := ""
 	if r.Note != "" {
-		note = sty.Dim.Render(r.Note)
+		note = sty.dim.Render(r.Note)
 	}
 	if len(r.Keys) == 0 {
 		if note == "" {
@@ -269,10 +269,10 @@ type RetryWait struct {
 // View renders the draining meter and the offers, in the detail body's column
 // under the row that stalled.
 func (w RetryWait) View(width int) string {
-	meter := Meter{Pct: w.Pct, Cells: MeterCellsCountdown, Tone: MeterCountdown, Text: w.Text}
+	meter := Meter{pctValue: w.Pct, cellCount: meterCellsCountdown, tone: meterCountdown, Text: w.Text}
 	head := meter.View()
 	if w.Note != "" {
-		head += sty.Dim.Render(" · " + w.Note)
+		head += sty.dim.Render(" · " + w.Note)
 	}
 	lines := []string{detailLine(head, width)}
 	// The offers wrap rather than clip, as the row's own do (keyLines): a
@@ -293,14 +293,14 @@ func (r RecoveryRow) keyLine() string {
 		parts = append(parts, offers)
 	}
 	if r.Note != "" {
-		parts = append(parts, sty.Dim.Render(r.Note))
+		parts = append(parts, sty.dim.Render(r.Note))
 	}
-	return strings.Join(parts, sty.Dim.Render(" · "))
+	return strings.Join(parts, sty.dim.Render(" · "))
 }
 
 // Keys returns just the keystrokes the row offers, for a host deciding
 // whether a key press belongs to it.
-func (r RecoveryRow) KeyStrokes() []string {
+func (r RecoveryRow) keyStrokes() []string {
 	out := make([]string, 0, len(r.Keys))
 	for _, k := range r.Keys {
 		out = append(out, strings.Trim(k.Key, "[]"))
@@ -343,14 +343,14 @@ type ProviderCard struct {
 	Keys []KeyOffer
 }
 
-// ProviderAction is the answer to the card: which of its offers was taken.
-type ProviderAction int
+// providerAction is the answer to the card: which of its offers was taken.
+type providerAction int
 
 const (
-	// ProviderNone is no answer: the key was none of the card's offers and
+	// providerNone is no answer: the key was none of the card's offers and
 	// the card is still up. It is the zero value so an unresolved press
 	// cannot be read as one of the offers.
-	ProviderNone ProviderAction = iota
+	providerNone providerAction = iota
 	// ProviderWizard opens the list of providers to set one up from.
 	ProviderWizard
 	// ProviderPaste opens the masked prompt for a key for the provider that
@@ -359,19 +359,19 @@ const (
 	// ProviderLocal takes the local runtime that answered, which needs
 	// neither a key nor the wizard.
 	ProviderLocal
-	// ProviderDismiss declines the card — esc, and any offer that is none of
+	// providerDismiss declines the card — esc, and any offer that is none of
 	// the three above. Nothing is set up.
-	ProviderDismiss
+	providerDismiss
 )
 
 // Update resolves on any offered key, and on esc, which dismisses — esc
 // never destroys. The card's own offers are consulted before the key is read
 // as one of the actions, because the local offer only exists where something
 // local answered and a key the card did not show does not act (invariant 5).
-func (c *ProviderCard) Update(msg tea.KeyPressMsg) (done bool, result ProviderAction) {
+func (c *ProviderCard) Update(msg tea.KeyPressMsg) (done bool, result providerAction) {
 	pressed := msg.String()
 	if keys.Is(pressed, keys.Screen.Quit) {
-		return true, ProviderDismiss
+		return true, providerDismiss
 	}
 	for _, k := range c.Keys {
 		if strings.Trim(k.Key, "[]") != pressed {
@@ -387,19 +387,19 @@ func (c *ProviderCard) Update(msg tea.KeyPressMsg) (done bool, result ProviderAc
 		}
 		// An offer with no action of its own dismisses the card, which is
 		// where a fourth offer would land until it was given one here.
-		return true, ProviderDismiss
+		return true, providerDismiss
 	}
-	return false, ProviderNone
+	return false, providerNone
 }
 
 // View renders the card at the given width.
 func (c ProviderCard) View(width int) string {
-	rows := []string{sty.Dim.Render(c.lookedIn())}
+	rows := []string{sty.dim.Render(c.lookedIn())}
 	for _, p := range c.Places {
 		rows = append(rows, c.placeRow(p))
 	}
 	if c.Likely != "" {
-		rows = append(rows, "", sty.Dim.Render(c.Likely))
+		rows = append(rows, "", sty.dim.Render(c.Likely))
 	}
 	if len(c.Keys) > 0 {
 		rows = append(rows, cardRule, keyOffers(c.Keys))
@@ -409,10 +409,10 @@ func (c ProviderCard) View(width int) string {
 	// on the reader — while the input frame's border stays chrome in every
 	// mode (ui_kits/cockpit/Edges.html in the shhh Design System project).
 	// See docs/interface/departures.md#the-frames-border-is-chrome-and-the-mode-segment-carries-the-mode.
-	border := sty.Accent
+	border := sty.accent
 	return Card{
 		Title: "No model provider configured",
-		Style: &border,
+		style: &border,
 	}.Render(rows, width)
 }
 
@@ -429,22 +429,22 @@ func (c ProviderCard) lookedIn() string {
 // placeRow is one row of the search list: the glyph for whether anything was
 // there, the place in a fixed field so the details line up, then the finding.
 func (c ProviderCard) placeRow(p ProviderPlace) string {
-	glyph := sty.Del.Render("✗")
+	glyph := sty.del.Render("✗")
 	if p.Found {
-		glyph = sty.Add.Render("✓")
+		glyph = sty.add.Render("✓")
 	}
 	label := p.Label
 	if pad := providerPlaceWidth - len([]rune(label)); pad > 0 {
 		label += strings.Repeat(" ", pad)
 	}
-	detail := sty.Dim.Render(p.Detail)
+	detail := sty.dim.Render(p.Detail)
 	if p.Emphasis != "" {
-		detail = sty.Body.Render(p.Emphasis)
+		detail = sty.body.Render(p.Emphasis)
 		if p.Detail != "" {
-			detail += sty.Dim.Render(" — " + p.Detail)
+			detail += sty.dim.Render(" — " + p.Detail)
 		}
 	}
-	return "  " + glyph + " " + sty.Body.Render(label) + detail
+	return "  " + glyph + " " + sty.body.Render(label) + detail
 }
 
 // spellNumber writes the small counts as words, because "shhh looked in 4
@@ -479,8 +479,8 @@ type SecretPrompt struct {
 	value []rune
 }
 
-// SecretResult is what the masked prompt resolved to.
-type SecretResult struct {
+// secretResult is what the masked prompt resolved to.
+type secretResult struct {
 	// Value is what was typed, trimmed. An empty one is a decline — esc,
 	// ctrl+c, or enter on nothing typed — and leaves whatever was there in
 	// place, because esc never destroys.
@@ -490,41 +490,41 @@ type SecretResult struct {
 // Update accumulates the key. Enter resolves to what was typed, esc to an
 // empty value; backspace deletes; every other printable rune is appended.
 // Paste arrives as a run of runes, which is the ordinary case here.
-func (s *SecretPrompt) Update(msg tea.KeyPressMsg) (done bool, result SecretResult) {
+func (s *SecretPrompt) Update(msg tea.KeyPressMsg) (done bool, result secretResult) {
 	switch msg.Code {
 	case tea.KeyEnter:
-		return true, SecretResult{Value: strings.TrimSpace(string(s.value))}
+		return true, secretResult{Value: strings.TrimSpace(string(s.value))}
 	case tea.KeyEscape:
-		return true, SecretResult{}
+		return true, secretResult{}
 	case tea.KeyBackspace:
 		if len(s.value) > 0 {
 			s.value = s.value[:len(s.value)-1]
 		}
-		return false, SecretResult{}
+		return false, secretResult{}
 	}
 	if msg.Mod.Contains(tea.ModCtrl) && msg.Code == 'c' {
-		return true, SecretResult{}
+		return true, secretResult{}
 	}
 	// Text is the characters the key contributes and nothing else, so the
 	// space bar types a space and every chord types nothing.
 	s.value = append(s.value, []rune(msg.Text)...)
-	return false, SecretResult{}
+	return false, secretResult{}
 }
 
-// Len is how many characters have been entered, for a caller that wants to
+// len is how many characters have been entered, for a caller that wants to
 // know whether anything has been.
-func (s *SecretPrompt) Len() int { return len(s.value) }
+func (s *SecretPrompt) len() int { return len(s.value) }
 
 // View renders the prompt, the mask, and the two keys it offers.
 func (s SecretPrompt) View(width int) string {
-	head := sty.Body.Render(s.Prompt)
+	head := sty.body.Render(s.Prompt)
 	if s.Replace != "" {
-		head += sty.Dim.Render(" · replacing ···" + s.Replace)
+		head += sty.dim.Render(" · replacing ···" + s.Replace)
 	} else if s.Hint != "" {
-		head += sty.Dim.Render(" · stands in for " + s.Hint)
+		head += sty.dim.Render(" · stands in for " + s.Hint)
 	}
 	mask := strings.Repeat("●", min(len(s.value), max(width-4, 1)))
-	entry := sty.Dim.Render("▸ ") + sty.Accent.Render(mask) + sty.FocusRow.Render(" ")
+	entry := sty.dim.Render("▸ ") + sty.accent.Render(mask) + sty.focusRow.Render(" ")
 	offers := packOffers([]KeyOffer{keyOffer(keys.Wait.UseKey), keyOffer(keys.Wait.KeepKey)}, width)
 	return strings.Join(append([]string{
 		Clip(head, width),

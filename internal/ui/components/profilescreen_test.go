@@ -111,7 +111,7 @@ func TestProfileScreen_TheRailSaysWhenQuestionsWereSkipped(t *testing.T) {
 		t.Fatalf("a draft with no questions should mark the step skipped:\n%s", view)
 	}
 	asked := draftScreen()
-	asked.Of = 2
+	asked.of = 2
 	if view := asked.View(90); !strings.Contains(view, "✓ questions") {
 		t.Fatalf("a draft that was asked questions should tick the step:\n%s", view)
 	}
@@ -134,12 +134,12 @@ func draftScreen() *ProfileScreen {
 func TestProfileScreen_DecisionRows(t *testing.T) {
 	for _, tc := range []struct {
 		downs  int
-		action ProfileAction
+		action profileAction
 		index  int
 	}{
 		{0, ProfileSave, 0},
 		{1, ProfileSave, 1},
-		{2, ProfileDiscard, 0},
+		{2, profileDiscard, 0},
 	} {
 		p := draftScreen()
 		p.Update(key("tab"))
@@ -168,7 +168,7 @@ func TestProfileScreen_TheSelectedSectionIsRevised(t *testing.T) {
 	}
 	// Scope has none, so esc is the step's own: the draft is discarded.
 	p.Update(key("down"))
-	if done, res := p.Update(key("esc")); !done || res.Action != ProfileDiscard {
+	if done, res := p.Update(key("esc")); !done || res.Action != profileDiscard {
 		t.Fatalf("esc on an unrevised section = %+v", res)
 	}
 	if done, res := p.Update(key("e")); !done || res.Action != ProfileEdit || res.Index != 1 {
@@ -282,7 +282,7 @@ func TestProfileScreen_TheProfilePaneHoldsItsEnds(t *testing.T) {
 	for range 80 {
 		p.Update(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})
 	}
-	if want := p.pane.Total - p.pane.Height; p.pane.Offset != want {
+	if want := p.pane.total - p.pane.Height; p.pane.Offset != want {
 		t.Fatalf("offset after the overshoot = %d, want %d", p.pane.Offset, want)
 	}
 	end := p.View(100)

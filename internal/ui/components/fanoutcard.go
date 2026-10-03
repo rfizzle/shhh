@@ -27,8 +27,8 @@ const (
 	CardLineHeader
 	// CardLineChild is one entry of the list: a child's row, a plan's step.
 	CardLineChild
-	// CardLineNote is the line a child's row says under itself.
-	CardLineNote
+	// cardLineNote is the line a child's row says under itself.
+	cardLineNote
 	// CardLineReport is a settled child's report fold and the report under it.
 	CardLineReport
 )
@@ -71,7 +71,7 @@ func (l FanoutLane) cardLines(width int, offers []TurnKey) ([]string, []CardLine
 		lead = strings.Repeat(" ", CardBodyIndent-1) + AgentNesting(2)
 	}
 	nameW := max(laneNameSlot, lipgloss.Width(l.Name)+1)
-	head := lead + l.glyph() + " " + sty.Body.Render(l.Name) + strings.Repeat(" ", nameW-lipgloss.Width(l.Name))
+	head := lead + l.glyph() + " " + sty.body.Render(l.Name) + strings.Repeat(" ", nameW-lipgloss.Width(l.Name))
 	room := inner - lipgloss.Width(head)
 
 	right := l.fittedRight(room, offers)
@@ -85,7 +85,7 @@ func (l FanoutLane) cardLines(width int, offers []TurnKey) ([]string, []CardLine
 	roles := []CardLine{CardLineChild}
 	if note := l.rowNote(); note != "" {
 		lines = append(lines, onBand(indented(note, laneDetailColumn, inner), width))
-		roles = append(roles, CardLineNote)
+		roles = append(roles, cardLineNote)
 	}
 	for _, r := range l.reportFold(inner) {
 		lines = append(lines, onBand(r, width))
@@ -127,9 +127,9 @@ const laneBlocked = "blocked"
 // says so in del.
 func (l FanoutLane) paintFacts(s string) string {
 	if l.State == FanoutBlocked && strings.HasPrefix(s, laneBlocked) {
-		return sty.Err.Render(laneBlocked) + sty.Dim.Render(strings.TrimPrefix(s, laneBlocked))
+		return sty.err.Render(laneBlocked) + sty.dim.Render(strings.TrimPrefix(s, laneBlocked))
 	}
-	return sty.Dim.Render(s)
+	return sty.dim.Render(s)
 }
 
 // rowNote is the line under a child still working, which has nothing else to
@@ -175,9 +175,9 @@ func (l FanoutLane) fittedRight(room int, offers []TurnKey) string {
 		case l.Elapsed == "":
 			return s
 		case s == "":
-			return sty.Dim.Render(l.Elapsed)
+			return sty.dim.Render(l.Elapsed)
 		}
-		return s + sty.Dim.Render(detailSep+l.Elapsed)
+		return s + sty.dim.Render(detailSep+l.Elapsed)
 	}
 	leaves := func(r string) int { return room - lipgloss.Width(r) - 1 }
 	if l.State == FanoutBlocked && len(offers) > 0 {
@@ -216,9 +216,9 @@ func (l FanoutLane) fittedRight(room int, offers []TurnKey) string {
 func offerRun(offers []TurnKey) string {
 	parts := make([]string, 0, len(offers))
 	for _, o := range offers {
-		parts = append(parts, sty.Key.Render(o.Key)+sty.Dim.Render(" "+o.Label))
+		parts = append(parts, sty.key.Render(o.Key)+sty.dim.Render(" "+o.Label))
 	}
-	return strings.Join(parts, sty.Dim.Render(detailSep))
+	return strings.Join(parts, sty.dim.Render(detailSep))
 }
 
 // reportFold is the child's own words under a settled row: the line that says
@@ -241,10 +241,10 @@ func (l FanoutLane) reportFold(width int) []string {
 	for _, r := range l.Earlier {
 		// Folded, and only folded: the answer the reader acts on is the one
 		// under them, and an earlier one is a heading to remember it by.
-		lines = append(lines, pad+sty.Dimmer.Render(Clip(
+		lines = append(lines, pad+sty.dimmer.Render(Clip(
 			fmt.Sprintf("▸ turn %d report%s%s", r.Turn, detailSep, plural(len(r.Lines), "line")), room)))
 	}
-	lines = append(lines, pad+sty.Dimmer.Render(Clip(mark+" report"+detailSep+plural(len(l.Report), "line"), room)))
+	lines = append(lines, pad+sty.dimmer.Render(Clip(mark+" report"+detailSep+plural(len(l.Report), "line"), room)))
 	if !l.ReportOpen {
 		return lines
 	}
@@ -259,7 +259,7 @@ func (l FanoutLane) reportFold(width int) []string {
 		// The bound is a fold like any other, so it counts what it swallowed,
 		// and names the key that opens the whole of it on its own screen, the
 		// way a paste's bound does.
-		lines = append(lines, pad+sty.Dim.Render(Clip(countedTail(dropped)+", "+
+		lines = append(lines, pad+sty.dim.Render(Clip(countedTail(dropped)+", "+
 			keys.Bracket(keys.Reading.Expand)+" opens the whole of it", room)))
 	}
 	return lines
@@ -299,7 +299,7 @@ func (b FanoutBlock) cardLines(width int) ([]string, []CardLine) {
 		Rollup:         rollup,
 		Bare:           count,
 		Outcome:        b.headerOutcome(),
-		OutcomePainted: true,
+		outcomePainted: true,
 		Duration:       b.Elapsed,
 		Body:           b.Body,
 		Selected:       b.Selected,
@@ -348,7 +348,7 @@ func (b FanoutBlock) headerOutcome() string {
 		return b.lowTally()
 	}
 	if b.live() && held == 0 && b.slotWaits() == 0 {
-		return sty.Dim.Render("in parallel")
+		return sty.dim.Render("in parallel")
 	}
 	return waitingTally(b.states(), b.slotWaits(), false)
 }
@@ -373,11 +373,11 @@ func (b FanoutBlock) lowTally() string {
 			parts = append(parts, style.Render(fmt.Sprintf("%d %s", n, word)))
 		}
 	}
-	add(done, "done", sty.Add)
-	add(failed, "failed", sty.Err)
-	add(blocked, "needs you", sty.Err)
-	add(held, "held", sty.Dim)
-	add(waiting, "waiting", sty.Dim)
-	add(running, "running", sty.Dim)
-	return strings.Join(parts, sty.Dim.Render(" · "))
+	add(done, "done", sty.add)
+	add(failed, "failed", sty.err)
+	add(blocked, "needs you", sty.err)
+	add(held, "held", sty.dim)
+	add(waiting, "waiting", sty.dim)
+	add(running, "running", sty.dim)
+	return strings.Join(parts, sty.dim.Render(" · "))
 }

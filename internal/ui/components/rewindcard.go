@@ -58,8 +58,8 @@ func (c RewindCard) View(width int) string {
 	style := SeverityLow.tone()
 	return Card{
 		Title: c.Title,
-		Chips: []string{SeverityLow.Word()},
-		Style: &style,
+		chips: []string{SeverityLow.Word()},
+		style: &style,
 	}.Render(rows, width)
 }
 

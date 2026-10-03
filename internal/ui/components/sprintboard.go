@@ -36,7 +36,7 @@ import (
 // it appears. The head runs the tab's full width, so there is nothing here
 // forcing a narrower bar, and a meter that changed length by surface would
 // read as a different quantity.
-const sprintMeterCells = MeterCellsRail
+const sprintMeterCells = meterCellsRail
 
 // SprintBoard is the sprint as the tab draws it: what the host read off the
 // file, the backlog and the run's checkpoint, already in words. This package
@@ -132,9 +132,9 @@ type SprintPlan struct {
 	focus int
 }
 
-// Kept is the slugs still in the proposal, in the order they are drawn. It
+// kept is the slugs still in the proposal, in the order they are drawn. It
 // is what the key that takes the card hands back.
-func (p *SprintPlan) Kept() []string {
+func (p *SprintPlan) kept() []string {
 	var out []string
 	for _, r := range p.Rows {
 		if !r.Dropped {
@@ -154,7 +154,7 @@ func (p *SprintPlan) sync() {
 	}
 	p.list.Items = idx
 	p.list.Focus = min(max(p.focus, 0), max(len(p.Rows)-1, 0))
-	p.list.Normalize()
+	p.list.normalize()
 	p.focus = p.list.Focus
 }
 
@@ -162,7 +162,7 @@ func (p *SprintPlan) sync() {
 // the card's: the screen's own letters are not live under it, which is the
 // register's reading of a takeover and the reason the pair `j/k` works here
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-func (b *BacklogScreen) updatePlan(pressed string) (bool, BacklogResult) {
+func (b *BacklogScreen) updatePlan(pressed string) (bool, backlogResult) {
 	p := b.Plan
 	p.sync()
 	switch {
@@ -175,9 +175,9 @@ func (b *BacklogScreen) updatePlan(pressed string) (bool, BacklogResult) {
 	case keys.Is(pressed, keys.Sprint.Left) && len(p.Left) > 0:
 		p.open = !p.open
 	case keys.Is(pressed, keys.Sprint.Goal):
-		return false, BacklogResult{Do: &BacklogCommand{Act: BacklogSprintGoal}}
+		return false, backlogResult{Do: &BacklogCommand{Act: BacklogSprintGoal}}
 	case keys.Is(pressed, keys.Sprint.Take):
-		kept := p.Kept()
+		kept := p.kept()
 		if len(kept) == 0 {
 			// Taking an empty set would write a sprint that scopes the
 			// ready list to nothing, which is the one file here nobody can
@@ -185,13 +185,13 @@ func (b *BacklogScreen) updatePlan(pressed string) (bool, BacklogResult) {
 			// back is one keystroke on the row the reader just cleared.
 			b.Notice = "nothing is left in the set; " + keys.Bracket(keys.Sprint.Toggle) +
 				" puts a row back, " + keys.Bracket(keys.Sprint.Cancel) + " writes nothing"
-			return false, BacklogResult{}
+			return false, backlogResult{}
 		}
-		return false, BacklogResult{Do: &BacklogCommand{Act: BacklogSprintTake, Slugs: kept}}
+		return false, backlogResult{Do: &BacklogCommand{Act: BacklogSprintTake, Slugs: kept}}
 	case keys.Is(pressed, keys.Sprint.Cancel):
-		return false, BacklogResult{Do: &BacklogCommand{Act: BacklogSprintCancel}}
+		return false, backlogResult{Do: &BacklogCommand{Act: BacklogSprintCancel}}
 	}
-	return false, BacklogResult{}
+	return false, backlogResult{}
 }
 
 // planRows is the plan card: the budget it was bounded by, the goal it would
@@ -202,8 +202,8 @@ func (b *BacklogScreen) updatePlan(pressed string) (bool, BacklogResult) {
 func (b *BacklogScreen) planRows(width, budget int) []string {
 	p := b.Plan
 	p.sync()
-	rows := []string{Clip(sty.Dim.Render("nothing is written until ")+
-		sty.Key.Render(keys.Bracket(keys.Sprint.Take)), width)}
+	rows := []string{Clip(sty.dim.Render("nothing is written until ")+
+		sty.key.Render(keys.Bracket(keys.Sprint.Take)), width)}
 	if goal := strings.TrimSpace(p.Goal); goal != "" {
 		rows = append(rows, wrapDim(goal, width)...)
 	}
@@ -238,14 +238,14 @@ func (p *SprintPlan) leftRows(width int) []string {
 	}
 	if !p.open {
 		head := fmt.Sprintf("%s left out · %s", plural(len(p.Left), "item"), leftWords(p.Left))
-		return []string{"", sty.Dim.Render(Clip(head, width)) + " " + sty.Key.Render(keys.Bracket(keys.Sprint.Left))}
+		return []string{"", sty.dim.Render(Clip(head, width)) + " " + sty.key.Render(keys.Bracket(keys.Sprint.Left))}
 	}
-	out := []string{"", sty.Dim.Render(Clip(plural(len(p.Left), "item")+" left out", width)) +
-		" " + sty.Key.Render(keys.Bracket(keys.Sprint.Left))}
+	out := []string{"", sty.dim.Render(Clip(plural(len(p.Left), "item")+" left out", width)) +
+		" " + sty.key.Render(keys.Bracket(keys.Sprint.Left))}
 	word := leftWordWidth(p.Left)
 	for _, l := range p.Left {
 		rest := strings.TrimSpace(l.Slug + "  " + l.Title)
-		out = append(out, sty.Dim.Render(Clip(fmt.Sprintf("  %-*s  %s", word, l.Why, rest), width)))
+		out = append(out, sty.dim.Render(Clip(fmt.Sprintf("  %-*s  %s", word, l.Why, rest), width)))
 	}
 	return out
 }
@@ -286,7 +286,7 @@ func leftWordWidth(left []SprintPlanOut) int {
 // and loses its tick.
 func (p *SprintPlan) rows(width, budget int) []string {
 	if len(p.Rows) == 0 {
-		return []string{sty.Dim.Render(Clip("nothing was proposed", width))}
+		return []string{sty.dim.Render(Clip("nothing was proposed", width))}
 	}
 	lo, hi := p.list.Range(budget)
 	if budget <= 0 {
@@ -294,13 +294,13 @@ func (p *SprintPlan) rows(width, budget int) []string {
 	}
 	var out []string
 	if lo > 0 {
-		out = append(out, sty.Dim.Render(Clip(fmt.Sprintf("↑ %d above", lo), width)))
+		out = append(out, sty.dim.Render(Clip(fmt.Sprintf("↑ %d above", lo), width)))
 	}
 	for i := lo; i < hi; i++ {
 		out = append(out, p.row(i, width))
 	}
 	if below := len(p.Rows) - hi; below > 0 {
-		out = append(out, sty.Dim.Render(Clip(fmt.Sprintf("↓ %d below", below), width)))
+		out = append(out, sty.dim.Render(Clip(fmt.Sprintf("↓ %d below", below), width)))
 	}
 	return out
 }
@@ -310,14 +310,14 @@ func (p *SprintPlan) rows(width, budget int) []string {
 // is answerable without it and unreadable without the slug.
 func (p *SprintPlan) row(i, width int) string {
 	r := p.Rows[i]
-	box, name := sty.Add.Render("[x]"), brightStyle()
+	box, name := sty.add.Render("[x]"), brightStyle()
 	if r.Dropped {
-		box, name = sty.Dim.Render("[ ]"), sty.Dim
+		box, name = sty.dim.Render("[ ]"), sty.dim
 	}
 	focused := i == p.focus
 	pointer := PointerColumn()
 	if focused {
-		pointer = sty.FocusPointer.Render("❯ ")
+		pointer = sty.focusPointer.Render("❯ ")
 	}
 	inner := max(width-GridPointerWidth, 1)
 	// The row the keyboard is on is lit under the pointer, the way it is on
@@ -327,7 +327,7 @@ func (p *SprintPlan) row(i, width int) string {
 		if !focused {
 			return pointer + body
 		}
-		return pointer + LitRowKeeping(body, 0, lipgloss.Width(box)+1, inner)
+		return pointer + litRowKeeping(body, 0, lipgloss.Width(box)+1, inner)
 	}
 	lead := box + " " + name.Render(r.Slug)
 	room := inner - lipgloss.Width(lead)
@@ -338,7 +338,7 @@ func (p *SprintPlan) row(i, width int) string {
 	if r.Note != "" {
 		rest = strings.TrimSpace(r.Title + "  ·  " + r.Note)
 	}
-	return lit(lead + sty.Dim.Render(Clip("  "+rest, room)))
+	return lit(lead + sty.dim.Render(Clip("  "+rest, room)))
 }
 
 // boardRows is the head above the sprint tab's two panes: what the set is
@@ -355,38 +355,38 @@ func (b *BacklogScreen) boardRows(width int) []string {
 	if goal := strings.TrimSpace(board.Goal); goal != "" {
 		rows = append(rows, wrapDim(goal, width)...)
 	}
-	if meter, ok := SprintMeter(board.Done, board.Total, sprintMeterCells); ok {
+	if meter, ok := sprintMeter(board.Done, board.Total, sprintMeterCells); ok {
 		line := meter.View()
 		// The spend joins the meter's row where the whole of it fits, and
 		// takes a row of its own where it would not: a figure stated against
 		// a ceiling is read for its last word, and clipping would take that
 		// word first.
-		joined := line + sty.Dim.Render("  ·  "+board.Spend)
+		joined := line + sty.dim.Render("  ·  "+board.Spend)
 		switch {
 		case board.Spend == "":
 			rows = append(rows, Clip(line, width))
 		case lipgloss.Width(joined) <= width:
 			rows = append(rows, joined)
 		default:
-			rows = append(rows, Clip(line, width), sty.Dim.Render(Clip(board.Spend, width)))
+			rows = append(rows, Clip(line, width), sty.dim.Render(Clip(board.Spend, width)))
 		}
 	} else if board.Spend != "" {
-		rows = append(rows, sty.Dim.Render(Clip(board.Spend, width)))
+		rows = append(rows, sty.dim.Render(Clip(board.Spend, width)))
 	}
 	if board.Stopped != "" {
 		rows = append(rows, wrapWarn("⚠ "+board.Stopped, width)...)
 	}
 	rows = append(rows, laneRows(board.Lanes, width)...)
 	if board.Next != "" {
-		rows = append(rows, sty.Dim.Render(Clip("next · ", width))+
-			sty.Body.Render(Clip(board.Next, max(width-7, 1))))
+		rows = append(rows, sty.dim.Render(Clip("next · ", width))+
+			sty.body.Render(Clip(board.Next, max(width-7, 1))))
 	}
 	// The page is the board's last row and the link is the whole of it,
 	// which is the shape an activity row gives a published report: a URL is
 	// the one field that must never be clipped into something the reader
 	// cannot paste.
 	if board.Report != "" {
-		rows = append(rows, sty.Info.Render(Clip("→ "+board.Report, width)))
+		rows = append(rows, sty.info.Render(Clip("→ "+board.Report, width)))
 	}
 	return rows
 }
@@ -401,7 +401,7 @@ func laneRows(lanes []SprintLane, width int) []string {
 	if len(lanes) == 0 {
 		return nil
 	}
-	return []string{sty.Dim.Render(Clip(fmt.Sprintf("working · %d at once", len(lanes)), width))}
+	return []string{sty.dim.Render(Clip(fmt.Sprintf("working · %d at once", len(lanes)), width))}
 }
 
 // sprintOffers is the key row while the plan card holds the keyboard. The

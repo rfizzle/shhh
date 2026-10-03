@@ -26,10 +26,10 @@ import (
 // wants some other count is a meter that is drifting. The rail's is the count
 // at the rail's own floor — a rail with more columns asks railCells for them.
 const (
-	MeterCellsVitals    = 8  // the context meter in the vitals rail
-	MeterCellsRail      = 22 // context and step progress in the inspector rail
-	MeterCellsAgent     = 5  // an agent lane's progress
-	MeterCellsCountdown = 20 // a retry countdown
+	meterCellsVitals    = 8  // the context meter in the vitals rail
+	meterCellsRail      = 22 // context and step progress in the inspector rail
+	meterCellsAgent     = 5  // an agent lane's progress
+	meterCellsCountdown = 20 // a retry countdown
 )
 
 // railCells is a rail run's cell count at a rail width: the role's count at
@@ -44,7 +44,7 @@ func railCells(base, width int) int {
 // SparkCellsRailMax is the longest burn run the rail can ask for — railCells
 // at the rail's ceiling. A host feeding the series keeps this many samples,
 // so the widest rail is never a run with cells nobody gave it a value for.
-const SparkCellsRailMax = SparkCells + InspectorMaxWidth - InspectorWidth
+const SparkCellsRailMax = sparkCellCount + InspectorMaxWidth - InspectorWidth
 
 // Context-meter warning thresholds, matching the window trim's warnings.
 // Hosts with their own thresholds override them per meter.
@@ -53,22 +53,22 @@ const (
 	ctxAlertPct = 90
 )
 
-// MeterTone selects how a meter colours its cells and its number.
-type MeterTone int
+// meterTone selects how a meter colours its cells and its number.
+type meterTone int
 
 const (
-	// MeterPressure colours by the value: add below the warn threshold,
+	// meterPressure colours by the value: add below the warn threshold,
 	// accent from it, del from the alert threshold — where it also goes bold.
 	// This is the context meter, in both rails and in the pressure card.
-	MeterPressure MeterTone = iota
-	// MeterProgress is step progress: the completed cells add, the cells of
+	meterPressure meterTone = iota
+	// meterProgress is step progress: the completed cells add, the cells of
 	// the step in flight spin, the rest dim.
-	MeterProgress
-	// MeterAgent is an agent lane — always info. A lane is never colour-coded
+	meterProgress
+	// meterAgent is an agent lane — always info. A lane is never colour-coded
 	// by health.
-	MeterAgent
-	// MeterCountdown is a draining countdown — always accent.
-	MeterCountdown
+	meterAgent
+	// meterCountdown is a draining countdown — always accent.
+	meterCountdown
 	// MeterCategory is the metrics screen's category meter: one share of a total
 	// nobody set a threshold on — where the money went, how the answers came
 	// back. Always accent, never the context ladder, because a threshold
@@ -84,63 +84,63 @@ const (
 // Meter is the block meter: `▰` filled, `▱` empty. Never a bar element, never
 // a percentage without its bar, never a bar without its number.
 type Meter struct {
-	// Pct is the fill, 0–100; values outside the range are clamped.
-	Pct int
-	// Cells is the bar's width; 0 means MeterCellsRail.
-	Cells int
-	Tone  MeterTone
-	// Label is the optional leading field — the "ctx" of the vitals rail, or
+	// pctValue is the fill, 0–100; values outside the range are clamped.
+	pctValue int
+	// cellCount is the bar's width; 0 means MeterCellsRail.
+	cellCount int
+	tone      meterTone
+	// labelText is the optional leading field — the "ctx" of the vitals rail, or
 	// the percent itself when the host wants the number ahead of the bar.
-	Label string
+	labelText string
 	// Text is what the meter states after its bar. Empty means its own
 	// percent, because the bar is never the only carrier of the value.
 	Text string
-	// ValueFirst states that number ahead of the bar instead of after it —
+	// valueFirst states that number ahead of the bar instead of after it —
 	// `ctx 62% ▰▰▰▰▰▱▱▱`, which is the shape every rail carrying a context
 	// meter draws. The value stays beside the bar and stays in the meter's
 	// own colour; only the side it stands on changes, and nothing follows the
 	// bar (docs/interface/surfaces.md#the-input-frame).
-	ValueFirst bool
-	// Warn and Alert override MeterPressure's thresholds (0 keeps 70/90), so
+	valueFirst bool
+	// warn and Alert override MeterPressure's thresholds (0 keeps 70/90), so
 	// a meter matches the host's own trim warnings.
-	Warn, Alert int
-	// Running is how many of the filled cells belong to the step in flight
+	warn, alert int
+	// running is how many of the filled cells belong to the step in flight
 	// (MeterProgress only); they render in spin, the rest in add.
-	Running int
+	running int
 }
 
-// StepMeter is the step-progress meter for step of steps: the completed steps
+// stepMeter is the step-progress meter for step of steps: the completed steps
 // filled, the step in flight taking its own slice of cells in spin, and the
 // count stated beside the bar. It returns ok=false when no total was
 // declared — there is no honest ratio to draw.
-func StepMeter(step, steps, cells int, running bool) (Meter, bool) {
+func stepMeter(step, steps, cells int, running bool) (Meter, bool) {
 	if steps <= 0 {
 		return Meter{}, false
 	}
 	if cells <= 0 {
-		cells = MeterCellsRail
+		cells = meterCellsRail
 	}
 	step = min(max(step, 0), steps)
 	m := Meter{
-		Pct:   step * 100 / steps,
-		Cells: cells,
-		Tone:  MeterProgress,
-		Text:  fmt.Sprintf("step %d of %d", step, steps),
+		pctValue:  step * 100 / steps,
+		cellCount: cells,
+		tone:      meterProgress,
+		Text:      fmt.Sprintf("step %d of %d", step, steps),
 	}
 	if running && step > 0 {
-		m.Running = max(cells/steps, 1)
+		m.running = max(cells/steps, 1)
 	}
 	return m, true
 }
 
-// SprintMeter is the sprint board's progress: how many of a set's items are
+// sprintMeter is the sprint board's progress: how many of a set's items are
 // finished, out of the ones the backlog still holds. It is the step meter's
 // bar under the set's own noun — a sprint's items are not stages of one
 // thing, and "step 3 of 7" would read as a run rather than as a week. It
 // returns ok=false for a set with nothing in it, because a bar drawn against
 // a total of nothing is a bar that says a sprint is finished.
-func SprintMeter(done, total, cells int) (Meter, bool) {
-	m, ok := StepMeter(done, total, cells, false)
+func sprintMeter(done, total, cells int) (Meter, bool) {
+	m, ok := stepMeter(done, total, cells, false)
 	if !ok {
 		return Meter{}, false
 	}
@@ -153,28 +153,28 @@ func SprintMeter(done, total, cells int) (Meter, bool) {
 // Spinner, because a bar drawn against a denominator nobody supplied is a
 // number the interface invented.
 func AgentMeter(step, steps int) (Meter, bool) {
-	m, ok := StepMeter(step, steps, MeterCellsAgent, false)
+	m, ok := stepMeter(step, steps, meterCellsAgent, false)
 	if !ok {
 		return Meter{}, false
 	}
-	m.Tone = MeterAgent
+	m.tone = meterAgent
 	return m, true
 }
 
-// Style is the meter's colour, so a host stating the value in its own row can
+// style is the meter's colour, so a host stating the value in its own row can
 // colour the number to match the bar.
-func (m Meter) Style() lipgloss.Style {
-	switch m.Tone {
-	case MeterProgress:
-		return sty.Add
-	case MeterAgent:
-		return sty.Info
-	case MeterCountdown, MeterCategory:
-		return sty.Accent
+func (m Meter) style() lipgloss.Style {
+	switch m.tone {
+	case meterProgress:
+		return sty.add
+	case meterAgent:
+		return sty.info
+	case meterCountdown, MeterCategory:
+		return sty.accent
 	case MeterUnasked:
-		return sty.Del
+		return sty.del
 	default:
-		return ctxStyle(min(max(m.Pct, 0), 100), m.Warn, m.Alert)
+		return ctxStyle(min(max(m.pctValue, 0), 100), m.warn, m.alert)
 	}
 }
 
@@ -186,10 +186,10 @@ func (m Meter) Style() lipgloss.Style {
 // the row rather than the first — the value is beside the bar either way,
 // which is the rule.
 func (m Meter) View() string {
-	if m.ValueFirst {
-		return join(m.label(), m.Bar())
+	if m.valueFirst {
+		return join(m.label(), m.bar())
 	}
-	return join(m.label(), m.Bar(), m.Style().Render(m.text()))
+	return join(m.label(), m.bar(), m.style().Render(m.text()))
 }
 
 // label is the leading field — dim for step progress, and in the meter's own
@@ -200,48 +200,48 @@ func (m Meter) View() string {
 // and the row would then sit one column right of the row above it
 // (docs/interface/surfaces.md#the-inspector-rail).
 func (m Meter) label() string {
-	label := m.Label
-	if m.ValueFirst {
+	label := m.labelText
+	if m.valueFirst {
 		label = strings.TrimSpace(label + " " + m.text())
 	}
 	if label == "" {
 		return ""
 	}
-	if m.Tone == MeterProgress {
-		return sty.Dim.Render(label)
+	if m.tone == meterProgress {
+		return sty.dim.Render(label)
 	}
-	return m.Style().Render(label)
+	return m.style().Render(label)
 }
 
-// Bar is the styled bar alone, for a host that states the meter's value
+// bar is the styled bar alone, for a host that states the meter's value
 // elsewhere on the same row — the inspector rail right-aligns its token count
 // at the rail's edge. A host using it still has to state that number: the
 // rule is that the value is beside the bar, not that View wrote it.
-func (m Meter) Bar() string {
+func (m Meter) bar() string {
 	cells, pct := m.cells(), m.pct()
 	filled := meterFill(pct, cells)
 	// The track is chrome under every tone: an unfilled cell is the shape the
 	// fill is measured against, not a quantity of its own, so it is the same
 	// neutral grey whatever the fill is doing — never bold, and never the
 	// fill's own colour, which would draw a full bar at every percentage.
-	track := meterRun(sty.Dim, "▱", cells-filled)
-	if m.Tone != MeterProgress {
-		return meterRun(m.Style(), "▰", filled) + track
+	track := meterRun(sty.dim, "▱", cells-filled)
+	if m.tone != meterProgress {
+		return meterRun(m.style(), "▰", filled) + track
 	}
 	// The only two-colour fill: the run in flight is motion, and motion is
 	// never the same colour as what is already done.
-	spin := min(max(m.Running, 0), filled)
-	return meterRun(sty.Add, "▰", filled-spin) + meterRun(sty.SpinText, "▰", spin) + track
+	spin := min(max(m.running, 0), filled)
+	return meterRun(sty.add, "▰", filled-spin) + meterRun(sty.spinText, "▰", spin) + track
 }
 
 func (m Meter) cells() int {
-	if m.Cells <= 0 {
-		return MeterCellsRail
+	if m.cellCount <= 0 {
+		return meterCellsRail
 	}
-	return m.Cells
+	return m.cellCount
 }
 
-func (m Meter) pct() int { return min(max(m.Pct, 0), 100) }
+func (m Meter) pct() int { return min(max(m.pctValue, 0), 100) }
 
 // text is what the meter states beside its bar — the host's own count, or the
 // percent when it gave none.
@@ -298,42 +298,42 @@ func ctxStyle(pct, warn, alert int) lipgloss.Style {
 	}
 	switch {
 	case pct >= alert:
-		return sty.Err.Bold(true)
+		return sty.err.Bold(true)
 	case pct >= warn:
-		return sty.Accent
+		return sty.accent
 	default:
-		return sty.Add
+		return sty.add
 	}
 }
 
-// SparkCells is the sparkline's fixed cell count: eight rounds, the last
+// sparkCellCount is the sparkline's fixed cell count: eight rounds, the last
 // eight samples, no more.
-const SparkCells = 8
+const sparkCellCount = 8
 
-// Sparkline is the `▁▂▃▄▅▆▇█` run — tokens per round in the CONTEXT block,
+// sparkline is the `▁▂▃▄▅▆▇█` run — tokens per round in the CONTEXT block,
 // and nothing else so far. It is a shape, not a measurement; the numbers
 // beside it are the measurement, which is why it is always dimmer and never
 // coloured.
-type Sparkline struct {
-	// Values is the series, oldest first; only the last Cells samples are
+type sparkline struct {
+	// values is the series, oldest first; only the last Cells samples are
 	// drawn.
-	Values []float64
-	// Cells is the run's width; 0 means SparkCells.
-	Cells int
+	values []float64
+	// cells is the run's width; 0 means SparkCells.
+	cells int
 }
 
-// View renders the run. An empty series renders nothing at all rather than a
+// view renders the run. An empty series renders nothing at all rather than a
 // flat line, because a series with no samples has no shape.
-func (s Sparkline) View() string {
-	cells := s.Cells
+func (s sparkline) view() string {
+	cells := s.cells
 	if cells <= 0 {
-		cells = SparkCells
+		cells = sparkCellCount
 	}
-	run := sparkCells(s.Values, cells)
+	run := sparkCells(s.values, cells)
 	if run == "" {
 		return ""
 	}
-	return sty.Dimmer.Render(run)
+	return sty.dimmer.Render(run)
 }
 
 // sparkCells renders the last cells values of a series as a ▁▂▃▄▅▆▇█ run,
@@ -378,12 +378,12 @@ const SpinnerInterval = 80 * time.Millisecond
 // ticking.
 type Spinner struct {
 	Frame int
-	// Label names what is running ("running go test"). Without it the spinner
+	// label names what is running ("running go test"). Without it the spinner
 	// renders nothing: motion with no subject reports only that the program
 	// is alive, which the user can already see.
-	Label string
-	// Elapsed is the optional wall-clock tail ("3s").
-	Elapsed string
+	label string
+	// elapsed is the optional wall-clock tail ("3s").
+	elapsed string
 }
 
 // Glyph is the current frame.
@@ -392,14 +392,14 @@ func (s Spinner) Glyph() string {
 	return SpinnerFrames[((s.Frame%n)+n)%n]
 }
 
-// View renders the frame, its label, and any elapsed time.
-func (s Spinner) View() string {
-	if s.Label == "" {
+// view renders the frame, its label, and any elapsed time.
+func (s Spinner) view() string {
+	if s.label == "" {
 		return ""
 	}
-	out := sty.SpinText.Render(s.Glyph() + " " + s.Label)
-	if s.Elapsed != "" {
-		out += sty.Dim.Render(" · " + s.Elapsed)
+	out := sty.spinText.Render(s.Glyph() + " " + s.label)
+	if s.elapsed != "" {
+		out += sty.dim.Render(" · " + s.elapsed)
 	}
 	return out
 }
@@ -409,6 +409,6 @@ func (s Spinner) View() string {
 func NewSpinnerModel() spinner.Model {
 	s := spinner.New()
 	s.Spinner = spinner.Spinner{Frames: SpinnerFrames, FPS: SpinnerInterval}
-	s.Style = sty.SpinText
+	s.Style = sty.spinText
 	return s
 }

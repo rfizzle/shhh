@@ -40,7 +40,7 @@ func Clip(s string, width int) string {
 // sees them.
 const cardRule = "\x00rule"
 
-// CardTone is a card's border colour named by the job the card is doing
+// cardTone is a card's border colour named by the job the card is doing
 // rather than by a value. A card that is showing something wears the chrome
 // grey every rule in the product is drawn in; a card that is asking for an
 // answer wears Info, which is the tone the keys under its rule are written
@@ -50,22 +50,22 @@ const cardRule = "\x00rule"
 // It is a role rather than a stored style because the palette is rebuilt
 // whenever the theme is swapped, and a card built once and rendered every
 // frame afterwards would go on drawing itself in the theme it was born in.
-type CardTone int
+type cardTone int
 
 const (
-	// CardChrome is the plain grey frame: a card that reports.
-	CardChrome CardTone = iota
+	// cardChrome is the plain grey frame: a card that reports.
+	cardChrome cardTone = iota
 	// CardDecision is the frame of a card waiting for an answer that has no
 	// severity of its own to colour itself with — the plan card, the question
 	// card, the agent manager, the memory proposal.
 	CardDecision
 )
 
-func (t CardTone) style() lipgloss.Style {
+func (t cardTone) style() lipgloss.Style {
 	if t == CardDecision {
-		return sty.Info
+		return sty.info
 	}
-	return sty.Border
+	return sty.border
 }
 
 // Card is a card's frame beyond its rows: the title, the chips that ride the
@@ -79,20 +79,20 @@ func (t CardTone) style() lipgloss.Style {
 // there: both are a rectangle around something to read.
 type Card struct {
 	Title string
-	// Subtitle follows the title on the border in the chrome grey, after
+	// subtitle follows the title on the border in the chrome grey, after
 	// the separator every rail joins its fields with: what the card says
 	// about its subject rather than the subject itself. Empty draws nothing.
-	Subtitle string
-	// Chips sit at the right end of the top border, joined by ─ separators.
+	subtitle string
+	// chips sit at the right end of the top border, joined by ─ separators.
 	// They drop from the front as the terminal narrows, so the last chip —
 	// the one that leads the decision — is the one that survives.
-	Chips []string
-	// Style colours the border with a value the caller resolved for itself —
+	chips []string
+	// style colours the border with a value the caller resolved for itself —
 	// the approval card's severity, which is a reading and not a role. It
 	// wins over Tone wherever it is set.
-	Style *lipgloss.Style
-	// Tone colours the border by the job the card is doing.
-	Tone CardTone
+	style *lipgloss.Style
+	// tone colours the border by the job the card is doing.
+	tone cardTone
 }
 
 // Inner is the width a card's rows are laid out in at the given total width:
@@ -105,9 +105,9 @@ func (c Card) Inner(width int) int { return max(width-cardFrameWidth, 1) }
 // its right end (docs/interface/surfaces.md#the-approval-card). Rows are
 // clipped and padded to the inner width.
 func (c Card) Render(rows []string, width int) string {
-	border := c.Tone.style()
-	if c.Style != nil {
-		border = *c.Style
+	border := c.tone.style()
+	if c.style != nil {
+		border = *c.style
 	}
 	if width < minCardWidth {
 		return strings.Join(dropRules(rows), "\n")
@@ -156,11 +156,11 @@ func cardTop(c Card, border lipgloss.Style, width int) string {
 	lead, title := cardLeadIn, c.Title+" "
 	if c.Title == "" {
 		lead, title = cardLeadInBare, ""
-	} else if c.Subtitle != "" {
-		title = c.Title + chipSeparator + c.Subtitle + " "
+	} else if c.subtitle != "" {
+		title = c.Title + chipSeparator + c.subtitle + " "
 	}
 	room := max(0, width-1-lipgloss.Width(lead))
-	chips := c.Chips
+	chips := c.chips
 	for {
 		right := chipRun(chips)
 		if lipgloss.Width(title)+lipgloss.Width(right)+1 <= room {
@@ -180,7 +180,7 @@ func cardTop(c Card, border lipgloss.Style, width int) string {
 // subtitle with one, and all of what is left when the clip reached into the
 // heading itself.
 func (c Card) heading(title string) int {
-	if c.Subtitle == "" || !strings.HasPrefix(title, c.Title) {
+	if c.subtitle == "" || !strings.HasPrefix(title, c.Title) {
 		return len(title)
 	}
 	return len(c.Title)
@@ -213,15 +213,15 @@ func (c Card) heading(title string) int {
 func paintCardTop(border lipgloss.Style, lead, title string, heading, fill int, right string) string {
 	head := border.Render(lead)
 	if title[:heading] != "" {
-		head += sty.Bright.Bold(true).Render(title[:heading])
+		head += sty.bright.Bold(true).Render(title[:heading])
 	}
 	if rest := title[heading:]; rest != "" {
-		head += sty.Dim.Render(rest)
+		head += sty.dim.Render(rest)
 	}
 	if Mono() || fill <= 0 {
 		return head + border.Render(ruleRun(fill)+right)
 	}
-	return head + sty.Dim.Render(ruleRun(fill)) + border.Render(right)
+	return head + sty.dim.Render(ruleRun(fill)) + border.Render(right)
 }
 
 // chipRun renders the chips as they sit in the border: each between a space
@@ -285,7 +285,7 @@ func notYetLiveRows(handover string, width int) []string {
 // one dressing with no frame it is the whole of the panel.
 func NotYetLiveRows(handover string, room int) []string {
 	if handover == "" {
-		return []string{sty.Dim.Render(Clip(notYetLiveWords, room))}
+		return []string{sty.dim.Render(Clip(notYetLiveWords, room))}
 	}
 	return []string{handoverRow(handover, room)}
 }
@@ -311,21 +311,21 @@ func deadRows(run []string, closeLive func(rows []string, inner int) []string, w
 	inner := Card{}.Inner(width)
 	dim := make([]string, len(run))
 	for i, seg := range run {
-		dim[i] = sty.Dimmer.Render(seg)
+		dim[i] = sty.dimmer.Render(seg)
 	}
 	rows := runRows(dim, inner)
 	if closeLive != nil {
 		rows = closeLive(rows, inner)
 	}
 	if len(rows) == 0 {
-		return []string{sty.Dim.Render(Clip(words, inner))}
+		return []string{sty.dim.Render(Clip(words, inner))}
 	}
 	last := len(rows) - 1
 	if pad := inner - lipgloss.Width(rows[last]) - lipgloss.Width(words); pad >= 2 {
-		rows[last] += strings.Repeat(" ", pad) + sty.Dim.Render(words)
+		rows[last] += strings.Repeat(" ", pad) + sty.dim.Render(words)
 		return rows
 	}
-	return append(rows, sty.Dim.Render(Clip(words, inner)))
+	return append(rows, sty.dim.Render(Clip(words, inner)))
 }
 
 // graceWords is what the key row says while an arrival's grace window holds
@@ -391,8 +391,8 @@ const handoverImperative = " answer it"
 // are going until it is pressed — in the words a card that took the keyboard
 // by arriving says the same thing in, because it is the same handover.
 func handoverRow(key string, inner int) string {
-	head := sty.Key.Render("["+key+"]") + sty.Body.Render(handoverImperative)
-	tail := sty.Dim.Render(" · " + arrivalDraftWords)
+	head := sty.key.Render("["+key+"]") + sty.body.Render(handoverImperative)
+	tail := sty.dim.Render(" · " + arrivalDraftWords)
 	if lipgloss.Width(head)+lipgloss.Width(tail) > inner {
 		return Clip(head, inner)
 	}

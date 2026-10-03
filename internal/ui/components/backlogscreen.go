@@ -185,13 +185,13 @@ type BacklogRow struct {
 	Warnings []string
 }
 
-// BacklogAct is what a key asked the host to do to the item under the
+// backlogAct is what a key asked the host to do to the item under the
 // pointer.
-type BacklogAct int
+type backlogAct int
 
 const (
 	// BacklogEdit is `[e]`: the file in the reader's own editor.
-	BacklogEdit BacklogAct = iota
+	BacklogEdit backlogAct = iota
 	// BacklogRun is `[R]`: the item worked through to a commit.
 	BacklogRun
 	// BacklogBlock is `[b]`, past its confirm.
@@ -231,7 +231,7 @@ const (
 // fresh rows with the screen still up. Which is which is the host's to know,
 // because it is a fact about the session rather than about this list.
 type BacklogCommand struct {
-	Act  BacklogAct
+	Act  backlogAct
 	Slug string
 	// Slugs is the set an act names rather than the one row it stands on.
 	// Only the plan card fills it, because it is the only key here whose
@@ -239,10 +239,10 @@ type BacklogCommand struct {
 	Slugs []string
 }
 
-// BacklogResult is how a key was answered: the screen closed, or an act for
+// backlogResult is how a key was answered: the screen closed, or an act for
 // the host to carry out.
-type BacklogResult struct {
-	Canceled bool
+type backlogResult struct {
+	canceled bool
 	// Do is the act a key asked for, once any confirm in front of it has
 	// been answered. nil is a key that asked for none.
 	Do *BacklogCommand
@@ -300,8 +300,8 @@ type BacklogScreen struct {
 	// That is the honest fallback rather than a degraded one: what the pane
 	// is showing then is the file, which is what the item is.
 	Prose func(src string, width int) []string
-	// MaxLines bounds the screen height. 0 is unbounded.
-	MaxLines int
+	// maxLines bounds the screen height. 0 is unbounded.
+	maxLines int
 	// Notice is the line a key left behind. The screen clears it on the next
 	// keystroke.
 	Notice string
@@ -338,7 +338,7 @@ type BacklogScreen struct {
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from
 // the width it is rendered at, so only the height is kept.
-func (b *BacklogScreen) SetSize(_, height int) { b.MaxLines = height }
+func (b *BacklogScreen) SetSize(_, height int) { b.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves.
@@ -347,44 +347,44 @@ func (b *BacklogScreen) View(width int) string {
 		return ""
 	}
 	b.sync()
-	return ScreenChrome{
-		Header:   b.header(),
-		Foot:     b.footRows(width),
-		Notice:   b.Notice,
-		MaxLines: b.MaxLines,
-	}.View(width, func(budget int) []string { return b.paneRows(width, budget) })
+	return screenChrome{
+		header:   b.header(),
+		foot:     b.footRows(width),
+		notice:   b.Notice,
+		maxLines: b.maxLines,
+	}.view(width, func(budget int) []string { return b.paneRows(width, budget) })
 }
 
 // header names the surface, which tab it is on, what the filters left and
 // how much of the list that is.
-func (b *BacklogScreen) header() ScreenHeader {
-	h := ScreenHeader{Left: []RailSegment{screenTitle("backlog")}, Keys: b.headerKeys()}
+func (b *BacklogScreen) header() screenHeader {
+	h := screenHeader{left: []RailSegment{screenTitle("backlog")}, keys: b.headerKeys()}
 	switch {
 	case b.archived():
-		h.Left = append(h.Left, screenField("done"))
+		h.left = append(h.left, screenField("done"))
 	case b.planning():
 		// The budget is in the header because it is the whole account of
 		// why these items and not others: a proposal whose filter is not
 		// stated is a recommendation, and this is not one.
-		h.Left = append(h.Left, screenField("planning"))
+		h.left = append(h.left, screenField("planning"))
 		if b.Plan.Budget != "" {
-			h.Left = append(h.Left, screenField(b.Plan.Budget))
+			h.left = append(h.left, screenField(b.Plan.Budget))
 		}
 	case b.sprinting() && b.Board != nil:
 		// A sprint over the whole ready list has no file and so no name;
 		// the header says it is a sprint and stops there.
-		h.Left = append(h.Left, screenField("sprint"))
+		h.left = append(h.left, screenField("sprint"))
 		if b.Board.Name != "" {
-			h.Left = append(h.Left, screenField(b.Board.Name))
+			h.left = append(h.left, screenField(b.Board.Name))
 		}
 	}
 	if words := b.filterWords(); words != "" && !b.planning() {
-		h.Left = append(h.Left, screenField(words))
+		h.left = append(h.left, screenField(words))
 	}
 	if b.Sprint != "" && b.tab == backlogTabItems {
-		h.Left = append(h.Left, screenField(b.Sprint))
+		h.left = append(h.left, screenField(b.Sprint))
 	}
-	h.Tally = sty.Dim.Render(b.count())
+	h.tally = sty.dim.Render(b.count())
 	return h
 }
 
@@ -431,7 +431,7 @@ func (b *BacklogScreen) filterWords() string {
 // a list that is not the backlog.
 func (b *BacklogScreen) count() string {
 	if b.planning() {
-		return fmt.Sprintf("%d of %s kept", len(b.Plan.Kept()), plural(len(b.Plan.Rows), b.noun()))
+		return fmt.Sprintf("%d of %s kept", len(b.Plan.kept()), plural(len(b.Plan.Rows), b.noun()))
 	}
 	total := len(b.rows())
 	if len(b.shown) == total {
@@ -497,7 +497,7 @@ func (b *BacklogScreen) sync() {
 	b.shown = b.match()
 	b.list.Items = b.shown
 	b.list.Focus = b.optIndex(b.focus[b.tab])
-	b.list.Normalize()
+	b.list.normalize()
 }
 
 // match is the positions the filters left showing.
@@ -518,7 +518,7 @@ func (b *BacklogScreen) match() []int {
 // saying the file is there, and a filter that swallowed it would be hiding
 // exactly the item the reader has to go and fix.
 func (b *BacklogScreen) matches(row BacklogRow) bool {
-	if !Matches(strings.TrimSpace(b.query), row.Slug, row.Title) {
+	if !matches(strings.TrimSpace(b.query), row.Slug, row.Title) {
 		return false
 	}
 	if row.State == BacklogUnreadable {
@@ -557,7 +557,7 @@ func (b *BacklogScreen) moved(pressed string) bool {
 
 // movedTyping is moved with the filter row open, where a letter is a letter.
 func (b *BacklogScreen) movedTyping(pressed string) bool {
-	return b.after(b.list.MoveTyping(pressed, keys.Backlog.Move))
+	return b.after(b.list.moveTyping(pressed, keys.Backlog.Move))
 }
 
 // after carries a move through to the pointer the tabs remember, and drops

@@ -34,11 +34,11 @@ func (r InspectorRail) stepsBlock(width int) (railBlock, bool) {
 	if s == nil || s.Total <= 0 {
 		return railBlock{}, false
 	}
-	b := railBlock{heading: railHeading("STEPS", "", sty.Dim, width)}
-	parts := []string{sty.Info.Render(fmt.Sprintf("%d of %d", min(max(s.Done, 0), s.Total), s.Total))}
+	b := railBlock{heading: railHeading("STEPS", "", sty.dim, width)}
+	parts := []string{sty.info.Render(fmt.Sprintf("%d of %d", min(max(s.Done, 0), s.Total), s.Total))}
 	if s.Current != "" {
-		parts = append(parts, sty.Body.Render(s.Current))
+		parts = append(parts, sty.body.Render(s.Current))
 	}
-	b.add(indentRow(strings.Join(parts, sty.Dim.Render(" · ")), width))
+	b.add(indentRow(strings.Join(parts, sty.dim.Render(" · ")), width))
 	return b, true
 }

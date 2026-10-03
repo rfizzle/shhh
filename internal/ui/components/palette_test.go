@@ -23,24 +23,24 @@ var paletteTable = []struct {
 	ansi256 string
 	ansi16  string
 }{
-	{"add", FullPalette.Add, "#5fd75f", "10", "10"},
-	{"del", FullPalette.Del, "#ff5f5f", "9", "9"},
-	{"addBg", FullPalette.AddBg, "#005f00", "22", "2"},
-	{"delBg", FullPalette.DelBg, "#5f0000", "52", "1"},
-	{"hunk", FullPalette.Hunk, "#5fd7d7", "14", "14"},
-	{"accent", FullPalette.Accent, "#ffaf00", "214", "11"},
-	{"info", FullPalette.Info, "#5f87ff", "12", "12"},
-	{"focusBg", FullPalette.FocusBg, "#5f5fd7", "62", "12"},
-	{"band", FullPalette.Band, "#1c1c1c", "234", noSixteen},
-	{"dim", FullPalette.Dim, "#626262", "241", "8"},
-	{"dimmer", FullPalette.Dimmer, "#8a8a8a", "245", "8"},
-	{"spin", FullPalette.Spin, "#ff5faf", "205", "13"},
-	{"status", FullPalette.Status, "#767676", "243", "8"},
-	{"bright", FullPalette.Bright, "#eaeaea", "15", "15"},
-	{"subtle", FullPalette.Subtle, "#bcbcbc", "250", "7"},
-	{"body", FullPalette.Body, "#d0d0d0", "252", "7"},
-	{"code", FullPalette.Code, "#d7af87", "180", "3"},
-	{"key", FullPalette.Key, "#8787af", "103", "12"},
+	{"add", fullPalette.Add, "#5fd75f", "10", "10"},
+	{"del", fullPalette.Del, "#ff5f5f", "9", "9"},
+	{"addBg", fullPalette.addBg, "#005f00", "22", "2"},
+	{"delBg", fullPalette.delBg, "#5f0000", "52", "1"},
+	{"hunk", fullPalette.Hunk, "#5fd7d7", "14", "14"},
+	{"accent", fullPalette.Accent, "#ffaf00", "214", "11"},
+	{"info", fullPalette.Info, "#5f87ff", "12", "12"},
+	{"focusBg", fullPalette.FocusBg, "#5f5fd7", "62", "12"},
+	{"band", fullPalette.band, "#1c1c1c", "234", noSixteen},
+	{"dim", fullPalette.Dim, "#626262", "241", "8"},
+	{"dimmer", fullPalette.Dimmer, "#8a8a8a", "245", "8"},
+	{"spin", fullPalette.Spin, "#ff5faf", "205", "13"},
+	{"status", fullPalette.Status, "#767676", "243", "8"},
+	{"bright", fullPalette.Bright, "#eaeaea", "15", "15"},
+	{"subtle", fullPalette.Subtle, "#bcbcbc", "250", "7"},
+	{"body", fullPalette.Body, "#d0d0d0", "252", "7"},
+	{"code", fullPalette.Code, "#d7af87", "180", "3"},
+	{"key", fullPalette.Key, "#8787af", "103", "12"},
 }
 
 // noSixteen is the sixteen-colour rung of a token that draws nothing there:
@@ -73,9 +73,9 @@ func TestPalette_EveryTokenIsWrittenForEveryProfile(t *testing.T) {
 			want color.Color
 			says string
 		}{
-			{"truecolor", c.token.TrueColor, lipgloss.Color(c.hex), c.hex},
-			{"256 index", c.token.ANSI256, lipgloss.Color(c.ansi256), c.ansi256},
-			{"16-colour fallback", c.token.ANSI, lipgloss.Color(c.ansi16), c.ansi16},
+			{"truecolor", c.token.trueColor, lipgloss.Color(c.hex), c.hex},
+			{"256 index", c.token.aNSI256, lipgloss.Color(c.ansi256), c.ansi256},
+			{"16-colour fallback", c.token.aNSI, lipgloss.Color(c.ansi16), c.ansi16},
 		} {
 			if rung.got != rung.want {
 				t.Errorf("%s: %s is %s, the palette says %q",
@@ -136,15 +136,15 @@ func TestPalette_ProfilesEmitTheDocumentedValue(t *testing.T) {
 // colours by choice, and deriving them from a hex would replace a theme
 // colour with a literal approximation of it.)
 func TestPalette_AHexAloneWouldCollapseTheSixteen(t *testing.T) {
-	derived := func(c Token) string { return sgr(colorprofile.ANSI.Convert(c.TrueColor)) }
-	written := func(c Token) string { return sgr(c.ANSI) }
+	derived := func(c Token) string { return sgr(colorprofile.ANSI.Convert(c.trueColor)) }
+	written := func(c Token) string { return sgr(c.aNSI) }
 	for _, c := range []struct {
 		one, two string
 		a, b     Token
 	}{
-		{"bright", "body", FullPalette.Bright, FullPalette.Body},
-		{"accent", "del", FullPalette.Accent, FullPalette.Del},
-		{"spin", "del", FullPalette.Spin, FullPalette.Del},
+		{"bright", "body", fullPalette.Bright, fullPalette.Body},
+		{"accent", "del", fullPalette.Accent, fullPalette.Del},
+		{"spin", "del", fullPalette.Spin, fullPalette.Del},
 	} {
 		if derived(c.a) != derived(c.b) {
 			t.Errorf("the downsampler now keeps %s and %s apart at sixteen colours; "+
@@ -168,8 +168,8 @@ func TestPalette_NoTwoTokensCollapse(t *testing.T) {
 		what string
 		of   func(Token) string
 	}{
-		{"truecolor", func(c Token) string { return sgr(c.TrueColor) }},
-		{"256", func(c Token) string { return sgr(c.ANSI256) }},
+		{"truecolor", func(c Token) string { return sgr(c.trueColor) }},
+		{"256", func(c Token) string { return sgr(c.aNSI256) }},
 	} {
 		seen := map[string]string{}
 		for _, c := range paletteTable {
@@ -190,12 +190,12 @@ func TestPalette_GreyLadderDescends(t *testing.T) {
 		name  string
 		token Token
 	}{
-		{"bright", FullPalette.Bright},
-		{"body", FullPalette.Body},
-		{"subtle", FullPalette.Subtle},
-		{"dimmer", FullPalette.Dimmer},
-		{"status", FullPalette.Status},
-		{"dim", FullPalette.Dim},
+		{"bright", fullPalette.Bright},
+		{"body", fullPalette.Body},
+		{"subtle", fullPalette.Subtle},
+		{"dimmer", fullPalette.Dimmer},
+		{"status", fullPalette.Status},
+		{"dim", fullPalette.Dim},
 	}
 	for i := 1; i < len(ladder); i++ {
 		hi, lo := luminance(t, ladder[i-1].token), luminance(t, ladder[i].token)
@@ -213,7 +213,7 @@ func TestPalette_MonoCollapsesOntoItsThreeShades(t *testing.T) {
 		name  string
 		token Token
 	}{{"mono-fg", MonoFg}, {"mono-dim", MonoDim}, {"mono-bg", MonoBg}} {
-		if c.token.TrueColor == nil || c.token.ANSI256 == nil || c.token.ANSI == nil {
+		if c.token.trueColor == nil || c.token.aNSI256 == nil || c.token.aNSI == nil {
 			t.Errorf("%s is not written for every profile: %+v", c.name, c.token)
 		}
 	}
@@ -222,7 +222,7 @@ func TestPalette_MonoCollapsesOntoItsThreeShades(t *testing.T) {
 		if c.name == "band" {
 			continue // no ground at all under mono; TestPalette_TheBandIsPaddingAloneWhereItWouldMislead
 		}
-		got := tokenNamed(MonoPalette, c.name)
+		got := tokenNamed(monoPalette, c.name)
 		if !shades[got] {
 			t.Errorf("mono %s is %+v, which is none of the three shades", c.name, got)
 		}
@@ -238,11 +238,11 @@ func TestPalette_TheBandIsPaddingAloneWhereItWouldMislead(t *testing.T) {
 		if name == ThemeAuto {
 			continue
 		}
-		if got := themes[name].tokens.Band.ANSI; got != (lipgloss.NoColor{}) {
+		if got := themes[name].tokens.band.aNSI; got != (lipgloss.NoColor{}) {
 			t.Errorf("%s theme: the band is %s at sixteen colours, want no ground", name, sgr(got))
 		}
 	}
-	for _, rung := range []color.Color{MonoPalette.Band.TrueColor, MonoPalette.Band.ANSI256, MonoPalette.Band.ANSI} {
+	for _, rung := range []color.Color{monoPalette.band.trueColor, monoPalette.band.aNSI256, monoPalette.band.aNSI} {
 		if rung != (lipgloss.NoColor{}) {
 			t.Errorf("mono: the band is %s, want no ground at every rung", sgr(rung))
 		}
@@ -258,9 +258,9 @@ func tokenNamed(p ColorTokens, name string) Token {
 	case "del":
 		return p.Del
 	case "addBg":
-		return p.AddBg
+		return p.addBg
 	case "delBg":
-		return p.DelBg
+		return p.delBg
 	case "hunk":
 		return p.Hunk
 	case "accent":
@@ -270,7 +270,7 @@ func tokenNamed(p ColorTokens, name string) Token {
 	case "focusBg":
 		return p.FocusBg
 	case "band":
-		return p.Band
+		return p.band
 	case "dim":
 		return p.Dim
 	case "dimmer":
@@ -297,10 +297,10 @@ func tokenNamed(p ColorTokens, name string) Token {
 // not pretending to be a contrast model.
 func luminance(t *testing.T, c Token) int {
 	t.Helper()
-	if c.TrueColor == nil {
+	if c.trueColor == nil {
 		t.Fatalf("token %+v has no colour to measure", c)
 	}
-	r, g, b, _ := c.TrueColor.RGBA()
+	r, g, b, _ := c.trueColor.RGBA()
 	return int(299*uint64(r>>8)+587*uint64(g>>8)+114*uint64(b>>8)) / 1000
 }
 
@@ -317,13 +317,13 @@ var lightTable = []struct {
 }{
 	{"add", LightPalette.Add, "#008700", "2", "2"},
 	{"del", LightPalette.Del, "#d70000", "1", "1"},
-	{"addBg", LightPalette.AddBg, "#d7ffd7", "194", "10"},
-	{"delBg", LightPalette.DelBg, "#ffd7d7", "224", "9"},
+	{"addBg", LightPalette.addBg, "#d7ffd7", "194", "10"},
+	{"delBg", LightPalette.delBg, "#ffd7d7", "224", "9"},
 	{"hunk", LightPalette.Hunk, "#008787", "6", "6"},
 	{"accent", LightPalette.Accent, "#af5f00", "130", "3"},
 	{"info", LightPalette.Info, "#005fd7", "4", "4"},
 	{"focusBg", LightPalette.FocusBg, "#d7d7ff", "189", "7"},
-	{"band", LightPalette.Band, "#e4e4e4", "254", noSixteen},
+	{"band", LightPalette.band, "#e4e4e4", "254", noSixteen},
 	{"dim", LightPalette.Dim, "#8a8a8a", "245", "8"},
 	{"dimmer", LightPalette.Dimmer, "#6c6c6c", "242", "8"},
 	{"spin", LightPalette.Spin, "#af005f", "125", "5"},
@@ -346,9 +346,9 @@ func TestPalette_LightIsWrittenForEveryProfile(t *testing.T) {
 			want color.Color
 			says string
 		}{
-			{"truecolor", c.token.TrueColor, lipgloss.Color(c.hex), c.hex},
-			{"256 index", c.token.ANSI256, lipgloss.Color(c.ansi256), c.ansi256},
-			{"16-colour fallback", c.token.ANSI, lipgloss.Color(c.ansi16), c.ansi16},
+			{"truecolor", c.token.trueColor, lipgloss.Color(c.hex), c.hex},
+			{"256 index", c.token.aNSI256, lipgloss.Color(c.ansi256), c.ansi256},
+			{"16-colour fallback", c.token.aNSI, lipgloss.Color(c.ansi16), c.ansi16},
 		} {
 			if rung.got != rung.want {
 				t.Errorf("light %s: %s is %s, the palette says %q",
@@ -376,11 +376,11 @@ func TestPalette_EveryThemeAnswersForEveryToken(t *testing.T) {
 		p := themes[name].tokens
 		for _, c := range paletteTable {
 			tok := tokenNamed(p, c.name)
-			if tok.TrueColor == nil || tok.ANSI256 == nil || tok.ANSI == nil {
+			if tok.trueColor == nil || tok.aNSI256 == nil || tok.aNSI == nil {
 				t.Errorf("%s theme: %s is not written for every profile: %+v", name, c.name, tok)
 			}
 		}
-		if themes[name].ground.TrueColor == nil {
+		if themes[name].ground.trueColor == nil {
 			t.Errorf("%s theme has no ground to have been chosen against", name)
 		}
 	}
@@ -397,12 +397,12 @@ func TestPalette_NoThemeSpendsDelsSixteenTwice(t *testing.T) {
 			continue
 		}
 		p := themes[name].tokens
-		del := sgr(p.Del.ANSI)
+		del := sgr(p.Del.aNSI)
 		for _, c := range paletteTable {
 			if c.name == "del" {
 				continue
 			}
-			if got := sgr(tokenNamed(p, c.name).ANSI); got == del {
+			if got := sgr(tokenNamed(p, c.name).aNSI); got == del {
 				t.Errorf("%s theme: %s is del's %s at sixteen colours", name, c.name, del)
 			}
 		}
@@ -424,8 +424,8 @@ func TestPalette_NoThemeCollapsesTwoTokens(t *testing.T) {
 			what string
 			of   func(Token) string
 		}{
-			{"truecolor", func(c Token) string { return sgr(c.TrueColor) }},
-			{"256", func(c Token) string { return sgr(c.ANSI256) }},
+			{"truecolor", func(c Token) string { return sgr(c.trueColor) }},
+			{"256", func(c Token) string { return sgr(c.aNSI256) }},
 		} {
 			seen := map[string]string{}
 			for _, c := range paletteTable {
@@ -449,14 +449,14 @@ func TestPalette_TheDerivedTintsKeepTheirHue(t *testing.T) {
 		token        Token
 		lead, second func(r, g, b uint32) uint32
 	}{
-		{"addBg", CharmPalette.AddBg,
+		{"addBg", charmPalette.addBg,
 			func(_, g, _ uint32) uint32 { return g },
 			func(r, _, _ uint32) uint32 { return r }},
-		{"delBg", CharmPalette.DelBg,
+		{"delBg", charmPalette.delBg,
 			func(r, _, _ uint32) uint32 { return r },
 			func(_, g, _ uint32) uint32 { return g }},
 	} {
-		r, g, b, _ := c.token.TrueColor.RGBA()
+		r, g, b, _ := c.token.trueColor.RGBA()
 		if c.lead(r, g, b) <= c.second(r, g, b) {
 			t.Errorf("%s is #%02x%02x%02x, which is not the hue it was derived from",
 				c.name, r>>8, g>>8, b>>8)
@@ -491,7 +491,7 @@ func TestPalette_LightGreyLadderAscends(t *testing.T) {
 	if luminance(t, LightPalette.Dim) <= luminance(t, LightPalette.Dimmer) {
 		t.Error("dim must be the lighter of the two chrome greys on a light ground")
 	}
-	if luminance(t, FullPalette.Dim) >= luminance(t, FullPalette.Dimmer) {
+	if luminance(t, fullPalette.Dim) >= luminance(t, fullPalette.Dimmer) {
 		t.Error("dim must be the darker of the two chrome greys on a dark ground")
 	}
 }
@@ -530,29 +530,29 @@ func TestPalette_TheThemeGoesThroughMonosDoor(t *testing.T) {
 	if Palette != LightPalette {
 		t.Error("the light table was asked for and is not the one being drawn with")
 	}
-	if sty.Body.GetForeground() != LightPalette.Body.Color() {
+	if sty.body.GetForeground() != LightPalette.Body.Color() {
 		t.Error("the derived styles did not rebuild on the swapped table")
 	}
 
 	SetMono(true)
-	if Palette != MonoPalette {
+	if Palette != monoPalette {
 		t.Error("mono outranks the theme")
 	}
 	if err := SetTheme(ThemeCharm); err != nil {
 		t.Fatalf("charm is a shipped table: %v", err)
 	}
-	if Palette != MonoPalette {
+	if Palette != monoPalette {
 		t.Error("a theme asked for under mono must not paint over the two greys")
 	}
 	SetMono(false)
-	if Palette != CharmPalette {
+	if Palette != charmPalette {
 		t.Error("the theme asked for under mono is what comes back when mono goes off")
 	}
 
 	if err := SetTheme("solarized"); err == nil {
 		t.Error("a name no table answers to must be refused, not fallen back from")
 	}
-	if Palette != CharmPalette {
+	if Palette != charmPalette {
 		t.Error("a refused name changed the palette")
 	}
 }
@@ -578,7 +578,7 @@ func TestPalette_AutoFollowsTheGroundAndANamedThemeDoesNot(t *testing.T) {
 	if !SetGround(true) {
 		t.Error("a terminal that changed its background is a swap back")
 	}
-	if Palette != FullPalette {
+	if Palette != fullPalette {
 		t.Error("auto did not follow the terminal back onto the dark table")
 	}
 
@@ -588,7 +588,7 @@ func TestPalette_AutoFollowsTheGroundAndANamedThemeDoesNot(t *testing.T) {
 	if SetGround(false) {
 		t.Error("a named theme does not move when the terminal answers")
 	}
-	if Palette != FullPalette {
+	if Palette != fullPalette {
 		t.Error("a named theme was overruled by the ground")
 	}
 }
@@ -649,7 +649,7 @@ func TestPalette_TheDarkGroundIsPaintedByDefault(t *testing.T) {
 			if got := GroundColor(); !sameColor(got, c.ground) {
 				t.Errorf("%s at %v: the ground is %v, want %v", theme, c.profile, got, c.ground)
 			}
-			if got := CardBand().Color(); !sameColor(got, c.band) {
+			if got := cardBand().Color(); !sameColor(got, c.band) {
 				t.Errorf("%s at %v: the card's band is %v, want %v and no step", theme, c.profile, got, c.band)
 			}
 		}

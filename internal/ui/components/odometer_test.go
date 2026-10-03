@@ -14,7 +14,7 @@ func climb(start, target int64) (Odometer, []int64) {
 	var seen []int64
 	for frame := 1; frame <= odometerSteps; frame++ {
 		o.Toward(target, frame)
-		seen = append(seen, o.Value())
+		seen = append(seen, o.value())
 	}
 	return o, seen
 }
@@ -47,7 +47,7 @@ func TestOdometer_ArrivesExactlyAndInBoundedFrames(t *testing.T) {
 func TestOdometer_FirstTargetIsExact(t *testing.T) {
 	var o Odometer
 	o.Toward(41200, 0)
-	if got := o.Value(); got != 41200 {
+	if got := o.value(); got != 41200 {
 		t.Fatalf("the first target should be shown exactly, got %d", got)
 	}
 	if o.Easing() {
@@ -62,7 +62,7 @@ func TestOdometer_HoldsWhenTheTargetHolds(t *testing.T) {
 	o.Toward(9834, 0)
 	for frame := 1; frame <= 20; frame++ {
 		o.Toward(9834, frame)
-		if got := o.Value(); got != 9834 {
+		if got := o.value(); got != 9834 {
 			t.Fatalf("frame %d moved a count nothing measured: %d", frame, got)
 		}
 		if o.Easing() {
@@ -78,7 +78,7 @@ func TestOdometer_AFallingTargetSnaps(t *testing.T) {
 	var o Odometer
 	o.Toward(41200, 0)
 	o.Toward(0, 1)
-	if got := o.Value(); got != 0 {
+	if got := o.value(); got != 0 {
 		t.Fatalf("a reset should land at once, got %d", got)
 	}
 	if o.Easing() {
@@ -93,11 +93,11 @@ func TestOdometer_AdvancesOnFramesNotOnCalls(t *testing.T) {
 	var o Odometer
 	o.Toward(0, 0)
 	o.Toward(1000, 1)
-	once := o.Value()
+	once := o.value()
 	for range 5 {
 		o.Toward(1000, 1)
 	}
-	if got := o.Value(); got != once {
+	if got := o.value(); got != once {
 		t.Fatalf("a second call on one frame advanced the climb: %d -> %d", once, got)
 	}
 }
@@ -108,15 +108,15 @@ func TestOdometer_RetargetsFromWhereItIs(t *testing.T) {
 	var o Odometer
 	o.Toward(0, 0)
 	o.Toward(1000, 1)
-	mid := o.Value()
+	mid := o.value()
 	o.Toward(5000, 2)
-	if got := o.Value(); got < mid {
+	if got := o.value(); got < mid {
 		t.Fatalf("a new target should climb on from %d, not back to %d", mid, got)
 	}
 	for frame := 3; frame <= 2+odometerSteps; frame++ {
 		o.Toward(5000, frame)
 	}
-	if got := o.Value(); got != 5000 {
+	if got := o.value(); got != 5000 {
 		t.Fatalf("the second climb should land too, got %d", got)
 	}
 }

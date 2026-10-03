@@ -56,7 +56,7 @@ func readingsScreen(focus int) *ReadingsScreen {
 				Expanded: true, Detail: detail,
 			}
 		},
-		Focus: focus, Subject: "5 readings", Cost: "$0.0142 spent", MaxLines: 18,
+		focus: focus, Subject: "5 readings", Cost: "$0.0142 spent", maxLines: 18,
 	}
 }
 
@@ -102,8 +102,8 @@ func TestReadingsScreen_SaysWhenTheOldestWereDropped(t *testing.T) {
 func TestReadingsScreen_MovesAndLeaves(t *testing.T) {
 	s := readingsScreen(0)
 	s.View(110)
-	if done := s.Update(tea.KeyPressMsg{Code: tea.KeyDown}); done || s.Focus != 1 {
-		t.Fatalf("down: done %v, focus %d", done, s.Focus)
+	if done := s.Update(tea.KeyPressMsg{Code: tea.KeyDown}); done || s.focus != 1 {
+		t.Fatalf("down: done %v, focus %d", done, s.focus)
 	}
 	if done := s.Update(tea.KeyPressMsg{Code: 'q', Text: "q"}); !done {
 		t.Fatal("q did not close the screen")
@@ -113,7 +113,7 @@ func TestReadingsScreen_MovesAndLeaves(t *testing.T) {
 // Stacked, both panes stay and nothing runs past the terminal.
 func TestReadingsScreen_NarrowStacksThePanes(t *testing.T) {
 	s := readingsScreen(1)
-	s.MaxLines = 26
+	s.maxLines = 26
 	view := s.View(60)
 	plain := ansi.Strip(view)
 	if !strings.Contains(plain, "r 6 · off target") || !strings.Contains(plain, "the importer is not the exporter") {

@@ -147,7 +147,7 @@ func (s StartScreen) layout(width int) ([]string, []int) {
 		rows = append(rows, "")
 		blank(1)
 		if s.Lead != "" {
-			rows = append(rows, sty.Dim.Render(Clip(s.Lead, width)))
+			rows = append(rows, sty.dim.Render(Clip(s.Lead, width)))
 			blank(1)
 		}
 		lines, owners := s.suggestionRows(width)
@@ -161,7 +161,7 @@ func (s StartScreen) layout(width int) ([]string, []int) {
 	if len(s.FirstRun) > 0 {
 		rows = append(rows, "")
 		for _, line := range s.FirstRun {
-			rows = append(rows, Clip(sty.Dim.Render(line), width))
+			rows = append(rows, Clip(sty.dim.Render(line), width))
 		}
 		blank(1 + len(s.FirstRun))
 	}
@@ -194,12 +194,12 @@ func (s StartScreen) hintRows(width int) []string {
 	if s.Typing == "" {
 		return rows
 	}
-	typing := sty.Dim.Render(s.Typing)
+	typing := sty.dim.Render(s.Typing)
 	if len(rows) == 0 {
 		return []string{Clip(typing, width)}
 	}
 	if len(rows) == 1 {
-		if joined := typing + sty.Dim.Render(" · ") + rows[0]; lipgloss.Width(joined) <= width {
+		if joined := typing + sty.dim.Render(" · ") + rows[0]; lipgloss.Width(joined) <= width {
 			return []string{joined}
 		}
 	}
@@ -291,7 +291,7 @@ func wordmarkRows(width int) []string {
 		painted := brightStyle().Render(row)
 		if i == 1 {
 			if trail := startTrail(width - lipgloss.Width(row)); trail != "" {
-				painted += sty.Dim.Render(trail)
+				painted += sty.dim.Render(trail)
 			}
 		}
 		rows = append(rows, Clip(painted, width))
@@ -327,8 +327,8 @@ func nameRule(width int) string {
 	if fill < 3 {
 		return ""
 	}
-	return sty.Dim.Render(ruleRun(2)) + " " + brightStyle().Render(startName) +
-		" " + sty.Dim.Render(ruleRun(fill))
+	return sty.dim.Render(ruleRun(2)) + " " + brightStyle().Render(startName) +
+		" " + sty.dim.Render(ruleRun(fill))
 }
 
 // startName is what the product calls itself. It is here rather than borrowed
@@ -355,7 +355,7 @@ func joinFacts(facts []StartFact) string {
 	var b strings.Builder
 	for i, f := range facts {
 		if i > 0 {
-			b.WriteString(sty.Dim.Render(" · "))
+			b.WriteString(sty.dim.Render(" · "))
 		}
 		b.WriteString(f.Tone.style().Render(f.Text))
 	}
@@ -374,16 +374,16 @@ func (s StartScreen) noteRows(width int) []string {
 	indent := strings.Repeat(" ", label+2)
 	rows := make([]string, 0, len(s.Notes))
 	for _, n := range s.Notes {
-		head := sty.Status.Render(padRight(n.Label, label)) + "  " + sty.Body.Render(n.Value)
+		head := sty.status.Render(padRight(n.Label, label)) + "  " + sty.body.Render(n.Value)
 		if n.Detail == "" {
 			rows = append(rows, Clip(head, width))
 			continue
 		}
-		if full := head + sty.Dim.Render(" — "+n.Detail); lipgloss.Width(full) <= width {
+		if full := head + sty.dim.Render(" — "+n.Detail); lipgloss.Width(full) <= width {
 			rows = append(rows, full)
 			continue
 		}
-		rows = append(rows, Clip(head, width), Clip(indent+sty.Dim.Render(n.Detail), width))
+		rows = append(rows, Clip(head, width), Clip(indent+sty.dim.Render(n.Detail), width))
 	}
 	return rows
 }
@@ -410,7 +410,7 @@ func (s StartScreen) suggestionRows(width int) ([]string, []int) {
 			continue
 		}
 		rows = append(rows, s.row(focused, head, "", width),
-			Clip(strings.Repeat(" ", suggestionGutter+2)+sty.Dim.Render(sg.Detail), width))
+			Clip(strings.Repeat(" ", suggestionGutter+2)+sty.dim.Render(sg.Detail), width))
 		owners = append(owners, i, i)
 	}
 	return rows, owners
@@ -428,9 +428,9 @@ func (s StartScreen) row(focused bool, head, detail string, width int) string {
 		}
 		return LitOption(line, width)
 	}
-	line := strings.Repeat(" ", suggestionGutter) + sty.Accent.Render(glyph) + " " + sty.Body.Render(title)
+	line := strings.Repeat(" ", suggestionGutter) + sty.accent.Render(glyph) + " " + sty.body.Render(title)
 	if detail != "" {
-		line += sty.Dim.Render(" — " + detail)
+		line += sty.dim.Render(" — " + detail)
 	}
 	return Clip(line, width)
 }

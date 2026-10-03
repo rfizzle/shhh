@@ -114,9 +114,9 @@ func TestApprovalCard_TheSeverityLadderHasThreeColours(t *testing.T) {
 		severity Severity
 		want     string
 	}{
-		{SeverityLow, sty.Accent.Render("⚠ low")},
-		{SeverityMedium, sty.Accent.Render("⚠ medium")},
-		{SeverityHigh, sty.Del.Render("⚠ HIGH")},
+		{SeverityLow, sty.accent.Render("⚠ low")},
+		{SeverityMedium, sty.accent.Render("⚠ medium")},
+		{SeverityHigh, sty.del.Render("⚠ HIGH")},
 	} {
 		c := &ApprovalCard{
 			Variant: ApprovalCommand, Title: "Approve command",
@@ -138,7 +138,7 @@ func TestApprovalCard_TheSeverityLadderHasThreeColours(t *testing.T) {
 		Variant: ApprovalGeneric, Title: "Approve tool",
 		Act: "use web_fetch", Answer: "allow it",
 	}
-	if !strings.Contains(unrated.View(90), sty.Info.Render("╭─ ")) {
+	if !strings.Contains(unrated.View(90), sty.info.Render("╭─ ")) {
 		t.Fatalf("a card with no rating takes the decision tone:\n%s", unrated.View(90))
 	}
 }
@@ -513,8 +513,8 @@ func TestApprovalCard_Keys(t *testing.T) {
 		{"n", true, ApprovalDeny},
 		{"esc", true, ApprovalDeny},
 		{"ctrl+c", true, ApprovalDeny},
-		{"a", false, ApprovalWaiting}, // AllowAlways off: [a] ignored
-		{"z", false, ApprovalWaiting},
+		{"a", false, approvalWaiting}, // AllowAlways off: [a] ignored
+		{"z", false, approvalWaiting},
 	}
 	for _, tc := range cases {
 		done, result := c.Update(key(tc.key))
@@ -620,7 +620,7 @@ func TestApprovalCard_AnOfferWiderThanTheCardFolds(t *testing.T) {
 // one on: the way out of a decision is what a reader must be able to find
 // without having pressed anything.
 func TestApprovalCard_EveryVariantSaysWhatEscDoes(t *testing.T) {
-	for _, variant := range []ApprovalVariant{ApprovalCommand, ApprovalEdit, ApprovalGeneric} {
+	for _, variant := range []approvalVariant{ApprovalCommand, ApprovalEdit, ApprovalGeneric} {
 		c := &ApprovalCard{
 			Variant: variant, Title: "Approve", Act: "act",
 			Answer: "do it",

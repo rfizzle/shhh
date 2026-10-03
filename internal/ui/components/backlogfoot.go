@@ -17,16 +17,16 @@ import (
 // footRows is the key row and, while a turn is running, the run of keys that
 // is not live and the sentence saying why.
 func (b *BacklogScreen) footRows(width int) []string {
-	f := KeyFooter{
-		Offers:   b.offers(width),
-		Register: b.keyList(),
-		Showing:  b.keys,
-		Legend:   b.lettersLegend(),
+	f := keyFooter{
+		offers:   b.offers(width),
+		register: b.keyList(),
+		showing:  b.keys,
+		legend:   b.lettersLegend(),
 	}
 	if b.confirm != nil {
-		f.Taken = b.confirm.View(width)
+		f.taken = b.confirm.View(width)
 	}
-	rows := f.Rows(width)
+	rows := f.rows(width)
 	if b.confirm != nil || b.keys || !b.ReadOnly {
 		return rows
 	}
@@ -39,7 +39,7 @@ func (b *BacklogScreen) footRows(width int) []string {
 	// keys as the terminal narrows, and this one may not: a row of grey keys
 	// with nothing left saying why they are grey is a surface that looks
 	// broken (invariant 5).
-	rows = append(rows, sty.Dim.Render(Clip(b.whyInert(), width)))
+	rows = append(rows, sty.dim.Render(Clip(b.whyInert(), width)))
 	return append(rows, packOffersIn(b.stateOffers(), width, false)...)
 }
 

@@ -177,7 +177,7 @@ func TestChatScreen_LeavingOpensNothing(t *testing.T) {
 	} {
 		c := chatScreen()
 		done, result := c.Update(press)
-		if !done || !result.Canceled || result.Open {
+		if !done || !result.canceled || result.Open {
 			t.Fatalf("%v left with something open: %+v", press, result)
 		}
 	}

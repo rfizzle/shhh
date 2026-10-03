@@ -312,21 +312,21 @@ func TestActivityRow_OutcomeTakesTheStatesToken(t *testing.T) {
 		want lipgloss.Style
 	}{
 		{"a command that finished", ActivityRow{Kind: ActivityCommand, Verb: "run",
-			Outcome: OutcomeExit(0)}, sty.Add},
+			Outcome: OutcomeExit(0)}, sty.add},
 		{"a commit that landed", ActivityRow{Kind: ActivityEdit, Verb: "commit",
-			Outcome: "9f824a1"}, sty.Add},
+			Outcome: "9f824a1"}, sty.add},
 		{"a command in flight", ActivityRow{Kind: ActivityCommand, Verb: "run",
-			State: ActivityRunning, Outcome: OutcomeRunning}, sty.SpinText},
+			State: ActivityRunning, Outcome: OutcomeRunning}, sty.spinText},
 		{"a call the classifier is judging", ActivityRow{Kind: ActivityCommand, Verb: "run",
-			State: ActivityChecking, Outcome: OutcomeChecking}, sty.SpinText},
+			State: ActivityChecking, Outcome: outcomeChecking}, sty.spinText},
 		{"a command that broke", ActivityRow{Kind: ActivityCommand, Verb: "run",
-			State: ActivityFailed, Outcome: OutcomeExit(1)}, sty.Del},
+			State: ActivityFailed, Outcome: OutcomeExit(1)}, sty.del},
 		{"a rule's no", ActivityRow{Kind: ActivityCommand, Verb: "run", State: ActivityDenied,
-			ByRule: true, Outcome: OutcomeBlocked, Allowed: "plan mode"}, sty.Del},
+			ByRule: true, Outcome: OutcomeBlocked, Allowed: "plan mode"}, sty.del},
 		{"your own no", ActivityRow{Kind: ActivityCommand, Verb: "run", State: ActivityDenied,
-			Outcome: OutcomeBy(OutcomeDenied, "you")}, sty.Dim},
+			Outcome: OutcomeBy(OutcomeDenied, "you")}, sty.dim},
 		{"a call that has not started", ActivityRow{Kind: ActivityTool, Verb: "read",
-			State: ActivityQueued, Outcome: OutcomeQueued}, sty.Dim},
+			State: ActivityQueued, Outcome: OutcomeQueued}, sty.dim},
 	}
 	for _, tc := range cases {
 		if want, got := tc.want.Render(tc.row.Outcome), tc.row.outcomeField(); !strings.Contains(got, want) {
@@ -337,7 +337,7 @@ func TestActivityRow_OutcomeTakesTheStatesToken(t *testing.T) {
 	// A read's count is the other half of the field and keeps its own tone:
 	// what a call found is content, and content is dimmer.
 	counted := ActivityRow{Kind: ActivityTool, Verb: "read", Counts: "218 lines"}
-	if want, got := sty.Dimmer.Render("218 lines"), counted.outcomeField(); !strings.Contains(got, want) {
+	if want, got := sty.dimmer.Render("218 lines"), counted.outcomeField(); !strings.Contains(got, want) {
 		t.Fatalf("a count stays dimmer, got %q", got)
 	}
 }
@@ -350,9 +350,9 @@ func TestActivityRow_LineCountsCarryTheDiffsTokens(t *testing.T) {
 		Counts: "+12 −4 · 2 hunks", Duration: "1.1s"}
 	view := r.View(110)
 	for _, want := range []string{
-		sty.Add.Render("+12"),
-		sty.Del.Render("−4"),
-		sty.Dimmer.Render(" · ") + sty.Dimmer.Render("2 hunks"),
+		sty.add.Render("+12"),
+		sty.del.Render("−4"),
+		sty.dimmer.Render(" · ") + sty.dimmer.Render("2 hunks"),
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("an edit's counts should carry %q:\n%q", want, view)
@@ -360,7 +360,7 @@ func TestActivityRow_LineCountsCarryTheDiffsTokens(t *testing.T) {
 	}
 	// Only a line count takes them: a search's own numbers are not additions.
 	found := ActivityRow{Kind: ActivityTool, Verb: "search", Counts: "6 matches · 4 files"}
-	if want, got := sty.Dimmer.Render("6 matches"), found.outcomeField(); !strings.Contains(got, want) {
+	if want, got := sty.dimmer.Render("6 matches"), found.outcomeField(); !strings.Contains(got, want) {
 		t.Fatalf("a count that is not a line count stays dimmer, got %q", got)
 	}
 }
@@ -375,19 +375,19 @@ func TestActivityRow_SubjectTone(t *testing.T) {
 		row  ActivityRow
 		want lipgloss.Style
 	}{
-		{"at rest", ActivityRow{Kind: ActivityTool, Verb: "read", Target: "loop.go"}, sty.Body},
+		{"at rest", ActivityRow{Kind: ActivityTool, Verb: "read", Target: "loop.go"}, sty.body},
 		{"in flight", ActivityRow{Kind: ActivityCommand, Verb: "run", Target: "go test ./...",
-			State: ActivityRunning, Outcome: OutcomeRunning}, sty.Bright},
+			State: ActivityRunning, Outcome: OutcomeRunning}, sty.bright},
 		{"queued", ActivityRow{Kind: ActivityTool, Verb: "read", Target: "loop.go",
-			State: ActivityQueued, Outcome: OutcomeQueued}, sty.Dim},
+			State: ActivityQueued, Outcome: OutcomeQueued}, sty.dim},
 		{"refused by you", ActivityRow{Kind: ActivityEdit, Verb: "edit", Target: "go.mod",
-			State: ActivityDenied, Outcome: OutcomeBy(OutcomeDenied, "you")}, sty.Dim},
+			State: ActivityDenied, Outcome: OutcomeBy(OutcomeDenied, "you")}, sty.dim},
 		// A rule's no keeps body text: the reader is being told about an act
 		// somebody else stopped, not about a preference of their own.
 		{"blocked by a rule", ActivityRow{Kind: ActivityCommand, Verb: "run", Target: "rm -rf ./dist",
-			State: ActivityDenied, ByRule: true, Outcome: OutcomeBlocked}, sty.Body},
+			State: ActivityDenied, ByRule: true, Outcome: OutcomeBlocked}, sty.body},
 		{"broken", ActivityRow{Kind: ActivityCommand, Verb: "run", Target: "go vet ./...",
-			State: ActivityFailed, Outcome: OutcomeExit(1)}, sty.Body},
+			State: ActivityFailed, Outcome: OutcomeExit(1)}, sty.body},
 	}
 	for _, tc := range cases {
 		view := tc.row.View(110)
@@ -406,7 +406,7 @@ func TestActivityRow_ScopeStaysBehindTheSubject(t *testing.T) {
 	r := ActivityRow{Kind: ActivityTool, Verb: "search", Target: "ErrRoundLimit ./internal",
 		Scope: "./internal", Counts: "6 matches"}
 	view := r.View(110)
-	if want := sty.Body.Render("ErrRoundLimit") + sty.Dim.Render(" ./internal"); !strings.Contains(view, want) {
+	if want := sty.body.Render("ErrRoundLimit") + sty.dim.Render(" ./internal"); !strings.Contains(view, want) {
 		t.Fatalf("the pattern leads in body text and the place is dim behind it:\n%q", view)
 	}
 	// Clipped past the scope, what is left is all subject.
@@ -415,7 +415,7 @@ func TestActivityRow_ScopeStaysBehindTheSubject(t *testing.T) {
 	if strings.Contains(stripANSI(narrow), "./internal/ui/chat") {
 		t.Fatalf("a 40-column row has no room for the scope: %q", stripANSI(narrow))
 	}
-	if want := sty.Body.Render("ErrRound…"); !strings.Contains(narrow, want) {
+	if want := sty.body.Render("ErrRound…"); !strings.Contains(narrow, want) {
 		t.Fatalf("and what is left of the field is all subject: %q", narrow)
 	}
 }
@@ -426,7 +426,7 @@ func TestActivityRow_ScopeStaysBehindTheSubject(t *testing.T) {
 func TestActivityRow_DurationIsDim(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	r := ActivityRow{Kind: ActivityTool, Verb: "read", Target: "loop.go", Counts: "218 lines", Duration: "0.6s"}
-	if want := sty.Dim.Render("0.6s"); !strings.Contains(r.View(110), want) {
+	if want := sty.dim.Render("0.6s"); !strings.Contains(r.View(110), want) {
 		t.Fatalf("the duration field is dim, want %q:\n%q", want, r.View(110))
 	}
 }
@@ -441,12 +441,12 @@ func TestActivityRow_EveryCellCarriesAToken(t *testing.T) {
 		"search":  {Kind: ActivityTool, Verb: "search", Target: "ErrRoundLimit ./internal", Scope: "./internal", Counts: "6 matches"},
 		"command": {Kind: ActivityCommand, Verb: "run", Target: "go test ./internal/agent/...", Outcome: OutcomeExit(0), Duration: "12.4s"},
 		"edit": {Kind: ActivityEdit, Verb: "edit", Target: "internal/agent/loop.go",
-			Outcome: OutcomeBy(OutcomeApproved, "you"), Counts: "+12 −4 · 2 hunks", Duration: "1.1s"},
+			Outcome: OutcomeBy(outcomeApproved, "you"), Counts: "+12 −4 · 2 hunks", Duration: "1.1s"},
 		"agent":    {Kind: ActivitySubagent, Verb: "agent", Target: "writer-1", Outcome: OutcomeOK, Duration: "48.0s"},
-		"think":    {Kind: ActivityThink, Verb: "think", Counts: "42 lines"},
+		"think":    {Kind: activityThink, Verb: "think", Counts: "42 lines"},
 		"queued":   {Kind: ActivityTool, Verb: "read", Target: "internal/agent/round.go", State: ActivityQueued, Outcome: OutcomeQueued, Duration: NoDuration},
 		"running":  {Kind: ActivityCommand, Verb: "run", Target: "go build ./cmd/shhh", State: ActivityRunning, Outcome: OutcomeRunning, Tail: "internal/ui/chat/model.go:1660:1: too many arguments"},
-		"checking": {Kind: ActivityCommand, Verb: "run", Target: "gofmt -w loop.go", State: ActivityChecking, Outcome: OutcomeChecking, Duration: "0.4s"},
+		"checking": {Kind: ActivityCommand, Verb: "run", Target: "gofmt -w loop.go", State: ActivityChecking, Outcome: outcomeChecking, Duration: "0.4s"},
 		"failed": {Kind: ActivityCommand, Verb: "run", Target: "go test ./internal/agent/...", State: ActivityFailed,
 			Outcome: OutcomeExit(1), Duration: "21.4s", Detail: []string{"--- FAIL: TestRoundLimit (0.03s)"}},
 		"denied": {Kind: ActivityEdit, Verb: "edit", Target: "go.mod", State: ActivityDenied,
@@ -455,7 +455,7 @@ func TestActivityRow_EveryCellCarriesAToken(t *testing.T) {
 			Outcome: OutcomeBlocked, Allowed: "classifier 2.1s", Keys: "/permissions why", Duration: NoDuration},
 		"allowed": {Kind: ActivityTool, Verb: "read", Target: "internal/ui/chat/model.go",
 			Allowed: OutcomeBy(OutcomeAutoAllowed, "read-only"), Counts: "412 lines", Duration: "0.2s"},
-		"selected": {Kind: ActivityTool, Verb: "read", Target: "internal/agent/loop.go", Selected: true,
+		"selected": {Kind: ActivityTool, Verb: "read", Target: "internal/agent/loop.go", selected: true,
 			Counts: "218 lines", Duration: "0.6s"},
 	}
 	for _, width := range goldenWidths {
@@ -517,18 +517,18 @@ func TestActivityRow_AReadingsVerdictIsNotASuccess(t *testing.T) {
 	for _, tone := range []SummaryTone{SummaryUnclear, SummaryOnTarget, SummarySufficient, SummaryOffTarget} {
 		r := ActivityRow{Kind: ActivitySummary, Verb: "summary", Target: "round 5",
 			Outcome: SummaryGlyph(tone) + " " + SummaryWord(tone), Counts: "1 line"}
-		if want, got := sty.Dim.Render(r.Outcome), r.outcomeField(); !strings.Contains(got, want) {
+		if want, got := sty.dim.Render(r.Outcome), r.outcomeField(); !strings.Contains(got, want) {
 			t.Fatalf("a reading's verdict should not take the done token, got %q", got)
 		}
 	}
 	// The same for the row that read, wrote and ran nothing at all.
-	think := ActivityRow{Kind: ActivityThink, Verb: "think", Outcome: OutcomeOK}
-	if want, got := sty.Dim.Render(OutcomeOK), think.outcomeField(); !strings.Contains(got, want) {
+	think := ActivityRow{Kind: activityThink, Verb: "think", Outcome: OutcomeOK}
+	if want, got := sty.dim.Render(OutcomeOK), think.outcomeField(); !strings.Contains(got, want) {
 		t.Fatalf("a thought has no outcome to call done, got %q", got)
 	}
 	// And an act that finished still says so in the token that means done.
 	ran := ActivityRow{Kind: ActivityCommand, Verb: "run", Outcome: OutcomeExit(0)}
-	if want, got := sty.Add.Render(OutcomeExit(0)), ran.outcomeField(); !strings.Contains(got, want) {
+	if want, got := sty.add.Render(OutcomeExit(0)), ran.outcomeField(); !strings.Contains(got, want) {
 		t.Fatalf("a command that finished should take the done token, got %q", got)
 	}
 }
@@ -541,7 +541,7 @@ func TestActivityRow_EveryOfferTheRowActsOnIsDrawnWhole(t *testing.T) {
 	rows := map[string]ActivityRow{
 		"summary": {Kind: ActivitySummary, Verb: "summary", Target: "round 1",
 			Outcome: SummaryGlyph(SummaryUnclear) + " " + SummaryWord(SummaryUnclear), Counts: "1 line", Keys: "[ctrl+o] reading mode"},
-		"think": {Kind: ActivityThink, Verb: "think", Target: "weighing the cap against the tests",
+		"think": {Kind: activityThink, Verb: "think", Target: "weighing the cap against the tests",
 			Counts: "12 lines", Duration: "3.1s", Keys: "[ctrl+o] reading mode"},
 		"denied": {Kind: ActivityCommand, State: ActivityDenied, ByRule: true, Verb: "run", Target: "rm -rf build",
 			Outcome: OutcomeBlocked, Allowed: "auto", Keys: "/permissions why"},
@@ -611,7 +611,7 @@ func TestActivityNotice_IsANoticeLine(t *testing.T) {
 	if got, want := stripANSI(full.View(80)), "  · session 2026-09-04 11:20:07 · saved · shhh code --continue"; got != want {
 		t.Fatalf("the notice line:\n got %q\nwant %q", got, want)
 	}
-	if !strings.Contains(full.View(80), sty.Dim.Render("session 2026-09-04 11:20:07 · saved · shhh code --continue")) {
+	if !strings.Contains(full.View(80), sty.dim.Render("session 2026-09-04 11:20:07 · saved · shhh code --continue")) {
 		t.Fatalf("every word of a notice is dim:\n%q", full.View(80))
 	}
 	for _, width := range []int{40, 60, 80, 110} {
@@ -639,7 +639,7 @@ func TestActivityNotice_IsANoticeLine(t *testing.T) {
 func TestActivityRow_APatternIsNotItsOwnScope(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	r := ActivityRow{Kind: ActivityTool, Verb: "search", Target: "func loop() .", Counts: "1 match"}
-	if want := sty.Body.Render("func loop() ."); !strings.Contains(r.View(80), want) {
+	if want := sty.body.Render("func loop() ."); !strings.Contains(r.View(80), want) {
 		t.Fatalf("a pattern with no place behind it is all subject:\n%q", r.View(80))
 	}
 }
@@ -668,13 +668,13 @@ func TestActivityRow_ACompactionCarriesItsOutcomeInTheGlyphColumn(t *testing.T) 
 	if glyph := strings.TrimSpace(string(line[ptrWidth+railWidth : ptrWidth+railWidth+glyphWidth])); glyph != "✓" {
 		t.Fatalf("a compaction that came back says so with ✓, got %q", glyph)
 	}
-	if !strings.Contains(done.View(110), sty.Add.Render("✓")) {
+	if !strings.Contains(done.View(110), sty.add.Render("✓")) {
 		t.Fatalf("the ✓ is add, like every other thing that landed:\n%q", done.View(110))
 	}
 	// The two ends of the account carry the two tokens those numbers mean
 	// everywhere else; the label and the cost stay in the field's own tone.
-	for _, want := range []string{sty.Del.Render("88%"), sty.Add.Render("28%"),
-		sty.Dim.Render("ctx"), sty.Dim.Render("$0.02")} {
+	for _, want := range []string{sty.del.Render("88%"), sty.add.Render("28%"),
+		sty.dim.Render("ctx"), sty.dim.Render("$0.02")} {
 		if !strings.Contains(done.View(110), want) {
 			t.Fatalf("want %q in the account:\n%q", want, done.View(110))
 		}
@@ -701,16 +701,16 @@ func TestPaintOccupancy_ClaimsOnlyAPairOfPercentages(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	for _, seg := range []string{"auto-allowed", "classifier 2.1s", "signal 9", "30s",
 		"ctx 88% → high", "88% → 28% → 12%", "ctx  88%  →  28%"} {
-		if _, ok := paintOccupancy(seg, sty.Dim); ok {
+		if _, ok := paintOccupancy(seg, sty.dim); ok {
 			t.Fatalf("%q is not an occupancy pair", seg)
 		}
 	}
 	for _, seg := range []string{"88% → 28%", "ctx 88% → 28%", "the window 100% → 0%"} {
-		if _, ok := paintOccupancy(seg, sty.Dim); !ok {
+		if _, ok := paintOccupancy(seg, sty.dim); !ok {
 			t.Fatalf("%q is an occupancy pair", seg)
 		}
 	}
-	if got := paintAccount("auto-allowed · auto mode", sty.Dim); got != sty.Dim.Render("auto-allowed · auto mode") {
+	if got := paintAccount("auto-allowed · auto mode", sty.dim); got != sty.dim.Render("auto-allowed · auto mode") {
 		t.Fatalf("an account with no pair in it is one run, got %q", got)
 	}
 }
@@ -750,18 +750,18 @@ func TestActivityRow_ApprovedAtTheCardNamesYou(t *testing.T) {
 // way — but it is what makes the column scannable (invariant 1).
 func TestActivityRow_TheTwoYesesArePaintedApart(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
-	got := paintAccount(ApprovedBy("you"), sty.Dim)
-	if want := sty.Add.Render(OutcomeApproved) + sty.Dim.Render(" by you"); got != want {
+	got := paintAccount(ApprovedBy("you"), sty.dim)
+	if want := sty.add.Render(outcomeApproved) + sty.dim.Render(" by you"); got != want {
 		t.Fatalf("a person's yes paints the word in add:\n got %q\nwant %q", got, want)
 	}
-	if got, want := paintAccount(OutcomeBy(OutcomeAutoAllowed, "read-only"), sty.Dim),
-		sty.Dim.Render("auto-allowed · read-only"); got != want {
+	if got, want := paintAccount(OutcomeBy(OutcomeAutoAllowed, "read-only"), sty.dim),
+		sty.dim.Render("auto-allowed · read-only"); got != want {
 		t.Fatalf("a rule's yes stays one dim run:\n got %q\nwant %q", got, want)
 	}
 	// The word test claims the decision word and nothing that merely opens
 	// with it, the way the shape tests beside it claim only their shape.
 	for _, seg := range []string{"approvedby you", "approved-by you", "approvals 3", "auto-allowed"} {
-		if _, ok := paintApproval(seg, sty.Dim); ok {
+		if _, ok := paintApproval(seg, sty.dim); ok {
 			t.Fatalf("%q is not the reader's approval", seg)
 		}
 	}

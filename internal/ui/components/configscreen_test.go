@@ -18,7 +18,7 @@ import (
 func configFixture() *ConfigScreen {
 	return &ConfigScreen{
 		Path:     "~/.config/shhh/config.toml",
-		MaxLines: 24,
+		maxLines: 24,
 		Rows: []ConfigRow{
 			{Group: "SESSION", Key: "behavior.default_mode", Label: "permission mode",
 				Value: "⏵⏵ auto", ValueTone: ToneSafe, Detail: "edits apply", Source: "user",
@@ -104,7 +104,7 @@ func TestConfigScreen_TakingAnOptionResolvesTheChange(t *testing.T) {
 // and enter resolves what was typed.
 func TestConfigScreen_FieldEditsResolveWhatWasTyped(t *testing.T) {
 	c := configFixture()
-	c.Focus = 1
+	c.focus = 1
 	c.Update(key("enter"))
 	c.Update(key("ctrl+u"))
 	typeInto(c, "40")
@@ -122,7 +122,7 @@ func TestConfigScreen_FieldEditsResolveWhatWasTyped(t *testing.T) {
 // it came from (the last four characters and nothing else).
 func TestConfigScreen_SecretIsNeverEchoed(t *testing.T) {
 	c := configFixture()
-	c.Focus = 2
+	c.focus = 2
 	c.Update(key("enter"))
 	typeInto(c, "sk-live-secret")
 	view := c.View(110)
@@ -382,14 +382,14 @@ func TestConfigScreen_PointerStepsOverRails(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		c.Update(key("down"))
 	}
-	if c.Focus != len(c.Rows)-1 {
-		t.Fatalf("the pointer stops at the last setting, got %d", c.Focus)
+	if c.focus != len(c.Rows)-1 {
+		t.Fatalf("the pointer stops at the last setting, got %d", c.focus)
 	}
 	for i := 0; i < 10; i++ {
 		c.Update(key("up"))
 	}
-	if c.Focus != 0 {
-		t.Fatalf("the pointer stops at the first setting, got %d", c.Focus)
+	if c.focus != 0 {
+		t.Fatalf("the pointer stops at the first setting, got %d", c.focus)
 	}
 }
 

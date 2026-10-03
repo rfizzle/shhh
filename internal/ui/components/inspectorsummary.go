@@ -86,11 +86,11 @@ func (r InspectorRail) summaryBlock(width int) (railBlock, bool) {
 	if s.Round > 0 {
 		fields = append(fields, fmt.Sprintf("as of round %d", s.Round))
 	}
-	metaStyle := sty.Dim
+	metaStyle := sty.dim
 	if s.Stale {
 		// An old reading is still the best reading there is — it is just not
 		// a current one, and the heading is where that is said.
-		fields, metaStyle = append(fields, "stale"), sty.Accent
+		fields, metaStyle = append(fields, "stale"), sty.accent
 	}
 	meta := strings.Join(fields, " · ")
 	b := railBlock{heading: railHeading("SUMMARY", meta, metaStyle, width)}
@@ -104,7 +104,7 @@ func (r InspectorRail) summaryBlock(width int) (railBlock, bool) {
 		// The first line is pinned: a block truncated to its heading would
 		// leave the rail with a word and no sentence, and the sentence is the
 		// whole block. The rest fold from the bottom like any other rows.
-		row := indentRow(sty.Body.Render(line), width)
+		row := indentRow(sty.body.Render(line), width)
 		if i == 0 {
 			b.pin(row)
 			continue
@@ -121,7 +121,7 @@ func (r InspectorRail) summaryBlock(width int) (railBlock, bool) {
 		if s.Reason == "" || i >= summaryReasonLines {
 			break
 		}
-		b.pin(railRow(sty.Dim.Render(line), "", width, inspectorIndent+2))
+		b.pin(railRow(sty.dim.Render(line), "", width, inspectorIndent+2))
 	}
 	return b, true
 }
@@ -157,13 +157,13 @@ func summaryTone(s SummaryTone) (string, string, lipgloss.Style) {
 	glyph, word := SummaryGlyph(s), SummaryWord(s)
 	switch s {
 	case SummaryOnTarget:
-		return sty.Dim.Render(glyph), word, sty.Dim
+		return sty.dim.Render(glyph), word, sty.dim
 	case SummarySufficient:
-		return sty.Dim.Render(glyph), word, sty.Body
+		return sty.dim.Render(glyph), word, sty.body
 	case SummaryOffTarget:
-		return sty.Accent.Render(glyph), word, sty.Body
+		return sty.accent.Render(glyph), word, sty.body
 	}
-	return sty.Dim.Render(glyph), word, sty.Dim
+	return sty.dim.Render(glyph), word, sty.dim
 }
 
 // SummaryGlyph and SummaryWord are the same verdict unpainted, for the

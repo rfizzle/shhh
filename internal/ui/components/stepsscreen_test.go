@@ -39,7 +39,7 @@ func stepsItems() []StepsItem {
 }
 
 func stepsScreen(focus int) *StepsScreen {
-	return &StepsScreen{Steps: stepsItems(), Focus: focus, Subject: "1 of 7", MaxLines: 16}
+	return &StepsScreen{Steps: stepsItems(), Focus: focus, Subject: "1 of 7", maxLines: 16}
 }
 
 // The list is the checklist and the preview is what the transcript recorded
@@ -85,7 +85,7 @@ func TestStepsScreen_MovesAndLeaves(t *testing.T) {
 // Stacked, both panes stay and nothing runs past the terminal.
 func TestStepsScreen_NarrowStacksThePanes(t *testing.T) {
 	s := stepsScreen(1)
-	s.MaxLines = 24
+	s.maxLines = 24
 	view := s.View(60)
 	plain := ansi.Strip(view)
 	if !strings.Contains(plain, "Patch the round limit") || !strings.Contains(plain, "in the transcript") {
@@ -137,7 +137,7 @@ func planItems() []StepsItem {
 
 func planStepsScreen(focus int, drift ...string) *StepsScreen {
 	return &StepsScreen{Steps: planItems(), Focus: focus, Subject: "make the round limit recoverable · 2 of 4 done",
-		Plan: true, Drift: drift, MaxLines: 16}
+		Plan: true, Drift: drift, maxLines: 16}
 }
 
 // Over an approved plan the screen is /plan's: the states are the

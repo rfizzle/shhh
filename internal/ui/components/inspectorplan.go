@@ -63,14 +63,14 @@ func (r InspectorRail) planBlock(width int) (railBlock, bool) {
 		return railBlock{}, false
 	}
 	b := railBlock{heading: railHeading("PLAN",
-		fmt.Sprintf("%d of %d done", p.Done, len(p.Steps)), sty.Dim, width)}
+		fmt.Sprintf("%d of %d done", p.Done, len(p.Steps)), sty.dim, width)}
 	for _, s := range p.Steps {
 		glyph, style := planStepTone(s.State)
 		// A step with no duration yet gets no right-hand field at all, so the
 		// title has the whole row rather than a column reserved for nothing.
 		elapsed := ""
 		if s.Elapsed != "" {
-			elapsed = sty.Dim.Render(s.Elapsed)
+			elapsed = sty.dim.Render(s.Elapsed)
 		}
 		b.add(railRow(glyph+" "+style.Render(s.Title), elapsed, width, inspectorIndent))
 	}
@@ -79,7 +79,7 @@ func (r InspectorRail) planBlock(width int) (railBlock, bool) {
 		// steps before it, and a rail short enough to reach it removes it
 		// rather than counting it among the steps the marker says it hid.
 		b.rows = append(b.rows, railLine{
-			text:   railRow(sty.Accent.Render("⚠")+" "+sty.Dim.Render(p.Drift), "", width, inspectorIndent),
+			text:   railRow(sty.accent.Render("⚠")+" "+sty.dim.Render(p.Drift), "", width, inspectorIndent),
 			pinned: true, shed: true,
 		})
 	}
@@ -88,7 +88,7 @@ func (r InspectorRail) planBlock(width int) (railBlock, bool) {
 		// counting what the block hid has nothing to count for it, and would
 		// spend the row the fold just saved while reporting a step hidden
 		// that is still on screen (railLine.shed).
-		b.shedRow(indentRow(sty.Hint.Render(p.Hint), width))
+		b.shedRow(indentRow(sty.hint.Render(p.Hint), width))
 	}
 	return b, true
 }
@@ -99,11 +99,11 @@ func (r InspectorRail) planBlock(width int) (railBlock, bool) {
 func planStepTone(s PlanStepState) (string, lipgloss.Style) {
 	switch s {
 	case PlanStepRunning:
-		return sty.SpinText.Render("▸"), brightStyle()
+		return sty.spinText.Render("▸"), brightStyle()
 	case PlanStepDone:
-		return sty.Add.Render("✓"), sty.Dim
+		return sty.add.Render("✓"), sty.dim
 	case PlanStepFailed:
-		return sty.Err.Render("✗"), sty.Body
+		return sty.err.Render("✗"), sty.body
 	}
-	return sty.Dim.Render("·"), sty.Dim
+	return sty.dim.Render("·"), sty.dim
 }

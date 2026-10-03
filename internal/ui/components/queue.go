@@ -57,7 +57,7 @@ func (q QueuedMessage) kind() string {
 // the text gives up, because a message that loses its attachments from its
 // row reads as a message without any.
 func (q QueuedMessage) row(width int) string {
-	lead := sty.Info.Render(fmt.Sprintf("%-*s", queueKindWidth, q.kind())) + "  "
+	lead := sty.info.Render(fmt.Sprintf("%-*s", queueKindWidth, q.kind())) + "  "
 	room := width - queueKindWidth - 2
 	text, _, more := strings.Cut(strings.TrimSpace(q.Text), "\n")
 	text = strings.TrimSpace(text)
@@ -70,9 +70,9 @@ func (q QueuedMessage) row(width int) string {
 		room -= lipgloss.Width(tail)
 	}
 	if room < 1 {
-		return Clip(lead+sty.Body.Render(text)+sty.Dim.Render(tail), width)
+		return Clip(lead+sty.body.Render(text)+sty.dim.Render(tail), width)
 	}
-	return lead + sty.Body.Render(Clip(text, room)) + sty.Dim.Render(tail)
+	return lead + sty.body.Render(Clip(text, room)) + sty.dim.Render(tail)
 }
 
 // QueueRows is the queue above the box: one row per message, in delivery
@@ -92,7 +92,7 @@ func QueueRows(msgs []QueuedMessage, width, max int) []string {
 		rows = append(rows, q.row(width))
 	}
 	if more > 0 {
-		rows = append(rows, sty.Dim.Render(Clip(fmt.Sprintf("+%d more queued", more), width)))
+		rows = append(rows, sty.dim.Render(Clip(fmt.Sprintf("+%d more queued", more), width)))
 	}
 	return rows
 }
@@ -115,11 +115,11 @@ func (c QueueCard) View(width int) string {
 	if c.Held {
 		chips = []string{"follow-ups held"}
 	}
-	card := Card{Title: "queued · " + plural(len(c.Messages), "message"), Tone: CardChrome, Chips: chips}
+	card := Card{Title: "queued · " + plural(len(c.Messages), "message"), tone: cardChrome, chips: chips}
 	inner := card.Inner(width)
 	var rows []string
 	if len(c.Messages) == 0 {
-		rows = append(rows, sty.Dim.Render("nothing is queued — everything was sent"))
+		rows = append(rows, sty.dim.Render("nothing is queued — everything was sent"))
 	}
 	// The window follows the pointer: it starts at the top and moves only as
 	// far as it must to keep the selected row in it.
@@ -129,21 +129,21 @@ func (c QueueCard) View(width int) string {
 	}
 	end := min(len(c.Messages), start+queueCardRows)
 	if start > 0 {
-		rows = append(rows, sty.Dim.Render(fmt.Sprintf("  %d more above", start)))
+		rows = append(rows, sty.dim.Render(fmt.Sprintf("  %d more above", start)))
 	}
 	for i := start; i < end; i++ {
 		body := c.Messages[i].row(inner - GridPointerWidth)
 		if i == c.Selected {
-			rows = append(rows, sty.FocusPointer.Render("❯")+" "+LitRow(body, 0, lipgloss.Width(body)))
+			rows = append(rows, sty.focusPointer.Render("❯")+" "+LitRow(body, 0, lipgloss.Width(body)))
 			continue
 		}
 		rows = append(rows, "  "+body)
 	}
 	if end < len(c.Messages) {
-		rows = append(rows, sty.Dim.Render(fmt.Sprintf("  %d more below", len(c.Messages)-end)))
+		rows = append(rows, sty.dim.Render(fmt.Sprintf("  %d more below", len(c.Messages)-end)))
 	}
 	for _, l := range wrapPlain("steering joins the turn at its next round; a follow-up goes when it ends", inner) {
-		rows = append(rows, sty.Dim.Render(l))
+		rows = append(rows, sty.dim.Render(l))
 	}
 	rows = append(rows, cardRule)
 	var sel QueuedMessage

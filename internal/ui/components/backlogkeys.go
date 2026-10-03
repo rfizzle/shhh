@@ -16,7 +16,7 @@ import (
 // is up — it holds the keyboard, and `y` is not a letter to it
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard,
 // invariant 5).
-func (b *BacklogScreen) Update(msg tea.KeyPressMsg) (done bool, result BacklogResult) {
+func (b *BacklogScreen) Update(msg tea.KeyPressMsg) (done bool, result backlogResult) {
 	b.Notice = ""
 	b.sync()
 	if b.confirm != nil {
@@ -40,10 +40,10 @@ func (b *BacklogScreen) Update(msg tea.KeyPressMsg) (done bool, result BacklogRe
 		return b.updateReading(pressed)
 	}
 	if keys.Is(pressed, keys.Backlog.Back) {
-		return true, BacklogResult{Canceled: true}
+		return true, backlogResult{canceled: true}
 	}
 	if b.readKey(pressed) {
-		return false, BacklogResult{}
+		return false, backlogResult{}
 	}
 	return b.stateKey(pressed)
 }
@@ -93,20 +93,20 @@ func (b *BacklogScreen) readKey(pressed string) bool {
 // footer says why, rather than the surface accepting the press and refusing
 // it afterwards — a refusal after the fact is a key that looked live
 // (invariant 5).
-func (b *BacklogScreen) stateKey(pressed string) (bool, BacklogResult) {
+func (b *BacklogScreen) stateKey(pressed string) (bool, backlogResult) {
 	if b.ReadOnly {
-		return false, BacklogResult{}
+		return false, backlogResult{}
 	}
 	// Starting an item is about the backlog rather than about a row, so it
 	// answers with the pointer on nothing — which is the list it is most
 	// needed on. An empty backlog offering a key that did nothing would be
 	// the one screen where the offer is the only thing on it.
 	if keys.Is(pressed, keys.Backlog.New) {
-		return false, BacklogResult{Do: &BacklogCommand{Act: BacklogNew}}
+		return false, backlogResult{Do: &BacklogCommand{Act: BacklogNew}}
 	}
 	row := b.current()
 	if row == nil {
-		return false, BacklogResult{}
+		return false, backlogResult{}
 	}
 	switch {
 	case row.State == BacklogUnreadable:
@@ -139,30 +139,30 @@ func (b *BacklogScreen) stateKey(pressed string) (bool, BacklogResult) {
 		}
 		return false, b.act(BacklogSprintAdd, row.Slug)
 	}
-	return false, BacklogResult{}
+	return false, backlogResult{}
 }
 
 // act is a key that asked for something with nothing to confirm.
-func (b *BacklogScreen) act(a BacklogAct, slug string) BacklogResult {
-	return BacklogResult{Do: &BacklogCommand{Act: a, Slug: slug}}
+func (b *BacklogScreen) act(a backlogAct, slug string) backlogResult {
+	return backlogResult{Do: &BacklogCommand{Act: a, Slug: slug}}
 }
 
 // ask arms the inline confirm in front of a key that changes a file. The
 // prompt names the item rather than saying "this item": the row moves under
 // the reader as the filters narrow, and a question that does not say what it
 // is about is one that gets answered yes by reflex.
-func (b *BacklogScreen) ask(a BacklogAct, slug, prompt string) {
-	b.confirm = &Confirm{Prompt: sty.Body.Render(prompt)}
+func (b *BacklogScreen) ask(a backlogAct, slug, prompt string) {
+	b.confirm = &Confirm{Prompt: sty.body.Render(prompt)}
 	b.pending = &BacklogCommand{Act: a, Slug: slug}
 }
 
 // updateConfirm resolves the armed question. Declining leaves the screen
 // exactly as it was, which is what esc promises everywhere else
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
-func (b *BacklogScreen) updateConfirm(msg tea.KeyPressMsg) (bool, BacklogResult) {
+func (b *BacklogScreen) updateConfirm(msg tea.KeyPressMsg) (bool, backlogResult) {
 	answered, yes := confirmed(&b.confirm, msg)
 	if !answered {
-		return false, BacklogResult{}
+		return false, backlogResult{}
 	}
 	// The armed command goes down with the question either way: it was armed
 	// for this question, and a decline that left it behind would hand it to
@@ -170,29 +170,29 @@ func (b *BacklogScreen) updateConfirm(msg tea.KeyPressMsg) (bool, BacklogResult)
 	cmd := b.pending
 	b.pending = nil
 	if yes && cmd != nil {
-		return false, BacklogResult{Do: cmd}
+		return false, backlogResult{Do: cmd}
 	}
-	return false, BacklogResult{}
+	return false, backlogResult{}
 }
 
 // editQuery is the keyboard while the filter row is open. Every letter is a
 // letter here, the arrows still move the pointer, and the two keys that are
 // not letters close the row.
-func (b *BacklogScreen) editQuery(msg tea.KeyPressMsg, pressed string) (bool, BacklogResult) {
+func (b *BacklogScreen) editQuery(msg tea.KeyPressMsg, pressed string) (bool, backlogResult) {
 	switch {
 	case b.movedTyping(pressed):
 		// The list under the row is still a list, which is why the movement
 		// binding is the arrows and not j/k: a query being typed into has
 		// no letters to spare, and this screen would have had to break the
 		// pair here as well as on the list.
-		return false, BacklogResult{}
+		return false, backlogResult{}
 	case keys.Is(pressed, keys.Backlog.ClearQ):
 		// An empty filter has nothing left to clear, so the same key closes
 		// the row and hands the letters back — the rule every selector in
 		// the product answers to.
 		if b.query == "" {
 			b.filtering = false
-			return false, BacklogResult{}
+			return false, backlogResult{}
 		}
 		b.query = ""
 	case keys.Is(pressed, keys.Backlog.Back) && pressed != keys.Shown(keys.Backlog.Back):
@@ -208,14 +208,14 @@ func (b *BacklogScreen) editQuery(msg tea.KeyPressMsg, pressed string) (bool, Ba
 		b.query += typedRunes(msg)
 	}
 	b.refilter()
-	return false, BacklogResult{}
+	return false, backlogResult{}
 }
 
 // updateReading is the keyboard while the body has it: the pager, and the
 // way back to the list. Back goes to the list rather than out of the screen,
 // because the reader is one level in and esc is a step back rather than an
 // exit.
-func (b *BacklogScreen) updateReading(pressed string) (bool, BacklogResult) {
+func (b *BacklogScreen) updateReading(pressed string) (bool, backlogResult) {
 	switch {
 	case keys.Is(pressed, keys.Backlog.Move):
 		b.pager.Offset += keys.Step(pressed, keys.Backlog.Move)
@@ -226,7 +226,7 @@ func (b *BacklogScreen) updateReading(pressed string) (bool, BacklogResult) {
 	case keys.Is(pressed, keys.Backlog.List):
 		b.keys = !b.keys
 	}
-	return false, BacklogResult{}
+	return false, backlogResult{}
 }
 
 // jumpToDependency puts the pointer on the first item the row is waiting on,

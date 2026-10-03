@@ -29,7 +29,7 @@ func TestConfirm_Keys(t *testing.T) {
 	}
 	// Only the capital is emphasised: it is the default, and the default is
 	// the answer that changes nothing.
-	if !strings.Contains(c.View(80), sty.Bright.Bold(true).Render("N")) {
+	if !strings.Contains(c.View(80), sty.bright.Bold(true).Render("N")) {
 		t.Fatalf("the default letter carries the emphasis: %q", c.View(80))
 	}
 }

@@ -60,7 +60,7 @@ func (c FailureCard) View(width int) string {
 	}
 	switch r.State {
 	case RecoveryStalled:
-		card.Mark, card.OutcomeAccent = sty.Accent.Render("⚠"), true
+		card.mark, card.OutcomeAccent = sty.accent.Render("⚠"), true
 	case RecoveryStopped:
 		card.State, card.OutcomeState = ActivityDenied, ActivityDenied
 	default:
@@ -85,7 +85,7 @@ func (c FailureCard) footer(width int) []string {
 	}
 	words := make([]string, 0, len(detail))
 	for _, d := range detail {
-		words = append(words, sty.Dimmer.Render(Clip(d, inner)))
+		words = append(words, sty.dimmer.Render(Clip(d, inner)))
 	}
 	keys := c.keyRows(inner)
 	var lines []string
@@ -137,7 +137,7 @@ func (c FailureCard) keyRows(room int) []string {
 			pieces = append(pieces, handoverOffer(r.Handover, handoverWords))
 		}
 	}
-	sep := sty.Dim.Render(" · ")
+	sep := sty.dim.Render(" · ")
 	var rows []string
 	line := ""
 	for _, p := range pieces {
@@ -168,5 +168,5 @@ func (r RetryLine) View(width int) string {
 	if r.NewModel != "" {
 		what = "same prompt, now on " + r.NewModel
 	}
-	return Clip(sty.Dim.Render("↻ try again · "+what), width)
+	return Clip(sty.dim.Render("↻ try again · "+what), width)
 }

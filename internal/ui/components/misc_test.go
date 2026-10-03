@@ -94,7 +94,7 @@ func TestAgentList_ViewAndKeys(t *testing.T) {
 		t.Fatal("X should request kill and keep the list open")
 	}
 	done, result := l.Update(key("enter"))
-	if !done || result != (AgentListResult{Action: AgentAttach, Index: 2}) {
+	if !done || result != (agentListResult{Action: AgentAttach, Index: 2}) {
 		t.Fatalf("enter should attach to the focused agent, got %v", result)
 	}
 	done, result = l.Update(key("esc"))

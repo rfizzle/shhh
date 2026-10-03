@@ -92,9 +92,9 @@ func (b ExitBanner) View(width int) string {
 		return ""
 	}
 
-	rows := []string{b.row("session", b.sessionLine(body), sty.Body)}
+	rows := []string{b.row("session", b.sessionLine(body), sty.body)}
 	if b.Spend != "" {
-		rows = append(rows, b.row("spent", b.spendLine(body), sty.Body))
+		rows = append(rows, b.row("spent", b.spendLine(body), sty.body))
 	}
 	switch {
 	case b.Unsaved:
@@ -106,9 +106,9 @@ func (b ExitBanner) View(width int) string {
 		if b.PersistenceError != "" {
 			line = "not saved · run `shhh doctor`"
 		}
-		rows = append(rows, b.row("resume", Clip(line, body), sty.Dim))
+		rows = append(rows, b.row("resume", Clip(line, body), sty.dim))
 		if b.PersistenceError != "" {
-			rows = append(rows, b.row("reason", Clip(b.PersistenceError, body), sty.Dim))
+			rows = append(rows, b.row("reason", Clip(b.PersistenceError, body), sty.dim))
 		}
 	case b.Resume != "":
 		rows = append(rows, b.row("resume", b.Resume, brightStyle()))
@@ -141,14 +141,14 @@ func partingLine(width int) string {
 	if Profile() <= colorprofile.NoTTY {
 		return ""
 	}
-	return sty.Dim.Render(Clip(partingWords, width))
+	return sty.dim.Render(Clip(partingWords, width))
 }
 
 // row lays one labelled line out: the label in Status in its column, as a
 // card's field label is, and the value in
 // the tone the row is read for.
 func (b ExitBanner) row(label, value string, style lipgloss.Style) string {
-	return sty.Status.Render(padRight(label, exitLabelWidth)) + "  " + style.Render(value)
+	return sty.status.Render(padRight(label, exitLabelWidth)) + "  " + style.Render(value)
 }
 
 // spendLine is what the sitting cost and whose spend that is. The scope

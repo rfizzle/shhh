@@ -123,7 +123,7 @@ func TestSafetyScreen_AnAbsentCapabilityIsStated(t *testing.T) {
 // A body longer than its pane scrolls, and each end names the sections it is
 // sitting on rather than only counting rows.
 func TestSafetyScreen_ScrollsAndNamesWhatIsFolded(t *testing.T) {
-	s := &SafetyScreen{Sections: safetySections(), MaxLines: 20}
+	s := &SafetyScreen{Sections: safetySections(), maxLines: 20}
 	top := ansi.Strip(s.View(60))
 	if !strings.Contains(top, "↓ 6 more · containment · web") {
 		t.Fatalf("the foot of a long reading does not name what is below it:\n%s", top)
@@ -152,7 +152,7 @@ func TestSafetyScreen_ScrollsAndNamesWhatIsFolded(t *testing.T) {
 // A body that fits offers no scroll key: a key that cannot act is not an
 // offer (invariant 5).
 func TestSafetyScreen_AShortReadingOffersNoScroll(t *testing.T) {
-	s := &SafetyScreen{Sections: safetySections()[:1], MaxLines: 40}
+	s := &SafetyScreen{Sections: safetySections()[:1], maxLines: 40}
 	if view := ansi.Strip(s.View(110)); strings.Contains(view, "scroll") {
 		t.Errorf("a reading that fits offers a scroll:\n%s", view)
 	}
@@ -167,7 +167,7 @@ func TestSafetyScreen_OnlyTheWayOutCloses(t *testing.T) {
 			t.Errorf("%q closed a reading", k)
 		}
 	}
-	if done, result := s.Update(key("q")); !done || !result.Canceled {
+	if done, result := s.Update(key("q")); !done || !result.canceled {
 		t.Error("q did not leave the reading")
 	}
 }
@@ -177,7 +177,7 @@ func TestSafetyScreen_OnlyTheWayOutCloses(t *testing.T) {
 // servers are absent and say so.
 func TestGolden_SafetyScreen(t *testing.T) {
 	captureGolden(t, "safety-screen", "the safety reading", goldenWidths, func(width int) []golden.Panel {
-		scrolled := &SafetyScreen{Sections: safetySections(), Subject: "manual · sandbox-exec", MaxLines: 24}
+		scrolled := &SafetyScreen{Sections: safetySections(), Subject: "manual · sandbox-exec", maxLines: 24}
 		for range 12 {
 			scrolled.View(width)
 			scrolled.Update(key("down"))

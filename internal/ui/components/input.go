@@ -48,7 +48,7 @@ func NewTextArea() textarea.Model {
 	f.ShowLineNumbers = false
 	f.CharLimit = 0
 	f.KeyMap.InsertNewline.SetKeys(keys.Draft.Newline.Keys()[1:]...)
-	f.SetStyles(sty.TextArea)
+	f.SetStyles(sty.textArea)
 	return f
 }
 
@@ -58,7 +58,7 @@ func NewTextArea() textarea.Model {
 func NewTextInput() textinput.Model {
 	f := textinput.New()
 	f.CharLimit = 0
-	f.SetStyles(sty.TextInput)
+	f.SetStyles(sty.textInput)
 	return f
 }
 
@@ -84,7 +84,7 @@ func StyleTextArea(f *textarea.Model) {
 	if painted(s.Focused.Placeholder, s.Focused.Text, s.Cursor.Color) {
 		return
 	}
-	f.SetStyles(sty.TextArea)
+	f.SetStyles(sty.textArea)
 }
 
 // StyleTextInput is StyleTextArea for the one-line field.
@@ -93,7 +93,7 @@ func StyleTextInput(f *textinput.Model) {
 	if painted(s.Focused.Placeholder, s.Focused.Text, s.Cursor.Color) {
 		return
 	}
-	f.SetStyles(sty.TextInput)
+	f.SetStyles(sty.textInput)
 }
 
 // painted reports whether a field's table was built from the palette that is

@@ -51,7 +51,7 @@ func TestCard_FillNeverEatsTheTitleOrTheChips(t *testing.T) {
 	SetMono(false)
 	for _, width := range []int{minCardWidth, 24, 60, 130} {
 		top := strings.SplitN(ansi.Strip(
-			Card{Title: "Approve command", Chips: []string{"⚠ medium"}}.Render([]string{"row"}, width)), "\n", 2)[0]
+			Card{Title: "Approve command", chips: []string{"⚠ medium"}}.Render([]string{"row"}, width)), "\n", 2)[0]
 		if lipgloss.Width(top) != width {
 			t.Fatalf("width %d: top edge measures %d: %q", width, lipgloss.Width(top), top)
 		}
@@ -73,7 +73,7 @@ func TestCard_CornersAreTheFramesAndTheChipSitsOnTheRail(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	card := ansi.Strip(Card{
 		Title: "Approve edit",
-		Chips: []string{"⚠ low"},
+		chips: []string{"⚠ low"},
 	}.Render([]string{"row", cardRule, "keys"}, 60))
 	lines := strings.Split(card, "\n")
 	top, rule, bottom := lines[0], lines[2], lines[len(lines)-1]
@@ -111,17 +111,17 @@ func TestCard_TheTitleIsAHeadingWhateverTheBorderCarries(t *testing.T) {
 	t.Cleanup(func() { SetMono(was) })
 	SetMono(false)
 
-	red := sty.Err
+	red := sty.err
 	top := func(width int) string {
 		return strings.SplitN(Card{
 			Title: "Approve edit",
-			Chips: []string{"⚠ HIGH"},
-			Style: &red,
+			chips: []string{"⚠ HIGH"},
+			style: &red,
 		}.Render([]string{"row"}, width), "\n", 2)[0]
 	}
 
 	wide := top(60)
-	if !strings.Contains(wide, sty.Bright.Bold(true).Render("Approve edit ")) {
+	if !strings.Contains(wide, sty.bright.Bold(true).Render("Approve edit ")) {
 		t.Fatalf("the title should be the heading's bright bold: %q", wide)
 	}
 	if !strings.Contains(wide, red.Render("╭─ ")) {
@@ -137,12 +137,12 @@ func TestCard_TheTitleIsAHeadingWhateverTheBorderCarries(t *testing.T) {
 	// A title with no room for all of it keeps the heading to its last cell:
 	// the … was dropped from the title, so it is the title's mark and not a
 	// piece of the frame that happens to sit where a word ran out.
-	if narrow := top(minCardWidth); !strings.Contains(narrow, sty.Bright.Bold(true).Render("Approve…")) {
+	if narrow := top(minCardWidth); !strings.Contains(narrow, sty.bright.Bold(true).Render("Approve…")) {
 		t.Fatalf("a clipped title should keep its tone through the …: %q", narrow)
 	}
 
 	SetMono(true)
-	if mono := top(60); !strings.Contains(mono, sty.Bright.Bold(true).Render("Approve edit ")) {
+	if mono := top(60); !strings.Contains(mono, sty.bright.Bold(true).Render("Approve edit ")) {
 		t.Fatalf("the heading should still be bold under mono: %q", mono)
 	}
 }

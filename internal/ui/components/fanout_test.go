@@ -230,7 +230,7 @@ func TestFanoutLaneKeepsItsKindGlyph(t *testing.T) {
 func TestAgentRowFollowsTheOutcomeTable(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
-		state AgentState
+		state agentState
 		want  string
 	}{
 		{"blocked", AgentBlocked, "⚠"},
@@ -798,12 +798,12 @@ func TestFanoutCountsAreDimAndTheStateIsTheGlyph(t *testing.T) {
 	}}
 	view := block.View(110)
 	for _, want := range []struct{ what, render string }{
-		{"the header's word for children working together in dim", sty.Dim.Render("in parallel")},
-		{"a running bar's count in dim", sty.Dim.Render("2/5")},
-		{"a planned lane's step count in dim", sty.Dim.Render("1 of 3 steps")},
-		{"a running lane's glyph in info", sty.Info.Render("◇")},
-		{"the ask in del", sty.Err.Render("blocked")},
-		{"a finished lane's glyph in add", sty.Add.Render("◇")},
+		{"the header's word for children working together in dim", sty.dim.Render("in parallel")},
+		{"a running bar's count in dim", sty.dim.Render("2/5")},
+		{"a planned lane's step count in dim", sty.dim.Render("1 of 3 steps")},
+		{"a running lane's glyph in info", sty.info.Render("◇")},
+		{"the ask in del", sty.err.Render("blocked")},
+		{"a finished lane's glyph in add", sty.add.Render("◇")},
 	} {
 		if !strings.Contains(view, want.render) {
 			t.Errorf("want %s:\n%s", want.what, view)
@@ -813,8 +813,8 @@ func TestFanoutCountsAreDimAndTheStateIsTheGlyph(t *testing.T) {
 		{Name: "orchestrator", Self: true, State: FanoutRunning},
 		{Name: "b", State: FanoutRunning, Step: 1, Steps: 3, Planned: true},
 	}}
-	if got := rail.View(40, 30); !strings.Contains(got, sty.Dim.Render("1 of 3 steps")) ||
-		!strings.Contains(got, sty.Dim.Render("1 running")) {
+	if got := rail.View(40, 30); !strings.Contains(got, sty.dim.Render("1 of 3 steps")) ||
+		!strings.Contains(got, sty.dim.Render("1 running")) {
 		t.Errorf("the rail's map should draw its counts in dim:\n%s", got)
 	}
 }
@@ -918,7 +918,7 @@ func TestFanout_ARunningLaneIsStatic(t *testing.T) {
 			t.Errorf("%s: a lane draws a spinner frame: %q", tc.name, got)
 		}
 	}
-	if raw := (FanoutLane{State: FanoutRunning, Name: "writer-1", Writes: true}).View(110); !strings.Contains(raw, sty.SpinText.Render("writing")) {
+	if raw := (FanoutLane{State: FanoutRunning, Name: "writer-1", Writes: true}).View(110); !strings.Contains(raw, sty.spinText.Render("writing")) {
 		t.Errorf("the running word is in the spin colour: %q", raw)
 	}
 	block := FanoutBlock{Elapsed: "41s", Body: "Fanning two out.", Lanes: []FanoutLane{

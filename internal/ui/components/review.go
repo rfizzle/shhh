@@ -99,13 +99,13 @@ type ReviewView struct {
 	Shield, ShieldDetail string
 	// Height is the surface's row budget, footer included.
 	Height int
-	// SideBySide forces the paired layout; it is automatic at
+	// sideBySide forces the paired layout; it is automatic at
 	// sideBySideMinWidth columns either way.
-	SideBySide bool
+	sideBySide bool
 
-	// File is the focused row of the list, Hunk the focused hunk within it,
+	// file is the focused row of the list, Hunk the focused hunk within it,
 	// and Offset the first visible row of the hunk pane.
-	File, Hunk, Offset int
+	file, hunk, Offset int
 
 	// wide is the last render's automatic side-by-side verdict, taken from
 	// the surface's own width rather than the hunk pane's: the layout
@@ -132,17 +132,17 @@ func (v *ReviewView) Update(msg tea.KeyPressMsg) (done bool) {
 	case keys.Is(pressed, keys.Review.PageUp):
 		v.Offset -= max(v.paneHeight()-1, 1)
 	case keys.Is(pressed, keys.Review.SideBySide):
-		v.SideBySide = !v.SideBySide
+		v.sideBySide = !v.sideBySide
 	}
 	return false
 }
 
 // current is the focused file, or nil when there is nothing to review.
 func (v *ReviewView) current() *ReviewFile {
-	if v.File < 0 || v.File >= len(v.Files) {
+	if v.file < 0 || v.file >= len(v.Files) {
 		return nil
 	}
-	return &v.Files[v.File]
+	return &v.Files[v.file]
 }
 
 // moveFile moves the list cursor, resetting the hunk cursor and the pane
@@ -151,8 +151,8 @@ func (v *ReviewView) moveFile(delta int) {
 	if len(v.Files) == 0 {
 		return
 	}
-	v.File = min(max(v.File+delta, 0), len(v.Files)-1)
-	v.Hunk, v.Offset = 0, 0
+	v.file = min(max(v.file+delta, 0), len(v.Files)-1)
+	v.hunk, v.Offset = 0, 0
 }
 
 // moveHunk moves the hunk cursor within the focused file, spilling into the
@@ -162,25 +162,25 @@ func (v *ReviewView) moveHunk(delta int) {
 	if f == nil {
 		return
 	}
-	next := v.Hunk + delta
+	next := v.hunk + delta
 	switch {
 	case next < 0:
-		if v.File == 0 {
-			v.Hunk = 0
+		if v.file == 0 {
+			v.hunk = 0
 			return
 		}
 		v.moveFile(-1)
 		if prev := v.current(); prev != nil {
-			v.Hunk = max(len(prev.Hunks)-1, 0)
+			v.hunk = max(len(prev.Hunks)-1, 0)
 		}
 	case next >= len(f.Hunks):
-		if v.File >= len(v.Files)-1 {
-			v.Hunk = max(len(f.Hunks)-1, 0)
+		if v.file >= len(v.Files)-1 {
+			v.hunk = max(len(f.Hunks)-1, 0)
 			return
 		}
 		v.moveFile(1)
 	default:
-		v.Hunk = next
+		v.hunk = next
 	}
 }
 
@@ -203,7 +203,7 @@ func (v *ReviewView) View(width int) string {
 		body = append(body, "")
 	}
 
-	out := append(body[:rows:rows], sty.Dim.Render(strings.Repeat("─", max(width, 0))))
+	out := append(body[:rows:rows], sty.dim.Render(strings.Repeat("─", max(width, 0))))
 	return strings.Join(append(out, footer...), "\n")
 }
 
@@ -253,7 +253,7 @@ func truncRows(rows []string, limit, width int) []string {
 	}
 	keep := max(limit-1, 1)
 	return append(rows[:keep:keep],
-		sty.Hint.Render(Clip(fmt.Sprintf("… (+%d more rows)", len(rows)-keep), width)))
+		sty.hint.Render(Clip(fmt.Sprintf("… (+%d more rows)", len(rows)-keep), width)))
 }
 
 // joinReviewPanes lays the list and the pane side by side, padding the list
@@ -270,7 +270,7 @@ func joinReviewPanes(list, pane []string, listWidth, rows int) []string {
 		}
 		// The divider runs the full height of the surface, so the panes stay
 		// framed rather than trailing off into blank rows.
-		out = append(out, strings.TrimRight(padRight(l, listWidth)+sty.Dim.Render(reviewDivider)+r, " "))
+		out = append(out, strings.TrimRight(padRight(l, listWidth)+sty.dim.Render(reviewDivider)+r, " "))
 	}
 	return out
 }
@@ -297,9 +297,9 @@ func (v *ReviewView) listRows(width int) []string {
 
 // headRows are the list's header and the rule under it.
 func (v *ReviewView) headRows(width int) []string {
-	head := sty.Info.Bold(true).Render("REVIEW")
+	head := sty.info.Bold(true).Render("REVIEW")
 	if v.Title != "" {
-		head += sty.Dim.Render(" " + v.Title)
+		head += sty.dim.Render(" " + v.Title)
 	}
 	return []string{reviewLine(head, v.countLabel(), width), screenRule(width)}
 }
@@ -312,19 +312,19 @@ func (v *ReviewView) headRows(width int) []string {
 // unchanged (litrow.go).
 func (v *ReviewView) fileRows(width int) []string {
 	if len(v.Files) == 0 {
-		return []string{sty.Hint.Render("(nothing changed)")}
+		return []string{sty.hint.Render("(nothing changed)")}
 	}
 	inner := max(width-GridPointerWidth, 1)
 	rows := make([]string, 0, len(v.Files))
 	for i, f := range v.Files {
 		added, removed := f.stats()
-		lead := sty.Accent.Render("✎ ")
+		lead := sty.accent.Render("✎ ")
 		note := DiffStat(added, removed)
 		switch {
 		case f.Mode != "" && len(f.Hunks) == 0:
-			note = sty.Dim.Render(f.Mode)
+			note = sty.dim.Render(f.Mode)
 		case f.Mode != "":
-			note += sty.Dim.Render(" · " + f.Mode)
+			note += sty.dim.Render(" · " + f.Mode)
 		}
 
 		// A file list is read by its filenames, so a path that does not fit
@@ -339,8 +339,8 @@ func (v *ReviewView) fileRows(width int) []string {
 			tail = ""
 		}
 		path := clipLeft(f.Path, budget-lipgloss.Width(tail))
-		row := reviewLine(lead+sty.Body.Render(path)+sty.Dim.Render(tail), note, inner)
-		rows = append(rows, reviewRow(row, lipgloss.Width(lead), i == v.File, inner))
+		row := reviewLine(lead+sty.body.Render(path)+sty.dim.Render(tail), note, inner)
+		rows = append(rows, reviewRow(row, lipgloss.Width(lead), i == v.file, inner))
 	}
 	return rows
 }
@@ -357,7 +357,7 @@ func reviewRow(row string, marks int, lit bool, width int) string {
 	if !lit {
 		return PointerColumn() + row
 	}
-	return sty.FocusPointer.Render("❯") + " " + LitRowKeeping(row, 0, marks, width)
+	return sty.focusPointer.Render("❯") + " " + litRowKeeping(row, 0, marks, width)
 }
 
 // clipLeft trims s to width from the front, keeping its tail.
@@ -402,13 +402,13 @@ func (v *ReviewView) verdictRows(width int) []string {
 	if vd == nil {
 		return nil
 	}
-	glyph, verdict := sty.Add.Render("✓"), " passing"
+	glyph, verdict := sty.add.Render("✓"), " passing"
 	if vd.Failed {
-		glyph, verdict = sty.Del.Render("✗"), " failing"
+		glyph, verdict = sty.del.Render("✗"), " failing"
 	}
-	rows := []string{screenRule(width), Clip(glyph+" "+sty.Body.Render(vd.Label+verdict), width)}
+	rows := []string{screenRule(width), Clip(glyph+" "+sty.body.Render(vd.Label+verdict), width)}
 	for _, d := range vd.Detail {
-		rows = append(rows, "  "+sty.Dimmer.Render(Clip(d, max(width-2, 0))))
+		rows = append(rows, "  "+sty.dimmer.Render(Clip(d, max(width-2, 0))))
 	}
 	return rows
 }
@@ -419,9 +419,9 @@ func (v *ReviewView) shieldRows(width int) []string {
 	if v.Shield == "" {
 		return nil
 	}
-	rows := []string{screenRule(width), Clip(sty.Shield.Render("⛨ "+v.Shield), width)}
+	rows := []string{screenRule(width), Clip(sty.shield.Render("⛨ "+v.Shield), width)}
 	if v.ShieldDetail != "" {
-		rows = append(rows, "  "+sty.Dim.Render(Clip(v.ShieldDetail, max(width-2, 0))))
+		rows = append(rows, "  "+sty.dim.Render(Clip(v.ShieldDetail, max(width-2, 0))))
 	}
 	return rows
 }
@@ -438,9 +438,9 @@ func brightStyle() lipgloss.Style {
 // many files the review holds.
 func (v *ReviewView) countLabel() string {
 	if v.Note != "" {
-		return sty.Dim.Render(v.Note)
+		return sty.dim.Render(v.Note)
 	}
-	return sty.Dim.Render(plural(len(v.Files), "file"))
+	return sty.dim.Render(plural(len(v.Files), "file"))
 }
 
 // paneRows is the focused file's hunks, scrolled to keep the focused hunk on
@@ -449,15 +449,15 @@ func (v *ReviewView) countLabel() string {
 func (v *ReviewView) paneRows(width, rows int) []string {
 	f := v.current()
 	if f == nil {
-		return []string{sty.Hint.Render("(no file selected)")}
+		return []string{sty.hint.Render("(no file selected)")}
 	}
 	added, removed := f.stats()
-	detail := sty.Dim.Render("  "+plural(len(f.Hunks), "hunk")+" · ") + DiffStat(added, removed)
+	detail := sty.dim.Render("  "+plural(len(f.Hunks), "hunk")+" · ") + DiffStat(added, removed)
 	switch {
 	case f.Mode != "" && len(f.Hunks) == 0:
-		detail = sty.Dim.Render("  " + f.Mode)
+		detail = sty.dim.Render("  " + f.Mode)
 	case f.Mode != "":
-		detail += sty.Dim.Render(" · " + f.Mode)
+		detail += sty.dim.Render(" · " + f.Mode)
 	}
 	head := brightStyle().Render(f.Path) + detail
 
@@ -465,8 +465,8 @@ func (v *ReviewView) paneRows(width, rows int) []string {
 	// The pane follows the focused hunk: moving between hunks is how this
 	// surface is read, so the row the pointer is on is brought in before the
 	// window is taken.
-	p := Pager{Offset: v.Offset, Height: max(rows-1, 1), Total: len(body)}
-	p.Reveal(focus)
+	p := Pager{Offset: v.Offset, Height: max(rows-1, 1), total: len(body)}
+	p.reveal(focus)
 	visible := p.Window(body)
 	v.Offset = p.Offset
 	return append([]string{Clip(head, width)}, visible...)
@@ -475,16 +475,16 @@ func (v *ReviewView) paneRows(width, rows int) []string {
 // hunkRows renders the file's hunks and reports which row the focused hunk's
 // header landed on, so the pane can scroll to it.
 func (v *ReviewView) hunkRows(f ReviewFile, width int) (rows []string, focus int) {
-	sbs := v.SideBySide || v.wide
+	sbs := v.sideBySide || v.wide
 	for i, h := range f.Hunks {
 		var lines []string
 		if sbs {
 			lines = sideBySideHunks([]diff.Hunk{h}, width, f.Syntax)
 		} else {
-			lines = UnifiedLines([]diff.Hunk{h}, width,
-				UnifiedOpts{LineNumbers: true, Emphasis: true, Syntax: f.Syntax})
+			lines = unifiedLines([]diff.Hunk{h}, width,
+				unifiedOpts{lineNumbers: true, emphasis: true, syntax: f.Syntax})
 		}
-		if i == v.Hunk {
+		if i == v.hunk {
 			focus = len(rows)
 		}
 		rows = append(rows, v.hunkHeader(h, i, width))
@@ -496,7 +496,7 @@ func (v *ReviewView) hunkRows(f ReviewFile, width int) (rows []string, focus int
 		}
 	}
 	if len(rows) == 0 {
-		rows = append(rows, sty.Hint.Render("(no changes)"))
+		rows = append(rows, sty.hint.Render("(no changes)"))
 	}
 	return rows, focus
 }
@@ -506,8 +506,8 @@ func (v *ReviewView) hunkRows(f ReviewFile, width int) (rows []string, focus int
 // same way — one surface with two lists is still one pointer.
 func (v *ReviewView) hunkHeader(h diff.Hunk, i, width int) string {
 	inner := max(width-GridPointerWidth, 1)
-	row := sty.Hunk.Render(Clip(h.Header(), inner))
-	return reviewRow(row, 0, i == v.Hunk, inner)
+	row := sty.hunk.Render(Clip(h.Header(), inner))
+	return reviewRow(row, 0, i == v.hunk, inner)
 }
 
 // footerRows are the keys the surface offers. Below reviewStackWidth the

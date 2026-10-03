@@ -40,14 +40,14 @@ const (
 	toolsLabelWidth = 10
 )
 
-// ToolsGroup is which kind of source a row is, and the heading it is listed
+// toolsGroup is which kind of source a row is, and the heading it is listed
 // under. The order of the constants is the order of the list.
-type ToolsGroup int
+type toolsGroup int
 
 const (
 	// ToolsBuiltin is the toolset shhh registers itself, the rail's
 	// `built-in` row. It heads the list on its own, under no heading.
-	ToolsBuiltin ToolsGroup = iota
+	ToolsBuiltin toolsGroup = iota
 	// ToolsServers are the MCP servers the session was told to reach, each
 	// the rail's own row.
 	ToolsServers
@@ -63,7 +63,7 @@ const (
 )
 
 // heading is the group rail a kind of source is listed under.
-func (g ToolsGroup) heading() string {
+func (g toolsGroup) heading() string {
 	switch g {
 	case ToolsServers:
 		return "mcp servers"
@@ -79,13 +79,13 @@ func (g ToolsGroup) heading() string {
 	return ""
 }
 
-// ToolsOffer is the one act a row can carry: the checkout's trust answer, on
+// toolsOffer is the one act a row can carry: the checkout's trust answer, on
 // a server the checkout declared.
-type ToolsOffer int
+type toolsOffer int
 
 const (
 	// ToolsOfferNone is a row with nothing to answer.
-	ToolsOfferNone ToolsOffer = iota
+	ToolsOfferNone toolsOffer = iota
 	// ToolsOfferTrust trusts the checkout, which is what starts its servers
 	// from the next session on.
 	ToolsOfferTrust
@@ -94,7 +94,7 @@ const (
 )
 
 // label is what the key row calls the offer.
-func (o ToolsOffer) label() string {
+func (o toolsOffer) label() string {
 	switch o {
 	case ToolsOfferTrust:
 		return "trust this checkout"
@@ -107,7 +107,7 @@ func (o ToolsOffer) label() string {
 // ToolsSource is one place tools came from, already resolved to what the
 // screen draws.
 type ToolsSource struct {
-	Group ToolsGroup
+	Group toolsGroup
 	// Source is the row as the rail's TOOLS block draws it — the name, the
 	// state and the note — and not a copy of its words made again, so a
 	// server here and its row there are one reading.
@@ -123,7 +123,7 @@ type ToolsSource struct {
 	Fix []string
 	// Offer is the act the row carries, and Ask the question the confirm
 	// puts before it is carried out.
-	Offer ToolsOffer
+	Offer toolsOffer
 	Ask   string
 }
 
@@ -138,8 +138,8 @@ type ToolsScreen struct {
 	// it gives, drawn under the account of the row it was taken on. Moving
 	// the pointer drops it.
 	Said string
-	// MaxLines bounds the screen height. 0 is unbounded.
-	MaxLines int
+	// maxLines bounds the screen height. 0 is unbounded.
+	maxLines int
 
 	list  Select
 	optAt map[int]int
@@ -148,25 +148,25 @@ type ToolsScreen struct {
 	// records: none of the supporting screens changes the machine without
 	// asking (docs/interface/surfaces.md#the-supporting-screens).
 	confirm *Confirm
-	asking  ToolsResult
+	asking  toolsResult
 }
 
-// ToolsResult is an act the screen hands the host: the offer a confirmed
+// toolsResult is an act the screen hands the host: the offer a confirmed
 // `[a]` was about, and the row it was taken on. The zero value is nothing.
-type ToolsResult struct {
-	Offer ToolsOffer
-	At    int
+type toolsResult struct {
+	Offer toolsOffer
+	at    int
 }
 
 // Update is the screen's whole keyboard: it moves, it asks about a row's
 // offer and hands the answer over, it shows its keys, and it leaves. It
 // reports whether the screen is done and any act a confirm let through.
-func (s *ToolsScreen) Update(msg tea.KeyPressMsg) (done bool, result ToolsResult) {
+func (s *ToolsScreen) Update(msg tea.KeyPressMsg) (done bool, result toolsResult) {
 	if s.confirm != nil {
 		if answered, yes := confirmed(&s.confirm, msg); answered && yes {
 			return false, s.asking
 		}
-		return false, ToolsResult{}
+		return false, toolsResult{}
 	}
 	pressed := msg.String()
 	switch {
@@ -174,20 +174,20 @@ func (s *ToolsScreen) Update(msg tea.KeyPressMsg) (done bool, result ToolsResult
 	case keys.Is(pressed, keys.Screen.Apply):
 		// Only where the row carries an offer, and even there it asks first.
 		if src := s.current(); src != nil && src.Offer != ToolsOfferNone {
-			s.asking = ToolsResult{Offer: src.Offer, At: s.Focus}
-			s.confirm = &Confirm{Prompt: sty.Body.Render(src.Ask)}
+			s.asking = toolsResult{Offer: src.Offer, at: s.Focus}
+			s.confirm = &Confirm{Prompt: sty.body.Render(src.Ask)}
 		}
 	case keys.Is(pressed, keys.Screen.List):
 		s.keys = !s.keys
 	case keys.Is(pressed, keys.Screen.Quit):
-		return true, ToolsResult{}
+		return true, toolsResult{}
 	}
-	return false, ToolsResult{}
+	return false, toolsResult{}
 }
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from
 // the width it is rendered at, so only the height is kept.
-func (s *ToolsScreen) SetSize(_, height int) { s.MaxLines = height }
+func (s *ToolsScreen) SetSize(_, height int) { s.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves.
@@ -196,11 +196,11 @@ func (s *ToolsScreen) View(width int) string {
 		return ""
 	}
 	s.sync()
-	return ScreenChrome{
-		Header:   s.header(),
-		Foot:     s.footer(width).Rows(width),
-		MaxLines: s.MaxLines,
-	}.View(width, func(budget int) []string { return s.panes().rows(width, budget) })
+	return screenChrome{
+		header:   s.header(),
+		foot:     s.footer(width).rows(width),
+		maxLines: s.maxLines,
+	}.view(width, func(budget int) []string { return s.panes().rows(width, budget) })
 }
 
 // panes is the body, split the way every screen with a list and a preview
@@ -217,7 +217,7 @@ func (s *ToolsScreen) panes() screenPanes {
 // listRows is the left pane: the sources under their headings.
 func (s *ToolsScreen) listRows(width, budget int) []string {
 	if len(s.Sources) == 0 {
-		return []string{sty.Dim.Render(Clip("this session registered no tools", width))}
+		return []string{sty.dim.Render(Clip("this session registered no tools", width))}
 	}
 	body, _ := s.list.visibleRows(cardWidthFor(width), budget, false)
 	return body
@@ -229,10 +229,10 @@ func (s *ToolsScreen) listRows(width, budget int) []string {
 func (s *ToolsScreen) previewRows(width int) []string {
 	src := s.current()
 	if src == nil {
-		return []string{sty.Dim.Render(Clip("nothing selected", width))}
+		return []string{sty.dim.Render(Clip("nothing selected", width))}
 	}
 	word := ToolSourceWord(src.Source.State)
-	rows := []string{paneTitle(brightStyle().Render(src.Source.Name), sty.Dim.Render(word), width), ""}
+	rows := []string{paneTitle(brightStyle().Render(src.Source.Name), sty.dim.Render(word), width), ""}
 	state := word
 	if src.Source.Note != "" {
 		state += " · " + src.Source.Note
@@ -245,16 +245,16 @@ func (s *ToolsScreen) previewRows(width int) []string {
 		rows = append(rows, toolsField("costs", src.Consequence, width)...)
 	}
 	if len(src.Tools) > 0 {
-		rows = append(rows, "", "  "+sty.Status.Render(plural(len(src.Tools), "tool")))
+		rows = append(rows, "", "  "+sty.status.Render(plural(len(src.Tools), "tool")))
 		for _, line := range wrapPlain(strings.Join(src.Tools, ", "), max(width-4, 8)) {
-			rows = append(rows, Clip("    "+sty.Body.Render(line), width))
+			rows = append(rows, Clip("    "+sty.body.Render(line), width))
 		}
 	}
 	if len(src.Fix) > 0 {
 		// Wrapped rather than clipped: a server's reason is the one line the
 		// reader opened the screen for, and its tail is usually the part that
 		// names what is missing.
-		rows = append(rows, "", "  "+sty.Status.Render("what would move it"))
+		rows = append(rows, "", "  "+sty.status.Render("what would move it"))
 		for _, line := range src.Fix {
 			// A line that fits is kept as written: the listing aligns its
 			// comments with runs of spaces, and wrapping would fold them.
@@ -263,14 +263,14 @@ func (s *ToolsScreen) previewRows(width int) []string {
 				parts = wrapPlain(line, max(width-4, 8))
 			}
 			for _, part := range parts {
-				rows = append(rows, Clip("    "+sty.Dim.Render(part), width))
+				rows = append(rows, Clip("    "+sty.dim.Render(part), width))
 			}
 		}
 	}
 	if s.Said != "" {
 		rows = append(rows, "")
 		for _, line := range wrapPlain(s.Said, max(width-2, 8)) {
-			rows = append(rows, Clip("  "+sty.Body.Render(line), width))
+			rows = append(rows, Clip("  "+sty.body.Render(line), width))
 		}
 	}
 	return rows
@@ -280,15 +280,15 @@ func (s *ToolsScreen) previewRows(width int) []string {
 // the value beside it, wrapped under itself rather than clipped, since a
 // server's reason runs longer than a pane is wide.
 func toolsField(label, value string, width int) []string {
-	lead := "  " + sty.Status.Render(fmt.Sprintf("%-*s", toolsLabelWidth, label))
+	lead := "  " + sty.status.Render(fmt.Sprintf("%-*s", toolsLabelWidth, label))
 	indent := strings.Repeat(" ", 2+toolsLabelWidth)
 	var rows []string
 	for i, part := range wrapPlain(value, max(width-len(indent), 8)) {
 		if i == 0 {
-			rows = append(rows, Clip(lead+sty.Body.Render(part), width))
+			rows = append(rows, Clip(lead+sty.body.Render(part), width))
 			continue
 		}
-		rows = append(rows, Clip(indent+sty.Body.Render(part), width))
+		rows = append(rows, Clip(indent+sty.body.Render(part), width))
 	}
 	return rows
 }
@@ -324,7 +324,7 @@ func toolsTone(st ToolSourceState) FieldTone {
 // its state word, and its note.
 func (src ToolsSource) option() SelectOption {
 	opt := SelectOption{Label: toolsGlyph(src.Source.State) + " " + src.Source.Name,
-		Value: ToolSourceWord(src.Source.State), ValueTone: toolsTone(src.Source.State)}
+		Value: ToolSourceWord(src.Source.State), valueTone: toolsTone(src.Source.State)}
 	if src.Source.Note != "" {
 		opt.Detail = []DetailSpan{{Text: src.Source.Note, Tone: ToneQuiet}}
 	}
@@ -335,8 +335,8 @@ func (src ToolsSource) option() SelectOption {
 // heading's own ratio — the built-in toolset and the servers, the sources the
 // block draws — so the figure on the screen and the figure on the rail are
 // one. A session with no servers has no block, and no ratio either.
-func (s *ToolsScreen) header() ScreenHeader {
-	h := ScreenHeader{Left: []RailSegment{screenTitle("/mcp")}, Keys: s.headerKeys()}
+func (s *ToolsScreen) header() screenHeader {
+	h := screenHeader{left: []RailSegment{screenTitle("/mcp")}, keys: s.headerKeys()}
 	servers, counted, up := 0, 0, 0
 	for _, src := range s.Sources {
 		if src.Group != ToolsBuiltin && src.Group != ToolsServers {
@@ -351,7 +351,7 @@ func (s *ToolsScreen) header() ScreenHeader {
 		}
 	}
 	if servers > 0 {
-		h.Left = append(h.Left, screenField(plural(servers, "server")),
+		h.left = append(h.left, screenField(plural(servers, "server")),
 			screenField(fmt.Sprintf("%d of %d up", up, counted)))
 	}
 	return h
@@ -369,12 +369,12 @@ func (s *ToolsScreen) headerKeys() string {
 
 // footer is the keys the screen offers and the field that annotates them. The
 // confirm borrows the foot row while it is up, as the doctor's does.
-func (s *ToolsScreen) footer(width int) KeyFooter {
+func (s *ToolsScreen) footer(width int) keyFooter {
 	field := s.footField()
-	f := KeyFooter{Offers: s.offers(width, field), Register: s.keyList(),
-		Showing: s.keys, Field: field}
+	f := keyFooter{offers: s.offers(width, field), register: s.keyList(),
+		showing: s.keys, field: field}
 	if s.confirm != nil {
-		f.Taken = s.confirm.View(width)
+		f.taken = s.confirm.View(width)
 	}
 	return f
 }
@@ -418,7 +418,7 @@ func (s *ToolsScreen) footField() string {
 
 // FocusGroup puts the pointer on the first source of a group, and reports
 // whether there was one — `/mcp` opens on the servers.
-func (s *ToolsScreen) FocusGroup(g ToolsGroup) bool {
+func (s *ToolsScreen) FocusGroup(g toolsGroup) bool {
 	for i, src := range s.Sources {
 		if src.Group == g {
 			s.Focus = i

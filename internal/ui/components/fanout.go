@@ -27,13 +27,13 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// FanoutState is one lane's lifecycle state. It mirrors the supervisor's
+// fanoutState is one lane's lifecycle state. It mirrors the supervisor's
 // child states; the block keeps its own so nothing in components imports the
 // orchestration package.
-type FanoutState int
+type fanoutState int
 
 const (
-	FanoutQueued  FanoutState = iota // accepted, waiting for a slot
+	FanoutQueued  fanoutState = iota // accepted, waiting for a slot
 	FanoutRunning                    // working
 	FanoutBlocked                    // waiting on an answer from you
 	FanoutIdle                       // turn cancelled, waiting for steering
@@ -44,7 +44,7 @@ const (
 
 // settled reports whether the lane has stopped moving, which is when its
 // progress stops being worth drawing.
-func (s FanoutState) settled() bool { return s == FanoutDone || s == FanoutFailed }
+func (s fanoutState) settled() bool { return s == FanoutDone || s == FanoutFailed }
 
 // AgentProgress is what one child reports about how it is doing: its state,
 // how far it has got against a declared step count, how many calls it has
@@ -53,7 +53,7 @@ func (s FanoutState) settled() bool { return s == FanoutDone || s == FanoutFaile
 // through these methods, so what a lane says and what a row says about the
 // same child can never drift apart.
 type AgentProgress struct {
-	State       FanoutState
+	State       fanoutState
 	Step, Steps int
 	Tools       int
 	Spend       string
@@ -141,7 +141,7 @@ func stepsOf(done, total int) string {
 
 // FanoutLane is one child of the batch.
 type FanoutLane struct {
-	State FanoutState
+	State fanoutState
 	// Name is the child's name; it takes the verb column, so a lane lines up
 	// with the rows around it.
 	Name string
@@ -325,7 +325,7 @@ func AgentNesting(depth int) string {
 	if depth < 2 {
 		return ""
 	}
-	return strings.Repeat(" ", depth-2) + sty.Dimmer.Render("└")
+	return strings.Repeat(" ", depth-2) + sty.dimmer.Render("└")
 }
 
 // glyph is the kind glyph, and on a lane it is the kind glyph in every state:
@@ -357,13 +357,13 @@ func (p AgentProgress) glyph() string { return p.kindTone().Render("◇") }
 func (p AgentProgress) rowGlyph() string {
 	switch p.State {
 	case FanoutBlocked:
-		return sty.Err.Render("⚠")
+		return sty.err.Render("⚠")
 	case FanoutFailed:
-		return sty.Err.Render("✗")
+		return sty.err.Render("✗")
 	case FanoutQueued:
-		return sty.Dim.Render("·")
+		return sty.dim.Render("·")
 	case FanoutIdle:
-		return sty.Dim.Render("⊘")
+		return sty.dim.Render("⊘")
 	}
 	return p.glyph()
 }
@@ -378,13 +378,13 @@ func (p AgentProgress) rowGlyph() string {
 func (p AgentProgress) kindTone() lipgloss.Style {
 	switch p.State {
 	case FanoutBlocked, FanoutFailed:
-		return sty.Err
+		return sty.err
 	case FanoutDone:
-		return sty.Add
+		return sty.add
 	case FanoutQueued, FanoutIdle, FanoutHeld:
-		return sty.Dim
+		return sty.dim
 	default:
-		return sty.Info
+		return sty.info
 	}
 }
 
@@ -402,14 +402,14 @@ func (p AgentProgress) kindTone() lipgloss.Style {
 func (p AgentProgress) progress() string {
 	switch p.State {
 	case FanoutBlocked:
-		return sty.Err.Render("⚠ needs you")
+		return sty.err.Render("⚠ needs you")
 	case FanoutQueued:
 		if p.Behind != "" {
-			return sty.Dim.Render("queued behind " + p.Behind)
+			return sty.dim.Render("queued behind " + p.Behind)
 		}
-		return sty.Dim.Render("queued")
+		return sty.dim.Render("queued")
 	case FanoutIdle:
-		return sty.Dim.Render("idle")
+		return sty.dim.Render("idle")
 	case FanoutHeld:
 		// A parked child and an idle one are both stopped, and only one of
 		// them was stopped on purpose: a hold is something the reader did to
@@ -420,30 +420,30 @@ func (p AgentProgress) progress() string {
 		// A child parked while a landed patch is carried into its copy wears
 		// it too: it is the same park, and the word says it was not yours.
 		if p.Reseeding {
-			return sty.Dim.Render("⏸ reseeding")
+			return sty.dim.Render("⏸ reseeding")
 		}
 		// And one waiting its turn at the session's check slots, which is
 		// the same park in front of a check rather than at a boundary. The
 		// word is short because the field is shared with the name; the line
 		// under the lane says what it waits for (SlotWaitNote).
 		if p.SlotWait > 0 {
-			return sty.Dim.Render("⏸ waiting")
+			return sty.dim.Render("⏸ waiting")
 		}
-		return sty.Dim.Render("⏸ held")
+		return sty.dim.Render("⏸ held")
 	case FanoutFailed:
-		return sty.Err.Render("✗ failed")
+		return sty.err.Render("✗ failed")
 	}
 	if p.Planned && p.Steps > 0 {
 		text := stepsOf(p.Step, p.Steps)
 		if p.State == FanoutDone {
 			// What the child marked, not the whole: a child that reported
 			// with two of its steps unmarked says so here.
-			return p.withVerdict(sty.Add.Render("✓ " + text))
+			return p.withVerdict(sty.add.Render("✓ " + text))
 		}
 		// A count, not a verdict, so it is dim: the glyph beside the name is
 		// what carries the state's tone
 		// (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
-		return sty.Dim.Render(text)
+		return sty.dim.Render(text)
 	}
 	if m, ok := AgentMeter(p.Step, p.Steps); ok {
 		m.Text = fmt.Sprintf("%d/%d", min(max(p.Step, 0), p.Steps), p.Steps)
@@ -451,7 +451,7 @@ func (p AgentProgress) progress() string {
 			// Full, and in the add every finished thing wears rather than the
 			// info a lane climbs in: the run is over and the bar is now a
 			// statement about it.
-			m.Pct, m.Tone = 100, MeterProgress
+			m.pctValue, m.tone = 100, meterProgress
 			m.Text = fmt.Sprintf("✓ %d/%d", p.Steps, p.Steps)
 		}
 		if p.State != FanoutDone {
@@ -460,9 +460,9 @@ func (p AgentProgress) progress() string {
 		return p.withVerdict(m.View())
 	}
 	if p.State == FanoutDone {
-		return p.withVerdict(sty.Add.Render("✓ done"))
+		return p.withVerdict(sty.add.Render("✓ done"))
 	}
-	return sty.SpinText.Render(p.runningWord())
+	return sty.spinText.Render(p.runningWord())
 }
 
 // runningWord is what a child still working with no declared step count says
@@ -491,7 +491,7 @@ func LaneWord(writes bool) string {
 // and the spend that follow it, so it takes their tone rather than the bar's;
 // only a verdict — `✓ 5/5`, `⚠ needs you` — is drawn in a state's colour
 // (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
-func countedMeter(m Meter) string { return join(m.Bar(), sty.Dim.Render(m.text())) }
+func countedMeter(m Meter) string { return join(m.bar(), sty.dim.Render(m.text())) }
 
 // withVerdict puts a review's own last word beside what the run came to:
 // `✓ done · approve with changes`. The tick is the session's account of the
@@ -506,7 +506,7 @@ func (p AgentProgress) withVerdict(s string) string {
 	if p.State != FanoutDone || p.ReportVerdict == "" {
 		return s
 	}
-	return s + sty.Dim.Render(detailSep) + sty.Body.Render(p.ReportVerdict)
+	return s + sty.dim.Render(detailSep) + sty.body.Render(p.ReportVerdict)
 }
 
 // stats is what the child cost so far: the calls it made and the money it
@@ -526,7 +526,7 @@ func (p AgentProgress) stats() string {
 	if len(parts) == 0 {
 		return ""
 	}
-	return sty.Dimmer.Render(strings.Join(parts, " · "))
+	return sty.dimmer.Render(strings.Join(parts, " · "))
 }
 
 // outcomeField joins the progress and the stats into the one right-aligned
@@ -537,11 +537,11 @@ func (p AgentProgress) outcomeField() string {
 		// The budget's share rides beside the progress, not in the costs: it
 		// is the other half of how far along the child is, and the one half
 		// nobody had to declare.
-		share := sty.Dimmer.Render(fmt.Sprintf("%d%% of budget", p.BudgetPct))
+		share := sty.dimmer.Render(fmt.Sprintf("%d%% of budget", p.BudgetPct))
 		if progress == "" {
 			progress = share
 		} else {
-			progress += sty.Dim.Render(" · ") + share
+			progress += sty.dim.Render(" · ") + share
 		}
 	}
 	switch {
@@ -550,7 +550,7 @@ func (p AgentProgress) outcomeField() string {
 	case stats == "":
 		return progress
 	}
-	return progress + sty.Dim.Render(" · ") + stats
+	return progress + sty.dim.Render(" · ") + stats
 }
 
 // progressOf is the lane's child-progress view of itself, so the lane and
@@ -760,7 +760,7 @@ func depthGroups(depths []int) [][]int {
 
 // tallyStates counts a set of children by state, for the one line that heads
 // them.
-func tallyStates(states []FanoutState) (running, blocked, held, done, failed int) {
+func tallyStates(states []fanoutState) (running, blocked, held, done, failed int) {
 	for _, st := range states {
 		switch st {
 		case FanoutBlocked:
@@ -812,36 +812,36 @@ func tallyStates(states []FanoutState) (running, blocked, held, done, failed int
 // the reader stopped children they never touched. It is said after the held
 // clause and in the same dim, since it too is a child stopped at its
 // boundary, and the lane under it says what it waits for.
-func waitingTally(states []FanoutState, slotWaits int, owed bool) string {
+func waitingTally(states []fanoutState, slotWaits int, owed bool) string {
 	running, blocked, held, done, failed := tallyStates(states)
 	waiting := min(slotWaits, held)
 	held -= waiting
 	running += blocked
 	var parts []string
 	if owed && blocked > 0 {
-		parts = append(parts, sty.Err.Render(fmt.Sprintf("%d needs you", blocked)))
+		parts = append(parts, sty.err.Render(fmt.Sprintf("%d needs you", blocked)))
 	}
 	if held > 0 {
-		parts = append(parts, sty.Dim.Render(fmt.Sprintf("%d held", held)))
+		parts = append(parts, sty.dim.Render(fmt.Sprintf("%d held", held)))
 	}
 	if waiting > 0 {
-		parts = append(parts, sty.Dim.Render(fmt.Sprintf("%d waiting", waiting)))
+		parts = append(parts, sty.dim.Render(fmt.Sprintf("%d waiting", waiting)))
 	}
 	if running > 0 {
-		parts = append(parts, sty.Dim.Render(fmt.Sprintf("%d running", running)))
+		parts = append(parts, sty.dim.Render(fmt.Sprintf("%d running", running)))
 	}
 	if len(parts) > tallyParts {
 		parts = parts[:tallyParts]
 	}
 	if len(parts) == 0 {
 		if done > 0 {
-			parts = append(parts, sty.Add.Render(fmt.Sprintf("%d done", done)))
+			parts = append(parts, sty.add.Render(fmt.Sprintf("%d done", done)))
 		}
 		if failed > 0 {
-			parts = append(parts, sty.Err.Render(fmt.Sprintf("%d failed", failed)))
+			parts = append(parts, sty.err.Render(fmt.Sprintf("%d failed", failed)))
 		}
 	}
-	return strings.Join(parts, sty.Dim.Render(" · "))
+	return strings.Join(parts, sty.dim.Render(" · "))
 }
 
 // tallyParts is how many clauses the tally says at most. The field shares a
@@ -850,8 +850,8 @@ func waitingTally(states []FanoutState, slotWaits int, owed bool) string {
 const tallyParts = 2
 
 // states is the batch's lane states, in lane order.
-func (b FanoutBlock) states() []FanoutState {
-	out := make([]FanoutState, len(b.Lanes))
+func (b FanoutBlock) states() []fanoutState {
+	out := make([]fanoutState, len(b.Lanes))
 	for i, l := range b.Lanes {
 		out[i] = l.State
 	}

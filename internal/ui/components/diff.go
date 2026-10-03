@@ -82,7 +82,7 @@ type DiffView struct {
 	// Height is the full-screen view's row budget, including header and
 	// footer.
 	Height     int
-	SideBySide bool
+	sideBySide bool
 	// Offset is the first visible body row of the full-screen view.
 	Offset int
 	// Full-screen body cache: rendering (with syntax highlighting) is only
@@ -92,12 +92,12 @@ type DiffView struct {
 	cachedBodySBS   bool
 }
 
-// DiffResult is the viewer's answer, and it carries nothing. The viewer
+// diffResult is the viewer's answer, and it carries nothing. The viewer
 // walks between its three forms and scrolls; it decides nothing about the
 // session, so `done` — the viewer was dismissed — is the whole of what it
 // has to report. It is a type of its own rather than `any` so the viewer
 // answers a key the way every other surface does (Keyed).
-type DiffResult struct{}
+type diffResult struct{}
 
 // SetSize gives the viewer the terminal's rectangle. It lays itself out from
 // the width it is rendered at, so only the height is kept — and the height it
@@ -108,7 +108,7 @@ func (d *DiffView) SetSize(_, height int) { d.Height = height }
 // Update handles keys while the viewer is focused. done reports that the
 // viewer was dismissed (esc from the collapsed or expanded form). Esc from
 // full screen steps back to the expanded view — esc never destroys.
-func (d *DiffView) Update(msg tea.KeyPressMsg) (done bool, result DiffResult) {
+func (d *DiffView) Update(msg tea.KeyPressMsg) (done bool, result diffResult) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Reading.Expand):
 		// [enter] expand · [enter] full view · [enter again] collapse.
@@ -121,16 +121,16 @@ func (d *DiffView) Update(msg tea.KeyPressMsg) (done bool, result DiffResult) {
 		default:
 			d.Mode = DiffCollapsed
 		}
-		return false, DiffResult{}
+		return false, diffResult{}
 	case keys.Is(pressed, keys.Diff.Back):
 		if d.Mode == DiffFull {
 			d.Mode = DiffExpanded
-			return false, DiffResult{}
+			return false, diffResult{}
 		}
-		return true, DiffResult{}
+		return true, diffResult{}
 	}
 	if d.Mode != DiffFull {
-		return false, DiffResult{}
+		return false, diffResult{}
 	}
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Diff.Scroll):
@@ -138,9 +138,9 @@ func (d *DiffView) Update(msg tea.KeyPressMsg) (done bool, result DiffResult) {
 	case keys.Is(pressed, keys.Diff.Hunk):
 		d.jumpHunk(keys.Step(pressed, keys.Diff.Hunk))
 	case keys.Is(pressed, keys.Diff.SideBySide):
-		d.SideBySide = !d.SideBySide
+		d.sideBySide = !d.sideBySide
 	}
-	return false, DiffResult{}
+	return false, diffResult{}
 }
 
 // View renders the current mode at the given width.
@@ -218,42 +218,42 @@ func (d *DiffView) RowView(width int) string { return d.row().View(width) }
 // the activity row's own renderer.
 func (d *DiffView) Row() ActivityRow { return d.row() }
 
-// UnifiedOpts controls the unified rendering.
-type UnifiedOpts struct {
-	// LineNumbers prefixes each line with its old/new line number.
-	LineNumbers bool
-	// Emphasis applies the intraline background tint to changed spans.
-	Emphasis bool
-	// MaxLines bounds the output; the last row becomes a truncation notice
+// unifiedOpts controls the unified rendering.
+type unifiedOpts struct {
+	// lineNumbers prefixes each line with its old/new line number.
+	lineNumbers bool
+	// emphasis applies the intraline background tint to changed spans.
+	emphasis bool
+	// maxLines bounds the output; the last row becomes a truncation notice
 	// when lines were dropped. 0 means unbounded.
-	MaxLines int
-	// Syntax highlights line text, with diff coloring layered over it
+	maxLines int
+	// syntax highlights line text, with diff coloring layered over it
 	// (docs/interface/surfaces.md#the-diff-view); nil keeps plain diff colors.
-	Syntax Syntax
+	syntax Syntax
 }
 
-// UnifiedLines renders hunks as colored unified-diff rows. An empty diff
+// unifiedLines renders hunks as colored unified-diff rows. An empty diff
 // renders a single "(no changes)" notice.
-func UnifiedLines(hunks []diff.Hunk, width int, opts UnifiedOpts) []string {
+func unifiedLines(hunks []diff.Hunk, width int, opts unifiedOpts) []string {
 	if len(hunks) == 0 {
-		return []string{sty.Hint.Render("(no changes)")}
+		return []string{sty.hint.Render("(no changes)")}
 	}
 	numWidth := 0
-	if opts.LineNumbers {
+	if opts.lineNumbers {
 		last := hunks[len(hunks)-1]
 		numWidth = len(fmt.Sprintf("%d", max(last.OldStart+last.OldCount, last.NewStart+last.NewCount)))
 	}
 	var rows []string
 	for _, h := range hunks {
-		rows = append(rows, sty.Hunk.Render(Clip(h.Header(), width)))
+		rows = append(rows, sty.hunk.Render(Clip(h.Header(), width)))
 		for _, l := range h.Lines {
 			rows = append(rows, renderUnifiedLine(l, width, numWidth, opts))
 		}
 	}
-	if opts.MaxLines > 0 && len(rows) > opts.MaxLines {
-		keep := max(opts.MaxLines-1, 1)
+	if opts.maxLines > 0 && len(rows) > opts.maxLines {
+		keep := max(opts.maxLines-1, 1)
 		extra := len(rows) - keep
-		rows = append(rows[:keep:keep], sty.Hint.Render(fmt.Sprintf("… (+%d more diff lines)", extra)))
+		rows = append(rows[:keep:keep], sty.hint.Render(fmt.Sprintf("… (+%d more diff lines)", extra)))
 	}
 	return rows
 }
@@ -273,8 +273,8 @@ func (d *DiffView) ExpandedLines(width int) []string {
 	}
 	inner := max(width-detailIndent, 1)
 	lines := []string{d.RowView(width)}
-	for _, l := range UnifiedLines(d.Hunks, inner, UnifiedOpts{
-		LineNumbers: true, Emphasis: true, MaxLines: body, Syntax: d.Syntax}) {
+	for _, l := range unifiedLines(d.Hunks, inner, unifiedOpts{
+		lineNumbers: true, emphasis: true, maxLines: body, syntax: d.Syntax}) {
 		lines = append(lines, strings.Repeat(" ", detailIndent)+l)
 	}
 	return lines
@@ -285,11 +285,11 @@ func (d *DiffView) ExpandedLines(width int) []string {
 func kindStyles(kind diff.Kind) (style, emph lipgloss.Style) {
 	switch kind {
 	case diff.Add:
-		return sty.Add, sty.AddEmph
+		return sty.add, sty.addEmph
 	case diff.Del:
-		return sty.Del, sty.DelEmph
+		return sty.del, sty.delEmph
 	}
-	return sty.Context, sty.Context
+	return sty.context, sty.context
 }
 
 // emphSpan is the intraline span to tint on this line, or nil. Tab expansion
@@ -304,7 +304,7 @@ func emphSpan(l diff.Line) *diff.Span {
 // renderUnifiedLine renders one diff line: marker, optional line number, text
 // with tab expansion, syntax highlighting when available, and optional
 // intraline emphasis.
-func renderUnifiedLine(l diff.Line, width, numWidth int, opts UnifiedOpts) string {
+func renderUnifiedLine(l diff.Line, width, numWidth int, opts unifiedOpts) string {
 	marker := " "
 	switch l.Kind {
 	case diff.Add:
@@ -323,12 +323,12 @@ func renderUnifiedLine(l diff.Line, width, numWidth int, opts UnifiedOpts) strin
 	}
 
 	var span *diff.Span
-	if opts.Emphasis {
+	if opts.emphasis {
 		span = emphSpan(l)
 	}
 	style, _ := kindStyles(l.Kind)
 	head, avail := paintGutter(marker, number, style, width)
-	return head + renderLineBody(l.Text, avail, l.Kind, span, opts.Syntax)
+	return head + renderLineBody(l.Text, avail, l.Kind, span, opts.syntax)
 }
 
 // renderLineBody renders one line's text in the columns the gutter left it:
@@ -393,11 +393,11 @@ func paintGutter(marker, number string, style lipgloss.Style, width int) (string
 	avail := width - lipgloss.Width(mark) - lipgloss.Width(num)
 	var b strings.Builder
 	if strings.TrimSpace(mark) == "" {
-		writeRun(&b, sty.Dim, mark+num)
+		writeRun(&b, sty.dim, mark+num)
 		return b.String(), avail
 	}
 	writeRun(&b, style, mark)
-	writeRun(&b, sty.Dim, num)
+	writeRun(&b, sty.dim, num)
 	return b.String(), avail
 }
 
@@ -460,13 +460,13 @@ func renderSyntaxBody(text string, avail int, kind diff.Kind, span *diff.Span, s
 		return "", false
 	}
 
-	kindStyle := sty.Context
+	kindStyle := sty.context
 	var emphBg Token
 	switch kind {
 	case diff.Add:
-		kindStyle, emphBg = sty.Add, Palette.AddBg
+		kindStyle, emphBg = sty.add, Palette.addBg
 	case diff.Del:
-		kindStyle, emphBg = sty.Del, Palette.DelBg
+		kindStyle, emphBg = sty.del, Palette.delBg
 	}
 
 	var b strings.Builder
@@ -547,11 +547,11 @@ func (d *DiffView) fileSyntax(path string, explicit Syntax) Syntax {
 // fullView is the full-screen rendering: header, scrollable body,
 // footer hint. Side-by-side when toggled or the terminal is wide enough.
 func (d *DiffView) fullView(width int) string {
-	header := padRight(" "+d.Path, max(0, width-lipgloss.Width(d.statsLabel()))) + paintCounts(d.statsLabel(), sty.Dim)
+	header := padRight(" "+d.Path, max(0, width-lipgloss.Width(d.statsLabel()))) + paintCounts(d.statsLabel(), sty.dim)
 	// Clipped to the screen it is drawn on: a key row wider than the
 	// terminal wraps onto the body's last line and takes a line of the diff
 	// with it, which costs the reader more than the last offer costs.
-	footer := Clip(sty.Dim.Render("diff · ")+keyOffers([]KeyOffer{
+	footer := Clip(sty.dim.Render("diff · ")+keyOffers([]KeyOffer{
 		keyOffer(keys.Diff.Scroll), keyOffer(keys.Diff.Hunk),
 		keyOffer(keys.Diff.SideBySide), keyOffer(keys.Diff.Back),
 	}), width)
@@ -559,7 +559,7 @@ func (d *DiffView) fullView(width int) string {
 	p := Pager{Offset: d.Offset, Height: d.bodyHeight()}
 	visible := p.Window(d.fullBody(width))
 	d.Offset = p.Offset
-	return p.Screen(header, visible, footer)
+	return p.screen(header, visible, footer)
 }
 
 // fullBody renders (and caches) the full-screen body rows, so scrolling a
@@ -573,17 +573,17 @@ func (d *DiffView) fullBody(width int) []string {
 	for _, sec := range d.sections() {
 		if sec.path != "" {
 			adds, dels := diff.Stats(sec.hunks)
-			rows = append(rows, Clip(sty.Accent.Render("─ "+sec.path)+"  "+sty.Dim.Render(fmt.Sprintf("+%d −%d", adds, dels)), width))
+			rows = append(rows, Clip(sty.accent.Render("─ "+sec.path)+"  "+sty.dim.Render(fmt.Sprintf("+%d −%d", adds, dels)), width))
 		}
 		switch {
 		case sec.binary:
-			rows = append(rows, sty.Hint.Render("(binary file differs)"))
+			rows = append(rows, sty.hint.Render("(binary file differs)"))
 		case len(sec.hunks) == 0:
-			rows = append(rows, sty.Hint.Render("(no textual changes)"))
+			rows = append(rows, sty.hint.Render("(no textual changes)"))
 		case sbs:
 			rows = append(rows, sideBySideHunks(sec.hunks, width, sec.syntax)...)
 		default:
-			rows = append(rows, UnifiedLines(sec.hunks, width, UnifiedOpts{LineNumbers: true, Emphasis: true, Syntax: sec.syntax})...)
+			rows = append(rows, unifiedLines(sec.hunks, width, unifiedOpts{lineNumbers: true, emphasis: true, syntax: sec.syntax})...)
 		}
 	}
 	d.cachedBody, d.cachedBodyWidth, d.cachedBodySBS = rows, width, sbs
@@ -596,12 +596,12 @@ func (d *DiffView) bodyHeight() int {
 }
 
 func (d *DiffView) sideBySideActive(width int) bool {
-	return d.SideBySide || width >= sideBySideMinWidth
+	return d.sideBySide || width >= sideBySideMinWidth
 }
 
 // scrollTo holds a new full-screen offset inside the body and applies it.
 func (d *DiffView) scrollTo(offset int) {
-	d.Offset = Pager{Offset: offset, Height: d.bodyHeight(), Total: d.fullBodyLen()}.Held()
+	d.Offset = Pager{Offset: offset, Height: d.bodyHeight(), total: d.fullBodyLen()}.Held()
 }
 
 // fullBodyLen is the total body row count of the current full-screen layout;
@@ -626,7 +626,7 @@ func (d *DiffView) fullBodyLen() int {
 // hunkRows is one hunk's body row count in the current layout (header line
 // excluded).
 func (d *DiffView) hunkRows(h diff.Hunk) int {
-	if d.SideBySide {
+	if d.sideBySide {
 		return len(pairHunkRows(h))
 	}
 	return len(h.Lines)
@@ -726,10 +726,10 @@ func pairHunkRows(h diff.Hunk) []pairedRow {
 // two different objects wearing one name.
 func sideBySideHunks(hunks []diff.Hunk, width int, syntax Syntax) []string {
 	pane := max((width-3)/2, 8)
-	divider := sty.Dim.Render(" │ ")
+	divider := sty.dim.Render(" │ ")
 	var out []string
 	for _, h := range hunks {
-		out = append(out, sty.Hunk.Render(Clip(h.Header(), width)))
+		out = append(out, sty.hunk.Render(Clip(h.Header(), width)))
 		for _, row := range pairHunkRows(h) {
 			out = append(out, padRight(sideCell(row.old, pane, true, syntax), pane)+divider+sideCell(row.new, pane, false, syntax))
 		}
@@ -782,18 +782,18 @@ func LineChange(before, after string) string {
 	case after == "":
 		return strikeStyle().Render(before)
 	case before == "":
-		return sty.Add.Render(after)
+		return sty.add.Render(after)
 	}
-	return sty.Add.Render(after) + sty.Dim.Render("  ← ") + strikeStyle().Render(before)
+	return sty.add.Render(after) + sty.dim.Render("  ← ") + strikeStyle().Render(before)
 }
 
 // strikeStyle is how a line being replaced is drawn: struck through and
 // dim, so it reads as the text that was there rather than as text to read.
-func strikeStyle() lipgloss.Style { return sty.Dim.Strikethrough(true) }
+func strikeStyle() lipgloss.Style { return sty.dim.Strikethrough(true) }
 
 // DimText is body text at chrome weight, for a caller outside this package
 // that is composing a row out of parts and has one of them to recede.
-func DimText(s string) string { return sty.Dim.Render(s) }
+func DimText(s string) string { return sty.dim.Render(s) }
 
 // Toned renders one part of such a row in the tone a card field is read at.
 // It is the same closed vocabulary a selector's own fields use, so a caller

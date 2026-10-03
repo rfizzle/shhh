@@ -37,7 +37,7 @@ func historyRows() []HistoryRow {
 }
 
 func historyScreen() *HistoryScreen {
-	return &HistoryScreen{Rows: historyRows(), Subject: "4 entries · 2 run", MaxLines: 18}
+	return &HistoryScreen{Rows: historyRows(), Subject: "4 entries · 2 run", maxLines: 18}
 }
 
 func typeIntoHistory(h *HistoryScreen, text string) {
@@ -210,7 +210,7 @@ func TestHistoryScreen_MatchedRunIsBold(t *testing.T) {
 	// Bold over the row's own tone rather than bold alone: a bold run
 	// rendered inside a coloured one ends in a reset and takes the rest of
 	// the label out with it (emphasizeMatch).
-	if !strings.Contains(h.View(130), sty.Body.Bold(true).Render("log")) {
+	if !strings.Contains(h.View(130), sty.body.Bold(true).Render("log")) {
 		t.Fatal("the matched run is not emphasized in the row")
 	}
 }
@@ -298,7 +298,7 @@ func TestHistoryScreen_EnterRunsTheEntryUnderThePointer(t *testing.T) {
 	if !got.Run {
 		t.Fatalf("want a run result, got %#v", result)
 	}
-	if got.ID != "2" || got.Command != "du -ah . | sort -rh | head -10" {
+	if got.iD != "2" || got.Command != "du -ah . | sort -rh | head -10" {
 		t.Fatalf("enter ran the wrong entry: %#v", got)
 	}
 }
@@ -313,7 +313,7 @@ func TestHistoryScreen_LeavingRunsNothing(t *testing.T) {
 		h := historyScreen()
 		done, result := h.Update(key(k))
 		got := result
-		if !done || !got.Canceled || got.Run {
+		if !done || !got.canceled || got.Run {
 			t.Fatalf("%s should leave running nothing, got done=%v %#v", k, done, result)
 		}
 	}
@@ -324,7 +324,7 @@ func TestHistoryScreen_LeavingRunsNothing(t *testing.T) {
 func TestHistoryScreen_CopyAndSaveResolveWithoutClosing(t *testing.T) {
 	for _, tc := range []struct {
 		key string
-		act HistoryAct
+		act historyAct
 	}{{"c", HistoryCopy}, {"s", HistorySave}} {
 		h := historyScreen()
 		h.Update(key("down"))
@@ -453,7 +453,7 @@ func TestHistoryScreen_DrawsNoFrame(t *testing.T) {
 // An empty store renders rather than panicking — the host does not open the
 // screen on one, but a delete can empty it while it is up.
 func TestHistoryScreen_EmptyRenders(t *testing.T) {
-	h := &HistoryScreen{Subject: "0 entries · 0 run", MaxLines: 18}
+	h := &HistoryScreen{Subject: "0 entries · 0 run", maxLines: 18}
 	out := plainView(h, 130)
 	if !strings.Contains(out, "no entry selected") {
 		t.Fatalf("an empty screen says nothing:\n%s", out)

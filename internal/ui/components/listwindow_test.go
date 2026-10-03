@@ -302,7 +302,7 @@ func TestList_StepGoesOverRailsAndStopsAtTheEnds(t *testing.T) {
 		{Label: "FILES", Header: true},
 		{Label: "two"},
 	}
-	l := List[SelectOption]{Items: opts, Focus: 1, Skip: func(o SelectOption) bool { return o.Header }}
+	l := List[SelectOption]{Items: opts, Focus: 1, skipFn: func(o SelectOption) bool { return o.Header }}
 
 	l.Step(1)
 	if l.Focus != 3 {
@@ -343,20 +343,20 @@ func TestList_NormalizeLeavesThePointerOnAnOption(t *testing.T) {
 	skip := func(o SelectOption) bool { return o.Header }
 	rails := []SelectOption{{Label: "COMMANDS", Header: true}, {Label: "one"}}
 
-	l := List[SelectOption]{Items: rails, Focus: 0, Skip: skip}
-	l.Normalize()
+	l := List[SelectOption]{Items: rails, Focus: 0, skipFn: skip}
+	l.normalize()
 	if l.Focus != 1 {
 		t.Fatalf("a pointer on a rail should move to the option under it, got %d", l.Focus)
 	}
 
-	l = List[SelectOption]{Items: rails, Focus: 9, Skip: skip}
-	l.Normalize()
+	l = List[SelectOption]{Items: rails, Focus: 9, skipFn: skip}
+	l.normalize()
 	if l.Focus != 1 {
 		t.Fatalf("a pointer past the end should come back to the last option, got %d", l.Focus)
 	}
 
-	l = List[SelectOption]{Items: []SelectOption{{Label: "one"}, {Label: "TAIL", Header: true}}, Focus: 1, Skip: skip}
-	l.Normalize()
+	l = List[SelectOption]{Items: []SelectOption{{Label: "one"}, {Label: "TAIL", Header: true}}, Focus: 1, skipFn: skip}
+	l.normalize()
 	if l.Focus != 0 {
 		t.Fatalf("a rail with nothing under it should send the pointer back up, got %d", l.Focus)
 	}
@@ -370,11 +370,11 @@ func TestList_CountsAndIndexesWhatCanBeChosen(t *testing.T) {
 		{Label: "FILES", Header: true},
 		{Label: "two"},
 	}
-	l := List[SelectOption]{Items: opts, Skip: func(o SelectOption) bool { return o.Header }}
-	if got := l.Count(); got != 2 {
+	l := List[SelectOption]{Items: opts, skipFn: func(o SelectOption) bool { return o.Header }}
+	if got := l.count(); got != 2 {
 		t.Fatalf("two options among four rows, got %d", got)
 	}
-	if got := l.First(); got != 1 {
+	if got := l.first(); got != 1 {
 		t.Fatalf("the first option is at 1, got %d", got)
 	}
 	if got := l.Index(2); got != 3 {

@@ -46,12 +46,12 @@ func TestCard_TheSubtitleIsChromeAfterTheTitle(t *testing.T) {
 	if top := ansi.Strip(strings.Split(plain, "\n")[0]); !strings.HasPrefix(top, "╭─ clipboard.png ─") {
 		t.Fatalf("the bare title is %q", top)
 	}
-	sent := Card{Title: "clipboard.png", Subtitle: "sent with turn 3"}.Render(nil, 60)
+	sent := Card{Title: "clipboard.png", subtitle: "sent with turn 3"}.Render(nil, 60)
 	top := strings.Split(sent, "\n")[0]
 	if !strings.HasPrefix(ansi.Strip(top), "╭─ clipboard.png · sent with turn 3 ─") {
 		t.Fatalf("the title with its subtitle is %q", ansi.Strip(top))
 	}
-	if !strings.Contains(top, sty.Dim.Render(" · sent with turn 3 ")) {
+	if !strings.Contains(top, sty.dim.Render(" · sent with turn 3 ")) {
 		t.Fatalf("the subtitle is not in the chrome grey: %q", top)
 	}
 }

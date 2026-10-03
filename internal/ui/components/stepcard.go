@@ -68,15 +68,15 @@ type StepCard struct {
 	// step with none says CardRunning there.
 	Outcome      string
 	OutcomeState ActivityState
-	// Mark, where set, is the glyph already painted, standing in for the
+	// mark, where set, is the glyph already painted, standing in for the
 	// one the state would draw, and OutcomeAccent paints the outcome in the
 	// accent with it: a failure the session will come back from is a stall,
 	// `⚠`, and not a break (FailureCard).
-	Mark          string
+	mark          string
 	OutcomeAccent bool
-	// OutcomePainted marks an outcome already painted run by run: a
+	// outcomePainted marks an outcome already painted run by run: a
 	// fan-out's tally, whose clauses each carry their own tone.
-	OutcomePainted bool
+	outcomePainted bool
 	// Verdict is the reading's verdict or the gate's word after the
 	// outcome, and VerdictAlert paints it in the accent. It drops second.
 	Verdict      string
@@ -121,9 +121,9 @@ type StepCard struct {
 	// landed mid-step (CardNoteRow). A card drawn as its header alone or
 	// open onto its calls draws none, as it draws no footer.
 	Rows []string
-	// Calls are the open card's rows, already drawn at the pane's width.
+	// calls are the open card's rows, already drawn at the pane's width.
 	// They stand where the footer stood, on the band.
-	Calls []string
+	calls []string
 	// Density is how much of the card is drawn. No card has a fold of the
 	// reader's: its header alone is the low rung's closed card and nothing
 	// else, so the pointer column carries no fold mark.
@@ -169,7 +169,7 @@ func (c StepCard) View(width int) string {
 	switch c.Density {
 	case CardHigh:
 		lines = append(lines, cardPad(width))
-		for _, call := range c.Calls {
+		for _, call := range c.calls {
 			for _, l := range strings.Split(strings.TrimRight(call, "\n"), "\n") {
 				lines = append(lines, onBand(Clip(l, width), width))
 			}
@@ -206,16 +206,16 @@ const cardPictureOpens = "opens like an attachment"
 // View draws the row at the pane's width.
 func (p CardPictureRow) View(width int) string {
 	inner := max(width-cardMargin-CardBodyIndent, 1)
-	mark := sty.Dim.Render(ChipImage.mark())
+	mark := sty.dim.Render(ChipImage.mark())
 	said := Clip(p.Name, max(inner-2, 1))
 	facts := ""
 	if p.Facts != "" && lipgloss.Width(said)+2+3+lipgloss.Width(p.Facts) <= inner {
-		facts = sty.Dim.Render(" · " + p.Facts)
+		facts = sty.dim.Render(" · " + p.Facts)
 	}
-	left := mark + " " + sty.Dimmer.Render(said) + facts
+	left := mark + " " + sty.dimmer.Render(said) + facts
 	right := ""
 	if lipgloss.Width(left)+closeMinNoteGap+lipgloss.Width(cardPictureOpens) <= inner {
-		right = sty.Dim.Render(cardPictureOpens)
+		right = sty.dim.Render(cardPictureOpens)
 	}
 	gap := max(inner-lipgloss.Width(left)-lipgloss.Width(right), 1)
 	line := strings.Repeat(" ", CardBodyIndent) + left + strings.Repeat(" ", gap) + right
@@ -235,7 +235,7 @@ func CardNoteRow(text string, width int) string {
 	var lines []string
 	for _, l := range strings.Split(lipgloss.Wrap(text, inner, ""), "\n") {
 		lines = append(lines, onBand(strings.Repeat(" ", CardBodyIndent)+
-			sty.Dimmer.Render(Clip(strings.TrimRight(l, " "), inner)), width))
+			sty.dimmer.Render(Clip(strings.TrimRight(l, " "), inner)), width))
 	}
 	return strings.Join(lines, "\n")
 }
@@ -299,20 +299,20 @@ func (c StepCard) header(width int) string {
 		subject = Clip(subject, max(lipgloss.Width(subject)-over, 1))
 	}
 
-	verbTone := sty.Body
+	verbTone := sty.body
 	if c.State == ActivityQueued {
-		verbTone = sty.Dim
+		verbTone = sty.dim
 	}
 	left := verbTone.Render(c.Verb)
 	if subject != "" {
-		left += " " + sty.Dimmer.Render(subject)
+		left += " " + sty.dimmer.Render(subject)
 	}
 	if fit.rollup != "" {
 		sep := " "
 		if subject != "" {
 			sep = " · "
 		}
-		left += sty.Dim.Render(sep + fit.rollup)
+		left += sty.dim.Render(sep + fit.rollup)
 	}
 	right := c.headerRight(fit)
 	// One blank column at least between the receipt and the right-hand run:
@@ -322,7 +322,7 @@ func (c StepCard) header(width int) string {
 	rest := c.railCell() + c.glyph() + " " + left + strings.Repeat(" ", gap) + right
 	rest = Clip(rest, max(width-1, 0))
 	if c.Selected {
-		return sty.FocusPointer.Render("❯") + LitRowKeeping(rest, 0, -1, max(width-1, 0))
+		return sty.focusPointer.Render("❯") + litRowKeeping(rest, 0, -1, max(width-1, 0))
 	}
 	return onBand(" "+rest, width)
 }
@@ -354,55 +354,55 @@ func (c StepCard) headerRight(fit headerFit) string {
 	case c.Outcome != "":
 		parts = append(parts, c.outcome())
 	case c.State == ActivityRunning:
-		parts = append(parts, sty.SpinText.Render(CardRunning))
+		parts = append(parts, sty.spinText.Render(CardRunning))
 	}
 	if c.Matches != "" {
-		parts = append(parts, sty.Dim.Render(c.Matches))
+		parts = append(parts, sty.dim.Render(c.Matches))
 	}
 	if fit.verdict && c.Verdict != "" {
 		parts = append(parts, c.verdict(c.Verdict))
 	}
 	if fit.duration && c.Duration != "" {
-		parts = append(parts, sty.Dim.Render(c.Duration))
+		parts = append(parts, sty.dim.Render(c.Duration))
 	}
-	return strings.Join(parts, sty.Dim.Render(" · "))
+	return strings.Join(parts, sty.dim.Render(" · "))
 }
 
 // outcome paints the step's answer: a write's line counts in the diff's two
 // tokens, and anything else in the tone of how the step stands.
 func (c StepCard) outcome() string {
-	if c.OutcomePainted {
+	if c.outcomePainted {
 		return c.Outcome
 	}
 	if c.OutcomeAccent {
-		return sty.Accent.Render(c.Outcome)
+		return sty.accent.Render(c.Outcome)
 	}
 	if painted, ok := paintLineCounts(c.Outcome); ok {
 		return painted
 	}
 	switch c.OutcomeState {
 	case ActivityFailed:
-		return sty.Del.Render(c.Outcome)
+		return sty.del.Render(c.Outcome)
 	case ActivityDenied:
 		if c.ByRule {
-			return sty.Del.Render(c.Outcome)
+			return sty.del.Render(c.Outcome)
 		}
-		return sty.Dim.Render(c.Outcome)
+		return sty.dim.Render(c.Outcome)
 	case ActivityQueued:
-		return sty.Dim.Render(c.Outcome)
+		return sty.dim.Render(c.Outcome)
 	case ActivityRunning:
-		return sty.SpinText.Render(c.Outcome)
+		return sty.spinText.Render(c.Outcome)
 	}
-	return sty.Add.Render(c.Outcome)
+	return sty.add.Render(c.Outcome)
 }
 
 // verdict paints a verdict or a gate's word: dim, a person's `approved` in
 // add as it is on a row, and a reading that departed in the accent.
 func (c StepCard) verdict(v string) string {
 	if c.VerdictAlert {
-		return sty.Accent.Render(v)
+		return sty.accent.Render(v)
 	}
-	return paintAccount(v, sty.Dim)
+	return paintAccount(v, sty.dim)
 }
 
 // railCell is the mutation rail's column: accent, or del on a step that
@@ -412,9 +412,9 @@ func (c StepCard) railCell() string {
 	case !c.Rail:
 		return " "
 	case c.State == ActivityFailed, c.State == ActivityDenied && c.ByRule:
-		return sty.Del.Render("▎")
+		return sty.del.Render("▎")
 	}
-	return sty.Accent.Render("▎")
+	return sty.accent.Render("▎")
 }
 
 // glyph is the step's mark: the state where it overrides, the lead kind of
@@ -427,25 +427,25 @@ func (c StepCard) railCell() string {
 // telling the same fact, and the word in the outcome slot is what says this
 // step is the live one. See docs/interface/surfaces.md#the-step.
 func (c StepCard) glyph() string {
-	if c.Mark != "" {
-		return c.Mark
+	if c.mark != "" {
+		return c.mark
 	}
 	switch c.State {
 	case ActivityDenied:
 		if c.ByRule {
-			return sty.Del.Render(stateGlyphs[ActivityDenied].mark)
+			return sty.del.Render(stateGlyphs[ActivityDenied].mark)
 		}
 		return stateGlyphs[ActivityDenied].render()
 	case ActivityFailed, ActivityQueued, ActivityChecking:
 		return stateGlyphs[c.State].render()
 	}
 	if c.Kind == ActivityTool {
-		return sty.Accent.Render(kindGlyphs[ActivityTool].mark)
+		return sty.accent.Render(kindGlyphs[ActivityTool].mark)
 	}
 	if int(c.Kind) < len(kindGlyphs) {
 		return kindGlyphs[c.Kind].render()
 	}
-	return sty.Accent.Render(kindGlyphs[ActivityTool].mark)
+	return sty.accent.Render(kindGlyphs[ActivityTool].mark)
 }
 
 // bodyLines is the sentence that titled the step, whole, wrapped at the
@@ -457,9 +457,9 @@ func (c StepCard) bodyLines(width int) []string {
 	if text == "" {
 		return nil
 	}
-	tone := sty.Body
+	tone := sty.body
 	if c.Reading {
-		tone = sty.Dimmer.Italic(true)
+		tone = sty.dimmer.Italic(true)
 	}
 	inner := max(width-CardBodyIndent-cardMargin, 1)
 	var lines []string
@@ -487,12 +487,12 @@ func (c StepCard) footer(width int) (string, bool) {
 	var right []string
 	switch {
 	case c.EvidenceRight != "" && c.EvidenceAlert:
-		right = append(right, sty.Del.Render(c.EvidenceRight))
+		right = append(right, sty.del.Render(c.EvidenceRight))
 	case c.EvidenceRight != "":
-		right = append(right, paintCounts(c.EvidenceRight, sty.Dim))
+		right = append(right, paintCounts(c.EvidenceRight, sty.dim))
 	}
 	if c.Keys != "" {
-		right = append(right, sty.Key.Render(Clip(c.Keys, inner)))
+		right = append(right, sty.key.Render(Clip(c.Keys, inner)))
 	}
 	if len(c.Strip) > 0 {
 		used := lipgloss.Width(strings.Join(right, " "))
@@ -512,7 +512,7 @@ func (c StepCard) footer(width int) (string, bool) {
 		if painted, ok := repaint(c.Evidence, Palette.Dimmer); ok {
 			ev = Clip(painted, room)
 		} else {
-			ev = sty.Dimmer.Render(Clip(c.Evidence, room))
+			ev = sty.dimmer.Render(Clip(c.Evidence, room))
 		}
 	}
 	gap := max(inner-lipgloss.Width(ev)-rightW, 0)
@@ -530,7 +530,7 @@ func stepStripRun(cells []StripCell, room int) string {
 	}
 	if len(cells) > room {
 		cells = cells[len(cells)-(room-1):]
-		return sty.Dim.Render("…") + stepStripRun(cells, room-1)
+		return sty.dim.Render("…") + stepStripRun(cells, room-1)
 	}
 	var b strings.Builder
 	for _, cell := range cells {
@@ -543,11 +543,11 @@ func stepStripRun(cells []StripCell, room int) string {
 func stripCell(cell StripCell) string {
 	switch cell.State {
 	case ActivityFailed:
-		return sty.Del.Render(stateGlyphs[ActivityFailed].mark)
+		return sty.del.Render(stateGlyphs[ActivityFailed].mark)
 	case ActivityDenied:
 		return stateGlyphs[ActivityDenied].render()
 	case ActivityRunning:
-		return sty.SpinText.Render(stateGlyphs[ActivityRunning].mark)
+		return sty.spinText.Render(stateGlyphs[ActivityRunning].mark)
 	}
 	if int(cell.Kind) < len(kindGlyphs) && cell.Kind != ActivityTool {
 		return kindGlyphs[cell.Kind].render()
@@ -565,7 +565,7 @@ func cardPad(width int) string { return onBand("", width) }
 // palette has no band — mono, sixteen colours — the line is left as it was
 // and its trailing blanks go, as they do on every other row.
 func onBand(line string, width int) string {
-	bg := backgroundSeq(CardBand())
+	bg := backgroundSeq(cardBand())
 	if bg == "" {
 		return strings.TrimRight(line, " ")
 	}
@@ -573,9 +573,9 @@ func onBand(line string, width int) string {
 	return bg + strings.ReplaceAll(line, ansiReset, ansiReset+bg) + strings.Repeat(" ", pad) + ansiReset
 }
 
-// CardBand is the ground a card is drawn on: the palette's band, the same
+// cardBand is the ground a card is drawn on: the palette's band, the same
 // whether or not the screen under it is painted. The dark band is half of
 // the catalogue's pair with the dark ground, so stepping it off whatever
 // ground stood under it would draw a card the catalogue does not.
 // See docs/interface/departures.md#a-card-on-a-painted-ground-steps-its-band-up.
-func CardBand() Token { return Palette.Band }
+func cardBand() Token { return Palette.band }

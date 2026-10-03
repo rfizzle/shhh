@@ -44,16 +44,16 @@ type OutputView struct {
 	Rowless bool
 }
 
-// OutputResult is what a key did to the view: left it up, or one of the two
+// outputResult is what a key did to the view: left it up, or one of the two
 // ways out of it.
-type OutputResult int
+type outputResult int
 
 const (
-	// OutputStay: the key scrolled; the view is still up.
-	OutputStay OutputResult = iota
-	// OutputBack: esc or q — back to where it was opened from, the row
+	// outputStay: the key scrolled; the view is still up.
+	outputStay outputResult = iota
+	// outputBack: esc or q — back to where it was opened from, the row
 	// still open in place.
-	OutputBack
+	outputBack
 	// OutputCollapse: enter — the depth past full screen is closed, so the
 	// host also folds the row the view came from.
 	OutputCollapse
@@ -74,10 +74,10 @@ func (v *OutputView) Scroll(delta int) {
 // Update handles keys while the viewer holds the screen. done reports that
 // the key ended the view, which is the shape every other surface answers a
 // key in (Keyed) — a scroll leaves the view up and says so.
-func (v *OutputView) Update(msg tea.KeyPressMsg) (done bool, result OutputResult) {
+func (v *OutputView) Update(msg tea.KeyPressMsg) (done bool, result outputResult) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Output.Back, keys.Output.Leave):
-		return true, OutputBack
+		return true, outputBack
 	case keys.Is(pressed, keys.Output.Collapse):
 		return true, OutputCollapse
 	case keys.Is(pressed, keys.Output.Scroll):
@@ -87,7 +87,7 @@ func (v *OutputView) Update(msg tea.KeyPressMsg) (done bool, result OutputResult
 	case keys.Is(pressed, keys.Output.PageDown):
 		v.Scroll(v.bodyHeight())
 	}
-	return false, OutputStay
+	return false, outputStay
 }
 
 // bodyHeight is the rows left for content once the header and footer have
@@ -100,12 +100,12 @@ func (v *OutputView) bodyHeight() int {
 func (v *OutputView) View(width int) string {
 	stats := plural(len(v.Lines), "line")
 	header := padRight(Clip(" "+v.Title, max(0, width-lipgloss.Width(stats))),
-		max(0, width-lipgloss.Width(stats))) + sty.Dim.Render(stats)
+		max(0, width-lipgloss.Width(stats))) + sty.dim.Render(stats)
 	offers := []KeyOffer{keyOffer(keys.Output.Scroll), keyOffer(keys.Output.PageUp), keyOffer(keys.Output.PageDown)}
 	if !v.Rowless {
 		offers = append(offers, keyOffer(keys.Output.Collapse))
 	}
-	footer := sty.Dim.Render("output · ") + keyOffers(append(offers, keyOffer(keys.Output.Back)))
+	footer := sty.dim.Render("output · ") + keyOffers(append(offers, keyOffer(keys.Output.Back)))
 
 	p := Pager{Offset: v.Offset, Height: v.bodyHeight()}
 	visible := p.Window(v.bodyRows(width))
@@ -119,9 +119,9 @@ func (v *OutputView) View(width int) string {
 			out = append(out, Clip(painted, width))
 			continue
 		}
-		out = append(out, sty.Dimmer.Render(Clip(l, width)))
+		out = append(out, sty.dimmer.Render(Clip(l, width)))
 	}
-	return p.Screen(header, out, footer)
+	return p.screen(header, out, footer)
 }
 
 // bodyRows is the body as display rows: the lines themselves, or their

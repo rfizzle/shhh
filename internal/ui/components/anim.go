@@ -96,11 +96,11 @@ const (
 func animRung(rung int) lipgloss.Style {
 	switch rung {
 	case animCrest:
-		return sty.AnimCrest
+		return sty.animCrest
 	case animBirth:
-		return sty.Dim
+		return sty.dim
 	}
-	return sty.SpinText
+	return sty.spinText
 }
 
 // animCanon collapses the crest onto the base when the live palette gives
@@ -116,52 +116,52 @@ func animCanon(rung int) int {
 	return rung
 }
 
-// Anim is a label in motion. It is a value the host rebuilds every frame from
+// animLabel is a label in motion. It is a value the host rebuilds every frame from
 // state it already has, not an object with a life of its own: `Frame` is the
 // session's one frame counter and `Arriving` how much of the entrance
 // is still to run.
-type Anim struct {
-	// Frame is the tick the host is on. The sweep advances with it, so this
+type animLabel struct {
+	// frame is the tick the host is on. The sweep advances with it, so this
 	// label and every other moving thing on screen show the same instant.
-	Frame int
-	// Arriving is the number of entrance frames left, counting down to zero.
+	frame int
+	// arriving is the number of entrance frames left, counting down to zero.
 	// Zero is a label that has been on screen a while — and the zero value,
 	// so a host with no entrance to stage renders the settled label without
 	// having to say so. AnimArriving converts an age into it.
-	Arriving int
-	// Lead is drawn at the base rung ahead of the label and is not swept —
+	arriving int
+	// lead is drawn at the base rung ahead of the label and is not swept —
 	// the spinner's own frame, whose eight-frame cycle is not this label's
 	// business. It merges into the label's first run when that run is also
 	// base, so a label at rest is one escape sequence rather than two.
-	Lead string
-	// Label is the word in motion.
-	Label string
-	// Suffix is written after the label exactly as the host styled it: the
+	lead string
+	// label is the word in motion.
+	label string
+	// suffix is written after the label exactly as the host styled it: the
 	// fields the caller's own drop ladder left standing. It is a string
 	// rather than Crush's `func() string` because this value is rebuilt every
 	// frame anyway, and a closure would make View impure for no gain.
-	Suffix string
+	suffix string
 }
 
-// View renders the label at the frame it was given. Width is invariant across
+// view renders the label at the frame it was given. Width is invariant across
 // every frame — the entrance swaps a cell for a mark of the same width and
 // the sweep swaps only colour — so a host can lay this out once and never
 // again.
-func (a Anim) View() string {
-	if a.Label == "" {
-		if a.Lead == "" {
-			return a.Suffix
+func (a animLabel) view() string {
+	if a.label == "" {
+		if a.lead == "" {
+			return a.suffix
 		}
-		return sty.SpinText.Render(a.Lead) + a.Suffix
+		return sty.spinText.Render(a.lead) + a.suffix
 	}
-	f := animFramesFor(a.Label)
-	frame := f.sweep[modIndex(a.Frame, len(f.sweep))]
-	if a.Arriving > 0 {
-		frame = f.entrance[min(a.Arriving, animBirthSteps)-1]
+	f := animFramesFor(a.label)
+	frame := f.sweep[modIndex(a.frame, len(f.sweep))]
+	if a.arriving > 0 {
+		frame = f.entrance[min(a.arriving, animBirthSteps)-1]
 	}
 	runs := make([]animRun, 0, len(frame)+1)
-	if a.Lead != "" {
-		runs = appendRun(runs, animBase, a.Lead)
+	if a.lead != "" {
+		runs = appendRun(runs, animBase, a.lead)
 	}
 	for _, r := range frame {
 		runs = appendRun(runs, r.rung, r.text)
@@ -170,7 +170,7 @@ func (a Anim) View() string {
 	for _, r := range runs {
 		b.WriteString(animRung(r.rung).Render(r.text))
 	}
-	b.WriteString(a.Suffix)
+	b.WriteString(a.suffix)
 	return b.String()
 }
 

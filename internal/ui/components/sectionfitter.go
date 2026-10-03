@@ -68,11 +68,11 @@ func (f SectionFitter) cost(kept []int) int {
 	return n
 }
 
-// Dropped is the sections Fit left out, in the order they were in. It is what
+// dropped is the sections Fit left out, in the order they were in. It is what
 // the marker names: a row that only said "4 more" would leave the reader
 // guessing which four the screen is sitting on, which on a diagnostic is the
 // whole question (invariant 4).
-func (f SectionFitter) Dropped(n int, kept []int) []int {
+func (f SectionFitter) dropped(n int, kept []int) []int {
 	shown := make(map[int]bool, len(kept))
 	for _, i := range kept {
 		shown[i] = true

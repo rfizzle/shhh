@@ -93,7 +93,7 @@ type MetricsBar struct {
 	NoteTone FieldTone
 	// Tone is the meter's own colour: MeterCategory for an ordinary share,
 	// MeterUnasked for a cost nobody asked for, MeterAgent for a sub-agent's.
-	Tone MeterTone
+	Tone meterTone
 }
 
 // MetricsBlock is one titled run of bars — `where the money went`, `how the
@@ -121,10 +121,10 @@ type MetricsScreen struct {
 	Models []MetricsModel
 	// Blocks are the meter blocks under the table, in the order they are drawn.
 	Blocks []MetricsBlock
-	// MaxLines bounds the screen height; the header and its rule come off the
+	// maxLines bounds the screen height; the header and its rule come off the
 	// body's budget before anything is drawn. 0 is unbounded, which is what a
 	// test or a host that sizes itself gets.
-	MaxLines int
+	maxLines int
 
 	// keys reports that `?` has the register and the glyph legend showing
 	// in place of the foot.
@@ -157,7 +157,7 @@ func (m *MetricsScreen) Update(msg tea.KeyPressMsg) (done bool, result MetricsRe
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from
 // the width it is rendered at, so only the height is kept.
-func (m *MetricsScreen) SetSize(_, height int) { m.MaxLines = height }
+func (m *MetricsScreen) SetSize(_, height int) { m.maxLines = height }
 
 // View renders the screen: the shared chrome, with the model table and the
 // meter blocks in the rows it leaves.
@@ -173,24 +173,24 @@ func (m *MetricsScreen) View(width int) string {
 	if width <= 0 {
 		return ""
 	}
-	return ScreenChrome{Header: m.header(), MaxLines: m.MaxLines,
-		Foot: KeyFooter{Offers: []KeyOffer{wayOut(backToShell)},
-			Register: []KeyOffer{wayOut(backToShell)}, Showing: m.keys}.Rows(width)}.
-		View(width, func(budget int) []string { return m.bodyRows(width, budget) })
+	return screenChrome{header: m.header(), maxLines: m.maxLines,
+		foot: keyFooter{offers: []KeyOffer{wayOut(backToShell)},
+			register: []KeyOffer{wayOut(backToShell)}, showing: m.keys}.rows(width)}.
+		view(width, func(budget int) []string { return m.bodyRows(width, budget) })
 }
 
 // header names the command and what it is over, with the total spend beside
 // the keys the screen has. The spend sits with the key rather than in the
 // subject because it is the answer the reader came for, and this is where the
 // eye already goes for the state of a surface.
-func (m *MetricsScreen) header() ScreenHeader {
-	h := ScreenHeader{
-		Left:  []RailSegment{screenTitle("shhh metrics")},
-		Keys:  screenHeaderKeys(),
-		Tally: sty.Body.Render(m.Spend),
+func (m *MetricsScreen) header() screenHeader {
+	h := screenHeader{
+		left:  []RailSegment{screenTitle("shhh metrics")},
+		keys:  screenHeaderKeys(),
+		tally: sty.body.Render(m.Spend),
 	}
 	if m.Subject != "" {
-		h.Left = append(h.Left, screenField(m.Subject))
+		h.left = append(h.left, screenField(m.Subject))
 	}
 	return h
 }
@@ -247,7 +247,7 @@ func (m *MetricsScreen) droppedRow(dropped, width int) string {
 	for _, block := range m.Blocks[len(m.Blocks)-dropped:] {
 		titles = append(titles, block.Title)
 	}
-	return sty.Dim.Render(Clip(
+	return sty.dim.Render(Clip(
 		fmt.Sprintf("↓ %d more · %s", dropped, strings.Join(titles, " · ")), width))
 }
 
@@ -259,12 +259,12 @@ func (m *MetricsScreen) tableRows(width, budget int) []string {
 	if len(cols) == 0 {
 		return nil
 	}
-	rows := []string{indentBy(sty.Headline.Render(m.headingRow(cols)), metricsIndent, width)}
+	rows := []string{indentBy(sty.headline.Render(m.headingRow(cols)), metricsIndent, width)}
 	if len(m.Models) == 0 {
 		// A heading over nothing is a table that lost its rows. The host keeps the
 		// screen closed when the store is empty, so this is the window having taken
 		// everything, and it says so.
-		return append(rows, indentBy(sty.Dim.Render("no models to show"), metricsIndent, width))
+		return append(rows, indentBy(sty.dim.Render("no models to show"), metricsIndent, width))
 	}
 
 	shown := m.Models
@@ -277,7 +277,7 @@ func (m *MetricsScreen) tableRows(width, budget int) []string {
 		rows = append(rows, indentBy(m.modelRow(model, cols), metricsIndent, width))
 	}
 	if hidden := len(m.Models) - len(shown); hidden > 0 {
-		rows = append(rows, indentBy(sty.Dim.Render(
+		rows = append(rows, indentBy(sty.dim.Render(
 			fmt.Sprintf("↓ %d more %s", hidden, nounFor(hidden, "model"))), metricsIndent, width))
 	}
 	return rows
@@ -400,12 +400,12 @@ func (m *MetricsScreen) modelRow(model MetricsModel, cols []metricsColumn) strin
 	)
 	for _, col := range cols {
 		if col.trend {
-			trend = Sparkline{Values: model.Trend, Cells: metricsTrendCells}.View()
+			trend = sparkline{values: model.Trend, cells: metricsTrendCells}.view()
 			continue
 		}
 		cells = append(cells, align(col.value(model), col.width, col.numeric))
 	}
-	row := sty.Body.Render(strings.Join(cells, strings.Repeat(" ", metricsGap)))
+	row := sty.body.Render(strings.Join(cells, strings.Repeat(" ", metricsGap)))
 	if trend == "" {
 		return strings.TrimRight(row, " ")
 	}
@@ -450,8 +450,8 @@ func (m *MetricsScreen) labelWidth() int {
 // titleRow is the block's heading: what the block is reading, and what it is
 // reading it over.
 func titleRow(block MetricsBlock, width int) string {
-	left := sty.Dim.Render(block.Title)
-	right := sty.Dim.Render(block.Field)
+	left := sty.dim.Render(block.Title)
+	right := sty.dim.Render(block.Field)
 	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 && block.Field != "" {
 		return left + strings.Repeat(" ", pad) + right
 	}
@@ -473,8 +473,8 @@ func (m *MetricsScreen) barGeometry(block MetricsBlock, width int) (label int, n
 		text = max(text, lipgloss.Width(bar.Text))
 		note = max(note, lipgloss.Width(bar.Note))
 	}
-	label = max(min(m.labelWidth(), width-MeterCellsRail-text-4), metricsMinLabel)
-	notes = note > 0 && label+2+MeterCellsRail+1+text+2+note <= width
+	label = max(min(m.labelWidth(), width-meterCellsRail-text-4), metricsMinLabel)
+	notes = note > 0 && label+2+meterCellsRail+1+text+2+note <= width
 	return label, notes
 }
 
@@ -482,8 +482,8 @@ func (m *MetricsScreen) barGeometry(block MetricsBlock, width int) (label int, n
 // and the note that annotates the pair. The note drops first and the meter
 // never does.
 func barRow(bar MetricsBar, label int, notes bool, width int) string {
-	meter := Meter{Pct: bar.Pct, Cells: MeterCellsRail, Tone: bar.Tone, Text: bar.Text}
-	left := sty.Dim.Render(padRight(Clip(bar.Label, label), label)) + "  " + meter.View()
+	meter := Meter{pctValue: bar.Pct, cellCount: meterCellsRail, tone: bar.Tone, Text: bar.Text}
+	left := sty.dim.Render(padRight(Clip(bar.Label, label), label)) + "  " + meter.View()
 	if bar.Note == "" || !notes {
 		return Clip(left, width)
 	}

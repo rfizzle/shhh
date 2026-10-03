@@ -125,7 +125,7 @@ func TestSprintBoard_ClosedOffersItsPage(t *testing.T) {
 // planScreen is a screen with a proposal on its sprint tab.
 func planScreen() *BacklogScreen {
 	b := &BacklogScreen{
-		Rows: goldenBacklogRows(), MaxLines: 24,
+		Rows: goldenBacklogRows(), maxLines: 24,
 		Plan: &SprintPlan{
 			Budget: "S=2 M=1",
 			Rows: []SprintPlanRow{
@@ -152,7 +152,7 @@ func TestSprintPlan_KeysAnswerTheCard(t *testing.T) {
 	if !b.Plan.Rows[1].Dropped {
 		t.Fatal("space did not drop the row")
 	}
-	if got := strings.Join(b.Plan.Kept(), ","); got != "one,three" {
+	if got := strings.Join(b.Plan.kept(), ","); got != "one,three" {
 		t.Fatalf("kept = %q", got)
 	}
 	b.Update(key(" "))
@@ -222,10 +222,10 @@ func TestSprintPlan_OffersOnlyItsOwnKeys(t *testing.T) {
 // The progress meter is a ratio or it is nothing: a bar drawn against a
 // total of nothing would say a sprint with no items is finished.
 func TestSprintMeter_NeedsATotal(t *testing.T) {
-	if _, ok := SprintMeter(0, 0, 8); ok {
+	if _, ok := sprintMeter(0, 0, 8); ok {
 		t.Fatal("a set of nothing drew a meter")
 	}
-	m, ok := SprintMeter(3, 7, 8)
+	m, ok := sprintMeter(3, 7, 8)
 	if !ok || m.Text != "3 of 7 done" {
 		t.Fatalf("meter = %+v %v", m, ok)
 	}

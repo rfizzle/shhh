@@ -41,16 +41,16 @@ const handoverWord = "read"
 func keyOffers(keys []TurnKey) string {
 	var parts []string
 	for _, k := range keys {
-		tone := sty.Key
+		tone := sty.key
 		switch {
-		case k.Inert:
-			tone = sty.Dimmer
+		case k.inert:
+			tone = sty.dimmer
 		case k.Safe:
-			tone = sty.Add
+			tone = sty.add
 		}
 		parts = append(parts, tone.Render(k.Key)+offerWords(k.Label))
 	}
-	return strings.Join(parts, sty.Dim.Render(" · "))
+	return strings.Join(parts, sty.dim.Render(" · "))
 }
 
 // offerWords is the words after a key. A key offered bare — the tone
@@ -60,7 +60,7 @@ func offerWords(label string) string {
 	if label == "" {
 		return ""
 	}
-	return sty.Dim.Render(" " + label)
+	return sty.dim.Render(" " + label)
 }
 
 // inertOffers renders the same run for a surface that does not hold the
@@ -70,16 +70,16 @@ func offerWords(label string) string {
 func inertOffers(keys []TurnKey) string {
 	var parts []string
 	for _, k := range keys {
-		parts = append(parts, sty.Dimmer.Render(k.Key)+offerWords(k.Label))
+		parts = append(parts, sty.dimmer.Render(k.Key)+offerWords(k.Label))
 	}
-	return strings.Join(parts, sty.Dim.Render(" · "))
+	return strings.Join(parts, sty.dim.Render(" · "))
 }
 
 // handoverOffer is the one live key on a row whose own keys are not: the key
 // in Key, its words in body text, so the live half of the run is the half
 // that reads as an offer.
 func handoverOffer(key, words string) string {
-	return sty.Key.Render("["+key+"]") + sty.Body.Render(" "+words)
+	return sty.key.Render("["+key+"]") + sty.body.Render(" "+words)
 }
 
 // chorded reports that every offer in the run carries the chord that reaches
@@ -136,7 +136,7 @@ func keyRun(keys []TurnKey, waiting bool, handover string) string {
 	if handover == "" {
 		return inertOffers(keys)
 	}
-	return inertOffers(keys) + sty.Dim.Render(" · ") + handoverOffer(handover, handoverWords)
+	return inertOffers(keys) + sty.dim.Render(" · ") + handoverOffer(handover, handoverWords)
 }
 
 // keyRunNarrow is the same run once the terminal has run out of room for the

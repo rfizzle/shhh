@@ -32,7 +32,7 @@ import (
 // widget paints a cursor wherever it is drawn, and a cursor on a field the
 // keyboard is not in would say the next character goes there.
 func noteFieldRows(field *textarea.Model, own string, focused, missing, required bool, inner int) []string {
-	label, style := "note (optional)", sty.Dim
+	label, style := "note (optional)", sty.dim
 	if required {
 		label = "note (required)"
 	}
@@ -40,7 +40,7 @@ func noteFieldRows(field *textarea.Model, own string, focused, missing, required
 		label = own
 	}
 	if missing {
-		label, style = "note required", sty.Err
+		label, style = "note required", sty.err
 	}
 	field.SetWidth(max(inner-2, 8))
 	// The placeholder says the same thing the label does, because on an
@@ -56,7 +56,7 @@ func noteFieldRows(field *textarea.Model, own string, focused, missing, required
 		if text == "" {
 			text = "(none)"
 		}
-		view = sty.Dimmer.Render(Clip(text, max(inner-2, 8)))
+		view = sty.dimmer.Render(Clip(text, max(inner-2, 8)))
 	}
 	rows := []string{style.Render(Clip("┄ "+label, inner))}
 	for _, l := range strings.Split(view, "\n") {
@@ -80,9 +80,9 @@ type NoteBox struct {
 	// states before anybody is refused for it. Refusing is the host's: what
 	// counts as an answer is not something a field can know.
 	Required bool
-	// Label is the host's own word for what the field is, where `note` is
+	// label is the host's own word for what the field is, where `note` is
 	// not it. Empty is the note every other host opens.
-	Label   string
+	label   string
 	missing bool
 }
 
@@ -131,9 +131,9 @@ func (n *NoteBox) Refuse() { n.missing = true }
 // stands for exactly as long as the reader has not answered it.
 func (n *NoteBox) Settle() { n.missing = false }
 
-// Rows renders the field into a body of the given inner width, for a host
+// rows renders the field into a body of the given inner width, for a host
 // that always holds the keyboard while it is drawn.
-func (n *NoteBox) Rows(inner int) []string { return n.RowsLive(inner, true) }
+func (n *NoteBox) rows(inner int) []string { return n.RowsLive(inner, true) }
 
 // RowsLive is Rows for a host that can be drawn before it holds the keyboard.
 // live is whether it does: a field opened with an ungated card is still not
@@ -141,5 +141,5 @@ func (n *NoteBox) Rows(inner int) []string { return n.RowsLive(inner, true) }
 // the draft's cursor is the only one on screen
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (n *NoteBox) RowsLive(inner int, live bool) []string {
-	return noteFieldRows(&n.Field, n.Label, n.Focused && live, n.missing, n.Required, inner)
+	return noteFieldRows(&n.Field, n.label, n.Focused && live, n.missing, n.Required, inner)
 }

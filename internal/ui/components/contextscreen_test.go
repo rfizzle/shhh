@@ -87,7 +87,7 @@ func TestContextGridIsOneMeterCutIntoRows(t *testing.T) {
 		// draws one cell more than the proportion alone would, not three.
 		{"the fixture", []float64{0.38, 0.006, 2.23, 28.33, 0.29}, 69},
 		{"half", []float64{50, 0, 0, 0, 0}, 110},
-		{"full", []float64{100, 0, 0, 0, 0}, MeterCellsRail * contextGridRows},
+		{"full", []float64{100, 0, 0, 0, 0}, meterCellsRail * contextGridRows},
 	}
 	for _, c := range cases {
 		screen := goldenContextScreen()
@@ -183,8 +183,8 @@ func TestContextGridIsAlwaysTheWholeWindow(t *testing.T) {
 			t.Fatalf("%d%%: %d rows, want %d", pct, len(rows), contextGridRows)
 		}
 		for i, row := range rows {
-			if n := len([]rune(stripANSI(row))); n != MeterCellsRail {
-				t.Errorf("%d%% row %d: %d cells, want %d", pct, i, n, MeterCellsRail)
+			if n := len([]rune(stripANSI(row))); n != meterCellsRail {
+				t.Errorf("%d%% row %d: %d cells, want %d", pct, i, n, meterCellsRail)
 			}
 		}
 	}
@@ -236,14 +236,14 @@ func TestContextCursorStopsAtBothEnds(t *testing.T) {
 	for range 5 {
 		screen.Update(key("down"))
 	}
-	if screen.Cursor != len(screen.Groups)-1 {
-		t.Errorf("cursor ran to %d, want %d", screen.Cursor, len(screen.Groups)-1)
+	if screen.cursorAt != len(screen.Groups)-1 {
+		t.Errorf("cursor ran to %d, want %d", screen.cursorAt, len(screen.Groups)-1)
 	}
 	for range 5 {
 		screen.Update(key("up"))
 	}
-	if screen.Cursor != 0 {
-		t.Errorf("cursor ran to %d, want 0", screen.Cursor)
+	if screen.cursorAt != 0 {
+		t.Errorf("cursor ran to %d, want 0", screen.cursorAt)
 	}
 }
 
@@ -290,7 +290,7 @@ func TestContextStacksRatherThanTruncating(t *testing.T) {
 func TestContextKeysListSwapsInPlace(t *testing.T) {
 	screen := goldenContextScreen()
 	screen.Update(key("?"))
-	if !screen.ShowKeys {
+	if !screen.showKeys {
 		t.Fatal("? did not open the key list")
 	}
 	if out := stripANSI(screen.View(130)); !strings.Contains(out, "hide the keys") {

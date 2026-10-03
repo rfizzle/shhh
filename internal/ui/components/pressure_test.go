@@ -65,13 +65,13 @@ func TestPressureCard_MeterMatchesTheRails(t *testing.T) {
 
 	bar := strings.Repeat("▰", 20) + strings.Repeat("▱", 2)
 	if !strings.Contains(got, bar) {
-		t.Fatalf("the meter should be %d cells filled to 94%%, got:\n%s", MeterCellsRail, got)
+		t.Fatalf("the meter should be %d cells filled to 94%%, got:\n%s", meterCellsRail, got)
 	}
-	rail := Meter{Pct: 94, Cells: MeterCellsRail, Tone: MeterPressure, Warn: 60, Alert: 80}
+	rail := Meter{pctValue: 94, cellCount: meterCellsRail, tone: meterPressure, warn: 60, alert: 80}
 	if c.meter() != rail {
 		t.Fatalf("the card's meter %+v should be the rail's %+v", c.meter(), rail)
 	}
-	if !rail.Style().GetBold() {
+	if !rail.style().GetBold() {
 		t.Fatal("past the alert threshold the meter should be the bold alert state")
 	}
 }
@@ -81,7 +81,7 @@ func TestPressureCard_MeterMatchesTheRails(t *testing.T) {
 func TestPressureCard_BorderTakesTheMeterColour(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	c := pressureFixture()
-	probe := c.meter().Style().Render("\u256d")
+	probe := c.meter().style().Render("\u256d")
 	probe = strings.TrimSuffix(probe, ansi.ResetStyle)
 	if got := c.View(82); !strings.Contains(got, probe) {
 		t.Fatalf("the frame should be drawn in the meter's own colour (%q), got:\n%q", probe, got)
@@ -133,12 +133,12 @@ func TestPressureCard_CountsAreRightAligned(t *testing.T) {
 func TestPressureCard_KeysResolveAndEscDeclines(t *testing.T) {
 	for _, tc := range []struct {
 		key  string
-		want PressureDecision
+		want pressureDecision
 	}{
 		{"enter", PressureCompact},
 		{"n", PressureNewSession},
-		{"esc", PressureKeepGoing},
-		{"ctrl+c", PressureKeepGoing},
+		{"esc", pressureKeepGoing},
+		{"ctrl+c", pressureKeepGoing},
 	} {
 		c := pressureFixture()
 		done, result := c.Update(pressFor(tc.key))

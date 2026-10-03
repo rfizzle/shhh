@@ -55,7 +55,7 @@ const (
 	OutcomeOK       = "ok"
 	OutcomeRunning  = "running…"
 	OutcomeQueued   = "queued"
-	OutcomeChecking = "checking"
+	outcomeChecking = "checking"
 	OutcomeDenied   = "denied"
 	// OutcomeBlocked is a rule's no, and the reason it is a second word
 	// rather than OutcomeDenied with a different decider: "you said no" and
@@ -65,7 +65,7 @@ const (
 	// rule that said it goes in the account field beside this, so a row
 	// narrow enough to drop the account still says which of the two it was.
 	OutcomeBlocked  = "blocked"
-	OutcomeApproved = "approved"
+	outcomeApproved = "approved"
 	// OutcomeAnswered is a question the model asked and the person answered
 	// (docs/capabilities/coding-agent.md#the-model-can-ask). It is an
 	// outcome and not a count because nothing was found and nothing ran:
@@ -166,9 +166,9 @@ func OutcomeBy(outcome, decider string) string {
 // that same split in the one register left.
 func ApprovedBy(who string) string {
 	if who == "" {
-		return OutcomeApproved
+		return outcomeApproved
 	}
-	return OutcomeApproved + " by " + who
+	return outcomeApproved + " by " + who
 }
 
 // ActivityKind selects an activity row's glyph and whether it carries the
@@ -187,11 +187,11 @@ const (
 	// already follow. A read-only server's call is ⚙ like any other read
 	// (docs/capabilities/mcp.md#a-call-is-a-command-unless-you-said-otherwise).
 	ActivityRemote
-	// ActivityThink is the model's own reasoning: ✻, and the only kind that
+	// activityThink is the model's own reasoning: ✻, and the only kind that
 	// touched nothing at all. It is drawn dim, because weight tracks risk and
 	// this row is the bottom of that order — it read nothing, wrote nothing
 	// and ran nothing. See docs/interface/principles.md#weight-tracks-risk.
-	ActivityThink
+	activityThink
 	// ActivityReport is a published report page: ⛁, a stack with a page on
 	// top, because the row's outcome is a link into a store. No mutation
 	// rail — the store is shhh's own state, not the workspace
@@ -306,7 +306,7 @@ type ActivityRow struct {
 	ByRule bool
 	// Expanded shows the detail body; Selected draws the focus-mode pointer.
 	Expanded bool
-	Selected bool
+	selected bool
 	// Spin says the host is ticking, and Frame is the frame it is on — the same
 	// frame the status line and the frame header are drawing, from the
 	// one tick source. A running row is `▸` in a still image and the spinner
@@ -349,9 +349,9 @@ func (r ActivityRow) railCell() string {
 		return strings.Repeat(" ", railWidth)
 	}
 	if r.State == ActivityFailed {
-		return sty.Del.Render("▎")
+		return sty.del.Render("▎")
 	}
-	return sty.Accent.Render("▎")
+	return sty.accent.Render("▎")
 }
 
 // pointer renders the marker gutter: the reading cursor where the row is
@@ -359,10 +359,10 @@ func (r ActivityRow) railCell() string {
 // there is a mark to put in them
 // (docs/interface/surfaces.md#the-leading-columns).
 func (r ActivityRow) pointer() string {
-	if r.Selected {
+	if r.selected {
 		// The pointer is a glyph in its own column, not part of the highlight
 		// behind the row.
-		return sty.FocusPointer.Render("❯") + " "
+		return sty.focusPointer.Render("❯") + " "
 	}
 	return strings.Repeat(" ", ptrWidth)
 }
@@ -384,13 +384,13 @@ func (r ActivityRow) runningGlyph() string {
 // glyph the grid no longer draws.
 type glyphRow struct {
 	mark  string
-	tone  func(Styles) lipgloss.Style
+	tone  func(styles) lipgloss.Style
 	means string
 }
 
-func dimTone(s Styles) lipgloss.Style    { return s.Dim }
-func accentTone(s Styles) lipgloss.Style { return s.Accent }
-func spinTone(s Styles) lipgloss.Style   { return s.SpinText }
+func dimTone(s styles) lipgloss.Style    { return s.dim }
+func accentTone(s styles) lipgloss.Style { return s.accent }
+func spinTone(s styles) lipgloss.Style   { return s.spinText }
 
 // kindGlyphs is the kind of act, which a row keeps once it has finished.
 //
@@ -410,12 +410,12 @@ var kindGlyphs = [...]glyphRow{
 	ActivityTool:       {"⚙", dimTone, "a read: a file, a search, a listing"},
 	ActivityCommand:    {"$", accentTone, "a shell command"},
 	ActivityEdit:       {"✎", accentTone, "an edit, a write, a patch or a memory"},
-	ActivitySubagent:   {"◇", func(s Styles) lipgloss.Style { return s.Info }, "a sub-agent"},
+	ActivitySubagent:   {"◇", func(s styles) lipgloss.Style { return s.info }, "a sub-agent"},
 	ActivityRemote:     {"⇄", accentTone, "a call to a server not marked read-only"},
-	ActivityThink:      {"✻", dimTone, "the model writing its calls, counted as they arrive"},
+	activityThink:      {"✻", dimTone, "the model writing its calls, counted as they arrive"},
 	ActivityReport:     {"⛁", dimTone, "a published report page"},
 	ActivitySummary:    {"≡", dimTone, "a reading of the session"},
-	ActivityCompaction: {"✓", func(s Styles) lipgloss.Style { return s.Add }, "a compaction that brought the window back"},
+	ActivityCompaction: {"✓", func(s styles) lipgloss.Style { return s.add }, "a compaction that brought the window back"},
 }
 
 // stateGlyphs is the states worth a glyph of their own, each overriding the
@@ -425,7 +425,7 @@ var stateGlyphs = [...]glyphRow{
 	ActivityQueued:   {"·", dimTone, "accepted, not started"},
 	ActivityRunning:  {"▸", spinTone, "running"},
 	ActivityChecking: {"✦", spinTone, "the classifier is deciding"},
-	ActivityFailed:   {"✗", func(s Styles) lipgloss.Style { return s.Err }, "failed"},
+	ActivityFailed:   {"✗", func(s styles) lipgloss.Style { return s.err }, "failed"},
 	// A refusal a rule made is painted del and yours dim. The mark is the
 	// same, so the legend says both.
 	ActivityDenied: {"⊘", dimTone, "refused: dim by you, red by a rule"},
@@ -439,7 +439,7 @@ func (r ActivityRow) glyph() string {
 	case r.State == ActivityRunning:
 		g = spinTone(sty).Render(r.runningGlyph())
 	case r.State == ActivityDenied && r.ByRule:
-		g = sty.Del.Render(stateGlyphs[ActivityDenied].mark)
+		g = sty.del.Render(stateGlyphs[ActivityDenied].mark)
 	case r.State != ActivityDone && int(r.State) < len(stateGlyphs):
 		g = stateGlyphs[r.State].render()
 	case int(r.Kind) < len(kindGlyphs):
@@ -453,13 +453,13 @@ func (r ActivityRow) glyph() string {
 // render is the mark in its token.
 func (g glyphRow) render() string { return g.tone(sty).Render(g.mark) }
 
-// GlyphLegend is the glyph table as the key list draws it under a surface's
+// glyphLegend is the glyph table as the key list draws it under a surface's
 // keys: one row per glyph, painted as the grid paints it, with its meaning
 // beside it — the kinds of act in the order they are declared, then the
 // states that override them. Words too long for the width fold onto the next
 // row rather than being cut (docs/interface/principles.md#fold-never-hide).
-func GlyphLegend(width int) []string {
-	rows := []string{sty.Dim.Render(Clip("glyphs", width))}
+func glyphLegend(width int) []string {
+	rows := []string{sty.dim.Render(Clip("glyphs", width))}
 	for _, set := range [][]glyphRow{kindGlyphs[:], stateGlyphs[ActivityQueued:]} {
 		for _, g := range set {
 			lead := g.render() + "  "
@@ -469,7 +469,7 @@ func GlyphLegend(width int) []string {
 				if i > 0 {
 					lead = pad
 				}
-				rows = append(rows, lead+sty.Dim.Render(line))
+				rows = append(rows, lead+sty.dim.Render(line))
 			}
 		}
 	}
@@ -485,7 +485,7 @@ func GlyphLegend(width int) []string {
 // left in the terminal's default foreground was the one field on the grid
 // with no token at all (docs/interface/principles.md#one-grid). The padding
 // stays unpainted — it is spacing, not text.
-func verbField(verb string) string { return verbFieldIn(verb, sty.Body) }
+func verbField(verb string) string { return verbFieldIn(verb, sty.body) }
 
 // verbFieldIn is verbField in the tone a row's state asks for: bright while
 // it is happening, dim before it started and after a refusal that means it
@@ -506,16 +506,16 @@ func verbFieldIn(verb string, style lipgloss.Style) string {
 func (r ActivityRow) subjectStyle() lipgloss.Style {
 	switch {
 	case r.State == ActivityRunning:
-		return sty.Bright
+		return sty.bright
 	case r.State == ActivityQueued:
-		return sty.Dim
+		return sty.dim
 	case r.State == ActivityDenied && !r.ByRule:
 		// Your own refusal is a preference, and a preference is the quietest
 		// thing on the grid. A rule's is not: that row keeps body text and
 		// says `blocked` in del beside it.
-		return sty.Dim
+		return sty.dim
 	}
-	return sty.Body
+	return sty.body
 }
 
 // paintTarget leads the growing field with the subject in the state's tone
@@ -526,7 +526,7 @@ func (r ActivityRow) paintTarget(s string) string {
 	style := r.subjectStyle()
 	if r.Scope != "" {
 		if head, ok := strings.CutSuffix(s, " "+r.Scope); ok {
-			return style.Render(head) + sty.Dim.Render(" "+r.Scope)
+			return style.Render(head) + sty.dim.Render(" "+r.Scope)
 		}
 	}
 	return style.Render(s)
@@ -540,16 +540,16 @@ func (r ActivityRow) paintTarget(s string) string {
 func (r ActivityRow) outcomeStyle() lipgloss.Style {
 	switch r.State {
 	case ActivityRunning, ActivityChecking:
-		return sty.SpinText
+		return sty.spinText
 	case ActivityFailed:
-		return sty.Del
+		return sty.del
 	case ActivityQueued:
-		return sty.Dim
+		return sty.dim
 	case ActivityDenied:
 		if r.ByRule {
-			return sty.Del
+			return sty.del
 		}
-		return sty.Dim
+		return sty.dim
 	}
 	// The two kinds that are not acts have no act to have succeeded. A
 	// reading of the session states a verdict in this column — `⚠ off
@@ -559,10 +559,10 @@ func (r ActivityRow) outcomeStyle() lipgloss.Style {
 	// (docs/interface/principles.md#weight-tracks-risk), and the glyph in
 	// front of the verdict is what tells the readings apart on a terminal
 	// with no colour at all.
-	if r.Kind == ActivityThink || r.Kind == ActivitySummary {
-		return sty.Dim
+	if r.Kind == activityThink || r.Kind == ActivitySummary {
+		return sty.dim
 	}
-	return sty.Add
+	return sty.add
 }
 
 // outcomeField joins outcome, counts, account and keys into the one
@@ -583,15 +583,15 @@ func (r ActivityRow) outcomeField() string {
 		parts = append(parts, r.outcomeStyle().Render(r.Outcome))
 	}
 	if r.Counts != "" {
-		parts = append(parts, paintCounts(r.Counts, sty.Dimmer))
+		parts = append(parts, paintCounts(r.Counts, sty.dimmer))
 	}
 	if r.Allowed != "" {
-		parts = append(parts, paintAccount(r.Allowed, sty.Dim))
+		parts = append(parts, paintAccount(r.Allowed, sty.dim))
 	}
 	if r.Keys != "" {
-		parts = append(parts, sty.Key.Render(r.Keys))
+		parts = append(parts, sty.key.Render(r.Keys))
 	}
-	return strings.Join(parts, sty.Dim.Render(" · "))
+	return strings.Join(parts, sty.dim.Render(" · "))
 }
 
 // paintCounts paints a ` · `-joined count label, giving an edit's line counts
@@ -627,9 +627,9 @@ func paintLineCounts(seg string) (string, bool) {
 	for _, f := range fields {
 		switch {
 		case signedCount(f, "+"):
-			painted = append(painted, sty.Add.Render(f))
+			painted = append(painted, sty.add.Render(f))
 		case signedCount(f, "−"):
-			painted = append(painted, sty.Del.Render(f))
+			painted = append(painted, sty.del.Render(f))
 		default:
 			return "", false
 		}
@@ -689,11 +689,11 @@ func paintAccount(label string, rest lipgloss.Style) string {
 // token here is a word from the closed outcome vocabulary, and that
 // vocabulary is declared in this file.
 func paintApproval(seg string, rest lipgloss.Style) (string, bool) {
-	who, ok := strings.CutPrefix(seg, OutcomeApproved)
+	who, ok := strings.CutPrefix(seg, outcomeApproved)
 	if !ok || (who != "" && !strings.HasPrefix(who, " by ")) {
 		return "", false
 	}
-	return sty.Add.Render(OutcomeApproved) + rest.Render(who), true
+	return sty.add.Render(outcomeApproved) + rest.Render(who), true
 }
 
 // paintOccupancy paints `ctx 88% → 28%` — where the window stood before an
@@ -718,7 +718,7 @@ func paintOccupancy(seg string, rest lipgloss.Style) (string, bool) {
 	if len(fields) > 3 {
 		head = rest.Render(strings.Join(fields[:len(fields)-3], " ")) + " "
 	}
-	return head + sty.Del.Render(tail[0]) + rest.Render(" → ") + sty.Add.Render(tail[2]), true
+	return head + sty.del.Render(tail[0]) + rest.Render(" → ") + sty.add.Render(tail[2]), true
 }
 
 // percentCount reports whether s is digits followed by a per-cent sign and
@@ -770,7 +770,7 @@ func durationField(d string) string {
 	if d == "" {
 		return strings.Repeat(" ", durWidth)
 	}
-	return strings.Repeat(" ", pad) + sty.Dim.Render(d)
+	return strings.Repeat(" ", pad) + sty.dim.Render(d)
 }
 
 // gridLineWith assembles one line on the grid: a lead already padded to
@@ -823,7 +823,7 @@ func (r ActivityRow) View(width int) string {
 	lead := r.pointer() + r.railCell() + r.glyph() + verbFieldIn(r.Verb, r.subjectStyle())
 	row, under := r.foldKeys(width)
 	first := gridLineWith(lead, row.Target, row.paintTarget, row.fittedOutcome(width), row.Duration, width)
-	if r.Selected {
+	if r.selected {
 		// The reading cursor lights the row it is on: the background runs the row's
 		// width and its words go bright, while the rail and the glyph keep the
 		// colours that say what the row did. The pointer stays outside it.
@@ -851,7 +851,7 @@ func (r ActivityRow) View(width int) string {
 			// (docs/interface/principles.md#fold-never-hide); reading mode's
 			// [enter] on the row is how the rest is reached.
 			lines = append(lines, strings.Repeat(" ", detailIndent)+
-				sty.Dim.Render(Clip(countedTail(dropped), max(width-detailIndent, 1))))
+				sty.dim.Render(Clip(countedTail(dropped), max(width-detailIndent, 1))))
 		}
 	}
 	return strings.Join(lines, "\n")
@@ -872,7 +872,7 @@ func (r ActivityRow) foldKeys(width int) (ActivityRow, []string) {
 	if room >= min(lipgloss.Width(r.Target), minTargetWidth) {
 		return r, nil
 	}
-	offer, tone := r.Keys, sty.Key
+	offer, tone := r.Keys, sty.key
 	r.Keys = ""
 	inner := max(width-detailIndent, 1)
 	var under []string
@@ -909,7 +909,7 @@ func indented(s string, indent, width int) string {
 		// wrapper around it would only spend bytes the first reset throws away.
 		return pad + Clip(painted, inner)
 	}
-	return pad + sty.Dimmer.Render(Clip(s, inner))
+	return pad + sty.dimmer.Render(Clip(s, inner))
 }
 
 // ActivityNotice is a line the session wrote about itself rather than an act

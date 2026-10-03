@@ -1165,7 +1165,7 @@ func TestInspectorRail_WideRailKeepsThePathAndTheStats(t *testing.T) {
 // TestSparkCellsRailMax_IsTheRunAtTheCeiling keeps the constant a host bounds
 // its series by and the run the widest rail draws from drifting apart.
 func TestSparkCellsRailMax_IsTheRunAtTheCeiling(t *testing.T) {
-	if got := railCells(SparkCells, InspectorMaxWidth); got != SparkCellsRailMax {
+	if got := railCells(sparkCellCount, InspectorMaxWidth); got != SparkCellsRailMax {
 		t.Fatalf("the widest run is %d cells, SparkCellsRailMax is %d", got, SparkCellsRailMax)
 	}
 }
@@ -1256,7 +1256,7 @@ func TestInspectorRail_FoldMarkersPointAtNothing(t *testing.T) {
 			continue
 		}
 		marked = true
-		if row.Target.Kind != RailTargetNone {
+		if row.Target.Kind != railTargetNone {
 			t.Fatalf("a fold marker points at %+v, want nothing", row.Target)
 		}
 	}

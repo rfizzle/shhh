@@ -177,51 +177,51 @@ func (s TurnState) Word() string {
 	return "Done"
 }
 
-// TurnTotal is the turn's last line: one slot in three states, the glyph the
+// turnTotal is the turn's last line: one slot in three states, the glyph the
 // only thing that changes — `∗` once it is done, `✗` where it failed, `⊘`
 // where it was stopped — and the rest dim, because it is the turn's own
 // account of itself and never something to act on. A turn still running has
 // no total line: the frame's status and the cockpit already count it, and a
 // line under the transcript would be a second account of the same facts
 // (docs/interface/surfaces.md#the-turns-close).
-type TurnTotal struct {
-	State TurnState
-	// Elapsed is the turn's wall time, pre-formatted by FormatElapsed.
-	Elapsed string
-	Tools   int
-	// Spend is what the turn has cost so far, already worded.
-	Spend string
-	// At is when a finished turn ended; zero leaves the time out.
-	At time.Time
-	// NoFiles says a turn that broke or was stopped changed no file, which
+type turnTotal struct {
+	state TurnState
+	// elapsed is the turn's wall time, pre-formatted by FormatElapsed.
+	elapsed string
+	tools   int
+	// spend is what the turn has cost so far, already worded.
+	spend string
+	// at is when a finished turn ended; zero leaves the time out.
+	at time.Time
+	// noFiles says a turn that broke or was stopped changed no file, which
 	// the line states rather than leaving the reader to wonder whether the
 	// break took anything with it.
-	NoFiles bool
-	// Note is the right-aligned aside, the first thing a narrow pane drops.
-	Note string
+	noFiles bool
+	// note is the right-aligned aside, the first thing a narrow pane drops.
+	note string
 }
 
 // glyph is the state's mark. The word after it says the state too, so
 // colour never carries it alone (invariant 1).
-func (t TurnTotal) glyph() string {
-	switch t.State {
+func (t turnTotal) glyph() string {
+	switch t.state {
 	case TurnCancelled:
-		return sty.Dim.Render("⊘")
+		return sty.dim.Render("⊘")
 	case TurnFailed:
-		return sty.Del.Render("✗")
+		return sty.del.Render("✗")
 	}
-	return sty.Dim.Render("∗")
+	return sty.dim.Render("∗")
 }
 
 // text is the line's words. A turn that worked leads with how long it
 // worked and ends on when it was done; one that broke or was stopped leads
 // with that, counts what it got through, and says what it left changed.
 // See docs/interface/departures.md#what-the-turns-total-says-where-the-catalogue-left-it-open.
-func (t TurnTotal) text() string {
+func (t turnTotal) text() string {
 	var parts []string
 	tools := ""
-	if t.Tools > 0 {
-		tools = plural(t.Tools, "tool")
+	if t.tools > 0 {
+		tools = plural(t.tools, "tool")
 	}
 	add := func(s ...string) {
 		for _, p := range s {
@@ -230,32 +230,32 @@ func (t TurnTotal) text() string {
 			}
 		}
 	}
-	switch t.State {
+	switch t.state {
 	case TurnFailed, TurnCancelled:
-		add(strings.ToLower(t.State.Word()), tools, t.Elapsed, t.Spend)
-		if t.NoFiles {
+		add(strings.ToLower(t.state.Word()), tools, t.elapsed, t.spend)
+		if t.noFiles {
 			add(wroteNothingTotal)
 		}
 	default:
-		add(strings.TrimSpace("worked "+t.Elapsed), tools, t.Spend)
-		if !t.At.IsZero() {
-			add("done " + t.At.Format("3:04 PM"))
+		add(strings.TrimSpace("worked "+t.elapsed), tools, t.spend)
+		if !t.at.IsZero() {
+			add("done " + t.at.Format("3:04 PM"))
 		}
 	}
 	return strings.Join(parts, " · ")
 }
 
-// View is the line at the given width.
+// view is the line at the given width.
 //
 // A pane too narrow for the line carries it on at the words' column rather
 // than cutting it, because what a failed turn left changed is said last.
-func (t TurnTotal) View(width int) string {
+func (t turnTotal) view(width int) string {
 	lead, text := closeLead("", t.glyph()), t.text()
 	if lipgloss.Width(lead+text) <= width {
-		return closeLine(lead, sty.Dim.Render(text), sty.Dim.Render(t.Note), width)
+		return closeLine(lead, sty.dim.Render(text), sty.dim.Render(t.note), width)
 	}
 	head, rest, _ := strings.Cut(text, " · ")
-	return strings.Join(closeRunOn(lead, sty.Dim.Render(head), rest, width), "\n")
+	return strings.Join(closeRunOn(lead, sty.dim.Render(head), rest, width), "\n")
 }
 
 // wroteNothingTotal is the total's statement for a turn that broke or was
@@ -263,11 +263,11 @@ func (t TurnTotal) View(width int) string {
 const wroteNothingTotal = "no files changed"
 
 // total is the close's first row.
-func (c TurnClose) total() TurnTotal {
+func (c TurnClose) total() turnTotal {
 	stopped := c.State == TurnFailed || c.State == TurnCancelled
-	return TurnTotal{
-		State: c.State, Elapsed: c.Elapsed, Tools: c.Tools, Spend: c.Spend, At: c.At,
-		NoFiles: stopped && c.Changes == nil, Note: c.Note,
+	return turnTotal{
+		state: c.State, elapsed: c.Elapsed, tools: c.Tools, spend: c.Spend, at: c.At,
+		noFiles: stopped && c.Changes == nil, note: c.Note,
 	}
 }
 
@@ -391,7 +391,7 @@ func closeOfferRows(lead, stated string, keys []TurnKey, waiting bool, handover 
 	if run == "" {
 		return []string{line(stated)}
 	}
-	sep := sty.Dim.Render(" · ")
+	sep := sty.dim.Render(" · ")
 	if text := stated + sep + run; lipgloss.Width(lead+text) <= width {
 		return []string{line(text)}
 	}
@@ -408,22 +408,22 @@ func closeOfferRows(lead, stated string, keys []TurnKey, waiting bool, handover 
 
 // View renders the close block at the given width, one line per row.
 func (c TurnClose) View(width int) string {
-	lines := []string{c.total().View(width)}
+	lines := []string{c.total().view(width)}
 
 	if ch := c.Changes; ch != nil {
 		stats := DiffStat(ch.Added, ch.Removed)
 		if ch.Mode != "" {
-			stats = sty.Dim.Render(ch.Mode)
+			stats = sty.dim.Render(ch.Mode)
 		}
-		stated := sty.Body.Render(plural(ch.Files, "file")+" changed ") + stats
-		lead := closeLead(sty.Accent.Render("▎"), sty.Accent.Render("✎"))
-		notes := []string{sty.Dim.Render(ch.Note)}
+		stated := sty.body.Render(plural(ch.Files, "file")+" changed ") + stats
+		lead := closeLead(sty.accent.Render("▎"), sty.accent.Render("✎"))
+		notes := []string{sty.dim.Render(ch.Note)}
 		if ch.Back != "" {
 			fuller := ch.Back
 			if ch.Note != "" {
 				fuller = ch.Note + " · " + ch.Back
 			}
-			notes = append([]string{sty.Dim.Render(fuller)}, notes...)
+			notes = append([]string{sty.dim.Render(fuller)}, notes...)
 		}
 		if len(ch.Keys) == 0 {
 			// Offering nothing, the row says the reading of the files and the
@@ -446,8 +446,8 @@ func (c TurnClose) View(width int) string {
 		// and this is where it is answered. No offers — there is nothing to
 		// review, keep or take back.
 		lines = append(lines, closeLine(
-			closeLead(sty.Accent.Render("▎"), sty.Accent.Render("✎")),
-			sty.Body.Render(wroteNothing), "", width))
+			closeLead(sty.accent.Render("▎"), sty.accent.Render("✎")),
+			sty.body.Render(wroteNothing), "", width))
 	}
 
 	if cm := c.Commit; cm != nil {
@@ -455,25 +455,25 @@ func (c TurnClose) View(width int) string {
 		// ✓ of a thing that landed rather than the ✎ of a thing that was
 		// written: the row above already said what was written.
 		lines = append(lines, closeLine(
-			closeLead(sty.Accent.Render("▎"), sty.Add.Render("✓")),
-			sty.Body.Render(cm.Receipt), sty.Dim.Render(CommitUndoNote), width))
+			closeLead(sty.accent.Render("▎"), sty.add.Render("✓")),
+			sty.body.Render(cm.Receipt), sty.dim.Render(CommitUndoNote), width))
 	}
 
 	if c.Notes != "" {
 		// No rail and no glyph: nothing here changed the machine, and a
 		// reading of what the session already holds is not one of the acts
 		// the glyph column names. The empty gutter is what says so.
-		lines = append(lines, closeLine(closeLead("", " "), sty.Dim.Render(c.Notes), "", width))
+		lines = append(lines, closeLine(closeLead("", " "), sty.dim.Render(c.Notes), "", width))
 	}
 
 	if ck := c.Checks; ck != nil {
-		glyph, verdict := sty.Add.Render("✓"), " passing"
+		glyph, verdict := sty.add.Render("✓"), " passing"
 		if ck.Failed {
-			glyph, verdict = sty.Del.Render("✗"), " failing"
+			glyph, verdict = sty.del.Render("✗"), " failing"
 		}
-		text := sty.Body.Render(ck.Label + verdict)
+		text := sty.body.Render(ck.Label + verdict)
 		if ck.Counts != "" {
-			text += sty.Dim.Render(" · " + ck.Counts)
+			text += sty.dim.Render(" · " + ck.Counts)
 		}
 		// What the verdict answered, and what to type to run it again, ride
 		// in the note column, where they are the first thing a narrow
@@ -492,7 +492,7 @@ func (c TurnClose) View(width int) string {
 				notes = again
 			}
 		}
-		lines = append(lines, closeLine(lead, text, sty.Dim.Render(strings.Join(notes, " · ")), width))
+		lines = append(lines, closeLine(lead, text, sty.dim.Render(strings.Join(notes, " · ")), width))
 	}
 	return strings.Join(lines, "\n")
 }
@@ -519,7 +519,7 @@ func closeRunOn(lead, stated, tail string, width int) []string {
 	if first == "" {
 		left = strings.TrimRight(Clip(left, width), " ")
 	} else {
-		left += sty.Dim.Render(sep + first)
+		left += sty.dim.Render(sep + first)
 	}
 	lines := []string{left}
 	if len(words) == 0 {
@@ -528,7 +528,7 @@ func closeRunOn(lead, stated, tail string, width int) []string {
 	under := closeLead("", " ")
 	inner := max(width-lipgloss.Width(under), 1)
 	for _, l := range strings.Split(lipgloss.Wrap(strings.Join(words, " "), inner, ""), "\n") {
-		lines = append(lines, under+sty.Dim.Render(Clip(strings.TrimRight(l, " "), inner)))
+		lines = append(lines, under+sty.dim.Render(Clip(strings.TrimRight(l, " "), inner)))
 	}
 	return lines
 }

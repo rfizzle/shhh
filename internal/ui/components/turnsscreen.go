@@ -81,23 +81,23 @@ type TurnsScreen struct {
 	Subject string
 	Tools   string
 	Spend   string
-	// MaxLines bounds the screen height. 0 is unbounded.
-	MaxLines int
+	// maxLines bounds the screen height. 0 is unbounded.
+	maxLines int
 
 	list Select
 	keys bool
 }
 
-// TurnsResult is what the screen leaves with: nothing, or the turn whose
+// turnsResult is what the screen leaves with: nothing, or the turn whose
 // review the reader asked for.
-type TurnsResult struct {
+type turnsResult struct {
 	Review int64
 }
 
 // Update is the screen's whole keyboard: it moves, it shows its keys, it asks
 // for a turn's review, and it leaves. It reports whether the screen is done
 // and, where it is done by asking for a review, which turn.
-func (s *TurnsScreen) Update(msg tea.KeyPressMsg) (done bool, result TurnsResult) {
+func (s *TurnsScreen) Update(msg tea.KeyPressMsg) (done bool, result turnsResult) {
 	pressed := msg.String()
 	switch {
 	case s.moved(pressed):
@@ -107,17 +107,17 @@ func (s *TurnsScreen) Update(msg tea.KeyPressMsg) (done bool, result TurnsResult
 		// Only for a turn with a changeset: a key that cannot act is not an
 		// offer, and the footer draws it grey (invariant 5).
 		if t := s.current(); t != nil && t.Reviewable {
-			return true, TurnsResult{Review: t.N}
+			return true, turnsResult{Review: t.N}
 		}
 	case keys.Is(pressed, keys.Screen.Quit):
-		return true, TurnsResult{}
+		return true, turnsResult{}
 	}
-	return false, TurnsResult{}
+	return false, turnsResult{}
 }
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from
 // the width it is rendered at, so only the height is kept.
-func (s *TurnsScreen) SetSize(_, height int) { s.MaxLines = height }
+func (s *TurnsScreen) SetSize(_, height int) { s.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves.
@@ -126,11 +126,11 @@ func (s *TurnsScreen) View(width int) string {
 		return ""
 	}
 	s.sync()
-	return ScreenChrome{
-		Header:   s.header(),
-		Foot:     s.footer(width).Rows(width),
-		MaxLines: s.MaxLines,
-	}.View(width, func(budget int) []string { return s.panes().rows(width, budget) })
+	return screenChrome{
+		header:   s.header(),
+		foot:     s.footer(width).rows(width),
+		maxLines: s.maxLines,
+	}.view(width, func(budget int) []string { return s.panes().rows(width, budget) })
 }
 
 // panes is the body, split the way every screen with a list and a preview
@@ -147,7 +147,7 @@ func (s *TurnsScreen) panes() screenPanes {
 // listRows is the left pane: the turns, newest first.
 func (s *TurnsScreen) listRows(width, budget int) []string {
 	if len(s.Turns) == 0 {
-		return []string{sty.Dim.Render(Clip("the session has run no turns", width))}
+		return []string{sty.dim.Render(Clip("the session has run no turns", width))}
 	}
 	body, _ := s.list.visibleRows(cardWidthFor(width), budget, false)
 	return body
@@ -159,11 +159,11 @@ func (s *TurnsScreen) listRows(width, budget int) []string {
 func (s *TurnsScreen) previewRows(width int) []string {
 	t := s.current()
 	if t == nil {
-		return []string{sty.Dim.Render(Clip("no turn selected", width))}
+		return []string{sty.dim.Render(Clip("no turn selected", width))}
 	}
 	word, _ := turnWord(*t)
 	rows := []string{paneTitle(brightStyle().Render(fmt.Sprintf("turn %d", t.N)),
-		sty.Dim.Render(word), width), ""}
+		sty.dim.Render(word), width), ""}
 	switch {
 	case t.Running != nil:
 		rows = append(rows, runningRows(*t.Running, width)...)
@@ -175,8 +175,8 @@ func (s *TurnsScreen) previewRows(width int) []string {
 		// with the pause row — so the one thing this screen can say about it
 		// beyond its files is that.
 		rows = append(rows,
-			closeLine(closeLead("", sty.Dim.Render("·")), sty.Body.Render(noFiguresKept), "", width),
-			closeLine(closeLead("", " "), sty.Dimmer.Render("the session kept its files and not its close"), "", width))
+			closeLine(closeLead("", sty.dim.Render("·")), sty.body.Render(noFiguresKept), "", width),
+			closeLine(closeLead("", " "), sty.dimmer.Render("the session kept its files and not its close"), "", width))
 	}
 	if len(t.Files) > 0 {
 		rows = append(rows, "")
@@ -184,11 +184,11 @@ func (s *TurnsScreen) previewRows(width int) []string {
 		for i, f := range t.Files {
 			lead := strings.Repeat(" ", len(label))
 			if i == 0 {
-				lead = sty.Status.Render(label)
+				lead = sty.status.Render(label)
 			}
 			stat := " " + DiffStat(f.Added, f.Removed)
 			room := max(width-len(label)-2-len(fmt.Sprintf(" +%d −%d", f.Added, f.Removed)), 1)
-			rows = append(rows, "  "+lead+sty.Body.Render(Clip(f.Path, room))+stat)
+			rows = append(rows, "  "+lead+sty.body.Render(Clip(f.Path, room))+stat)
 		}
 	}
 	return rows
@@ -208,16 +208,16 @@ func runningRows(r InspectorTurn, width int) []string {
 	if r.Tools > 0 {
 		stats = append(stats, plural(r.Tools, "tool"))
 	}
-	text := sty.Body.Render("Running")
+	text := sty.body.Render("Running")
 	if len(stats) > 0 {
-		text += sty.Dim.Render(" · " + strings.Join(stats, " · "))
+		text += sty.dim.Render(" · " + strings.Join(stats, " · "))
 	}
-	rows := []string{closeLine(closeLead("", sty.Info.Render("▸")), text, "", width)}
-	files := sty.Dim.Render(plural(r.Files, "file") + " this turn")
+	rows := []string{closeLine(closeLead("", sty.info.Render("▸")), text, "", width)}
+	files := sty.dim.Render(plural(r.Files, "file") + " this turn")
 	if r.Files > 0 {
 		files += " " + DiffStat(r.Added, r.Removed)
 	}
-	return append(rows, closeLine(closeLead(sty.Accent.Render("▎"), sty.Accent.Render("✎")), files, "", width))
+	return append(rows, closeLine(closeLead(sty.accent.Render("▎"), sty.accent.Render("✎")), files, "", width))
 }
 
 // readOnly is the block as a preview draws it: the same figures with none of
@@ -302,15 +302,15 @@ func turnDetail(t TurnsItem) []DetailSpan {
 }
 
 // header names the surface, what it counts and what the session has spent.
-func (s *TurnsScreen) header() ScreenHeader {
-	h := ScreenHeader{Left: []RailSegment{screenTitle("/turns")}, Keys: s.headerKeys()}
+func (s *TurnsScreen) header() screenHeader {
+	h := screenHeader{left: []RailSegment{screenTitle("/turns")}, keys: s.headerKeys()}
 	for _, f := range []string{s.Subject, s.Tools} {
 		if f != "" {
-			h.Left = append(h.Left, screenField(f))
+			h.left = append(h.left, screenField(f))
 		}
 	}
 	if s.Spend != "" {
-		h.Tally = sty.Dim.Render(s.Spend)
+		h.tally = sty.dim.Render(s.Spend)
 	}
 	return h
 }
@@ -326,10 +326,10 @@ func (s *TurnsScreen) headerKeys() string {
 }
 
 // footer is the keys the screen offers and the field that annotates them.
-func (s *TurnsScreen) footer(width int) KeyFooter {
+func (s *TurnsScreen) footer(width int) keyFooter {
 	field := s.footField()
-	return KeyFooter{Offers: s.offers(width, field), Register: s.keyList(),
-		Showing: s.keys, Field: field}
+	return keyFooter{offers: s.offers(width, field), register: s.keyList(),
+		showing: s.keys, field: field}
 }
 
 // offers is the key row: the pointer's keys, the review, and the way out,
@@ -341,7 +341,7 @@ func (s *TurnsScreen) offers(width int, field string) []KeyOffer {
 	var acts []KeyOffer
 	if t := s.current(); t != nil {
 		review := keyOfferAs(keys.Screen.Take, fmt.Sprintf("review turn %d", t.N))
-		review.Inert = !t.Reviewable
+		review.inert = !t.Reviewable
 		acts = append(acts, review)
 	}
 	acts = append(acts, wayOut(backToPrompt))
@@ -379,9 +379,9 @@ func (s *TurnsScreen) sync() {
 	opts := make([]SelectOption, 0, len(s.Turns))
 	for _, t := range s.Turns {
 		opt := SelectOption{Label: fmt.Sprintf("%s turn %d", turnGlyph(t), t.N), Detail: turnDetail(t)}
-		opt.Value, opt.ValueTone = turnWord(t)
+		opt.Value, opt.valueTone = turnWord(t)
 		if t.Close != nil && t.Close.Spend != "" {
-			opt.Meta, opt.MetaTone = t.Close.Spend, ToneQuiet
+			opt.Meta, opt.metaTone = t.Close.Spend, ToneQuiet
 		}
 		opts = append(opts, opt)
 	}

@@ -190,11 +190,11 @@ func TestGolden_ActivityRows(t *testing.T) {
 				r.Outcome, r.Duration = "→ http://127.0.0.1:52104/r/rp-8f3a11c04b2d9e61", "0.8s"
 			})},
 			{Label: "kind · think, folded", View: row(func(r *ActivityRow) {
-				r.Kind, r.Verb, r.Target = ActivityThink, "think", ""
+				r.Kind, r.Verb, r.Target = activityThink, "think", ""
 				r.Counts = "42 lines"
 			})},
 			{Label: "kind · think, opened to its tail", View: row(func(r *ActivityRow) {
-				r.Kind, r.Verb, r.Target = ActivityThink, "think", ""
+				r.Kind, r.Verb, r.Target = activityThink, "think", ""
 				r.Counts, r.Expanded = "42 lines", true
 				// Already wrapped to the detail width by the caller: this
 				// body is prose, and the row would clip it.
@@ -212,7 +212,7 @@ func TestGolden_ActivityRows(t *testing.T) {
 				r.Tail = "internal/ui/chat/model.go:1660:1: too many arguments"
 			})},
 			{Label: "state · classifier checking", View: row(func(r *ActivityRow) {
-				r.State, r.Outcome = ActivityChecking, OutcomeChecking
+				r.State, r.Outcome = ActivityChecking, outcomeChecking
 			})},
 			{Label: "state · failed, expanded", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "go test ./internal/agent/..."
@@ -316,7 +316,7 @@ func TestGolden_ActivityRows(t *testing.T) {
 				r.Allowed, r.Duration = ApprovedBy("you"), "12.4s"
 			})},
 			{Label: "focus · selected", View: row(func(r *ActivityRow) {
-				r.Selected, r.Counts, r.Duration = true, "218 lines", "0.6s"
+				r.selected, r.Counts, r.Duration = true, "218 lines", "0.6s"
 			})},
 			{Label: "overflow · target clips, outcome does not", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb = ActivityEdit, "edit"
@@ -571,7 +571,7 @@ func TestGolden_Anim(t *testing.T) {
 			entrance = append(entrance, status(0, arriving).View(width))
 		}
 		var sweep []string
-		for frame := range animRest + len([]rune(PhaseActing.Word())) {
+		for frame := range animRest + len([]rune(PhaseActing.word())) {
 			sweep = append(sweep, status(frame, 0).View(width))
 		}
 		return []golden.Panel{
@@ -1211,7 +1211,7 @@ func TestGolden_ReviewMode(t *testing.T) {
 			{Label: "a turn's review · the second file focused", View: view(func(v *ReviewView) {
 				v.Update(key("j"))
 			})},
-			{Label: "layout · side-by-side forced", View: view(func(v *ReviewView) { v.SideBySide = true })},
+			{Label: "layout · side-by-side forced", View: view(func(v *ReviewView) { v.sideBySide = true })},
 		}
 	})
 }
@@ -2805,7 +2805,7 @@ func TestGolden_ConfigScreen(t *testing.T) {
 	captureGolden(t, "config-screen", "the config screen", goldenWidths, func(width int) []golden.Panel {
 		screen := func(mut func(*ConfigScreen)) *ConfigScreen {
 			c := &ConfigScreen{
-				Path: "~/.config/shhh/config.toml", Rows: goldenConfigRows(), MaxLines: 22,
+				Path: "~/.config/shhh/config.toml", Rows: goldenConfigRows(), maxLines: 22,
 			}
 			if mut != nil {
 				mut(c)
@@ -2820,31 +2820,31 @@ func TestGolden_ConfigScreen(t *testing.T) {
 		return []golden.Panel{
 			{Label: "the list · every row states where its value came from", View: screen(nil).View(width)},
 			{Label: "changing one · the picker opens under the row, not over the screen", View: func() string {
-				c := screen(func(c *ConfigScreen) { c.Focus = 5 })
+				c := screen(func(c *ConfigScreen) { c.focus = 5 })
 				c.Update(key("enter"))
 				return c.View(width)
 			}()},
 			{Label: "the picker filtered · the query row carries both counts", View: func() string {
-				c := screen(func(c *ConfigScreen) { c.Focus = 5 })
+				c := screen(func(c *ConfigScreen) { c.focus = 5 })
 				c.Update(key("enter"))
 				c.Update(key("/"))
 				typed(c, "claude")
 				return c.View(width)
 			}()},
 			{Label: "a setting with no answers to choose · a field under the row", View: func() string {
-				c := screen(func(c *ConfigScreen) { c.Focus = 1 })
+				c := screen(func(c *ConfigScreen) { c.focus = 1 })
 				c.Update(key("enter"))
 				typed(c, "40")
 				return c.View(width)
 			}()},
 			{Label: "a secret · the mask, never the key", View: func() string {
-				c := screen(func(c *ConfigScreen) { c.Focus = 6 })
+				c := screen(func(c *ConfigScreen) { c.focus = 6 })
 				c.Update(key("enter"))
 				typed(c, "sk-live-9f2b")
 				return c.View(width)
 			}()},
 			{Label: "staged · the header counts it and [w] is offered", View: screen(func(c *ConfigScreen) {
-				c.Focus, c.Changed = 5, 2
+				c.focus, c.Changed = 5, 2
 				c.Rows[5].Value = "claude-sonnet-4.6"
 				c.Rows[5].Source, c.Rows[5].SourceTone = "unwritten", ToneOpen
 				c.Rows[1].Value = "40"
@@ -2874,7 +2874,7 @@ func TestGolden_ConfigScreen(t *testing.T) {
 			{Label: "the flows section · each row says which link of the chain answered, or that the session holds it",
 				View: flowsScreen(nil).View(width)},
 			{Label: "a flow's picker · the choice has three destinations on the key row", View: func() string {
-				c := flowsScreen(func(c *ConfigScreen) { c.Focus = 1 })
+				c := flowsScreen(func(c *ConfigScreen) { c.focus = 1 })
 				c.Update(key("enter"))
 				return c.View(width)
 			}()},
@@ -2887,7 +2887,7 @@ func TestGolden_ConfigScreen(t *testing.T) {
 func flowsScreen(mut func(*ConfigScreen)) *ConfigScreen {
 	c := &ConfigScreen{
 		Path: ".shhh/config.toml", Rows: append(goldenFlowRows(), goldenConfigRows()...),
-		MaxLines: 22, InSession: true, Scoped: true,
+		maxLines: 22, InSession: true, Scoped: true,
 	}
 	if mut != nil {
 		mut(c)
@@ -2904,7 +2904,7 @@ func TestGolden_ConfigScreenScope(t *testing.T) {
 	captureGolden(t, "config-screen-scope", "the config screen in a checkout", goldenWidths, func(width int) []golden.Panel {
 		screen := func(yours bool) *ConfigScreen {
 			c := &ConfigScreen{
-				Path: ".shhh/config.toml", Rows: goldenConfigRows(), MaxLines: 12,
+				Path: ".shhh/config.toml", Rows: goldenConfigRows(), maxLines: 12,
 				Scoped: true, Yours: yours,
 			}
 			if yours {
@@ -2981,7 +2981,7 @@ func TestGolden_HistoryScreen(t *testing.T) {
 	captureGolden(t, "history-screen", "the history browser", historyWidths, func(width int) []golden.Panel {
 		screen := func(mut func(*HistoryScreen)) *HistoryScreen {
 			h := &HistoryScreen{
-				Rows: goldenHistoryRows(), Subject: "6 entries · 2 run", MaxLines: 20,
+				Rows: goldenHistoryRows(), Subject: "6 entries · 2 run", maxLines: 20,
 			}
 			if mut != nil {
 				mut(h)
@@ -3102,7 +3102,7 @@ func goldenBacklogFields() (BacklogField, []BacklogField) {
 func goldenBacklogScreen() *BacklogScreen {
 	b := &BacklogScreen{
 		Rows: goldenBacklogRows(), Done: goldenBacklogDone(),
-		Sprint: "the cockpit sprint", MaxLines: 22,
+		Sprint: "the cockpit sprint", maxLines: 22,
 	}
 	b.Priority, b.Fields = goldenBacklogFields()
 	return b
@@ -3139,7 +3139,7 @@ func withNote(row BacklogRow, note string) BacklogRow {
 func goldenSprintScreen(board *SprintBoard) *BacklogScreen {
 	b := &BacklogScreen{
 		Rows: goldenBacklogRows(), Done: goldenBacklogDone(),
-		Sprint: "the cockpit sprint", Board: board, MaxLines: 24,
+		Sprint: "the cockpit sprint", Board: board, maxLines: 24,
 	}
 	b.Priority, b.Fields = goldenBacklogFields()
 	b.Update(key("tab"))
@@ -3193,17 +3193,17 @@ func TestGolden_SprintBoard(t *testing.T) {
 			Report: "http://127.0.0.1:8731/r/rp-4c1d90ab77e25f30",
 		}
 		plan := &BacklogScreen{
-			Rows: goldenBacklogRows(), Done: goldenBacklogDone(), MaxLines: 24,
+			Rows: goldenBacklogRows(), Done: goldenBacklogDone(), maxLines: 24,
 			Plan: goldenSprintPlan(),
 		}
 		plan.Priority, plan.Fields = goldenBacklogFields()
 		droppedRow := *plan
-		dropped := &BacklogScreen{Rows: droppedRow.Rows, Done: droppedRow.Done, MaxLines: 24,
+		dropped := &BacklogScreen{Rows: droppedRow.Rows, Done: droppedRow.Done, maxLines: 24,
 			Plan: goldenSprintPlan()}
 		dropped.Priority, dropped.Fields = goldenBacklogFields()
 		dropped.Update(key("j"))
 		dropped.Update(key(" "))
-		left := &BacklogScreen{Rows: droppedRow.Rows, Done: droppedRow.Done, MaxLines: 24,
+		left := &BacklogScreen{Rows: droppedRow.Rows, Done: droppedRow.Done, maxLines: 24,
 			Plan: goldenSprintPlan()}
 		left.Priority, left.Fields = goldenBacklogFields()
 		left.Update(key("o"))
@@ -3408,10 +3408,10 @@ func TestGolden_MetricsScreen(t *testing.T) {
 				}
 			}).View(width)},
 			{Label: "a short terminal · what fits is drawn, what went is named", View: screen(func(m *MetricsScreen) {
-				m.MaxLines = 16
+				m.maxLines = 16
 			}).View(width)},
 			{Label: "a shorter one · the table windows last and says what it holds back",
-				View: screen(func(m *MetricsScreen) { m.MaxLines = 7 }).View(width)},
+				View: screen(func(m *MetricsScreen) { m.maxLines = 7 }).View(width)},
 			{Label: "nothing recorded · a heading over nothing says so", View: (&MetricsScreen{
 				Subject: "all time · 0 requests · 0 models",
 			}).View(width)},
@@ -3565,7 +3565,7 @@ func goldenRateRows() []RateRow {
 func TestGolden_RateScreen(t *testing.T) {
 	captureGolden(t, "rate-screen", "the rating screen", goldenWidths, func(width int) []golden.Panel {
 		screen := func(mut func(*RateScreen)) *RateScreen {
-			r := &RateScreen{Rows: goldenRateRows(), MaxLines: 20}
+			r := &RateScreen{Rows: goldenRateRows(), maxLines: 20}
 			if mut != nil {
 				mut(r)
 			}
@@ -3581,23 +3581,23 @@ func TestGolden_RateScreen(t *testing.T) {
 					return r.View(width)
 				}()},
 			{Label: "a long command · continued under its own row, never clipped away",
-				View: screen(func(r *RateScreen) { r.Focus = 3 }).View(width)},
+				View: screen(func(r *RateScreen) { r.focus = 3 }).View(width)},
 			{Label: "a session · the same card over an agent run, and no rail on a good one",
-				View: screen(func(r *RateScreen) { r.Focus = 4 }).View(width)},
+				View: screen(func(r *RateScreen) { r.focus = 4 }).View(width)},
 			{Label: "a session that was given up on · the rail and the glyph every broken row takes",
 				View: screen(func(r *RateScreen) {
-					r.Focus = 4
+					r.focus = 4
 					r.Rows[4].Outcome, r.Rows[4].State = "abandoned", ActivityDenied
 				}).View(width)},
 			{Label: "a short terminal · the card folds behind a counted tail",
-				View: screen(func(r *RateScreen) { r.Focus = 3; r.MaxLines = 10 }).View(width)},
+				View: screen(func(r *RateScreen) { r.focus = 3; r.maxLines = 10 }).View(width)},
 			{Label: "a write that failed · the notice, and the entry left unrated",
 				View: screen(func(r *RateScreen) {
-					r.Focus = 2
+					r.focus = 2
 					r.Notice = "rate: database is locked"
 				}).View(width)},
 			{Label: "nothing left to answer · the three answers are gone from the row",
-				View: screen(func(r *RateScreen) { r.Focus = len(r.Rows) }).View(width)},
+				View: screen(func(r *RateScreen) { r.focus = len(r.Rows) }).View(width)},
 			{Label: "[?] · every key the screen has",
 				View: func() string {
 					r := screen(nil)
@@ -3637,7 +3637,7 @@ func TestGolden_ProfileScreen(t *testing.T) {
 			p := NewProfileScreen("/agents new")
 			p.Subject = "a coding agent · reviewer tester"
 			p.MaxLines = height
-			p.Of = 2
+			p.of = 2
 			p.Show(sectionedDraft(), []SelectOption{
 				{Label: "Save to this project", Desc: ".shhh/agents"},
 				{Label: "Save globally", Desc: "~/.config/shhh/agents"},
@@ -3758,26 +3758,26 @@ func TestGolden_ScreenFamily(t *testing.T) {
 				{Label: "metrics · the spend rides with the one key the screen has",
 					View: (&MetricsScreen{
 						Subject: "last 30 days · 251 requests · 4 models", Spend: "$18.42",
-						Models: goldenMetricsModels(), MaxLines: 12,
+						Models: goldenMetricsModels(), maxLines: 12,
 					}).View(width)},
 				{Label: "config · the file, and what is standing against it, over the flows section",
 					View: (&ConfigScreen{
 						Path: "~/.config/shhh/config.toml", Rows: append(goldenFlowRows(), goldenConfigRows()...),
-						Changed: 2, MaxLines: 12, InSession: true,
+						Changed: 2, maxLines: 12, InSession: true,
 					}).View(width)},
 				{Label: "history · the subject, and a foot key row that states the way out",
 					View: (&HistoryScreen{
-						Rows: goldenHistoryRows(), Subject: "6 entries · 2 run", MaxLines: 12,
+						Rows: goldenHistoryRows(), Subject: "6 entries · 2 run", maxLines: 12,
 					}).View(width)},
 				{Label: "rate · the same header over one card",
-					View: (&RateScreen{Rows: goldenRateRows(), MaxLines: 12}).View(width)},
+					View: (&RateScreen{Rows: goldenRateRows(), maxLines: 12}).View(width)},
 				{Label: "context · the occupancy is the tally beside the keys",
-					View: func() string { context.MaxLines = 12; return context.View(width) }()},
+					View: func() string { context.maxLines = 12; return context.View(width) }()},
 				{Label: "the profile drafter · the way out is the whole right-hand run",
 					View: profile.View(width)},
 				{Label: "snippets · the list, the command it would run, and the promise that it will not",
 					View: (&SnippetScreen{
-						Rows: snippetRows(), Subject: "3 snippets", MaxLines: 12,
+						Rows: snippetRows(), Subject: "3 snippets", maxLines: 12,
 					}).View(width)},
 				{Label: "the saved-chat browser · a row another session holds says so in a word",
 					View: (&ChatScreen{
@@ -3785,24 +3785,24 @@ func TestGolden_ScreenFamily(t *testing.T) {
 					}).View(width)},
 				{Label: "sources · the list is grouped under the hosts it read",
 					View: (&SourcesScreen{
-						Rows: sourceRows(), Subject: "2 pages · 1 host · 1 search", Focus: 1, MaxLines: 12,
+						Rows: sourceRows(), Subject: "2 pages · 1 host · 1 search", Focus: 1, maxLines: 12,
 					}).View(width)},
 				{Label: "safety · the reading, its subject beside the title and the way back on the right",
 					View: (&SafetyScreen{
-						Sections: safetySections(), Subject: "manual · sandbox-exec", MaxLines: 12,
+						Sections: safetySections(), Subject: "manual · sandbox-exec", maxLines: 12,
 					}).View(width)},
 				{Label: "steps · the session's own list, the run the transcript titled for the step beside it",
-					View: func() string { s := stepsScreen(1); s.MaxLines = 12; return s.View(width) }()},
+					View: func() string { s := stepsScreen(1); s.maxLines = 12; return s.View(width) }()},
 				{Label: "readings · every reading the session took, the one under the pointer whole beside it",
-					View: func() string { s := readingsScreen(0); s.MaxLines = 12; return s.View(width) }()},
+					View: func() string { s := readingsScreen(0); s.maxLines = 12; return s.View(width) }()},
 				{Label: "turns · every turn the session ran, the close of the one under the pointer beside it",
-					View: func() string { s := turnsScreen(2); s.MaxLines = 12; return s.View(width) }()},
+					View: func() string { s := turnsScreen(2); s.maxLines = 12; return s.View(width) }()},
 				{Label: "alerts · every command the session broke, standing first, the one under the pointer's account beside it",
-					View: func() string { s := alertsScreen(0, false); s.MaxLines = 12; return s.View(width) }()},
+					View: func() string { s := alertsScreen(0, false); s.maxLines = 12; return s.View(width) }()},
 				{Label: "spend · the session's bill by model, by child and by turn, the row under the pointer's account beside it",
 					View: func() string { s := spendScreen(1); s.MaxLines = 12; return s.View(width) }()},
 				{Label: "tools · where the session's tools came from, the source under the pointer's account beside it",
-					View: func() string { s := toolsScreen(3); s.MaxLines = 12; return s.View(width) }()},
+					View: func() string { s := toolsScreen(3); s.maxLines = 12; return s.View(width) }()},
 			}
 		})
 }
@@ -3864,7 +3864,7 @@ func TestGolden_LightTable(t *testing.T) {
 					}.View(width),
 					ActivityRow{
 						Kind: ActivityTool, Verb: "read", Target: "internal/agent/loop.go",
-						Selected: true, Counts: "218 lines", Duration: "0.6s",
+						selected: true, Counts: "218 lines", Duration: "0.6s",
 					}.View(width),
 				}, "\n")},
 				{Label: "diff · the two verdicts and the hunk heading", View: (&DiffView{

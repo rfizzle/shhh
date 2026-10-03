@@ -68,7 +68,7 @@ func TestScreenHeader_TheTallyDropsBeforeTheWayOut(t *testing.T) {
 		{"snippets", 44, "[q] quit", "3 snippets", func(w int) string { return snippetScreen().View(w) }},
 		{"chats", 44, "[q] quit", "3 conversations", func(w int) string { return chatScreen().View(w) }},
 		{"safety", 36, "[q] back", "sandbox-exec", func(w int) string {
-			return (&SafetyScreen{Sections: safetySections(), Subject: "manual · sandbox-exec", MaxLines: 12}).View(w)
+			return (&SafetyScreen{Sections: safetySections(), Subject: "manual · sandbox-exec", maxLines: 12}).View(w)
 		}},
 		{"steps", 30, "[q] back", "1 of 7", func(w int) string { return stepsScreen(1).View(w) }},
 		{"readings", 30, "[q] back", "$0.0142", func(w int) string { return readingsScreen(0).View(w) }},
@@ -95,11 +95,11 @@ func TestScreenHeader_TheTallyDropsBeforeTheWayOut(t *testing.T) {
 // The title is the field a header is clipped down to, not one it drops: a
 // header that has given up its own name has stopped being one.
 func TestScreenHeader_TheTitleIsClippedRatherThanDropped(t *testing.T) {
-	h := ScreenHeader{
-		Left: []RailSegment{screenTitle("shhh doctor"), screenField("10 checks")},
-		Keys: "[q] quit",
+	h := screenHeader{
+		left: []RailSegment{screenTitle("shhh doctor"), screenField("10 checks")},
+		keys: "[q] quit",
 	}
-	row := ansi.Strip(h.Row(24))
+	row := ansi.Strip(h.row(24))
 	if !strings.HasPrefix(row, "shhh d") {
 		t.Fatalf("the title did not survive the narrowest row: %q", row)
 	}
@@ -114,11 +114,11 @@ func TestScreenHeader_TheTitleIsClippedRatherThanDropped(t *testing.T) {
 // A field carries the separator that joins it to what is in front of it, so
 // a header whose fields have all dropped does not end in a dangling ` · `.
 func TestScreenHeader_ADroppedFieldTakesItsSeparator(t *testing.T) {
-	h := ScreenHeader{
-		Left: []RailSegment{screenTitle("shhh config"), screenField("~/.config/shhh/config.toml")},
-		Keys: "[?] keys · [q] quit",
+	h := screenHeader{
+		left: []RailSegment{screenTitle("shhh config"), screenField("~/.config/shhh/config.toml")},
+		keys: "[?] keys · [q] quit",
 	}
-	row := ansi.Strip(h.Row(40))
+	row := ansi.Strip(h.row(40))
 	if strings.Contains(row, "shhh config ·") {
 		t.Fatalf("the dropped field left its separator behind: %q", row)
 	}
@@ -128,12 +128,12 @@ func TestScreenHeader_ADroppedFieldTakesItsSeparator(t *testing.T) {
 // renders a pair of escapes around an empty string, and a header that read
 // the tally as "present" would draw the separator anyway.
 func TestScreenHeader_AnEmptyTallyDrawsNoSeparator(t *testing.T) {
-	h := ScreenHeader{
-		Left:  []RailSegment{screenTitle("shhh metrics")},
-		Keys:  "[q] quit",
-		Tally: sty.Body.Render(""),
+	h := screenHeader{
+		left:  []RailSegment{screenTitle("shhh metrics")},
+		keys:  "[q] quit",
+		tally: sty.body.Render(""),
 	}
-	if row := ansi.Strip(h.Row(80)); !strings.HasSuffix(row, "[q] quit") {
+	if row := ansi.Strip(h.row(80)); !strings.HasSuffix(row, "[q] quit") {
 		t.Fatalf("an empty tally left a separator on the row: %q", row)
 	}
 }
@@ -143,9 +143,9 @@ func TestScreenHeader_AnEmptyTallyDrawsNoSeparator(t *testing.T) {
 // in it.
 func TestScreenChrome_NoFooterMeansNoTrailingBlank(t *testing.T) {
 	body := func(int) []string { return []string{"one", "two"} }
-	rows := strings.Split(ScreenChrome{Header: ScreenHeader{
-		Left: []RailSegment{screenTitle("shhh doctor")}, Keys: "[q] quit",
-	}}.View(40, body), "\n")
+	rows := strings.Split(screenChrome{header: screenHeader{
+		left: []RailSegment{screenTitle("shhh doctor")}, keys: "[q] quit",
+	}}.view(40, body), "\n")
 	if got := rows[len(rows)-1]; got != "two" {
 		t.Fatalf("the body is not the last row: %q", got)
 	}
@@ -155,13 +155,13 @@ func TestScreenChrome_NoFooterMeansNoTrailingBlank(t *testing.T) {
 // and the footer's own blank row is part of what is pinned.
 func TestScreenChrome_BudgetCountsEverythingPinned(t *testing.T) {
 	var got int
-	ScreenChrome{
-		MaxLines: 20,
-		Foot:     []string{"[q] quit"},
-		Notice:   "copied the report to the clipboard",
-		Head:     []string{"filter"},
-		Reserve:  2,
-	}.View(40, func(budget int) []string {
+	screenChrome{
+		maxLines: 20,
+		foot:     []string{"[q] quit"},
+		notice:   "copied the report to the clipboard",
+		head:     []string{"filter"},
+		reserve:  2,
+	}.view(40, func(budget int) []string {
 		got = budget
 		return nil
 	})
@@ -181,7 +181,7 @@ func TestKeyFooter_OffersWrapRatherThanClip(t *testing.T) {
 		{Key: "[a]", Label: "allow every one like it"},
 		{Key: "[esc]", Label: "leave, change nothing"},
 	}
-	rows := KeyFooter{Offers: offers}.Rows(40)
+	rows := keyFooter{offers: offers}.rows(40)
 	if len(rows) < 2 {
 		t.Fatalf("the offers were not wrapped: %#v", rows)
 	}
@@ -205,8 +205,8 @@ func TestKeyFooter_AnOfferWiderThanTheRowWrapsRatherThanClips(t *testing.T) {
 	wide := KeyOffer{Key: "[esc]", Label: "back to the draft, cursor where you left it"}
 	const width = 24
 	for name, rows := range map[string][]string{
-		"offers":   KeyFooter{Offers: []KeyOffer{{Key: "[y]", Label: "allow"}, wide}}.Rows(width),
-		"register": KeyFooter{Register: []KeyOffer{wide}, Showing: true}.Rows(width),
+		"offers":   keyFooter{offers: []KeyOffer{{Key: "[y]", Label: "allow"}, wide}}.rows(width),
+		"register": keyFooter{register: []KeyOffer{wide}, showing: true}.rows(width),
 		"packed":   HintRows([]KeyOffer{wide}, width),
 	} {
 		for _, row := range rows {
@@ -228,10 +228,10 @@ func TestKeyFooter_AnOfferWiderThanTheRowWrapsRatherThanClips(t *testing.T) {
 // confirm is up it is what the keyboard is answering, so the keys underneath
 // it are not offers.
 func TestKeyFooter_ATakenFooterIsTheWholeFooter(t *testing.T) {
-	rows := KeyFooter{
-		Offers: []KeyOffer{{Key: "[w]", Label: "write"}},
-		Taken:  "Write 2 changes to the file? [y/N]",
-	}.Rows(80)
+	rows := keyFooter{
+		offers: []KeyOffer{{Key: "[w]", Label: "write"}},
+		taken:  "Write 2 changes to the file? [y/N]",
+	}.rows(80)
 	if len(rows) != 1 || !strings.Contains(rows[0], "[y/N]") {
 		t.Fatalf("the confirm did not take the footer: %#v", rows)
 	}

@@ -90,7 +90,7 @@ func (r InspectorRail) alertsBlock(width int) (railBlock, bool) {
 	}
 	superseded := len(r.Alerts) - len(live)
 	b := railBlock{heading: railHeading("ALERTS",
-		fmt.Sprintf("%d standing", len(live)), sty.Err, width)}
+		fmt.Sprintf("%d standing", len(live)), sty.err, width)}
 	// The most recent live alerts are the ones drawn: an alert older than
 	// two failures ago is the least likely of them to be what the session is
 	// standing in front of now.
@@ -131,11 +131,11 @@ func (r InspectorRail) alertsBlock(width int) (railBlock, bool) {
 func alertRow(a InspectorAlert, width int) string {
 	turn := ""
 	if a.Turn > 0 {
-		turn = sty.Dim.Render(alertTurn(a))
+		turn = sty.dim.Render(alertTurn(a))
 	}
-	left := " " + sty.Err.Render("✗") + " " + sty.Body.Render(a.Label)
+	left := " " + sty.err.Render("✗") + " " + sty.body.Render(a.Label)
 	if note := alertNote(a); note != "" {
-		stated := left + "  " + sty.Dim.Render(note)
+		stated := left + "  " + sty.dim.Render(note)
 		if lipgloss.Width(stated) <= railRoom(width, turn, inspectorIndent) {
 			left = stated
 		}
@@ -173,11 +173,11 @@ func alertNote(a InspectorAlert) string {
 // behind it leads with the answered count rather than a zero.
 func alertsFold(more, superseded int, width int) string {
 	if more <= 0 {
-		return indentRow(sty.Hint.Render(fmt.Sprintf("… %d superseded", superseded)), width)
+		return indentRow(sty.hint.Render(fmt.Sprintf("… %d superseded", superseded)), width)
 	}
 	right := ""
 	if superseded > 0 {
-		right = sty.Dim.Render(fmt.Sprintf("%d superseded", superseded))
+		right = sty.dim.Render(fmt.Sprintf("%d superseded", superseded))
 	}
-	return railRow(sty.Hint.Render(fmt.Sprintf("… %d more", more)), right, width, inspectorIndent)
+	return railRow(sty.hint.Render(fmt.Sprintf("… %d more", more)), right, width, inspectorIndent)
 }

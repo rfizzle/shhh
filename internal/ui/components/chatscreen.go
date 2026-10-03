@@ -85,14 +85,14 @@ type ChatRow struct {
 	Deleting string
 }
 
-// ChatAct is what a key asked the host to do to the conversation under the
+// chatAct is what a key asked the host to do to the conversation under the
 // pointer. Opening is not one of them: it hands the terminal to a session, so
 // it closes the screen instead (see ChatResult).
-type ChatAct int
+type chatAct int
 
 const (
 	// ChatRename is `[r]`, once the rename row has been committed.
-	ChatRename ChatAct = iota
+	ChatRename chatAct = iota
 	// ChatDelete is `[x]`, and only after the inline confirm has been
 	// answered — the screen never resolves a delete the reader has not said
 	// yes to.
@@ -102,7 +102,7 @@ const (
 // ChatCommand is one act the host carries out while the screen stays up. The
 // host does it, sets Notice, and hands back fresh Rows.
 type ChatCommand struct {
-	Act ChatAct
+	Act chatAct
 	ID  string
 	// Name is what the rename row was left holding, and is read for
 	// ChatRename alone.
@@ -115,7 +115,7 @@ type ChatResult struct {
 	Open bool
 	// ID is the slot `[enter]` chose.
 	ID       string
-	Canceled bool
+	canceled bool
 	// Do is the housekeeping a key asked for with the screen still up — a
 	// rename, a delete already past its confirm. nil is a key that asked for
 	// none.
@@ -171,7 +171,7 @@ func (c *ChatScreen) Update(msg tea.KeyPressMsg) (done bool, result ChatResult) 
 	case keys.Is(pressed, keys.Screen.Take):
 		return c.open()
 	case keys.Is(pressed, keys.Select.Cancel):
-		return true, ChatResult{Canceled: true}
+		return true, ChatResult{canceled: true}
 	}
 	// With the query line open the query line is the surface, so r, x and q
 	// are letters rather than keys — the reading every picker in the product
@@ -193,7 +193,7 @@ func (c *ChatScreen) Update(msg tea.KeyPressMsg) (done bool, result ChatResult) 
 	case keys.Is(pressed, keys.Screen.Filter):
 		c.list.Filtering = true
 	case pressed == keys.Shown(keys.Screen.Quit):
-		return true, ChatResult{Canceled: true}
+		return true, ChatResult{canceled: true}
 	case keys.Is(pressed, keys.Screen.List):
 		c.keys = !c.keys
 	case keys.Is(pressed, keys.Screen.Rename):
@@ -209,7 +209,7 @@ func (c *ChatScreen) Update(msg tea.KeyPressMsg) (done bool, result ChatResult) 
 			if row.Deleting != "" {
 				with = " " + row.Deleting
 			}
-			c.confirm = &Confirm{Prompt: sty.Body.Render(
+			c.confirm = &Confirm{Prompt: sty.body.Render(
 				"Delete " + quoted(row.Name) + with + "? Files on disk are untouched.")}
 		}
 	}
@@ -282,13 +282,13 @@ func (c *ChatScreen) View(width int) string {
 		list:    c.listRows,
 		preview: c.previewRows,
 	}
-	return ScreenChrome{
-		Header:   c.header(),
-		Foot:     c.footer(width).Rows(width),
-		Notice:   c.Notice,
-		MaxLines: c.MaxLines,
-		Reserve:  len(c.renameRows(width)),
-	}.View(width, func(budget int) []string {
+	return screenChrome{
+		header:   c.header(),
+		foot:     c.footer(width).rows(width),
+		notice:   c.Notice,
+		maxLines: c.MaxLines,
+		reserve:  len(c.renameRows(width)),
+	}.view(width, func(budget int) []string {
 		return append(panes.rows(width, budget), c.renameRows(width)...)
 	})
 }
@@ -326,8 +326,8 @@ func (c *ChatScreen) hiddenRows(width int) []string {
 	if hidden <= 0 {
 		return nil
 	}
-	row := sty.Dim.Render(plural(hidden, "conversation")+" hidden by the filter · ") +
-		sty.Key.Render(keys.Bracket(keys.Screen.ClearQ)) + sty.Dim.Render(" clear it")
+	row := sty.dim.Render(plural(hidden, "conversation")+" hidden by the filter · ") +
+		sty.key.Render(keys.Bracket(keys.Screen.ClearQ)) + sty.dim.Render(" clear it")
 	return []string{screenRule(width), Clip(row, width)}
 }
 
@@ -341,11 +341,11 @@ func (c *ChatScreen) hiddenRows(width int) []string {
 func (c *ChatScreen) previewRows(width int) []string {
 	row := c.current()
 	if row == nil {
-		return []string{sty.Dim.Render(Clip("no conversation selected", width))}
+		return []string{sty.dim.Render(Clip("no conversation selected", width))}
 	}
-	rows := []string{paneTitle(brightStyle().Render(row.Name), sty.Dim.Render(row.Updated), width)}
+	rows := []string{paneTitle(brightStyle().Render(row.Name), sty.dim.Render(row.Updated), width)}
 	if row.Title != "" {
-		for _, line := range wrapSpans([]styledSpan{{row.Title, sty.Dim}}, max(width-2, 1)) {
+		for _, line := range wrapSpans([]styledSpan{{row.Title, sty.dim}}, max(width-2, 1)) {
 			rows = append(rows, "  "+line)
 		}
 	}
@@ -353,14 +353,14 @@ func (c *ChatScreen) previewRows(width int) []string {
 	// and wraps whole, a blank row below the title it qualifies.
 	if row.Summary != "" {
 		rows = append(rows, "")
-		for _, line := range wrapSpans([]styledSpan{{row.Summary, sty.Body}}, max(width-2, 1)) {
+		for _, line := range wrapSpans([]styledSpan{{row.Summary, sty.body}}, max(width-2, 1)) {
 			rows = append(rows, "  "+line)
 		}
 	}
-	rows = append(rows, "", "  "+sty.Body.Render(Clip(row.Turns, max(width-2, 1))))
+	rows = append(rows, "", "  "+sty.body.Render(Clip(row.Turns, max(width-2, 1))))
 	if row.Refused != "" {
 		rows = append(rows, "")
-		for _, line := range wrapSpans([]styledSpan{{row.Refused, sty.Dim}}, max(width-2, 1)) {
+		for _, line := range wrapSpans([]styledSpan{{row.Refused, sty.dim}}, max(width-2, 1)) {
 			rows = append(rows, "  "+line)
 		}
 	}
@@ -368,23 +368,23 @@ func (c *ChatScreen) previewRows(width int) []string {
 }
 
 // header names the command and what it is over.
-func (c *ChatScreen) header() ScreenHeader {
-	head := ScreenHeader{Left: []RailSegment{screenTitle("shhh chats")}, Keys: screenHeaderKeys()}
+func (c *ChatScreen) header() screenHeader {
+	head := screenHeader{left: []RailSegment{screenTitle("shhh chats")}, keys: screenHeaderKeys()}
 	if c.Subject != "" {
-		head.Left = append(head.Left, screenField(c.Subject))
+		head.left = append(head.left, screenField(c.Subject))
 	}
 	if query := strings.TrimSpace(c.list.Query); query != "" {
-		head.Left = append(head.Left, screenField("filtered by "+strconv.Quote(query)))
+		head.left = append(head.left, screenField("filtered by "+strconv.Quote(query)))
 	}
 	return head
 }
 
 // footer is the keys the screen offers and the field that annotates them.
-func (c *ChatScreen) footer(width int) KeyFooter {
-	f := KeyFooter{Offers: c.offers(), Register: c.keyList(), Showing: c.keys,
-		Field: c.footField()}
+func (c *ChatScreen) footer(width int) keyFooter {
+	f := keyFooter{offers: c.offers(), register: c.keyList(), showing: c.keys,
+		field: c.footField()}
 	if c.confirm != nil {
-		f.Taken = c.confirm.View(width)
+		f.taken = c.confirm.View(width)
 	}
 	return f
 }
@@ -483,7 +483,7 @@ func (c *ChatScreen) match() []int {
 	query := strings.ToLower(strings.TrimSpace(c.list.Query))
 	out := make([]int, 0, len(c.Rows))
 	for i, row := range c.Rows {
-		if Matches(query, row.Name, row.Title) {
+		if matches(query, row.Name, row.Title) {
 			out = append(out, i)
 		}
 	}
@@ -512,7 +512,7 @@ func (c *ChatScreen) moved(pressed string) bool {
 	l := List[int]{Items: c.shown, Focus: c.at()}
 	moved := false
 	if c.list.Filtering {
-		moved = l.MoveTyping(pressed, keys.Screen.Move)
+		moved = l.moveTyping(pressed, keys.Screen.Move)
 	} else {
 		moved = l.Move(pressed, keys.Screen.Move)
 	}

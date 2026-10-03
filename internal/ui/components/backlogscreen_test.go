@@ -12,7 +12,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-func pressAll(b *BacklogScreen, text string) (done bool, result BacklogResult) {
+func pressAll(b *BacklogScreen, text string) (done bool, result backlogResult) {
 	for _, r := range text {
 		done, result = b.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
 	}
@@ -163,7 +163,7 @@ func TestBacklogScreen_DestructiveKeysAskFirst(t *testing.T) {
 	for _, tc := range []struct {
 		press  string
 		prompt string
-		act    BacklogAct
+		act    backlogAct
 	}{
 		{"b", "Block rail-todo-block?", BacklogBlock},
 		{"d", "Archive rail-todo-block?", BacklogArchive},
@@ -373,7 +373,7 @@ func TestBacklogScreen_BodyFoldsUnderTheList(t *testing.T) {
 // the way back is a step rather than an exit.
 func TestBacklogScreen_ReadingTheBody(t *testing.T) {
 	b := goldenBacklogScreen()
-	b.MaxLines = 12
+	b.maxLines = 12
 	b.Update(key("enter"))
 	if !b.reading {
 		t.Fatal("[enter] should hand the body the keys")
@@ -438,7 +438,7 @@ func TestBacklogScreen_QueryRowCorners(t *testing.T) {
 // an empty list, which is the list it is most needed on — and the empty
 // state offers it, so the offer and the handler cannot disagree.
 func TestBacklogScreen_StartingAnItemWorksOnAnEmptyList(t *testing.T) {
-	b := &BacklogScreen{MaxLines: 20}
+	b := &BacklogScreen{maxLines: 20}
 	view := ansi.Strip(b.View(110))
 	if !strings.Contains(view, "no items yet") {
 		t.Fatalf("an empty backlog should say so:\n%s", view)
@@ -456,7 +456,7 @@ func TestBacklogScreen_StartingAnItemWorksOnAnEmptyList(t *testing.T) {
 // own account of itself, and a blank one costs a line of the item.
 func TestBacklogScreen_AnItemThatFitsSpendsNoFoldRow(t *testing.T) {
 	b := goldenBacklogScreen()
-	b.MaxLines = 30
+	b.maxLines = 30
 	b.Update(key("enter"))
 	tall := strings.Split(ansi.Strip(b.View(110)), "\n")
 	for _, row := range tall {
@@ -464,7 +464,7 @@ func TestBacklogScreen_AnItemThatFitsSpendsNoFoldRow(t *testing.T) {
 			t.Fatalf("an item that fits drew a fold marker:\n%s", strings.Join(tall, "\n"))
 		}
 	}
-	b.MaxLines = 12
+	b.maxLines = 12
 	short := ansi.Strip(b.View(110))
 	if !strings.Contains(short, "more rows below") {
 		t.Errorf("an item that does not fit should say how much it folded:\n%s", short)
@@ -492,7 +492,7 @@ func TestBacklogScreen_TheTallyCountsInTheProjectsOwnNoun(t *testing.T) {
 		{Slug: "why-tabs", Title: "Why tabs", Priority: "high", Status: "open", State: BacklogReady},
 		{Slug: "who-reads-it", Title: "Who reads it", Priority: "low", Status: "open", State: BacklogReady},
 	}
-	b := &BacklogScreen{MaxLines: 24, Rows: rows, Noun: "question"}
+	b := &BacklogScreen{maxLines: 24, Rows: rows, Noun: "question"}
 	b.Priority, b.Fields = researchFields()
 	b.sync()
 	if got := b.count(); got != "2 questions" {
@@ -500,7 +500,7 @@ func TestBacklogScreen_TheTallyCountsInTheProjectsOwnNoun(t *testing.T) {
 	}
 	// A host that names none gets the word every backlog started with, so
 	// nothing has to state the ordinary answer.
-	plain := &BacklogScreen{MaxLines: 24, Rows: rows}
+	plain := &BacklogScreen{maxLines: 24, Rows: rows}
 	plain.sync()
 	if got := plain.count(); got != "2 items" {
 		t.Errorf("the tally with no noun says %q", got)
@@ -511,7 +511,7 @@ func TestBacklogScreen_TheTallyCountsInTheProjectsOwnNoun(t *testing.T) {
 // own words, and the footer names the field a filter stopped on — "reading"
 // on its own would not say what was narrowed.
 func TestBacklogScreen_DrawsASecondVocabulary(t *testing.T) {
-	b := &BacklogScreen{MaxLines: 24, Rows: []BacklogRow{
+	b := &BacklogScreen{maxLines: 24, Rows: []BacklogRow{
 		{Slug: "why-tabs", Title: "Why tabs", Priority: "high", Status: "open",
 			Values: map[string]string{"kind": "reading", "depth": "deep"}, State: BacklogReady},
 		{Slug: "who-reads-it", Title: "Who reads it", Priority: "low", Status: "open",
@@ -544,7 +544,7 @@ func TestBacklogScreen_DrawsASecondVocabulary(t *testing.T) {
 // the field-filter key cycles, in the words of whichever vocabulary the
 // screen was handed: nothing about them is written for one profile.
 func TestBacklogScreen_TheKeysSayWhatASecondVocabularysLettersMean(t *testing.T) {
-	b := &BacklogScreen{MaxLines: 60, Rows: []BacklogRow{
+	b := &BacklogScreen{maxLines: 60, Rows: []BacklogRow{
 		{Slug: "why-tabs", Title: "Why tabs", Priority: "high", Status: "open", State: BacklogReady},
 	}}
 	b.Priority, b.Fields = researchFields()

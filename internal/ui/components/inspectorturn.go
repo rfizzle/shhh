@@ -46,15 +46,15 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 		// not be, so no denominator and no meter.
 		meta = fmt.Sprintf("step %d", t.Step)
 	}
-	b := railBlock{heading: railHeading("THIS TURN", meta, sty.Dim, width)}
-	if m, ok := StepMeter(t.Step, t.Steps, railCells(MeterCellsRail, width), t.Running); ok {
+	b := railBlock{heading: railHeading("THIS TURN", meta, sty.dim, width)}
+	if m, ok := stepMeter(t.Step, t.Steps, railCells(meterCellsRail, width), t.Running); ok {
 		// The count sits beside the bar rather than in the heading, because a
 		// bar is never the only carrier of its value.
 		b.add(indentRow(m.View(), width))
 	}
 	// "3 files this turn" rather than "3 files": CHANGES counts files too, and
 	// the two are different questions, so both say their scope in words.
-	files := sty.Dim.Render(plural(t.Files, "file") + " this turn")
+	files := sty.dim.Render(plural(t.Files, "file") + " this turn")
 	if t.Files > 0 {
 		files += " " + DiffStat(t.Added, t.Removed)
 	}
@@ -66,8 +66,8 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 	// "0 files this turn" is the answer the block is asked for
 	// (docs/interface/departures.md#a-turn-that-changed-no-files-says-so).
 	if t.Tools > 0 {
-		stats = append(stats, sty.Dim.Render(plural(t.Tools, "tool")))
+		stats = append(stats, sty.dim.Render(plural(t.Tools, "tool")))
 	}
-	b.add(indentRow(strings.Join(stats, sty.Dim.Render(" · ")), width))
+	b.add(indentRow(strings.Join(stats, sty.dim.Render(" · ")), width))
 	return b, true
 }

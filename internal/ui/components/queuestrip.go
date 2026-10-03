@@ -71,7 +71,7 @@ func (q QueueStrip) View(width int) []string {
 		rows = append(rows, item.render(width, i == 0))
 	}
 	if len(hidden) > 0 {
-		rows = append(rows, queueIndent+sty.Dim.Render(overflowRow(hidden)))
+		rows = append(rows, queueIndent+sty.dim.Render(overflowRow(hidden)))
 	}
 	return rows
 }
@@ -118,10 +118,10 @@ const queueIndent = "  "
 // which would read as work in progress
 // (docs/interface/principles.md#weight-tracks-risk).
 func (q QueueStrip) header(width int) string {
-	dots := sty.Err.Render("●") + sty.Dim.Render(strings.Repeat("○", len(q.Items)-1))
-	head := dots + sty.Dim.Render("  "+strconv.Itoa(len(q.Items))+" pending")
+	dots := sty.err.Render("●") + sty.dim.Render(strings.Repeat("○", len(q.Items)-1))
+	head := dots + sty.dim.Render("  "+strconv.Itoa(len(q.Items))+" pending")
 	if q.Note != "" {
-		head += sty.Dim.Render("  ·  ") + sty.Key.Render(q.Note)
+		head += sty.dim.Render("  ·  ") + sty.key.Render(q.Note)
 	}
 	return queueIndent + Clip(head, max(width-len(queueIndent), 0))
 }
@@ -133,7 +133,7 @@ func (q QueueStrip) header(width int) string {
 func (item QueueItem) render(width int, current bool) string {
 	pointer := "  "
 	if current {
-		pointer = sty.SpinText.Render("▸") + " "
+		pointer = sty.spinText.Render("▸") + " "
 	}
 	number := strconv.Itoa(item.Number) + " "
 	right := item.right(current)
@@ -141,12 +141,12 @@ func (item QueueItem) render(width int, current bool) string {
 	// Indent, pointer, number, one gap column, then the right-hand block.
 	room := width - len(queueIndent) - 2 - len(number) - 2 - lipgloss.Width(right)
 	label := Clip(item.Label, max(room, 0))
-	style := sty.Dim
+	style := sty.dim
 	if current {
-		style = sty.Body
+		style = sty.body
 	}
 	pad := strings.Repeat(" ", max(room-lipgloss.Width(label), 0))
-	return queueIndent + pointer + sty.Dim.Render(number) + style.Render(label) + pad + "  " + right
+	return queueIndent + pointer + sty.dim.Render(number) + style.Render(label) + pad + "  " + right
 }
 
 // right is the item's detail and rating and, when [A] would answer it, the
@@ -154,7 +154,7 @@ func (item QueueItem) render(width int, current bool) string {
 func (item QueueItem) right(current bool) string {
 	var b strings.Builder
 	if item.Detail != "" {
-		b.WriteString(sty.Dimmer.Render(item.Detail))
+		b.WriteString(sty.dimmer.Render(item.Detail))
 	}
 	if chip := severityChip(item.Severity, current); chip != "" {
 		if b.Len() > 0 {
@@ -166,7 +166,7 @@ func (item QueueItem) right(current bool) string {
 		if b.Len() > 0 {
 			b.WriteString("  ")
 		}
-		b.WriteString(sty.Key.Render(queueMarkKey))
+		b.WriteString(sty.key.Render(queueMarkKey))
 	}
 	return b.String()
 }
@@ -193,7 +193,7 @@ func severityChip(s Severity, current bool) string {
 		return ""
 	}
 	if !current {
-		return sty.Dim.Render(word)
+		return sty.dim.Render(word)
 	}
 	return s.tone().Render(word)
 }

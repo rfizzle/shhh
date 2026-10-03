@@ -32,7 +32,7 @@ func TestTurnStatus_PhaseVocabularyIsClosed(t *testing.T) {
 		{TurnPhase(42), "thinking…"},
 	}
 	for _, c := range cases {
-		if got := c.phase.Word(); got != c.want {
+		if got := c.phase.word(); got != c.want {
 			t.Fatalf("phase %d word = %q, want %q", c.phase, got, c.want)
 		}
 	}

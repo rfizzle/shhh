@@ -77,7 +77,7 @@ func (c CommitCard) View(width int) string {
 		rows = append(rows, f.render(inner))
 	}
 	if c.Failure != "" {
-		rows = append(rows, "", sty.Err.Render(Clip("✗ "+c.Failure, inner)))
+		rows = append(rows, "", sty.err.Render(Clip("✗ "+c.Failure, inner)))
 	}
 	rows = append(rows, cardRule)
 	if c.Running {
@@ -95,8 +95,8 @@ func (c CommitCard) View(width int) string {
 	style := SeverityLow.tone()
 	return Card{
 		Title: commitTitle,
-		Chips: []string{SeverityLow.Word()},
-		Style: &style,
+		chips: []string{SeverityLow.Word()},
+		style: &style,
 	}.Render(rows, width)
 }
 
@@ -112,15 +112,15 @@ func (c CommitCard) View(width int) string {
 // neighbours to be marked out from
 // (docs/interface/principles.md#weight-tracks-risk).
 func (c CommitCard) messageRow(inner int) string {
-	return sty.Accent.Render("$") + " " + sty.Bright.Render(Clip(c.Message, max(inner-2, 1)))
+	return sty.accent.Render("$") + " " + sty.bright.Render(Clip(c.Message, max(inner-2, 1)))
 }
 
 // stagesRow is the first field, laid out in the same label column as the
 // others but with its counts in the diff's own two colours rather than in one
 // tone — the counts are the whole of what a reader checks this row for.
 func (c CommitCard) stagesRow(inner int) string {
-	label := sty.Status.Render(padRight("stages", fieldLabelWidth-1) + " ")
-	head := label + sty.Body.Render(plural(c.Files, "file")+" ") + DiffStat(c.Added, c.Removed)
+	label := sty.status.Render(padRight("stages", fieldLabelWidth-1) + " ")
+	head := label + sty.body.Render(plural(c.Files, "file")+" ") + DiffStat(c.Added, c.Removed)
 	if c.StagesNote == "" {
 		return head
 	}
@@ -128,7 +128,7 @@ func (c CommitCard) stagesRow(inner int) string {
 	if lipgloss.Width(head)+lipgloss.Width(note) > inner {
 		return head
 	}
-	return head + sty.Dimmer.Render(note)
+	return head + sty.dimmer.Render(note)
 }
 
 // commitRun is the card's decision keys, drawn from the register so the
@@ -217,7 +217,7 @@ func (c CommitMessage) View(width int) string {
 	inner := Card{}.Inner(width)
 	rows := make([]string, 0, len(c.Rows)+4)
 	for _, r := range c.Rows {
-		rows = append(rows, sty.Info.Render("▸ ")+r)
+		rows = append(rows, sty.info.Render("▸ ")+r)
 	}
 	rows = append(rows, cardRule,
 		offerSegment(keys.Bracket(keys.Select.Take), "commit with this"))
@@ -228,6 +228,6 @@ func (c CommitMessage) View(width int) string {
 	// the text that will be written, and the surface is the one place in
 	// this flow where nothing is being decided — the decision was taken on
 	// the card and comes back to it.
-	style := sty.Add
-	return Card{Title: c.budgetTitle(), Style: &style}.Render(rows, width)
+	style := sty.add
+	return Card{Title: c.budgetTitle(), style: &style}.Render(rows, width)
 }

@@ -62,14 +62,14 @@ type SnippetRow struct {
 	Saved string
 }
 
-// SnippetAct is what a key asked the host to do to the snippet under the
+// snippetAct is what a key asked the host to do to the snippet under the
 // pointer. Running is not one of them: it takes the terminal, so it closes
 // the screen instead (see SnippetResult).
-type SnippetAct int
+type snippetAct int
 
 const (
 	// SnippetCopy is `[c]`: the command to the clipboard.
-	SnippetCopy SnippetAct = iota
+	SnippetCopy snippetAct = iota
 	// SnippetRename is `[r]`, once the rename row has been committed.
 	SnippetRename
 	// SnippetDelete is `[x]`, and only after the inline confirm has been
@@ -81,7 +81,7 @@ const (
 // SnippetCommand is one act the host carries out while the screen stays up.
 // The host does it, sets Notice, and hands back fresh Rows.
 type SnippetCommand struct {
-	Act SnippetAct
+	Act snippetAct
 	ID  string
 	// Name is what the rename row was left holding, and is read for
 	// SnippetRename alone.
@@ -92,12 +92,12 @@ type SnippetCommand struct {
 // nothing. Run and Canceled are never both true.
 type SnippetResult struct {
 	Run bool
-	// ID and Command are the snippet `[enter]` chose. The command travels
+	// iD and Command are the snippet `[enter]` chose. The command travels
 	// with the id so a host that has already closed its store can still run
 	// it.
-	ID       string
+	iD       string
 	Command  string
-	Canceled bool
+	canceled bool
 	// Do is the housekeeping a key asked for with the screen still up — a
 	// copy, a rename, a delete already past its confirm. nil is a key that
 	// asked for none.
@@ -114,9 +114,9 @@ type SnippetScreen struct {
 	// Subject is what the header says the screen is over — `12 snippets`. The
 	// host counts it, because counting is a reading of the store.
 	Subject string
-	// MaxLines bounds the screen height; everything pinned comes off the
+	// maxLines bounds the screen height; everything pinned comes off the
 	// panes' budget before the window is drawn. 0 is unbounded.
-	MaxLines int
+	maxLines int
 	// Notice is the line a key left behind — what was copied, what was
 	// deleted. The host clears it on the next keystroke.
 	Notice string
@@ -147,11 +147,11 @@ func (s *SnippetScreen) Update(msg tea.KeyPressMsg) (done bool, result SnippetRe
 		// The one key that leaves the screen with something to do. A list the
 		// filter emptied has nothing for it to take (invariant 5).
 		if row := s.current(); row != nil {
-			return true, SnippetResult{Run: true, ID: row.ID, Command: row.Command}
+			return true, SnippetResult{Run: true, iD: row.ID, Command: row.Command}
 		}
 		return false, SnippetResult{}
 	case keys.Is(pressed, keys.Select.Cancel):
-		return true, SnippetResult{Canceled: true}
+		return true, SnippetResult{canceled: true}
 	}
 	// With the query line open the query line is the surface, so c, r, x and q
 	// are letters rather than keys — the reading every picker in the product
@@ -173,7 +173,7 @@ func (s *SnippetScreen) Update(msg tea.KeyPressMsg) (done bool, result SnippetRe
 	case keys.Is(pressed, keys.Screen.Filter):
 		s.list.Filtering = true
 	case pressed == keys.Shown(keys.Screen.Quit):
-		return true, SnippetResult{Canceled: true}
+		return true, SnippetResult{canceled: true}
 	case keys.Is(pressed, keys.Screen.List):
 		s.keys = !s.keys
 	case keys.Is(pressed, keys.Screen.Copy):
@@ -190,7 +190,7 @@ func (s *SnippetScreen) Update(msg tea.KeyPressMsg) (done bool, result SnippetRe
 		// disk is untouched, which the question says because a reader deleting a
 		// saved command has every reason to wonder.
 		if row := s.current(); row != nil {
-			s.confirm = &Confirm{Prompt: sty.Body.Render(
+			s.confirm = &Confirm{Prompt: sty.body.Render(
 				"Delete the snippet " + quoted(row.Name) + "? Files on disk are untouched.")}
 		}
 	}
@@ -232,7 +232,7 @@ func (s *SnippetScreen) updateRename(msg tea.KeyPressMsg) (bool, SnippetResult) 
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from
 // the width it is rendered at, so only the height is kept.
-func (s *SnippetScreen) SetSize(_, height int) { s.MaxLines = height }
+func (s *SnippetScreen) SetSize(_, height int) { s.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves and the rename row, when one is open, under them.
@@ -247,13 +247,13 @@ func (s *SnippetScreen) View(width int) string {
 		list:    s.listRows,
 		preview: s.previewRows,
 	}
-	return ScreenChrome{
-		Header:   s.header(),
-		Foot:     s.footer(width).Rows(width),
-		Notice:   s.Notice,
-		MaxLines: s.MaxLines,
-		Reserve:  len(s.renameRows(width)),
-	}.View(width, func(budget int) []string {
+	return screenChrome{
+		header:   s.header(),
+		foot:     s.footer(width).rows(width),
+		notice:   s.Notice,
+		maxLines: s.maxLines,
+		reserve:  len(s.renameRows(width)),
+	}.view(width, func(budget int) []string {
 		return append(panes.rows(width, budget), s.renameRows(width)...)
 	})
 }
@@ -293,8 +293,8 @@ func (s *SnippetScreen) hiddenRows(width int) []string {
 	if hidden <= 0 {
 		return nil
 	}
-	row := sty.Dim.Render(plural(hidden, "snippet")+" hidden by the filter · ") +
-		sty.Key.Render(keys.Bracket(keys.Screen.ClearQ)) + sty.Dim.Render(" clear it")
+	row := sty.dim.Render(plural(hidden, "snippet")+" hidden by the filter · ") +
+		sty.key.Render(keys.Bracket(keys.Screen.ClearQ)) + sty.dim.Render(" clear it")
 	return []string{screenRule(width), Clip(row, width)}
 }
 
@@ -309,11 +309,11 @@ func (s *SnippetScreen) hiddenRows(width int) []string {
 func (s *SnippetScreen) previewRows(width int) []string {
 	row := s.current()
 	if row == nil {
-		return []string{sty.Dim.Render(Clip("no snippet selected", width))}
+		return []string{sty.dim.Render(Clip("no snippet selected", width))}
 	}
-	rows := []string{paneTitle(brightStyle().Render(row.Name), sty.Dim.Render(row.Saved), width)}
+	rows := []string{paneTitle(brightStyle().Render(row.Name), sty.dim.Render(row.Saved), width)}
 	if row.Description != "" {
-		for _, line := range wrapSpans([]styledSpan{{row.Description, sty.Dim}}, max(width-2, 1)) {
+		for _, line := range wrapSpans([]styledSpan{{row.Description, sty.dim}}, max(width-2, 1)) {
 			rows = append(rows, "  "+line)
 		}
 	}
@@ -324,29 +324,29 @@ func (s *SnippetScreen) previewRows(width int) []string {
 }
 
 // header names the command and what it is over.
-func (s *SnippetScreen) header() ScreenHeader {
-	head := ScreenHeader{Left: []RailSegment{screenTitle("shhh snippets")}, Keys: screenHeaderKeys()}
+func (s *SnippetScreen) header() screenHeader {
+	head := screenHeader{left: []RailSegment{screenTitle("shhh snippets")}, keys: screenHeaderKeys()}
 	if s.Subject != "" {
-		head.Left = append(head.Left, screenField(s.Subject))
+		head.left = append(head.left, screenField(s.Subject))
 	}
 	// The query is stated up here as well as on the row it is typed into,
 	// because the header is what says what the count under it is a count of:
 	// `4 of 12` on the query row is a reading of a list this row has already
 	// said is filtered.
 	if query := strings.TrimSpace(s.list.Query); query != "" {
-		head.Left = append(head.Left, screenField("filtered by "+strconv.Quote(query)))
+		head.left = append(head.left, screenField("filtered by "+strconv.Quote(query)))
 	}
 	return head
 }
 
 // footer is the keys the screen offers and the field that annotates them.
 // Which keys those are depends on the field, so it is read once here.
-func (s *SnippetScreen) footer(width int) KeyFooter {
+func (s *SnippetScreen) footer(width int) keyFooter {
 	field := s.footField()
-	f := KeyFooter{Offers: s.offers(width, field), Register: s.keyList(),
-		Showing: s.keys, Field: field}
+	f := keyFooter{offers: s.offers(width, field), register: s.keyList(),
+		showing: s.keys, field: field}
 	if s.confirm != nil {
-		f.Taken = s.confirm.View(width)
+		f.taken = s.confirm.View(width)
 	}
 	return f
 }
@@ -458,7 +458,7 @@ func (s *SnippetScreen) match() []int {
 	query := strings.ToLower(strings.TrimSpace(s.list.Query))
 	out := make([]int, 0, len(s.Rows))
 	for i, row := range s.Rows {
-		if Matches(query, row.Name, row.Description, row.Command) {
+		if matches(query, row.Name, row.Description, row.Command) {
 			out = append(out, i)
 		}
 	}
@@ -487,7 +487,7 @@ func (s *SnippetScreen) moved(pressed string) bool {
 	l := List[int]{Items: s.shown, Focus: s.at()}
 	moved := false
 	if s.list.Filtering {
-		moved = l.MoveTyping(pressed, keys.Screen.Move)
+		moved = l.moveTyping(pressed, keys.Screen.Move)
 	} else {
 		moved = l.Move(pressed, keys.Screen.Move)
 	}

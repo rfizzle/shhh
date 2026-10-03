@@ -105,7 +105,7 @@ func (t TabStrip) row(word bool, tail string) string {
 	}
 	row := strings.Join(parts, tabGap)
 	if tail != "" {
-		row += sty.Dim.Render(tabGap + tail)
+		row += sty.dim.Render(tabGap + tail)
 	}
 	return row
 }
@@ -129,11 +129,11 @@ func (t TabStrip) render(i int, tab Tab, word bool) string {
 		// The one place a background is used, and it says the same thing the
 		// mark already said: a reader on a monochrome terminal reads ▸ and
 		// loses nothing (invariant 1).
-		return sty.FocusRow.Render(text)
+		return sty.focusRow.Render(text)
 	case tab.Answered:
-		return sty.Add.Render(text)
+		return sty.add.Render(text)
 	}
-	return sty.Dim.Render(text)
+	return sty.dim.Render(text)
 }
 
 // TabTally is the strip's tail in words: where the reader is standing among

@@ -69,9 +69,9 @@ func (b *BacklogScreen) queryRows(width int) []string {
 	if !b.filtering {
 		return nil
 	}
-	typed := sty.Info.Render(queryPrompt) + sty.QueryText.Render(b.query+queryCursor)
+	typed := sty.info.Render(queryPrompt) + sty.queryText.Render(b.query+queryCursor)
 	if b.query == "" {
-		typed += sty.Dim.Render(" type to filter by slug or title")
+		typed += sty.dim.Render(" type to filter by slug or title")
 	}
 	return []string{Clip(typed, width)}
 }
@@ -84,8 +84,8 @@ func (b *BacklogScreen) hiddenRows(width int) []string {
 	if hidden <= 0 {
 		return nil
 	}
-	row := sty.Dim.Render(fmt.Sprintf("%d hidden · ", hidden)) +
-		sty.Key.Render(keys.Bracket(keys.Backlog.ClearQ)) + sty.Dim.Render(" clear it")
+	row := sty.dim.Render(fmt.Sprintf("%d hidden · ", hidden)) +
+		sty.key.Render(keys.Bracket(keys.Backlog.ClearQ)) + sty.dim.Render(" clear it")
 	return []string{screenRule(width), Clip(row, width)}
 }
 
@@ -96,9 +96,9 @@ func (b *BacklogScreen) hiddenRows(width int) []string {
 func (b *BacklogScreen) windowRows(width, budget int) []string {
 	if len(b.shown) == 0 {
 		if len(b.rows()) == 0 {
-			return []string{sty.Dim.Render(Clip(b.emptyWords(), width))}
+			return []string{sty.dim.Render(Clip(b.emptyWords(), width))}
 		}
-		return []string{sty.Dim.Render(Clip("nothing matches the filter", width))}
+		return []string{sty.dim.Render(Clip("nothing matches the filter", width))}
 	}
 	lo, hi := b.list.Range(budget)
 	rows := make([]string, 0, hi-lo)
@@ -106,10 +106,10 @@ func (b *BacklogScreen) windowRows(width, budget int) []string {
 		rows = append(rows, b.itemRow(b.rows()[b.shown[i]], i == b.list.Focus, width))
 	}
 	if above := lo; above > 0 {
-		rows = append([]string{sty.Dim.Render(Clip(fmt.Sprintf("↑ %d above", above), width))}, rows...)
+		rows = append([]string{sty.dim.Render(Clip(fmt.Sprintf("↑ %d above", above), width))}, rows...)
 	}
 	if below := len(b.shown) - hi; below > 0 {
-		rows = append(rows, sty.Dim.Render(Clip(fmt.Sprintf("↓ %d below", below), width)))
+		rows = append(rows, sty.dim.Render(Clip(fmt.Sprintf("↓ %d below", below), width)))
 	}
 	return rows
 }
@@ -144,11 +144,11 @@ func (b *BacklogScreen) itemRow(row BacklogRow, focused bool, width int) string 
 	glyph, name := b.rowTone(row)
 	pointer := PointerColumn()
 	if focused {
-		pointer, name = sty.FocusPointer.Render("❯ "), brightStyle()
+		pointer, name = sty.focusPointer.Render("❯ "), brightStyle()
 	}
 	lead := glyph + " " + name.Render(row.Slug)
 	if grade := b.grade(row); grade != "" {
-		lead += "  " + sty.Dim.Render(grade)
+		lead += "  " + sty.dim.Render(grade)
 	}
 	inner := max(width-GridPointerWidth, 1)
 	// The row the keyboard is on takes the highlight as well as the pointer:
@@ -171,9 +171,9 @@ func (b *BacklogScreen) itemRow(row BacklogRow, focused bool, width int) string 
 	state := Clip("  "+b.stateWords(row), room)
 	rest := room - lipgloss.Width(state)
 	if row.Title == "" || rest < minBacklogTitle+2 {
-		return lit(lead + sty.Dim.Render(state))
+		return lit(lead + sty.dim.Render(state))
 	}
-	return lit(lead + sty.Dim.Render(state+"  "+Clip(row.Title, rest-2)))
+	return lit(lead + sty.dim.Render(state+"  "+Clip(row.Title, rest-2)))
 }
 
 // rowTone is the row's glyph and the weight its slug carries. The four
@@ -183,9 +183,9 @@ func (b *BacklogScreen) itemRow(row BacklogRow, focused bool, width int) string 
 func (b *BacklogScreen) rowTone(row BacklogRow) (string, lipgloss.Style) {
 	switch row.State {
 	case BacklogUnreadable:
-		return sty.Warn.Render("⚠"), sty.Warn
+		return sty.warn.Render("⚠"), sty.warn
 	case BacklogArchived:
-		return sty.Add.Render("✓"), sty.Dim
+		return sty.add.Render("✓"), sty.dim
 	case BacklogRunning:
 		return todoRowTone(TodoRunning)
 	case BacklogBlocked:

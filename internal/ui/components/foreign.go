@@ -61,7 +61,7 @@ import (
 // It reads FullPalette rather than the live Palette and is not rebuilt on a
 // swap, because mono declines foreign colour outright instead of recolouring
 // it: with mono on, foreignRun never reaches this table.
-var ansiPalette = ansiTable(FullPalette)
+var ansiPalette = ansiTable(fullPalette)
 
 func ansiTable(p ColorTokens) [16]Token {
 	return [16]Token{
@@ -360,7 +360,7 @@ func nearestHue(h float64) Token {
 // Like ansiPalette they read FullPalette and are not rebuilt on a swap, for
 // the same reason: mono declines foreign colour outright rather than
 // recolouring it, so with mono on nothing reaches these tables.
-var foreignHues, foreignGreys = foreignTargets(FullPalette)
+var foreignHues, foreignGreys = foreignTargets(fullPalette)
 
 type foreignTarget struct {
 	tok Token
@@ -369,7 +369,7 @@ type foreignTarget struct {
 
 func foreignTargets(p ColorTokens) (hues, greys []foreignTarget) {
 	at := func(t Token, hue bool) foreignTarget {
-		r, g, b := rgb8(t.TrueColor)
+		r, g, b := rgb8(t.trueColor)
 		hi, lo := max(r, max(g, b)), min(r, min(g, b))
 		if hue {
 			return foreignTarget{t, hueOf(r, g, b, hi, lo)}

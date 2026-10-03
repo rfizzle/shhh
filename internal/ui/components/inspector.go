@@ -169,17 +169,17 @@ func (r InspectorRail) Empty() bool {
 		len(r.Agents) == 0 && r.Tools == nil && r.Context == nil && r.Spend == nil
 }
 
-// RailTargetKind says what a row on the rail points at. Most of the rail
+// railTargetKind says what a row on the rail points at. Most of the rail
 // points at nothing, and that is the default on purpose: a meter and a
 // sentence are readings rather than doors. A block's heading and its fold
 // marker are the exception where the block has a surface behind it: they
 // open the surface that holds the whole of what the block bounds, and the
 // same cell closes it again.
-type RailTargetKind int
+type railTargetKind int
 
 const (
-	// RailTargetNone: the row is something to read.
-	RailTargetNone RailTargetKind = iota
+	// railTargetNone: the row is something to read.
+	railTargetNone railTargetKind = iota
 	// RailTargetFile: the row names a path the session has changed.
 	RailTargetFile
 	// RailTargetSession: the row names a session in the map.
@@ -194,16 +194,16 @@ const (
 // which is empty for the session the rail belongs to, and a block's Rail*
 // name for a block.
 type RailTarget struct {
-	Kind RailTargetKind
+	Kind railTargetKind
 	Name string
 }
 
-// RailRow is one rendered row of the rail beside what it points at. The rail
+// railTargetRow is one rendered row of the rail beside what it points at. The rail
 // assembles its rows from the session's own values, so a row already knows
 // what it is; handing that out with the text is what lets a host resolve a
 // cell to a target instead of parsing back the styled string it drew
 // (docs/interface/surfaces.md#the-inspector-rail).
-type RailRow struct {
+type railTargetRow struct {
 	Text   string
 	Target RailTarget
 }
@@ -300,26 +300,26 @@ func (b railBlock) height() int {
 // of it, that is what they open. A host's own count of rows it left out
 // (TODO's `… N more`) is a fold marker in the host's words and opens the same
 // door. A block with no surface behind it keeps all of them inert.
-func (b railBlock) render(width int) []RailRow {
-	out := make([]RailRow, 0, b.height())
-	out = append(out, RailRow{Text: b.heading, Target: b.door})
+func (b railBlock) render(width int) []railTargetRow {
+	out := make([]railTargetRow, 0, b.height())
+	out = append(out, railTargetRow{Text: b.heading, Target: b.door})
 	for _, r := range b.rows {
 		target := r.target
 		if r.more > 0 {
 			target = b.door
 		}
-		out = append(out, RailRow{Text: r.text, Target: target})
+		out = append(out, railTargetRow{Text: r.text, Target: target})
 	}
 	switch {
 	case len(b.hidden) == 0:
 	case b.fold != nil:
-		out = append(out, RailRow{Text: b.fold(b.hidden), Target: b.door})
+		out = append(out, railTargetRow{Text: b.fold(b.hidden), Target: b.door})
 	default:
 		n := 0
 		for _, h := range b.hidden {
 			n += max(h.more, 1)
 		}
-		out = append(out, RailRow{Text: indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", n)), width), Target: b.door})
+		out = append(out, railTargetRow{Text: indentRow(sty.hint.Render(fmt.Sprintf("… %d more", n)), width), Target: b.door})
 	}
 	return out
 }
@@ -350,7 +350,7 @@ func (r InspectorRail) Lines(width, height int) []string {
 // answers a pointer asks for these and indexes the row the pointer is on: the
 // rail is laid out from the top of its rectangle, so the row is the offset
 // and nothing has to be measured or re-read.
-func (r InspectorRail) Rows(width, height int) []RailRow {
+func (r InspectorRail) Rows(width, height int) []railTargetRow {
 	blocks := r.blocks(width)
 	if len(blocks) == 0 {
 		return nil
@@ -358,10 +358,10 @@ func (r InspectorRail) Rows(width, height int) []RailRow {
 	if height > 0 {
 		blocks = fitBlocks(blocks, height)
 	}
-	var out []RailRow
+	var out []railTargetRow
 	for i, b := range blocks {
 		if i > 0 {
-			out = append(out, RailRow{})
+			out = append(out, railTargetRow{})
 		}
 		out = append(out, b.render(width)...)
 	}
@@ -503,7 +503,7 @@ func railHeading(label, meta string, metaStyle lipgloss.Style, width int) string
 	if meta != "" && !strings.Contains(meta, "\x1b") {
 		meta = metaStyle.Render(meta)
 	}
-	return railRow(sty.Headline.Render(label), meta, width, inspectorIndent)
+	return railRow(sty.headline.Render(label), meta, width, inspectorIndent)
 }
 
 // railRow lays one row out: indent, left field, right field against the

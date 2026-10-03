@@ -92,7 +92,7 @@ type SourcesResult struct {
 	Open     bool
 	ID       string
 	Evidence string
-	Canceled bool
+	canceled bool
 }
 
 // SourcesScreen is `/sources`: a takeover in the chat, full width, owning the
@@ -106,9 +106,9 @@ type SourcesScreen struct {
 	// Subject is what the header says the screen is over — `12 pages · 3
 	// hosts`. The host counts it.
 	Subject string
-	// MaxLines bounds the screen height; everything pinned comes off the
+	// maxLines bounds the screen height; everything pinned comes off the
 	// panes' budget. 0 is unbounded.
-	MaxLines int
+	maxLines int
 	// Notice is the line a key left behind. The host clears it on the next
 	// keystroke.
 	Notice string
@@ -137,14 +137,14 @@ func (s *SourcesScreen) Update(msg tea.KeyPressMsg) (done bool, result SourcesRe
 	case keys.Is(pressed, keys.Sources.List):
 		s.keys = !s.keys
 	case keys.Is(pressed, keys.Sources.Back):
-		return true, SourcesResult{Canceled: true}
+		return true, SourcesResult{canceled: true}
 	}
 	return false, SourcesResult{}
 }
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from
 // the width it is rendered at, so only the height is kept.
-func (s *SourcesScreen) SetSize(_, height int) { s.MaxLines = height }
+func (s *SourcesScreen) SetSize(_, height int) { s.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves.
@@ -153,12 +153,12 @@ func (s *SourcesScreen) View(width int) string {
 		return ""
 	}
 	s.sync()
-	return ScreenChrome{
-		Header:   s.header(),
-		Foot:     s.footer(width).Rows(width),
-		Notice:   s.Notice,
-		MaxLines: s.MaxLines,
-	}.View(width, func(budget int) []string { return s.panes().rows(width, budget) })
+	return screenChrome{
+		header:   s.header(),
+		foot:     s.footer(width).rows(width),
+		notice:   s.Notice,
+		maxLines: s.maxLines,
+	}.view(width, func(budget int) []string { return s.panes().rows(width, budget) })
 }
 
 // panes is the body, split the way every screen with a list and a preview
@@ -175,7 +175,7 @@ func (s *SourcesScreen) panes() screenPanes {
 // listRows is the left pane: the ledger grouped under its hosts.
 func (s *SourcesScreen) listRows(width, budget int) []string {
 	if len(s.Rows) == 0 {
-		return []string{sty.Dim.Render(Clip("nothing has been read in this session", width))}
+		return []string{sty.dim.Render(Clip("nothing has been read in this session", width))}
 	}
 	body, _ := s.list.visibleRows(cardWidthFor(width), budget, false)
 	return body
@@ -190,22 +190,22 @@ func (s *SourcesScreen) listRows(width, budget int) []string {
 func (s *SourcesScreen) previewRows(width int) []string {
 	row := s.current()
 	if row == nil {
-		return []string{sty.Dim.Render(Clip("no source selected", width))}
+		return []string{sty.dim.Render(Clip("no source selected", width))}
 	}
 	rows := []string{paneTitle(brightStyle().Render(oneLine(s.subjectOf(*row))),
-		sty.Dim.Render(row.Agent), width)}
+		sty.dim.Render(row.Agent), width)}
 	if row.Title != "" {
-		rows = append(rows, "  "+sty.Dim.Render(Clip(oneLine(row.Title), max(width-2, 1))))
+		rows = append(rows, "  "+sty.dim.Render(Clip(oneLine(row.Title), max(width-2, 1))))
 	}
 	rows = append(rows, "")
 	for _, f := range s.fields(*row) {
-		rows = append(rows, "  "+sty.Status.Render(f.label+" ")+
-			sty.Body.Render(Clip(f.value, max(width-lipgloss.Width(f.label)-3, 1))))
+		rows = append(rows, "  "+sty.status.Render(f.label+" ")+
+			sty.body.Render(Clip(f.value, max(width-lipgloss.Width(f.label)-3, 1))))
 	}
 	if len(row.Head) > 0 {
-		rows = append(rows, "", sty.Dimmer.Render(Clip("  the page as it was kept", width)))
+		rows = append(rows, "", sty.dimmer.Render(Clip("  the page as it was kept", width)))
 		for _, line := range row.Head {
-			rows = append(rows, "  "+sty.Dim.Render(Clip(oneLine(line), max(width-2, 1))))
+			rows = append(rows, "  "+sty.dim.Render(Clip(oneLine(line), max(width-2, 1))))
 		}
 	}
 	return rows
@@ -260,10 +260,10 @@ func (s *SourcesScreen) outcomeOf(row SourcesRow) string {
 }
 
 // header names the surface and what it is over.
-func (s *SourcesScreen) header() ScreenHeader {
-	h := ScreenHeader{Left: []RailSegment{screenTitle("/sources")}, Keys: s.headerKeys()}
+func (s *SourcesScreen) header() screenHeader {
+	h := screenHeader{left: []RailSegment{screenTitle("/sources")}, keys: s.headerKeys()}
 	if s.Subject != "" {
-		h.Left = append(h.Left, screenField(s.Subject))
+		h.left = append(h.left, screenField(s.Subject))
 	}
 	return h
 }
@@ -280,10 +280,10 @@ func (s *SourcesScreen) headerKeys() string {
 }
 
 // footer is the keys the screen offers and the field that annotates them.
-func (s *SourcesScreen) footer(width int) KeyFooter {
+func (s *SourcesScreen) footer(width int) keyFooter {
 	field := s.footField()
-	return KeyFooter{Offers: s.offers(width, field), Register: s.keyList(),
-		Showing: s.keys, Field: field}
+	return keyFooter{offers: s.offers(width, field), register: s.keyList(),
+		showing: s.keys, field: field}
 }
 
 // offers is the key row. A row whose page was never kept has nothing for
@@ -347,7 +347,7 @@ func (s *SourcesScreen) sync() {
 		opts = append(opts, SelectOption{
 			Label:     sourcesGlyph(row) + " " + oneLine(row.Label),
 			Value:     s.outcomeOf(row),
-			ValueTone: sourcesTone(row),
+			valueTone: sourcesTone(row),
 			Desc:      sourcesAgent(row.Agent),
 			Meta:      row.Bytes,
 		})

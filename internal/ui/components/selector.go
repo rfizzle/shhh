@@ -30,11 +30,11 @@ type SelectOption struct {
 	// has nothing to be toned about. A list that sets none renders exactly as
 	// it did before this field existed.
 	Value string
-	// ValueTone reads the value the way a card field is read: safe,
+	// valueTone reads the value the way a card field is read: safe,
 	// open, at risk, or an unremarkable statement of fact. The glyph beside
 	// it says the same thing, so the colour is never carrying it alone
 	// (invariant 1).
-	ValueTone FieldTone
+	valueTone FieldTone
 	// Number is what the row is called where that is not its position in the
 	// list — the rewind picker's turn number, which counts down as the list
 	// is read. It takes the numbering column, so the figure stays chrome and
@@ -62,7 +62,7 @@ type SelectOption struct {
 	// Desc is, because Desc is the row's own words and Meta is a label on
 	// them.
 	Meta     string
-	MetaTone FieldTone
+	metaTone FieldTone
 	// Recommended is the list's own answer to "which of these would you
 	// take". It rides the meta field in a word, ahead of whatever the meta
 	// already said, so a monochrome terminal loses nothing — a recommendation
@@ -139,8 +139,8 @@ func (opt SelectOption) detailPainted(width int) string {
 	return Clip(b.String(), width)
 }
 
-// SelectResult is the single-select Update result.
-type SelectResult struct {
+// selectResult is the single-select Update result.
+type selectResult struct {
 	Index    int
 	Canceled bool
 	// Alt is set when AltKey took the option rather than enter. It is the
@@ -177,7 +177,7 @@ type Select struct {
 	Chips []string
 	// Tone is the frame's colour: chrome on a card that is showing a list,
 	// Info on one that is asking a question with it (CardTone).
-	Tone CardTone
+	Tone cardTone
 	// Rail is the label the host puts on the rule above the card, for a
 	// picker that is a surface in its own right rather than a menu a command
 	// dropped — the rewind's timeline. The card carries the word and does not
@@ -235,13 +235,13 @@ type Select struct {
 	// Unnumbered drops the "1." prefixes and the number-jump keys, for a
 	// surface where a digit is text rather than a jump.
 	Unnumbered bool
-	// Idle draws the card with no row lit, for a card on a surface where
+	// idle draws the card with no row lit, for a card on a surface where
 	// something else holds the keyboard until a key hands it over — the
 	// profile drafter's sections. A pointer on a card that is not answering
 	// keys would claim the keyboard twice
 	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 	// The host supplies the key row that says how the card is reached.
-	Idle bool
+	idle bool
 	// FocusDesc keeps each option's Desc under the focused option instead of
 	// on every row. It is the plan card's rule and no other surface's:
 	// there the descriptions are consequences of taking the option, and four
@@ -332,8 +332,8 @@ type Select struct {
 // offer to scroll to them.
 func (s *Select) pointer() *List[SelectOption] {
 	s.list.Items, s.list.Focus = s.Options, s.Focus
-	s.list.Skip = func(o SelectOption) bool { return o.passive() }
-	s.list.Rows = func(i int) int {
+	s.list.skipFn = func(o SelectOption) bool { return o.passive() }
+	s.list.rows = func(i int) int {
 		if s.FocusDesc && i == s.Focus && !s.Options[i].passive() && s.Options[i].Desc != "" {
 			return 2
 		}
@@ -353,7 +353,7 @@ func (s *Select) moved(pressed string) bool {
 	moved := false
 	switch {
 	case s.Filtering:
-		moved = l.MoveTyping(pressed, keys.Select.Move)
+		moved = l.moveTyping(pressed, keys.Select.Move)
 	case s.Unnumbered:
 		moved = l.Move(pressed, keys.Select.Move)
 	default:
@@ -363,24 +363,24 @@ func (s *Select) moved(pressed string) bool {
 	return moved
 }
 
-func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result SelectResult) {
+func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result selectResult) {
 	s.normalizeFocus()
 	pressed := msg.String()
 	switch {
 	case s.moved(pressed):
-		return false, SelectResult{}
+		return false, selectResult{}
 	case keys.Is(pressed, keys.Select.Take):
 		// A card that matched nothing has nothing for enter to take, and a
 		// key that cannot act does not act (invariant 5).
 		if s.selectable() == 0 {
-			return false, SelectResult{}
+			return false, selectResult{}
 		}
-		return true, SelectResult{Index: s.Focus}
+		return true, selectResult{Index: s.Focus}
 	case keys.Is(pressed, keys.Select.Cancel):
 		// esc leaves the picker rather than closing the query line: the card asks
 		// that leaving change nothing, and a filter you have to escape twice
 		// is a mode.
-		return true, SelectResult{Index: -1, Canceled: true}
+		return true, selectResult{Index: -1, Canceled: true}
 	}
 	// With the query line open, the query line is the surface: everything
 	// that is not movement or dispatch is text. A digit typed into a model
@@ -394,16 +394,16 @@ func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result SelectResult) {
 		// with the row already open.
 		if keys.Is(pressed, keys.Select.ClearQ) && s.Query == "" {
 			s.Filtering = false
-			return false, SelectResult{}
+			return false, selectResult{}
 		}
 		s.editQuery(msg)
-		return false, SelectResult{}
+		return false, selectResult{}
 	}
 	// The second reading of the focused option, checked before the digits so
 	// a card whose alt key is a digit is still coherent. Like enter it needs
 	// something to take.
 	if s.AltKey != "" && pressed == s.AltKey && s.selectable() > 0 {
-		return true, SelectResult{Index: s.Focus, Alt: true}
+		return true, selectResult{Index: s.Focus, Alt: true}
 	}
 	switch {
 	case keys.Is(pressed, keys.Select.Toggle):
@@ -418,10 +418,10 @@ func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result SelectResult) {
 		}
 		if n := digitIndex(pressed, s.selectable()); n >= 0 {
 			s.Focus = s.selectableIndex(n)
-			return true, SelectResult{Index: s.Focus}
+			return true, selectResult{Index: s.Focus}
 		}
 	}
-	return false, SelectResult{}
+	return false, selectResult{}
 }
 
 // cycle steps the focused row's own answer to the next of the answers it
@@ -517,7 +517,7 @@ func (s *Select) View(width int) string {
 	rows = append(rows, s.proseRows(width, prose)...)
 	rows = append(rows, tail...)
 	rows = boundRows(rows, s.MaxLines)
-	return Card{Title: s.Title, Chips: s.chips(shown), Tone: s.Tone}.Render(rows, width)
+	return Card{Title: s.Title, chips: s.chips(shown), tone: s.Tone}.Render(rows, width)
 }
 
 // leadRows are the sentence a card's options answer and the blank row that
@@ -535,7 +535,7 @@ func leadRows(lead []string, width int) []string {
 	inner := Card{}.Inner(width)
 	rows := make([]string, 0, len(lead)+1)
 	for _, l := range lead {
-		rows = append(rows, sty.Body.Render(Clip(l, inner)))
+		rows = append(rows, sty.body.Render(Clip(l, inner)))
 	}
 	return append(rows, "")
 }
@@ -578,7 +578,7 @@ func (s *Select) proseRows(width, budget int) []string {
 	for _, l := range s.Body[:keep] {
 		rows = append(rows, Clip(l, inner))
 	}
-	return append(rows, ListOverflowRow("↓", len(s.Body)-keep, "", inner))
+	return append(rows, listOverflowRow("↓", len(s.Body)-keep, "", inner))
 }
 
 // cancelOffer is esc as this card offers it: the host's words where it has
@@ -720,17 +720,17 @@ func (s *Select) queryRows(width int) []string {
 		return nil
 	}
 	inner := Card{}.Inner(width)
-	typed := sty.Info.Render(queryPrompt) + sty.QueryText.Render(s.Query+s.cursorCell())
+	typed := sty.info.Render(queryPrompt) + sty.queryText.Render(s.Query+s.cursorCell())
 	if s.Query == "" && s.QueryHint != "" {
 		// A row that has just been opened by a key says what the key was for.
 		// It goes as soon as anything is typed, because from then on the row
 		// is showing what it is doing.
-		typed += sty.Dim.Render(" " + s.QueryHint)
+		typed += sty.dim.Render(" " + s.QueryHint)
 	}
 	if s.Total <= 0 {
 		return []string{Clip(typed, inner)}
 	}
-	count := sty.Dim.Render(fmt.Sprintf("%d of %d match", s.selectable(), s.Total))
+	count := sty.dim.Render(fmt.Sprintf("%d of %d match", s.selectable(), s.Total))
 	if pad := inner - lipgloss.Width(typed) - lipgloss.Width(count); pad >= 2 {
 		return []string{typed + strings.Repeat(" ", pad) + count}
 	}
@@ -938,7 +938,7 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 	for i, opt := range s.Options {
 		if opt.Fold > 0 {
 			if i >= lo && i < hi {
-				rows = append(rows, ListOverflowRow("↓", opt.Fold, "", inner))
+				rows = append(rows, listOverflowRow("↓", opt.Fold, "", inner))
 			}
 			continue
 		}
@@ -949,7 +949,7 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 				// it. It read dim until the config screen wanted the
 				// SESSION / WORKSPACE rails and found the rails it already had painted as
 				// chrome.
-				rows = append(rows, sty.Headline.Render(Clip(opt.Label, inner)))
+				rows = append(rows, sty.headline.Render(Clip(opt.Label, inner)))
 			}
 			continue
 		}
@@ -957,9 +957,9 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 		if i < lo || i >= hi {
 			continue
 		}
-		rows = append(rows, s.optionRow(opt, n, i == s.Focus && !s.Idle, g, inner))
+		rows = append(rows, s.optionRow(opt, n, i == s.Focus && !s.idle, g, inner))
 		if s.FocusDesc && i == s.Focus && opt.Desc != "" {
-			rows = append(rows, sty.Dim.Render(Clip("    "+opt.Desc, inner)))
+			rows = append(rows, sty.dim.Render(Clip("    "+opt.Desc, inner)))
 		}
 	}
 	return rows
@@ -1061,29 +1061,29 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 	// half of them (docs/interface/principles.md#one-grid). Numbering is
 	// chrome the eye counts down and the label is the row, so they take the
 	// two tones that say exactly that.
-	body, num, sep := emphasizeMatch(label, s.Query, sty.Body), sty.Dim, ""
+	body, num, sep := emphasizeMatch(label, s.Query, sty.body), sty.dim, ""
 	if opt.Dim {
 		// A row that cannot be acted on is not a row the query is hunting
 		// for, and the dimming is one run: emphasis inside it would break the
 		// run and say the wrong thing twice. Its detail goes out in that run
 		// too — the row's own tones would be saying that a restore is on
 		// offer where the row exists to say it is not.
-		body, num = sty.Dimmer.Render(label), sty.Dimmer
-		desc, meta = sty.Dimmer.Render(desc), sty.Dimmer.Render(meta)
-		value = sty.Dimmer.Render(value)
+		body, num = sty.dimmer.Render(label), sty.dimmer
+		desc, meta = sty.dimmer.Render(desc), sty.dimmer.Render(meta)
+		value = sty.dimmer.Render(value)
 		if detail != "" {
-			sep, detail = sty.Dimmer.Render(detailSep), sty.Dimmer.Render(detail)
+			sep, detail = sty.dimmer.Render(detailSep), sty.dimmer.Render(detail)
 		}
 	} else {
 		if detail != "" {
-			sep, detail = sty.Dim.Render(detailSep), opt.detailPainted(lipgloss.Width(detail))
+			sep, detail = sty.dim.Render(detailSep), opt.detailPainted(lipgloss.Width(detail))
 		}
-		desc = sty.Dim.Render(desc)
+		desc = sty.dim.Render(desc)
 		if value != "" {
-			value = opt.ValueTone.style().Render(value)
+			value = opt.valueTone.style().Render(value)
 		}
 		if meta != "" {
-			meta = opt.MetaTone.style().Render(meta)
+			meta = opt.metaTone.style().Render(meta)
 		}
 	}
 	// An unnumbered list buys no escapes for the column it does not have: a
@@ -1180,18 +1180,18 @@ func (s *Select) visibleRowsFocus(width, budget int, numbered bool) ([]string, i
 	rows := s.optionRows(width, numbered, lo, hi)
 	focusAt := -1
 	if s.Focus >= lo && s.Focus < hi {
-		focusAt = l.RowsIn(lo, s.Focus+1) - 1
+		focusAt = l.rowsIn(lo, s.Focus+1) - 1
 	}
 	if lo > 0 {
-		rows = append([]string{ListOverflowRow("↑", l.CountIn(0, lo), "", width-cardFrameWidth)}, rows...)
+		rows = append([]string{listOverflowRow("↑", l.countIn(0, lo), "", width-cardFrameWidth)}, rows...)
 		if focusAt >= 0 {
 			focusAt++
 		}
 	}
 	if hi < len(s.Options) {
-		rows = append(rows, ListOverflowRow("↓", l.CountIn(hi, len(s.Options)), "", width-cardFrameWidth))
+		rows = append(rows, listOverflowRow("↓", l.countIn(hi, len(s.Options)), "", width-cardFrameWidth))
 	}
-	return rows, l.CountIn(lo, hi), focusAt
+	return rows, l.countIn(lo, hi), focusAt
 }
 
 // noMatchRows is what a filter that matched nothing renders: a row, not
@@ -1201,9 +1201,9 @@ func (s *Select) visibleRowsFocus(width, budget int, numbered bool) ([]string, i
 // because the caller is what matched.
 func (s *Select) noMatchRows(width int) []string {
 	inner := Card{}.Inner(width)
-	rows := []string{sty.Dim.Render(Clip("  "+fmt.Sprintf("no match for %q", s.Query), inner))}
+	rows := []string{sty.dim.Render(Clip("  "+fmt.Sprintf("no match for %q", s.Query), inner))}
 	if s.Closest != "" {
-		rows = append(rows, sty.Dim.Render(Clip("  closest is "+s.Closest, inner)))
+		rows = append(rows, sty.dim.Render(Clip("  closest is "+s.Closest, inner)))
 	}
 	return rows
 }
@@ -1213,18 +1213,18 @@ func (s *Select) noMatchRows(width int) []string {
 // focus to the nearest option instead.
 func (s *Select) normalizeFocus() {
 	l := s.pointer()
-	l.Normalize()
+	l.normalize()
 	s.Focus = l.Focus
 }
 
 // FirstSelectable is the index of the first row a key can land on. A filtered
 // list puts its pointer here after every keystroke, because the rows
 // under it are not the rows that were there a moment ago.
-func (s *Select) FirstSelectable() int { return s.pointer().First() }
+func (s *Select) FirstSelectable() int { return s.pointer().first() }
 
 // selectable counts the rows a key can land on, which is every row until a
 // list carries headers.
-func (s *Select) selectable() int { return s.pointer().Count() }
+func (s *Select) selectable() int { return s.pointer().count() }
 
 // selectableIndex maps a 1-based position among the selectable rows — what
 // the number keys and the "1." prefixes count — to its index in Options.
@@ -1252,5 +1252,5 @@ func boundRows(rows []string, maxLines int) []string {
 		return rows
 	}
 	keep := max(budget-1, 1)
-	return append(rows[:keep:keep], sty.Dim.Render("…"))
+	return append(rows[:keep:keep], sty.dim.Render("…"))
 }

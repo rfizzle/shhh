@@ -99,7 +99,7 @@ func Scrollbar(height, content, viewport, offset int) []string {
 	rows := make([]string, height)
 	for i := range rows {
 		if i >= pos && i < pos+thumb {
-			rows[i] = sty.ScrollThumb.Render(scrollThumb) + scrollBlank
+			rows[i] = sty.scrollThumb.Render(scrollThumb) + scrollBlank
 			continue
 		}
 		rows[i] = scrollBlank + scrollBlank

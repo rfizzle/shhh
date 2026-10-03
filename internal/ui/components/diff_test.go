@@ -16,7 +16,7 @@ func sampleHunks(t *testing.T) []diff.Hunk {
 }
 
 func TestUnifiedLines_Basics(t *testing.T) {
-	lines := UnifiedLines(sampleHunks(t), 80, UnifiedOpts{})
+	lines := unifiedLines(sampleHunks(t), 80, unifiedOpts{})
 	joined := strings.Join(lines, "\n")
 	for _, want := range []string{"@@ -1,3 +1,3 @@", "-b", "+B", " a"} {
 		if !strings.Contains(joined, want) {
@@ -26,7 +26,7 @@ func TestUnifiedLines_Basics(t *testing.T) {
 }
 
 func TestUnifiedLines_LineNumbers(t *testing.T) {
-	lines := UnifiedLines(sampleHunks(t), 80, UnifiedOpts{LineNumbers: true})
+	lines := unifiedLines(sampleHunks(t), 80, unifiedOpts{lineNumbers: true})
 	joined := strings.Join(lines, "\n")
 	if !strings.Contains(joined, "- 2  b") || !strings.Contains(joined, "+ 2  B") {
 		t.Fatalf("numbered rendering should carry old/new line numbers:\n%s", joined)
@@ -35,7 +35,7 @@ func TestUnifiedLines_LineNumbers(t *testing.T) {
 
 func TestUnifiedLines_TruncatesWithNotice(t *testing.T) {
 	hunks := diff.Compute("", strings.Repeat("x\n", 20))
-	lines := UnifiedLines(hunks, 80, UnifiedOpts{MaxLines: 5})
+	lines := unifiedLines(hunks, 80, unifiedOpts{maxLines: 5})
 	if len(lines) != 5 {
 		t.Fatalf("expected 5 rendered lines, got %d", len(lines))
 	}
@@ -46,7 +46,7 @@ func TestUnifiedLines_TruncatesWithNotice(t *testing.T) {
 }
 
 func TestUnifiedLines_EmptyShowsNoChanges(t *testing.T) {
-	lines := UnifiedLines(nil, 80, UnifiedOpts{})
+	lines := unifiedLines(nil, 80, unifiedOpts{})
 	if len(lines) != 1 || !strings.Contains(lines[0], "no changes") {
 		t.Fatalf("empty diff should render a no-changes notice, got %v", lines)
 	}
@@ -137,7 +137,7 @@ func TestDiffView_FullViewScrollAndToggle(t *testing.T) {
 	}
 
 	v.Update(key("s"))
-	if !v.SideBySide {
+	if !v.sideBySide {
 		t.Fatal("s should toggle side-by-side")
 	}
 }
@@ -187,7 +187,7 @@ func TestDiffView_HunkJump(t *testing.T) {
 
 func TestUnifiedLines_IntralineEmphasisKeepsText(t *testing.T) {
 	hunks := diff.Compute("return nil\n", "return err\n")
-	lines := UnifiedLines(hunks, 80, UnifiedOpts{Emphasis: true})
+	lines := unifiedLines(hunks, 80, unifiedOpts{emphasis: true})
 	joined := stripANSI(strings.Join(lines, "\n"))
 	if !strings.Contains(joined, "-return nil") || !strings.Contains(joined, "+return err") {
 		t.Fatalf("emphasized rendering must preserve the full text:\n%s", joined)
@@ -222,7 +222,7 @@ func fakeSyntax(line string) []Segment {
 
 func TestUnifiedLines_SyntaxKeepsTextAndNumbers(t *testing.T) {
 	hunks := diff.Compute("return nil\n", "return err\n")
-	lines := UnifiedLines(hunks, 80, UnifiedOpts{LineNumbers: true, Emphasis: true, Syntax: fakeSyntax})
+	lines := unifiedLines(hunks, 80, unifiedOpts{lineNumbers: true, emphasis: true, syntax: fakeSyntax})
 	joined := stripANSI(strings.Join(lines, "\n"))
 	if !strings.Contains(joined, "- 1  return nil") || !strings.Contains(joined, "+ 1  return err") {
 		t.Fatalf("syntax rendering must preserve text, markers, and line numbers:\n%s", joined)
@@ -231,7 +231,7 @@ func TestUnifiedLines_SyntaxKeepsTextAndNumbers(t *testing.T) {
 
 func TestUnifiedLines_SyntaxClipsWithEllipsis(t *testing.T) {
 	hunks := diff.Compute("", "abcdefghijklmnopqrstuvwxyz\n")
-	lines := UnifiedLines(hunks, 12, UnifiedOpts{Syntax: fakeSyntax})
+	lines := unifiedLines(hunks, 12, unifiedOpts{syntax: fakeSyntax})
 	joined := stripANSI(strings.Join(lines, "\n"))
 	if !strings.Contains(joined, "…") {
 		t.Fatalf("overlong syntax lines should clip with an ellipsis:\n%s", joined)
@@ -244,7 +244,7 @@ func TestUnifiedLines_SyntaxClipsWithEllipsis(t *testing.T) {
 func TestUnifiedLines_SyntaxMismatchFallsBack(t *testing.T) {
 	bad := func(string) []Segment { return []Segment{{Text: "wrong"}} }
 	hunks := diff.Compute("a\n", "b\n")
-	lines := UnifiedLines(hunks, 80, UnifiedOpts{Syntax: bad})
+	lines := unifiedLines(hunks, 80, unifiedOpts{syntax: bad})
 	joined := stripANSI(strings.Join(lines, "\n"))
 	if !strings.Contains(joined, "-a") || !strings.Contains(joined, "+b") {
 		t.Fatalf("segments that don't reconstruct the line must fall back to plain rendering:\n%s", joined)
@@ -379,18 +379,18 @@ func tokenTone(tok Token) string {
 // statement about it, and the marker beside it keeps the line's own colour.
 func TestUnifiedLines_TheNumberIsChromeAndTheMarkerIsTheVerdict(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
-	lines := UnifiedLines(diff.Compute("return nil\n", "return err\n"), 80,
-		UnifiedOpts{LineNumbers: true})
+	lines := unifiedLines(diff.Compute("return nil\n", "return err\n"), 80,
+		unifiedOpts{lineNumbers: true})
 	del, add := lines[1], lines[2]
 
-	if got, want := toneOf(t, del, "-"), toneFor(sty.Del); got != want {
+	if got, want := toneOf(t, del, "-"), toneFor(sty.del); got != want {
 		t.Fatalf("the deletion's marker carries Del, got %q", got)
 	}
-	if got, want := toneOf(t, add, "+"), toneFor(sty.Add); got != want {
+	if got, want := toneOf(t, add, "+"), toneFor(sty.add); got != want {
 		t.Fatalf("the addition's marker carries Add, got %q", got)
 	}
 	for _, line := range []string{del, add} {
-		if got, want := toneOf(t, line, "1"), toneFor(sty.Dim); got != want {
+		if got, want := toneOf(t, line, "1"), toneFor(sty.dim); got != want {
 			t.Fatalf("the line number carries Dim, got %q in:\n%s", got, stripANSI(line))
 		}
 	}
@@ -428,11 +428,11 @@ func registerSyntax(line string) []Segment {
 func TestUnifiedLines_TheVerdictCarriesAChangedLineUnderTheRegister(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	hunks := diff.Compute("// func Run ( 9 ) name\n", "// func Run ( 8 ) name\n")
-	lines := UnifiedLines(hunks, 80, UnifiedOpts{Syntax: registerSyntax})
+	lines := unifiedLines(hunks, 80, unifiedOpts{syntax: registerSyntax})
 	removed := lines[1]
 
 	for _, word := range []string{"//", "(", "name"} {
-		if got, want := toneOf(t, removed, word), toneFor(sty.Del); got != want {
+		if got, want := toneOf(t, removed, word), toneFor(sty.del); got != want {
 			t.Fatalf("the ground under %q is the verdict, got %q", word, got)
 		}
 	}
@@ -454,7 +454,7 @@ func TestUnifiedLines_TheVerdictCarriesAChangedLineUnderTheRegister(t *testing.T
 func TestUnifiedLines_AContextLineTakesTheRegisterWhole(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	hunks := diff.Compute("// func Run ( 9 ) name\nx\n", "// func Run ( 9 ) name\ny\n")
-	lines := UnifiedLines(hunks, 80, UnifiedOpts{Syntax: registerSyntax})
+	lines := unifiedLines(hunks, 80, unifiedOpts{syntax: registerSyntax})
 	context := lines[1]
 	for _, kept := range []struct {
 		word string
@@ -500,7 +500,7 @@ func TestDiffView_SideBySideKeepsTheSyntaxTheUnifiedBodyHas(t *testing.T) {
 		OldStart: 1200, OldCount: 1, NewStart: 1200, NewCount: 1,
 		Lines: []diff.Line{{Kind: diff.Del, Text: "name", OldNo: 1204}},
 	}}}
-	if got, want := toneOf(t, wide.View(sideBySideMinWidth+20), "1204"), toneFor(sty.Dim); got != want {
+	if got, want := toneOf(t, wide.View(sideBySideMinWidth+20), "1204"), toneFor(sty.dim); got != want {
 		t.Fatalf("a four-digit number is chrome, got %q", got)
 	}
 }

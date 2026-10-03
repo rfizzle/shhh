@@ -88,31 +88,31 @@ type PressureCard struct {
 	KeyList bool
 }
 
-// PressureDecision is the answer to the card: which of the three offers the
+// pressureDecision is the answer to the card: which of the three offers the
 // key took.
-type PressureDecision int
+type pressureDecision int
 
 const (
-	// PressureNone is no answer: the key was none of the card's offers and
+	// pressureNone is no answer: the key was none of the card's offers and
 	// the card is still up. It is the zero value so an unresolved press
 	// cannot be read as one of the answers.
-	PressureNone PressureDecision = iota
+	pressureNone pressureDecision = iota
 	// PressureCompact recovers the window in place, keeping the session.
 	PressureCompact
 	// PressureNewSession crosses the session boundary instead.
 	PressureNewSession
-	// PressureKeepGoing changes nothing — esc, which keeps going, which is
+	// pressureKeepGoing changes nothing — esc, which keeps going, which is
 	// invariant 3 holding even at 94%.
-	PressureKeepGoing
+	pressureKeepGoing
 )
 
 // Update resolves on any offered key and on esc, which declines. The card's
 // own offers are consulted before the key is read as one of the three
 // answers, because a key the card did not show does not act (invariant 5).
-func (c *PressureCard) Update(msg tea.KeyPressMsg) (done bool, result PressureDecision) {
+func (c *PressureCard) Update(msg tea.KeyPressMsg) (done bool, result pressureDecision) {
 	pressed := msg.String()
 	if keys.Is(pressed, keys.Select.Cancel) {
-		return true, PressureKeepGoing
+		return true, pressureKeepGoing
 	}
 	for _, k := range c.Keys {
 		if strings.Trim(k.Key, "[]") != pressed {
@@ -127,9 +127,9 @@ func (c *PressureCard) Update(msg tea.KeyPressMsg) (done bool, result PressureDe
 		// An offer with no answer of its own is the answer that changes
 		// nothing, which is where the card's own [esc] offer lands and where
 		// a fourth offer would land until it was given one here.
-		return true, PressureKeepGoing
+		return true, pressureKeepGoing
 	}
-	return false, PressureNone
+	return false, pressureNone
 }
 
 // PressureOffers is the card's three answers as it offers them. The keys come
@@ -166,7 +166,7 @@ func NewSessionCarryPlan() string {
 // inspector rail's CONTEXT block uses, so the two cannot disagree about what
 // colour 84% is.
 func (c PressureCard) meter() Meter {
-	return Meter{Pct: c.Pct, Cells: MeterCellsRail, Tone: MeterPressure, Warn: c.Warn, Alert: c.Alert}
+	return Meter{pctValue: c.Pct, cellCount: meterCellsRail, tone: meterPressure, warn: c.Warn, alert: c.Alert}
 }
 
 // View renders the card at the given width.
@@ -176,9 +176,9 @@ func (c PressureCard) View(width int) string {
 	// threshold — which is what puts the bar and the numbers on the title
 	// rail in one colour without the chips having to be styled through the
 	// frame (the bar and its number turn colour together).
-	style := meter.Style()
+	style := meter.style()
 
-	rows := []string{meter.Bar()}
+	rows := []string{meter.bar()}
 	if len(c.Rows) > 0 {
 		rows = append(rows, "")
 		field := c.countField()
@@ -207,8 +207,8 @@ func (c PressureCard) View(width int) string {
 	}
 	return Card{
 		Title: pressureTitle,
-		Chips: []string{c.chip()},
-		Style: &style,
+		chips: []string{c.chip()},
+		style: &style,
 	}.Render(rows, width)
 }
 
@@ -244,9 +244,9 @@ func (c PressureCard) rowLine(r PressureRow, field int) string {
 	if pad := field - len(count); pad > 0 {
 		count = strings.Repeat(" ", pad) + count
 	}
-	line := sty.Status.Render(count) + strings.Repeat(" ", pressureCountGap) + sty.Body.Render(r.Label)
+	line := sty.status.Render(count) + strings.Repeat(" ", pressureCountGap) + sty.body.Render(r.Label)
 	if r.Detail != "" {
-		line += sty.Dim.Render(" — " + r.Detail)
+		line += sty.dim.Render(" — " + r.Detail)
 	}
 	return line
 }
@@ -268,7 +268,7 @@ type styledSpan struct {
 func (c PressureCard) prediction() [][]styledSpan {
 	var rows [][]styledSpan
 	if c.Keeps != "" {
-		rows = append(rows, []styledSpan{{"compacting keeps " + c.Keeps, sty.Dim}})
+		rows = append(rows, []styledSpan{{"compacting keeps " + c.Keeps, sty.dim}})
 	}
 	if c.Drops != "" || c.Recovers > 0 {
 		lead := "and drops " + c.Drops
@@ -278,16 +278,16 @@ func (c PressureCard) prediction() [][]styledSpan {
 		case len(rows) == 0:
 			lead = "compacting drops " + c.Drops
 		}
-		row := []styledSpan{{lead, sty.Dim}}
+		row := []styledSpan{{lead, sty.dim}}
 		if c.Recovers > 0 {
 			row = append(row,
-				styledSpan{"—", sty.Dim},
-				styledSpan{fmt.Sprintf("recovers about %s (%d%%)", formatTokens(c.Recovers), c.RecoversPct), sty.Add})
+				styledSpan{"—", sty.dim},
+				styledSpan{fmt.Sprintf("recovers about %s (%d%%)", formatTokens(c.Recovers), c.RecoversPct), sty.add})
 		}
 		rows = append(rows, row)
 	}
 	if c.Continuing != "" {
-		rows = append(rows, []styledSpan{{c.Continuing, sty.Dim}})
+		rows = append(rows, []styledSpan{{c.Continuing, sty.dim}})
 	}
 	return rows
 }

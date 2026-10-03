@@ -106,8 +106,8 @@ const (
 	TakeCheckout
 )
 
-// Word is the destination as the picker's key row names it.
-func (t ConfigTake) Word() string {
+// word is the destination as the picker's key row names it.
+func (t ConfigTake) word() string {
 	switch t {
 	case TakeSession:
 		return "this session"
@@ -165,16 +165,16 @@ type ConfigScreen struct {
 	Yours  bool
 	// Rows are the settings in the order they are shown.
 	Rows []ConfigRow
-	// Focus is an index into Rows and survives the host rebuilding them.
-	Focus int
+	// focus is an index into Rows and survives the host rebuilding them.
+	focus int
 	// Changed is how many edits are standing against the file. The header counts
 	// them and `[w]` is not offered while it is zero — a key that cannot act is
 	// not offered (invariant 5).
 	Changed int
-	// MaxLines bounds the screen height; everything pinned comes off the list's
+	// maxLines bounds the screen height; everything pinned comes off the list's
 	// budget before its window is drawn. 0 is unbounded, which is what a test or
 	// a host that sizes itself gets.
-	MaxLines int
+	maxLines int
 	// Notice is the line a key left behind — what `[w]` wrote, what `[r]` reset.
 	// The host clears it on the next keystroke.
 	Notice string
@@ -300,7 +300,7 @@ func (c *ConfigScreen) leave() (bool, ConfigResult) {
 // does. Both questions this screen asks are one line and count the same
 // edits, because they are the two answers to the same situation.
 func (c *ConfigScreen) ask(prompt string, then ConfigResult) {
-	c.confirm = &Confirm{Prompt: sty.Body.Render(prompt)}
+	c.confirm = &Confirm{Prompt: sty.body.Render(prompt)}
 	c.pending = then
 }
 
@@ -312,7 +312,7 @@ func (c *ConfigScreen) open() {
 	if row == nil {
 		return
 	}
-	c.editRow = c.Focus
+	c.editRow = c.focus
 	switch {
 	case len(row.Options) > 0:
 		p := &Select{
@@ -473,7 +473,7 @@ func (c *ConfigScreen) updateConfirm(msg tea.KeyPressMsg) (bool, ConfigResult) {
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from
 // the width it is rendered at, so only the height is kept.
-func (c *ConfigScreen) SetSize(_, height int) { c.MaxLines = height }
+func (c *ConfigScreen) SetSize(_, height int) { c.maxLines = height }
 
 // View renders the screen: the shared chrome, with the settings list in the
 // rows it leaves and whatever is open spliced in under the row being changed.
@@ -490,14 +490,14 @@ func (c *ConfigScreen) View(width int) string {
 	for _, row := range c.menu.queryRows(cardWidthFor(width - menuIndent)) {
 		head = append(head, indentBy(row, menuIndent, width))
 	}
-	return ScreenChrome{
-		Header:   c.header(),
-		Head:     head,
-		Foot:     c.footer(width).Rows(width),
-		Notice:   c.Notice,
-		MaxLines: c.MaxLines,
-		Reserve:  len(inline),
-	}.View(width, func(budget int) []string { return c.bodyRows(width, budget, inline) })
+	return screenChrome{
+		header:   c.header(),
+		head:     head,
+		foot:     c.footer(width).rows(width),
+		notice:   c.Notice,
+		maxLines: c.maxLines,
+		reserve:  len(inline),
+	}.view(width, func(budget int) []string { return c.bodyRows(width, budget, inline) })
 }
 
 // bodyRows is the settings list with the open sub-surface spliced in under
@@ -559,8 +559,8 @@ func (c *ConfigScreen) inlineRows(width int) []string {
 // is what the artboard draws and what the selector window is sized for.
 func (c *ConfigScreen) pickerBudget(pinned int) int {
 	const pickerRows = 8
-	if c.MaxLines > 0 {
-		return max(min(pickerRows, c.MaxLines/2)-pinned, 1)
+	if c.maxLines > 0 {
+		return max(min(pickerRows, c.maxLines/2)-pinned, 1)
 	}
 	return max(pickerRows-pinned, 1)
 }
@@ -569,30 +569,30 @@ func (c *ConfigScreen) pickerBudget(pinned int) int {
 // against that file. The path goes before the count of unwritten changes: a
 // change that has not reached the file yet is the one thing on this row a
 // reader cannot afford to lose sight of.
-func (c *ConfigScreen) header() ScreenHeader {
+func (c *ConfigScreen) header() screenHeader {
 	title, headerKeys := "shhh config", screenHeaderKeys()
 	if c.InSession {
 		title, headerKeys = "/config", screenBackKeys()
 	}
-	h := ScreenHeader{Left: []RailSegment{screenTitle(title)}, Keys: headerKeys}
+	h := screenHeader{left: []RailSegment{screenTitle(title)}, keys: headerKeys}
 	if c.Scoped {
 		// Whose file it is outlives the path: a long path is the first field
 		// this header gives up, and which of the two files the write reaches
 		// is the thing the scope key changes.
-		h.Left = append(h.Left, RailSegment{Text: sty.Dim.Render(" · " + c.owner() + "file"), Drop: RailNormal})
+		h.left = append(h.left, RailSegment{Text: sty.dim.Render(" · " + c.owner() + "file"), Drop: RailNormal})
 	}
 	if c.Path != "" {
-		h.Left = append(h.Left, screenField(c.Path))
+		h.left = append(h.left, screenField(c.Path))
 	}
 	if c.Behind {
 		// Kept longer than the path it qualifies: a long path is the first
 		// field to go, and the word is the one thing here the reader would
 		// not otherwise learn.
-		h.Left = append(h.Left, RailSegment{Text: sty.Warn.Render(" · behind"), Drop: RailNormal})
+		h.left = append(h.left, RailSegment{Text: sty.warn.Render(" · behind"), Drop: RailNormal})
 	}
 	if c.Changed > 0 {
-		h.Left = append(h.Left, RailSegment{
-			Text: sty.Accent.Render(" · " + plural(c.Changed, "change") + " unwritten"),
+		h.left = append(h.left, RailSegment{
+			Text: sty.accent.Render(" · " + plural(c.Changed, "change") + " unwritten"),
 			Drop: RailVital,
 		})
 	}
@@ -622,10 +622,10 @@ func (c *ConfigScreen) scopeOffer() KeyOffer {
 }
 
 // footer is the keys the screen offers and the field that annotates them.
-func (c *ConfigScreen) footer(width int) KeyFooter {
-	f := KeyFooter{Offers: c.offers(), Register: c.keyList(), Showing: c.keys, Field: c.footField()}
+func (c *ConfigScreen) footer(width int) keyFooter {
+	f := keyFooter{offers: c.offers(), register: c.keyList(), showing: c.keys, field: c.footField()}
 	if c.confirm != nil {
-		f.Taken = c.confirm.View(width)
+		f.taken = c.confirm.View(width)
 	}
 	return f
 }
@@ -648,10 +648,10 @@ func (c *ConfigScreen) offers() []KeyOffer {
 		// ones past the first are letters, so they are offered only while
 		// the query row is closed and a letter is a key.
 		if first := c.firstTake(); first != 0 {
-			offers = append(offers, keyOfferAs(keys.Screen.Take, first.Word()))
+			offers = append(offers, keyOfferAs(keys.Screen.Take, first.word()))
 			if !c.picker.Filtering {
 				for _, t := range c.otherTakes() {
-					offers = append(offers, keyOfferAs(takeKey(t), t.Word()))
+					offers = append(offers, keyOfferAs(takeKey(t), t.word()))
 				}
 			}
 			return append(offers, keep)
@@ -665,7 +665,7 @@ func (c *ConfigScreen) offers() []KeyOffer {
 	case c.edit != nil:
 		set := "set it"
 		if first := c.firstTake(); first != 0 {
-			set = first.Word()
+			set = first.word()
 		}
 		return []KeyOffer{
 			keyOfferAs(keys.Screen.Take, set),
@@ -776,8 +776,8 @@ func (c *ConfigScreen) sync() {
 			rail(group)
 		}
 		opts = append(opts, SelectOption{
-			Label: row.Label, Value: row.Value, ValueTone: row.ValueTone,
-			Desc: qualifier(row.Detail), Meta: row.Source, MetaTone: row.SourceTone,
+			Label: row.Label, Value: row.Value, valueTone: row.ValueTone,
+			Desc: qualifier(row.Detail), Meta: row.Source, metaTone: row.SourceTone,
 		})
 		c.optRow = append(c.optRow, i)
 	}
@@ -786,7 +786,7 @@ func (c *ConfigScreen) sync() {
 	c.menu.Filterable = true
 	c.menu.Unnumbered = true
 	c.menu.QueryHint = "type to filter the settings"
-	c.menu.Focus = c.optIndex(c.Focus)
+	c.menu.Focus = c.optIndex(c.focus)
 }
 
 // qualifier is how a note about a value joins it: an em-dash, because `normal
@@ -816,7 +816,7 @@ func (c *ConfigScreen) match() []int {
 func (c *ConfigScreen) refilter() {
 	c.picker, c.edit, c.secret = nil, nil, nil
 	if shown := c.match(); len(shown) > 0 {
-		c.Focus = shown[0]
+		c.focus = shown[0]
 	}
 	c.sync()
 }
@@ -855,14 +855,14 @@ func (c *ConfigScreen) moved(pressed string) bool {
 	l := List[int]{Items: c.shown, Focus: c.at()}
 	moved := false
 	if c.menu.Filtering {
-		moved = l.MoveTyping(pressed, keys.Screen.Move)
+		moved = l.moveTyping(pressed, keys.Screen.Move)
 	} else {
 		moved = l.Move(pressed, keys.Screen.Move)
 	}
 	if !moved {
 		return false
 	}
-	c.Focus = c.shown[l.Focus]
+	c.focus = c.shown[l.Focus]
 	c.picker, c.edit, c.secret = nil, nil, nil
 	c.sync()
 	return true
@@ -871,7 +871,7 @@ func (c *ConfigScreen) moved(pressed string) bool {
 // at is where the pointer is among the rows the filter left showing.
 func (c *ConfigScreen) at() int {
 	for i, row := range c.shown {
-		if row == c.Focus {
+		if row == c.focus {
 			return i
 		}
 	}
@@ -879,7 +879,7 @@ func (c *ConfigScreen) at() int {
 }
 
 // current is the row under the pointer, or nil when the filter left none.
-func (c *ConfigScreen) current() *ConfigRow { return c.rowAt(c.Focus) }
+func (c *ConfigScreen) current() *ConfigRow { return c.rowAt(c.focus) }
 
 func (c *ConfigScreen) rowAt(i int) *ConfigRow {
 	if i < 0 || i >= len(c.Rows) {
@@ -935,11 +935,11 @@ func (e *lineEdit) update(msg tea.KeyPressMsg) {
 func (e *lineEdit) view() string {
 	row := ""
 	if e.lead != "" {
-		row = sty.Dim.Render(e.lead + " ")
+		row = sty.dim.Render(e.lead + " ")
 	}
-	row += sty.Info.Render("▸ ") + sty.QueryText.Render(string(e.value)+queryCursor)
+	row += sty.info.Render("▸ ") + sty.queryText.Render(string(e.value)+queryCursor)
 	if len(e.value) == 0 && e.hint != "" {
-		row += sty.Dim.Render(" " + e.hint)
+		row += sty.dim.Render(" " + e.hint)
 	}
 	return row
 }

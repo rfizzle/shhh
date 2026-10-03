@@ -105,16 +105,16 @@ type SpendScreen struct {
 	keys  bool
 }
 
-// SpendResult is what the screen leaves with: nothing, or the turn the
+// spendResult is what the screen leaves with: nothing, or the turn the
 // reader asked to open on the turns screen.
-type SpendResult struct {
+type spendResult struct {
 	Turn int64
 }
 
 // Update is the screen's whole keyboard: it moves, it opens a turn, it shows
 // its keys, and it leaves. It reports whether the screen is done and, where
 // it is done by opening a turn, which one.
-func (s *SpendScreen) Update(msg tea.KeyPressMsg) (done bool, result SpendResult) {
+func (s *SpendScreen) Update(msg tea.KeyPressMsg) (done bool, result spendResult) {
 	pressed := msg.String()
 	switch {
 	case s.moved(pressed):
@@ -122,14 +122,14 @@ func (s *SpendScreen) Update(msg tea.KeyPressMsg) (done bool, result SpendResult
 		// Only on a turn: a key that cannot act is not an offer, and the
 		// footer draws it grey (invariant 5).
 		if r := s.current(); r != nil && r.Kind == SpendTurn && r.Turn != nil {
-			return true, SpendResult{Turn: r.Turn.N}
+			return true, spendResult{Turn: r.Turn.N}
 		}
 	case keys.Is(pressed, keys.Screen.List):
 		s.keys = !s.keys
 	case keys.Is(pressed, keys.Screen.Quit):
-		return true, SpendResult{}
+		return true, spendResult{}
 	}
-	return false, SpendResult{}
+	return false, spendResult{}
 }
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from
@@ -143,11 +143,11 @@ func (s *SpendScreen) View(width int) string {
 		return ""
 	}
 	s.sync()
-	return ScreenChrome{
-		Header:   s.header(),
-		Foot:     s.footer(width).Rows(width),
-		MaxLines: s.MaxLines,
-	}.View(width, func(budget int) []string { return s.panes().rows(width, budget) })
+	return screenChrome{
+		header:   s.header(),
+		foot:     s.footer(width).rows(width),
+		maxLines: s.MaxLines,
+	}.view(width, func(budget int) []string { return s.panes().rows(width, budget) })
 }
 
 // panes is the body, split the way every screen with a list and a preview
@@ -164,7 +164,7 @@ func (s *SpendScreen) panes() screenPanes {
 // listRows is the left pane: the total, and the bill under it three ways.
 func (s *SpendScreen) listRows(width, budget int) []string {
 	if len(s.Rows) == 0 {
-		return []string{sty.Dim.Render(Clip("the session has not been billed for anything yet", width))}
+		return []string{sty.dim.Render(Clip("the session has not been billed for anything yet", width))}
 	}
 	body, _ := s.list.visibleRows(cardWidthFor(width), budget, false)
 	return body
@@ -174,10 +174,10 @@ func (s *SpendScreen) listRows(width, budget int) []string {
 func (s *SpendScreen) previewRows(width int) []string {
 	r := s.current()
 	if r == nil {
-		return []string{sty.Dim.Render(Clip("nothing selected", width))}
+		return []string{sty.dim.Render(Clip("nothing selected", width))}
 	}
 	title, word := spendTitle(*r)
-	rows := []string{paneTitle(brightStyle().Render(title), sty.Dim.Render(word), width), ""}
+	rows := []string{paneTitle(brightStyle().Render(title), sty.dim.Render(word), width), ""}
 	var fields []field
 	if r.Kind == SpendTurn && r.Turn != nil {
 		fields = append(fields, field{"spent", r.Cost})
@@ -202,16 +202,16 @@ func (s *SpendScreen) previewRows(width int) []string {
 	}
 	for _, f := range fields {
 		if f.value != "" {
-			rows = append(rows, spendField(f.label, sty.Body.Render(f.value), width))
+			rows = append(rows, spendField(f.label, sty.body.Render(f.value), width))
 		}
 	}
 	if len(r.Parts) > 0 || r.Children != "" {
-		rows = append(rows, "", "  "+sty.Status.Render("by kind of request"))
+		rows = append(rows, "", "  "+sty.status.Render("by kind of request"))
 		for _, p := range r.Parts {
-			rows = append(rows, spendField(p.Word, sty.Body.Render(spendPart(p)), width))
+			rows = append(rows, spendField(p.Word, sty.body.Render(spendPart(p)), width))
 		}
 		if r.Children != "" {
-			rows = append(rows, spendField("children", sty.Body.Render(r.Children+" ◇"), width))
+			rows = append(rows, spendField("children", sty.body.Render(r.Children+" ◇"), width))
 		}
 	}
 	return rows
@@ -220,7 +220,7 @@ func (s *SpendScreen) previewRows(width int) []string {
 // spendField is one line of the account: a dim label in a fixed column and
 // the value beside it, clipped to the pane.
 func spendField(label, value string, width int) string {
-	lead := "  " + sty.Status.Render(fmt.Sprintf("%-*s", spendLabelWidth, label))
+	lead := "  " + sty.status.Render(fmt.Sprintf("%-*s", spendLabelWidth, label))
 	return Clip(lead+value, width)
 }
 
@@ -273,7 +273,7 @@ func spendGroup(k SpendKind) string {
 // their ◇ — a child by name with the model it ran on, a turn in the turns
 // screen's mark and word.
 func (r SpendRow) option() SelectOption {
-	opt := SelectOption{Meta: r.Cost, MetaTone: ToneQuiet}
+	opt := SelectOption{Meta: r.Cost, metaTone: ToneQuiet}
 	switch r.Kind {
 	case SpendTotal:
 		opt.Label = "session total"
@@ -300,15 +300,15 @@ func (r SpendRow) option() SelectOption {
 	case SpendTurn:
 		if r.Turn != nil {
 			opt.Label = fmt.Sprintf("%s turn %d", turnGlyph(*r.Turn), r.Turn.N)
-			opt.Value, opt.ValueTone = turnWord(*r.Turn)
+			opt.Value, opt.valueTone = turnWord(*r.Turn)
 		}
 	}
 	return opt
 }
 
 // header names the surface, what the bill is cut into, and the total.
-func (s *SpendScreen) header() ScreenHeader {
-	h := ScreenHeader{Left: []RailSegment{screenTitle("/stats")}, Keys: s.headerKeys()}
+func (s *SpendScreen) header() screenHeader {
+	h := screenHeader{left: []RailSegment{screenTitle("/stats")}, keys: s.headerKeys()}
 	counts := map[SpendKind]int{}
 	total := ""
 	for _, r := range s.Rows {
@@ -326,11 +326,11 @@ func (s *SpendScreen) header() ScreenHeader {
 			if c.kind == SpendChild && n > 1 {
 				noun = fmt.Sprintf("%d children", n)
 			}
-			h.Left = append(h.Left, screenField(noun))
+			h.left = append(h.left, screenField(noun))
 		}
 	}
 	if total != "" {
-		h.Tally = sty.Dim.Render(total + " spent")
+		h.tally = sty.dim.Render(total + " spent")
 	}
 	return h
 }
@@ -346,10 +346,10 @@ func (s *SpendScreen) headerKeys() string {
 }
 
 // footer is the keys the screen offers and the field that annotates them.
-func (s *SpendScreen) footer(width int) KeyFooter {
+func (s *SpendScreen) footer(width int) keyFooter {
 	field := s.footField()
-	return KeyFooter{Offers: s.offers(width, field), Register: s.keyList(),
-		Showing: s.keys, Field: field}
+	return keyFooter{offers: s.offers(width, field), register: s.keyList(),
+		showing: s.keys, field: field}
 }
 
 // offers is the key row: the pointer's keys, the turn, and the way out, and
@@ -360,7 +360,7 @@ func (s *SpendScreen) offers(width int, field string) []KeyOffer {
 	var acts []KeyOffer
 	if r := s.current(); r != nil {
 		open := keyOfferAs(keys.Screen.Take, "open the turn")
-		open.Inert = r.Kind != SpendTurn
+		open.inert = r.Kind != SpendTurn
 		acts = append(acts, open)
 	}
 	acts = append(acts, wayOut(backToPrompt))

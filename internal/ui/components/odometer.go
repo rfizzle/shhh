@@ -75,7 +75,7 @@ func (o *Odometer) Toward(target int64, frame int) {
 		return
 	}
 	if target != o.to {
-		if shown := o.Value(); target > shown {
+		if shown := o.value(); target > shown {
 			o.from, o.to, o.step = shown, target, 0
 		} else {
 			o.from, o.to, o.step = target, target, odometerSteps
@@ -89,8 +89,8 @@ func (o *Odometer) Toward(target int64, frame int) {
 	}
 }
 
-// Value is the figure to print this frame.
-func (o Odometer) Value() int64 {
+// value is the figure to print this frame.
+func (o Odometer) value() int64 {
 	if o.step >= odometerSteps {
 		return o.to
 	}
@@ -117,7 +117,7 @@ func (o *Odometer) Settle() {
 	if !o.aimed {
 		return
 	}
-	v := o.Value()
+	v := o.value()
 	o.from, o.to, o.step = v, v, odometerSteps
 }
 
@@ -130,7 +130,7 @@ func (o Odometer) Reading(target int64) int64 {
 	if !o.aimed || o.to != target {
 		return target
 	}
-	return o.Value()
+	return o.value()
 }
 
 // Easing reports whether the figure is still short of its target. A host

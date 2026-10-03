@@ -69,7 +69,7 @@ func TestReview_PaneBodyComesFromTheSharedRenderer(t *testing.T) {
 	v.wide = false
 	rows, _ := v.hunkRows(v.Files[0], width)
 
-	shared := UnifiedLines(v.Files[0].Hunks[:1], width, UnifiedOpts{LineNumbers: true, Emphasis: true})
+	shared := unifiedLines(v.Files[0].Hunks[:1], width, unifiedOpts{lineNumbers: true, emphasis: true})
 	for i, want := range shared[1:] {
 		if rows[i+1] != want {
 			t.Fatalf("pane row %d differs from the shared renderer:\n got %q\nwant %q", i+1, rows[i+1], want)
@@ -96,7 +96,7 @@ func TestReview_IntralineEmphasisSurvives(t *testing.T) {
 	v := reviewFixture()
 	rows, _ := v.hunkRows(v.Files[0], 70)
 	joined := strings.Join(rows, "\n")
-	if !strings.Contains(joined, bgParams(Palette.AddBg)) || !strings.Contains(joined, bgParams(Palette.DelBg)) {
+	if !strings.Contains(joined, bgParams(Palette.addBg)) || !strings.Contains(joined, bgParams(Palette.delBg)) {
 		t.Fatalf("the pane should carry the intraline emphasis backgrounds:\n%q", joined)
 	}
 }
@@ -120,11 +120,11 @@ func TestReview_SideBySideIsAutomaticWhenWideAndTogglesBack(t *testing.T) {
 	}
 	// [\] forces the pairing at any width.
 	v.Update(key("\\"))
-	if !v.SideBySide {
+	if !v.sideBySide {
 		t.Fatal("\\ should toggle side-by-side on")
 	}
 	v.Update(key("\\"))
-	if v.SideBySide {
+	if v.sideBySide {
 		t.Fatal("\\ should toggle it back off")
 	}
 }
@@ -183,12 +183,12 @@ func TestReview_HunkCursorSpillsBetweenFiles(t *testing.T) {
 	v := reviewFixture()
 	v.Update(key("n")) // second hunk of the first file
 	v.Update(key("n")) // spills into the second file
-	if v.File != 1 || v.Hunk != 0 {
-		t.Fatalf("n should spill into the next file, got file %d hunk %d", v.File, v.Hunk)
+	if v.file != 1 || v.hunk != 0 {
+		t.Fatalf("n should spill into the next file, got file %d hunk %d", v.file, v.hunk)
 	}
 	v.Update(key("p"))
-	if v.File != 0 || v.Hunk != len(v.Files[0].Hunks)-1 {
-		t.Fatalf("p should spill back to the previous file's last hunk, got file %d hunk %d", v.File, v.Hunk)
+	if v.file != 0 || v.hunk != len(v.Files[0].Hunks)-1 {
+		t.Fatalf("p should spill back to the previous file's last hunk, got file %d hunk %d", v.file, v.hunk)
 	}
 }
 

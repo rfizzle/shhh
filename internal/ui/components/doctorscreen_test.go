@@ -282,10 +282,10 @@ func TestDoctorScreen_AnUnpointedFixKeyIsNotAnOffer(t *testing.T) {
 	if live == "" || inert == "" {
 		t.Fatalf("expected one live and one waiting fix key:\n%s", ansi.Strip(d.View(110)))
 	}
-	if !strings.Contains(live, sty.Key.Render("[f]")) {
+	if !strings.Contains(live, sty.key.Render("[f]")) {
 		t.Fatalf("the pointed row's key is not offered in the key colour: %q", live)
 	}
-	if strings.Contains(inert, sty.Key.Render("[f]")) {
+	if strings.Contains(inert, sty.key.Render("[f]")) {
 		t.Fatalf("a waiting row's key reads as an offer: %q", inert)
 	}
 }
@@ -571,7 +571,7 @@ func TestDoctorScreen_ActionMakesARowAStop(t *testing.T) {
 		only,
 	}}
 	d.sync()
-	if d.Focus != 1 {
-		t.Fatalf("the pointer stands on %d, not on the row with something to do", d.Focus)
+	if d.focus != 1 {
+		t.Fatalf("the pointer stands on %d, not on the row with something to do", d.focus)
 	}
 }

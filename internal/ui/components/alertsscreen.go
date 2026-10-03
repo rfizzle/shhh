@@ -93,20 +93,20 @@ type AlertsScreen struct {
 	// Alerts are standing first, then superseded, each newest first — the
 	// order the list draws them in.
 	Alerts []AlertsItem
-	// Focus is an index into Alerts.
-	Focus int
+	// focus is an index into Alerts.
+	focus int
 	// Open says the runs of the episode under the pointer are showing.
 	// Moving the pointer off the episode closes them, since they are one
 	// episode's.
 	Open bool
-	// Run is the run under the pointer while the runs are showing, an index
+	// runAt is the run under the pointer while the runs are showing, an index
 	// into the episode's Runs.
-	Run int
+	runAt int
 	// Notice is the line a key left behind. The host clears it on the next
 	// keystroke.
 	Notice string
-	// MaxLines bounds the screen height. 0 is unbounded.
-	MaxLines int
+	// maxLines bounds the screen height. 0 is unbounded.
+	maxLines int
 
 	list Select
 	keys bool
@@ -124,7 +124,7 @@ func (s *AlertsScreen) Update(msg tea.KeyPressMsg) (done bool, result AlertsResu
 			break
 		}
 		if !s.Open {
-			s.Open, s.Run = true, 0
+			s.Open, s.runAt = true, 0
 			break
 		}
 		r := s.run()
@@ -148,7 +148,7 @@ func (s *AlertsScreen) Update(msg tea.KeyPressMsg) (done bool, result AlertsResu
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from
 // the width it is rendered at, so only the height is kept.
-func (s *AlertsScreen) SetSize(_, height int) { s.MaxLines = height }
+func (s *AlertsScreen) SetSize(_, height int) { s.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves.
@@ -157,12 +157,12 @@ func (s *AlertsScreen) View(width int) string {
 		return ""
 	}
 	s.sync()
-	return ScreenChrome{
-		Header:   s.header(),
-		Foot:     s.footer(width).Rows(width),
-		Notice:   s.Notice,
-		MaxLines: s.MaxLines,
-	}.View(width, func(budget int) []string { return s.panes().rows(width, budget) })
+	return screenChrome{
+		header:   s.header(),
+		foot:     s.footer(width).rows(width),
+		notice:   s.Notice,
+		maxLines: s.maxLines,
+	}.view(width, func(budget int) []string { return s.panes().rows(width, budget) })
 }
 
 // panes is the body, split the way every screen with a list and a preview
@@ -179,7 +179,7 @@ func (s *AlertsScreen) panes() screenPanes {
 // listRows is the left pane: the episodes, standing first.
 func (s *AlertsScreen) listRows(width, budget int) []string {
 	if len(s.Alerts) == 0 {
-		return []string{sty.Dim.Render(Clip("nothing this session ran has come back broken", width))}
+		return []string{sty.dim.Render(Clip("nothing this session ran has come back broken", width))}
 	}
 	body, _ := s.list.visibleRows(cardWidthFor(width), budget, false)
 	return body
@@ -191,26 +191,26 @@ func (s *AlertsScreen) listRows(width, budget int) []string {
 func (s *AlertsScreen) previewRows(width int) []string {
 	a := s.current()
 	if a == nil {
-		return []string{sty.Dim.Render(Clip("no alert selected", width))}
+		return []string{sty.dim.Render(Clip("no alert selected", width))}
 	}
 	word, _ := alertStanding(*a)
-	rows := []string{paneTitle(brightStyle().Render(a.Alert.Label), sty.Dim.Render(word), width), ""}
+	rows := []string{paneTitle(brightStyle().Render(a.Alert.Label), sty.dim.Render(word), width), ""}
 	runs := fmt.Sprintf("%d", max(a.Alert.Runs, 1))
 	if a.Alert.Turns > 1 {
 		runs += fmt.Sprintf(", in %d turns", a.Alert.Turns)
 	}
-	answered := sty.Err.Render("not yet")
+	answered := sty.err.Render("not yet")
 	if a.Answer != nil {
-		answered = sty.Body.Render(joinTurn(a.Answer.What, a.Answer.Turn))
+		answered = sty.body.Render(joinTurn(a.Answer.What, a.Answer.Turn))
 	}
 	fields := []struct{ label, value string }{
-		{"last run", sty.Body.Render(a.Alert.Note)},
-		{"runs", sty.Body.Render(runs)},
+		{"last run", sty.body.Render(a.Alert.Note)},
+		{"runs", sty.body.Render(runs)},
 	}
 	// A command run before any turn — the reader's own, at an idle prompt —
 	// has no turn to name, and the rail's row names none for it either.
 	if a.Alert.Turn > 0 {
-		fields = append(fields, struct{ label, value string }{"broke", sty.Body.Render(fmt.Sprintf("turn %d", a.Alert.Turn))})
+		fields = append(fields, struct{ label, value string }{"broke", sty.body.Render(fmt.Sprintf("turn %d", a.Alert.Turn))})
 	}
 	fields = append(fields, struct{ label, value string }{"answered", answered})
 	for _, f := range fields {
@@ -219,9 +219,9 @@ func (s *AlertsScreen) previewRows(width int) []string {
 	if !s.Open {
 		return rows
 	}
-	rows = append(rows, "", "  "+sty.Status.Render("each run"))
+	rows = append(rows, "", "  "+sty.status.Render("each run"))
 	for i, r := range a.Runs {
-		rows = append(rows, alertsRunRows(r, i == s.Run, width)...)
+		rows = append(rows, alertsRunRows(r, i == s.runAt, width)...)
 	}
 	return rows
 }
@@ -233,7 +233,7 @@ const alertsLabelWidth = 10
 // alertsField is one line of the account: a dim label in a fixed column and
 // the value beside it, clipped to the pane.
 func alertsField(label, value string, width int) string {
-	lead := "  " + sty.Status.Render(fmt.Sprintf("%-*s", alertsLabelWidth, label))
+	lead := "  " + sty.status.Render(fmt.Sprintf("%-*s", alertsLabelWidth, label))
 	return Clip(lead+value, width)
 }
 
@@ -252,22 +252,22 @@ func alertsRunRows(r AlertsRun, pointed bool, width int) []string {
 	}
 	lead := "  "
 	if pointed {
-		lead = sty.FocusPointer.Render("❯") + " "
+		lead = sty.focusPointer.Render("❯") + " "
 	}
-	left := lead + sty.Err.Render("✗") + " " + sty.Body.Render(text)
-	rows := []string{Clip(left, width), Clip("    "+sty.Dimmer.Render(r.Line), width)}
+	left := lead + sty.err.Render("✗") + " " + sty.body.Render(text)
+	rows := []string{Clip(left, width), Clip("    "+sty.dimmer.Render(r.Line), width)}
 	if r.Evidence == "" {
 		return rows
 	}
 	// The id is what makes the output one read away, so where it will not
 	// stand at the end of the run's row it takes a row of its own rather
 	// than being dropped.
-	right := sty.Dim.Render(r.Evidence)
+	right := sty.dim.Render(r.Evidence)
 	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
 		rows[0] = left + strings.Repeat(" ", pad) + right
 		return rows
 	}
-	return append(rows, Clip("    "+sty.Dim.Render("output kept as "+r.Evidence), width))
+	return append(rows, Clip("    "+sty.dim.Render("output kept as "+r.Evidence), width))
 }
 
 // joinTurn is a fact and the turn it happened in, `… · turn 3`, and the fact
@@ -301,8 +301,8 @@ func alertGlyph(a AlertsItem) string {
 
 // header names the surface and what it counts: the standing and the answered,
 // two fields because they are two facts, as the rail's marker says them.
-func (s *AlertsScreen) header() ScreenHeader {
-	h := ScreenHeader{Left: []RailSegment{screenTitle("/alerts")}, Keys: s.headerKeys()}
+func (s *AlertsScreen) header() screenHeader {
+	h := screenHeader{left: []RailSegment{screenTitle("/alerts")}, keys: s.headerKeys()}
 	standing := 0
 	for _, a := range s.Alerts {
 		if !a.Alert.Superseded {
@@ -312,10 +312,10 @@ func (s *AlertsScreen) header() ScreenHeader {
 	// Nothing standing is not a field: the rail's marker leads with the
 	// answered count in that case too, rather than with a zero.
 	if standing > 0 {
-		h.Left = append(h.Left, screenField(fmt.Sprintf("%d standing", standing)))
+		h.left = append(h.left, screenField(fmt.Sprintf("%d standing", standing)))
 	}
 	if superseded := len(s.Alerts) - standing; superseded > 0 {
-		h.Left = append(h.Left, screenField(fmt.Sprintf("%d superseded", superseded)))
+		h.left = append(h.left, screenField(fmt.Sprintf("%d superseded", superseded)))
 	}
 	return h
 }
@@ -331,10 +331,10 @@ func (s *AlertsScreen) headerKeys() string {
 }
 
 // footer is the keys the screen offers and the field that annotates them.
-func (s *AlertsScreen) footer(width int) KeyFooter {
+func (s *AlertsScreen) footer(width int) keyFooter {
 	field := s.footField()
-	return KeyFooter{Offers: s.offers(width, field), Register: s.keyList(),
-		Showing: s.keys, Field: field}
+	return keyFooter{offers: s.offers(width, field), register: s.keyList(),
+		showing: s.keys, field: field}
 }
 
 // offers is the key row: the pointer's keys, the runs, and the way out, and
@@ -379,23 +379,23 @@ func (s *AlertsScreen) footField() string {
 // sync rebuilds the list from Alerts. It runs before every View because the
 // host may replace Alerts, and the pointer has to survive that.
 func (s *AlertsScreen) sync() {
-	s.Focus = min(max(s.Focus, 0), max(len(s.Alerts)-1, 0))
+	s.focus = min(max(s.focus, 0), max(len(s.Alerts)-1, 0))
 	opts := make([]SelectOption, 0, len(s.Alerts))
 	for _, a := range s.Alerts {
 		opt := SelectOption{Label: alertGlyph(a) + " " + a.Alert.Label,
-			MetaTone: ToneQuiet}
+			metaTone: ToneQuiet}
 		if a.Alert.Turn > 0 {
 			opt.Meta = alertTurn(a.Alert)
 		}
 		if note := alertNote(a.Alert); note != "" {
 			opt.Detail = []DetailSpan{{Text: note, Tone: ToneQuiet}}
 		}
-		opt.Value, opt.ValueTone = alertStanding(a)
+		opt.Value, opt.valueTone = alertStanding(a)
 		opts = append(opts, opt)
 	}
 	s.list.Options = opts
 	s.list.Unnumbered = true
-	s.list.Focus = s.Focus
+	s.list.Focus = s.focus
 }
 
 // moved walks the pointer: between an open episode's runs, and between
@@ -406,35 +406,35 @@ func (s *AlertsScreen) moved(pressed string) bool {
 		return false
 	}
 	if s.Open && s.current() != nil && keys.Is(pressed, keys.Screen.Move) {
-		if next := s.Run + keys.Step(pressed, keys.Screen.Move); next >= 0 && next < len(s.current().Runs) {
-			s.Run = next
+		if next := s.runAt + keys.Step(pressed, keys.Screen.Move); next >= 0 && next < len(s.current().Runs) {
+			s.runAt = next
 			return true
 		}
 	}
-	l := List[AlertsItem]{Items: s.Alerts, Focus: s.Focus}
+	l := List[AlertsItem]{Items: s.Alerts, Focus: s.focus}
 	if !l.Move(pressed, keys.Screen.Move) {
 		return false
 	}
-	if l.Focus != s.Focus {
+	if l.Focus != s.focus {
 		s.Open = false
 	}
-	s.Focus = l.Focus
+	s.focus = l.Focus
 	return true
 }
 
 // run is the run under the pointer while an episode's runs are out, or nil.
 func (s *AlertsScreen) run() *AlertsRun {
 	a := s.current()
-	if a == nil || !s.Open || s.Run < 0 || s.Run >= len(a.Runs) {
+	if a == nil || !s.Open || s.runAt < 0 || s.runAt >= len(a.Runs) {
 		return nil
 	}
-	return &a.Runs[s.Run]
+	return &a.Runs[s.runAt]
 }
 
 // current is the episode under the pointer, or nil for an empty list.
 func (s *AlertsScreen) current() *AlertsItem {
-	if s.Focus < 0 || s.Focus >= len(s.Alerts) {
+	if s.focus < 0 || s.focus >= len(s.Alerts) {
 		return nil
 	}
-	return &s.Alerts[s.Focus]
+	return &s.Alerts[s.focus]
 }

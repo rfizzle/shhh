@@ -24,14 +24,14 @@ import (
 // past it the rest are counted. The prompt has to fit in the input area.
 const undoDriftNames = 3
 
-// UndoDecision is the answer to the undo confirm.
-type UndoDecision int
+// undoDecision is the answer to the undo confirm.
+type undoDecision int
 
 const (
 	// UndoCancel: nothing is written. n, enter and esc all mean this.
-	UndoCancel UndoDecision = iota
-	// UndoApply: take the turn back, leaving drifted files alone.
-	UndoApply
+	UndoCancel undoDecision = iota
+	// undoApply: take the turn back, leaving drifted files alone.
+	undoApply
 	// UndoForce: take the turn back including the drifted files, discarding
 	// what changed since.
 	UndoForce
@@ -51,11 +51,11 @@ type UndoConfirm struct {
 	Restores, Removes int
 	// Drifted names the files that changed since the turn, in plan order.
 	Drifted []string
-	// Note is a warning the host adds under the question: something the
+	// note is a warning the host adds under the question: something the
 	// caller knows about how the selection was made that the plan itself
 	// cannot see. An undo plans per file, so a review that staged part of a
 	// file says here that the rest of it goes back too.
-	Note string
+	note string
 }
 
 // touches is what [y] would act on at all.
@@ -66,7 +66,7 @@ func (c UndoConfirm) touches() int { return c.Restores + c.Removes }
 // embedded confirm's, so an answer that changes there changes here. With
 // nothing for [y] to do — every file drifted — y is not bound, so the only
 // ways out are the deliberate [f] and declining.
-func (c *UndoConfirm) Update(msg tea.KeyPressMsg) (done bool, result UndoDecision) {
+func (c *UndoConfirm) Update(msg tea.KeyPressMsg) (done bool, result undoDecision) {
 	if keys.Is(msg.String(), keys.Confirm.Force) {
 		if len(c.Drifted) == 0 {
 			return false, UndoCancel
@@ -80,7 +80,7 @@ func (c *UndoConfirm) Update(msg tea.KeyPressMsg) (done bool, result UndoDecisio
 	case yes && c.touches() == 0:
 		return false, UndoCancel
 	case yes:
-		return true, UndoApply
+		return true, undoApply
 	}
 	return true, UndoCancel
 }
@@ -105,10 +105,10 @@ func (c UndoConfirm) effect() string {
 // It is a warning rather than a hint because it says the answer will do more
 // than the question implies, which is the one thing a confirm must not bury.
 func (c UndoConfirm) noteRows(width int) []string {
-	if c.Note == "" {
+	if c.note == "" {
 		return nil
 	}
-	return []string{Clip(sty.Warn.Render("⚠ "+c.Note), width)}
+	return []string{Clip(sty.warn.Render("⚠ "+c.note), width)}
 }
 
 // driftRows are the drift lines: the count and what the default answer does
@@ -122,16 +122,16 @@ func (c UndoConfirm) driftRows(width int) []string {
 	if c.touches() > 0 {
 		head += " — left alone"
 	}
-	rows := []string{Clip(sty.Warn.Render(head), width)}
+	rows := []string{Clip(sty.warn.Render(head), width)}
 	named := c.Drifted
 	if len(named) > undoDriftNames {
 		named = named[:undoDriftNames]
 	}
 	for _, p := range named {
-		rows = append(rows, Clip("    "+sty.Dim.Render(p), width))
+		rows = append(rows, Clip("    "+sty.dim.Render(p), width))
 	}
 	if rest := len(c.Drifted) - len(named); rest > 0 {
-		rows = append(rows, Clip("    "+sty.Dim.Render(fmt.Sprintf("and %d more", rest)), width))
+		rows = append(rows, Clip("    "+sty.dim.Render(fmt.Sprintf("and %d more", rest)), width))
 	}
 	return rows
 }
@@ -142,13 +142,13 @@ func (c UndoConfirm) driftRows(width int) []string {
 // end.
 func (c UndoConfirm) headRows(width int) []string {
 	answers := c.defaultKeys()
-	head := sty.Body.Render(c.Prompt + " " + c.effect())
+	head := sty.body.Render(c.Prompt + " " + c.effect())
 	if full := head + "  " + c.withKeyList(answers, width-lipgloss.Width(head)-2); lipgloss.Width(full) <= width {
 		return []string{full}
 	}
 	return []string{
-		Clip(sty.Body.Render(c.Prompt)+"  "+c.withKeyList(answers, width-lipgloss.Width(c.Prompt)-2), width),
-		Clip(sty.Dim.Render(c.effect()), width),
+		Clip(sty.body.Render(c.Prompt)+"  "+c.withKeyList(answers, width-lipgloss.Width(c.Prompt)-2), width),
+		Clip(sty.dim.Render(c.effect()), width),
 	}
 }
 

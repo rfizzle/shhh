@@ -49,7 +49,7 @@ import (
 // the moment they are drawn — which is the rule the palette always stated,
 // now with somewhere of its own to live.
 type Token struct {
-	TrueColor, ANSI256, ANSI color.Color
+	trueColor, aNSI256, aNSI color.Color
 }
 
 // token writes one row of the palette table: the design system's hex, the 256
@@ -65,9 +65,9 @@ type Token struct {
 // form that says it.
 func token(hex, ansi256, ansi16 string) Token {
 	return Token{
-		TrueColor: lipgloss.Color(hex),
-		ANSI256:   lipgloss.Color(ansi256),
-		ANSI:      lipgloss.Color(ansi16),
+		trueColor: lipgloss.Color(hex),
+		aNSI256:   lipgloss.Color(ansi256),
+		aNSI:      lipgloss.Color(ansi16),
 	}
 }
 
@@ -95,13 +95,13 @@ func token(hex, ansi256, ansi16 string) Token {
 type ColorTokens struct {
 	Add     Token // diff additions, ✓, [x], permissive mode, staged hunks, healthy context
 	Del     Token // diff deletions, ✗, failures, blocked agents, a rule's denial, ctx ≥90%
-	AddBg   Token // intraline emphasis background for additions
-	DelBg   Token // intraline emphasis background for deletions
+	addBg   Token // intraline emphasis background for additions
+	delBg   Token // intraline emphasis background for deletions
 	Hunk    Token // @@ hunk headers and nothing else
 	Accent  Token // the mutation rail and the glyphs beside it, ⚠ warnings, gated modes, ctx ≥70%
 	Info    Token // sub-agents, block headings, decision cards
 	FocusBg Token // selected option/row background, the cursor block
-	Band    Token // the ground a step card rests on; docs/interface/principles.md#a-colour-is-three-values-and-a-ground
+	band    Token // the ground a step card rests on; docs/interface/principles.md#a-colour-is-three-values-and-a-ground
 	Dim     Token // chrome, counts, hints, faint rules, empty meter cells, the scroll gutter's thumb
 	Dimmer  Token // tool output, live tails, detail bodies, sparklines
 	Spin    Token // anything in motion — spinner frames, ▸ running…, ✦ deciding
@@ -126,9 +126,9 @@ const PaletteSize = 18
 // resolves to, or the two-grey mono palette while mono conformance is on
 // (mono.go). Every style in the product reads it through newStyles, which
 // applyPalette re-runs whenever the palette is swapped.
-var Palette = FullPalette
+var Palette = fullPalette
 
-// FullPalette is the coloured token set chosen against a dark ground — the
+// fullPalette is the coloured token set chosen against a dark ground — the
 // palette unless mono is on or another theme was asked for.
 //
 // Every hex but five is exactly the 256 index beside it, because the
@@ -138,16 +138,16 @@ var Palette = FullPalette
 // dark enough on some themes to lose what it marks. Those
 // five are the design system's own colours on a truecolor terminal, and the
 // index they were chosen for everywhere else.
-var FullPalette = ColorTokens{
+var fullPalette = ColorTokens{
 	Add:     token("#5fd75f", "10", "10"),
 	Del:     token("#ff5f5f", "9", "9"),
-	AddBg:   token("#005f00", "22", "2"),
-	DelBg:   token("#5f0000", "52", "1"),
+	addBg:   token("#005f00", "22", "2"),
+	delBg:   token("#5f0000", "52", "1"),
 	Hunk:    token("#5fd7d7", "14", "14"),
 	Accent:  token("#ffaf00", "214", "11"),
 	Info:    token("#5f87ff", "12", "12"),
 	FocusBg: token("#5f5fd7", "62", "12"),
-	Band:    band("#1c1c1c", "234"),
+	band:    band("#1c1c1c", "234"),
 	Dim:     token("#626262", "241", "8"),
 	Dimmer:  token("#8a8a8a", "245", "8"),
 	Spin:    token("#ff5faf", "205", "13"),
@@ -198,13 +198,13 @@ var FullPalette = ColorTokens{
 var LightPalette = ColorTokens{
 	Add:     token("#008700", "2", "2"),
 	Del:     token("#d70000", "1", "1"),
-	AddBg:   token("#d7ffd7", "194", "10"),
-	DelBg:   token("#ffd7d7", "224", "9"),
+	addBg:   token("#d7ffd7", "194", "10"),
+	delBg:   token("#ffd7d7", "224", "9"),
 	Hunk:    token("#008787", "6", "6"),
 	Accent:  token("#af5f00", "130", "3"),
 	Info:    token("#005fd7", "4", "4"),
 	FocusBg: token("#d7d7ff", "189", "7"),
-	Band:    band("#e4e4e4", "254"),
+	band:    band("#e4e4e4", "254"),
 	Dim:     token("#8a8a8a", "245", "8"),
 	Dimmer:  token("#6c6c6c", "242", "8"),
 	Spin:    token("#af005f", "125", "5"),
@@ -218,7 +218,7 @@ var LightPalette = ColorTokens{
 	Key:    token("#5f5f87", "60", "4"),
 }
 
-// CharmPalette is the same jobs done in CharmTone, the palette the
+// charmPalette is the same jobs done in CharmTone, the palette the
 // libraries this interface is built on are drawn in. It is a dark table like
 // the first one and it is not a variant of it: every hue is picked from the
 // published set rather than approximated, which is why it exists at all —
@@ -230,16 +230,16 @@ var LightPalette = ColorTokens{
 // config says is not that palette, so every token carries a real 256 index
 // and the sixteen-colour rung is the only place the terminal's own theme is
 // still spent.
-var CharmPalette = ColorTokens{
+var charmPalette = ColorTokens{
 	Add:     tone(charmtone.Guac, "42", "10"),
 	Del:     tone(charmtone.Coral, "203", "9"),
-	AddBg:   tint(charmtone.Guac, "22", "2"),
-	DelBg:   tint(charmtone.Coral, "52", "1"),
+	addBg:   tint(charmtone.Guac, "22", "2"),
+	delBg:   tint(charmtone.Coral, "52", "1"),
 	Hunk:    tone(charmtone.Turtle, "44", "14"),
 	Accent:  tone(charmtone.Tang, "209", "11"),
 	Info:    tone(charmtone.Malibu, "39", "12"),
 	FocusBg: tone(charmtone.Charple, "63", "12"),
-	Band:    band(charmtone.Charcoal.Hex(), "237"),
+	band:    band(charmtone.Charcoal.Hex(), "237"),
 	Dim:     tone(charmtone.Iron, "239", "8"),
 	Dimmer:  tone(charmtone.Squid, "245", "8"),
 	Spin:    tone(charmtone.Cheeky, "212", "13"),
@@ -259,9 +259,9 @@ var CharmPalette = ColorTokens{
 // the published grey one step up from that set's own ground.
 func band(hex, ansi256 string) Token {
 	return Token{
-		TrueColor: lipgloss.Color(hex),
-		ANSI256:   lipgloss.Color(ansi256),
-		ANSI:      lipgloss.NoColor{},
+		trueColor: lipgloss.Color(hex),
+		aNSI256:   lipgloss.Color(ansi256),
+		aNSI:      lipgloss.NoColor{},
 	}
 }
 
@@ -292,9 +292,9 @@ func tint(k charmtone.Key, ansi256, ansi16 string) Token {
 	r, g, b, _ := k.RGBA()
 	darken := func(v uint32) uint8 { return uint8(v >> 8 * 3 / 8) }
 	return Token{
-		TrueColor: color.RGBA{R: darken(r), G: darken(g), B: darken(b), A: 0xff},
-		ANSI256:   lipgloss.Color(ansi256),
-		ANSI:      lipgloss.Color(ansi16),
+		trueColor: color.RGBA{R: darken(r), G: darken(g), B: darken(b), A: 0xff},
+		aNSI256:   lipgloss.Color(ansi256),
+		aNSI:      lipgloss.Color(ansi16),
 	}
 }
 
@@ -324,9 +324,9 @@ type theme struct {
 // themes is every table that ships. A theme is added by adding a row here and
 // a word to ThemeNames; nothing else in the product knows how many there are.
 var themes = map[string]theme{
-	ThemeDark:  {FullPalette, darkGround},
+	ThemeDark:  {fullPalette, darkGround},
 	ThemeLight: {LightPalette, token("#ffffff", "231", "15")},
-	ThemeCharm: {CharmPalette, tone(charmtone.Pepper, "235", "0")},
+	ThemeCharm: {charmPalette, tone(charmtone.Pepper, "235", "0")},
 }
 
 // darkGround is the design system's screen, #0f1117, and 233 for it at 256
@@ -338,9 +338,9 @@ var themes = map[string]theme{
 // ground with a colour their theme chose for text, which is often not the
 // one it chose for the screen.
 var darkGround = Token{
-	TrueColor: lipgloss.Color("#0f1117"),
-	ANSI256:   lipgloss.Color("233"),
-	ANSI:      lipgloss.NoColor{},
+	trueColor: lipgloss.Color("#0f1117"),
+	aNSI256:   lipgloss.Color("233"),
+	aNSI:      lipgloss.NoColor{},
 }
 
 // ThemeNames is the words a reader may choose between, auto first because it
@@ -571,10 +571,10 @@ func SetProfile(p colorprofile.Profile) {
 // own Styles from these tokens (chat, browse, the generate UI) and reads them
 // the same way: p.Info.Color() is the token and the profile in one place.
 func (t Token) Color() color.Color {
-	return lipgloss.Complete(profile)(t.ANSI, t.ANSI256, t.TrueColor)
+	return lipgloss.Complete(profile)(t.aNSI, t.aNSI256, t.trueColor)
 }
 
-// Styles is the derived style set: one populated value per theme, built by
+// styles is the derived style set: one populated value per theme, built by
 // newStyles from the token set and nothing else. Every style this package
 // draws with is a field on it, so a theme is a struct to build rather than a
 // list of globals to remember to rebuild — which is what the seven
@@ -583,28 +583,28 @@ func (t Token) Color() color.Color {
 // The fields are grouped the way the design doc groups them, and the group
 // comments are the argument for the assignment; the palette is the table they
 // answer to.
-type Styles struct {
-	Border   lipgloss.Style
-	Headline lipgloss.Style
-	// Hint is what a surface says about itself — the keys it offers, the fold
+type styles struct {
+	border   lipgloss.Style
+	headline lipgloss.Style
+	// hint is what a surface says about itself — the keys it offers, the fold
 	// markers under a truncated list, the note under a viewer. It is dim and
 	// upright: italic means quoted model output, and chrome is the product's
 	// own voice, so it wears the grey and nothing else. That leaves Hint and
 	// Dim the same tone, and the two names still say different things — a
 	// hint answers "what can I do here", Dim is a rung on the grey scale.
-	Hint     lipgloss.Style
-	Warn     lipgloss.Style
-	Shield   lipgloss.Style
-	Dim      lipgloss.Style
-	Dimmer   lipgloss.Style
-	Status   lipgloss.Style
-	Body     lipgloss.Style
-	Bright   lipgloss.Style
-	Accent   lipgloss.Style
-	Info     lipgloss.Style
-	Key      lipgloss.Style // a key this surface will answer, and nothing else
-	Err      lipgloss.Style
-	SpinText lipgloss.Style
+	hint     lipgloss.Style
+	warn     lipgloss.Style
+	shield   lipgloss.Style
+	dim      lipgloss.Style
+	dimmer   lipgloss.Style
+	status   lipgloss.Style
+	body     lipgloss.Style
+	bright   lipgloss.Style
+	accent   lipgloss.Style
+	info     lipgloss.Style
+	key      lipgloss.Style // a key this surface will answer, and nothing else
+	err      lipgloss.Style
+	spinText lipgloss.Style
 
 	// The reading cursor: the row it sits on is lit, and the pointer
 	// that names it stays outside the highlight.
@@ -615,18 +615,18 @@ type Styles struct {
 	// than the bright token beside it, so the row the keyboard is on was the
 	// one row on screen whose text came from outside the palette
 	// (docs/interface/principles.md#one-grid).
-	FocusRow     lipgloss.Style
-	LitText      lipgloss.Style
-	FocusPointer lipgloss.Style
+	focusRow     lipgloss.Style
+	litText      lipgloss.Style
+	focusPointer lipgloss.Style
 
 	// The diff body: the kind's colour, the intraline background tints,
 	// and the context lines the tints sit between.
-	Add     lipgloss.Style
-	Del     lipgloss.Style
-	AddEmph lipgloss.Style
-	DelEmph lipgloss.Style
-	Hunk    lipgloss.Style
-	Context lipgloss.Style
+	add     lipgloss.Style
+	del     lipgloss.Style
+	addEmph lipgloss.Style
+	delEmph lipgloss.Style
+	hunk    lipgloss.Style
+	context lipgloss.Style
 
 	// The filter row: what has been typed reads bright against the card. The
 	// run of an option the query named is bold — the one emphasis that costs
@@ -634,18 +634,18 @@ type Styles struct {
 	// added to whatever tone the row is already in, because a bold run
 	// rendered inside a coloured one ends in a reset and takes the rest of
 	// the label out with it (emphasizeMatch).
-	QueryText lipgloss.Style
+	queryText lipgloss.Style
 
 	// The scroll gutter's thumb: chrome like every other faint mark on the
 	// frame, and the only thing drawn in that column. It is a shape, not a
 	// measurement.
-	ScrollThumb lipgloss.Style
+	scrollThumb lipgloss.Style
 
 	// The working label's sweep: the crest of the light that runs
 	// along a label in motion, over a base of Spin. It is the second rung of
 	// a two-rung ramp and not a colour of its own — under mono it is the same
 	// grey as the base, which is how the sweep goes away.
-	AnimCrest lipgloss.Style
+	animCrest lipgloss.Style
 
 	// The text fields, in the two style records bubbles hands out. A field
 	// paints itself from a table of its own, so the only way the palette
@@ -653,8 +653,8 @@ type Styles struct {
 	// literal 256 indices chosen for one ground, which is a surface reaching
 	// outside the palette
 	// (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
-	TextArea  textarea.Styles
-	TextInput textinput.Styles
+	textArea  textarea.Styles
+	textInput textinput.Styles
 }
 
 // sty is the live style set, rebuilt by applyPalette whenever the theme or
@@ -668,48 +668,48 @@ var sty = newStyles(Palette)
 // newStyles builds the whole style set from one token set. It reads its
 // argument and no global, so a theme can be rendered in a test without
 // swapping the one the session is using.
-func newStyles(p ColorTokens) Styles {
-	return Styles{
-		Border:   lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Headline: lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
-		Hint:     lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Warn:     lipgloss.NewStyle().Foreground(p.Del.Color()),
-		Shield:   lipgloss.NewStyle().Foreground(p.Status.Color()),
-		Dim:      lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Dimmer:   lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
-		Status:   lipgloss.NewStyle().Foreground(p.Status.Color()),
-		Body:     lipgloss.NewStyle().Foreground(p.Body.Color()),
-		Bright:   lipgloss.NewStyle().Foreground(p.Bright.Color()),
-		Accent:   lipgloss.NewStyle().Foreground(p.Accent.Color()),
-		Info:     lipgloss.NewStyle().Foreground(p.Info.Color()),
-		Key:      lipgloss.NewStyle().Foreground(p.Key.Color()),
-		Err:      lipgloss.NewStyle().Foreground(p.Del.Color()),
-		SpinText: lipgloss.NewStyle().Foreground(p.Spin.Color()),
+func newStyles(p ColorTokens) styles {
+	return styles{
+		border:   lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		headline: lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
+		hint:     lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		warn:     lipgloss.NewStyle().Foreground(p.Del.Color()),
+		shield:   lipgloss.NewStyle().Foreground(p.Status.Color()),
+		dim:      lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		dimmer:   lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
+		status:   lipgloss.NewStyle().Foreground(p.Status.Color()),
+		body:     lipgloss.NewStyle().Foreground(p.Body.Color()),
+		bright:   lipgloss.NewStyle().Foreground(p.Bright.Color()),
+		accent:   lipgloss.NewStyle().Foreground(p.Accent.Color()),
+		info:     lipgloss.NewStyle().Foreground(p.Info.Color()),
+		key:      lipgloss.NewStyle().Foreground(p.Key.Color()),
+		err:      lipgloss.NewStyle().Foreground(p.Del.Color()),
+		spinText: lipgloss.NewStyle().Foreground(p.Spin.Color()),
 
-		FocusRow:     lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()).Background(p.FocusBg.Color()),
-		LitText:      lipgloss.NewStyle().Foreground(p.Bright.Color()).Background(p.FocusBg.Color()),
-		FocusPointer: lipgloss.NewStyle().Foreground(p.Info.Color()),
+		focusRow:     lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()).Background(p.FocusBg.Color()),
+		litText:      lipgloss.NewStyle().Foreground(p.Bright.Color()).Background(p.FocusBg.Color()),
+		focusPointer: lipgloss.NewStyle().Foreground(p.Info.Color()),
 
-		Add:     lipgloss.NewStyle().Foreground(p.Add.Color()),
-		Del:     lipgloss.NewStyle().Foreground(p.Del.Color()),
-		AddEmph: lipgloss.NewStyle().Foreground(p.Add.Color()).Background(p.AddBg.Color()),
-		DelEmph: lipgloss.NewStyle().Foreground(p.Del.Color()).Background(p.DelBg.Color()),
-		Hunk:    lipgloss.NewStyle().Foreground(p.Hunk.Color()),
-		Context: lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
+		add:     lipgloss.NewStyle().Foreground(p.Add.Color()),
+		del:     lipgloss.NewStyle().Foreground(p.Del.Color()),
+		addEmph: lipgloss.NewStyle().Foreground(p.Add.Color()).Background(p.addBg.Color()),
+		delEmph: lipgloss.NewStyle().Foreground(p.Del.Color()).Background(p.delBg.Color()),
+		hunk:    lipgloss.NewStyle().Foreground(p.Hunk.Color()),
+		context: lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
 
-		QueryText: lipgloss.NewStyle().Foreground(p.Bright.Color()),
+		queryText: lipgloss.NewStyle().Foreground(p.Bright.Color()),
 
 		// One token, the same Dim the frame's own rules are drawn in: the
 		// gutter is chrome, and it has nothing in its column to be told apart
 		// from, so a second rung would be a distinction with nothing on the
 		// other side of it. What the mark says is said by its stroke and its
 		// length, both of which survive a terminal with no colour at all.
-		ScrollThumb: lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		scrollThumb: lipgloss.NewStyle().Foreground(p.Dim.Color()),
 
-		AnimCrest: lipgloss.NewStyle().Foreground(p.Bright.Color()),
+		animCrest: lipgloss.NewStyle().Foreground(p.Bright.Color()),
 
-		TextArea:  textAreaStyles(p),
-		TextInput: textInputStyles(p),
+		textArea:  textAreaStyles(p),
+		textInput: textInputStyles(p),
 	}
 }
 

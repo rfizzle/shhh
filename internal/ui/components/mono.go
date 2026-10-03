@@ -37,22 +37,22 @@ var (
 // monoNoBand is the band under mono, which is no ground at all: every
 // background here collapses onto the selection ground, so a band would read
 // as a selected row, and a card is its padding rows alone.
-var monoNoBand = Token{TrueColor: lipgloss.NoColor{}, ANSI256: lipgloss.NoColor{}, ANSI: lipgloss.NoColor{}}
+var monoNoBand = Token{trueColor: lipgloss.NoColor{}, aNSI256: lipgloss.NoColor{}, aNSI: lipgloss.NoColor{}}
 
-// MonoPalette is the two-grey token set. Every token that means content,
+// monoPalette is the two-grey token set. Every token that means content,
 // state or emphasis collapses onto MonoFg; every token that means chrome
 // collapses onto MonoDim. Nothing is left that could distinguish two states
 // by hue.
-var MonoPalette = ColorTokens{
+var monoPalette = ColorTokens{
 	Add:     MonoFg,
 	Del:     MonoFg,
-	AddBg:   MonoBg,
-	DelBg:   MonoBg,
+	addBg:   MonoBg,
+	delBg:   MonoBg,
 	Hunk:    MonoFg,
 	Accent:  MonoFg,
 	Info:    MonoFg,
 	FocusBg: MonoBg,
-	Band:    monoNoBand,
+	band:    monoNoBand,
 	Dim:     MonoDim,
 	Dimmer:  MonoDim,
 	Spin:    MonoFg,
@@ -94,7 +94,7 @@ func SetMono(on bool) {
 	}
 	mono = on
 	if on {
-		swapPalette(MonoPalette)
+		swapPalette(monoPalette)
 	} else {
 		swapPalette(activeTokens())
 	}

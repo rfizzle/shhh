@@ -123,15 +123,15 @@ func (c DoctorCheck) hasAction() bool { return c.Action != "" }
 // 5). Either key counts — a fix to read, or a change to make.
 func (c DoctorCheck) actionable() bool { return c.hasFix() || c.hasAction() }
 
-// DoctorAct is what a key asked the host to do. Two of them are about the
+// doctorAct is what a key asked the host to do. Two of them are about the
 // whole run — a report is every check, and re-running is every check again —
 // and the third is about the one check under the pointer.
-type DoctorAct int
+type doctorAct int
 
 const (
 	// DoctorCopy is `[c]`: the report as text, because the next thing that
 	// happens to a doctor run is that it gets pasted into an issue.
-	DoctorCopy DoctorAct = iota
+	DoctorCopy doctorAct = iota
 	// DoctorRerun is `[r]`: run the checks again, which is the key that closes
 	// the loop after a fix has been applied.
 	DoctorRerun
@@ -144,7 +144,7 @@ const (
 // DoctorCommand is one act the host carries out while the screen stays up.
 // The host does it, sets Notice, and hands back fresh Checks.
 type DoctorCommand struct {
-	Act DoctorAct
+	Act doctorAct
 	// At is the check the act is about, for DoctorApply. Copying and
 	// re-running are about the whole run, and leave it at zero.
 	At int
@@ -189,9 +189,9 @@ type DoctorScreen struct {
 	// MaxLines bounds the screen height; everything pinned around the checks
 	// comes off their budget before any of them is drawn. 0 is unbounded.
 	MaxLines int
-	// Focus is an index into Checks: the row whose `[f]` is live. It survives
+	// focus is an index into Checks: the row whose `[f]` is live. It survives
 	// the host replacing Checks, and lands on a row worth standing on.
-	Focus int
+	focus int
 
 	fix  map[int]bool
 	keys bool
@@ -219,15 +219,15 @@ func (d *DoctorScreen) Update(msg tea.KeyPressMsg) (done bool, result DoctorResu
 	case keys.Is(pressed, keys.Screen.Fix):
 		// A row with nothing behind `[f]` does not offer it, so pressing it there
 		// is not a refusal to report — there is simply no key.
-		if d.stops() > 0 && d.Checks[d.Focus].hasFix() {
-			d.fix[d.Focus] = !d.fix[d.Focus]
+		if d.stops() > 0 && d.Checks[d.focus].hasFix() {
+			d.fix[d.focus] = !d.fix[d.focus]
 		}
 	case keys.Is(pressed, keys.Screen.Apply):
 		// The key is only live where the check under the pointer has
 		// something to apply, and even there it asks before it acts.
-		if d.stops() > 0 && d.Checks[d.Focus].hasAction() {
-			d.asking = d.Focus
-			d.confirm = &Confirm{Prompt: sty.Body.Render(d.Checks[d.Focus].ActionPrompt)}
+		if d.stops() > 0 && d.Checks[d.focus].hasAction() {
+			d.asking = d.focus
+			d.confirm = &Confirm{Prompt: sty.body.Render(d.Checks[d.focus].ActionPrompt)}
 		}
 	case keys.Is(pressed, keys.Screen.Copy):
 		return false, DoctorResult{Command: &DoctorCommand{Act: DoctorCopy}}
@@ -264,36 +264,36 @@ func (d *DoctorScreen) View(width int) string {
 		return ""
 	}
 	d.sync()
-	return ScreenChrome{
-		Header:   d.header(),
-		Foot:     d.footer(width).Rows(width),
-		Notice:   d.Notice,
-		MaxLines: d.MaxLines,
-	}.View(width, func(budget int) []string { return d.bodyRows(width, budget) })
+	return screenChrome{
+		header:   d.header(),
+		foot:     d.footer(width).rows(width),
+		notice:   d.Notice,
+		maxLines: d.MaxLines,
+	}.view(width, func(budget int) []string { return d.bodyRows(width, budget) })
 }
 
 // header names the command, says how many checks it is over and whether they
 // are still going, and puts the elapsed time beside the keys — the elapsed
 // time goes there because it is what says the run is still moving.
-func (d *DoctorScreen) header() ScreenHeader {
+func (d *DoctorScreen) header() screenHeader {
 	title := d.Title
 	if title == "" {
 		title = "shhh doctor"
 	}
-	h := ScreenHeader{
-		Left:  []RailSegment{screenTitle(title)},
-		Keys:  screenHeaderKeys(),
-		Tally: sty.Dimmer.Render(d.Elapsed),
+	h := screenHeader{
+		left:  []RailSegment{screenTitle(title)},
+		keys:  screenHeaderKeys(),
+		tally: sty.dimmer.Render(d.Elapsed),
 	}
 	if n := len(d.Checks); n > 0 {
-		h.Left = append(h.Left, screenField(countChecks(n)))
+		h.left = append(h.left, screenField(countChecks(n)))
 	}
 	if d.Running {
 		// The count goes before this does: how many checks there are is
 		// something a narrow terminal can do without, and that the run has not
 		// finished is not.
-		h.Left = append(h.Left, RailSegment{
-			Text: sty.Dim.Render(" · ") + sty.SpinText.Render(d.spinGlyph()+" running"),
+		h.left = append(h.left, RailSegment{
+			Text: sty.dim.Render(" · ") + sty.spinText.Render(d.spinGlyph()+" running"),
 			Drop: RailNormal,
 		})
 	}
@@ -335,7 +335,7 @@ func (d *DoctorScreen) bodyRows(width, budget int) []string {
 	for _, i := range kept {
 		rows = append(rows, sections[i]...)
 	}
-	dropped := fitter.Dropped(len(sections), kept)
+	dropped := fitter.dropped(len(sections), kept)
 	rows = append(rows, indentBy(d.droppedRow(dropped, width-ptrWidth), ptrWidth, width))
 	// One check whose fix is longer than the whole screen is the case whole
 	// sections cannot answer. Its own rows give ground then, and the marker
@@ -364,7 +364,7 @@ func (d *DoctorScreen) droppedRow(dropped []int, width int) string {
 	for _, i := range dropped {
 		names = append(names, d.Checks[i].Name)
 	}
-	return sty.Dim.Render(Clip(
+	return sty.dim.Render(Clip(
 		fmt.Sprintf("↓ %d more · %s", len(names), strings.Join(names, " · ")), width))
 }
 
@@ -375,7 +375,7 @@ func (d *DoctorScreen) checkRows(i, width int) []string {
 	check := d.Checks[i]
 	rows := []string{d.checkRow(i, width)}
 	if check.Consequence != "" {
-		rows = append(rows, detailLine(sty.Dimmer.Render(check.Consequence), width))
+		rows = append(rows, detailLine(sty.dimmer.Render(check.Consequence), width))
 	}
 	if check.hasFix() && d.fix[i] {
 		for _, line := range check.Fix {
@@ -397,11 +397,11 @@ func (d *DoctorScreen) checkRows(i, width int) []string {
 func fixLine(line string) string {
 	word, rest, ok := strings.Cut(line, "  ")
 	if !ok || word == "" || strings.ContainsAny(word, " \t") {
-		return sty.Body.Render(line)
+		return sty.body.Render(line)
 	}
 	value := strings.TrimLeft(rest, " ")
 	gap := line[len(word) : len(line)-len(value)]
-	return sty.Status.Render(word) + gap + sty.Body.Render(value)
+	return sty.status.Render(word) + gap + sty.body.Render(value)
 }
 
 // fixKeyRow is the offer under a check that has something to do on it: `[f]`
@@ -430,7 +430,7 @@ func (d *DoctorScreen) fixKeyRow(i, width int) string {
 	if check.hasAction() {
 		offers = append(offers, keyOfferAs(keys.Screen.Apply, check.Action))
 	}
-	if i != d.Focus {
+	if i != d.focus {
 		return detailLine(inertOffers(offers), width)
 	}
 	return detailLine(keyOffers(offers), width)
@@ -460,14 +460,14 @@ func (d *DoctorScreen) checkRow(i, width int) string {
 // it to move: a run with nothing to fix has no pointer and no `[↑↓]`.
 func (d *DoctorScreen) pointer(i int) string {
 	if d.lit(i) {
-		return sty.FocusPointer.Render("❯") + " "
+		return sty.focusPointer.Render("❯") + " "
 	}
 	return PointerColumn()
 }
 
 // lit reports the row the keyboard is on, which is the row that takes both
 // the pointer and the highlight.
-func (d *DoctorScreen) lit(i int) bool { return d.stops() > 0 && i == d.Focus }
+func (d *DoctorScreen) lit(i int) bool { return d.stops() > 0 && i == d.focus }
 
 // glyph is the state's glyph in the state's colour. The word beside it in the
 // outcome field carries the same meaning, so the colour is reinforcement
@@ -475,17 +475,17 @@ func (d *DoctorScreen) lit(i int) bool { return d.stops() > 0 && i == d.Focus }
 func (d *DoctorScreen) glyph(state DoctorState) string {
 	switch state {
 	case DoctorWarned:
-		return sty.Accent.Render("⚠") + " "
+		return sty.accent.Render("⚠") + " "
 	case DoctorFailed:
-		return sty.Err.Render("✗") + " "
+		return sty.err.Render("✗") + " "
 	case DoctorSkipped:
-		return sty.Dim.Render("⊘") + " "
+		return sty.dim.Render("⊘") + " "
 	case DoctorRunning:
-		return sty.SpinText.Render(d.spinGlyph()) + " "
+		return sty.spinText.Render(d.spinGlyph()) + " "
 	case DoctorQueued:
-		return sty.Dim.Render("·") + " "
+		return sty.dim.Render("·") + " "
 	}
-	return sty.Add.Render("✓") + " "
+	return sty.add.Render("✓") + " "
 }
 
 // target assembles the growing field: what was checked, and the facts behind
@@ -506,9 +506,9 @@ func (c DoctorCheck) target() string {
 // version number.
 func (c DoctorCheck) paintTarget(s string) string {
 	if c.Subject != "" && strings.HasPrefix(s, c.Subject) {
-		return sty.Body.Render(c.Subject) + sty.Dim.Render(strings.TrimPrefix(s, c.Subject))
+		return sty.body.Render(c.Subject) + sty.dim.Render(strings.TrimPrefix(s, c.Subject))
 	}
-	return sty.Dim.Render(s)
+	return sty.dim.Render(s)
 }
 
 // outcomeField colours the right-aligned field by state. It never clips.
@@ -518,24 +518,24 @@ func (c DoctorCheck) outcomeField() string {
 	}
 	switch c.State {
 	case DoctorWarned:
-		return sty.Accent.Render(c.Outcome)
+		return sty.accent.Render(c.Outcome)
 	case DoctorFailed:
-		return sty.Del.Render(c.Outcome)
+		return sty.del.Render(c.Outcome)
 	case DoctorRunning:
-		return sty.SpinText.Render(c.Outcome)
+		return sty.spinText.Render(c.Outcome)
 	}
-	return sty.Dim.Render(c.Outcome)
+	return sty.dim.Render(c.Outcome)
 }
 
 // footer is the summary and the keys beside it. The doctor screen leads with
 // the counts and lets the keys annotate them, which is the reverse of the
 // other supporting screens: on a diagnostic the thing to read is what the run
 // found, and `[c]` is the annotation.
-func (d *DoctorScreen) footer(width int) KeyFooter {
-	f := KeyFooter{Offers: d.offers(), Register: d.keyList(), Showing: d.keys,
-		Lead: indentBy(d.summaryRow(), ptrWidth, width)}
+func (d *DoctorScreen) footer(width int) keyFooter {
+	f := keyFooter{offers: d.offers(), register: d.keyList(), showing: d.keys,
+		lead: indentBy(d.summaryRow(), ptrWidth, width)}
 	if d.confirm != nil {
-		f.Taken = d.confirm.View(width)
+		f.taken = d.confirm.View(width)
 	}
 	return f
 }
@@ -545,7 +545,7 @@ func (d *DoctorScreen) footer(width int) KeyFooter {
 // one line a reader who has scrolled away can still see.
 func (d *DoctorScreen) summaryRow() string {
 	if len(d.Checks) == 0 {
-		return sty.Dim.Render("no checks to run")
+		return sty.dim.Render("no checks to run")
 	}
 	counts := map[DoctorState]int{}
 	worst := DoctorPassed
@@ -560,12 +560,12 @@ func (d *DoctorScreen) summaryRow() string {
 		word  string
 		style lipgloss.Style
 	}{
-		{DoctorFailed, "failed", sty.Del},
-		{DoctorWarned, "warning", sty.Accent},
-		{DoctorPassed, "passed", sty.Body},
-		{DoctorSkipped, "not checked", sty.Dim},
-		{DoctorRunning, "running", sty.SpinText},
-		{DoctorQueued, "queued", sty.Dim},
+		{DoctorFailed, "failed", sty.del},
+		{DoctorWarned, "warning", sty.accent},
+		{DoctorPassed, "passed", sty.body},
+		{DoctorSkipped, "not checked", sty.dim},
+		{DoctorRunning, "running", sty.spinText},
+		{DoctorQueued, "queued", sty.dim},
 	}
 	var parts []string
 	for _, tally := range tallies {
@@ -580,7 +580,7 @@ func (d *DoctorScreen) summaryRow() string {
 		parts = append(parts, tally.style.Render(fmt.Sprintf("%d %s", n, word)))
 	}
 	lead := d.glyph(worst)
-	return lead + strings.Join(parts, sty.Dim.Render(" · "))
+	return lead + strings.Join(parts, sty.dim.Render(" · "))
 }
 
 // rank orders the states by how much they want the reader's attention, which
@@ -666,13 +666,13 @@ func (d *DoctorScreen) sync() {
 		d.fix = map[int]bool{}
 	}
 	if d.stops() == 0 {
-		d.Focus = 0
+		d.focus = 0
 		return
 	}
-	if d.Focus >= 0 && d.Focus < len(d.Checks) && d.Checks[d.Focus].actionable() {
+	if d.focus >= 0 && d.focus < len(d.Checks) && d.Checks[d.focus].actionable() {
 		return
 	}
-	d.Focus = d.firstStop()
+	d.focus = d.firstStop()
 }
 
 // stops is how many checks the pointer can stand on.
@@ -709,7 +709,7 @@ func (d *DoctorScreen) moved(pressed string) bool {
 	}
 	at := 0
 	for i, stop := range stops {
-		if stop == d.Focus {
+		if stop == d.focus {
 			at = i
 			break
 		}
@@ -718,7 +718,7 @@ func (d *DoctorScreen) moved(pressed string) bool {
 	if !l.Move(pressed, keys.Screen.Move) {
 		return false
 	}
-	d.Focus = stops[l.Focus]
+	d.focus = stops[l.Focus]
 	return true
 }
 

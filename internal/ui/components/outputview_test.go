@@ -86,15 +86,15 @@ func TestOutputView_WrapKeepsTheWholeLine(t *testing.T) {
 // four times is the corner cases: an offset past the end, a body shorter than
 // the pane, and a pane that has to stay the same height either way.
 func TestPager_HoldsTheOffsetInsideTheBody(t *testing.T) {
-	p := Pager{Offset: 900, Height: 10, Total: 100}
+	p := Pager{Offset: 900, Height: 10, total: 100}
 	if got := p.Held(); got != 90 {
 		t.Fatalf("an offset past the end settles on the last full pane, got %d", got)
 	}
-	p = Pager{Offset: -5, Height: 10, Total: 100}
+	p = Pager{Offset: -5, Height: 10, total: 100}
 	if got := p.Held(); got != 0 {
 		t.Fatalf("an offset above the top settles at the top, got %d", got)
 	}
-	p = Pager{Offset: 4, Height: 10, Total: 3}
+	p = Pager{Offset: 4, Height: 10, total: 3}
 	if got := p.Held(); got != 0 {
 		t.Fatalf("a body shorter than the pane holds at the top, got %d", got)
 	}
@@ -115,24 +115,24 @@ func TestPager_WindowWritesTheHeldOffsetBack(t *testing.T) {
 	if len(got) != 5 || got[0] != "row 15" {
 		t.Fatalf("the window is the five rows from 15, got %v", got)
 	}
-	if p.Above() != 15 || p.Below() != 0 {
-		t.Fatalf("above/below = %d/%d, want 15/0", p.Above(), p.Below())
+	if p.above() != 15 || p.below() != 0 {
+		t.Fatalf("above/below = %d/%d, want 15/0", p.above(), p.below())
 	}
 }
 
 // Reveal is what a pane scrolled by something other than the wheel does: the
 // least movement that brings a row in.
 func TestPager_RevealScrollsTheLeastItCan(t *testing.T) {
-	p := Pager{Offset: 10, Height: 5, Total: 100}
-	p.Reveal(12)
+	p := Pager{Offset: 10, Height: 5, total: 100}
+	p.reveal(12)
 	if p.Offset != 10 {
 		t.Fatalf("a row already showing moves nothing, got %d", p.Offset)
 	}
-	p.Reveal(3)
+	p.reveal(3)
 	if p.Offset != 3 {
 		t.Fatalf("a row above the pane pulls it up to meet it, got %d", p.Offset)
 	}
-	p.Reveal(20)
+	p.reveal(20)
 	if p.Offset != 16 {
 		t.Fatalf("a row below the pane pushes it down to end on it, got %d", p.Offset)
 	}
@@ -143,7 +143,7 @@ func TestPager_RevealScrollsTheLeastItCan(t *testing.T) {
 // has to look for.
 func TestPager_ScreenPadsToThePanesRows(t *testing.T) {
 	p := Pager{Height: 6}
-	got := strings.Split(p.Screen("head", []string{"a", "b"}, "foot"), "\n")
+	got := strings.Split(p.screen("head", []string{"a", "b"}, "foot"), "\n")
 	if len(got) != 8 {
 		t.Fatalf("header + 6 rows + footer is 8 rows, got %d: %q", len(got), got)
 	}

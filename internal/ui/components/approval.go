@@ -11,13 +11,13 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// ApprovalVariant selects which body the approval card renders
+// approvalVariant selects which body the approval card renders
 // (docs/interface/surfaces.md#the-approval-card): a command, a file edit
 // diff, a fan-out, or a generic tool summary.
-type ApprovalVariant int
+type approvalVariant int
 
 const (
-	ApprovalCommand ApprovalVariant = iota
+	ApprovalCommand approvalVariant = iota
 	ApprovalEdit
 	ApprovalGeneric
 	// ApprovalSpawn is the fan-out's body: a row per child, because a round
@@ -31,12 +31,12 @@ const (
 type ApprovalDecision int
 
 const (
-	// ApprovalWaiting is no decision at all: the key was none of the card's
+	// approvalWaiting is no decision at all: the key was none of the card's
 	// answers and the card is still up. It is the zero value so that the
 	// result of an unresolved press is inert — a host that read it without
 	// the done flag would otherwise read a press of any letter as an
 	// approval.
-	ApprovalWaiting ApprovalDecision = iota
+	approvalWaiting ApprovalDecision = iota
 	// ApprovalApprove runs the pending action (y / enter).
 	ApprovalApprove
 	// ApprovalDeny declines it (n / esc / ctrl+c) — esc never destroys.
@@ -113,11 +113,11 @@ func (s Severity) Word() string {
 func (s Severity) tone() lipgloss.Style {
 	switch s {
 	case SeverityHigh:
-		return sty.Del
+		return sty.del
 	case SeverityLow, SeverityMedium:
-		return sty.Accent
+		return sty.accent
 	}
-	return sty.Info
+	return sty.info
 }
 
 // FieldTone colours a blast-radius field's value. The tone never carries the
@@ -153,17 +153,17 @@ const (
 func (t FieldTone) style() lipgloss.Style {
 	switch t {
 	case ToneSafe:
-		return sty.Add
+		return sty.add
 	case ToneOpen:
-		return sty.Accent
+		return sty.accent
 	case ToneRisk:
-		return sty.Del
+		return sty.del
 	case ToneChrome:
-		return sty.Status
+		return sty.status
 	case ToneQuiet:
-		return sty.Dim
+		return sty.dim
 	}
-	return sty.Body
+	return sty.body
 }
 
 // CardField is one row of the blast-radius block: what the action touches,
@@ -298,7 +298,7 @@ type SpawnRow struct {
 // ApprovalCard is the single surface for every approval-gated action. One
 // container, four body variants.
 type ApprovalCard struct {
-	Variant ApprovalVariant
+	Variant approvalVariant
 	// Title is the border title, e.g. "Approve command"; QueuePos ("2 of 5")
 	// is appended when set.
 	Title    string
@@ -546,7 +546,7 @@ func (c *ApprovalCard) arrivalKey(pressed string) (ApprovalDecision, bool) {
 	case c.Noted && keys.Is(pressed, keys.Decision.DenyNoted):
 		return ApprovalDenyNoted, true
 	}
-	return ApprovalWaiting, false
+	return approvalWaiting, false
 }
 
 // Update maps decision keys, preserving the chat confirm prompt's y/n/esc
@@ -558,7 +558,7 @@ func (c *ApprovalCard) Update(msg tea.KeyPressMsg) (done bool, result ApprovalDe
 		// (invariant 5). The host owns the one key that changes that, and
 		// everything else belongs to the draft — including enter, which is
 		// how a sentence ends.
-		return false, ApprovalWaiting
+		return false, approvalWaiting
 	}
 	if c.HeldOnArrival {
 		// The card has the keyboard, but nobody handed it over. It answers
@@ -605,7 +605,7 @@ func (c *ApprovalCard) Update(msg tea.KeyPressMsg) (done bool, result ApprovalDe
 			return true, ApprovalDenyNoted
 		}
 	}
-	return false, ApprovalWaiting
+	return false, approvalWaiting
 }
 
 // View renders the card at the given width, bounded to MaxLines rows: a body
@@ -620,7 +620,7 @@ func (c *ApprovalCard) View(width int) string {
 		title += " (" + c.QueuePos + ")"
 	}
 	style := c.tone()
-	return Card{Title: title, Chips: c.chips(), Style: &style}.Render(rows, width)
+	return Card{Title: title, chips: c.chips(), style: &style}.Render(rows, width)
 }
 
 // tone is the card's own colour, which its three statements of the severity
@@ -634,7 +634,7 @@ func (c *ApprovalCard) View(width int) string {
 // ⚠ medium` (docs/interface/surfaces.md#the-approval-card).
 func (c *ApprovalCard) tone() lipgloss.Style {
 	if c.Uncontained {
-		return sty.Del
+		return sty.del
 	}
 	return c.Severity.tone()
 }
@@ -651,11 +651,11 @@ func (c *ApprovalCard) tone() lipgloss.Style {
 func (c *ApprovalCard) actRow() string {
 	switch c.ActGlyph {
 	case "":
-		return sty.Bright.Render(c.Act)
+		return sty.bright.Render(c.Act)
 	case readGlyph:
-		return sty.Dim.Render(c.ActGlyph) + " " + sty.Bright.Render(c.Act)
+		return sty.dim.Render(c.ActGlyph) + " " + sty.bright.Render(c.Act)
 	}
-	return sty.Accent.Render(c.ActGlyph) + " " + sty.Bright.Render(c.Act)
+	return sty.accent.Render(c.ActGlyph) + " " + sty.bright.Render(c.Act)
 }
 
 // spawnGlyph opens a child's row with the mark every sub-agent surface draws
@@ -688,23 +688,23 @@ func (c *ApprovalCard) spawnBody(inner int) []string {
 	}
 	var rows []string
 	for _, s := range c.Spawns {
-		row := sty.Accent.Render(spawnGlyph) + " "
+		row := sty.accent.Render(spawnGlyph) + " "
 		if s.Name != "" {
-			row += sty.Bright.Render(s.Name)
+			row += sty.bright.Render(s.Name)
 			if s.Task != "" {
-				row += sty.Dim.Render(detailSep)
+				row += sty.dim.Render(detailSep)
 			}
 		}
-		row += sty.Body.Render(s.Task)
+		row += sty.body.Render(s.Task)
 		rows = append(rows, row)
 		if len(c.Spawns) == 1 {
 			if s.About != "" {
-				rows = append(rows, sty.Dim.Render(Clip(s.About, inner)))
+				rows = append(rows, sty.dim.Render(Clip(s.About, inner)))
 			}
 			continue
 		}
 		for _, line := range spawnScopeLines(s.Touches, inner) {
-			rows = append(rows, sty.Dimmer.Render(line))
+			rows = append(rows, sty.dimmer.Render(line))
 		}
 	}
 	return rows
@@ -755,7 +755,7 @@ func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
 	// What the call asked for, directly under what will run instead, so the
 	// two are read as one statement rather than as two facts a row apart.
 	if c.Was != "" {
-		body = append(body, sty.Dim.Render(Clip("was: "+c.Was, inner)))
+		body = append(body, sty.dim.Render(Clip("was: "+c.Was, inner)))
 	}
 	// Severity leads the body, as the level and what makes it that. The
 	// border and the title chip carry the level too, and three statements of
@@ -765,12 +765,12 @@ func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
 	// The classifier's no, where it is why the card is up: the sentence the
 	// reader is answering, beside the level it is read with.
 	if c.Judged != "" {
-		body = append(body, wrapSpans([]styledSpan{{"classifier:", sty.Status}, {c.Judged, sty.Warn}}, inner)...)
+		body = append(body, wrapSpans([]styledSpan{{"classifier:", sty.status}, {c.Judged, sty.warn}}, inner)...)
 	}
 	// The generic variant's one-liner belongs with the act it qualifies,
 	// above the blast-radius block rather than below it.
 	if c.Variant == ApprovalGeneric && c.Summary != "" && c.Summary != c.Act {
-		body = append(body, sty.Dim.Render(Clip(c.Summary, inner)))
+		body = append(body, sty.dim.Render(Clip(c.Summary, inner)))
 	}
 	if len(c.Fields) > 0 {
 		if len(body) > 1 {
@@ -788,9 +788,9 @@ func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
 		}
 		// The diff is laid out whole and the window below decides what shows,
 		// so what the cap swallows is counted rather than dropped.
-		body = append(body, UnifiedLines(c.Hunks, inner,
-			UnifiedOpts{LineNumbers: true, Emphasis: true, Syntax: c.Syntax})...)
-		body = append(body, sty.Dim.Render(line))
+		body = append(body, unifiedLines(c.Hunks, inner,
+			unifiedOpts{lineNumbers: true, emphasis: true, syntax: c.Syntax})...)
+		body = append(body, sty.dim.Render(line))
 	}
 
 	hints = c.hintRowsFor(width, inner)
@@ -824,14 +824,14 @@ func (c *ApprovalCard) windowBody(body []string, hintRows int, width int) []stri
 	}
 	p := Pager{Offset: c.BodyOffset, Height: visible}
 	win := append([]string(nil), p.Window(body)...)
-	if below := p.Below(); below > 0 {
-		win[len(win)-1] = sty.Dim.Render(Clip(c.tailLabel(countedTail(below+1),
+	if below := p.below(); below > 0 {
+		win[len(win)-1] = sty.dim.Render(Clip(c.tailLabel(countedTail(below+1),
 			keys.Bracket(keys.Decision.ScrollDown)), inner))
 	}
-	if above := p.Above(); above > 0 {
+	if above := p.above(); above > 0 {
 		label := c.tailLabel(fmt.Sprintf("… %s above", plural(above+1, "line")),
 			keys.Bracket(keys.Decision.ScrollUp))
-		win[0] = sty.Dim.Render(Clip(label, inner))
+		win[0] = sty.dim.Render(Clip(label, inner))
 	}
 	return win
 }
@@ -867,7 +867,7 @@ func panRows(rows []string, x, inner int) []string {
 			cut = ansi.Cut(r, x, min(x+inner, w))
 		}
 		if x+inner < w {
-			cut = ansi.Truncate(cut, max(inner-1, 0), "") + sty.Dim.Render("…")
+			cut = ansi.Truncate(cut, max(inner-1, 0), "") + sty.dim.Render("…")
 		}
 		out[i] = cut
 	}
@@ -967,7 +967,7 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 // answers the same way, so the words give up before the row does
 // (docs/interface/surfaces.md#the-approval-card).
 func (c *ApprovalCard) closeRun(rows []string, inner int) []string {
-	sep := sty.Dim.Render(" · ")
+	sep := sty.dim.Render(" · ")
 	if n := len(rows); n > 0 {
 		if room := inner - lipgloss.Width(rows[n-1]) - lipgloss.Width(sep); room > 0 {
 			fit := inner
@@ -979,7 +979,7 @@ func (c *ApprovalCard) closeRun(rows []string, inner int) []string {
 				esc = safeSegment(keys.Shown(keys.Select.Cancel), waitWord)
 			}
 			if c.Return == "" && lipgloss.Width(esc) > room {
-				esc = sty.Add.Render("[" + keys.Shown(keys.Select.Cancel) + "]")
+				esc = sty.add.Render("[" + keys.Shown(keys.Select.Cancel) + "]")
 			}
 			if lipgloss.Width(esc) <= room {
 				rows[n-1] += sep + esc
@@ -1032,7 +1032,7 @@ func (c *ApprovalCard) footnoteRows(inner int) []string {
 		// a card is drawn in may take at most 40% of the terminal
 		// (docs/interface/principles.md#one-interaction-panel), so a row
 		// spent on it is a row the transcript gives up.
-		return []string{sty.Dim.Render(FitSegments(note, inner))}
+		return []string{sty.dim.Render(FitSegments(note, inner))}
 	}
 	return nil
 }
@@ -1085,9 +1085,9 @@ const waitWord = "wait"
 // the register is what spells a key and this only paints it.
 func offerSegment(mark, label string) string {
 	if label == "" {
-		return sty.Key.Render(mark)
+		return sty.key.Render(mark)
 	}
-	return sty.Key.Render(mark) + " " + sty.Body.Render(label)
+	return sty.key.Render(mark) + " " + sty.body.Render(label)
 }
 
 // safeSegment is the same offer for the answer that costs nothing: one run in
@@ -1095,7 +1095,7 @@ func offerSegment(mark, label string) string {
 // is the whole clause and not the letter
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
 func safeSegment(key, label string) string {
-	return sty.Add.Render("[" + key + "] " + label)
+	return sty.add.Render("[" + key + "] " + label)
 }
 
 // runRows packs the painted run into rows. It is the rule hintRows applies —
@@ -1107,7 +1107,7 @@ func safeSegment(key, label string) string {
 func runRows(segments []string, inner int) []string {
 	var rows []string
 	var line []string
-	sep := sty.Dim.Render(" · ")
+	sep := sty.dim.Render(" · ")
 	flush := func() {
 		if len(line) > 0 {
 			rows = append(rows, strings.Join(line, sep))
@@ -1175,21 +1175,21 @@ func foldSegment(seg string, inner int) []string {
 	return rows
 }
 
-// CardKey is one key of the decision run: the spelling the card printed, the
+// cardKey is one key of the decision run: the spelling the card printed, the
 // keystroke it stands for, and the imperative it is offered under. The
 // spelling and the keystroke are two fields rather than one because a pointer
 // resolving a click must not have to learn which it is holding by looking at
 // the letter.
-type CardKey struct {
-	Shown string
+type cardKey struct {
+	shown string
 	Key   string
-	// Label is the imperative the key is offered under, in the surface's own
+	// label is the imperative the key is offered under, in the surface's own
 	// words where it has better ones than the register.
-	Label string
+	label string
 }
 
 // mark is the key as the run prints it.
-func (k CardKey) mark() string { return "[" + k.Shown + "]" }
+func (k cardKey) mark() string { return "[" + k.shown + "]" }
 
 // KeyRun is the decision keys in the order the card draws them, each with the
 // words it is offered under. [a] appears only where a session grant is
@@ -1200,17 +1200,17 @@ func (k CardKey) mark() string { return "[" + k.Shown + "]" }
 // paintedRun draws this list and KeyAt walks it across the row it was drawn
 // on, so the run a reader sees, the keys the card answers and the cells a
 // click resolves against cannot become three different lists.
-func (c *ApprovalCard) KeyRun() []CardKey {
+func (c *ApprovalCard) KeyRun() []cardKey {
 	// The words are the register's unless the card has better ones: `[a]`
 	// names the scope it would grant and `[y]` names the act rather than the
 	// category, and neither of those is a fact the binding knows.
-	offer := func(b keys.Binding, label string) CardKey {
+	offer := func(b keys.Binding, label string) cardKey {
 		if label == "" {
 			label = keys.Words(b)
 		}
-		return CardKey{Shown: keys.Shown(b), Key: keys.Shown(b), Label: label}
+		return cardKey{shown: keys.Shown(b), Key: keys.Shown(b), label: label}
 	}
-	run := []CardKey{offer(keys.Decision.Allow, c.Answer)}
+	run := []cardKey{offer(keys.Decision.Allow, c.Answer)}
 	// The shifted pair sits beside the answer it carries rather than at the
 	// end of the run: they are the same two answers with a sentence, and the
 	// pairing is what the run has to make legible.
@@ -1252,7 +1252,7 @@ func (c *ApprovalCard) paintedRun() []string {
 	run := c.KeyRun()
 	segs := make([]string, len(run))
 	for i, k := range run {
-		segs[i] = offerSegment(k.mark(), k.Label)
+		segs[i] = offerSegment(k.mark(), k.label)
 	}
 	return segs
 }
@@ -1263,7 +1263,7 @@ func (c *ApprovalCard) plainRun() []string {
 	run := c.KeyRun()
 	segs := make([]string, len(run))
 	for i, k := range run {
-		segs[i] = k.mark() + " " + k.Label
+		segs[i] = k.mark() + " " + k.label
 	}
 	return segs
 }
@@ -1297,7 +1297,7 @@ func (c *ApprovalCard) KeyAt(row string, col int) (string, bool) {
 			continue
 		}
 		lo := ansi.StringWidth(plain[:i])
-		if hi := lo + ansi.StringWidth(k.mark()+" "+k.Label); col >= lo && col < hi {
+		if hi := lo + ansi.StringWidth(k.mark()+" "+k.label); col >= lo && col < hi {
 			return k.Key, true
 		}
 	}
@@ -1429,12 +1429,12 @@ func FieldWidth(width int) int { return max(Card{}.Inner(width)-noteIndent-1, 1)
 // the last one on the card — FieldOrigin finds the field by that label, and
 // a second one above it would put the terminal's cursor a row out.
 func (c *ApprovalCard) fieldRows(label, view, refused, take, back string, width, inner int) []string {
-	rows := []string{sty.Dim.Render(Clip("┄ "+label, inner))}
+	rows := []string{sty.dim.Render(Clip("┄ "+label, inner))}
 	for _, l := range strings.Split(view, "\n") {
 		rows = append(rows, Clip(strings.Repeat(" ", noteIndent)+l, inner))
 	}
 	if refused != "" {
-		rows = append(rows, sty.Err.Render(Clip(strings.Repeat(" ", noteIndent)+"⚠ "+refused, inner)))
+		rows = append(rows, sty.err.Render(Clip(strings.Repeat(" ", noteIndent)+"⚠ "+refused, inner)))
 	}
 	// Wrapped rather than clipped: what esc does here is the half a narrow
 	// terminal would take, and it is the half that has to be readable — a
@@ -1490,7 +1490,7 @@ const grantWords = "allow without asking"
 // under a decision.
 func (c *ApprovalCard) grantRows(width, inner int) []string {
 	list := Select{Options: c.GrantRows, Focus: c.GrantFocus}
-	rows := []string{sty.Dim.Render(Clip("┄ "+grantWords, inner))}
+	rows := []string{sty.dim.Render(Clip("┄ "+grantWords, inner))}
 	rows = append(rows, list.optionRows(width, false, 0, len(c.GrantRows))...)
 	// What esc leaves behind is spelled out rather than left to the word
 	// "cancel": the whole offer is that a grant is read before it is made,
@@ -1563,7 +1563,7 @@ func (c *ApprovalCard) severityRows() []string {
 	if word == "" {
 		var rows []string
 		for _, w := range c.Warnings {
-			rows = append(rows, sty.Warn.Render("⚠ "+w))
+			rows = append(rows, sty.warn.Render("⚠ "+w))
 		}
 		return rows
 	}
@@ -1573,11 +1573,11 @@ func (c *ApprovalCard) severityRows() []string {
 	}
 	lead := c.tone().Render(word)
 	if reason != "" {
-		lead += sty.Dim.Render(" · " + reason)
+		lead += sty.dim.Render(" · " + reason)
 	}
 	rows := []string{lead}
 	for _, w := range rest {
-		rows = append(rows, sty.Warn.Render("⚠ "+w))
+		rows = append(rows, sty.warn.Render("⚠ "+w))
 	}
 	return rows
 }
@@ -1616,7 +1616,7 @@ func (c *ApprovalCard) chips() []string {
 func (f CardField) render(inner int) string {
 	label := padRight(f.Label, fieldLabelWidth-1) + " "
 	value := f.Tone.style().Render(f.Value)
-	head := sty.Status.Render(label) + value
+	head := sty.status.Render(label) + value
 	if f.Detail == "" || f.Standing() {
 		return head
 	}
@@ -1624,7 +1624,7 @@ func (f CardField) render(inner int) string {
 	if lipgloss.Width(head)+lipgloss.Width(detail) > inner {
 		return head
 	}
-	return head + sty.Dimmer.Render(detail)
+	return head + sty.dimmer.Render(detail)
 }
 
 // plural renders "1 hunk" / "3 hunks".

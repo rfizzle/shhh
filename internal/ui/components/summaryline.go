@@ -32,9 +32,9 @@ type SummaryLine struct {
 func summaryVerdict(t SummaryTone) string {
 	switch t {
 	case SummaryOffTarget, SummaryUnclear:
-		return sty.Accent.Render(SummaryWord(t))
+		return sty.accent.Render(SummaryWord(t))
 	}
-	return sty.Dim.Render(SummaryWord(t))
+	return sty.dim.Render(SummaryWord(t))
 }
 
 // View draws the row at the pane's width: the sentence wrapped at the body
@@ -42,12 +42,12 @@ func summaryVerdict(t SummaryTone) string {
 func (s SummaryLine) View(width int) string {
 	right := summaryVerdict(s.Tone)
 	if s.Offer.Key != "" {
-		right += sty.Dim.Render(" · ") + keyOffers([]TurnKey{s.Offer})
+		right += sty.dim.Render(" · ") + keyOffers([]TurnKey{s.Offer})
 	}
-	lead := " " + " " + sty.Dim.Render("≡") + " "
+	lead := " " + " " + sty.dim.Render("≡") + " "
 	inner := max(width-CardBodyIndent-cardMargin, 1)
 	first := max(inner-lipgloss.Width(right)-1, 1)
-	tone := sty.Dimmer.Italic(true)
+	tone := sty.dimmer.Italic(true)
 	head, rest := wrapFirst(strings.TrimSpace(s.Text), first, inner)
 	line := lead + tone.Render(head)
 	gap := max(CardBodyIndent+inner-lipgloss.Width(line)-lipgloss.Width(right), 1)
@@ -57,7 +57,7 @@ func (s SummaryLine) View(width int) string {
 		lines = append(lines, pad+tone.Render(l))
 	}
 	for _, d := range s.Detail {
-		lines = append(lines, pad+sty.Dim.Render(Clip(d, inner)))
+		lines = append(lines, pad+sty.dim.Render(Clip(d, inner)))
 	}
 	return strings.Join(lines, "\n")
 }

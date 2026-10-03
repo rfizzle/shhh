@@ -133,27 +133,27 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 	}
 	meta := ""
 	if len(c.Files) > 0 {
-		meta = sty.Dim.Render("session · ") + DiffStat(c.Added, c.Removed)
+		meta = sty.dim.Render("session · ") + DiffStat(c.Added, c.Removed)
 		if c.Added == 0 && c.Removed == 0 {
 			// Every file below changed its permissions and nothing else, so
 			// there are no lines to total. The heading keeps its scope and
 			// drops the pair of zeros nothing measured
 			// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out);
 			// the rows say what did change.
-			meta = sty.Dim.Render("session")
+			meta = sty.dim.Render("session")
 		}
 	}
-	b := railBlock{heading: railHeading("CHANGES", meta, sty.Dim, width)}
+	b := railBlock{heading: railHeading("CHANGES", meta, sty.dim, width)}
 	// What has been banked, above the paths that have not. It is pinned
 	// because it is the one row in the block that says some of this work is
 	// now somewhere a session ending cannot lose it.
 	if cm := c.Committed; cm != nil {
-		stated := sty.Body.Render("committed "+cm.SHA) +
-			sty.Dim.Render(" · "+plural(cm.Files, "file"))
+		stated := sty.body.Render("committed "+cm.SHA) +
+			sty.dim.Render(" · "+plural(cm.Files, "file"))
 		if cm.Ahead != "" {
-			stated += sty.Dim.Render(" · " + cm.Ahead)
+			stated += sty.dim.Render(" · " + cm.Ahead)
 		}
-		b.pin(railRow(" "+sty.Add.Render("✓")+" "+stated, "", width, inspectorIndent))
+		b.pin(railRow(" "+sty.add.Render("✓")+" "+stated, "", width, inspectorIndent))
 	}
 	// The rows the preset does not keep go straight behind the marker, which
 	// states them with their counts the way it states what a short rail
@@ -170,22 +170,22 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 	for i, f := range c.Files {
 		// The changed-file row carries the mutation rail and the edit glyph,
 		// so the close of a turn looks like the rows that produced it.
-		lead := sty.Accent.Render("▎") + sty.Accent.Render("✎") + " "
+		lead := sty.accent.Render("▎") + sty.accent.Render("✎") + " "
 		stats := DiffStat(f.Added, f.Removed)
 		counted := true
 		if f.Mode != "" && f.Added == 0 && f.Removed == 0 {
 			// Nothing counted this row, so it states the change it does have
 			// rather than the zero it does not, and it brings no counts to
 			// the fold's total.
-			stats, counted = sty.Dim.Render(f.Mode), false
+			stats, counted = sty.dim.Render(f.Mode), false
 		}
 		if f.Turns > 1 {
 			// Repeat edits collapsed to one row, so the row says how many
 			// turns are behind its counts.
-			stats += " " + sty.Dim.Render(fmt.Sprintf("%dt", f.Turns))
+			stats += " " + sty.dim.Render(fmt.Sprintf("%dt", f.Turns))
 		}
 		list(i, railLine{
-			text:    railRow(lead+sty.Body.Render(f.Path), stats, width, inspectorIndent),
+			text:    railRow(lead+sty.body.Render(f.Path), stats, width, inspectorIndent),
 			pinned:  f.ThisTurn,
 			counted: counted,
 			added:   f.Added,
@@ -209,8 +209,8 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 		if c.Committed == nil {
 			label = "skipped"
 		}
-		list(len(c.Files)+j, railLine{text: railRow(" "+sty.Dim.Render("·")+" "+sty.Dimmer.Render(path),
-			sty.Dim.Render(label), width, inspectorIndent)})
+		list(len(c.Files)+j, railLine{text: railRow(" "+sty.dim.Render("·")+" "+sty.dimmer.Render(path),
+			sty.dim.Render(label), width, inspectorIndent)})
 	}
 	b.fold = func(hidden []railLine) string { return changesFold(hidden, width) }
 	return b, true
@@ -231,7 +231,7 @@ func changesFold(hidden []railLine, width int) string {
 		added += h.added
 		removed += h.removed
 	}
-	left := sty.Hint.Render(fmt.Sprintf("… %d more", len(hidden)))
+	left := sty.hint.Render(fmt.Sprintf("… %d more", len(hidden)))
 	if counted == 0 {
 		return indentRow(left, width)
 	}

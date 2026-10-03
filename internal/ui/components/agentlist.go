@@ -19,12 +19,12 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// AgentState is one agent row's lifecycle state
+// agentState is one agent row's lifecycle state
 // (docs/interface/surfaces.md#the-agent-manager).
-type AgentState int
+type agentState int
 
 const (
-	AgentCurrent AgentState = iota // ● the agent whose surface is shown
+	AgentCurrent agentState = iota // ● the agent whose surface is shown
 	AgentRunning                   // ◇ working
 	AgentBlocked                   // ⚠ waiting on the user
 	AgentDone                      // ◇ finished, ✓ in the outcome field
@@ -48,7 +48,7 @@ const (
 // AgentRow is one agent in the list: identity, task label, live status, and
 // spend.
 type AgentRow struct {
-	State  AgentState
+	State  agentState
 	Name   string
 	Task   string
 	Status string
@@ -125,15 +125,15 @@ func (r AgentRow) followsUp() bool {
 	return r.Progress != nil && r.Progress.State == FanoutDone && r.TakesFollowUp
 }
 
-// AgentAction is what the user asked to do with the focused row.
-type AgentAction int
+// agentAction is what the user asked to do with the focused row.
+type agentAction int
 
 const (
 	// AgentNone is the zero value, and it leads the list so that a key the
 	// surface answered without asking the host for anything cannot be read as
 	// the first action in it. The result is a value rather than an interface,
 	// so there is no nil left to mean this.
-	AgentNone     AgentAction = iota
+	AgentNone     agentAction = iota
 	AgentAttach               // enter — attach to the agent's surface
 	AgentCancel               // x — cancel its current turn
 	AgentKill                 // X — kill the agent
@@ -149,9 +149,9 @@ const (
 	AgentBack                 // esc — dismiss the list
 )
 
-// AgentListResult is the agent-list Update result.
-type AgentListResult struct {
-	Action AgentAction
+// agentListResult is the agent-list Update result.
+type agentListResult struct {
+	Action agentAction
 	Index  int
 	// Text is what was typed into the row's field, for the one action that
 	// carries words: the redirect. Empty for every other action, which is
@@ -294,13 +294,13 @@ func (l *AgentList) liveChildren() int {
 // action and comes back); attach and esc dismiss it. [r] is silent on a row
 // that does not offer it rather than reporting a failure the row already
 // predicted, and [a] and [K] are silent when the list holds nothing for them.
-func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResult) {
+func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result agentListResult) {
 	if l.steer != nil {
 		if l.settleSteer(); l.steer == nil {
 			// The row went away under the field between frames. The keystroke
 			// goes with it rather than acting on whichever agent now stands
 			// where the pointer is.
-			return false, AgentListResult{}
+			return false, agentListResult{}
 		}
 		return false, l.typeSteer(msg)
 	}
@@ -309,26 +309,26 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResu
 	case keys.Is(pressed, keys.Agent.Attach):
 		switch row := l.focused(); row.State {
 		case AgentOffer:
-			return true, AgentListResult{Action: AgentDraft, Index: l.Focus}
+			return true, agentListResult{Action: AgentDraft, Index: l.Focus}
 		case AgentRole:
 			// A role shhh ships has no file, so there is nothing for the key
 			// to open and it is silent rather than saying so.
 			if row.Editable {
-				return true, AgentListResult{Action: AgentOpenRole, Index: l.Focus}
+				return true, agentListResult{Action: AgentOpenRole, Index: l.Focus}
 			}
 		default:
-			return true, AgentListResult{Action: AgentAttach, Index: l.Focus}
+			return true, agentListResult{Action: AgentAttach, Index: l.Focus}
 		}
 	case keys.Is(pressed, keys.Agent.Answer):
 		if i := l.answerable(); i >= 0 {
-			return false, AgentListResult{Action: AgentAnswer, Index: i}
+			return false, agentListResult{Action: AgentAnswer, Index: i}
 		}
 	case keys.Is(pressed, keys.Agent.KillAll):
 		// The list rather than a row, so the index says so: a host that read
 		// one off this action would be killing whichever child the pointer
 		// happened to be resting on as well as all of them.
 		if l.liveChildren() > 1 {
-			return false, AgentListResult{Action: AgentKillAll, Index: -1}
+			return false, agentListResult{Action: AgentKillAll, Index: -1}
 		}
 	case keys.Is(pressed, keys.Agent.Steer):
 		if l.focused().steerable() {
@@ -336,19 +336,19 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResu
 		}
 	case keys.Is(pressed, keys.Agent.Retry):
 		if l.focused().Retryable {
-			return false, AgentListResult{Action: AgentRetry, Index: l.Focus}
+			return false, agentListResult{Action: AgentRetry, Index: l.Focus}
 		}
 	case keys.Is(pressed, keys.Agent.Review):
 		if l.focused().PatchKept {
-			return false, AgentListResult{Action: AgentReview, Index: l.Focus}
+			return false, agentListResult{Action: AgentReview, Index: l.Focus}
 		}
 	case keys.Is(pressed, keys.Agent.Migrate):
 		if row := l.focused(); row.State == AgentRole && row.Editable && row.Migratable {
-			return true, AgentListResult{Action: AgentMigrate, Index: l.Focus}
+			return true, agentListResult{Action: AgentMigrate, Index: l.Focus}
 		}
 	case keys.Is(pressed, keys.Agent.Edit):
 		if row := l.focused(); row.State == AgentRole && row.Editable {
-			return true, AgentListResult{Action: AgentEditRole, Index: l.Focus}
+			return true, agentListResult{Action: AgentEditRole, Index: l.Focus}
 		}
 	case keys.Is(pressed, keys.Agent.Cancel):
 		// A role row and the offer row are not agents, so the keys that act
@@ -357,16 +357,16 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResu
 		if !l.focused().isAgent() {
 			break
 		}
-		return false, AgentListResult{Action: AgentCancel, Index: l.Focus}
+		return false, agentListResult{Action: AgentCancel, Index: l.Focus}
 	case keys.Is(pressed, keys.Agent.Kill):
 		if !l.focused().isAgent() {
 			break
 		}
-		return false, AgentListResult{Action: AgentKill, Index: l.Focus}
+		return false, agentListResult{Action: AgentKill, Index: l.Focus}
 	case keys.Is(pressed, keys.Agent.Back):
-		return true, AgentListResult{Action: AgentBack, Index: -1}
+		return true, agentListResult{Action: AgentBack, Index: -1}
 	}
-	return false, AgentListResult{}
+	return false, agentListResult{}
 }
 
 // openSteer puts the field under the focused row with the keyboard in it. It
@@ -376,10 +376,10 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResu
 func (l *AgentList) openSteer() {
 	row := l.focused()
 	l.steer = NewNoteBox()
-	l.steer.Label = keys.Words(keys.Agent.Steer) + " " + row.Name
+	l.steer.label = keys.Words(keys.Agent.Steer) + " " + row.Name
 	l.steer.Field.Placeholder = "what it should do instead"
 	if row.followsUp() {
-		l.steer.Label = followUpWord + " " + row.Name
+		l.steer.label = followUpWord + " " + row.Name
 		l.steer.Field.Placeholder = "what to ask it next"
 	}
 	l.steer.Open()
@@ -397,7 +397,7 @@ func (l *AgentList) openSteer() {
 // redirect with no words in it is not one.
 //
 // settleSteer has run, so the target is a row in this list.
-func (l *AgentList) typeSteer(msg tea.KeyPressMsg) AgentListResult {
+func (l *AgentList) typeSteer(msg tea.KeyPressMsg) agentListResult {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Agent.Back):
 		l.closeSteer()
@@ -408,11 +408,11 @@ func (l *AgentList) typeSteer(msg tea.KeyPressMsg) AgentListResult {
 		}
 		at := l.steerTarget()
 		l.closeSteer()
-		return AgentListResult{Action: AgentSteer, Index: at, Text: text}
+		return agentListResult{Action: AgentSteer, Index: at, Text: text}
 	default:
 		l.steer.Update(msg)
 	}
-	return AgentListResult{}
+	return agentListResult{}
 }
 
 // settleSteer puts the pointer back on the row the open field is aimed at,
@@ -467,7 +467,7 @@ func (l *AgentList) steerRows(i, inner int) []string {
 	}
 	indent := detailIndent + max(l.Rows[i].Depth-1, 0)
 	var rows []string
-	for _, r := range l.steer.Rows(max(inner-indent, 8)) {
+	for _, r := range l.steer.rows(max(inner-indent, 8)) {
 		rows = append(rows, strings.Repeat(" ", indent)+r)
 	}
 	return rows
@@ -487,7 +487,7 @@ func (l *AgentList) steerRows(i, inner int) []string {
 func (r AgentRow) stateGlyph() string {
 	switch r.State {
 	case AgentCurrent:
-		return sty.Headline.Render("●")
+		return sty.headline.Render("●")
 	case AgentBlocked:
 		return AgentProgress{State: FanoutBlocked}.rowGlyph()
 	case AgentFailed:
@@ -495,12 +495,12 @@ func (r AgentRow) stateGlyph() string {
 	case AgentDone:
 		return AgentProgress{State: FanoutDone}.rowGlyph()
 	case AgentOffer:
-		return sty.Accent.Render("⚙")
+		return sty.accent.Render("⚙")
 	case AgentRole:
 		// The sub-agent's own mark, unlit: a role is what a child is before
 		// anybody spawns one, and a lit ◇ on this list is a child that is
 		// running.
-		return sty.Dimmer.Render("◇")
+		return sty.dimmer.Render("◇")
 	default:
 		return AgentProgress{State: FanoutRunning}.rowGlyph()
 	}
@@ -512,12 +512,12 @@ func (r AgentRow) stateGlyph() string {
 // command the offer opens, and the place a role's file lives.
 func (r AgentRow) rightField() string {
 	if !r.isAgent() {
-		field := sty.Dimmer.Render(r.Status)
+		field := sty.dimmer.Render(r.Status)
 		if r.State == AgentRole && r.Editable && r.Migratable {
 			// The glyph and the words carry it, so a terminal without colour
 			// still says which file is behind
 			// (docs/interface/principles.md#colour-never-carries-meaning-alone).
-			field += sty.Dimmer.Render(detailSep) + sty.Accent.Render(OlderShapeMark)
+			field += sty.dimmer.Render(detailSep) + sty.accent.Render(OlderShapeMark)
 		}
 		return field
 	}
@@ -530,17 +530,17 @@ func (r AgentRow) rightField() string {
 	status := r.Status
 	switch r.State {
 	case AgentBlocked:
-		status = sty.Err.Render("⚠ " + status)
+		status = sty.err.Render("⚠ " + status)
 	case AgentDone:
 		// ✓ never takes an activity row's glyph column, so a finished child
 		// keeps ◇ there and its tick stands in the outcome field, which is
 		// where the outcome table puts it (stateGlyph).
-		status = sty.Add.Render("✓ " + status)
+		status = sty.add.Render("✓ " + status)
 	default:
-		status = sty.Dim.Render(status)
+		status = sty.dim.Render(status)
 	}
 	if r.Spend != "" {
-		status += "  " + sty.Status.Render(r.Spend)
+		status += "  " + sty.status.Render(r.Spend)
 	}
 	return status
 }
@@ -556,7 +556,7 @@ const OlderShapeMark = "◆ older shape"
 func keptPatchField(p AgentProgress) string {
 	field := keptPatchOffer()
 	if stats := p.stats(); stats != "" {
-		field += sty.Dim.Render(detailSep) + stats
+		field += sty.dim.Render(detailSep) + stats
 	}
 	return field
 }
@@ -564,8 +564,8 @@ func keptPatchField(p AgentProgress) string {
 // keptPatchOffer is `patch kept · [p] review`, one spelling for the manager's
 // row and the rail's line under the same child.
 func keptPatchOffer() string {
-	return sty.Dimmer.Render("patch kept") + sty.Dimmer.Render(detailSep) +
-		sty.Hint.Render(keys.Bracket(keys.Agent.Review)+" "+keys.Words(keys.Agent.Review))
+	return sty.dimmer.Render("patch kept") + sty.dimmer.Render(detailSep) +
+		sty.hint.Render(keys.Bracket(keys.Agent.Review)+" "+keys.Words(keys.Agent.Review))
 }
 
 // render lays one row out across the card's inner width, with its note (if
@@ -581,14 +581,14 @@ func (r AgentRow) render(inner int, focused bool) []string {
 		// a column that is not there, because the names are not one width and
 		// so the tasks under them never line up
 		// (docs/interface/surfaces.md#the-agent-manager).
-		left += sty.Dimmer.Render(detailSep + Clip(r.Task, max(inner/3, 8)))
+		left += sty.dimmer.Render(detailSep + Clip(r.Task, max(inner/3, 8)))
 	}
 	right := r.rightField()
 	// The step a running child with its own plan is on, where there is room
 	// for it: it is the first thing on the row to give way, since the lane
 	// in the transcript carries it too.
 	if p := r.Progress; p != nil && p.Planned && p.StepTitle != "" && !r.PatchKept && !p.State.settled() {
-		titled := left + sty.Dimmer.Render(detailSep+Clip(p.StepTitle, max(inner/4, 8)))
+		titled := left + sty.dimmer.Render(detailSep+Clip(p.StepTitle, max(inner/4, 8)))
 		if inner-2-lipgloss.Width(titled)-lipgloss.Width(right) >= 2 {
 			left = titled
 		}
@@ -620,7 +620,7 @@ func (r AgentRow) render(inner int, focused bool) []string {
 	if focused {
 		// The pointer keeps its own colour outside the highlight and the row
 		// is lit behind it, which is the pair every list draws (LitRow).
-		row = sty.FocusPointer.Render("❯") + " " + LitRow(row, 0, max(inner-GridPointerWidth, 0))
+		row = sty.focusPointer.Render("❯") + " " + LitRow(row, 0, max(inner-GridPointerWidth, 0))
 	} else {
 		row = PointerColumn() + row
 	}
@@ -730,7 +730,7 @@ func (l *AgentList) hints() []KeyOffer {
 // not a child and is left out of it. A child parked in front of a check is
 // counted as waiting, as the fan-out header counts it, since nobody held it.
 func (l *AgentList) tally() string {
-	var states []FanoutState
+	var states []fanoutState
 	waits := 0
 	for _, r := range l.Rows {
 		if r.State != AgentOffer && r.Progress != nil {
@@ -761,7 +761,7 @@ func (l *AgentList) visibleRows(width, budget int, scrolling []int) []string {
 		}
 	}
 	l.list.Items, l.list.Focus = scrolling, focus
-	l.list.Rows = func(pos int) int {
+	l.list.rows = func(pos int) int {
 		lines := 1
 		if l.Rows[scrolling[pos]].noteLine() != "" {
 			lines++
@@ -774,7 +774,7 @@ func (l *AgentList) visibleRows(width, budget int, scrolling []int) []string {
 	lo, hi := l.list.Range(budget)
 	var rows []string
 	if lo > 0 {
-		rows = append(rows, ListOverflowRow("↑", lo, "", width-cardFrameWidth))
+		rows = append(rows, listOverflowRow("↑", lo, "", width-cardFrameWidth))
 	}
 	for pos := lo; pos < hi; pos++ {
 		i := scrolling[pos]
@@ -782,7 +782,7 @@ func (l *AgentList) visibleRows(width, budget int, scrolling []int) []string {
 		rows = append(rows, l.steerRows(i, inner)...)
 	}
 	if hi < n {
-		rows = append(rows, ListOverflowRow("↓", n-hi, "", width-cardFrameWidth))
+		rows = append(rows, listOverflowRow("↓", n-hi, "", width-cardFrameWidth))
 	}
 	return rows
 }
@@ -812,15 +812,15 @@ func (l *AgentList) View(width int) string {
 	// that is rated, so there is no severity to take the frame's colour from
 	// (CardTone). What the top border says beside it departs from the
 	// artboard (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
-	card := Card{Title: "Agents", Tone: CardDecision}
+	card := Card{Title: "Agents", tone: CardDecision}
 	// The count goes in front of the tally because chips drop from the
 	// front: on a narrow terminal what still needs you outlasts how many
 	// have been started.
 	if count := spawnedCount(l.Spawned, l.SpawnLimit); count != "" {
-		card.Chips = append(card.Chips, sty.Dim.Render(count))
+		card.chips = append(card.chips, sty.dim.Render(count))
 	}
 	if tally := l.tally(); tally != "" {
-		card.Chips = append(card.Chips, tally)
+		card.chips = append(card.chips, tally)
 	}
 	return card.Render(rows, width)
 }

@@ -30,7 +30,7 @@ func sourceRows() []SourcesRow {
 }
 
 func TestSourcesScreen_GroupsUnderItsHosts(t *testing.T) {
-	s := &SourcesScreen{Rows: sourceRows(), Focus: 1, Subject: "2 pages · 1 host · 1 search", MaxLines: 14}
+	s := &SourcesScreen{Rows: sourceRows(), Focus: 1, Subject: "2 pages · 1 host · 1 search", maxLines: 14}
 	view := ansi.Strip(s.View(110))
 	for _, want := range []string{"/sources", "searches", "docs.rs", "tokio — Rust", "[?] keys", "back"} {
 		if !strings.Contains(view, want) {
@@ -46,7 +46,7 @@ func TestSourcesScreen_GroupsUnderItsHosts(t *testing.T) {
 
 // The pointer steps over the group headers: no key can land on one.
 func TestSourcesScreen_MovementStepsOverTheHeaders(t *testing.T) {
-	s := &SourcesScreen{Rows: sourceRows(), MaxLines: 14}
+	s := &SourcesScreen{Rows: sourceRows(), maxLines: 14}
 	s.View(110)
 	for i := 0; i < 2; i++ {
 		if done, _ := s.Update(tea.KeyPressMsg{Code: tea.KeyDown}); done {
@@ -59,7 +59,7 @@ func TestSourcesScreen_MovementStepsOverTheHeaders(t *testing.T) {
 }
 
 func TestSourcesScreen_EnterOnlyAnswersForAPageThatWasKept(t *testing.T) {
-	s := &SourcesScreen{Rows: sourceRows(), Focus: 1, MaxLines: 14}
+	s := &SourcesScreen{Rows: sourceRows(), Focus: 1, maxLines: 14}
 	s.View(110)
 	done, result := s.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if !done || !result.Open || result.Evidence != "ev-1" {
@@ -79,7 +79,7 @@ func TestSourcesScreen_EnterOnlyAnswersForAPageThatWasKept(t *testing.T) {
 }
 
 func TestSourcesScreen_AnEmptyLedgerSaysSo(t *testing.T) {
-	s := &SourcesScreen{MaxLines: 14}
+	s := &SourcesScreen{maxLines: 14}
 	view := s.View(90)
 	if !strings.Contains(view, "nothing has been read") {
 		t.Errorf("an empty screen says nothing:\n%s", view)
@@ -120,7 +120,7 @@ func TestSourcesScreen_TheRowLeadsWithTheMarkTheActWore(t *testing.T) {
 // Stacked, the list gives way to the preview's floor rather than the other
 // way round, which is the family's rule.
 func TestSourcesScreen_NarrowStacksThePanes(t *testing.T) {
-	s := &SourcesScreen{Rows: sourceRows(), Focus: 1, Subject: "2 pages", MaxLines: 16}
+	s := &SourcesScreen{Rows: sourceRows(), Focus: 1, Subject: "2 pages", maxLines: 16}
 	view := s.View(60)
 	if !strings.Contains(view, "⚙ /tokio/latest/tokio/") ||
 		!strings.Contains(view, "https://docs.rs/tokio/latest/tokio/") {
@@ -146,7 +146,7 @@ func TestGolden_SourcesScreen(t *testing.T) {
 	})
 	captureGolden(t, "sources-screen", "the sources screen", goldenWidths, func(width int) []golden.Panel {
 		screen := func(focus int) string {
-			return (&SourcesScreen{Rows: rows, Subject: "2 pages · 1 via mcp · 2 hosts · 1 search", Focus: focus, MaxLines: 16}).View(width)
+			return (&SourcesScreen{Rows: rows, Subject: "2 pages · 1 via mcp · 2 hosts · 1 search", Focus: focus, maxLines: 16}).View(width)
 		}
 		return []golden.Panel{
 			{Label: "a fetch · the fetcher's own read, under ⚙", View: screen(1)},

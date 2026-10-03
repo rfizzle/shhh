@@ -10,12 +10,12 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// TodoRowState is what a backlog row's glyph says about it.
-type TodoRowState int
+// todoRowState is what a backlog row's glyph says about it.
+type todoRowState int
 
 const (
 	// TodoReady can be started now.
-	TodoReady TodoRowState = iota
+	TodoReady todoRowState = iota
 	// TodoWaiting is open but has a dependency still outstanding.
 	TodoWaiting
 	// TodoBlocked needs a person before it can move.
@@ -32,7 +32,7 @@ type InspectorTodoRow struct {
 	// the two facts that decide the order and the ceremony, and nothing
 	// else fits.
 	Priority, Grade string
-	State           TodoRowState
+	State           todoRowState
 	// Note is the right-hand column: what the row waits on, or the stage a
 	// running one is at. Blank for a ready row, which has nothing to add.
 	Note string
@@ -89,40 +89,40 @@ func (r InspectorRail) todoBlock(width int) (railBlock, bool) {
 	if t.Blocked > 0 {
 		meta += fmt.Sprintf(" · %d blocked", t.Blocked)
 	}
-	b := railBlock{heading: railHeading("TODO", meta, sty.Dim, width)}
+	b := railBlock{heading: railHeading("TODO", meta, sty.dim, width)}
 	// The sprint sits above the items because it is what scopes them: the
 	// rows under it are the set, and n of m is how far through it the
 	// project is. The word "sprint" is on the row because the name alone
 	// would read as one more item.
 	if t.Sprint != "" {
-		b.add(railRow(sty.Dim.Render("sprint")+" "+sty.Body.Render(t.Sprint),
-			sty.Dim.Render(fmt.Sprintf("%d of %d", t.SprintDone, t.SprintTotal)), width, inspectorIndent))
+		b.add(railRow(sty.dim.Render("sprint")+" "+sty.body.Render(t.Sprint),
+			sty.dim.Render(fmt.Sprintf("%d of %d", t.SprintDone, t.SprintTotal)), width, inspectorIndent))
 	}
 	// And which of them is being worked, on its own row under the set. It is
 	// said here as well as on the item's own row because the list below shows
 	// four of a backlog that may hold forty, and where a sprint is up to is
 	// the one fact that must not depend on the current item having fitted.
 	if t.SprintItem != "" {
-		b.add(railRow(sty.Dim.Render("on")+" "+sty.Body.Render(t.SprintItem),
-			sty.Dim.Render(t.SprintStage), width, inspectorIndent))
+		b.add(railRow(sty.dim.Render("on")+" "+sty.body.Render(t.SprintItem),
+			sty.dim.Render(t.SprintStage), width, inspectorIndent))
 	}
 	for _, row := range t.Rows {
 		glyph, style := todoRowTone(row.State)
-		left := glyph + " " + sty.Dim.Render(row.Priority+" "+row.Grade) + " " + style.Render(row.Slug)
+		left := glyph + " " + sty.dim.Render(row.Priority+" "+row.Grade) + " " + style.Render(row.Slug)
 		b.add(railRow(left, row.note(), width, inspectorIndent))
 	}
 	if t.More > 0 {
 		// Not an item but a count of them, so it is not folded like one: the
 		// first item the rail folds takes this row with it and the block's
 		// marker states both numbers as one (railLine.more).
-		b.moreRow(indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", t.More)), width), t.More)
+		b.moreRow(indentRow(sty.hint.Render(fmt.Sprintf("… %d more", t.More)), width), t.More)
 	}
 	if t.Hint != "" {
 		// It goes rather than folds, like PLAN's: the hint is not a backlog
 		// item, so the marker counting what the block hid has nothing to
 		// count for it, and would spend the row the fold just saved while
 		// reporting an item hidden that is still on screen (railLine.shed).
-		b.shedRow(indentRow(sty.Hint.Render(t.Hint), width))
+		b.shedRow(indentRow(sty.hint.Render(t.Hint), width))
 	}
 	return b, true
 }
@@ -134,9 +134,9 @@ func (r InspectorRail) todoBlock(width int) (railBlock, bool) {
 func (r InspectorTodoRow) note() string {
 	note := ""
 	if r.Note != "" {
-		note = sty.Dim.Render(r.Note)
+		note = sty.dim.Render(r.Note)
 		if r.Stale {
-			note = sty.Warn.Render(r.Note)
+			note = sty.warn.Render(r.Note)
 		}
 	}
 	m, ok := AgentMeter(r.LanesDone, r.LanesTotal)
@@ -153,14 +153,14 @@ func (r InspectorTodoRow) note() string {
 // todoRowTone is a backlog row's glyph and the weight its slug carries. The
 // running one is bright for the same reason the running plan step is; a
 // blocked one carries the error mark because it is waiting on a person.
-func todoRowTone(s TodoRowState) (string, lipgloss.Style) {
+func todoRowTone(s todoRowState) (string, lipgloss.Style) {
 	switch s {
 	case TodoRunning:
-		return sty.SpinText.Render("▸"), brightStyle()
+		return sty.spinText.Render("▸"), brightStyle()
 	case TodoBlocked:
-		return sty.Err.Render("!"), sty.Body
+		return sty.err.Render("!"), sty.body
 	case TodoWaiting:
-		return sty.Dim.Render("·"), sty.Dim
+		return sty.dim.Render("·"), sty.dim
 	}
-	return sty.Dim.Render("·"), sty.Body
+	return sty.dim.Render("·"), sty.body
 }

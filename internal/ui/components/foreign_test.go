@@ -185,14 +185,14 @@ func TestForeignText_NoIndexEscapesThePalette(t *testing.T) {
 	withColorProfile(t, colorprofile.TrueColor)
 	issued := map[color.Color]bool{}
 	for _, tok := range []Token{
-		FullPalette.Add, FullPalette.Del, FullPalette.Accent, FullPalette.Info,
-		FullPalette.Hunk, FullPalette.Spin, FullPalette.Dim, FullPalette.Dimmer,
-		FullPalette.Status, FullPalette.Body, FullPalette.Bright,
+		fullPalette.Add, fullPalette.Del, fullPalette.Accent, fullPalette.Info,
+		fullPalette.Hunk, fullPalette.Spin, fullPalette.Dim, fullPalette.Dimmer,
+		fullPalette.Status, fullPalette.Body, fullPalette.Bright,
 	} {
-		issued[tok.TrueColor] = true
+		issued[tok.trueColor] = true
 	}
 	for n := range 256 {
-		if got := indexToken(n).TrueColor; !issued[got] {
+		if got := indexToken(n).trueColor; !issued[got] {
 			t.Fatalf("38;5;%d arrives as %v, which no token issued", n, got)
 		}
 	}
@@ -203,13 +203,13 @@ func TestForeignText_NoIndexEscapesThePalette(t *testing.T) {
 // to its own materials.
 func TestForeignText_EveryTokenFoldsOntoItself(t *testing.T) {
 	for _, tok := range []Token{
-		FullPalette.Add, FullPalette.Del, FullPalette.Accent, FullPalette.Info,
-		FullPalette.Hunk, FullPalette.Spin, FullPalette.Dim, FullPalette.Dimmer,
-		FullPalette.Status, FullPalette.Body, FullPalette.Bright,
+		fullPalette.Add, fullPalette.Del, fullPalette.Accent, fullPalette.Info,
+		fullPalette.Hunk, fullPalette.Spin, fullPalette.Dim, fullPalette.Dimmer,
+		fullPalette.Status, fullPalette.Body, fullPalette.Bright,
 	} {
-		r, g, b, _ := tok.TrueColor.RGBA()
+		r, g, b, _ := tok.trueColor.RGBA()
 		if got := nearestToken(int(r>>8), int(g>>8), int(b>>8)); got != tok {
-			t.Fatalf("%v folds onto %v, want itself", tok.TrueColor, got.TrueColor)
+			t.Fatalf("%v folds onto %v, want itself", tok.trueColor, got.trueColor)
 		}
 	}
 }

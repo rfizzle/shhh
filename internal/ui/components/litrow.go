@@ -39,10 +39,10 @@ const ansiReset = ansi.ResetStyle
 // the pointer is the whole of the cursor on such a terminal, which is why the
 // cursor is a glyph and not a colour (invariant 1).
 func LitRow(line string, skip, width int) string {
-	return LitRowKeeping(line, skip, -1, width)
+	return litRowKeeping(line, skip, -1, width)
 }
 
-// LitRowKeeping is LitRow told where the row's marks end rather than left to
+// litRowKeeping is LitRow told where the row's marks end rather than left to
 // measure it. keep is how many cells after skip hold their own colours inside
 // the highlight; a negative keep measures the glyph run, which is what LitRow
 // passes.
@@ -51,7 +51,7 @@ func LitRow(line string, skip, width int) string {
 // `[x]`, and the letter in the middle of it ends the glyph run, which would
 // paint the bracket in the box's colour and the tick in the row's. Half a
 // checkbox in each of two colours is one mark drawn as two.
-func LitRowKeeping(line string, skip, keep, width int) string {
+func litRowKeeping(line string, skip, keep, width int) string {
 	bg := backgroundSeq(Palette.FocusBg)
 	if bg == "" {
 		return line
@@ -68,7 +68,7 @@ func LitRowKeeping(line string, skip, keep, width int) string {
 	words := ansi.Strip(ansi.TruncateLeft(rest, keep, ""))
 	pad := max(width-skip-keep-lipgloss.Width(words), 0)
 	return head + rearm(glyphs, bg) +
-		sty.LitText.Render(words+strings.Repeat(" ", pad)) + ansiReset
+		sty.litText.Render(words+strings.Repeat(" ", pad)) + ansiReset
 }
 
 // glyphRunWidth is how many cells of a plain row come before its first word.
@@ -110,8 +110,8 @@ func rearm(s, bg string) string {
 // (docs/interface/principles.md#one-grid).
 func LitOption(row string, width int) string {
 	inner := max(width-GridPointerWidth, 0)
-	return sty.FocusPointer.Render("❯") + " " +
-		sty.FocusRow.Render(padRight(Clip(row, inner), inner))
+	return sty.focusPointer.Render("❯") + " " +
+		sty.focusRow.Render(padRight(Clip(row, inner), inner))
 }
 
 // PointerColumn is the pointer's own cells on a row that is not the one the

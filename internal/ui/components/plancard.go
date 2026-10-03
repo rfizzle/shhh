@@ -101,7 +101,7 @@ func (c *PlanCard) View(width int) string {
 	// — a plan is a proposal and not an act — and a card waiting for an
 	// answer drawn in the chrome grey a viewer wears says nothing about which
 	// of the two it is (CardTone).
-	return Card{Title: c.Title, Chips: c.chips(), Tone: CardDecision}.
+	return Card{Title: c.Title, chips: c.chips(), tone: CardDecision}.
 		Render(append(rows, tail...), width)
 }
 
@@ -173,7 +173,7 @@ func (c *PlanCard) bodyRows(inner, budget int) []string {
 	// is reserved for that count.
 	for i, g := range groups {
 		if len(rows)+len(g) > budget-1 {
-			return append(rows, sty.Hint.Render(Clip(remainder(len(c.Steps)-i, len(rows) > 0), inner)))
+			return append(rows, sty.hint.Render(Clip(remainder(len(c.Steps)-i, len(rows) > 0), inner)))
 		}
 		rows = append(rows, g...)
 	}
@@ -201,10 +201,10 @@ func boundProse(prose []string, inner, budget int) []string {
 	}
 	var rows []string
 	for _, line := range prose {
-		rows = append(rows, sty.Body.Render(Clip(line, inner)))
+		rows = append(rows, sty.body.Render(Clip(line, inner)))
 	}
 	if truncated {
-		rows = append(rows, sty.Hint.Render("…"))
+		rows = append(rows, sty.hint.Render("…"))
 	}
 	return rows
 }
@@ -213,7 +213,7 @@ func boundProse(prose []string, inner, budget int) []string {
 // then the paths beneath. The intent is dropped before the title is clipped —
 // a title cut in half says less than a missing label does.
 func (s PlanStep) rows(inner int) []string {
-	head := sty.Dim.Render(padRight(strconv.Itoa(s.Number), 2)) + sty.Body.Render(s.Title)
+	head := sty.dim.Render(padRight(strconv.Itoa(s.Number), 2)) + sty.body.Render(s.Title)
 	if s.Kind != "" {
 		kind := s.KindTone.style().Render(s.Kind)
 		if gap := inner - lipgloss.Width(head) - lipgloss.Width(kind); gap >= 1 {
@@ -222,7 +222,7 @@ func (s PlanStep) rows(inner int) []string {
 	}
 	rows := []string{Clip(head, inner)}
 	if s.Detail != "" {
-		rows = append(rows, sty.Dimmer.Render(Clip("  "+s.Detail, inner)))
+		rows = append(rows, sty.dimmer.Render(Clip("  "+s.Detail, inner)))
 	}
 	return rows
 }
@@ -238,11 +238,11 @@ func (c *PlanCard) summaryRow(inner int) string {
 	for _, f := range c.Summary {
 		parts = append(parts, f.Tone.style().Render(f.Text))
 	}
-	line := strings.Join(parts, sty.Dim.Render(" · "))
+	line := strings.Join(parts, sty.dim.Render(" · "))
 	if c.SummaryDetail != "" {
 		detail := " — " + c.SummaryDetail
 		if lipgloss.Width(line)+lipgloss.Width(detail) <= inner {
-			line += sty.Dimmer.Render(detail)
+			line += sty.dimmer.Render(detail)
 		}
 	}
 	return Clip(line, inner)

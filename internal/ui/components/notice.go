@@ -34,7 +34,7 @@ func (n NoticeLine) View(width int) string {
 	if mark == "" {
 		mark = NoticeMark
 	}
-	lead := closeLead("", sty.Dim.Render(mark))
+	lead := closeLead("", sty.dim.Render(mark))
 	under := strings.Repeat(" ", lipgloss.Width(lead))
 	inner := max(width-lipgloss.Width(lead), 1)
 	text := strings.TrimSpace(n.Text)
@@ -51,7 +51,7 @@ func (n NoticeLine) View(width int) string {
 			head = lead
 		}
 		l = strings.ReplaceAll(strings.TrimRight(l, " "), nbsp, " ")
-		lines = append(lines, head+sty.Dim.Render(Clip(l, inner)))
+		lines = append(lines, head+sty.dim.Render(Clip(l, inner)))
 	}
 	return strings.Join(lines, "\n")
 }

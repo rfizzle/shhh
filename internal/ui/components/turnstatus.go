@@ -80,9 +80,9 @@ var phaseWords = map[TurnPhase]string{
 	PhaseStreaming: "streaming…",
 }
 
-// Word is the phase's word. A phase outside the vocabulary reads as thinking
+// word is the phase's word. A phase outside the vocabulary reads as thinking
 // rather than as blank: the nearest of the four is the rule.
-func (p TurnPhase) Word() string {
+func (p TurnPhase) word() string {
 	if w, ok := phaseWords[p]; ok {
 		return w
 	}
@@ -95,8 +95,8 @@ func (p TurnPhase) Word() string {
 // so the running line's elapsed is the one field a narrowing slot reaches,
 // and the resolved line has nothing to shed at all.
 const (
-	TurnDropNone    = iota // every field the host supplied
-	TurnDropElapsed        // the running line's elapsed goes; the floor is the word
+	turnDropNone    = iota // every field the host supplied
+	turnDropElapsed        // the running line's elapsed goes; the floor is the word
 )
 
 // TurnStatus is the line. A host fills the live fields while the turn runs
@@ -141,11 +141,11 @@ var doneWords = map[TurnState]string{
 func (s TurnStatus) doneGlyph() (string, string, lipgloss.Style) {
 	switch s.Outcome {
 	case TurnCancelled:
-		return "⊘", doneWords[TurnCancelled], sty.Dim
+		return "⊘", doneWords[TurnCancelled], sty.dim
 	case TurnFailed:
-		return "✗", doneWords[TurnFailed], sty.Del
+		return "✗", doneWords[TurnFailed], sty.del
 	}
-	return "✓", doneWords[TurnDone], sty.Add
+	return "✓", doneWords[TurnDone], sty.add
 }
 
 // View renders the line at the widest fidelity that fits width, dropping in
@@ -156,9 +156,9 @@ func (s TurnStatus) View(width int) string {
 	if width <= 0 {
 		return ""
 	}
-	for drop := TurnDropNone; ; drop++ {
+	for drop := turnDropNone; ; drop++ {
 		out := s.render(drop)
-		if lipgloss.Width(out) <= width || drop >= TurnDropElapsed {
+		if lipgloss.Width(out) <= width || drop >= turnDropElapsed {
 			return Clip(out, width)
 		}
 	}
@@ -169,26 +169,26 @@ func (s TurnStatus) render(drop int) string {
 	if s.Done {
 		return s.renderDone()
 	}
-	label := s.Phase.Word()
+	label := s.Phase.word()
 	// Elapsed, where the ladder left it standing, rides behind the label as
 	// the animation's suffix: it is the host's own styling and the animation
 	// never touches it, but it belongs to the same string so the line is
 	// measured and clipped as one. The word in front of it is what makes it
 	// the turn's clock rather than a second reading of the command's.
 	var tail string
-	if s.Elapsed != "" && drop < TurnDropElapsed {
-		tail += sty.Dim.Render(" · " + turnClock(s.Elapsed))
+	if s.Elapsed != "" && drop < turnDropElapsed {
+		tail += sty.dim.Render(" · " + turnClock(s.Elapsed))
 	}
 	// The line's moving part. The spinner's frame leads, outside the sweep
 	// because its eight-frame cycle is not the label's; the label arrives
 	// cell by cell when the turn starts and carries the light after that.
-	return Anim{
-		Frame:    s.Frame,
-		Arriving: s.Arriving,
-		Lead:     Spinner{Frame: s.Frame}.Glyph() + " ",
-		Label:    label,
-		Suffix:   tail,
-	}.View()
+	return animLabel{
+		frame:    s.Frame,
+		arriving: s.Arriving,
+		lead:     Spinner{Frame: s.Frame}.Glyph() + " ",
+		label:    label,
+		suffix:   tail,
+	}.view()
 }
 
 // turnClock labels a span as the whole turn's. The feed under this line is

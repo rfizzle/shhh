@@ -33,31 +33,31 @@ type KeyListScreen struct {
 	// the reading bar draws them; a surface with no row under a cursor leaves
 	// it empty.
 	Row []KeyOffer
-	// MaxLines bounds the screen to the pane it is drawn into.
-	MaxLines int
+	// maxLines bounds the screen to the pane it is drawn into.
+	maxLines int
 	// pager is the offset the list is read through where the pane is shorter
 	// than it.
 	pager Pager
 }
 
-// KeyListResult carries nothing: the list decides nothing, so leaving is all
+// keyListResult carries nothing: the list decides nothing, so leaving is all
 // it has to report.
-type KeyListResult struct{}
+type keyListResult struct{}
 
 // SetSize gives the screen the pane's rectangle.
-func (k *KeyListScreen) SetSize(_, height int) { k.MaxLines = height }
+func (k *KeyListScreen) SetSize(_, height int) { k.maxLines = height }
 
 // Update answers one key. The same `?` that opened the list closes it, and so
 // does the way out every screen answers; the arrows read a list longer than
 // the pane.
-func (k *KeyListScreen) Update(msg tea.KeyPressMsg) (done bool, result KeyListResult) {
+func (k *KeyListScreen) Update(msg tea.KeyPressMsg) (done bool, result keyListResult) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Screen.List, keys.Screen.Quit):
-		return true, KeyListResult{}
+		return true, keyListResult{}
 	case keys.Is(pressed, keys.Screen.Move):
 		k.pager.Offset += keys.Step(pressed, keys.Screen.Move)
 	}
-	return false, KeyListResult{}
+	return false, keyListResult{}
 }
 
 // View renders the list at the given width.
@@ -65,27 +65,27 @@ func (k *KeyListScreen) View(width int) string {
 	if width <= 0 {
 		return ""
 	}
-	header := ScreenHeader{
-		Left: []RailSegment{screenTitle("keys")},
-		Keys: words(keys.Screen.List, "back"),
+	header := screenHeader{
+		left: []RailSegment{screenTitle("keys")},
+		keys: words(keys.Screen.List, "back"),
 	}
 	if k.Surface != "" {
-		header.Left = append(header.Left, screenField(k.Surface))
+		header.left = append(header.left, screenField(k.Surface))
 	}
-	return ScreenChrome{Header: header, MaxLines: k.MaxLines}.
-		View(width, func(budget int) []string { return k.bodyRows(width, budget) })
+	return screenChrome{header: header, maxLines: k.maxLines}.
+		view(width, func(budget int) []string { return k.bodyRows(width, budget) })
 }
 
 // bodyRows is the register, the row's offers under it, and the legend,
 // windowed to the budget. What the window leaves out is counted at its edge
 // rather than dropped (docs/interface/principles.md#fold-never-hide).
 func (k *KeyListScreen) bodyRows(width, budget int) []string {
-	rows := KeyListRows(k.Register, width)
+	rows := keyListRows(k.Register, width)
 	if len(k.Row) > 0 {
 		// The row's offers sit with the keys, above the blank row the legend
 		// starts after.
-		split := len(rows) - len(GlyphLegend(width)) - 1
-		rail := sty.Accent.Render("▎")
+		split := len(rows) - len(glyphLegend(width)) - 1
+		rail := sty.accent.Render("▎")
 		var own []string
 		for _, o := range k.Row {
 			for _, r := range packOffers([]KeyOffer{o}, width-1) {
@@ -101,17 +101,17 @@ func (k *KeyListScreen) bodyRows(width, budget int) []string {
 	// is left of it.
 	k.pager.Height = max(budget-2, 1)
 	shown := k.pager.Window(rows)
-	above := fmt.Sprintf("↑ %d more", k.pager.Above())
-	below := fmt.Sprintf("↓ %d more · %s", k.pager.Below(), words(keys.Screen.Move, "read on"))
-	if k.pager.Above() == 0 {
+	above := fmt.Sprintf("↑ %d more", k.pager.above())
+	below := fmt.Sprintf("↓ %d more · %s", k.pager.below(), words(keys.Screen.Move, "read on"))
+	if k.pager.above() == 0 {
 		above = ""
 	}
-	if k.pager.Below() == 0 {
+	if k.pager.below() == 0 {
 		below = ""
 	}
-	out := []string{sty.Dim.Render(Clip(above, width))}
+	out := []string{sty.dim.Render(Clip(above, width))}
 	out = append(out, shown...)
-	return append(out, sty.Dim.Render(Clip(below, width)))
+	return append(out, sty.dim.Render(Clip(below, width)))
 }
 
 // A card's run says `[?] keys` wherever its host answers the key, so the list

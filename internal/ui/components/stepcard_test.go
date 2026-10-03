@@ -232,7 +232,7 @@ func TestGolden_StepCards(t *testing.T) {
 		runningLow, runningOpen := running, running
 		runningLow.Density = CardLow
 		runningOpen.Density = CardHigh
-		runningOpen.Calls = []string{ActivityRow{Kind: ActivityTool, Verb: "read",
+		runningOpen.calls = []string{ActivityRow{Kind: ActivityTool, Verb: "read",
 			Target: "internal/ui/view.go", Counts: "218 lines"}.View(width)}
 		noBody := commandStep()
 		noBody.Body = ""
@@ -241,7 +241,7 @@ func TestGolden_StepCards(t *testing.T) {
 		low.Density = CardLow
 		open := commandStep()
 		open.Density = CardHigh
-		open.Calls = []string{ActivityRow{Kind: ActivityCommand, Verb: "run", Target: "git status --short .plan/",
+		open.calls = []string{ActivityRow{Kind: ActivityCommand, Verb: "run", Target: "git status --short .plan/",
 			Outcome: OutcomeOK, Allowed: ApprovedBy("you"), Expanded: true, Detail: []string{"?? .plan/"}}.View(width)}
 		write := StepCard{Kind: ActivityEdit, Rail: true, Verb: "wrote", Subject: ".plan/BACKLOG.md",
 			Outcome: "+41", Duration: "1m04s", Body: "Writing the epic and two stories now, appended after the last one.",

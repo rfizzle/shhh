@@ -221,7 +221,7 @@ func TestSelectFilter_TheMatchedRunIsBoldNotTinted(t *testing.T) {
 		// run rendered inside it would end in a reset and take the rest of
 		// the label out with it (emphasizeMatch). The tone is read while the
 		// profile under test is still in force.
-		bold := sty.Body.Bold(true).Render("mini")
+		bold := sty.body.Bold(true).Render("mini")
 		SetMono(was)
 		if !strings.Contains(view, bold) {
 			t.Fatalf("mono=%v: the matched run should be bold:\n%q", monoOn, view)

@@ -97,7 +97,7 @@ func (p *AttachmentView) SetSize(_, height int) { p.Height = height }
 // View draws the card.
 func (p AttachmentView) View(width int) string {
 	rows := p.body(width-cardFrameWidth, p.Height-viewChrome)
-	return Card{Title: p.Name, Subtitle: p.Sent, Chips: p.captions()}.Render(rows, width)
+	return Card{Title: p.Name, subtitle: p.Sent, chips: p.captions()}.Render(rows, width)
 }
 
 // captions are the top border's chips, in the order they are given up as the
@@ -110,13 +110,13 @@ func (p AttachmentView) View(width int) string {
 func (p AttachmentView) captions() []string {
 	var out []string
 	if p.Size != "" {
-		out = append(out, sty.Dim.Render(p.Size))
+		out = append(out, sty.dim.Render(p.Size))
 	}
 	switch {
 	case p.Pixels != "":
-		out = append(out, sty.Dim.Render(p.Pixels))
+		out = append(out, sty.dim.Render(p.Pixels))
 	case len(p.Text) > 0:
-		out = append(out, sty.Dim.Render(countedLines(len(p.Text))))
+		out = append(out, sty.dim.Render(countedLines(len(p.Text))))
 	}
 	return out
 }
@@ -144,7 +144,7 @@ func (p AttachmentView) body(width, height int) []string {
 	case len(p.Placement) > 0:
 		return centre(p.Placement, width, height)
 	case p.Note != "":
-		return centre([]string{sty.Dim.Render(Clip(p.Note, width))}, width, height)
+		return centre([]string{sty.dim.Render(Clip(p.Note, width))}, width, height)
 	case p.Image == nil && len(p.Text) > 0:
 		return p.text(width, height)
 	case p.Image == nil:
@@ -155,7 +155,7 @@ func (p AttachmentView) body(width, height int) []string {
 		return nil
 	}
 	var cells [][]raster.Cell
-	if PictureInColour() {
+	if pictureInColour() {
 		cells = raster.Halfblocks(p.Image, cols, rows)
 	} else {
 		cells = raster.Ramp(p.Image, cols, rows)
@@ -195,13 +195,13 @@ func (p AttachmentView) text(width, height int) []string {
 		// One row and more than one line: the count is the honest thing to
 		// spend it on, because a single line of a log says nothing and the
 		// number says the card is not the whole file.
-		return []string{sty.Dim.Render(Clip(moreLines(len(p.Text)), width))}
+		return []string{sty.dim.Render(Clip(moreLines(len(p.Text)), width))}
 	}
 	lines := make([]string, 0, height)
 	for _, line := range p.Text[:shown] {
 		lines = append(lines, p.line(line, width))
 	}
-	return append(lines, sty.Dim.Render(Clip(moreLines(len(p.Text)-shown), width)))
+	return append(lines, sty.dim.Render(Clip(moreLines(len(p.Text)-shown), width)))
 }
 
 // line draws one row of the text body.
@@ -217,7 +217,7 @@ func (p AttachmentView) line(s string, width int) string {
 		// A re-painted line already carries the ground, run by run.
 		return Clip(painted, width)
 	}
-	return sty.Body.Render(Clip(s, width))
+	return sty.body.Render(Clip(s, width))
 }
 
 // moreLines is the foot of a clipped text body: what it swallowed, counted.
@@ -228,7 +228,7 @@ func moreLines(n int) string {
 	return "+" + strconv.Itoa(n) + " more lines"
 }
 
-// PictureInColour reports whether a picture is drawn in colour here, or as
+// pictureInColour reports whether a picture is drawn in colour here, or as
 // the drawing kit's density ramp.
 //
 // Both halves of the answer are already settled elsewhere and neither is this
@@ -237,7 +237,7 @@ func moreLines(n int) string {
 // ramp exists rather than a refusal. The profile is the single answer to
 // what the terminal can carry, and below sixteen colours there is nothing to
 // carry a picture in.
-func PictureInColour() bool { return !Mono() && Profile() >= colorprofile.ANSI }
+func pictureInColour() bool { return !Mono() && Profile() >= colorprofile.ANSI }
 
 // pictureRow paints one row of cells, coalescing the runs that share a
 // colour.

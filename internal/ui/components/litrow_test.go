@@ -43,7 +43,7 @@ func TestLitOption_PointerOutsideTheHighlight(t *testing.T) {
 // a colour the palette never issued, and on half the terminals in use it
 // reads brighter than the bright token beside it.
 func TestFocusRow_NamesItsForeground(t *testing.T) {
-	if sty.FocusRow.GetForeground() == nil {
+	if sty.focusRow.GetForeground() == nil {
 		t.Fatal("the lit row inherits the terminal's own foreground")
 	}
 }

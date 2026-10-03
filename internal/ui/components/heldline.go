@@ -27,20 +27,20 @@ type HeldLine struct {
 
 // View draws the card at the given width.
 func (h HeldLine) View(width int) string {
-	card := Card{Title: "a line from " + h.From, Tone: CardDecision, Chips: []string{"held"}}
+	card := Card{Title: "a line from " + h.From, tone: CardDecision, chips: []string{"held"}}
 	inner := card.Inner(width)
 	var rows []string
 	for _, para := range strings.Split(strings.TrimSpace(h.Text), "\n") {
 		for _, l := range wrapPlain(para, inner) {
-			rows = append(rows, sty.Body.Render(l))
+			rows = append(rows, sty.body.Render(l))
 		}
 	}
 	if len(rows) > heldLineRows {
-		rows = append(rows[:heldLineRows-1], sty.Dim.Render("…"))
+		rows = append(rows[:heldLineRows-1], sty.dim.Render("…"))
 	}
-	rows = append(rows, sty.Dim.Render("it joins the turn as a message; it grants nothing"))
+	rows = append(rows, sty.dim.Render("it joins the turn as a message; it grants nothing"))
 	if h.More > 0 {
-		rows = append(rows, sty.Dim.Render(plural(h.More, "more line")+" waiting behind it"))
+		rows = append(rows, sty.dim.Render(plural(h.More, "more line")+" waiting behind it"))
 	}
 	rows = append(rows, cardRule)
 	// `?` takes the last slot: the host answers it with the card's register

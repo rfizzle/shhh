@@ -41,9 +41,9 @@ func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
 		return railBlock{}, false
 	}
 	pct := min(max(c.Pct, 0), 100)
-	meter := Meter{Pct: pct, Cells: railCells(MeterCellsRail, width), Tone: MeterPressure,
-		Warn: c.WarnPct, Alert: c.AlertPct}
-	style := meter.Style()
+	meter := Meter{pctValue: pct, cellCount: railCells(meterCellsRail, width), tone: meterPressure,
+		warn: c.WarnPct, alert: c.AlertPct}
+	style := meter.style()
 	b := railBlock{heading: railHeading("CONTEXT",
 		style.Render(fmt.Sprintf("%d%% of %s", pct, formatTokens(c.Window))), style, width)}
 	count := formatTokens(c.Tokens)
@@ -54,21 +54,21 @@ func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
 	// meter's own colour — the bar never carries the value alone.
 	right := style.Render(count)
 	if c.Corrected {
-		right = sty.Dim.Render("corrected") + " " + right
+		right = sty.dim.Render("corrected") + " " + right
 	}
-	b.add(railRow(meter.Bar(), right, width, inspectorIndent))
+	b.add(railRow(meter.bar(), right, width, inspectorIndent))
 	tokens := strings.TrimSpace(c.Tokens1 + " " + c.Tokens2)
 	lead := ""
 	switch {
 	case len(c.Burn) > 0:
-		lead = Sparkline{Values: c.Burn, Cells: railCells(SparkCells, width)}.View() + " " + sty.Dim.Render("per round")
+		lead = sparkline{values: c.Burn, cells: railCells(sparkCellCount, width)}.view() + " " + sty.dim.Render("per round")
 	case c.Estimated:
 		// No series yet and no reported size: the block still has to say
 		// where its number came from.
-		lead = sty.Dim.Render("estimated")
+		lead = sty.dim.Render("estimated")
 	}
 	if lead != "" || tokens != "" {
-		b.add(railRow(lead, sty.Dim.Render(tokens), width, inspectorIndent))
+		b.add(railRow(lead, sty.dim.Render(tokens), width, inspectorIndent))
 	}
 	return b, true
 }

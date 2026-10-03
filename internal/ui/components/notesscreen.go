@@ -77,8 +77,8 @@ type NotesRow struct {
 	Body []string
 }
 
-// NotesResult is how a keystroke resolved.
-type NotesResult struct {
+// notesResult is how a keystroke resolved.
+type notesResult struct {
 	// Read is `[enter]` on a note: the host opens ID's body full screen.
 	Read bool
 	// ID is the note Read names.
@@ -88,8 +88,8 @@ type NotesResult struct {
 	// up while the host deletes them and hands back fresh Rows, so this
 	// arrives with done false.
 	Dropped []string
-	// Canceled is the way out.
-	Canceled bool
+	// canceled is the way out.
+	canceled bool
 }
 
 // NotesScreen is `/notes`: a takeover in the chat, full width, owning the
@@ -103,9 +103,9 @@ type NotesScreen struct {
 	// Subject is what the header says the screen is over — `7 notes · 3
 	// agents`. The host counts it.
 	Subject string
-	// MaxLines bounds the screen height; everything pinned comes off the
+	// maxLines bounds the screen height; everything pinned comes off the
 	// panes' budget. 0 is unbounded.
-	MaxLines int
+	maxLines int
 	// Notice is the line a key left behind — what was dropped. The host
 	// clears it on the next keystroke.
 	Notice string
@@ -131,14 +131,14 @@ func (s *NotesScreen) AskClear() {
 		return
 	}
 	s.clearing = true
-	s.confirm = &Confirm{Prompt: sty.Body.Render(
+	s.confirm = &Confirm{Prompt: sty.body.Render(
 		"Drop " + plural(len(s.Rows), "note") + "? Nothing else in the session is touched.")}
 }
 
 // Update is the screen's whole keyboard. The confirm answers first while it
 // is up, because it holds the keyboard and `d` is not a key to it
 // (invariant 5).
-func (s *NotesScreen) Update(msg tea.KeyPressMsg) (done bool, result NotesResult) {
+func (s *NotesScreen) Update(msg tea.KeyPressMsg) (done bool, result notesResult) {
 	s.sync()
 	if s.confirm != nil {
 		return false, s.answerConfirm(msg)
@@ -146,58 +146,58 @@ func (s *NotesScreen) Update(msg tea.KeyPressMsg) (done bool, result NotesResult
 	pressed := msg.String()
 	switch {
 	case s.moved(pressed):
-		return false, NotesResult{}
+		return false, notesResult{}
 	case keys.Is(pressed, keys.Notes.Read):
 		// The one key that leaves with something to do. A row is a note and
 		// every note has a body, so there is no row it cannot act on.
 		if row := s.current(); row != nil {
-			return true, NotesResult{Read: true, ID: row.ID}
+			return true, notesResult{Read: true, ID: row.ID}
 		}
-		return false, NotesResult{}
+		return false, notesResult{}
 	case keys.Is(pressed, keys.Notes.Drop):
 		// The one key here that destroys something asks first, and the
 		// prompt names the note rather than saying "this note".
 		if row := s.current(); row != nil {
 			s.clearing = false
-			s.confirm = &Confirm{Prompt: sty.Body.Render("Drop " + quoted(row.Label) + "?")}
+			s.confirm = &Confirm{Prompt: sty.body.Render("Drop " + quoted(row.Label) + "?")}
 		}
 	case keys.Is(pressed, keys.Notes.List):
 		s.keys = !s.keys
 	case keys.Is(pressed, keys.Notes.Back):
-		return true, NotesResult{Canceled: true}
+		return true, notesResult{canceled: true}
 	}
-	return false, NotesResult{}
+	return false, notesResult{}
 }
 
 // answerConfirm is the keyboard while the drop question is up. Declining
 // leaves the notebook exactly as it was, and what a yes takes is read when it
 // is answered rather than when it was armed.
-func (s *NotesScreen) answerConfirm(msg tea.KeyPressMsg) NotesResult {
+func (s *NotesScreen) answerConfirm(msg tea.KeyPressMsg) notesResult {
 	clearing := s.clearing
 	answered, yes := confirmed(&s.confirm, msg)
 	if !answered {
-		return NotesResult{}
+		return notesResult{}
 	}
 	s.clearing = false
 	if !yes {
-		return NotesResult{}
+		return notesResult{}
 	}
 	if clearing {
 		ids := make([]string, 0, len(s.Rows))
 		for _, row := range s.Rows {
 			ids = append(ids, row.ID)
 		}
-		return NotesResult{Dropped: ids}
+		return notesResult{Dropped: ids}
 	}
 	if row := s.current(); row != nil {
-		return NotesResult{Dropped: []string{row.ID}}
+		return notesResult{Dropped: []string{row.ID}}
 	}
-	return NotesResult{}
+	return notesResult{}
 }
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from
 // the width it is rendered at, so only the height is kept.
-func (s *NotesScreen) SetSize(_, height int) { s.MaxLines = height }
+func (s *NotesScreen) SetSize(_, height int) { s.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves.
@@ -206,12 +206,12 @@ func (s *NotesScreen) View(width int) string {
 		return ""
 	}
 	s.sync()
-	return ScreenChrome{
-		Header:   s.header(),
-		Foot:     s.footer(width).Rows(width),
-		Notice:   s.Notice,
-		MaxLines: s.MaxLines,
-	}.View(width, func(budget int) []string { return s.panes().rows(width, budget) })
+	return screenChrome{
+		header:   s.header(),
+		foot:     s.footer(width).rows(width),
+		notice:   s.Notice,
+		maxLines: s.maxLines,
+	}.view(width, func(budget int) []string { return s.panes().rows(width, budget) })
 }
 
 // panes is the body, split the way every screen with a list and a preview
@@ -229,7 +229,7 @@ func (s *NotesScreen) panes() screenPanes {
 // wrote it.
 func (s *NotesScreen) listRows(width, budget int) []string {
 	if len(s.Rows) == 0 {
-		return []string{sty.Dim.Render(Clip("the notebook is empty", width))}
+		return []string{sty.dim.Render(Clip("the notebook is empty", width))}
 	}
 	body, _ := s.list.visibleRows(cardWidthFor(width), budget, false)
 	return body
@@ -240,16 +240,16 @@ func (s *NotesScreen) listRows(width, budget int) []string {
 func (s *NotesScreen) previewRows(width int) []string {
 	row := s.current()
 	if row == nil {
-		return []string{sty.Dim.Render(Clip("no note selected", width))}
+		return []string{sty.dim.Render(Clip("no note selected", width))}
 	}
 	rows := []string{paneTitle(brightStyle().Render(oneLine(row.Label)),
-		sty.Dim.Render(row.Signer), width)}
+		sty.dim.Render(row.Signer), width)}
 	if field := notesStamp(*row); field != "" {
-		rows = append(rows, "  "+sty.Dimmer.Render(Clip(field, max(width-2, 1))))
+		rows = append(rows, "  "+sty.dimmer.Render(Clip(field, max(width-2, 1))))
 	}
 	rows = append(rows, "")
 	for _, para := range row.Body {
-		for _, line := range wrapSpans([]styledSpan{{para, sty.Dim}}, max(width-2, 1)) {
+		for _, line := range wrapSpans([]styledSpan{{para, sty.dim}}, max(width-2, 1)) {
 			rows = append(rows, "  "+line)
 		}
 	}
@@ -279,10 +279,10 @@ func notesStamp(row NotesRow) string {
 }
 
 // header names the surface and what it is over.
-func (s *NotesScreen) header() ScreenHeader {
-	h := ScreenHeader{Left: []RailSegment{screenTitle("/notes")}, Keys: s.headerKeys()}
+func (s *NotesScreen) header() screenHeader {
+	h := screenHeader{left: []RailSegment{screenTitle("/notes")}, keys: s.headerKeys()}
 	if s.Subject != "" {
-		h.Left = append(h.Left, screenField(s.Subject))
+		h.left = append(h.left, screenField(s.Subject))
 	}
 	return h
 }
@@ -300,12 +300,12 @@ func (s *NotesScreen) headerKeys() string {
 
 // footer is the keys the screen offers, the field that annotates them, and
 // the confirm where one is armed.
-func (s *NotesScreen) footer(width int) KeyFooter {
+func (s *NotesScreen) footer(width int) keyFooter {
 	field := s.footField()
-	f := KeyFooter{Offers: s.offers(width, field), Register: s.keyList(),
-		Showing: s.keys, Field: field}
+	f := keyFooter{offers: s.offers(width, field), register: s.keyList(),
+		showing: s.keys, field: field}
 	if s.confirm != nil {
-		f.Taken = s.confirm.View(width)
+		f.taken = s.confirm.View(width)
 	}
 	return f
 }

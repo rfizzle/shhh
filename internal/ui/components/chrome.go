@@ -71,13 +71,13 @@ func ruleRun(width int) string {
 
 // screenRule is the horizontal rule a screen's panes and sections are divided
 // by.
-func screenRule(width int) string { return sty.Dim.Render(ruleRun(width)) }
+func screenRule(width int) string { return sty.dim.Render(ruleRun(width)) }
 
 // titleRule is the rule under a screen's header. A card's top edge is the
 // same row on a smaller frame, and drawing the two from the same material is
 // what makes a card and a screen read as one product
 // (docs/interface/surfaces.md#the-supporting-screens).
-func titleRule(width int) string { return sty.Dim.Render(ruleRun(width)) }
+func titleRule(width int) string { return sty.dim.Render(ruleRun(width)) }
 
 // screenTitle is a header's first field: the surface's own name, in the one
 // treatment that is never dropped. It is clipped instead, and only once
@@ -94,10 +94,10 @@ func screenTitle(name string) RailSegment {
 // percentage and a warning about unwritten changes are all fields here, and a
 // separator painted by the rail would have to pick one of them.
 func screenField(text string) RailSegment {
-	return RailSegment{Text: sty.Dim.Render(" · " + text), Drop: RailDetail}
+	return RailSegment{Text: sty.dim.Render(" · " + text), Drop: RailDetail}
 }
 
-// ScreenHeader is the row every take-over screen opens with: what the surface
+// screenHeader is the row every take-over screen opens with: what the surface
 // is on the left, what it offers on the right.
 //
 // The left half is a rail, so the two ways these headers used to differ are
@@ -113,29 +113,29 @@ func screenField(text string) RailSegment {
 // stated way out of a take-over is not
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard,
 // invariant 5).
-type ScreenHeader struct {
-	// Left is the surface's name and the fields that continue it, in reading
+type screenHeader struct {
+	// left is the surface's name and the fields that continue it, in reading
 	// order. screenTitle and screenField build the two ordinary shapes.
-	Left []RailSegment
-	// Keys is the run of keys the header ends with, unpainted — the header
+	left []RailSegment
+	// keys is the run of keys the header ends with, unpainted — the header
 	// paints it dim, along with the separator that joins the tally to it, so
 	// the run reads as one field however much of it is showing.
-	Keys string
-	// Tally is the reading that rides in front of the keys, already painted:
+	keys string
+	// tally is the reading that rides in front of the keys, already painted:
 	// the elapsed clock, the spend, the occupancy. It is where the eye
 	// already goes for the state of a surface, and it is what the row gives
 	// up first.
-	Tally string
+	tally string
 }
 
-// Row renders the header at the given width.
-func (h ScreenHeader) Row(width int) string {
-	right := sty.Dim.Render(h.Keys)
+// row renders the header at the given width.
+func (h screenHeader) row(width int) string {
+	right := sty.dim.Render(h.keys)
 	// The tally is measured rather than compared to "": it arrives painted,
 	// and a style renders a pair of escapes around an empty string, so a
 	// screen with nothing to count would otherwise draw the separator anyway.
-	if lipgloss.Width(h.Tally) > 0 {
-		if tallied := h.Tally + sty.Dim.Render(" · "+h.Keys); lipgloss.Width(tallied) <= width {
+	if lipgloss.Width(h.tally) > 0 {
+		if tallied := h.tally + sty.dim.Render(" · "+h.keys); lipgloss.Width(tallied) <= width {
 			right = tallied
 		}
 	}
@@ -144,71 +144,71 @@ func (h ScreenHeader) Row(width int) string {
 	if room < 1 {
 		return Clip(right, width)
 	}
-	left := FitRail(h.Left, "", room)
+	left := FitRail(h.left, "", room)
 	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
 		return left + strings.Repeat(" ", pad) + right
 	}
 	return Clip(right, width)
 }
 
-// ScreenChrome is the frame a take-over screen is drawn in: the header and
+// screenChrome is the frame a take-over screen is drawn in: the header and
 // its rule, whatever else is pinned under them, the body's row budget, and
 // the footer.
 //
 // A screen with no footer ends at its body — the blank row above the keys is
 // the footer's, and a screen that draws none would otherwise end in one.
-type ScreenChrome struct {
-	Header ScreenHeader
-	// Head are rows pinned between the rule and the body: a filter row the
+type screenChrome struct {
+	header screenHeader
+	// head are rows pinned between the rule and the body: a filter row the
 	// screen keeps above its list, the profile drafter's step rail.
-	Head []string
-	// Foot is the key row and whatever annotates it, already rendered.
-	Foot []string
-	// Notice is the one dim line under the footer, an answer the last key
+	head []string
+	// foot is the key row and whatever annotates it, already rendered.
+	foot []string
+	// notice is the one dim line under the footer, an answer the last key
 	// left behind. It clears on the next key, which is the host's business.
-	Notice string
-	// MaxLines is the screen's whole row budget. Zero is a screen nothing
+	notice string
+	// maxLines is the screen's whole row budget. Zero is a screen nothing
 	// bounds, which drops nothing.
-	MaxLines int
-	// Reserve is rows the body pins for itself out of its own budget — the
+	maxLines int
+	// reserve is rows the body pins for itself out of its own budget — the
 	// sub-surface the settings screen splices in under the row being changed.
-	Reserve int
+	reserve int
 }
 
-// View assembles the screen. body is called once with the rows left for it,
+// view assembles the screen. body is called once with the rows left for it,
 // which is the screen's height less everything pinned around it.
-func (c ScreenChrome) View(width int, body func(budget int) []string) string {
-	head := append([]string{c.Header.Row(width), titleRule(width), ""}, c.Head...)
+func (c screenChrome) view(width int, body func(budget int) []string) string {
+	head := append([]string{c.header.row(width), titleRule(width), ""}, c.head...)
 
-	pinned := len(head) + c.Reserve
-	if len(c.Foot) > 0 {
+	pinned := len(head) + c.reserve
+	if len(c.foot) > 0 {
 		// The blank row that separates the body from the keys is the footer's.
-		pinned += 1 + len(c.Foot)
+		pinned += 1 + len(c.foot)
 	}
-	if c.Notice != "" {
+	if c.notice != "" {
 		pinned++
 	}
 
 	rows := append(head, body(c.budget(pinned))...)
-	if len(c.Foot) > 0 {
-		rows = append(append(rows, ""), c.Foot...)
+	if len(c.foot) > 0 {
+		rows = append(append(rows, ""), c.foot...)
 	}
-	if c.Notice != "" {
-		rows = append(rows, sty.Dim.Render(Clip(c.Notice, width)))
+	if c.notice != "" {
+		rows = append(rows, sty.dim.Render(Clip(c.notice, width)))
 	}
 	return strings.Join(rows, "\n")
 }
 
 // budget is how many rows the body may spend. An unbounded screen drops
 // nothing, which is what a zero budget means to every body here.
-func (c ScreenChrome) budget(pinned int) int {
-	if c.MaxLines <= 0 {
+func (c screenChrome) budget(pinned int) int {
+	if c.maxLines <= 0 {
 		return 0
 	}
-	return max(c.MaxLines-pinned, 1)
+	return max(c.maxLines-pinned, 1)
 }
 
-// KeyFooter is what a take-over screen ends with: the keys it offers, and the
+// keyFooter is what a take-over screen ends with: the keys it offers, and the
 // field that annotates them.
 //
 // No offer is ever truncated to make room
@@ -217,68 +217,68 @@ func (c ScreenChrome) budget(pinned int) int {
 // the one before it starts a row of its own. That is the narrow terminal's
 // stack, arrived at rather than branched to. What does give ground is the
 // field beside them, which is an annotation.
-type KeyFooter struct {
-	// Offers are the keys the surface is offering now.
-	Offers []KeyOffer
-	// Field is the annotation, dim and right-aligned on the first row, where
+type keyFooter struct {
+	// offers are the keys the surface is offering now.
+	offers []KeyOffer
+	// field is the annotation, dim and right-aligned on the first row, where
 	// there is room for it. It is what drops: the offers wrap instead.
-	Field string
-	// Lead is the row the keys annotate rather than the other way round — a
+	field string
+	// lead is the row the keys annotate rather than the other way round — a
 	// diagnostic's counts, where the thing to read is what the run found and
 	// the key beside it is the annotation. Where both fit they share a row.
-	Lead string
-	// Register is every key the surface has, one per row, behind `[?]`.
-	Register []KeyOffer
-	// Showing reports that the register is open, and the footer is it.
-	Showing bool
-	// Legend is what the register carries under its keys and above the
+	lead string
+	// register is every key the surface has, one per row, behind `[?]`.
+	register []KeyOffer
+	// showing reports that the register is open, and the footer is it.
+	showing bool
+	// legend is what the register carries under its keys and above the
 	// glyph legend: what a screen's own shorthand stands for, where the
 	// screen has one (the backlog's letters). Its clauses are joined with a
 	// dash and a narrow terminal breaks between them rather than inside one,
 	// so a letter is never parted from the word it stands for. Empty draws
 	// nothing.
-	Legend []string
-	// Taken is the footer a sub-surface has taken over — an armed confirm,
+	legend []string
+	// taken is the footer a sub-surface has taken over — an armed confirm,
 	// which is the only thing the keyboard is answering while it is up.
-	Taken string
+	taken string
 }
 
-// Rows renders the footer at the given width.
-func (f KeyFooter) Rows(width int) []string {
-	if f.Taken != "" {
-		return []string{Clip(f.Taken, width)}
+// rows renders the footer at the given width.
+func (f keyFooter) rows(width int) []string {
+	if f.taken != "" {
+		return []string{Clip(f.taken, width)}
 	}
-	if f.Showing {
-		rows := KeyListRows(f.Register, width)
-		if len(f.Legend) > 0 {
+	if f.showing {
+		rows := keyListRows(f.register, width)
+		if len(f.legend) > 0 {
 			// Under the keys, above the blank row the glyph legend starts
 			// after, the way the key list screen places a row's own offers.
-			split := len(rows) - len(GlyphLegend(width)) - 1
+			split := len(rows) - len(glyphLegend(width)) - 1
 			var legend []string
-			for _, l := range legendRows(f.Legend, width) {
-				legend = append(legend, sty.Dim.Render(l))
+			for _, l := range legendRows(f.legend, width) {
+				legend = append(legend, sty.dim.Render(l))
 			}
 			rows = append(append(append([]string{}, rows[:split]...), legend...), rows[split:]...)
 		}
 		return append(rows, packOffers([]KeyOffer{hideKeysOffer()}, width)...)
 	}
-	if f.Lead != "" {
-		if len(f.Offers) == 0 {
-			return []string{f.Lead}
+	if f.lead != "" {
+		if len(f.offers) == 0 {
+			return []string{f.lead}
 		}
 		// The keys annotate the lead where both fit, and take a row of their
 		// own where they do not.
-		run := keyOffers(f.Offers)
-		if pad := width - lipgloss.Width(f.Lead) - lipgloss.Width(run); pad >= 2 {
-			return []string{f.Lead + strings.Repeat(" ", pad) + run}
+		run := keyOffers(f.offers)
+		if pad := width - lipgloss.Width(f.lead) - lipgloss.Width(run); pad >= 2 {
+			return []string{f.lead + strings.Repeat(" ", pad) + run}
 		}
-		return append([]string{f.Lead}, packOffers(f.Offers, width)...)
+		return append([]string{f.lead}, packOffers(f.offers, width)...)
 	}
-	rows := packOffers(f.Offers, width)
-	if len(rows) == 0 || f.Field == "" {
+	rows := packOffers(f.offers, width)
+	if len(rows) == 0 || f.field == "" {
 		return rows
 	}
-	painted := sty.Dim.Render(f.Field)
+	painted := sty.dim.Render(f.field)
 	if pad := width - lipgloss.Width(rows[0]) - lipgloss.Width(painted); pad >= 2 {
 		rows[0] += strings.Repeat(" ", pad) + painted
 	}
@@ -314,19 +314,19 @@ func legendRows(clauses []string, width int) []string {
 	return rows
 }
 
-// KeyListRows is what `?` shows on every surface that holds the keyboard:
+// keyListRows is what `?` shows on every surface that holds the keyboard:
 // the surface's whole register, one key per row, and under it the glyph
 // legend (GlyphLegend). It is one function because it is one answer — a
 // screen's footer, a card's key list and reading mode's all draw it — so a
 // reader who has learned where the legend is on one surface finds it in the
 // same place on the next
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-func KeyListRows(register []KeyOffer, width int) []string {
+func keyListRows(register []KeyOffer, width int) []string {
 	rows := make([]string, 0, len(register)+16)
 	for _, offer := range register {
 		rows = append(rows, packOffers([]KeyOffer{offer}, width)...)
 	}
-	return append(append(rows, ""), GlyphLegend(width)...)
+	return append(append(rows, ""), glyphLegend(width)...)
 }
 
 // packOffers lays the key offers out in as few rows as the width allows.

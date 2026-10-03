@@ -38,7 +38,7 @@ func alertsFixture() []AlertsItem {
 
 // alertsScreen is the screen over the fixture with the pointer on focus.
 func alertsScreen(focus int, open bool) *AlertsScreen {
-	return &AlertsScreen{Alerts: alertsFixture(), Focus: focus, Open: open, MaxLines: 24}
+	return &AlertsScreen{Alerts: alertsFixture(), focus: focus, Open: open, maxLines: 24}
 }
 
 // The list is one row per episode in the rail row's own words, standing
@@ -74,8 +74,8 @@ func TestAlertsScreen_AStandingEpisodeIsNotYetAnswered(t *testing.T) {
 func TestAlertsScreen_EnterShowsEachRun(t *testing.T) {
 	s := alertsScreen(0, false)
 	s.View(130)
-	if done, _ := s.Update(tea.KeyPressMsg{Code: tea.KeyEnter}); done || !s.Open || s.Run != 0 {
-		t.Fatalf("enter: done %v, open %v, run %d", done, s.Open, s.Run)
+	if done, _ := s.Update(tea.KeyPressMsg{Code: tea.KeyEnter}); done || !s.Open || s.runAt != 0 {
+		t.Fatalf("enter: done %v, open %v, run %d", done, s.Open, s.runAt)
 	}
 	view := ansi.Strip(s.View(130))
 	for _, want := range []string{"each run", "❯ ✗ turn 3 · exit 2 · 4.2s", "ev-0f3a9c1d2e4b5a67",
@@ -87,12 +87,12 @@ func TestAlertsScreen_EnterShowsEachRun(t *testing.T) {
 	for range 2 {
 		s.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	}
-	if !s.Open || s.Focus != 0 || s.Run != 2 {
-		t.Fatalf("down should walk the runs: open %v, focus %d, run %d", s.Open, s.Focus, s.Run)
+	if !s.Open || s.focus != 0 || s.runAt != 2 {
+		t.Fatalf("down should walk the runs: open %v, focus %d, run %d", s.Open, s.focus, s.runAt)
 	}
 	s.Update(tea.KeyPressMsg{Code: tea.KeyDown})
-	if s.Open || s.Focus != 1 {
-		t.Fatalf("moving past the last run should leave the episode: open %v, focus %d", s.Open, s.Focus)
+	if s.Open || s.focus != 1 {
+		t.Fatalf("moving past the last run should leave the episode: open %v, focus %d", s.Open, s.focus)
 	}
 	if done, _ := s.Update(tea.KeyPressMsg{Code: tea.KeyEscape}); !done {
 		t.Fatal("esc did not close the screen")
@@ -126,7 +126,7 @@ func TestAlertsScreen_EnterOnARunOpensItsKeptOutput(t *testing.T) {
 // row of its own rather than going, since it is how the output is reached.
 func TestAlertsScreen_TheEvidenceIdIsNeverDropped(t *testing.T) {
 	s := alertsScreen(0, true)
-	s.MaxLines = 40
+	s.maxLines = 40
 	view := s.View(60)
 	plain := ansi.Strip(view)
 	if !strings.Contains(plain, "ev-0f3a9c1d2e4b5a67") {
@@ -141,7 +141,7 @@ func TestAlertsScreen_TheEvidenceIdIsNeverDropped(t *testing.T) {
 
 // A session that has broken nothing opens on a sentence saying so.
 func TestAlertsScreen_EmptySaysNothingBroke(t *testing.T) {
-	s := &AlertsScreen{MaxLines: 12}
+	s := &AlertsScreen{maxLines: 12}
 	view := ansi.Strip(s.View(130))
 	if !strings.Contains(view, "nothing this session ran has come back broken") || strings.Contains(view, "standing") {
 		t.Errorf("the empty screen:\n%s", view)
@@ -160,8 +160,8 @@ func TestGolden_AlertsScreen(t *testing.T) {
 		return []golden.Panel{
 			{Label: "standing · the suite still failing, nothing has answered it", View: alertsScreen(0, false).View(width)},
 			{Label: "superseded · the linter the quality gate answered, and the turn it did", View: alertsScreen(2, false).View(width)},
-			{Label: "one episode opened · each run, its ending, its time and the evidence id its output was kept under", View: func() string { s := alertsScreen(0, true); s.MaxLines = 34; return s.View(width) }()},
-			{Label: "empty · a session that has broken nothing", View: (&AlertsScreen{MaxLines: 12}).View(width)},
+			{Label: "one episode opened · each run, its ending, its time and the evidence id its output was kept under", View: func() string { s := alertsScreen(0, true); s.maxLines = 34; return s.View(width) }()},
+			{Label: "empty · a session that has broken nothing", View: (&AlertsScreen{maxLines: 12}).View(width)},
 		}
 	})
 }

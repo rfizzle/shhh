@@ -95,12 +95,12 @@ func (c PlannedCard) cardLines(width int) ([]string, []CardLine) {
 		}
 	}
 	card := StepCard{
-		Mark:           sty.Dim.Render("▸"),
+		mark:           sty.dim.Render("▸"),
 		Verb:           plannedVerb,
 		Rollup:         rollup,
 		Bare:           steps,
 		Outcome:        c.ReversibleTone.style().Render(c.Reversible),
-		OutcomePainted: c.Reversible != "",
+		outcomePainted: c.Reversible != "",
 		Duration:       plural(writes, "write"),
 		Body:           c.Body,
 		Selected:       c.Selected,
@@ -190,7 +190,7 @@ func restLine(rest []PlannedStep) string {
 // one, at the titles' column.
 func (c PlannedCard) countRow(text string, width int) string {
 	col := CardBodyIndent + 2 + plannedNumberSlot
-	return onBand(strings.Repeat(" ", col)+sty.Dim.Render(Clip(text, max(width-cardMargin-col, 1))), width)
+	return onBand(strings.Repeat(" ", col)+sty.dim.Render(Clip(text, max(width-cardMargin-col, 1))), width)
 }
 
 // stepRow is one step: its state's glyph, its number, its title — bright
@@ -201,17 +201,17 @@ func (c PlannedCard) countRow(text string, width int) string {
 // the turn beside it (docs/interface/surfaces.md#the-progress-checkpoint).
 func (c PlannedCard) stepRow(s PlannedStep, width int) string {
 	inner := max(width-cardMargin, 1)
-	glyph, title := sty.Dim.Render("·"), sty.Dim
+	glyph, title := sty.dim.Render("·"), sty.dim
 	switch s.State {
 	case PlanStepDone:
-		glyph, title = sty.Add.Render("✓"), sty.Body
+		glyph, title = sty.add.Render("✓"), sty.body
 	case PlanStepFailed:
-		glyph, title = sty.Err.Render("✗"), sty.Body
+		glyph, title = sty.err.Render("✗"), sty.body
 	case PlanStepRunning:
-		glyph, title = sty.SpinText.Render("▸"), sty.Bright
+		glyph, title = sty.spinText.Render("▸"), sty.bright
 	}
 	num := fmt.Sprintf("%-*d", plannedNumberSlot, s.Number)
-	head := strings.Repeat(" ", CardBodyIndent) + glyph + " " + sty.Dim.Render(num)
+	head := strings.Repeat(" ", CardBodyIndent) + glyph + " " + sty.dim.Render(num)
 	right := s.mark()
 	room := inner - lipgloss.Width(head)
 	if right != "" && lipgloss.Width(right)+1+laneFactsMin > room {
@@ -230,11 +230,11 @@ func (c PlannedCard) stepRow(s PlannedStep, width int) string {
 // that writes nothing.
 func (s PlannedStep) mark() string {
 	if !s.Writes {
-		return sty.Dim.Render(s.Does)
+		return sty.dim.Render(s.Does)
 	}
-	tone := sty.Accent
+	tone := sty.accent
 	if s.Delete {
-		tone = sty.Del
+		tone = sty.del
 	}
 	file := s.File
 	if s.More > 0 {
@@ -243,7 +243,7 @@ func (s PlannedStep) mark() string {
 	if file == "" {
 		return tone.Render("✎")
 	}
-	return tone.Render("✎") + sty.Dim.Render(" "+file)
+	return tone.Render("✎") + sty.dim.Render(" "+file)
 }
 
 // PlanTick is a step of an approved plan the run finished, as the flat line
@@ -261,9 +261,9 @@ type PlanTick struct {
 // View draws the line at the glyph column, dim, with no band: it is the
 // session's note about the plan, not a step of the work.
 func (t PlanTick) View(width int) string {
-	glyph := sty.Add.Render("✓")
+	glyph := sty.add.Render("✓")
 	if t.Failed {
-		glyph = sty.Err.Render("✗")
+		glyph = sty.err.Render("✗")
 	}
 	left := "  " + glyph + " "
 	room := max(width-lipgloss.Width(left)-cardMargin, 1)
@@ -279,7 +279,7 @@ func (t PlanTick) View(width int) string {
 			tail = ""
 		}
 	}
-	return left + sty.Dim.Render(Clip(lead+title+tail, room))
+	return left + sty.dim.Render(Clip(lead+title+tail, room))
 }
 
 // writesLeft says how many of the plan's writes are still to come.

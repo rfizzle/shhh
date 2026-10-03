@@ -51,9 +51,9 @@ type SafetySection struct {
 	Absent bool
 }
 
-// SafetyResult is how the screen closed. It only ever closes: nothing on it
+// safetyResult is how the screen closed. It only ever closes: nothing on it
 // decides anything.
-type SafetyResult struct{ Canceled bool }
+type safetyResult struct{ canceled bool }
 
 // SafetyScreen is `/safety`: a takeover in the chat, full width, owning the
 // keyboard for as long as it is up, and changing nothing.
@@ -63,33 +63,33 @@ type SafetyScreen struct {
 	// Subject is what the header says the reading is of — `manual ·
 	// sandbox-exec`. The host words it.
 	Subject string
-	// Offset is the first body row the pane shows. It is held inside the
+	// offset is the first body row the pane shows. It is held inside the
 	// body by every render, so a key may overshoot it.
-	Offset int
-	// ShowKeys is whether `?` has swapped the key row for the register.
-	ShowKeys bool
-	// MaxLines bounds the screen height. 0 is unbounded.
-	MaxLines int
+	offset int
+	// showKeys is whether `?` has swapped the key row for the register.
+	showKeys bool
+	// maxLines bounds the screen height. 0 is unbounded.
+	maxLines int
 }
 
 // Update is the screen's keyboard: it scrolls, shows its keys, and leaves.
 // There is no fourth key, because every other key a screen in this family
 // has changes something and this one is a reading.
-func (s *SafetyScreen) Update(msg tea.KeyPressMsg) (done bool, result SafetyResult) {
+func (s *SafetyScreen) Update(msg tea.KeyPressMsg) (done bool, result safetyResult) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Screen.Quit):
-		return true, SafetyResult{Canceled: true}
+		return true, safetyResult{canceled: true}
 	case keys.Is(pressed, keys.Screen.List):
-		s.ShowKeys = !s.ShowKeys
+		s.showKeys = !s.showKeys
 	case keys.Is(pressed, keys.Screen.Move):
-		s.Offset = max(s.Offset+keys.Step(pressed, keys.Screen.Move), 0)
+		s.offset = max(s.offset+keys.Step(pressed, keys.Screen.Move), 0)
 	}
-	return false, SafetyResult{}
+	return false, safetyResult{}
 }
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from
 // the width it is rendered at, so only the height is kept.
-func (s *SafetyScreen) SetSize(_, height int) { s.MaxLines = height }
+func (s *SafetyScreen) SetSize(_, height int) { s.maxLines = height }
 
 // View renders the screen through the family's chrome.
 func (s *SafetyScreen) View(width int) string {
@@ -103,12 +103,12 @@ func (s *SafetyScreen) View(width int) string {
 	// offers no scroll: the offer only ever takes rows away, so a body that
 	// overflows that one overflows the other. The three are the header, its
 	// rule and the blank under it; the one is the blank above the keys.
-	chrome := ScreenChrome{Header: s.header(), MaxLines: s.MaxLines}
-	chrome.Foot = s.footer(false).Rows(width)
-	if s.MaxLines > 0 && len(rows) > s.MaxLines-3-1-len(chrome.Foot) {
-		chrome.Foot = s.footer(true).Rows(width)
+	chrome := screenChrome{header: s.header(), maxLines: s.maxLines}
+	chrome.foot = s.footer(false).rows(width)
+	if s.maxLines > 0 && len(rows) > s.maxLines-3-1-len(chrome.foot) {
+		chrome.foot = s.footer(true).rows(width)
 	}
-	return chrome.View(width, func(budget int) []string { return s.window(rows, heads, width, budget) })
+	return chrome.view(width, func(budget int) []string { return s.window(rows, heads, width, budget) })
 }
 
 // rows is the whole body, every section drawn, before any of it is windowed,
@@ -120,10 +120,10 @@ func (s *SafetyScreen) rows(width int) (out []string, heads []int) {
 			out = append(out, "")
 		}
 		heads = append(heads, len(out))
-		out = append(out, sty.Status.Render(Clip(strings.ToUpper(sec.Title), width)))
-		tone := sty.Body
+		out = append(out, sty.status.Render(Clip(strings.ToUpper(sec.Title), width)))
+		tone := sty.body
 		if sec.Absent {
-			tone = sty.Dim
+			tone = sty.dim
 		}
 		for _, line := range sec.Lines {
 			for _, part := range safetyWrap(line, width) {
@@ -145,7 +145,7 @@ func (s *SafetyScreen) rows(width int) (out []string, heads []int) {
 func safetyChangedBy(owner string, width int) []string {
 	var out []string
 	for _, part := range safetyWrap("changed with "+owner, width) {
-		out = append(out, sty.Dim.Render(part))
+		out = append(out, sty.dim.Render(part))
 	}
 	return out
 }
@@ -181,25 +181,25 @@ func safetyWrap(line string, width int) []string {
 // (docs/interface/principles.md#fold-never-hide).
 func (s *SafetyScreen) window(rows []string, heads []int, width, budget int) []string {
 	if budget <= 0 || len(rows) <= budget {
-		s.Offset = 0
+		s.offset = 0
 		return rows
 	}
 	// The markers take rows of their own, so the pane is the budget less
 	// whichever of them will be drawn. The top one is decided by the offset
 	// asked for, held against the smallest pane it could be.
 	height := budget - 1
-	if (Pager{Offset: s.Offset, Height: height - 1, Total: len(rows)}).Held() > 0 {
+	if (Pager{Offset: s.offset, Height: height - 1, total: len(rows)}).Held() > 0 {
 		height--
 	}
-	p := Pager{Offset: s.Offset, Height: max(height, 1)}
+	p := Pager{Offset: s.offset, Height: max(height, 1)}
 	shown := p.Window(rows)
-	s.Offset = p.Offset
+	s.offset = p.Offset
 	var out []string
-	if p.Above() > 0 {
+	if p.above() > 0 {
 		out = append(out, s.marker("↑", heads, 0, p.Offset, width))
 	}
 	out = append(out, shown...)
-	if p.Below() > 0 {
+	if p.below() > 0 {
 		out = append(out, s.marker("↓", heads, p.Offset+len(shown), len(rows), width))
 	}
 	return out
@@ -217,9 +217,9 @@ func (s *SafetyScreen) marker(arrow string, heads []int, from, to, width int) st
 	}
 	if len(names) == 0 {
 		n := to - from
-		return sty.Dim.Render(Clip(fmt.Sprintf("%s %d more %s", arrow, n, plainPlural(n, "row", "rows")), width))
+		return sty.dim.Render(Clip(fmt.Sprintf("%s %d more %s", arrow, n, plainPlural(n, "row", "rows")), width))
 	}
-	return ListOverflowRow(arrow, len(names), strings.Join(names, " · "), width)
+	return listOverflowRow(arrow, len(names), strings.Join(names, " · "), width)
 }
 
 // plainPlural picks a noun's spelling for a count.
@@ -231,13 +231,13 @@ func plainPlural(n int, one, many string) string {
 }
 
 // header names the surface and what it is a reading of.
-func (s *SafetyScreen) header() ScreenHeader {
-	h := ScreenHeader{Left: []RailSegment{screenTitle("/safety")}, Keys: screenBackKeys()}
-	if s.ShowKeys {
-		h.Keys = keys.Bracket(keys.Screen.List) + " hide the keys · " + words(keys.Screen.Quit, "back")
+func (s *SafetyScreen) header() screenHeader {
+	h := screenHeader{left: []RailSegment{screenTitle("/safety")}, keys: screenBackKeys()}
+	if s.showKeys {
+		h.keys = keys.Bracket(keys.Screen.List) + " hide the keys · " + words(keys.Screen.Quit, "back")
 	}
 	if s.Subject != "" {
-		h.Left = append(h.Left, screenField(s.Subject))
+		h.left = append(h.left, screenField(s.Subject))
 	}
 	return h
 }
@@ -245,17 +245,17 @@ func (s *SafetyScreen) header() ScreenHeader {
 // footer is the keys the screen offers and the field that says what it is.
 // The field is the promise the screen exists to keep: it reads, and each
 // section names where the fact it states is changed.
-func (s *SafetyScreen) footer(scrolls bool) KeyFooter {
+func (s *SafetyScreen) footer(scrolls bool) keyFooter {
 	var offers []KeyOffer
 	if scrolls {
 		offers = append(offers, keyOfferAs(keys.Screen.Move, "scroll"))
 	}
 	offers = append(offers, wayOut(backToPrompt))
-	return KeyFooter{
-		Offers:  offers,
-		Field:   "a reading · nothing here changes it",
-		Showing: s.ShowKeys,
-		Register: []KeyOffer{
+	return keyFooter{
+		offers:  offers,
+		field:   "a reading · nothing here changes it",
+		showing: s.showKeys,
+		register: []KeyOffer{
 			keyOfferAs(keys.Screen.Move, "scroll the reading"),
 			wayOut(backToPrompt),
 			keyOfferAs(keys.Screen.Quit, backToPrompt),

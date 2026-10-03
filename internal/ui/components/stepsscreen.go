@@ -91,8 +91,8 @@ type StepsScreen struct {
 	// each, as /plan has always reported it. Empty on a plan the run has
 	// followed, which says so.
 	Drift []string
-	// MaxLines bounds the screen height. 0 is unbounded.
-	MaxLines int
+	// maxLines bounds the screen height. 0 is unbounded.
+	maxLines int
 
 	list Select
 	keys bool
@@ -114,7 +114,7 @@ func (s *StepsScreen) Update(msg tea.KeyPressMsg) (done bool) {
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from
 // the width it is rendered at, so only the height is kept.
-func (s *StepsScreen) SetSize(_, height int) { s.MaxLines = height }
+func (s *StepsScreen) SetSize(_, height int) { s.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves.
@@ -123,11 +123,11 @@ func (s *StepsScreen) View(width int) string {
 		return ""
 	}
 	s.sync()
-	return ScreenChrome{
-		Header:   s.header(),
-		Foot:     s.footer(width).Rows(width),
-		MaxLines: s.MaxLines,
-	}.View(width, func(budget int) []string { return s.panes().rows(width, budget) })
+	return screenChrome{
+		header:   s.header(),
+		foot:     s.footer(width).rows(width),
+		maxLines: s.maxLines,
+	}.view(width, func(budget int) []string { return s.panes().rows(width, budget) })
 }
 
 // panes is the body, split the way every screen with a list and a preview
@@ -144,7 +144,7 @@ func (s *StepsScreen) panes() screenPanes {
 // listRows is the left pane: the steps, numbered as the list numbers them.
 func (s *StepsScreen) listRows(width, budget int) []string {
 	if len(s.Steps) == 0 {
-		return []string{sty.Dim.Render(Clip("the session has declared no steps", width))}
+		return []string{sty.dim.Render(Clip("the session has declared no steps", width))}
 	}
 	// A plan's departures are about the whole run rather than one step, so
 	// they stand under the list the way /plan printed them under its
@@ -187,19 +187,19 @@ func (s *StepsScreen) driftRows(width int) []string {
 func (s *StepsScreen) previewRows(width int) []string {
 	step := s.current()
 	if step == nil {
-		return []string{sty.Dim.Render(Clip("no step selected", width))}
+		return []string{sty.dim.Render(Clip("no step selected", width))}
 	}
 	rows := []string{paneTitle(brightStyle().Render(oneLine(stepLabel(*step))),
-		sty.Dim.Render(s.stepState(*step)), width)}
+		sty.dim.Render(s.stepState(*step)), width)}
 	if len(step.Paths) > 0 {
 		rows = append(rows, "")
 		const label = "touches "
 		for i, p := range step.Paths {
 			lead := strings.Repeat(" ", len(label))
 			if i == 0 {
-				lead = sty.Status.Render(label)
+				lead = sty.status.Render(label)
 			}
-			rows = append(rows, "  "+lead+sty.Body.Render(Clip(p, max(width-len(label)-2, 1))))
+			rows = append(rows, "  "+lead+sty.body.Render(Clip(p, max(width-len(label)-2, 1))))
 		}
 	}
 	rows = append(rows, "")
@@ -216,7 +216,7 @@ func (s *StepsScreen) previewRows(width int) []string {
 		case s.Plan:
 			line = outcomeNotStarted + " · nothing in the transcript has carried it out"
 		}
-		return append(rows, sty.Dim.Render(Clip("  "+line, width)))
+		return append(rows, sty.dim.Render(Clip("  "+line, width)))
 	}
 	head := "  in the transcript"
 	for _, f := range []string{step.Count, step.Duration} {
@@ -224,7 +224,7 @@ func (s *StepsScreen) previewRows(width int) []string {
 			head += " · " + f
 		}
 	}
-	rows = append(rows, sty.Dimmer.Render(Clip(head, width)))
+	rows = append(rows, sty.dimmer.Render(Clip(head, width)))
 	for _, row := range step.Rows {
 		rows = append(rows, strings.Split(row.View(width), "\n")...)
 	}
@@ -282,14 +282,14 @@ func stepGlyph(step StepsItem) string {
 
 // header names the surface and what it is over: /steps over the working list,
 // /plan over an approved plan's, since that is the command whose list it is.
-func (s *StepsScreen) header() ScreenHeader {
+func (s *StepsScreen) header() screenHeader {
 	title := "/steps"
 	if s.Plan {
 		title = "/plan"
 	}
-	h := ScreenHeader{Left: []RailSegment{screenTitle(title)}, Keys: s.headerKeys()}
+	h := screenHeader{left: []RailSegment{screenTitle(title)}, keys: s.headerKeys()}
 	if s.Subject != "" {
-		h.Left = append(h.Left, screenField(s.Subject))
+		h.left = append(h.left, screenField(s.Subject))
 	}
 	return h
 }
@@ -306,10 +306,10 @@ func (s *StepsScreen) headerKeys() string {
 }
 
 // footer is the keys the screen offers and the field that annotates them.
-func (s *StepsScreen) footer(width int) KeyFooter {
+func (s *StepsScreen) footer(width int) keyFooter {
 	field := s.footField()
-	return KeyFooter{Offers: s.offers(width, field), Register: s.keyList(),
-		Showing: s.keys, Field: field}
+	return keyFooter{offers: s.offers(width, field), register: s.keyList(),
+		showing: s.keys, field: field}
 }
 
 // offers is the key row: the pointer's keys and the way out, and the way out
@@ -358,9 +358,9 @@ func (s *StepsScreen) sync() {
 		}
 		switch {
 		case step.Failed:
-			opt.Value, opt.ValueTone = s.stepState(step), ToneRisk
+			opt.Value, opt.valueTone = s.stepState(step), ToneRisk
 		case step.Done:
-			opt.Value, opt.ValueTone = "done", ToneSafe
+			opt.Value, opt.valueTone = "done", ToneSafe
 		case step.Current:
 			opt.Value = s.stepState(step)
 		}
@@ -371,7 +371,7 @@ func (s *StepsScreen) sync() {
 			// A plan's finished step with no run left: the state beside it
 			// is the reading, and not started would contradict it.
 		default:
-			opt.Meta, opt.MetaTone = outcomeNotStarted, ToneQuiet
+			opt.Meta, opt.metaTone = outcomeNotStarted, ToneQuiet
 		}
 		opts = append(opts, opt)
 	}

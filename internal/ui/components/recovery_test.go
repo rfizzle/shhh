@@ -86,7 +86,7 @@ func TestRecoveryRow_OutcomeNeverClips(t *testing.T) {
 
 func TestRecoveryRow_KeyStrokes(t *testing.T) {
 	row := RecoveryRow{Keys: []KeyOffer{{Key: "[k]"}, {Key: "[p]"}}}
-	got := strings.Join(row.KeyStrokes(), ",")
+	got := strings.Join(row.keyStrokes(), ",")
 	if got != "k,p" {
 		t.Errorf("KeyStrokes() = %q, want the bare keys", got)
 	}
@@ -131,7 +131,7 @@ func TestProviderCard_ClaimsOnlyTheKeysItOffers(t *testing.T) {
 	}
 	esc := &ProviderCard{Keys: []KeyOffer{{Key: "[p]"}}}
 	done, result = esc.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
-	if !done || result != ProviderDismiss {
+	if !done || result != providerDismiss {
 		t.Errorf("esc should decline, got done=%v result=%v", done, result)
 	}
 }
@@ -148,12 +148,12 @@ func TestSecretPrompt_MasksAndNeverEchoes(t *testing.T) {
 	if !strings.Contains(got, strings.Repeat("●", 9)) {
 		t.Errorf("the prompt should mask a cell per rune, got:\n%s", got)
 	}
-	if p.Len() != 9 {
-		t.Errorf("Len() = %d, want 9", p.Len())
+	if p.len() != 9 {
+		t.Errorf("Len() = %d, want 9", p.len())
 	}
 	p.Update(tea.KeyPressMsg{Code: tea.KeyBackspace})
-	if p.Len() != 8 {
-		t.Errorf("backspace should delete one rune, Len() = %d", p.Len())
+	if p.len() != 8 {
+		t.Errorf("backspace should delete one rune, Len() = %d", p.len())
 	}
 	done, result := p.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if !done || result.Value != "sk-secre" {

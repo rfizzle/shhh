@@ -274,7 +274,7 @@ func TestPlan_TheRunningStepIsStatic(t *testing.T) {
 				t.Errorf("at %d the plan card lacks the row %q:\n%s", width, want, view)
 			}
 		}
-		if !strings.Contains(raw, sty.SpinText.Render("▸")) {
+		if !strings.Contains(raw, sty.spinText.Render("▸")) {
 			t.Errorf("at %d the running step's mark is not in the spin colour:\n%s", width, raw)
 		}
 	}

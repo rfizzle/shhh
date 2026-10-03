@@ -13,18 +13,18 @@ import (
 
 // anim builds the label the frame's activity slot animates, so every test
 // below is reading the same thing the top rail draws.
-func anim(frame, arriving int) Anim {
-	return Anim{Frame: frame, Arriving: arriving, Lead: "⠋ ", Label: "running go test"}
+func anim(frame, arriving int) animLabel {
+	return animLabel{frame: frame, arriving: arriving, lead: "⠋ ", label: "running go test"}
 }
 
 // The line does not reflow while it moves. The entrance swaps a cell for a
 // mark of the same width and the sweep swaps only colour, so a host can lay
 // the slot out once.
 func TestAnim_WidthIsInvariant(t *testing.T) {
-	want := lipgloss.Width(anim(0, 0).View())
+	want := lipgloss.Width(anim(0, 0).view())
 	for arriving := 0; arriving <= animBirthSteps+4; arriving++ {
 		for frame := range animBirthSteps + len("running go test") + animRest {
-			if got := lipgloss.Width(anim(frame, arriving).View()); got != want {
+			if got := lipgloss.Width(anim(frame, arriving).view()); got != want {
 				t.Fatalf("frame %d arriving %d is %d columns, want %d", frame, arriving, got, want)
 			}
 		}
@@ -39,7 +39,7 @@ func TestAnim_ArrivesInReadingOrder(t *testing.T) {
 	const label = "running go test"
 	prev := 0
 	for arriving := animBirthSteps; arriving >= 0; arriving-- {
-		plain := ansi.Strip(anim(0, arriving).View())
+		plain := ansi.Strip(anim(0, arriving).view())
 		plain = strings.TrimPrefix(plain, "⠋ ")
 		// Everything before the first mark is the label itself, and
 		// everything from it on is marks: the word fills from the left.
@@ -58,7 +58,7 @@ func TestAnim_ArrivesInReadingOrder(t *testing.T) {
 		}
 		prev = n
 	}
-	if got := ansi.Strip(anim(0, 0).View()); got != "⠋ "+label {
+	if got := ansi.Strip(anim(0, 0).view()); got != "⠋ "+label {
 		t.Fatalf("a settled label is %q, want the whole word", got)
 	}
 }
@@ -67,7 +67,7 @@ func TestAnim_ArrivesInReadingOrder(t *testing.T) {
 // value is a label that has been on screen a while, not one that has just
 // appeared.
 func TestAnim_ZeroArrivingIsSettled(t *testing.T) {
-	if got := ansi.Strip(Anim{Label: "thinking…"}.View()); got != "thinking…" {
+	if got := ansi.Strip(animLabel{label: "thinking…"}.view()); got != "thinking…" {
 		t.Fatalf("the zero value rendered %q, want the settled label", got)
 	}
 }
@@ -78,9 +78,9 @@ func TestAnim_ZeroArrivingIsSettled(t *testing.T) {
 // moved when the animation landed.
 func TestAnim_AtRestIsOneRun(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
-	want := sty.SpinText.Render("⠋ thinking…")
+	want := sty.spinText.Render("⠋ thinking…")
 	for frame := range animRest - animCrestSpread {
-		if got := (Anim{Frame: frame, Lead: "⠋ ", Label: "thinking…"}).View(); got != want {
+		if got := (animLabel{frame: frame, lead: "⠋ ", label: "thinking…"}).view(); got != want {
 			t.Fatalf("frame %d rendered %q, want the single run %q", frame, got, want)
 		}
 	}
@@ -92,11 +92,11 @@ func TestAnim_SweepLightsTheCrest(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	lit := 0
 	for frame := range animRest + len("thinking…") {
-		out := (Anim{Frame: frame, Label: "thinking…"}).View()
+		out := (animLabel{frame: frame, label: "thinking…"}).view()
 		if plain := ansi.Strip(out); plain != "thinking…" {
 			t.Fatalf("frame %d changed the text to %q", frame, plain)
 		}
-		if out != sty.SpinText.Render("thinking…") {
+		if out != sty.spinText.Render("thinking…") {
 			lit++
 		}
 	}
@@ -118,13 +118,13 @@ func TestAnim_MonoDeclinesTheSweepAndKeepsTheEntrance(t *testing.T) {
 	SetMono(true)
 	t.Cleanup(func() { SetMono(was) })
 
-	still := (Anim{Lead: "⠋ ", Label: "thinking…"}).View()
+	still := (animLabel{lead: "⠋ ", label: "thinking…"}).view()
 	for frame := range animRest + len("thinking…") {
-		if got := (Anim{Frame: frame, Lead: "⠋ ", Label: "thinking…"}).View(); got != still {
+		if got := (animLabel{frame: frame, lead: "⠋ ", label: "thinking…"}).view(); got != still {
 			t.Fatalf("mono frame %d rendered %q, want the still label %q", frame, got, still)
 		}
 	}
-	arriving := ansi.Strip((Anim{Arriving: animBirthSteps, Lead: "⠋ ", Label: "thinking…"}).View())
+	arriving := ansi.Strip((animLabel{arriving: animBirthSteps, lead: "⠋ ", label: "thinking…"}).view())
 	if !strings.Contains(arriving, animBirthMark) {
 		t.Fatalf("the entrance should still read in two greys, got %q", arriving)
 	}
@@ -136,11 +136,11 @@ func TestAnim_IsDeterministicAcrossTheCache(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	first := make([]string, 0, animBirthSteps)
 	for arriving := animBirthSteps; arriving >= 0; arriving-- {
-		first = append(first, anim(3, arriving).View())
+		first = append(first, anim(3, arriving).view())
 	}
 	clearAnimCache()
 	for i, arriving := 0, animBirthSteps; arriving >= 0; i, arriving = i+1, arriving-1 {
-		if got := anim(3, arriving).View(); got != first[i] {
+		if got := anim(3, arriving).view(); got != first[i] {
 			t.Fatalf("arriving %d rebuilt as %q, want %q", arriving, got, first[i])
 		}
 	}
@@ -153,9 +153,9 @@ func TestAnim_PaletteSwapDropsTheFrames(t *testing.T) {
 	was := Mono()
 	t.Cleanup(func() { SetMono(was) })
 	SetMono(false)
-	colour := (Anim{Frame: animRest, Label: "thinking…"}).View()
+	colour := (animLabel{frame: animRest, label: "thinking…"}).view()
 	SetMono(true)
-	if got := (Anim{Frame: animRest, Label: "thinking…"}).View(); got == colour {
+	if got := (animLabel{frame: animRest, label: "thinking…"}).view(); got == colour {
 		t.Fatal("the mono render came back with the coloured frames still cached")
 	}
 }

@@ -203,18 +203,18 @@ func (r stripRun) draw() (string, []ChipHit) {
 		col += lipgloss.Width(s)
 	}
 	if r.from > 0 {
-		write(sty.Dim.Render(chipTail(r.from) + chipSeparator))
+		write(sty.dim.Render(chipTail(r.from) + chipSeparator))
 	}
 	for i := r.from; i < r.to; i++ {
 		if i > r.from {
-			write(sty.Dim.Render(chipSeparator))
+			write(sty.dim.Render(chipSeparator))
 		}
 		at := col
 		write(r.chips[i].render(r.form, i == r.picked))
 		hits = append(hits, ChipHit{Index: i, From: at, To: col})
 	}
 	if r.to < len(r.chips) {
-		write(sty.Dim.Render(chipSeparator + chipTail(len(r.chips)-r.to)))
+		write(sty.dim.Render(chipSeparator + chipTail(len(r.chips)-r.to)))
 	}
 	return b.String(), hits
 }
@@ -289,15 +289,15 @@ func (c AttachmentChip) render(form chipForm, picked bool) string {
 	counts := ""
 	if form != chipBare {
 		if c.Size != "" {
-			counts += sty.Dim.Render(" " + c.Size)
+			counts += sty.dim.Render(" " + c.Size)
 		}
 		if c.Lines > 0 {
-			counts += sty.Dim.Render(" " + countedLines(c.Lines))
+			counts += sty.dim.Render(" " + countedLines(c.Lines))
 		}
 	}
 	if picked {
-		rest := sty.Body.Render(head) + counts
-		return sty.FocusPointer.Render("❯") + LitRow(rest, 0, lipgloss.Width(rest))
+		rest := sty.body.Render(head) + counts
+		return sty.focusPointer.Render("❯") + LitRow(rest, 0, lipgloss.Width(rest))
 	}
-	return sty.Body.Render(c.Kind.mark()+head) + counts
+	return sty.body.Render(c.Kind.mark()+head) + counts
 }

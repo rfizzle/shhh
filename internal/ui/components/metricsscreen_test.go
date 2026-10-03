@@ -143,7 +143,7 @@ func TestMetricsScreen_HeadingIsARail(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	m := metricsScreen()
 	heading := strings.TrimSpace(metricsRowFor(m, 130, "REQUESTS"))
-	if !strings.Contains(m.View(130), sty.Headline.Render(heading)) {
+	if !strings.Contains(m.View(130), sty.headline.Render(heading)) {
 		t.Fatalf("the heading %q is not the group rail every other list uses", heading)
 	}
 }
@@ -154,10 +154,10 @@ func TestMetricsScreen_SparklineIsDimmerAndNeverColoured(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	view := metricsScreen().View(130)
 	run := sparkCells(metricsModels()[0].Trend, metricsTrendCells)
-	if !strings.Contains(view, sty.Dimmer.Render(run)) {
+	if !strings.Contains(view, sty.dimmer.Render(run)) {
 		t.Fatalf("the trend %q is not drawn in dimmer", run)
 	}
-	for _, style := range []lipgloss.Style{sty.Accent, sty.Add, sty.Del, sty.Info} {
+	for _, style := range []lipgloss.Style{sty.accent, sty.add, sty.del, sty.info} {
 		if strings.Contains(view, style.Render(run)) {
 			t.Fatal("the trend is coloured, which would imply a threshold nobody set")
 		}
@@ -216,7 +216,7 @@ func TestMetricsScreen_EveryBarStatesItsNumber(t *testing.T) {
 func TestMetricsScreen_TheUnaskedCostIsToldTwice(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	m := metricsScreen()
-	unasked := Meter{Pct: 5, Cells: MeterCellsRail, Tone: MeterUnasked, Text: "$0.96 · 5%"}
+	unasked := Meter{pctValue: 5, cellCount: meterCellsRail, tone: MeterUnasked, Text: "$0.96 · 5%"}
 	if !strings.Contains(m.View(130), unasked.View()) {
 		t.Fatal("the unasked cost's bar is not del")
 	}
@@ -271,7 +271,7 @@ func TestMetricsScreen_NotesDropAsABlock(t *testing.T) {
 // readings the screen is sitting on (invariant 4).
 func TestMetricsScreen_DroppedBlocksAreNamed(t *testing.T) {
 	m := metricsScreen()
-	m.MaxLines = 12
+	m.maxLines = 12
 	out := metricsPlain(m, 130)
 	if !strings.Contains(out, "how the commands ran") {
 		t.Fatalf("the dropped block is not named:\n%s", out)
@@ -289,7 +289,7 @@ func TestMetricsScreen_DroppedBlocksAreNamed(t *testing.T) {
 // budget squeezed out.
 func TestMetricsScreen_ABlockThatFitsKeepsTheMarkerBesideIt(t *testing.T) {
 	m := metricsScreen()
-	m.MaxLines = 16
+	m.maxLines = 16
 	out := metricsPlain(m, 130)
 	if !strings.Contains(out, "$9.94 · 54%") {
 		t.Fatalf("the block that fits was dropped anyway:\n%s", out)
@@ -297,8 +297,8 @@ func TestMetricsScreen_ABlockThatFitsKeepsTheMarkerBesideIt(t *testing.T) {
 	if !strings.Contains(out, "↓ 2 more · how the answers came back · how the commands ran") {
 		t.Fatalf("the blocks that went are not named beside the one that fit:\n%s", out)
 	}
-	if got := len(metricsLines(m, 130)); got > m.MaxLines {
-		t.Fatalf("the screen is %d rows against a budget of %d:\n%s", got, m.MaxLines, out)
+	if got := len(metricsLines(m, 130)); got > m.maxLines {
+		t.Fatalf("the screen is %d rows against a budget of %d:\n%s", got, m.maxLines, out)
 	}
 }
 
@@ -306,7 +306,7 @@ func TestMetricsScreen_ABlockThatFitsKeepsTheMarkerBesideIt(t *testing.T) {
 // is holding back — and still says which blocks went with them.
 func TestMetricsScreen_TheTableWindowsLast(t *testing.T) {
 	m := metricsScreen()
-	m.MaxLines = 6
+	m.maxLines = 6
 	out := metricsPlain(m, 130)
 	if !strings.Contains(out, "gpt-5.2") {
 		t.Fatalf("the table was dropped before the blocks were:\n%s", out)
@@ -362,7 +362,7 @@ func TestSectionFitter_ReservesTheMarkersRowOnceAnythingDrops(t *testing.T) {
 	if len(kept) != 3 {
 		t.Fatalf("three sections and a marker fit eleven rows, got %v", kept)
 	}
-	if dropped := f.Dropped(4, kept); len(dropped) != 1 || dropped[0] != 3 {
+	if dropped := f.dropped(4, kept); len(dropped) != 1 || dropped[0] != 3 {
 		t.Fatalf("the last section is the one that went, got %v", dropped)
 	}
 }

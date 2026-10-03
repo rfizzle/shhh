@@ -32,7 +32,7 @@ type InspectorAgent struct {
 	// State is the session's lifecycle state, in the same vocabulary a
 	// fan-out lane and a manager row use, so one child cannot be drawn three
 	// ways on one screen.
-	State FanoutState
+	State fanoutState
 	// Outcome is the word a session that has stopped ends on, and the word a
 	// session parked mid-run has stopped at. It is the host's own word rather
 	// than one derived here: the block states how a child ended, and the only
@@ -96,7 +96,7 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 	if len(r.Agents) == 0 {
 		return railBlock{}, false
 	}
-	b := railBlock{heading: railHeading("AGENTS", r.childTally(), sty.Dim, width)}
+	b := railBlock{heading: railHeading("AGENTS", r.childTally(), sty.dim, width)}
 	shown, folded := r.mappedAgents()
 	rows := make([][]railLine, len(shown))
 	for i, a := range shown {
@@ -116,7 +116,7 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 		// goes rather than folds: it is not a session, so the marker has
 		// nothing to count for it and would cost the row it saved.
 		b.rows = append(b.rows, railLine{
-			text: indentRow(sty.Hint.Render(hint), width), give: giveFirst, shed: true,
+			text: indentRow(sty.hint.Render(hint), width), give: giveFirst, shed: true,
 		})
 	}
 	b.fold = func(hidden []railLine) string { return agentsFold(hidden, r.Agents, width) }
@@ -254,13 +254,13 @@ func (r InspectorRail) mappedAgents() (shown, folded []InspectorAgent) {
 	ordered := r.mapOrder()
 	drop := make(map[int]bool)
 	places := make(map[int]int)
-	live := func(s FanoutState) bool { return s == FanoutRunning || s == FanoutQueued }
+	live := func(s fanoutState) bool { return s == FanoutRunning || s == FanoutQueued }
 	for _, a := range ordered {
 		if !a.Self && (a.State == FanoutBlocked || a.Focused && live(a.State)) {
 			places[a.Depth]++
 		}
 	}
-	for _, state := range []FanoutState{FanoutRunning, FanoutQueued} {
+	for _, state := range []fanoutState{FanoutRunning, FanoutQueued} {
 		for i := len(ordered) - 1; i >= 0; i-- {
 			a := ordered[i]
 			if a.Self || a.Focused || a.State != state {
@@ -369,7 +369,7 @@ func (r InspectorRail) mapOrder() []InspectorAgent {
 // A child parked in front of a check is counted as waiting, as the fan-out
 // header counts it, since nobody held it.
 func (r InspectorRail) childTally() string {
-	var states []FanoutState
+	var states []fanoutState
 	waits := 0
 	for _, a := range r.Agents {
 		if !a.Self {
@@ -392,7 +392,7 @@ func (r InspectorRail) childTally() string {
 // nothing.
 func agentsFold(hidden []railLine, agents []InspectorAgent, width int) string {
 	n := 0
-	var states []FanoutState
+	var states []fanoutState
 	waits := 0
 	for _, h := range hidden {
 		if !h.counted {
@@ -410,10 +410,10 @@ func agentsFold(hidden []railLine, agents []InspectorAgent, width int) string {
 		}
 	}
 	if running, blocked, held, done, failed := tallyStates(states); n > 0 && running+blocked+held > 0 {
-		text := sty.Hint.Render(fmt.Sprintf("… %d more", n)) + sty.Dim.Render(" · ") + waitingTally(states, waits, false)
+		text := sty.hint.Render(fmt.Sprintf("… %d more", n)) + sty.dim.Render(" · ") + waitingTally(states, waits, false)
 		// waitingTally leaves the finished to the rows while anything is
 		// live; here there are no rows, so they are asked for on their own.
-		var ended []FanoutState
+		var ended []fanoutState
 		for range done {
 			ended = append(ended, FanoutDone)
 		}
@@ -422,7 +422,7 @@ func agentsFold(hidden []railLine, agents []InspectorAgent, width int) string {
 		}
 		finished := waitingTally(ended, 0, false)
 		if finished != "" {
-			text += sty.Dim.Render(" · ") + finished
+			text += sty.dim.Render(" · ") + finished
 		}
 		return indentRow(text, width)
 	}
@@ -433,7 +433,7 @@ func agentsFold(hidden []railLine, agents []InspectorAgent, width int) string {
 		// either, so the marker falls back to counting what it has.
 		n = len(hidden)
 	}
-	return indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", n)), width)
+	return indentRow(sty.hint.Render(fmt.Sprintf("… %d more", n)), width)
 }
 
 // railLines is one session's rows: who it is, how it is and what it has
@@ -446,7 +446,7 @@ func (a InspectorAgent) railLines(width int) []railLine {
 	// rows above on a session that is actually working.
 	lead := PointerColumn()
 	if a.Focused {
-		lead = sty.FocusPointer.Render("❯") + " "
+		lead = sty.focusPointer.Render("❯") + " "
 	}
 	lead += a.nesting()
 	// Both of a session's rows point at that session. They are one thing
@@ -459,7 +459,7 @@ func (a InspectorAgent) railLines(width int) []railLine {
 		// keyboard goes back to, which every host spells as no name at all.
 		target.Name = ""
 	}
-	row := railRow(lead+AgentProgress{State: a.State}.rowGlyph()+" "+sty.Body.Render(a.Name),
+	row := railRow(lead+AgentProgress{State: a.State}.rowGlyph()+" "+sty.body.Render(a.Name),
 		a.rightField(), width, 0)
 	if a.Focused {
 		row = LitRow(row, GridPointerWidth, width)
@@ -502,7 +502,7 @@ func (a InspectorAgent) detailIndent() int {
 func (a InspectorAgent) rightField() string {
 	spend := ""
 	if a.Spend != "" {
-		spend = sty.Dim.Render(a.Spend)
+		spend = sty.dim.Render(a.Spend)
 	}
 	if a.Outcome == "" {
 		return spend
@@ -516,14 +516,14 @@ func (a InspectorAgent) rightField() string {
 
 // outcomeStyle is the weight the word a session ended on carries: a failure
 // is the only one of them that asks anything of the reader.
-func outcomeStyle(s FanoutState) lipgloss.Style {
+func outcomeStyle(s fanoutState) lipgloss.Style {
 	switch s {
 	case FanoutFailed:
-		return sty.Err
+		return sty.err
 	case FanoutDone:
-		return sty.Add
+		return sty.add
 	}
-	return sty.Dim
+	return sty.dim
 }
 
 // detailRow is the line under a session. A session that has stopped moving
@@ -547,7 +547,7 @@ func (a InspectorAgent) detailRow(width int) string {
 	switch m, ok := AgentMeter(a.Step, a.Steps); {
 	case a.State == FanoutDone || a.State == FanoutFailed:
 		if a.Detail != "" {
-			field := detailField{text: sty.Dimmer.Render(a.Detail)}
+			field := detailField{text: sty.dimmer.Render(a.Detail)}
 			if a.PatchKept || a.Handoff {
 				field.drop = dropReason
 			}
@@ -557,19 +557,19 @@ func (a InspectorAgent) detailRow(width int) string {
 		// The child's own plan, in words, and the budget's share beside it:
 		// two denominators stated rather than one bar that merges them
 		// (docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one).
-		parts = append(parts, detailField{text: sty.Dim.Render(stepsOf(a.Step, a.Steps))})
+		parts = append(parts, detailField{text: sty.dim.Render(stepsOf(a.Step, a.Steps))})
 		if pct := BudgetPct(a.Fresh, a.Budget); pct > 0 {
-			parts = append(parts, detailField{text: sty.Dimmer.Render(fmt.Sprintf("%d%% of budget", pct))})
+			parts = append(parts, detailField{text: sty.dimmer.Render(fmt.Sprintf("%d%% of budget", pct))})
 		}
 		if a.Detail != "" {
-			parts = append(parts, detailField{text: sty.Dimmer.Render(a.Detail)})
+			parts = append(parts, detailField{text: sty.dimmer.Render(a.Detail)})
 		}
 	case ok:
 		// A declared step count earns a bar; the lane is info whatever
 		// the child's health, and states its count beside it.
 		parts = append(parts, detailField{text: countedMeter(m)})
 		if a.Detail != "" {
-			parts = append(parts, detailField{text: sty.Dimmer.Render(a.Detail)})
+			parts = append(parts, detailField{text: sty.dimmer.Render(a.Detail)})
 		}
 	case a.State == FanoutRunning && a.pastHalfItsBudget():
 		// Nobody declared a step count, but somebody set a ceiling, and the
@@ -579,19 +579,19 @@ func (a InspectorAgent) detailRow(width int) string {
 		// watching, and it is not the fact that it is still moving.
 		parts = append(parts, detailField{text: a.budgetMeter().View()})
 		if a.Detail != "" {
-			parts = append(parts, detailField{text: sty.Dimmer.Render(a.Detail)})
+			parts = append(parts, detailField{text: sty.dimmer.Render(a.Detail)})
 		}
 	case a.Detail == "":
 	case a.State != FanoutRunning:
 		// Waiting on an answer, waiting for a slot, or waiting to be
 		// steered: none of them is running, so none of them gets the mark.
-		parts = append(parts, detailField{text: sty.Dimmer.Render(a.Detail)})
+		parts = append(parts, detailField{text: sty.dimmer.Render(a.Detail)})
 	default:
 		// No declared total: the still running mark beside the words naming
 		// what is running, never a fabricated ratio. It does not move: the
 		// frame's status is the one thing on screen that animates
 		// (docs/interface/surfaces.md#the-inspector-rail).
-		parts = append(parts, detailField{text: sty.SpinText.Render("▸ " + a.Detail)})
+		parts = append(parts, detailField{text: sty.spinText.Render("▸ " + a.Detail)})
 	}
 	if a.PatchKept {
 		// The same words the manager's row carries for the same child, and
@@ -599,8 +599,8 @@ func (a InspectorAgent) detailRow(width int) string {
 		// checkout is the one thing on the line that is somebody's work, so
 		// it is not the part a narrow rail gives up. Its key is split from
 		// it so that the key can go first.
-		parts = append(parts, detailField{text: sty.Dimmer.Render("patch kept")},
-			detailField{text: sty.Hint.Render(keys.Bracket(keys.Agent.Review) + " " + keys.Words(keys.Agent.Review)),
+		parts = append(parts, detailField{text: sty.dimmer.Render("patch kept")},
+			detailField{text: sty.hint.Render(keys.Bracket(keys.Agent.Review) + " " + keys.Words(keys.Agent.Review)),
 				drop: dropReviewKey})
 	}
 	if a.Steers >= inspectorSteersWorthSaying {
@@ -609,18 +609,18 @@ func (a InspectorAgent) detailRow(width int) string {
 		// finding the same departure — which is the thing worth knowing forty
 		// rounds before the report says it
 		// (docs/capabilities/subagents.md#they-are-visible-while-they-run).
-		parts = append(parts, detailField{text: sty.Del.Render(fmt.Sprintf("⚠ off task ×%d", a.Steers))})
+		parts = append(parts, detailField{text: sty.del.Render(fmt.Sprintf("⚠ off task ×%d", a.Steers))})
 	}
 	if a.Tools > 0 {
-		parts = append(parts, detailField{text: sty.Dimmer.Render(plural(a.Tools, "tool")), drop: dropTools})
+		parts = append(parts, detailField{text: sty.dimmer.Render(plural(a.Tools, "tool")), drop: dropTools})
 	}
 	if a.Handoff {
 		// The row ends on what can still be done about it, and does nothing
 		// about it: the key is the manager's, and the trailer under the block
 		// is how a reader gets there
 		// (docs/interface/surfaces.md#the-inspector-rail).
-		parts = append(parts, detailField{text: sty.Dimmer.Render("handoff kept")},
-			detailField{text: sty.Hint.Render(keys.Bracket(keys.Agent.Retry) + " " + keys.Words(keys.Agent.Retry)),
+		parts = append(parts, detailField{text: sty.dimmer.Render("handoff kept")},
+			detailField{text: sty.hint.Render(keys.Bracket(keys.Agent.Retry) + " " + keys.Words(keys.Agent.Retry)),
 				drop: dropRetryKey})
 	}
 	if len(parts) == 0 {
@@ -658,7 +658,7 @@ const (
 // fitDetail joins the clauses, giving up the ranked ones in rank order
 // until the line fits the room it has.
 func fitDetail(parts []detailField, room int) string {
-	sep := sty.Dimmer.Render(detailSep)
+	sep := sty.dimmer.Render(detailSep)
 	join := func() string {
 		texts := make([]string, 0, len(parts))
 		for _, p := range parts {
@@ -704,9 +704,9 @@ func (a InspectorAgent) pastHalfItsBudget() bool {
 // the only carrier of the value.
 func (a InspectorAgent) budgetMeter() Meter {
 	return Meter{
-		Pct:   int(min(a.Fresh*100/a.Budget, 100)),
-		Cells: MeterCellsAgent,
-		Tone:  MeterAgent,
-		Text:  formatTokens(a.Fresh) + " of " + formatTokens(a.Budget),
+		pctValue:  int(min(a.Fresh*100/a.Budget, 100)),
+		cellCount: meterCellsAgent,
+		tone:      meterAgent,
+		Text:      formatTokens(a.Fresh) + " of " + formatTokens(a.Budget),
 	}
 }

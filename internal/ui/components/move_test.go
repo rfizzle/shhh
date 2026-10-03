@@ -94,11 +94,11 @@ func movers() []mover {
 	sprint := planScreen()
 	prof := briefScreen()
 	hosts := []mover{
-		{"shhh config", keys.Screen.Move, func() int { return c.Focus },
+		{"shhh config", keys.Screen.Move, func() int { return c.focus },
 			func(k tea.KeyPressMsg) { c.Update(k) }},
 		{"shhh history", keys.Screen.Move, func() int { return h.Focus },
 			func(k tea.KeyPressMsg) { h.Update(k) }},
-		{"shhh doctor", keys.Screen.Move, func() int { return d.Focus },
+		{"shhh doctor", keys.Screen.Move, func() int { return d.focus },
 			func(k tea.KeyPressMsg) { d.Update(k) }},
 		{"the agent manager", keys.Agent.Move, func() int { return l.Focus },
 			func(k tea.KeyPressMsg) { l.Update(k) }},
@@ -110,7 +110,7 @@ func movers() []mover {
 			func(k tea.KeyPressMsg) { p.Update(k) }},
 		{"the note selector", keys.Select.MoveJK, func() int { return n.Select.Focus },
 			func(k tea.KeyPressMsg) { n.Update(k) }},
-		{"the context surface", keys.Context.Move, func() int { return ctx.Cursor },
+		{"the context surface", keys.Context.Move, func() int { return ctx.cursorAt },
 			func(k tea.KeyPressMsg) { ctx.Update(k) }},
 		{"the backlog screen", keys.Backlog.Move, func() int { return back.focus[back.tab] },
 			func(k tea.KeyPressMsg) { back.Update(k) }},
@@ -191,7 +191,7 @@ func TestAKeymapMovesWhatTheScreensAnswer(t *testing.T) {
 
 	c, h := configFixture(), historyScreen()
 	for _, host := range []mover{
-		{"shhh config", keys.Screen.Move, func() int { return c.Focus },
+		{"shhh config", keys.Screen.Move, func() int { return c.focus },
 			func(k tea.KeyPressMsg) { c.Update(k) }},
 		{"shhh history", keys.Screen.Move, func() int { return h.Focus },
 			func(k tea.KeyPressMsg) { h.Update(k) }},

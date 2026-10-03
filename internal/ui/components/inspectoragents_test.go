@@ -611,7 +611,7 @@ func TestRail_AgentRowsAreStatic(t *testing.T) {
 			t.Errorf("the rail lacks the row %q:\n%s", want, view)
 		}
 	}
-	if !strings.Contains(raw, sty.SpinText.Render("▸ docs/loop.md")) {
+	if !strings.Contains(raw, sty.spinText.Render("▸ docs/loop.md")) {
 		t.Errorf("the running mark is in the spin colour:\n%s", raw)
 	}
 	if strings.Contains(view, "▸ survey internal/ui") || strings.Contains(view, "▸ go test") {

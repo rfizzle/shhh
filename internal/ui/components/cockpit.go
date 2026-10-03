@@ -7,12 +7,12 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// CockpitMode classifies the permission-mode segment's rendering
+// cockpitMode classifies the permission-mode segment's rendering
 // (docs/interface/surfaces.md#the-input-frame).
-type CockpitMode int
+type cockpitMode int
 
 const (
-	CockpitPermissive CockpitMode = iota // ⏵⏵ green
+	CockpitPermissive cockpitMode = iota // ⏵⏵ green
 	CockpitGated                         // ⏸ amber
 	CockpitChecking                      // ✦ classifier deciding
 )
@@ -22,7 +22,7 @@ const (
 // When the bar overflows, right-side segments drop first.
 type Cockpit struct {
 	Mode     string
-	ModeKind CockpitMode
+	ModeKind cockpitMode
 	// Round is the tool-round counter segment ("round 7 of 25"); empty hides it.
 	Round string
 	// CtxPct drives the 8-cell context meter; negative hides it.
@@ -57,11 +57,11 @@ type Cockpit struct {
 func (c Cockpit) modeSegment() string {
 	switch c.ModeKind {
 	case CockpitChecking:
-		return sty.SpinText.Render("✦ " + c.Mode)
+		return sty.spinText.Render("✦ " + c.Mode)
 	case CockpitPermissive:
-		return sty.Add.Render("⏵⏵ " + c.Mode)
+		return sty.add.Render("⏵⏵ " + c.Mode)
 	default:
-		return sty.Accent.Render("⏸ " + c.Mode)
+		return sty.accent.Render("⏸ " + c.Mode)
 	}
 }
 
@@ -81,13 +81,13 @@ func CtxMeter(word string, pct, warn, alert int) string {
 		word = "ctx"
 	}
 	return Meter{
-		Pct:        pct,
-		Cells:      MeterCellsVitals,
-		Tone:       MeterPressure,
-		Label:      word,
-		ValueFirst: true,
-		Warn:       warn,
-		Alert:      alert,
+		pctValue:   pct,
+		cellCount:  meterCellsVitals,
+		tone:       meterPressure,
+		labelText:  word,
+		valueFirst: true,
+		warn:       warn,
+		alert:      alert,
 	}.View()
 }
 
@@ -103,7 +103,7 @@ func (c Cockpit) ctxMeter() string {
 // lane, and the frame's title counts its ask among the decisions waiting
 // (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
 func (c Cockpit) agentsSegment() string {
-	return sty.Info.Render(fmt.Sprintf("◇%d", c.Agents))
+	return sty.info.Render(fmt.Sprintf("◇%d", c.Agents))
 }
 
 // Rail drop ranks (docs/interface/surfaces.md#the-input-frame): when a
@@ -138,7 +138,7 @@ type RailSegment struct {
 func (c Cockpit) RailSegments() []RailSegment {
 	segs := []RailSegment{{Text: c.modeSegment(), Drop: RailKeep}}
 	if c.Round != "" {
-		segs = append(segs, RailSegment{Text: sty.Status.Render(c.Round), Drop: RailNormal})
+		segs = append(segs, RailSegment{Text: sty.status.Render(c.Round), Drop: RailNormal})
 	}
 	if c.CtxPct >= 0 {
 		segs = append(segs, RailSegment{Text: c.ctxMeter(), Drop: RailVital})
@@ -148,13 +148,13 @@ func (c Cockpit) RailSegments() []RailSegment {
 		if c.Spend == "" {
 			drop = RailVital
 		}
-		segs = append(segs, RailSegment{Text: sty.Status.Render(c.Tokens), Drop: drop})
+		segs = append(segs, RailSegment{Text: sty.status.Render(c.Tokens), Drop: drop})
 	}
 	if c.Spend != "" {
-		segs = append(segs, RailSegment{Text: sty.Status.Render(c.Spend), Drop: RailVital})
+		segs = append(segs, RailSegment{Text: sty.status.Render(c.Spend), Drop: RailVital})
 	}
 	for _, e := range c.Extra {
-		segs = append(segs, RailSegment{Text: sty.Status.Render(e), Drop: RailNormal})
+		segs = append(segs, RailSegment{Text: sty.status.Render(e), Drop: RailNormal})
 	}
 	if c.Agents > 0 {
 		segs = append(segs, RailSegment{Text: c.agentsSegment(), Drop: RailNormal})
@@ -191,26 +191,26 @@ func FitRail(segs []RailSegment, sep string, width int) string {
 func (c Cockpit) View(width int) string {
 	segments := []string{c.modeSegment()}
 	if c.Round != "" {
-		segments = append(segments, sty.Status.Render(c.Round))
+		segments = append(segments, sty.status.Render(c.Round))
 	}
 	if c.CtxPct >= 0 {
 		segments = append(segments, c.ctxMeter())
 	}
 	if c.Tokens != "" {
-		segments = append(segments, sty.Status.Render(c.Tokens))
+		segments = append(segments, sty.status.Render(c.Tokens))
 	}
 	if c.Spend != "" {
-		segments = append(segments, sty.Status.Render(c.Spend))
+		segments = append(segments, sty.status.Render(c.Spend))
 	}
 	for _, e := range c.Extra {
-		segments = append(segments, sty.Status.Render(e))
+		segments = append(segments, sty.status.Render(e))
 	}
 	if c.Agents > 0 {
 		segments = append(segments, c.agentsSegment())
 	}
 
 	for {
-		left := strings.Join(segments, sty.Status.Render(" · "))
+		left := strings.Join(segments, sty.status.Render(" · "))
 		if pad := width - lipgloss.Width(left); pad >= 0 {
 			return left + strings.Repeat(" ", pad)
 		}

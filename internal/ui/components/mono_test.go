@@ -72,7 +72,7 @@ func monoFixtures() []monoSurface {
 		}}
 	}
 	diffLine := func(kind diff.Kind) string {
-		return strings.Join(UnifiedLines(hunk(kind), w, UnifiedOpts{LineNumbers: true, Emphasis: true}), "\n")
+		return strings.Join(unifiedLines(hunk(kind), w, unifiedOpts{lineNumbers: true, emphasis: true}), "\n")
 	}
 
 	// The transcript's gutter as a column, for a pane six rows tall over ten
@@ -168,7 +168,7 @@ func monoFixtures() []monoSurface {
 	// beside it are held constant, so the only thing left to tell an ordinary
 	// share from a cost nobody asked for is the label and its glyph — which
 	// is exactly what invariant 1 asks of them.
-	metricsBar := func(label string, tone MeterTone) string {
+	metricsBar := func(label string, tone meterTone) string {
 		m := &MetricsScreen{
 			Subject: "all time · 1 request · 1 model",
 			Blocks: []MetricsBlock{{Title: "where the money went", Bars: []MetricsBar{
@@ -211,7 +211,7 @@ func monoFixtures() []monoSurface {
 	// left to tell two renders apart. A child's row draws through the lane
 	// renderer; the orchestrator has no lane progress and keeps its
 	// own status text.
-	agents := func(state AgentState, status string) string {
+	agents := func(state agentState, status string) string {
 		row := AgentRow{State: state, Name: "writer-1", Task: "docs", Status: status}
 		switch state {
 		case AgentRunning:
@@ -290,7 +290,7 @@ func monoFixtures() []monoSurface {
 	}
 
 	meter := func(pct int) string {
-		return Meter{Pct: pct, Cells: MeterCellsVitals, Tone: MeterPressure, Label: "ctx"}.View()
+		return Meter{pctValue: pct, cellCount: meterCellsVitals, tone: meterPressure, labelText: "ctx"}.View()
 	}
 
 	// The review surface's verdicts, held to one file and one hunk so that
@@ -405,7 +405,7 @@ func monoFixtures() []monoSurface {
 				r.State, r.Outcome, r.Duration = ActivityQueued, OutcomeQueued, NoDuration
 			})},
 			{"running", row(func(r *ActivityRow) { r.State, r.Outcome = ActivityRunning, OutcomeRunning })},
-			{"checking", row(func(r *ActivityRow) { r.State, r.Outcome = ActivityChecking, OutcomeChecking })},
+			{"checking", row(func(r *ActivityRow) { r.State, r.Outcome = ActivityChecking, outcomeChecking })},
 			{"failed", row(func(r *ActivityRow) { r.State, r.Outcome = ActivityFailed, OutcomeExit(1) })},
 			// The two denials are the case the invariant is really about: the
 			// component colours them differently, so the decider has to be a
@@ -511,7 +511,7 @@ func monoFixtures() []monoSurface {
 			{"at the top", gutterColumn(0)},
 			// The pane divider's cell as the split draws it: the frame's rule
 			// on the chrome token.
-			{"pane divider", sty.Dim.Render(paneDivider)},
+			{"pane divider", sty.dim.Render(paneDivider)},
 		}},
 		{"fan-out lane state", []monoState{
 			{"queued", lane(func(l *FanoutLane) { l.State = FanoutQueued })},
@@ -710,7 +710,7 @@ func monoFixtures() []monoSurface {
 		}},
 		{"metrics category", []monoState{
 			{"an ordinary share", metricsBar("$ run", MeterCategory)},
-			{"a sub-agent's share", metricsBar("◇ agents", MeterAgent)},
+			{"a sub-agent's share", metricsBar("◇ agents", meterAgent)},
 			{"a cost nobody asked for", metricsBar("✗ no answer", MeterUnasked)},
 		}},
 		{"doctor state", []monoState{
@@ -788,7 +788,7 @@ var sgrPattern = regexp.MustCompile(`\x1b\[([0-9;]*)m`)
 // digits, so the digits are read back off the ANSI256 rung. The three
 // mono shades are all above sixteen, so all three are indexed colours.
 func index256(t Token) string {
-	i, ok := t.ANSI256.(lipgloss.ANSIColor)
+	i, ok := t.aNSI256.(lipgloss.ANSIColor)
 	if !ok {
 		return ""
 	}
@@ -899,7 +899,7 @@ func TestMonoLeavesTheFullPaletteIntact(t *testing.T) {
 	if Mono() {
 		t.Fatal("mono should be off")
 	}
-	if Palette != FullPalette {
+	if Palette != fullPalette {
 		t.Fatal("the full palette should be back")
 	}
 	var offPalette bool
@@ -913,7 +913,7 @@ func TestMonoLeavesTheFullPaletteIntact(t *testing.T) {
 	}
 
 	SetMono(true)
-	if !Mono() || Palette != MonoPalette {
+	if !Mono() || Palette != monoPalette {
 		t.Fatal("mono should be on with the mono palette")
 	}
 }
@@ -932,7 +932,7 @@ func TestMonoDeclinesSyntaxHighlighting(t *testing.T) {
 		OldStart: 1, OldCount: 0, NewStart: 1, NewCount: 1,
 		Lines: []diff.Line{{Kind: diff.Add, Text: "x := 1", NewNo: 1}},
 	}}
-	out := strings.Join(UnifiedLines(hunks, 60, UnifiedOpts{Syntax: syntax}), "\n")
+	out := strings.Join(unifiedLines(hunks, 60, unifiedOpts{syntax: syntax}), "\n")
 	for _, m := range sgrPattern.FindAllStringSubmatch(out, -1) {
 		if !allowedMonoSGR(m[1]) {
 			t.Fatalf("mono diff kept a syntax colour: SGR %q", m[1])

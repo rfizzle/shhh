@@ -8,9 +8,9 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// NoteSelectResult is the note-selector Update result: the chosen option and
+// noteSelectResult is the note-selector Update result: the chosen option and
 // the note text, confirmed together.
-type NoteSelectResult struct {
+type noteSelectResult struct {
 	Index    int
 	Note     string
 	Canceled bool
@@ -66,7 +66,7 @@ func NewNoteSelect(title string, options []SelectOption) *NoteSelect {
 	return &NoteSelect{Select: Select{Title: title, Options: options}, Note: ta}
 }
 
-func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result NoteSelectResult) {
+func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result noteSelectResult) {
 	s.noteMissing = false
 	switch pressed := msg.String(); {
 	// A card with no options is the field and nothing else, so there is
@@ -79,22 +79,22 @@ func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result NoteSelectRe
 		} else {
 			s.Note.Blur()
 		}
-		return false, NoteSelectResult{}
+		return false, noteSelectResult{}
 	case keys.Is(pressed, keys.Select.Take):
 		idx := s.Select.Focus
 		note := strings.TrimSpace(s.Note.Value())
 		required := s.Require || (idx < len(s.Select.Options) && s.Select.Options[idx].RequireNote)
 		if required && note == "" {
 			s.noteMissing = true
-			return false, NoteSelectResult{}
+			return false, noteSelectResult{}
 		}
-		return true, NoteSelectResult{Index: idx, Note: note}
+		return true, noteSelectResult{Index: idx, Note: note}
 	case keys.Is(pressed, keys.Select.Cancel):
-		return true, NoteSelectResult{Index: -1, Canceled: true}
+		return true, noteSelectResult{Index: -1, Canceled: true}
 	}
 	if s.FocusNote {
 		s.Note, _ = s.Note.Update(msg)
-		return false, NoteSelectResult{}
+		return false, noteSelectResult{}
 	}
 	// List focus with the query line open: the query line is the surface, so
 	// everything but movement is text — the same reading the plain card makes
@@ -105,7 +105,7 @@ func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result NoteSelectRe
 		if !s.Select.moved(pressed) {
 			s.Select.editQuery(msg)
 		}
-		return false, NoteSelectResult{}
+		return false, noteSelectResult{}
 	}
 	// List focus: reuse the single-select movement; its enter/esc/digit paths
 	// are unreachable here (handled above), except digits, which should type
@@ -121,7 +121,7 @@ func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result NoteSelectRe
 			s.Select.Focus = s.Select.selectableIndex(n)
 		}
 	}
-	return false, NoteSelectResult{}
+	return false, noteSelectResult{}
 }
 
 // NoteMissing reports that the last confirm was refused because the note the
@@ -154,7 +154,7 @@ func (s *NoteSelect) View(width int) string {
 	rows = append(rows, tail...)
 	rows = boundRows(rows, s.Select.MaxLines)
 	return Card{
-		Title: s.Select.Title, Chips: s.Select.chips(shown), Tone: s.Select.Tone,
+		Title: s.Select.Title, chips: s.Select.chips(shown), tone: s.Select.Tone,
 	}.Render(rows, width)
 }
 

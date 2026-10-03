@@ -44,13 +44,13 @@ type List[T any] struct {
 	// somewhere this list does not cover: the agent manager's blocked
 	// children are pinned above the window rather than inside it.
 	Focus int
-	// Skip marks an item the pointer passes over rather than lands on — a
+	// skipFn marks an item the pointer passes over rather than lands on — a
 	// group rail, which labels the options under it rather than offering
 	// one. nil is a list every item of which can be chosen.
-	Skip func(T) bool
-	// Rows is how many screen rows item i renders to: one for most, two for
+	skipFn func(T) bool
+	// rows is how many screen rows item i renders to: one for most, two for
 	// an item that carries its consequence underneath. nil is one apiece.
-	Rows func(i int) int
+	rows func(i int) int
 	// window is the run being shown, remembered between keystrokes
 	// (listwindow.go).
 	window listWindow
@@ -58,15 +58,15 @@ type List[T any] struct {
 
 // skip reports whether the pointer passes over item i.
 func (l *List[T]) skip(i int) bool {
-	return l.Skip != nil && l.Skip(l.Items[i])
+	return l.skipFn != nil && l.skipFn(l.Items[i])
 }
 
 // height is how many rows item i renders to.
 func (l *List[T]) height(i int) int {
-	if l.Rows == nil {
+	if l.rows == nil {
 		return 1
 	}
-	return l.Rows(i)
+	return l.rows(i)
 }
 
 // geometry is what the window needs to know about this list.
@@ -100,12 +100,12 @@ func (l *List[T]) Move(pressed string, bs ...keys.Binding) bool {
 	return false
 }
 
-// MoveTyping is Move for a list with its query line open: only the halves of
+// moveTyping is Move for a list with its query line open: only the halves of
 // the same bindings that no sentence produces move it, because a j typed into
 // a filter is a letter (docs/interface/surfaces.md#selectors). The binding
 // stays the surface's own, so a file that moved a pointer's key moves what
 // the open row answers too.
-func (l *List[T]) MoveTyping(pressed string, bs ...keys.Binding) bool {
+func (l *List[T]) moveTyping(pressed string, bs ...keys.Binding) bool {
 	if keys.Typed(pressed) {
 		return false
 	}
@@ -124,11 +124,11 @@ func (l *List[T]) Step(delta int) {
 	}
 }
 
-// Normalize puts the pointer on an item that can be chosen: a list that
+// normalize puts the pointer on an item that can be chosen: a list that
 // opened on a group rail — or on nothing, after a filter shortened it —
 // moves to the nearest item instead. Forwards first, because a rail labels
 // what is under it and the reader's eye is already there.
-func (l *List[T]) Normalize() {
+func (l *List[T]) normalize() {
 	if len(l.Items) == 0 {
 		l.Focus = 0
 		return
@@ -151,10 +151,10 @@ func (l *List[T]) Normalize() {
 	}
 }
 
-// First is the position of the first item the pointer can land on. A filtered
+// first is the position of the first item the pointer can land on. A filtered
 // list puts its pointer here after every keystroke, because the items under
 // it are not the items that were there a moment ago.
-func (l *List[T]) First() int {
+func (l *List[T]) first() int {
 	for i := range l.Items {
 		if !l.skip(i) {
 			return i
@@ -163,9 +163,9 @@ func (l *List[T]) First() int {
 	return 0
 }
 
-// Count is how many items the pointer can land on, which is all of them until
+// count is how many items the pointer can land on, which is all of them until
 // a list carries rails.
-func (l *List[T]) Count() int {
+func (l *List[T]) count() int {
 	n := 0
 	for i := range l.Items {
 		if !l.skip(i) {
@@ -196,14 +196,14 @@ func (l *List[T]) Range(budget int) (lo, hi int) {
 	return l.window.rangeFor(l.geometry(), budget)
 }
 
-// CountIn is how many items in [lo:hi) the pointer could land on — what an
+// countIn is how many items in [lo:hi) the pointer could land on — what an
 // overflow marker says it is hiding, and what a title rail says is showing.
-func (l *List[T]) CountIn(lo, hi int) int { return l.geometry().countIn(lo, hi) }
+func (l *List[T]) countIn(lo, hi int) int { return l.geometry().countIn(lo, hi) }
 
-// RowsIn is how many screen rows items [lo:hi) render to.
-func (l *List[T]) RowsIn(lo, hi int) int { return l.geometry().rows(lo, hi) }
+// rowsIn is how many screen rows items [lo:hi) render to.
+func (l *List[T]) rowsIn(lo, hi int) int { return l.geometry().rows(lo, hi) }
 
-// Matches is the type-to-filter rule every list here answers: the query,
+// matches is the type-to-filter rule every list here answers: the query,
 // folded to lower case, found somewhere inside any one of the fields the item
 // offers it. An empty query matches everything, which is what makes "no
 // filter" and "a filter nothing fails" one code path rather than a branch
@@ -217,7 +217,7 @@ func (l *List[T]) RowsIn(lo, hi int) int { return l.geometry().rows(lo, hi) }
 //
 // The query is folded here and not trimmed: leading space is something the
 // reader typed, and a caller that means to ignore it says so itself.
-func Matches(query string, fields ...string) bool {
+func matches(query string, fields ...string) bool {
 	if query == "" {
 		return true
 	}
@@ -238,7 +238,7 @@ func Matches(query string, fields ...string) bool {
 func Filter[T any](items []T, query string, fields func(T) []string) []int {
 	out := make([]int, 0, len(items))
 	for i, item := range items {
-		if Matches(query, fields(item)...) {
+		if matches(query, fields(item)...) {
 			out = append(out, i)
 		}
 	}

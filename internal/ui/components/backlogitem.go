@@ -25,19 +25,19 @@ func (b *BacklogScreen) readingRows(width, budget int) []string {
 		// The whole item is on screen, so no row is spent saying what was
 		// folded: the marker is a fold's own account of itself, and a blank
 		// line where it would be costs a line of the item for nothing.
-		b.pager.Height, b.pager.Total = budget, len(rows)
+		b.pager.Height, b.pager.total = budget, len(rows)
 		return rows
 	}
 	b.pager.Height = max(budget-1, 1)
 	shown := b.pager.Window(rows)
-	return append(shown, sty.Dim.Render(Clip(b.scrollNote(), width)))
+	return append(shown, sty.dim.Render(Clip(b.scrollNote(), width)))
 }
 
 // scrollNote is the row under a folded body saying what is off each end. It
 // is only asked for once something has been folded, which is why none of its
 // three answers is a blank.
 func (b *BacklogScreen) scrollNote() string {
-	above, below := b.pager.Above(), b.pager.Below()
+	above, below := b.pager.above(), b.pager.below()
 	switch {
 	case above == 0:
 		return fmt.Sprintf("%d more rows below", below)
@@ -56,20 +56,20 @@ func (b *BacklogScreen) scrollNote() string {
 func (b *BacklogScreen) itemRows(width int) []string {
 	row := b.current()
 	if row == nil {
-		return []string{sty.Dim.Render(Clip("no item selected", width))}
+		return []string{sty.dim.Render(Clip("no item selected", width))}
 	}
 	rows := []string{brightStyle().Render(Clip(row.Slug, width))}
 	if row.Title != "" {
 		rows = append(rows, wrapDim(row.Title, width)...)
 	}
 	if fields := b.fieldRow(*row); fields != "" {
-		rows = append(rows, sty.Dim.Render(Clip(fields, width)))
+		rows = append(rows, sty.dim.Render(Clip(fields, width)))
 	}
 	if edges := b.edgeRow(*row); edges != "" {
-		rows = append(rows, sty.Dim.Render(Clip(edges, width)))
+		rows = append(rows, sty.dim.Render(Clip(edges, width)))
 	}
 	for _, w := range row.Warnings {
-		rows = append(rows, sty.Warn.Render(Clip("⚠ "+w, width)))
+		rows = append(rows, sty.warn.Render(Clip("⚠ "+w, width)))
 	}
 	rows = append(rows, screenRule(width), "")
 	return append(rows, b.bodyRows(*row, width)...)
@@ -109,15 +109,15 @@ func (b *BacklogScreen) edgeRow(row BacklogRow) string {
 func (b *BacklogScreen) bodyRows(row BacklogRow, width int) []string {
 	if row.State == BacklogUnreadable {
 		return append(wrapWarn(row.Reason, width),
-			sty.Dim.Render(Clip(row.Path+" is still on disk; "+
+			sty.dim.Render(Clip(row.Path+" is still on disk; "+
 				keys.Bracket(keys.Backlog.Edit)+" opens it", width)))
 	}
 	body := strings.TrimSpace(row.Body)
 	if body == "" {
 		if row.State == BacklogArchived {
-			return []string{sty.Dim.Render(Clip("archived without a report", width))}
+			return []string{sty.dim.Render(Clip("archived without a report", width))}
 		}
-		return []string{sty.Dim.Render(Clip("nothing written under the header yet", width))}
+		return []string{sty.dim.Render(Clip("nothing written under the header yet", width))}
 	}
 	key := fmt.Sprintf("%s\x00%d\x00%d\x00%t", row.Slug, b.tab, width, Mono())
 	if key != b.bodyKey {
@@ -150,9 +150,9 @@ func (b *BacklogScreen) prose(body string, width int) []string {
 // wrapDim and wrapWarn are a run of prose laid out in the pane's width, in
 // the one treatment each is drawn in.
 func wrapDim(text string, width int) []string {
-	return wrapSpans([]styledSpan{{text, sty.Dim}}, max(width, 1))
+	return wrapSpans([]styledSpan{{text, sty.dim}}, max(width, 1))
 }
 
 func wrapWarn(text string, width int) []string {
-	return wrapSpans([]styledSpan{{text, sty.Warn}}, max(width, 1))
+	return wrapSpans([]styledSpan{{text, sty.warn}}, max(width, 1))
 }

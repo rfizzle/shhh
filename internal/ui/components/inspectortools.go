@@ -77,10 +77,10 @@ func (r InspectorRail) toolsBlock(width int) (railBlock, bool) {
 	if total := len(t.Sources) + t.More; total > 0 {
 		meta = fmt.Sprintf("%d of %d up", t.Up, total)
 	}
-	b := railBlock{heading: railHeading("TOOLS", meta, sty.Dim, width)}
+	b := railBlock{heading: railHeading("TOOLS", meta, sty.dim, width)}
 	for _, s := range t.Sources {
 		glyph, word, style := toolSourceTone(s.State)
-		left := glyph + " " + sty.Body.Render(s.Name)
+		left := glyph + " " + sty.body.Render(s.Name)
 		right := style.Render(word)
 		if s.Note != "" {
 			// The name is the row's target and the note its outcome, and the
@@ -90,7 +90,7 @@ func (r InspectorRail) toolsBlock(width int) (railBlock, bool) {
 			// dropped whole where not even its separator and one cell fit.
 			const sep = " · "
 			if room := railRoom(width, right, inspectorIndent) - lipgloss.Width(left); room > lipgloss.Width(sep) {
-				right += sty.Dim.Render(Clip(sep+s.Note, room))
+				right += sty.dim.Render(Clip(sep+s.Note, room))
 			}
 		}
 		b.add(railRow(left, right, width, inspectorIndent))
@@ -99,7 +99,7 @@ func (r InspectorRail) toolsBlock(width int) (railBlock, bool) {
 		// A count of sources rather than one, so it folds with the first
 		// source the rail takes and the block's marker states both numbers,
 		// and it opens the block's door as that marker does (railLine.more).
-		b.moreRow(indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", t.More)), width), t.More)
+		b.moreRow(indentRow(sty.hint.Render(fmt.Sprintf("… %d more", t.More)), width), t.More)
 	}
 	if t.MemoryOmitted > 0 {
 		// A source row in everything but name: the memory the prompt carries
@@ -107,8 +107,8 @@ func (r InspectorRail) toolsBlock(width int) (railBlock, bool) {
 		// much of it did not arrive. The mark is the one the rail already
 		// uses for something only a person can move — the way out is to
 		// shorten an entry.
-		b.add(railRow(sty.Accent.Render("⚠")+" "+sty.Body.Render("memory"),
-			sty.Dim.Render(fmt.Sprintf("%d did not fit", t.MemoryOmitted)),
+		b.add(railRow(sty.accent.Render("⚠")+" "+sty.body.Render("memory"),
+			sty.dim.Render(fmt.Sprintf("%d did not fit", t.MemoryOmitted)),
 			width, inspectorIndent))
 	}
 	return b, true
@@ -129,11 +129,11 @@ func ToolSourceWord(s ToolSourceState) string {
 func toolSourceTone(s ToolSourceState) (string, string, lipgloss.Style) {
 	switch s {
 	case ToolSourceUp:
-		return sty.Add.Render("✓"), "up", sty.Dim
+		return sty.add.Render("✓"), "up", sty.dim
 	case ToolSourceBlocked:
-		return sty.Accent.Render("⚠"), "blocked", sty.Body
+		return sty.accent.Render("⚠"), "blocked", sty.body
 	case ToolSourceOff:
-		return sty.Dim.Render("⊘"), "off", sty.Dim
+		return sty.dim.Render("⊘"), "off", sty.dim
 	}
-	return sty.Err.Render("✗"), "error", sty.Body
+	return sty.err.Render("✗"), "error", sty.body
 }

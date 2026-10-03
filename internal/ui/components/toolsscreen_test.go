@@ -53,7 +53,7 @@ func toolsFixture() []ToolsSource {
 
 // toolsScreen is the screen over the fixture with the pointer on focus.
 func toolsScreen(focus int) *ToolsScreen {
-	return &ToolsScreen{Sources: toolsFixture(), Focus: focus, MaxLines: 30}
+	return &ToolsScreen{Sources: toolsFixture(), Focus: focus, maxLines: 30}
 }
 
 // The list is every source under its group's heading, each the rail row's
@@ -107,7 +107,7 @@ func TestToolsScreen_TheOfferIsAskedFirst(t *testing.T) {
 		t.Fatal("a declined confirm handed the offer over")
 	}
 	s.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
-	if _, r := s.Update(tea.KeyPressMsg{Code: 'y', Text: "y"}); r.Offer != ToolsOfferTrust || r.At != 2 {
+	if _, r := s.Update(tea.KeyPressMsg{Code: 'y', Text: "y"}); r.Offer != ToolsOfferTrust || r.at != 2 {
 		t.Fatalf("a confirmed [a] handed over %+v", r)
 	}
 	s.Said = "trusted ~/src/app — it takes effect in the next session."
@@ -142,7 +142,7 @@ func TestToolsScreen_FocusGroupFindsTheServers(t *testing.T) {
 // Nothing a narrow screen draws runs past the terminal.
 func TestToolsScreen_NarrowStaysInside(t *testing.T) {
 	s := toolsScreen(3)
-	s.MaxLines = 50
+	s.maxLines = 50
 	for _, line := range strings.Split(s.View(60), "\n") {
 		if lipgloss.Width(line) > 60 {
 			t.Errorf("a row ran past the terminal: %q", ansi.Strip(line))
@@ -157,7 +157,7 @@ func TestToolsScreen_NarrowStaysInside(t *testing.T) {
 func TestGolden_ToolsScreen(t *testing.T) {
 	bare := func() *ToolsScreen {
 		all := toolsFixture()
-		return &ToolsScreen{Sources: []ToolsSource{all[0], all[9], all[10]}, MaxLines: 20}
+		return &ToolsScreen{Sources: []ToolsSource{all[0], all[9], all[10]}, maxLines: 20}
 	}
 	captureGolden(t, "tools-screen", "the tools screen", goldenWidths, func(width int) []golden.Panel {
 		return []golden.Panel{

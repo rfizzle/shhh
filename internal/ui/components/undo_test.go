@@ -13,7 +13,7 @@ import (
 
 func runes(s string) tea.KeyPressMsg { return tea.KeyPressMsg{Code: []rune(s)[0], Text: s} }
 
-func answer(t *testing.T, c *UndoConfirm, msg tea.KeyPressMsg) (bool, UndoDecision) {
+func answer(t *testing.T, c *UndoConfirm, msg tea.KeyPressMsg) (bool, undoDecision) {
 	t.Helper()
 	return c.Update(msg)
 }
@@ -28,7 +28,7 @@ func TestUndoConfirm_DefaultIsDecline(t *testing.T) {
 			t.Fatalf("%v should decline, got done=%v %v", msg, done, d)
 		}
 	}
-	if done, d := answer(t, c, runes("y")); !done || d != UndoApply {
+	if done, d := answer(t, c, runes("y")); !done || d != undoApply {
 		t.Fatalf("y should undo, got done=%v %v", done, d)
 	}
 }

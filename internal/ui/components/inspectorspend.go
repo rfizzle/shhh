@@ -46,17 +46,17 @@ func (r InspectorRail) spendBlock(width int) (railBlock, bool) {
 	if s == nil || (s.Turn == "" && len(s.Models) == 0 && s.Session == "") {
 		return railBlock{}, false
 	}
-	b := railBlock{heading: railHeading("SPEND", sty.Body.Render(s.Turn), sty.Body, width)}
+	b := railBlock{heading: railHeading("SPEND", sty.body.Render(s.Turn), sty.body, width)}
 	room := railRoom(width, "", inspectorIndent)
 	for _, m := range s.Models {
 		if line := m.fit(room); line != "" {
-			b.add(railRow(sty.Dim.Render(line), "", width, inspectorIndent))
+			b.add(railRow(sty.dim.Render(line), "", width, inspectorIndent))
 		}
 	}
 	if s.Session != "" {
 		// The total is what the rows above it add up to, and the one figure a
 		// short rail keeps: its shares fold before it does.
-		b.pin(railRow(sty.Dim.Render("session total · "+s.Session), "", width, inspectorIndent))
+		b.pin(railRow(sty.dim.Render("session total · "+s.Session), "", width, inspectorIndent))
 	}
 	return b, true
 }

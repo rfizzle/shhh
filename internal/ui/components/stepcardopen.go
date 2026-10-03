@@ -50,12 +50,12 @@ func (g CardGroupLine) View(width int) string {
 		if painted, ok := paintLineCounts(g.Right); ok {
 			right = painted
 		} else {
-			right = sty.Dim.Render(g.Right)
+			right = sty.dim.Render(g.Right)
 		}
 	}
 	rightW := lipgloss.Width(right)
 	room := max(width-cardMargin-CardBodyIndent-2-rightW-1, 1)
-	left := strings.Repeat(" ", CardBodyIndent) + sty.Dim.Render(mark+" "+Clip(g.Label, room))
+	left := strings.Repeat(" ", CardBodyIndent) + sty.dim.Render(mark+" "+Clip(g.Label, room))
 	gap := max(width-cardMargin-lipgloss.Width(left)-rightW, 1)
 	line := left + strings.Repeat(" ", gap) + right
 	if g.Selected {
@@ -80,7 +80,7 @@ func (d CardDirRow) View(width int) string {
 	inner := max(width-cardMargin-cardDirIndent, 1)
 	head := ""
 	if d.Dir != "" {
-		head = sty.Dimmer.Render(d.Dir) + " "
+		head = sty.dimmer.Render(d.Dir) + " "
 	}
 	room := inner - lipgloss.Width(head)
 	listed := ""
@@ -94,7 +94,7 @@ func (d CardDirRow) View(width int) string {
 			break
 		}
 	}
-	line := strings.Repeat(" ", cardDirIndent) + head + sty.Dim.Render(Clip(listed, max(room, 1)))
+	line := strings.Repeat(" ", cardDirIndent) + head + sty.dim.Render(Clip(listed, max(room, 1)))
 	return onBand(Clip(line, width), width)
 }
 
@@ -131,10 +131,10 @@ func (c CardCallRow) View(width int) string {
 	// Target already ends in its scope (ActivityRow.Scope is its tail), so
 	// the subject is the target whole.
 	subject := r.Target
-	text := sty.Dimmer.Render(Clip(subject, room))
+	text := sty.dimmer.Render(Clip(subject, room))
 	if c.Line != "" {
 		if left := room - lipgloss.Width(subject) - 3; left > 0 {
-			text += sty.Dim.Render(" · ") + cardLine(Clip(c.Line, left))
+			text += sty.dim.Render(" · ") + cardLine(Clip(c.Line, left))
 		}
 	}
 	gap := max(width-cardMargin-lipgloss.Width(lead)-lipgloss.Width(text)-rightW, 1)
@@ -153,9 +153,9 @@ func (c CardCallRow) right(r ActivityRow) string {
 		parts = append(parts, out)
 	}
 	if r.Duration != "" && r.Duration != NoDuration {
-		parts = append(parts, sty.Dim.Render(r.Duration))
+		parts = append(parts, sty.dim.Render(r.Duration))
 	}
-	return strings.Join(parts, sty.Dim.Render(" · "))
+	return strings.Join(parts, sty.dim.Render(" · "))
 }
 
 // cardLine paints a call's one line: an edit's marker in the diff's token
@@ -163,12 +163,12 @@ func (c CardCallRow) right(r ActivityRow) string {
 // else dimmer.
 func cardLine(line string) string {
 	if rest, ok := strings.CutPrefix(line, "+ "); ok {
-		return sty.Add.Render("+ ") + sty.Dimmer.Render(rest)
+		return sty.add.Render("+ ") + sty.dimmer.Render(rest)
 	}
 	if rest, ok := strings.CutPrefix(line, "- "); ok {
-		return sty.Del.Render("- ") + sty.Dimmer.Render(rest)
+		return sty.del.Render("- ") + sty.dimmer.Render(rest)
 	}
-	return sty.Dimmer.Render(line)
+	return sty.dimmer.Render(line)
 }
 
 // CardCallBody lays the lines of a call's open body on the band, held in
@@ -238,10 +238,10 @@ func (s CardStrip) View(width int) string {
 	var b strings.Builder
 	b.WriteString(strings.Repeat(" ", CardBodyIndent))
 	if words {
-		b.WriteString(sty.Dim.Render(stripWords))
+		b.WriteString(sty.dim.Render(stripWords))
 	}
 	if more {
-		b.WriteString(sty.Dim.Render("…"))
+		b.WriteString(sty.dim.Render("…"))
 	}
 	room := width - cardMargin - CardBodyIndent - 1 - lipgloss.Width(s.count())
 	if more {
@@ -258,7 +258,7 @@ func (s CardStrip) View(width int) string {
 	}
 	line := b.String()
 	gap := max(width-cardMargin-lipgloss.Width(line)-lipgloss.Width(s.count()), 1)
-	return onBand(Clip(line+strings.Repeat(" ", gap)+sty.Dim.Render(s.count()), width), width)
+	return onBand(Clip(line+strings.Repeat(" ", gap)+sty.dim.Render(s.count()), width), width)
 }
 
 // CellAt is the call whose glyph stands at column x of the strip's row, so
@@ -287,10 +287,10 @@ func (s CardStrip) CellAt(width, x int) (int, bool) {
 // eye finds the cursor in one column whatever it is on.
 // See docs/interface/departures.md#an-open-cards-cursor-keeps-the-pointer-column.
 func cardLit(line string, from, width int) string {
-	head := sty.FocusPointer.Render("❯") + strings.Repeat(" ", max(from-1, 0))
-	if bg := backgroundSeq(CardBand()); bg != "" {
+	head := sty.focusPointer.Render("❯") + strings.Repeat(" ", max(from-1, 0))
+	if bg := backgroundSeq(cardBand()); bg != "" {
 		head = rearm(head, bg) + ansiReset
 	}
 	rest := ansi.TruncateLeft(Clip(line, width), from, "")
-	return head + LitRowKeeping(rest, 0, -1, max(width-from, 0))
+	return head + litRowKeeping(rest, 0, -1, max(width-from, 0))
 }

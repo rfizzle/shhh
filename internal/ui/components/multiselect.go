@@ -9,9 +9,9 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// MultiSelectResult is the multi-select Update result: the checked indices in
+// multiSelectResult is the multi-select Update result: the checked indices in
 // order, or Canceled.
-type MultiSelectResult struct {
+type multiSelectResult struct {
 	Indices  []int
 	Canceled bool
 }
@@ -71,7 +71,7 @@ type MultiSelect struct {
 	// pinned above them — both the single-select's, for the reason the note
 	// field is the same field on both cards: a question asked with boxes is
 	// the same question asked with rows.
-	Tone CardTone
+	Tone cardTone
 	Lead []string
 	// Chips ride the right end of the title border, the single-select's way:
 	// a card whose title is what it is asking needs somewhere to say which of
@@ -123,7 +123,7 @@ type MultiSelect struct {
 // labels or qualifies the rows around it and is stepped over.
 func (s *MultiSelect) pointer() *List[SelectOption] {
 	s.list.Items, s.list.Focus = s.Options, s.Focus
-	s.list.Skip = func(o SelectOption) bool { return o.Header }
+	s.list.skipFn = func(o SelectOption) bool { return o.Header }
 	return &s.list
 }
 
@@ -167,7 +167,7 @@ func (s *MultiSelect) moved(pressed string) bool {
 	return moved
 }
 
-func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result MultiSelectResult) {
+func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result multiSelectResult) {
 	s.notice = ""
 	pressed := msg.String()
 	if s.Note != nil {
@@ -177,11 +177,11 @@ func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result MultiSelect
 		// and the `a` that ticks all of them included.
 		if keys.Is(pressed, keys.Select.Note) {
 			s.Note.Toggle()
-			return false, MultiSelectResult{}
+			return false, multiSelectResult{}
 		}
 		if s.Note.Focused && !keys.Is(pressed, keys.Select.Take) && !keys.Is(pressed, keys.Select.Cancel) {
 			s.Note.Update(msg)
-			return false, MultiSelectResult{}
+			return false, multiSelectResult{}
 		}
 	}
 	switch {
@@ -193,11 +193,11 @@ func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result MultiSelect
 				// doing nothing: a key that looks ignored is a key the
 				// reader presses harder (invariant 5).
 				s.notice = s.Options[s.Focus].UnavailableNotice()
-				return false, MultiSelectResult{}
+				return false, multiSelectResult{}
 			}
 			if s.fixed(s.Focus) {
 				s.notice = s.Options[s.Focus].fixedNotice()
-				return false, MultiSelectResult{}
+				return false, multiSelectResult{}
 			}
 			s.Checked[s.Focus] = !s.Checked[s.Focus]
 		}
@@ -216,12 +216,12 @@ func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result MultiSelect
 			// The refusal is already on the card; enter says it was read
 			// rather than doing nothing (invariant 5).
 			s.notice = "not taken — the line above says why"
-			return false, MultiSelectResult{}
+			return false, multiSelectResult{}
 		}
 		if s.count() == 0 && !s.AllowNone {
 			s.notice = "nothing selected — " + keys.Bracket(keys.Select.Toggle) +
 				" toggles, " + keys.Bracket(keys.Select.Cancel) + " cancels"
-			return false, MultiSelectResult{}
+			return false, multiSelectResult{}
 		}
 		var idx []int
 		for i, c := range s.Checked {
@@ -229,11 +229,11 @@ func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result MultiSelect
 				idx = append(idx, i)
 			}
 		}
-		return true, MultiSelectResult{Indices: idx}
+		return true, multiSelectResult{Indices: idx}
 	case keys.Is(pressed, keys.Select.Cancel):
-		return true, MultiSelectResult{Canceled: true}
+		return true, multiSelectResult{Canceled: true}
 	}
-	return false, MultiSelectResult{}
+	return false, multiSelectResult{}
 }
 
 func (s *MultiSelect) View(width int) string {
@@ -250,11 +250,11 @@ func (s *MultiSelect) View(width int) string {
 			if i == 0 {
 				mark = "⚠ "
 			}
-			tail = append(tail, sty.Warn.Render(Clip(mark+line, inner)))
+			tail = append(tail, sty.warn.Render(Clip(mark+line, inner)))
 		}
 	}
 	if s.notice != "" {
-		tail = append(tail, sty.Warn.Render(Clip(s.notice, inner)))
+		tail = append(tail, sty.warn.Render(Clip(s.notice, inner)))
 	}
 	if s.Note != nil {
 		tail = append(tail, s.Note.RowsLive(inner, !s.NotYetLive)...)
@@ -264,7 +264,7 @@ func (s *MultiSelect) View(width int) string {
 	rows := append(head, s.visibleRows(width, bodyBudget(s.MaxLines, len(tail)+len(head)))...)
 	rows = append(rows, tail...)
 	rows = boundRows(rows, s.MaxLines)
-	return Card{Title: s.Title, Chips: s.Chips, Tone: s.Tone}.Render(rows, width)
+	return Card{Title: s.Title, chips: s.Chips, tone: s.Tone}.Render(rows, width)
 }
 
 // takeVerb is enter's word on the key row: the host's, or `apply`.
@@ -315,7 +315,7 @@ func (s *MultiSelect) visibleRows(width, budget int) []string {
 	lo, hi := s.pointer().Range(budget)
 	var rows []string
 	if lo > 0 {
-		rows = append(rows, ListOverflowRow("↑", lo, s.checkedNote(0, lo), width-cardFrameWidth))
+		rows = append(rows, listOverflowRow("↑", lo, s.checkedNote(0, lo), width-cardFrameWidth))
 	}
 	for i := lo; i < hi; i++ {
 		if s.Options[i].Header {
@@ -325,7 +325,7 @@ func (s *MultiSelect) visibleRows(width, budget int) []string {
 		rows = append(rows, s.optionRow(i, inner))
 	}
 	if hi < n {
-		rows = append(rows, ListOverflowRow("↓", n-hi, s.checkedNote(hi, n), width-cardFrameWidth))
+		rows = append(rows, listOverflowRow("↓", n-hi, s.checkedNote(hi, n), width-cardFrameWidth))
 	}
 	return rows
 }
@@ -337,7 +337,7 @@ func (s *MultiSelect) visibleRows(width, budget int) []string {
 // summary underneath it.
 func (s *MultiSelect) optionRow(i, inner int) string {
 	opt := s.Options[i]
-	box := sty.Dim.Render("[ ]")
+	box := sty.dim.Render("[ ]")
 	switch {
 	case opt.Dim:
 		// A row that cannot be ticked draws no box: an empty box is an
@@ -345,17 +345,17 @@ func (s *MultiSelect) optionRow(i, inner int) string {
 		// one (invariant 1).
 		box = "   "
 	case i < len(s.Checked) && s.Checked[i]:
-		box = sty.Add.Render("[x]")
+		box = sty.add.Render("[x]")
 	}
 	if s.fixed(i) {
 		// Ticked and not a choice: the box is the grant's, in the tone that
 		// says it is not the reader's to change.
-		box = sty.Dim.Render("[x]")
+		box = sty.dim.Render("[x]")
 	}
 	body := inner - 2
 	label := opt.labelText()
 	if opt.Dim {
-		label = sty.Dimmer.Render(label)
+		label = sty.dimmer.Render(label)
 	}
 	if s.Columns {
 		label = s.columnsText(opt, s.columns(i))
@@ -379,8 +379,8 @@ func (s *MultiSelect) optionRow(i, inner int) string {
 		// which is the pair every list draws: a pointer on the focus ground
 		// with an unlit row beside it says the highlight is the mark, and the
 		// mark is the pointer (LitRow).
-		return sty.FocusPointer.Render("❯") + " " +
-			LitRowKeeping(row, 0, lipgloss.Width(box)+1, max(body, 0))
+		return sty.focusPointer.Render("❯") + " " +
+			litRowKeeping(row, 0, lipgloss.Width(box)+1, max(body, 0))
 	}
 	return PointerColumn() + row
 }
@@ -423,10 +423,10 @@ func (s *MultiSelect) columns(i int) multiColumns {
 // description rather than its label, so the columns stand where they stood
 // when a tick elsewhere makes the row one that cannot be ticked.
 func (s *MultiSelect) columnsText(opt SelectOption, c multiColumns) string {
-	label, value, desc := sty.Body, opt.ValueTone.style(), sty.Dim
+	label, value, desc := sty.body, opt.valueTone.style(), sty.dim
 	why := opt.Desc
 	if opt.Dim {
-		label, value, desc = sty.Dimmer, sty.Dimmer, sty.Dimmer
+		label, value, desc = sty.dimmer, sty.dimmer, sty.dimmer
 		why = strings.TrimSpace("⊘ " + why)
 	}
 	text := label.Render(padRight(opt.Label, c.label))
@@ -445,16 +445,16 @@ func (s *MultiSelect) columnsText(opt SelectOption, c multiColumns) string {
 // where a row would be and without a box, because a box is an offer.
 func (s *MultiSelect) headerRow(opt SelectOption, c multiColumns, inner int) string {
 	if opt.Desc == "" {
-		return Clip(" "+sty.Dim.Render(opt.Label), inner)
+		return Clip(" "+sty.dim.Render(opt.Label), inner)
 	}
 	if opt.Label == "" {
-		return Clip(PointerColumn()+sty.Dim.Render(opt.Desc), inner)
+		return Clip(PointerColumn()+sty.dim.Render(opt.Desc), inner)
 	}
-	text := sty.Dim.Render(padRight(opt.Label, c.label))
+	text := sty.dim.Render(padRight(opt.Label, c.label))
 	if c.value > 0 {
 		text += "  " + strings.Repeat(" ", c.value)
 	}
-	return Clip(PointerColumn()+"    "+text+"  "+sty.Dim.Render(opt.Desc), inner)
+	return Clip(PointerColumn()+"    "+text+"  "+sty.dim.Render(opt.Desc), inner)
 }
 
 // fixedNotice is what space on a row that stays ticked says: that it does,
@@ -479,9 +479,9 @@ func (opt SelectOption) fixedNotice() string {
 func (s *MultiSelect) rightRun(i int, opt SelectOption) string {
 	var b strings.Builder
 	if meta := opt.metaText(); meta != "" {
-		tone := opt.MetaTone.style()
+		tone := opt.metaTone.style()
 		if opt.Dim {
-			tone = sty.Dimmer
+			tone = sty.dimmer
 		}
 		b.WriteString(tone.Render(meta))
 	}

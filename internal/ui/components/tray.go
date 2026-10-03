@@ -31,9 +31,9 @@ const TrayHandleSlot = 13
 // not sit against the edge of the pane.
 const trayMargin = 2
 
-// TrayBodyIndent is where an opened paste's lines start inside the tray: the
+// trayBodyIndent is where an opened paste's lines start inside the tray: the
 // detail column every body in the transcript is set in.
-const TrayBodyIndent = GridDetailIndent
+const trayBodyIndent = GridDetailIndent
 
 // trayMark is the kind's mark on a tray row. A paste is `¶` here where the
 // staged chip draws `≡`, because the transcript's summary row already wears
@@ -46,11 +46,11 @@ func (k ChipKind) trayMark() string {
 	return k.mark()
 }
 
-// TrayHandle is the handle as a tray row spells it: the angle quotes the
+// trayHandle is the handle as a tray row spells it: the angle quotes the
 // sentence's fold wears, with the kind's mark inside them. An attachment with
 // no handle — only a message saved before handles existed carries one — is
 // its mark alone.
-func TrayHandle(k ChipKind, handle string) string {
+func trayHandle(k ChipKind, handle string) string {
 	if handle == "" {
 		return string(PasteFoldOpen) + k.trayMark() + string(PasteFoldClose)
 	}
@@ -87,7 +87,7 @@ type TrayRow struct {
 // called clipboard.png, and the handle is the one thing that tells them
 // apart and opens one by name.
 func (r TrayRow) View(width int) string {
-	handle := TrayHandle(r.Kind, r.Handle)
+	handle := trayHandle(r.Kind, r.Handle)
 	slot := max(TrayHandleSlot, lipgloss.Width(handle)+1)
 	lead := strings.Repeat(" ", GridPointerWidth)
 	right := " " + r.Size + strings.Repeat(" ", trayMargin)
@@ -99,15 +99,15 @@ func (r TrayRow) View(width int) string {
 	name := Clip(r.Name, max(room, 0))
 	tail := Clip(factRun(facts), max(room-lipgloss.Width(name), 0))
 	fill := max(room-lipgloss.Width(name)-lipgloss.Width(tail), 0)
-	band, handleTone := trayBand(), sty.Info
+	band, handleTone := trayBand(), sty.info
 	if r.Lit {
 		band = func(s lipgloss.Style) lipgloss.Style { return s }
-		handleTone = sty.Bright
+		handleTone = sty.bright
 	}
-	return band(sty.Dim).Render(lead) +
+	return band(sty.dim).Render(lead) +
 		band(handleTone).Render(padRight(handle, slot)) +
-		band(sty.Bright).Render(name) +
-		band(sty.Dim).Render(tail+strings.Repeat(" ", fill)+right)
+		band(sty.bright).Render(name) +
+		band(sty.dim).Render(tail+strings.Repeat(" ", fill)+right)
 }
 
 // factRun is the facts as they follow the name: each led by the separator
@@ -124,18 +124,18 @@ func factRun(facts []string) string {
 // the tray's one key, in the hint grey — set in at the body's indent and
 // carried to the pane's edge so the band does not stop where the words do.
 func TrayLine(text string, count bool, width int) string {
-	inner := max(width-TrayBodyIndent, 1)
+	inner := max(width-trayBodyIndent, 1)
 	text = Clip(text, inner)
-	tone := sty.Dimmer
+	tone := sty.dimmer
 	if count {
-		tone = sty.Hint
+		tone = sty.hint
 	}
 	band := trayBand()
 	pad := ""
 	if trayBandShows() {
 		pad = strings.Repeat(" ", max(inner-lipgloss.Width(text), 0))
 	}
-	return band(sty.Dim).Render(strings.Repeat(" ", TrayBodyIndent)) + band(tone).Render(text+pad)
+	return band(sty.dim).Render(strings.Repeat(" ", trayBodyIndent)) + band(tone).Render(text+pad)
 }
 
 // trayBand puts the band under a style. Where the palette has no band — mono,
@@ -145,9 +145,9 @@ func trayBand() func(lipgloss.Style) lipgloss.Style {
 	if !trayBandShows() {
 		return func(s lipgloss.Style) lipgloss.Style { return s }
 	}
-	bg := Palette.Band.Color()
+	bg := Palette.band.Color()
 	return func(s lipgloss.Style) lipgloss.Style { return s.Background(bg) }
 }
 
 // trayBandShows reports whether the band is a colour at all here.
-func trayBandShows() bool { return backgroundSeq(Palette.Band) != "" }
+func trayBandShows() bool { return backgroundSeq(Palette.band) != "" }

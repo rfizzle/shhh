@@ -31,7 +31,7 @@ func rateRows() []RateRow {
 }
 
 func rateScreen() *RateScreen {
-	return &RateScreen{Rows: rateRows(), MaxLines: 18}
+	return &RateScreen{Rows: rateRows(), maxLines: 18}
 }
 
 func rateView(r *RateScreen, width int) string { return ansi.Strip(r.View(width)) }
@@ -48,8 +48,8 @@ func rateAnswer(t *testing.T, r *RateScreen, pressed string) (bool, RateResult) 
 func TestRateScreen_AnswerCarriesTheEntryAndMovesOn(t *testing.T) {
 	for _, tc := range []struct {
 		pressed string
-		want    RateAct
-	}{{"y", RateWorked}, {"n", RateFailed}, {"s", RateSkipped}} {
+		want    rateAct
+	}{{"y", RateWorked}, {"n", rateFailed}, {"s", RateSkipped}} {
 		r := rateScreen()
 		done, result := rateAnswer(t, r, tc.pressed)
 		if done {
@@ -62,8 +62,8 @@ func TestRateScreen_AnswerCarriesTheEntryAndMovesOn(t *testing.T) {
 		if got.Act != tc.want || got.ID != "1" {
 			t.Errorf("%q resolved to %+v, want %v on entry 1", tc.pressed, got, tc.want)
 		}
-		if r.Focus != 1 {
-			t.Errorf("%q left the card on %d, want the next one", tc.pressed, r.Focus)
+		if r.focus != 1 {
+			t.Errorf("%q left the card on %d, want the next one", tc.pressed, r.focus)
 		}
 	}
 }
@@ -123,10 +123,10 @@ func TestRateScreen_EscStopsWithoutAnswering(t *testing.T) {
 		if !done {
 			t.Errorf("%q did not stop", pressed)
 		}
-		if !result.Stopped {
+		if !result.stopped {
 			t.Errorf("%q resolved to %#v, not a stop", pressed, result)
 		}
-		if r.Focus != 1 {
+		if r.focus != 1 {
 			t.Errorf("%q moved the card", pressed)
 		}
 	}
@@ -136,7 +136,7 @@ func TestRateScreen_EscStopsWithoutAnswering(t *testing.T) {
 // been answered, the three answers are gone from the row and the way out is
 // what is left.
 func TestRateScreen_TheAnswersStopBeingOfferedWhenThereIsNothingToAnswer(t *testing.T) {
-	r := &RateScreen{Rows: rateRows(), Focus: 3, MaxLines: 18}
+	r := &RateScreen{Rows: rateRows(), focus: 3, maxLines: 18}
 	got := rateView(r, 80)
 	for _, gone := range []string{"[y]", "[n]", "[s]"} {
 		if strings.Contains(got, gone) {
@@ -179,7 +179,7 @@ func TestRateScreen_TheRegisterIsBehindOneKey(t *testing.T) {
 // prompt wraps and the command continues under its own row (invariant 4).
 func TestRateScreen_NarrowKeepsTheWholeQuestion(t *testing.T) {
 	row := rateRows()[2]
-	got := rateView(&RateScreen{Rows: rateRows(), Focus: 2}, 60)
+	got := rateView(&RateScreen{Rows: rateRows(), focus: 2}, 60)
 	// The outcome sits in its own column at the end of the first line, so it
 	// comes back out before the command's two lines are read as one command.
 	flat := strings.ReplaceAll(got, "│", " ")
@@ -197,7 +197,7 @@ func TestRateScreen_NarrowKeepsTheWholeQuestion(t *testing.T) {
 // and reads as the agent run it is: the sub-agent glyph, the `agent` verb,
 // and the same three answers underneath.
 func TestRateScreen_ASessionIsTheSameCard(t *testing.T) {
-	r := &RateScreen{MaxLines: 18, Rows: []RateRow{sessionRateRow(nil)}}
+	r := &RateScreen{maxLines: 18, Rows: []RateRow{sessionRateRow(nil)}}
 
 	got := rateView(r, 110)
 	for _, want := range []string{
@@ -227,7 +227,7 @@ func TestRateScreen_ASessionsRailFollowsItsOutcome(t *testing.T) {
 		{"abandoned", ActivityDenied, true},
 		{"error", ActivityFailed, true},
 	} {
-		r := &RateScreen{MaxLines: 18, Rows: []RateRow{sessionRateRow(func(row *RateRow) {
+		r := &RateScreen{maxLines: 18, Rows: []RateRow{sessionRateRow(func(row *RateRow) {
 			row.Outcome, row.State = tc.outcome, tc.state
 		})}}
 		if got := strings.Contains(rateView(r, 110), "▎"); got != tc.rail {

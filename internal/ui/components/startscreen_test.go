@@ -139,10 +139,10 @@ func TestStartScreen_KeyRowsWearTheBracketGrammar(t *testing.T) {
 	}
 	view := s.View(110)
 	for _, want := range []struct{ what, run string }{
-		{"the list's own key", sty.Key.Render("[↑↓]") + sty.Dim.Render(" choose")},
-		{"a navigation key", sty.Key.Render(keys.Bracket(keys.Draft.PageUp)) + sty.Dim.Render(" scroll")},
-		{"the safe answer", sty.Add.Render("[esc]") + sty.Dim.Render(" "+backToPrompt)},
-		{"the clause that is not a key", sty.Dim.Render("or just type what you want")},
+		{"the list's own key", sty.key.Render("[↑↓]") + sty.dim.Render(" choose")},
+		{"a navigation key", sty.key.Render(keys.Bracket(keys.Draft.PageUp)) + sty.dim.Render(" scroll")},
+		{"the safe answer", sty.add.Render("[esc]") + sty.dim.Render(" "+backToPrompt)},
+		{"the clause that is not a key", sty.dim.Render("or just type what you want")},
 	} {
 		if !strings.Contains(view, want.run) {
 			t.Fatalf("%s is not painted in the bracket grammar:\n%q", want.what, view)
