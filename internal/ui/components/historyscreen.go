@@ -140,10 +140,11 @@ type HistoryResult struct {
 // HistoryScreen is `shhh history`: a takeover surface, full width, no
 // inspector rail, owning the keyboard for as long as it is up.
 type HistoryScreen struct {
+	// The pointer is an index into Rows and survives the host rebuilding
+	// them; the rows showing are the ones the query left.
+	listScreen[HistoryRow]
 	// Rows are the entries newest first, as the host read them.
 	Rows []HistoryRow
-	// Focus is an index into Rows and survives the host rebuilding them.
-	Focus int
 	// Subject is what the header says the screen is over — `41 entries · 12
 	// run`. The host counts it, because counting is a reading of the store.
 	Subject string
@@ -154,10 +155,7 @@ type HistoryScreen struct {
 	// The host clears it on the next keystroke.
 	Notice string
 
-	list    Select
-	shown   []int
 	confirm *Confirm
-	keys    bool
 }
 
 // Update is the screen's whole keyboard. The confirm answers first while it
@@ -169,12 +167,12 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result HistoryRe
 	}
 	pressed := msg.String()
 	switch {
-	case h.moved(pressed):
+	case h.walked(pressed):
 		return false, HistoryResult{}
 	case keys.Is(pressed, keys.Screen.Rerun):
 		// The one key that leaves the screen with something to do. A list the
 		// filter emptied has nothing for it to take (invariant 5).
-		if row := h.current(); row != nil {
+		if row := h.currentShown(h.Rows); row != nil {
 			return true, HistoryResult{Run: true, iD: row.ID, Command: row.Command}
 		}
 		return false, HistoryResult{}
@@ -186,13 +184,8 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result HistoryRe
 	// makes. ctrl+u clears it, and clearing a filter that is already empty
 	// closes it, which is how the row keys are got back without leaving the
 	// screen.
-	if h.list.Filtering {
-		if keys.Is(pressed, keys.Screen.ClearQ) && h.list.Query == "" {
-			h.list.Filtering = false
-			return false, HistoryResult{}
-		}
-		h.list.editQuery(msg)
-		if h.list.QueryChanged() {
+	if open, changed := h.filterKey(msg); open {
+		if changed {
 			h.refilter()
 		}
 		return false, HistoryResult{}
@@ -205,17 +198,17 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result HistoryRe
 	case keys.Is(pressed, keys.Screen.List):
 		h.keys = !h.keys
 	case keys.Is(pressed, keys.Screen.Copy):
-		if row := h.current(); row != nil {
+		if row := h.currentShown(h.Rows); row != nil {
 			return false, HistoryResult{Do: &HistoryCommand{Act: HistoryCopy, ID: row.ID}}
 		}
 	case keys.Is(pressed, keys.Screen.Snippet):
-		if row := h.current(); row != nil {
+		if row := h.currentShown(h.Rows); row != nil {
 			return false, HistoryResult{Do: &HistoryCommand{Act: HistorySave, ID: row.ID}}
 		}
 	case keys.Is(pressed, keys.Screen.Delete):
 		// The one key here that destroys something asks first, and the prompt names
 		// what it would take rather than saying "this entry".
-		if row := h.current(); row != nil {
+		if row := h.currentShown(h.Rows); row != nil {
 			h.confirm = &Confirm{Prompt: sty.body.Render(
 				"Delete the entry for " + quoted(row.Prompt) + "?")}
 		}
@@ -238,7 +231,7 @@ func (h *HistoryScreen) SetQuery(query string) {
 // one under the pointer when it is answered.
 func (h *HistoryScreen) updateConfirm(msg tea.KeyPressMsg) (bool, HistoryResult) {
 	if answered, yes := confirmed(&h.confirm, msg); answered && yes {
-		if row := h.current(); row != nil {
+		if row := h.currentShown(h.Rows); row != nil {
 			return false, HistoryResult{Do: &HistoryCommand{Act: HistoryDelete, ID: row.ID}}
 		}
 	}
@@ -251,17 +244,18 @@ func (h *HistoryScreen) SetSize(_, height int) { h.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves.
-func (h *HistoryScreen) View(width int) string {
-	if width <= 0 {
-		return ""
+func (h *HistoryScreen) View(width int) string { return h.view(width, h) }
+
+// chrome is the header over the panes, the keys under them, and the line the
+// last key left. Which keys those are depends on the field, so it is read
+// once here, and the confirm borrows the foot row while it is up.
+func (h *HistoryScreen) chrome(width int) screenChrome {
+	field := h.footField()
+	foot := h.footer(h.offers(width, field), h.keyList(), field)
+	if h.confirm != nil {
+		foot.taken = h.confirm.View(width)
 	}
-	h.sync()
-	return screenChrome{
-		header:   h.header(),
-		foot:     h.footer(width).rows(width),
-		notice:   h.Notice,
-		maxLines: h.maxLines,
-	}.view(width, func(budget int) []string { return h.panes().rows(width, budget) })
+	return screenChrome{header: h.header(), foot: foot.rows(width), notice: h.Notice, maxLines: h.maxLines}
 }
 
 // panes is the body: the search and the preview, split the way every screen
@@ -272,25 +266,19 @@ func (h *HistoryScreen) panes() screenPanes {
 	return screenPanes{
 		stackAt: historyStackWidth, listMin: historyListMin,
 		listMax: historyListMax, minPreview: historyMinPreview,
-		list:    h.listRows,
+		list:    h.entryRows,
 		preview: h.previewRows,
 	}
 }
 
-// listRows is the left pane: the filter row pinned above the selector window,
-// the window itself with its markers, and — under it — what the filter hid
-// and the key that clears it. Both counts are stated: the query row says `6
-// of 41 match` and the line under the list says what became of the other 35.
-func (h *HistoryScreen) listRows(width, budget int) []string {
+// entryRows is the left pane: the filter row pinned above the selector
+// window, the window itself with its markers, and — under it — what the
+// filter hid and the key that clears it. Both counts are stated: the query
+// row says `6 of 41 match` and the line under the list says what became of
+// the other 35.
+func (h *HistoryScreen) entryRows(width, budget int) []string {
 	h.clipLabels(width)
-	head := h.list.queryRows(cardWidthFor(width))
-	if len(head) > 0 {
-		head = append(head, screenRule(width))
-	}
-	tail := h.hiddenRows(width)
-	body, _ := h.list.visibleRows(cardWidthFor(width), listBudget(budget, len(head)+len(tail)), false)
-	rows := append(head, body...)
-	return append(rows, tail...)
+	return h.queryListRows(len(h.Rows), entries, width, budget)
 }
 
 // clipLabels is what keeps the outcome on the row. The selector's grid gives
@@ -328,23 +316,6 @@ func listBudget(budget, pinned int) int {
 	return max(budget-pinned, 1)
 }
 
-// hiddenRows is the line under the list saying what the filter took out of
-// it. It is only ever drawn while something is hidden — a filter that hid
-// nothing has nothing to confess, and invariant 4 is about what a surface
-// swallowed, not about the row that says so.
-func (h *HistoryScreen) hiddenRows(width int) []string {
-	if !h.list.Filtering {
-		return nil
-	}
-	hidden := len(h.Rows) - len(h.shown)
-	if hidden <= 0 {
-		return nil
-	}
-	row := sty.dim.Render(entries(hidden)+" hidden by the filter · ") +
-		sty.key.Render("[ctrl+u]") + sty.dim.Render(" clear it")
-	return []string{screenRule(width), Clip(row, width)}
-}
-
 // previewRows is the right pane: the entry the pointer is on, in the grammar
 // it was recorded in. The title says when and by which model, the prompt is
 // the opening instruction, the command is a grid row with its outcome and its
@@ -353,7 +324,7 @@ func (h *HistoryScreen) hiddenRows(width int) []string {
 // It is a preview, not a second list: nothing in it is focusable and no key
 // reaches it.
 func (h *HistoryScreen) previewRows(width int) []string {
-	row := h.current()
+	row := h.currentShown(h.Rows)
 	if row == nil {
 		return []string{sty.dim.Render(Clip("no entry selected", width))}
 	}
@@ -479,18 +450,6 @@ func (h *HistoryScreen) header() screenHeader {
 	return head
 }
 
-// footer is the keys the screen offers and the field that annotates them.
-// Which keys those are depends on the field, so it is read once here.
-func (h *HistoryScreen) footer(width int) keyFooter {
-	field := h.footField()
-	f := keyFooter{offers: h.offers(width, field), register: h.keyList(),
-		showing: h.keys, field: field}
-	if h.confirm != nil {
-		f.taken = h.confirm.View(width)
-	}
-	return f
-}
-
 // fits reports whether a run of offers leaves room beside it for the field
 // that annotates them.
 func fitsBeside(offers []KeyOffer, field string, width int) bool {
@@ -511,13 +470,13 @@ func fitsBeside(offers []KeyOffer, field string, width int) bool {
 func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
 	move := keyOffer(keys.Screen.Move)
 	var acts []KeyOffer
-	if h.current() != nil {
+	if h.currentShown(h.Rows) != nil {
 		acts = append(acts, keyOffer(keys.Screen.Rerun))
 	}
 	if h.list.Filtering {
 		acts = append(acts, keyOfferAs(keys.Screen.ClearQ, "clear the filter, then close it"))
 	} else {
-		if h.current() != nil {
+		if h.currentShown(h.Rows) != nil {
 			acts = append(acts,
 				keyOffer(keys.Screen.Copy),
 				keyOffer(keys.Screen.Snippet),
@@ -533,23 +492,11 @@ func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
 	// about somewhere else. `[/]` is the last thing shed — it is what this
 	// screen is for. A row that still does not fit keeps the last rung and lets
 	// the field go, which is the turn close's own order.
-	rungs := [][]KeyOffer{
+	return fitRungs(field, width,
 		append([]KeyOffer{move}, acts...),
 		acts,
 		without(acts, keys.Bracket(keys.Screen.Snippet)),
-		without(acts, keys.Bracket(keys.Screen.Snippet), keys.Bracket(keys.Screen.Filter)),
-	}
-	if field == "" {
-		return rungs[0]
-	}
-	for _, rung := range rungs {
-		if fitsBeside(rung, field, width) {
-			return rung
-		}
-	}
-	// Nothing fits beside the field, so the field goes — and with nothing left
-	// to buy, the row keeps every offer it had and wraps.
-	return rungs[0]
+		without(acts, keys.Bracket(keys.Screen.Snippet), keys.Bracket(keys.Screen.Filter)))
 }
 
 // without is a rung with some offers shed. Shedding is whole-segment: nothing
@@ -588,7 +535,7 @@ func (h *HistoryScreen) keyList() []KeyOffer {
 // has read the sentence before they walk away: nothing on this screen runs by
 // itself.
 func (h *HistoryScreen) footField() string {
-	if h.current() == nil {
+	if h.currentShown(h.Rows) == nil {
 		return ""
 	}
 	return "nothing is re-run until [enter]"
@@ -598,7 +545,7 @@ func (h *HistoryScreen) footField() string {
 // View because the host replaces Rows after each command, and the window and
 // the query the list is showing have to survive that.
 func (h *HistoryScreen) sync() {
-	h.shown = h.match()
+	h.shown = h.match(h.Rows, historyFields)
 	opts := make([]SelectOption, 0, len(h.shown))
 	for _, i := range h.shown {
 		row := h.Rows[i]
@@ -610,12 +557,7 @@ func (h *HistoryScreen) sync() {
 			Meta:      row.Duration,
 		})
 	}
-	h.list.Options = opts
-	h.list.Total = len(h.Rows)
-	h.list.Filterable = true
-	h.list.Unnumbered = true
-	h.list.QueryHint = "type to filter what was asked or what came back"
-	h.list.Focus = h.optIndex(h.Focus)
+	h.showFiltered(opts, len(h.Rows), "type to filter what was asked or what came back")
 	h.list.Closest = ""
 	if h.list.Filtering && len(h.shown) == 0 {
 		h.list.Closest = h.closest()
@@ -661,29 +603,17 @@ func historyWhen(when string) string {
 	return "· " + when
 }
 
-// match is the entries the query left showing. The rule lives here rather
-// than in the card because the card never filters: an entry is found by what
-// was asked or by what came back, which is the pair a reader looking for a
-// command they half remember has to work with.
-func (h *HistoryScreen) match() []int {
-	query := strings.ToLower(strings.TrimSpace(h.list.Query))
-	out := make([]int, 0, len(h.Rows))
-	for i, row := range h.Rows {
-		if matchesQuery(row, query) {
-			out = append(out, i)
-		}
-	}
-	return out
-}
+// historyFields are what an entry is found by: what was asked or what came
+// back, which is the pair a reader looking for a command they half remember
+// has to work with.
+func historyFields(row HistoryRow) []string { return []string{row.Prompt, row.Command} }
 
-// refilter re-runs the match after a keystroke changed the query, and puts
-// the pointer on the first entry that survived it — the rows under it are not
-// the rows that were there a moment ago.
+// refilter re-runs the match after a keystroke changed the query: the
+// pointer goes to the first entry that survived it, and the delete question
+// asked about the row that was under it goes.
 func (h *HistoryScreen) refilter() {
 	h.confirm = nil
-	if shown := h.match(); len(shown) > 0 {
-		h.Focus = shown[0]
-	}
+	h.refocus(h.Rows, historyFields)
 	h.sync()
 }
 
@@ -696,7 +626,7 @@ func (h *HistoryScreen) refilter() {
 func (h *HistoryScreen) closest() string {
 	for r := []rune(strings.TrimSpace(h.list.Query)); len(r) > minClosestPrefix; r = r[:len(r)-1] {
 		for _, row := range h.Rows {
-			if matchesQuery(row, strings.ToLower(string(r[:len(r)-1]))) {
+			if matches(string(r[:len(r)-1]), historyFields(row)...) {
 				return oneLine(row.Prompt)
 			}
 		}
@@ -704,69 +634,15 @@ func (h *HistoryScreen) closest() string {
 	return ""
 }
 
-// matchesQuery is the match rule, over one row: an entry is matched by what
-// was asked for or by the command that came back, so a reader who remembers
-// either can find it.
-func matchesQuery(row HistoryRow, query string) bool {
-	return matches(query, row.Prompt, row.Command)
-}
-
-// moved walks the pointer over the entries the filter left showing and
-// reports whether the keystroke was the screen's own movement key. The
-// pointer is the entry's place in the whole list rather than in the filtered
-// one, so what moves is a List over what is showing (list.go).
-//
-// With the query line open only the half of the binding no sentence produces
-// moves it: a j typed into a filter is a letter.
-func (h *HistoryScreen) moved(pressed string) bool {
-	if len(h.shown) == 0 {
+// walked walks the pointer over the entries the filter left showing, and
+// puts away the delete question asked about the row it left.
+func (h *HistoryScreen) walked(pressed string) bool {
+	if !h.movedShown(pressed, keys.Screen.Move) {
 		return false
 	}
-	l := List[int]{Items: h.shown, Focus: h.at()}
-	moved := false
-	if h.list.Filtering {
-		moved = l.moveTyping(pressed, keys.Screen.Move)
-	} else {
-		moved = l.Move(pressed, keys.Screen.Move)
-	}
-	if !moved {
-		return false
-	}
-	h.Focus = h.shown[l.Focus]
 	h.confirm = nil
 	h.sync()
 	return true
-}
-
-// at is where the pointer is among the entries the filter left showing.
-func (h *HistoryScreen) at() int {
-	for i, row := range h.shown {
-		if row == h.Focus {
-			return i
-		}
-	}
-	return 0
-}
-
-// current is the entry under the pointer, or nil when the filter left none.
-func (h *HistoryScreen) current() *HistoryRow {
-	for _, i := range h.shown {
-		if i == h.Focus {
-			return &h.Rows[i]
-		}
-	}
-	return nil
-}
-
-// optIndex maps a row index to its place in the list the card is drawing. A
-// row the filter hid takes the first one showing.
-func (h *HistoryScreen) optIndex(row int) int {
-	for i, at := range h.shown {
-		if at == row {
-			return i
-		}
-	}
-	return 0
 }
 
 // oneLine flattens a prompt onto the single row it gets. A prompt typed over
