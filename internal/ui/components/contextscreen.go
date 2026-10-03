@@ -296,29 +296,13 @@ func (c *ContextScreen) View(width int) string {
 func (c *ContextScreen) header() screenHeader {
 	h := screenHeader{
 		left:  []RailSegment{screenTitle("/context")},
-		keys:  c.headerKeys(),
+		keys:  headerKeyPair(keys.Context.List, keys.Context.Back, c.showKeys),
 		tally: c.pctStyle().Render(c.Tokens),
 	}
 	if c.Window != "" {
 		h.left = append(h.left, screenField("this session · "+c.Window+" window"))
 	}
 	return h
-}
-
-// headerKeys is the pair the header ends with: the key that shows the whole
-// register, and the way back. A takeover that did not state its way out would
-// be a surface holding the keyboard with nothing saying how to give it back
-// (invariant 5).
-//
-// The way back is one word here, as it is on every screen in the family: a
-// header field says what the key is for and the foot says what it will do
-// (docs/interface/surfaces.md#the-supporting-screens).
-func (c *ContextScreen) headerKeys() string {
-	list := keys.Bracket(keys.Context.List) + " " + keys.Words(keys.Context.List)
-	if c.showKeys {
-		list = keys.Bracket(keys.Context.List) + " hide the keys"
-	}
-	return list + " · " + words(keys.Context.Back, "back")
 }
 
 // bodyRows is the two panels and the folds under them, trimmed to the budget.

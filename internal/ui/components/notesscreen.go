@@ -280,22 +280,11 @@ func notesStamp(row NotesRow) string {
 
 // header names the surface and what it is over.
 func (s *NotesScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/notes")}, keys: s.headerKeys()}
+	h := screenHeader{left: []RailSegment{screenTitle("/notes")}, keys: headerKeyPair(keys.Notes.List, keys.Notes.Back, s.keys)}
 	if s.Subject != "" {
 		h.left = append(h.left, screenField(s.Subject))
 	}
 	return h
-}
-
-// headerKeys is the pair the header ends with: the key that shows the whole
-// register, and the way back in the one word a header field is
-// (docs/interface/surfaces.md#the-supporting-screens).
-func (s *NotesScreen) headerKeys() string {
-	list := keys.Bracket(keys.Notes.List) + " " + keys.Words(keys.Notes.List)
-	if s.keys {
-		list = keys.Bracket(keys.Notes.List) + " hide the keys"
-	}
-	return list + " · " + words(keys.Notes.Back, "back")
 }
 
 // footer is the keys the screen offers, the field that annotates them, and
