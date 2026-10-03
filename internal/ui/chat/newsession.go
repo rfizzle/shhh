@@ -53,8 +53,8 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	// no longer exists, which is why quitting kills them and why this does
 	// too (cancel.go).
 	m.cancelSubagents()
-	if m.classifierCancel != nil {
-		m.classifierCancel()
+	if m.classifier.cancel != nil {
+		m.classifier.cancel()
 	}
 	m.dropTodoExtract()
 	m.dropTodoDraft()

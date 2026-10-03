@@ -34,7 +34,7 @@ import (
 // joins the conversation, so there is nothing to show the reader, and the row
 // on the rail is already the reading itself.
 func (m *Model) considerVerdict(v agent.SummaryVerdict) {
-	m.agent.SetInterveneBounds(m.summaryInterval(), m.summarizer.Config().CooldownIntervals())
+	m.agent.SetInterveneBounds(m.summaryInterval(), m.summary.writer.Config().CooldownIntervals())
 	if reason := m.agent.ConsiderVerdict(v, m.agent.Rounds(), m.working()); reason != "" {
 		m.signal(observe.SignalIntervene, reason)
 	}

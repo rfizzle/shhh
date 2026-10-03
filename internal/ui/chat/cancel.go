@@ -141,19 +141,7 @@ func (m *Model) quitNow() tea.Cmd {
 	// A suite is a subprocess and minutes of one; a session that is leaving
 	// must not go on spending a build on the way out (gate.go).
 	m.cancelCloseGate()
-	if m.runCancel != nil {
-		m.runCancel()
-	}
-	if m.classifierCancel != nil {
-		m.classifierCancel()
-	}
-	// The model list is a request to the provider that a leaving session has
-	// nothing left to do with, and it is the one surface that can be holding
-	// one (picker.go).
-	if m.picker.models.cancel != nil {
-		m.picker.models.cancel()
-		m.picker.models.cancel = nil
-	}
+	m.stopSideJobs()
 	// Cancelling a command only asks it to stop; the kill that would follow
 	// is a timer inside this process, and quitting takes the process with it.
 	// So the stop is finished here and now rather than left to a timer that

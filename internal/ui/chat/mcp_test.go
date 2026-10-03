@@ -121,7 +121,7 @@ func TestStatusCommand_NamesTheToolSources(t *testing.T) {
 		components.InspectorToolSource{Name: "docs", State: components.ToolSourceUp, Note: "2 tools"},
 		components.InspectorToolSource{Name: "linear", State: components.ToolSourceFailed, Note: "timeout"},
 	)
-	m.summarizer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
+	m.summary.writer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
 	m.summary.last = &agent.SummaryVerdict{Text: "wiring the pause", State: agent.SummaryOnTarget, Round: 7}
 	text, _ := m.statusCommand()
 	for _, want := range []string{"wiring the pause", "Tools", "built-in — up · 3 tools", "docs — up · 2 tools", "linear — error · timeout"} {

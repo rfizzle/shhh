@@ -60,8 +60,8 @@ func (m Model) Wiring() Wiring {
 	return Wiring{
 		Subagents:       m.subagents != nil,
 		Memory:          m.memory.Manage != nil,
-		Classifier:      m.classifier != nil,
-		Titler:          m.titler != nil,
+		Classifier:      m.classifier.judge != nil,
+		Titler:          m.titles.writer != nil,
 		Changeset:       m.changes != nil && m.tracker != nil,
 		Hooks:           m.hooks != nil,
 		RecoverableTrim: m.evidence.Keep != nil,

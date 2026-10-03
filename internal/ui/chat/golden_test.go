@@ -2888,7 +2888,7 @@ func TestGolden_Screen(t *testing.T) {
 			{Label: "working · a reading of the session leads the rail", View: build(func(m *Model) {
 				m.state = stateStreaming
 				m.streaming = ""
-				m.summarizer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
+				m.summary.writer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
 				m.summary.last = &agent.SummaryVerdict{
 					Text:  "Wiring the round-limit pause into the chat model; the sentinel is in and nothing has run the tests yet.",
 					State: agent.SummaryOnTarget,
@@ -2905,7 +2905,7 @@ func TestGolden_Screen(t *testing.T) {
 			{Label: "working · a quiet reading lands · the rail's, not the feed's", View: build(func(m *Model) {
 				m.state = stateStreaming
 				m.streaming = ""
-				m.summarizer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
+				m.summary.writer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
 				landReading(m, agent.SummaryVerdict{
 					Text:  "Wiring the round-limit pause into the chat model; the sentinel is in and nothing has run the tests yet.",
 					State: agent.SummaryOnTarget,
@@ -2916,7 +2916,7 @@ func TestGolden_Screen(t *testing.T) {
 			{Label: "working · an off-target reading lands · a row under the close", View: build(func(m *Model) {
 				m.state = stateStreaming
 				m.streaming = ""
-				m.summarizer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
+				m.summary.writer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
 				landReading(m, agent.SummaryVerdict{
 					Text:   "Rewriting the README instead of the round-limit pause.",
 					State:  agent.SummaryOffTarget,

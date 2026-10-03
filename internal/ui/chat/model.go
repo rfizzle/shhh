@@ -937,25 +937,21 @@ type Model struct {
 	// the UI goroutine, and because a grant made on a card has to be the same
 	// grant the sandbox sees on the next command.
 	scope *scope.Scope
-	// Auto mode's LLM permission classifier: judges gated calls the
-	// static policy would ask about; nil falls back to asking the user.
-	classifier       *agent.Classifier
-	classifierCancel context.CancelFunc
+	// Auto mode's LLM permission classifier and the check in flight
+	// (sidejobs.go).
+	classifier classifierState
 	// The command card's explanation (run.go): the same cheap model, asked
 	// what the command in front of the reader does. nil is a session that
 	// makes no such offer, which is what the card checks before drawing the
 	// key. It is not the classifier's field because the two are configured
 	// apart and either can be absent while the other is there.
 	explainer *agent.Explainer
-	// The session summary (summary.go): a cheap model's periodic read
-	// of what the session is doing, drawn as the rail's SUMMARY block.
-	summarizer    *agent.Summarizer
-	summary       summaryState
-	summaryCancel context.CancelFunc
-	// The session titler and what it has written — title.go.
-	titler      *agent.Titler
-	titles      titleState
-	titleCancel context.CancelFunc
+	// The session summary and its writer (summary.go): a cheap model's
+	// periodic read of what the session is doing, drawn as the rail's
+	// SUMMARY block.
+	summary summaryState
+	// The session's title and its writer — title.go.
+	titles titleState
 	// The session's standing account and its writer — account.go.
 	account accountState
 	// The next step offered in the empty draft and its writer — suggest.go.

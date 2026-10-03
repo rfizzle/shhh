@@ -423,7 +423,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		if msg.runID != m.agent.RunID() || m.turnState() != stateClassifying || m.approval.request == nil {
 			return m, nil, true
 		}
-		m.classifierCancel = nil
+		m.classifier.cancel = nil
 		return answered(m.finishClassifierCheck(msg.verdict))
 
 	case titleDoneMsg:
@@ -451,7 +451,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// A reading never routes anything: it changes what the rail draws and
 		// what the transcript holds, and nothing else, which is why it has no
 		// turn-state guard of its own. finishSummary decides what to keep.
-		m.summaryCancel = nil
+		m.summary.cancel = nil
 		if m.finishSummary(msg) {
 			// The reading landed a row, and it landed out of band: no stream
 			// owed this frame a repaint. Following to the bottom only if the

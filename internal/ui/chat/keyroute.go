@@ -226,9 +226,9 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			// card arrives through the one door every decision arrives
 			// through, so it takes an empty draft's keyboard like any
 			// other arrival instead of showing keys nobody can press.
-			if m.classifierCancel != nil {
-				m.classifierCancel()
-				m.classifierCancel = nil
+			if m.classifier.cancel != nil {
+				m.classifier.cancel()
+				m.classifier.cancel = nil
 			}
 			m.setTurnState(stateConfirmRun)
 			m.syncViewport()

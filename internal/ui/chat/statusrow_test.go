@@ -17,7 +17,7 @@ import (
 func statusRowModel(t *testing.T, width int) Model {
 	t.Helper()
 	m := frameModel(t, width, 40)
-	m.summarizer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
+	m.summary.writer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
 	m.summary.last = &agent.SummaryVerdict{Text: "wiring the pause", State: agent.SummaryOnTarget, Round: 7}
 	m.summary.schedule.Read(7)
 	m.turnCount = 1

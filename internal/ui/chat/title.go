@@ -37,6 +37,9 @@ const titleAttempts = 2
 // titleState is what the session knows about its title: the words on the
 // row, whether readings are wanted, and how many have been asked for.
 type titleState struct {
+	// writer is the titler, and cancel abandons the reading it has out.
+	writer *agent.Titler
+	cancel context.CancelFunc
 	// on is the session's switch (/ui title, summary.title).
 	on bool
 	// title is the session's generated title as the store has it — empty
@@ -59,14 +62,14 @@ type titleDoneMsg struct {
 // WithTitler wires the session titler and whether the session starts with
 // titles on. A nil titler leaves every row untitled and no requests made.
 func (m Model) WithTitler(t *agent.Titler, on bool) Model {
-	m.titler = t
+	m.titles.writer = t
 	m.titles.on = on
 	return m
 }
 
 // titleEnabled reports whether readings are taken at all.
 func (m Model) titleEnabled() bool {
-	return m.titles.on && m.titler.Enabled() && m.db != nil
+	return m.titles.on && m.titles.writer.Enabled() && m.db != nil
 }
 
 // isAutosaveSlot reports whether a session name is one the session was given
@@ -109,9 +112,9 @@ func (m *Model) titleCloseCmd(prev Model) tea.Cmd {
 	m.titles.attempts++
 	m.titles.inFlight = true
 	m.titles.readFor = m.sessionName
-	titler, name := m.titler, m.sessionName
+	titler, name := m.titles.writer, m.sessionName
 	ctx, cancel := context.WithCancel(context.Background())
-	m.titleCancel = cancel
+	m.titles.cancel = cancel
 	return func() tea.Msg {
 		defer cancel()
 		return titleDoneMsg{name: name, verdict: titler.Title(ctx, req)}
@@ -145,7 +148,7 @@ func (m *Model) finishTitle(msg titleDoneMsg) tea.Cmd {
 		return nil
 	}
 	m.titles.inFlight = false
-	m.titleCancel = nil
+	m.titles.cancel = nil
 	if msg.verdict.Failed || msg.verdict.Title == "" {
 		return nil
 	}
@@ -171,13 +174,13 @@ func (m *Model) finishTitle(msg titleDoneMsg) tea.Cmd {
 // resetTitle forgets the slot's title state: a new slot has no title and
 // every reading to come.
 func (m *Model) resetTitle() {
-	if m.titleCancel != nil {
+	if m.titles.cancel != nil {
 		// A reading out for the old slot is about a conversation this
 		// session no longer holds.
-		m.titleCancel()
-		m.titleCancel = nil
+		m.titles.cancel()
+		m.titles.cancel = nil
 	}
-	m.titles = titleState{on: m.titles.on}
+	m.titles = titleState{writer: m.titles.writer, on: m.titles.on}
 }
 
 // loadTitle reads the stored title of the slot the session just moved to.
@@ -193,14 +196,14 @@ func (m *Model) loadTitle() {
 // or off and why.
 func (m Model) titleStatus() string {
 	switch {
-	case !m.titles.on && !m.titler.Enabled():
+	case !m.titles.on && !m.titles.writer.Enabled():
 		return "off — turned off in the config (summary.title)"
 	case !m.titles.on:
 		return "off"
-	case !m.titler.Enabled():
+	case !m.titles.writer.Enabled():
 		return "on, but turned off in the config (summary.title) — nothing is asked"
 	}
-	return "on (" + m.titler.Model() + ")"
+	return "on (" + m.titles.writer.Model() + ")"
 }
 
 // titleCommand handles /ui title [on|off].

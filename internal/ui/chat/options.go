@@ -314,7 +314,7 @@ func (m Model) WithUpdateNotice(notice string) Model {
 // gated calls the static policy would ask about are judged by it instead;
 // its failures fall back to asking the user.
 func (m Model) WithClassifier(c *agent.Classifier) Model {
-	m.classifier = c
+	m.classifier.judge = c
 	return m
 }
 

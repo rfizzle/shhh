@@ -563,12 +563,12 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	// human, short of the one the rules prove is a clean-up of untracked
 	// scratch inside the workspace
 	// (docs/capabilities/approvals-and-safety.md#severity-moves-the-default).
-	if m.policy.mode == agent.ModeAuto && m.classifier != nil {
+	if m.policy.mode == agent.ModeAuto && m.classifier.judge != nil {
 		if act := m.approvalAction(req); act.SafetyFlagged && !act.ScopeSensitive {
 			req.scratch = m.scratchDelete(req)
 		}
 	}
-	if act := m.approvalAction(req); m.policy.mode == agent.ModeAuto && m.classifier != nil &&
+	if act := m.approvalAction(req); m.policy.mode == agent.ModeAuto && m.classifier.judge != nil &&
 		(!act.SafetyFlagged || agent.ClassifierClearsScratch(act)) && !act.ScopeSensitive {
 		return m.startClassifierCheck(req)
 	}
@@ -646,8 +646,8 @@ func (m Model) startClassifierCheck(req *approvalRequest) (tea.Model, tea.Cmd) {
 	m.setTurnState(stateClassifying)
 	m.syncViewport()
 	ctx, cancel := context.WithCancel(context.Background())
-	m.classifierCancel = cancel
-	classifier := m.classifier
+	m.classifier.cancel = cancel
+	classifier := m.classifier.judge
 	runID := m.agent.RunID()
 	cwd, _ := os.Getwd()
 	creq := agent.ClassifierRequest{

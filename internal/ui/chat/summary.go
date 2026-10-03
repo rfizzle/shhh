@@ -83,6 +83,9 @@ const (
 // summaryState is what the session knows about its own summary: the reading
 // on screen, when it was taken, and whether another is in flight.
 type summaryState struct {
+	// writer is the summarizer, and cancel abandons the reading it has out.
+	writer *agent.Summarizer
+	cancel context.CancelFunc
 	// last is the reading being drawn. It survives a failed refresh, which is
 	// the whole reason it is kept here rather than rebuilt per frame.
 	last *agent.SummaryVerdict
@@ -159,14 +162,14 @@ func (m *Model) summarySteered() {
 		return
 	}
 	m.summary.inFlight = false
-	if m.summaryCancel != nil {
+	if m.summary.cancel != nil {
 		// A reading whose verdict will be discarded is not worth paying the
 		// rest of. It is the generation that discards it, not the
 		// cancellation: a cancelled request comes back failed, and a failure
 		// the session caused itself must not push the summarizer into its
 		// backoff.
-		m.summaryCancel()
-		m.summaryCancel = nil
+		m.summary.cancel()
+		m.summary.cancel = nil
 	}
 }
 
@@ -265,11 +268,11 @@ func (m Model) intervened() bool {
 // for about a conversation that no longer exists. Its cancel goes with it, so
 // the answer is never paid for twice over.
 func (m *Model) resetSummary() {
-	if m.summaryCancel != nil {
-		m.summaryCancel()
-		m.summaryCancel = nil
+	if m.summary.cancel != nil {
+		m.summary.cancel()
+		m.summary.cancel = nil
 	}
-	m.summary = summaryState{}
+	m.summary = summaryState{writer: m.summary.writer}
 }
 
 // summaryDoneMsg carries a finished reading back to the model.
@@ -282,17 +285,17 @@ type summaryDoneMsg struct {
 // WithSummarizer enables the session summary. A nil summarizer, or a
 // disabled one, leaves the block undrawn and no requests made.
 func (m Model) WithSummarizer(s *agent.Summarizer) Model {
-	m.summarizer = s
+	m.summary.writer = s
 	return m
 }
 
 // summaryEnabled reports whether readings are taken at all.
-func (m Model) summaryEnabled() bool { return m.summarizer.Enabled() }
+func (m Model) summaryEnabled() bool { return m.summary.writer.Enabled() }
 
 // summaryInterval is the round interval in force, doubled while the
 // summarizer is failing.
 func (m Model) summaryInterval() int {
-	n := m.summarizer.Config().Interval()
+	n := m.summary.writer.Config().Interval()
 	if m.summary.failures >= summaryBackoff {
 		n *= 2
 	}
@@ -307,7 +310,7 @@ func (m Model) summaryDue() bool {
 	if !m.summaryEnabled() || m.summary.inFlight {
 		return false
 	}
-	return m.summary.schedule.Due(m.agent.Rounds(), m.summaryInterval(), m.summarizer.Config().Gap())
+	return m.summary.schedule.Due(m.agent.Rounds(), m.summaryInterval(), m.summary.writer.Config().Gap())
 }
 
 // summaryCmd takes a reading if one is due, and is a no-op otherwise — so
@@ -348,13 +351,13 @@ func (m *Model) forceSummaryCmd() tea.Cmd {
 	}
 	m.summary.inFlight = true
 	m.summary.runID = m.agent.RunID()
-	summarizer := m.summarizer
+	summarizer := m.summary.writer
 	runID, gen := m.summary.runID, m.summary.gen
 	req := m.summaryRequest()
 	// Background, like the classifier's judge: nothing on screen
 	// waits for it, and the turn under it is untouched either way.
 	ctx, cancel := context.WithCancel(context.Background())
-	m.summaryCancel = cancel
+	m.summary.cancel = cancel
 	return func() tea.Msg {
 		defer cancel()
 		return summaryDoneMsg{runID: runID, gen: gen, verdict: summarizer.Summarize(ctx, req)}
@@ -685,7 +688,7 @@ func (m Model) toolSourceStatus() string {
 // fresh one.
 func (m *Model) summaryStatus() (string, tea.Cmd) {
 	if !m.summaryEnabled() {
-		if m.summarizer.Config().Disabled {
+		if m.summary.writer.Config().Disabled {
 			return "the session summary is off (summary.disabled). Turn it back on in ~/.config/shhh/config.toml", nil
 		}
 		return "the session summary is not configured — no model resolved for it", nil
@@ -718,7 +721,7 @@ func (m *Model) summaryStatus() (string, tea.Cmd) {
 	}
 	fmt.Fprintf(&sb, "%s · every %d rounds · %s so far",
 		model, m.summaryInterval(), m.freshRateLabel(m.summary.tokensIn, m.summary.tokensOut))
-	if m.summarizer.Config().Model == "" {
+	if m.summary.writer.Config().Model == "" {
 		sb.WriteString("\nSet summary.model in config to read these on a faster model than the session's.")
 	}
 	return sb.String(), cmd
