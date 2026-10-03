@@ -109,7 +109,7 @@ func (s Severity) Word() string {
 // has nothing left to say it with (docs/interface/surfaces.md#the-approval-card).
 //
 // A card with no rating takes Info, the tone of a surface asking for an
-// answer, rather than the chrome grey a card that reports wears (CardTone).
+// answer, rather than the chrome grey a card that reports wears (cardTone).
 func (s Severity) tone() lipgloss.Style {
 	switch s {
 	case SeverityHigh:

@@ -100,7 +100,7 @@ func (c *PlanCard) View(width int) string {
 	// The frame is Info: the plan card has no severity to colour itself with
 	// — a plan is a proposal and not an act — and a card waiting for an
 	// answer drawn in the chrome grey a viewer wears says nothing about which
-	// of the two it is (CardTone).
+	// of the two it is (cardTone).
 	return Card{Title: c.Title, chips: c.chips(), tone: CardDecision}.
 		Render(append(rows, tail...), width)
 }

@@ -405,10 +405,6 @@ func (p *ProfileScreen) Select(index int) {
 	p.syncCard()
 }
 
-// CardFocused reports that the card rather than the sections has the
-// keyboard.
-func (p *ProfileScreen) CardFocused() bool { return p.card }
-
 // syncCard tells the card whether it has the keyboard: idle, it lights no row
 // and its key row is the one key that hands it over.
 func (p *ProfileScreen) syncCard() {

@@ -16,9 +16,9 @@ package components
 // stamps every message with a generation so a re-`Start()` can supersede the
 // last one. That machinery exists to make many independent chains safe; the
 // one-clock rule says there is one chain and never three, so shhh's animation
-// is a *value* that reads the frame it is told (`Frame`) and holds no state
+// is a *value* that reads the frame it is told (`frame`) and holds no state
 // at all. There is nothing to start, nothing to stop, nothing to supersede —
-// and `View` is a pure function, which is what lets a golden capture it.
+// and `view` is a pure function, which is what lets a golden capture it.
 //
 // **The ramp is two rungs, not a gradient.** Crush blends two arbitrary
 // colours through HCL across the label. The palette is a closed set of
@@ -117,8 +117,8 @@ func animCanon(rung int) int {
 }
 
 // animLabel is a label in motion. It is a value the host rebuilds every frame from
-// state it already has, not an object with a life of its own: `Frame` is the
-// session's one frame counter and `Arriving` how much of the entrance
+// state it already has, not an object with a life of its own: `frame` is the
+// session's one frame counter and `arriving` how much of the entrance
 // is still to run.
 type animLabel struct {
 	// frame is the tick the host is on. The sweep advances with it, so this
@@ -139,7 +139,7 @@ type animLabel struct {
 	// suffix is written after the label exactly as the host styled it: the
 	// fields the caller's own drop ladder left standing. It is a string
 	// rather than Crush's `func() string` because this value is rebuilt every
-	// frame anyway, and a closure would make View impure for no gain.
+	// frame anyway, and a closure would make view impure for no gain.
 	suffix string
 }
 
@@ -246,7 +246,7 @@ func buildAnimFrames(label string) *animFrames {
 	for _, r := range label {
 		cells = append(cells, string(r))
 	}
-	// A cell arrives when Arriving has fallen to its own step.
+	// A cell arrives when arriving has fallen to its own step.
 	//
 	// The schedule sweeps left to right with a cell of jitter either side,
 	// which is where this parts company with Crush: its birth steps are a

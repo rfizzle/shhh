@@ -200,7 +200,7 @@ const (
 	// decision, and this row is neither.
 	ActivityReport
 	// ActivitySummary is a reading of the session by the summariser: ≡, three
-	// stacked lines for the digest it is. Like ActivityThink it is drawn dim
+	// stacked lines for the digest it is. Like activityThink it is drawn dim
 	// and carries no rail, and for the same reason — it read nothing of the
 	// workspace, wrote nothing and ran nothing. It is the second act that is
 	// not a tool, and it gets a glyph of its own rather than borrowing ✻
@@ -304,7 +304,7 @@ type ActivityRow struct {
 	// ByRule colours a denial del (9) rather than dim (241): `⊘ denied · you`
 	// is a preference, `⊘ denied · auto` is a rule.
 	ByRule bool
-	// Expanded shows the detail body; Selected draws the focus-mode pointer.
+	// Expanded shows the detail body; selected draws the focus-mode pointer.
 	Expanded bool
 	selected bool
 	// Spin says the host is ticking, and Frame is the frame it is on — the same

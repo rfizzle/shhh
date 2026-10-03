@@ -69,7 +69,7 @@ func (p *Pager) reveal(row int) {
 	p.Offset = p.Held()
 }
 
-// above is how many rows the pane has scrolled past, and Below how many are
+// above is how many rows the pane has scrolled past, and below how many are
 // still under it. They are what a counted marker states: a fold is only a
 // fold while it says how much it folded
 // (docs/interface/principles.md#fold-never-hide).

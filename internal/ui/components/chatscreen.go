@@ -109,7 +109,7 @@ type ChatCommand struct {
 }
 
 // ChatResult is how the screen closed: with a conversation to open, or with
-// nothing. Open and Canceled are never both true.
+// nothing. Open and canceled are never both true.
 type ChatResult struct {
 	Open bool
 	// ID is the slot `[enter]` chose.

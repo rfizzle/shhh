@@ -86,7 +86,7 @@ const (
 type Meter struct {
 	// pctValue is the fill, 0–100; values outside the range are clamped.
 	pctValue int
-	// cellCount is the bar's width; 0 means MeterCellsRail.
+	// cellCount is the bar's width; 0 means meterCellsRail.
 	cellCount int
 	tone      meterTone
 	// labelText is the optional leading field — the "ctx" of the vitals rail, or
@@ -101,11 +101,11 @@ type Meter struct {
 	// own colour; only the side it stands on changes, and nothing follows the
 	// bar (docs/interface/surfaces.md#the-input-frame).
 	valueFirst bool
-	// warn and Alert override MeterPressure's thresholds (0 keeps 70/90), so
+	// warn and alert override meterPressure's thresholds (0 keeps 70/90), so
 	// a meter matches the host's own trim warnings.
 	warn, alert int
 	// running is how many of the filled cells belong to the step in flight
-	// (MeterProgress only); they render in spin, the rest in add.
+	// (meterProgress only); they render in spin, the rest in add.
 	running int
 }
 
@@ -182,7 +182,7 @@ func (m Meter) style() lipgloss.Style {
 // The fill and the number are the meter's own colour and turn together; the
 // track between them does not, because a track is not part of the value.
 //
-// ValueFirst moves the number into the label, so the bar is the last thing on
+// valueFirst moves the number into the label, so the bar is the last thing on
 // the row rather than the first — the value is beside the bar either way,
 // which is the rule.
 func (m Meter) View() string {
@@ -194,7 +194,7 @@ func (m Meter) View() string {
 
 // label is the leading field — dim for step progress, and in the meter's own
 // colour otherwise, where the label names the value the bar is about ("ctx")
-// and, under ValueFirst, states it as well.
+// and, under valueFirst, states it as well.
 // A meter without one renders nothing at all rather than a styled empty
 // string: an empty Render is a pair of escapes, which join keeps and spaces,
 // and the row would then sit one column right of the row above it
@@ -315,10 +315,10 @@ const sparkCellCount = 8
 // beside it are the measurement, which is why it is always dimmer and never
 // coloured.
 type sparkline struct {
-	// values is the series, oldest first; only the last Cells samples are
+	// values is the series, oldest first; only the last cells samples are
 	// drawn.
 	values []float64
-	// cells is the run's width; 0 means SparkCells.
+	// cells is the run's width; 0 means sparkCellCount.
 	cells int
 }
 

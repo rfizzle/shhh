@@ -50,7 +50,7 @@ func TestSnippetScreen_EnterRunsTheSnippetUnderThePointer(t *testing.T) {
 	if !done || !result.Run {
 		t.Fatalf("enter did not close the screen with something to run: %+v", result)
 	}
-	if result.iD != "2" || result.Command != "du -ah . | sort -rh | head -10" {
+	if result.id != "2" || result.Command != "du -ah . | sort -rh | head -10" {
 		t.Fatalf("the wrong snippet was taken: %+v", result)
 	}
 	if view := ansi.Strip(snippetScreen().View(130)); !strings.Contains(view, "nothing is run until [enter]") {

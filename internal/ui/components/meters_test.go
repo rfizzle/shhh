@@ -108,7 +108,7 @@ func TestMeterWithNoLabelStartsOnItsBar(t *testing.T) {
 	}
 }
 
-// ValueFirst moves the number in front of the bar and leaves nothing after
+// valueFirst moves the number in front of the bar and leaves nothing after
 // it, which is how every rail carrying a context meter draws one. The number
 // is still beside the bar and still in the meter's own colour — only the side
 // changes — so the rule the bar is never the only carrier of its value holds

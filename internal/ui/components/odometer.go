@@ -105,22 +105,6 @@ func (o Odometer) value() int64 {
 	return o.to - (o.to-o.from)*rem*rem*rem/(span*span*span)
 }
 
-// Settle ends the climb where the figure stands rather than where it was
-// going, for a host that has nothing reading this counter any more. Two
-// things make it the right move at that moment and simply leaving the
-// odometer alone the wrong one: a counter left part-way is still easing, and
-// something still easing keeps a tick chain alive over a screen with nothing
-// on it to move; and a figure settled where it stands costs nothing to hand
-// back the number it is already showing, where one re-aimed at a closed
-// account's zero would have to climb the whole way to it again.
-func (o *Odometer) Settle() {
-	if !o.aimed {
-		return
-	}
-	v := o.value()
-	o.from, o.to, o.step = v, v, odometerSteps
-}
-
 // Reading is the figure to print for target: the climb's intermediate value
 // while the odometer is on its way to that very number, and target itself
 // otherwise. The ease is allowed to lag the truth by a few frames; it is

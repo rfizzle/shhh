@@ -298,7 +298,7 @@ func TestHistoryScreen_EnterRunsTheEntryUnderThePointer(t *testing.T) {
 	if !got.Run {
 		t.Fatalf("want a run result, got %#v", result)
 	}
-	if got.iD != "2" || got.Command != "du -ah . | sort -rh | head -10" {
+	if got.id != "2" || got.Command != "du -ah . | sort -rh | head -10" {
 		t.Fatalf("enter ran the wrong entry: %#v", got)
 	}
 }

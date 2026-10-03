@@ -49,7 +49,7 @@ import (
 // the moment they are drawn — which is the rule the palette always stated,
 // now with somewhere of its own to live.
 type Token struct {
-	trueColor, aNSI256, aNSI color.Color
+	trueColor, ansi256, ansi color.Color
 }
 
 // token writes one row of the palette table: the design system's hex, the 256
@@ -66,8 +66,8 @@ type Token struct {
 func token(hex, ansi256, ansi16 string) Token {
 	return Token{
 		trueColor: lipgloss.Color(hex),
-		aNSI256:   lipgloss.Color(ansi256),
-		aNSI:      lipgloss.Color(ansi16),
+		ansi256:   lipgloss.Color(ansi256),
+		ansi:      lipgloss.Color(ansi16),
 	}
 }
 
@@ -260,8 +260,8 @@ var charmPalette = ColorTokens{
 func band(hex, ansi256 string) Token {
 	return Token{
 		trueColor: lipgloss.Color(hex),
-		aNSI256:   lipgloss.Color(ansi256),
-		aNSI:      lipgloss.NoColor{},
+		ansi256:   lipgloss.Color(ansi256),
+		ansi:      lipgloss.NoColor{},
 	}
 }
 
@@ -293,8 +293,8 @@ func tint(k charmtone.Key, ansi256, ansi16 string) Token {
 	darken := func(v uint32) uint8 { return uint8(v >> 8 * 3 / 8) }
 	return Token{
 		trueColor: color.RGBA{R: darken(r), G: darken(g), B: darken(b), A: 0xff},
-		aNSI256:   lipgloss.Color(ansi256),
-		aNSI:      lipgloss.Color(ansi16),
+		ansi256:   lipgloss.Color(ansi256),
+		ansi:      lipgloss.Color(ansi16),
 	}
 }
 
@@ -339,8 +339,8 @@ var themes = map[string]theme{
 // one it chose for the screen.
 var darkGround = Token{
 	trueColor: lipgloss.Color("#0f1117"),
-	aNSI256:   lipgloss.Color("233"),
-	aNSI:      lipgloss.NoColor{},
+	ansi256:   lipgloss.Color("233"),
+	ansi:      lipgloss.NoColor{},
 }
 
 // ThemeNames is the words a reader may choose between, auto first because it
@@ -571,7 +571,7 @@ func SetProfile(p colorprofile.Profile) {
 // own Styles from these tokens (chat, browse, the generate UI) and reads them
 // the same way: p.Info.Color() is the token and the profile in one place.
 func (t Token) Color() color.Color {
-	return lipgloss.Complete(profile)(t.aNSI, t.aNSI256, t.trueColor)
+	return lipgloss.Complete(profile)(t.ansi, t.ansi256, t.trueColor)
 }
 
 // styles is the derived style set: one populated value per theme, built by
@@ -589,9 +589,9 @@ type styles struct {
 	// hint is what a surface says about itself — the keys it offers, the fold
 	// markers under a truncated list, the note under a viewer. It is dim and
 	// upright: italic means quoted model output, and chrome is the product's
-	// own voice, so it wears the grey and nothing else. That leaves Hint and
-	// Dim the same tone, and the two names still say different things — a
-	// hint answers "what can I do here", Dim is a rung on the grey scale.
+	// own voice, so it wears the grey and nothing else. That leaves hint and
+	// dim the same tone, and the two names still say different things — a
+	// hint answers "what can I do here", dim is a rung on the grey scale.
 	hint     lipgloss.Style
 	warn     lipgloss.Style
 	shield   lipgloss.Style
@@ -609,7 +609,7 @@ type styles struct {
 	// The reading cursor: the row it sits on is lit, and the pointer
 	// that names it stays outside the highlight.
 	//
-	// FocusRow names its foreground rather than letting the lit row inherit
+	// focusRow names its foreground rather than letting the lit row inherit
 	// one. Left unset it is the terminal's own default, which is a colour the
 	// palette never issued: on half the terminals in use it reads brighter
 	// than the bright token beside it, so the row the keyboard is on was the

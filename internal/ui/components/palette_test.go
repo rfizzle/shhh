@@ -74,8 +74,8 @@ func TestPalette_EveryTokenIsWrittenForEveryProfile(t *testing.T) {
 			says string
 		}{
 			{"truecolor", c.token.trueColor, lipgloss.Color(c.hex), c.hex},
-			{"256 index", c.token.aNSI256, lipgloss.Color(c.ansi256), c.ansi256},
-			{"16-colour fallback", c.token.aNSI, lipgloss.Color(c.ansi16), c.ansi16},
+			{"256 index", c.token.ansi256, lipgloss.Color(c.ansi256), c.ansi256},
+			{"16-colour fallback", c.token.ansi, lipgloss.Color(c.ansi16), c.ansi16},
 		} {
 			if rung.got != rung.want {
 				t.Errorf("%s: %s is %s, the palette says %q",
@@ -137,7 +137,7 @@ func TestPalette_ProfilesEmitTheDocumentedValue(t *testing.T) {
 // colour with a literal approximation of it.)
 func TestPalette_AHexAloneWouldCollapseTheSixteen(t *testing.T) {
 	derived := func(c Token) string { return sgr(colorprofile.ANSI.Convert(c.trueColor)) }
-	written := func(c Token) string { return sgr(c.aNSI) }
+	written := func(c Token) string { return sgr(c.ansi) }
 	for _, c := range []struct {
 		one, two string
 		a, b     Token
@@ -169,7 +169,7 @@ func TestPalette_NoTwoTokensCollapse(t *testing.T) {
 		of   func(Token) string
 	}{
 		{"truecolor", func(c Token) string { return sgr(c.trueColor) }},
-		{"256", func(c Token) string { return sgr(c.aNSI256) }},
+		{"256", func(c Token) string { return sgr(c.ansi256) }},
 	} {
 		seen := map[string]string{}
 		for _, c := range paletteTable {
@@ -213,7 +213,7 @@ func TestPalette_MonoCollapsesOntoItsThreeShades(t *testing.T) {
 		name  string
 		token Token
 	}{{"mono-fg", MonoFg}, {"mono-dim", MonoDim}, {"mono-bg", MonoBg}} {
-		if c.token.trueColor == nil || c.token.aNSI256 == nil || c.token.aNSI == nil {
+		if c.token.trueColor == nil || c.token.ansi256 == nil || c.token.ansi == nil {
 			t.Errorf("%s is not written for every profile: %+v", c.name, c.token)
 		}
 	}
@@ -238,11 +238,11 @@ func TestPalette_TheBandIsPaddingAloneWhereItWouldMislead(t *testing.T) {
 		if name == ThemeAuto {
 			continue
 		}
-		if got := themes[name].tokens.band.aNSI; got != (lipgloss.NoColor{}) {
+		if got := themes[name].tokens.band.ansi; got != (lipgloss.NoColor{}) {
 			t.Errorf("%s theme: the band is %s at sixteen colours, want no ground", name, sgr(got))
 		}
 	}
-	for _, rung := range []color.Color{monoPalette.band.trueColor, monoPalette.band.aNSI256, monoPalette.band.aNSI} {
+	for _, rung := range []color.Color{monoPalette.band.trueColor, monoPalette.band.ansi256, monoPalette.band.ansi} {
 		if rung != (lipgloss.NoColor{}) {
 			t.Errorf("mono: the band is %s, want no ground at every rung", sgr(rung))
 		}
@@ -347,8 +347,8 @@ func TestPalette_LightIsWrittenForEveryProfile(t *testing.T) {
 			says string
 		}{
 			{"truecolor", c.token.trueColor, lipgloss.Color(c.hex), c.hex},
-			{"256 index", c.token.aNSI256, lipgloss.Color(c.ansi256), c.ansi256},
-			{"16-colour fallback", c.token.aNSI, lipgloss.Color(c.ansi16), c.ansi16},
+			{"256 index", c.token.ansi256, lipgloss.Color(c.ansi256), c.ansi256},
+			{"16-colour fallback", c.token.ansi, lipgloss.Color(c.ansi16), c.ansi16},
 		} {
 			if rung.got != rung.want {
 				t.Errorf("light %s: %s is %s, the palette says %q",
@@ -376,7 +376,7 @@ func TestPalette_EveryThemeAnswersForEveryToken(t *testing.T) {
 		p := themes[name].tokens
 		for _, c := range paletteTable {
 			tok := tokenNamed(p, c.name)
-			if tok.trueColor == nil || tok.aNSI256 == nil || tok.aNSI == nil {
+			if tok.trueColor == nil || tok.ansi256 == nil || tok.ansi == nil {
 				t.Errorf("%s theme: %s is not written for every profile: %+v", name, c.name, tok)
 			}
 		}
@@ -397,12 +397,12 @@ func TestPalette_NoThemeSpendsDelsSixteenTwice(t *testing.T) {
 			continue
 		}
 		p := themes[name].tokens
-		del := sgr(p.Del.aNSI)
+		del := sgr(p.Del.ansi)
 		for _, c := range paletteTable {
 			if c.name == "del" {
 				continue
 			}
-			if got := sgr(tokenNamed(p, c.name).aNSI); got == del {
+			if got := sgr(tokenNamed(p, c.name).ansi); got == del {
 				t.Errorf("%s theme: %s is del's %s at sixteen colours", name, c.name, del)
 			}
 		}
@@ -425,7 +425,7 @@ func TestPalette_NoThemeCollapsesTwoTokens(t *testing.T) {
 			of   func(Token) string
 		}{
 			{"truecolor", func(c Token) string { return sgr(c.trueColor) }},
-			{"256", func(c Token) string { return sgr(c.aNSI256) }},
+			{"256", func(c Token) string { return sgr(c.ansi256) }},
 		} {
 			seen := map[string]string{}
 			for _, c := range paletteTable {

@@ -9,7 +9,7 @@ package components
 // than the card. So the list takes the transcript pane for as long as it is
 // up, drawn in the screens' chrome, and the same key — or esc — puts the card
 // back exactly as it was. The rows are the ones a screen's foot draws
-// (KeyListRows), so the answer to `?` reads the same wherever it was asked.
+// (keyListRows), so the answer to `?` reads the same wherever it was asked.
 
 import (
 	"fmt"

@@ -86,13 +86,13 @@ type SnippetCommand struct {
 }
 
 // SnippetResult is how the screen closed: with a command to run, or with
-// nothing. Run and Canceled are never both true.
+// nothing. Run and canceled are never both true.
 type SnippetResult struct {
 	Run bool
-	// iD and Command are the snippet `[enter]` chose. The command travels
+	// id and Command are the snippet `[enter]` chose. The command travels
 	// with the id so a host that has already closed its store can still run
 	// it.
-	iD       string
+	id       string
 	Command  string
 	canceled bool
 	// Do is the housekeeping a key asked for with the screen still up — a
@@ -142,7 +142,7 @@ func (s *SnippetScreen) Update(msg tea.KeyPressMsg) (done bool, result SnippetRe
 		// The one key that leaves the screen with something to do. A list the
 		// filter emptied has nothing for it to take (invariant 5).
 		if row := s.currentShown(s.Rows); row != nil {
-			return true, SnippetResult{Run: true, iD: row.ID, Command: row.Command}
+			return true, SnippetResult{Run: true, id: row.ID, Command: row.Command}
 		}
 		return false, SnippetResult{}
 	case keys.Is(pressed, keys.Select.Cancel):

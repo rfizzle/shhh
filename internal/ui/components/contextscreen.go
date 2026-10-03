@@ -44,7 +44,7 @@ import (
 
 const (
 	// contextGridRows is how deep the wrapped meter runs. Ten rows of
-	// MeterCellsRail is 220 cells, so one cell is a little under half a
+	// meterCellsRail is 220 cells, so one cell is a little under half a
 	// percent — fine enough that a category worth acting on is visible, and
 	// coarse enough that the grid is a shape rather than a texture.
 	contextGridRows = 10
@@ -267,7 +267,7 @@ func (c *ContextScreen) move(pressed string) {
 	c.cursorAt = min(max(c.cursor()+keys.Step(pressed, keys.Context.Move), 0), len(c.Groups)-1)
 }
 
-// cursor is Cursor clamped to the groups that exist, so a host that dropped a
+// cursor is cursorAt clamped to the groups that exist, so a host that dropped a
 // group between renders cannot index past the end.
 func (c ContextScreen) cursor() int {
 	if len(c.Groups) == 0 {
@@ -391,7 +391,7 @@ func (c *ContextScreen) stackedRows(grid, legend []string, width int) []string {
 	return rows
 }
 
-// gridRows is the wrapped meter: MeterCellsRail cells a row, contextGridRows
+// gridRows is the wrapped meter: meterCellsRail cells a row, contextGridRows
 // deep, laid out in reading order and cut into rows afterwards. It is one
 // meter rather than ten, so a category's run ends where its share says it
 // does and not at the end of whichever row it fell in.

@@ -122,13 +122,13 @@ type HistoryCommand struct {
 }
 
 // HistoryResult is how the screen closed: with a command to run, or with
-// nothing. Run and Canceled are never both true.
+// nothing. Run and canceled are never both true.
 type HistoryResult struct {
 	Run bool
-	// iD and Command are the entry `[enter]` chose. The command is carried out
+	// id and Command are the entry `[enter]` chose. The command is carried out
 	// as well as the id so a host that has already closed its store can still
 	// run it.
-	iD       string
+	id       string
 	Command  string
 	canceled bool
 	// Do is the housekeeping a key asked for with the screen still up — a
@@ -173,7 +173,7 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result HistoryRe
 		// The one key that leaves the screen with something to do. A list the
 		// filter emptied has nothing for it to take (invariant 5).
 		if row := h.currentShown(h.Rows); row != nil {
-			return true, HistoryResult{Run: true, iD: row.ID, Command: row.Command}
+			return true, HistoryResult{Run: true, id: row.ID, Command: row.Command}
 		}
 		return false, HistoryResult{}
 	case keys.Is(pressed, keys.Select.Cancel):

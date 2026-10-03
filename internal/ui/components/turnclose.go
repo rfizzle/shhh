@@ -369,7 +369,7 @@ func closeLine(lead, text, note string, width int) string {
 // not live yet give up the width first and the key that makes them live is
 // the last to go (keyRunNarrow): one is an offer, the others are not offers
 // yet. Where even that does not fit, the statement keeps its row and the
-// offers take rows of their own under it, packed the way KeyFooter packs a
+// offers take rows of their own under it, packed the way keyFooter packs a
 // screen's keys beside its lead — an offer the row acts on goes to the next
 // row whole, never clipped off the edge of this one
 // (docs/interface/principles.md#fold-never-hide).

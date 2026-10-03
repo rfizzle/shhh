@@ -319,7 +319,7 @@ func legendRows(clauses []string, width int) []string {
 
 // keyListRows is what `?` shows on every surface that holds the keyboard:
 // the surface's whole register, one key per row, and under it the glyph
-// legend (GlyphLegend). It is one function because it is one answer — a
+// legend (glyphLegend). It is one function because it is one answer — a
 // screen's footer, a card's key list and reading mode's all draw it — so a
 // reader who has learned where the legend is on one surface finds it in the
 // same place on the next

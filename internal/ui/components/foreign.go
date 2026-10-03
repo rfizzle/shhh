@@ -58,7 +58,7 @@ import (
 // Bold is what still says which of the two the program was emphasising, and
 // bold passes through untouched.
 //
-// It reads FullPalette rather than the live Palette and is not rebuilt on a
+// It reads fullPalette rather than the live Palette and is not rebuilt on a
 // swap, because mono declines foreign colour outright instead of recolouring
 // it: with mono on, foreignRun never reaches this table.
 var ansiPalette = ansiTable(fullPalette)
@@ -357,7 +357,7 @@ func nearestHue(h float64) Token {
 // itself. The four the list leaves out are the three background tints, which a
 // foreground may not borrow, and subtle, which belongs to the one-shot UI.
 //
-// Like ansiPalette they read FullPalette and are not rebuilt on a swap, for
+// Like ansiPalette they read fullPalette and are not rebuilt on a swap, for
 // the same reason: mono declines foreign colour outright rather than
 // recolouring it, so with mono on nothing reaches these tables.
 var foreignHues, foreignGreys = foreignTargets(fullPalette)
@@ -405,7 +405,7 @@ func hueOf(r, g, b, hi, lo int) float64 {
 	return h
 }
 
-// rgb8 is a token's own colour as three bytes. Token.TrueColor is the design
+// rgb8 is a token's own colour as three bytes. Token.trueColor is the design
 // system's hex, which is what the fold is measured against: the token a
 // colour is nearest is a fact about the palette and not about what rung of it
 // this terminal can show.

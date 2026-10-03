@@ -120,7 +120,7 @@ func TestPager_WindowWritesTheHeldOffsetBack(t *testing.T) {
 	}
 }
 
-// Reveal is what a pane scrolled by something other than the wheel does: the
+// reveal is what a pane scrolled by something other than the wheel does: the
 // least movement that brings a row in.
 func TestPager_RevealScrollsTheLeastItCan(t *testing.T) {
 	p := Pager{Offset: 10, Height: 5, total: 100}

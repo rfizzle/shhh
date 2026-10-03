@@ -92,7 +92,7 @@ type MetricsBar struct {
 	// rather not have paid for is del, and its bar is too.
 	NoteTone FieldTone
 	// Tone is the meter's own colour: MeterCategory for an ordinary share,
-	// MeterUnasked for a cost nobody asked for, MeterAgent for a sub-agent's.
+	// MeterUnasked for a cost nobody asked for, meterAgent for a sub-agent's.
 	Tone meterTone
 }
 

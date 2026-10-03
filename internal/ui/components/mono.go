@@ -37,7 +37,7 @@ var (
 // monoNoBand is the band under mono, which is no ground at all: every
 // background here collapses onto the selection ground, so a band would read
 // as a selected row, and a card is its padding rows alone.
-var monoNoBand = Token{trueColor: lipgloss.NoColor{}, aNSI256: lipgloss.NoColor{}, aNSI: lipgloss.NoColor{}}
+var monoNoBand = Token{trueColor: lipgloss.NoColor{}, ansi256: lipgloss.NoColor{}, ansi: lipgloss.NoColor{}}
 
 // monoPalette is the two-grey token set. Every token that means content,
 // state or emphasis collapses onto MonoFg; every token that means chrome

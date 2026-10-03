@@ -8,7 +8,7 @@ package components
 // The file list is on the left, the focused file's hunks on the right, and
 // the turn's verdict pinned under the list — the failing test beside the
 // hunks that claim to fix it. Nothing here renders a diff of its own: the
-// hunk pane calls the same UnifiedLines and sideBySideHunks the approval
+// hunk pane calls the same unifiedLines and sideBySideHunks the approval
 // card's body, the transcript row and /diff go through, so there is one diff
 // renderer and review is a layout around it.
 //
@@ -103,7 +103,7 @@ type ReviewView struct {
 	// sideBySideMinWidth columns either way.
 	sideBySide bool
 
-	// file is the focused row of the list, Hunk the focused hunk within it,
+	// file is the focused row of the list, hunk the focused hunk within it,
 	// and Offset the first visible row of the hunk pane.
 	file, hunk, Offset int
 

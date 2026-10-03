@@ -89,7 +89,7 @@ type Card struct {
 	chips []string
 	// style colours the border with a value the caller resolved for itself —
 	// the approval card's severity, which is a reading and not a role. It
-	// wins over Tone wherever it is set.
+	// wins over tone wherever it is set.
 	style *lipgloss.Style
 	// tone colours the border by the job the card is doing.
 	tone cardTone

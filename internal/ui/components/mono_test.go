@@ -785,10 +785,10 @@ var sgrPattern = regexp.MustCompile(`\x1b\[([0-9;]*)m`)
 
 // index256 is the 256-colour index a token stands for, written the way an SGR
 // escape writes it. A token holds a colour value per profile rather than the
-// digits, so the digits are read back off the ANSI256 rung. The three
+// digits, so the digits are read back off the ansi256 rung. The three
 // mono shades are all above sixteen, so all three are indexed colours.
 func index256(t Token) string {
-	i, ok := t.aNSI256.(lipgloss.ANSIColor)
+	i, ok := t.ansi256.(lipgloss.ANSIColor)
 	if !ok {
 		return ""
 	}

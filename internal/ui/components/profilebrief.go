@@ -22,7 +22,7 @@ type profileBrief struct {
 	// ask is the question this step puts, in the drafter's words or the
 	// surface's own.
 	ask string
-	// lead introduces the starting points and Starts are the starting
+	// lead introduces the starting points and starts are the starting
 	// points; both are empty once the flow is past the brief.
 	lead   string
 	starts []string
@@ -31,7 +31,7 @@ type profileBrief struct {
 	// placeholder is what the empty field says.
 	placeholder string
 
-	// asked is the exchange so far, and At/Of number the question being
+	// asked is the exchange so far, and at/of number the question being
 	// asked now. A flow whose length is not stated is one nobody can decide
 	// to finish.
 	asked  []profileQA

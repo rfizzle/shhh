@@ -152,7 +152,7 @@ func keyRunNarrow(keys []TurnKey, waiting bool, handover string) string {
 }
 
 // keyRunRows is the run once even keyRunNarrow is wider than the room: the
-// offers packed into as few rows as room allows, the way KeyFooter packs a
+// offers packed into as few rows as room allows, the way keyFooter packs a
 // screen's, so a narrow terminal gets another row rather than an offer cut
 // off at the edge (docs/interface/principles.md#fold-never-hide). Whether
 // they are painted live is the question keyRun answers. A waiting run with a

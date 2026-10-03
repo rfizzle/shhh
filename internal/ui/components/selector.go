@@ -176,7 +176,7 @@ type Select struct {
 	// none gets the window's own count instead — see chips.
 	Chips []string
 	// Tone is the frame's colour: chrome on a card that is showing a list,
-	// Info on one that is asking a question with it (CardTone).
+	// Info on one that is asking a question with it (cardTone).
 	Tone cardTone
 	// Rail is the label the host puts on the rule above the card, for a
 	// picker that is a surface in its own right rather than a menu a command
