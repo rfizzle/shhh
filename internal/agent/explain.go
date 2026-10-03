@@ -161,33 +161,16 @@ func (e *Explainer) Explain(ctx context.Context, req ExplainRequest) ExplainVerd
 		return finish(v)
 	}
 
-	var text strings.Builder
-	for done := false; !done; {
-		select {
-		case <-attemptCtx.Done():
-			// Guards against providers that ignore cancellation.
-			v.Err = "the explanation could not be read: " + attemptCtx.Err().Error()
-			return finish(v)
-		case ev, ok := <-events:
-			if !ok {
-				done = true
-				break
-			}
-			if ev.Err != nil {
-				v.Err = "the explanation could not be read: " + ev.Err.Error()
-				return finish(v)
-			}
-			text.WriteString(ev.Token)
-			if ev.Usage != nil {
-				v.Usage = *ev.Usage
-			}
-			if ev.Done {
-				done = true
-			}
-		}
+	reply, err := provider.Collect(attemptCtx, events)
+	if reply.Usage != nil {
+		v.Usage = *reply.Usage
+	}
+	if err != nil {
+		v.Err = "the explanation could not be read: " + err.Error()
+		return finish(v)
 	}
 
-	answer := strings.TrimSpace(text.String())
+	answer := strings.TrimSpace(reply.Text)
 	if answer == "" {
 		v.Err = "the model returned no explanation"
 		return finish(v)

@@ -165,35 +165,17 @@ func (t *Titler) Title(ctx context.Context, req TitleRequest) TitleVerdict {
 		return v
 	}
 
-	var text strings.Builder
-	var calls []provider.ToolCall
-	for done := false; !done; {
-		select {
-		case <-attemptCtx.Done():
-			v.Err = "the title could not be read: " + attemptCtx.Err().Error()
-			return v
-		case ev, ok := <-events:
-			if !ok {
-				done = true
-				break
-			}
-			if ev.Err != nil {
-				v.Err = "the title could not be read: " + ev.Err.Error()
-				return v
-			}
-			text.WriteString(ev.Token)
-			calls = append(calls, ev.ToolCalls...)
-			if ev.Usage != nil {
-				v.Usage = *ev.Usage
-			}
-			if ev.Done {
-				done = true
-			}
-		}
+	reply, err := provider.Collect(attemptCtx, events)
+	if reply.Usage != nil {
+		v.Usage = *reply.Usage
+	}
+	if err != nil {
+		v.Err = "the title could not be read: " + err.Error()
+		return v
 	}
 
 	raw := ""
-	for _, tc := range calls {
+	for _, tc := range reply.Calls {
 		if tc.Name != TitleToolName {
 			continue
 		}
@@ -208,7 +190,7 @@ func (t *Titler) Title(ctx context.Context, req TitleRequest) TitleVerdict {
 	if raw == "" {
 		// A model that answered in prose rather than through the tool: the
 		// first line is the title, if there is one.
-		raw, _, _ = strings.Cut(strings.TrimSpace(text.String()), "\n")
+		raw, _, _ = strings.Cut(strings.TrimSpace(reply.Text), "\n")
 	}
 	title := CleanTitle(raw)
 	if title == "" {

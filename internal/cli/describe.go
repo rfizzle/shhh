@@ -71,15 +71,12 @@ func generateDescription(ctx context.Context, p provider.Provider, model, config
 		return ""
 	}
 
-	var sb strings.Builder
-	for ev := range events {
-		if ev.Err != nil {
-			return ""
-		}
-		sb.WriteString(ev.Token)
+	reply, err := provider.Collect(ctx, events)
+	if err != nil {
+		return ""
 	}
 
-	return clampDescription(sb.String())
+	return clampDescription(reply.Text)
 }
 
 // clampDescription folds a description onto the one row the listing gives it

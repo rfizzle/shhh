@@ -220,35 +220,17 @@ func (a *Accountant) Account(ctx context.Context, req AccountRequest) AccountVer
 		return v
 	}
 
-	var text strings.Builder
-	var calls []provider.ToolCall
-	for done := false; !done; {
-		select {
-		case <-attemptCtx.Done():
-			v.Err = "the account could not be read: " + attemptCtx.Err().Error()
-			return v
-		case ev, ok := <-events:
-			if !ok {
-				done = true
-				break
-			}
-			if ev.Err != nil {
-				v.Err = "the account could not be read: " + ev.Err.Error()
-				return v
-			}
-			text.WriteString(ev.Token)
-			calls = append(calls, ev.ToolCalls...)
-			if ev.Usage != nil {
-				v.Usage = *ev.Usage
-			}
-			if ev.Done {
-				done = true
-			}
-		}
+	reply, err := provider.Collect(attemptCtx, events)
+	if reply.Usage != nil {
+		v.Usage = *reply.Usage
+	}
+	if err != nil {
+		v.Err = "the account could not be read: " + err.Error()
+		return v
 	}
 
 	raw := ""
-	for _, tc := range calls {
+	for _, tc := range reply.Calls {
 		if tc.Name != AccountToolName {
 			continue
 		}
@@ -263,7 +245,7 @@ func (a *Accountant) Account(ctx context.Context, req AccountRequest) AccountVer
 	if raw == "" {
 		// A model that answered in prose rather than through the tool: the
 		// prose is the account.
-		raw = text.String()
+		raw = reply.Text
 	}
 	account := CleanAccount(raw)
 	if account == "" {

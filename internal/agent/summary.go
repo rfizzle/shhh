@@ -481,34 +481,13 @@ func (s *Summarizer) readOnce(ctx context.Context, model, instructions, digest s
 		return "", SummaryUncertain, "", nil, err
 	}
 
-	var text strings.Builder
-	var calls []provider.ToolCall
-	var usage *provider.Usage
-	for done := false; !done; {
-		select {
-		case <-attemptCtx.Done():
-			// Guards against providers that ignore cancellation.
-			return "", SummaryUncertain, "", usage, attemptCtx.Err()
-		case ev, ok := <-events:
-			if !ok {
-				done = true
-				break
-			}
-			if ev.Err != nil {
-				return "", SummaryUncertain, "", usage, ev.Err
-			}
-			text.WriteString(ev.Token)
-			calls = append(calls, ev.ToolCalls...)
-			if ev.Usage != nil {
-				usage = ev.Usage
-			}
-			if ev.Done {
-				done = true
-			}
-		}
+	reply, err := provider.Collect(attemptCtx, events)
+	usage := reply.Usage
+	if err != nil {
+		return "", SummaryUncertain, "", usage, err
 	}
 
-	for _, tc := range calls {
+	for _, tc := range reply.Calls {
 		if tc.Name != SummaryToolName {
 			continue
 		}
@@ -516,7 +495,7 @@ func (s *Summarizer) readOnce(ctx context.Context, model, instructions, digest s
 			return summary, state, reason, usage, nil
 		}
 	}
-	if summary, state, reason, ok := ParseSummaryText(text.String()); ok {
+	if summary, state, reason, ok := ParseSummaryText(reply.Text); ok {
 		return summary, state, reason, usage, nil
 	}
 	return "", SummaryUncertain, "", usage, nil

@@ -179,31 +179,15 @@ func (s *Suggester) Suggest(ctx context.Context, req SuggestRequest) SuggestVerd
 		return v
 	}
 
-	var text strings.Builder
-	for done := false; !done; {
-		select {
-		case <-attemptCtx.Done():
-			v.Err = "the suggestion could not be read: " + attemptCtx.Err().Error()
-			return v
-		case ev, ok := <-events:
-			if !ok {
-				done = true
-				break
-			}
-			if ev.Err != nil {
-				v.Err = "the suggestion could not be read: " + ev.Err.Error()
-				return v
-			}
-			text.WriteString(ev.Token)
-			if ev.Usage != nil {
-				v.Usage = *ev.Usage
-			}
-			if ev.Done {
-				done = true
-			}
-		}
+	reply, err := provider.Collect(attemptCtx, events)
+	if reply.Usage != nil {
+		v.Usage = *reply.Usage
 	}
-	suggestion := CleanSuggestion(text.String())
+	if err != nil {
+		v.Err = "the suggestion could not be read: " + err.Error()
+		return v
+	}
+	suggestion := CleanSuggestion(reply.Text)
 	if suggestion == "" {
 		v.Err = "the suggestion came back empty"
 		return v

@@ -467,32 +467,12 @@ func readProposals(ctx context.Context, p provider.Provider, cfg ExtractConfig, 
 	if err != nil {
 		return nil, nil, err
 	}
-	var text strings.Builder
-	var calls []provider.ToolCall
-	var usage *provider.Usage
-	for done := false; !done; {
-		select {
-		case <-attemptCtx.Done():
-			return nil, usage, attemptCtx.Err()
-		case ev, ok := <-events:
-			if !ok {
-				done = true
-				break
-			}
-			if ev.Err != nil {
-				return nil, usage, ev.Err
-			}
-			text.WriteString(ev.Token)
-			calls = append(calls, ev.ToolCalls...)
-			if ev.Usage != nil {
-				usage = ev.Usage
-			}
-			if ev.Done {
-				done = true
-			}
-		}
+	reply, err := provider.Collect(attemptCtx, events)
+	usage := reply.Usage
+	if err != nil {
+		return nil, usage, err
 	}
-	for _, tc := range calls {
+	for _, tc := range reply.Calls {
 		if tc.Name != ExtractToolName {
 			continue
 		}
@@ -500,7 +480,7 @@ func readProposals(ctx context.Context, p provider.Provider, cfg ExtractConfig, 
 			return ps, usage, nil
 		}
 	}
-	if ps, ok := ParseProposals(profile, text.String()); ok {
+	if ps, ok := ParseProposals(profile, reply.Text); ok {
 		return ps, usage, nil
 	}
 	return nil, usage, nil

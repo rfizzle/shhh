@@ -238,31 +238,13 @@ func (d *Drafter) Draft(ctx context.Context, req Request) Outcome {
 		out.Err = err.Error()
 		return finish(out)
 	}
-	var text strings.Builder
-	var calls []provider.ToolCall
-	for done := false; !done; {
-		select {
-		case <-attemptCtx.Done():
-			out.Err = attemptCtx.Err().Error()
-			return finish(out)
-		case ev, ok := <-events:
-			if !ok {
-				done = true
-				break
-			}
-			if ev.Err != nil {
-				out.Err = ev.Err.Error()
-				return finish(out)
-			}
-			text.WriteString(ev.Token)
-			calls = append(calls, ev.ToolCalls...)
-			if ev.Usage != nil {
-				out.Usage = *ev.Usage
-			}
-			if ev.Done {
-				done = true
-			}
-		}
+	reply, err := provider.Collect(attemptCtx, events)
+	if reply.Usage != nil {
+		out.Usage = *reply.Usage
+	}
+	if err != nil {
+		out.Err = err.Error()
+		return finish(out)
 	}
 	read := func(text string) (Outcome, bool) {
 		if req.Source != nil {
@@ -270,7 +252,7 @@ func (d *Drafter) Draft(ctx context.Context, req Request) Outcome {
 		}
 		return parse(text, req.Kind)
 	}
-	for _, tc := range calls {
+	for _, tc := range reply.Calls {
 		if tc.Name == DraftToolName {
 			if o, ok := read(tc.Arguments); ok {
 				o.Usage, o.Elapsed = out.Usage, time.Since(start)
@@ -278,7 +260,7 @@ func (d *Drafter) Draft(ctx context.Context, req Request) Outcome {
 			}
 		}
 	}
-	if o, ok := read(text.String()); ok {
+	if o, ok := read(reply.Text); ok {
 		o.Usage, o.Elapsed = out.Usage, time.Since(start)
 		return o
 	}
