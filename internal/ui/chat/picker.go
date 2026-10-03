@@ -38,7 +38,7 @@ import (
 // normally the provider's curated catalog (provider.KnownModels). The
 // session's current model is merged in when missing.
 func (m Model) WithModelOptions(names []string) Model {
-	m.modelOptions = names
+	m.picker.models.options = names
 	return m
 }
 
@@ -86,7 +86,7 @@ type pickerAlt struct {
 // apply is told which key took it. search opens the query row with the card
 // (openSearchPicker).
 func (m Model) openPickerWith(title string, opts []components.SelectOption, focus int, alt pickerAlt, search bool, apply func(*Model, int, bool) (string, tea.Cmd)) (tea.Model, tea.Cmd) {
-	m.picker = &components.Select{
+	m.picker.card = &components.Select{
 		Title:      title,
 		Options:    opts,
 		Focus:      focus,
@@ -101,11 +101,11 @@ func (m Model) openPickerWith(title string, opts []components.SelectOption, focu
 	}
 	// The panel places the terminal's own cursor on the filter row, so the
 	// card stops painting one (docs/interface/surfaces.md#selectors).
-	m.picker.SetVirtualCursor(false)
-	m.pickerAll = opts
-	m.pickerIndex = identityIndex(len(opts))
-	m.pickerApply = apply
-	m.pickerFromReading = m.state == stateFocus
+	m.picker.card.SetVirtualCursor(false)
+	m.picker.all = opts
+	m.picker.index = identityIndex(len(opts))
+	m.picker.apply = apply
+	m.picker.fromReading = m.state == stateFocus
 	m.enterSurface(statePick)
 	m.syncViewport()
 	return m, nil
@@ -137,17 +137,17 @@ func identityIndex(n int) []int {
 // what matches it, and the card is handed the matches, the catalog they came
 // out of, and the nearest option there is when nothing matched at all.
 func (m *Model) refilterPicker() {
-	matches, index := pickerMatches(m.pickerAll, m.picker.Query)
+	matches, index := pickerMatches(m.picker.all, m.picker.card.Query)
 	// The saved-chat card looks past the names as well, and folds what the
 	// store found into the same list (chats.go).
 	matches, index = m.withChatMatches(matches, index)
-	m.picker.Options = matches
-	m.pickerIndex = index
-	m.picker.Closest = ""
+	m.picker.card.Options = matches
+	m.picker.index = index
+	m.picker.card.Closest = ""
 	if len(matches) == 0 {
-		m.picker.Closest = closestOption(m.pickerAll, m.picker.Query)
+		m.picker.card.Closest = closestOption(m.picker.all, m.picker.card.Query)
 	}
-	m.picker.Focus = m.picker.FirstSelectable()
+	m.picker.card.Focus = m.picker.card.FirstSelectable()
 }
 
 // pickerMatches is the picker's match rule: a case-insensitive run of the
@@ -215,8 +215,8 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if model, cmd, handled := m.updateRewindPick(msg); handled {
 		return model, cmd
 	}
-	done, sel := m.picker.Update(msg)
-	if m.picker.QueryChanged() {
+	done, sel := m.picker.card.Update(msg)
+	if m.picker.card.QueryChanged() {
 		m.refilterPicker()
 		m.syncViewport()
 		return m, nil
@@ -224,7 +224,7 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if !done {
 		return m, nil
 	}
-	apply, index := m.pickerApply, m.pickerIndex
+	apply, index := m.picker.apply, m.picker.index
 	m.closePicker()
 	if sel.Canceled {
 		m.syncViewport()
@@ -265,30 +265,30 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // what the card's own title already said
 // (docs/interface/surfaces.md#the-rewind).
 func (m Model) pickerLines() []string {
-	if m.picker == nil {
+	if m.picker.card == nil {
 		return nil
 	}
 	width := m.contentWidth()
 	var lines []string
-	if m.picker.Rail != "" {
-		lines = append(lines, keyboardRail(m.picker.Rail, width))
+	if m.picker.card.Rail != "" {
+		lines = append(lines, keyboardRail(m.picker.card.Rail, width))
 	}
-	lines = append(lines, strings.Split(m.picker.View(width), "\n")...)
+	lines = append(lines, strings.Split(m.picker.card.View(width), "\n")...)
 	return append(lines, m.chatPickLines()...)
 }
 
 // modelPickChoices is the /model picker's option list: the curated catalog
 // with the session's current model merged in (first when it isn't listed).
 func (m Model) modelPickChoices() []string {
-	for _, name := range m.modelOptions {
+	for _, name := range m.picker.models.options {
 		if name == m.modelName {
-			return m.modelOptions
+			return m.picker.models.options
 		}
 	}
 	if m.modelName == "" {
-		return m.modelOptions
+		return m.picker.models.options
 	}
-	return append([]string{m.modelName}, m.modelOptions...)
+	return append([]string{m.modelName}, m.picker.models.options...)
 }
 
 // canPickModel reports whether bare /model should open the picker rather
@@ -298,7 +298,7 @@ func (m Model) canPickModel() bool {
 	if m.switchFn == nil {
 		return false
 	}
-	return len(m.modelPickChoices()) > 1 || (m.modelLister != nil && !m.modelListed)
+	return len(m.modelPickChoices()) > 1 || (m.picker.models.lister != nil && !m.picker.models.listed)
 }
 
 // WithModelLister wires live model discovery for providers that can
@@ -306,7 +306,7 @@ func (m Model) canPickModel() bool {
 // once per session — lazily, so a slow or unreachable endpoint costs nothing
 // until the user asks — and the result replaces the curated catalog.
 func (m Model) WithModelLister(fn func(context.Context) ([]string, error)) Model {
-	m.modelLister = fn
+	m.picker.models.lister = fn
 	return m
 }
 
@@ -314,12 +314,12 @@ func (m Model) WithModelLister(fn func(context.Context) ([]string, error)) Model
 // its model list when one is available and not yet fetched, and otherwise
 // opens the picker straight away.
 func (m Model) startModelPick() (tea.Model, tea.Cmd) {
-	if m.modelLister == nil || m.modelListed {
+	if m.picker.models.lister == nil || m.picker.models.listed {
 		return m.openModelPick()
 	}
-	lister := m.modelLister
+	lister := m.picker.models.lister
 	ctx, cancel := context.WithCancel(context.Background())
-	m.modelListCancel = cancel
+	m.picker.models.cancel = cancel
 	m.enterSurface(stateModelList)
 	m.syncViewport()
 	return m, func() tea.Msg {
@@ -334,9 +334,9 @@ func (m *Model) answerModelList(msg tea.KeyPressMsg) (bool, overlayAction) {
 	if !keys.Match(msg, keys.Select.Cancel) {
 		return false, overlayAction{}
 	}
-	if m.modelListCancel != nil {
-		m.modelListCancel()
-		m.modelListCancel = nil
+	if m.picker.models.cancel != nil {
+		m.picker.models.cancel()
+		m.picker.models.cancel = nil
 	}
 	return true, overlayAction{close: true}
 }
@@ -350,17 +350,17 @@ func (m Model) finishModelList(msg modelListMsg) (tea.Model, tea.Cmd) {
 		// The query was abandoned (esc) or the session moved on.
 		return m, nil
 	}
-	m.modelListCancel = nil
+	m.picker.models.cancel = nil
 	m.leaveSurface()
 	switch {
 	case msg.err != nil:
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("could not list models: %v", msg.err)})
 	case len(msg.names) == 0:
-		m.modelListed = true
+		m.picker.models.listed = true
 		m.appendEntry(entry{kind: entrySystem, text: "the provider reported no models"})
 	default:
-		m.modelListed = true
-		m.modelOptions = msg.names
+		m.picker.models.listed = true
+		m.picker.models.options = msg.names
 	}
 	if len(m.modelPickChoices()) > 1 {
 		return m.openModelPick()
@@ -440,7 +440,7 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 		return fmt.Sprintf("switched to %s. %s", name, saved), nil
 	})
 	next := updated.(Model)
-	next.picker.CancelLabel = "keep " + keep
+	next.picker.card.CancelLabel = "keep " + keep
 	return next, cmd
 }
 
@@ -475,7 +475,7 @@ func (m Model) openModePick() (tea.Model, tea.Cmd) {
 	// Esc leaves the session on the mode it is in, and says which one
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 	next := updated.(Model)
-	next.picker.CancelLabel = "keep " + m.policy.mode.String()
+	next.picker.card.CancelLabel = "keep " + m.policy.mode.String()
 	return next, cmd
 }
 
@@ -599,12 +599,12 @@ func (m Model) openBlockPick(title, cancel string, blocks []codeBlock, apply fun
 		return apply(m, idx)
 	})
 	pm := next.(Model)
-	pm.picker.Filterable = false
-	pm.picker.FocusDesc = true
-	pm.picker.Tone = components.CardDecision
-	pm.picker.Chips = []string{plural(len(blocks), "block")}
-	pm.picker.CancelLabel = cancel
-	pm.picker.HintKeys = []components.KeyOffer{
+	pm.picker.card.Filterable = false
+	pm.picker.card.FocusDesc = true
+	pm.picker.card.Tone = components.CardDecision
+	pm.picker.card.Chips = []string{plural(len(blocks), "block")}
+	pm.picker.card.CancelLabel = cancel
+	pm.picker.card.HintKeys = []components.KeyOffer{
 		components.Offer(keys.Select.Move), components.Offer(keys.Select.Take),
 	}
 	pm.syncViewport()

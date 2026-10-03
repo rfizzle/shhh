@@ -454,13 +454,13 @@ func TestPasteMsg_ASurfaceWithTheKeyboardStillGetsTheText(t *testing.T) {
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	if m.state != statePick || m.picker == nil {
+	if m.state != statePick || m.picker.card == nil {
 		t.Fatal("bare /model should open the picker")
 	}
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: '/', Text: "/"})
 	m = updated.(Model)
-	if !m.picker.Filtering {
+	if !m.picker.card.Filtering {
 		t.Fatal("/ should open the picker's filter row")
 	}
 
@@ -469,7 +469,7 @@ func TestPasteMsg_ASurfaceWithTheKeyboardStillGetsTheText(t *testing.T) {
 	if len(next.attachments) != 0 {
 		t.Fatalf("a paste into a filter row stages nothing, got %d", len(next.attachments))
 	}
-	if next.picker == nil || next.picker.Query == "" {
+	if next.picker.card == nil || next.picker.card.Query == "" {
 		t.Fatal("the paste should have reached the filter row")
 	}
 }

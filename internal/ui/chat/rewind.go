@@ -191,12 +191,12 @@ const rewindRailLabel = "REWIND · pick a turn to return to"
 func (m Model) openRewindPicker(opts []components.SelectOption, apply func(*Model, int) (string, tea.Cmd)) (tea.Model, tea.Cmd) {
 	updated, cmd := m.openSearchPicker("", opts, 0, apply)
 	next := updated.(Model)
-	next.picker.Rail = rewindRailLabel
+	next.picker.card.Rail = rewindRailLabel
 	// A digit here is part of a turn's number rather than a jump to the
 	// third row down, and the card opens with its query row already taking
 	// every letter, so there is nothing for the numbering column to address.
-	next.picker.Unnumbered = true
-	next.picker.Actions = []keys.Binding{keys.Rewind.Diff}
+	next.picker.card.Unnumbered = true
+	next.picker.card.Actions = []keys.Binding{keys.Rewind.Diff}
 	return next, cmd
 }
 
@@ -206,20 +206,20 @@ func (m Model) openRewindPicker(opts []components.SelectOption, apply func(*Mode
 // (docs/interface/surfaces.md#the-rewind). Like every letter on a card that
 // opens as a search, it is text while the query row is open.
 func (m Model) updateRewindPick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
-	if m.picker == nil || m.picker.Rail != rewindRailLabel {
+	if m.picker.card == nil || m.picker.card.Rail != rewindRailLabel {
 		return m, nil, false
 	}
 	// The card's one line about the last press lasts until the next one.
-	m.picker.Warning = ""
-	if m.picker.Filtering || !keys.Match(msg, keys.Rewind.Diff) {
+	m.picker.card.Warning = ""
+	if m.picker.card.Filtering || !keys.Match(msg, keys.Rewind.Diff) {
 		return m, nil, false
 	}
-	row := m.picker.Focus
-	if row < 0 || row >= len(m.pickerIndex) {
+	row := m.picker.card.Focus
+	if row < 0 || row >= len(m.picker.index) {
 		return m, nil, true
 	}
 	// The options are latest-first, as the picker's own apply counts them.
-	next, cmd := m.openRewindDiff(len(m.checkpoints) - m.pickerIndex[row])
+	next, cmd := m.openRewindDiff(len(m.checkpoints) - m.picker.index[row])
 	return next, cmd, true
 }
 
@@ -230,16 +230,16 @@ func (m Model) updateRewindPick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) 
 func (m Model) openRewindDiff(n int) (tea.Model, tea.Cmd) {
 	cp, ok := m.cutAt(n)
 	if !ok {
-		m.picker.Warning = fmt.Sprintf("The session stands at the end of turn %d — nothing after it to show.", n)
+		m.picker.card.Warning = fmt.Sprintf("The session stands at the end of turn %d — nothing after it to show.", n)
 		return m, nil
 	}
 	if blocked := m.restoreBlocked(cp); blocked != "" {
-		m.picker.Warning = blocked + "."
+		m.picker.card.Warning = blocked + "."
 		return m, nil
 	}
 	folded := changeset.Fold(m.rewindTurns(cp))
 	if folded.Files() == 0 {
-		m.picker.Warning = fmt.Sprintf("Nothing on record was written after %s.", turnPoint(n))
+		m.picker.card.Warning = fmt.Sprintf("Nothing on record was written after %s.", turnPoint(n))
 		return m, nil
 	}
 	files := make([]diff.File, 0, len(folded.Records))

@@ -124,7 +124,7 @@ type paletteState struct {
 // keystroke.
 func (m Model) openPalette() (tea.Model, tea.Cmd) {
 	m.palette = &paletteState{all: m.paletteCandidates()}
-	m.picker = &components.Select{
+	m.picker.card = &components.Select{
 		// The chord is the title: the card is the answer to a key that was
 		// pressed, and naming the key is what tells the reader which of the two
 		// doors into this list they came through. "Palette" only named the
@@ -142,8 +142,8 @@ func (m Model) openPalette() (tea.Model, tea.Cmd) {
 	}
 	// The panel places the terminal's own cursor on the query row, so the
 	// card stops painting one (docs/interface/surfaces.md#selectors).
-	m.picker.SetVirtualCursor(false)
-	m.pickerApply = nil
+	m.picker.card.SetVirtualCursor(false)
+	m.picker.apply = nil
 	m.refreshPalette()
 	m.enterSurface(statePick)
 	m.syncViewport()
@@ -154,8 +154,8 @@ func (m Model) openPalette() (tea.Model, tea.Cmd) {
 // palette had it.
 func (m *Model) closePalette() {
 	m.palette = nil
-	m.picker = nil
-	m.pickerApply = nil
+	m.picker.card = nil
+	m.picker.apply = nil
 	m.leaveSurface()
 }
 
@@ -170,11 +170,11 @@ func (m Model) updatePalette(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case keys.Is(pressed, keys.Select.Palette.Prev):
-		m.picker.Update(tea.KeyPressMsg{Code: tea.KeyUp})
+		m.picker.card.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 		return m, nil
 
 	case keys.Is(pressed, keys.Select.Palette.Next):
-		m.picker.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+		m.picker.card.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 		return m, nil
 
 	case keys.Is(pressed, keys.Select.Palette.Run, keys.Select.Palette.Write):
@@ -198,9 +198,9 @@ func (m Model) updatePalette(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// and every key that types. The palette stopped keeping its own copy of
 	// that when the filter row landed; it keeps the match rule, which
 	// is the half the component never had.
-	m.picker.Update(msg)
-	if m.picker.QueryChanged() {
-		m.palette.query = m.picker.Query
+	m.picker.card.Update(msg)
+	if m.picker.card.QueryChanged() {
+		m.palette.query = m.picker.card.Query
 		m.refreshPalette()
 	}
 	return m, nil
@@ -225,11 +225,11 @@ func (m *Model) refreshPalette() {
 			Dim:    r.dim != "",
 		}
 	}
-	m.picker.Options = opts
-	m.picker.Query = p.query
-	m.picker.Chips = []string{paletteCount(len(matches), len(p.all))}
-	m.picker.MaxLines = m.maxConfirmPanelHeight()
-	m.picker.Focus = m.picker.FirstSelectable()
+	m.picker.card.Options = opts
+	m.picker.card.Query = p.query
+	m.picker.card.Chips = []string{paletteCount(len(matches), len(p.all))}
+	m.picker.card.MaxLines = m.maxConfirmPanelHeight()
+	m.picker.card.Focus = m.picker.card.FirstSelectable()
 }
 
 // paletteRowBudget is how many result rows fit the bottom panel: everything
@@ -261,7 +261,7 @@ func paletteCount(matched, all int) string {
 // paletteFocus is the entry under the pointer, or false when the pointer is
 // on nothing — an empty list, or a query that matched nothing.
 func (m Model) paletteFocus() (paletteEntry, bool) {
-	idx := m.picker.Focus
+	idx := m.picker.card.Focus
 	if idx < 0 || idx >= len(m.palette.rows) {
 		return paletteEntry{}, false
 	}

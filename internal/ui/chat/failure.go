@@ -430,7 +430,7 @@ func (m Model) openProviderPick() (tea.Model, tea.Cmd) {
 	// that names none keeps the family's words.
 	next := updated.(Model)
 	if m.providerName != "" {
-		next.picker.CancelLabel = "keep " + m.providerName
+		next.picker.card.CancelLabel = "keep " + m.providerName
 	}
 	return next, cmd
 }

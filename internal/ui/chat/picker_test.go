@@ -29,11 +29,11 @@ func TestModelPick_BareModelOpensPicker(t *testing.T) {
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	if m.state != statePick || m.picker == nil {
+	if m.state != statePick || m.picker.card == nil {
 		t.Fatal("bare /model should open the picker")
 	}
-	if !strings.Contains(m.picker.Options[m.picker.Focus].Label, "m1") {
-		t.Fatalf("the current model should be focused, got %q", m.picker.Options[m.picker.Focus].Label)
+	if !strings.Contains(m.picker.card.Options[m.picker.card.Focus].Label, "m1") {
+		t.Fatalf("the current model should be focused, got %q", m.picker.card.Options[m.picker.card.Focus].Label)
 	}
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
@@ -66,13 +66,13 @@ func TestModelPick_EscSaysWhichModelItKeeps(t *testing.T) {
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	if m.picker == nil {
+	if m.picker.card == nil {
 		t.Fatal("/model should open the picker")
 	}
-	if got := m.picker.CancelLabel; got != "keep m1" {
+	if got := m.picker.card.CancelLabel; got != "keep m1" {
 		t.Fatalf("esc should offer %q, got %q", "keep m1", got)
 	}
-	if view := ansi.Strip(m.picker.View(110)); !strings.Contains(view, "[esc] keep m1") {
+	if view := ansi.Strip(m.picker.card.View(110)); !strings.Contains(view, "[esc] keep m1") {
 		t.Fatalf("the key row should offer `[esc] keep m1`:\n%s", view)
 	}
 }
@@ -84,20 +84,20 @@ func TestModeAndProviderPick_EscSaysWhatItKeeps(t *testing.T) {
 	m := readyModel(t)
 	opened, _ := m.openModePick()
 	mode := opened.(Model)
-	if mode.picker == nil {
+	if mode.picker.card == nil {
 		t.Fatal("the mode picker should open in a coding session")
 	}
-	if view := ansi.Strip(mode.picker.View(110)); !strings.Contains(view, "[esc] keep manual") {
+	if view := ansi.Strip(mode.picker.card.View(110)); !strings.Contains(view, "[esc] keep manual") {
 		t.Fatalf("the mode picker should offer `[esc] keep manual`:\n%s", view)
 	}
 
 	m = readyModel(t).WithProvider("anthropic", nil, func(string) error { return nil })
 	opened, _ = m.openProviderPick()
 	prov := opened.(Model)
-	if prov.picker == nil {
+	if prov.picker.card == nil {
 		t.Fatal("the provider picker should open")
 	}
-	if view := ansi.Strip(prov.picker.View(110)); !strings.Contains(view, "[esc] keep anthropic") {
+	if view := ansi.Strip(prov.picker.card.View(110)); !strings.Contains(view, "[esc] keep anthropic") {
 		t.Fatalf("the provider picker should offer `[esc] keep anthropic`:\n%s", view)
 	}
 }
@@ -115,7 +115,7 @@ func TestModelPick_EscCancels(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
-	if m.state != stateInput || m.picker != nil {
+	if m.state != stateInput || m.picker.card != nil {
 		t.Fatal("esc should close the picker")
 	}
 	if switched != "" || m.modelName != "m1" {
@@ -160,11 +160,11 @@ func TestModePick_BareModeOpensPickerAndApplies(t *testing.T) {
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	if m.state != statePick || m.picker == nil {
+	if m.state != statePick || m.picker.card == nil {
 		t.Fatal("bare /mode should open the picker")
 	}
-	if !strings.Contains(m.picker.Options[m.picker.Focus].Label, "manual") {
-		t.Fatalf("the current mode should be focused, got %q", m.picker.Options[m.picker.Focus].Label)
+	if !strings.Contains(m.picker.card.Options[m.picker.card.Focus].Label, "manual") {
+		t.Fatalf("the current mode should be focused, got %q", m.picker.card.Options[m.picker.card.Focus].Label)
 	}
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
@@ -225,7 +225,7 @@ func TestPick_LongCatalogScrollsWithTheFocus(t *testing.T) {
 	m = updated.(Model)
 	m = sendText(t, m, "/model")
 
-	if m.state != statePick || m.picker == nil {
+	if m.state != statePick || m.picker.card == nil {
 		t.Fatal("bare /model should open the picker")
 	}
 	for i := 0; i < len(names); i++ {
@@ -258,23 +258,23 @@ func TestPick_LongCatalogScrollsWithTheFocus(t *testing.T) {
 // pickIndex is the picker row whose label starts with want.
 func pickIndex(t *testing.T, m Model, want string) int {
 	t.Helper()
-	for i, o := range m.picker.Options {
+	for i, o := range m.picker.card.Options {
 		if strings.HasPrefix(o.Label, want) {
 			return i
 		}
 	}
-	t.Fatalf("no picker row for %q, got %v", want, m.picker.Options)
+	t.Fatalf("no picker row for %q, got %v", want, m.picker.card.Options)
 	return -1
 }
 
 // focusPick arrows from the focused row to target and selects it.
 func focusPick(t *testing.T, m Model, target int) Model {
 	t.Helper()
-	for m.picker.Focus < target {
+	for m.picker.card.Focus < target {
 		updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 		m = updated.(Model)
 	}
-	for m.picker.Focus > target {
+	for m.picker.card.Focus > target {
 		updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 		m = updated.(Model)
 	}
@@ -300,22 +300,22 @@ func chatPickModel(t *testing.T, names ...string) Model {
 func TestChatPick_BareLoadOpensPickerAndLoads(t *testing.T) {
 	m := sendText(t, chatPickModel(t, "alpha", "beta"), "/load")
 
-	if m.state != statePick || m.picker == nil {
+	if m.state != statePick || m.picker.card == nil {
 		t.Fatal("bare /load should open the saved-chat picker")
 	}
-	if m.picker.Title != "Load a saved chat" {
-		t.Fatalf("unexpected picker title %q", m.picker.Title)
+	if m.picker.card.Title != "Load a saved chat" {
+		t.Fatalf("unexpected picker title %q", m.picker.card.Title)
 	}
-	if len(m.picker.Options) != 2 {
-		t.Fatalf("expected both saved chats, got %v", m.picker.Options)
+	if len(m.picker.card.Options) != 2 {
+		t.Fatalf("expected both saved chats, got %v", m.picker.card.Options)
 	}
 	idx := pickIndex(t, m, "alpha")
-	if !strings.HasPrefix(m.picker.Options[idx].Desc, "1 turn · ") {
-		t.Fatalf("description should carry turn count and time, got %q", m.picker.Options[idx].Desc)
+	if !strings.HasPrefix(m.picker.card.Options[idx].Desc, "1 turn · ") {
+		t.Fatalf("description should carry turn count and time, got %q", m.picker.card.Options[idx].Desc)
 	}
 
 	m = focusPick(t, m, idx)
-	if m.state != stateInput || m.picker != nil {
+	if m.state != stateInput || m.picker.card != nil {
 		t.Fatal("selecting should return to input")
 	}
 	if m.sessionName != "alpha" {
@@ -332,7 +332,7 @@ func TestChatPick_BareLoadOpensPickerAndLoads(t *testing.T) {
 func TestChatPick_BareChatsOpensTheSamePicker(t *testing.T) {
 	m := sendText(t, chatPickModel(t, "alpha"), "/chats")
 
-	if m.state != statePick || m.picker == nil || m.picker.Title != "Load a saved chat" {
+	if m.state != statePick || m.picker.card == nil || m.picker.card.Title != "Load a saved chat" {
 		t.Fatal("bare /chats should open the saved-chat picker")
 	}
 }
@@ -344,7 +344,7 @@ func TestChatPick_EscDoesNotLoad(t *testing.T) {
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
-	if m.state != stateInput || m.picker != nil {
+	if m.state != stateInput || m.picker.card != nil {
 		t.Fatal("esc should close the picker")
 	}
 	if m.sessionName != before {
@@ -357,7 +357,7 @@ func TestChatPick_CurrentSessionMarkedAndFocused(t *testing.T) {
 	m.sessionName = "beta"
 	m = sendText(t, m, "/load")
 
-	focused := m.picker.Options[m.picker.Focus]
+	focused := m.picker.card.Options[m.picker.card.Focus]
 	if focused.Label != "beta" || !focused.Dim || focused.Meta != protectedPhrase {
 		t.Fatalf("the current chat should be the unavailable row and focused, got %+v", focused)
 	}
@@ -366,7 +366,7 @@ func TestChatPick_CurrentSessionMarkedAndFocused(t *testing.T) {
 func TestChatPick_NoSavedChatsKeepsTextMessage(t *testing.T) {
 	for _, cmd := range []string{"/load", "/chats"} {
 		m := sendText(t, chatPickModel(t), cmd)
-		if m.picker != nil {
+		if m.picker.card != nil {
 			t.Fatalf("%s should not open an empty picker", cmd)
 		}
 		if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "no saved chats") {
@@ -377,7 +377,7 @@ func TestChatPick_NoSavedChatsKeepsTextMessage(t *testing.T) {
 
 func TestChatPick_NoDBKeepsTextMessage(t *testing.T) {
 	m := sendText(t, readyModel(t), "/load")
-	if m.picker != nil {
+	if m.picker.card != nil {
 		t.Fatal("no database → no picker")
 	}
 	if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "unavailable") {
@@ -397,24 +397,24 @@ func branchPickModel(t *testing.T) Model {
 func TestBranchPick_BareBranchesOpensPickerAndSwitches(t *testing.T) {
 	m := sendText(t, branchPickModel(t), "/branches")
 
-	if m.state != statePick || m.picker == nil {
+	if m.state != statePick || m.picker.card == nil {
 		t.Fatal("bare /branches should open the branch picker")
 	}
 	root := m.sessionName
-	focused := m.picker.Options[m.picker.Focus]
+	focused := m.picker.card.Options[m.picker.card.Focus]
 	if focused.Label != root {
 		t.Fatalf("the label column should be the branch name alone, got %q", focused.Label)
 	}
 	if focused.Meta != currentBranchPhrase {
 		t.Fatalf("the current branch should be marked in the row's short field, got %q", focused.Meta)
 	}
-	target := 1 - m.picker.Focus
-	if !strings.Contains(m.picker.Options[target].Desc, "branch of") {
-		t.Fatalf("the branch row should name its parent, got %q", m.picker.Options[target].Desc)
+	target := 1 - m.picker.card.Focus
+	if !strings.Contains(m.picker.card.Options[target].Desc, "branch of") {
+		t.Fatalf("the branch row should name its parent, got %q", m.picker.card.Options[target].Desc)
 	}
 	// The row shows the part of the name its parent does not, and acts on
 	// the whole of it.
-	label := m.picker.Options[target].Label
+	label := m.picker.card.Options[target].Label
 	if !strings.HasPrefix(label, "…@turn") {
 		t.Fatalf("a cut branch should show the cut, not the ancestry, got %q", label)
 	}
@@ -443,7 +443,7 @@ func TestBranchPick_SelectingCurrentBranchIsANoOp(t *testing.T) {
 	m := sendText(t, branchPickModel(t), "/branches")
 	before := m.sessionName
 
-	m = focusPick(t, m, m.picker.Focus)
+	m = focusPick(t, m, m.picker.card.Focus)
 	if m.sessionName != before {
 		t.Fatalf("picking the current branch should stay put, got %q", m.sessionName)
 	}
@@ -460,7 +460,7 @@ func TestBranchPick_EscDoesNotSwitch(t *testing.T) {
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
-	if m.state != stateInput || m.picker != nil {
+	if m.state != stateInput || m.picker.card != nil {
 		t.Fatal("esc should close the picker")
 	}
 	if m.sessionName != before {
@@ -473,7 +473,7 @@ func TestBranchPick_EscDoesNotSwitch(t *testing.T) {
 
 func TestBranchPick_NoBranchFamilyKeepsTextMessage(t *testing.T) {
 	m := sendText(t, newRewindModel(t).WithDB(rewindTestDB(t)), "/branches")
-	if m.picker != nil {
+	if m.picker.card != nil {
 		t.Fatal("a session with no branches should not open a picker")
 	}
 	if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "no branches yet") {
@@ -483,7 +483,7 @@ func TestBranchPick_NoBranchFamilyKeepsTextMessage(t *testing.T) {
 
 func TestBranchPick_NoDBKeepsTextMessage(t *testing.T) {
 	m := sendText(t, newRewindModel(t), "/branches")
-	if m.picker != nil {
+	if m.picker.card != nil {
 		t.Fatal("no database → no picker")
 	}
 	if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "unavailable") {
@@ -548,15 +548,15 @@ func TestGolden_BranchPicker(t *testing.T) {
 		}
 		opened := sendText(t, m, "/branches")
 		opts, focus := opened.branchPickOptions(fixed)
-		opened.pickerAll, opened.picker.Options, opened.picker.Total = opts, opts, len(opts)
-		opened.picker.Focus = focus
-		opened.pickerIndex = identityIndex(len(opts))
+		opened.picker.all, opened.picker.card.Options, opened.picker.card.Total = opts, opts, len(opts)
+		opened.picker.card.Focus = focus
+		opened.picker.index = identityIndex(len(opts))
 
 		// The card is a pointer on the model, so the filtered panel takes a
 		// copy of it before typing.
-		card := *opened.picker
+		card := *opened.picker.card
 		filtered := opened
-		filtered.picker = &card
+		filtered.picker.card = &card
 		for _, r := range "turn2" {
 			filtered = press(t, filtered, string(r))
 		}
@@ -576,23 +576,23 @@ func TestRunPick_MultipleBlocksOpensPicker(t *testing.T) {
 	m := runCapableModel(twoBlockResponse)
 	m = sendText(t, m, "/run")
 
-	if m.state != statePick || m.picker == nil {
+	if m.state != statePick || m.picker.card == nil {
 		t.Fatalf("bare /run with several blocks should open the picker, got state=%d", m.state)
 	}
-	if len(m.picker.Options) != 2 {
-		t.Fatalf("expected a row per block, got %d", len(m.picker.Options))
+	if len(m.picker.card.Options) != 2 {
+		t.Fatalf("expected a row per block, got %d", len(m.picker.card.Options))
 	}
-	if m.picker.Focus != 0 {
-		t.Fatalf("the first block should be focused, got %d", m.picker.Focus)
+	if m.picker.card.Focus != 0 {
+		t.Fatalf("the first block should be focused, got %d", m.picker.card.Focus)
 	}
-	first := pickRowText(m.picker.Options[0])
+	first := pickRowText(m.picker.card.Options[0])
 	if !strings.HasPrefix(first, "echo one") || !strings.Contains(first, "bash") || !strings.Contains(first, "1 line") {
 		t.Fatalf("row should carry first line, language, and line count, got %q", first)
 	}
-	if m.picker.Options[0].Desc != "" {
-		t.Fatalf("a one-line block's preview repeats its label, so it gets no description, got %q", m.picker.Options[0].Desc)
+	if m.picker.card.Options[0].Desc != "" {
+		t.Fatalf("a one-line block's preview repeats its label, so it gets no description, got %q", m.picker.card.Options[0].Desc)
 	}
-	second := m.picker.Options[1]
+	second := m.picker.card.Options[1]
 	if row := pickRowText(second); !strings.Contains(row, "python") || !strings.Contains(row, "2 lines") {
 		t.Fatalf("second row should be a 2-line python block, got %q", row)
 	}
@@ -625,7 +625,7 @@ func TestRunPick_SelectingEntersConfirm(t *testing.T) {
 	if m.pendingRun != "print(\"a\")\nprint(\"b\")" {
 		t.Fatalf("expected the second block pending, got %q", m.pendingRun)
 	}
-	if m.picker != nil {
+	if m.picker.card != nil {
 		t.Fatal("the picker should be dismissed once a block is chosen")
 	}
 	for _, e := range m.transcript {
@@ -658,7 +658,7 @@ func TestRunPick_EscReturnsToInputWithoutRunning(t *testing.T) {
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
-	if m.state != stateInput || m.picker != nil {
+	if m.state != stateInput || m.picker.card != nil {
 		t.Fatalf("esc should dismiss the picker, got state=%d", m.state)
 	}
 	if m.pendingRun != "" {
@@ -670,7 +670,7 @@ func TestRunPick_SingleBlockGoesStraightToConfirm(t *testing.T) {
 	m := runCapableModel("Do this:\n```bash\necho hi\n```")
 	m = sendText(t, m, "/run")
 
-	if m.state != stateConfirmRun || m.picker != nil {
+	if m.state != stateConfirmRun || m.picker.card != nil {
 		t.Fatalf("one block should skip the picker, got state=%d", m.state)
 	}
 	if m.pendingRun != "echo hi" {
@@ -682,7 +682,7 @@ func TestRunPick_NumberedFormSkipsPicker(t *testing.T) {
 	m := runCapableModel(twoBlockResponse)
 	m = sendText(t, m, "/run 1")
 
-	if m.state != stateConfirmRun || m.picker != nil {
+	if m.state != stateConfirmRun || m.picker.card != nil {
 		t.Fatalf("/run <n> should skip the picker, got state=%d", m.state)
 	}
 	if m.pendingRun != "echo one" {
@@ -699,7 +699,7 @@ func TestRunPick_NoRunnerKeepsTextMessage(t *testing.T) {
 	m := updated.(Model)
 
 	m = sendText(t, m, "/run")
-	if m.state != stateInput || m.picker != nil {
+	if m.state != stateInput || m.picker.card != nil {
 		t.Fatalf("no runner should keep the text path, got state=%d", m.state)
 	}
 	if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "not available") {
@@ -711,14 +711,14 @@ func TestRunPick_UntaggedFenceAndBlankBlock(t *testing.T) {
 	m := runCapableModel("```\nls\n```\nand\n```\n\n```")
 	m = sendText(t, m, "/run")
 
-	if m.picker == nil {
+	if m.picker.card == nil {
 		t.Fatal("expected the picker to open")
 	}
-	if strings.Contains(m.picker.Options[0].Label, "·  ·") {
-		t.Fatalf("an untagged fence should not leave an empty language slot, got %q", m.picker.Options[0].Label)
+	if strings.Contains(m.picker.card.Options[0].Label, "·  ·") {
+		t.Fatalf("an untagged fence should not leave an empty language slot, got %q", m.picker.card.Options[0].Label)
 	}
-	if !strings.HasPrefix(m.picker.Options[1].Label, "(empty block)") {
-		t.Fatalf("an empty block needs a placeholder label, got %q", m.picker.Options[1].Label)
+	if !strings.HasPrefix(m.picker.card.Options[1].Label, "(empty block)") {
+		t.Fatalf("an empty block needs a placeholder label, got %q", m.picker.card.Options[1].Label)
 	}
 }
 
@@ -793,11 +793,11 @@ func TestModelList_BareModelQueriesTheProvider(t *testing.T) {
 
 	updated, _ = m.Update(listed)
 	m = updated.(Model)
-	if m.state != statePick || m.picker == nil {
+	if m.state != statePick || m.picker.card == nil {
 		t.Fatalf("the discovered models should open the picker, got state %v", m.state)
 	}
-	if len(m.picker.Options) != 2 {
-		t.Fatalf("expected both discovered models, got %d", len(m.picker.Options))
+	if len(m.picker.card.Options) != 2 {
+		t.Fatalf("expected both discovered models, got %d", len(m.picker.card.Options))
 	}
 }
 
@@ -840,7 +840,7 @@ func TestModelList_ErrorFallsBackToUsageText(t *testing.T) {
 	updated, _ = m.Update(modelListMsg{err: errors.New("connection refused")})
 	m = updated.(Model)
 
-	if m.state != stateInput || m.picker != nil {
+	if m.state != stateInput || m.picker.card != nil {
 		t.Fatalf("a failed query should return to the input, got state %v", m.state)
 	}
 	texts := []string{
@@ -870,11 +870,11 @@ func TestModelList_ErrorKeepsCuratedCatalog(t *testing.T) {
 	updated, _ = m.Update(modelListMsg{err: errors.New("timeout")})
 	m = updated.(Model)
 
-	if m.state != statePick || m.picker == nil {
+	if m.state != statePick || m.picker.card == nil {
 		t.Fatalf("the curated catalog should still open the picker, got state %v", m.state)
 	}
-	if len(m.picker.Options) != 2 {
-		t.Fatalf("expected the curated entries, got %d", len(m.picker.Options))
+	if len(m.picker.card.Options) != 2 {
+		t.Fatalf("expected the curated entries, got %d", len(m.picker.card.Options))
 	}
 }
 
@@ -913,7 +913,7 @@ func TestModelList_EscCancelsTheQuery(t *testing.T) {
 	// A late result from the abandoned query must not open a picker.
 	updated, _ = m.Update(modelListMsg{names: []string{"a", "b"}})
 	m = updated.(Model)
-	if m.state != stateInput || m.picker != nil {
+	if m.state != stateInput || m.picker.card != nil {
 		t.Fatal("a late result should be ignored")
 	}
 }
@@ -976,19 +976,19 @@ func TestModelPick_FilterNarrowsAndStillSwitchesTheRightModel(t *testing.T) {
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	if !m.picker.Filterable {
+	if !m.picker.card.Filterable {
 		t.Fatal("a picker over a catalog should offer the filter row")
 	}
-	if !m.picker.Filtering {
+	if !m.picker.card.Filtering {
 		t.Fatal("a picker over a catalog should arrive with the query row open")
 	}
 
 	m = runes(t, m, "sonnet")
-	if got := len(m.picker.Options); got != 1 {
+	if got := len(m.picker.card.Options); got != 1 {
 		t.Fatalf("one model matches \"sonnet\", the card is showing %d", got)
 	}
-	if m.picker.Total != 4 {
-		t.Fatalf("the row should still name the catalog it filtered, got %d", m.picker.Total)
+	if m.picker.card.Total != 4 {
+		t.Fatalf("the row should still name the catalog it filtered, got %d", m.picker.card.Total)
 	}
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -1018,8 +1018,8 @@ func TestModelPick_DigitsAreTextWhileTheQueryLineIsOpen(t *testing.T) {
 	if m.state != statePick {
 		t.Fatal("the picker should still be open")
 	}
-	if m.picker.Query != "gpt-5.1" {
-		t.Fatalf("every key should have landed in the query, got %q", m.picker.Query)
+	if m.picker.card.Query != "gpt-5.1" {
+		t.Fatalf("every key should have landed in the query, got %q", m.picker.card.Query)
 	}
 }
 
@@ -1036,30 +1036,30 @@ func TestModelPick_ClearAndEscape(t *testing.T) {
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	m = runes(t, m, "gemini")
-	if len(m.picker.Options) != 1 {
-		t.Fatalf("the filter should have narrowed the list, got %d", len(m.picker.Options))
+	if len(m.picker.card.Options) != 1 {
+		t.Fatalf("the filter should have narrowed the list, got %d", len(m.picker.card.Options))
 	}
 
 	updated, _ = m.Update(ctrlU)
 	m = updated.(Model)
-	if len(m.picker.Options) != 3 || m.picker.Query != "" {
+	if len(m.picker.card.Options) != 3 || m.picker.card.Query != "" {
 		t.Fatalf("ctrl+u should put the whole catalog back, got %d options and query %q",
-			len(m.picker.Options), m.picker.Query)
+			len(m.picker.card.Options), m.picker.card.Query)
 	}
-	if !m.picker.Filtering {
+	if !m.picker.card.Filtering {
 		t.Fatal("clearing a query that had something in it leaves the row open")
 	}
 	// Again on the empty query closes the row, which is how the card's own
 	// letters are got back without leaving it.
 	updated, _ = m.Update(ctrlU)
 	m = updated.(Model)
-	if m.picker.Filtering {
+	if m.picker.card.Filtering {
 		t.Fatal("ctrl+u on an empty query should close the row")
 	}
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
-	if m.state != stateInput || switched != "" || m.picker != nil {
+	if m.state != stateInput || switched != "" || m.picker.card != nil {
 		t.Fatalf("esc should leave the picker changing nothing, state=%v switched=%q", m.state, switched)
 	}
 }
@@ -1078,13 +1078,13 @@ func TestModelPick_NoMatchNamesTheClosestModel(t *testing.T) {
 	m = updated.(Model)
 	m = runes(t, m, "sonnet-5")
 
-	if len(m.picker.Options) != 0 {
-		t.Fatalf("nothing matches \"sonnet-5\", got %d options", len(m.picker.Options))
+	if len(m.picker.card.Options) != 0 {
+		t.Fatalf("nothing matches \"sonnet-5\", got %d options", len(m.picker.card.Options))
 	}
-	if m.picker.Closest != "claude-sonnet-4.6" {
-		t.Fatalf("the card should name the closest model there is, got %q", m.picker.Closest)
+	if m.picker.card.Closest != "claude-sonnet-4.6" {
+		t.Fatalf("the card should name the closest model there is, got %q", m.picker.card.Closest)
 	}
-	view := ansi.Strip(m.picker.View(70))
+	view := ansi.Strip(m.picker.card.View(70))
 	for _, want := range []string{`no match for "sonnet-5"`, "closest is claude-sonnet-4.6", "0 of 3 match"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("expected %q on the card:\n%s", want, view)
@@ -1134,21 +1134,21 @@ func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	if m.picker == nil {
+	if m.picker.card == nil {
 		t.Fatal("bare /model should open the picker")
 	}
 	// The open query row offers the way back to the card's own keys rather
 	// than a clear that would do nothing.
-	if hint := ansi.Strip(m.picker.View(110)); !strings.Contains(hint, "[ctrl+u] row keys") {
+	if hint := ansi.Strip(m.picker.card.View(110)); !strings.Contains(hint, "[ctrl+u] row keys") {
 		t.Errorf("the searching card should name the way back to its keys:\n%s", hint)
 	}
 	updated, _ = m.Update(ctrlU)
 	m = updated.(Model)
-	if m.picker.Filtering {
+	if m.picker.card.Filtering {
 		t.Fatal("ctrl+u on an empty query should close the row")
 	}
 	// Both readings are on the card, and enter's is named once d's is.
-	hint := ansi.Strip(m.picker.View(110))
+	hint := ansi.Strip(m.picker.card.View(110))
 	for _, want := range []string{"[enter] this session", "[d] and make it default"} {
 		if !strings.Contains(hint, want) {
 			t.Errorf("the card should offer %q:\n%s", want, hint)
@@ -1182,12 +1182,12 @@ func TestModelPick_NoWriterNoDefaultOffer(t *testing.T) {
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	if m.picker.AltKey != "" {
-		t.Errorf("no writer means no offer, got %q", m.picker.AltKey)
+	if m.picker.card.AltKey != "" {
+		t.Errorf("no writer means no offer, got %q", m.picker.card.AltKey)
 	}
 	updated, _ = m.Update(ctrlU)
 	m = updated.(Model)
-	if hint := ansi.Strip(m.picker.View(110)); !strings.Contains(hint, "[enter] select") {
+	if hint := ansi.Strip(m.picker.card.View(110)); !strings.Contains(hint, "[enter] select") {
 		t.Errorf("enter goes back to its plain label when it is the only one:\n%s", hint)
 	}
 }
@@ -1256,14 +1256,14 @@ func TestModelPick_TitleNamesTheKeyThatChoseIt(t *testing.T) {
 		t.Fatalf("the text answer should name the checkout's file, got %q", out)
 	}
 	opened, _ := m.openModelPick()
-	title := opened.(Model).picker.Title
+	title := opened.(Model).picker.card.Title
 	if title != "Switch model · current (chosen by provider.code_model in .shhh/config.toml)" {
 		t.Fatalf("the picker's title should carry /model's clause, got %q", title)
 	}
 
 	m.modelName = "gpt-5"
 	opened, _ = m.openModelPick()
-	if title := opened.(Model).picker.Title; title != "Switch model" {
+	if title := opened.(Model).picker.card.Title; title != "Switch model" {
 		t.Fatalf("a model switched to here was chosen by no key, got %q", title)
 	}
 }
@@ -1279,17 +1279,17 @@ func TestModelPick_OpensReadyToType(t *testing.T) {
 		WithModelOptions([]string{"gpt-5.2", "claude-opus-4.6", "claude-sonnet-4.6"})
 
 	m = sendText(t, m, "/model")
-	if !m.picker.Filtering {
+	if !m.picker.card.Filtering {
 		t.Fatal("the model card should arrive with its query row open")
 	}
 	// [d] is the card's own key, and a card being typed into keeps every
 	// letter as text — including that one.
 	m = runes(t, m, "claude")
-	if m.picker.Query != "claude" {
-		t.Fatalf("every keystroke should have landed in the query, got %q", m.picker.Query)
+	if m.picker.card.Query != "claude" {
+		t.Fatalf("every keystroke should have landed in the query, got %q", m.picker.card.Query)
 	}
-	if len(m.picker.Options) != 2 {
-		t.Fatalf("two models match \"claude\", the card is showing %d", len(m.picker.Options))
+	if len(m.picker.card.Options) != 2 {
+		t.Fatalf("two models match \"claude\", the card is showing %d", len(m.picker.card.Options))
 	}
 }
 
@@ -1298,14 +1298,14 @@ func TestModelPick_OpensReadyToType(t *testing.T) {
 func TestModePick_OpensAsAListOfAnswers(t *testing.T) {
 	m := sendText(t, readyModel(t), "/permissions")
 
-	if m.picker == nil {
+	if m.picker.card == nil {
 		t.Fatal("bare /permissions should open the picker")
 	}
-	if m.picker.Filtering {
+	if m.picker.card.Filtering {
 		t.Fatal("a fixed set of answers should open as a list, not a query row")
 	}
 	m = press(t, m, "2")
-	if m.picker != nil {
+	if m.picker.card != nil {
 		t.Fatal("a digit should have taken an answer outright")
 	}
 	if want := agent.DefaultCycle()[1]; m.policy.mode != want {

@@ -149,8 +149,8 @@ func (m Model) openChatPick() (tea.Model, tea.Cmd, bool) {
 		return m.loadChatByName(e.Name)
 	})
 	mm := model.(Model)
-	mm.picker.Actions = chatPickActions
-	mm.picker.QueryHint = "type to find a name or a word said in one"
+	mm.picker.card.Actions = chatPickActions
+	mm.picker.card.QueryHint = "type to find a name or a word said in one"
 	mm.chats = chatOps{active: true, entries: entries}
 	return mm, cmd, true
 }
@@ -167,10 +167,10 @@ func (m Model) openChatPick() (tea.Model, tea.Cmd, bool) {
 // are one list in the order the catalog is already in: a reader who typed a
 // name expects it where it always was, and the rest below it.
 func (m Model) withChatMatches(matches []components.SelectOption, index []int) ([]components.SelectOption, []int) {
-	if !m.chats.active || m.db == nil || m.picker == nil {
+	if !m.chats.active || m.db == nil || m.picker.card == nil {
 		return matches, index
 	}
-	found, err := m.db.SearchChats(m.picker.Query)
+	found, err := m.db.SearchChats(m.picker.card.Query)
 	if err != nil || len(found) == 0 {
 		return matches, index
 	}
@@ -187,10 +187,10 @@ func (m Model) withChatMatches(matches []components.SelectOption, index []int) (
 		out  []int
 	)
 	for i, e := range m.chats.entries {
-		if i >= len(m.pickerAll) {
+		if i >= len(m.picker.all) {
 			break
 		}
-		opt := m.pickerAll[i]
+		opt := m.picker.all[i]
 		switch {
 		case named[i]:
 			// The name matched, and the card will bold the run it matched.
@@ -240,7 +240,7 @@ func (m Model) chatPickLines() []string {
 // typed into — opening the rename row is what takes the keyboard off the
 // filter.
 func (m Model) pickCursor(width int) *tea.Cursor {
-	if m.picker == nil {
+	if m.picker.card == nil {
 		return nil
 	}
 	if row := m.chats.rename; row != nil {
@@ -250,23 +250,23 @@ func (m Model) pickCursor(width int) *tea.Cursor {
 		}
 		// The rename row is drawn under the card, so it starts where the
 		// card's rows end.
-		cur.Y += len(strings.Split(m.picker.View(width), "\n"))
+		cur.Y += len(strings.Split(m.picker.card.View(width), "\n"))
 		return cur
 	}
-	return m.picker.Cursor(width)
+	return m.picker.card.Cursor(width)
 }
 
 // focusedChat is the entry under the picker's pointer, mapped back through
 // the filter to the list it was built from.
 func (m Model) focusedChat() (storage.ChatListEntry, bool) {
-	if !m.chats.active || m.picker == nil {
+	if !m.chats.active || m.picker.card == nil {
 		return storage.ChatListEntry{}, false
 	}
-	row := m.picker.Focus
-	if row < 0 || row >= len(m.pickerIndex) {
+	row := m.picker.card.Focus
+	if row < 0 || row >= len(m.picker.index) {
 		return storage.ChatListEntry{}, false
 	}
-	idx := m.pickerIndex[row]
+	idx := m.picker.index[row]
 	if idx < 0 || idx >= len(m.chats.entries) {
 		return storage.ChatListEntry{}, false
 	}
@@ -300,7 +300,7 @@ func (m Model) updateChatOps(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	}
 	// The bare letters are text while the query line is open, the reading
 	// every card in the family makes.
-	if m.picker.Filtering {
+	if m.picker.card.Filtering {
 		return m, nil, false
 	}
 	switch {
@@ -440,28 +440,25 @@ func (m *Model) refreshChatPick() {
 	}
 	opts, _ := m.chatPickOptions(entries)
 	m.chats.entries = entries
-	m.pickerAll = opts
-	m.picker.Total = selectableOptions(opts)
-	focus := m.picker.Focus
+	m.picker.all = opts
+	m.picker.card.Total = selectableOptions(opts)
+	focus := m.picker.card.Focus
 	m.refilterPicker()
-	m.picker.Focus = min(focus, max(len(m.picker.Options)-1, 0))
+	m.picker.card.Focus = min(focus, max(len(m.picker.card.Options)-1, 0))
 	m.syncViewport()
 }
 
 // closePicker drops the picker and everything hanging off it, handing the
 // screen back.
 func (m *Model) closePicker() {
-	m.picker = nil
-	m.pickerApply = nil
-	m.pickerAll = nil
-	m.pickerIndex = nil
+	m.picker.clear()
 	// The entries stay for the apply that runs after this; everything
 	// else about the housekeeping goes with the picker.
 	m.chats = chatOps{entries: m.chats.entries}
-	if m.pickerFromReading {
+	if m.picker.fromReading {
 		// Back to the mode the card was opened over, rather than through
 		// it to the turn: the turn is still where the mode will hand back.
-		m.pickerFromReading = false
+		m.picker.fromReading = false
 		m.state = stateFocus
 		return
 	}

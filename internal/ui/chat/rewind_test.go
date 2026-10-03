@@ -225,16 +225,16 @@ func TestRewind_BarePicker_EscKeepsConversation(t *testing.T) {
 	m = completeExchange(t, m, "second", "two")
 
 	m = sendText(t, m, "/rewind")
-	if m.state != statePick || m.picker == nil {
+	if m.state != statePick || m.picker.card == nil {
 		t.Fatal("bare /rewind should open the picker")
 	}
-	if len(m.picker.Options) != 2 {
-		t.Fatalf("picker should list every checkpoint, got %d", len(m.picker.Options))
+	if len(m.picker.card.Options) != 2 {
+		t.Fatalf("picker should list every checkpoint, got %d", len(m.picker.card.Options))
 	}
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
-	if m.state != stateInput || m.picker != nil {
+	if m.state != stateInput || m.picker.card != nil {
 		t.Fatal("esc should dismiss the picker")
 	}
 	if len(m.Messages()) != 5 {
@@ -811,17 +811,17 @@ func rewindPickerModel(t *testing.T, width int) Model {
 func TestRewindPicker_RowsCarryTheTurnAndWhatItChanged(t *testing.T) {
 	m := rewindPickerModel(t, 120)
 	m = sendText(t, m, "/rewind")
-	if m.state != statePick || m.picker == nil {
+	if m.state != statePick || m.picker.card == nil {
 		t.Fatalf("bare /rewind should open the timeline, got state %v", m.state)
 	}
-	if m.picker.Rail != rewindRailLabel {
-		t.Fatalf("the picker should name itself on the rail, got %q", m.picker.Rail)
+	if m.picker.card.Rail != rewindRailLabel {
+		t.Fatalf("the picker should name itself on the rail, got %q", m.picker.card.Rail)
 	}
 	if !strings.HasPrefix(strings.Join(m.pickerLines(), "\n"), "\x1b[38;5;") &&
 		!strings.Contains(m.pickerLines()[0], "REWIND") {
 		t.Fatalf("the rail should be the first line drawn, got %q", m.pickerLines()[0])
 	}
-	opts := m.picker.Options
+	opts := m.picker.card.Options
 	if len(opts) != 4 {
 		t.Fatalf("four turns, four rows, got %d", len(opts))
 	}
@@ -846,7 +846,7 @@ func TestRewindPicker_RowsCarryTheTurnAndWhatItChanged(t *testing.T) {
 func TestRewindPicker_AnUnreachableTurnStatesWhyAndStillRewindsTheTalk(t *testing.T) {
 	m := rewindPickerModel(t, 120)
 	m = sendText(t, m, "/rewind")
-	oldest := m.picker.Options[3]
+	oldest := m.picker.card.Options[3]
 	if !oldest.Dim {
 		t.Fatalf("a turn no restore can cross should be drawn as unavailable: %+v", oldest)
 	}
@@ -874,7 +874,7 @@ func TestRewindPicker_ARebuiltTurnReportsNoChange(t *testing.T) {
 	m := rewindPickerModel(t, 120)
 	m.checkpoints[len(m.checkpoints)-1].turn = 0
 	m = sendText(t, m, "/rewind")
-	if latest := m.picker.Options[0]; len(latest.Detail) != 0 || latest.Dim {
+	if latest := m.picker.card.Options[0]; len(latest.Detail) != 0 || latest.Dim {
 		t.Fatalf("a rebuilt turn's row should say nothing about what it changed: %+v", latest)
 	}
 }

@@ -21,10 +21,10 @@ func chatsPicker(t *testing.T, focus string, names ...string) Model {
 	t.Helper()
 	m := sendText(t, chatPickModel(t, names...), "/chats")
 	idx := pickIndex(t, m, focus)
-	for m.picker.Focus < idx {
+	for m.picker.card.Focus < idx {
 		m = press(t, m, "j")
 	}
-	for m.picker.Focus > idx {
+	for m.picker.card.Focus > idx {
 		m = press(t, m, "k")
 	}
 	return m
@@ -64,11 +64,11 @@ func TestChatPick_DeleteConfirmedRemovesTheChatAndKeepsThePicker(t *testing.T) {
 	if _, err := m.db.LoadChat("alpha"); err == nil {
 		t.Fatal("y should delete alpha")
 	}
-	if m.state != statePick || m.picker == nil {
+	if m.state != statePick || m.picker.card == nil {
 		t.Fatal("the picker should stay open with what is left")
 	}
-	if len(m.picker.Options) != 1 || m.picker.Options[0].Label != "beta" {
-		t.Fatalf("the rows should be rebuilt without alpha, got %+v", m.picker.Options)
+	if len(m.picker.card.Options) != 1 || m.picker.card.Options[0].Label != "beta" {
+		t.Fatalf("the rows should be rebuilt without alpha, got %+v", m.picker.card.Options)
 	}
 	if !strings.Contains(lastNote(m), `deleted chat "alpha"`) {
 		t.Fatalf("the transcript should note the delete, got %q", lastNote(m))
@@ -82,7 +82,7 @@ func TestChatPick_DeleteNamesTheBranches(t *testing.T) {
 		t.Fatal(err)
 	}
 	m = sendText(t, m, "/chats")
-	for m.picker.Options[m.picker.Focus].Label != "alpha" {
+	for m.picker.card.Options[m.picker.card.Focus].Label != "alpha" {
 		m = press(t, m, "j")
 	}
 	m = press(t, m, "x")
@@ -103,7 +103,7 @@ func TestChatPick_DeletingTheLastChatClosesThePicker(t *testing.T) {
 	m := chatsPicker(t, "alpha", "alpha")
 	m = press(t, m, "x")
 	m = press(t, m, "y")
-	if m.state != stateInput || m.picker != nil || m.chats.active {
+	if m.state != stateInput || m.picker.card != nil || m.chats.active {
 		t.Fatal("a picker with no rows left should close")
 	}
 }
@@ -206,7 +206,7 @@ func TestChatPick_OwnSlotCannotBeDeletedOrRenamed(t *testing.T) {
 	m := chatPickModel(t, "alpha", "beta")
 	m.sessionName = "beta"
 	m = sendText(t, m, "/chats")
-	if m.picker.Options[m.picker.Focus].Label != "beta" {
+	if m.picker.card.Options[m.picker.card.Focus].Label != "beta" {
 		t.Fatal("the session's own slot should be focused")
 	}
 
@@ -236,8 +236,8 @@ func TestChatPick_KeysAreTextWhileFiltering(t *testing.T) {
 	if m.chats.confirm != nil {
 		t.Fatal("x typed into the filter row is text")
 	}
-	if m.picker.Query != "x" {
-		t.Fatalf("the query should have taken the x, got %q", m.picker.Query)
+	if m.picker.card.Query != "x" {
+		t.Fatalf("the query should have taken the x, got %q", m.picker.card.Query)
 	}
 }
 
@@ -247,11 +247,11 @@ func TestChatPick_TitleLeadsTheDescription(t *testing.T) {
 		t.Fatal(err)
 	}
 	m = sendText(t, m, "/chats")
-	desc := m.picker.Options[pickIndex(t, m, "alpha")].Desc
+	desc := m.picker.card.Options[pickIndex(t, m, "alpha")].Desc
 	if !strings.HasPrefix(desc, "Greeting the tests · 1 turn · ") {
 		t.Fatalf("the title should lead the row, got %q", desc)
 	}
-	if desc := m.picker.Options[pickIndex(t, m, "beta")].Desc; !strings.HasPrefix(desc, "1 turn · ") {
+	if desc := m.picker.card.Options[pickIndex(t, m, "beta")].Desc; !strings.HasPrefix(desc, "1 turn · ") {
 		t.Fatalf("an untitled row keeps the plain description, got %q", desc)
 	}
 }
@@ -265,11 +265,11 @@ func TestChatPick_TheAccountFollowsTheReadings(t *testing.T) {
 		t.Fatal(err)
 	}
 	m = sendText(t, m, "/chats")
-	desc := m.picker.Options[pickIndex(t, m, "alpha")].Desc
+	desc := m.picker.card.Options[pickIndex(t, m, "alpha")].Desc
 	if !strings.HasPrefix(desc, "1 turn · ") || !strings.HasSuffix(desc, " · Fixing the retry backoff.") {
 		t.Fatalf("the account should follow the readings, got %q", desc)
 	}
-	if desc := m.picker.Options[pickIndex(t, m, "beta")].Desc; strings.Contains(desc, "retry") {
+	if desc := m.picker.card.Options[pickIndex(t, m, "beta")].Desc; strings.Contains(desc, "retry") {
 		t.Fatalf("a row with no account carries none, got %q", desc)
 	}
 }
@@ -306,15 +306,15 @@ func TestGolden_ChatPicker(t *testing.T) {
 		opened := sendText(t, m, "/chats")
 		opts, focus := opened.chatPickOptions(fixed)
 		opened.chats.entries = fixed
-		opened.pickerAll, opened.picker.Options, opened.picker.Total = opts, opts, len(opts)
-		opened.picker.Focus = focus
-		opened.pickerIndex = identityIndex(len(opts))
+		opened.picker.all, opened.picker.card.Options, opened.picker.card.Total = opts, opts, len(opts)
+		opened.picker.card.Focus = focus
+		opened.picker.index = identityIndex(len(opts))
 
 		// The card is a pointer on the model, so each panel takes a copy of
 		// it before pressing anything.
 		branch := func(m Model) Model {
-			card := *m.picker
-			m.picker = &card
+			card := *m.picker.card
+			m.picker.card = &card
 			return m
 		}
 		listed := opened
@@ -351,9 +351,9 @@ func TestChatPick_ASlotAnotherSessionHoldsIsNotOffered(t *testing.T) {
 	}
 
 	m.chats.entries = entries
-	m.pickerAll, m.picker.Options, m.picker.Total = opts, opts, len(opts)
-	m.picker.Focus = focus
-	m.pickerIndex = identityIndex(len(opts))
+	m.picker.all, m.picker.card.Options, m.picker.card.Total = opts, opts, len(opts)
+	m.picker.card.Focus = focus
+	m.picker.index = identityIndex(len(opts))
 	m = press(t, m, "enter")
 	view := ansi.Strip(m.renderHistory())
 	if !strings.Contains(view, livePhrase) {
@@ -494,28 +494,28 @@ func searchablePicker(t *testing.T) Model {
 
 func TestChatPick_FindsAChatByAWordSaidInIt(t *testing.T) {
 	m := searchablePicker(t)
-	if len(m.picker.Options) != 2 {
-		t.Fatalf("both chats should be listed, got %v", m.picker.Options)
+	if len(m.picker.card.Options) != 2 {
+		t.Fatalf("both chats should be listed, got %v", m.picker.card.Options)
 	}
 
 	m = press(t, m, "/")
 	m = runes(t, m, "retry")
 
-	if len(m.picker.Options) != 1 {
-		t.Fatalf("one conversation says \"retry\", the card is showing %v", m.picker.Options)
+	if len(m.picker.card.Options) != 1 {
+		t.Fatalf("one conversation says \"retry\", the card is showing %v", m.picker.card.Options)
 	}
-	if m.picker.Options[0].Label != "2026-09-04 09:15" {
-		t.Fatalf("the wrong conversation matched: %+v", m.picker.Options[0])
+	if m.picker.card.Options[0].Label != "2026-09-04 09:15" {
+		t.Fatalf("the wrong conversation matched: %+v", m.picker.card.Options[0])
 	}
 	// A row no name matched says what did, since the card has nothing in the
 	// label to bold.
-	if m.picker.Options[0].Meta != bodyMatchPhrase {
-		t.Fatalf("the row should say why it is here, got %q", m.picker.Options[0].Meta)
+	if m.picker.card.Options[0].Meta != bodyMatchPhrase {
+		t.Fatalf("the row should say why it is here, got %q", m.picker.card.Options[0].Meta)
 	}
 	// And the choice still reaches the apply as the chat it names: the row
 	// the card answers with is one of the matches, and the apply was written
 	// against the list the picker opened over.
-	if idx := m.pickerIndex[0]; m.chats.entries[idx].Name != "2026-09-04 09:15" {
+	if idx := m.picker.index[0]; m.chats.entries[idx].Name != "2026-09-04 09:15" {
 		t.Fatalf("the filtered row should map back to its chat, got %q", m.chats.entries[idx].Name)
 	}
 	if m = press(t, m, "enter"); m.sessionName != "2026-09-04 09:15" {
@@ -527,8 +527,8 @@ func TestChatPick_FindsAChatByItsTitle(t *testing.T) {
 	m := press(t, searchablePicker(t), "/")
 	m = runes(t, m, "chore")
 
-	if len(m.picker.Options) != 1 || m.picker.Options[0].Label != "2026-09-04 11:02" {
-		t.Fatalf("the title should have found the chat, got %v", m.picker.Options)
+	if len(m.picker.card.Options) != 1 || m.picker.card.Options[0].Label != "2026-09-04 11:02" {
+		t.Fatalf("the title should have found the chat, got %v", m.picker.card.Options)
 	}
 }
 
@@ -536,10 +536,10 @@ func TestChatPick_KeepsTheNameFilterWhenItMatches(t *testing.T) {
 	m := press(t, searchablePicker(t), "/")
 	m = runes(t, m, "09:15")
 
-	if len(m.picker.Options) != 1 || m.picker.Options[0].Label != "2026-09-04 09:15" {
-		t.Fatalf("a name should still filter by name, got %v", m.picker.Options)
+	if len(m.picker.card.Options) != 1 || m.picker.card.Options[0].Label != "2026-09-04 09:15" {
+		t.Fatalf("a name should still filter by name, got %v", m.picker.card.Options)
 	}
-	if m.picker.Options[0].Meta != "" {
-		t.Fatalf("a row the name matched needs no explanation, got %q", m.picker.Options[0].Meta)
+	if m.picker.card.Options[0].Meta != "" {
+		t.Fatalf("a row the name matched needs no explanation, got %q", m.picker.card.Options[0].Meta)
 	}
 }

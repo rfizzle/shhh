@@ -89,24 +89,24 @@ func TestPalette_CtrlKOpensGroupedResults(t *testing.T) {
 	if !strings.Contains(labels, "FILES") {
 		t.Fatalf("the recent files should be offered, got:\n%s", labels)
 	}
-	if !m.picker.Filtering {
+	if !m.picker.card.Filtering {
 		t.Fatal("the palette is the shared filter row always open, so the card should be filtering")
 	}
-	if !strings.Contains(ansi.Strip(m.picker.View(70)), "▸ ") {
-		t.Fatalf("the palette should carry its query line:\n%s", m.picker.View(70))
+	if !strings.Contains(ansi.Strip(m.picker.card.View(70)), "▸ ") {
+		t.Fatalf("the palette should carry its query line:\n%s", m.picker.card.View(70))
 	}
 	// The panel places the terminal's own cursor on that row, so the card
 	// paints no block there and reports the coordinate instead.
-	if m.picker.Cursor(70) == nil {
+	if m.picker.card.Cursor(70) == nil {
 		t.Fatal("the query row is where the terminal's cursor goes, so the card should say where")
 	}
-	if got := strings.Join(m.picker.Chips, ""); !strings.Contains(got, "matches") {
+	if got := strings.Join(m.picker.card.Chips, ""); !strings.Contains(got, "matches") {
 		t.Fatalf("the title rail should count the matches, got %q", got)
 	}
-	if m.picker.Title != keys.Shown(keys.Draft.Palette) {
-		t.Fatalf("the card is titled with the chord that opened it, got %q", m.picker.Title)
+	if m.picker.card.Title != keys.Shown(keys.Draft.Palette) {
+		t.Fatalf("the card is titled with the chord that opened it, got %q", m.picker.card.Title)
 	}
-	if m.palette.rows[m.picker.Focus].header {
+	if m.palette.rows[m.picker.card.Focus].header {
 		t.Fatal("the pointer should open on a row a key can land on, not on a rail")
 	}
 }
@@ -117,12 +117,12 @@ func TestPalette_CtrlKOpensGroupedResults(t *testing.T) {
 func TestPalette_CountsMatchesAgainstTheWholeReach(t *testing.T) {
 	all := openPaletteWith(t, paletteModel(t), "")
 	total := len(all.palette.all)
-	if got, want := strings.Join(all.picker.Chips, ""), fmt.Sprintf("%d matches", total); got != want {
+	if got, want := strings.Join(all.picker.card.Chips, ""), fmt.Sprintf("%d matches", total); got != want {
 		t.Fatalf("an unfiltered palette should count what it holds, got %q want %q", got, want)
 	}
 
 	some := openPaletteWith(t, paletteModel(t), "permissions")
-	got := strings.Join(some.picker.Chips, "")
+	got := strings.Join(some.picker.card.Chips, "")
 	if !strings.Contains(got, " of ") || !strings.HasSuffix(got, fmt.Sprintf("of %d matches", total)) {
 		t.Fatalf("a narrowed palette should count against the whole reach, got %q", got)
 	}
@@ -149,7 +149,7 @@ func TestPalette_CountsEveryCommandTheRegistryOffers(t *testing.T) {
 		t.Fatalf("the registry offers %d commands and the stated total is %d: a command was added or taken away, so move paletteCommandTotal", offered, paletteCommandTotal)
 	}
 	opened, _ := m.openPalette()
-	got := strings.Join(opened.(Model).picker.Chips, "")
+	got := strings.Join(opened.(Model).picker.card.Chips, "")
 	if want := fmt.Sprintf("%d matches", paletteCommandTotal); got != want {
 		t.Fatalf("the palette should count every command the registry offers, got %q want %q", got, want)
 	}
@@ -225,7 +225,7 @@ func TestPalette_EnterRunsTheFocusedCommand(t *testing.T) {
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	if m.palette != nil || m.picker != nil {
+	if m.palette != nil || m.picker.card != nil {
 		t.Fatal("running from the palette should dismiss it")
 	}
 	if m.state != stateSpend {
@@ -265,7 +265,7 @@ func TestPalette_EnterOnAFileWritesItsPath(t *testing.T) {
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
 func TestPalette_EscSaysItClosesIt(t *testing.T) {
 	m := openPaletteWith(t, paletteModel(t), "mo")
-	view := ansi.Strip(m.picker.View(110))
+	view := ansi.Strip(m.picker.card.View(110))
 	if !strings.Contains(view, "[esc] close it") {
 		t.Fatalf("the palette should offer `[esc] close it`:\n%s", view)
 	}
@@ -295,7 +295,7 @@ func TestPalette_BackspaceWidensTheQuery(t *testing.T) {
 	if len(m.palette.rows) != 0 {
 		t.Fatalf("a query that matches nothing should show nothing, got %v", paletteLabels(m))
 	}
-	if got := strings.Join(m.picker.Chips, ""); got != "no matches" {
+	if got := strings.Join(m.picker.card.Chips, ""); got != "no matches" {
 		t.Fatalf("the rail should say so, got %q", got)
 	}
 
@@ -327,15 +327,15 @@ func TestPalette_TheOldChordStillMovesInsideTheList(t *testing.T) {
 	m := openPaletteWith(t, paletteModel(t), "")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
-	moved := m.picker.Focus
+	moved := m.picker.card.Focus
 
 	updated, _ = m.Update(ctrlP)
 	m = updated.(Model)
 	if m.palette == nil || m.state != statePick {
 		t.Fatal("the old chord closed the palette instead of moving in it")
 	}
-	if m.picker.Focus >= moved {
-		t.Errorf("the old chord did not move the cursor back: %d, was %d", m.picker.Focus, moved)
+	if m.picker.card.Focus >= moved {
+		t.Errorf("the old chord did not move the cursor back: %d, was %d", m.picker.card.Focus, moved)
 	}
 	if m.palette.query != "" {
 		t.Errorf("the chord typed into the query: %q", m.palette.query)
@@ -360,7 +360,7 @@ func TestPalette_IdleOnlyCommandsDimRatherThanDrop(t *testing.T) {
 	if !strings.Contains(row.desc, "summary") {
 		t.Fatalf("a greyed row keeps the command's own words, got %q", row.desc)
 	}
-	view := ansi.Strip(m.picker.View(110))
+	view := ansi.Strip(m.picker.card.View(110))
 	if !strings.Contains(view, "⊘ /compact") || !strings.Contains(view, idleOnlyMeta) {
 		t.Fatalf("the card should draw the glyph and the reason:\n%s", view)
 	}

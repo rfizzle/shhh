@@ -287,7 +287,7 @@ func TestArgCompletion_EnterOnAnUnfilteredMenuRunsTheLine(t *testing.T) {
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	if m.state != statePick || m.picker == nil {
+	if m.state != statePick || m.picker.card == nil {
 		t.Fatalf("enter on the unfiltered menu should open the picker, state is %v", m.state)
 	}
 	if m.modelName != "m1" {
@@ -308,7 +308,7 @@ func TestArgCompletion_ArrowMakesTheMenuTheChoiceAgain(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	if m.picker != nil {
+	if m.picker.card != nil {
 		t.Fatal("a row that was arrowed onto is a choice, not the bare command")
 	}
 	if switched != "m2" {

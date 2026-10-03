@@ -1294,23 +1294,9 @@ type Model struct {
 	// The open completion menu — slash commands, their arguments, and the @
 	// file mention (complete.go).
 	complete completionState
-	// Interactive slash-command pickers: picker is the open select
-	// card, pickerApply consumes the chosen index and returns the transcript
-	// note; modelOptions is the /model picker's model catalog.
-	//
-	// pickerAll is the list the picker opened over and pickerIndex maps the
-	// rows it is showing back onto it, so a choice made through the filter row
-	// still reaches an apply written against the whole list.
-	picker      *components.Select
-	pickerApply func(*Model, int, bool) (string, tea.Cmd)
-	pickerAll   []components.SelectOption
-	pickerIndex []int
-	// pickerFromReading is a picker opened over reading mode — the block
-	// card [c] opens on a reply — which goes back to the mode when it
-	// closes, taken or not: the reader asked from a row they were standing
-	// on, and the cursor is still on it.
-	pickerFromReading bool
-	modelOptions      []string
+	// picker is the slash commands' select card: the card, the list under
+	// it, what taking a row does, and the /model catalog (pickerstate.go).
+	picker pickerState
 	// chats is the saved-chat picker's housekeeping — chats.go.
 	chats chatOps
 	// The command palette: the open palette's query and candidates,
@@ -1319,12 +1305,6 @@ type Model struct {
 	// is how the tests stop depending on the directory they run in.
 	palette     *paletteState
 	recentFiles func() []project.RecentFile
-	// Live model discovery: modelLister queries the provider's
-	// /v1/models endpoint for endpoints no curated catalog can cover, and the
-	// result replaces modelOptions for the rest of the session.
-	modelLister     func(context.Context) ([]string, error)
-	modelListCancel context.CancelFunc
-	modelListed     bool
 	// steering holds messages queued while the agent is working; they
 	// are injected before the next stream request.
 	steering []steeringItem

@@ -71,7 +71,7 @@ func lastNotice(t *testing.T, m Model) string {
 func TestCopyCode_OneBlockIsCopiedAsBefore(t *testing.T) {
 	var caught []string
 	m := sendText(t, replyModel(t, oneBlock, &caught), "/copy code")
-	if m.picker != nil {
+	if m.picker.card != nil {
 		t.Fatal("one block should be copied, not offered")
 	}
 	if !slices.Equal(caught, []string{"make build"}) {
@@ -85,14 +85,14 @@ func TestCopyCode_OneBlockIsCopiedAsBefore(t *testing.T) {
 func TestCopyCode_SeveralBlocksOpenTheList(t *testing.T) {
 	var caught []string
 	m := sendText(t, replyModel(t, threeBlocks, &caught), "/copy code")
-	if m.state != statePick || m.picker == nil {
+	if m.state != statePick || m.picker.card == nil {
 		t.Fatalf("several blocks should open the card, got state %d", m.state)
 	}
 	if len(caught) != 0 {
 		t.Fatalf("opening the card copies nothing, got %q", caught)
 	}
-	if m.picker.Title != "copy which block?" || len(m.picker.Options) != 3 {
-		t.Fatalf("card %q with %d rows", m.picker.Title, len(m.picker.Options))
+	if m.picker.card.Title != "copy which block?" || len(m.picker.card.Options) != 3 {
+		t.Fatalf("card %q with %d rows", m.picker.card.Title, len(m.picker.card.Options))
 	}
 	// The rows are the ones /run's card draws: first line, language — a
 	// bare fence's is `code` — and line count, the block flattened under
@@ -102,7 +102,7 @@ func TestCopyCode_SeveralBlocksOpenTheList(t *testing.T) {
 		"make build · sh · 3 lines",
 		`keys "/copy code" Enter · code · 2 lines`,
 	} {
-		if got := pickRowText(m.picker.Options[i]); got != want {
+		if got := pickRowText(m.picker.card.Options[i]); got != want {
 			t.Errorf("row %d is %q, want %q", i+1, got, want)
 		}
 	}
@@ -129,7 +129,7 @@ func TestCopyCode_SeveralBlocksOpenTheList(t *testing.T) {
 	m = sendText(t, m, "/copy code")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
-	if m.picker != nil || len(caught) != 0 {
+	if m.picker.card != nil || len(caught) != 0 {
 		t.Fatalf("esc should close the card and copy nothing, got %q", caught)
 	}
 }
@@ -146,7 +146,7 @@ func TestCopyCode_ANumberCopiesThatBlock(t *testing.T) {
 		t.Run(tc.arg, func(t *testing.T) {
 			var caught []string
 			m := sendText(t, replyModel(t, threeBlocks, &caught), "/copy code "+tc.arg)
-			if m.picker != nil {
+			if m.picker.card != nil {
 				t.Fatal("a number takes the block without a card")
 			}
 			if !slices.Equal(caught, []string{tc.want}) {
@@ -261,7 +261,7 @@ func TestReading_CopyBlockOnARowWithOneBlock(t *testing.T) {
 		t.Fatalf("a reply with a block offers both copies, got %q", bar)
 	}
 	m = pressC(t, m)
-	if m.picker != nil || m.state != stateFocus {
+	if m.picker.card != nil || m.state != stateFocus {
 		t.Fatalf("one block copies at once and stays in the mode, got state %d", m.state)
 	}
 	if !slices.Equal(caught, []string{"make build"}) {
@@ -280,11 +280,11 @@ func TestReading_CopyBlockListsOnlyThatRowsBlocks(t *testing.T) {
 	var caught []string
 	m := readingOn(t, twoBlocks, threeBlocks, 1, &caught)
 	m = pressC(t, m)
-	if m.state != statePick || m.picker == nil {
+	if m.state != statePick || m.picker.card == nil {
 		t.Fatalf("several blocks open the card, got state %d", m.state)
 	}
-	if len(m.picker.Options) != 2 {
-		t.Fatalf("the card lists the row's own blocks, got %d rows", len(m.picker.Options))
+	if len(m.picker.card.Options) != 2 {
+		t.Fatalf("the card lists the row's own blocks, got %d rows", len(m.picker.card.Options))
 	}
 	m = focusPick(t, m, 1)
 	if !slices.Equal(caught, []string{"echo 1\necho 2"}) {
@@ -323,7 +323,7 @@ func TestReading_CopyBlockIsSilentOnARowWithoutOne(t *testing.T) {
 				t.Fatalf("a row with no block offers no block copy, got %q", bar)
 			}
 			m = pressC(t, m)
-			if len(caught) != 0 || m.picker != nil {
+			if len(caught) != 0 || m.picker.card != nil {
 				t.Fatalf("copied %q", caught)
 			}
 			if m.state == stateFocus || m.input.Value() != "c" {
@@ -370,7 +370,7 @@ func TestGolden_CopyBlock(t *testing.T) {
 // focusMove walks a picker's pointer to target without taking the row.
 func focusMove(t *testing.T, m Model, target int) Model {
 	t.Helper()
-	for m.picker != nil && m.picker.Focus < target {
+	for m.picker.card != nil && m.picker.card.Focus < target {
 		updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 		m = updated.(Model)
 	}

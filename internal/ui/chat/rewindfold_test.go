@@ -246,19 +246,19 @@ func TestRewindPicker_TheDiffKeyOpensTheRunAndComesBack(t *testing.T) {
 	m = sendText(t, m, "/rewind")
 	// The card opens as a search; its letters are text until the row closes.
 	m = press(t, m, "d")
-	if m.state != statePick || m.picker.Query != "d" {
-		t.Fatalf("a letter typed into the query is text, got state %v query %q", m.state, m.picker.Query)
+	if m.state != statePick || m.picker.card.Query != "d" {
+		t.Fatalf("a letter typed into the query is text, got state %v query %q", m.state, m.picker.card.Query)
 	}
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl})
 	m = updated.(Model)
-	if m.picker.Filtering {
+	if m.picker.card.Filtering {
 		t.Fatal("the fixture wants the query row closed")
 	}
 	// Down to turn 1: a rewind there takes turn 2 back.
 	m = press(t, m, "down")
-	focus := m.picker.Focus
+	focus := m.picker.card.Focus
 	m = press(t, m, keys.Shown(keys.Rewind.Diff))
 	if m.state != stateDiffFull || m.fullDiff == nil {
 		t.Fatalf("the key should open the run's diff full screen, got state %v", m.state)
@@ -267,14 +267,14 @@ func TestRewindPicker_TheDiffKeyOpensTheRunAndComesBack(t *testing.T) {
 		t.Fatalf("the diff should be turn 2's two files, got %q with %d", m.fullDiff.Path, len(m.fullDiff.Files))
 	}
 	m = press(t, m, "esc")
-	if m.state != statePick || m.picker == nil || m.picker.Focus != focus {
+	if m.state != statePick || m.picker.card == nil || m.picker.card.Focus != focus {
 		t.Fatalf("esc should come back to the picker as it was left, got state %v", m.state)
 	}
 	// The latest turn has nothing after it, and the card says so.
 	m = press(t, m, "up")
 	m = press(t, m, keys.Shown(keys.Rewind.Diff))
-	if m.state != statePick || !strings.Contains(m.picker.Warning, "nothing after it") {
-		t.Fatalf("the latest turn should say why there is nothing to show, got %q", m.picker.Warning)
+	if m.state != statePick || !strings.Contains(m.picker.card.Warning, "nothing after it") {
+		t.Fatalf("the latest turn should say why there is nothing to show, got %q", m.picker.card.Warning)
 	}
 }
 

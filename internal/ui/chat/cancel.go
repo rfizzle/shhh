@@ -150,9 +150,9 @@ func (m *Model) quitNow() tea.Cmd {
 	// The model list is a request to the provider that a leaving session has
 	// nothing left to do with, and it is the one surface that can be holding
 	// one (picker.go).
-	if m.modelListCancel != nil {
-		m.modelListCancel()
-		m.modelListCancel = nil
+	if m.picker.models.cancel != nil {
+		m.picker.models.cancel()
+		m.picker.models.cancel = nil
 	}
 	// Cancelling a command only asks it to stop; the kill that would follow
 	// is a timer inside this process, and quitting takes the process with it.
