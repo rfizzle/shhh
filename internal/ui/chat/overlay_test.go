@@ -161,8 +161,9 @@ func TestOverlayAddingAModeIsOneRow(t *testing.T) {
 
 // The register row is where a surface declares everything the rest of the
 // session reads about it, and this is the check that the readers agree with
-// the rows: a surface's command is on the menu once and has a paragraph in
-// /help, a pane surface stands over the rail, and every rail door is a row's.
+// the rows: a surface's command is a command table row that opens it, named
+// by that one row, on the menu once and with a paragraph in /help; a pane
+// surface stands over the rail, and every rail door is a row's.
 func TestRegisterDeclaresEachSurfaceOnce(t *testing.T) {
 	rows := map[string]*mode{"the agent manager": agentListMode()}
 	for s, o := range overlays() {
@@ -173,16 +174,21 @@ func TestRegisterDeclaresEachSurfaceOnce(t *testing.T) {
 		listed[c.name]++
 	}
 	doors := map[string]string{}
+	opener := map[string]string{}
 	for name, o := range rows {
-		if c := o.command; c != nil {
-			if listed[c.name] != 1 {
-				t.Errorf("%s declares %s, which the completion registry lists %d times", name, c.name, listed[c.name])
+		if command := o.command; command != "" {
+			if other, dup := opener[command]; dup {
+				t.Errorf("%s and %s are both opened by %s", name, other, command)
 			}
-			if strings.TrimSpace(c.help) == "" {
-				t.Errorf("%s declares %s with no /help paragraph", name, c.name)
+			opener[command] = name
+			if c, ok := commands()[command]; !ok || c.name != command || c.open == nil {
+				t.Errorf("%s names %s, which is no command table row that opens a surface", name, command)
 			}
-			if c.open == nil {
-				t.Errorf("%s declares %s and nothing to do when it is typed", name, c.name)
+			if listed[command] != 1 {
+				t.Errorf("%s names %s, which the completion registry lists %d times", name, command, listed[command])
+			}
+			if strings.TrimSpace(commandHelp(declaredSlash(command))) == "" {
+				t.Errorf("%s names %s, which has no /help paragraph", name, command)
 			}
 		}
 		if len(o.doorAlso) > 0 && o.door == nil {
@@ -198,6 +204,11 @@ func TestRegisterDeclaresEachSurfaceOnce(t *testing.T) {
 			if d.open == nil || d.surface == nil || d.close == nil {
 				t.Errorf("%s declares the %s door without an open, a showing and a close", name, d.block)
 			}
+		}
+	}
+	for name, c := range commands() {
+		if c.open != nil && name == c.name && opener[name] == "" {
+			t.Errorf("%s opens a surface no register row names it for", name)
 		}
 	}
 	for block := range railDoors() {
@@ -227,11 +238,12 @@ func TestRegisterDeclaresEachSurfaceOnce(t *testing.T) {
 // paint happened to build first.
 func TestRegisterDerivedTablesOpenFromAZeroModel(t *testing.T) {
 	overlayOnce, overlayTable = sync.Once{}, nil
-	registerCommands, registerDoors, registerDoorNames = nil, nil, nil
+	registerDoors, registerDoorNames = nil, nil
+	commandOnce, commandByName, slashHandlerAt = sync.Once{}, nil, nil
 	slashOnce, slashTable = sync.Once{}, nil
 
 	var m Model
-	if c, ok := registeredCommand("/context"); !ok || c.open == nil {
+	if c, ok := commands()["/context"]; !ok || c.open == nil {
 		t.Fatal("the command dispatch has no /context before a paint")
 	}
 	if len(slashCommands()) == 0 {
@@ -240,8 +252,8 @@ func TestRegisterDerivedTablesOpenFromAZeroModel(t *testing.T) {
 	if len(railDoors()) == 0 || len(railDoorSet()) != len(railDoors()) {
 		t.Fatal("the rail doors are missing before a paint")
 	}
-	if strings.TrimSpace(commandHelp(registeredSlash("/steps"))) == "" {
-		t.Fatal("/help has no paragraph for a register command before a paint")
+	if strings.TrimSpace(commandHelp(declaredSlash("/steps"))) == "" {
+		t.Fatal("/help has no paragraph for a surface's command before a paint")
 	}
 	m.state = stateSteps
 	if !m.inspectorHidden() {
@@ -288,7 +300,7 @@ func TestOverlayPaneScreensKeepTheirRows(t *testing.T) {
 		if o.place != placePane || !o.holds || !o.borrows || !o.hidesRail || !o.noSelection {
 			t.Errorf("state %d lost a pane screen's flags: %+v", w.s, o)
 		}
-		if o.command == nil || o.command.name != w.command {
+		if o.command != w.command {
 			t.Errorf("state %d's command is not %s", w.s, w.command)
 		}
 		door := ""

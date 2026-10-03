@@ -20,11 +20,12 @@ package chat
 // The row also carries what the rest of the session used to keep a table of
 // its own for: whether the mode stands over the inspector rail
 // (inspectorHidden), whether the pointer can still select the transcript
-// under it (selectableSurface), the slash command that opens it with its
-// completion row and its /help paragraph (runCommand, slashCommands,
-// helpSheet), and the rail block whose heading is its door (railDoors). Those
-// readers derive from the register through the one lazy accessor below, so a
-// screen is its own file plus one row here, not one row in each of them.
+// under it (selectableSurface), the slash command that opens it, by name —
+// the command itself, with its completion row and its /help paragraph, is a
+// row of the command table (command.go) — and the rail block whose heading is
+// its door (railDoors). Those readers derive from the register through the
+// one lazy accessor below, so a screen is its own file plus one row here, not
+// one row in each of them.
 //
 // What the register deliberately does not become: a place a mode's own
 // behaviour moves to. The row points at the mode's file; the flow, the
@@ -170,10 +171,11 @@ type mode struct {
 	// scrolling, or reading mode's gutter — so a drag selects nothing
 	// (selectableSurface).
 	noSelection bool
-	// command is the slash command whose job is opening this mode: its
-	// completion row, its /help paragraph and what typing it does. nil is a
-	// mode no command of its own opens.
-	command *surfaceCommand
+	// command names the slash command whose job is opening this mode. The
+	// command is a row of the command table (command.go), which is where its
+	// completion row, its /help paragraph and what typing it does are
+	// declared. "" is a mode no command of its own opens.
+	command string
 	// door is the rail block whose heading and fold marker open this mode
 	// (railclick.go). nil is a mode the rail has no door to.
 	door *surfaceDoor
@@ -188,20 +190,6 @@ type mode struct {
 	// nothing else — one pointer each, with no return state or confirm of
 	// its own beside it.
 	holds bool
-}
-
-// surfaceCommand is the slash command a register row declares. The embedded
-// row is what the completion menu and /help read; open is what typing it
-// does.
-type surfaceCommand struct {
-	slashCommand
-	// bare is a command that opens its surface only when typed alone. With
-	// words after it the line goes on through the rest of the dispatch and
-	// is answered as any form the session does not know.
-	bare bool
-	// open carries the command out; parts is the whole line split on
-	// whitespace, the command name included.
-	open func(m Model, parts []string) (tea.Model, tea.Cmd)
 }
 
 // heldScreens is the state of every screen a register row holds, keyed by
@@ -415,14 +403,7 @@ func buildOverlays() map[state]*mode {
 			lines:     panelRows((Model).keyPopupLines),
 			cursor:    (Model).keyPopupCursor,
 			keys:      (Model).updateKeyPopup,
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: "/help", desc: "every key, by group, to filter; with words, the whole help as a row",
-					key: keys.Shown(keys.Draft.KeyList),
-					help: `open the key list: every key this session answers, grouped as a keybindings.toml names them and spelled the way they are bound now — type to filter by key or words, ` +
-						keys.Bracket(keys.KeyList.Close) + ` or ` + keys.Bracket(keys.Draft.KeyList) + ` closes it, and the draft is as you left it. With words after it (/help keys), the whole sheet — the commands, what happens mid-turn, the keys and the approval policy — is written to the transcript instead`},
-				bare: true,
-				open: bareOpen(Model.openKeyPopup),
-			},
+			command:   "/help",
 		},
 		// The card the rewind picker opens once a turn has been taken. It
 		// borrows the panel and the keyboard the picker already had, so
@@ -483,16 +464,7 @@ func buildOverlays() map[state]*mode {
 			bound:   (Model).planPanelBound,
 			answer:  (*Model).answerSetup,
 			keyList: staticKeyList("the toolchain card"),
-			// The install writes only into shhh's own directory and never
-			// into the conversation, so it is not idle-only: a turn running
-			// is when the model finds the tool missing.
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: setupCommandName, desc: "install the tools this checkout's toolchain declaration names (asks first)",
-					enabled: func(m *Model) bool { return m.setupWired() },
-					help:    `install what this checkout's .shhh/toolchain.toml names — the card lists every install line, where the tools land and what the lines may reach before anything runs, and they run contained exactly as the assistant's commands are. The start screen offers it when a declared tool is not on PATH`},
-				bare: true,
-				open: bareOpen(Model.setupCommand),
-			},
+			command: setupCommandName,
 		},
 		stateToolchainDraft: {
 			place:     placePanel,
@@ -504,16 +476,7 @@ func buildOverlays() map[state]*mode {
 			bound:   (Model).planPanelBound,
 			answer:  (*Model).answerToolchainDraft,
 			keyList: staticKeyList("the toolchain draft card"),
-			// The draft is read and written beside the conversation and never
-			// into it, so it is not idle-only; its editor refuses a running
-			// turn itself, since the editor takes the terminal with it.
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: toolchainCommandName, desc: "draft this checkout's toolchain declaration, or review the one it has (reads only, then asks)",
-					enabled: func(m *Model) bool { return m.toolchainDraftWired() },
-					help:    "read the checkout — its build files, CI workflows, Makefile and quality gate — and draft the .shhh/toolchain.toml its checks need, or review the one it has and propose only changes, each with its reason. The draft is read by the same loader the file is before a card shows it, and nothing is written until the card's yes"},
-				bare: true,
-				open: bareOpen(Model.toolchainCommand),
-			},
+			command: toolchainCommandName,
 		},
 		stateTodoPause: {
 			place:     placePanel,
@@ -628,25 +591,9 @@ func buildOverlays() map[state]*mode {
 				m.fullDiff.SetSize(width, height)
 				return strings.Split(m.fullDiff.View(width), "\n")
 			},
-			hint: (Model).renderDiffFullHint,
-			keys: (Model).updateDiffFull,
-			// Bare, the cumulative session diff; with a path, that one file's,
-			// which is the keyboard's way to the door a click on a CHANGES row
-			// opens (railclick.go). The argument is a path and not a turn
-			// number, because the rail's rows are paths and the two surfaces
-			// answer the same question.
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: "/diff", args: "[path]", desc: "cumulative session diff, full screen — bare, or one file's",
-					enabled:  func(m *Model) bool { return m.changes != nil && m.codingSurfaces() },
-					argSpecs: []argSpec{{dynamic: sessionFileArgs, fuzzy: true}},
-					help:     `show what this session changed, full screen, or one file's — read from the session's own changeset, so it works outside a git repository`},
-				open: func(m Model, parts []string) (tea.Model, tea.Cmd) {
-					if len(parts) > 1 {
-						return m.openFileDiff(strings.Join(parts[1:], " "))
-					}
-					return m.openSessionDiff()
-				},
-			},
+			hint:    (Model).renderDiffFullHint,
+			keys:    (Model).updateDiffFull,
+			command: "/diff",
 		},
 		stateOutputFull: {
 			place:         placePane,
@@ -711,17 +658,9 @@ func buildOverlays() map[state]*mode {
 				m.review.SetSize(width, height)
 				return strings.Split(m.review.View(width), "\n")
 			},
-			hint: (Model).renderReviewHint,
-			keys: (Model).updateReview,
-			// Review mode over a turn's changeset; bare takes the most recent
-			// turn that changed anything.
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: "/review", args: "[turn]", desc: "review what a turn changed — files, hunks, staging",
-					enabled:  func(m *Model) bool { return m.changes != nil && m.codingSurfaces() },
-					argSpecs: []argSpec{{dynamic: reviewTurnArgs}},
-					help:     `review what a turn changed: file list, hunks and the turn's verdict (bare reviews the last turn that changed anything). Also a turn's changed-files row, clicked or selected and opened with enter. It reads and changes nothing; /undo takes a turn back`},
-				open: (Model).reviewCommand,
-			},
+			hint:    (Model).renderReviewHint,
+			keys:    (Model).updateReview,
+			command: "/review",
 			// The CHANGES door is /diff's bare form: the session's whole
 			// changeset, read in review mode.
 			door: &surfaceDoor{components.RailChanges, railDoor{Model.openSessionDiff, reviewShowing, Model.closeReview}},
@@ -737,39 +676,15 @@ func buildOverlays() map[state]*mode {
 		stateAlerts:   paneScreen(heldScreens.alerts, alertsScreenRow()),
 		stateSpend:    paneScreen(heldScreens.spend, spendScreenRow()),
 		stateTools: paneScreenDrawn((Model).toolsLines, mode{
-			hint: (Model).renderToolsHint,
-			keys: (Model).updateTools,
-			// Where the session's tools came from, as the rail's TOOLS block
-			// reads it. It is not idleOnly: a server that went mid-turn is
-			// exactly when somebody asks, and its one act records an answer
-			// for the next session rather than changing this one (tools.go).
-			// With words after it, /mcp is the listing's own verbs and never
-			// reaches this row.
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: "/mcp", args: "[trust <name>|distrust <name>]",
-					desc: "where this session's tools came from, and why any did not come",
-					help: `every place this session's tools came from on one screen, opened on the MCP servers: the built-in toolset, each server, the language servers, the binaries found on PATH and the web tools, each up or not with the tools it registered — and for one that is not up, what that costs and what would move it, in the words shhh mcp gives. On a server the checkout declared, [a] trusts the checkout or withdraws that, after asking, as /trust does; it takes effect in the next session. trust <name> and distrust <name> say where that answer is given`,
-					argSpecs: staticArgs(
-						argOption{"trust", "where a project server's trust is answered"},
-						argOption{"distrust", "where that answer is withdrawn"},
-					)},
-				bare: true,
-				open: bareOpen(Model.openMCPScreen),
-			},
-			door: &surfaceDoor{components.RailTools, railDoor{Model.openTools, toolsShowing, Model.closeToolsScreen}},
+			hint:    (Model).renderToolsHint,
+			keys:    (Model).updateTools,
+			command: "/mcp",
+			door:    &surfaceDoor{components.RailTools, railDoor{Model.openTools, toolsShowing, Model.closeToolsScreen}},
 		}),
 		stateSafety: paneScreenDrawn((Model).safetyLines, mode{
-			hint: (Model).renderSafetyHint,
-			keys: (Model).updateSafety,
-			// The session's whole boundary. It reads and changes nothing, so it
-			// is not idleOnly: a turn that just asked for something is when a
-			// person wants to see what it may do (safety.go).
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: "/safety", aliases: []string{"/security"}, desc: "everything this session may do, and what fences it, in one place",
-					help: `the session's whole boundary on one screen (also /security): the mode and grants, where it may write, what contains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools — each section naming the command that changes it. It reads and changes nothing`},
-				bare: true,
-				open: bareOpen(Model.openSafety),
-			},
+			hint:    (Model).renderSafetyHint,
+			keys:    (Model).updateSafety,
+			command: "/safety",
 		}),
 		stateNotes: paneScreen(heldScreens.notes, notesScreenRow()),
 		stateBacklog: paneScreenDrawn(func(m Model, width, height int) []string {
@@ -778,54 +693,18 @@ func buildOverlays() map[state]*mode {
 			}
 			return strings.Split(m.backlogPane(width, height), "\n")
 		}, mode{
-			hint: (Model).renderTodoScreenHint,
-			keys: (Model).updateTodoScreen,
-			// Bare /todo opens the backlog screen; the subcommands are textual,
-			// and edit hands the item file to the editor.
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: "/todo", args: "[show|edit|new|add|groom|block|open|done|drop|run|sprint|status|stop]", desc: "the project's backlog (bare /todo opens the screen)",
-					enabled: func(m *Model) bool { return m.todosEnabled() },
-					argSpecs: []argSpec{
-						{options: []argOption{
-							{"show", "print an item"},
-							{"edit", "open an item in your editor"},
-							{"add", "read this session into items, or add one from a sentence"},
-							{"groom", "read an item against the tree and propose the corrections"},
-							{"block", "mark an item blocked, with why"},
-							{"open", "reopen a blocked item"},
-							{"done", "archive an item"},
-							{"drop", "delete an item outright"},
-							{"run", "work an item through to a commit (bare run takes the next ready one)"},
-							{"sprint", "the set being worked: bare shows it, plan proposes one"},
-							{"status", "where the run is"},
-							{"stop", "abandon the run; the item goes back to open"},
-						}},
-						{after: []string{"show", "edit", "groom", "block", "open", "done", "drop", "run"}, dynamic: todoSlugArgs, fuzzy: true},
-					},
-					help: `the project's backlog: bare opens a picker · show|edit <slug> · add (reads this session into proposed items you accept or drop) · add <text> · block <slug> [why] · open|done|drop <slug> · new <text> · groom <slug> (reads an item against the tree and proposes the corrections) · run [slug|--next] works an item through its profile's run · sprint · status · stop`},
-				open: (Model).todoCommand,
-			},
-			door: &surfaceDoor{components.RailTodo, railDoor{Model.openTodoDoor, backlogShowing, Model.closeTodoScreen}},
+			hint:    (Model).renderTodoScreenHint,
+			keys:    (Model).updateTodoScreen,
+			command: "/todo",
+			door:    &surfaceDoor{components.RailTodo, railDoor{Model.openTodoDoor, backlogShowing, Model.closeTodoScreen}},
 		}),
 		// The one pane overlay that can write a file. It writes on `[w]`
 		// alone and asks before it walks away from anything staged, which is
 		// the screen's own rule rather than the register's (config.go).
 		stateConfig: paneScreenDrawn((Model).configScreenLines, mode{
-			hint:   (Model).renderConfigHint,
-			answer: (*Model).answerConfig,
-			// The whole settings file, where /ui is the handful of its keys a
-			// session flips often enough to have a word for. Not idleOnly: the
-			// settings a person wants to change mid-session are the ones the
-			// running turn just made them think about, and nothing the screen
-			// stages reaches the file until [w] — which writes the user's own
-			// config file and not the tree the turn is working in.
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: "/config", desc: "every setting, where its value came from, and what changing it costs",
-					enabled: func(m *Model) bool { return m.openConfig != nil },
-					help:    `every setting, staged: what each one is set to, where that value came from, and what [enter] offers instead of typing it. Nothing reaches your config file until [w], and the way out asks before discarding what is staged. The running session keeps the settings it started on`},
-				bare: true,
-				open: bareOpen(Model.openConfigScreen),
-			},
+			hint:    (Model).renderConfigHint,
+			answer:  (*Model).answerConfig,
+			command: "/config",
 		}),
 		statePersona: {
 			place:     placePane,
@@ -900,52 +779,25 @@ func contextScreenRow() mode {
 		ownsQuit: true,
 		hint:     (Model).renderContextHint,
 		answer:   (*Model).answerContext,
-		// The occupancy surface reads the conversation and changes nothing
-		// in it, so it is not idleOnly: a window filling up mid-turn is
-		// exactly when the question gets asked.
-		command: &surfaceCommand{
-			slashCommand: slashCommand{name: "/context", desc: "the window as a meter, itemised down to the tool",
-				help: `the window as a meter, by category, with the tools itemised`},
-			bare: true,
-			open: bareOpen(Model.openContext),
-		},
-		door: &surfaceDoor{components.RailContext, railDoor{Model.openContext, contextShowing, Model.closeContextScreen}},
+		command:  "/context",
+		door:     &surfaceDoor{components.RailContext, railDoor{Model.openContext, contextShowing, Model.closeContextScreen}},
 	}
 }
 
 func sourcesScreenRow() mode {
 	return mode{
-		hint: (Model).renderSourcesHint,
-		keys: (Model).updateSources,
-		// The ledger of what the session read. Like the occupancy surface
-		// it reads and changes nothing, so it is not idleOnly: mid-turn is
-		// exactly when somebody asks where a claim came from.
-		command: &surfaceCommand{
-			slashCommand: slashCommand{name: "/sources", desc: "what this session read: every fetch and search, by host",
-				enabled: func(m *Model) bool { return m.sourceLedger != nil },
-				help:    `what this session read: every fetch and every search, its own and its children's, grouped by host — with the whole page under [enter] where the fetch kept one`},
-			bare: true,
-			open: bareOpen(Model.openSources),
-		},
+		hint:    (Model).renderSourcesHint,
+		keys:    (Model).updateSources,
+		command: "/sources",
 	}
 }
 
 func stepsScreenRow() mode {
 	return mode{
-		hint: (Model).renderStepsHint,
-		keys: (Model).updateSteps,
-		// The session's whole working list, each step beside what the
-		// transcript recorded for it. It reads and changes nothing, so it
-		// is not idleOnly: mid-turn is when somebody asks where the agent
-		// is (worksteps.go).
-		command: &surfaceCommand{
-			slashCommand: slashCommand{name: "/steps", desc: "the session's own working list, each step beside what the transcript recorded for it",
-				enabled: func(m *Model) bool { return m.codingSurfaces() },
-				help:    `the session's own working list on one screen: every step it declared, the paths each said it would touch, which it has marked done and the one it is on — and beside each, the calls the transcript titled for it, or not started where there are none. It reads and changes nothing`},
-			bare: true,
-			open: bareOpen(Model.openSteps),
-		},
-		door: &surfaceDoor{components.RailSteps, railDoor{Model.openSteps, stepsShowing, Model.closeStepsScreen}},
+		hint:    (Model).renderStepsHint,
+		keys:    (Model).updateSteps,
+		command: "/steps",
+		door:    &surfaceDoor{components.RailSteps, railDoor{Model.openSteps, stepsShowing, Model.closeStepsScreen}},
 		// PLAN stands where STEPS would while an approved plan is being
 		// executed, and the screen is then the plan's (worksteps.go).
 		doorAlso: []string{components.RailPlan},
@@ -954,88 +806,45 @@ func stepsScreenRow() mode {
 
 func readingsScreenRow() mode {
 	return mode{
-		hint: (Model).renderReadingsHint,
-		keys: (Model).updateReadings,
-		// Every reading the session has taken of its own run. It reads and
-		// changes nothing, so it is not idleOnly: mid-turn is when somebody
-		// asks what the run has been saying about itself (readings.go).
-		command: &surfaceCommand{
-			slashCommand: slashCommand{name: "/readings", desc: "every reading the session has taken of its own run, each whole",
-				help: `every reading the session has taken of its own run on one screen, newest first: the round, the verdict, the whole reading with its reason and the instruction it was judged against, and whether it steered the turn and whether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing`},
-			bare: true,
-			open: bareOpen(Model.openReadings),
-		},
-		door: &surfaceDoor{components.RailSummary, railDoor{Model.openReadings, readingsShowing, Model.closeReadingsScreen}},
+		hint:    (Model).renderReadingsHint,
+		keys:    (Model).updateReadings,
+		command: "/readings",
+		door:    &surfaceDoor{components.RailSummary, railDoor{Model.openReadings, readingsShowing, Model.closeReadingsScreen}},
 	}
 }
 
 func turnsScreenRow() mode {
 	return mode{
-		hint: (Model).renderTurnsHint,
-		keys: (Model).updateTurns,
-		// Every turn the session has run, as its close row reads it. It
-		// reads and changes nothing, so it is not idleOnly: mid-turn is when
-		// somebody asks what the turns before this one cost (turns.go).
-		command: &surfaceCommand{
-			slashCommand: slashCommand{name: "/turns", desc: "every turn the session has run, as its close row reads it, each one's review a key away",
-				help: `every turn the session has run on one screen, newest first: how it ended, its steps, tools, time and spend, what it changed, its commit and its checks' verdict — the figures its close row drew, beside the close itself — with the turn in flight on top. [enter] opens a turn's review where it changed files. A turn from an ended sitting shows its files and says its figures were not kept. It reads and changes nothing`},
-			bare: true,
-			open: bareOpen(Model.openTurns),
-		},
-		door: &surfaceDoor{components.RailTurn, railDoor{Model.openTurns, turnsShowing, Model.closeTurnsScreen}},
+		hint:    (Model).renderTurnsHint,
+		keys:    (Model).updateTurns,
+		command: "/turns",
+		door:    &surfaceDoor{components.RailTurn, railDoor{Model.openTurns, turnsShowing, Model.closeTurnsScreen}},
 	}
 }
 
 func alertsScreenRow() mode {
 	return mode{
-		hint: (Model).renderAlertsHint,
-		keys: (Model).updateAlerts,
-		// Every alert the session has had, as the rail reads it. It reads
-		// and changes nothing, so it is not idleOnly: mid-turn is when
-		// somebody asks what has been failing and what fixed it (alerts.go).
-		command: &surfaceCommand{
-			slashCommand: slashCommand{name: "/alerts", desc: "every command this session broke, standing and superseded, each run a key away",
-				help: `every alert the session has had on one screen, standing first and then superseded, newest first: the command, its last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate passing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id its output was kept under where it was cut. It reads the rail's own alerts and changes nothing`},
-			bare: true,
-			open: bareOpen(Model.openAlerts),
-		},
-		door: &surfaceDoor{components.RailAlerts, railDoor{Model.openAlerts, alertsShowing, Model.closeAlertsScreen}},
+		hint:    (Model).renderAlertsHint,
+		keys:    (Model).updateAlerts,
+		command: "/alerts",
+		door:    &surfaceDoor{components.RailAlerts, railDoor{Model.openAlerts, alertsShowing, Model.closeAlertsScreen}},
 	}
 }
 
 func spendScreenRow() mode {
 	return mode{
-		hint: (Model).renderStatsHint,
-		keys: (Model).updateStats,
-		// The session's whole bill, as the rail's SPEND block reads it. It
-		// reads and changes nothing, so it is not idleOnly: mid-turn is when
-		// somebody asks what the run is costing (stats.go). While attached
-		// to a child, /stats is the child's own answer and never reaches
-		// this row (attach.go).
-		command: &surfaceCommand{
-			slashCommand: slashCommand{name: "/stats", desc: "the session's whole bill: by model, by child and by turn",
-				help: `the session's whole bill on one screen, as the rail's SPEND block reads it: the session total with the kinds of request that make it up, each model's share with its own kinds and what the children on it cost, each child's share by name, and each turn's cost as its close row states it. [enter] on a turn opens it on the turns screen. What the context window is occupied by is /context. While attached to an agent, /stats is that agent's own. It reads and changes nothing`},
-			bare: true,
-			open: bareOpen(Model.openStats),
-		},
-		door: &surfaceDoor{components.RailSpend, railDoor{Model.openStats, statsShowing, Model.closeStatsScreen}},
+		hint:    (Model).renderStatsHint,
+		keys:    (Model).updateStats,
+		command: "/stats",
+		door:    &surfaceDoor{components.RailSpend, railDoor{Model.openStats, statsShowing, Model.closeStatsScreen}},
 	}
 }
 
 func notesScreenRow() mode {
 	return mode{
-		hint: (Model).renderNotesHint,
-		keys: (Model).updateNotes,
-		command: &surfaceCommand{
-			slashCommand: slashCommand{name: "/notes", args: "[drop <n>|clear]", desc: "the session's shared notebook, as a screen: what the agents wrote for each other",
-				enabled: func(m *Model) bool { return m.notebook != nil },
-				argSpecs: staticArgs(
-					argOption{"drop", "remove one note by number"},
-					argOption{"clear", "empty the notebook, after confirming it"},
-				),
-				help: `the session's shared notebook — what the agents wrote for each other, and what a backlog run wrote up, listed by author. Dropping is yours alone: drop <n> removes one, clear empties it`},
-			open: func(m Model, parts []string) (tea.Model, tea.Cmd) { return m.notesCommand(parts[1:]) },
-		},
+		hint:    (Model).renderNotesHint,
+		keys:    (Model).updateNotes,
+		command: "/notes",
 	}
 }
 
@@ -1051,24 +860,8 @@ func agentListMode() *mode {
 		lines:   panelRows((Model).agentListLines),
 		keys:    (Model).updateAgentList,
 		keyList: (Model).agentListKeyList,
-		command: &surfaceCommand{
-			slashCommand: slashCommand{name: "/agents", args: "[new [brief]]", desc: "agent manager; new drafts a profile from a sentence",
-				key: keys.Shown(keys.Draft.Agents),
-				// The manager opens on a session that can spawn agents or draft
-				// a profile for one. Drafting alone is enough: the list is where
-				// the offer to draft lives (attach.go).
-				enabled:  func(m *Model) bool { return m.subagents != nil || m.personas.Enabled },
-				argSpecs: staticArgs(argOption{"new", "draft an agent profile with the model's help"}),
-				help: `agent manager: attach, answer, steer, retry, cancel and kill sub-agents from the row each is on (also ` + keys.Bracket(keys.Draft.Agents) + `)
-new [brief]   draft an agent profile from a sentence with the model's help: answer its questions if it has any, then keep, refine or discard the draft on a card. Bare offers starting points`},
-			open: func(m Model, parts []string) (tea.Model, tea.Cmd) {
-				if len(parts) > 1 && parts[1] == "new" {
-					return m.startPersona(strings.Join(parts[2:], " "))
-				}
-				return m.openAgentList()
-			},
-		},
-		door: &surfaceDoor{components.RailAgents, railDoor{Model.openAgentList, agentListShowing, Model.closeAgentList}},
+		command: "/agents",
+		door:    &surfaceDoor{components.RailAgents, railDoor{Model.openAgentList, agentListShowing, Model.closeAgentList}},
 	}
 }
 
@@ -1102,18 +895,11 @@ func panelRows(f func(Model) []string) func(Model, int, int) []string {
 	return func(m Model, _, _ int) []string { return f(m) }
 }
 
-// bareOpen adapts a surface's opener to a command that takes no words.
-func bareOpen(open func(Model) (tea.Model, tea.Cmd)) func(Model, []string) (tea.Model, tea.Cmd) {
-	return func(m Model, _ []string) (tea.Model, tea.Cmd) { return open(m) }
-}
-
 var (
 	overlayOnce  sync.Once
 	overlayTable map[state]*mode
 	// The tables derived from the register's rows, built in the same Do as
-	// the rows themselves: a command by every name and alias it answers to,
-	// and a rail door by the block it opens from.
-	registerCommands  map[string]*surfaceCommand
+	// the rows themselves: a rail door by the block it opens from.
 	registerDoors     map[string]railDoor
 	registerDoorNames map[string]bool
 )
@@ -1131,22 +917,15 @@ var (
 func overlays() map[state]*mode {
 	overlayOnce.Do(func() {
 		overlayTable = buildOverlays()
-		registerCommands = map[string]*surfaceCommand{}
 		registerDoors = map[string]railDoor{}
 		registerDoorNames = map[string]bool{}
 		// The agent manager is a row the state cannot name (coverOverlay),
-		// and the only such row with a command and a door.
+		// and the only such row with a door.
 		rows := []*mode{agentListMode()}
 		for _, o := range overlayTable {
 			rows = append(rows, o)
 		}
 		for _, o := range rows {
-			if c := o.command; c != nil {
-				registerCommands[c.name] = c
-				for _, a := range c.aliases {
-					registerCommands[a] = c
-				}
-			}
 			if d := o.door; d != nil {
 				for _, block := range append([]string{d.block}, o.doorAlso...) {
 					registerDoors[block] = d.railDoor
@@ -1162,26 +941,6 @@ func overlays() map[state]*mode {
 // own turn rather than a mode over it.
 func overlayFor(s state) *mode {
 	return overlays()[s]
-}
-
-// registeredCommand is the command a register row declares under this name
-// or one of its aliases.
-func registeredCommand(name string) (*surfaceCommand, bool) {
-	overlays()
-	c, ok := registerCommands[name]
-	return c, ok
-}
-
-// registeredSlash is a register row's command as the completion registry
-// lists it (complete.go), which is where the menu's order is kept. A name no
-// row declares is a registry that has drifted from the register, and there
-// is no row to show for it.
-func registeredSlash(name string) slashCommand {
-	c, ok := registeredCommand(name)
-	if !ok {
-		panic("no register row declares the command " + name)
-	}
-	return c.slashCommand
 }
 
 // coverOverlay is the mode covering whatever the state is showing: the agent

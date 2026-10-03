@@ -16,8 +16,7 @@ package chat
 // read a paragraph. It is declared with the key among the input's offers
 // (internal/ui/keys), which the input's row of the register is read off, so
 // the input cannot answer a key that has no row here. A command's paragraph
-// is declared with the command, in the command table or on its surface's
-// register row.
+// is declared with the command, in the command table.
 //
 // The prose is written unwrapped and laid out at the width it is drawn at
 // (helpsheet.go): a list authored at one width was a list that ran off the
@@ -103,9 +102,8 @@ func helpMidTurn(m *Model) string {
 		"it, which is a question rather than a wait"
 }
 
-// commandHelp is a command's /help paragraph, declared with the command:
-// on its row of the command table (command.go), or on the register row of the
-// surface it opens (overlay.go).
+// commandHelp is a command's /help paragraph, declared with the command on
+// its row of the command table (command.go).
 func commandHelp(c slashCommand) string { return c.help }
 
 // helpKeysText is the key list on its own, as text: what the chord prints,

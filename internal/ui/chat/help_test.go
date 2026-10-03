@@ -172,9 +172,6 @@ func TestHelp_EveryCommandHasAParagraph(t *testing.T) {
 		if !named[name] {
 			t.Errorf("the command table declares a menu row for %s, which the menu does not list", name)
 		}
-		if _, ok := registeredCommand(name); ok {
-			t.Errorf("the command table declares a menu row for %s, which its register row already declares", name)
-		}
 	}
 }
 

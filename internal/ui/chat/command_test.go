@@ -301,8 +301,9 @@ var unofferedCommands = map[string]string{
 	"/adddir":  "/add-dir without its hyphen",
 }
 
-// The command table and the overlay register are what a typed name does; the
-// completion registry is what the menu, the palette and /help offer. Nothing
+// The command table is what a typed name does, the commands that open a
+// surface included; the completion registry is what the menu, the palette and
+// /help offer. Nothing
 // but this test stops the two drifting: a row offered with nothing to answer
 // it falls through to "unknown command", and a command answered with no row is
 // one nobody can find.
@@ -314,22 +315,16 @@ func TestCommandTableAnswersWhatTheRegistryOffers(t *testing.T) {
 		}
 	}
 	for name := range offered {
-		_, surface := registeredCommand(name)
-		_, row := commands()[name]
-		if !surface && !row {
-			t.Errorf("the registry offers %s and neither the command table nor the register answers it", name)
+		if _, row := commands()[name]; !row {
+			t.Errorf("the registry offers %s and the command table does not answer it", name)
 		}
 	}
 
 	answered := map[string]bool{}
 	for name, c := range commands() {
-		if c.run == nil && c.answer == nil {
+		if c.open == nil && c.run == nil && c.answer == nil {
 			t.Errorf("the command table declares %s with nothing to do when it is typed", name)
 		}
-		answered[name] = true
-	}
-	overlays()
-	for name := range registerCommands {
 		answered[name] = true
 	}
 	for name := range answered {

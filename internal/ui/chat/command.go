@@ -120,8 +120,8 @@ func commandName(text string) string {
 }
 
 // runCommand dispatches one slash command from the orchestrator surface: the
-// surface a register row opens (overlay.go), else the run the command table
-// declares under the name, else answerCommand.
+// surface the command table's row opens, else the run it declares under the
+// name, else answerCommand.
 func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 	if m.working() {
 		if reason, ok := idleOnlyReason(name); ok {
@@ -137,13 +137,14 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		return m.surfaceNotice(name + " is not part of this session")
 	}
 	parts := strings.Fields(text)
-	// A command whose job is opening a surface is carried out by that
-	// surface's register row (overlay.go). A bare one typed with words after
-	// it goes on below and is answered as any form the session does not know.
-	if c, ok := registeredCommand(name); ok && (!c.bare || len(parts) == 1) {
+	c, ok := commands()[name]
+	// A command whose job is opening a surface opens it. A bare one typed
+	// with words after it goes on below and is answered as any form the
+	// session does not know.
+	if ok && c.open != nil && (!c.bare || len(parts) == 1) {
 		return c.open(m, parts)
 	}
-	if c, ok := commands()[name]; ok && c.run != nil && (!c.exact || text == name) {
+	if ok && c.run != nil && (!c.exact || text == name) {
 		if next, cmd, handled := c.run(m, parts); handled {
 			return next, cmd
 		}
@@ -233,10 +234,11 @@ func (m Model) attachCommand(parts []string) (tea.Model, tea.Cmd) {
 // transcript shows, so a command with both was declared twice. It is one row
 // per command now holding both, and an alias is a name on the row.
 //
-// A command whose job is opening a surface is not here: its register row
-// declares it (overlay.go). command_test.go holds both to the completion
-// registry, so a name cannot be offered without being answered, or answered
-// without being offered.
+// A command whose job is opening a surface is a row here like any other,
+// with what opening it does; the register row that draws the surface names
+// it (overlay.go) and declares nothing else about it. command_test.go holds
+// the table to the completion registry, so a name cannot be offered without
+// being answered, or answered without being offered.
 
 // command is one row of the table. A row is where a command's name sits
 // beside what it does, so whatever else is said about a command — its menu
@@ -247,6 +249,13 @@ type command struct {
 	// exact is a run taken only when the line is the name alone, spelled as
 	// typed; anything else goes on to answerCommand.
 	exact bool
+	// open is what typing a command whose job is opening a surface does,
+	// ahead of run: the register row that draws the surface names the
+	// command (overlay.go). nil is a command that opens nothing of its own.
+	open func(m Model, parts []string) (tea.Model, tea.Cmd)
+	// bare is an open taken only when the command is typed alone. With words
+	// after it the line goes on to run and the rest of the dispatch.
+	bare bool
 	// run is what the front end does with the line: open a picker, ask a
 	// confirm, hand the terminal a write. handled false is a form it leaves
 	// to the rest of the dispatch (answerCommand). nil is a command whose
@@ -259,8 +268,7 @@ type command struct {
 	// menu, the palette and /help offer under the name (complete.go). Its
 	// name is this row's; its aliases are the ones the menu matches while
 	// filtering, which leave out a spelling answered only so a slip of habit
-	// is not an unknown command. nil is a command whose row is declared on
-	// the register row of the surface it opens (overlay.go).
+	// is not an unknown command. nil is a command the menu does not offer.
 	slash *slashCommand
 }
 
@@ -288,6 +296,11 @@ func bareRun(run func(m Model) (tea.Model, tea.Cmd)) commandRun {
 		next, cmd := run(m)
 		return next, cmd, true
 	}
+}
+
+// bareOpen adapts a surface's opener to a command that takes no words.
+func bareOpen(open func(Model) (tea.Model, tea.Cmd)) func(Model, []string) (tea.Model, tea.Cmd) {
+	return func(m Model, _ []string) (tea.Model, tea.Cmd) { return open(m) }
 }
 
 // picks is a run that opens a picker when there is something to pick, and
@@ -589,9 +602,14 @@ revoke [commands|edits|hosts|agents]   take the grants back`},
 				help:     `saved chats — opens the same picker; enter loads, [x] deletes (asks first), [r] renames`},
 			exact: true, run: picks(Model.openChatPick), answer: slashChats},
 		{name: "/help",
-			// Bare /help is the key list's register row (keypopup.go). With words
-			// after it, it writes the whole help — a sheet laid out at the pane's
-			// width rather than a sentence (helpsheet.go), so it is appended as one.
+			slash: &slashCommand{desc: "every key, by group, to filter; with words, the whole help as a row",
+				key: keys.Shown(keys.Draft.KeyList),
+				help: `open the key list: every key this session answers, grouped as a keybindings.toml names them and spelled the way they are bound now — type to filter by key or words, ` +
+					keys.Bracket(keys.KeyList.Close) + ` or ` + keys.Bracket(keys.Draft.KeyList) + ` closes it, and the draft is as you left it. With words after it (/help keys), the whole sheet — the commands, what happens mid-turn, the keys and the approval policy — is written to the transcript instead`},
+			// Bare /help opens the key list (keypopup.go). With words after it,
+			// it writes the whole help — a sheet laid out at the pane's width
+			// rather than a sentence (helpsheet.go), so it is appended as one.
+			bare: true, open: bareOpen(Model.openKeyPopup),
 			run: always(func(m Model, _ []string) (tea.Model, tea.Cmd) {
 				return m.helpNotice(m.helpSheet())
 			}),
@@ -770,7 +788,21 @@ default [level]   show or persist the level new sessions start on (provider.reas
 				enabled: func(m *Model) bool { return m.processes.Manage != nil },
 				help:    `list the long-running processes this session owns (process tool)`},
 			answer: slashProcesses},
-		{name: "/mcp", answer: slashMCP},
+		// Where the session's tools came from, as the rail's TOOLS block
+		// reads it. It is not idleOnly: a server that went mid-turn is
+		// exactly when somebody asks, and its one act records an answer
+		// for the next session rather than changing this one (tools.go).
+		// With words after it, /mcp is the listing's own verbs: the answer.
+		{name: "/mcp",
+			slash: &slashCommand{args: "[trust <name>|distrust <name>]",
+				desc: "where this session's tools came from, and why any did not come",
+				help: `every place this session's tools came from on one screen, opened on the MCP servers: the built-in toolset, each server, the language servers, the binaries found on PATH and the web tools, each up or not with the tools it registered — and for one that is not up, what that costs and what would move it, in the words shhh mcp gives. On a server the checkout declared, [a] trusts the checkout or withdraws that, after asking, as /trust does; it takes effect in the next session. trust <name> and distrust <name> say where that answer is given`,
+				argSpecs: staticArgs(
+					argOption{"trust", "where a project server's trust is answered"},
+					argOption{"distrust", "where that answer is withdrawn"},
+				)},
+			bare: true, open: bareOpen(Model.openMCPScreen),
+			answer: slashMCP},
 		{name: "/skills",
 			slash: &slashCommand{desc: "the skills this session loaded, and why any did not",
 				help: `the skills this session loaded (SKILL.md directories), and why any did not`},
@@ -784,6 +816,183 @@ default [level]   show or persist the level new sessions start on (provider.reas
 			slash: &slashCommand{desc: "the sessions running on this machine, and where each one is",
 				help: `the sessions running on this machine: the conversation each saves to, its checkout and branch, and whether it is working`},
 			answer: slashSessions},
+
+		// The commands whose job is opening a surface. The register row that
+		// draws the surface names the command (overlay.go); what typing it
+		// does is open, here beside the name.
+
+		// The occupancy surface reads the conversation and changes nothing
+		// in it, so it is not idleOnly: a window filling up mid-turn is
+		// exactly when the question gets asked.
+		{name: "/context",
+			slash: &slashCommand{desc: "the window as a meter, itemised down to the tool",
+				help: `the window as a meter, by category, with the tools itemised`},
+			bare: true,
+			open: bareOpen(Model.openContext)},
+		// The session's whole bill, as the rail's SPEND block reads it. It
+		// reads and changes nothing, so it is not idleOnly: mid-turn is when
+		// somebody asks what the run is costing (stats.go). While attached
+		// to a child, /stats is the child's own answer and never reaches
+		// this row (attach.go).
+		{name: "/stats",
+			slash: &slashCommand{desc: "the session's whole bill: by model, by child and by turn",
+				help: `the session's whole bill on one screen, as the rail's SPEND block reads it: the session total with the kinds of request that make it up, each model's share with its own kinds and what the children on it cost, each child's share by name, and each turn's cost as its close row states it. [enter] on a turn opens it on the turns screen. What the context window is occupied by is /context. While attached to an agent, /stats is that agent's own. It reads and changes nothing`},
+			bare: true,
+			open: bareOpen(Model.openStats)},
+		// Every reading the session has taken of its own run. It reads and
+		// changes nothing, so it is not idleOnly: mid-turn is when somebody
+		// asks what the run has been saying about itself (readings.go).
+		{name: "/readings",
+			slash: &slashCommand{desc: "every reading the session has taken of its own run, each whole",
+				help: `every reading the session has taken of its own run on one screen, newest first: the round, the verdict, the whole reading with its reason and the instruction it was judged against, and whether it steered the turn and whether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing`},
+			bare: true,
+			open: bareOpen(Model.openReadings)},
+		// Every turn the session has run, as its close row reads it. It
+		// reads and changes nothing, so it is not idleOnly: mid-turn is when
+		// somebody asks what the turns before this one cost (turns.go).
+		{name: "/turns",
+			slash: &slashCommand{desc: "every turn the session has run, as its close row reads it, each one's review a key away",
+				help: `every turn the session has run on one screen, newest first: how it ended, its steps, tools, time and spend, what it changed, its commit and its checks' verdict — the figures its close row drew, beside the close itself — with the turn in flight on top. [enter] opens a turn's review where it changed files. A turn from an ended sitting shows its files and says its figures were not kept. It reads and changes nothing`},
+			bare: true,
+			open: bareOpen(Model.openTurns)},
+		// Every alert the session has had, as the rail reads it. It reads
+		// and changes nothing, so it is not idleOnly: mid-turn is when
+		// somebody asks what has been failing and what fixed it (alerts.go).
+		{name: "/alerts",
+			slash: &slashCommand{desc: "every command this session broke, standing and superseded, each run a key away",
+				help: `every alert the session has had on one screen, standing first and then superseded, newest first: the command, its last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate passing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id its output was kept under where it was cut. It reads the rail's own alerts and changes nothing`},
+			bare: true,
+			open: bareOpen(Model.openAlerts)},
+		// The session's whole working list, each step beside what the
+		// transcript recorded for it. It reads and changes nothing, so it
+		// is not idleOnly: mid-turn is when somebody asks where the agent
+		// is (worksteps.go).
+		{name: "/steps",
+			slash: &slashCommand{desc: "the session's own working list, each step beside what the transcript recorded for it",
+				enabled: func(m *Model) bool { return m.codingSurfaces() },
+				help:    `the session's own working list on one screen: every step it declared, the paths each said it would touch, which it has marked done and the one it is on — and beside each, the calls the transcript titled for it, or not started where there are none. It reads and changes nothing`},
+			bare: true,
+			open: bareOpen(Model.openSteps)},
+		// The whole settings file, where /ui is the handful of its keys a
+		// session flips often enough to have a word for. Not idleOnly: the
+		// settings a person wants to change mid-session are the ones the
+		// running turn just made them think about, and nothing the screen
+		// stages reaches the file until [w] — which writes the user's own
+		// config file and not the tree the turn is working in.
+		{name: "/config",
+			slash: &slashCommand{desc: "every setting, where its value came from, and what changing it costs",
+				enabled: func(m *Model) bool { return m.openConfig != nil },
+				help:    `every setting, staged: what each one is set to, where that value came from, and what [enter] offers instead of typing it. Nothing reaches your config file until [w], and the way out asks before discarding what is staged. The running session keeps the settings it started on`},
+			bare: true,
+			open: bareOpen(Model.openConfigScreen)},
+		// The session's whole boundary. It reads and changes nothing, so it
+		// is not idleOnly: a turn that just asked for something is when a
+		// person wants to see what it may do (safety.go).
+		{name: "/safety",
+			slash: &slashCommand{aliases: []string{"/security"}, desc: "everything this session may do, and what fences it, in one place",
+				help: `the session's whole boundary on one screen (also /security): the mode and grants, where it may write, what contains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools — each section naming the command that changes it. It reads and changes nothing`},
+			aliases: []string{"/security"}, bare: true,
+			open: bareOpen(Model.openSafety)},
+		// The ledger of what the session read. Like the occupancy surface
+		// it reads and changes nothing, so it is not idleOnly: mid-turn is
+		// exactly when somebody asks where a claim came from.
+		{name: "/sources",
+			slash: &slashCommand{desc: "what this session read: every fetch and search, by host",
+				enabled: func(m *Model) bool { return m.sourceLedger != nil },
+				help:    `what this session read: every fetch and every search, its own and its children's, grouped by host — with the whole page under [enter] where the fetch kept one`},
+			bare: true,
+			open: bareOpen(Model.openSources)},
+		// The install writes only into shhh's own directory and never
+		// into the conversation, so it is not idle-only: a turn running
+		// is when the model finds the tool missing.
+		{name: setupCommandName,
+			slash: &slashCommand{desc: "install the tools this checkout's toolchain declaration names (asks first)",
+				enabled: func(m *Model) bool { return m.setupWired() },
+				help:    `install what this checkout's .shhh/toolchain.toml names — the card lists every install line, where the tools land and what the lines may reach before anything runs, and they run contained exactly as the assistant's commands are. The start screen offers it when a declared tool is not on PATH`},
+			bare: true,
+			open: bareOpen(Model.setupCommand)},
+		// The draft is read and written beside the conversation and never
+		// into it, so it is not idle-only; its editor refuses a running
+		// turn itself, since the editor takes the terminal with it.
+		{name: toolchainCommandName,
+			slash: &slashCommand{desc: "draft this checkout's toolchain declaration, or review the one it has (reads only, then asks)",
+				enabled: func(m *Model) bool { return m.toolchainDraftWired() },
+				help:    "read the checkout — its build files, CI workflows, Makefile and quality gate — and draft the .shhh/toolchain.toml its checks need, or review the one it has and propose only changes, each with its reason. The draft is read by the same loader the file is before a card shows it, and nothing is written until the card's yes"},
+			bare: true,
+			open: bareOpen(Model.toolchainCommand)},
+		{name: "/notes",
+			slash: &slashCommand{args: "[drop <n>|clear]", desc: "the session's shared notebook, as a screen: what the agents wrote for each other",
+				enabled: func(m *Model) bool { return m.notebook != nil },
+				argSpecs: staticArgs(
+					argOption{"drop", "remove one note by number"},
+					argOption{"clear", "empty the notebook, after confirming it"},
+				),
+				help: `the session's shared notebook — what the agents wrote for each other, and what a backlog run wrote up, listed by author. Dropping is yours alone: drop <n> removes one, clear empties it`},
+			open: func(m Model, parts []string) (tea.Model, tea.Cmd) { return m.notesCommand(parts[1:]) }},
+		{name: "/agents",
+			slash: &slashCommand{args: "[new [brief]]", desc: "agent manager; new drafts a profile from a sentence",
+				key: keys.Shown(keys.Draft.Agents),
+				// The manager opens on a session that can spawn agents or draft
+				// a profile for one. Drafting alone is enough: the list is where
+				// the offer to draft lives (attach.go).
+				enabled:  func(m *Model) bool { return m.subagents != nil || m.personas.Enabled },
+				argSpecs: staticArgs(argOption{"new", "draft an agent profile with the model's help"}),
+				help: `agent manager: attach, answer, steer, retry, cancel and kill sub-agents from the row each is on (also ` + keys.Bracket(keys.Draft.Agents) + `)
+new [brief]   draft an agent profile from a sentence with the model's help: answer its questions if it has any, then keep, refine or discard the draft on a card. Bare offers starting points`},
+			open: func(m Model, parts []string) (tea.Model, tea.Cmd) {
+				if len(parts) > 1 && parts[1] == "new" {
+					return m.startPersona(strings.Join(parts[2:], " "))
+				}
+				return m.openAgentList()
+			}},
+		// Bare /todo opens the backlog screen; the subcommands are textual,
+		// and edit hands the item file to the editor.
+		{name: "/todo",
+			slash: &slashCommand{args: "[show|edit|new|add|groom|block|open|done|drop|run|sprint|status|stop]", desc: "the project's backlog (bare /todo opens the screen)",
+				enabled: func(m *Model) bool { return m.todosEnabled() },
+				argSpecs: []argSpec{
+					{options: []argOption{
+						{"show", "print an item"},
+						{"edit", "open an item in your editor"},
+						{"add", "read this session into items, or add one from a sentence"},
+						{"groom", "read an item against the tree and propose the corrections"},
+						{"block", "mark an item blocked, with why"},
+						{"open", "reopen a blocked item"},
+						{"done", "archive an item"},
+						{"drop", "delete an item outright"},
+						{"run", "work an item through to a commit (bare run takes the next ready one)"},
+						{"sprint", "the set being worked: bare shows it, plan proposes one"},
+						{"status", "where the run is"},
+						{"stop", "abandon the run; the item goes back to open"},
+					}},
+					{after: []string{"show", "edit", "groom", "block", "open", "done", "drop", "run"}, dynamic: todoSlugArgs, fuzzy: true},
+				},
+				help: `the project's backlog: bare opens a picker · show|edit <slug> · add (reads this session into proposed items you accept or drop) · add <text> · block <slug> [why] · open|done|drop <slug> · new <text> · groom <slug> (reads an item against the tree and proposes the corrections) · run [slug|--next] works an item through its profile's run · sprint · status · stop`},
+			open: (Model).todoCommand},
+		// Bare, the cumulative session diff; with a path, that one file's,
+		// which is the keyboard's way to the door a click on a CHANGES row
+		// opens (railclick.go). The argument is a path and not a turn
+		// number, because the rail's rows are paths and the two surfaces
+		// answer the same question.
+		{name: "/diff",
+			slash: &slashCommand{args: "[path]", desc: "cumulative session diff, full screen — bare, or one file's",
+				enabled:  func(m *Model) bool { return m.changes != nil && m.codingSurfaces() },
+				argSpecs: []argSpec{{dynamic: sessionFileArgs, fuzzy: true}},
+				help:     `show what this session changed, full screen, or one file's — read from the session's own changeset, so it works outside a git repository`},
+			open: func(m Model, parts []string) (tea.Model, tea.Cmd) {
+				if len(parts) > 1 {
+					return m.openFileDiff(strings.Join(parts[1:], " "))
+				}
+				return m.openSessionDiff()
+			}},
+		// Review mode over a turn's changeset; bare takes the most recent
+		// turn that changed anything.
+		{name: "/review",
+			slash: &slashCommand{args: "[turn]", desc: "review what a turn changed — files, hunks, staging",
+				enabled:  func(m *Model) bool { return m.changes != nil && m.codingSurfaces() },
+				argSpecs: []argSpec{{dynamic: reviewTurnArgs}},
+				help:     `review what a turn changed: file list, hunks and the turn's verdict (bare reviews the last turn that changed anything). Also a turn's changed-files row, clicked or selected and opened with enter. It reads and changes nothing; /undo takes a turn back`},
+			open: (Model).reviewCommand},
 	}
 }
 

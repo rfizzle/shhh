@@ -1300,14 +1300,15 @@ func TestNewSession_TakesEveryHeldScreenWithIt(t *testing.T) {
 		t.Fatal("no register row holds a screen")
 	}
 	for _, s := range held {
-		c := overlays()[s].command
-		if c == nil {
+		name := overlays()[s].command
+		c, ok := commands()[name]
+		if !ok || c.open == nil {
 			t.Fatalf("state %d holds a screen and no command opens it", s)
 		}
-		next, _ := c.open(m, []string{c.name})
+		next, _ := c.open(m, []string{name})
 		m = next.(Model)
 		if m.state != s || m.screens[s] == nil {
-			t.Fatalf("%s did not put its own screen up: state=%d, held=%v", c.name, m.state, m.screens[s])
+			t.Fatalf("%s did not put its own screen up: state=%d, held=%v", name, m.state, m.screens[s])
 		}
 	}
 	for s := range m.screens {

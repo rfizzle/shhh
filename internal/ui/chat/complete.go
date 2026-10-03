@@ -116,10 +116,8 @@ var (
 // A package-level registry closes that loop into an initialisation cycle.
 //
 // slashOrder is the one order every command list keeps — the menu, the
-// palette and /help. Each row is the command's own declaration: a command
-// whose job is opening a surface is declared on that surface's register row
-// (overlay.go), and every other on its row of the command table (command.go),
-// completion row and paragraph included.
+// palette and /help. Each row is the command's own declaration, on its row of
+// the command table (command.go), completion row and paragraph included.
 func slashCommands() []slashCommand {
 	slashOnce.Do(func() { slashTable = buildSlashCommands() })
 	return slashTable
@@ -127,9 +125,8 @@ func slashCommands() []slashCommand {
 
 // slashOrder is the menu's order, by name. Each command's row — its argument
 // hint, its words, its argument specs and its /help paragraph — is declared
-// with the command: on its row of the command table (command.go), or on the
-// register row of the surface it opens (overlay.go). The slot is the only
-// thing this list says about it.
+// with the command, on its row of the command table (command.go). The slot is
+// the only thing this list says about it.
 var slashOrder = []string{
 	"/help", "/clear", "/paste", "/copy", "/run", "/model", "/permissions",
 	"/reasoning", "/context", "/stats", "/readings", "/turns", "/alerts",
@@ -149,14 +146,10 @@ func buildSlashCommands() []slashCommand {
 	return rows
 }
 
-// declaredSlash is the menu row a command declares under this name: its
-// surface's register row's, else its command table row's. A name neither
-// declares is a menu that has drifted from the commands, and there is no row
-// to show for it.
+// declaredSlash is the menu row a command declares under this name, on its
+// command table row. A name no row declares is a menu that has drifted from
+// the commands, and there is no row to show for it.
 func declaredSlash(name string) slashCommand {
-	if c, ok := registeredCommand(name); ok {
-		return c.slashCommand
-	}
 	if c, ok := commands()[name]; ok && c.name == name && c.slash != nil {
 		row := *c.slash
 		row.name = c.name
