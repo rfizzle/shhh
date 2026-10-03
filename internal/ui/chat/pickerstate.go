@@ -58,6 +58,16 @@ type modelList struct {
 	listed bool
 }
 
+// stop abandons a query in flight and drops its cancel. It is nil-safe, so
+// the esc on the waiting screen (answerModelList) and the quit
+// (stopSideJobs) share it with the path that has nothing out.
+func (l *modelList) stop() {
+	if l.cancel != nil {
+		l.cancel()
+		l.cancel = nil
+	}
+}
+
 // clear drops the closed card and everything hanging off it.
 func (p *pickerState) clear() {
 	p.card = nil

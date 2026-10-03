@@ -334,10 +334,7 @@ func (m *Model) answerModelList(msg tea.KeyPressMsg) (bool, overlayAction) {
 	if !keys.Match(msg, keys.Select.Cancel) {
 		return false, overlayAction{}
 	}
-	if m.picker.models.cancel != nil {
-		m.picker.models.cancel()
-		m.picker.models.cancel = nil
-	}
+	m.picker.models.stop()
 	return true, overlayAction{close: true}
 }
 

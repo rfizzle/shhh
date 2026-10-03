@@ -30,21 +30,21 @@ type classifierState struct {
 // summary's and the title's readings. A reading out when the session leaves
 // is about a conversation nobody is left to read it for. A session boundary
 // (newsession.go) and a new slot (resetTitle) stop their own sets. Every
-// cancel is nil-safe, so the idle path shares it.
+// cancel is nil-safe, so the idle path shares it, and each is dropped once
+// it has run, so every side job is stopped the same way.
 func (m *Model) stopSideJobs() {
 	if m.runCancel != nil {
 		m.runCancel()
+		m.runCancel = nil
 	}
 	if m.classifier.cancel != nil {
 		m.classifier.cancel()
+		m.classifier.cancel = nil
 	}
 	// The model list is a request to the provider that a leaving session has
 	// nothing left to do with, and it is the one surface that can be holding
 	// one (picker.go).
-	if m.picker.models.cancel != nil {
-		m.picker.models.cancel()
-		m.picker.models.cancel = nil
-	}
+	m.picker.models.stop()
 	if m.summary.cancel != nil {
 		m.summary.cancel()
 		m.summary.cancel = nil
