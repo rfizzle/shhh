@@ -56,10 +56,6 @@ linters:
       - linters: [gocognit]
         path: ^internal/cli/print\.go$
         text: 'func `runPrintSession`'
-      # The headless approver: every approval kind decided in one closure.
-      - linters: [gocognit]
-        path: ^internal/cli/print\.go$
-        text: 'func `headlessApprover`'
       # The chat session: setup, the program and teardown still in one body.
       - linters: [gocognit]
         path: ^internal/cli/session\.go$
