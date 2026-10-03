@@ -42,7 +42,7 @@ import (
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/storage"
-	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/web"
@@ -1375,7 +1375,7 @@ func (d *todoDriver) fanOut(ctx context.Context, deadline time.Time, st *run.Sta
 		return st.NoLanes(it, "no lane is waiting to be built")
 	}
 
-	trees := make([]*subagent.Worktree, 0, len(lanes))
+	trees := make([]*worktree.Worktree, 0, len(lanes))
 	// Inside a sprint's lane the copies are made, landed and removed under
 	// the sprint's own worktree lock: several lanes can divide at once, and
 	// git's worktree administration is not safe run concurrently in one
@@ -1393,7 +1393,7 @@ func (d *todoDriver) fanOut(ctx context.Context, deadline time.Time, st *run.Sta
 		// seeds a writer from its changeset: the earlier stages' work is in
 		// this tree uncommitted, and a lane started without it writes its
 		// patch against text the checkout no longer has.
-		wt, err := subagent.NewWorktree(d.tree, st.Paths)
+		wt, err := worktree.NewWorktree(d.tree, st.Paths)
 		if err != nil {
 			release()
 			return st.NoLanes(it, "no isolated copy of the checkout could be made: "+todoFirstProblem(err.Error()))

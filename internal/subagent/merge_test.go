@@ -41,7 +41,7 @@ func ours(text string) string  { return strings.Replace(text, "var y = 0", "var 
 // the way it does when another patch lands.
 func landLane(t *testing.T, repo string, edit func(string) string) {
 	t.Helper()
-	lane, err := NewWorktree(repo, nil)
+	lane, err := wtree.NewWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,12 +199,12 @@ func TestMergeWorktree_TheSameLinesAreAConflictAndNothingIsMerged(t *testing.T) 
 // lane over the same lines lands nothing and says where.
 func TestWorktreeLand_MergesOverAnEarlierLaneAndRefusesAConflict(t *testing.T) {
 	repo := mergeRepo(t)
-	late, err := NewWorktree(repo, nil)
+	late, err := wtree.NewWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer late.Remove()
-	clash, err := NewWorktree(repo, nil)
+	clash, err := wtree.NewWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

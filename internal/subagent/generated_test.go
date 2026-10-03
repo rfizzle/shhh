@@ -89,12 +89,12 @@ func sumRepo(t *testing.T) string {
 // regenerated the golden in its own copy, in that order.
 func sumLanes(t *testing.T, repo string, gen Regenerator) error {
 	t.Helper()
-	one, err := NewWorktree(repo, nil)
+	one, err := wtree.NewWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer one.Remove()
-	two, err := NewWorktree(repo, nil)
+	two, err := wtree.NewWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +155,7 @@ func TestWorktreeLand_AnUnlistedGeneratedFileStillMergesAsText(t *testing.T) {
 // A generator that fails lands nothing and leaves the checkout as it was.
 func TestWorktreeLand_AFailingGeneratorLeavesTheCheckoutUntouched(t *testing.T) {
 	repo := sumRepo(t)
-	lane, err := NewWorktree(repo, nil)
+	lane, err := wtree.NewWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

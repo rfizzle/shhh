@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 )
@@ -357,7 +357,7 @@ func TestTodoLane_ALandingThatConflictsKeepsBothPatches(t *testing.T) {
 			t.Fatalf("git %v: %s", args, out)
 		}
 	}
-	wt, err := subagent.NewWorktree(root, nil)
+	wt, err := worktree.NewWorktree(root, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

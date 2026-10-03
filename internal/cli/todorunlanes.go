@@ -39,7 +39,6 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/quality"
-	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
@@ -100,7 +99,7 @@ type todoLanding struct {
 type todoLane struct {
 	set  *todoLanes
 	slug string
-	wt   *subagent.Worktree
+	wt   *worktree.Worktree
 	// seen is how many of the set's landings the copy has carried.
 	seen int
 	// landed reports the lane's patch on the checkout; kept that the copy
@@ -278,7 +277,7 @@ func (d *todoDriver) runLane(ctx context.Context, set *todoLanes, it todo.Item) 
 	// starts from too: the lane's patch is then measured against the
 	// checkout's own text rather than the last commit's.
 	// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
-	wt, err := subagent.NewWorktree(d.root, nil)
+	wt, err := worktree.NewWorktree(d.root, nil)
 	seen := len(set.landings)
 	set.land.Unlock()
 	if err != nil {
