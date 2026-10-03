@@ -11,18 +11,20 @@ package chat
 // and how a key is spelled comes from the register, so a command that is not
 // wired and a rebind both move the help with the handler.
 //
-// What the register cannot hold is the paragraph beside a key: its own words
-// are a phrase for a one-line hint, and this list is where a reader who
-// cannot find something comes to read a paragraph. So the paragraph is here
-// and the key is the register's, and a test holds the two together — every
-// binding the input frame offers has a row, and a row naming none is a
-// gesture the register does not bind.
+// The paragraph beside a key is longer than the phrase a one-line hint gives
+// it, because this list is where a reader who cannot find something comes to
+// read a paragraph. It is declared with the key among the input's offers
+// (internal/ui/keys), which the input's row of the register is read off, so
+// the input cannot answer a key that has no row here. A command's paragraph
+// is declared with the command, in the command table or on its surface's
+// register row.
 //
 // The prose is written unwrapped and laid out at the width it is drawn at
 // (helpsheet.go): a list authored at one width was a list that ran off the
 // pane at every narrower one (docs/interface/principles.md#one-grid).
 
 import (
+	"cmp"
 	"slices"
 	"strings"
 
@@ -101,80 +103,10 @@ func helpMidTurn(m *Model) string {
 		"it, which is a question rather than a wait"
 }
 
-// helpCommands is what each command's row says, by the name the registry
-// gives it. The registry decides which rows a session has; this decides what
-// each one is for, at the length a reader who could not find something needs
-// — which is longer than the line the completion menu shares with a name.
-//
-// Each line is a paragraph, wrapped where it is drawn. A line whose first
-// words are followed by two spaces is a row of its own inside the paragraph
-// — `default [name]   show or persist…` — and wraps under the text after the
-// gap rather than under the term (helpsheet.go).
-//
-// A command a register row declares carries its paragraph on that row
-// (overlay.go) and has none here. A test holds the two together as sets, so
-// a command added to the registry with a paragraph in neither place draws an
-// empty row rather than quietly shipping one.
-var helpCommands = map[string]string{
-	"/clear": `end this session and start another (also /new)`,
-	"/paste": `attach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path> attaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle> takes one back out — the handle is the one a chip leads with, Image#1, and its name works too — and /paste clear drops what is staged (ctrl+v). With a sentence half typed, reading mode (ctrl+o) keeps it and reaches the strip of chips as its last row: ←→ picks a chip, enter opens it, x drops it, esc goes back to the sentence; a click on a chip opens it too`,
-	"/copy":  `copy the last response (or just its code blocks)`,
-	"/run":   `run a code block from the last response (with confirmation)`,
-	"/model": `switch the model (bare /model opens an interactive picker)
-default [name]   show or persist the default model for new sessions
-agents [name]    show or persist the model sub-agents run on ("inherit" follows the session model)`,
-	"/permissions": `what runs without asking, and the permission mode that frames it (also /perms; was /mode)
-[name]   bare opens a picker over the five modes:
-         manual asks about every consequential call
-         accept-edits applies the edits and asks for the rest
-         auto adds the allowlist and lets the classifier judge
-         read-only writes nothing — a write is refused, not asked
-         plan is read-only, ending on a plan you can approve here or carry into a fresh session
-why      the latest auto-mode denial's reason
-grants   what this session has stopped asking about
-allow <commands|edits>   grant a whole category
-revoke [commands|edits|hosts|agents]   take the grants back`,
-	"/reasoning": `how much thinking the model does before it answers: off (the default), low, medium, high, xhigh or max — ctrl+t cycles them
-[level]           set it for this session (also /think)
-default [level]   show or persist the level new sessions start on (provider.reasoning)`,
-	"/step":     `open the in-flight step's card onto its calls, every call with its output body, bounded; run it again to close (/ui verbosity high is the same thing for every card at once)`,
-	"/status":   `where this session is: what it is working on, what it has spent, and whether the last few turns are still on the target you set it`,
-	"/sessions": `the sessions running on this machine: the conversation each saves to, its checkout and branch, and whether it is working`,
-	"/trust":    `let this checkout's own skills, agent profiles, wordings and quality suites load. A clone can carry instructions, so nothing of a checkout's runs until you say so; "off" withdraws it and the next session starts without them`,
-	"/ui": `screen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
-low draws each step's card as its header alone and leaves thinking out, normal draws the header, the sentence and the evidence, high opens every card onto its calls; a card you opened or closed stays as you left it. The mouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, open or close a card by its header, or answer keys; off hands selection back to the terminal, and ctrl+x flips it and saves it
-terminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications, focus events, cell size`,
-	"/add-dir":          `the working scope: which directories this session may write to. Bare lists it; <path> adds one (contained commands can write there, and edits there stop asking about leaving the scope); drop <path> takes it back`,
-	"/sandbox":          `containment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)`,
-	"/evidence":         `tool-output evidence store: reduction stats and size (purge to clear)`,
-	"/gate":             `quality gate: run [suite] starts the project's checks in the background, result shows the verdict, on|off runs them as a turn closes`,
-	"/ps":               `list the long-running processes this session owns (process tool)`,
-	scaffoldCommandName: `scaffold this project's .shhh/ context file — the card lists what it would write, and nothing is written until you say so. The start screen offers it in a checkout that has no .shhh`,
-	"/skills":           `the skills this session loaded (SKILL.md directories), and why any did not`,
-	"/skill":            `activate a skill now: /skill <name> [task] sends its instructions to the model with your task, as the model would load them itself. /<name> does the same for a skill whose name is not a command`,
-	"/secret":           `values a command may use and the model never sees: list names them, set NAME takes one from your environment (or NAME=value declares it outright), forget NAME drops it. What a command prints is scrubbed of them before it reaches the transcript`,
-	"/memory":           `durable memories: list (default) · add [global] [kind] <text> · edit <id> (opens the entry in your editor) · forget <id>`,
-	"/attach":           `attach to an agent's session and steer it (bare /attach lists)`,
-	"/detach":           `back to your own session (also esc while attached)`,
-	"/plan":             `the approved plan as a checklist on the steps screen — each step, the paths it named, its state and the calls that carried it out — with anything that has departed from it · save [name] writes the last plan/response to .shhh/plans/ · drop forgets an approved plan`,
-	"/undo":             `put back what a turn changed, from the session's own records (not git). Asks first, names anything that changed since, and is itself recorded as a turn`,
-	"/compact":          `continue from a summary plus the most recent turns`,
-	"/rewind":           `rewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the abandoned tail is kept as a branch, and a card asks whether the files come back too`,
-	"/branches":         `switch this session's branches: [n] by number, [name] by name, bare opens a picker`,
-	"/save":             `save this chat`,
-	"/load":             `load a saved chat (bare /load opens a picker)`,
-	"/chats":            `saved chats — opens the same picker; enter loads, [x] deletes (asks first), [r] renames`,
-	"/exit":             `quit (also /quit, /q)`,
-}
-
-// commandHelp is a command's /help paragraph: the one its register row
-// declares, or the one kept above.
-func commandHelp(c slashCommand) string {
-	if c.help != "" {
-		return c.help
-	}
-	return helpCommands[c.name]
-}
+// commandHelp is a command's /help paragraph, declared with the command:
+// on its row of the command table (command.go), or on the register row of the
+// surface it opens (overlay.go).
+func commandHelp(c slashCommand) string { return c.help }
 
 // helpKeysText is the key list on its own, as text: what the chord prints,
 // so the door Claude Code taught opens the same list /help holds. Every key
@@ -232,34 +164,17 @@ func (m Model) helpKeys() string { return helpSheet{m.helpKeySection()}.text() }
 // separate a column from its prose.
 const helpKeyWidth = 17
 
-// helpKeyRow is one row of the key list: which keys it is about, and the
-// paragraph beside them. The paragraph's own line breaks are kept — several
-// of these are two thoughts and not one long one — and each is wrapped to the
-// prose column where it is drawn.
+// helpKeyRow is one row of the key list, as the offer that declares it
+// (keys.Offer) spells it: which keys it is about, how their spellings join,
+// the column it writes out where the register does not spell it, and the
+// paragraph beside them.
 type helpKeyRow struct {
 	// binds are the register bindings the row is about. The column is their
-	// spellings, so a rebind moves the list with the handler, and the test
-	// that holds this list to the register reads them.
+	// spellings, so a rebind moves the list with the handler.
 	binds []keys.Binding
-	// sep joins the spellings when the row is about more than one binding: a
-	// space for two chords that are one gesture, a slash for the two ends of
-	// one act, and a newline for a pair that gets a line of the column each.
-	sep string
-	// key is the column when the register does not spell it the way the list
-	// reads it — the recall arrows, whose glyphs beside "recall previous
-	// inputs" read as decoration rather than as a key — or when the row is
-	// about something the register does not bind at all: a leading
-	// character, a paste, or the mouse.
-	//
-	// It is written exactly as the list draws it, because those two cases
-	// want opposite things. A leading character is a key: `@` and `!` are
-	// pressed, so they wear the brackets every key wears. A paste, a wheel
-	// and a click are not pressed at all, and bracketing them would offer a
-	// keystroke that does not exist
-	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-	key string
-	// text is the paragraph.
-	text string
+	sep   string
+	key   string
+	text  string
 }
 
 // column is the row's key column, one entry per line of it.
@@ -291,183 +206,17 @@ func (r helpKeyRow) column() []string {
 	}
 }
 
-// wordMoves is how the line editor moves by word, in the keys this platform
-// presses for it: alt+b and alt+f where alt arrives, and on a Mac the
-// Option arrows, which the stock terminals send as those two with nothing
-// set.
-func wordMoves() string {
-	if keys.Platform() == "darwin" {
-		return "option+← and option+→ move by word"
-	}
-	return "alt+b and alt+f move by word"
-}
-
 // helpKeyRows is the key list, in the order a reader meets the keys rather
 // than the order the register declares them: what sends a message first, then
-// what the draft does, then what takes the screen, then the ways out.
+// what the draft does, then what takes the screen, then the ways out. Each
+// row and its paragraph are declared once, with the key, among the input's
+// offers (internal/ui/keys), and the order is each offer's weight.
 func helpKeyRows() []helpKeyRow {
-	return []helpKeyRow{
-		{
-			binds: []keys.Binding{keys.Draft.Send, keys.Draft.Newline},
-			text: `send the message; shift+enter inserts a newline
-ctrl+j does the same, for terminals that cannot report shift+enter. A draft ending in \ turns enter into a newline too, the shell's own continuation — end in \\ to send a literal backslash`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Queue},
-			text: `while a turn is live, queue the draft as a follow-up sent when the turn completes. Steering (enter) joins the running turn; a follow-up waits for it to end. After a cancel the queue is held rather than sent — the notice rail says so
-on an empty draft the same key pulls the newest queued message — a follow-up first, else a steering line — back (it was the line editor's next-line; ↓ still is)`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Queued},
-			text: `move the keyboard into what is queued, drawn as rows above the input in the order it will go out: ↑↓ picks a message, enter pulls it back into the draft with what was staged with it — out of the queue, so sending it queues it again at the end — x cancels it, esc goes back to the draft as it was
-a message the turn delivered before the key reached it is already sent, and the row says so; /rewind is what takes a sent message back out`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.TakeSuggestion},
-			text: `on an empty draft with a next step drawn dim in it, put that step in the draft with the cursor at its end, to edit or send like anything you typed
-the step is offered after a turn closes and never sent on its own; any other key drops it for that turn. /ui suggest turns the offer off for the session`,
-		},
-		{
-			key:  "[@]",
-			text: `at the start of a word, open a file menu over what this session changed and the checkout's recent files, filtered by what you type after it. tab or enter inserts the path, esc keeps what you typed; a mentioned image is staged the way a pasted one is`,
-		},
-		{
-			key:  "[!]",
-			text: `a draft starting with ! runs as a command through the same confirm card /run uses; !! runs it and keeps the output out of the conversation (its row says local). A ! anywhere else is a letter`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Attach},
-			text:  `attach the clipboard: a copied screenshot or file is staged for your next message, ordinary text still pastes into the draft. Dragging an image into the terminal attaches it the same way. What is staged shows as chips above the input`,
-		},
-		{
-			key:  "pasting",
-			text: `text taller than 10 lines or wider than 1000 columns is staged as paste-1.txt rather than typed into the draft — both through ctrl+v and through your terminal's own paste — so a stack trace does not bury the sentence it came with. Those two numbers are the defaults for appearance.paste_lines and appearance.paste_columns; shhh config shows this machine's, and a negative turns one of them off. A paste over 256 KB is refused rather than staged — it would ride in the prompt itself`,
-		},
-		{
-			key:  "/paste show\nthe chip",
-			text: `open the staged paste. What is staged leaves a fold where you pasted it — ⟨Paste#1 · 214 lines⟩ — which moves, deletes and sends as one character, and what it will cost is on the vitals rail before you send. Its chip opens it with the sentence kept: a click on the chip, or reading mode (` + keys.Shown(keys.Draft.Reading) + `) down to the strip and enter on it; /paste show Paste#1 is the same surface by name. It reads the paste back: j/k scrolls, x drops it, q returns to the draft with the cursor where you left it`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Complete},
-			text:  `complete a slash command (typing / opens the menu; ↑↓ move, enter runs the highlighted command, esc dismisses)`,
-		},
-		{
-			key:  "[ctrl+a ctrl+e]\n[ctrl+k ctrl+u]",
-			text: `the draft is a readline editor: line start and line end, kill to end and to start of line; ctrl+w deletes the word before the cursor, ` + wordMoves(),
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Palette},
-			text:  `command palette: one prompt over commands, saved chats and the files this session touched — type to filter, enter runs, tab writes it into the input, esc dismisses. A terminal that cannot send this chord — it is a single byte and Windows conhost sends nothing for it — reaches the same list through the other door: / on an empty draft, then tab`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Pause},
-			text:  `hold the turn between rounds, and press it again to let the turn go on. The hold waits for the round in flight to finish, because a stream nobody is reading backs up until the provider gives up on it — so the rail says "holding after this round" and then "held". Nothing is re-asked and nothing is lost: what you type while it is held rides out with the round it resumes into, ctrl+z is accepted, and quitting and coming back with --continue opens the conversation held. It reaches every agent this session started, each at its own boundary, and one press lets them all go`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.HistorySearch},
-			text:  `search the input history: an incremental reverse search over what you typed before. Typing filters, ctrl+r again steps to an older match, enter keeps the match in the draft, esc puts the draft back exactly as it was`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Reasoning},
-			text:  `cycle the reasoning level: off → low → medium → high. It changes the next model request, not the one in flight, and the level is stated on the vitals rail beside the model`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Mode},
-			text: `cycle the permission mode: manual → accept-edits → auto → read-only → plan, and round again (behavior.mode_cycle sets another order)
-while the agent is working, enter queues a steering message that joins the conversation before the next model request`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.HistoryPrev, keys.Draft.HistoryNext},
-			key:   "[up/down]",
-			text:  `recall previous inputs (when the input is empty)`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.PointUp, keys.Draft.PointDown},
-			sep:   "\n",
-			text:  `move the pointer over the pane's rows — reading mode's cursor seen from the prompt. The draft keeps the keyboard and every letter it has, and the pane scrolls only as far as keeps the pointed row in view. On the start screen the offers are the rows. Esc drops the pointer; ctrl+o opens reading mode on it`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Open, keys.Draft.Close},
-			sep:   "\n",
-			text:  `open or run the pointed row, and close it: what enter and - do under reading mode's cursor, by the same handler. A row's own letters (a failure's r, a pause's +) are live only once the handover or reading mode has given the row the keyboard, because at the prompt a letter is text. Enter on an empty draft is the same open`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Reading},
-			text: `reading mode: select transcript rows (j/k, u/d half a page), expand/collapse (enter), y copies the row under the cursor — a command as $ cmd over its output, an edit as its unified diff, a message as markdown source, a card call by call — / searches the transcript and n/N walk what it found, pgup/pgdn page, ? lists every key the mode has, esc or typing returns to the prompt
-enter on a step's card opens it onto its calls and enter again closes it, as - does; on an open card ←→ walk the strip of its calls and enter opens that tool, esc there coming back to the strip, and a click on a call's row opens it the same way. enter on an edit row cycles collapsed → expanded → full-screen diff, and on a command or read row the same three depths over its output, the whole of it scrollable at the last one. It opens over a running turn, which keeps streaming underneath; a transcript with nothing selectable opens as a plain pager. /step opens the in-flight step's detail from the prompt`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Agents},
-			text:  `agent manager: enter attaches to an agent's session, s steers it from its row without attaching, x cancels its turn, X kills it — the one way an agent ends; attached, typing steers the agent, shift+tab sets its mode (clamped), esc detaches`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Backlog},
-			text: `the backlog screen: the project's items on the left and the one under the pointer on the right, / and s/p/k/r narrow the list, enter reads the body, e edits the file, R runs it, b/o/d/x block, reopen, archive and drop it, tab shows what shipped, ? lists every key it has, esc returns
-bare /todo opens the same screen; it opens over a running turn, and the keys that would change a file are grey while one is going, because the model may be reading them`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.NextAgent, keys.Draft.PrevAgent},
-			sep:   "\n",
-			text:  `move the keyboard one session along the inspector rail's AGENTS map — the orchestrator and every agent it started, in the order they were started, wrapping at both ends. The rail stays up while you are in an agent's session and marks the row you are in; everything you do *to* an agent is still in the manager`,
-		},
-		{
-			key:  "rail click",
-			text: `on the inspector rail, a changed file opens its diff and a session's row moves the keyboard into it. A block's heading, or its … N more, opens the surface holding the whole block — SUMMARY is /readings, THIS TURN is /turns, ALERTS is /alerts, CHANGES is /diff, AGENTS is /agents, STEPS is /steps, TODO is /todo, CONTEXT is /context, SPEND is /stats, TOOLS is /mcp — and a click on the same cell closes it, as its own esc does. The rail never holds the keyboard, so each command is that door's key`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Editor},
-			text:  `open the draft in your editor: $EDITOR (then $VISUAL, then vi) opens a file holding what you have typed, at the line and column the cursor was on, and whatever is in the file when the editor exits becomes the draft. An empty file leaves the draft alone. Not while a turn is running or a decision is waiting — the editor takes the terminal with it`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Suspend},
-			text:  `suspend shhh and go back to the shell; fg brings it back with the screen as you left it. Refused while a turn is running or a decision is waiting — a stopped shhh is not reading the stream it asked for`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Redraw},
-			text:  `redraw the screen from what the session already holds, for a display something else wrote over. The draft, the history and any selection are untouched`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Answer},
-			sep:   "\n",
-			text:  `hand the keyboard to a decision waiting on screen. An approval that lands while you are typing does not take your keys with it: its y, n and a are not live until one of these chords gives them the keyboard, and until then every letter goes into the draft. Esc leaves the decision waiting; n is how you say no. The two are the same act, and a waiting card names both: ctrl+y is for terminals and desktops that never deliver ctrl+space — macOS binds it to the input-source switcher and takes it first. With nothing waiting it hands the keyboard to the row you have selected: on a recovery or round-limit row that row's own letters are live from then on — r tries again, c continues, e takes a new key, p switches provider, + grants more rounds, ! lets it run — and esc gives the keyboard back; with no row selected it reaches the failure the last turn ended on, which says so. On a selected changed-files row it opens that turn's commit card, and a changed-files row opens the turn's review when it is clicked or selected and opened with enter. What a row once offered to do to the work is a command now: /undo takes a turn back, /gate run runs its checks again, /todo open reopens a blocked run's item`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.KeyList},
-			text:  `open the key list over the session: every key, by group, as they are bound now — type to filter, esc or the chord again closes it, and nothing is written to the transcript. It is a chord and not the ? it used to be, because a bare key at the draft is a letter of whatever you are typing — every key live here is a chord but enter and esc`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Clear},
-			text:  `go back, in this order: drop a selection, drop the pointer, dismiss the completion menu, detach one level — then, with any text in the box, clear the input, and on an empty draft fold every row you opened back to its resting form, counted on the notice rail. What /ui verbosity opened is the setting's and stays open. A waiting decision is left waiting. It never stops a running turn — on an empty draft under one with nothing left to fold it does nothing, so ctrl+c is what you want there. On an empty idle draft, esc esc opens the /rewind picker`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Cancel},
-			text:  `cancel the running turn — press twice, and what the turn already did is kept. Also clears the input, and quits from an empty idle draft (twice again)`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Quit},
-			text:  `quit — press twice; with a turn running it asks first, saying what is cancelled and what the autosave keeps`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.PageUp, keys.Draft.PageDown},
-			sep:   "/",
-			text:  `page the transcript, leaving the keyboard in the prompt. Scrolling away pauses the follow while a turn streams; the notice rail counts what is below and pgdn walks back to it`,
-		},
-		{
-			binds: []keys.Binding{keys.Draft.Mouse},
-			key:   "wheel",
-			text:  `scroll the transcript (or the full-screen diff / review), leaving the draft and the keyboard where they are (needs ctrl+x — off by default, so the terminal keeps its own click-drag selection)`,
-		},
-		{
-			key:  "click-drag",
-			text: `with the mouse on (ctrl+x), select transcript text: the drag scrolls the pane when it reaches an edge, so a selection can run past the screen; releasing copies it, esc cancels`,
-		},
-		{
-			key:  "click",
-			text: `a press and release in the same cell opens the activity row under it, the way enter does in reading mode, or answers the key it lands on in an approval card's [y/n/a]. On a step's card the header is the target: a click there opens the card and a second closes it, a click on its sentence or evidence does nothing, and a click on a call's row inside an open card opens that call's own view, which esc closes. It never takes the keyboard: the draft keeps every character`,
-		},
-		{
-			key:  "[y/n/a]",
-			text: `approval prompts: allow / deny / always allow this session. A card taller than its panel counts what is cut and scrolls on shift+↑/↓ (shift+←/→ pan a wide body); d opens an edit's full diff, or a command card's full view; t runs the harmless form of a command that has one, and answers nothing`,
-		},
+	offers := keys.InputOffers()
+	slices.SortStableFunc(offers, func(a, b keys.Offer) int { return cmp.Compare(a.Weight, b.Weight) })
+	rows := make([]helpKeyRow, 0, len(offers))
+	for _, o := range offers {
+		rows = append(rows, helpKeyRow{binds: o.Binds, sep: o.Sep, key: o.Key, text: o.Help})
 	}
+	return rows
 }

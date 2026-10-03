@@ -48,9 +48,13 @@ type slashCommand struct {
 	// greyed behind ⊘ with idleOnlyMeta beside it; an unwired one never
 	// appears at all, because it is not a command this session has.
 	idleOnly string
-	// help is the command's /help paragraph when a register row declares the
-	// command (overlay.go). Empty is a command whose paragraph is kept in
-	// helpCommands (help.go).
+	// help is the command's /help paragraph, at the length a reader who
+	// could not find something needs — which is longer than the line the
+	// menu shares with a name. Each line is a paragraph, wrapped where it is
+	// drawn, and a line whose first words are followed by two spaces is a
+	// row of its own inside the paragraph — `default [name]   show or
+	// persist…` — that wraps under the text after the gap rather than under
+	// the term (helpsheet.go).
 	help string
 }
 
@@ -111,231 +115,54 @@ var (
 // mode owns the screen (overlay.go), which reads a table built the same way.
 // A package-level registry closes that loop into an initialisation cycle.
 //
-// The order below is the one order every command list keeps — the menu, the
-// palette and /help. A command whose job is opening a surface is declared on
-// that surface's register row (overlay.go), completion row and paragraph
-// included, and stands here as registeredSlash: the slot is the only thing
-// this list says about it.
+// slashOrder is the one order every command list keeps — the menu, the
+// palette and /help. Each row is the command's own declaration: a command
+// whose job is opening a surface is declared on that surface's register row
+// (overlay.go), and every other on its row of the command table (command.go),
+// completion row and paragraph included.
 func slashCommands() []slashCommand {
 	slashOnce.Do(func() { slashTable = buildSlashCommands() })
 	return slashTable
 }
 
+// slashOrder is the menu's order, by name. Each command's row — its argument
+// hint, its words, its argument specs and its /help paragraph — is declared
+// with the command: on its row of the command table (command.go), or on the
+// register row of the surface it opens (overlay.go). The slot is the only
+// thing this list says about it.
+var slashOrder = []string{
+	"/help", "/clear", "/paste", "/copy", "/run", "/model", "/permissions",
+	"/reasoning", "/context", "/stats", "/readings", "/turns", "/alerts",
+	"/step", "/steps", "/status", "/sessions", "/trust", "/ui", "/config",
+	"/add-dir", "/sandbox", "/safety", "/sources", "/evidence", "/gate",
+	"/ps", scaffoldCommandName, setupCommandName, toolchainCommandName,
+	"/skills", "/mcp", "/skill", "/secret", "/notes", "/memory", "/agents",
+	"/attach", "/detach", "/todo", "/plan", "/diff", "/review", "/undo",
+	"/compact", "/rewind", "/branches", "/save", "/load", "/chats", "/exit",
+}
+
 func buildSlashCommands() []slashCommand {
-	return []slashCommand{
-		registeredSlash("/help"),
-		// Not idleOnly, though it replaces the conversation: a turn that is not
-		// over is exactly when ending the session is worth asking about, so the
-		// command stays offered mid-turn and answers with the confirm quitting
-		// draws (cancel.go).
-		{name: "/clear", aliases: []string{"/new"}, desc: "start a new session"},
-		{name: "/paste", args: "[path|show <handle>|drop [handle]|clear]", desc: "attach the clipboard, or a file, to your next message",
-			key: keys.Shown(keys.Draft.Attach),
-			argSpecs: []argSpec{
-				{options: []argOption{
-					{"show", "look at a staged image"},
-					{"drop", "take one attachment back out"},
-					{"clear", "drop what is staged"},
-				}},
-				{after: []string{"drop"}, dynamic: attachmentDropArgs},
-				{after: []string{"show"}, dynamic: attachmentShowArgs},
-			}},
-		{name: "/copy", args: "[code]", desc: "copy the last response (or just its code blocks)",
-			argSpecs: []argSpec{
-				{options: []argOption{{"code", "only the code blocks"}}},
-				{after: []string{"code"}, options: []argOption{{"all", "every block, joined"}}},
-			}},
-		{name: "/run", args: "[n]", desc: "run a code block from the last response",
-			enabled:  func(m *Model) bool { return m.runFn != nil },
-			idleOnly: "it runs a command in this session"},
-		{name: "/model", args: "[name]", desc: "switch the model (bare /model opens a picker)",
-			argSpecs: []argSpec{{dynamic: modelArgs, fuzzy: true}},
-			idleOnly: "it switches the model the running turn is using"},
-		{name: "/permissions", args: "[name|grants|allow|revoke|why]", desc: "what runs without asking, and the mode that frames it",
-			aliases: []string{"/perms", "/mode"},
-			key:     keys.Shown(keys.Draft.Mode),
-			argSpecs: []argSpec{
-				{dynamic: modeArgs},
-				{after: []string{"allow"}, options: []argOption{
-					{"commands", "every command runs without asking"},
-					{"edits", "every edit applies without asking"},
-				}},
-				{after: []string{"revoke"}, options: []argOption{
-					{"edits", "only the edit grants"},
-					{"commands", "only the command grants"},
-					{"hosts", "only the fetch host grants"},
-				}},
-			}},
-		{name: "/reasoning", args: "[off|low|medium|high|xhigh|max|default]", desc: "how much the model thinks before it answers",
-			aliases: []string{"/think"},
-			key:     keys.Shown(keys.Draft.Reasoning),
-			argSpecs: []argSpec{
-				{dynamic: reasoningArgs},
-				{after: []string{"default"}, options: reasoningLevelArgs()},
-			}},
-		registeredSlash("/context"),
-		registeredSlash("/stats"),
-		registeredSlash("/readings"),
-		registeredSlash("/turns"),
-		registeredSlash("/alerts"),
-		{name: "/step", desc: "open the in-flight step's card onto its calls (again closes it)"},
-		registeredSlash("/steps"),
-		{name: "/status", desc: "where the session is, and whether it is still on target"},
-		{name: "/sessions", desc: "the sessions running on this machine, and where each one is"},
-		{name: "/trust", desc: "let this checkout's skills, agent profiles and quality suites load (\"off\" withdraws it)"},
-		{name: "/ui", args: "verbosity <low|normal|high> | mono <on|off>", desc: "screen density and monochrome mode",
-			argSpecs: []argSpec{
-				{options: []argOption{
-					{"verbosity", "how much the screen explains"},
-					{"theme", "which colour table every surface draws with"},
-					{"ground", "paint the screen with the theme's own background"},
-					{"mono", "strip every surface to two greys"},
-					{"mouse", "whether shhh or the terminal owns the mouse"},
-					{"notify", "say so when a turn stops and you are elsewhere"},
-					{"title", "name an unnamed session after its first turn"},
-					{"suggest", "offer a next step in the empty draft after each turn"},
-					{"window", "name the terminal's own tab after this session"},
-					{"rail", "how many columns the inspector rail takes"},
-					{"terminal", "what this terminal can do"},
-				}},
-				{after: []string{"verbosity"}, options: []argOption{
-					{"low", "each card its header alone, thinking left out"},
-					{"normal", "each card its header, sentence and evidence"},
-					{"high", "every card open on its calls"},
-				}},
-				{after: []string{"theme"}, options: []argOption{
-					{components.ThemeAuto, "The table chosen for the background this terminal reports"},
-					{components.ThemeDark, "The product's own colours, on a dark ground"},
-					{components.ThemeLight, fmt.Sprintf("The same %d jobs, on a light ground", components.PaletteSize)},
-					{components.ThemeCharm, fmt.Sprintf("The same %d jobs in CharmTone", components.PaletteSize)},
-				}},
-				{after: []string{"ground"}, options: []argOption{
-					{"on", "paint the background the theme was drawn against"},
-					{"off", "leave the terminal's own background"},
-				}},
-				{after: []string{"mono"}, options: []argOption{
-					{"on", "two greys — glyphs and words carry every state"},
-					{"off", "the full palette"},
-				}},
-				{after: []string{"mouse"}, options: []argOption{
-					{"on", "the wheel scrolls, click-drag selects, a click opens a row"},
-					{"off", "the terminal keeps its own click-drag selection"},
-				}},
-				{after: []string{"notify"}, options: []argOption{
-					{"on", "one notification when a turn stops and the window is not in front"},
-					{"off", "a turn that stops while you are elsewhere waits silently"},
-				}},
-				{after: []string{"title"}, options: []argOption{
-					{"on", "the summary model names the session after its first turn"},
-					{"off", "sessions keep the timestamp they were opened at"},
-				}},
-				{after: []string{"suggest"}, options: []argOption{
-					{"on", "a cheap model offers the obvious next message; → takes it"},
-					{"off", "the empty draft stays empty and nothing is asked"},
-				}},
-				{after: []string{"window"}, options: []argOption{
-					{"on", "the tab says the command, the directory, and ⏸ while a decision waits"},
-					{"off", "the tab keeps whatever your terminal puts there"},
-				}},
-				{after: []string{"rail"}, dynamic: railArgs},
-			}},
-		registeredSlash("/config"),
-		{name: "/add-dir", args: "[<path>|drop <path>]", desc: "the directories this session may work in",
-			enabled: func(m *Model) bool { return m.scope != nil },
-			argSpecs: []argSpec{
-				{options: []argOption{{"drop", "take a directory back out of the scope"}}},
-				{after: []string{"drop"}, dynamic: scopeDropArgs},
-			}},
-		{name: "/sandbox", args: "[doctor|scope|list|status|destroy|prune]", desc: "containment status and container sandboxes",
-			enabled: func(m *Model) bool { return m.codingSurfaces() },
-			argSpecs: staticArgs(
-				argOption{"doctor", "report containment support"},
-				argOption{"scope", "the directories commands may write to"},
-				argOption{"list", "list container sandboxes"},
-				argOption{"status", "this session's sandbox"},
-				argOption{"destroy", "destroy a sandbox by id"},
-				argOption{"prune", "remove stopped sandboxes"},
-			)},
-		registeredSlash("/safety"),
-		registeredSlash("/sources"),
-		{name: "/evidence", args: "[purge]", desc: "tool-output evidence store",
-			enabled:  func(m *Model) bool { return m.evidence.Manage != nil },
-			argSpecs: staticArgs(argOption{"purge", "delete stored tool output"})},
-		{name: "/gate", args: "[run|result|on|off]", desc: "run the project's quality gate",
-			enabled: func(m *Model) bool { return m.gate.Manage != nil },
-			argSpecs: staticArgs(
-				argOption{"run", "run the gate suites"},
-				argOption{"result", "show the last result"},
-				argOption{"on", "run the suite as a turn that changed files closes"},
-				argOption{"off", "stop running it at a turn's close"},
-			)},
-		{name: "/ps", desc: "list session-owned long-running processes",
-			enabled: func(m *Model) bool { return m.processes.Manage != nil }},
-		{name: scaffoldCommandName, desc: "scaffold this project's .shhh/ context file (asks first)",
-			enabled:  func(m *Model) bool { return m.scaffold.Write != nil },
-			idleOnly: "it writes a file into the checkout"},
-		registeredSlash(setupCommandName),
-		registeredSlash(toolchainCommandName),
-		{name: "/skills", desc: "the skills this session loaded, and why any did not"},
-		registeredSlash("/mcp"),
-		{name: "/skill", args: "<name> [task]", desc: "activate a skill now, with your task after it",
-			enabled:  func(m *Model) bool { return m.skills.Len() > 0 },
-			argSpecs: []argSpec{{dynamic: skillArgs}}},
-		{name: "/secret", args: "[list|set|forget]", desc: "values commands can use and the model never sees",
-			enabled: func(m *Model) bool { return m.secrets.Manage != nil },
-			argSpecs: staticArgs(
-				argOption{"list", "name the session's secrets"},
-				argOption{"set", "declare one: NAME from the environment, or NAME=value"},
-				argOption{"forget", "drop one by name"},
-			)},
-		registeredSlash("/notes"),
-		{name: "/memory", args: "[list|add|edit|forget]", desc: "durable memories",
-			enabled: func(m *Model) bool { return m.memory.Manage != nil },
-			argSpecs: staticArgs(
-				argOption{"list", "show stored memories"},
-				argOption{"add", "remember something"},
-				argOption{"edit", "reword a memory by id, in your editor"},
-				argOption{"forget", "drop a memory by id"},
-			)},
-		registeredSlash("/agents"),
-		{name: "/attach", args: "[name]", desc: "attach to an agent's session and steer it",
-			enabled:  func(m *Model) bool { return m.subagents != nil },
-			argSpecs: []argSpec{{dynamic: agentArgs, fuzzy: true}}},
-		{name: "/detach", desc: "back to the orchestrator (also esc)",
-			enabled: func(m *Model) bool { return m.subagents != nil && m.attachedTo != "" }},
-		registeredSlash("/todo"),
-		{name: "/plan", args: "[save|drop]", desc: "the approved plan as a checklist, with anything that has departed from it",
-			enabled: func(m *Model) bool { return m.codingSurfaces() },
-			argSpecs: staticArgs(
-				argOption{"save", "write the last plan/response to .shhh/plans/"},
-				argOption{"drop", "forget the approved plan; steps go back to inferred"},
-			)},
-		registeredSlash("/diff"),
-		registeredSlash("/review"),
-		{name: "/undo", args: "[turn]", desc: "put back what a turn changed (asks first)",
-			enabled:  func(m *Model) bool { return m.changes != nil && m.codingSurfaces() },
-			argSpecs: []argSpec{{dynamic: reviewTurnArgs}},
-			idleOnly: "it writes files the running turn may be editing"},
-		{name: "/compact", desc: "continue from a summary plus the most recent turns",
-			idleOnly: "it rewrites the conversation into a summary"},
-		{name: "/rewind", args: "[n]", desc: "rewind to the end of a turn — the conversation, the files, or both",
-			argSpecs: []argSpec{{dynamic: checkpointArgs}},
-			idleOnly: "it rewinds the conversation and can write files back"},
-		{name: "/branches", args: "[n|name]", desc: "switch this session's branches (bare /branches picks)",
-			enabled:  func(m *Model) bool { return m.db != nil },
-			argSpecs: []argSpec{{dynamic: branchArgs, fuzzy: true}},
-			idleOnly: "it switches the conversation to another branch"},
-		{name: "/save", args: "[name]", desc: "save this chat",
-			enabled: func(m *Model) bool { return m.db != nil }},
-		{name: "/load", args: "[name]", desc: "load a saved chat (bare /load picks)",
-			enabled:  func(m *Model) bool { return m.db != nil },
-			argSpecs: []argSpec{{dynamic: chatArgs, fuzzy: true}},
-			idleOnly: "it replaces the conversation"},
-		{name: "/chats", desc: "saved chats — enter loads, x deletes, r renames",
-			enabled:  func(m *Model) bool { return m.db != nil },
-			idleOnly: "it opens the picker that replaces the conversation"},
-		{name: "/exit", aliases: []string{"/quit", "/q"}, desc: "quit (also /quit, /q)", key: keys.Shown(keys.Draft.Quit)},
+	rows := make([]slashCommand, 0, len(slashOrder))
+	for _, name := range slashOrder {
+		rows = append(rows, declaredSlash(name))
 	}
+	return rows
+}
+
+// declaredSlash is the menu row a command declares under this name: its
+// surface's register row's, else its command table row's. A name neither
+// declares is a menu that has drifted from the commands, and there is no row
+// to show for it.
+func declaredSlash(name string) slashCommand {
+	if c, ok := registeredCommand(name); ok {
+		return c.slashCommand
+	}
+	if c, ok := commands()[name]; ok && c.name == name && c.slash != nil {
+		row := *c.slash
+		row.name = c.name
+		return row
+	}
+	panic("no command declares the menu row " + name)
 }
 
 // maxCompletionRows caps how many commands the menu shows at once; longer

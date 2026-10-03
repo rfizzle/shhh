@@ -17,6 +17,8 @@ package keys
 //
 // It is also what the key list renders and what /help's key section is built
 // from, so the register a reader is shown is the register the handlers use.
+// The input's row is read off its offers (input.go), which carry the
+// paragraph /help keeps beside each key.
 
 // Position is where a surface stands relative to the keyboard. The register
 // allows two and says there is no third; Home is the thing those two are
@@ -77,21 +79,10 @@ func Surfaces() []Surface {
 			Section:  "docs/interface/surfaces.md#the-input-frame",
 			Position: Home,
 			Reached:  "it has the keyboard unless something has taken it",
-			Bindings: []Binding{
-				Draft.Send, Draft.Newline, Draft.Queue, Draft.Queued,
-				Draft.Editor, Draft.Attach,
-				Draft.Complete, Draft.Palette, Draft.Reasoning, Draft.Mode,
-				Draft.Pause,
-				Draft.HistoryPrev, Draft.HistoryNext, Draft.HistorySearch,
-				Draft.TakeSuggestion,
-				Draft.PointUp, Draft.PointDown, Draft.Open, Draft.Close,
-				Draft.PageUp, Draft.PageDown,
-				Draft.Reading, Draft.Agents, Draft.Backlog,
-				Draft.NextAgent, Draft.PrevAgent,
-				Draft.Mouse, Draft.KeyList,
-				Draft.Suspend, Draft.Redraw,
-				Draft.Answer, Draft.Clear, Draft.Cancel, Draft.Quit,
-			},
+			// Read off the offers (input.go), where each key is declared with
+			// its paragraph, so the input cannot answer a key /help has no
+			// words for.
+			Bindings: inputBindings(),
 		},
 		{
 			// The reverse search over the input ring. It is typed into from

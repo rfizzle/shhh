@@ -165,12 +165,15 @@ func TestHelp_EveryCommandHasAParagraph(t *testing.T) {
 		}
 		named[c.name] = true
 	}
-	for name := range helpCommands {
+	for name, c := range commands() {
+		if c.slash == nil || name != c.name {
+			continue
+		}
 		if !named[name] {
-			t.Errorf("/help keeps a paragraph for %s, which is not a command", name)
+			t.Errorf("the command table declares a menu row for %s, which the menu does not list", name)
 		}
 		if _, ok := registeredCommand(name); ok {
-			t.Errorf("/help keeps a paragraph for %s, which its register row already declares", name)
+			t.Errorf("the command table declares a menu row for %s, which its register row already declares", name)
 		}
 	}
 }
@@ -222,7 +225,7 @@ func TestHelp_SaysOpenAndClose(t *testing.T) {
 		name, text string
 		want       []string
 	}{
-		{"/help /ui", helpCommands["/ui"], []string{
+		{"/help /ui", commandHelp(declaredSlash("/ui")), []string{
 			"low draws each step's card as its header alone",
 			"a card you opened or closed stays as you left it",
 			"open or close a card by its header",

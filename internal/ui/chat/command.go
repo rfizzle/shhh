@@ -24,6 +24,8 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // submitInput handles Enter on the orchestrator surface, in every state that
@@ -253,6 +255,13 @@ type command struct {
 	// answer is the row the transcript shows, which handleSlashCommand gives
 	// for the name. nil is a command the front end always carries out.
 	answer slashHandler
+	// slash is the command's completion row and /help paragraph: what the
+	// menu, the palette and /help offer under the name (complete.go). Its
+	// name is this row's; its aliases are the ones the menu matches while
+	// filtering, which leave out a spelling answered only so a slip of habit
+	// is not an unknown command. nil is a command whose row is declared on
+	// the register row of the surface it opens (overlay.go).
+	slash *slashCommand
 }
 
 // commandRun is what one command does in the front end. parts is the whole
@@ -328,15 +337,46 @@ func buildCommands() []*command {
 	return []*command{
 		// Attachments. Not idleOnly: staging bytes for the next
 		// message touches nothing the running turn is using.
-		{name: "/paste", run: always(Model.runPaste)},
-		{name: "/attach", run: always(Model.attachCommand)},
-		{name: "/secret", aliases: []string{"/secrets"},
+		{name: "/paste",
+			slash: &slashCommand{args: "[path|show <handle>|drop [handle]|clear]", desc: "attach the clipboard, or a file, to your next message",
+				key: keys.Shown(keys.Draft.Attach),
+				argSpecs: []argSpec{
+					{options: []argOption{
+						{"show", "look at a staged image"},
+						{"drop", "take one attachment back out"},
+						{"clear", "drop what is staged"},
+					}},
+					{after: []string{"drop"}, dynamic: attachmentDropArgs},
+					{after: []string{"show"}, dynamic: attachmentShowArgs},
+				},
+				help: `attach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path> attaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle> takes one back out — the handle is the one a chip leads with, Image#1, and its name works too — and /paste clear drops what is staged (ctrl+v). With a sentence half typed, reading mode (ctrl+o) keeps it and reaches the strip of chips as its last row: ←→ picks a chip, enter opens it, x drops it, esc goes back to the sentence; a click on a chip opens it too`},
+			run: always(Model.runPaste)},
+		{name: "/attach",
+			slash: &slashCommand{args: "[name]", desc: "attach to an agent's session and steer it",
+				enabled:  func(m *Model) bool { return m.subagents != nil },
+				argSpecs: []argSpec{{dynamic: agentArgs, fuzzy: true}},
+				help:     `attach to an agent's session and steer it (bare /attach lists)`},
+			run: always(Model.attachCommand)},
+		{name: "/secret",
+			slash: &slashCommand{args: "[list|set|forget]", desc: "values commands can use and the model never sees",
+				enabled: func(m *Model) bool { return m.secrets.Manage != nil },
+				argSpecs: staticArgs(
+					argOption{"list", "name the session's secrets"},
+					argOption{"set", "declare one: NAME from the environment, or NAME=value"},
+					argOption{"forget", "drop one by name"},
+				),
+				help: `values a command may use and the model never sees: list names them, set NAME takes one from your environment (or NAME=value declares it outright), forget NAME drops it. What a command prints is scrubbed of them before it reaches the transcript`},
+			aliases: []string{"/secrets"},
 			// Not idleOnly: adding a secret mid-turn is exactly when the
 			// command is wanted — the model just asked for a key it lacks.
 			run: always(func(m Model, parts []string) (tea.Model, tea.Cmd) {
 				return m.secretCommand(parts[1:])
 			})},
 		{name: "/skill",
+			slash: &slashCommand{args: "<name> [task]", desc: "activate a skill now, with your task after it",
+				enabled:  func(m *Model) bool { return m.skills.Len() > 0 },
+				argSpecs: []argSpec{{dynamic: skillArgs}},
+				help:     `activate a skill now: /skill <name> [task] sends its instructions to the model with your task, as the model would load them itself. /<name> does the same for a skill whose name is not a command`},
 			// Explicit activation. Not idleOnly: while the agent works the
 			// content queues as steering, like any typed text.
 			run: always(func(m Model, parts []string) (tea.Model, tea.Cmd) {
@@ -346,6 +386,13 @@ func buildCommands() []*command {
 				return m.activateSkill(parts[1], strings.Join(parts[2:], " "))
 			})},
 		{name: "/plan",
+			slash: &slashCommand{args: "[save|drop]", desc: "the approved plan as a checklist, with anything that has departed from it",
+				enabled: func(m *Model) bool { return m.codingSurfaces() },
+				argSpecs: staticArgs(
+					argOption{"save", "write the last plan/response to .shhh/plans/"},
+					argOption{"drop", "forget the approved plan; steps go back to inferred"},
+				),
+				help: `the approved plan as a checklist on the steps screen — each step, the paths it named, its state and the calls that carried it out — with anything that has departed from it · save [name] writes the last plan/response to .shhh/plans/ · drop forgets an approved plan`},
 			// The approved plan's checklist, read whole on the steps screen —
 			// the list the rail's PLAN block draws and whose heading opens the
 			// same screen. Not idleOnly: mid-turn is when somebody asks where
@@ -358,14 +405,25 @@ func buildCommands() []*command {
 				return next, cmd, true
 			},
 			answer: slashPlan},
-		{name: "/detach", run: always(func(m Model, _ []string) (tea.Model, tea.Cmd) {
-			if m.attachedTo == "" {
-				return m.surfaceNotice("not attached to an agent. /attach <name> or /agents to pick one")
-			}
-			m.detachOne()
-			return m, nil
-		})},
-		{name: "/clear", aliases: []string{"/new"},
+		{name: "/detach",
+			slash: &slashCommand{desc: "back to the orchestrator (also esc)",
+				enabled: func(m *Model) bool { return m.subagents != nil && m.attachedTo != "" },
+				help:    `back to your own session (also esc while attached)`},
+			run: always(func(m Model, _ []string) (tea.Model, tea.Cmd) {
+				if m.attachedTo == "" {
+					return m.surfaceNotice("not attached to an agent. /attach <name> or /agents to pick one")
+				}
+				m.detachOne()
+				return m, nil
+			})},
+		{name: "/clear",
+			// Not idleOnly, though it replaces the conversation: a turn that is not
+			// over is exactly when ending the session is worth asking about, so the
+			// command stays offered mid-turn and answers with the confirm quitting
+			// draws (cancel.go).
+			slash: &slashCommand{aliases: []string{"/new"}, desc: "start a new session",
+				help: `end this session and start another (also /new)`},
+			aliases: []string{"/new"},
 			// The session boundary (model.go). Over a turn that is not over it
 			// asks first, the way quitting does and for the same reason: what a
 			// yes costs is the work the reader may not have noticed running, and
@@ -378,7 +436,10 @@ func buildCommands() []*command {
 				next, cmd := m.systemEntries(notes)
 				return next, tea.Batch(cmd, save)
 			})},
-		{name: "/exit", aliases: []string{"/quit", "/q"},
+		{name: "/exit",
+			slash: &slashCommand{aliases: []string{"/quit", "/q"}, desc: "quit (also /quit, /q)", key: keys.Shown(keys.Draft.Quit),
+				help: `quit (also /quit, /q)`},
+			aliases: []string{"/quit", "/q"},
 			// A typed command is deliberate, so an idle quit goes straight
 			// out; over a live turn even it confirms, because what it costs is
 			// the turn's work, not the reader's time.
@@ -389,6 +450,10 @@ func buildCommands() []*command {
 				return m, m.quitNow()
 			})},
 		{name: "/run",
+			slash: &slashCommand{args: "[n]", desc: "run a code block from the last response",
+				enabled:  func(m *Model) bool { return m.runFn != nil },
+				idleOnly: "it runs a command in this session",
+				help:     `run a code block from the last response (with confirmation)`},
 			// Bare /run with several code blocks opens the picker; one
 			// block, /run <n>, and every no-op case go straight to startRun.
 			run: always(func(m Model, parts []string) (tea.Model, tea.Cmd) {
@@ -405,7 +470,10 @@ func buildCommands() []*command {
 				m.viewport.GotoBottom()
 				return m, nil
 			})},
-		{name: "/status", exact: true,
+		{name: "/status",
+			slash: &slashCommand{desc: "where the session is, and whether it is still on target",
+				help: `where this session is: what it is working on, what it has spent, and whether the last few turns are still on the target you set it`},
+			exact: true,
 			// The rail's SUMMARY block in words, for the terminals
 			// below 130 columns that have no rail to draw it in — the same answer
 			// the rail's rules give for PLAN. It takes a fresh reading on the way out:
@@ -418,20 +486,52 @@ func buildCommands() []*command {
 		// The last response onto the clipboard. A run rather than an answer
 		// because the copy may be a write the terminal takes, and an answer
 		// has nowhere to put one.
-		{name: "/copy", run: always(Model.copyCommand)},
-		{name: "/compact", exact: true, run: bareRun(Model.startCompact)},
+		{name: "/copy",
+			slash: &slashCommand{args: "[code]", desc: "copy the last response (or just its code blocks)",
+				argSpecs: []argSpec{
+					{options: []argOption{{"code", "only the code blocks"}}},
+					{after: []string{"code"}, options: []argOption{{"all", "every block, joined"}}},
+				},
+				help: `copy the last response (or just its code blocks)`},
+			run: always(Model.copyCommand)},
+		{name: "/compact",
+			slash: &slashCommand{desc: "continue from a summary plus the most recent turns",
+				idleOnly: "it rewrites the conversation into a summary",
+				help:     `continue from a summary plus the most recent turns`},
+			exact: true, run: bareRun(Model.startCompact)},
 		// Bare /rewind opens the checkpoint picker; the numbered form is
 		// the answer.
-		{name: "/rewind", exact: true, run: bareRun(Model.openRewindPick), answer: slashRewind},
+		{name: "/rewind",
+			slash: &slashCommand{args: "[n]", desc: "rewind to the end of a turn — the conversation, the files, or both",
+				argSpecs: []argSpec{{dynamic: checkpointArgs}},
+				idleOnly: "it rewinds the conversation and can write files back",
+				help:     `rewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the abandoned tail is kept as a branch, and a card asks whether the files come back too`},
+			exact: true, run: bareRun(Model.openRewindPick), answer: slashRewind},
 		// The in-flight step's detail, from the draft — the chord that
 		// answered this went to reading mode, and the question it answered
 		// is still asked mid-turn with a half-written sentence in the box
 		// (detail.go).
-		{name: "/step", exact: true, run: bareRun(Model.detailFromDraft)},
+		{name: "/step",
+			slash: &slashCommand{desc: "open the in-flight step's card onto its calls (again closes it)",
+				help: `open the in-flight step's card onto its calls, every call with its output body, bounded; run it again to close (/ui verbosity high is the same thing for every card at once)`},
+			exact: true, run: bareRun(Model.detailFromDraft)},
 		// Put a turn's edits back from the session's own records;
 		// bare takes the most recent turn that changed anything.
-		{name: "/undo", run: always(Model.undoCommand)},
-		{name: "/model", exact: true,
+		{name: "/undo",
+			slash: &slashCommand{args: "[turn]", desc: "put back what a turn changed (asks first)",
+				enabled:  func(m *Model) bool { return m.changes != nil && m.codingSurfaces() },
+				argSpecs: []argSpec{{dynamic: reviewTurnArgs}},
+				idleOnly: "it writes files the running turn may be editing",
+				help:     `put back what a turn changed, from the session's own records (not git). Asks first, names anything that changed since, and is itself recorded as a turn`},
+			run: always(Model.undoCommand)},
+		{name: "/model",
+			slash: &slashCommand{args: "[name]", desc: "switch the model (bare /model opens a picker)",
+				argSpecs: []argSpec{{dynamic: modelArgs, fuzzy: true}},
+				idleOnly: "it switches the model the running turn is using",
+				help: `switch the model (bare /model opens an interactive picker)
+default [name]   show or persist the default model for new sessions
+agents [name]    show or persist the model sub-agents run on ("inherit" follows the session model)`},
+			exact: true,
 			// Bare /model opens the model picker; the named form and
 			// sessions with nothing to pick get the answer. A provider that
 			// can enumerate its endpoint is queried first.
@@ -444,12 +544,50 @@ func buildCommands() []*command {
 			}),
 			answer: slashModel},
 		// Bare /permissions opens the mode picker.
-		{name: "/permissions", aliases: []string{"/perms", "/mode"}, exact: true,
+		{name: "/permissions",
+			slash: &slashCommand{args: "[name|grants|allow|revoke|why]", desc: "what runs without asking, and the mode that frames it",
+				aliases: []string{"/perms", "/mode"},
+				key:     keys.Shown(keys.Draft.Mode),
+				argSpecs: []argSpec{
+					{dynamic: modeArgs},
+					{after: []string{"allow"}, options: []argOption{
+						{"commands", "every command runs without asking"},
+						{"edits", "every edit applies without asking"},
+					}},
+					{after: []string{"revoke"}, options: []argOption{
+						{"edits", "only the edit grants"},
+						{"commands", "only the command grants"},
+						{"hosts", "only the fetch host grants"},
+					}},
+				},
+				help: `what runs without asking, and the permission mode that frames it (also /perms; was /mode)
+[name]   bare opens a picker over the five modes:
+         manual asks about every consequential call
+         accept-edits applies the edits and asks for the rest
+         auto adds the allowlist and lets the classifier judge
+         read-only writes nothing — a write is refused, not asked
+         plan is read-only, ending on a plan you can approve here or carry into a fresh session
+why      the latest auto-mode denial's reason
+grants   what this session has stopped asking about
+allow <commands|edits>   grant a whole category
+revoke [commands|edits|hosts|agents]   take the grants back`},
+			aliases: []string{"/perms", "/mode"}, exact: true,
 			run: bareRun(Model.openModePick), answer: slashPermissions},
 		// Bare /load and /chats open the saved-chat picker; with nothing
 		// saved they go on to the listing their answer gives.
-		{name: "/load", exact: true, run: picks(Model.openChatPick), answer: slashLoad},
-		{name: "/chats", exact: true, run: picks(Model.openChatPick), answer: slashChats},
+		{name: "/load",
+			slash: &slashCommand{args: "[name]", desc: "load a saved chat (bare /load picks)",
+				enabled:  func(m *Model) bool { return m.db != nil },
+				argSpecs: []argSpec{{dynamic: chatArgs, fuzzy: true}},
+				idleOnly: "it replaces the conversation",
+				help:     `load a saved chat (bare /load opens a picker)`},
+			exact: true, run: picks(Model.openChatPick), answer: slashLoad},
+		{name: "/chats",
+			slash: &slashCommand{desc: "saved chats — enter loads, x deletes, r renames",
+				enabled:  func(m *Model) bool { return m.db != nil },
+				idleOnly: "it opens the picker that replaces the conversation",
+				help:     `saved chats — opens the same picker; enter loads, [x] deletes (asks first), [r] renames`},
+			exact: true, run: picks(Model.openChatPick), answer: slashChats},
 		{name: "/help",
 			// Bare /help is the key list's register row (keypopup.go). With words
 			// after it, it writes the whole help — a sheet laid out at the pane's
@@ -459,6 +597,65 @@ func buildCommands() []*command {
 			}),
 			answer: slashHelp},
 		{name: "/ui",
+			slash: &slashCommand{args: "verbosity <low|normal|high> | mono <on|off>", desc: "screen density and monochrome mode",
+				argSpecs: []argSpec{
+					{options: []argOption{
+						{"verbosity", "how much the screen explains"},
+						{"theme", "which colour table every surface draws with"},
+						{"ground", "paint the screen with the theme's own background"},
+						{"mono", "strip every surface to two greys"},
+						{"mouse", "whether shhh or the terminal owns the mouse"},
+						{"notify", "say so when a turn stops and you are elsewhere"},
+						{"title", "name an unnamed session after its first turn"},
+						{"suggest", "offer a next step in the empty draft after each turn"},
+						{"window", "name the terminal's own tab after this session"},
+						{"rail", "how many columns the inspector rail takes"},
+						{"terminal", "what this terminal can do"},
+					}},
+					{after: []string{"verbosity"}, options: []argOption{
+						{"low", "each card its header alone, thinking left out"},
+						{"normal", "each card its header, sentence and evidence"},
+						{"high", "every card open on its calls"},
+					}},
+					{after: []string{"theme"}, options: []argOption{
+						{components.ThemeAuto, "The table chosen for the background this terminal reports"},
+						{components.ThemeDark, "The product's own colours, on a dark ground"},
+						{components.ThemeLight, fmt.Sprintf("The same %d jobs, on a light ground", components.PaletteSize)},
+						{components.ThemeCharm, fmt.Sprintf("The same %d jobs in CharmTone", components.PaletteSize)},
+					}},
+					{after: []string{"ground"}, options: []argOption{
+						{"on", "paint the background the theme was drawn against"},
+						{"off", "leave the terminal's own background"},
+					}},
+					{after: []string{"mono"}, options: []argOption{
+						{"on", "two greys — glyphs and words carry every state"},
+						{"off", "the full palette"},
+					}},
+					{after: []string{"mouse"}, options: []argOption{
+						{"on", "the wheel scrolls, click-drag selects, a click opens a row"},
+						{"off", "the terminal keeps its own click-drag selection"},
+					}},
+					{after: []string{"notify"}, options: []argOption{
+						{"on", "one notification when a turn stops and the window is not in front"},
+						{"off", "a turn that stops while you are elsewhere waits silently"},
+					}},
+					{after: []string{"title"}, options: []argOption{
+						{"on", "the summary model names the session after its first turn"},
+						{"off", "sessions keep the timestamp they were opened at"},
+					}},
+					{after: []string{"suggest"}, options: []argOption{
+						{"on", "a cheap model offers the obvious next message; → takes it"},
+						{"off", "the empty draft stays empty and nothing is asked"},
+					}},
+					{after: []string{"window"}, options: []argOption{
+						{"on", "the tab says the command, the directory, and ⏸ while a decision waits"},
+						{"off", "the tab keeps whatever your terminal puts there"},
+					}},
+					{after: []string{"rail"}, dynamic: railArgs},
+				},
+				help: `screen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
+low draws each step's card as its header alone and leaves thinking out, normal draws the header, the sentence and the evidence, high opens every card onto its calls; a card you opened or closed stays as you left it. The mouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, open or close a card by its header, or answer keys; off hands selection back to the terminal, and ctrl+x flips it and saves it
+terminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications, focus events, cell size`},
 			// /ui mouse flips the terminal's own reporting. That is
 			// a field on the View rather than a command back to the program, so
 			// this setting takes the same path as every other /ui setting: change
@@ -468,6 +665,8 @@ func buildCommands() []*command {
 			}),
 			answer: slashUI},
 		{name: "/trust",
+			slash: &slashCommand{desc: "let this checkout's skills, agent profiles and quality suites load (\"off\" withdraws it)",
+				help: `let this checkout's own skills, agent profiles, wordings and quality suites load. A clone can carry instructions, so nothing of a checkout's runs until you say so; "off" withdraws it and the next session starts without them`},
 			// The one answer that decides whether the checkout's skills, agent
 			// profiles, quality suites and servers load at all. Like trusting a
 			// server, it lands in the next session: the prompt naming the skills
@@ -476,8 +675,22 @@ func buildCommands() []*command {
 				return m.systemNotice(m.trustCommand(parts[1:]))
 			})},
 		// The scaffolding card: what it would write, before it writes it.
-		{name: scaffoldCommandName, exact: true, run: bareRun(Model.scaffoldCommand)},
+		{name: scaffoldCommandName,
+			slash: &slashCommand{desc: "scaffold this project's .shhh/ context file (asks first)",
+				enabled:  func(m *Model) bool { return m.scaffold.Write != nil },
+				idleOnly: "it writes a file into the checkout",
+				help:     `scaffold this project's .shhh/ context file — the card lists what it would write, and nothing is written until you say so. The start screen offers it in a checkout that has no .shhh`},
+			exact: true, run: bareRun(Model.scaffoldCommand)},
 		{name: "/memory",
+			slash: &slashCommand{args: "[list|add|edit|forget]", desc: "durable memories",
+				enabled: func(m *Model) bool { return m.memory.Manage != nil },
+				argSpecs: staticArgs(
+					argOption{"list", "show stored memories"},
+					argOption{"add", "remember something"},
+					argOption{"edit", "reword a memory by id, in your editor"},
+					argOption{"forget", "drop a memory by id"},
+				),
+				help: `durable memories: list (default) · add [global] [kind] <text> · edit <id> (opens the entry in your editor) · forget <id>`},
 			// /memory edit hands the entry's text to the editor; every other
 			// /memory subcommand is textual and gets the answer.
 			run: func(m Model, parts []string) (tea.Model, tea.Cmd, bool) {
@@ -494,17 +707,83 @@ func buildCommands() []*command {
 			answer: slashMemory},
 		// Bare /branches opens the branch picker; a session with no
 		// branch family gets the answer.
-		{name: "/branches", exact: true, run: picks(Model.openBranchPick), answer: slashBranches},
-		{name: "/reasoning", aliases: []string{"/think"}, answer: slashReasoning},
-		{name: "/add-dir", aliases: []string{"/adddir"}, answer: slashAddDir},
-		{name: "/sandbox", answer: slashSandbox},
-		{name: "/evidence", answer: slashEvidence},
-		{name: "/gate", answer: slashGate},
-		{name: "/ps", answer: slashProcesses},
+		{name: "/branches",
+			slash: &slashCommand{args: "[n|name]", desc: "switch this session's branches (bare /branches picks)",
+				enabled:  func(m *Model) bool { return m.db != nil },
+				argSpecs: []argSpec{{dynamic: branchArgs, fuzzy: true}},
+				idleOnly: "it switches the conversation to another branch",
+				help:     `switch this session's branches: [n] by number, [name] by name, bare opens a picker`},
+			exact: true, run: picks(Model.openBranchPick), answer: slashBranches},
+		{name: "/reasoning",
+			slash: &slashCommand{args: "[off|low|medium|high|xhigh|max|default]", desc: "how much the model thinks before it answers",
+				aliases: []string{"/think"},
+				key:     keys.Shown(keys.Draft.Reasoning),
+				argSpecs: []argSpec{
+					{dynamic: reasoningArgs},
+					{after: []string{"default"}, options: reasoningLevelArgs()},
+				},
+				help: `how much thinking the model does before it answers: off (the default), low, medium, high, xhigh or max — ctrl+t cycles them
+[level]           set it for this session (also /think)
+default [level]   show or persist the level new sessions start on (provider.reasoning)`},
+			aliases: []string{"/think"}, answer: slashReasoning},
+		{name: "/add-dir",
+			slash: &slashCommand{args: "[<path>|drop <path>]", desc: "the directories this session may work in",
+				enabled: func(m *Model) bool { return m.scope != nil },
+				argSpecs: []argSpec{
+					{options: []argOption{{"drop", "take a directory back out of the scope"}}},
+					{after: []string{"drop"}, dynamic: scopeDropArgs},
+				},
+				help: `the working scope: which directories this session may write to. Bare lists it; <path> adds one (contained commands can write there, and edits there stop asking about leaving the scope); drop <path> takes it back`},
+			aliases: []string{"/adddir"}, answer: slashAddDir},
+		{name: "/sandbox",
+			slash: &slashCommand{args: "[doctor|scope|list|status|destroy|prune]", desc: "containment status and container sandboxes",
+				enabled: func(m *Model) bool { return m.codingSurfaces() },
+				argSpecs: staticArgs(
+					argOption{"doctor", "report containment support"},
+					argOption{"scope", "the directories commands may write to"},
+					argOption{"list", "list container sandboxes"},
+					argOption{"status", "this session's sandbox"},
+					argOption{"destroy", "destroy a sandbox by id"},
+					argOption{"prune", "remove stopped sandboxes"},
+				),
+				help: `containment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)`},
+			answer: slashSandbox},
+		{name: "/evidence",
+			slash: &slashCommand{args: "[purge]", desc: "tool-output evidence store",
+				enabled:  func(m *Model) bool { return m.evidence.Manage != nil },
+				argSpecs: staticArgs(argOption{"purge", "delete stored tool output"}),
+				help:     `tool-output evidence store: reduction stats and size (purge to clear)`},
+			answer: slashEvidence},
+		{name: "/gate",
+			slash: &slashCommand{args: "[run|result|on|off]", desc: "run the project's quality gate",
+				enabled: func(m *Model) bool { return m.gate.Manage != nil },
+				argSpecs: staticArgs(
+					argOption{"run", "run the gate suites"},
+					argOption{"result", "show the last result"},
+					argOption{"on", "run the suite as a turn that changed files closes"},
+					argOption{"off", "stop running it at a turn's close"},
+				),
+				help: `quality gate: run [suite] starts the project's checks in the background, result shows the verdict, on|off runs them as a turn closes`},
+			answer: slashGate},
+		{name: "/ps",
+			slash: &slashCommand{desc: "list session-owned long-running processes",
+				enabled: func(m *Model) bool { return m.processes.Manage != nil },
+				help:    `list the long-running processes this session owns (process tool)`},
+			answer: slashProcesses},
 		{name: "/mcp", answer: slashMCP},
-		{name: "/skills", answer: slashSkills},
-		{name: "/save", answer: slashSave},
-		{name: "/sessions", answer: slashSessions},
+		{name: "/skills",
+			slash: &slashCommand{desc: "the skills this session loaded, and why any did not",
+				help: `the skills this session loaded (SKILL.md directories), and why any did not`},
+			answer: slashSkills},
+		{name: "/save",
+			slash: &slashCommand{args: "[name]", desc: "save this chat",
+				enabled: func(m *Model) bool { return m.db != nil },
+				help:    `save this chat`},
+			answer: slashSave},
+		{name: "/sessions",
+			slash: &slashCommand{desc: "the sessions running on this machine, and where each one is",
+				help: `the sessions running on this machine: the conversation each saves to, its checkout and branch, and whether it is working`},
+			answer: slashSessions},
 	}
 }
 
