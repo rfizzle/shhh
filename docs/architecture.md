@@ -208,9 +208,10 @@ a moment ago. The query line's keys are its too: a clear on an empty query
 closes the line, which is how the row keys come back without leaving the
 screen. The screen names its fields, says what else a changed query puts
 away, and words the line saying how many rows the filter hid. The history
-browser and the settings screen take the filter without the rest of the
-shape where their lists are drawn differently; the backlog's filter joins
-them once its screen is cut over.
+browser takes the whole shape after the two browsers. The settings screen
+takes the filter and keeps its rails, its sub-surfaces and its own query
+keys, which never closed the line on an empty clear. The backlog's filter
+joins them once its screen is cut over.
 
 ## Spend is counted at the provider
 
