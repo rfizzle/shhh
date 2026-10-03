@@ -53,7 +53,9 @@ func toolsFixture() []ToolsSource {
 
 // toolsScreen is the screen over the fixture with the pointer on focus.
 func toolsScreen(focus int) *ToolsScreen {
-	return &ToolsScreen{Sources: toolsFixture(), Focus: focus, maxLines: 30}
+	s := &ToolsScreen{Sources: toolsFixture(), maxLines: 30}
+	s.Focus = focus
+	return s
 }
 
 // The list is every source under its group's heading, each the rail row's

@@ -130,10 +130,10 @@ type ToolsSource struct {
 // ToolsScreen is `/mcp` and the TOOLS heading: a takeover in the chat, full
 // width, owning the keyboard for as long as it is up.
 type ToolsScreen struct {
+	// The pointer is an index into Sources.
+	listScreen[ToolsSource]
 	// Sources are in group order — the order the list draws them in.
 	Sources []ToolsSource
-	// Focus is an index into Sources.
-	Focus int
 	// Said is what the last answer came to, in the words the command behind
 	// it gives, drawn under the account of the row it was taken on. Moving
 	// the pointer drops it.
@@ -141,9 +141,7 @@ type ToolsScreen struct {
 	// maxLines bounds the screen height. 0 is unbounded.
 	maxLines int
 
-	list  Select
 	optAt map[int]int
-	keys  bool
 	// confirm is the question standing between `[a]` and the answer it
 	// records: none of the supporting screens changes the machine without
 	// asking (docs/interface/surfaces.md#the-supporting-screens).
@@ -170,10 +168,10 @@ func (s *ToolsScreen) Update(msg tea.KeyPressMsg) (done bool, result toolsResult
 	}
 	pressed := msg.String()
 	switch {
-	case s.moved(pressed):
+	case s.walked(pressed):
 	case keys.Is(pressed, keys.Screen.Apply):
 		// Only where the row carries an offer, and even there it asks first.
-		if src := s.current(); src != nil && src.Offer != ToolsOfferNone {
+		if src := s.current(s.Sources); src != nil && src.Offer != ToolsOfferNone {
 			s.asking = toolsResult{Offer: src.Offer, at: s.Focus}
 			s.confirm = &Confirm{Prompt: sty.body.Render(src.Ask)}
 		}
@@ -191,43 +189,37 @@ func (s *ToolsScreen) SetSize(_, height int) { s.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves.
-func (s *ToolsScreen) View(width int) string {
-	if width <= 0 {
-		return ""
+func (s *ToolsScreen) View(width int) string { return s.view(width, s) }
+
+// chrome is the header over the panes and the keys under them. The confirm
+// borrows the foot row while it is up, as the doctor's does.
+func (s *ToolsScreen) chrome(width int) screenChrome {
+	field := s.footField()
+	foot := s.footer(s.offers(width, field), s.keyList(), field)
+	if s.confirm != nil {
+		foot.taken = s.confirm.View(width)
 	}
-	s.sync()
-	return screenChrome{
-		header:   s.header(),
-		foot:     s.footer(width).rows(width),
-		maxLines: s.maxLines,
-	}.view(width, func(budget int) []string { return s.panes().rows(width, budget) })
+	return screenChrome{header: s.header(), foot: foot.rows(width), maxLines: s.maxLines}
 }
 
 // panes is the body, split the way every screen with a list and a preview
-// splits it (screenpanes.go).
+// splits it (screenpanes.go): on the left the sources under their headings.
 func (s *ToolsScreen) panes() screenPanes {
 	return screenPanes{
 		stackAt: toolsStackWidth, listMin: toolsListMin,
 		listMax: toolsListMax, minPreview: toolsMinPreview,
-		list:    s.listRows,
+		list: func(width, budget int) []string {
+			return s.listRows(s.Sources, "this session registered no tools", width, budget)
+		},
 		preview: s.previewRows,
 	}
-}
-
-// listRows is the left pane: the sources under their headings.
-func (s *ToolsScreen) listRows(width, budget int) []string {
-	if len(s.Sources) == 0 {
-		return []string{sty.dim.Render(Clip("this session registered no tools", width))}
-	}
-	body, _ := s.list.visibleRows(cardWidthFor(width), budget, false)
-	return body
 }
 
 // previewRows is the right pane: the source under the pointer, what it
 // reaches and brought, and for one that is not up what it costs and what
 // would move it.
 func (s *ToolsScreen) previewRows(width int) []string {
-	src := s.current()
+	src := s.current(s.Sources)
 	if src == nil {
 		return []string{sty.dim.Render(Clip("nothing selected", width))}
 	}
@@ -336,7 +328,7 @@ func (src ToolsSource) option() SelectOption {
 // block draws — so the figure on the screen and the figure on the rail are
 // one. A session with no servers has no block, and no ratio either.
 func (s *ToolsScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/mcp")}, keys: s.headerKeys()}
+	h := screenHeader{left: []RailSegment{screenTitle("/mcp")}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)}
 	servers, counted, up := 0, 0, 0
 	for _, src := range s.Sources {
 		if src.Group != ToolsBuiltin && src.Group != ToolsServers {
@@ -357,28 +349,6 @@ func (s *ToolsScreen) header() screenHeader {
 	return h
 }
 
-// headerKeys is the pair the header ends with, as on every screen of the
-// family (docs/interface/surfaces.md#the-supporting-screens).
-func (s *ToolsScreen) headerKeys() string {
-	list := keys.Bracket(keys.Screen.List) + " " + keys.Words(keys.Screen.List)
-	if s.keys {
-		list = keys.Bracket(keys.Screen.List) + " hide the keys"
-	}
-	return list + " · " + words(keys.Screen.Quit, "back")
-}
-
-// footer is the keys the screen offers and the field that annotates them. The
-// confirm borrows the foot row while it is up, as the doctor's does.
-func (s *ToolsScreen) footer(width int) keyFooter {
-	field := s.footField()
-	f := keyFooter{offers: s.offers(width, field), register: s.keyList(),
-		showing: s.keys, field: field}
-	if s.confirm != nil {
-		f.taken = s.confirm.View(width)
-	}
-	return f
-}
-
 // offers is the key row: the pointer's keys, the row's offer where it has
 // one, and the way out, and the last two alone where the field leaves no room
 // for all of them. The offer is dropped rather than drawn grey off a row that
@@ -386,15 +356,11 @@ func (s *ToolsScreen) footer(width int) keyFooter {
 // `trust this checkout` beside the built-in toolset would say it could.
 func (s *ToolsScreen) offers(width int, field string) []KeyOffer {
 	var acts []KeyOffer
-	if src := s.current(); src != nil && src.Offer != ToolsOfferNone {
+	if src := s.current(s.Sources); src != nil && src.Offer != ToolsOfferNone {
 		acts = append(acts, keyOfferAs(keys.Screen.Apply, src.Offer.label()))
 	}
 	acts = append(acts, wayOut(backToPrompt))
-	full := append([]KeyOffer{keyOffer(keys.Screen.Move)}, acts...)
-	if field == "" || fitsBeside(full, field, width) {
-		return full
-	}
-	return acts
+	return offersBeside(keyOffer(keys.Screen.Move), acts, field, width)
 }
 
 // keyList is every key the screen has, for `[?]`.
@@ -432,7 +398,7 @@ func (s *ToolsScreen) FocusGroup(g toolsGroup) bool {
 // runs before every View because the host replaces Sources as it reads them
 // again, and the pointer has to survive that.
 func (s *ToolsScreen) sync() {
-	s.Focus = min(max(s.Focus, 0), max(len(s.Sources)-1, 0))
+	s.clamp(len(s.Sources))
 	s.optAt = make(map[int]int, len(s.Sources))
 	opts := make([]SelectOption, 0, len(s.Sources)+5)
 	group := ""
@@ -446,36 +412,21 @@ func (s *ToolsScreen) sync() {
 		s.optAt[i] = len(opts)
 		opts = append(opts, src.option())
 	}
-	s.list.Options = opts
 	// The count the window's marker states is of sources, not of options:
 	// the headings are rows on the screen and not places tools came from.
-	s.list.Total = len(s.Sources)
-	s.list.Unnumbered = true
-	s.list.Focus = s.optAt[s.Focus]
+	s.show(opts, len(s.Sources), s.optAt[s.Focus])
 }
 
-// moved walks the pointer through the sources, over the headings. What the
+// walked walks the pointer through the sources, over the headings. What the
 // last answer said belongs to the row it was taken on, so it goes when the
 // pointer does.
-func (s *ToolsScreen) moved(pressed string) bool {
-	if len(s.Sources) == 0 {
+func (s *ToolsScreen) walked(pressed string) bool {
+	from := s.Focus
+	if !s.moved(s.Sources, pressed, keys.Screen.Move) {
 		return false
 	}
-	l := List[ToolsSource]{Items: s.Sources, Focus: s.Focus}
-	if !l.Move(pressed, keys.Screen.Move) {
-		return false
-	}
-	if l.Focus != s.Focus {
+	if s.Focus != from {
 		s.Said = ""
 	}
-	s.Focus = l.Focus
 	return true
-}
-
-// current is the source under the pointer, or nil for an empty list.
-func (s *ToolsScreen) current() *ToolsSource {
-	if s.Focus < 0 || s.Focus >= len(s.Sources) {
-		return nil
-	}
-	return &s.Sources[s.Focus]
 }
