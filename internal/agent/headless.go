@@ -225,6 +225,10 @@ func (h *Headless) wasInterrupted() bool {
 // Run executes one user turn to completion and returns the final assistant
 // text. The conversation (including tool results) accumulates on the Agent,
 // so callers can inspect Messages() afterwards or run another turn.
+//
+// The loop carries two values from one round to the next, continued and
+// carried, and each phase below that reads or changes them takes them in and
+// hands them back rather than reaching for them.
 func (h *Headless) Run(prompt string) (string, error) {
 	h.mu.Lock()
 	h.interrupted = false
@@ -271,62 +275,16 @@ func (h *Headless) Run(prompt string) (string, error) {
 		// A checkpoint's status is buffered until the response says whether it
 		// is leading another tool round or is the turn's final answer.
 		progressPending := h.Agent.ProgressPending()
-		text, calls, stop, err := h.streamOnce(progressPending)
+		text, calls, stop, again, err := h.request(progressPending)
 		if err != nil {
-			// A request the window could not hold is answered before the
-			// backoff is asked anything, because it is not a stall: waiting
-			// changes nothing about a conversation that is too big, and a
-			// run that spent an attempt on it would spend all three
-			// re-sending the same oversized request. What fixes it is the
-			// step this loop already takes at every round boundary, run
-			// again with the refusal itself as the measurement.
-			if h.recoverOverflow(err) {
-				continue
-			}
-			notice, ok := h.retry.Next(err)
-			if !ok {
-				return "", err
-			}
-			notice.Partial = text
-			if !h.waitToRetry(notice) {
-				h.Agent.CancelTurn()
-				return "", ErrInterrupted
-			}
-			// The request that failed never reached the conversation, so
-			// asking again is the same question rather than a second one —
-			// which is the whole of what an unattended run can do here. A
-			// session offers to keep a reply that stopped halfway and let the
-			// model carry on from its own last sentence, because deciding
-			// whether half a sentence is worth having is a judgement, and the
-			// loop is passive: it cannot make one, and here there is nobody
-			// to ask.
-			// See docs/architecture.md#one-agent-several-front-ends.
+			return "", err
+		}
+		if again {
 			continue
 		}
-		// A request the provider answered ends the stall, whatever the answer
-		// was: the bound is on consecutive failures. So is the overflow
-		// recovery's bound — a request that fitted says the last one that
-		// did not is behind the run.
-		h.retry.Reset()
-		h.overflowed = false
 		// What the agent believes it is doing is most of what a reading is.
 		h.Summary.Recorder().Assistant(text)
-		if h.wasInterrupted() {
-			// A partial response without tool calls is safe to keep; tool calls
-			// from an aborted stream are dropped whole so no assistant message
-			// is ever owed results. CancelTurn fences off the run either way.
-			if len(calls) == 0 && text != "" {
-				// A checkpoint's status was buffered rather than streamed, so
-				// nothing has shown it yet; the words kept here reach the feed
-				// as the status they are before the turn is fenced off. It is
-				// not an answer — the turn has none — so it goes to OnProgress
-				// and never to OnText.
-				if progressPending && h.OnProgress != nil {
-					h.OnProgress(text)
-				}
-				h.Agent.Append(provider.Message{Role: provider.RoleAssistant, Content: text})
-			}
-			h.Agent.CancelTurn()
+		if h.cancelInterrupted(text, calls, progressPending) {
 			return "", ErrInterrupted
 		}
 		// How this round ended is this round's own. A ceiling reached before
@@ -336,81 +294,13 @@ func (h *Headless) Run(prompt string) (string, error) {
 		h.truncated = false
 		progress := h.Agent.NoteProgressProse(text)
 		if len(calls) == 0 {
-			if progressPending && text != "" && h.OnText != nil {
-				// A checkpoint request that ended the turn is still the model's
-				// answer, not progress that text-mode callers should lose.
-				h.OnText(text)
+			var answer string
+			var done bool
+			answer, done, continued, carried = h.finishReply(text, stop, progressPending, continued, carried)
+			if done {
+				return answer, nil
 			}
-
-			if text != "" {
-				h.Agent.Append(provider.Message{Role: provider.RoleAssistant, Content: text})
-			}
-			// What the turn answers with is the whole of what the model
-			// wrote. A continuation was told to carry on from where the
-			// sentence stopped, so the reply that comes back is the rest of
-			// an answer and means nothing without the half in front of it —
-			// and the caller reading that reply is the one place the two
-			// halves are ever put back together.
-			answer := carried + text
-			// A reply the model stopped writing because it filled its output
-			// budget is not an answer, it is the first half of one — and
-			// nothing downstream of an unattended run can tell the
-			// difference, which is how half a sentence becomes the run's
-			// result. A session hands the choice to the person in front of
-			// it; here there is nobody to ask, so the run asks the model to
-			// carry on, once, and lets the second attempt stand whatever it
-			// is. Twice would be a turn with no ceiling at all.
-			if stop == provider.StopLength && text != "" {
-				if !continued {
-					continued, carried = true, answer
-					h.Agent.AppendMachine(ContinueAfterCeiling)
-					h.notifyContinue(continueNotice)
-					continue
-				}
-				// The round's one continuation is spent and the reply
-				// stopped short again, so the half answer is what this run
-				// has. What it must not do is hand that back looking like a
-				// whole one: a caller judging the work — a backlog run
-				// grading a stage, a lane reading its writer — cannot see
-				// from the words that the sentence was cut, and every one of
-				// them is somewhere nobody is watching.
-				h.truncated = true
-				h.notifyContinue(truncatedReplyNotice)
-			}
-			if stop == provider.StopLength && text == "" {
-				// The budget went entirely on a call the ceiling then cut,
-				// so the reply is empty and there is no sentence to
-				// continue. Saying so is all there is to do, and it is the
-				// whole of what was missing here: the turn used to end at
-				// this line as though the model had answered.
-				h.notifyContinue(TruncatedRoundNotice)
-			}
-			// The answer is in the conversation before the close is asked
-			// anything, so a hand-back reads as a reply to what was just
-			// said rather than as an interruption of it.
-			if fb := h.closeFeedback(answer); fb != "" {
-				h.Agent.AppendMachine(fb)
-				// The round counter is untouched: the turn goes on under
-				// the ceiling it was already under, because a turn that
-				// could not finish inside its budget must not be handed a
-				// fresh one for having failed a check. What is dropped is
-				// the half in hand: what the model writes after a hand-back
-				// answers the check, and is a reply in its own right rather
-				// than the rest of the one before it.
-				carried = ""
-				continue
-			}
-			// The run ends on a reading of how it ended, rather than
-			// leaving the record whatever the last interval happened to
-			// see: a child steered back on target has been on target since,
-			// and a reading that was still out when the answer came would
-			// otherwise be paid for and read by nobody. It is started here
-			// and never waited for — Run returns now, and the verdict
-			// reaches OnSummary if and when it lands, which is why a surface
-			// that outlives its run records it and a one-shot that exits
-			// first does not.
-			h.Summary.Close(h.Agent.Rounds(), h.OnSummary)
-			return answer, nil
+			continue
 		}
 
 		// A round that ran tools is a fresh round, and its own reply gets its
@@ -431,135 +321,314 @@ func (h *Headless) Run(prompt string) (string, error) {
 			h.notifyContinue(TruncatedRoundNotice)
 		}
 
-		auto, _ := h.Agent.BeginToolRound(text, calls, h.Gate)
-		// The round's auto calls go out together, through the same bounded
-		// dispatcher the session uses. The prompt tells the model its
-		// independent reads and searches can be asked for in one round; a
-		// runner that then ran them one at a time made that advice a lie
-		// wherever nobody was watching, which is every fan-out.
-		for _, tc := range auto {
-			h.notifyCall(tc)
-		}
-		results := h.Agent.ExecuteCalls(auto)
-		for _, r := range results {
-			h.notifyResult(r)
-		}
-		h.Agent.RecordAutoResults(results)
-
-		// Gated calls stay one at a time: each is a decision, and in a run
-		// with nobody in front of it the decision is policy's, which is
-		// allowed to depend on what the calls before it did.
-		for {
-			tc, ok := h.Agent.NextApproval()
-			if !ok {
-				break
-			}
-			h.notifyCall(tc)
-			start := time.Now()
-			result := h.resolveGated(tc)
-			h.Agent.ResolveApproval(result)
-			h.notifyResult(ToolResult{Call: tc, Result: result, Duration: time.Since(start)})
-		}
+		h.runTools(text, calls)
 
 		if h.wasInterrupted() {
 			h.Agent.CancelTurn()
 			return "", ErrInterrupted
 		}
 
-		// A hold parks the run here and nowhere else. The round's results
-		// are in the conversation and nothing has been asked of the model
-		// yet, so the wait holds no stream, owes no results and leaves the
-		// conversation exactly as the round left it. An open stream cannot
-		// be paused — a reader that stops reading backs the socket up until
-		// the provider gives up on the request — which is why a hold waits
-		// for the boundary rather than taking effect where it is asked for.
-		//
-		// It comes before the steering below, so that what arrived while the
-		// run was parked — a person's redirect, or what the hold had to say
-		// about a tree it moved — joins the conversation at this boundary
-		// rather than one round after the run is let go.
-		if !h.waitOnHold() {
+		if err := h.betweenRounds(); err != nil {
+			return "", err
+		}
+	}
+}
+
+// request sends one round's request and answers whether the run has a reply
+// to read. It reads and changes neither of the loop's carried values,
+// continued and carried: a request that failed never reached the
+// conversation, so the round it belongs to is still the same round. again
+// reports a request that should simply be sent again (an overflow recovered,
+// or a stall waited out); err is the run's end, ErrInterrupted included, with
+// the turn already cancelled where the wait was interrupted.
+func (h *Headless) request(progressPending bool) (text string, calls []provider.ToolCall, stop provider.StopReason, again bool, err error) {
+	text, calls, stop, err = h.streamOnce(progressPending)
+	if err != nil {
+		// A request the window could not hold is answered before the
+		// backoff is asked anything, because it is not a stall: waiting
+		// changes nothing about a conversation that is too big, and a
+		// run that spent an attempt on it would spend all three
+		// re-sending the same oversized request. What fixes it is the
+		// step this loop already takes at every round boundary, run
+		// again with the refusal itself as the measurement.
+		if h.recoverOverflow(err) {
+			return "", nil, stop, true, nil
+		}
+		notice, ok := h.retry.Next(err)
+		if !ok {
+			return "", nil, stop, false, err
+		}
+		notice.Partial = text
+		if !h.waitToRetry(notice) {
 			h.Agent.CancelTurn()
-			return "", ErrInterrupted
+			return "", nil, stop, false, ErrInterrupted
 		}
+		// The request that failed never reached the conversation, so
+		// asking again is the same question rather than a second one —
+		// which is the whole of what an unattended run can do here. A
+		// session offers to keep a reply that stopped halfway and let the
+		// model carry on from its own last sentence, because deciding
+		// whether half a sentence is worth having is a judgement, and the
+		// loop is passive: it cannot make one, and here there is nobody
+		// to ask.
+		// See docs/architecture.md#one-agent-several-front-ends.
+		return "", nil, stop, true, nil
+	}
+	// A request the provider answered ends the stall, whatever the answer
+	// was: the bound is on consecutive failures. So is the overflow
+	// recovery's bound — a request that fitted says the last one that
+	// did not is behind the run.
+	h.retry.Reset()
+	h.overflowed = false
+	return text, calls, stop, false, nil
+}
 
-		// Steering messages queued mid-turn join the conversation between tool
-		// rounds; they count as fresh user input, so they also reset the round
-		// counter (matching the TUI's injectSteering).
-		if h.Steer != nil {
-			if msgs := h.Steer(); len(msgs) > 0 {
-				for _, msg := range msgs {
-					h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: msg})
-					// What the person asked for is now part of what the
-					// readings judge the run against. Without this the next
-					// reading calls their own correction a departure and the
-					// steer it earns quotes the task they have moved on from
-					// back at the model. A child is steered here too — what a
-					// person types into an attached lane, or an RPC client
-					// sends into a served turn, arrives through this hook and
-					// nowhere else.
-					h.Summary.Extend(msg)
-				}
-				h.Agent.ResetRounds()
-				// And the verdict about the work before they spoke is not
-				// delivered after it. The counter the cooldown is measured in
-				// has just gone back to zero as well, which is the other half
-				// of what a turn's start does here.
-				h.Agent.StartInterveneTurn()
+// cancelInterrupted fences off a turn that was interrupted while its request
+// was answered, keeping what of the reply is safe to keep, and reports
+// whether it did; the caller returns ErrInterrupted when it did. It reads
+// and changes neither of the loop's carried values, continued and carried:
+// an interrupted turn has no answer for them to be part of.
+func (h *Headless) cancelInterrupted(text string, calls []provider.ToolCall, progressPending bool) bool {
+	if !h.wasInterrupted() {
+		return false
+	}
+	// A partial response without tool calls is safe to keep; tool calls
+	// from an aborted stream are dropped whole so no assistant message
+	// is ever owed results. CancelTurn fences off the run either way.
+	if len(calls) == 0 && text != "" {
+		// A checkpoint's status was buffered rather than streamed, so
+		// nothing has shown it yet; the words kept here reach the feed
+		// as the status they are before the turn is fenced off. It is
+		// not an answer — the turn has none — so it goes to OnProgress
+		// and never to OnText.
+		if progressPending && h.OnProgress != nil {
+			h.OnProgress(text)
+		}
+		h.Agent.Append(provider.Message{Role: provider.RoleAssistant, Content: text})
+	}
+	h.Agent.CancelTurn()
+	return true
+}
+
+// finishReply ends a round that asked for no tools: it asks once for the
+// rest of a reply the output ceiling cut, hands a reply the close refuses
+// back to the model, and otherwise closes the turn on the answer. It takes
+// the loop's carried values, continued and carried, and returns them as the
+// next round must see them. done reports the turn over with answer as its
+// result; when it is false the loop goes round again.
+func (h *Headless) finishReply(text string, stop provider.StopReason, progressPending, continued bool, carried string) (answer string, done, continuedOut bool, carriedOut string) {
+	if progressPending && text != "" && h.OnText != nil {
+		// A checkpoint request that ended the turn is still the model's
+		// answer, not progress that text-mode callers should lose.
+		h.OnText(text)
+	}
+
+	if text != "" {
+		h.Agent.Append(provider.Message{Role: provider.RoleAssistant, Content: text})
+	}
+	// What the turn answers with is the whole of what the model
+	// wrote. A continuation was told to carry on from where the
+	// sentence stopped, so the reply that comes back is the rest of
+	// an answer and means nothing without the half in front of it —
+	// and the caller reading that reply is the one place the two
+	// halves are ever put back together.
+	answer = carried + text
+	// A reply the model stopped writing because it filled its output
+	// budget is not an answer, it is the first half of one — and
+	// nothing downstream of an unattended run can tell the
+	// difference, which is how half a sentence becomes the run's
+	// result. A session hands the choice to the person in front of
+	// it; here there is nobody to ask, so the run asks the model to
+	// carry on, once, and lets the second attempt stand whatever it
+	// is. Twice would be a turn with no ceiling at all.
+	if stop == provider.StopLength && text != "" && !continued {
+		h.Agent.AppendMachine(ContinueAfterCeiling)
+		h.notifyContinue(continueNotice)
+		return "", false, true, answer
+	}
+	if stop == provider.StopLength && text != "" {
+		// The round's one continuation is spent and the reply
+		// stopped short again, so the half answer is what this run
+		// has. What it must not do is hand that back looking like a
+		// whole one: a caller judging the work — a backlog run
+		// grading a stage, a lane reading its writer — cannot see
+		// from the words that the sentence was cut, and every one of
+		// them is somewhere nobody is watching.
+		h.truncated = true
+		h.notifyContinue(truncatedReplyNotice)
+	}
+	if stop == provider.StopLength && text == "" {
+		// The budget went entirely on a call the ceiling then cut,
+		// so the reply is empty and there is no sentence to
+		// continue. Saying so is all there is to do, and it is the
+		// whole of what was missing here: the turn used to end at
+		// this line as though the model had answered.
+		h.notifyContinue(TruncatedRoundNotice)
+	}
+	// The answer is in the conversation before the close is asked
+	// anything, so a hand-back reads as a reply to what was just
+	// said rather than as an interruption of it.
+	if fb := h.closeFeedback(answer); fb != "" {
+		h.Agent.AppendMachine(fb)
+		// The round counter is untouched: the turn goes on under
+		// the ceiling it was already under, because a turn that
+		// could not finish inside its budget must not be handed a
+		// fresh one for having failed a check. What is dropped is
+		// the half in hand: what the model writes after a hand-back
+		// answers the check, and is a reply in its own right rather
+		// than the rest of the one before it.
+		return "", false, continued, ""
+	}
+	// The run ends on a reading of how it ended, rather than
+	// leaving the record whatever the last interval happened to
+	// see: a child steered back on target has been on target since,
+	// and a reading that was still out when the answer came would
+	// otherwise be paid for and read by nobody. It is started here
+	// and never waited for — Run returns now, and the verdict
+	// reaches OnSummary if and when it lands, which is why a surface
+	// that outlives its run records it and a one-shot that exits
+	// first does not.
+	h.Summary.Close(h.Agent.Rounds(), h.OnSummary)
+	return answer, true, continued, carried
+}
+
+// runTools runs a round's calls: the auto calls together, then the gated
+// ones one at a time. It reads and changes neither of the loop's carried
+// values, continued and carried; the caller has already cleared both for the
+// fresh round a tool round is.
+func (h *Headless) runTools(text string, calls []provider.ToolCall) {
+	auto, _ := h.Agent.BeginToolRound(text, calls, h.Gate)
+	// The round's auto calls go out together, through the same bounded
+	// dispatcher the session uses. The prompt tells the model its
+	// independent reads and searches can be asked for in one round; a
+	// runner that then ran them one at a time made that advice a lie
+	// wherever nobody was watching, which is every fan-out.
+	for _, tc := range auto {
+		h.notifyCall(tc)
+	}
+	results := h.Agent.ExecuteCalls(auto)
+	for _, r := range results {
+		h.notifyResult(r)
+	}
+	h.Agent.RecordAutoResults(results)
+
+	// Gated calls stay one at a time: each is a decision, and in a run
+	// with nobody in front of it the decision is policy's, which is
+	// allowed to depend on what the calls before it did.
+	for {
+		tc, ok := h.Agent.NextApproval()
+		if !ok {
+			break
+		}
+		h.notifyCall(tc)
+		start := time.Now()
+		result := h.resolveGated(tc)
+		h.Agent.ResolveApproval(result)
+		h.notifyResult(ToolResult{Call: tc, Result: result, Duration: time.Since(start)})
+	}
+}
+
+// betweenRounds takes the boundary after a tool round's results are
+// recorded: a hold, then steering, then the round cap, then the tree, the
+// reading and the check-ins the next request carries. It reads and changes
+// neither of the loop's carried values, continued and carried. A non-nil
+// error ends the run: ErrInterrupted, with the turn already cancelled, for a
+// hold that was interrupted, or the round cap.
+func (h *Headless) betweenRounds() error {
+	// A hold parks the run here and nowhere else. The round's results
+	// are in the conversation and nothing has been asked of the model
+	// yet, so the wait holds no stream, owes no results and leaves the
+	// conversation exactly as the round left it. An open stream cannot
+	// be paused — a reader that stops reading backs the socket up until
+	// the provider gives up on the request — which is why a hold waits
+	// for the boundary rather than taking effect where it is asked for.
+	//
+	// It comes before the steering below, so that what arrived while the
+	// run was parked — a person's redirect, or what the hold had to say
+	// about a tree it moved — joins the conversation at this boundary
+	// rather than one round after the run is let go.
+	if !h.waitOnHold() {
+		h.Agent.CancelTurn()
+		return ErrInterrupted
+	}
+
+	// Steering messages queued mid-turn join the conversation between tool
+	// rounds; they count as fresh user input, so they also reset the round
+	// counter (matching the TUI's injectSteering).
+	if h.Steer != nil {
+		if msgs := h.Steer(); len(msgs) > 0 {
+			for _, msg := range msgs {
+				h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: msg})
+				// What the person asked for is now part of what the
+				// readings judge the run against. Without this the next
+				// reading calls their own correction a departure and the
+				// steer it earns quotes the task they have moved on from
+				// back at the model. A child is steered here too — what a
+				// person types into an attached lane, or an RPC client
+				// sends into a served turn, arrives through this hook and
+				// nowhere else.
+				h.Summary.Extend(msg)
 			}
+			h.Agent.ResetRounds()
+			// And the verdict about the work before they spoke is not
+			// delivered after it. The counter the cooldown is measured in
+			// has just gone back to zero as well, which is the other half
+			// of what a turn's start does here.
+			h.Agent.StartInterveneTurn()
 		}
+	}
 
-		// Mirrors the TUI's resumeToolLoop: the cap is checked after a round's
-		// results are recorded, before the next stream request. Headless has no
-		// user to hand control back to, so hitting the cap is a failure — and
-		// an uncapped agent (--max-rounds 0) never reaches it, which is why
-		// that spelling is only offered to a foreground run someone can
-		// interrupt.
-		if h.Agent.CapReached() {
-			return "", fmt.Errorf("%w after %d rounds", ErrRoundCap, h.Agent.Rounds())
-		}
+	// Mirrors the TUI's resumeToolLoop: the cap is checked after a round's
+	// results are recorded, before the next stream request. Headless has no
+	// user to hand control back to, so hitting the cap is a failure — and
+	// an uncapped agent (--max-rounds 0) never reaches it, which is why
+	// that spelling is only offered to a foreground run someone can
+	// interrupt.
+	if h.Agent.CapReached() {
+		return fmt.Errorf("%w after %d rounds", ErrRoundCap, h.Agent.Rounds())
+	}
 
-		// The tree first, then the question: a check-in asked against a tree
-		// the run has not been told about is answered against the wrong one.
-		h.deliverTree(false)
+	// The tree first, then the question: a check-in asked against a tree
+	// the run has not been told about is answered against the wrong one.
+	h.deliverTree(false)
 
-		// The same take-stock check-in the TUI injects. A headless run needs
-		// it more, not less: there is nobody here to ask a turn whether it has
-		// enough yet, so the run itself has to ask.
-		// A reading due now goes out in the background; whatever an earlier
-		// one returned is offered to the policy here. The reading never
-		// blocks the round, so a run is never slower for having one.
-		if h.Summary != nil {
-			h.Agent.SetInterveneBounds(h.Summary.Bounds())
-			if v, ok := h.Summary.Tick(h.Agent.Rounds()); ok {
-				if h.OnSummary != nil {
-					h.OnSummary(v)
-				}
-				// The age is judged here, where the reading is collected: a
-				// verdict is parked when it lands and taken off at the next
-				// boundary, so this round is the first one it could have
-				// acted on and the only honest place to ask how old it is.
-				if reason := h.Agent.ConsiderVerdict(v, h.Agent.Rounds(), true); reason != "" && h.OnWithheld != nil {
-					h.OnWithheld(reason)
-				}
+	// The same take-stock check-in the TUI injects. A headless run needs
+	// it more, not less: there is nobody here to ask a turn whether it has
+	// enough yet, so the run itself has to ask.
+	// A reading due now goes out in the background; whatever an earlier
+	// one returned is offered to the policy here. The reading never
+	// blocks the round, so a run is never slower for having one.
+	if h.Summary != nil {
+		h.Agent.SetInterveneBounds(h.Summary.Bounds())
+		if v, ok := h.Summary.Tick(h.Agent.Rounds()); ok {
+			if h.OnSummary != nil {
+				h.OnSummary(v)
 			}
-		}
-		if prompt, ok := h.Agent.TakeProgressCheckpoint(); ok {
-			h.Agent.AppendProgressRequest(prompt)
-		}
-		if iv, ok := h.Agent.NextIntervention(h.summaryTarget()); ok {
-			h.Agent.AppendMachine(iv.Message)
-			// The reading that judges what happens next is told what was
-			// just said, and comes sooner for it. Without that it is handed
-			// the evidence that earned the interruption and the verdict it
-			// earned, and says the same thing again while the cooldown holds
-			// the next one an interval away.
-			h.Summary.Intervened(h.Agent.Rounds(), iv)
-			if h.OnIntervene != nil {
-				h.OnIntervene(iv)
+			// The age is judged here, where the reading is collected: a
+			// verdict is parked when it lands and taken off at the next
+			// boundary, so this round is the first one it could have
+			// acted on and the only honest place to ask how old it is.
+			if reason := h.Agent.ConsiderVerdict(v, h.Agent.Rounds(), true); reason != "" && h.OnWithheld != nil {
+				h.OnWithheld(reason)
 			}
 		}
 	}
+	if prompt, ok := h.Agent.TakeProgressCheckpoint(); ok {
+		h.Agent.AppendProgressRequest(prompt)
+	}
+	if iv, ok := h.Agent.NextIntervention(h.summaryTarget()); ok {
+		h.Agent.AppendMachine(iv.Message)
+		// The reading that judges what happens next is told what was
+		// just said, and comes sooner for it. Without that it is handed
+		// the evidence that earned the interruption and the verdict it
+		// earned, and says the same thing again while the cooldown holds
+		// the next one an interval away.
+		h.Summary.Intervened(h.Agent.Rounds(), iv)
+		if h.OnIntervene != nil {
+			h.OnIntervene(iv)
+		}
+	}
+	return nil
 }
 
 // recoverContext takes the run's window-recovery step and reports what it

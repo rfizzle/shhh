@@ -40,10 +40,6 @@ linters:
       - linters: [gocognit, nestif]
         path: _test\.go$
       # Cognitive complexity over 50, one rule per function.
-      # The headless agent loop: every turn outcome handled in one place.
-      - linters: [gocognit]
-        path: ^internal/agent/headless\.go$
-        text: 'func `\(\*Headless\)\.Run`'
       # The one-shot: the terminal and the piped paths both inline in one constructor.
       - linters: [gocognit]
         path: ^internal/cli/cmd\.go$
