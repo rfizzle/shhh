@@ -803,63 +803,22 @@ func askToolDefs(session chatSession) []provider.Tool {
 	return append(append([]provider.Tool{}, session.toolDefs...), ask.ToolDefinition())
 }
 
-// assembled, when set, takes the model runChatSession has just built instead
-// of the program that would run it. See the call site for why it is here.
-var assembled func(chat.Model) error
-
-func runChatSession(cmd *cobra.Command, args []string, session chatSession) error {
-	// The working scope: the directory the session was opened in plus
-	// whatever config and --add-dir put beside it. Containment writes to it,
-	// the approval cards ask before anything leaves it, and /add-dir grows it
-	// mid-session. It is built first because everything that runs a command
-	// — the gate, sub-agents, the session's own runner — takes it.
-	sc, err := sessionScope(ConfigFrom(cmd.Context()), session.addDirs)
-	if err != nil {
-		return err
-	}
-
-	// The changeset store is named here and opened below, where the local
-	// store it persists into is open. The git stager reads it through this
-	// variable rather than through a copy of what it held at registration:
-	// what may be staged is what the session has changed by the time the
-	// call is made, not what it had changed when the toolset was built.
-	var changes *changeset.Store
-	var gitWrites *structural.Writes
-	if !session.conversation {
-		gitWrites = &structural.Writes{
-			Files: func() []string { return changes.Paths() },
-			// A commit hook is a program git runs as whoever opened the
-			// session, and a checkout can point git at one inside itself, so
-			// it is behind the same answer every other thing a checkout
-			// declares is behind.
-			// See docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs.
-			Hooks: projectTrust().RunsOwnPrograms(),
-		}
-	}
-
-	// Everything a session and an unattended run both register, on the
-	// conditions they both register it under: the reducer, the web tools, the
-	// language server, the structural tools, the quality gate, the process
-	// supervisor, the report publisher and the vault (toolset.go). A session
-	// pops a browser for a page the model published, because somebody is here
-	// to read it.
-	ts, err := buildToolset(cmd, &session, session.kind, toolsetOpts{scope: sc, browser: true, resident: true, gitWrites: gitWrites, asks: true})
-	if err != nil {
-		return err
-	}
-	defer ts.close()
-	red, gate, procSup := ts.evidence, ts.gate, ts.proc
-
+// registerChat is the terminal session's registrations, in its own order: the
+// roles before the store, then the servers, the memories with the tool that
+// proposes one, the question tool, the working steps, the notebook, the
+// sources and the skills. The order is what the model reads its tools and
+// their paragraphs in, which is why it stays this surface's.
+// See docs/architecture.md#a-session-is-assembled-in-one-place.
+func registerChat(cmd *cobra.Command, a *assembly, session *chatSession) error {
 	// Sub-agent orchestration: spawn_agent (approval-gated) and
 	// agent_report join the toolset; the supervisor itself is built once the
 	// provider is resolved.
 	// The roles it can spawn are the built-in two plus whatever profiles the
 	// user wrote to the agents directory; a profile that does not load is a
 	// startup error naming the file, not a role that quietly went missing.
-	var agents *agentProfiles
-	applyDelegation(ConfigFrom(cmd.Context()), &session)
+	applyDelegation(ConfigFrom(cmd.Context()), session)
 	if session.agents {
-		agents, err = loadAgentProfiles(!session.conversation)
+		agents, err := loadAgentProfiles(!session.conversation)
 		if err != nil {
 			return err
 		}
@@ -869,6 +828,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			// (docs/capabilities/chat.md#colleagues-not-workers).
 			agents = agents.readers()
 		}
+		a.agents = agents
 		// The models it may name are known once the provider is, and are
 		// put on the definition then (offerOn).
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles, subagent.Offer{})...)
@@ -879,8 +839,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		fmt.Fprintf(os.Stderr, "warning: chat persistence unavailable: %v\n", storeErr)
 	}
 	if db != nil {
-		defer db.Close()
+		a.closers = append(a.closers, func() { db.Close() })
 	}
+	a.db, a.storeErr = db, storeErr
 	// Pointed at the store before the prompt and the screen are built from
 	// it, because both of them state whether anybody else is here.
 	session.sibling = readSibling(db)
@@ -891,7 +852,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// a row in /mcp, never a reason not to start
 	// (docs/capabilities/mcp.md#a-server-that-did-not-answer-is-a-row).
 	if session.mcp {
-		defer session.attachMCP(cmd.Context(), db, session.conversation)()
+		a.closers = append(a.closers, session.attachMCP(cmd.Context(), db, session.conversation))
 	}
 
 	// Durable memory: recalled entries join the system prompt under a hard
@@ -899,13 +860,13 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// every surface takes (memory.go). The remember tool is the half that is
 	// this surface's alone: it proposes a new memory, and a proposal is
 	// confirmed by the user before it persists.
-	mem := recallMemory(cmd, &session, db)
-	if mem != nil && session.memory {
+	a.mem = recallMemory(cmd, session, db)
+	if a.mem != nil && session.memory {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), memory.ToolDefinition())
 	}
 
 	// And the question tool, on the same terms and for the same reason.
-	session.toolDefs = askToolDefs(session)
+	session.toolDefs = askToolDefs(*session)
 
 	// And the working list, which the rail's STEPS block draws.
 	// See docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
@@ -917,33 +878,50 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	session.openNotebook(db)
 	session.openSourceLedger(db)
 
-	registerSkills(&session)
+	registerSkills(session)
+	return nil
+}
 
-	// The model is told where the work is, so an out-of-scope path is
-	// a question it asks rather than a call the user refuses.
-	scopeSaid := scopePromptBlock(sc, true)
-	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopeSaid)
+// assembled, when set, takes the model runChatSession has just built instead
+// of the program that would run it. See the call site for why it is here.
+var assembled func(chat.Model) error
 
-	// …and what it has to work with. Every optional tool above is
-	// registered on a condition — a language server was found, a binary is on
-	// PATH, a key is configured — so this is the last point where the whole
-	// toolset is known, and it has to be said after the last one joins.
-	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs, session.proactive))
-
-	// The spend ledger is opened before the session's provider, because the
-	// provider is handed out through it: every request shhh makes is billed
-	// at the gate rather than by the feature that made it.
-	// See docs/architecture.md#spend-is-counted-at-the-provider.
-	prices := loadPricing()
-	ledger := meter.New(prices)
-
-	env, err := buildSessionEnv(cmd, session, ledger)
+func runChatSession(cmd *cobra.Command, args []string, session chatSession) error {
+	// The changeset store is named here and opened below, where the local
+	// store it persists into is open. The git stager reads it through this
+	// variable rather than through a copy of what it held at registration:
+	// what may be staged is what the session has changed by the time the
+	// call is made, not what it had changed when the toolset was built.
+	var changes *changeset.Store
+	asm, err := assembleSession(cmd, &session, assemblyOpts{
+		kind: session.kind,
+		toolset: func(sc *scope.Scope) toolsetOpts {
+			var gitWrites *structural.Writes
+			if !session.conversation {
+				gitWrites = &structural.Writes{
+					Files: func() []string { return changes.Paths() },
+					// A commit hook is a program git runs as whoever opened
+					// the session, and a checkout can point git at one inside
+					// itself, so it is behind the same answer every other
+					// thing a checkout declares is behind.
+					// See docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs.
+					Hooks: projectTrust().RunsOwnPrograms(),
+				}
+			}
+			// A session pops a browser for a page the model published,
+			// because somebody is here to read it.
+			return toolsetOpts{scope: sc, browser: true, resident: true, gitWrites: gitWrites, asks: true}
+		},
+		register:  registerChat,
+		grantable: true,
+	})
 	if err != nil {
 		return err
 	}
-	if agents != nil {
-		session.toolDefs = spawnModels{env: env, agents: agents, prices: prices}.offerOn(agents.profiles, session.toolDefs)
-	}
+	defer asm.close()
+	sc, ts, db, storeErr, agents, mem := asm.sc, asm.ts, asm.db, asm.storeErr, asm.agents, asm.mem
+	scopeSaid, prices, ledger, env := asm.scopeSaid, asm.prices, asm.ledger, asm.env
+	red, gate, procSup := ts.evidence, ts.gate, ts.proc
 	cfg := env.cfg
 	proj := ProjectConfigFrom(cmd.Context())
 	startedBy := resolve.ModelFrom(*session.flags)
