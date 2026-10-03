@@ -111,7 +111,7 @@ func TestProfileScreen_TheRailSaysWhenQuestionsWereSkipped(t *testing.T) {
 		t.Fatalf("a draft with no questions should mark the step skipped:\n%s", view)
 	}
 	asked := draftScreen()
-	asked.of = 2
+	asked.brief.of = 2
 	if view := asked.View(90); !strings.Contains(view, "✓ questions") {
 		t.Fatalf("a draft that was asked questions should tick the step:\n%s", view)
 	}
@@ -282,8 +282,8 @@ func TestProfileScreen_TheProfilePaneHoldsItsEnds(t *testing.T) {
 	for range 80 {
 		p.Update(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})
 	}
-	if want := p.pane.total - p.pane.Height; p.pane.Offset != want {
-		t.Fatalf("offset after the overshoot = %d, want %d", p.pane.Offset, want)
+	if want := p.sections.pane.total - p.sections.pane.Height; p.sections.pane.Offset != want {
+		t.Fatalf("offset after the overshoot = %d, want %d", p.sections.pane.Offset, want)
 	}
 	end := p.View(100)
 	if end == top {

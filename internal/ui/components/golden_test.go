@@ -3637,7 +3637,7 @@ func TestGolden_ProfileScreen(t *testing.T) {
 			p := NewProfileScreen("/agents new")
 			p.Subject = "a coding agent · reviewer tester"
 			p.MaxLines = height
-			p.of = 2
+			p.brief.of = 2
 			p.Show(sectionedDraft(), []SelectOption{
 				{Label: "Save to this project", Desc: ".shhh/agents"},
 				{Label: "Save globally", Desc: "~/.config/shhh/agents"},

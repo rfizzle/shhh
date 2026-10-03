@@ -28,7 +28,6 @@ package components
 // it (invariant 2).
 
 import (
-	"fmt"
 	"strings"
 
 	"charm.land/bubbles/v2/textarea"
@@ -122,14 +121,6 @@ type profileResult struct {
 	Include bool
 }
 
-// profileQA is one question the drafter asked and the answer it got, kept on
-// screen above the question being asked now. A flow that forgot what it had
-// already been told would be asking the person to hold it in their head.
-type profileQA struct {
-	question string
-	answer   string
-}
-
 // ProfileMarkTone is what has happened to a section, as the mark after its
 // heading colours it. The words carry it too (invariant 1): the tone only
 // makes the section that is the person's own, or the one that is empty,
@@ -210,7 +201,11 @@ func (d ProfileDraftView) headline() string {
 	return d.Name + " — " + d.Description
 }
 
-// ProfileScreen is the drafting flow's surface.
+// ProfileScreen is the drafting flow's surface: a wizard over three widgets
+// the step selects — the brief and its questions, the section editor, and
+// the diff and migrate viewer. It keeps the step, the chrome and the card,
+// and every fact the host sets. See
+// docs/architecture.md#the-profile-drafters-widgets.
 type ProfileScreen struct {
 	// name is what the header calls the surface — the command that opens it.
 	name string
@@ -221,23 +216,12 @@ type ProfileScreen struct {
 
 	Step profileStep
 
-	// ask is the question this step puts, in the drafter's words or the
-	// surface's own.
-	ask string
-	// lead introduces the starting points and Starts are the starting
-	// points; both are empty once the flow is past the brief.
-	lead   string
-	starts []string
-	// fieldLabel names the text field: what is wanted in it.
-	fieldLabel string
-	// placeholder is what the empty field says.
-	placeholder string
-
-	// asked is the exchange so far, and At/Of number the question being
-	// asked now. A flow whose length is not stated is one nobody can decide
-	// to finish.
-	asked  []profileQA
-	at, of int
+	// brief, sections and review are the three widgets the step selects,
+	// and field is the text field the first two are lent.
+	brief    profileBrief
+	sections profileSections
+	review   profileReview
+	field    textarea.Model
 
 	// working is what the drafter is doing, in a word, animated on the
 	// session's own frame counter; Elapsed is how long it has been at it.
@@ -245,8 +229,6 @@ type ProfileScreen struct {
 	Frame   int
 	Elapsed string
 
-	// draft is the profile the card is about.
-	draft ProfileDraftView
 	// warning is what went wrong with the decision just taken — a file that
 	// already exists, a revision that did not land — shown on the draft that
 	// is asking again.
@@ -260,38 +242,15 @@ type ProfileScreen struct {
 	// has to know where the save rows end.
 	saves []SelectOption
 
-	// focus is -1 while the text field has it, and the starting point's
-	// index otherwise.
-	focus  int
-	field  textarea.Model
 	decide *Select
 	// Picker is the selector a field block opened, drawn where the card is
 	// and holding the keyboard until it is taken or cancelled. The host
 	// builds it and reads its boxes; the surface only routes and draws it.
 	Picker *MultiSelect
-	// section is the block the pointer is on, and card says the card rather
-	// than the sections has the keyboard; tab moves it between the two
+	// card says the card rather than the sections has the keyboard; tab
+	// moves it between the two
 	// (docs/interface/surfaces.md#the-profile-drafter).
-	section int
-	card    bool
-	// refining is the note open under the selected section: the field has
-	// the keyboard, and enter sends it.
-	refining bool
-	// whole says the note, or the wait after it, is about the whole draft
-	// rather than the selected section, and is drawn under the section list;
-	// include is its second press, and sent the note as it went to the
-	// drafter, which the wait keeps on screen above itself.
-	whole   bool
-	include bool
-	sent    string
-	// pane is the offset into the sections' rows, held as a Pager like every
-	// other scrolling body's here, so the fold under it counts through the
-	// same arithmetic the rest of the package folds through
-	// (docs/interface/principles.md#fold-never-hide). reveal asks the next
-	// draw to bring the selected section inside it: a move puts it there,
-	// and a scroll the reader asked for does not snap back.
-	pane   Pager
-	reveal bool
+	card bool
 	// from is the step the wait was entered from, which is the step the rail
 	// keeps showing while it lasts: a drafting turn started from the brief
 	// may still come back with questions, so a rail that jumped to the draft
@@ -321,22 +280,23 @@ type ProfileScreen struct {
 	Diff []string
 	// DiscardDesc is what the card's Discard row says beside it.
 	DiscardDesc string
-	// diff is the diff's window: it stands where the sections stood while
-	// the card holds the keyboard, and the profile's scroll keys move it.
-	diff Pager
-	// migrating is the wait while a profile opened from its file is moved
-	// into the sections: drawn on its own, with the file's headline.
-	migrating bool
 }
 
 // NewProfileScreen builds the surface with its text field. The field is one
 // row and takes the draft's newline chords, which is the note field's rule
 // and for the note field's reason: the surface answers enter itself.
+//
+// The field is one, and the brief and the section editor are each lent it:
+// it carries the width the last draw gave it, and a note typed before the
+// next draw lays itself out in that width.
 func NewProfileScreen(name string) *ProfileScreen {
 	ta := NewTextArea()
 	ta.SetHeight(1)
 	ta.Focus()
-	return &ProfileScreen{name: name, focus: -1, field: ta}
+	p := &ProfileScreen{name: name, field: ta}
+	p.brief = profileBrief{focus: -1, field: &p.field}
+	p.sections = profileSections{field: &p.field}
+	return p
 }
 
 // AskBrief puts the flow on its first step. It drops the exchange with it:
@@ -344,34 +304,24 @@ func NewProfileScreen(name string) *ProfileScreen {
 // asked about, so answers to them are not still true.
 func (p *ProfileScreen) AskBrief(ask, lead string, starts []string) {
 	p.Step = ProfileBrief
-	p.ask, p.lead, p.starts = ask, lead, starts
-	p.asked, p.at, p.of = nil, 0, 0
-	p.fieldLabel, p.placeholder = "in your own words", "what it is for"
-	p.resetField()
+	p.brief.open(ask, lead, starts)
 }
 
 // AskQuestion puts one of the drafter's questions on screen, numbered.
 func (p *ProfileScreen) AskQuestion(question string, at, of int) {
 	p.Step = ProfileQuestions
-	p.ask, p.lead, p.starts = question, "", nil
-	p.at, p.of = at, of
-	p.fieldLabel, p.placeholder = "your answer", "enter alone says you have no preference"
-	p.resetField()
+	p.brief.question(question, at, of)
 }
 
 // Answered records an exchange, so the questions already answered stay on
 // screen under the ones still being asked.
 func (p *ProfileScreen) Answered(question, answer string) {
-	p.asked = append(p.asked, profileQA{question: question, answer: answer})
+	p.brief.answered(question, answer)
 }
 
 // Forget drops the last exchange, for a step back onto the question that
 // produced it.
-func (p *ProfileScreen) Forget() {
-	if len(p.asked) > 0 {
-		p.asked = p.asked[:len(p.asked)-1]
-	}
-}
+func (p *ProfileScreen) Forget() { p.brief.forget() }
 
 // SetText puts text in the field with the cursor after it, for a step the
 // person is coming back to rather than meeting.
@@ -393,9 +343,8 @@ func (p *ProfileScreen) Work(doing string) {
 	}
 	p.Step = ProfileWorking
 	p.working = doing
-	p.refining = false
-	p.migrating = false
-	p.field.Blur()
+	p.review.migrating = false
+	p.sections.wait()
 }
 
 // Migrating puts the surface on the wait while a profile opened from its
@@ -404,9 +353,8 @@ func (p *ProfileScreen) Work(doing string) {
 func (p *ProfileScreen) Migrating(doing string) {
 	p.Step, p.from = ProfileWorking, ProfileWorking
 	p.working = doing
-	p.refining = false
-	p.migrating = true
-	p.field.Blur()
+	p.review.migrating = true
+	p.sections.wait()
 }
 
 // Show puts the finished draft up over the decision. saves are the rows that
@@ -418,16 +366,11 @@ func (p *ProfileScreen) Migrating(doing string) {
 // walk down to it again.
 func (p *ProfileScreen) Show(draft ProfileDraftView, saves []SelectOption) {
 	p.Step = ProfileDraft
-	p.draft = draft
 	p.warning = ""
 	p.saves = saves
-	p.refining = false
-	p.whole, p.include, p.sent = false, false, ""
 	p.Picker = nil
-	p.migrating = false
-	p.section = min(max(p.section, 0), max(len(draft.Sections)-1, 0))
-	p.reveal = true
-	p.field.Blur()
+	p.review.migrating = false
+	p.sections.land(draft)
 	options := append([]SelectOption{}, saves...)
 	options = append(options, SelectOption{Label: "Discard", Desc: p.DiscardDesc})
 	// The card's title names the profile, so the question stays answerable
@@ -443,21 +386,22 @@ func (p *ProfileScreen) Show(draft ProfileDraftView, saves []SelectOption) {
 // keyboard. Show closes it: the next draft is the selector's answer.
 func (p *ProfileScreen) OpenPicker(picker *MultiSelect) {
 	p.Picker = picker
-	p.reveal = true
+	p.sections.reveal = true
 }
 
 // Selected is the section the pointer is on, for a host that words a wait
 // or a warning about it.
-func (p *ProfileScreen) Selected() int { return p.section }
+func (p *ProfileScreen) Selected() int { return p.sections.section }
 
 // Select puts the pointer on a block and the keyboard on the sections, for a
 // host that lands a revision on a block the person should be standing on —
 // a whole-draft note's own row, whose esc takes the revision back.
 func (p *ProfileScreen) Select(index int) {
-	if index < 0 || index >= len(p.draft.Sections) {
+	if index < 0 || index >= len(p.sections.draft.Sections) {
 		return
 	}
-	p.section, p.card, p.reveal = index, false, true
+	p.sections.section, p.sections.reveal = index, true
+	p.card = false
 	p.syncCard()
 }
 
@@ -483,14 +427,6 @@ func (p *ProfileScreen) syncCard() {
 	p.decide.HintKeys = []KeyOffer{keyOfferAs(keys.Profile.Note, "the card")}
 }
 
-// resetField empties the field and puts the cursor back in it.
-func (p *ProfileScreen) resetField() {
-	p.field.Reset()
-	p.field.Placeholder = p.placeholder
-	p.focus = -1
-	p.field.Focus()
-}
-
 // Update routes one keystroke to the step that is up.
 func (p *ProfileScreen) Update(msg tea.KeyPressMsg) (done bool, result profileResult) {
 	if keys.Is(msg.String(), keys.Screen.List) && p.listLive() {
@@ -499,65 +435,21 @@ func (p *ProfileScreen) Update(msg tea.KeyPressMsg) (done bool, result profileRe
 	}
 	switch p.Step {
 	case ProfileBrief:
-		return p.updateBrief(msg)
+		return p.brief.updateBrief(msg)
 	case ProfileQuestions:
-		return p.updateQuestion(msg)
+		return p.brief.updateQuestion(msg)
 	case ProfileWorking:
 		// A wait offers one key, and it is the way out of the wait rather
 		// than out of the flow: the drafting is stopped and the step that
 		// started it comes back (invariant 5 — the surface holds the
 		// keyboard, so it says what the one live key does).
 		if keys.Is(msg.String(), keys.Profile.Back) {
-			return true, profileResult{Action: ProfileAbort, Index: p.section}
+			return true, profileResult{Action: ProfileAbort, Index: p.sections.section}
 		}
 		return false, profileResult{}
 	default:
 		return p.updateDraft(msg)
 	}
-}
-
-// updateBrief answers the first step: the field has the keyboard, the
-// starting points are under it, and ↑↓ is what moves between them. The
-// arrows and not j/k, because everything else on this step is text.
-func (p *ProfileScreen) updateBrief(msg tea.KeyPressMsg) (bool, profileResult) {
-	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Profile.Back):
-		return true, profileResult{Action: ProfileBack}
-	case keys.Is(pressed, keys.Profile.Take):
-		// A brief is the one answer the flow cannot supply for itself, so
-		// enter with nothing to take does nothing rather than starting a
-		// drafting from an empty sentence.
-		if text := p.taken(); text != "" {
-			return true, profileResult{Action: ProfileTake, Text: text}
-		}
-		return false, profileResult{}
-	case keys.Is(pressed, keys.Profile.Move):
-		// The pointer runs from the field, at -1, through the starts, so what
-		// moves is a step and not a list: the row above the first start is a
-		// place the pointer lands and not an item it steps over.
-		p.moveFocus(keys.Step(pressed, keys.Profile.Move))
-		return false, profileResult{}
-	}
-	if p.focus < 0 {
-		p.field, _ = p.field.Update(msg)
-	}
-	return false, profileResult{}
-}
-
-// updateQuestion answers one of the drafter's questions. There is nothing to
-// pick here, so every key that is not the answer or the way back is text.
-func (p *ProfileScreen) updateQuestion(msg tea.KeyPressMsg) (bool, profileResult) {
-	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Profile.Back):
-		return true, profileResult{Action: ProfileBack}
-	case keys.Is(pressed, keys.Profile.Take):
-		// An empty answer is an answer: someone who has no preference about
-		// which languages a reviewer covers should not be held at the
-		// question until they invent one.
-		return true, profileResult{Action: ProfileTake, Text: strings.TrimSpace(p.field.Value())}
-	}
-	p.field, _ = p.field.Update(msg)
-	return false, profileResult{}
 }
 
 // updateDraft answers the draft step. The sections and the card share it and
@@ -568,8 +460,8 @@ func (p *ProfileScreen) updateDraft(msg tea.KeyPressMsg) (bool, profileResult) {
 	if p.decide == nil {
 		return true, profileResult{Action: profileDiscard}
 	}
-	if p.refining {
-		return p.updateRefine(msg)
+	if p.sections.refining {
+		return p.sections.updateRefine(msg)
 	}
 	if p.Picker != nil {
 		// The selector holds the keyboard whole, the scroll keys included:
@@ -579,9 +471,9 @@ func (p *ProfileScreen) updateDraft(msg tea.KeyPressMsg) (bool, profileResult) {
 		case !done:
 			return false, profileResult{}
 		case res.Canceled:
-			return true, profileResult{Action: ProfileUnpicked, Index: p.section}
+			return true, profileResult{Action: ProfileUnpicked, Index: p.sections.section}
 		}
-		return true, profileResult{Action: ProfilePicked, Index: p.section}
+		return true, profileResult{Action: ProfilePicked, Index: p.sections.section}
 	}
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Profile.ScrollUp):
@@ -598,7 +490,7 @@ func (p *ProfileScreen) updateDraft(msg tea.KeyPressMsg) (bool, profileResult) {
 	if p.card {
 		return p.updateCard(msg)
 	}
-	return p.updateSections(msg)
+	return p.sections.updateSections(msg, p.Migratable)
 }
 
 // updateCard answers the card once it has the keyboard: a save row, or
@@ -614,140 +506,19 @@ func (p *ProfileScreen) updateCard(msg tea.KeyPressMsg) (bool, profileResult) {
 	return true, profileResult{Action: profileDiscard}
 }
 
-// updateSections answers the sections while they have the keyboard. What
-// enter, e and x do is the selected section's: a prose section is revised,
-// and a field block hands enter to the host for the selector that picks it.
-func (p *ProfileScreen) updateSections(msg tea.KeyPressMsg) (bool, profileResult) {
-	sec, ok := p.selected()
-	if !ok {
-		if keys.Is(msg.String(), keys.Profile.Back) {
-			return true, profileResult{Action: profileDiscard}
-		}
-		return false, profileResult{}
-	}
-	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Profile.Move):
-		p.section = min(max(p.section+keys.Step(pressed, keys.Profile.Move), 0), len(p.draft.Sections)-1)
-		p.reveal = true
-	case keys.Is(pressed, keys.Profile.Refine):
-		if !sec.revisable() {
-			if sec.Pick == "" {
-				return false, profileResult{}
-			}
-			return true, profileResult{Action: ProfilePick, Index: p.section}
-		}
-		p.refining = true
-		p.field.Reset()
-		p.field.Placeholder = "what to change in " + sec.Name
-		p.field.Focus()
-		p.reveal = true
-	case keys.Is(pressed, keys.Profile.RefineAll):
-		// One note for every section, whichever block the pointer is on: it
-		// opens under the section list, since it is about all of them.
-		p.refining, p.whole, p.include = true, true, false
-		p.field.Reset()
-		p.field.Placeholder = "what to change across the draft"
-		p.field.Focus()
-	case keys.Is(pressed, keys.Profile.Edit) && sec.revisable():
-		return true, profileResult{Action: ProfileEdit, Index: p.section}
-	case keys.Is(pressed, keys.Profile.Clear) && sec.revisable() && strings.TrimSpace(sec.Body) != "":
-		return true, profileResult{Action: ProfileClear, Index: p.section}
-	case keys.Is(pressed, keys.Profile.Migrate) && p.Migratable:
-		return true, profileResult{Action: ProfileMigrate, Index: p.section}
-	case keys.Is(pressed, keys.Profile.Back):
-		// esc takes back the selected section's last revision while it has
-		// one, and is the step's own esc on a section with none: every
-		// revision is kept for the life of the flow, so the way back through
-		// them is the key that is always the safe answer.
-		if sec.Revised || sec.Whole {
-			return true, profileResult{Action: ProfileUndo, Index: p.section}
-		}
-		return true, profileResult{Action: profileDiscard}
-	}
-	return false, profileResult{}
-}
-
-// updateRefine answers the note open under a section: enter sends it, esc
-// closes it leaving the section as it is, and everything else is text.
-func (p *ProfileScreen) updateRefine(msg tea.KeyPressMsg) (bool, profileResult) {
-	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Profile.Back):
-		p.refining, p.whole, p.include = false, false, false
-		p.field.Blur()
-		return false, profileResult{}
-	case p.toggles(pressed):
-		p.include = !p.include
-		return false, profileResult{}
-	case keys.Is(pressed, keys.Profile.Refine):
-		// A note is what a refine is made of, so enter over an empty one does
-		// nothing rather than asking the drafter to guess.
-		note := strings.TrimSpace(p.field.Value())
-		if note == "" {
-			return false, profileResult{}
-		}
-		if p.whole {
-			p.sent = note
-			return true, profileResult{Action: ProfileRefineAll, Text: note, Include: p.include}
-		}
-		return true, profileResult{Action: ProfileRefine, Index: p.section, Text: note}
-	}
-	p.field, _ = p.field.Update(msg)
-	return false, profileResult{}
-}
-
-// toggles reports a keystroke that is the whole-draft note's second press
-// rather than a letter of it: the note's own key, while nothing has been
-// typed and some section is the person's to keep or include. Once the note
-// has text in it the key is text, since a note is a sentence.
-func (p *ProfileScreen) toggles(pressed string) bool {
-	return p.whole && keys.Is(pressed, keys.Profile.RefineAll) &&
-		p.field.Value() == "" && len(p.mine()) > 0
-}
-
-// mine is the names of the sections the person wrote themselves, in order.
-func (p *ProfileScreen) mine() []string {
-	var out []string
-	for _, sec := range p.draft.Sections {
-		if sec.Mine {
-			out = append(out, sec.Name)
-		}
-	}
-	return out
-}
-
-// sectionCount is the draft's sections, leaving out the row a whole-draft
-// note left under them.
-func (p *ProfileScreen) sectionCount() int {
-	n := 0
-	for _, sec := range p.draft.Sections {
-		if !sec.Whole {
-			n++
-		}
-	}
-	return n
-}
-
-// selected is the section the pointer is on.
-func (p *ProfileScreen) selected() (ProfileSection, bool) {
-	if p.section < 0 || p.section >= len(p.draft.Sections) {
-		return ProfileSection{}, false
-	}
-	return p.draft.Sections[p.section], true
-}
-
 // listLive reports that `?` is a key here rather than a character: a step
 // with no field holding the keyboard. The brief's field, a question's answer
 // and a section's open note all take it as text.
 func (p *ProfileScreen) listLive() bool {
 	switch p.Step {
 	case ProfileBrief:
-		return p.focus >= 0
+		return p.brief.focus >= 0
 	case ProfileQuestions:
 		return false
 	case ProfileWorking:
 		return true
 	default:
-		return p.decide != nil && !p.refining && p.Picker == nil
+		return p.decide != nil && !p.sections.refining && p.Picker == nil
 	}
 }
 
@@ -765,31 +536,6 @@ func (p *ProfileScreen) keyList() []KeyOffer {
 	return append(list, keyOffer(keys.Profile.Note),
 		keyOffer(keys.Profile.ScrollUp), keyOffer(keys.Profile.ScrollDown),
 		keyOffer(keys.Profile.Back))
-}
-
-// taken is what enter takes on the brief step: what has been typed, or the
-// starting point the pointer is on.
-func (p *ProfileScreen) taken() string {
-	if p.focus >= 0 && p.focus < len(p.starts) {
-		return p.starts[p.focus]
-	}
-	return strings.TrimSpace(p.field.Value())
-}
-
-// moveFocus walks the pointer between the field and the starting points. The
-// field is above the list rather than a row in it, so leaving the top of the
-// list is how you get back to typing.
-func (p *ProfileScreen) moveFocus(delta int) {
-	next := min(max(p.focus+delta, -1), len(p.starts)-1)
-	if len(p.starts) == 0 {
-		next = -1
-	}
-	p.focus = next
-	if p.focus < 0 {
-		p.field.Focus()
-	} else {
-		p.field.Blur()
-	}
 }
 
 // SetSize gives the surface the terminal's rectangle. It lays itself out from
@@ -843,17 +589,17 @@ func (p *ProfileScreen) header() screenHeader {
 // not the same act and must not be worded as if they were.
 func (p *ProfileScreen) wayOutWords() string {
 	switch {
-	case p.Step == ProfileWorking && p.migrating:
+	case p.Step == ProfileWorking && p.review.migrating:
 		return "stop"
 	case p.Step == ProfileWorking:
 		return "stop drafting"
-	case p.Step == ProfileDraft && p.FromFile && !p.refining && p.Picker == nil:
+	case p.Step == ProfileDraft && p.FromFile && !p.sections.refining && p.Picker == nil:
 		return "close, nothing written"
-	case p.Step == ProfileDraft && (p.refining || p.Picker != nil):
+	case p.Step == ProfileDraft && (p.sections.refining || p.Picker != nil):
 		return "leave it as it is"
 	case p.Step == ProfileDraft:
 		return "discard the draft"
-	case p.Step == ProfileQuestions && len(p.asked) > 0:
+	case p.Step == ProfileQuestions && len(p.brief.asked) > 0:
 		return "back a step"
 	}
 	return "leave"
@@ -870,7 +616,7 @@ func (p *ProfileScreen) railRow(width int) string {
 	var parts []string
 	for i, name := range names {
 		switch {
-		case i == 1 && i < at && p.of == 0:
+		case i == 1 && i < at && p.brief.of == 0:
 			// A brief that was already a specification gets a draft and no
 			// questions, and the rail says which happened: ⊘ is the mark for
 			// a step that was skipped as well as for one that was refused —
@@ -911,6 +657,16 @@ func (p *ProfileScreen) railStep() int {
 	}
 }
 
+// flow is where the wizard stands, as the section editor draws it.
+func (p *ProfileScreen) flow() profileFlow {
+	return profileFlow{
+		card:       p.card,
+		working:    p.Step == ProfileWorking,
+		redrafting: p.redrafting(),
+		label:      p.workingLabel,
+	}
+}
+
 // redrafting says the wait is one section being redrafted rather than the
 // whole profile being drafted.
 func (p *ProfileScreen) redrafting() bool {
@@ -922,9 +678,9 @@ func (p *ProfileScreen) bodyRows(width, budget int) []string {
 	var rows []string
 	switch {
 	case p.Step == ProfileBrief:
-		rows = p.briefRows(width)
+		rows = p.brief.briefRows(width)
 	case p.Step == ProfileQuestions:
-		rows = p.questionRows(width)
+		rows = p.brief.questionRows(width)
 	case p.Step == ProfileDraft || p.redrafting():
 		// The draft's rows lay their own key row where it belongs — between
 		// the sections and the card — so nothing is appended after them.
@@ -933,8 +689,8 @@ func (p *ProfileScreen) bodyRows(width, budget int) []string {
 			return rows
 		}
 		return rows[:budget]
-	case p.migrating:
-		rows = []string{Clip(indent(sty.body.Render(p.draft.headline())), width), ""}
+	case p.review.migrating:
+		rows = []string{Clip(indent(sty.body.Render(p.sections.draft.headline())), width), ""}
 		rows = append(rows, Clip(bodyIndent(p.workingLabel("the author's sentences, placed where they belong")), width), "")
 	default:
 		rows = p.workingRows(width)
@@ -944,71 +700,6 @@ func (p *ProfileScreen) bodyRows(width, budget int) []string {
 		return rows
 	}
 	return rows[:budget]
-}
-
-// briefRows is the first step: the question, the field, the starting points,
-// and what the session already has.
-func (p *ProfileScreen) briefRows(width int) []string {
-	rows := p.askRows(width)
-	rows = append(rows, p.fieldRows(width)...)
-	if len(p.starts) > 0 {
-		rows = append(rows, "")
-		if p.lead != "" {
-			rows = append(rows, Clip(indent(sty.dim.Render(p.lead)), width))
-		}
-		rows = append(rows, p.startRows(width)...)
-	}
-	return append(rows, "")
-}
-
-// briefHint is the first step's key row. It leads with what enter takes,
-// because which of the two the pointer is on is the one thing about this step
-// that is not obvious from looking at it.
-func (p *ProfileScreen) briefHint() []KeyOffer {
-	take := keyOfferAs(keys.Profile.Take, "draft from what you typed")
-	if p.focus >= 0 {
-		take = keyOfferAs(keys.Profile.Take, "draft from this one")
-	}
-	segments := []KeyOffer{take}
-	if len(p.starts) > 0 {
-		segments = append(segments, keyOfferAs(keys.Profile.Move, "the field or a starting point"))
-	}
-	return append(segments, keyOfferAs(keys.Profile.Back, "nothing is drafted"))
-}
-
-// questionRows is one question with the answers already given above it. The
-// answered run is dim and the question is not: what is being asked now is
-// what the eye should land on.
-func (p *ProfileScreen) questionRows(width int) []string {
-	var rows []string
-	for _, qa := range p.asked {
-		answer := qa.answer
-		if answer == "" {
-			answer = "no preference"
-		}
-		rows = append(rows,
-			Clip(indent(sty.dim.Render("✓ "+qa.question)), width),
-			Clip(indent(sty.dimmer.Render("  "+answer)), width))
-	}
-	if len(rows) > 0 {
-		rows = append(rows, "")
-	}
-	if p.of > 0 {
-		rows = append(rows, Clip(indent(sty.dim.Render(fmt.Sprintf("question %d of %d", p.at, p.of))), width))
-	}
-	rows = append(rows, p.askRows(width)...)
-	rows = append(rows, p.fieldRows(width)...)
-	return append(rows, "")
-}
-
-// backWords is what esc does from where the flow is standing. It says which
-// of the two it is, because "back" on the first question and "back" on the
-// third are a cancelled drafting and a corrected answer.
-func (p *ProfileScreen) backWords() string {
-	if len(p.asked) == 0 {
-		return "nothing is drafted"
-	}
-	return "back to the last answer"
 }
 
 // workingRows is the wait: the label in motion and how long it has been.
@@ -1044,18 +735,18 @@ func (p *ProfileScreen) hintFor(width int) []string {
 	var segments []KeyOffer
 	switch p.Step {
 	case ProfileBrief:
-		segments = p.briefHint()
+		segments = p.brief.briefHint()
 	case ProfileQuestions:
 		segments = []KeyOffer{
 			keyOfferAs(keys.Profile.Take, "answer it"),
-			keyOfferAs(keys.Profile.Back, p.backWords()),
+			keyOfferAs(keys.Profile.Back, p.brief.backWords()),
 		}
 	case ProfileWorking:
-		if p.migrating {
+		if p.review.migrating {
 			segments = []KeyOffer{keyOfferAs(keys.Profile.Back, "stop · the profile stays as the file has it")}
 			break
 		}
-		if p.redrafting() && p.whole {
+		if p.redrafting() && p.sections.whole {
 			segments = []KeyOffer{keyOfferAs(keys.Profile.Back, "stop drafting · every section keeps its last text")}
 			break
 		}
@@ -1065,7 +756,7 @@ func (p *ProfileScreen) hintFor(width int) []string {
 		}
 		segments = []KeyOffer{keyOfferAs(keys.Profile.Back, "stop drafting")}
 	default:
-		segments = p.sectionHint()
+		segments = p.sections.sectionHint(p.card || p.Picker != nil, p.Migratable, p.wayOutWords())
 	}
 	if len(segments) == 0 {
 		return nil
@@ -1075,59 +766,6 @@ func (p *ProfileScreen) hintFor(width int) []string {
 		rows[i] = indent(row)
 	}
 	return rows
-}
-
-// sectionHint is the draft step's own key row while the sections or a note
-// under one have the keyboard. The card draws its own row, and while it has
-// the keyboard this one is not drawn: two rows of live keys for one keyboard
-// would be offering it twice.
-func (p *ProfileScreen) sectionHint() []KeyOffer {
-	if p.refining && p.whole {
-		segments := []KeyOffer{keyOfferAs(keys.Profile.Refine, "redraft every section")}
-		if len(p.mine()) > 0 && p.field.Value() == "" {
-			again := "again to include the sections you edited"
-			if p.include {
-				again = "again to keep the sections you edited"
-			}
-			segments = append(segments, keyOfferAs(keys.Profile.RefineAll, again))
-		}
-		return append(segments, keyOfferAs(keys.Profile.Back, "leave it as it is"))
-	}
-	if p.refining {
-		return []KeyOffer{
-			keyOfferAs(keys.Profile.Refine, "refine it"),
-			keyOfferAs(keys.Profile.Back, "leave it as it is"),
-		}
-	}
-	if p.card || p.Picker != nil {
-		return nil
-	}
-	sec, ok := p.selected()
-	segments := []KeyOffer{keyOfferAs(keys.Profile.Move, "section")}
-	if ok && !sec.revisable() && sec.Pick != "" {
-		segments = append(segments, keyOfferAs(keys.Profile.Refine, sec.Pick))
-	}
-	if ok && sec.revisable() {
-		segments = append(segments,
-			keyOfferAs(keys.Profile.Refine, "refine it with a note"),
-			keyOfferAs(keys.Profile.Edit, "edit it yourself"))
-		if strings.TrimSpace(sec.Body) != "" {
-			segments = append(segments, keyOfferAs(keys.Profile.Clear, "clear it"))
-		}
-	}
-	if p.Migratable {
-		segments = append(segments, keyOffer(keys.Profile.Migrate))
-	}
-	segments = append(segments,
-		keyOfferAs(keys.Profile.RefineAll, "all"),
-		keyOfferAs(keys.Profile.Note, "the card"))
-	if ok && sec.Whole {
-		return append(segments, keyOfferAs(keys.Profile.Back, "take it back from every section it changed"))
-	}
-	if ok && sec.Revised {
-		return append(segments, keyOfferAs(keys.Profile.Back, "take back its last revision"))
-	}
-	return append(segments, keyOfferAs(keys.Profile.Back, p.wayOutWords()))
 }
 
 // draftRows is the finished profile over the decision: what it is, its
@@ -1152,11 +790,11 @@ func (p *ProfileScreen) draftRows(width, budget int) []string {
 	hint := p.hintFor(width)
 	var head []string
 	if p.Migratable {
-		head = append(head, Clip(indent(p.olderRow()), width), "")
+		head = append(head, Clip(indent(p.review.olderRow(p.OlderNote)), width), "")
 	}
-	headline := sty.body.Render(p.draft.headline())
-	if p.draft.Note != "" {
-		headline += sty.dim.Render(" · " + p.draft.Note)
+	headline := sty.body.Render(p.sections.draft.headline())
+	if p.sections.draft.Note != "" {
+		headline += sty.dim.Render(" · " + p.sections.draft.Note)
 	}
 	head = append(head, Clip(indent(headline), width), "")
 	if p.warning != "" {
@@ -1172,10 +810,13 @@ func (p *ProfileScreen) draftRows(width, budget int) []string {
 		}
 		head = append(head, "")
 	}
-	blocks, starts := p.originalBeside(width)
+	flow := p.flow()
+	blocks, starts := p.review.originalBeside(p.Original, width, func(width int) ([]string, []int) {
+		return p.sections.sectionRows(width, flow)
+	})
 	// A note on the whole draft, and the wait after it, are under the
 	// section list and never folded with it: the note holds the keyboard.
-	tail := p.wholeRows(width)
+	tail := p.sections.wholeRows(width, flow)
 	if len(hint) > 0 {
 		tail = append(append(tail, ""), hint...)
 	}
@@ -1187,7 +828,7 @@ func (p *ProfileScreen) draftRows(width, budget int) []string {
 		if budget > 0 {
 			room = budget - len(head) - len(tail) - len(card) - 1
 		}
-		rows := append(head, p.diffWindow(width, room)...)
+		rows := append(head, p.review.diffWindow(p.Diff, width, room)...)
 		return append(append(append(rows, tail...), ""), card...)
 	}
 	if len(card) > 0 {
@@ -1201,264 +842,14 @@ func (p *ProfileScreen) draftRows(width, budget int) []string {
 		rows := append(head, blocks...)
 		return append(rows, tail...)
 	}
-	rows := append(head, p.foldedSections(width, max(room, 0), blocks, starts)...)
+	rows := append(head, p.sections.foldedSections(width, max(room, 0), blocks, starts)...)
 	return append(rows, tail...)
-}
-
-// foldedSections is the sections windowed to room rows, with a counted marker
-// for what is folded above and below. The markers are paid for out of the
-// room, so the window never draws a row past it.
-func (p *ProfileScreen) foldedSections(width, room int, blocks []string, starts []int) []string {
-	if room <= 0 {
-		return nil
-	}
-	height := max(room-1, 1)
-	p.pane.Height, p.pane.total = height, len(blocks)
-	if p.reveal {
-		first, last := p.selectedRows(starts, len(blocks))
-		p.pane.reveal(last)
-		p.pane.reveal(first)
-		p.reveal = false
-	}
-	p.pane.Offset = p.pane.Held()
-	if p.pane.Offset > 0 && room > 2 {
-		// A second marker costs a row of its own, so the window is shortened
-		// by one more and the selected section brought back into it.
-		height = room - 2
-		p.pane.Height = height
-		first, last := p.selectedRows(starts, len(blocks))
-		if first < p.pane.Offset || last >= p.pane.Offset+height {
-			p.pane.reveal(last)
-			p.pane.reveal(first)
-		}
-		p.pane.Offset = p.pane.Held()
-	}
-	var rows []string
-	if above := sectionsBefore(starts, p.pane.Offset); p.pane.Offset > 0 && room > 2 {
-		rows = append(rows, Clip(indent(sty.dim.Render(fmt.Sprintf("⋮ %s above · %s",
-			plural(above, "more section"), words(keys.Profile.ScrollUp, "scroll up")))), width))
-	}
-	window := p.pane.Window(blocks)
-	end := p.pane.Offset + len(window)
-	// A section the window would cut off after its heading is folded whole
-	// rather than shown as a heading with nothing under it — unless it is the
-	// selected one, which the window is there to show.
-	for i, start := range starts {
-		last := len(blocks) - 1
-		if i+1 < len(starts) {
-			last = starts[i+1] - 2
-		}
-		if start > p.pane.Offset && start < end && last >= end && i != p.section {
-			window = window[:start-1-p.pane.Offset]
-			end = start
-			break
-		}
-	}
-	rows = append(rows, window...)
-	if below := sectionsFrom(starts, end); below > 0 {
-		rows = append(rows, Clip(indent(sty.dim.Render(fmt.Sprintf("⋮ %s · %s",
-			plural(below, "more section"), words(keys.Profile.ScrollDown, "scroll the profile")))), width))
-	}
-	if len(rows) > room {
-		rows = rows[:room]
-	}
-	return rows
-}
-
-// selectedRows is the first and last row of the selected section.
-func (p *ProfileScreen) selectedRows(starts []int, total int) (int, int) {
-	if p.section < 0 || p.section >= len(starts) {
-		return 0, 0
-	}
-	last := total - 1
-	if p.section+1 < len(starts) {
-		// The blank row between two sections belongs to neither.
-		last = starts[p.section+1] - 2
-	}
-	return starts[p.section], max(last, starts[p.section])
-}
-
-// sectionsBefore counts the sections whose heading is above row, which is
-// what a marker over a scrolled pane states.
-func sectionsBefore(starts []int, row int) int {
-	n := 0
-	for _, s := range starts {
-		if s < row {
-			n++
-		}
-	}
-	return n
-}
-
-// sectionsFrom counts the sections whose heading is at or below row, which
-// is what the marker under a folded pane states.
-func sectionsFrom(starts []int, row int) int {
-	n := 0
-	for _, s := range starts {
-		if s >= row {
-			n++
-		}
-	}
-	return n
-}
-
-// sectionRows is every section as a block — the heading with its mark, then
-// its prose or its field line — with a blank row between blocks, and the row
-// each block starts at. The selected section takes the pointer and the focus
-// tone on its heading while the sections have the keyboard; a note being
-// written, or a redraft being waited on, is drawn under it.
-func (p *ProfileScreen) sectionRows(width int) ([]string, []int) {
-	var rows []string
-	starts := make([]int, 0, len(p.draft.Sections))
-	// A whole-draft note is about every section, so no one of them is lit
-	// while it is open or being waited on.
-	lit := (!p.card || p.Step == ProfileWorking) && !p.whole
-	for i, sec := range p.draft.Sections {
-		if i > 0 {
-			rows = append(rows, "")
-		}
-		starts = append(starts, len(rows))
-		selected := i == p.section && lit
-		rows = append(rows, p.headingRow(sec, selected, width))
-		rows = append(rows, p.sectionBody(sec, width)...)
-		if i != p.section || p.whole {
-			continue
-		}
-		switch {
-		case p.refining:
-			rows = append(rows, "")
-			rows = append(rows, p.refineRows(sec, width)...)
-		case p.redrafting():
-			rows = append(rows, "", Clip(bodyIndent(p.workingLabel("the other sections stand")), width))
-		}
-	}
-	return rows, starts
-}
-
-// olderRow is the offer at the head of a profile opened in the older shape:
-// the mark in its glyph and words, what it means, and the key that moves it.
-func (p *ProfileScreen) olderRow() string {
-	row := sty.accent.Render(OlderShapeMark)
-	if p.OlderNote != "" {
-		row += sty.dim.Render(" · " + p.OlderNote)
-	}
-	return row + sty.dim.Render(" · ") + strings.Join(HintRows([]KeyOffer{keyOffer(keys.Profile.Migrate)}, 1<<10), "")
-}
-
-// originalColumn is the narrowest width the original prompt is drawn beside
-// the sections at; under it the original is drawn after them.
-const originalColumn = 100
-
-// originalBeside is the sections with the original prompt readable next to
-// them: a column on the right where the width allows, rows after the
-// sections where it does not. The starts index the same rows either way.
-func (p *ProfileScreen) originalBeside(width int) ([]string, []int) {
-	if p.Original == "" {
-		return p.sectionRows(width)
-	}
-	if width < originalColumn {
-		blocks, starts := p.sectionRows(width)
-		blocks = append(blocks, "", Clip(indent(sty.dim.Render("as the file wrote it")), width))
-		for _, line := range p.originalLines(width - profileBodyIndent) {
-			blocks = append(blocks, Clip(bodyIndent(sty.dim.Render(line)), width))
-		}
-		return blocks, starts
-	}
-	right := min(52, width/3)
-	left := width - right - 2
-	blocks, starts := p.sectionRows(left)
-	column := append([]string{sty.dim.Render("as the file wrote it")}, p.originalLines(right-2)...)
-	for i, line := range column {
-		if i >= len(blocks) {
-			blocks = append(blocks, "")
-		}
-		if i > 0 {
-			line = sty.dim.Render(line)
-		}
-		blocks[i] = padRight(blocks[i], left) + sty.dimmer.Render("│ ") + line
-	}
-	return blocks, starts
-}
-
-// originalLines is the original prompt wrapped paragraph by paragraph.
-func (p *ProfileScreen) originalLines(width int) []string {
-	var out []string
-	for i, para := range strings.Split(strings.TrimSpace(p.Original), "\n\n") {
-		if i > 0 {
-			out = append(out, "")
-		}
-		out = append(out, wrapPlain(para, width)...)
-	}
-	return out
 }
 
 // diffUp says the save's diff stands where the sections do: it was asked
 // for and the card holds the keyboard.
 func (p *ProfileScreen) diffUp() bool {
 	return len(p.Diff) > 0 && p.card && p.Step == ProfileDraft && p.Picker == nil
-}
-
-// diffWindow is the diff windowed to room rows, with a counted marker for
-// the lines above and below it, paid for out of the room.
-func (p *ProfileScreen) diffWindow(width, room int) []string {
-	all := p.diffRows(width)
-	if room <= 0 {
-		return nil
-	}
-	if len(all) <= room {
-		p.diff = Pager{}
-		return all
-	}
-	height := max(room-2, 1)
-	p.diff.Height, p.diff.total = height, len(all)
-	p.diff.Offset = p.diff.Held()
-	var rows []string
-	if p.diff.Offset > 0 {
-		rows = append(rows, Clip(indent(sty.dim.Render(fmt.Sprintf("⋮ %s above · %s",
-			plural(p.diff.Offset, "more line"), words(keys.Profile.ScrollUp, "scroll up")))), width))
-	} else {
-		height++
-		p.diff.Height = height
-	}
-	window := p.diff.Window(all)
-	rows = append(rows, window...)
-	if below := len(all) - p.diff.Offset - len(window); below > 0 {
-		rows = append(rows, Clip(indent(sty.dim.Render(fmt.Sprintf("⋮ %s · %s",
-			plural(below, "more line"), words(keys.Profile.ScrollDown, "scroll the diff")))), width))
-	}
-	return rows
-}
-
-// diffRows is the save's diff, a line each, in the diff's own tones.
-func (p *ProfileScreen) diffRows(width int) []string {
-	rows := make([]string, 0, len(p.Diff))
-	for _, line := range p.Diff {
-		style := sty.dim
-		switch {
-		case strings.HasPrefix(line, "+++"), strings.HasPrefix(line, "---"), strings.HasPrefix(line, "@@"):
-			style = sty.dimmer
-		case strings.HasPrefix(line, "+"):
-			style = sty.add
-		case strings.HasPrefix(line, "-"):
-			style = sty.del
-		}
-		rows = append(rows, Clip(indent(style.Render(line)), width))
-	}
-	return rows
-}
-
-// headingRow is a section's heading with its mark after it.
-func (p *ProfileScreen) headingRow(sec ProfileSection, selected bool, width int) string {
-	heading := sty.body.Render(sec.Name)
-	lead := PointerColumn()
-	if selected {
-		heading = sty.info.Render(sec.Name)
-		lead = sty.focusPointer.Render("❯") + " "
-	}
-	if sec.Mark != "" {
-		heading += " " + sec.MarkTone.style().Render(sec.Mark)
-	}
-	return Clip(lead+heading, width)
 }
 
 // style is the mark's tone.
@@ -1470,110 +861,6 @@ func (t ProfileMarkTone) style() lipgloss.Style {
 		return sty.del
 	}
 	return sty.dim
-}
-
-// sectionBody is a section's prose wrapped under its heading, or a field
-// block's value and what it means.
-func (p *ProfileScreen) sectionBody(sec ProfileSection, width int) []string {
-	if !sec.Prose {
-		if sec.Value == "" {
-			return nil
-		}
-		row := bodyIndent(sec.Tone.style().Render(sec.Value))
-		if sec.Detail == "" {
-			return []string{Clip(row, width)}
-		}
-		if full := row + sty.dim.Render(" · "+sec.Detail); lipgloss.Width(full) <= width {
-			return []string{full}
-		}
-		// What the value means goes under it rather than off the end of the
-		// row: on the tools block it is the sentence that says the agent can
-		// change things.
-		rows := []string{Clip(row, width)}
-		for _, line := range wrapPlain(sec.Detail, width-profileBodyIndent-2) {
-			rows = append(rows, Clip(bodyIndent(sty.dim.Render(line)), width))
-		}
-		return rows
-	}
-	body := strings.TrimSpace(sec.Body)
-	if body == "" {
-		// An empty section is its heading and the mark that says so; a blank
-		// row under it would read as text nobody can see.
-		return nil
-	}
-	var rows []string
-	for _, line := range wrapBlock(body, width-profileBodyIndent-2) {
-		rows = append(rows, Clip(bodyIndent(sty.status.Render(line)), width))
-	}
-	return rows
-}
-
-// refineRows is the note under the section being refined: what it is for,
-// and the field.
-func (p *ProfileScreen) refineRows(sec ProfileSection, width int) []string {
-	others := p.sectionCount() - 1
-	label := fmt.Sprintf("┄ what to change in %s — the other %s are sent as fixed context", sec.Name, spellNumber(others))
-	inner := max(width-profileBodyIndent-2, 8)
-	p.field.SetWidth(inner)
-	StyleTextArea(&p.field)
-	// Wrapped rather than clipped: the half a clip would cut is the half that
-	// says what else goes with the note.
-	var rows []string
-	for _, line := range wrapPlain(label, inner) {
-		rows = append(rows, Clip(bodyIndent(sty.dim.Render(line)), width))
-	}
-	for _, line := range strings.Split(p.field.View(), "\n") {
-		rows = append(rows, Clip(bodyIndent(line), width))
-	}
-	return rows
-}
-
-// wholeRows is a note on the whole draft under the section list: what it is
-// sent with — which sections it keeps, when some are the person's — and the
-// field, or once it has gone, the note as sent and the wait under it.
-func (p *ProfileScreen) wholeRows(width int) []string {
-	if !p.whole || (!p.refining && !p.redrafting()) {
-		return nil
-	}
-	label := "┄ a note on the whole draft — every section is redrafted on it; the tiers, tools and fields are sent as fixed context"
-	if mine := p.mine(); len(mine) > 0 {
-		verb := "is"
-		if len(mine) > 1 {
-			verb = "are"
-		}
-		if p.include {
-			label += "; " + joinAnd(mine) + ", which you edited, " + verb + " redrafted too"
-		} else {
-			label += "; " + joinAnd(mine) + ", which you edited, " + verb + " kept"
-		}
-	}
-	inner := max(width-profileIndent-2, 8)
-	// Wrapped rather than clipped: the half a clip would cut is the half that
-	// says which of the person's own sections the note may touch.
-	rows := []string{""}
-	for _, line := range wrapPlain(label, inner) {
-		rows = append(rows, Clip(indent(sty.dim.Render(line)), width))
-	}
-	if p.refining {
-		p.field.SetWidth(inner)
-		StyleTextArea(&p.field)
-		for _, line := range strings.Split(p.field.View(), "\n") {
-			rows = append(rows, Clip(indent("  "+line), width))
-		}
-		return rows
-	}
-	for _, line := range wrapPlain(p.sent, inner) {
-		rows = append(rows, Clip(indent("  "+sty.dimmer.Render(line)), width))
-	}
-	return append(rows, "", Clip(indent(p.workingLabel("")), width))
-}
-
-// joinAnd is names as a sentence lists them.
-func joinAnd(names []string) string {
-	if len(names) < 2 {
-		return strings.Join(names, "")
-	}
-	return strings.Join(names[:len(names)-1], ", ") + " and " + names[len(names)-1]
 }
 
 // cardRows is the decision, windowed to the height when even it does not fit:
@@ -1594,61 +881,10 @@ func (p *ProfileScreen) cardRows(width, budget int) []string {
 // the pane last drew them in.
 func (p *ProfileScreen) scrollPane(by int) {
 	if p.diffUp() {
-		p.diff.Offset = Pager{Offset: p.diff.Offset + by, Height: p.diff.Height, total: p.diff.total}.Held()
+		p.review.scroll(by)
 		return
 	}
-	p.pane.Offset = Pager{Offset: p.pane.Offset + by, Height: p.pane.Height, total: p.pane.total}.Held()
-}
-
-// askRows is the step's question, wrapped by the caller and drawn as the one
-// bright thing on the step.
-func (p *ProfileScreen) askRows(width int) []string {
-	if p.ask == "" {
-		return nil
-	}
-	var rows []string
-	for _, line := range wrapBlock(p.ask, width-profileIndent) {
-		rows = append(rows, Clip(indent(sty.body.Render(line)), width))
-	}
-	return append(rows, "")
-}
-
-// fieldRows is the text field: the label that names what is wanted, and the
-// field under it. It is the note field's shape rather than a box of its own,
-// because a second kind of text input would be a second thing to learn.
-func (p *ProfileScreen) fieldRows(width int) []string {
-	inner := max(width-profileIndent-2, 8)
-	p.field.SetWidth(inner)
-	StyleTextArea(&p.field)
-	view := p.field.View()
-	if p.focus >= 0 {
-		// Unfocused, the field echoes as plain text: a blurred textarea
-		// still draws cursor artifacts, and the pointer is in the list.
-		text := strings.TrimSpace(p.field.Value())
-		if text == "" {
-			text = "(nothing typed)"
-		}
-		view = sty.dimmer.Render(Clip(text, inner))
-	}
-	rows := []string{Clip(indent(sty.dim.Render("┄ "+p.fieldLabel)), width)}
-	for _, line := range strings.Split(view, "\n") {
-		rows = append(rows, Clip(indent("  "+line), width))
-	}
-	return rows
-}
-
-// startRows is the starting points, drawn as the start screen draws its
-// offers: a pointer outside the highlight, and the focused row lit whole.
-func (p *ProfileScreen) startRows(width int) []string {
-	rows := make([]string, 0, len(p.starts))
-	for i, start := range p.starts {
-		if i == p.focus {
-			rows = append(rows, LitOption(start, width))
-			continue
-		}
-		rows = append(rows, Clip(PointerColumn()+sty.status.Render(start), width))
-	}
-	return rows
+	p.sections.scroll(by)
 }
 
 // wrapBlock wraps text to a width, keeping the breaks the text already has:

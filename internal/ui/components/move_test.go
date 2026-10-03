@@ -119,7 +119,7 @@ func movers() []mover {
 		// The drafter's pointer starts on the field, at -1, and the starts
 		// are under it, so it is the one surface here whose first row is not
 		// where the pointer opens.
-		{"the profile drafter", keys.Profile.Move, func() int { return prof.focus },
+		{"the profile drafter", keys.Profile.Move, func() int { return prof.brief.focus },
 			func(k tea.KeyPressMsg) { prof.Update(k) }},
 	}
 	// Every one of them opens with its pointer at the top, where the half of
