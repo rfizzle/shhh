@@ -280,7 +280,7 @@ func TestAnIntegrationThatDoesNotReconcileKeepsBothPatches(t *testing.T) {
 // is put on the card merged.
 func TestAKeptPatchReviewedFromItsRowIsMergedOrIntegrated(t *testing.T) {
 	repo := mergeRepo(t)
-	h, err := wtree.AddWorktree(repo, nil)
+	h, err := wtree.AddWorktreeContext(context.Background(), repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

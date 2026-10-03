@@ -74,7 +74,7 @@ func WithoutFiles(patch string, drop []string) string {
 // checkout's own text; the checkout itself is only read, and a generator that
 // fails leaves it exactly as it was.
 //
-// root and untracked are what a writer's copy is made from (AddWorktree).
+// root and untracked are what a writer's copy is made from (addWorktree).
 // The copy is made and removed under the repository's worktree lock, and the
 // generators run with the lock released.
 func RegenerateOver(ctx context.Context, gen Regenerator, root string, untracked []string, patch string, paths []string) (string, []string, error) {

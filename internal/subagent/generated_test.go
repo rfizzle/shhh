@@ -171,58 +171,6 @@ func TestWorktreeLand_AFailingGeneratorLeavesTheCheckoutUntouched(t *testing.T) 
 	}
 }
 
-// A landing carried into a live writer's copy regenerates the golden there
-// rather than applying its hunks — which here would collide, since both
-// sides moved the sum — and the copy's base takes the landed bytes, so the
-// writer's patch is its own work over them.
-func TestReseedWorktree_AGeneratedFileIsRegeneratedInTheCopy(t *testing.T) {
-	repo := sumRepo(t)
-	other, err := wtree.AddWorktree(repo, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer wtree.RemoveWorktree(other.RepoTop, other.Dir)
-	mine, err := wtree.AddWorktree(repo, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer wtree.RemoveWorktree(mine.RepoTop, mine.Dir)
-	put(other.Root, "a.txt", "2")
-	writeSum(other.Root)
-	landed, err := wtree.WorktreePatch(other.Dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	put(mine.Root, "b.txt", "2")
-	writeSum(mine.Root)
-
-	var clash *wtree.ReseedCollision
-	if _, err := wtree.ReseedWorktree(context.Background(), mine.Dir, landed, nil); !errors.As(err, &clash) {
-		t.Fatalf("applied as hunks the golden collides, got %v", err)
-	}
-	gen := &sumGenerator{declared: true}
-	regen, err := wtree.ReseedWorktree(context.Background(), mine.Dir, landed, gen)
-	if err != nil || regen.Failed != nil || len(regen.Ran) != 1 {
-		t.Fatalf("the landing should carry with the golden regenerated: %+v, %v", regen, err)
-	}
-	if dirs := gen.ran(); len(dirs) != 1 || dirs[0] != mine.Dir {
-		t.Fatalf("the generator should run in the copy, ran in %v", dirs)
-	}
-	if got := take(mine.Root, "gen/out.txt"); got != sumGolden("2", "2") {
-		t.Fatalf("the copy's golden should be generated over both:\n%s", got)
-	}
-	if base, _ := wtree.GitOutput(mine.Dir, "show", "HEAD:gen/out.txt"); base != sumGolden("2", "1") {
-		t.Fatalf("the base should hold the landed golden:\n%s", base)
-	}
-	patch, err := wtree.WorktreePatch(mine.Dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if files := wtree.PatchFiles(patch); len(files) != 2 || strings.Contains(patch, "+a=2") {
-		t.Fatalf("the writer's patch should be its own work over the landing, got %v:\n%s", files, patch)
-	}
-}
-
 // A writer's patch that touched the golden is put on the card regenerated:
 // the hunks are what the generator wrote over the checkout, not the bytes the
 // writer left, and the card names the command.
@@ -292,7 +240,7 @@ func TestAFailingGeneratorGoesToTheCardWithItsOutput(t *testing.T) {
 // and the review regenerates them over the patch instead.
 func TestAKeptPatchLeavesItsGeneratedFilesToTheGenerator(t *testing.T) {
 	repo := sumRepo(t)
-	h, err := wtree.AddWorktree(repo, nil)
+	h, err := wtree.AddWorktreeContext(context.Background(), repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -328,7 +276,7 @@ func TestAKeptPatchLeavesItsGeneratedFilesToTheGenerator(t *testing.T) {
 func TestAKeptPatchLandsWithItsGeneratedFilesRegenerated(t *testing.T) {
 	repo := sumRepo(t)
 	gen := &sumGenerator{declared: true}
-	h, err := wtree.AddWorktree(repo, nil)
+	h, err := wtree.AddWorktreeContext(context.Background(), repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

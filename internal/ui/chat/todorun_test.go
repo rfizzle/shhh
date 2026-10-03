@@ -962,7 +962,7 @@ func largeRunModel(t *testing.T, env subagent.EnvFactory) (Model, *subagent.Supe
 	// the fan-out in particular because git answers `rev-parse
 	// --show-toplevel` with the link followed, and a lane's patch recorded
 	// against the unresolved root lands on disk and then belongs to no path
-	// the run can name (internal/subagent/rooted.go).
+	// the run can name (internal/subagent/worktree/paths.go).
 	link := filepath.Join(t.TempDir(), "workspace")
 	if err := os.Symlink(t.TempDir(), link); err != nil {
 		t.Skipf("symlinks unavailable: %v", err)

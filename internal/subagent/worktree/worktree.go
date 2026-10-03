@@ -18,17 +18,16 @@ import (
 // add` calls in one repository can each read the other's half-written entry
 // under .git/worktrees and fail with "failed to read …/commondir", so every
 // add, remove and prune in a repository waits its turn. Its one owner is
-// this package: AddWorktreeContext and RemoveWorktree take it, and
-// LockWorktrees is exported only so a caller reading the worktree list waits
-// the same turn. The lock is the package's rather than a supervisor's because
+// this package: AddWorktreeContext and RemoveWorktree take it through
+// lockWorktrees. The lock is the package's rather than a supervisor's because
 // the exported NewWorktree and Remove make and tear down worktrees too, and a
 // lock only some callers take closes nothing. It is a channel so a stopping
 // writer can stop waiting.
 var worktreeLocks sync.Map // repoTop → chan struct{}
 
-// LockWorktrees waits for the repository's worktree administration, or for
+// lockWorktrees waits for the repository's worktree administration, or for
 // ctx to end; the function it returns releases the turn.
-func LockWorktrees(ctx context.Context, repoTop string) (func(), error) {
+func lockWorktrees(ctx context.Context, repoTop string) (func(), error) {
 	v, _ := worktreeLocks.LoadOrStore(repoTop, make(chan struct{}, 1))
 	turn := v.(chan struct{})
 	select {
@@ -50,11 +49,11 @@ type WorktreeHandle struct {
 	Seeded  int
 }
 
-// AddWorktree creates a detached worktree of the repository containing root
+// addWorktree creates a detached worktree of the repository containing root
 // at its current HEAD and seeds it with the parent's uncommitted work:
 // everything `git diff HEAD` reports, plus the untracked paths the caller
 // says the session created.
-func AddWorktree(root string, untracked []string) (WorktreeHandle, error) {
+func addWorktree(root string, untracked []string) (WorktreeHandle, error) {
 	return AddWorktreeContext(context.Background(), root, untracked)
 }
 
@@ -79,7 +78,7 @@ func AddWorktreeContext(ctx context.Context, root string, untracked []string) (W
 	if err = os.Remove(h.Dir); err != nil {
 		return WorktreeHandle{}, err
 	}
-	unlock, err := LockWorktrees(ctx, h.RepoTop)
+	unlock, err := lockWorktrees(ctx, h.RepoTop)
 	if err != nil {
 		return WorktreeHandle{}, err
 	}
@@ -116,7 +115,7 @@ func AddWorktreeContext(ctx context.Context, root string, untracked []string) (W
 		RemoveWorktree(h.RepoTop, h.Dir)
 		return WorktreeHandle{}, err
 	}
-	h.Seeded, err = SeedWorktree(h.RepoTop, h.Dir, RepoRelative(root, h.RepoTop, untracked))
+	h.Seeded, err = seedWorktree(h.RepoTop, h.Dir, repoRelative(root, h.RepoTop, untracked))
 	if err != nil {
 		RemoveWorktree(h.RepoTop, h.Dir)
 		return WorktreeHandle{}, err
@@ -124,7 +123,7 @@ func AddWorktreeContext(ctx context.Context, root string, untracked []string) (W
 	return h, nil
 }
 
-// SeedWorktree carries the parent's uncommitted work into a fresh worktree
+// seedWorktree carries the parent's uncommitted work into a fresh worktree
 // and makes the result the base the child's patch will be measured against.
 // It returns how many of the parent's paths the child started from.
 //
@@ -133,7 +132,7 @@ func AddWorktreeContext(ctx context.Context, root string, untracked []string) (W
 // parent already edited clashes when the patch lands, and the person is asked
 // to reconcile a conflict between their own work and work they asked for.
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
-func SeedWorktree(repoTop, worktree string, untracked []string) (int, error) {
+func seedWorktree(repoTop, worktree string, untracked []string) (int, error) {
 	patch, err := GitOutput(repoTop, "diff", "HEAD", "--binary")
 	if err != nil {
 		return 0, err
@@ -177,13 +176,13 @@ func SeedWorktree(repoTop, worktree string, untracked []string) (int, error) {
 	return carried, nil
 }
 
-// RepoRelative re-expresses paths the session named — relative to where it is
+// repoRelative re-expresses paths the session named — relative to where it is
 // standing, or absolute — as the repository-relative ones a copy of the
 // repository can hold. Duplicates and anything outside the repository are
 // dropped: a session can name a file anywhere on the disk, and only what is
 // under the toplevel has a place in a worktree. The separator is git's, so
 // these paths and the ones read out of a patch are the same strings.
-func RepoRelative(root, repoTop string, paths []string) []string {
+func repoRelative(root, repoTop string, paths []string) []string {
 	out := make([]string, 0, len(paths))
 	seen := map[string]bool{}
 	for _, p := range paths {
@@ -281,7 +280,7 @@ func RemoveWorktree(repoTop, worktree string) {
 		return
 	}
 	if repoTop != "" {
-		unlock, _ := LockWorktrees(context.Background(), repoTop)
+		unlock, _ := lockWorktrees(context.Background(), repoTop)
 		_, _ = RunGit(repoTop, "worktree", "remove", "--force", worktree)
 		_, _ = RunGit(repoTop, "worktree", "prune")
 		unlock()

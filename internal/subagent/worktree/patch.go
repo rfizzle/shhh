@@ -94,9 +94,9 @@ type PatchedFile struct {
 	AfterMode os.FileMode
 }
 
-// FileSide is a file as it was at one moment: content, whether it was there
+// fileSide is a file as it was at one moment: content, whether it was there
 // at all, and the permission bits it had.
-type FileSide struct {
+type fileSide struct {
 	Text   string
 	Exists bool
 	Mode   os.FileMode
@@ -112,16 +112,16 @@ type FileSide struct {
 // once it has there is nowhere else left to learn that it was one: taking the
 // turn back would write the file out at the default mode and the next
 // `./script.sh` would fail with permission denied.
-func ReadSides(repoTop string, paths []string) map[string]FileSide {
-	out := make(map[string]FileSide, len(paths))
+func ReadSides(repoTop string, paths []string) map[string]fileSide {
+	out := make(map[string]fileSide, len(paths))
 	for _, p := range paths {
 		full := filepath.Join(repoTop, p)
 		data, err := os.ReadFile(full)
 		if err != nil {
-			out[p] = FileSide{}
+			out[p] = fileSide{}
 			continue
 		}
-		side := FileSide{Text: string(data), Exists: true}
+		side := fileSide{Text: string(data), Exists: true}
 		if fi, statErr := os.Stat(full); statErr == nil {
 			// Permission bits only: applying a patch never changed an owner
 			// or a timestamp, so putting one back is not undo's to do.
@@ -138,7 +138,7 @@ func ReadSides(repoTop string, paths []string) map[string]FileSide {
 // where the session is standing when it was started from a subdirectory — so
 // each one is re-expressed against the session's own root, the way every
 // other path the user sees is.
-func PatchedFiles(root, repoTop string, paths []string, before, after map[string]FileSide) []PatchedFile {
+func PatchedFiles(root, repoTop string, paths []string, before, after map[string]fileSide) []PatchedFile {
 	out := make([]PatchedFile, 0, len(paths))
 	for _, p := range paths {
 		b, a := before[p], after[p]

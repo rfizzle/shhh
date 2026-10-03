@@ -30,7 +30,7 @@ type Worktree struct {
 // NewWorktree makes one, seeded with the caller's uncommitted work: what `git
 // diff HEAD` reports, plus the untracked paths the caller says are its own.
 func NewWorktree(root string, untracked []string) (*Worktree, error) {
-	h, err := AddWorktree(root, untracked)
+	h, err := addWorktree(root, untracked)
 	if err != nil {
 		return nil, err
 	}
