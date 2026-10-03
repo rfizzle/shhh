@@ -90,11 +90,11 @@ type AlertsResult struct {
 // AlertsScreen is `/alerts`: a takeover in the chat, full width, owning the
 // keyboard for as long as it is up.
 type AlertsScreen struct {
+	// The pointer is an index into Alerts.
+	listScreen[AlertsItem]
 	// Alerts are standing first, then superseded, each newest first — the
 	// order the list draws them in.
 	Alerts []AlertsItem
-	// focus is an index into Alerts.
-	focus int
 	// Open says the runs of the episode under the pointer are showing.
 	// Moving the pointer off the episode closes them, since they are one
 	// episode's.
@@ -107,9 +107,6 @@ type AlertsScreen struct {
 	Notice string
 	// maxLines bounds the screen height. 0 is unbounded.
 	maxLines int
-
-	list Select
-	keys bool
 }
 
 // Update is the screen's whole keyboard: it moves, it shows an episode's
@@ -118,9 +115,9 @@ type AlertsScreen struct {
 func (s *AlertsScreen) Update(msg tea.KeyPressMsg) (done bool, result AlertsResult) {
 	pressed := msg.String()
 	switch {
-	case s.moved(pressed):
+	case s.walked(pressed):
 	case keys.Is(pressed, keys.Screen.Take):
-		if s.current() == nil {
+		if s.current(s.Alerts) == nil {
 			break
 		}
 		if !s.Open {
@@ -152,44 +149,38 @@ func (s *AlertsScreen) SetSize(_, height int) { s.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves.
-func (s *AlertsScreen) View(width int) string {
-	if width <= 0 {
-		return ""
-	}
-	s.sync()
+func (s *AlertsScreen) View(width int) string { return s.view(width, s) }
+
+// chrome is the header over the panes, the keys under them, and the line the
+// last key left.
+func (s *AlertsScreen) chrome(width int) screenChrome {
+	field := s.footField()
 	return screenChrome{
 		header:   s.header(),
-		foot:     s.footer(width).rows(width),
+		foot:     s.footer(s.offers(width, field), s.keyList(), field).rows(width),
 		notice:   s.Notice,
 		maxLines: s.maxLines,
-	}.view(width, func(budget int) []string { return s.panes().rows(width, budget) })
+	}
 }
 
 // panes is the body, split the way every screen with a list and a preview
-// splits it (screenpanes.go).
+// splits it (screenpanes.go): on the left the episodes, standing first.
 func (s *AlertsScreen) panes() screenPanes {
 	return screenPanes{
 		stackAt: alertsStackWidth, listMin: alertsListMin,
 		listMax: alertsListMax, minPreview: alertsMinPreview,
-		list:    s.listRows,
+		list: func(width, budget int) []string {
+			return s.listRows(s.Alerts, "nothing this session ran has come back broken", width, budget)
+		},
 		preview: s.previewRows,
 	}
-}
-
-// listRows is the left pane: the episodes, standing first.
-func (s *AlertsScreen) listRows(width, budget int) []string {
-	if len(s.Alerts) == 0 {
-		return []string{sty.dim.Render(Clip("nothing this session ran has come back broken", width))}
-	}
-	body, _ := s.list.visibleRows(cardWidthFor(width), budget, false)
-	return body
 }
 
 // previewRows is the right pane: the episode under the pointer, its account
 // in the rail's own words and what answered it, and its runs where they are
 // open.
 func (s *AlertsScreen) previewRows(width int) []string {
-	a := s.current()
+	a := s.current(s.Alerts)
 	if a == nil {
 		return []string{sty.dim.Render(Clip("no alert selected", width))}
 	}
@@ -302,7 +293,7 @@ func alertGlyph(a AlertsItem) string {
 // header names the surface and what it counts: the standing and the answered,
 // two fields because they are two facts, as the rail's marker says them.
 func (s *AlertsScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/alerts")}, keys: s.headerKeys()}
+	h := screenHeader{left: []RailSegment{screenTitle("/alerts")}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)}
 	standing := 0
 	for _, a := range s.Alerts {
 		if !a.Alert.Superseded {
@@ -320,29 +311,12 @@ func (s *AlertsScreen) header() screenHeader {
 	return h
 }
 
-// headerKeys is the pair the header ends with, as on every screen of the
-// family (docs/interface/surfaces.md#the-supporting-screens).
-func (s *AlertsScreen) headerKeys() string {
-	list := keys.Bracket(keys.Screen.List) + " " + keys.Words(keys.Screen.List)
-	if s.keys {
-		list = keys.Bracket(keys.Screen.List) + " hide the keys"
-	}
-	return list + " · " + words(keys.Screen.Quit, "back")
-}
-
-// footer is the keys the screen offers and the field that annotates them.
-func (s *AlertsScreen) footer(width int) keyFooter {
-	field := s.footField()
-	return keyFooter{offers: s.offers(width, field), register: s.keyList(),
-		showing: s.keys, field: field}
-}
-
 // offers is the key row: the pointer's keys, the runs, and the way out, and
 // the last two alone where the field leaves no room for all three.
 func (s *AlertsScreen) offers(width int, field string) []KeyOffer {
 	var acts []KeyOffer
 	switch {
-	case s.current() != nil && !s.Open:
+	case s.current(s.Alerts) != nil && !s.Open:
 		acts = append(acts, keyOfferAs(keys.Screen.Take, "show each run"))
 	case s.run() != nil && s.run().Evidence != "":
 		// Only a run whose output was kept offers the key: on one that was
@@ -350,11 +324,7 @@ func (s *AlertsScreen) offers(width int, field string) []KeyOffer {
 		acts = append(acts, keyOfferAs(keys.Screen.Take, "open its output"))
 	}
 	acts = append(acts, wayOut(backToPrompt))
-	full := append([]KeyOffer{keyOffer(keys.Screen.Move)}, acts...)
-	if field == "" || fitsBeside(full, field, width) {
-		return full
-	}
-	return acts
+	return offersBeside(keyOffer(keys.Screen.Move), acts, field, width)
 }
 
 // keyList is every key the screen has, for `[?]`.
@@ -379,7 +349,7 @@ func (s *AlertsScreen) footField() string {
 // sync rebuilds the list from Alerts. It runs before every View because the
 // host may replace Alerts, and the pointer has to survive that.
 func (s *AlertsScreen) sync() {
-	s.focus = min(max(s.focus, 0), max(len(s.Alerts)-1, 0))
+	s.clamp(len(s.Alerts))
 	opts := make([]SelectOption, 0, len(s.Alerts))
 	for _, a := range s.Alerts {
 		opt := SelectOption{Label: alertGlyph(a) + " " + a.Alert.Label,
@@ -393,48 +363,37 @@ func (s *AlertsScreen) sync() {
 		opt.Value, opt.valueTone = alertStanding(a)
 		opts = append(opts, opt)
 	}
-	s.list.Options = opts
-	s.list.Unnumbered = true
-	s.list.Focus = s.focus
+	s.show(opts, 0, s.Focus)
 }
 
-// moved walks the pointer: between an open episode's runs, and between
+// walked walks the pointer: between an open episode's runs, and between
 // episodes otherwise — or past either end of the runs, which leaves the
 // episode and puts them away.
-func (s *AlertsScreen) moved(pressed string) bool {
+func (s *AlertsScreen) walked(pressed string) bool {
 	if len(s.Alerts) == 0 {
 		return false
 	}
-	if s.Open && s.current() != nil && keys.Is(pressed, keys.Screen.Move) {
-		if next := s.runAt + keys.Step(pressed, keys.Screen.Move); next >= 0 && next < len(s.current().Runs) {
+	if a := s.current(s.Alerts); s.Open && a != nil && keys.Is(pressed, keys.Screen.Move) {
+		if next := s.runAt + keys.Step(pressed, keys.Screen.Move); next >= 0 && next < len(a.Runs) {
 			s.runAt = next
 			return true
 		}
 	}
-	l := List[AlertsItem]{Items: s.Alerts, Focus: s.focus}
-	if !l.Move(pressed, keys.Screen.Move) {
+	from := s.Focus
+	if !s.moved(s.Alerts, pressed, keys.Screen.Move) {
 		return false
 	}
-	if l.Focus != s.focus {
+	if s.Focus != from {
 		s.Open = false
 	}
-	s.focus = l.Focus
 	return true
 }
 
 // run is the run under the pointer while an episode's runs are out, or nil.
 func (s *AlertsScreen) run() *AlertsRun {
-	a := s.current()
+	a := s.current(s.Alerts)
 	if a == nil || !s.Open || s.runAt < 0 || s.runAt >= len(a.Runs) {
 		return nil
 	}
 	return &a.Runs[s.runAt]
-}
-
-// current is the episode under the pointer, or nil for an empty list.
-func (s *AlertsScreen) current() *AlertsItem {
-	if s.focus < 0 || s.focus >= len(s.Alerts) {
-		return nil
-	}
-	return &s.Alerts[s.focus]
 }

@@ -38,7 +38,9 @@ func alertsFixture() []AlertsItem {
 
 // alertsScreen is the screen over the fixture with the pointer on focus.
 func alertsScreen(focus int, open bool) *AlertsScreen {
-	return &AlertsScreen{Alerts: alertsFixture(), focus: focus, Open: open, maxLines: 24}
+	s := &AlertsScreen{Alerts: alertsFixture(), Open: open, maxLines: 24}
+	s.Focus = focus
+	return s
 }
 
 // The list is one row per episode in the rail row's own words, standing
@@ -87,12 +89,12 @@ func TestAlertsScreen_EnterShowsEachRun(t *testing.T) {
 	for range 2 {
 		s.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	}
-	if !s.Open || s.focus != 0 || s.runAt != 2 {
-		t.Fatalf("down should walk the runs: open %v, focus %d, run %d", s.Open, s.focus, s.runAt)
+	if !s.Open || s.Focus != 0 || s.runAt != 2 {
+		t.Fatalf("down should walk the runs: open %v, focus %d, run %d", s.Open, s.Focus, s.runAt)
 	}
 	s.Update(tea.KeyPressMsg{Code: tea.KeyDown})
-	if s.Open || s.focus != 1 {
-		t.Fatalf("moving past the last run should leave the episode: open %v, focus %d", s.Open, s.focus)
+	if s.Open || s.Focus != 1 {
+		t.Fatalf("moving past the last run should leave the episode: open %v, focus %d", s.Open, s.Focus)
 	}
 	if done, _ := s.Update(tea.KeyPressMsg{Code: tea.KeyEscape}); !done {
 		t.Fatal("esc did not close the screen")
