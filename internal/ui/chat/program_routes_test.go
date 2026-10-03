@@ -139,60 +139,77 @@ func TestProgram_TheQuitChordArmsThenLeaves(t *testing.T) {
 }
 
 // A command card that arrives on an empty draft and a quiet keyboard holds
-// the keyboard by arriving: its own [y] runs the command with no handover,
-// and the row and the reply after it land on the frame.
-func TestProgram_ACardOnAnEmptyDraftAnswersToItsOwnKey(t *testing.T) {
-	var ran []string
-	hold, release := quietHold(t)
-	m, _ := scriptedSession(
-		programTurn{hold: hold, calls: []provider.ToolCall{call("c1", tools.ExecCommandName, `{"command":"echo hi from the script"}`)}},
-		programTurn{text: "Done: the command printed a greeting"},
-	)
-	m = m.WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
-		ran = append(ran, cmd)
-		return "hi from the script", 0
-	}))
-	tm := runProgram(t, m)
+// the keyboard by arriving, so its own keys answer it with no handover: [y]
+// runs the command and the row and the reply after it land on the frame;
+// [n] refuses the call, nothing runs, the row says it was the reader's
+// refusal, and the turn carries on to its last sentence.
+func TestProgram_ACardAnswersToItsOwnKeys(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		command string
+		reply   string
+		ask     string
+		output  string
+		await   string
+		key     tea.KeyPressMsg
+		settle  string
+		runs    int
+		ranMsg  string
+		wants   []string
+	}{
+		{
+			name:    "yes runs it",
+			command: "echo hi from the script",
+			reply:   "Done: the command printed a greeting",
+			ask:     "run something",
+			output:  "hi from the script",
+			await:   "[y] run it once",
+			key:     programAllow,
+			settle:  "Done: the command printed",
+			runs:    1,
+			ranMsg:  "the card's own key did not run the command, ran %v:\n%s",
+			wants:   []string{"$ ran", "echo hi from the script", "Done: the command printed a greeting"},
+		},
+		{
+			name:    "no refuses it",
+			command: "go test ./internal/agent/...",
+			reply:   "That is the shape of it",
+			ask:     "now run the agent tests",
+			output:  "",
+			await:   "[n]",
+			key:     programDeny,
+			settle:  "That is the shape of it",
+			runs:    0,
+			ranMsg:  "a refused command ran: %v\n%s",
+			wants:   []string{"go test ./internal/agent/...", "denied", "That is the shape of it"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var ran []string
+			hold, release := quietHold(t)
+			m, _ := scriptedSession(
+				programTurn{hold: hold, calls: []provider.ToolCall{call("c1", tools.ExecCommandName, `{"command":"`+tc.command+`"}`)}},
+				programTurn{text: tc.reply},
+			)
+			m = m.WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
+				ran = append(ran, cmd)
+				return tc.output, 0
+			}))
+			tm := runProgram(t, m)
 
-	send(tm, "run something")
-	release()
-	waitForText(t, tm, "[y] run it once")
-	tm.Send(programAllow)
-	waitForText(t, tm, "Done: the command printed")
+			send(tm, tc.ask)
+			release()
+			waitForText(t, tm, tc.await)
+			tm.Send(tc.key)
+			waitForText(t, tm, tc.settle)
 
-	frame := finalFrame(t, tm)
-	if len(ran) != 1 {
-		t.Fatalf("the card's own key did not run the command, ran %v:\n%s", ran, frame)
+			frame := finalFrame(t, tm)
+			if len(ran) != tc.runs {
+				t.Fatalf(tc.ranMsg, ran, frame)
+			}
+			frameHas(t, frame, tc.wants...)
+		})
 	}
-	frameHas(t, frame, "$ ran", "echo hi from the script", "Done: the command printed a greeting")
-}
-
-// [n] on a card refuses the call: nothing runs, the row says it was the
-// reader's refusal, and the turn carries on to its last sentence.
-func TestProgram_ACardsNoRefusesTheCall(t *testing.T) {
-	var ran []string
-	hold, release := quietHold(t)
-	m, _ := scriptedSession(
-		programTurn{hold: hold, calls: []provider.ToolCall{call("c1", tools.ExecCommandName, `{"command":"go test ./internal/agent/..."}`)}},
-		programTurn{text: "That is the shape of it"},
-	)
-	m = m.WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
-		ran = append(ran, cmd)
-		return "", 0
-	}))
-	tm := runProgram(t, m)
-
-	send(tm, "now run the agent tests")
-	release()
-	waitForText(t, tm, "[n]")
-	tm.Send(programDeny)
-	waitForText(t, tm, "That is the shape of it")
-
-	frame := finalFrame(t, tm)
-	if len(ran) != 0 {
-		t.Fatalf("a refused command ran: %v\n%s", ran, frame)
-	}
-	frameHas(t, frame, "go test ./internal/agent/...", "denied", "That is the shape of it")
 }
 
 // An edit is gated: the card shows the change, the handover and [y] apply

@@ -1,5 +1,5 @@
 # program test: TestProgram_ATypedLineFetchesAReplyOntoTheFrame,
-#   TestProgram_ACardOnAnEmptyDraftAnswersToItsOwnKey,
+#   TestProgram_ACardAnswersToItsOwnKeys,
 #   TestProgram_TheQuitChordArmsThenLeaves
 #
 # The path a first session takes: the start screen, a reply, an approval

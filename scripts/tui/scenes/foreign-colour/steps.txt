@@ -1,4 +1,4 @@
-# program test: TestProgram_ACardOnAnEmptyDraftAnswersToItsOwnKey,
+# program test: TestProgram_ACardAnswersToItsOwnKeys,
 #   TestProgram_TheQuitChordArmsThenLeaves
 #
 # The re-painting itself is what the terminal is handed, which only a capture

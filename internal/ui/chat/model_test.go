@@ -485,60 +485,26 @@ func TestExit_CtrlD(t *testing.T) {
 	}
 }
 
-func TestExit_SlashQuit(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+func TestExit_SlashCommands(t *testing.T) {
+	for _, command := range []string{"/quit", "/exit", "/q"} {
+		t.Run(command, func(t *testing.T) {
+			msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+			m := New(msgs, mockStream)
 
-	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
-	m = updated.(Model)
+			updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+			m = updated.(Model)
 
-	m.input.SetValue("/quit")
-	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = updated.(Model)
+			m.input.SetValue(command)
+			updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+			m = updated.(Model)
 
-	if !m.quitting {
-		t.Fatal("/quit should set quitting")
-	}
-	if cmd == nil {
-		t.Fatal("/quit should return a quit cmd")
-	}
-}
-
-func TestExit_SlashExit(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
-
-	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
-	m = updated.(Model)
-
-	m.input.SetValue("/exit")
-	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = updated.(Model)
-
-	if !m.quitting {
-		t.Fatal("/exit should set quitting")
-	}
-	if cmd == nil {
-		t.Fatal("/exit should return a quit cmd")
-	}
-}
-
-func TestExit_SlashQ(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
-
-	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
-	m = updated.(Model)
-
-	m.input.SetValue("/q")
-	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = updated.(Model)
-
-	if !m.quitting {
-		t.Fatal("/q should set quitting")
-	}
-	if cmd == nil {
-		t.Fatal("/q should return a quit cmd")
+			if !m.quitting {
+				t.Fatalf("%s should set quitting", command)
+			}
+			if cmd == nil {
+				t.Fatalf("%s should return a quit cmd", command)
+			}
+		})
 	}
 }
 

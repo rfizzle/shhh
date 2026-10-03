@@ -1,4 +1,4 @@
-# program test: TestProgram_ACardsNoRefusesTheCall,
+# program test: TestProgram_ACardAnswersToItsOwnKeys,
 #   TestProgram_TheQuitChordArmsThenLeaves
 #
 # The severity ladder in three colours, and the decision run in one grammar

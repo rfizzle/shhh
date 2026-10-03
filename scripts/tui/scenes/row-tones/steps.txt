@@ -1,4 +1,4 @@
-# program test: TestProgram_ACardsNoRefusesTheCall,
+# program test: TestProgram_ACardAnswersToItsOwnKeys,
 #   TestProgram_ABrokenCommandsRowSaysHowItEnded,
 #   TestProgram_TheQuitChordArmsThenLeaves
 #

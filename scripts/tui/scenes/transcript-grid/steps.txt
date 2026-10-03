@@ -1,5 +1,5 @@
 # program test: TestProgram_ALongTurnDrawsTheCheckIn,
-#   TestProgram_ACardOnAnEmptyDraftAnswersToItsOwnKey,
+#   TestProgram_ACardAnswersToItsOwnKeys,
 #   TestProgram_TheTreeMovingUnderASessionIsANotice,
 #   TestProgram_TheQuitChordArmsThenLeaves
 #
