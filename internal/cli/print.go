@@ -2075,8 +2075,9 @@ func headlessFlagCheck(session chatSession) error {
 	return nil
 }
 
-// headlessGate mirrors the TUI's requiresApproval: exec, file-modification
-// and git-write tools go through approval; read-only tools run directly.
+// headlessGate is what a run with nobody in front of it always holds an
+// answer for: the command, the two file tools and git's writing half. Which
+// calls are put to a decision, and at which tier, is the classifier's.
 func headlessGate(name string) bool {
 	return name == tools.ExecCommandName || tools.IsMutating(name) || name == structural.GitWriteToolName
 }

@@ -30,16 +30,19 @@ import (
 // is added to whichever copy the author was looking at, and the other surface
 // runs it unasked with nothing going red.
 //
-// Each of the three registrations is a gate of its own because each has its
-// own answer. A fetch is an external action; a server call is gated unless
-// the server was declared read-only; and the process tool gates on its
-// arguments rather than its name, since only a start needs an answer and
-// status, read, input and stop do not.
+// What tier a call sits at is the classifier's, so the line this draws is the
+// one the session's card draws; what the run holds is its own. A fetch is held
+// where a fetcher is, a child where a supervisor is, a server's tool unless its
+// server was declared read-only, and the process tool where processes are
+// managed — whose reading goes with it, since only a start needs an answer and
+// status, read, input and stop do not. The command, the two file tools and
+// git's writing half are held always.
+// See docs/capabilities/approvals-and-safety.md#one-classifier-names-a-calls-tier.
 func unattendedGate(webTools *web.Toolset, procSup *process.Supervisor, mcpTools *mcp.Toolset, sup *subagent.Supervisor) agent.ApprovalGate {
-	return func(tc provider.ToolCall) bool {
-		if webTools != nil && tc.Name == web.FetchToolName {
+	holds := agent.Answers{Has: func(name string) bool {
+		switch {
+		case webTools != nil && name == web.FetchToolName:
 			return true
-		}
 		// A question always stops the run, because a question that ran
 		// without stopping would be a question nobody answered. It is here
 		// and not among the answers below: every other entry decides which
@@ -53,25 +56,29 @@ func unattendedGate(webTools *web.Toolset, procSup *process.Supervisor, mcpTools
 		// call it — a tool the run can only be refused is worse than one it
 		// never saw
 		// (docs/capabilities/headless.md#everything-the-session-has-unless-somebody-has-to-answer).
-		if tc.Name == ask.ToolName {
+		case name == ask.ToolName:
 			return true
-		}
 		// Starting a child is a gated call like any other, and the one this
 		// surface used to answer by not offering it. It is gated rather than
 		// dispatched because a child spends the session's budget on work
 		// nobody reads until it reports, which is the decision --yes was
 		// given to make and the card a client attached to a served session
 		// draws (docs/capabilities/subagents.md#spawning-is-a-decision).
-		if sup != nil && tc.Name == subagent.SpawnToolName {
+		case sup != nil && name == subagent.SpawnToolName:
 			return true
+		case procSup != nil && name == process.ToolName:
+			return true
+		case mcpTools != nil && mcpTools.Has(name):
+			return !mcpTools.ReadOnly(name)
 		}
-		if procSup != nil && tc.Name == process.ToolName {
-			return process.NeedsApproval(json.RawMessage(tc.Arguments))
-		}
-		if mcpTools != nil && mcpTools.Has(tc.Name) {
-			return !mcpTools.ReadOnly(tc.Name)
-		}
-		return headlessGate(tc.Name)
+		return headlessGate(name)
+	}}
+	if procSup != nil {
+		holds.Command = process.CommandOf
+	}
+	return func(tc provider.ToolCall) bool {
+		call, _ := agent.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), holds)
+		return call.Gated
 	}
 }
 
