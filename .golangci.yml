@@ -96,10 +96,6 @@ linters:
       - linters: [gocognit]
         path: ^internal/ui/chat/keyroute\.go$
         text: 'func `\(Model\)\.updateKey`'
-      # The turn update: every message a turn reports handled in one switch.
-      - linters: [gocognit]
-        path: ^internal/ui/chat/turn\.go$
-        text: 'func `\(Model\)\.updateTurn`'
       # Nesting over 10, one rule per function.
       # activityRowDetail: the command row's detail is built in one nested branch.
       - linters: [nestif]

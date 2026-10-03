@@ -291,59 +291,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		return m, waitForEvent(m.events), true
 
 	case doneMsg:
-		m.clearRetryChain()
-		m.accumulateUsage(msg.usage)
-		// A response that ended in text asked for no tools, so its thinking
-		// has nowhere to travel to and the latch is dropped rather than left
-		// for a later round to pick up.
-		m.agent.CarryReasoning(nil)
-		if m.compacting {
-			return answered(m.finishCompact())
-		}
-		hadText := m.streaming != ""
-		text := m.streaming
-		m.agent.NoteProgressProse(text)
-		m.finishStreaming()
-		// A reply that stopped at the output ceiling is not the model's whole
-		// answer, and nothing that follows a finished turn should treat it as
-		// one: no plan to approve, no queued follow-up sent against half an
-		// answer. What it gets instead is the offer to have it finished
-		// (resume.go).
-		if msg.stop == provider.StopLength {
-			if hadText {
-				return answered(m.truncatedReply(text))
-			}
-			// The budget went entirely on a call the ceiling then cut, so
-			// there is no sentence to offer to finish — only the fact that
-			// the turn is ending on nothing rather than on an answer.
-			m.truncatedRound()
-		}
-		// A steering message queued while the model was responding becomes the
-		// next user turn immediately.
-		if cmd := m.dispatchSteering(); cmd != nil {
-			return m, cmd, true
-		}
-		// A completed planning response gets the plan-approval prompt —
-		// unless a backlog run is what asked for the plan, in which case
-		// the runner reads it and there is nothing to approve by hand. A
-		// grooming reading is the same: it is a plan-mode turn whose answer
-		// is verdicts, and what is put to the reader is its card. So is a
-		// sprint planning turn, whose answer is a set.
-		if m.policy.mode == agent.ModePlan && hadText && m.todo.runner.state == nil && !m.todo.groomer.going() && !m.todo.planner.going {
-			m.setTurnState(statePlanApprove)
-			m.armPlan()
-			m.syncViewport()
-		}
-		// The turn is truly over and nothing took the keyboard: the oldest
-		// queued follow-up goes out as the next user message (followup.go).
-		if m.turnState() == stateInput {
-			if next, cmd, sent := m.dispatchFollowUp(); sent {
-				return next, cmd, true
-			}
-		}
-		m.viewport.SetLines(m.renderHistoryLines())
-		m.viewport.GotoBottom()
-		return m, m.autosaveCmd(), true
+		return answered(m.finishReply(msg))
 
 	case toolCallsMsg:
 		m.clearRetryChain()
@@ -432,130 +380,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		return answered(m.resumeToolLoop())
 
 	case cmdDoneMsg:
-		if msg.runID != m.agent.RunID() || m.turnState() != stateRunningCmd {
-			return m, nil, true
-		}
-		m.runCancel = nil
-		m.runningCommand = ""
-		m.runTail = nil
-		m.runStart = time.Time{}
-		result := msg.result
-		if result.Outcome == "" {
-			result = tools.InferExecResult(msg.output, msg.exitCode)
-		}
-		out := strings.TrimRight(result.Output, "\n")
-		// Assistant command output goes through the reduction pipeline
-		// before both the transcript entry and the tool result, so
-		// the user sees exactly what the model got. /run — the user's own
-		// command — stays unreduced.
-		var allowedBy, approvedBy, amendedFrom string
-		var allowElapsed time.Duration
-		// The formatted result, made once and read twice. Formatting a
-		// command's result is not free of consequence any more: an output
-		// over the cap puts its middle in the evidence store, and a second
-		// call would file a second entry for the one command.
-		var formatted string
-		if m.approval.request != nil {
-			// The line the call carried, where the reader wrote another one
-			// in its place: the row records what ran and says whose line it
-			// was (amend.go).
-			amendedFrom = m.approval.request.amendedFrom
-			out = m.reduceResult(tools.ExecCommandName, out)
-			result.Output = out
-			formatted = m.execToolResult(result)
-			outcome, class := observe.ToolOutcome(formatted)
-			// The purpose is read off the line that ran, which is the
-			// reader's where they amended the model's.
-			m.recordToolEvent(tools.ExecCommandName, msg.duration, outcome, class,
-				observe.CommandPurpose(msg.command))
-			// What allowed the command rides the command's own row: nothing
-			// said so above it (approval.go). A rule that answered names
-			// itself; a card the reader answered names them, because a
-			// decision is the same fact either way and the row is where it
-			// is stated. A `/run` the reader typed reaches neither — it was
-			// never gated, so there is no decision behind it to carry.
-			allowedBy, allowElapsed = m.approval.request.autoRule, m.approval.request.autoCost
-			if allowedBy == "" {
-				approvedBy = decidedByYou
-			}
-		}
-		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out,
-			exitCode: msg.exitCode, commandResult: result, localRun: msg.local, duration: msg.duration,
-			allowedBy: allowedBy, allowElapsed: allowElapsed, approvedBy: approvedBy,
-			amendedFrom: amendedFrom, end: msg.end})
-		if m.approval.request != nil {
-			call := m.approval.request.call
-			m.approval.request = nil
-			// The command the repeat detector was written for reaches it
-			// here and nowhere else: an assistant command is dispatched by
-			// this model rather than by the tool executor. It is the whole
-			// result that is keyed and led, exit code included, because that
-			// is what the model reads. `/run` stays out of it — the reader
-			// is here, and telling them they have run this before is telling
-			// them what they just did.
-			//
-			// The arguments are the line that ran rather than the line the
-			// call carried, which are two different things once the reader
-			// has amended one (amend.go). Keying the original against the
-			// amendment's output would file an interaction that never
-			// happened: the detector's window is the tool, its arguments and
-			// the output they produced, so the model's own line would be
-			// remembered as having produced somebody else's result — and a
-			// real repeat of the amended line would go unnoticed, because
-			// nothing was ever filed under it.
-			ranArgs := call.Arguments
-			if amendedFrom != "" {
-				ranArgs = execArguments(msg.command)
-			}
-			toolResult := m.repeats.Notice(tools.ExecCommandName,
-				json.RawMessage(ranArgs), formatted)
-			if agent.IsRepeatNotice(toolResult) {
-				m.signal(observe.SignalRepeat, tools.ExecCommandName)
-			}
-			// What ran, where it was not what was asked for, leads the whole
-			// of that: a model handed a bare success reads it as a success
-			// of the command it proposed, and carries the wrong line into
-			// its next round (amend.go). It goes on outside the detector
-			// because the detector keys on what the call produced, and a
-			// sentence about the line would make two runs of one amended
-			// command look like two different results — and it is read
-			// before the notice is looked for, so a lead of this session's
-			// own is never mistaken for one of the detector's.
-			if amendedFrom != "" {
-				toolResult = amendedNotice(amendedFrom, msg.command) + "\n" + toolResult
-			}
-			// A read a built-in tool answers says so under its output, once
-			// per turn for each tool. It goes on after the detector for the
-			// reason the amendment's lead does: a line on the first call and
-			// not the second would make two identical runs look different.
-			// It is the line that ran that is judged, and only the model
-			// reads it; the row above shows the output alone.
-			// See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
-			toolResult = m.nudges.Append(m.turnCount, msg.command, toolResult)
-			m.agent.ResolveApproval(toolResult)
-			m.viewport.SetLines(m.renderHistoryLines())
-			m.viewport.GotoBottom()
-			return answered(m.advanceApprovalQueue())
-		}
-		m.setTurnState(stateInput)
-		// A local run's output stays out of the conversation: that is the
-		// whole difference `!!` buys, and the row's outcome says so (bang.go).
-		if !msg.local {
-			m.agent.AppendMachine(commandContextMessage(msg.command, out, msg.exitCode, m.evidence.Keep))
-		}
-		// A message typed while the /run command executed is sent now, with
-		// the command context already in the conversation.
-		if cmd := m.dispatchSteering(); cmd != nil {
-			return m, cmd, true
-		}
-		// And a follow-up queued while it ran goes out the same way: the
-		// session is idle, which is all "after the turn" ever meant.
-		if next, cmd, sent := m.dispatchFollowUp(); sent {
-			return next, cmd, true
-		}
-		m.viewport.SetLines(m.renderHistoryLines())
-		m.viewport.GotoBottom()
-		return m, m.autosaveCmd(), true
+		return answered(m.finishCommand(msg))
 
 	case dryRunDoneMsg:
 		// What the harmless form of a pending command printed (run.go). It is
@@ -571,58 +396,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		return answered(m.finishExplain(msg))
 
 	case approvedToolDoneMsg:
-		if msg.runID != m.agent.RunID() || m.turnState() != stateRunningCmd || m.approval.request == nil {
-			return m, nil, true
-		}
-		req := m.approval.request
-		m.approval.request = nil
-		m.agent.ResolveApproval(msg.result)
-		m.recordToolResult(req.call, msg.duration, msg.result)
-		// A git write is gated at the write tier, so this is the one place a
-		// switch lands.
-		m.noteBranchSwitch(req.call.Name, req.call.Arguments)
-		if agent.IsRepeatNotice(msg.result) {
-			m.signal(observe.SignalRepeat, req.call.Name)
-		}
-		m.noteEvictedTurns(msg.evicted)
-		// The plain row, for every landing but the diff's. Whichever of the
-		// three it lands as, it carries the account of how the call came to
-		// be allowed — the rule that answered, or the reader who answered
-		// the card: nothing said so above it (approval.go). And whichever it
-		// lands as, it goes at the place the call had in its round rather
-		// than at the end of the feed, because the calls that needed no
-		// decision ran while this one waited for one (queue.go).
-		row := entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments,
-			toolResult: msg.result, duration: msg.duration,
-			allowedBy: req.autoRule, allowElapsed: req.autoCost,
-			callSeq: m.callPlace(req.call.ID)}
-		if req.autoRule == "" {
-			row.approvedBy = decidedByYou
-		}
-		// An applied edit lands in the transcript as a collapsed diff row (
-		// docs/interface/surfaces.md#the-diff-view); failures keep the plain tool
-		// block so the error text stays visible.
-		if req.kind == approvalDiff && len(req.hunks) > 0 && digest.Outcome(msg.result) == digest.OutcomeOK {
-			m.appendCallRow(req.call.ID, entry{kind: entryDiff, toolName: req.call.Name, diff: &components.DiffView{
-				Path:     req.path,
-				Verb:     req.verb,
-				Hunks:    req.hunks,
-				Mode:     components.DiffCollapsed,
-				MaxLines: maxDiffExpandedLines,
-				Syntax:   diffSyntax(req.path),
-				Allowed:  approvalAccount(req),
-				// An applied edit is an activity row, so it says what the
-				// act cost in the field every other act says it in.
-				Duration: activityDuration(msg.duration),
-			}})
-		} else if req.call.Name == subagent.SpawnToolName && digest.Outcome(msg.result) == digest.OutcomeOK {
-			m.appendSpawnEntry(row)
-		} else {
-			m.appendEntry(row)
-		}
-		m.viewport.SetLines(m.renderHistoryLines())
-		m.viewport.GotoBottom()
-		return answered(m.advanceApprovalQueue())
+		return answered(m.finishApprovedTool(msg))
 
 	case preToolHookMsg:
 		// The hooks in front of a gated call have answered; the queue picks
@@ -780,4 +554,249 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		return answered(m.spinTick(msg))
 	}
 	return m, nil, false
+}
+
+// finishReply lands a stream that ended in text, and sends out whatever the
+// finished turn owes next: a plan to approve, a steering message, a queued
+// follow-up.
+func (m Model) finishReply(msg doneMsg) (tea.Model, tea.Cmd) {
+	m.clearRetryChain()
+	m.accumulateUsage(msg.usage)
+	// A response that ended in text asked for no tools, so its thinking
+	// has nowhere to travel to and the latch is dropped rather than left
+	// for a later round to pick up.
+	m.agent.CarryReasoning(nil)
+	if m.compacting {
+		return m.finishCompact()
+	}
+	hadText := m.streaming != ""
+	text := m.streaming
+	m.agent.NoteProgressProse(text)
+	m.finishStreaming()
+	// A reply that stopped at the output ceiling is not the model's whole
+	// answer, and nothing that follows a finished turn should treat it as
+	// one: no plan to approve, no queued follow-up sent against half an
+	// answer. What it gets instead is the offer to have it finished
+	// (resume.go).
+	if msg.stop == provider.StopLength {
+		if hadText {
+			return m.truncatedReply(text)
+		}
+		// The budget went entirely on a call the ceiling then cut, so
+		// there is no sentence to offer to finish — only the fact that
+		// the turn is ending on nothing rather than on an answer.
+		m.truncatedRound()
+	}
+	// A steering message queued while the model was responding becomes the
+	// next user turn immediately.
+	if cmd := m.dispatchSteering(); cmd != nil {
+		return m, cmd
+	}
+	// A completed planning response gets the plan-approval prompt —
+	// unless a backlog run is what asked for the plan, in which case
+	// the runner reads it and there is nothing to approve by hand. A
+	// grooming reading is the same: it is a plan-mode turn whose answer
+	// is verdicts, and what is put to the reader is its card. So is a
+	// sprint planning turn, whose answer is a set.
+	if m.policy.mode == agent.ModePlan && hadText && m.todo.runner.state == nil && !m.todo.groomer.going() && !m.todo.planner.going {
+		m.setTurnState(statePlanApprove)
+		m.armPlan()
+		m.syncViewport()
+	}
+	// The turn is truly over and nothing took the keyboard: the oldest
+	// queued follow-up goes out as the next user message (followup.go).
+	if m.turnState() == stateInput {
+		if next, cmd, sent := m.dispatchFollowUp(); sent {
+			return next, cmd
+		}
+	}
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	return m, m.autosaveCmd()
+}
+
+// finishCommand lands a finished command's row, and hands the result back to
+// the model for an assistant command or into the conversation for /run.
+func (m Model) finishCommand(msg cmdDoneMsg) (tea.Model, tea.Cmd) {
+	if msg.runID != m.agent.RunID() || m.turnState() != stateRunningCmd {
+		return m, nil
+	}
+	m.runCancel = nil
+	m.runningCommand = ""
+	m.runTail = nil
+	m.runStart = time.Time{}
+	result := msg.result
+	if result.Outcome == "" {
+		result = tools.InferExecResult(msg.output, msg.exitCode)
+	}
+	out := strings.TrimRight(result.Output, "\n")
+	// Assistant command output goes through the reduction pipeline
+	// before both the transcript entry and the tool result, so
+	// the user sees exactly what the model got. /run — the user's own
+	// command — stays unreduced.
+	var allowedBy, approvedBy, amendedFrom string
+	var allowElapsed time.Duration
+	// The formatted result, made once and read twice. Formatting a
+	// command's result is not free of consequence any more: an output
+	// over the cap puts its middle in the evidence store, and a second
+	// call would file a second entry for the one command.
+	var formatted string
+	if m.approval.request != nil {
+		// The line the call carried, where the reader wrote another one
+		// in its place: the row records what ran and says whose line it
+		// was (amend.go).
+		amendedFrom = m.approval.request.amendedFrom
+		out = m.reduceResult(tools.ExecCommandName, out)
+		result.Output = out
+		formatted = m.execToolResult(result)
+		outcome, class := observe.ToolOutcome(formatted)
+		// The purpose is read off the line that ran, which is the
+		// reader's where they amended the model's.
+		m.recordToolEvent(tools.ExecCommandName, msg.duration, outcome, class,
+			observe.CommandPurpose(msg.command))
+		// What allowed the command rides the command's own row: nothing
+		// said so above it (approval.go). A rule that answered names
+		// itself; a card the reader answered names them, because a
+		// decision is the same fact either way and the row is where it
+		// is stated. A `/run` the reader typed reaches neither — it was
+		// never gated, so there is no decision behind it to carry.
+		allowedBy, allowElapsed = m.approval.request.autoRule, m.approval.request.autoCost
+		if allowedBy == "" {
+			approvedBy = decidedByYou
+		}
+	}
+	m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out,
+		exitCode: msg.exitCode, commandResult: result, localRun: msg.local, duration: msg.duration,
+		allowedBy: allowedBy, allowElapsed: allowElapsed, approvedBy: approvedBy,
+		amendedFrom: amendedFrom, end: msg.end})
+	if m.approval.request != nil {
+		call := m.approval.request.call
+		m.approval.request = nil
+		// The command the repeat detector was written for reaches it
+		// here and nowhere else: an assistant command is dispatched by
+		// this model rather than by the tool executor. It is the whole
+		// result that is keyed and led, exit code included, because that
+		// is what the model reads. `/run` stays out of it — the reader
+		// is here, and telling them they have run this before is telling
+		// them what they just did.
+		//
+		// The arguments are the line that ran rather than the line the
+		// call carried, which are two different things once the reader
+		// has amended one (amend.go). Keying the original against the
+		// amendment's output would file an interaction that never
+		// happened: the detector's window is the tool, its arguments and
+		// the output they produced, so the model's own line would be
+		// remembered as having produced somebody else's result — and a
+		// real repeat of the amended line would go unnoticed, because
+		// nothing was ever filed under it.
+		ranArgs := call.Arguments
+		if amendedFrom != "" {
+			ranArgs = execArguments(msg.command)
+		}
+		toolResult := m.repeats.Notice(tools.ExecCommandName,
+			json.RawMessage(ranArgs), formatted)
+		if agent.IsRepeatNotice(toolResult) {
+			m.signal(observe.SignalRepeat, tools.ExecCommandName)
+		}
+		// What ran, where it was not what was asked for, leads the whole
+		// of that: a model handed a bare success reads it as a success
+		// of the command it proposed, and carries the wrong line into
+		// its next round (amend.go). It goes on outside the detector
+		// because the detector keys on what the call produced, and a
+		// sentence about the line would make two runs of one amended
+		// command look like two different results — and it is read
+		// before the notice is looked for, so a lead of this session's
+		// own is never mistaken for one of the detector's.
+		if amendedFrom != "" {
+			toolResult = amendedNotice(amendedFrom, msg.command) + "\n" + toolResult
+		}
+		// A read a built-in tool answers says so under its output, once
+		// per turn for each tool. It goes on after the detector for the
+		// reason the amendment's lead does: a line on the first call and
+		// not the second would make two identical runs look different.
+		// It is the line that ran that is judged, and only the model
+		// reads it; the row above shows the output alone.
+		// See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
+		toolResult = m.nudges.Append(m.turnCount, msg.command, toolResult)
+		m.agent.ResolveApproval(toolResult)
+		m.viewport.SetLines(m.renderHistoryLines())
+		m.viewport.GotoBottom()
+		return m.advanceApprovalQueue()
+	}
+	m.setTurnState(stateInput)
+	// A local run's output stays out of the conversation: that is the
+	// whole difference `!!` buys, and the row's outcome says so (bang.go).
+	if !msg.local {
+		m.agent.AppendMachine(commandContextMessage(msg.command, out, msg.exitCode, m.evidence.Keep))
+	}
+	// A message typed while the /run command executed is sent now, with
+	// the command context already in the conversation.
+	if cmd := m.dispatchSteering(); cmd != nil {
+		return m, cmd
+	}
+	// And a follow-up queued while it ran goes out the same way: the
+	// session is idle, which is all "after the turn" ever meant.
+	if next, cmd, sent := m.dispatchFollowUp(); sent {
+		return next, cmd
+	}
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	return m, m.autosaveCmd()
+}
+
+// finishApprovedTool lands a gated call the reader or a rule allowed at its
+// place in the round, and moves the approval queue on.
+func (m Model) finishApprovedTool(msg approvedToolDoneMsg) (tea.Model, tea.Cmd) {
+	if msg.runID != m.agent.RunID() || m.turnState() != stateRunningCmd || m.approval.request == nil {
+		return m, nil
+	}
+	req := m.approval.request
+	m.approval.request = nil
+	m.agent.ResolveApproval(msg.result)
+	m.recordToolResult(req.call, msg.duration, msg.result)
+	// A git write is gated at the write tier, so this is the one place a
+	// switch lands.
+	m.noteBranchSwitch(req.call.Name, req.call.Arguments)
+	if agent.IsRepeatNotice(msg.result) {
+		m.signal(observe.SignalRepeat, req.call.Name)
+	}
+	m.noteEvictedTurns(msg.evicted)
+	// The plain row, for every landing but the diff's. Whichever of the
+	// three it lands as, it carries the account of how the call came to
+	// be allowed — the rule that answered, or the reader who answered
+	// the card: nothing said so above it (approval.go). And whichever it
+	// lands as, it goes at the place the call had in its round rather
+	// than at the end of the feed, because the calls that needed no
+	// decision ran while this one waited for one (queue.go).
+	row := entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments,
+		toolResult: msg.result, duration: msg.duration,
+		allowedBy: req.autoRule, allowElapsed: req.autoCost,
+		callSeq: m.callPlace(req.call.ID)}
+	if req.autoRule == "" {
+		row.approvedBy = decidedByYou
+	}
+	// An applied edit lands in the transcript as a collapsed diff row (
+	// docs/interface/surfaces.md#the-diff-view); failures keep the plain tool
+	// block so the error text stays visible.
+	if req.kind == approvalDiff && len(req.hunks) > 0 && digest.Outcome(msg.result) == digest.OutcomeOK {
+		m.appendCallRow(req.call.ID, entry{kind: entryDiff, toolName: req.call.Name, diff: &components.DiffView{
+			Path:     req.path,
+			Verb:     req.verb,
+			Hunks:    req.hunks,
+			Mode:     components.DiffCollapsed,
+			MaxLines: maxDiffExpandedLines,
+			Syntax:   diffSyntax(req.path),
+			Allowed:  approvalAccount(req),
+			// An applied edit is an activity row, so it says what the
+			// act cost in the field every other act says it in.
+			Duration: activityDuration(msg.duration),
+		}})
+	} else if req.call.Name == subagent.SpawnToolName && digest.Outcome(msg.result) == digest.OutcomeOK {
+		m.appendSpawnEntry(row)
+	} else {
+		m.appendEntry(row)
+	}
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	return m.advanceApprovalQueue()
 }
