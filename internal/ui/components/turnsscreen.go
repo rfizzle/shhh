@@ -71,10 +71,10 @@ type TurnsItem struct {
 // TurnsScreen is `/turns`: a takeover in the chat, full width, owning the
 // keyboard for as long as it is up.
 type TurnsScreen struct {
+	// The pointer is an index into Turns.
+	listScreen[TurnsItem]
 	// Turns are newest first, the order the list draws them in.
 	Turns []TurnsItem
-	// Focus is an index into Turns.
-	Focus int
 	// Subject is what the header counts — `6 turns` — and Tools the calls
 	// they made, the field after it and the one that gives way first; Spend
 	// is what the session has spent, the tally in front of the keys.
@@ -83,9 +83,6 @@ type TurnsScreen struct {
 	Spend   string
 	// maxLines bounds the screen height. 0 is unbounded.
 	maxLines int
-
-	list Select
-	keys bool
 }
 
 // turnsResult is what the screen leaves with: nothing, or the turn whose
@@ -100,13 +97,13 @@ type turnsResult struct {
 func (s *TurnsScreen) Update(msg tea.KeyPressMsg) (done bool, result turnsResult) {
 	pressed := msg.String()
 	switch {
-	case s.moved(pressed):
+	case s.moved(s.Turns, pressed, keys.Screen.Move):
 	case keys.Is(pressed, keys.Screen.List):
 		s.keys = !s.keys
 	case keys.Is(pressed, keys.Screen.Take):
 		// Only for a turn with a changeset: a key that cannot act is not an
 		// offer, and the footer draws it grey (invariant 5).
-		if t := s.current(); t != nil && t.Reviewable {
+		if t := s.current(s.Turns); t != nil && t.Reviewable {
 			return true, turnsResult{Review: t.N}
 		}
 	case keys.Is(pressed, keys.Screen.Quit):
@@ -121,43 +118,36 @@ func (s *TurnsScreen) SetSize(_, height int) { s.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves.
-func (s *TurnsScreen) View(width int) string {
-	if width <= 0 {
-		return ""
-	}
-	s.sync()
+func (s *TurnsScreen) View(width int) string { return s.view(width, s) }
+
+// chrome is the header over the panes and the keys under them.
+func (s *TurnsScreen) chrome(width int) screenChrome {
+	field := s.footField()
 	return screenChrome{
 		header:   s.header(),
-		foot:     s.footer(width).rows(width),
+		foot:     s.footer(s.offers(width, field), s.keyList(), field).rows(width),
 		maxLines: s.maxLines,
-	}.view(width, func(budget int) []string { return s.panes().rows(width, budget) })
+	}
 }
 
 // panes is the body, split the way every screen with a list and a preview
-// splits it (screenpanes.go).
+// splits it (screenpanes.go): on the left the turns, newest first.
 func (s *TurnsScreen) panes() screenPanes {
 	return screenPanes{
 		stackAt: turnsStackWidth, listMin: turnsListMin,
 		listMax: turnsListMax, minPreview: turnsMinPreview,
-		list:    s.listRows,
+		list: func(width, budget int) []string {
+			return s.listRows(s.Turns, "the session has run no turns", width, budget)
+		},
 		preview: s.previewRows,
 	}
-}
-
-// listRows is the left pane: the turns, newest first.
-func (s *TurnsScreen) listRows(width, budget int) []string {
-	if len(s.Turns) == 0 {
-		return []string{sty.dim.Render(Clip("the session has run no turns", width))}
-	}
-	body, _ := s.list.visibleRows(cardWidthFor(width), budget, false)
-	return body
 }
 
 // previewRows is the right pane: the turn under the pointer — its close as
 // the transcript drew it, or what can be said in its place — and the files
 // it changed.
 func (s *TurnsScreen) previewRows(width int) []string {
-	t := s.current()
+	t := s.current(s.Turns)
 	if t == nil {
 		return []string{sty.dim.Render(Clip("no turn selected", width))}
 	}
@@ -303,7 +293,7 @@ func turnDetail(t TurnsItem) []DetailSpan {
 
 // header names the surface, what it counts and what the session has spent.
 func (s *TurnsScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/turns")}, keys: s.headerKeys()}
+	h := screenHeader{left: []RailSegment{screenTitle("/turns")}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)}
 	for _, f := range []string{s.Subject, s.Tools} {
 		if f != "" {
 			h.left = append(h.left, screenField(f))
@@ -315,23 +305,6 @@ func (s *TurnsScreen) header() screenHeader {
 	return h
 }
 
-// headerKeys is the pair the header ends with, as on every screen of the
-// family (docs/interface/surfaces.md#the-supporting-screens).
-func (s *TurnsScreen) headerKeys() string {
-	list := keys.Bracket(keys.Screen.List) + " " + keys.Words(keys.Screen.List)
-	if s.keys {
-		list = keys.Bracket(keys.Screen.List) + " hide the keys"
-	}
-	return list + " · " + words(keys.Screen.Quit, "back")
-}
-
-// footer is the keys the screen offers and the field that annotates them.
-func (s *TurnsScreen) footer(width int) keyFooter {
-	field := s.footField()
-	return keyFooter{offers: s.offers(width, field), register: s.keyList(),
-		showing: s.keys, field: field}
-}
-
 // offers is the key row: the pointer's keys, the review, and the way out,
 // and the last two alone where the field leaves no room for all three. The
 // review names the turn it opens, and a turn with nothing to review draws it
@@ -339,17 +312,13 @@ func (s *TurnsScreen) footer(width int) keyFooter {
 // pointer walking the list.
 func (s *TurnsScreen) offers(width int, field string) []KeyOffer {
 	var acts []KeyOffer
-	if t := s.current(); t != nil {
+	if t := s.current(s.Turns); t != nil {
 		review := keyOfferAs(keys.Screen.Take, fmt.Sprintf("review turn %d", t.N))
 		review.inert = !t.Reviewable
 		acts = append(acts, review)
 	}
 	acts = append(acts, wayOut(backToPrompt))
-	full := append([]KeyOffer{keyOffer(keys.Screen.Move)}, acts...)
-	if field == "" || fitsBeside(full, field, width) {
-		return full
-	}
-	return acts
+	return offersBeside(keyOffer(keys.Screen.Move), acts, field, width)
 }
 
 // keyList is every key the screen has, for `[?]`.
@@ -375,7 +344,7 @@ func (s *TurnsScreen) footField() string {
 // sync rebuilds the list from Turns. It runs before every View because the
 // host may replace Turns, and the pointer has to survive that.
 func (s *TurnsScreen) sync() {
-	s.Focus = min(max(s.Focus, 0), max(len(s.Turns)-1, 0))
+	s.clamp(len(s.Turns))
 	opts := make([]SelectOption, 0, len(s.Turns))
 	for _, t := range s.Turns {
 		opt := SelectOption{Label: fmt.Sprintf("%s turn %d", turnGlyph(t), t.N), Detail: turnDetail(t)}
@@ -385,28 +354,5 @@ func (s *TurnsScreen) sync() {
 		}
 		opts = append(opts, opt)
 	}
-	s.list.Options = opts
-	s.list.Unnumbered = true
-	s.list.Focus = s.Focus
-}
-
-// moved walks the pointer between turns.
-func (s *TurnsScreen) moved(pressed string) bool {
-	if len(s.Turns) == 0 {
-		return false
-	}
-	l := List[TurnsItem]{Items: s.Turns, Focus: s.Focus}
-	if !l.Move(pressed, keys.Screen.Move) {
-		return false
-	}
-	s.Focus = l.Focus
-	return true
-}
-
-// current is the turn under the pointer, or nil for an empty list.
-func (s *TurnsScreen) current() *TurnsItem {
-	if s.Focus < 0 || s.Focus >= len(s.Turns) {
-		return nil
-	}
-	return &s.Turns[s.Focus]
+	s.show(opts, 0, s.Focus)
 }

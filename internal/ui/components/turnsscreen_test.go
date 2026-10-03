@@ -39,8 +39,10 @@ func turnsFixture() []TurnsItem {
 
 // turnsScreen is the screen over the fixture with the pointer on one turn.
 func turnsScreen(focus int) *TurnsScreen {
-	return &TurnsScreen{Turns: turnsFixture(), Focus: focus,
+	s := &TurnsScreen{Turns: turnsFixture(),
 		Subject: "6 turns", Tools: "26 tools", Spend: "$0.1580 spent", maxLines: 20}
+	s.Focus = focus
+	return s
 }
 
 // The list is one row per turn in the close's own marks and words, and the
