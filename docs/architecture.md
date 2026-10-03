@@ -310,6 +310,73 @@ shape. What each keeps for itself:
   copy of its parent — its role decides its tools and its prompt, its spawn
   decides its model, and its mode is read at every request.
 
+## The unattended surfaces share one tail
+
+A scripted run and a served session agree about more than the assembly. Past
+the environment, both go on through the same steps in the same order, and
+those steps are written once and handed what differs between the two:
+
+1. **The containment**: what runs the session's commands, the refusal every
+   command gets where containment is required and the host has none, and
+   what contains a hook.
+2. **The prompt blocks**: what the model is told the containment is, and the
+   declared tools its commands will not find. They are joined to a prompt
+   already built, because the containment is resolved after the provider,
+   and the provider needed the prompt.
+3. **The runner's wraps**: the secret scrub on every result, then the command
+   ceiling, because nobody is at a keyboard to cancel a command that will not
+   finish.
+4. **The hooks**, after the containment because what contains a command is
+   what contains a hook; their notes, and the first seam, whose context is
+   joined to the built prompt.
+5. **The conversation** the session carries on, and the slot it will be left
+   in, claimed here so two sessions started together settle the name before
+   either writes to it.
+6. **The record**, opened before anything that links to it, with the hooks
+   told its identity; then **the stamp**, the gate's verdicts and the
+   searches.
+
+The order is load-bearing. A hook built before its containment runs outside
+it; a prompt block written before the containment is settled describes a
+runner the commands do not get; a record opened before the conversation it
+names is a row with no slot behind it; and what the session opened is closed
+in the reverse of that order — the record, then the slot, then whatever the
+surface opened before the tail — so nothing is torn down under something
+still holding it.
+
+What a scripted run keeps for itself, around the tail:
+
+- **Its prompt, before the tail starts.** It reads the prompt from its
+  argument or stdin and refuses an empty one before any containment is built,
+  so a run with nothing to do never starts a disposable container.
+- **The disposable container**, which stands in for the first step: started
+  for the run, torn down after the tail's own steps are closed, and the
+  reason no hook runs in that run — a hook cannot follow the commands into
+  the container, and running it on the host would put the person's own
+  command outside the strongest containment the run has. That is said on
+  stderr in place of building the hooks.
+- **Saying the containment only where it offers commands**, because a
+  conversation that cannot run one is not told what one would run under.
+- **Its stderr**: every line a run prints is a `»` line beside its activity,
+  because stdout is the answer.
+
+What a served session keeps:
+
+- **The store it is handed**, which it neither opens nor closes.
+- **Its closers**: the tail's are added to the session's own stack and
+  released with everything else it opened, when the client goes or the
+  assembly fails, rather than on the way out of a function.
+- **A conversation it may begin from**: a fork's copy of its parent's takes
+  the place of the fresh one, and of anything asked to resume.
+- **Its stderr**, the same `»` notes a scripted run writes. The event stream
+  a client reads does not exist yet when the tail runs, so what the first
+  seam says goes to stderr alone.
+
+The terminal session does not take the tail. It builds its classifier before
+its containment, offers to install a missing tool, and writes its notes as
+rows on the screen; taking the shared order would change what it does, which
+is a decision about the product and not a refactor.
+
 ## A busy screen gives each of its modes one owner
 
 Two screens hold the keyboard through more than one mode: the profile
