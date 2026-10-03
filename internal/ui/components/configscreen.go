@@ -163,10 +163,11 @@ type ConfigScreen struct {
 	// (docs/capabilities/configuration.md#two-files-one-resolution-order).
 	Scoped bool
 	Yours  bool
+	// The pointer is an index into Rows and survives the host rebuilding
+	// them; the rows showing are the ones the query left.
+	listScreen[ConfigRow]
 	// Rows are the settings in the order they are shown.
 	Rows []ConfigRow
-	// focus is an index into Rows and survives the host rebuilding them.
-	focus int
 	// Changed is how many edits are standing against the file. The header counts
 	// them and `[w]` is not offered while it is zero — a key that cannot act is
 	// not offered (invariant 5).
@@ -186,8 +187,6 @@ type ConfigScreen struct {
 	// (docs/interface/surfaces.md#the-supporting-screens).
 	InSession bool
 
-	menu    Select
-	shown   []int
 	optRow  []int
 	picker  *Select
 	editRow int
@@ -201,7 +200,6 @@ type ConfigScreen struct {
 	// question and goes down with it, so a decline cannot hand it to whatever
 	// is asked next.
 	pending ConfigResult
-	keys    bool
 }
 
 // MaskSecret renders a secret the way the config screen asks for: the last
@@ -239,7 +237,7 @@ func (c *ConfigScreen) Update(msg tea.KeyPressMsg) (done bool, result ConfigResu
 func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	pressed := msg.String()
 	switch {
-	case c.moved(pressed):
+	case c.walked(pressed):
 		return false, ConfigResult{}
 	case keys.Is(pressed, keys.Screen.Take):
 		c.open()
@@ -250,16 +248,16 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	// With the query line open the query line is the surface, so w, r and q are
 	// letters rather than keys — the same reading every picker in the product
 	// makes.
-	if c.menu.Filtering {
-		c.menu.editQuery(msg)
-		if c.menu.QueryChanged() {
+	if c.list.Filtering {
+		c.list.editQuery(msg)
+		if c.list.QueryChanged() {
 			c.refilter()
 		}
 		return false, ConfigResult{}
 	}
 	switch {
 	case keys.Is(pressed, keys.Screen.Filter):
-		c.menu.Filtering = true
+		c.list.Filtering = true
 	case keys.Is(pressed, keys.Screen.Quit):
 		return c.leave()
 	case keys.Is(pressed, keys.Screen.List):
@@ -312,7 +310,7 @@ func (c *ConfigScreen) open() {
 	if row == nil {
 		return
 	}
-	c.editRow = c.focus
+	c.editRow = c.Focus
 	switch {
 	case len(row.Options) > 0:
 		p := &Select{
@@ -487,7 +485,7 @@ func (c *ConfigScreen) View(width int) string {
 	// every card, so what it spends comes off the list's budget before the
 	// window is drawn.
 	var head []string
-	for _, row := range c.menu.queryRows(cardWidthFor(width - menuIndent)) {
+	for _, row := range c.list.queryRows(cardWidthFor(width - menuIndent)) {
 		head = append(head, indentBy(row, menuIndent, width))
 	}
 	return screenChrome{
@@ -505,7 +503,7 @@ func (c *ConfigScreen) View(width int) string {
 // picker is not a modal over the screen, so the setting being changed stays
 // on screen above its own options.
 func (c *ConfigScreen) bodyRows(width, budget int, inline []string) []string {
-	rows, _, at := c.menu.visibleRowsFocus(cardWidthFor(width-menuIndent), budget, false)
+	rows, _, at := c.list.visibleRowsFocus(cardWidthFor(width-menuIndent), budget, false)
 	out := make([]string, 0, len(rows)+len(inline))
 	for i, row := range rows {
 		out = append(out, indentBy(row, menuIndent, width))
@@ -674,7 +672,7 @@ func (c *ConfigScreen) offers() []KeyOffer {
 		}
 	}
 	offers := []KeyOffer{keyOffer(keys.Screen.Move), keyOfferAs(keys.Screen.Take, "change")}
-	if c.menu.Filtering {
+	if c.list.Filtering {
 		offers = append(offers, keyOffer(keys.Screen.ClearQ))
 	} else {
 		offers = append(offers, keyOffer(keys.Screen.Filter), keyOffer(keys.Screen.Reset))
@@ -748,7 +746,7 @@ func (c *ConfigScreen) footField() string {
 		return ""
 	case c.Changed > 0:
 		return "nothing is written until " + keys.Bracket(keys.Screen.Write)
-	case c.menu.Filtering:
+	case c.list.Filtering:
 		return ""
 	}
 	return plural(len(c.Rows), "setting")
@@ -758,7 +756,7 @@ func (c *ConfigScreen) footField() string {
 // View because the host replaces Rows after each change, and the window and
 // the query the list is showing have to survive that.
 func (c *ConfigScreen) sync() {
-	c.shown = c.match()
+	c.shown = c.match(c.Rows, configFields)
 	opts := make([]SelectOption, 0, len(c.shown)+6)
 	c.optRow = c.optRow[:0]
 	rail := func(label string) {
@@ -781,12 +779,9 @@ func (c *ConfigScreen) sync() {
 		})
 		c.optRow = append(c.optRow, i)
 	}
-	c.menu.Options = opts
-	c.menu.Total = len(c.Rows)
-	c.menu.Filterable = true
-	c.menu.Unnumbered = true
-	c.menu.QueryHint = "type to filter the settings"
-	c.menu.Focus = c.optIndex(c.focus)
+	c.show(opts, len(c.Rows), c.optIndex(c.Focus))
+	c.list.Filterable = true
+	c.list.QueryHint = "type to filter the settings"
 }
 
 // qualifier is how a note about a value joins it: an em-dash, because `normal
@@ -800,24 +795,16 @@ func qualifier(detail string) string {
 	return "— " + detail
 }
 
-// match is the settings the query left showing. The rule lives here rather
-// than in the card because the card never filters: a setting is matched by
-// its name or by the config key behind it, so a reader who knows the key can
-// type it.
-func (c *ConfigScreen) match() []int {
-	return Filter(c.Rows, strings.TrimSpace(c.menu.Query), func(row ConfigRow) []string {
-		return []string{row.Label, row.Key}
-	})
-}
+// configFields are what a setting is matched by: its name or the config key
+// behind it, so a reader who knows the key can type it.
+func configFields(row ConfigRow) []string { return []string{row.Label, row.Key} }
 
-// refilter re-runs the match after a keystroke changed the query, and puts
-// the pointer on the first row that survived it — the rows under it are not
-// the rows that were there a moment ago.
+// refilter re-runs the match after a keystroke changed the query: the
+// pointer goes to the first row that survived it, and whatever was open on
+// the row under it goes.
 func (c *ConfigScreen) refilter() {
 	c.picker, c.edit, c.secret = nil, nil, nil
-	if shown := c.match(); len(shown) > 0 {
-		c.focus = shown[0]
-	}
+	c.refocus(c.Rows, configFields)
 	c.sync()
 }
 
@@ -839,47 +826,19 @@ func (c *ConfigScreen) refilterPicker() {
 	c.picker.Focus = 0
 }
 
-// moved walks the pointer over the rows the filter left showing and reports
-// whether the keystroke was the screen's own movement key. The pointer is
-// the setting's place in the whole list rather than in the filtered one, so
-// what moves is a List over what is showing (list.go) and the row it landed
-// on is read back out.
-//
-// With the query line open only the half of the binding no sentence produces
-// moves it: a j typed into a filter is a letter, which is the reading every
-// list in the product makes of its own row.
-func (c *ConfigScreen) moved(pressed string) bool {
-	if len(c.shown) == 0 {
+// walked walks the pointer over the rows the filter left showing, and puts
+// away whatever was open on the row it left.
+func (c *ConfigScreen) walked(pressed string) bool {
+	if !c.movedShown(pressed, keys.Screen.Move) {
 		return false
 	}
-	l := List[int]{Items: c.shown, Focus: c.at()}
-	moved := false
-	if c.menu.Filtering {
-		moved = l.moveTyping(pressed, keys.Screen.Move)
-	} else {
-		moved = l.Move(pressed, keys.Screen.Move)
-	}
-	if !moved {
-		return false
-	}
-	c.focus = c.shown[l.Focus]
 	c.picker, c.edit, c.secret = nil, nil, nil
 	c.sync()
 	return true
 }
 
-// at is where the pointer is among the rows the filter left showing.
-func (c *ConfigScreen) at() int {
-	for i, row := range c.shown {
-		if row == c.focus {
-			return i
-		}
-	}
-	return 0
-}
-
 // current is the row under the pointer, or nil when the filter left none.
-func (c *ConfigScreen) current() *ConfigRow { return c.rowAt(c.focus) }
+func (c *ConfigScreen) current() *ConfigRow { return c.rowAt(c.Focus) }
 
 func (c *ConfigScreen) rowAt(i int) *ConfigRow {
 	if i < 0 || i >= len(c.Rows) {

@@ -94,7 +94,7 @@ func movers() []mover {
 	sprint := planScreen()
 	prof := briefScreen()
 	hosts := []mover{
-		{"shhh config", keys.Screen.Move, func() int { return c.focus },
+		{"shhh config", keys.Screen.Move, func() int { return c.Focus },
 			func(k tea.KeyPressMsg) { c.Update(k) }},
 		{"shhh history", keys.Screen.Move, func() int { return h.Focus },
 			func(k tea.KeyPressMsg) { h.Update(k) }},
@@ -191,7 +191,7 @@ func TestAKeymapMovesWhatTheScreensAnswer(t *testing.T) {
 
 	c, h := configFixture(), historyScreen()
 	for _, host := range []mover{
-		{"shhh config", keys.Screen.Move, func() int { return c.focus },
+		{"shhh config", keys.Screen.Move, func() int { return c.Focus },
 			func(k tea.KeyPressMsg) { c.Update(k) }},
 		{"shhh history", keys.Screen.Move, func() int { return h.Focus },
 			func(k tea.KeyPressMsg) { h.Update(k) }},

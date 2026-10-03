@@ -2820,31 +2820,31 @@ func TestGolden_ConfigScreen(t *testing.T) {
 		return []golden.Panel{
 			{Label: "the list · every row states where its value came from", View: screen(nil).View(width)},
 			{Label: "changing one · the picker opens under the row, not over the screen", View: func() string {
-				c := screen(func(c *ConfigScreen) { c.focus = 5 })
+				c := screen(func(c *ConfigScreen) { c.Focus = 5 })
 				c.Update(key("enter"))
 				return c.View(width)
 			}()},
 			{Label: "the picker filtered · the query row carries both counts", View: func() string {
-				c := screen(func(c *ConfigScreen) { c.focus = 5 })
+				c := screen(func(c *ConfigScreen) { c.Focus = 5 })
 				c.Update(key("enter"))
 				c.Update(key("/"))
 				typed(c, "claude")
 				return c.View(width)
 			}()},
 			{Label: "a setting with no answers to choose · a field under the row", View: func() string {
-				c := screen(func(c *ConfigScreen) { c.focus = 1 })
+				c := screen(func(c *ConfigScreen) { c.Focus = 1 })
 				c.Update(key("enter"))
 				typed(c, "40")
 				return c.View(width)
 			}()},
 			{Label: "a secret · the mask, never the key", View: func() string {
-				c := screen(func(c *ConfigScreen) { c.focus = 6 })
+				c := screen(func(c *ConfigScreen) { c.Focus = 6 })
 				c.Update(key("enter"))
 				typed(c, "sk-live-9f2b")
 				return c.View(width)
 			}()},
 			{Label: "staged · the header counts it and [w] is offered", View: screen(func(c *ConfigScreen) {
-				c.focus, c.Changed = 5, 2
+				c.Focus, c.Changed = 5, 2
 				c.Rows[5].Value = "claude-sonnet-4.6"
 				c.Rows[5].Source, c.Rows[5].SourceTone = "unwritten", ToneOpen
 				c.Rows[1].Value = "40"
@@ -2874,7 +2874,7 @@ func TestGolden_ConfigScreen(t *testing.T) {
 			{Label: "the flows section · each row says which link of the chain answered, or that the session holds it",
 				View: flowsScreen(nil).View(width)},
 			{Label: "a flow's picker · the choice has three destinations on the key row", View: func() string {
-				c := flowsScreen(func(c *ConfigScreen) { c.focus = 1 })
+				c := flowsScreen(func(c *ConfigScreen) { c.Focus = 1 })
 				c.Update(key("enter"))
 				return c.View(width)
 			}()},
