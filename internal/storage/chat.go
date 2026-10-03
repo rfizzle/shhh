@@ -513,58 +513,54 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 // link to the conversation it wrote is a reference for exactly that reason
 // (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
 func (db *DB) chatMessages(sessionID int64) ([]provider.Message, error) {
-	rows, err := db.sql.Query(
+	return queryRows(db, scanChatMessage,
 		`SELECT role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint, machine_kind
 		 FROM chat_messages WHERE session_id = ? ORDER BY seq`, sessionID,
 	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+}
 
-	var messages []provider.Message
-	for rows.Next() {
-		var (
-			role, content, toolCallID      string
-			toolCallsJSON, attachmentsJSON *string
-			machineKind                    *string
-			machine, checkpoint            bool
-			turn, round                    int64
-		)
-		if err := rows.Scan(&role, &content, &toolCallsJSON, &toolCallID, &attachmentsJSON, &machine,
-			&turn, &round, &checkpoint, &machineKind); err != nil {
-			return nil, err
-		}
-		msg := provider.Message{
-			Role:       provider.Role(role),
-			Content:    content,
-			ToolCallID: toolCallID,
-			Machine:    machine,
-			// Where it was written, carried back so a conversation replayed
-			// into the agent keeps the position it was saved with rather
-			// than being restamped with wherever the resume has got to.
-			Turn:  turn,
-			Round: round,
-			// And whether it was the run reporting on itself, so a reopened
-			// transcript draws the note at the rung it was written at.
-			Checkpoint: checkpoint,
-		}
-		if machineKind != nil {
-			msg.MachineKind = provider.MachineKind(*machineKind)
-		}
-		if toolCallsJSON != nil {
-			if err := json.Unmarshal([]byte(*toolCallsJSON), &msg.ToolCalls); err != nil {
-				return nil, fmt.Errorf("unmarshal tool calls: %w", err)
-			}
-		}
-		if attachmentsJSON != nil {
-			if err := json.Unmarshal([]byte(*attachmentsJSON), &msg.Attachments); err != nil {
-				return nil, fmt.Errorf("unmarshal attachments: %w", err)
-			}
-		}
-		messages = append(messages, msg)
+// scanChatMessage reads one row of chatMessages' query back into the message
+// it was saved from.
+func scanChatMessage(r rowScanner) (provider.Message, error) {
+	var (
+		role, content, toolCallID      string
+		toolCallsJSON, attachmentsJSON *string
+		machineKind                    *string
+		machine, checkpoint            bool
+		turn, round                    int64
+	)
+	if err := r.Scan(&role, &content, &toolCallsJSON, &toolCallID, &attachmentsJSON, &machine,
+		&turn, &round, &checkpoint, &machineKind); err != nil {
+		return provider.Message{}, err
 	}
-	return messages, rows.Err()
+	msg := provider.Message{
+		Role:       provider.Role(role),
+		Content:    content,
+		ToolCallID: toolCallID,
+		Machine:    machine,
+		// Where it was written, carried back so a conversation replayed
+		// into the agent keeps the position it was saved with rather
+		// than being restamped with wherever the resume has got to.
+		Turn:  turn,
+		Round: round,
+		// And whether it was the run reporting on itself, so a reopened
+		// transcript draws the note at the rung it was written at.
+		Checkpoint: checkpoint,
+	}
+	if machineKind != nil {
+		msg.MachineKind = provider.MachineKind(*machineKind)
+	}
+	if toolCallsJSON != nil {
+		if err := json.Unmarshal([]byte(*toolCallsJSON), &msg.ToolCalls); err != nil {
+			return provider.Message{}, fmt.Errorf("unmarshal tool calls: %w", err)
+		}
+	}
+	if attachmentsJSON != nil {
+		if err := json.Unmarshal([]byte(*attachmentsJSON), &msg.Attachments); err != nil {
+			return provider.Message{}, fmt.Errorf("unmarshal attachments: %w", err)
+		}
+	}
+	return msg, nil
 }
 
 // ListChats is every saved conversation, newest first, with the id breaking
@@ -583,7 +579,7 @@ func (db *DB) ListChats() ([]ChatListEntry, error) {
 	// read best-effort — a mark that could not be taken costs the mark, not
 	// the listing, which is the answer the caller actually asked for.
 	live, _ := db.liveChatSlots(time.Now())
-	rows, err := db.sql.Query(
+	return queryRows(db, scanChatListEntry(live),
 		`SELECT s.name, s.title, s.summary, s.updated_at,
 		        COUNT(CASE WHEN m.role = 'user' THEN 1 END) as turns
 		 FROM chat_sessions s
@@ -591,25 +587,23 @@ func (db *DB) ListChats() ([]ChatListEntry, error) {
 		 GROUP BY s.id
 		 ORDER BY s.updated_at DESC, s.id DESC`,
 	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+}
 
-	var entries []ChatListEntry
-	for rows.Next() {
+// scanChatListEntry reads one row of a listing, ListChats' or SearchChats',
+// and marks it with whether live says another session has the slot.
+func scanChatListEntry(live map[string]bool) func(rowScanner) (ChatListEntry, error) {
+	return func(r rowScanner) (ChatListEntry, error) {
 		var (
 			e         ChatListEntry
 			updatedAt string
 		)
-		if err := rows.Scan(&e.Name, &e.Title, &e.Summary, &updatedAt, &e.Turns); err != nil {
-			return nil, err
+		if err := r.Scan(&e.Name, &e.Title, &e.Summary, &updatedAt, &e.Turns); err != nil {
+			return e, err
 		}
 		e.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updatedAt)
 		e.Live = live[e.Name]
-		entries = append(entries, e)
+		return e, nil
 	}
-	return entries, rows.Err()
 }
 
 // SearchChats is every saved conversation carrying what was typed, newest
@@ -657,7 +651,7 @@ func (db *DB) SearchChats(query string) ([]ChatListEntry, error) {
 	// Read before the listing's cursor is open and best-effort, for the two
 	// reasons ListChats reads it that way.
 	live, _ := db.liveChatSlots(time.Now())
-	rows, err := db.sql.Query(
+	return queryRows(db, scanChatListEntry(live),
 		`SELECT s.name, s.title, s.summary, s.updated_at,
 		        COUNT(CASE WHEN m.role = 'user' THEN 1 END) AS turns
 		 FROM chat_sessions s
@@ -666,25 +660,6 @@ func (db *DB) SearchChats(query string) ([]ChatListEntry, error) {
 		 GROUP BY s.id
 		 ORDER BY s.updated_at DESC, s.id DESC`, args...,
 	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var entries []ChatListEntry
-	for rows.Next() {
-		var (
-			e         ChatListEntry
-			updatedAt string
-		)
-		if err := rows.Scan(&e.Name, &e.Title, &e.Summary, &updatedAt, &e.Turns); err != nil {
-			return nil, err
-		}
-		e.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updatedAt)
-		e.Live = live[e.Name]
-		entries = append(entries, e)
-	}
-	return entries, rows.Err()
 }
 
 // PruneOldChats deletes every saved conversation nothing has written to for
@@ -813,8 +788,17 @@ func (db *DB) MostRecentChat() (RecentChat, bool, error) {
 // walking name's parent chain, plus every descendant — ordered oldest-first.
 // An unknown name yields an empty list, not an error.
 func (db *DB) ListChatBranches(name string) ([]ChatBranch, error) {
-	rows, err := db.sql.Query(
-		`WITH RECURSIVE up(id, parent_id) AS (
+	return queryRows(db, func(r rowScanner) (ChatBranch, error) {
+		var (
+			b         ChatBranch
+			updatedAt string
+		)
+		if err := r.Scan(&b.Name, &b.Parent, &updatedAt, &b.Turns); err != nil {
+			return b, err
+		}
+		b.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updatedAt)
+		return b, nil
+	}, `WITH RECURSIVE up(id, parent_id) AS (
 		     SELECT id, parent_id FROM chat_sessions WHERE name = ?
 		     UNION ALL
 		     SELECT s.id, s.parent_id FROM chat_sessions s JOIN up ON s.id = up.parent_id
@@ -833,24 +817,6 @@ func (db *DB) ListChatBranches(name string) ([]ChatBranch, error) {
 		 GROUP BY s.id
 		 ORDER BY s.created_at, s.id`, name,
 	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var branches []ChatBranch
-	for rows.Next() {
-		var (
-			b         ChatBranch
-			updatedAt string
-		)
-		if err := rows.Scan(&b.Name, &b.Parent, &updatedAt, &b.Turns); err != nil {
-			return nil, err
-		}
-		b.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updatedAt)
-		branches = append(branches, b)
-	}
-	return branches, rows.Err()
 }
 
 // DeleteChat removes a session and every branch hanging off it. The

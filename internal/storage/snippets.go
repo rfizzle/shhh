@@ -38,29 +38,20 @@ func (db *DB) SaveSnippet(name, command string) error {
 // id breaking a tie on that column so that snippets saved in one tick still
 // come back in one order.
 func (db *DB) ListSnippets() ([]Snippet, error) {
-	rows, err := db.sql.Query(
-		`SELECT id, name, command, description, created_at, updated_at
-		 FROM snippets ORDER BY updated_at DESC, id DESC`,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var snippets []Snippet
-	for rows.Next() {
+	return queryRows(db, func(r rowScanner) (Snippet, error) {
 		var (
 			s                    Snippet
 			createdAt, updatedAt string
 		)
-		if err := rows.Scan(&s.ID, &s.Name, &s.Command, &s.Description, &createdAt, &updatedAt); err != nil {
-			return nil, err
+		if err := r.Scan(&s.ID, &s.Name, &s.Command, &s.Description, &createdAt, &updatedAt); err != nil {
+			return s, err
 		}
 		s.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
 		s.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updatedAt)
-		snippets = append(snippets, s)
-	}
-	return snippets, rows.Err()
+		return s, nil
+	}, `SELECT id, name, command, description, created_at, updated_at
+		 FROM snippets ORDER BY updated_at DESC, id DESC`,
+	)
 }
 
 func (db *DB) GetSnippet(name string) (Snippet, error) {

@@ -48,27 +48,19 @@ func (db *DB) LoadSources(slot string) ([]web.Source, error) {
 	if err != nil || !ok {
 		return nil, err
 	}
-	rows, err := db.sql.Query(
-		`SELECT id, turn, agent, kind, query, requested_url, final_url, title,
-		     status, bytes, results, cached, evidence, at
-		 FROM sources WHERE session_id = ? ORDER BY id`, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var out []web.Source
-	for rows.Next() {
+	return queryRows(db, func(r rowScanner) (web.Source, error) {
 		var (
 			s  web.Source
 			at string
 		)
-		if err := rows.Scan(&s.ID, &s.Turn, &s.Agent, &s.Kind, &s.Query, &s.Requested,
+		if err := r.Scan(&s.ID, &s.Turn, &s.Agent, &s.Kind, &s.Query, &s.Requested,
 			&s.FinalURL, &s.Title, &s.Status, &s.Bytes, &s.Results, &s.Cached,
 			&s.Evidence, &at); err != nil {
-			return nil, err
+			return s, err
 		}
 		s.At, _ = time.Parse(time.RFC3339Nano, at)
-		out = append(out, s)
-	}
-	return out, rows.Err()
+		return s, nil
+	}, `SELECT id, turn, agent, kind, query, requested_url, final_url, title,
+		     status, bytes, results, cached, evidence, at
+		 FROM sources WHERE session_id = ? ORDER BY id`, id)
 }

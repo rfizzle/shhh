@@ -55,9 +55,6 @@ func (db *DB) ListHistory(f HistoryFilter) ([]HistoryEntry, error) {
 		limit = 50
 	}
 
-	var rows_result []HistoryEntry
-	var err error
-
 	if f.Search != "" {
 		match, ok := matchQuery(f.Search)
 		if !ok {
@@ -68,25 +65,13 @@ func (db *DB) ListHistory(f HistoryFilter) ([]HistoryEntry, error) {
 		          FROM requests r JOIN request_search ON request_search.rowid = r.id
 		          WHERE request_search MATCH ?
 		          ORDER BY r.created_at DESC, r.id DESC LIMIT ?`
-		rows, qErr := db.sql.Query(query, match, limit)
-		if qErr != nil {
-			return nil, qErr
-		}
-		defer rows.Close()
-		rows_result, err = scanHistory(rows)
-	} else {
-		query := `SELECT id, created_at, provider, model, prompt, command, action,
+		return queryRows(db, scanHistory, query, match, limit)
+	}
+	query := `SELECT id, created_at, provider, model, prompt, command, action,
 		                 duration_ms, exit_code, tokens_in, tokens_out, success
 		          FROM requests
 		          ORDER BY created_at DESC, id DESC LIMIT ?`
-		rows, qErr := db.sql.Query(query, limit)
-		if qErr != nil {
-			return nil, qErr
-		}
-		defer rows.Close()
-		rows_result, err = scanHistory(rows)
-	}
-	return rows_result, err
+	return queryRows(db, scanHistory, query, limit)
 }
 
 func (db *DB) DeleteHistoryEntry(id int64) error {
@@ -111,30 +96,24 @@ func (db *DB) ClearAllHistory() (int64, error) {
 	return res.RowsAffected()
 }
 
-func scanHistory(rows interface {
-	Next() bool
-	Scan(...any) error
-	Err() error
-}) ([]HistoryEntry, error) {
-	var entries []HistoryEntry
-	for rows.Next() {
-		var (
-			e          HistoryEntry
-			createdAt  string
-			durationMs *int64
-			success    int64
-		)
-		if err := rows.Scan(&e.ID, &createdAt, &e.Provider, &e.Model, &e.Prompt, &e.Command,
-			&e.Action, &durationMs, &e.ExitCode, &e.TokensIn, &e.TokensOut, &success); err != nil {
-			return nil, err
-		}
-		e.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
-		if durationMs != nil {
-			d := time.Duration(*durationMs) * time.Millisecond
-			e.Duration = &d
-		}
-		e.Success = success != 0
-		entries = append(entries, e)
+// scanHistory reads one entry from either of ListHistory's queries, which
+// select the same columns in the same order.
+func scanHistory(r rowScanner) (HistoryEntry, error) {
+	var (
+		e          HistoryEntry
+		createdAt  string
+		durationMs *int64
+		success    int64
+	)
+	if err := r.Scan(&e.ID, &createdAt, &e.Provider, &e.Model, &e.Prompt, &e.Command,
+		&e.Action, &durationMs, &e.ExitCode, &e.TokensIn, &e.TokensOut, &success); err != nil {
+		return e, err
 	}
-	return entries, rows.Err()
+	e.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
+	if durationMs != nil {
+		d := time.Duration(*durationMs) * time.Millisecond
+		e.Duration = &d
+	}
+	e.Success = success != 0
+	return e, nil
 }

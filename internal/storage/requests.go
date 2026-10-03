@@ -69,32 +69,23 @@ type UnratedRequest struct {
 // ListUnrated returns recent requests that produced a command the user acted
 // on but hasn't rated yet, newest first.
 func (db *DB) ListUnrated(limit int) ([]UnratedRequest, error) {
-	rows, err := db.sql.Query(
-		`SELECT id, created_at, prompt, command, action, exit_code
+	return queryRows(db, func(row rowScanner) (UnratedRequest, error) {
+		var (
+			r         UnratedRequest
+			createdAt string
+		)
+		if err := row.Scan(&r.ID, &createdAt, &r.Prompt, &r.Command, &r.Action, &r.ExitCode); err != nil {
+			return r, err
+		}
+		r.CreatedAt, _ = time.Parse("2006-01-02T15:04:05.000Z", createdAt)
+		return r, nil
+	}, `SELECT id, created_at, prompt, command, action, exit_code
 		 FROM requests
 		 WHERE rating IS NULL
 		   AND command != ''
 		   AND action IN ('run', 'run-all', 'run-step', 'copy', 'edit', 'save')
 		 ORDER BY id DESC
 		 LIMIT ?`, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []UnratedRequest
-	for rows.Next() {
-		var (
-			r         UnratedRequest
-			createdAt string
-		)
-		if err := rows.Scan(&r.ID, &createdAt, &r.Prompt, &r.Command, &r.Action, &r.ExitCode); err != nil {
-			return nil, err
-		}
-		r.CreatedAt, _ = time.Parse("2006-01-02T15:04:05.000Z", createdAt)
-		out = append(out, r)
-	}
-	return out, rows.Err()
 }
 
 // RateRequest records a thumbs-up (true) or thumbs-down (false) for a
@@ -129,7 +120,15 @@ type ProviderMetrics struct {
 // the cutoff, most-used first. A zero cutoff is every request ever recorded,
 // which is what `shhh metrics` reads without a --window.
 func (db *DB) MetricsSummary(since time.Time) ([]ProviderMetrics, error) {
-	rows, err := db.sql.Query(`
+	return queryRows(db, scanFields(func(m *ProviderMetrics) []any {
+		return []any{
+			&m.Provider, &m.Model, &m.Count, &m.SuccessRate,
+			&m.AvgTTFT, &m.P95TTFT, &m.AvgDuration, &m.P95Duration,
+			&m.TotalTokensIn, &m.TotalTokensOut,
+			&m.ExecCount, &m.ExecSuccessRate,
+			&m.RatedCount, &m.RatingRate,
+		}
+	}), `
 		WITH ranked AS (
 			SELECT provider, model, success, ttft_ms, duration_ms, tokens_in, tokens_out, exit_code, rating,
 			       PERCENT_RANK() OVER (PARTITION BY provider, model ORDER BY ttft_ms) AS ttft_rank,
@@ -153,26 +152,6 @@ func (db *DB) MetricsSummary(since time.Time) ([]ProviderMetrics, error) {
 		FROM ranked
 		GROUP BY provider, model
 		ORDER BY count DESC`, observeCutoff(since))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var results []ProviderMetrics
-	for rows.Next() {
-		var m ProviderMetrics
-		if err := rows.Scan(
-			&m.Provider, &m.Model, &m.Count, &m.SuccessRate,
-			&m.AvgTTFT, &m.P95TTFT, &m.AvgDuration, &m.P95Duration,
-			&m.TotalTokensIn, &m.TotalTokensOut,
-			&m.ExecCount, &m.ExecSuccessRate,
-			&m.RatedCount, &m.RatingRate,
-		); err != nil {
-			return nil, err
-		}
-		results = append(results, m)
-	}
-	return results, rows.Err()
 }
 
 // MetricsDayTokens is one model's token use on one calendar day (UTC, the way
@@ -217,28 +196,19 @@ type MetricsActionUsage struct {
 // tokens are priced per model: a split of spend that summed tokens across
 // models first would be pricing gpt-5.2's output at gemini's rate.
 func (db *DB) MetricsByAction(since time.Time) ([]MetricsActionUsage, error) {
-	rows, err := db.sql.Query(
-		`SELECT provider, model, action, success, COUNT(*),
-		        COALESCE(SUM(tokens_in), 0), COALESCE(SUM(tokens_out), 0)
-		 FROM requests WHERE created_at >= ?
-		 GROUP BY provider, model, action, success ORDER BY COUNT(*) DESC`, observeCutoff(since))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []MetricsActionUsage
-	for rows.Next() {
+	return queryRows(db, func(r rowScanner) (MetricsActionUsage, error) {
 		var (
 			u       MetricsActionUsage
 			success int
 		)
-		if err := rows.Scan(&u.Provider, &u.Model, &u.Action, &success,
+		if err := r.Scan(&u.Provider, &u.Model, &u.Action, &success,
 			&u.Count, &u.TokensIn, &u.TokensOut); err != nil {
-			return nil, err
+			return u, err
 		}
 		u.Success = success != 0
-		out = append(out, u)
-	}
-	return out, rows.Err()
+		return u, nil
+	}, `SELECT provider, model, action, success, COUNT(*),
+		        COALESCE(SUM(tokens_in), 0), COALESCE(SUM(tokens_out), 0)
+		 FROM requests WHERE created_at >= ?
+		 GROUP BY provider, model, action, success ORDER BY COUNT(*) DESC`, observeCutoff(since))
 }

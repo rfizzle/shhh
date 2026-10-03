@@ -116,8 +116,29 @@ func (db *DB) DropChange(slot string, turn int64, path string) error {
 // computed from the two sides, and recomputing them is cheaper than storing a
 // derivation that could disagree with the content beside it.
 func (db *DB) LoadChanges(slot string, from, to int64) ([]changeset.TurnRecords, error) {
-	rows, err := db.sql.Query(
-		`SELECT c.turn, c.path, b.content, a.content, c.before_exists, c.after_exists,
+	type turnRecord struct {
+		turn int64
+		r    changeset.Record
+	}
+	records, err := queryRows(db, func(row rowScanner) (turnRecord, error) {
+		var (
+			turn                  int64
+			before, after         sql.NullString
+			beforeMode, afterMode uint32
+			origin, track         int
+			at                    string
+			r                     changeset.Record
+		)
+		if err := row.Scan(&turn, &r.Path, &before, &after, &r.BeforeExists, &r.AfterExists,
+			&beforeMode, &afterMode, &r.Agent, &origin, &track, &at); err != nil {
+			return turnRecord{}, err
+		}
+		r.Before, r.After = before.String, after.String
+		r.BeforeMode, r.AfterMode = os.FileMode(beforeMode), os.FileMode(afterMode)
+		r.Origin, r.Track = changeset.Origin(origin), changeset.Tracking(track)
+		r.At, _ = time.Parse(time.RFC3339Nano, at)
+		return turnRecord{turn: turn, r: r}, nil
+	}, `SELECT c.turn, c.path, b.content, a.content, c.before_exists, c.after_exists,
 		        c.before_mode, c.after_mode, c.agent, c.origin, c.track, c.at
 		   FROM changes c
 		   JOIN chat_sessions s ON s.id = c.session_id
@@ -128,33 +149,18 @@ func (db *DB) LoadChanges(slot string, from, to int64) ([]changeset.TurnRecords,
 	if err != nil {
 		return nil, fmt.Errorf("load changes: %w", err)
 	}
-	defer rows.Close()
 
+	// The rows come back ordered by turn, so a turn's records are a run of
+	// them, and folding each run into one TurnRecords keeps their order.
 	var out []changeset.TurnRecords
-	for rows.Next() {
-		var (
-			turn                  int64
-			before, after         sql.NullString
-			beforeMode, afterMode uint32
-			origin, track         int
-			at                    string
-			r                     changeset.Record
-		)
-		if err := rows.Scan(&turn, &r.Path, &before, &after, &r.BeforeExists, &r.AfterExists,
-			&beforeMode, &afterMode, &r.Agent, &origin, &track, &at); err != nil {
-			return nil, fmt.Errorf("load changes: %w", err)
-		}
-		r.Before, r.After = before.String, after.String
-		r.BeforeMode, r.AfterMode = os.FileMode(beforeMode), os.FileMode(afterMode)
-		r.Origin, r.Track = changeset.Origin(origin), changeset.Tracking(track)
-		r.At, _ = time.Parse(time.RFC3339Nano, at)
-		if n := len(out); n > 0 && out[n-1].Turn == turn {
-			out[n-1].Records = append(out[n-1].Records, r)
+	for _, tr := range records {
+		if n := len(out); n > 0 && out[n-1].Turn == tr.turn {
+			out[n-1].Records = append(out[n-1].Records, tr.r)
 			continue
 		}
-		out = append(out, changeset.TurnRecords{Turn: turn, Records: []changeset.Record{r}})
+		out = append(out, changeset.TurnRecords{Turn: tr.turn, Records: []changeset.Record{tr.r}})
 	}
-	return out, rows.Err()
+	return out, nil
 }
 
 // CopyChanges writes every change record under from into to, replacing

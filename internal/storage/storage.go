@@ -238,29 +238,23 @@ func Recorded(path string) (bool, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.sql.Query(
+	// queryRows closes the cursor before it returns, which the counts below
+	// need: the store runs on one connection, and a count asked for mid-walk
+	// would wait on it.
+	type schemaRow struct{ name, ddl string }
+	listed, err := queryRows(db, scanFields(func(t *schemaRow) []any { return []any{&t.name, &t.ddl} }),
 		`SELECT name, COALESCE(sql, '') FROM sqlite_master WHERE type = 'table'
 		   AND name NOT LIKE 'sqlite_%' AND name <> 'schema_version'`)
 	if err != nil {
 		return false, err
 	}
 	var tables, indexes []string
-	for rows.Next() {
-		var name, ddl string
-		if err := rows.Scan(&name, &ddl); err != nil {
-			rows.Close()
-			return false, err
+	for _, t := range listed {
+		if strings.HasPrefix(strings.ToUpper(t.ddl), "CREATE VIRTUAL TABLE") {
+			indexes = append(indexes, t.name)
 		}
-		if strings.HasPrefix(strings.ToUpper(ddl), "CREATE VIRTUAL TABLE") {
-			indexes = append(indexes, name)
-		}
-		tables = append(tables, name)
+		tables = append(tables, t.name)
 	}
-	if err := rows.Err(); err != nil {
-		rows.Close()
-		return false, err
-	}
-	rows.Close()
 
 	for _, table := range tables {
 		if belongsToIndex(table, indexes) {

@@ -25,25 +25,17 @@ func (db *DB) SaveNote(session string, n notebook.Note) (int64, error) {
 
 // LoadNotes returns a session's notes, oldest first.
 func (db *DB) LoadNotes(session string) ([]notebook.Note, error) {
-	rows, err := db.sql.Query(
-		`SELECT id, author, title, body, turn, written_at FROM notes WHERE session = ? ORDER BY id`, session)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var notes []notebook.Note
-	for rows.Next() {
+	return queryRows(db, func(r rowScanner) (notebook.Note, error) {
 		var (
 			n       notebook.Note
 			written string
 		)
-		if err := rows.Scan(&n.ID, &n.Author, &n.Title, &n.Body, &n.Turn, &written); err != nil {
-			return nil, err
+		if err := r.Scan(&n.ID, &n.Author, &n.Title, &n.Body, &n.Turn, &written); err != nil {
+			return n, err
 		}
 		n.Written, _ = time.Parse(time.RFC3339Nano, written)
-		notes = append(notes, n)
-	}
-	return notes, rows.Err()
+		return n, nil
+	}, `SELECT id, author, title, body, turn, written_at FROM notes WHERE session = ? ORDER BY id`, session)
 }
 
 // DeleteNote removes one note.

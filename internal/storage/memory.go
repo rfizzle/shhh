@@ -53,29 +53,20 @@ func (db *DB) ListMemories(scopes ...string) ([]Memory, error) {
 	for i, s := range scopes {
 		args[i] = s
 	}
-	rows, err := db.sql.Query(
-		`SELECT id, scope, kind, text, provenance, created_at, updated_at FROM memories
-		 WHERE scope IN (`+placeholders+`) ORDER BY updated_at DESC, id DESC`, args...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var memories []Memory
-	for rows.Next() {
+	return queryRows(db, func(r rowScanner) (Memory, error) {
 		var (
 			m                    Memory
 			createdAt, updatedAt string
 		)
-		if err := rows.Scan(&m.ID, &m.Scope, &m.Kind, &m.Text, &m.Provenance, &createdAt, &updatedAt); err != nil {
-			return nil, err
+		if err := r.Scan(&m.ID, &m.Scope, &m.Kind, &m.Text, &m.Provenance, &createdAt, &updatedAt); err != nil {
+			return m, err
 		}
 		m.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
 		m.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updatedAt)
-		memories = append(memories, m)
-	}
-	return memories, rows.Err()
+		return m, nil
+	}, `SELECT id, scope, kind, text, provenance, created_at, updated_at FROM memories
+		 WHERE scope IN (`+placeholders+`) ORDER BY updated_at DESC, id DESC`, args...,
+	)
 }
 
 // GetMemory returns one entry by id.
