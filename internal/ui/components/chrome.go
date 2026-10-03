@@ -173,6 +173,9 @@ type screenChrome struct {
 	// reserve is rows the body pins for itself out of its own budget — the
 	// sub-surface the settings screen splices in under the row being changed.
 	reserve int
+	// tail are rows pinned under the body: the rename row a browser opens
+	// under its panes, so the item being renamed stays on screen above it.
+	tail []string
 }
 
 // view assembles the screen. body is called once with the rows left for it,
@@ -180,7 +183,7 @@ type screenChrome struct {
 func (c screenChrome) view(width int, body func(budget int) []string) string {
 	head := append([]string{c.header.row(width), titleRule(width), ""}, c.head...)
 
-	pinned := len(head) + c.reserve
+	pinned := len(head) + c.reserve + len(c.tail)
 	if len(c.foot) > 0 {
 		// The blank row that separates the body from the keys is the footer's.
 		pinned += 1 + len(c.foot)
@@ -189,7 +192,7 @@ func (c screenChrome) view(width int, body func(budget int) []string) string {
 		pinned++
 	}
 
-	rows := append(head, body(c.budget(pinned))...)
+	rows := append(append(head, body(c.budget(pinned))...), c.tail...)
 	if len(c.foot) > 0 {
 		rows = append(append(rows, ""), c.foot...)
 	}
