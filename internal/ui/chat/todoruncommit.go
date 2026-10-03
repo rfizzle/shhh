@@ -6,15 +6,9 @@ package chat
 // is reached from here and from nowhere else in the runner.
 
 import (
-	"context"
-	"errors"
 	"fmt"
-	"os/exec"
-	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/hostgit"
-	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/todo/run"
 )
 
@@ -81,30 +75,10 @@ func (m Model) todoCommitCmd() tea.Cmd {
 	}
 }
 
-// gitNotInstalled is the shell's own code for a command that never started,
-// which is what this reports for a git that is not there rather than some
-// real exit code a caller might read a meaning out of.
-const gitNotInstalled = 127
-
-// git runs one git command in root and reports its output and its exit code.
-// It is the reading side only — the diff a reviewer child is handed; the
-// commit a run makes is the run package's (run.Commit).
-func git(root string, args ...string) (string, int) {
-	cmd := hostgit.Command(context.Background(), root, args...)
-	cmd.Env = hostgit.Env(runner.Environ())
-	out, err := cmd.CombinedOutput()
-	code := 0
-	if err != nil {
-		var ee *exec.ExitError
-		if errors.As(err, &ee) {
-			code = ee.ExitCode()
-		} else {
-			code = gitNotInstalled
-			out = append(out, err.Error()...)
-		}
-	}
-	return strings.TrimSpace(string(out)), code
-}
+// git is the run package's reading of one git command (run.Git). It is the
+// reading side only — the diff a reviewer child is handed; the commit a run
+// makes is the run package's (run.Commit).
+var git = run.Git
 
 // finishTodoCommit applies the commit outcome.
 func (m Model) finishTodoCommit(msg todoCommitMsg) (tea.Model, tea.Cmd) {

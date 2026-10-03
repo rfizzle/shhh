@@ -35,7 +35,6 @@ import (
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
-	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -1198,30 +1197,11 @@ func (d *todoDriver) paths(st *run.State) []string {
 	return run.Contents(st.Paths, d.wrote, run.DirtyPaths(d.tree), st.Prestart)
 }
 
-// todoGitNotInstalled is the shell's own code for a command that never
-// started, which is what this reports for a git that is not there.
-const todoGitNotInstalled = 127
-
-// todoGit runs one git command in root and reports its output and its code.
-// The reading it is used for here is a diff, which is read as text; what a
-// run may stage is read by column, and that reading lives in the run package
+// todoGit is the run package's reading of one git command (run.Git). The
+// reading it is used for here is a diff, which is read as text; what a run
+// may stage is read by column, and that reading lives in the run package
 // beside the definition of what a commit holds (run.DirtyPaths).
-func todoGit(root string, args ...string) (string, int) {
-	cmd := hostgit.Command(context.Background(), root, args...)
-	cmd.Env = hostgit.Env(runner.Environ())
-	out, err := cmd.CombinedOutput()
-	code := 0
-	if err != nil {
-		var ee *exec.ExitError
-		if errors.As(err, &ee) {
-			code = ee.ExitCode()
-		} else {
-			code = todoGitNotInstalled
-			out = append(out, err.Error()...)
-		}
-	}
-	return strings.TrimSpace(string(out)), code
-}
+var todoGit = run.Git
 
 // finish writes what the run ended as onto the item: the archive and the
 // report for one that is done, the evidence for one that blocked. Either way

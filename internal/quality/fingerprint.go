@@ -77,7 +77,7 @@ func TakeFingerprint(workspace string) Fingerprint {
 	// assumed: joining those paths onto a subdirectory workspace would miss
 	// every file, hash them all as absent, and quietly restore the blindness
 	// this function exists to remove.
-	out, err := gitOutput(workspace, "rev-parse", "HEAD", "--show-toplevel")
+	out, err := hostgit.Output(context.Background(), workspace, "rev-parse", "HEAD", "--show-toplevel")
 	if err != nil {
 		return Fingerprint{}
 	}
@@ -89,7 +89,7 @@ func TakeFingerprint(workspace string) Fingerprint {
 	// unescaping; -uall lists the files inside an untracked directory
 	// instead of collapsing it to one entry, which would hide every edit
 	// made inside it.
-	status, err := gitOutput(workspace, "status", "--porcelain", "-z", "-uall")
+	status, err := hostgit.Output(context.Background(), workspace, "status", "--porcelain", "-z", "-uall")
 	if err != nil {
 		return Fingerprint{}
 	}
@@ -212,12 +212,4 @@ func (f Fingerprint) Describe() string {
 			head, f.DirtyPaths, ContentBound())
 	}
 	return fmt.Sprintf("HEAD %s, dirty tree (%d changed/untracked paths)", head, f.DirtyPaths)
-}
-
-func gitOutput(workspace string, args ...string) (string, error) {
-	out, err := hostgit.Command(context.Background(), workspace, args...).Output()
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
 }

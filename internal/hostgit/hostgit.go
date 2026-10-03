@@ -12,6 +12,8 @@ package hostgit
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
@@ -130,4 +132,22 @@ func Command(ctx context.Context, dir string, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, "git", argv...)
 	cmd.Env = Env(nil)
 	return cmd
+}
+
+// Output is Command run for its standard output alone, untrimmed: a patch
+// read with the error stream folded into it is a patch that will not apply,
+// and porcelain read by column loses its first column to a trim. A failure
+// answers no output and an error naming the arguments and what git wrote to
+// its error stream, which os/exec keeps on the exit error since nothing else
+// asked for it; a git that never started has no stream to quote.
+func Output(ctx context.Context, dir string, args ...string) (string, error) {
+	out, err := Command(ctx, dir, args...).Output()
+	if err != nil {
+		var stderr []byte
+		if exit, ok := errors.AsType[*exec.ExitError](err); ok {
+			stderr = exit.Stderr
+		}
+		return "", fmt.Errorf("git %s: %s", strings.Join(args, " "), strings.TrimSpace(string(stderr)))
+	}
+	return string(out), nil
 }

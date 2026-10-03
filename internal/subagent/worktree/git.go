@@ -27,18 +27,10 @@ func runGitContext(ctx context.Context, dir string, args ...string) (string, err
 	return string(out), nil
 }
 
-// GitOutput runs one git command and returns its standard output alone. A
-// patch read with the error stream folded into it is a patch that will not
-// apply, so the two streams are kept apart wherever the output is content
-// rather than a report.
+// GitOutput runs one git command and returns its standard output alone, the
+// streams kept apart wherever the output is content rather than a report.
 func GitOutput(dir string, args ...string) (string, error) {
-	cmd := hostgit.Command(context.Background(), dir, args...)
-	var out, errBuf bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &out, &errBuf
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("git %s: %s", strings.Join(args, " "), strings.TrimSpace(errBuf.String()))
-	}
-	return out.String(), nil
+	return hostgit.Output(context.Background(), dir, args...)
 }
 
 // gitWithEnv runs one git command with extra environment and, where it is not

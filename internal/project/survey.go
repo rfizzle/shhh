@@ -312,7 +312,7 @@ func depth(root, path string) int {
 // repository, no git binary, no commit yet — leaves Repo false, which the
 // screen states as "not a git repository" rather than as a clean tree.
 func surveyGit(dir string) (repo bool, branch string, detached bool, dirty int) {
-	head, err := gitOutput(dir, "rev-parse", "--abbrev-ref", "HEAD")
+	head, err := hostgit.Output(context.Background(), dir, "rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {
 		return false, "", false, 0
 	}
@@ -321,7 +321,7 @@ func surveyGit(dir string) (repo bool, branch string, detached bool, dirty int) 
 		detached = true
 		head = ""
 	}
-	status, err := gitOutput(dir, "status", "--porcelain")
+	status, err := hostgit.Output(context.Background(), dir, "status", "--porcelain")
 	if err != nil {
 		return true, head, detached, 0
 	}
@@ -338,7 +338,7 @@ func surveyGit(dir string) (repo bool, branch string, detached bool, dirty int) 
 // conversation records the commit it was written down on with every save,
 // and only reads the rest of the checkout when it is opened again.
 func Head(dir string) string {
-	out, err := gitOutput(dir, "rev-parse", "HEAD")
+	out, err := hostgit.Output(context.Background(), dir, "rev-parse", "HEAD")
 	if err != nil {
 		return ""
 	}
@@ -351,7 +351,7 @@ func Head(dir string) string {
 // machine names each one's branch, and a whole survey per row would count
 // every dirty file in every checkout to print one word.
 func Branch(dir string) string {
-	out, err := gitOutput(dir, "rev-parse", "--abbrev-ref", "HEAD")
+	out, err := hostgit.Output(context.Background(), dir, "rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {
 		return ""
 	}
@@ -359,14 +359,6 @@ func Branch(dir string) string {
 		return b
 	}
 	return ""
-}
-
-func gitOutput(dir string, args ...string) (string, error) {
-	out, err := hostgit.Command(context.Background(), dir, args...).Output()
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
 }
 
 func exists(dir, name string) bool {

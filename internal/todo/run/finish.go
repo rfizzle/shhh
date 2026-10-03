@@ -219,11 +219,18 @@ func FileNote(root string, s *State, it todo.Item, write NoteWriter) (string, er
 	return File(root, s, it)
 }
 
-// git runs one git command in root and reports its output and its exit code.
-func git(root string, args ...string) (string, int) {
+// Git runs one git command in root, under the environment a run's commands
+// get, and reports its combined output trimmed and its exit code — 127 for a
+// git that never started, with why folded into the output. It is the one
+// reading of a git command the backlog runner's front-ends share: the commit
+// here, and the diff a reviewer child is handed.
+func Git(root string, args ...string) (string, int) {
 	out, code := gitLines(root, args...)
 	return strings.TrimSpace(out), code
 }
+
+// git is Git under the name this package's own callers use.
+var git = Git
 
 // gitLines is that without the trim, for a command whose output is read by
 // column. `git status --porcelain` states a path's staged mark in the first
