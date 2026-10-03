@@ -252,6 +252,120 @@ shape. What each keeps for itself:
   copy of its parent — its role decides its tools and its prompt, its spawn
   decides its model, and its mode is read at every request.
 
+## A busy screen gives each of its modes one owner
+
+Two screens hold the keyboard through more than one mode: the profile
+drafter, which is a brief, its questions, a draft revised section by section
+and a migration reviewed against its file; and the backlog screen, which is a
+list, a filter being typed, an item being read and a sprint being planned.
+Each mode was a flag on one value, set in one method and read in another, and
+the bug that shape breeds is a key routed by a flag nobody it reaches knows
+about: a mode left on by the step that should have cleared it, answering keys
+on a screen that no longer draws it.
+
+So each screen is an owner over pieces. A piece holds the flags of its own
+mode, draws its own rows and answers its own keys; the owner keeps the step,
+the chrome every supporting screen shares, and whatever the host sets. Where
+the owner has to read or clear a piece's flag on a transition, that crossing
+is named here, because it is the one place the next change can break the
+routing without any single piece looking wrong. Splitting draws nothing new:
+every frame is the frame it was.
+
+### The profile drafter's widgets
+
+The drafter is a wizard over three widgets, and the step selects which one is
+drawn and handed the key.
+
+- **The brief and the questions** own what is being asked, the starting
+  points and the pointer between them and the field, and the exchanges
+  already answered and the count of questions.
+- **The section editor** owns the draft's sections and the pointer on them,
+  the note open under a section, whether that note is about the whole draft
+  and whether it includes the sections the person wrote, the note as it was
+  sent, and the sections' scroll and the request to bring the selected
+  section into view. It answers the keys while the sections, or a note under
+  one, hold the keyboard.
+- **The diff and migrate viewer** owns the diff's scroll and whether the wait
+  is a migration, and draws the older-shape offer at the head of the draft,
+  the file's own prompt beside the sections, and the diff that stands where
+  the sections stood while the card holds the keyboard.
+
+The wizard keeps the step and the step a wait was entered from, the header,
+the rail and the key register, the decision card and whether it holds the
+keyboard, the selector a field block opened, the warning, the wait's label,
+and every fact the host sets — the subject, whether the profile came from its
+file, whether it is in the older shape, its original prompt and the diff. It
+keeps the one text field too, and lends it to the brief and to the section
+editor: the field carries the width the last draw gave it, and a note typed
+before the next draw is laid out in that width, so two fields would draw the
+same keystrokes differently.
+
+The flags that cross:
+
+- **Whether the card holds the keyboard** is the wizard's. The section editor
+  reads it to decide whether a heading is lit and whether its key row is
+  drawn, and the viewer's diff is up only while it holds.
+- **Whether a note is open** is the section editor's. The wizard reads it for
+  the way out the header states and for whether the register's key is a key,
+  and closes it when a wait starts or a draft lands.
+- **Whether the note is about the whole draft, and whether it includes the
+  person's own sections**, are the section editor's. The wizard reads the
+  first for the key row of the wait that follows the note, and a landed draft
+  clears both.
+- **Whether the selected section is to be brought into view** is the section
+  editor's. The wizard sets it when a draft lands, when the host puts the
+  pointer on a section, and when a selector opens.
+- **Whether the wait is a migration** is the viewer's. The wizard sets it when
+  a migration starts, clears it when any other wait starts or a draft lands,
+  and reads it for the way out and the wait's rows.
+- **Whether the register is showing** is the wizard's alone.
+- **Whether the profile came from its file, and whether it is in the older
+  shape**, are the host's. The wizard holds both; the section editor is
+  handed the second to make the migrate key live, and the viewer to draw the
+  offer.
+
+### The backlog screen's pieces
+
+The backlog screen keeps its list — the window of items, the pointer each
+tab remembers, the tab itself and the confirm in front of a key that changes
+a file — and hands the rest to four pieces.
+
+- **The sprint and plan tabs**: the board draws its own head over the
+  sprint's list, and the plan card draws itself and answers every key while
+  it is up.
+- **The reader** owns the item pane and the mode that gives it the whole
+  surface: whether it is open, its scroll, and the last render of an item's
+  body.
+- **The filter and field editor** owns the query row and the cycles: the
+  query, whether the row is open, the status, priority and field stops, and
+  the ready toggle, with what the header says about them and the rule a row
+  is matched by.
+- **The foot** is the key row, the register and the grey run of keys a turn
+  holds inert, drawn from a reading of the others taken when the frame is
+  drawn; it holds nothing of its own.
+
+Every flag the screen held for its modes, with its owner:
+
+- **Whether a turn holds the files read-only** is the host's, kept by the
+  screen. The screen's file keys go inert under it, and the foot reads it to
+  grey them and say why.
+- **Whether the filter row is open** is the filter's. The screen reads it to
+  route every keystroke to the row before anything else but the confirm and
+  the plan card, and the foot reads it to offer the row's keys instead of the
+  list's. A dependency jump to a row the filters hide clears every filter,
+  which closes it.
+- **The ready toggle** is the filter's. Its key flips it through the filter;
+  stepping onto the archive clears it, and so does a dependency jump to a row
+  the filters hide.
+- **Whether the reader is open** is the reader's. The read key opens it
+  through the reader, the reader's own back key closes it, and the screen
+  closes it whenever a filter, a tab or a dependency jump moves the row under
+  it. The screen reads it to route keys and to give the reader the surface,
+  and the foot to offer the reader's keys.
+- **Whether the register is showing** is the screen's. The reader hands the
+  register's key back to the screen rather than flipping it, and the foot
+  reads it.
+
 ## Design lives outside the repository
 
 The visual specification — tokens, components, artboards, and the guidelines
