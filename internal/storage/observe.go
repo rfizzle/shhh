@@ -382,7 +382,7 @@ func (db *DB) LiveSibling(project string, now time.Time) (LiveSession, bool, err
 		// somebody else's directory as a sibling here.
 		return LiveSession{}, false, nil
 	}
-	rows, err := db.sql.Query(
+	open, err := queryRows(db, scanFields(func(o *pidRow) []any { return []any{&o.key, &o.pid} }),
 		`SELECT started_at, pid FROM agent_sessions
 		 WHERE project = ? AND ended_at IS NULL AND parent_id IS NULL
 		   AND pid > 0 AND pid != ? AND heartbeat >= ?
@@ -392,22 +392,20 @@ func (db *DB) LiveSibling(project string, now time.Time) (LiveSession, bool, err
 	if err != nil {
 		return LiveSession{}, false, err
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var (
-			startedAt string
-			pid       int
-		)
-		if err := rows.Scan(&startedAt, &pid); err != nil {
-			return LiveSession{}, false, err
-		}
-		if !pidRunning(pid) {
+	for _, o := range open {
+		if !pidRunning(o.pid) {
 			continue
 		}
-		since, _ := time.Parse(observeTimeFormat, startedAt)
-		return LiveSession{Since: since}, true, rows.Err()
+		since, _ := time.Parse(observeTimeFormat, o.key)
+		return LiveSession{Since: since}, true, nil
 	}
-	return LiveSession{}, false, rows.Err()
+	return LiveSession{}, false, nil
+}
+
+// pidRow is an open row's process and the one column a reader keys it by.
+type pidRow struct {
+	key string
+	pid int
 }
 
 // agentWorkingWindow is how recently a session must have beaten to be read
@@ -468,8 +466,16 @@ type RunningChild struct {
 // because nobody can open it.
 // See docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone.
 func (db *DB) LiveSessions(now time.Time) ([]RunningSession, error) {
-	rows, err := db.sql.Query(
-		`SELECT a.id, a.kind, a.pid, a.chat_session, COALESCE(c.root, ''), a.project,
+	type openRow struct {
+		RunningSession
+		parent        int64
+		name          string
+		started, beat string
+	}
+	open, err := queryRows(db, scanFields(func(o *openRow) []any {
+		return []any{&o.ID, &o.Kind, &o.PID, &o.Slot, &o.Root, &o.Project,
+			&o.started, &o.beat, &o.parent, &o.name}
+	}), `SELECT a.id, a.kind, a.pid, a.chat_session, COALESCE(c.root, ''), a.project,
 		        a.started_at, a.heartbeat, COALESCE(a.parent_id, 0), COALESCE(a.name, '')
 		 FROM agent_sessions a LEFT JOIN chat_sessions c ON c.id = a.chat_session_id
 		 WHERE a.ended_at IS NULL AND a.pid > 0 AND a.heartbeat >= ?
@@ -479,36 +485,19 @@ func (db *DB) LiveSessions(now time.Time) ([]RunningSession, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	type openRow struct {
-		RunningSession
-		parent int64
-		name   string
-	}
 	var all []openRow
-	for rows.Next() {
-		var (
-			o             openRow
-			started, beat string
-		)
-		if err := rows.Scan(&o.ID, &o.Kind, &o.PID, &o.Slot, &o.Root, &o.Project,
-			&started, &beat, &o.parent, &o.name); err != nil {
-			return nil, err
-		}
+	for _, o := range open {
 		if !pidRunning(o.PID) {
 			continue
 		}
-		o.Started, _ = time.Parse(observeTimeFormat, started)
-		o.Beat, _ = time.Parse(observeTimeFormat, beat)
+		o.Started, _ = time.Parse(observeTimeFormat, o.started)
+		o.Beat, _ = time.Parse(observeTimeFormat, o.beat)
 		// The first beat is written with the row, so a beat that is still
 		// the start time is a session that has not been answered once yet —
 		// sitting at its start screen, not working.
-		o.Working = beat != started && now.Sub(o.Beat) < agentWorkingWindow
+		o.Working = o.beat != o.started && now.Sub(o.Beat) < agentWorkingWindow
 		o.Own = o.PID == os.Getpid()
 		all = append(all, o)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
 	}
 	parentOf := make(map[int64]int64, len(all))
 	for _, o := range all {
@@ -592,38 +581,26 @@ func (db *DB) LiveSessionPID(slot string, now time.Time) (int, bool, error) {
 // recorded none, and closing a row because it cannot vouch for itself would
 // rewrite history the reader can still see.
 func (db *DB) CloseCrashedAgentSessions() (int, error) {
-	rows, err := db.sql.Query(
+	type openRow struct {
+		id  int64
+		pid int
+	}
+	// The rows are read out before anything is written: the store runs on
+	// one connection, so an update issued while the cursor is open waits on
+	// a cursor that is waiting on it.
+	open, err := queryRows(db, scanFields(func(o *openRow) []any { return []any{&o.id, &o.pid} }),
 		`SELECT id, pid FROM agent_sessions WHERE ended_at IS NULL AND pid > 0 AND pid != ?`,
 		os.Getpid(),
 	)
 	if err != nil {
 		return 0, err
 	}
-	var dead []int64
-	for rows.Next() {
-		var (
-			id  int64
-			pid int
-		)
-		if err := rows.Scan(&id, &pid); err != nil {
-			rows.Close()
-			return 0, err
-		}
-		if !pidRunning(pid) {
-			dead = append(dead, id)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		rows.Close()
-		return 0, err
-	}
-	// The rows are read out before anything is written: the store runs on
-	// one connection, so an update issued while the cursor is open waits on
-	// a cursor that is waiting on it.
-	rows.Close()
 	closed := 0
-	for _, id := range dead {
-		if err := db.EndAgentSession(id, ""); err != nil {
+	for _, o := range open {
+		if pidRunning(o.pid) {
+			continue
+		}
+		if err := db.EndAgentSession(o.id, ""); err != nil {
 			return closed, err
 		}
 		closed++
@@ -635,7 +612,7 @@ func (db *DB) CloseCrashedAgentSessions() (int, error) {
 // session is writing to. A slot in it is one an autosave in another process
 // is about to overwrite, which is why nothing offers to open it.
 func (db *DB) liveChatSlots(now time.Time) (map[string]bool, error) {
-	rows, err := db.sql.Query(
+	open, err := queryRows(db, scanFields(func(o *pidRow) []any { return []any{&o.key, &o.pid} }),
 		`SELECT chat_session, pid FROM agent_sessions
 		 WHERE chat_session != '' AND ended_at IS NULL
 		   AND pid > 0 AND pid != ? AND heartbeat >= ?`,
@@ -644,21 +621,13 @@ func (db *DB) liveChatSlots(now time.Time) (map[string]bool, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 	live := map[string]bool{}
-	for rows.Next() {
-		var (
-			name string
-			pid  int
-		)
-		if err := rows.Scan(&name, &pid); err != nil {
-			return nil, err
-		}
-		if pidRunning(pid) {
-			live[name] = true
+	for _, o := range open {
+		if pidRunning(o.pid) {
+			live[o.key] = true
 		}
 	}
-	return live, rows.Err()
+	return live, nil
 }
 
 // heartbeatCutoff is the oldest beat still trusted, in the column's own
@@ -810,32 +779,24 @@ func (db *DB) AgentCohorts(since time.Time, key string) ([]AgentCohort, error) {
 	if !ok {
 		return nil, fmt.Errorf("cannot split sessions on %q", key)
 	}
-	rows, err := db.sql.Query(fmt.Sprintf(
+	return queryRows(db, func(r rowScanner) (AgentCohort, error) {
+		var (
+			c           AgentCohort
+			first, last string
+		)
+		if err := r.Scan(&c.Value, &c.Sessions, &c.TokensIn, &c.TokensOut, &c.Cost, &first, &last); err != nil {
+			return c, err
+		}
+		c.First, _ = time.Parse(observeTimeFormat, first)
+		c.Last, _ = time.Parse(observeTimeFormat, last)
+		return c, nil
+	}, fmt.Sprintf(
 		`SELECT CAST(%[1]s AS TEXT), COUNT(*),
 		        COALESCE(SUM(tokens_in), 0), COALESCE(SUM(tokens_out), 0), COALESCE(SUM(est_cost), 0),
 		        MIN(started_at), MAX(started_at)
 		 FROM agent_sessions
 		 WHERE started_at >= ? AND %[1]s IS NOT NULL AND %[1]s != ''
 		 GROUP BY %[1]s ORDER BY COUNT(*) DESC, MIN(started_at)`, column), observeCutoff(since))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []AgentCohort
-	for rows.Next() {
-		var (
-			c           AgentCohort
-			first, last string
-		)
-		if err := rows.Scan(&c.Value, &c.Sessions, &c.TokensIn, &c.TokensOut, &c.Cost, &first, &last); err != nil {
-			return nil, err
-		}
-		c.First, _ = time.Parse(observeTimeFormat, first)
-		c.Last, _ = time.Parse(observeTimeFormat, last)
-		out = append(out, c)
-	}
-	return out, rows.Err()
 }
 
 // AgentCohortReading is every aggregate the dashboard draws, taken over one
@@ -925,25 +886,12 @@ type AgentDayUsage struct {
 // AgentUsageByDay aggregates session usage per calendar day since the cutoff,
 // newest day first.
 func (db *DB) AgentUsageByDay(since time.Time) ([]AgentDayUsage, error) {
-	rows, err := db.sql.Query(
-		`SELECT substr(started_at, 1, 10) AS day, COUNT(*),
+	return queryRows(db, scanFields(func(u *AgentDayUsage) []any {
+		return []any{&u.Day, &u.Sessions, &u.TokensIn, &u.TokensOut, &u.Cost}
+	}), `SELECT substr(started_at, 1, 10) AS day, COUNT(*),
 		        COALESCE(SUM(tokens_in), 0), COALESCE(SUM(tokens_out), 0), COALESCE(SUM(est_cost), 0)
 		 FROM agent_sessions WHERE started_at >= ?
 		 GROUP BY day ORDER BY day DESC`, observeCutoff(since))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []AgentDayUsage
-	for rows.Next() {
-		var u AgentDayUsage
-		if err := rows.Scan(&u.Day, &u.Sessions, &u.TokensIn, &u.TokensOut, &u.Cost); err != nil {
-			return nil, err
-		}
-		out = append(out, u)
-	}
-	return out, rows.Err()
 }
 
 type AgentModelUsage struct {
@@ -958,25 +906,12 @@ type AgentModelUsage struct {
 // AgentUsageByModel aggregates session usage per provider/model since the
 // cutoff, most-used first.
 func (db *DB) AgentUsageByModel(since time.Time) ([]AgentModelUsage, error) {
-	rows, err := db.sql.Query(
-		`SELECT provider, model, COUNT(*),
+	return queryRows(db, scanFields(func(u *AgentModelUsage) []any {
+		return []any{&u.Provider, &u.Model, &u.Sessions, &u.TokensIn, &u.TokensOut, &u.Cost}
+	}), `SELECT provider, model, COUNT(*),
 		        COALESCE(SUM(tokens_in), 0), COALESCE(SUM(tokens_out), 0), COALESCE(SUM(est_cost), 0)
 		 FROM agent_sessions WHERE started_at >= ?
 		 GROUP BY provider, model ORDER BY COUNT(*) DESC`, observeCutoff(since))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []AgentModelUsage
-	for rows.Next() {
-		var u AgentModelUsage
-		if err := rows.Scan(&u.Provider, &u.Model, &u.Sessions, &u.TokensIn, &u.TokensOut, &u.Cost); err != nil {
-			return nil, err
-		}
-		out = append(out, u)
-	}
-	return out, rows.Err()
 }
 
 type AgentToolUsage struct {
@@ -998,21 +933,9 @@ func (db *DB) AgentToolMix(since time.Time) ([]AgentToolUsage, error) {
 }
 
 func (db *DB) agentToolMix(scope string, args ...any) ([]AgentToolUsage, error) {
-	rows, err := db.sql.Query(fmt.Sprintf(agentToolMixQuery, scope), append([]any{AgentEventTool}, args...)...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []AgentToolUsage
-	for rows.Next() {
-		var u AgentToolUsage
-		if err := rows.Scan(&u.Tool, &u.Count, &u.AvgDurationMs, &u.ErrorRate); err != nil {
-			return nil, err
-		}
-		out = append(out, u)
-	}
-	return out, rows.Err()
+	return queryScoped(db, scanFields(func(u *AgentToolUsage) []any {
+		return []any{&u.Tool, &u.Count, &u.AvgDurationMs, &u.ErrorRate}
+	}), agentToolMixQuery, scope, []any{AgentEventTool}, args)
 }
 
 // AgentToolErrorCount is how often one tool failed one way.
@@ -1036,21 +959,9 @@ const agentToolErrorsQuery = `SELECT tool, reason, COUNT(*)
 		 GROUP BY tool, reason ORDER BY COUNT(*) DESC`
 
 func (db *DB) agentToolErrors(scope string, args ...any) ([]AgentToolErrorCount, error) {
-	rows, err := db.sql.Query(fmt.Sprintf(agentToolErrorsQuery, scope), append([]any{AgentEventTool}, args...)...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []AgentToolErrorCount
-	for rows.Next() {
-		var c AgentToolErrorCount
-		if err := rows.Scan(&c.Tool, &c.Class, &c.Count); err != nil {
-			return nil, err
-		}
-		out = append(out, c)
-	}
-	return out, rows.Err()
+	return queryScoped(db, scanFields(func(c *AgentToolErrorCount) []any {
+		return []any{&c.Tool, &c.Class, &c.Count}
+	}), agentToolErrorsQuery, scope, []any{AgentEventTool}, args)
 }
 
 // AgentCommandPurpose is how many of the commands the model ran did one kind
@@ -1072,22 +983,9 @@ func (db *DB) AgentCommandPurposes(since time.Time) ([]AgentCommandPurpose, erro
 }
 
 func (db *DB) agentCommandPurposes(scope string, args ...any) ([]AgentCommandPurpose, error) {
-	rows, err := db.sql.Query(fmt.Sprintf(agentCommandPurposesQuery, scope),
-		append([]any{AgentEventTool, tools.ExecCommandName}, args...)...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []AgentCommandPurpose
-	for rows.Next() {
-		var p AgentCommandPurpose
-		if err := rows.Scan(&p.Purpose, &p.Count); err != nil {
-			return nil, err
-		}
-		out = append(out, p)
-	}
-	return out, rows.Err()
+	return queryScoped(db, scanFields(func(p *AgentCommandPurpose) []any {
+		return []any{&p.Purpose, &p.Count}
+	}), agentCommandPurposesQuery, scope, []any{AgentEventTool, tools.ExecCommandName}, args)
 }
 
 // AgentCommandEvent is one recorded command, addressed by its row so a
@@ -1100,24 +998,11 @@ type AgentCommandEvent struct {
 // AgentUnclassifiedCommandSessions is every session started since the cutoff
 // that recorded a command with no purpose word, oldest first.
 func (db *DB) AgentUnclassifiedCommandSessions(since time.Time) ([]int64, error) {
-	rows, err := db.sql.Query(
+	return queryRows(db, scanFields(func(id *int64) []any { return []any{id} }),
 		`SELECT DISTINCT e.session_id FROM agent_events e
 		 JOIN agent_sessions a ON a.id = e.session_id
 		 WHERE e.kind = ? AND e.tool = ? AND e.purpose = '' AND a.started_at >= ?
 		 ORDER BY e.session_id`, AgentEventTool, tools.ExecCommandName, observeCutoff(since))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var ids []int64
-	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		ids = append(ids, id)
-	}
-	return ids, rows.Err()
 }
 
 // AgentCommandEvents is every command one session recorded, in the order it
@@ -1125,23 +1010,11 @@ func (db *DB) AgentUnclassifiedCommandSessions(since time.Time) ([]int64, error)
 // conversation's by their order, so a reader that skipped the classified ones
 // would hand each of the rest its neighbour's line.
 func (db *DB) AgentCommandEvents(sessionID int64) ([]AgentCommandEvent, error) {
-	rows, err := db.sql.Query(
-		`SELECT id, turn, round, purpose FROM agent_events
+	return queryRows(db, scanFields(func(e *AgentCommandEvent) []any {
+		return []any{&e.ID, &e.Turn, &e.Round, &e.Purpose}
+	}), `SELECT id, turn, round, purpose FROM agent_events
 		 WHERE session_id = ? AND kind = ? AND tool = ? ORDER BY id`,
 		sessionID, AgentEventTool, tools.ExecCommandName)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var out []AgentCommandEvent
-	for rows.Next() {
-		var e AgentCommandEvent
-		if err := rows.Scan(&e.ID, &e.Turn, &e.Round, &e.Purpose); err != nil {
-			return nil, err
-		}
-		out = append(out, e)
-	}
-	return out, rows.Err()
 }
 
 // SetAgentCommandPurposes writes purpose words onto recorded commands by row,
@@ -1245,21 +1118,9 @@ func (db *DB) agentFirstWrites(scope string, args ...any) ([]AgentFirstWrite, er
 	all = append(all, sqlStrings(writes)...)
 	all = append(all, sqlStrings(searches)...)
 
-	rows, err := db.sql.Query(query, all...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []AgentFirstWrite
-	for rows.Next() {
-		var f AgentFirstWrite
-		if err := rows.Scan(&f.SessionID, &f.Wrote, &f.Searches); err != nil {
-			return nil, err
-		}
-		out = append(out, f)
-	}
-	return out, rows.Err()
+	return queryRows(db, scanFields(func(f *AgentFirstWrite) []any {
+		return []any{&f.SessionID, &f.Wrote, &f.Searches}
+	}), query, all...)
 }
 
 // sqlPlaceholders is a bind list of n parameters, for an IN whose length is
@@ -1295,21 +1156,9 @@ const agentDecisionsQuery = `SELECT outcome, reason, COUNT(*)
 		 GROUP BY outcome, reason ORDER BY COUNT(*) DESC`
 
 func (db *DB) agentDecisions(scope string, args ...any) ([]AgentDecisionCount, error) {
-	rows, err := db.sql.Query(fmt.Sprintf(agentDecisionsQuery, scope), append([]any{AgentEventDecision}, args...)...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []AgentDecisionCount
-	for rows.Next() {
-		var d AgentDecisionCount
-		if err := rows.Scan(&d.Decision, &d.Reason, &d.Count); err != nil {
-			return nil, err
-		}
-		out = append(out, d)
-	}
-	return out, rows.Err()
+	return queryScoped(db, scanFields(func(d *AgentDecisionCount) []any {
+		return []any{&d.Decision, &d.Reason, &d.Count}
+	}), agentDecisionsQuery, scope, []any{AgentEventDecision}, args)
 }
 
 // AgentOverturns is how often a person answering the classifier's no said
@@ -1390,21 +1239,9 @@ const agentTurnsQuery = `SELECT outcome, COUNT(*), AVG(round), MAX(round), AVG(d
 		 GROUP BY outcome ORDER BY COUNT(*) DESC`
 
 func (db *DB) agentTurns(scope string, args ...any) ([]AgentTurnOutcome, error) {
-	rows, err := db.sql.Query(fmt.Sprintf(agentTurnsQuery, scope), append([]any{AgentEventTurn}, args...)...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []AgentTurnOutcome
-	for rows.Next() {
-		var t AgentTurnOutcome
-		if err := rows.Scan(&t.Outcome, &t.Count, &t.AvgRounds, &t.MaxRounds, &t.AvgDurationMs); err != nil {
-			return nil, err
-		}
-		out = append(out, t)
-	}
-	return out, rows.Err()
+	return queryScoped(db, scanFields(func(t *AgentTurnOutcome) []any {
+		return []any{&t.Outcome, &t.Count, &t.AvgRounds, &t.MaxRounds, &t.AvgDurationMs}
+	}), agentTurnsQuery, scope, []any{AgentEventTurn}, args)
 }
 
 // AgentSignalCount is how often one signal fired with one qualifier.
@@ -1427,21 +1264,9 @@ const agentSignalsQuery = `SELECT outcome, reason, COUNT(*)
 		 GROUP BY outcome, reason ORDER BY COUNT(*) DESC`
 
 func (db *DB) agentSignals(scope string, args ...any) ([]AgentSignalCount, error) {
-	rows, err := db.sql.Query(fmt.Sprintf(agentSignalsQuery, scope), append([]any{AgentEventSignal}, args...)...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []AgentSignalCount
-	for rows.Next() {
-		var s AgentSignalCount
-		if err := rows.Scan(&s.Signal, &s.Reason, &s.Count); err != nil {
-			return nil, err
-		}
-		out = append(out, s)
-	}
-	return out, rows.Err()
+	return queryScoped(db, scanFields(func(s *AgentSignalCount) []any {
+		return []any{&s.Signal, &s.Reason, &s.Count}
+	}), agentSignalsQuery, scope, []any{AgentEventSignal}, args)
 }
 
 // AgentInterventionOutcome is one kind of interruption and what the next
@@ -1513,22 +1338,9 @@ const agentInterventionOutcomesQuery = `WITH intervened AS (
 		 GROUP BY i.reason, s.reason ORDER BY COUNT(*) DESC, i.reason`
 
 func (db *DB) agentInterventionOutcomes(scope string, args ...any) ([]AgentInterventionOutcome, error) {
-	rows, err := db.sql.Query(fmt.Sprintf(agentInterventionOutcomesQuery, scope),
-		append([]any{AgentEventSignal}, args...)...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []AgentInterventionOutcome
-	for rows.Next() {
-		var o AgentInterventionOutcome
-		if err := rows.Scan(&o.Kind, &o.Reading, &o.Count, &o.AvgRounds); err != nil {
-			return nil, err
-		}
-		out = append(out, o)
-	}
-	return out, rows.Err()
+	return queryScoped(db, scanFields(func(o *AgentInterventionOutcome) []any {
+		return []any{&o.Kind, &o.Reading, &o.Count, &o.AvgRounds}
+	}), agentInterventionOutcomesQuery, scope, []any{AgentEventSignal}, args)
 }
 
 // AgentGateVerdict is how often one quality-gate suite came out one way.
@@ -1557,21 +1369,9 @@ const agentGateVerdictsQuery = `SELECT tool, reason, COUNT(*)
 		 GROUP BY tool, reason ORDER BY tool, COUNT(*) DESC`
 
 func (db *DB) agentGateVerdicts(scope string, args ...any) ([]AgentGateVerdict, error) {
-	rows, err := db.sql.Query(fmt.Sprintf(agentGateVerdictsQuery, scope), append([]any{AgentEventSignal}, args...)...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []AgentGateVerdict
-	for rows.Next() {
-		var g AgentGateVerdict
-		if err := rows.Scan(&g.Suite, &g.Verdict, &g.Count); err != nil {
-			return nil, err
-		}
-		out = append(out, g)
-	}
-	return out, rows.Err()
+	return queryScoped(db, scanFields(func(g *AgentGateVerdict) []any {
+		return []any{&g.Suite, &g.Verdict, &g.Count}
+	}), agentGateVerdictsQuery, scope, []any{AgentEventSignal}, args)
 }
 
 // AgentSessionOutcome is how many sessions came out one way.
@@ -1595,21 +1395,9 @@ const agentSessionOutcomesQuery = `SELECT COALESCE(NULLIF(outcome, ''), 'unknown
 		 GROUP BY 1 ORDER BY COUNT(*) DESC`
 
 func (db *DB) agentSessionOutcomes(scope string, args ...any) ([]AgentSessionOutcome, error) {
-	rows, err := db.sql.Query(fmt.Sprintf(agentSessionOutcomesQuery, scope), args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []AgentSessionOutcome
-	for rows.Next() {
-		var o AgentSessionOutcome
-		if err := rows.Scan(&o.Outcome, &o.Count); err != nil {
-			return nil, err
-		}
-		out = append(out, o)
-	}
-	return out, rows.Err()
+	return queryScoped(db, scanFields(func(o *AgentSessionOutcome) []any {
+		return []any{&o.Outcome, &o.Count}
+	}), agentSessionOutcomesQuery, scope, nil, args)
 }
 
 // UnratedSession is one session waiting for a person's read on it, together
@@ -1671,33 +1459,24 @@ func (db *DB) ListUnratedSessions(limit int) ([]UnratedSession, error) {
 		           WHERE m.session_id = c.id AND m.role = 'user'
 		             AND trim(m.content, char(32,9,10,13)) != ''
 		           ORDER BY m.seq LIMIT 1)`
-	rows, err := db.sql.Query(
-		`SELECT a.id, a.started_at, a.kind, a.model, a.turns, COALESCE(a.outcome, ''),
+	return queryRows(db, func(r rowScanner) (UnratedSession, error) {
+		var (
+			u         UnratedSession
+			startedAt string
+		)
+		if err := r.Scan(&u.ID, &startedAt, &u.Kind, &u.Model, &u.Turns, &u.Outcome,
+			&u.Chat, &u.Title, &u.Opening); err != nil {
+			return u, err
+		}
+		u.StartedAt, _ = time.Parse(observeTimeFormat, startedAt)
+		return u, nil
+	}, `SELECT a.id, a.started_at, a.kind, a.model, a.turns, COALESCE(a.outcome, ''),
 		        c.name, c.title, `+opening+`
 		 FROM agent_sessions a
 		 JOIN chat_sessions c ON c.id = a.chat_session_id
 		 WHERE a.rating IS NULL AND `+opening+` IS NOT NULL
 		 ORDER BY a.id DESC
 		 LIMIT ?`, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []UnratedSession
-	for rows.Next() {
-		var (
-			u         UnratedSession
-			startedAt string
-		)
-		if err := rows.Scan(&u.ID, &startedAt, &u.Kind, &u.Model, &u.Turns, &u.Outcome,
-			&u.Chat, &u.Title, &u.Opening); err != nil {
-			return nil, err
-		}
-		u.StartedAt, _ = time.Parse(observeTimeFormat, startedAt)
-		out = append(out, u)
-	}
-	return out, rows.Err()
 }
 
 // RateAgentSession records a thumbs-up (true) or thumbs-down (false) for a
@@ -1765,7 +1544,7 @@ const agentSessionColumns = `id, started_at, ended_at, kind, provider, model, tu
 		        child_tokens_tools, child_tokens_analysis, child_tokens_handoff, child_tokens_fresh, name,
 		        agents_require_sandbox`
 
-func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary, error) {
+func scanAgentSession(rows rowScanner) (AgentSessionSummary, error) {
 	var (
 		s         AgentSessionSummary
 		startedAt string
@@ -1838,24 +1617,10 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 
 // AgentSessions lists sessions since the cutoff, newest first.
 func (db *DB) AgentSessions(since time.Time, limit int) ([]AgentSessionSummary, error) {
-	rows, err := db.sql.Query(
+	return queryRows(db, scanAgentSession,
 		`SELECT `+agentSessionColumns+`
 		 FROM agent_sessions WHERE started_at >= ?
 		 ORDER BY started_at DESC LIMIT ?`, observeCutoff(since), limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []AgentSessionSummary
-	for rows.Next() {
-		s, err := scanAgentSession(rows)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, s)
-	}
-	return out, rows.Err()
 }
 
 // AgentSession reads one session by id. The second result is false when
@@ -1914,15 +1679,20 @@ type AgentSessionCall struct {
 // answers with nothing rather than an error: there is no failure in a session
 // that saved no words.
 func (db *DB) AgentSessionCalls(id int64) ([]AgentSessionCall, error) {
-	rows, err := db.sql.Query(
-		`SELECT m.turn, m.round, m.role, m.content, m.tool_calls, m.tool_call_id
+	type message struct {
+		turn, round           int64
+		role, content, callID string
+		toolCallsJSON         *string
+	}
+	msgs, err := queryRows(db, scanFields(func(m *message) []any {
+		return []any{&m.turn, &m.round, &m.role, &m.content, &m.toolCallsJSON, &m.callID}
+	}), `SELECT m.turn, m.round, m.role, m.content, m.tool_calls, m.tool_call_id
 		 FROM chat_messages m
 		 JOIN agent_sessions a ON a.chat_session_id = m.session_id
 		 WHERE a.id = ? ORDER BY m.seq`, id)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var (
 		calls []AgentSessionCall
@@ -1933,35 +1703,27 @@ func (db *DB) AgentSessionCalls(id int64) ([]AgentSessionCall, error) {
 		// would then file one call's output under another's name.
 		at = map[string]int{}
 	)
-	for rows.Next() {
-		var (
-			turn, round           int64
-			role, content, callID string
-			toolCallsJSON         *string
-		)
-		if err := rows.Scan(&turn, &round, &role, &content, &toolCallsJSON, &callID); err != nil {
-			return nil, err
-		}
-		if toolCallsJSON != nil {
+	for _, m := range msgs {
+		if m.toolCallsJSON != nil {
 			var tcs []provider.ToolCall
-			if err := json.Unmarshal([]byte(*toolCallsJSON), &tcs); err != nil {
+			if err := json.Unmarshal([]byte(*m.toolCallsJSON), &tcs); err != nil {
 				return nil, fmt.Errorf("unmarshal tool calls: %w", err)
 			}
 			for _, tc := range tcs {
 				at[tc.ID] = len(calls)
 				calls = append(calls, AgentSessionCall{
-					Turn: turn, Round: round, Tool: tc.Name, Args: tc.Arguments,
+					Turn: m.turn, Round: m.round, Tool: tc.Name, Args: tc.Arguments,
 				})
 			}
 			continue
 		}
-		if role == string(provider.RoleTool) && callID != "" {
-			if i, ok := at[callID]; ok {
-				calls[i].Result = content
+		if m.role == string(provider.RoleTool) && m.callID != "" {
+			if i, ok := at[m.callID]; ok {
+				calls[i].Result = m.content
 			}
 		}
 	}
-	return calls, rows.Err()
+	return calls, nil
 }
 
 // AgentExportSession is one session with its events, for JSON export.
@@ -2024,13 +1786,12 @@ type AgentExportMessage struct {
 // session linked to a saved conversation carries it too — this is the one
 // path that puts content beside the metrics, and it runs only when asked.
 func (db *DB) ExportAgentObservability(since time.Time, transcript bool) ([]AgentExportSession, error) {
-	rows, err := db.sql.Query(
+	summaries, err := queryRows(db, scanAgentSession,
 		`SELECT `+agentSessionColumns+`
 		 FROM agent_sessions WHERE started_at >= ? ORDER BY started_at`, observeCutoff(since))
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var (
 		sessions []AgentExportSession
@@ -2040,16 +1801,9 @@ func (db *DB) ExportAgentObservability(since time.Time, transcript bool) ([]Agen
 		// the export nothing or hand it whatever holds that name now.
 		slots []*int64
 	)
-	for rows.Next() {
-		s, err := scanAgentSession(rows)
-		if err != nil {
-			return nil, err
-		}
+	for _, s := range summaries {
 		sessions = append(sessions, exportSession(s))
 		slots = append(slots, s.ChatSessionID)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
 	}
 
 	for i := range sessions {
@@ -2093,23 +1847,10 @@ func exportSession(s AgentSessionSummary) AgentExportSession {
 }
 
 func (db *DB) exportAgentEvents(sessionID int64) ([]AgentExportEvent, error) {
-	rows, err := db.sql.Query(
-		`SELECT created_at, kind, turn, round, tool, duration_ms, outcome, reason, purpose
+	return queryRows(db, scanFields(func(e *AgentExportEvent) []any {
+		return []any{&e.CreatedAt, &e.Kind, &e.Turn, &e.Round, &e.Tool, &e.DurationMs, &e.Outcome, &e.Reason, &e.Purpose}
+	}), `SELECT created_at, kind, turn, round, tool, duration_ms, outcome, reason, purpose
 		 FROM agent_events WHERE session_id = ? ORDER BY id`, sessionID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var events []AgentExportEvent
-	for rows.Next() {
-		var e AgentExportEvent
-		if err := rows.Scan(&e.CreatedAt, &e.Kind, &e.Turn, &e.Round, &e.Tool, &e.DurationMs, &e.Outcome, &e.Reason, &e.Purpose); err != nil {
-			return nil, err
-		}
-		events = append(events, e)
-	}
-	return events, rows.Err()
 }
 
 // PruneAgentObservability deletes the sessions that ended before the window

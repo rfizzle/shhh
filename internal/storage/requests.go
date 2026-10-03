@@ -190,25 +190,12 @@ type MetricsDayTokens struct {
 // MetricsTokensByDay aggregates request tokens per provider/model per day
 // since the cutoff, oldest day first.
 func (db *DB) MetricsTokensByDay(since time.Time) ([]MetricsDayTokens, error) {
-	rows, err := db.sql.Query(
-		`SELECT provider, model, substr(created_at, 1, 10) AS day,
+	return queryRows(db, scanFields(func(d *MetricsDayTokens) []any {
+		return []any{&d.Provider, &d.Model, &d.Day, &d.TokensIn, &d.TokensOut}
+	}), `SELECT provider, model, substr(created_at, 1, 10) AS day,
 		        COALESCE(SUM(tokens_in), 0), COALESCE(SUM(tokens_out), 0)
 		 FROM requests WHERE created_at >= ?
 		 GROUP BY provider, model, day ORDER BY day`, observeCutoff(since))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []MetricsDayTokens
-	for rows.Next() {
-		var d MetricsDayTokens
-		if err := rows.Scan(&d.Provider, &d.Model, &d.Day, &d.TokensIn, &d.TokensOut); err != nil {
-			return nil, err
-		}
-		out = append(out, d)
-	}
-	return out, rows.Err()
 }
 
 // MetricsActionUsage is what became of the commands one model answered with,
