@@ -1118,7 +1118,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// leftover worktrees when the session ends.
 	var sup *subagent.Supervisor
 	if session.agents {
-		sup = buildSupervisor(cmd.Context(), cfg, session, env, agents, red, recorder, db, prices, classifier, sc, ledger,
+		sup = buildSupervisor(cmd.Context(), asm, session, recorder, classifier,
 			hooks, func() []string { return sessionUntracked(changes) })
 		executor = sup.WrapExecutor("", executor)
 		defer sup.Close()

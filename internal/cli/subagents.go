@@ -44,7 +44,6 @@ import (
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/skill"
-	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -895,10 +894,17 @@ func withSystemParagraph(msgs []provider.Message, block string) []provider.Messa
 // never heard of are the half of that tree only the surface itself can name:
 // a session reads them off its changeset, and a run that keeps none passes
 // nil, which is a writer starting from `git diff HEAD` alone.
-func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession, env *sessionEnv, agents *agentProfiles,
-	red *evidence.Reducer, recorder *observeRecorder, db *storage.DB, prices *pricing.Table,
-	classifier *agent.Classifier, sc *scope.Scope, ledger *meter.Ledger, hooks *hook.Runner,
-	untracked func() []string) *subagent.Supervisor {
+//
+// The rest of what it is built from is the surface's assembly — the config
+// the environment resolved, the reducer, the store, the price table, the
+// scope and the ledger — and the three things each surface makes after it:
+// the record, the classifier and the hooks. The session is the surface's own
+// copy as it stands at the call, which is the one a child inherits from.
+// See docs/architecture.md#a-session-is-assembled-in-one-place.
+func buildSupervisor(ctx context.Context, a *assembly, session chatSession, recorder *observeRecorder,
+	classifier *agent.Classifier, hooks *hook.Runner, untracked func() []string) *subagent.Supervisor {
+	cfg, env, red, db, prices, sc, ledger := a.env.cfg, a.env, a.ts.evidence, a.db, a.prices, a.sc, a.ledger
+	agents := a.agents
 	root, err := os.Getwd()
 	if err != nil {
 		root = "."

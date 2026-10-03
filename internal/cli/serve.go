@@ -363,7 +363,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	}
 	l.closers = append(l.closers, asm.close)
 	l.mcp = session.mcpTools
-	sc, ts, agents, prices, env := asm.sc, asm.ts, asm.agents, asm.prices, asm.env
+	sc, ts, prices, env := asm.sc, asm.ts, asm.prices, asm.env
 	l.ledger = asm.ledger
 	red, qgate, procSup := ts.evidence, ts.gate, ts.proc
 	cfg = env.cfg
@@ -515,7 +515,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	var sup *subagent.Supervisor
 	exec := ts.executor(session)
 	if session.agents {
-		sup = buildSupervisor(cmd.Context(), cfg, session, env, agents, red, l.recorder, db, prices, classifier, sc, l.ledger, hooks, nil)
+		sup = buildSupervisor(cmd.Context(), asm, session, l.recorder, classifier, hooks, nil)
 		sup.SetParentMode(agent.ModeAuto)
 		sup.SetParentGrants(agent.Grants{AllEdits: true, AllCommands: true})
 		sup.SetConversation(a.Messages)

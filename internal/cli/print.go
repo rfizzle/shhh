@@ -950,7 +950,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		return err
 	}
 	defer asm.close()
-	sc, ts, db, agents, prices, ledger, env := asm.sc, asm.ts, asm.db, asm.agents, asm.prices, asm.ledger, asm.env
+	sc, ts, db, prices, ledger, env := asm.sc, asm.ts, asm.db, asm.prices, asm.ledger, asm.env
 	red, qgate, procSup := ts.evidence, ts.gate, ts.proc
 	cfg := env.cfg
 
@@ -1227,7 +1227,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		// out of its changeset; this run keeps no changeset, and reading the
 		// tree for them instead would carry a person's scratch files into
 		// every worktree (docs/capabilities/subagents.md#a-writer-starts-from-your-tree).
-		sup = buildSupervisor(cmd.Context(), cfg, session, env, agents, red, recorder, db, prices, classifier, sc, ledger, hooks, nil)
+		sup = buildSupervisor(cmd.Context(), asm, session, recorder, classifier, hooks, nil)
 		sup.SetParentMode(agent.ModeAuto)
 		sup.SetParentGrants(agent.Grants{AllEdits: opts.yes, AllCommands: opts.yes, Commands: opts.allow})
 		sup.SetConversation(a.Messages)
