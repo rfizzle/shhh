@@ -98,11 +98,12 @@ type SourcesResult struct {
 // SourcesScreen is `/sources`: a takeover in the chat, full width, owning the
 // keyboard for as long as it is up.
 type SourcesScreen struct {
+	// The pointer is an index into Rows and survives the host rebuilding
+	// them; the rows showing are Rows grouped under their hosts.
+	listScreen[SourcesRow]
 	// Rows are the reads in the order they happened, oldest first, as the
 	// host read them out of the ledger.
 	Rows []SourcesRow
-	// Focus is an index into Rows and survives the host rebuilding them.
-	Focus int
 	// Subject is what the header says the screen is over — `12 pages · 3
 	// hosts`. The host counts it.
 	Subject string
@@ -113,10 +114,7 @@ type SourcesScreen struct {
 	// keystroke.
 	Notice string
 
-	list  Select
-	order []int
 	optAt map[int]int
-	keys  bool
 }
 
 // Update is the screen's whole keyboard.
@@ -124,13 +122,13 @@ func (s *SourcesScreen) Update(msg tea.KeyPressMsg) (done bool, result SourcesRe
 	s.sync()
 	pressed := msg.String()
 	switch {
-	case s.moved(pressed):
+	case s.walked(pressed):
 		return false, SourcesResult{}
 	case keys.Is(pressed, keys.Sources.Open):
 		// The one key that leaves with something to do, and only for a row
 		// whose page was kept: a key that cannot act is not an offer
 		// (invariant 5).
-		if row := s.current(); row != nil && row.Evidence != "" {
+		if row := s.currentShown(s.Rows); row != nil && row.Evidence != "" {
 			return true, SourcesResult{Open: true, ID: row.ID, Evidence: row.Evidence}
 		}
 		return false, SourcesResult{}
@@ -148,37 +146,31 @@ func (s *SourcesScreen) SetSize(_, height int) { s.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves.
-func (s *SourcesScreen) View(width int) string {
-	if width <= 0 {
-		return ""
-	}
-	s.sync()
+func (s *SourcesScreen) View(width int) string { return s.view(width, s) }
+
+// chrome is the header over the panes, the keys under them, and the line the
+// last key left.
+func (s *SourcesScreen) chrome(width int) screenChrome {
+	field := s.footField()
 	return screenChrome{
 		header:   s.header(),
-		foot:     s.footer(width).rows(width),
+		foot:     s.footer(s.offers(width, field), s.keyList(), field).rows(width),
 		notice:   s.Notice,
 		maxLines: s.maxLines,
-	}.view(width, func(budget int) []string { return s.panes().rows(width, budget) })
+	}
 }
 
 // panes is the body, split the way every screen with a list and a preview
-// splits it (screenpanes.go).
+// splits it (screenpanes.go): on the left the ledger grouped under its hosts.
 func (s *SourcesScreen) panes() screenPanes {
 	return screenPanes{
 		stackAt: sourcesStackWidth, listMin: sourcesListMin,
 		listMax: sourcesListMax, minPreview: sourcesMinPreview,
-		list:    s.listRows,
+		list: func(width, budget int) []string {
+			return s.listRows(s.Rows, "nothing has been read in this session", width, budget)
+		},
 		preview: s.previewRows,
 	}
-}
-
-// listRows is the left pane: the ledger grouped under its hosts.
-func (s *SourcesScreen) listRows(width, budget int) []string {
-	if len(s.Rows) == 0 {
-		return []string{sty.dim.Render(Clip("nothing has been read in this session", width))}
-	}
-	body, _ := s.list.visibleRows(cardWidthFor(width), budget, false)
-	return body
 }
 
 // previewRows is the right pane: the row the pointer is on, field by field,
@@ -188,7 +180,7 @@ func (s *SourcesScreen) listRows(width, budget int) []string {
 // somewhere else. That difference is the whole reason the ledger keeps both:
 // a citation that names the URL asked for names a page nobody read.
 func (s *SourcesScreen) previewRows(width int) []string {
-	row := s.current()
+	row := s.currentShown(s.Rows)
 	if row == nil {
 		return []string{sty.dim.Render(Clip("no source selected", width))}
 	}
@@ -261,36 +253,18 @@ func (s *SourcesScreen) outcomeOf(row SourcesRow) string {
 
 // header names the surface and what it is over.
 func (s *SourcesScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/sources")}, keys: s.headerKeys()}
+	h := screenHeader{left: []RailSegment{screenTitle("/sources")}, keys: s.headerKeys(keys.Sources.List, keys.Sources.Back)}
 	if s.Subject != "" {
 		h.left = append(h.left, screenField(s.Subject))
 	}
 	return h
 }
 
-// headerKeys is the pair the header ends with: the key that shows the whole
-// register, and the way back in the one word a header field is
-// (docs/interface/surfaces.md#the-supporting-screens).
-func (s *SourcesScreen) headerKeys() string {
-	list := keys.Bracket(keys.Sources.List) + " " + keys.Words(keys.Sources.List)
-	if s.keys {
-		list = keys.Bracket(keys.Sources.List) + " hide the keys"
-	}
-	return list + " · " + words(keys.Sources.Back, "back")
-}
-
-// footer is the keys the screen offers and the field that annotates them.
-func (s *SourcesScreen) footer(width int) keyFooter {
-	field := s.footField()
-	return keyFooter{offers: s.offers(width, field), register: s.keyList(),
-		showing: s.keys, field: field}
-}
-
 // offers is the key row. A row whose page was never kept has nothing for
 // `[enter]` to open, so it is not offered one (invariant 5).
 func (s *SourcesScreen) offers(width int, field string) []KeyOffer {
 	var acts []KeyOffer
-	if row := s.current(); row != nil && row.Evidence != "" {
+	if row := s.currentShown(s.Rows); row != nil && row.Evidence != "" {
 		acts = append(acts, keyOffer(keys.Sources.Open))
 	}
 	acts = append(acts, wayOut(backToPrompt))
@@ -333,11 +307,11 @@ func (s *SourcesScreen) footField() string {
 // View because the host replaces Rows whenever the session reads something
 // else, and the pointer has to survive that.
 func (s *SourcesScreen) sync() {
-	s.order = s.grouped()
-	s.optAt = make(map[int]int, len(s.order))
-	opts := make([]SelectOption, 0, len(s.order))
+	s.shown = s.grouped()
+	s.optAt = make(map[int]int, len(s.shown))
+	opts := make([]SelectOption, 0, len(s.shown))
 	group := ""
-	for _, i := range s.order {
+	for _, i := range s.shown {
 		row := s.Rows[i]
 		if row.Group != group {
 			group = row.Group
@@ -352,12 +326,9 @@ func (s *SourcesScreen) sync() {
 			Meta:      row.Bytes,
 		})
 	}
-	s.list.Options = opts
 	// The count the window's marker states is of sources, not of options:
 	// the host headers are rows on the screen and not things that were read.
-	s.list.Total = len(s.order)
-	s.list.Unnumbered = true
-	s.list.Focus = s.optIndex(s.Focus)
+	s.show(opts, len(s.shown), s.optIndex(s.Focus))
 }
 
 // grouped is the display order: the hosts in the order the session first
@@ -381,39 +352,14 @@ func (s *SourcesScreen) grouped() []int {
 	return out
 }
 
-// moved walks the pointer between rows, stepping over the headers the way
-// every list in the product does.
-func (s *SourcesScreen) moved(pressed string) bool {
-	if len(s.order) == 0 {
+// walked walks the pointer between rows in the order they are drawn,
+// stepping over the headers the way every list in the product does.
+func (s *SourcesScreen) walked(pressed string) bool {
+	if !s.movedShown(pressed, keys.Sources.Move) {
 		return false
 	}
-	l := List[int]{Items: s.order, Focus: s.at()}
-	if !l.Move(pressed, keys.Sources.Move) {
-		return false
-	}
-	s.Focus = s.order[l.Focus]
 	s.sync()
 	return true
-}
-
-// at is where the pointer is among the rows in display order.
-func (s *SourcesScreen) at() int {
-	for i, row := range s.order {
-		if row == s.Focus {
-			return i
-		}
-	}
-	return 0
-}
-
-// current is the row under the pointer, or nil for an empty ledger.
-func (s *SourcesScreen) current() *SourcesRow {
-	for _, i := range s.order {
-		if i == s.Focus {
-			return &s.Rows[i]
-		}
-	}
-	return nil
 }
 
 // optIndex maps a row index to its place in the list, which carries a header
@@ -422,8 +368,8 @@ func (s *SourcesScreen) optIndex(row int) int {
 	if at, ok := s.optAt[row]; ok {
 		return at
 	}
-	if len(s.order) > 0 {
-		return s.optAt[s.order[0]]
+	if len(s.shown) > 0 {
+		return s.optAt[s.shown[0]]
 	}
 	return 0
 }

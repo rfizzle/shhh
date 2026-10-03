@@ -3785,7 +3785,8 @@ func TestGolden_ScreenFamily(t *testing.T) {
 					}).View(width)},
 				{Label: "sources · the list is grouped under the hosts it read",
 					View: (&SourcesScreen{
-						Rows: sourceRows(), Subject: "2 pages · 1 host · 1 search", Focus: 1, maxLines: 12,
+						listScreen: listScreen[SourcesRow]{Focus: 1},
+						Rows:       sourceRows(), Subject: "2 pages · 1 host · 1 search", maxLines: 12,
 					}).View(width)},
 				{Label: "safety · the reading, its subject beside the title and the way back on the right",
 					View: (&SafetyScreen{

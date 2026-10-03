@@ -30,7 +30,8 @@ func sourceRows() []SourcesRow {
 }
 
 func TestSourcesScreen_GroupsUnderItsHosts(t *testing.T) {
-	s := &SourcesScreen{Rows: sourceRows(), Focus: 1, Subject: "2 pages · 1 host · 1 search", maxLines: 14}
+	s := &SourcesScreen{Rows: sourceRows(), Subject: "2 pages · 1 host · 1 search", maxLines: 14}
+	s.Focus = 1
 	view := ansi.Strip(s.View(110))
 	for _, want := range []string{"/sources", "searches", "docs.rs", "tokio — Rust", "[?] keys", "back"} {
 		if !strings.Contains(view, want) {
@@ -59,7 +60,8 @@ func TestSourcesScreen_MovementStepsOverTheHeaders(t *testing.T) {
 }
 
 func TestSourcesScreen_EnterOnlyAnswersForAPageThatWasKept(t *testing.T) {
-	s := &SourcesScreen{Rows: sourceRows(), Focus: 1, maxLines: 14}
+	s := &SourcesScreen{Rows: sourceRows(), maxLines: 14}
+	s.Focus = 1
 	s.View(110)
 	done, result := s.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if !done || !result.Open || result.Evidence != "ev-1" {
@@ -120,7 +122,8 @@ func TestSourcesScreen_TheRowLeadsWithTheMarkTheActWore(t *testing.T) {
 // Stacked, the list gives way to the preview's floor rather than the other
 // way round, which is the family's rule.
 func TestSourcesScreen_NarrowStacksThePanes(t *testing.T) {
-	s := &SourcesScreen{Rows: sourceRows(), Focus: 1, Subject: "2 pages", maxLines: 16}
+	s := &SourcesScreen{Rows: sourceRows(), Subject: "2 pages", maxLines: 16}
+	s.Focus = 1
 	view := s.View(60)
 	if !strings.Contains(view, "⚙ /tokio/latest/tokio/") ||
 		!strings.Contains(view, "https://docs.rs/tokio/latest/tokio/") {
@@ -146,7 +149,9 @@ func TestGolden_SourcesScreen(t *testing.T) {
 	})
 	captureGolden(t, "sources-screen", "the sources screen", goldenWidths, func(width int) []golden.Panel {
 		screen := func(focus int) string {
-			return (&SourcesScreen{Rows: rows, Subject: "2 pages · 1 via mcp · 2 hosts · 1 search", Focus: focus, maxLines: 16}).View(width)
+			s := &SourcesScreen{Rows: rows, Subject: "2 pages · 1 via mcp · 2 hosts · 1 search", maxLines: 16}
+			s.Focus = focus
+			return s.View(width)
 		}
 		return []golden.Panel{
 			{Label: "a fetch · the fetcher's own read, under ⚙", View: screen(1)},

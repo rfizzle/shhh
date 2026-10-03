@@ -161,11 +161,9 @@ func (m Model) sourcesScreenData() components.SourcesScreen {
 	for _, s := range rows {
 		out = append(out, m.sourcesRow(s))
 	}
-	return components.SourcesScreen{
-		Rows:    out,
-		Focus:   max(len(out)-1, 0),
-		Subject: sourcesSubject(rows),
-	}
+	screen := components.SourcesScreen{Rows: out, Subject: sourcesSubject(rows)}
+	screen.Focus = max(len(out)-1, 0)
+	return screen
 }
 
 // sourcesRow is one ledger row as the screen draws it.
