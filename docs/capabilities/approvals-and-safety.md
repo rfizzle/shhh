@@ -17,6 +17,79 @@ running one, by a bug or by a model that has learned to ask nicely. This is the
 codebase's most important invariant and the easiest to erode, because merging
 the paths always looks like a simplification.
 
+## One classifier names a call's tier
+
+Four surfaces put a call to a decision: the session's approval card, a
+scripted run, a session a client drives over the protocol, and a child
+answering to its parent. Each of them used to work out for itself which tier a
+call sat at, and four copies of that reading agree on the day they are
+written. The next tool that has to be answered for is added to whichever copy
+the author was looking at, and on the other three it runs as something it is
+not, with nothing going red. So there is one classifier, beside the policy it
+feeds, and the four surfaces are its callers.
+
+It is asked three things: the tool's name, the call's arguments, and whether
+the surface asking has an answer for that tool at all — what it registered,
+and the cards or rules it can answer one with. It returns the tier, the
+action the policy is asked about, and whether the call is put to a decision.
+
+- **Read** runs without one. It is dispatched by the path that has no case for
+  anything else, which is what makes the tier safe to reach by default: a name
+  nothing recognises lands there and is answered as a tool that does not
+  exist.
+- **Write** changes the tree: the two file tools and the writing half of git.
+  It is answered the way an edit is — it applies where an edit applies, asks
+  where an edit asks, and the read-only modes refuse it — and it carries the
+  command line it stands for, so the deny list reads the act whatever tool
+  spells it.
+- **Command** runs a program or reaches past the tree: a command, a process
+  start, a fetch, and anything else a surface registered as needing an answer
+  — a server's tool, a child, a memory, a question. Each is answered by its
+  own kind: a command by the allowlist and the safety table, a fetch by its
+  host, the rest by being asked. An edit grant answers none of them.
+
+A name the classifier does not know, on a surface that has an answer for it,
+sits at the command tier as the strictest kind there is: asked in every mode
+that asks, refused in the two that write nothing. A surface that has no answer
+for a name does not put it to a decision at all. The tier is a property of the
+call and never of the surface, so no surface can resolve a write below write
+or a command as an edit.
+
+What a surface still decides is everything that is its own:
+
+- **Which tools it has.** A conversation registers no runner, a child holds
+  only its role's tools, and a fetch exists only where a fetcher does; that
+  answer is the surface's and is handed to the classifier rather than
+  re-derived by it.
+- **How it asks.** The card, the run's flags and its judge, the client, the
+  parent: each surface keeps its own answerer, and the standing refusals in
+  front of it — containment, the deny lists, the safety table, the working
+  scope — are asked in the order they always were.
+- **What its card reads.** The path an edit names and the host a fetch leaves
+  for are read by the surface's own previewer, because they depend on what
+  the session has read and on its fetcher's policy, and a person can amend a
+  command on the card after it was classified.
+- **More, never less.** A surface may hold a call it could have let through;
+  it may not let through one the classifier put to a decision.
+
+What each site gives up:
+
+- **The approval card** no longer decides which calls join its queue or what
+  tier a generic card sits at. A tool's preview used to declare that it was a
+  write; it now states only what the card shows, and the tier comes from the
+  name.
+- **The scripted run** no longer reads a call's tier off a chain of names. It
+  keeps its flags, its judge and its runners.
+- **The served session** no longer holds its own copy of which calls stop for
+  the client. The gate it shares with the scripted run asks the classifier,
+  and what the client is asked, and what a decline says, is unchanged.
+- **A child** no longer classifies its own calls. It keeps rooting them in its
+  worktree, reading what a command reaches against its scope, and its route to
+  the parent's card.
+
+The model is told nothing new. Every refusal it reads and every paragraph in
+its prompt are the sentences they were.
+
 ## The five modes
 
 How much has been decided in advance:
