@@ -6,10 +6,13 @@ package chat
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // Which keys a surface has is the register's answer (internal/ui/keys), read
-// by the surface's name there, so the list a reader is shown is the list the
+// by the surface's handle there, so the list a reader is shown is the list the
 // handlers answer. A card says which register row it is standing in through
 // its mode's keyList, and says nothing while a field on it holds the
-// keyboard: there a question mark is a question mark.
+// keyboard: there a question mark is a question mark. It names the row by
+// handle rather than by repeating its name, because the register is read
+// where the chat session is not loaded and so has to be where the row is
+// written (docs/architecture.md#a-surface-declares-itself-once-in-the-key-register).
 
 import (
 	"strings"
@@ -29,21 +32,15 @@ type keyListView struct {
 // registerOffers is a register row's keys as offers, in the row's order, less
 // the `?` that opened the list: on the list itself that key is the way back,
 // and the header says so.
-func registerOffers(surface string) []components.KeyOffer {
-	for _, s := range keys.Surfaces() {
-		if s.Name != surface {
+func registerOffers(s keys.Surface) []components.KeyOffer {
+	offers := make([]components.KeyOffer, 0, len(s.Bindings))
+	for _, b := range s.Bindings {
+		if keys.Shown(b) == keys.Shown(keys.Screen.List) {
 			continue
 		}
-		offers := make([]components.KeyOffer, 0, len(s.Bindings))
-		for _, b := range s.Bindings {
-			if keys.Shown(b) == keys.Shown(keys.Screen.List) {
-				continue
-			}
-			offers = append(offers, components.Offer(b))
-		}
-		return offers
+		offers = append(offers, components.Offer(b))
 	}
-	return nil
+	return offers
 }
 
 // readingListOffers is what reading mode's key list draws beside the mode's
@@ -80,9 +77,10 @@ func (m Model) readingListOffers() []components.KeyOffer {
 
 // openKeyList puts a surface's register on the pane. ret is the state the
 // list goes back to, which is the surface it was opened over.
-func (m Model) openKeyList(surface string, row []components.KeyOffer) (tea.Model, tea.Cmd) {
+func (m Model) openKeyList(id keys.SurfaceID, row []components.KeyOffer) (tea.Model, tea.Cmd) {
+	surface := id.Surface()
 	m.keyList = &keyListView{
-		screen: components.KeyListScreen{Surface: surface, Register: registerOffers(surface), Row: row},
+		screen: components.KeyListScreen{Surface: surface.Name, Register: registerOffers(surface), Row: row},
 		ret:    m.state,
 	}
 	m.enterSurface(stateKeyList)
@@ -147,45 +145,45 @@ func (m Model) renderKeyListHint() string {
 	return sty.SystemMsg.Render("keys · ") + segAs(keys.Select.Cancel, back).render()
 }
 
-// The register rows a card's `?` lists. Each answers "" while a field on the
-// card holds the keyboard, which is where `?` is text.
+// The register rows a card's `?` lists. Each answers false while a field on
+// the card holds the keyboard, which is where `?` is text.
 
 // confirmKeyList is the approval card's, or the list or field it has open
 // under it.
-func (m Model) confirmKeyList() string {
+func (m Model) confirmKeyList() (keys.SurfaceID, bool) {
 	switch {
 	case m.askOverlay() != nil, m.approval.note != nil, m.approval.edit != nil:
-		return ""
+		return 0, false
 	case m.approval.list != nil:
-		return "the approval card's queue list"
+		return keys.OnApprovalQueue, true
 	case m.approval.grant != nil:
-		return "the approval card's grant list"
+		return keys.OnApprovalGrant, true
 	}
-	return "the approval card and the /run confirm"
+	return keys.OnApprovalCard, true
 }
 
 // questionKeyList is the question card's, in whichever dressing it is.
-func (m Model) questionKeyList() string {
+func (m Model) questionKeyList() (keys.SurfaceID, bool) {
 	c := m.question
 	if c == nil || c.submit || c.typing() {
-		return ""
+		return 0, false
 	}
 	if c.q.Shape == ask.ShapeConfirm {
-		return "a yes-or-no question"
+		return keys.OnYesNo, true
 	}
-	return "the question card"
+	return keys.OnQuestion, true
 }
 
 // agentListKeyList is the agent manager's, while nothing on it is answering
 // a child or being typed into.
-func (m Model) agentListKeyList() string {
+func (m Model) agentListKeyList() (keys.SurfaceID, bool) {
 	if m.agentList == nil || m.listAnswerAsk() != nil || m.killConfirm != nil || m.agentList.Typing() {
-		return ""
+		return 0, false
 	}
-	return "the agent manager"
+	return keys.OnAgentManager, true
 }
 
 // staticKeyList is a card whose `?` always lists the same register row.
-func staticKeyList(surface string) func(Model) string {
-	return func(Model) string { return surface }
+func staticKeyList(surface keys.SurfaceID) func(Model) (keys.SurfaceID, bool) {
+	return func(Model) (keys.SurfaceID, bool) { return surface, true }
 }

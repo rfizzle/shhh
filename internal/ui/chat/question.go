@@ -606,7 +606,7 @@ func (m Model) questionCardLines(c *questionCard, width int) []string {
 	handover := m.questionHandover()
 	// `?` is offered wherever routeOverlay answers it with the card's
 	// register, which is every dressing while no field on it is typed into.
-	list := m.questionKeyList() != ""
+	_, list := m.questionKeyList()
 	switch {
 	case c.submit:
 		lines = append(lines, c.sheet.submitRows(width)...)

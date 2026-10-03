@@ -58,25 +58,25 @@ func TestKeyList_AFieldOnTheCardKeepsQuestionMarkAsText(t *testing.T) {
 	}
 }
 
-// Every register row a card names for `?` is a row of the register: a name
-// that matched none would open a list with no keys on it.
+// Every register row a card names for `?` has keys to list beyond the `?`
+// that opened it: a row with none would open a list with nothing on it.
 func TestKeyList_EveryCardNamesARegisterRow(t *testing.T) {
-	names := []string{
-		"reading mode", "a yes-or-no question", "the question card", "the agent manager",
-		"the approval card's queue list", "the approval card's grant list",
+	ids := []keys.SurfaceID{
+		keys.OnReading, keys.OnYesNo, keys.OnQuestion, keys.OnAgentManager,
+		keys.OnApprovalQueue, keys.OnApprovalGrant,
 	}
 	overlays()
 	for _, o := range append([]*mode{agentListMode(), childAskMode(nil)}, values(overlayTable)...) {
 		if o.keyList == nil {
 			continue
 		}
-		if name := o.keyList(Model{}); name != "" {
-			names = append(names, name)
+		if id, ok := o.keyList(Model{}); ok {
+			ids = append(ids, id)
 		}
 	}
-	for _, name := range names {
-		if len(registerOffers(name)) == 0 {
-			t.Errorf("%q names no row of the register", name)
+	for _, id := range ids {
+		if s := id.Surface(); len(registerOffers(s)) == 0 {
+			t.Errorf("%q has no keys to list", s.Name)
 		}
 	}
 }
