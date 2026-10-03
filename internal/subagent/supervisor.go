@@ -9,6 +9,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
+	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
 // Supervisor owns a session's children: spawning, bounded concurrency,
@@ -452,7 +453,7 @@ func (s *Supervisor) WorktreeDiff(name string) (string, error) {
 		}
 		return "", fmt.Errorf("agent %s has no isolated workspace (%s role) — nothing to diff", name, c.role)
 	}
-	return worktreePatch(worktree)
+	return wtree.WorktreePatch(worktree)
 }
 
 // CancelAll cancels every child; blocked approval waits unblock and each
@@ -480,7 +481,7 @@ func (s *Supervisor) Close() {
 		s.mu.Unlock()
 		for _, c := range kids {
 			if worktree, repoTop := c.workspace(); worktree != "" {
-				removeWorktree(repoTop, worktree)
+				wtree.RemoveWorktree(repoTop, worktree)
 			}
 		}
 		s.sendMu.Lock()

@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
+	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
 // Role scopes a child's toolset: researchers get read-only tools plus the
@@ -481,6 +482,11 @@ type Recorder struct {
 	// it spent, on the same row, for the same attempt.
 	End func(observe.ChildEnd)
 }
+
+// Regenerator is the project's declaration of which files it generates and
+// the way to generate them, which the worktree package runs at a landing and
+// a reseed.
+type Regenerator = wtree.Regenerator
 
 // Options configures a Supervisor.
 type Options struct {

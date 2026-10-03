@@ -11,6 +11,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/provider"
+	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
 // Spawn starts a child from the spawn tool's own arguments, for a caller
@@ -102,7 +103,7 @@ func (s *Supervisor) slots(depth int) chan struct{} {
 // for a writer, does not exist until the child starts.
 type workspace struct {
 	root  string
-	wt    worktreeHandle
+	wt    wtree.WorktreeHandle
 	env   Env
 	agent *agent.Agent
 	rec   Recorder
@@ -130,26 +131,26 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 	w := workspace{root: s.opts.Root}
 	var err error
 	if c.profile.Writes {
-		if w.wt, err = addWorktreeContext(ctx, s.opts.Root, s.parentUntracked()); err != nil {
+		if w.wt, err = wtree.AddWorktreeContext(ctx, s.opts.Root, s.parentUntracked()); err != nil {
 			return workspace{}, fmt.Errorf("cannot create an isolated worktree for a writer agent: %w", err)
 		}
-		w.root = w.wt.root
+		w.root = w.wt.Root
 		// An integration writer's copy starts holding everything of the
 		// patch it reconciles that merges cleanly, taken against the tree
 		// as it stands now rather than as it stood at the conflict.
 		if c.integrates != nil {
 			if err = c.integrates.seed(w.wt); err != nil {
-				removeWorktree(w.wt.repoTop, w.wt.dir)
+				wtree.RemoveWorktree(w.wt.RepoTop, w.wt.Dir)
 				return workspace{}, err
 			}
 		}
 	}
 	w.env, err = s.opts.NewEnv(ctx, Spec{Name: c.name, Role: c.role, Root: w.root, Model: c.model, Paths: c.paths,
 		Parent: c.parent, Depth: c.depth,
-		Worktree: w.wt.dir != "", MaxTokens: c.maxTokens, AdmissionFloor: c.admissionFloor, Attempt: attempt,
+		Worktree: w.wt.Dir != "", MaxTokens: c.maxTokens, AdmissionFloor: c.admissionFloor, Attempt: attempt,
 		Inherit: c.inheritTurns, Integrates: c.integrates.sourceName()})
 	if err != nil {
-		removeWorktree(w.wt.repoTop, w.wt.dir)
+		wtree.RemoveWorktree(w.wt.RepoTop, w.wt.Dir)
 		return workspace{}, fmt.Errorf("the agent's environment could not be built: %w", err)
 	}
 	// Its checks take the session's slots, whatever the surface built.
@@ -178,7 +179,7 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 	if s.opts.Record != nil {
 		w.rec = s.opts.Record(Spec{Name: c.name, Role: c.role, Root: w.root, Model: c.model, Paths: c.paths,
 			Parent: c.parent, Depth: c.depth,
-			Worktree: w.wt.dir != "", Mode: s.childMode(c), MaxRounds: roundCap(w.agent),
+			Worktree: w.wt.Dir != "", Mode: s.childMode(c), MaxRounds: roundCap(w.agent),
 			MaxTokens: c.maxTokens, AdmissionFloor: c.admissionFloor, Attempt: attempt}, w.env.SystemPrompt)
 	}
 	return w, nil
@@ -190,7 +191,7 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 // counter resets and no reader should ever see half of that, while a spawn
 // installs into a child no other goroutine can reach yet.
 func (c *child) install(w workspace) {
-	c.root, c.worktree, c.repoTop, c.seeded = w.root, w.wt.dir, w.wt.repoTop, w.wt.seeded
+	c.root, c.worktree, c.repoTop, c.seeded = w.root, w.wt.Dir, w.wt.RepoTop, w.wt.Seeded
 	c.landings, c.reseeds = nil, 0
 	c.agent, c.env, c.headless, c.rec = w.agent, w.env, nil, w.rec
 }

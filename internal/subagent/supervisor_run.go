@@ -10,6 +10,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
+	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
 // run drives one child to completion on its own goroutine. It owns what
@@ -82,7 +83,7 @@ func (s *Supervisor) run(c *child) {
 			// A killed agent's copy of the checkout goes only once the
 			// subtree the same kill cancelled has ended in it.
 			s.awaitSubtree(c)
-			removeWorktree(repoTop, worktree)
+			wtree.RemoveWorktree(repoTop, worktree)
 		}
 	}()
 
@@ -372,7 +373,7 @@ func (s *Supervisor) prepareAttempt(c *child, ctx context.Context, cancel contex
 		c.install(w)
 		rec = c.rec.End
 		c.mu.Unlock()
-		worktree, repoTop = w.wt.dir, w.wt.repoTop
+		worktree, repoTop = w.wt.Dir, w.wt.RepoTop
 	}
 
 	// The seam at the child's start, once it has everything it will run with
@@ -826,7 +827,7 @@ func (s *Supervisor) afterTurn(c *child, report string, err error, worktree stri
 			// What landed is the parent's now, so it becomes the copy's
 			// base: a follow-up's patch is then what the follow-up
 			// wrote, and not this turn's change handed over twice.
-			if err := commitBase(worktree, landedBaseMessage); err != nil {
+			if err := wtree.CommitBase(worktree, wtree.LandedBaseMessage); err != nil {
 				c.appendEntry(TranscriptEntry{Kind: EntrySystem,
 					Text: "The copy's base could not be moved past the landed patch: " + firstLine(err.Error())})
 			}

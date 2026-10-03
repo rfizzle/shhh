@@ -10,6 +10,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/provider"
+	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -221,10 +222,10 @@ func TestRootArgs_UnknownToolUntouched(t *testing.T) {
 
 func TestDisplayPath(t *testing.T) {
 	root := t.TempDir()
-	if got := displayPath(root, filepath.Join(root, "a/b.go")); got != "a/b.go" {
-		t.Fatalf("displayPath = %q", got)
+	if got := wtree.DisplayPath(root, filepath.Join(root, "a/b.go")); got != "a/b.go" {
+		t.Fatalf("wtree.DisplayPath = %q", got)
 	}
-	if got := displayPath(root, "/somewhere/else.go"); !strings.HasPrefix(got, "/somewhere") {
+	if got := wtree.DisplayPath(root, "/somewhere/else.go"); !strings.HasPrefix(got, "/somewhere") {
 		t.Fatalf("out-of-root path should stay absolute: %q", got)
 	}
 }

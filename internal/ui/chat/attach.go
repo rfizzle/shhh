@@ -21,6 +21,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -1051,7 +1052,7 @@ func (m *Model) attachedDiff(name string) {
 		m.noteChild(name, "no changes in the agent's workspace yet")
 		return
 	}
-	hunks, files := subagent.PatchHunks(patch)
+	hunks, files := worktree.PatchHunks(patch)
 	adds, dels := diff.Stats(hunks)
 	_ = m.subagents.Note(name, subagent.TranscriptEntry{
 		Kind:   subagent.EntryTool,

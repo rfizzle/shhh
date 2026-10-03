@@ -2,10 +2,10 @@ package subagent
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/diff"
+	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
 // PatchApplied is what a child's applied patch changed, file by file. The
@@ -17,33 +17,14 @@ type PatchApplied struct {
 	Files []PatchedFile
 }
 
-// PatchedFile is one file of an applied patch, read from the real checkout
-// either side of `git apply`. Exists distinguishes an empty file from one the
-// patch created or removed.
-type PatchedFile struct {
-	Path                      string
-	Before, After             string
-	BeforeExists, AfterExists bool
-	// BeforeMode is the permission bits the file had when the patch found
-	// it, zero where there was no file to have any. It is what puts a script
-	// the patch deleted back executable rather than at the default: once the
-	// file is gone, nothing else on disk remembers that it was one.
-	// See docs/capabilities/coding-agent.md#a-turn-ends-with-what-changed.
-	BeforeMode os.FileMode
-	// AfterMode is the same reading taken once the patch has landed, and it
-	// is the whole of a patch that changed a mode and not a byte: git
-	// carries one as an `old mode`/`new mode` header with no hunk, so both
-	// sides hold identical content and this pair is the only thing that
-	// tells them apart. It is read here because this is the one moment the
-	// mode can still be seen at all; the session changeset takes both sides
-	// and undo puts the old one back.
-	AfterMode os.FileMode
-}
+// PatchedFile is one file of an applied patch; the worktree package
+// reads it either side of `git apply`.
+type PatchedFile = wtree.PatchedFile
 
 // reviewPatch computes the writer's worktree patch and routes it through the
 // approval flow before anything touches the real checkout.
 func (s *Supervisor) reviewPatch(c *child) (landed bool) {
-	patch, err := worktreePatch(c.worktree)
+	patch, err := wtree.WorktreePatch(c.worktree)
 	if err != nil {
 		c.mu.Lock()
 		c.patchNote = "the worktree patch could not be computed: " + firstLine(err.Error()) + "; no files were changed"
@@ -85,7 +66,7 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 	// landing is carried in at. A card that showed the writer's own diff and
 	// then applied a merge would be approving one change and landing
 	// another. The plain patch is always tried first; the merge is shhh's own
-	// (mergeWorktree) and never `git apply --3way`.
+	// (worktree.MergeWorktree) and never `git apply --3way`.
 	// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
 	//
 	// A file the project declares generated is taken out of that altogether:
@@ -94,15 +75,15 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 	// the generators for those files run there, and the copy's difference is
 	// what the card shows and what lands. A clean-looking merge of a golden
 	// file is still a file no generator would write.
-	held := "; the patch would have touched " + patchPaths(PatchFiles(patch))
-	generated := c.integrates.withGenerated(generatedPaths(s.opts.Generators, PatchFiles(patch)))
-	source := withoutFiles(patch, generated)
+	held := "; the patch would have touched " + wtree.PatchPaths(wtree.PatchFiles(patch))
+	generated := c.integrates.withGenerated(wtree.GeneratedPaths(s.opts.Generators, wtree.PatchFiles(patch)))
+	source := wtree.WithoutFiles(patch, generated)
 	offer, merged := source, []string(nil)
 	for {
-		if offer != "" && checkPatch(c.repoTop, offer) != nil {
-			m, err := mergeWorktree(c.worktree, c.repoTop, generated)
+		if offer != "" && wtree.CheckPatch(c.repoTop, offer) != nil {
+			m, err := wtree.MergeWorktree(c.worktree, c.repoTop, generated)
 			if err == nil && m.Patch != "" && len(m.Conflicts) == 0 {
-				err = checkPatch(c.repoTop, m.Patch)
+				err = wtree.CheckPatch(c.repoTop, m.Patch)
 			}
 			switch {
 			case err != nil:
@@ -115,7 +96,7 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 				// is a writer's, in a copy of its own, under review.
 				// See docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer.
 				kept := c.keepWriterPatch(patch, s.opts.Generators)
-				settle("the patch no longer applies to the workspace: " + patchPaths(m.Conflicts) +
+				settle("the patch no longer applies to the workspace: " + wtree.PatchPaths(m.Conflicts) +
 					" moved since it started and the changes conflict there; no files were changed" +
 					kept + s.integrateKept(c, m.Conflicts) + held)
 				return false
@@ -132,10 +113,10 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 		// checkout has not been touched either way.
 		land, ran, regenErr := offer, []string(nil), error(nil)
 		if len(generated) > 0 {
-			c.set(StateRunning, "regenerating "+patchPaths(generated))
+			c.set(StateRunning, "regenerating "+wtree.PatchPaths(generated))
 			s.emitUpdate(c)
 			var out string
-			out, ran, regenErr = regenerateOver(c.ctx, s.opts.Generators, s.opts.Root, s.parentUntracked(), offer, generated)
+			out, ran, regenErr = wtree.RegenerateOver(c.ctx, s.opts.Generators, s.opts.Root, s.parentUntracked(), offer, generated)
 			if regenErr == nil {
 				land = out
 			} else {
@@ -156,13 +137,13 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 		ask.Merged = merged
 		ask.Regenerated = ran
 		if regenErr != nil {
-			ask.Warnings = append(ask.Warnings, patchPaths(generated)+" left as your checkout has them: "+firstLine(regenErr.Error()))
+			ask.Warnings = append(ask.Warnings, wtree.PatchPaths(generated)+" left as your checkout has them: "+firstLine(regenErr.Error()))
 		}
 		// What the patch names is the whole of what the parent has to know to
 		// integrate it, and it is already in hand here: a note that gave only
 		// a count sent the parent to `git status` for the names, one round and
 		// one approval after the patch had already landed.
-		held = "; the patch would have touched " + patchPaths(touched)
+		held = "; the patch would have touched " + wtree.PatchPaths(touched)
 		approved, ok := s.await(c, ask)
 		switch {
 		case !ok:
@@ -175,10 +156,10 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 		applied, applyErr := s.landPatch(c, c.repoTop, land, touched)
 		if applyErr == nil {
 			if len(merged) > 0 {
-				applied += ", merged over " + patchPaths(merged) + ", which moved since it started"
+				applied += ", merged over " + wtree.PatchPaths(merged) + ", which moved since it started"
 			}
 			if len(ran) > 0 {
-				applied += ", with " + patchPaths(generated) + " regenerated by " + strings.Join(ran, ", ") + " rather than merged"
+				applied += ", with " + wtree.PatchPaths(generated) + " regenerated by " + strings.Join(ran, ", ") + " rather than merged"
 			}
 			settle(applied)
 			if c.integrates != nil {
@@ -193,7 +174,7 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 		// merge and to the card again rather than being forced. Where the
 		// patch still applies, the tree did not move and the failure is
 		// something else, which another card would only repeat.
-		if checkPatch(c.repoTop, land) == nil {
+		if wtree.CheckPatch(c.repoTop, land) == nil {
 			settle("the patch failed to apply cleanly: " + firstLine(applyErr.Error()) + c.keepPatch(land, merged) + held)
 			return false
 		}
@@ -206,10 +187,10 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 // the card warns about and where it measures are the same either way.
 func (s *Supervisor) patchAsk(c *child, repoTop, patch string) (*Ask, []string) {
 	name := c.name
-	hunks, files := PatchHunks(patch)
+	hunks, files := wtree.PatchHunks(patch)
 	adds, dels := diff.Stats(hunks)
 	title := fmt.Sprintf("apply patch (+%d −%d, %s)", adds, dels, plural(files, "file"))
-	touched := PatchFiles(patch)
+	touched := wtree.PatchFiles(patch)
 	ask := NewAsk(name, AskPatch, title)
 	ask.Hunks = hunks
 	// A patch is the one child request that writes the reader's own files, so
@@ -242,8 +223,8 @@ func (s *Supervisor) landPatch(c *child, repoTop, patch string, touched []string
 	// Both sides are read around `git apply`, in the real checkout: the
 	// child's own worktree edits never touched these files, so this is the
 	// only place the session can see what its workspace lost and gained.
-	before := readSides(repoTop, touched)
-	if err := applyPatch(repoTop, patch); err != nil {
+	before := wtree.ReadSides(repoTop, touched)
+	if err := wtree.ApplyPatch(repoTop, patch); err != nil {
 		return "", err
 	}
 	s.recordApplied(c.name, touched)
@@ -255,28 +236,12 @@ func (s *Supervisor) landPatch(c *child, repoTop, patch string, touched []string
 		Status: c.status(),
 		Patch: &PatchApplied{
 			Agent: c.name,
-			Files: patchedFiles(s.opts.Root, repoTop, touched, before, readSides(repoTop, touched)),
+			Files: wtree.PatchedFiles(s.opts.Root, repoTop, touched, before, wtree.ReadSides(repoTop, touched)),
 		},
 	})
-	hunks, files := PatchHunks(patch)
+	hunks, files := wtree.PatchHunks(patch)
 	adds, dels := diff.Stats(hunks)
-	return fmt.Sprintf("patch applied to the workspace (+%d −%d, %s): %s", adds, dels, plural(files, "file"), patchPaths(touched)), nil
-}
-
-// maxNotedPatchPaths bounds the file list a patch note carries. The file
-// count is stated beside the list either way, so a patch longer than this
-// loses the names past it and nothing about its size; what it buys is that a
-// mechanical change over two hundred files cannot spend a page of the
-// parent's context on a list the parent would then have to summarise.
-const maxNotedPatchPaths = 20
-
-// patchPaths renders a patch's own file list for the note the parent reads.
-func patchPaths(files []string) string {
-	if len(files) <= maxNotedPatchPaths {
-		return strings.Join(files, ", ")
-	}
-	return strings.Join(files[:maxNotedPatchPaths], ", ") +
-		fmt.Sprintf(" and %d more", len(files)-maxNotedPatchPaths)
+	return fmt.Sprintf("patch applied to the workspace (+%d −%d, %s): %s", adds, dels, plural(files, "file"), wtree.PatchPaths(touched)), nil
 }
 
 // patchClashes names the other agents whose applied patches already touched
@@ -348,7 +313,7 @@ type keptPatch struct {
 	// base is the commit the writer's copy stood on, where the patch is the
 	// writer's own against it rather than a merge over the checkout. The
 	// commit outlives the copy in the object store every copy shares, which
-	// is what lets the patch be merged again from its row (mergeKept). Empty
+	// is what lets the patch be merged again from its row (worktree.MergeKept). Empty
 	// for a patch that lands only as it is.
 	base string
 	// generated is the files the project declares generated that the patch
@@ -408,7 +373,7 @@ func (c *child) keepStoppedPatch(gen Regenerator) {
 	if worktree == "" || kept {
 		return
 	}
-	patch, err := worktreePatch(worktree)
+	patch, err := wtree.WorktreePatch(worktree)
 	if err != nil || strings.TrimSpace(patch) == "" {
 		return
 	}
@@ -424,8 +389,8 @@ func (c *child) keepStoppedPatch(gen Regenerator) {
 // checkout has them until their generator is run.
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
 func (c *child) keepWriterPatch(patch string, gen Regenerator) string {
-	generated := generatedPaths(gen, PatchFiles(patch))
-	source := withoutFiles(patch, generated)
+	generated := wtree.GeneratedPaths(gen, wtree.PatchFiles(patch))
+	source := wtree.WithoutFiles(patch, generated)
 	c.mu.Lock()
 	worktree := c.worktree
 	c.mu.Unlock()
@@ -433,16 +398,16 @@ func (c *child) keepWriterPatch(patch string, gen Regenerator) string {
 	// writer's own against it, so the two are what a later merge needs.
 	base := ""
 	if worktree != "" {
-		if out, err := gitOutput(worktree, "rev-parse", "HEAD"); err == nil {
+		if out, err := wtree.GitOutput(worktree, "rev-parse", "HEAD"); err == nil {
 			base = strings.TrimSpace(out)
 		}
 	}
 	if len(generated) == 0 {
 		return c.keep(&keptPatch{patch: patch, base: base})
 	}
-	left := "; " + patchPaths(generated) + " are generated and are regenerated when it lands"
+	left := "; " + wtree.PatchPaths(generated) + " are generated and are regenerated when it lands"
 	if source == "" {
-		return "; " + patchPaths(generated) + " are generated and left to their generator"
+		return "; " + wtree.PatchPaths(generated) + " are generated and left to their generator"
 	}
 	return c.keep(&keptPatch{patch: source, base: base, generated: generated}) + left
 }
@@ -466,7 +431,7 @@ func (s *Supervisor) PatchToKeep(name string) bool {
 	if worktree == "" {
 		return false
 	}
-	out, err := gitOutput(worktree, "status", "--porcelain")
+	out, err := wtree.GitOutput(worktree, "status", "--porcelain")
 	return err == nil && strings.TrimSpace(out) != ""
 }
 
@@ -509,8 +474,8 @@ func (s *Supervisor) ReviewKept(name string) (*Ask, error) {
 	c.mu.Lock()
 	integrated := k.integrated
 	c.mu.Unlock()
-	if k.base != "" && checkPatch(k.repoTop, k.patch) != nil {
-		m, err := mergeKept(k.repoTop, k.base, k.patch, nil)
+	if k.base != "" && wtree.CheckPatch(k.repoTop, k.patch) != nil {
+		m, err := wtree.MergeKept(k.repoTop, k.base, k.patch, nil)
 		switch {
 		case err != nil:
 			// The card as the patch stands, whose landing then says why.
@@ -518,7 +483,7 @@ func (s *Supervisor) ReviewKept(name string) (*Ask, error) {
 			agentName, err := s.spawnIntegration(c, k, m.Conflicts)
 			if err != nil {
 				return nil, fmt.Errorf("the kept patch conflicts with the workspace in %s, and no integration writer could be started: %s",
-					patchPaths(m.Conflicts), firstLine(err.Error()))
+					wtree.PatchPaths(m.Conflicts), firstLine(err.Error()))
 			}
 			return nil, &IntegrationStarted{Agent: agentName, Files: m.Conflicts}
 		case len(m.Conflicts) == 0 && m.Patch == "":
@@ -532,7 +497,7 @@ func (s *Supervisor) ReviewKept(name string) (*Ask, error) {
 	// What the patch was kept without is regenerated over it as it lands,
 	// in a copy of the checkout as it stands then (awaitKept).
 	if len(k.generated) > 0 {
-		ask.Warnings = append(ask.Warnings, patchPaths(k.generated)+" are generated and are regenerated by their generator as this lands")
+		ask.Warnings = append(ask.Warnings, wtree.PatchPaths(k.generated)+" are generated and are regenerated by their generator as this lands")
 	}
 	c.mu.Lock()
 	if c.kept != k {
@@ -579,11 +544,11 @@ func (s *Supervisor) awaitKept(c *child, k *keptPatch, ask *Ask, land string, to
 	}
 	// The generated files the patch was kept without are regenerated over it
 	// in a copy of the checkout as it stands, as a finishing writer's are
-	// (regenerateOver); a generator that fails lands nothing, since the card
+	// (worktree.RegenerateOver); a generator that fails lands nothing, since the card
 	// promised the regenerated files with it.
 	var ran []string
 	if len(k.generated) > 0 {
-		out, cmds, err := regenerateOver(s.ctx, s.opts.Generators, s.opts.Root, s.parentUntracked(), land, k.generated)
+		out, cmds, err := wtree.RegenerateOver(s.ctx, s.opts.Generators, s.opts.Root, s.parentUntracked(), land, k.generated)
 		if err != nil || out == "" {
 			note := "the workspace already holds every change the kept patch makes"
 			if err != nil {
@@ -596,7 +561,7 @@ func (s *Supervisor) awaitKept(c *child, k *keptPatch, ask *Ask, land string, to
 			s.emitUpdate(c)
 			return
 		}
-		land, touched, ran = out, PatchFiles(out), cmds
+		land, touched, ran = out, wtree.PatchFiles(out), cmds
 	}
 	note, err := s.landPatch(c, k.repoTop, land, touched)
 	c.mu.Lock()
@@ -605,7 +570,7 @@ func (s *Supervisor) awaitKept(c *child, k *keptPatch, ask *Ask, land string, to
 		note = "the kept patch failed to apply cleanly: " + firstLine(err.Error()) + "; it is still kept"
 	} else {
 		if len(ran) > 0 {
-			note += ", with " + patchPaths(k.generated) + " regenerated by " + strings.Join(ran, ", ")
+			note += ", with " + wtree.PatchPaths(k.generated) + " regenerated by " + strings.Join(ran, ", ")
 		}
 		if c.kept == k {
 			c.kept, spent = nil, true

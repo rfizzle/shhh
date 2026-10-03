@@ -1,4 +1,4 @@
-package subagent
+package worktree
 
 import (
 	"context"
@@ -21,8 +21,8 @@ type Regenerator interface {
 	Regenerate(ctx context.Context, dir string, paths []string) ([]string, error)
 }
 
-// generatedPaths is which of a patch's paths are generated.
-func generatedPaths(gen Regenerator, paths []string) []string {
+// GeneratedPaths is which of a patch's paths are generated.
+func GeneratedPaths(gen Regenerator, paths []string) []string {
 	if gen == nil || len(paths) == 0 {
 		return nil
 	}
@@ -41,8 +41,8 @@ func runGenerators(ctx context.Context, gen Regenerator, dir string, paths []str
 	return gen.Regenerate(ctx, dir, paths)
 }
 
-// withoutFiles is a patch with the sections for these paths taken out.
-func withoutFiles(patch string, drop []string) string {
+// WithoutFiles is a patch with the sections for these paths taken out.
+func WithoutFiles(patch string, drop []string) string {
 	if len(drop) == 0 {
 		return patch
 	}
@@ -54,7 +54,7 @@ func withoutFiles(patch string, drop []string) string {
 	keep := true
 	for _, line := range strings.SplitAfter(patch, "\n") {
 		if strings.HasPrefix(line, "diff --git ") {
-			keep = !skip[parseGitDiffPath(strings.TrimRight(line, "\n"))]
+			keep = !skip[ParseGitDiffPath(strings.TrimRight(line, "\n"))]
 		}
 		if keep {
 			out.WriteString(line)
@@ -66,7 +66,7 @@ func withoutFiles(patch string, drop []string) string {
 	return out.String()
 }
 
-// regenerateOver is what a patch that touches generated paths lands as: its
+// RegenerateOver is what a patch that touches generated paths lands as: its
 // other changes applied to a copy of the checkout as it stands, the
 // generators for those paths run there, and the copy's whole difference from
 // the checkout taken as one patch — the source change and every file its
@@ -74,25 +74,25 @@ func withoutFiles(patch string, drop []string) string {
 // checkout's own text; the checkout itself is only read, and a generator that
 // fails leaves it exactly as it was.
 //
-// root and untracked are what a writer's copy is made from (addWorktree).
+// root and untracked are what a writer's copy is made from (AddWorktree).
 // The copy is made and removed under the repository's worktree lock, and the
 // generators run with the lock released.
-func regenerateOver(ctx context.Context, gen Regenerator, root string, untracked []string, patch string, paths []string) (string, []string, error) {
-	h, err := addWorktreeContext(ctx, root, untracked)
+func RegenerateOver(ctx context.Context, gen Regenerator, root string, untracked []string, patch string, paths []string) (string, []string, error) {
+	h, err := AddWorktreeContext(ctx, root, untracked)
 	if err != nil {
 		return "", nil, err
 	}
-	defer removeWorktree(h.repoTop, h.dir)
+	defer RemoveWorktree(h.RepoTop, h.Dir)
 	if strings.TrimSpace(patch) != "" {
-		if err := applyPatch(h.dir, patch); err != nil {
+		if err := ApplyPatch(h.Dir, patch); err != nil {
 			return "", nil, err
 		}
 	}
-	ran, err := runGenerators(ctx, gen, h.dir, paths)
+	ran, err := runGenerators(ctx, gen, h.Dir, paths)
 	if err != nil {
 		return "", ran, err
 	}
-	out, err := worktreePatch(h.dir)
+	out, err := WorktreePatch(h.Dir)
 	if strings.TrimSpace(out) == "" {
 		out = ""
 	}
@@ -105,7 +105,7 @@ func regenerateOver(ctx context.Context, gen Regenerator, root string, untracked
 func restoreFromBase(worktree string, paths []string) error {
 	var present []string
 	for _, p := range paths {
-		if _, err := gitOutput(worktree, "cat-file", "-e", "HEAD:"+p); err == nil {
+		if _, err := GitOutput(worktree, "cat-file", "-e", "HEAD:"+p); err == nil {
 			present = append(present, p)
 			continue
 		}
@@ -116,6 +116,6 @@ func restoreFromBase(worktree string, paths []string) error {
 	if len(present) == 0 {
 		return nil
 	}
-	_, err := runGit(worktree, append([]string{"checkout", "HEAD", "--"}, present...)...)
+	_, err := RunGit(worktree, append([]string{"checkout", "HEAD", "--"}, present...)...)
 	return err
 }

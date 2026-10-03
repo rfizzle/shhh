@@ -12,6 +12,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
+	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
 // mergeBase is the committed file the merge tests work on: a line the
@@ -25,7 +26,7 @@ func mergeRepo(t *testing.T) string {
 	t.Helper()
 	repo := initTestRepo(t)
 	writeInto(t, repo, "main.go", mergeBase)
-	if _, err := runGit(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-am", "base"); err != nil {
+	if _, err := wtree.RunGit(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-am", "base"); err != nil {
 		t.Fatal(err)
 	}
 	return repo
@@ -77,22 +78,22 @@ func hunkText(hunks []diff.Hunk) string {
 // checkout's.
 func TestMergeWorktree_APatchOverAMovedFileMergesAgainstTheCheckout(t *testing.T) {
 	repo := mergeRepo(t)
-	h, err := addWorktree(repo, nil)
+	h, err := wtree.AddWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(h.repoTop, h.dir)
-	writeInto(t, h.root, "main.go", ours(mergeBase))
-	patch, err := worktreePatch(h.dir)
+	defer wtree.RemoveWorktree(h.RepoTop, h.Dir)
+	writeInto(t, h.Root, "main.go", ours(mergeBase))
+	patch, err := wtree.WorktreePatch(h.Dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	writeInto(t, repo, "main.go", moved(mergeBase))
-	if checkPatch(repo, patch) == nil {
+	if wtree.CheckPatch(repo, patch) == nil {
 		t.Fatal("the fixture should move the checkout under the writer's hunk")
 	}
 
-	m, err := mergeWorktree(h.dir, repo, nil)
+	m, err := wtree.MergeWorktree(h.Dir, repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +106,7 @@ func TestMergeWorktree_APatchOverAMovedFileMergesAgainstTheCheckout(t *testing.T
 	if got := readFrom(t, repo, "main.go"); got != moved(mergeBase) {
 		t.Fatalf("merging must not touch the checkout:\n%s", got)
 	}
-	if err := applyPatch(repo, m.Patch); err != nil {
+	if err := wtree.ApplyPatch(repo, m.Patch); err != nil {
 		t.Fatalf("the merge should apply plainly to the checkout: %v", err)
 	}
 	if got := readFrom(t, repo, "main.go"); got != ours(moved(mergeBase)) {
@@ -120,35 +121,35 @@ func TestMergeWorktree_UnmovedFilesAreTheWritersOutright(t *testing.T) {
 	repo := mergeRepo(t)
 	writeInto(t, repo, "gone.txt", "bye\n")
 	writeInto(t, repo, "run.sh", "#!/bin/sh\n")
-	if _, err := runGit(repo, "add", "-A"); err != nil {
+	if _, err := wtree.RunGit(repo, "add", "-A"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := runGit(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "more"); err != nil {
+	if _, err := wtree.RunGit(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "more"); err != nil {
 		t.Fatal(err)
 	}
-	h, err := addWorktree(repo, nil)
+	h, err := wtree.AddWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(h.repoTop, h.dir)
-	writeInto(t, h.root, "main.go", ours(mergeBase))
-	writeInto(t, h.root, "pkg/deep/new.go", "package deep\n")
-	if err := os.Remove(filepath.Join(h.root, "gone.txt")); err != nil {
+	defer wtree.RemoveWorktree(h.RepoTop, h.Dir)
+	writeInto(t, h.Root, "main.go", ours(mergeBase))
+	writeInto(t, h.Root, "pkg/deep/new.go", "package deep\n")
+	if err := os.Remove(filepath.Join(h.Root, "gone.txt")); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(filepath.Join(h.root, "run.sh"), 0o755); err != nil {
+	if err := os.Chmod(filepath.Join(h.Root, "run.sh"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := worktreePatch(h.dir); err != nil {
+	if _, err := wtree.WorktreePatch(h.Dir); err != nil {
 		t.Fatal(err)
 	}
 	writeInto(t, repo, "main.go", moved(mergeBase))
 
-	m, err := mergeWorktree(h.dir, repo, nil)
+	m, err := wtree.MergeWorktree(h.Dir, repo, nil)
 	if err != nil || len(m.Conflicts) != 0 || len(m.Moved) != 1 {
 		t.Fatalf("one moved file and no conflict, got moved %v conflicts %v err %v", m.Moved, m.Conflicts, err)
 	}
-	if err := applyPatch(repo, m.Patch); err != nil {
+	if err := wtree.ApplyPatch(repo, m.Patch); err != nil {
 		t.Fatalf("the merge should apply plainly:\n%s\n%v", m.Patch, err)
 	}
 	if got := readFrom(t, repo, "main.go"); got != ours(moved(mergeBase)) {
@@ -169,20 +170,20 @@ func TestMergeWorktree_UnmovedFilesAreTheWritersOutright(t *testing.T) {
 // merged: no patch, the file named, the checkout untouched.
 func TestMergeWorktree_TheSameLinesAreAConflictAndNothingIsMerged(t *testing.T) {
 	repo := mergeRepo(t)
-	h, err := addWorktree(repo, nil)
+	h, err := wtree.AddWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(h.repoTop, h.dir)
-	writeInto(t, h.root, "main.go", ours(mergeBase))
-	writeInto(t, h.root, "other.go", "package main\n")
-	if _, err := worktreePatch(h.dir); err != nil {
+	defer wtree.RemoveWorktree(h.RepoTop, h.Dir)
+	writeInto(t, h.Root, "main.go", ours(mergeBase))
+	writeInto(t, h.Root, "other.go", "package main\n")
+	if _, err := wtree.WorktreePatch(h.Dir); err != nil {
 		t.Fatal(err)
 	}
 	theirs := strings.Replace(mergeBase, "var y = 0", "var y = 1", 1)
 	writeInto(t, repo, "main.go", theirs)
 
-	m, err := mergeWorktree(h.dir, repo, nil)
+	m, err := wtree.MergeWorktree(h.Dir, repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,7 +223,7 @@ func TestWorktreeLand_MergesOverAnEarlierLaneAndRefusesAConflict(t *testing.T) {
 	}
 
 	_, err = clash.Land()
-	var conflict *MergeConflict
+	var conflict *wtree.MergeConflict
 	if !errors.As(err, &conflict) || len(conflict.Files) != 1 || conflict.Files[0] != "main.go" {
 		t.Fatalf("a lane over the same line should be a conflict naming main.go, got %v", err)
 	}

@@ -2769,23 +2769,6 @@ func TestAPatchNoteNamesTheFilesItTouched(t *testing.T) {
 	}
 }
 
-// A patch of two hundred files is a page of the parent's context spent on a
-// list it would then have to summarise; the count beside the names says the
-// size either way.
-func TestAPatchNoteBoundsAVeryLongFileList(t *testing.T) {
-	files := make([]string, maxNotedPatchPaths+5)
-	for i := range files {
-		files[i] = fmt.Sprintf("pkg/file%d.go", i)
-	}
-	got := patchPaths(files)
-	if !strings.Contains(got, "and 5 more") {
-		t.Fatalf("a long list must say how many it left out, got %q", got)
-	}
-	if strings.Contains(got, files[maxNotedPatchPaths]) {
-		t.Fatalf("the list is not bounded: %q", got)
-	}
-}
-
 // spendingRounds is a script of n rounds that each read a file and take in
 // tokens doing it, for a child whose budget is what ends it rather than its
 // rounds.

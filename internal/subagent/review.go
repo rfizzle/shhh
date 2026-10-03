@@ -16,6 +16,8 @@ import (
 	"fmt"
 	"strings"
 	"unicode/utf8"
+
+	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
 const (
@@ -85,7 +87,7 @@ func declaredEvidence(root string, paths []string) string {
 // reason to refuse the spawn.
 func workspaceDiff(root string, paths []string) string {
 	args := append([]string{"diff", "HEAD", "--"}, paths...)
-	out, err := runGit(root, args...)
+	out, err := wtree.RunGit(root, args...)
 	if err != nil {
 		return ""
 	}

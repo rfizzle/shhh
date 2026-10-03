@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/provider"
+	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
 // The integration fixtures: two writers change the same line of mergeBase's
@@ -279,12 +280,12 @@ func TestAnIntegrationThatDoesNotReconcileKeepsBothPatches(t *testing.T) {
 // is put on the card merged.
 func TestAKeptPatchReviewedFromItsRowIsMergedOrIntegrated(t *testing.T) {
 	repo := mergeRepo(t)
-	h, err := addWorktree(repo, nil)
+	h, err := wtree.AddWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	put(h.root, "main.go", ours(mergeBase))
-	patch, err := worktreePatch(h.dir)
+	put(h.Root, "main.go", ours(mergeBase))
+	patch, err := wtree.WorktreePatch(h.Dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -294,10 +295,10 @@ func TestAKeptPatchReviewedFromItsRowIsMergedOrIntegrated(t *testing.T) {
 	sup := New(context.Background(), Options{Root: repo, NewEnv: w.factory()})
 	t.Cleanup(sup.Close)
 	drainEvents(t, sup)
-	c := &child{name: "writer-9", role: RoleWriter, profile: BuiltinProfiles()[RoleWriter], worktree: h.dir, repoTop: repo,
+	c := &child{name: "writer-9", role: RoleWriter, profile: BuiltinProfiles()[RoleWriter], worktree: h.Dir, repoTop: repo,
 		done: make(chan struct{}), state: StateDone, spend: meter.New(nil)}
 	c.keepWriterPatch(patch, nil)
-	removeWorktree(h.repoTop, h.dir)
+	wtree.RemoveWorktree(h.RepoTop, h.Dir)
 	sup.mu.Lock()
 	sup.children = append(sup.children, c)
 	sup.byName[c.name] = c
@@ -392,8 +393,8 @@ func TestConflictRegionsRunsGitUnderTheHostEnvironment(t *testing.T) {
 	t.Setenv("GIT_CONFIG_VALUE_0", "/tmp/attacker")
 	t.Setenv("GIT_CONFIG_PARAMETERS", "'core.fsmonitor'='/tmp/attacker'")
 
-	side := func(text string) mergeSide { return mergeSide{exists: true, mode: "100644", text: text} }
-	conflictRegions([]mergeSide{side("a\n"), side("b\n"), side("c\n")}, []string{"ours", "base", "theirs"})
+	side := func(text string) wtree.MergeSide { return wtree.MergeSide{Exists: true, Mode: "100644", Text: text} }
+	conflictRegions([]wtree.MergeSide{side("a\n"), side("b\n"), side("c\n")}, []string{"ours", "base", "theirs"})
 
 	args, err := os.ReadFile(record + ".args")
 	if err != nil {

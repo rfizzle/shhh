@@ -25,6 +25,7 @@ import (
 	"sync"
 
 	"github.com/rfizzle/shhh/internal/hostgit"
+	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
 // integratorRole is the stem an integration writer's generated name takes.
@@ -100,7 +101,7 @@ type IntegrationStarted struct {
 }
 
 func (e *IntegrationStarted) Error() string {
-	return "the kept patch conflicts with the workspace in " + patchPaths(e.Files) + "; " +
+	return "the kept patch conflicts with the workspace in " + wtree.PatchPaths(e.Files) + "; " +
 		e.Agent + " was started to reconcile the two, and its patch comes back for review"
 }
 
@@ -192,7 +193,7 @@ func (s *Supervisor) integrateKept(c *child, conflicts []string) string {
 // is in the writer's own words rather than read back out of a diff.
 func integrationTask(source, task string, conflicts []string) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "Reconcile %s's patch with the workspace in %s.\n\n%s was asked:\n\n", source, patchPaths(conflicts), source)
+	fmt.Fprintf(&b, "Reconcile %s's patch with the workspace in %s.\n\n%s was asked:\n\n", source, wtree.PatchPaths(conflicts), source)
 	for _, line := range strings.Split(strings.TrimSpace(task), "\n") {
 		b.WriteString("> " + line + "\n")
 	}
@@ -208,20 +209,20 @@ func integrationEvidence(repoTop, base, patch string, conflicts []string, source
 	if base == "" {
 		return "", errors.New("the kept patch does not record what it was written against")
 	}
-	theirs, err := keptTree(repoTop, base, patch)
+	theirs, err := wtree.KeptTree(repoTop, base, patch)
 	if err != nil {
 		return "", err
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "# The conflict\n\n%s's patch was written against a tree the workspace has since moved from, and in %s the two changed the same lines. Your copy is the workspace as it stands, with every other file of %s's patch already merged into it; the files below are as the workspace has them. Each region is marked as `git merge-file --diff3` marks it: the workspace's text, then the text both started from, then %s's.\n\n",
-		source, patchPaths(conflicts), source, source)
+		source, wtree.PatchPaths(conflicts), source, source)
 	for _, p := range conflicts {
 		fmt.Fprintf(&b, "## %s\n\n", p)
-		ours, err := checkoutSide(filepath.Join(repoTop, filepath.FromSlash(p)))
+		ours, err := wtree.CheckoutSide(filepath.Join(repoTop, filepath.FromSlash(p)))
 		if err != nil {
 			return "", err
 		}
-		sides := []mergeSide{ours, blobSide(repoTop, base, p), blobSide(repoTop, theirs, p)}
+		sides := []wtree.MergeSide{ours, blobSide(repoTop, base, p), blobSide(repoTop, theirs, p)}
 		regions, ok := conflictRegions(sides, []string{"the workspace", "base", source})
 		if !ok {
 			fmt.Fprintf(&b, "Not a line merge: the workspace %s it, the base %s it and %s %s it. Decide which the file should be.\n\n",
@@ -244,26 +245,26 @@ func integrationEvidence(repoTop, base, patch string, conflicts []string, source
 
 // blobSide is one file in a commit or tree of the shared object store,
 // absent where it does not hold the file.
-func blobSide(repoTop, treeish, path string) mergeSide {
-	entry, err := gitOutput(repoTop, "ls-tree", treeish, "--", path)
+func blobSide(repoTop, treeish, path string) wtree.MergeSide {
+	entry, err := wtree.GitOutput(repoTop, "ls-tree", treeish, "--", path)
 	mode, _, _ := strings.Cut(entry, " ")
 	if err != nil || mode == "" {
-		return mergeSide{}
+		return wtree.MergeSide{}
 	}
-	text, err := gitOutput(repoTop, "cat-file", "blob", treeish+":"+path)
+	text, err := wtree.GitOutput(repoTop, "cat-file", "blob", treeish+":"+path)
 	if err != nil {
-		return mergeSide{}
+		return wtree.MergeSide{}
 	}
-	return mergeSide{exists: true, mode: mode, text: text}
+	return wtree.MergeSide{Exists: true, Mode: mode, Text: text}
 }
 
 // sideWord says what one side of a merge that is not a line merge did with
 // the file.
-func sideWord(side mergeSide) string {
+func sideWord(side wtree.MergeSide) string {
 	switch {
-	case !side.exists:
+	case !side.Exists:
 		return "has no copy of"
-	case !side.textual():
+	case !side.Textual():
 		return "has a non-text version of"
 	}
 	return "has a text version of"
@@ -273,9 +274,9 @@ func sideWord(side mergeSide) string {
 // three labels and answers with each conflict region and the lines around
 // it, each headed with the line it starts at in the workspace's file. False
 // where the sides are not all text, which has no regions to show.
-func conflictRegions(sides []mergeSide, labels []string) (string, bool) {
+func conflictRegions(sides []wtree.MergeSide, labels []string) (string, bool) {
 	for _, side := range sides {
-		if !side.exists || !side.textual() {
+		if !side.Exists || !side.Textual() {
 			return "", false
 		}
 	}
@@ -290,7 +291,7 @@ func conflictRegions(sides []mergeSide, labels []string) (string, bool) {
 	}
 	for i, side := range sides {
 		name := filepath.Join(scratch, fmt.Sprintf("side-%d", i))
-		if err := os.WriteFile(name, []byte(side.text), 0o600); err != nil {
+		if err := os.WriteFile(name, []byte(side.Text), 0o600); err != nil {
 			return "", false
 		}
 		args = append(args, name)
@@ -353,8 +354,8 @@ func isMarker(line, marker string) bool {
 // merges cleanly written in, and the conflicting files left as the workspace
 // has them for the writer to reconcile. It records those files as seeded, so
 // the landing can tell which of them the writer did not touch.
-func (in *integration) seed(wt worktreeHandle) error {
-	m, err := mergeKept(wt.repoTop, in.kept.base, in.kept.patch, nil)
+func (in *integration) seed(wt wtree.WorktreeHandle) error {
+	m, err := wtree.MergeKept(wt.RepoTop, in.kept.base, in.kept.patch, nil)
 	if err != nil {
 		return fmt.Errorf("merging %s's patch into the integration's copy: %w", in.source, err)
 	}
@@ -363,13 +364,13 @@ func (in *integration) seed(wt worktreeHandle) error {
 		patch = m.Resolved
 	}
 	if patch != "" {
-		if err := applyPatch(wt.dir, patch); err != nil {
+		if err := wtree.ApplyPatch(wt.Dir, patch); err != nil {
 			return fmt.Errorf("writing %s's merged files into the integration's copy: %w", in.source, err)
 		}
 	}
 	seeded := make(map[string]seededFile, len(m.Conflicts))
 	for _, p := range m.Conflicts {
-		data, err := os.ReadFile(filepath.Join(wt.dir, filepath.FromSlash(p)))
+		data, err := os.ReadFile(filepath.Join(wt.Dir, filepath.FromSlash(p)))
 		seeded[p] = seededFile{text: string(data), exists: err == nil}
 	}
 	in.mu.Lock()
@@ -404,7 +405,7 @@ func (in *integration) unreconciled(worktree, patch string) []string {
 	for _, line := range strings.Split(patch, "\n") {
 		switch {
 		case strings.HasPrefix(line, "diff --git "):
-			file = parseGitDiffPath(line)
+			file = wtree.ParseGitDiffPath(line)
 		case strings.HasPrefix(line, "+") && !strings.HasPrefix(line, "+++"):
 			if body := line[1:]; isMarker(body, "<<<<<<<") || isMarker(body, ">>>>>>>") {
 				add(file)
@@ -426,11 +427,11 @@ func (s *Supervisor) unreconciledNote(c *child, files []string, patch string) st
 	}
 	if src, err := s.lookup(in.source); err == nil {
 		src.appendEntry(TranscriptEntry{Kind: EntrySystem,
-			Text: c.name + " did not reconcile " + patchPaths(files) + "; this patch is still kept for the user to review"})
+			Text: c.name + " did not reconcile " + wtree.PatchPaths(files) + "; this patch is still kept for the user to review"})
 		s.emitUpdate(src)
 	}
 	return fmt.Sprintf("%s did not reconcile %s with the workspace; no files were changed, and both patches are kept for the user: %s's, and this one%s",
-		c.name, patchPaths(files), in.source, kept)
+		c.name, wtree.PatchPaths(files), in.source, kept)
 }
 
 // integrationLanded spends the kept patch an integration writer reconciled,

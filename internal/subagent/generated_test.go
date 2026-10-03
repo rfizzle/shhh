@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/meter"
+	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
 // sumGolden is what the fixture generator writes from a.txt and b.txt: each
@@ -75,10 +76,10 @@ func sumRepo(t *testing.T) string {
 	writeInto(t, repo, "a.txt", "1")
 	writeInto(t, repo, "b.txt", "1")
 	writeSum(repo)
-	if _, err := runGit(repo, "add", "-A"); err != nil {
+	if _, err := wtree.RunGit(repo, "add", "-A"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := runGit(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "base"); err != nil {
+	if _, err := wtree.RunGit(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "base"); err != nil {
 		t.Fatal(err)
 	}
 	return repo
@@ -176,48 +177,48 @@ func TestWorktreeLand_AFailingGeneratorLeavesTheCheckoutUntouched(t *testing.T) 
 // writer's patch is its own work over them.
 func TestReseedWorktree_AGeneratedFileIsRegeneratedInTheCopy(t *testing.T) {
 	repo := sumRepo(t)
-	other, err := addWorktree(repo, nil)
+	other, err := wtree.AddWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(other.repoTop, other.dir)
-	mine, err := addWorktree(repo, nil)
+	defer wtree.RemoveWorktree(other.RepoTop, other.Dir)
+	mine, err := wtree.AddWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(mine.repoTop, mine.dir)
-	put(other.root, "a.txt", "2")
-	writeSum(other.root)
-	landed, err := worktreePatch(other.dir)
+	defer wtree.RemoveWorktree(mine.RepoTop, mine.Dir)
+	put(other.Root, "a.txt", "2")
+	writeSum(other.Root)
+	landed, err := wtree.WorktreePatch(other.Dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	put(mine.root, "b.txt", "2")
-	writeSum(mine.root)
+	put(mine.Root, "b.txt", "2")
+	writeSum(mine.Root)
 
-	var clash *ReseedCollision
-	if _, err := reseedWorktree(context.Background(), mine.dir, landed, nil); !errors.As(err, &clash) {
+	var clash *wtree.ReseedCollision
+	if _, err := wtree.ReseedWorktree(context.Background(), mine.Dir, landed, nil); !errors.As(err, &clash) {
 		t.Fatalf("applied as hunks the golden collides, got %v", err)
 	}
 	gen := &sumGenerator{declared: true}
-	regen, err := reseedWorktree(context.Background(), mine.dir, landed, gen)
-	if err != nil || regen.failed != nil || len(regen.ran) != 1 {
+	regen, err := wtree.ReseedWorktree(context.Background(), mine.Dir, landed, gen)
+	if err != nil || regen.Failed != nil || len(regen.Ran) != 1 {
 		t.Fatalf("the landing should carry with the golden regenerated: %+v, %v", regen, err)
 	}
-	if dirs := gen.ran(); len(dirs) != 1 || dirs[0] != mine.dir {
+	if dirs := gen.ran(); len(dirs) != 1 || dirs[0] != mine.Dir {
 		t.Fatalf("the generator should run in the copy, ran in %v", dirs)
 	}
-	if got := take(mine.root, "gen/out.txt"); got != sumGolden("2", "2") {
+	if got := take(mine.Root, "gen/out.txt"); got != sumGolden("2", "2") {
 		t.Fatalf("the copy's golden should be generated over both:\n%s", got)
 	}
-	if base, _ := gitOutput(mine.dir, "show", "HEAD:gen/out.txt"); base != sumGolden("2", "1") {
+	if base, _ := wtree.GitOutput(mine.Dir, "show", "HEAD:gen/out.txt"); base != sumGolden("2", "1") {
 		t.Fatalf("the base should hold the landed golden:\n%s", base)
 	}
-	patch, err := worktreePatch(mine.dir)
+	patch, err := wtree.WorktreePatch(mine.Dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if files := PatchFiles(patch); len(files) != 2 || strings.Contains(patch, "+a=2") {
+	if files := wtree.PatchFiles(patch); len(files) != 2 || strings.Contains(patch, "+a=2") {
 		t.Fatalf("the writer's patch should be its own work over the landing, got %v:\n%s", files, patch)
 	}
 }
@@ -291,14 +292,14 @@ func TestAFailingGeneratorGoesToTheCardWithItsOutput(t *testing.T) {
 // and the review regenerates them over the patch instead.
 func TestAKeptPatchLeavesItsGeneratedFilesToTheGenerator(t *testing.T) {
 	repo := sumRepo(t)
-	h, err := addWorktree(repo, nil)
+	h, err := wtree.AddWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(h.repoTop, h.dir)
-	put(h.root, "a.txt", "2")
-	put(h.root, "gen/out.txt", "hand-merged\n")
-	patch, err := worktreePatch(h.dir)
+	defer wtree.RemoveWorktree(h.RepoTop, h.Dir)
+	put(h.Root, "a.txt", "2")
+	put(h.Root, "gen/out.txt", "hand-merged\n")
+	patch, err := wtree.WorktreePatch(h.Dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -327,23 +328,23 @@ func TestAKeptPatchLeavesItsGeneratedFilesToTheGenerator(t *testing.T) {
 func TestAKeptPatchLandsWithItsGeneratedFilesRegenerated(t *testing.T) {
 	repo := sumRepo(t)
 	gen := &sumGenerator{declared: true}
-	h, err := addWorktree(repo, nil)
+	h, err := wtree.AddWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	put(h.root, "a.txt", "2")
-	put(h.root, "gen/out.txt", "hand-merged\n")
-	patch, err := worktreePatch(h.dir)
+	put(h.Root, "a.txt", "2")
+	put(h.Root, "gen/out.txt", "hand-merged\n")
+	patch, err := wtree.WorktreePatch(h.Dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	sup := New(context.Background(), Options{Root: repo, Generators: gen, NewEnv: mergeFactory(nil)})
 	t.Cleanup(sup.Close)
 	drainEvents(t, sup)
-	c := &child{name: "writer-9", role: RoleWriter, profile: BuiltinProfiles()[RoleWriter], worktree: h.dir, repoTop: repo,
+	c := &child{name: "writer-9", role: RoleWriter, profile: BuiltinProfiles()[RoleWriter], worktree: h.Dir, repoTop: repo,
 		done: make(chan struct{}), state: StateDone, spend: meter.New(nil)}
 	c.keepWriterPatch(patch, gen)
-	removeWorktree(h.repoTop, h.dir)
+	wtree.RemoveWorktree(h.RepoTop, h.Dir)
 	sup.mu.Lock()
 	sup.children = append(sup.children, c)
 	sup.byName[c.name] = c

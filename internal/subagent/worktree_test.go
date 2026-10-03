@@ -13,6 +13,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/hostgit/hostgittest"
+	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
 const samplePatch = `diff --git a/main.go b/main.go
@@ -35,7 +36,7 @@ index 0000000..3333333
 `
 
 func TestPatchHunks(t *testing.T) {
-	hunks, files := PatchHunks(samplePatch)
+	hunks, files := wtree.PatchHunks(samplePatch)
 	if files != 2 {
 		t.Fatalf("files = %d, want 2", files)
 	}
@@ -61,7 +62,7 @@ func TestPatchHunks(t *testing.T) {
 
 func TestPatchHunks_Binary(t *testing.T) {
 	patch := "diff --git a/img.png b/img.png\nBinary files a/img.png and b/img.png differ\n"
-	hunks, files := PatchHunks(patch)
+	hunks, files := wtree.PatchHunks(patch)
 	if files != 1 || len(hunks) != 1 {
 		t.Fatalf("hunks=%d files=%d", len(hunks), files)
 	}
@@ -101,12 +102,12 @@ func initTestRepo(t *testing.T) string {
 func TestWorktreeLifecycle(t *testing.T) {
 	repo := initTestRepo(t)
 
-	wt, err := addWorktree(repo, nil)
+	wt, err := wtree.AddWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	worktree, childRoot, repoTop := wt.dir, wt.root, wt.repoTop
-	defer removeWorktree(repoTop, worktree)
+	worktree, childRoot, repoTop := wt.Dir, wt.Root, wt.RepoTop
+	defer wtree.RemoveWorktree(repoTop, worktree)
 
 	// Edit a tracked file and add a new one inside the worktree.
 	if err := os.WriteFile(filepath.Join(childRoot, "main.go"), []byte("package main\n\nvar changed = true\n"), 0o644); err != nil {
@@ -116,7 +117,7 @@ func TestWorktreeLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	patch, err := worktreePatch(worktree)
+	patch, err := wtree.WorktreePatch(worktree)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +130,7 @@ func TestWorktreeLifecycle(t *testing.T) {
 	if strings.Contains(string(before), "changed") {
 		t.Fatal("worktree edit leaked into the real checkout")
 	}
-	if err := applyPatch(repoTop, patch); err != nil {
+	if err := wtree.ApplyPatch(repoTop, patch); err != nil {
 		t.Fatal(err)
 	}
 	after, _ := os.ReadFile(filepath.Join(repo, "main.go"))
@@ -140,7 +141,7 @@ func TestWorktreeLifecycle(t *testing.T) {
 		t.Fatal("new file missing after apply")
 	}
 
-	removeWorktree(repoTop, worktree)
+	wtree.RemoveWorktree(repoTop, worktree)
 	if _, err := os.Stat(worktree); !os.IsNotExist(err) {
 		t.Fatal("worktree not removed")
 	}
@@ -149,7 +150,7 @@ func TestWorktreeLifecycle(t *testing.T) {
 func TestAddWorktreeContext_StopsBeforeCreatingAWriterWorkspace(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := addWorktreeContext(ctx, t.TempDir(), nil); !errors.Is(err, context.Canceled) {
+	if _, err := wtree.AddWorktreeContext(ctx, t.TempDir(), nil); !errors.Is(err, context.Canceled) {
 		t.Fatalf("cancelled worktree setup error = %v, want context cancellation", err)
 	}
 }
@@ -158,7 +159,7 @@ func TestAddWorktreeNeedsGitRepo(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not on PATH")
 	}
-	if _, err := addWorktree(t.TempDir(), nil); err == nil {
+	if _, err := wtree.AddWorktree(t.TempDir(), nil); err == nil {
 		t.Fatal("expected an error outside a git repository")
 	}
 }
@@ -173,17 +174,17 @@ func TestPatchedFiles_SidesAndSessionRelativePaths(t *testing.T) {
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	before := map[string]fileSide{
-		"sub/edited.go": {text: "one\n", exists: true},
+	before := map[string]wtree.FileSide{
+		"sub/edited.go": {Text: "one\n", Exists: true},
 		"sub/added.go":  {},
-		"gone.go":       {text: "bye\n", exists: true},
+		"gone.go":       {Text: "bye\n", Exists: true},
 	}
-	after := map[string]fileSide{
-		"sub/edited.go": {text: "one\ntwo\n", exists: true},
-		"sub/added.go":  {text: "new\n", exists: true},
+	after := map[string]wtree.FileSide{
+		"sub/edited.go": {Text: "one\ntwo\n", Exists: true},
+		"sub/added.go":  {Text: "new\n", Exists: true},
 		"gone.go":       {},
 	}
-	files := patchedFiles(root, repoTop, []string{"sub/edited.go", "sub/added.go", "gone.go"}, before, after)
+	files := wtree.PatchedFiles(root, repoTop, []string{"sub/edited.go", "sub/added.go", "gone.go"}, before, after)
 	if len(files) != 3 {
 		t.Fatalf("expected 3 files, got %d", len(files))
 	}
@@ -223,18 +224,18 @@ func TestWorktree_RootReachedThroughASymlink(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wt, err := addWorktree(filepath.Join(link, "sub"), nil)
+	wt, err := wtree.AddWorktree(filepath.Join(link, "sub"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(wt.repoTop, wt.dir)
-	if want := filepath.Join(wt.dir, "sub"); wt.root != want {
-		t.Fatalf("the child should mirror the session's place in the repo: %q, want %q", wt.root, want)
+	defer wtree.RemoveWorktree(wt.RepoTop, wt.Dir)
+	if want := filepath.Join(wt.Dir, "sub"); wt.Root != want {
+		t.Fatalf("the child should mirror the session's place in the repo: %q, want %q", wt.Root, want)
 	}
 
-	files := patchedFiles(link, wt.repoTop, []string{"main.go"},
-		map[string]fileSide{"main.go": {text: "one\n", exists: true}},
-		map[string]fileSide{"main.go": {text: "two\n", exists: true}})
+	files := wtree.PatchedFiles(link, wt.RepoTop, []string{"main.go"},
+		map[string]wtree.FileSide{"main.go": {Text: "one\n", Exists: true}},
+		map[string]wtree.FileSide{"main.go": {Text: "two\n", Exists: true}})
 	if files[0].Path != "main.go" {
 		t.Fatalf("a patched file should be named relative to the session root, got %q", files[0].Path)
 	}
@@ -274,24 +275,24 @@ func TestWorktree_SeededFromTheParentsUncommittedWork(t *testing.T) {
 	writeInto(t, repo, "main.go", "package main\n\nvar edited = true\n")
 	writeInto(t, repo, "docs/notes.md", "the session wrote this\n")
 
-	wt, err := addWorktree(repo, []string{"docs/notes.md"})
+	wt, err := wtree.AddWorktree(repo, []string{"docs/notes.md"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(wt.repoTop, wt.dir)
+	defer wtree.RemoveWorktree(wt.RepoTop, wt.Dir)
 
-	if wt.seeded != 2 {
-		t.Fatalf("the child started from %d parent paths, want 2", wt.seeded)
+	if wt.Seeded != 2 {
+		t.Fatalf("the child started from %d parent paths, want 2", wt.Seeded)
 	}
-	if got := readFrom(t, wt.root, "main.go"); !strings.Contains(got, "var edited = true") {
+	if got := readFrom(t, wt.Root, "main.go"); !strings.Contains(got, "var edited = true") {
 		t.Fatalf("the parent's uncommitted edit is not in the worktree:\n%s", got)
 	}
-	if got := readFrom(t, wt.root, "docs/notes.md"); got != "the session wrote this\n" {
+	if got := readFrom(t, wt.Root, "docs/notes.md"); got != "the session wrote this\n" {
 		t.Fatalf("the parent's untracked file is not in the worktree: %q", got)
 	}
 
-	writeInto(t, wt.root, "main.go", "package main\n\nvar edited = true\nvar byTheChild = true\n")
-	patch, err := worktreePatch(wt.dir)
+	writeInto(t, wt.Root, "main.go", "package main\n\nvar edited = true\nvar byTheChild = true\n")
+	patch, err := wtree.WorktreePatch(wt.Dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -306,7 +307,7 @@ func TestWorktree_SeededFromTheParentsUncommittedWork(t *testing.T) {
 		}
 	}
 
-	if err := applyPatch(wt.repoTop, patch); err != nil {
+	if err := wtree.ApplyPatch(wt.RepoTop, patch); err != nil {
 		t.Fatalf("the child's patch should apply to the tree it was written against: %v", err)
 	}
 	main := readFrom(t, repo, "main.go")
@@ -320,35 +321,35 @@ func TestWorktree_SeededFromTheParentsUncommittedWork(t *testing.T) {
 // the same empty patch it would have produced before any of this existed.
 func TestWorktree_CleanParentIsUntouched(t *testing.T) {
 	repo := initTestRepo(t)
-	head, err := gitOutput(repo, "rev-parse", "HEAD")
+	head, err := wtree.GitOutput(repo, "rev-parse", "HEAD")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	wt, err := addWorktree(repo, nil)
+	wt, err := wtree.AddWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(wt.repoTop, wt.dir)
+	defer wtree.RemoveWorktree(wt.RepoTop, wt.Dir)
 
-	if wt.seeded != 0 {
-		t.Fatalf("a clean parent seeded %d paths, want none", wt.seeded)
+	if wt.Seeded != 0 {
+		t.Fatalf("a clean parent seeded %d paths, want none", wt.Seeded)
 	}
-	childHead, err := gitOutput(wt.dir, "rev-parse", "HEAD")
+	childHead, err := wtree.GitOutput(wt.Dir, "rev-parse", "HEAD")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if childHead != head {
 		t.Fatalf("the child should stand on the parent's commit: %q, want %q", childHead, head)
 	}
-	status, err := gitOutput(wt.dir, "status", "--porcelain")
+	status, err := wtree.GitOutput(wt.Dir, "status", "--porcelain")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if status != "" {
 		t.Fatalf("a clean parent should leave a clean worktree, got:\n%s", status)
 	}
-	patch, err := worktreePatch(wt.dir)
+	patch, err := wtree.WorktreePatch(wt.Dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +363,7 @@ func TestWorktree_CleanParentIsUntouched(t *testing.T) {
 // not exist and still succeed. Anything it ran there would fail instead.
 func TestSeedWorktree_CleanParentRunsNothing(t *testing.T) {
 	repo := initTestRepo(t)
-	n, err := seedWorktree(repo, filepath.Join(t.TempDir(), "not-a-worktree"), nil)
+	n, err := wtree.SeedWorktree(repo, filepath.Join(t.TempDir(), "not-a-worktree"), nil)
 	if err != nil {
 		t.Fatalf("a clean parent should seed without touching the worktree: %v", err)
 	}
@@ -376,13 +377,13 @@ func TestSeedWorktree_CleanParentRunsNothing(t *testing.T) {
 // over it would be a writer lost to a file nobody wanted.
 func TestSeedWorktree_UntrackedFileThatHasSinceGone(t *testing.T) {
 	repo := initTestRepo(t)
-	wt, err := addWorktree(repo, []string{"deleted-since.md"})
+	wt, err := wtree.AddWorktree(repo, []string{"deleted-since.md"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(wt.repoTop, wt.dir)
-	if wt.seeded != 0 {
-		t.Fatalf("a path that is not there seeded %d, want none", wt.seeded)
+	defer wtree.RemoveWorktree(wt.RepoTop, wt.Dir)
+	if wt.Seeded != 0 {
+		t.Fatalf("a path that is not there seeded %d, want none", wt.Seeded)
 	}
 }
 
@@ -394,7 +395,7 @@ func TestRepoRelative(t *testing.T) {
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	got := repoRelative(root, repoTop, []string{
+	got := wtree.RepoRelative(root, repoTop, []string{
 		"notes.md",
 		"notes.md",
 		filepath.Join(root, "notes.md"),
@@ -404,11 +405,11 @@ func TestRepoRelative(t *testing.T) {
 	})
 	want := []string{"sub/notes.md", "top.md"}
 	if len(got) != len(want) {
-		t.Fatalf("repoRelative = %v, want %v", got, want)
+		t.Fatalf("wtree.RepoRelative = %v, want %v", got, want)
 	}
 	for i := range want {
 		if got[i] != want[i] {
-			t.Fatalf("repoRelative = %v, want %v", got, want)
+			t.Fatalf("wtree.RepoRelative = %v, want %v", got, want)
 		}
 	}
 }
@@ -426,15 +427,15 @@ func TestSeedWorktree_AFileAddedSinceIsCountedOnce(t *testing.T) {
 		t.Fatalf("git add: %v\n%s", err, out)
 	}
 
-	wt, err := addWorktree(repo, []string{"added.go"})
+	wt, err := wtree.AddWorktree(repo, []string{"added.go"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(wt.repoTop, wt.dir)
-	if wt.seeded != 1 {
-		t.Fatalf("a file in both halves of the seed counted %d, want 1", wt.seeded)
+	defer wtree.RemoveWorktree(wt.RepoTop, wt.Dir)
+	if wt.Seeded != 1 {
+		t.Fatalf("a file in both halves of the seed counted %d, want 1", wt.Seeded)
 	}
-	if got := readFrom(t, wt.root, "added.go"); got != "package main\n" {
+	if got := readFrom(t, wt.Root, "added.go"); got != "package main\n" {
 		t.Fatalf("the file should still be carried once, got %q", got)
 	}
 }
@@ -452,15 +453,15 @@ func TestSeedWorktree_SymlinkIsNotFollowed(t *testing.T) {
 		t.Skipf("symlinks unavailable: %v", err)
 	}
 
-	wt, err := addWorktree(repo, []string{"link.txt"})
+	wt, err := wtree.AddWorktree(repo, []string{"link.txt"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(wt.repoTop, wt.dir)
-	if wt.seeded != 0 {
-		t.Fatalf("a symlink was carried: seeded %d, want 0", wt.seeded)
+	defer wtree.RemoveWorktree(wt.RepoTop, wt.Dir)
+	if wt.Seeded != 0 {
+		t.Fatalf("a symlink was carried: seeded %d, want 0", wt.Seeded)
 	}
-	if _, err := os.Lstat(filepath.Join(wt.root, "link.txt")); !os.IsNotExist(err) {
+	if _, err := os.Lstat(filepath.Join(wt.Root, "link.txt")); !os.IsNotExist(err) {
 		t.Fatalf("the worktree should not have the link: %v", err)
 	}
 }
@@ -481,25 +482,25 @@ func TestPatchedFiles_ADeletedScriptKeepsItsExecuteBit(t *testing.T) {
 		t.Skip("this filesystem does not carry the execute bit")
 	}
 
-	wt, err := addWorktree(repo, []string{"script.sh"})
+	wt, err := wtree.AddWorktree(repo, []string{"script.sh"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(wt.repoTop, wt.dir)
-	if err := os.Remove(filepath.Join(wt.root, "script.sh")); err != nil {
+	defer wtree.RemoveWorktree(wt.RepoTop, wt.Dir)
+	if err := os.Remove(filepath.Join(wt.Root, "script.sh")); err != nil {
 		t.Fatal(err)
 	}
-	patch, err := worktreePatch(wt.dir)
+	patch, err := wtree.WorktreePatch(wt.Dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	touched := PatchFiles(patch)
-	before := readSides(repo, touched)
-	if err := applyPatch(repo, patch); err != nil {
+	touched := wtree.PatchFiles(patch)
+	before := wtree.ReadSides(repo, touched)
+	if err := wtree.ApplyPatch(repo, patch); err != nil {
 		t.Fatalf("the child's deletion should apply to the parent: %v", err)
 	}
-	files := patchedFiles(repo, repo, touched, before, readSides(repo, touched))
+	files := wtree.PatchedFiles(repo, repo, touched, before, wtree.ReadSides(repo, touched))
 	if len(files) != 1 {
 		t.Fatalf("expected one patched file, got %+v", files)
 	}
@@ -528,15 +529,15 @@ func TestPatchedFiles_AModeOnlyPatchIsStillRead(t *testing.T) {
 		t.Skip("this filesystem does not carry the execute bit")
 	}
 
-	wt, err := addWorktree(repo, []string{"script.sh"})
+	wt, err := wtree.AddWorktree(repo, []string{"script.sh"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(wt.repoTop, wt.dir)
-	if !chmodCarried(t, filepath.Join(wt.root, "script.sh"), 0o755) {
+	defer wtree.RemoveWorktree(wt.RepoTop, wt.Dir)
+	if !chmodCarried(t, filepath.Join(wt.Root, "script.sh"), 0o755) {
 		t.Skip("this filesystem does not carry the execute bit")
 	}
-	patch, err := worktreePatch(wt.dir)
+	patch, err := wtree.WorktreePatch(wt.Dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -544,12 +545,12 @@ func TestPatchedFiles_AModeOnlyPatchIsStillRead(t *testing.T) {
 		t.Fatalf("git should carry the mode change:\n%s", patch)
 	}
 
-	touched := PatchFiles(patch)
-	before := readSides(repo, touched)
-	if err := applyPatch(repo, patch); err != nil {
+	touched := wtree.PatchFiles(patch)
+	before := wtree.ReadSides(repo, touched)
+	if err := wtree.ApplyPatch(repo, patch); err != nil {
 		t.Fatalf("a mode-only patch should apply: %v", err)
 	}
-	files := patchedFiles(repo, repo, touched, before, readSides(repo, touched))
+	files := wtree.PatchedFiles(repo, repo, touched, before, wtree.ReadSides(repo, touched))
 	if len(files) != 1 {
 		t.Fatalf("a mode-only patch should still produce a record, got %+v", files)
 	}
@@ -585,11 +586,11 @@ func linkedWorktrees(t *testing.T, repo string) int {
 	t.Helper()
 	// Listing while a writer's copy is being removed reads a half-removed
 	// entry and fails, so the reading takes its turn like the removal does.
-	top, err := runGit(repo, "rev-parse", "--show-toplevel")
+	top, err := wtree.RunGit(repo, "rev-parse", "--show-toplevel")
 	if err != nil {
 		t.Fatal(err)
 	}
-	unlock, _ := lockWorktrees(context.Background(), strings.TrimSpace(top))
+	unlock, _ := wtree.LockWorktrees(context.Background(), strings.TrimSpace(top))
 	out, err := exec.Command("git", "-C", repo, "worktree", "list", "--porcelain").CombinedOutput()
 	unlock()
 	if err != nil {
@@ -639,13 +640,13 @@ func TestAddWorktree_ThreeWritersAtOnceInOneRepository(t *testing.T) {
 	repo := initTestRepo(t)
 	for round := 0; round < 50; round++ {
 		var wg sync.WaitGroup
-		handles := make([]worktreeHandle, 3)
+		handles := make([]wtree.WorktreeHandle, 3)
 		errs := make([]error, 3)
 		for i := range handles {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				handles[i], errs[i] = addWorktreeContext(context.Background(), repo, nil)
+				handles[i], errs[i] = wtree.AddWorktreeContext(context.Background(), repo, nil)
 			}()
 		}
 		wg.Wait()
@@ -656,7 +657,7 @@ func TestAddWorktree_ThreeWritersAtOnceInOneRepository(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				removeWorktree(h.repoTop, h.dir)
+				wtree.RemoveWorktree(h.RepoTop, h.Dir)
 			}()
 		}
 		wg.Wait()
@@ -674,7 +675,7 @@ func TestWorktreePatchRunsNothingFromAPlantedSubmodule(t *testing.T) {
 		t.Fatal(err)
 	}
 	p.Stir(t)
-	patch, err := worktreePatch(p.Root)
+	patch, err := wtree.WorktreePatch(p.Root)
 	if err != nil {
 		t.Fatal(err)
 	}

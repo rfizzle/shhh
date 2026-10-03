@@ -40,6 +40,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 )
@@ -356,7 +357,7 @@ func (l *todoLane) catchUp() string {
 	for l.seen < len(l.set.landings) {
 		landed := l.set.landings[l.seen]
 		if err := l.wt.Reseed(landed.patch); err != nil {
-			var clash *subagent.ReseedCollision
+			var clash *worktree.ReseedCollision
 			if errors.As(err, &clash) {
 				return fmt.Sprintf("%s landed on the checkout (%s) and its patch does not carry into this lane's copy over %s, which this lane changed too: %s",
 					landed.slug, strings.Join(clash.Landed, ", "), strings.Join(clash.Files, ", "), clash.Reason)
@@ -376,13 +377,13 @@ func (l *todoLane) catchUp() string {
 func (l *todoLane) land() ([]string, error) {
 	patch, err := l.wt.LandPatch()
 	if err != nil {
-		var conflict *subagent.MergeConflict
+		var conflict *worktree.MergeConflict
 		if errors.As(err, &conflict) {
 			return nil, l.integrateConflict(conflict)
 		}
 		return nil, fmt.Errorf("the lane's patch would not apply onto the checkout: %s", todoFirstProblem(err.Error()))
 	}
-	files := subagent.PatchFiles(patch)
+	files := worktree.PatchFiles(patch)
 	if len(files) > 0 {
 		l.landed = true
 		// What landed is the patch the landing applied rather than the one
@@ -406,7 +407,7 @@ func (l *todoLane) land() ([]string, error) {
 // markers, and the item blocked with the files named for the person to
 // reconcile. This is the one place a lane's conflict is answered.
 // See docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer.
-func (l *todoLane) integrateConflict(conflict *subagent.MergeConflict) error {
+func (l *todoLane) integrateConflict(conflict *worktree.MergeConflict) error {
 	l.kept = true
 	return fmt.Errorf("the lane's patch conflicts with what landed on the checkout before it, in %s; nothing was written, the landed work stays on the checkout and this lane's is kept in %s",
 		strings.Join(conflict.Files, ", "), l.wt.Root())

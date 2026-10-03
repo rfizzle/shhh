@@ -13,6 +13,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
+	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
 // put and take are writeInto and readFrom for a child's own goroutine, which
@@ -38,7 +39,7 @@ func reseedRepo(t *testing.T) string {
 	t.Helper()
 	repo := initTestRepo(t)
 	writeInto(t, repo, "main.go", reseedBase)
-	if _, err := runGit(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-am", "base"); err != nil {
+	if _, err := wtree.RunGit(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-am", "base"); err != nil {
 		t.Fatal(err)
 	}
 	return repo
@@ -49,34 +50,34 @@ func reseedRepo(t *testing.T) string {
 // on top of it, and the patch the copy hands back is the writer's alone.
 func TestReseedWorktree_TheLandedChangeJoinsTheBase(t *testing.T) {
 	repo := reseedRepo(t)
-	other, err := addWorktree(repo, nil)
+	other, err := wtree.AddWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(other.repoTop, other.dir)
-	mine, err := addWorktree(repo, nil)
+	defer wtree.RemoveWorktree(other.RepoTop, other.Dir)
+	mine, err := wtree.AddWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(mine.repoTop, mine.dir)
+	defer wtree.RemoveWorktree(mine.RepoTop, mine.Dir)
 
-	writeInto(t, other.root, "main.go", strings.Replace(reseedBase, "var x = 0", "var x = 1", 1))
-	landed, err := worktreePatch(other.dir)
+	writeInto(t, other.Root, "main.go", strings.Replace(reseedBase, "var x = 0", "var x = 1", 1))
+	landed, err := wtree.WorktreePatch(other.Dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	writeInto(t, mine.root, "two.go", "package main\n\nvar two = 2\n")
+	writeInto(t, mine.Root, "two.go", "package main\n\nvar two = 2\n")
 
-	if _, err := reseedWorktree(context.Background(), mine.dir, landed, nil); err != nil {
+	if _, err := wtree.ReseedWorktree(context.Background(), mine.Dir, landed, nil); err != nil {
 		t.Fatalf("a patch over a file the writer has not touched should carry: %v", err)
 	}
-	if got := readFrom(t, mine.root, "main.go"); !strings.Contains(got, "var x = 1") {
+	if got := readFrom(t, mine.Root, "main.go"); !strings.Contains(got, "var x = 1") {
 		t.Fatalf("the landed change is not in the copy:\n%s", got)
 	}
-	if got := readFrom(t, mine.root, "two.go"); got != "package main\n\nvar two = 2\n" {
+	if got := readFrom(t, mine.Root, "two.go"); got != "package main\n\nvar two = 2\n" {
 		t.Fatalf("the writer's own work did not survive the reseed: %q", got)
 	}
-	patch, err := worktreePatch(mine.dir)
+	patch, err := wtree.WorktreePatch(mine.Dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,38 +91,38 @@ func TestReseedWorktree_TheLandedChangeJoinsTheBase(t *testing.T) {
 // the file the two met on.
 func TestReseedWorktree_ACollisionLeavesTheCopyAsItWas(t *testing.T) {
 	repo := reseedRepo(t)
-	other, err := addWorktree(repo, nil)
+	other, err := wtree.AddWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(other.repoTop, other.dir)
-	mine, err := addWorktree(repo, nil)
+	defer wtree.RemoveWorktree(other.RepoTop, other.Dir)
+	mine, err := wtree.AddWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(mine.repoTop, mine.dir)
+	defer wtree.RemoveWorktree(mine.RepoTop, mine.Dir)
 
-	writeInto(t, other.root, "main.go", strings.Replace(reseedBase, "var x = 0", "var x = 1", 1))
-	landed, err := worktreePatch(other.dir)
+	writeInto(t, other.Root, "main.go", strings.Replace(reseedBase, "var x = 0", "var x = 1", 1))
+	landed, err := wtree.WorktreePatch(other.Dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	mineText := strings.Replace(reseedBase, "var x = 0", "var x = 2", 1)
-	writeInto(t, mine.root, "main.go", mineText)
-	head, _ := gitOutput(mine.dir, "rev-parse", "HEAD")
+	writeInto(t, mine.Root, "main.go", mineText)
+	head, _ := wtree.GitOutput(mine.Dir, "rev-parse", "HEAD")
 
-	_, err = reseedWorktree(context.Background(), mine.dir, landed, nil)
-	var clash *ReseedCollision
+	_, err = wtree.ReseedWorktree(context.Background(), mine.Dir, landed, nil)
+	var clash *wtree.ReseedCollision
 	if !errors.As(err, &clash) {
 		t.Fatalf("a patch over the writer's own line should be refused as a collision, got %v", err)
 	}
 	if len(clash.Files) != 1 || clash.Files[0] != "main.go" {
 		t.Fatalf("the collision should name main.go, got %v", clash.Files)
 	}
-	if got := readFrom(t, mine.root, "main.go"); got != mineText {
+	if got := readFrom(t, mine.Root, "main.go"); got != mineText {
 		t.Fatalf("the copy was changed by a refused reseed:\n%s", got)
 	}
-	if after, _ := gitOutput(mine.dir, "rev-parse", "HEAD"); after != head {
+	if after, _ := wtree.GitOutput(mine.Dir, "rev-parse", "HEAD"); after != head {
 		t.Fatalf("the copy's base moved under a refused reseed: %s → %s", head, after)
 	}
 }
@@ -347,7 +348,7 @@ func TestALandingThatCollidesSteersTheWriterAndLeavesItsCopy(t *testing.T) {
 	if got := readFrom(t, root, "main.go"); got != mine {
 		t.Fatalf("a collision changed the writer's copy:\n%s", got)
 	}
-	patch, err := worktreePatch(filepath.Clean(root))
+	patch, err := wtree.WorktreePatch(filepath.Clean(root))
 	if err != nil {
 		t.Fatal(err)
 	}

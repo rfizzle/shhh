@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
+	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -293,7 +294,7 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 			if errors.As(askErr, &stale) {
 				c.appendEntry(TranscriptEntry{
 					Kind:   EntrySystem,
-					Text:   stale.Skipped(displayPath(c.root, stale.Path)),
+					Text:   stale.Skipped(wtree.DisplayPath(c.root, stale.Path)),
 					Result: stale.Error(),
 				})
 			}
@@ -616,7 +617,7 @@ func askFor(c *child, name string, rooted json.RawMessage, action agent.Action) 
 		if err != nil {
 			return nil, fmt.Errorf("invalid arguments: %w", err)
 		}
-		path := displayPath(c.root, mut.Path)
+		path := wtree.DisplayPath(c.root, mut.Path)
 		ask := NewAsk(c.name, AskEdit, mut.Action+" "+path)
 		ask.Path = path
 		ask.Hunks = diff.Compute(mut.OldText, mut.NewText)
