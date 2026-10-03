@@ -736,15 +736,9 @@ func buildOverlays() map[state]*mode {
 		stateTurns:    paneScreen(heldScreens.turns, turnsScreenRow()),
 		stateAlerts:   paneScreen(heldScreens.alerts, alertsScreenRow()),
 		stateSpend:    paneScreen(heldScreens.spend, spendScreenRow()),
-		stateTools: {
-			place:       placePane,
-			holds:       true,
-			borrows:     true,
-			hidesRail:   true,
-			noSelection: true,
-			lines:       (Model).toolsLines,
-			hint:        (Model).renderToolsHint,
-			keys:        (Model).updateTools,
+		stateTools: paneScreenDrawn((Model).toolsLines, mode{
+			hint: (Model).renderToolsHint,
+			keys: (Model).updateTools,
 			// Where the session's tools came from, as the rail's TOOLS block
 			// reads it. It is not idleOnly: a server that went mid-turn is
 			// exactly when somebody asks, and its one act records an answer
@@ -763,16 +757,10 @@ func buildOverlays() map[state]*mode {
 				open: bareOpen(Model.openMCPScreen),
 			},
 			door: &surfaceDoor{components.RailTools, railDoor{Model.openTools, toolsShowing, Model.closeToolsScreen}},
-		},
-		stateSafety: {
-			place:       placePane,
-			holds:       true,
-			borrows:     true,
-			hidesRail:   true,
-			noSelection: true,
-			lines:       (Model).safetyLines,
-			hint:        (Model).renderSafetyHint,
-			keys:        (Model).updateSafety,
+		}),
+		stateSafety: paneScreenDrawn((Model).safetyLines, mode{
+			hint: (Model).renderSafetyHint,
+			keys: (Model).updateSafety,
 			// The session's whole boundary. It reads and changes nothing, so it
 			// is not idleOnly: a turn that just asked for something is when a
 			// person wants to see what it may do (safety.go).
@@ -782,20 +770,14 @@ func buildOverlays() map[state]*mode {
 				bare: true,
 				open: bareOpen(Model.openSafety),
 			},
-		},
+		}),
 		stateNotes: paneScreen(heldScreens.notes, notesScreenRow()),
-		stateBacklog: {
-			place:       placePane,
-			holds:       true,
-			borrows:     true,
-			hidesRail:   true,
-			noSelection: true,
-			lines: func(m Model, width, height int) []string {
-				if m.screens.backlog() == nil {
-					return nil
-				}
-				return strings.Split(m.backlogPane(width, height), "\n")
-			},
+		stateBacklog: paneScreenDrawn(func(m Model, width, height int) []string {
+			if m.screens.backlog() == nil {
+				return nil
+			}
+			return strings.Split(m.backlogPane(width, height), "\n")
+		}, mode{
 			hint: (Model).renderTodoScreenHint,
 			keys: (Model).updateTodoScreen,
 			// Bare /todo opens the backlog screen; the subcommands are textual,
@@ -824,19 +806,13 @@ func buildOverlays() map[state]*mode {
 				open: (Model).todoCommand,
 			},
 			door: &surfaceDoor{components.RailTodo, railDoor{Model.openTodoDoor, backlogShowing, Model.closeTodoScreen}},
-		},
+		}),
 		// The one pane overlay that can write a file. It writes on `[w]`
 		// alone and asks before it walks away from anything staged, which is
 		// the screen's own rule rather than the register's (config.go).
-		stateConfig: {
-			place:       placePane,
-			holds:       true,
-			borrows:     true,
-			hidesRail:   true,
-			noSelection: true,
-			lines:       (Model).configScreenLines,
-			hint:        (Model).renderConfigHint,
-			answer:      (*Model).answerConfig,
+		stateConfig: paneScreenDrawn((Model).configScreenLines, mode{
+			hint:   (Model).renderConfigHint,
+			answer: (*Model).answerConfig,
 			// The whole settings file, where /ui is the handful of its keys a
 			// session flips often enough to have a word for. Not idleOnly: the
 			// settings a person wants to change mid-session are the ones the
@@ -850,7 +826,7 @@ func buildOverlays() map[state]*mode {
 				bare: true,
 				open: bareOpen(Model.openConfigScreen),
 			},
-		},
+		}),
 		statePersona: {
 			place:     placePane,
 			borrows:   true,
@@ -885,29 +861,37 @@ func buildOverlays() map[state]*mode {
 }
 
 // paneScreen is the row of a screen the session holds while it takes the
-// pane: it borrows the turn, stands over the rail, keeps a drag from
-// selecting and sizes the held screen to the pane on every paint, drawing
-// nothing while none is held. row is what is the screen's own — its hint,
-// its keys, its command and its rail door — and screen is the accessor it
-// is held under.
+// pane, drawn the plain way: it sizes the held screen to the pane on every
+// paint and draws nothing while none is held. row is what is the screen's
+// own — its hint, its keys, its command and its rail door — and screen is
+// the accessor it is held under.
 func paneScreen[T any, P interface {
 	*T
 	SetSize(width, height int)
 	View(width int) string
 }](screen func(heldScreens) P, row mode) *mode {
-	row.place = placePane
-	row.holds = true
-	row.borrows = true
-	row.hidesRail = true
-	row.noSelection = true
-	row.lines = func(m Model, width, height int) []string {
+	return paneScreenDrawn(func(m Model, width, height int) []string {
 		held := screen(m.screens)
 		if held == nil {
 			return nil
 		}
 		held.SetSize(width, height)
 		return strings.Split(held.View(width), "\n")
-	}
+	}, row)
+}
+
+// paneScreenDrawn is the row of a held screen that draws its own rows —
+// one that reads the session on every paint, or lays its pane out around
+// the screen — so the screen's file supplies lines, which answers nil while
+// none is held. The row borrows the turn, stands over the rail and keeps a
+// drag from selecting, as every held screen does.
+func paneScreenDrawn(lines func(m Model, width, height int) []string, row mode) *mode {
+	row.place = placePane
+	row.holds = true
+	row.borrows = true
+	row.hidesRail = true
+	row.noSelection = true
+	row.lines = lines
 	return &row
 }
 

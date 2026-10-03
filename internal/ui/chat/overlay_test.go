@@ -270,6 +270,10 @@ func TestOverlayPaneScreensKeepTheirRows(t *testing.T) {
 		{stateAlerts, "/alerts", components.RailAlerts},
 		{stateSpend, "/stats", components.RailSpend},
 		{stateNotes, "/notes", ""},
+		{stateTools, "/mcp", components.RailTools},
+		{stateSafety, "/safety", ""},
+		{stateBacklog, "/todo", components.RailTodo},
+		{stateConfig, "/config", ""},
 	}
 	overlays()
 	if len(overlayTable) != 44 {
