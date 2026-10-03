@@ -126,7 +126,7 @@ internal/
   secret/          the vault and the scrub
   observe/         the session record's contract and closed vocabularies
   evidence/        store for reduced and elided output
-  receipt/         what one call did, in the words every front-end draws
+  receipt/         what one call did, in the words the chat screen draws
   todo/, todo/run/ the project backlog and its runner
   rpc/             the JSON-RPC surface behind `shhh serve`
 ```
