@@ -26,7 +26,6 @@ import (
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/project"
-	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/radius"
@@ -950,29 +949,17 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		return err
 	}
 	defer asm.close()
-	sc, ts, db, prices, ledger, env := asm.sc, asm.ts, asm.db, asm.prices, asm.ledger, asm.env
+	sc, ts, prices, ledger, env := asm.sc, asm.ts, asm.prices, asm.ledger, asm.env
 	red, qgate, procSup := ts.evidence, ts.gate, ts.proc
 	cfg := env.cfg
 
-	initialPrompt := ""
-	if len(args) > 0 {
-		initialPrompt = args[0]
-	}
 	// Piped stdin is the prompt itself when no argument is given, and extra
-	// context for the prompt otherwise (mirroring the chat TUI).
-	if !isatty.IsTerminal(os.Stdin.Fd()) && !isatty.IsCygwinTerminal(os.Stdin.Fd()) {
-		maxChars := cfg.EffectiveContextMaxTokens() * 4
-		content, err := stdin.Read(os.Stdin, maxChars)
-		if err != nil {
-			return err
-		}
-		if content != "" {
-			if initialPrompt == "" {
-				initialPrompt = content
-			} else {
-				initialPrompt = stdin.FormatPromptWithContext(initialPrompt, content)
-			}
-		}
+	// context for the prompt otherwise (mirroring the chat TUI). It is read and
+	// an empty one refused before anything is contained, so a run with nothing
+	// to do never starts a disposable container.
+	initialPrompt, err := printPrompt(args, cfg)
+	if err != nil {
+		return err
 	}
 	if strings.TrimSpace(initialPrompt) == "" {
 		return fmt.Errorf("print mode needs a prompt: pass one as an argument or pipe it on stdin")
@@ -991,160 +978,18 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// — there is no human watching, so containment matters most here.
 	// --sandbox goes further: a disposable container is created for
 	// the run and approved commands exec inside it; if the sandbox cannot be
-	// created and verified, the run fails instead of downgrading.
-	run := runner.RunCaptureResult
-	// hookWrap is what contains a hook, which is what contains a command:
-	// filled in below beside the runner it belongs to (hooks.go).
-	var hookWrap func(string) ([]string, error)
-	// sandboxProfile is the profile the run's commands are actually under,
-	// for the record: empty when nothing contains them.
-	sandboxProfile := ""
-	// containRefusal is the answer every command gets when this run requires
-	// containment and the host has none. A headless run is where the
-	// requirement earns itself: there is nobody watching to notice the
-	// ⚠ UNCONTAINED on a card nobody drew.
-	containRefusal := ""
-	// What the model is told about all of it, resolved here where it is
-	// settled and joined to the prompt below (scope.go).
-	// A ceiling backgrounds a command that is still printing only where
-	// there is a supervisor to hand it to; the --sandbox branch below takes
-	// that back, having nowhere inside the container to put one.
-	cmdEnv := commandEnvironment{Ceiling: cfg.CommandTimeout(), Backgrounds: procSup != nil}
-	var missingTools []string
+	// created and verified, the run fails instead of downgrading. The
+	// container stands in for the host's containment at the tail's first
+	// step, and is torn down after everything the tail opened.
+	var box *contained
 	if opts.sandbox {
-		srun, cleanup, err := startSandbox(cmd.Context(), cfg, session.vault.Names())
-		if err != nil {
-			return fmt.Errorf("sandbox: %w", err)
-		}
-		defer cleanup()
-		run = srun
-		// The container took the same profile the spec parsed; a name the
-		// parser refused could not have started it.
-		// The mechanism is settled by the container existing, and the
-		// profile only names it: a session told nothing about the profile
-		// would still be wrong to be told nothing contains its commands.
-		cmdEnv.Mechanism = "a disposable container"
-		if profile, err := sandbox.ParseProfile(cfg.Sandbox.Profile); err == nil {
-			sandboxProfile = string(profile)
-			cmdEnv.Profile = string(profile)
-			cmdEnv.Network = profile != sandbox.ProfileWorkspaceNetless
-		}
-		if procSup != nil {
-			// Approved commands exec inside the disposable container and a
-			// started process cannot follow them in: what the supervisor
-			// would hold is the exec client, not the process, so stopping
-			// it would leave something running in a container nothing is
-			// watching. Starting on the host instead would put the one
-			// thing that keeps running outside the strongest containment
-			// this run has, so a start is refused and says why.
-			// See docs/capabilities/containment.md#a-started-process-is-contained-too.
-			procSup.SetContainment(process.Containment{
-				Mechanism: "container sandbox",
-				Wrap: func(string, []string, []string) ([]string, error) {
-					return nil, fmt.Errorf("a long-running process cannot be started inside this run's disposable container; use execute_command, or run without --sandbox")
-				},
-			})
-			// The command ceiling answers to the same fact. A command that
-			// will not finish here is running in the container and the local
-			// process is the exec client, so handing that to the supervisor
-			// would put a name and a stop verb on something that is not the
-			// process. It is stopped at the ceiling instead.
-			// See docs/capabilities/containment.md#a-started-process-is-contained-too.
-			runner.SetAdopter(nil)
-			cmdEnv.Backgrounds = false
-		}
-	} else {
-		containment, err := buildContainment(cfg, sc, procSup)
+		var cleanup func()
+		box, cleanup, err = startPrintSandbox(cmd.Context(), cfg, session.vault.Names(), procSup)
 		if err != nil {
 			return err
 		}
-		if containment.Run != nil {
-			run = containment.Run
-			sandboxProfile = containment.Profile
-		}
-		containRefusal = containment.Refusal
-		hookWrap = containment.Wrap
-		cmdEnv.Mechanism, cmdEnv.Profile = containment.Mechanism, containment.Profile
-		cmdEnv.Network, cmdEnv.Refused = containment.Network, containment.Refusal != ""
-		cmdEnv.Hosts = containment.Hosts
-		missingTools = containment.Toolchain.Missing
+		defer cleanup()
 	}
-	// A conversation reaches all of this and can run none of it, so it is
-	// told about the containment only where it has the tool the containment
-	// is about. The declared tools the host's PATH lacks are said beside it,
-	// as nothing anyone here can install — a disposable container's PATH is
-	// not the host's, so a `--sandbox` run says nothing about them
-	// (toolchain.go).
-	if offersCommands(session.toolDefs) {
-		env.addBuiltPrompt(commandEnvironmentBlock(cmdEnv))
-		env.addBuiltPrompt(toolchainPromptBlock(missingTools, false))
-	}
-	run = scrubResultRunner(session.vault, run)
-	// The ceiling matters most here. A session has a reader who can cancel a
-	// command that is never going to finish; a headless run has nobody, and
-	// the executor it is holding is held until something outside kills it.
-	run = boundedRunner(run, cfg.CommandTimeout())
-
-	// The person's own commands at this run's seams (hooks.go), assembled
-	// after the containment because what contains this run's commands is what
-	// contains its hooks. A `--sandbox` run has none: a hook cannot follow the
-	// commands into the disposable container, and running it on the host
-	// instead would put the person's own command line outside the strongest
-	// containment this run has — the same answer, for the same reason, a
-	// process start gets.
-	// See docs/capabilities/containment.md#a-started-process-is-contained-too.
-	hookCwd, _ := os.Getwd()
-	var hooks *hook.Runner
-	hooked := hookSet(cfg)
-	for _, note := range hookNotes(hooked) {
-		fmt.Fprintf(os.Stderr, "» hooks: %s\n", note)
-	}
-	if opts.sandbox && hooked.Len() > 0 {
-		fmt.Fprintln(os.Stderr, "» hooks: none run in a --sandbox run; a hook cannot follow the commands into the container")
-	} else {
-		hooks = buildHooks(cfg, hooked, hookWrap, hookCwd)
-	}
-	// The first seam. The prompt is already built — it had to be, for the
-	// provider to be resolved — so what a session-start hook says is joined to
-	// it here rather than folded in before it.
-	hookStart := hooks.SessionStart(cmd.Context())
-	hookNoteLine(hookStart)
-	if hookStart.Context != "" {
-		env.sysPrompt = prompt.CombineExtra(env.sysPrompt, hookStart.Context)
-		if len(env.messages) > 0 && env.messages[0].Role == provider.RoleSystem {
-			env.messages[0].Content = env.sysPrompt
-		}
-	}
-
-	// The conversation this run carries on, and the slot it will be left in.
-	// The claim happens here rather than at the save so that two runs started
-	// in the same second settle which of them owns the name before either
-	// writes a word to it.
-	saved, messages, err := openHeadlessChat(db, session, env.messages, env.sysPrompt)
-	if err != nil {
-		return err
-	}
-	// A slot this run claimed and never wrote to is given back on the way
-	// out, so a run whose save never landed leaves no name behind for the
-	// next one to be given a suffix around. A slot it resumed belongs to
-	// whoever made it and is left alone.
-	defer func() {
-		if db != nil {
-			_ = db.ReleaseChatSlot(saved.slot)
-		}
-	}()
-
-	// Session observability: headless runs record the same
-	// content-free events as interactive sessions; failure just disables
-	// recording. Tool calls are strictly sequential here, so one start
-	// timestamp is enough for durations.
-	//
-	// It is opened before the agent rather than after because the sub-agent
-	// supervisor below is built with it: a child's own row is linked to this
-	// one, and a supervisor built first would have no parent to link to.
-	recorder := startObserveRecorder(db, "print", env.prov.Name(), env.modelName, prices)
-	defer recorder.end()
-	hooks.SetSession(hookSession(recorder.sessionID()))
 	// The mode a run this shape answers with. It is empty unless --mode auto
 	// was given: a run answering with --yes and --allow alone is not in a
 	// mode, and borrowing the one a session would have started in would put
@@ -1157,23 +1002,29 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// They are the run's own facts and not the config's, which is why they
 	// are filled here beside the mode rather than read inside the allowlist.
 	runItem, runStage := todoStageStamp()
-	recorder.stamp(env.prompts.fingerprintOf(env.sysPrompt), session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{
-		mode:       recordedMode,
-		item:       runItem,
-		stage:      runStage,
-		effort:     env.effort,
-		rounds:     roundCapFor(opts.rounds(cfg)),
-		checkIn:    checkInFor(cfg.Behavior.CheckInIntervalRounds),
-		sandbox:    sandboxProfile,
-		model:      auxiliaryModel(cfg, env.provName, env.modelName),
-		summary:    cfg.HeadlessSummaryEnabled(),
-		classifier: opts.autoMode,
-	}))
-	// The gate's verdict, mirroring the interactive session — and a run
-	// with nobody in front of it is the one whose verdict the record most
-	// needs, because there was no one there to read it on the way past.
-	recordGateVerdicts(qgate, recorder)
-	recordSearches(session.web, recorder)
+	// The containment, what the model is told of it, the hooks, the
+	// conversation and its slot, and the record, in the order a served
+	// session takes them too. A conversation reaches all of this and can run
+	// none of it, so it is told about the containment only where it has the
+	// tool the containment is about.
+	tail, err := finishUnattended(cmd, asm, &session, tailOpts{
+		kind:        "print",
+		contained:   box,
+		sayCommands: offersCommands(session.toolDefs),
+		settings: runSettings{
+			mode:       recordedMode,
+			item:       runItem,
+			stage:      runStage,
+			rounds:     roundCapFor(opts.rounds(cfg)),
+			classifier: opts.autoMode,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	defer tail.close()
+	run, containRefusal, hooks, hookCwd := tail.run, tail.refusal, tail.hooks, tail.hookCwd
+	saved, messages, recorder := tail.saved, tail.messages, tail.recorder
 
 	a := agent.New(messages, env.stream)
 	a.SetSteering(steering(cfg, env.prompts))
@@ -1602,6 +1453,88 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		return nil
 	}
 	return exitError{code: code, err: out}
+}
+
+// printPrompt is the prompt a scripted run was given: its argument, and
+// piped stdin as the prompt itself when there is no argument or as context
+// for it when there is.
+func printPrompt(args []string, cfg config.Config) (string, error) {
+	initialPrompt := ""
+	if len(args) > 0 {
+		initialPrompt = args[0]
+	}
+	if !isatty.IsTerminal(os.Stdin.Fd()) && !isatty.IsCygwinTerminal(os.Stdin.Fd()) {
+		maxChars := cfg.EffectiveContextMaxTokens() * 4
+		content, err := stdin.Read(os.Stdin, maxChars)
+		if err != nil {
+			return "", err
+		}
+		if content != "" {
+			if initialPrompt == "" {
+				initialPrompt = content
+			} else {
+				initialPrompt = stdin.FormatPromptWithContext(initialPrompt, content)
+			}
+		}
+	}
+	return initialPrompt, nil
+}
+
+// startPrintSandbox starts the disposable container a --sandbox run's
+// approved commands exec inside, in the pieces the tail reads in place of the
+// host's containment, and hands back what tears it down.
+func startPrintSandbox(ctx context.Context, cfg config.Config, secrets []string, procSup *process.Supervisor) (*contained, func(), error) {
+	srun, cleanup, err := startSandbox(ctx, cfg, secrets)
+	if err != nil {
+		return nil, nil, fmt.Errorf("sandbox: %w", err)
+	}
+	c := &contained{
+		run: srun,
+		// The mechanism is settled by the container existing, and the
+		// profile only names it: a session told nothing about the profile
+		// would still be wrong to be told nothing contains its commands.
+		// A ceiling backgrounds a command that is still printing only where
+		// there is a supervisor to hand it to, and that is taken back below.
+		said: commandEnvironment{Mechanism: "a disposable container", Ceiling: cfg.CommandTimeout(), Backgrounds: procSup != nil},
+		// No hook runs in this run: a hook cannot follow the commands into the
+		// disposable container, and running it on the host instead would put
+		// the person's own command line outside the strongest containment this
+		// run has — the same answer, for the same reason, a process start gets.
+		// See docs/capabilities/containment.md#a-started-process-is-contained-too.
+		noHooks: "» hooks: none run in a --sandbox run; a hook cannot follow the commands into the container",
+	}
+	// The container took the same profile the spec parsed; a name the
+	// parser refused could not have started it.
+	if profile, err := sandbox.ParseProfile(cfg.Sandbox.Profile); err == nil {
+		c.profile = string(profile)
+		c.said.Profile = string(profile)
+		c.said.Network = profile != sandbox.ProfileWorkspaceNetless
+	}
+	if procSup != nil {
+		// Approved commands exec inside the disposable container and a
+		// started process cannot follow them in: what the supervisor
+		// would hold is the exec client, not the process, so stopping
+		// it would leave something running in a container nothing is
+		// watching. Starting on the host instead would put the one
+		// thing that keeps running outside the strongest containment
+		// this run has, so a start is refused and says why.
+		// See docs/capabilities/containment.md#a-started-process-is-contained-too.
+		procSup.SetContainment(process.Containment{
+			Mechanism: "container sandbox",
+			Wrap: func(string, []string, []string) ([]string, error) {
+				return nil, fmt.Errorf("a long-running process cannot be started inside this run's disposable container; use execute_command, or run without --sandbox")
+			},
+		})
+		// The command ceiling answers to the same fact. A command that
+		// will not finish here is running in the container and the local
+		// process is the exec client, so handing that to the supervisor
+		// would put a name and a stop verb on something that is not the
+		// process. It is stopped at the ceiling instead.
+		// See docs/capabilities/containment.md#a-started-process-is-contained-too.
+		runner.SetAdopter(nil)
+		c.said.Backgrounds = false
+	}
+	return c, cleanup, nil
 }
 
 // interruptOnSignal turns the first interrupt or termination signal the run

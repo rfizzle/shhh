@@ -44,10 +44,6 @@ linters:
       - linters: [gocognit]
         path: ^internal/cli/eval\.go$
         text: 'func `newEvalCmd`'
-      # The scripted session: setup, the run and teardown still in one body.
-      - linters: [gocognit]
-        path: ^internal/cli/print\.go$
-        text: 'func `runPrintSession`'
       # The chat session: setup, the program and teardown still in one body.
       - linters: [gocognit]
         path: ^internal/cli/runchatsession\.go$
