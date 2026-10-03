@@ -185,7 +185,9 @@ func (m Model) stepsScreenData() components.StepsScreen {
 	if focus < 0 {
 		focus = len(items) - 1
 	}
-	return components.StepsScreen{Steps: items, Focus: focus, Subject: fmt.Sprintf("%d of %d", done, total)}
+	screen := components.StepsScreen{Steps: items, Subject: fmt.Sprintf("%d of %d", done, total)}
+	screen.Focus = focus
+	return screen
 }
 
 // stepsRows is a run's calls as the screen draws them: each one the row the

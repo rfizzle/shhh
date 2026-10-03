@@ -918,5 +918,7 @@ func (m Model) planStepsScreenData() components.StepsScreen {
 	if run.doc.Title != "" {
 		subject = run.doc.Title + " · " + subject
 	}
-	return components.StepsScreen{Steps: items, Focus: focus, Subject: subject, Plan: true, Drift: run.drift()}
+	screen := components.StepsScreen{Steps: items, Subject: subject, Plan: true, Drift: run.drift()}
+	screen.Focus = focus
+	return screen
 }

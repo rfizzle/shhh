@@ -75,10 +75,10 @@ type StepsItem struct {
 // StepsScreen is `/steps`: a takeover in the chat, full width, owning the
 // keyboard for as long as it is up.
 type StepsScreen struct {
+	// The pointer is an index into Steps.
+	listScreen[StepsItem]
 	// Steps are the list in its own order.
 	Steps []StepsItem
-	// Focus is an index into Steps.
-	Focus int
 	// Subject is what the header says the screen is over — `2 of 7`, the
 	// rail block's own count.
 	Subject string
@@ -93,9 +93,6 @@ type StepsScreen struct {
 	Drift []string
 	// maxLines bounds the screen height. 0 is unbounded.
 	maxLines int
-
-	list Select
-	keys bool
 }
 
 // Update is the screen's whole keyboard: it moves, it shows its keys, and it
@@ -103,7 +100,7 @@ type StepsScreen struct {
 func (s *StepsScreen) Update(msg tea.KeyPressMsg) (done bool) {
 	pressed := msg.String()
 	switch {
-	case s.moved(pressed):
+	case s.moved(s.Steps, pressed, keys.Screen.Move):
 	case keys.Is(pressed, keys.Screen.List):
 		s.keys = !s.keys
 	case keys.Is(pressed, keys.Screen.Quit):
@@ -118,16 +115,16 @@ func (s *StepsScreen) SetSize(_, height int) { s.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves.
-func (s *StepsScreen) View(width int) string {
-	if width <= 0 {
-		return ""
-	}
-	s.sync()
+func (s *StepsScreen) View(width int) string { return s.view(width, s) }
+
+// chrome is the header over the panes and the keys under them.
+func (s *StepsScreen) chrome(width int) screenChrome {
+	field := s.footField()
 	return screenChrome{
 		header:   s.header(),
-		foot:     s.footer(width).rows(width),
+		foot:     s.footer(s.offers(width, field), s.keyList(), field).rows(width),
 		maxLines: s.maxLines,
-	}.view(width, func(budget int) []string { return s.panes().rows(width, budget) })
+	}
 }
 
 // panes is the body, split the way every screen with a list and a preview
@@ -136,13 +133,13 @@ func (s *StepsScreen) panes() screenPanes {
 	return screenPanes{
 		stackAt: stepsStackWidth, listMin: stepsListMin,
 		listMax: stepsListMax, minPreview: stepsMinPreview,
-		list:    s.listRows,
+		list:    s.stepRows,
 		preview: s.previewRows,
 	}
 }
 
-// listRows is the left pane: the steps, numbered as the list numbers them.
-func (s *StepsScreen) listRows(width, budget int) []string {
+// stepRows is the left pane: the steps, numbered as the list numbers them.
+func (s *StepsScreen) stepRows(width, budget int) []string {
 	if len(s.Steps) == 0 {
 		return []string{sty.dim.Render(Clip("the session has declared no steps", width))}
 	}
@@ -185,7 +182,7 @@ func (s *StepsScreen) driftRows(width int) []string {
 // previewRows is the right pane: the step under the pointer, the paths it
 // named, and what the transcript recorded for it.
 func (s *StepsScreen) previewRows(width int) []string {
-	step := s.current()
+	step := s.current(s.Steps)
 	if step == nil {
 		return []string{sty.dim.Render(Clip("no step selected", width))}
 	}
@@ -287,40 +284,17 @@ func (s *StepsScreen) header() screenHeader {
 	if s.Plan {
 		title = "/plan"
 	}
-	h := screenHeader{left: []RailSegment{screenTitle(title)}, keys: s.headerKeys()}
+	h := screenHeader{left: []RailSegment{screenTitle(title)}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)}
 	if s.Subject != "" {
 		h.left = append(h.left, screenField(s.Subject))
 	}
 	return h
 }
 
-// headerKeys is the pair the header ends with: the key that shows the whole
-// register, and the way back in the one word a header field is
-// (docs/interface/surfaces.md#the-supporting-screens).
-func (s *StepsScreen) headerKeys() string {
-	list := keys.Bracket(keys.Screen.List) + " " + keys.Words(keys.Screen.List)
-	if s.keys {
-		list = keys.Bracket(keys.Screen.List) + " hide the keys"
-	}
-	return list + " · " + words(keys.Screen.Quit, "back")
-}
-
-// footer is the keys the screen offers and the field that annotates them.
-func (s *StepsScreen) footer(width int) keyFooter {
-	field := s.footField()
-	return keyFooter{offers: s.offers(width, field), register: s.keyList(),
-		showing: s.keys, field: field}
-}
-
 // offers is the key row: the pointer's keys and the way out, and the way out
 // alone where the field leaves no room for both.
 func (s *StepsScreen) offers(width int, field string) []KeyOffer {
-	acts := []KeyOffer{wayOut(backToPrompt)}
-	full := append([]KeyOffer{keyOffer(keys.Screen.Move)}, acts...)
-	if field == "" || fitsBeside(full, field, width) {
-		return full
-	}
-	return acts
+	return offersBeside(keyOffer(keys.Screen.Move), []KeyOffer{wayOut(backToPrompt)}, field, width)
 }
 
 // keyList is every key the screen has, for `[?]`.
@@ -349,7 +323,7 @@ func (s *StepsScreen) footField() string {
 // sync rebuilds the list from Steps. It runs before every View because the
 // host may replace Steps, and the pointer has to survive that.
 func (s *StepsScreen) sync() {
-	s.Focus = min(max(s.Focus, 0), max(len(s.Steps)-1, 0))
+	s.clamp(len(s.Steps))
 	opts := make([]SelectOption, 0, len(s.Steps))
 	for _, step := range s.Steps {
 		opt := SelectOption{
@@ -375,28 +349,5 @@ func (s *StepsScreen) sync() {
 		}
 		opts = append(opts, opt)
 	}
-	s.list.Options = opts
-	s.list.Unnumbered = true
-	s.list.Focus = s.Focus
-}
-
-// moved walks the pointer between steps.
-func (s *StepsScreen) moved(pressed string) bool {
-	if len(s.Steps) == 0 {
-		return false
-	}
-	l := List[StepsItem]{Items: s.Steps, Focus: s.Focus}
-	if !l.Move(pressed, keys.Screen.Move) {
-		return false
-	}
-	s.Focus = l.Focus
-	return true
-}
-
-// current is the step under the pointer, or nil for an empty list.
-func (s *StepsScreen) current() *StepsItem {
-	if s.Focus < 0 || s.Focus >= len(s.Steps) {
-		return nil
-	}
-	return &s.Steps[s.Focus]
+	s.show(opts, 0, s.Focus)
 }

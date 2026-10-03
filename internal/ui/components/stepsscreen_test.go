@@ -39,7 +39,9 @@ func stepsItems() []StepsItem {
 }
 
 func stepsScreen(focus int) *StepsScreen {
-	return &StepsScreen{Steps: stepsItems(), Focus: focus, Subject: "1 of 7", maxLines: 16}
+	s := &StepsScreen{Steps: stepsItems(), Subject: "1 of 7", maxLines: 16}
+	s.Focus = focus
+	return s
 }
 
 // The list is the checklist and the preview is what the transcript recorded
@@ -136,8 +138,10 @@ func planItems() []StepsItem {
 }
 
 func planStepsScreen(focus int, drift ...string) *StepsScreen {
-	return &StepsScreen{Steps: planItems(), Focus: focus, Subject: "make the round limit recoverable · 2 of 4 done",
+	s := &StepsScreen{Steps: planItems(), Subject: "make the round limit recoverable · 2 of 4 done",
 		Plan: true, Drift: drift, maxLines: 16}
+	s.Focus = focus
+	return s
 }
 
 // Over an approved plan the screen is /plan's: the states are the
