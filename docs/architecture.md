@@ -493,6 +493,57 @@ Every flag the screen held for its modes, with its owner:
   register's key back to the screen rather than flipping it, and the foot
   reads it.
 
+## A surface declares itself once, in the key register
+
+The register of keyed surfaces says, for every surface that answers a key,
+what it is called, which document is normative for it, where it stands
+relative to the keyboard, how it gets the keyboard, and the keys it offers.
+The chat session's table of modes knows which of those surfaces a mode is
+standing in, because `?` over a card lists that surface's keys. The two had
+to agree by spelling: a mode named its surface by repeating the name the
+register gave it, and a misspelt name was not an error, it was a `?` that
+listed nothing.
+
+The obvious fix runs the wrong way. The register is read by things that never
+start a chat session — the keymap loader refusing a file that would make one
+keystroke mean two things, the reserved-key check, the doctor's report on the
+keymap, and the test that keeps the generated keymap and reserved-key
+references current — and the chat package imports the key package, not the
+reverse. A register assembled from the chat session's table would be empty,
+or a cycle, in every one of those programs; one that each mode filled in when
+the chat package loaded would be empty in the same ones, silently, which is
+worse.
+
+So the metadata lives in the key package, beside the bindings it lists, and
+nowhere else. That is also the only place it can live: the keys a surface
+offers are the key package's bindings, which a keymap file moves after the
+program starts, so a row is built from them each time it is read rather than
+kept; a package beneath the key package could hold the shape of a row but not
+one row, and a package above it could not be read by the loader. Who writes
+what:
+
+- **A surface a mode of the chat session stands in** is a row of the
+  register, keyed by a handle the register declares. The mode's row in the
+  chat table names the surface by that handle and says nothing else about it,
+  so the name, the section, the position and the way in are written once.
+- **The input** is the one row read off another declaration: its keys are the
+  input's offers, each declared with its help paragraph, and the row lists
+  them in that order.
+- **The surfaces no mode stands in** — the input's history search, the
+  transcript search, the staged strip, the fields typed into on a card, the
+  lists a card opens under it, a selector being typed into — are rows of the
+  same register with the same handles, because nothing else owns them.
+- **The programs outside a session** — the supporting screens, the
+  one-shot's action bar, the saved-chat browser — are a second list in the
+  same place, read alongside the first wherever a key is checked against
+  every surface.
+
+The register's order is the order of its handles, which is the order a reader
+meets the surfaces in. Because it is data built from the key package's own
+values, every reader sees the full list from the moment the package has
+initialised, including the checks that run during initialisation, and none of
+them needs the chat session to be linked in.
+
 ## Design lives outside the repository
 
 The visual specification — tokens, components, artboards, and the guidelines
