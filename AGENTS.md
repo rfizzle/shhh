@@ -52,7 +52,8 @@ is prose in `docs/capabilities/`, cited from the comment beside it
 | Format | `make fmt` |
 | Loopback contracts / containment | `make test-contract` / `make test-integration` |
 | CI pipeline | `make ci` (the gate plus `cross` and `tui-check`) |
-| Update goldens | `go test ./internal/ui ./internal/ui/components ./internal/ui/chat -update-golden` |
+| Update goldens (rewrites every golden in those packages, deletes orphans) | `go test ./internal/ui ./internal/ui/components ./internal/ui/chat -update-golden` |
+| Capture one new golden | `go test ./internal/ui/<pkg> -update-golden -run '<TestName>$'` |
 | Capture a TUI scene | `make tui-shot SCENE=<name> COLS=110 ROWS=40` |
 | Eval suite (costs real requests) | `make eval` |
 

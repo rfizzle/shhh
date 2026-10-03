@@ -451,6 +451,13 @@ The flags that cross:
   handed the second to make the migrate key live, and the viewer to draw the
   offer.
 
+The wizard also reads, and never sets, what two widgets count and point at.
+It reads the brief's pointer for whether the field holds the keyboard, its
+count of exchanges for whether the way out is a step back, and its count of
+questions for whether the rail marks the questions skipped; and it reads the
+section editor's draft for the headline and the bounds of a section the host
+names, and the pointer on it for the section a decision is about.
+
 ### The backlog screen's pieces
 
 The backlog screen keeps its list — the window of items, the pointer each
