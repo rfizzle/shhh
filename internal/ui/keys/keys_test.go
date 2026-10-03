@@ -359,6 +359,28 @@ func TestSurfacesAreNamedAndPlaced(t *testing.T) {
 	}
 }
 
+// TestEveryHandleNamesItsOwnRow keeps the handles and the register one list:
+// a mode that names its surface by handle opens that row's keys and title, so
+// two rows under one name, or a handle reading another's row, would put the
+// wrong register under a card's `?`.
+func TestEveryHandleNamesItsOwnRow(t *testing.T) {
+	rows := Surfaces()
+	if len(rows) != int(surfaceCount) {
+		t.Fatalf("Surfaces has %d rows, want one per handle (%d)", len(rows), surfaceCount)
+	}
+	seen := map[string]SurfaceID{}
+	for id := range surfaceCount {
+		got := id.Surface()
+		if got.Name != rows[id].Name {
+			t.Errorf("handle %d reads %q, want the row at its place, %q", id, got.Name, rows[id].Name)
+		}
+		if prev, ok := seen[got.Name]; ok {
+			t.Errorf("handles %d and %d are both %q", prev, id, got.Name)
+		}
+		seen[got.Name] = id
+	}
+}
+
 // TestOnlyTakeoversHoldBareLetters is invariant 5 asked of the register
 // . A surface that does not hold the keyboard may not answer a bare
 // letter without the register also declaring the key that hands the keyboard

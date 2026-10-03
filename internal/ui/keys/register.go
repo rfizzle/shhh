@@ -19,6 +19,15 @@ package keys
 // from, so the register a reader is shown is the register the handlers use.
 // The input's row is read off its offers (input.go), which carry the
 // paragraph /help keeps beside each key.
+//
+// Every row is written here and only here, keyed by a handle, and the chat
+// session's modes name the surface they stand in by that handle rather than by
+// repeating its name. It cannot be the other way round: the keymap loader, the
+// reserved-key check, the doctor's keymap report and the generated keymap
+// reference all read this register from programs that never link the chat
+// session, so a register filled in from the session's table would be empty in
+// exactly the programs that check a keymap against it.
+// See docs/architecture.md#a-surface-declares-itself-once-in-the-key-register.
 
 // Position is where a surface stands relative to the keyboard. The register
 // allows two and says there is no third; Home is the thing those two are
@@ -70,11 +79,80 @@ type Surface struct {
 	Bindings []Binding
 }
 
-// Surfaces is the register in the order a reader meets them: the input first,
-// then what takes the keyboard from it, then the rows that wait for it.
+// SurfaceID is one row of the register, by the handle the code that draws the
+// surface holds. Their order is the register's: the input first, then what
+// takes the keyboard from it, then the rows that wait for it.
+type SurfaceID int
+
+const (
+	OnInput SurfaceID = iota
+	OnHistorySearch
+	OnReading
+	OnTranscriptSearch
+	OnStagedStrip
+	OnQueue
+	OnStagedPaste
+	OnContext
+	OnSources
+	OnNotes
+	OnBacklog
+	OnSprintPlan
+	OnTranscriptRow
+	OnCommitCard
+	OnRewindScope
+	OnCommitMessage
+	OnApprovalCard
+	OnApprovalNote
+	OnApprovalCommand
+	OnApprovalQueue
+	OnApprovalGrant
+	OnPlanCard
+	OnQuestion
+	OnYesNo
+	OnScaffold
+	OnToolchain
+	OnToolchainDraft
+	OnConfirm
+	OnHeldLine
+	OnSelector
+	OnChatPicker
+	OnRewindPicker
+	OnSelectorQuery
+	OnPalette
+	OnWholeKeyList
+	OnReview
+	OnAgentManager
+	OnProfileDrafter
+	OnProfileDraft
+	OnDiff
+	OnOutput
+	OnPreview
+	OnKeyList
+	OnRetry
+	OnPressure
+	OnMaskedKey
+
+	// surfaceCount is how many rows the register has; it is not a surface.
+	surfaceCount
+)
+
+// Surfaces is the register in the order a reader meets them, which is the
+// order of their handles. It is built from the bindings each time it is read,
+// because a keymap file moves those after the program starts.
 func Surfaces() []Surface {
-	return []Surface{
-		{
+	rows := register()
+	return rows[:]
+}
+
+// Surface is the register's row for this handle, built from the bindings as
+// they stand now.
+func (id SurfaceID) Surface() Surface { return register()[id] }
+
+// register is every row, keyed by its handle, so a row cannot be listed twice
+// and a handle without a row is a zero Surface the tests refuse.
+func register() [surfaceCount]Surface {
+	return [surfaceCount]Surface{
+		OnInput: {
 			Name:     "the input",
 			Section:  "docs/interface/surfaces.md#the-input-frame",
 			Position: Home,
@@ -84,7 +162,7 @@ func Surfaces() []Surface {
 			// words for.
 			Bindings: inputBindings(),
 		},
-		{
+		OnHistorySearch: {
 			// The reverse search over the input ring. It is typed into from
 			// the first keystroke, like the palette: every letter filters, so
 			// the only keys on the row are the three that do not.
@@ -94,14 +172,14 @@ func Surfaces() []Surface {
 			Reached:  Shown(Draft.HistorySearch),
 			Bindings: []Binding{Search.Older, Search.Keep, Search.Cancel},
 		},
-		{
+		OnReading: {
 			Name:     "reading mode",
 			Section:  "docs/interface/surfaces.md#reading-mode",
 			Position: Takeover,
 			Reached:  Shown(Draft.Reading),
 			Bindings: Reading.All(),
 		},
-		{
+		OnTranscriptSearch: {
 			// Reading mode with its query row open, which is a row of its
 			// own here for the reason the selector's is: a surface being
 			// typed into keeps every letter as text, so none of the mode's
@@ -113,7 +191,7 @@ func Surfaces() []Surface {
 			Reached:  Bracket(Reading.Search) + " in reading mode",
 			Bindings: Find.All(),
 		},
-		{
+		OnStagedStrip: {
 			// Reading mode with its cursor on the staged strip. A row of its
 			// own because the mode's enter and esc mean something else there:
 			// enter opens the chip rather than a row, and esc goes back to the
@@ -124,7 +202,7 @@ func Surfaces() []Surface {
 			Reached:  "reading mode's last row, below the transcript",
 			Bindings: Staged.All(),
 		},
-		{
+		OnQueue: {
 			// What waits for the turn, once the keyboard has moved into it.
 			// A takeover: the draft keeps its sentence but not the keyboard,
 			// so the queue's letters are live while it is up, and one of them
@@ -135,7 +213,7 @@ func Surfaces() []Surface {
 			Reached:  Shown(Draft.Queued),
 			Bindings: append(Queue.All(), Screen.List),
 		},
-		{
+		OnStagedPaste: {
 			// The staged paste, opened from its chip on the staged strip or
 			// by name. A takeover: it scrolls, and one of its keys drops the
 			// paste, so nothing under it may be answering keys at the same
@@ -146,14 +224,14 @@ func Surfaces() []Surface {
 			Reached:  "its chip on the staged strip, or /paste show",
 			Bindings: Paste.All(),
 		},
-		{
+		OnContext: {
 			Name:     "the context surface",
 			Section:  "docs/interface/surfaces.md#the-context-surface",
 			Position: Takeover,
 			Reached:  "/context",
 			Bindings: Context.All(),
 		},
-		{
+		OnSources: {
 			// What the session read, as a screen: the ledger on the left
 			// grouped by host, the row the pointer is on beside it, and the
 			// page itself where the fetch was long enough to leave one.
@@ -163,7 +241,7 @@ func Surfaces() []Surface {
 			Reached:  "/sources",
 			Bindings: Sources.All(),
 		},
-		{
+		OnNotes: {
 			// The session's shared notebook, as a screen: the notes on the
 			// left grouped under the agent that wrote each one, the note the
 			// pointer is on beside it, and the one key that takes something
@@ -174,7 +252,7 @@ func Surfaces() []Surface {
 			Reached:  "/notes",
 			Bindings: Notes.All(),
 		},
-		{
+		OnBacklog: {
 			// The backlog as a screen rather than as a command that prints:
 			// the list on the left and the item's own prose on the right,
 			// with the keys that would otherwise be typed as verbs.
@@ -184,7 +262,7 @@ func Surfaces() []Surface {
 			Reached:  Shown(Draft.Backlog) + ", or /todo",
 			Bindings: append(Backlog.All(), Query.Rub),
 		},
-		{
+		OnSprintPlan: {
 			// The sprint plan card, on that screen's sprint tab. It is a
 			// surface of its own rather than a mode of the screen because
 			// it answers every keystroke while it is up: the list under it
@@ -196,7 +274,7 @@ func Surfaces() []Surface {
 			Reached:  "/todo sprint plan",
 			Bindings: Sprint.All(),
 		},
-		{
+		OnTranscriptRow: {
 			Name:     "a transcript row's own offers",
 			Section:  "docs/interface/surfaces.md#the-turns-close, docs/interface/surfaces.md#the-recovery-row",
 			Position: Beside,
@@ -206,7 +284,7 @@ func Surfaces() []Surface {
 				Row.Key, Row.Provider, Row.Rounds, Row.Uncap,
 			},
 		},
-		{
+		OnCommitCard: {
 			// The card the handover opens on a selected changed-files row.
 			// It is a takeover and not a card beside the draft: the key that
 			// opened it is the handover itself, so the keyboard has already
@@ -217,7 +295,7 @@ func Surfaces() []Surface {
 			Reached:  Shown(Draft.Answer) + " on a selected changed-files row",
 			Bindings: append(Commit.All(), Screen.List),
 		},
-		{
+		OnRewindScope: {
 			// The card the /rewind picker opens once a turn has been taken.
 			// It is a takeover for the commit card's reason: the picker
 			// already held the keyboard when the card arrived, so there is
@@ -228,7 +306,7 @@ func Surfaces() []Surface {
 			Reached:  "a turn taken in the /rewind picker",
 			Bindings: append(Rewind.All(), Screen.List),
 		},
-		{
+		OnCommitMessage: {
 			// The proposed message as a draft, which is a row of its own for
 			// the reason the approval card's note field is: a surface being
 			// typed into keeps every letter as text, so none of the card's
@@ -240,7 +318,7 @@ func Surfaces() []Surface {
 			Reached:  Bracket(Commit.Edit) + " on the commit card",
 			Bindings: []Binding{Select.Take, Select.Cancel},
 		},
-		{
+		OnApprovalCard: {
 			Name:     "the approval card and the /run confirm",
 			Section:  "docs/interface/surfaces.md#the-approval-card, docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard",
 			Position: Beside,
@@ -255,7 +333,7 @@ func Surfaces() []Surface {
 				Decision.PanLeft, Decision.PanRight, Screen.List,
 			},
 		},
-		{
+		OnApprovalNote: {
 			// A row of its own for the reason the transcript search has one:
 			// a surface being typed into keeps every letter as text, so none
 			// of the card's answers are live while the field is up and the
@@ -269,7 +347,7 @@ func Surfaces() []Surface {
 			Reached:  Bracket(Decision.AllowNoted) + " or " + Bracket(Decision.DenyNoted) + " on the card",
 			Bindings: []Binding{Select.Take, Select.Cancel},
 		},
-		{
+		OnApprovalCommand: {
 			// The command itself, open in a field for the reader to change
 			// before it runs. It is a row of its own for the reason the note
 			// field's is — a surface being typed into keeps every letter as
@@ -283,7 +361,7 @@ func Surfaces() []Surface {
 			Reached:  Bracket(Decision.Amend) + " on a command card",
 			Bindings: []Binding{Select.Take, Select.Cancel},
 		},
-		{
+		OnApprovalQueue: {
 			// The queue behind the card, opened as the list that answers it.
 			// It is a row of its own because it is a selector and answers a
 			// selector's keys — it moves, ticks, ticks everything and takes
@@ -300,7 +378,7 @@ func Surfaces() []Surface {
 				Select.Take, Select.Cancel, Screen.List,
 			},
 		},
-		{
+		OnApprovalGrant: {
 			// The grants the card can make, open under it. A row of its own
 			// for the reason the two fields above have theirs — it holds the
 			// keyboard, so none of the card's answers are live while it is
@@ -314,7 +392,7 @@ func Surfaces() []Surface {
 			Reached:  Bracket(Decision.Always) + " on a card that offers a grant",
 			Bindings: []Binding{Select.MoveJK, Select.Take, Select.Cancel, Screen.List},
 		},
-		{
+		OnPlanCard: {
 			// A row of its own, because the card is a list and answers a
 			// list's keys: it moves, takes and cancels the way every
 			// selector does, and the two keys it has beyond that are its.
@@ -339,7 +417,7 @@ func Surfaces() []Surface {
 				Select.Cancel, Screen.List,
 			},
 		},
-		{
+		OnQuestion: {
 			// The model's own question, in the three dressings that are a
 			// list: pick one, pick several, and the free answer, which is
 			// the same card with the field and no rows above it. It is a
@@ -365,7 +443,7 @@ func Surfaces() []Surface {
 				Select.Note, Select.Long, Select.Tab, Select.Cancel, Screen.List,
 			},
 		},
-		{
+		OnYesNo: {
 			// The fourth dressing, which is a row of its own because it is
 			// not a list: a yes-or-no is the inline confirm, and its two
 			// answers claim the enter the list's take claims. It steps
@@ -378,7 +456,7 @@ func Surfaces() []Surface {
 			Reached:  Shown(Draft.Answer),
 			Bindings: []Binding{Confirm.Yes, Confirm.No, Select.Note, Select.Tab, Screen.List},
 		},
-		{
+		OnScaffold: {
 			// The one approval card the reader asks for rather than is
 			// handed: it writes a file the session offered to write, so it
 			// holds the keyboard from the moment it opens. That is also why
@@ -389,7 +467,7 @@ func Surfaces() []Surface {
 			Reached:  "/init, or the start screen's scaffold offer",
 			Bindings: []Binding{Decision.Accept, Decision.Refuse, Select.Cancel, Screen.List},
 		},
-		{
+		OnToolchain: {
 			// The scaffold card's twin: asked for rather than handed, so it
 			// holds the keyboard from the moment it opens, and its no is
 			// Refuse for the same reason.
@@ -399,7 +477,7 @@ func Surfaces() []Surface {
 			Reached:  "/setup, or the start screen's install offer",
 			Bindings: []Binding{Decision.Accept, Decision.Refuse, Select.Cancel, Screen.List},
 		},
-		{
+		OnToolchainDraft: {
 			// The scaffold card's shape again, for a file drafted rather
 			// than templated, with the one key a draft needs that a template
 			// does not: the file opens in $EDITOR before anything is written.
@@ -409,14 +487,14 @@ func Surfaces() []Surface {
 			Reached:  "/toolchain, or the start screen's draft offer",
 			Bindings: []Binding{Decision.Accept, Decision.Revise, Decision.Refuse, Select.Cancel, Screen.List},
 		},
-		{
+		OnConfirm: {
 			Name:     "the inline confirm and the undo confirm",
 			Section:  "docs/interface/surfaces.md#the-inline-confirm",
 			Position: Takeover,
 			Reached:  "the key that opens it",
 			Bindings: []Binding{Confirm.Yes, Confirm.Force, Confirm.No, Screen.List},
 		},
-		{
+		OnHeldLine: {
 			// A line from another session has no default answer: passing a
 			// colleague's words to the turn is a decision, so enter and esc
 			// answer nothing and the no is Refuse, which is two letters.
@@ -426,7 +504,7 @@ func Surfaces() []Surface {
 			Reached:  "a line another session sent, where sessions.inbound holds it",
 			Bindings: []Binding{Confirm.Yes, Decision.Refuse, Screen.List},
 		},
-		{
+		OnSelector: {
 			Name:     "the selector family, the model and rewind pickers",
 			Section:  "docs/interface/surfaces.md#selectors",
 			Position: Takeover,
@@ -437,7 +515,7 @@ func Surfaces() []Surface {
 				Select.Cancel,
 			},
 		},
-		{
+		OnChatPicker: {
 			// The one card in the family with keys of its own: only the
 			// saved-chat picker answers them, so only its row offers them.
 			Name:     "the saved-chat picker",
@@ -446,7 +524,7 @@ func Surfaces() []Surface {
 			Reached:  "/chats, or bare /load",
 			Bindings: []Binding{Select.Delete, Select.Rename},
 		},
-		{
+		OnRewindPicker: {
 			// The rewind picker's own key: what a rewind to the row under
 			// the pointer would take back, read before the row is taken.
 			Name:     "the rewind picker",
@@ -455,7 +533,7 @@ func Surfaces() []Surface {
 			Reached:  "/rewind",
 			Bindings: []Binding{Rewind.Diff},
 		},
-		{
+		OnSelectorQuery: {
 			// The same family with the query line open, which is why it is
 			// a row of its own: a list being typed into keeps every letter
 			// as text, so j/k are not keys and the arrows are the movement
@@ -468,7 +546,7 @@ func Surfaces() []Surface {
 				Select.Move, Select.Take, Select.ClearQ, Query.Rub, Select.Cancel,
 			},
 		},
-		{
+		OnPalette: {
 			Name:     "the command palette",
 			Section:  "docs/interface/surfaces.md#the-palette",
 			Position: Takeover,
@@ -478,7 +556,7 @@ func Surfaces() []Surface {
 				Select.Palette.Run, Select.Palette.Write, Select.Cancel,
 			},
 		},
-		{
+		OnWholeKeyList: {
 			// Every key, by group, over the session. Typed into like the
 			// palette, so the only keys on its row are the ones no sentence
 			// produces, and the chord that opened it is one of the ways out.
@@ -488,7 +566,7 @@ func Surfaces() []Surface {
 			Reached:  Shown(Draft.KeyList) + ", or /help",
 			Bindings: append(KeyList.All(), Draft.KeyList),
 		},
-		{
+		OnReview: {
 			Name:     "review mode",
 			Section:  "docs/interface/surfaces.md#the-turns-close",
 			Position: Takeover,
@@ -498,7 +576,7 @@ func Surfaces() []Surface {
 				Review.PageUp, Review.PageDown, Review.Back,
 			},
 		},
-		{
+		OnAgentManager: {
 			Name:     "the agent manager",
 			Section:  "docs/interface/surfaces.md#the-agent-manager",
 			Position: Takeover,
@@ -509,7 +587,7 @@ func Surfaces() []Surface {
 				Agent.KillAll, Agent.Back, Screen.List,
 			},
 		},
-		{
+		OnProfileDrafter: {
 			// The drafting flow, which is a takeover for the reason every
 			// summoned surface is: it asks three things in order and each
 			// answer is typed, so the input it would otherwise borrow is the
@@ -522,7 +600,7 @@ func Surfaces() []Surface {
 				Profile.Move, Profile.Take, Screen.List, Profile.Back,
 			},
 		},
-		{
+		OnProfileDraft: {
 			// The draft step of the same flow: the sections, one at a time,
 			// over the card that writes the file. It is a row of its own
 			// because enter means something else here — a section is
@@ -537,7 +615,7 @@ func Surfaces() []Surface {
 				Profile.Migrate, Profile.Note, Profile.ScrollUp, Profile.ScrollDown, Screen.List, Profile.Back,
 			},
 		},
-		{
+		OnDiff: {
 			Name:     "the full-screen diff",
 			Section:  "docs/interface/surfaces.md#the-diff-view",
 			Position: Takeover,
@@ -546,7 +624,7 @@ func Surfaces() []Surface {
 				Diff.Scroll, Diff.Hunk, Diff.SideBySide, Diff.Back, Diff.Leave,
 			},
 		},
-		{
+		OnOutput: {
 			Name:     "the full-screen output",
 			Section:  "docs/interface/surfaces.md#the-activity-row",
 			Position: Takeover,
@@ -556,14 +634,14 @@ func Surfaces() []Surface {
 				Output.Collapse, Output.Back, Output.Leave,
 			},
 		},
-		{
+		OnPreview: {
 			Name:     "the staged attachment preview",
 			Section:  "docs/interface/surfaces.md#a-staged-attachment",
 			Position: Takeover,
 			Reached:  "a chip in reading mode, a click on one, or /paste show <handle>",
 			Bindings: Preview.All(),
 		},
-		{
+		OnKeyList: {
 			// The list `?` opens over a card or reading mode. It holds the
 			// keyboard while it is up, and every key it answers takes the
 			// reader back to the surface it was opened over, except the
@@ -574,21 +652,21 @@ func Surfaces() []Surface {
 			Reached:  Bracket(Screen.List) + " on a card that holds the keyboard, or in reading mode",
 			Bindings: []Binding{Screen.Move, Screen.List, Screen.Quit},
 		},
-		{
+		OnRetry: {
 			Name:     "the retry countdown",
 			Section:  "docs/interface/surfaces.md#the-recovery-row",
 			Position: Takeover,
 			Reached:  "it opens on its own and takes the keyboard",
 			Bindings: []Binding{Wait.Fallback, Wait.Stop},
 		},
-		{
+		OnPressure: {
 			Name:     "the context-pressure card",
 			Section:  "docs/interface/surfaces.md#the-recovery-row",
 			Position: Takeover,
 			Reached:  "it opens on its own and takes the keyboard",
 			Bindings: []Binding{Wait.Compact, Wait.NewSession, Wait.KeepGoing, Screen.List},
 		},
-		{
+		OnMaskedKey: {
 			Name:     "the masked key prompt",
 			Section:  "docs/interface/surfaces.md#the-recovery-row",
 			Position: Takeover,
