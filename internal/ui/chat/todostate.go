@@ -54,6 +54,19 @@ type todoState struct {
 	groom   *components.MultiSelect
 	// planner is the sprint planning turn in flight (todosprint.go).
 	planner todoPlanState
+	// sprintPlan is the proposal being answered. It lives on the session
+	// rather than on the screen because the key that writes its goal hands
+	// the keyboard back to the input, and a proposal that died with the
+	// surface would be one the reader has to plan again to get back.
+	sprintPlan *components.SprintPlan
+	// sprintClosed is the sprint this session closed, kept so the board can
+	// go on offering its report page: the file is renamed into the archive
+	// the moment it closes, and nothing else in the session remembers it.
+	sprintClosed *closedSprint
+	// rootSaid records that this session has already named the root its
+	// backlog was keyed on, which it does once and only where that root is
+	// not this directory's project (todo.go).
+	rootSaid bool
 }
 
 // enabled reports whether the host wired a backlog into this session.

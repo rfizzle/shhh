@@ -291,7 +291,7 @@ func (m Model) openWithPlan(plan *components.SprintPlan) (tea.Model, tea.Cmd) {
 	if screen == nil {
 		return model, cmd
 	}
-	model.sprintPlan, screen.Plan = plan, plan
+	model.todo.sprintPlan, screen.Plan = plan, plan
 	return model, cmd
 }
 
@@ -305,7 +305,7 @@ func (m Model) sprintGoalCommand(goal string) (tea.Model, tea.Cmd) {
 	if goal == "" {
 		return m.systemNotice("usage: " + strings.TrimSpace(sprintGoalPrefix) + " <what the set is for>")
 	}
-	plan := m.sprintPlan
+	plan := m.todo.sprintPlan
 	plan.Goal = goal
 	return m.openWithPlan(plan)
 }
@@ -528,7 +528,7 @@ func (m Model) sprintBoard() *components.SprintBoard {
 	if sp, live := run.Live(m.todo.wiring.Root); live && sp.Laned() {
 		return m.lanesBoard(s, sp)
 	}
-	if c := m.sprintClosed; c != nil {
+	if c := m.todo.sprintClosed; c != nil {
 		// A closed sprint is a record, so its board is the goal and the
 		// page and nothing that reads as still to do.
 		return &components.SprintBoard{
@@ -575,7 +575,7 @@ func (m Model) openSprintBoard(s *todo.Store) *components.SprintBoard {
 			board.Lanes = append(board.Lanes, components.SprintLane{Slug: l.Slug, Stage: string(l.Stage)})
 		}
 	}
-	if c := m.sprintClosed; c != nil && c.report != "" && c.name == s.Sprint.Name {
+	if c := m.todo.sprintClosed; c != nil && c.report != "" && c.name == s.Sprint.Name {
 		board.Report = c.report
 	}
 	return board
@@ -724,7 +724,7 @@ func (m *Model) sprintReportPage(sp *todo.Sprint, entries []todo.SprintEntry, tu
 	if err != nil {
 		return "\nThe sprint's report page could not be written — " + err.Error()
 	}
-	m.sprintClosed = &closedSprint{name: sp.Name, goal: sp.Goal, report: url}
+	m.todo.sprintClosed = &closedSprint{name: sp.Name, goal: sp.Goal, report: url}
 	return "\nThe set's report is a page: " + url
 }
 

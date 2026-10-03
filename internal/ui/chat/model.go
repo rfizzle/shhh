@@ -1391,10 +1391,6 @@ type Model struct {
 	// a conversation's directory and branch, which the header states the way
 	// a coding session's start survey lets it (WithCheckout).
 	checkout *project.Info
-	// todoRootSaid records that this session has already named the root its
-	// backlog was keyed on, which it does once and only where that root is
-	// not this directory's project (todo.go).
-	todoRootSaid bool
 
 	// conversation marks `shhh chat`; notebook is its shared notebook.
 	conversation bool
@@ -1478,15 +1474,6 @@ type Model struct {
 	// opener says /config cannot be reached rather than drawing a screen
 	// that cannot write.
 	openConfig ConfigOpener
-	// sprintPlan is the proposal being answered. It lives on the session
-	// rather than on the screen because the key that writes its goal hands
-	// the keyboard back to the input, and a proposal that died with the
-	// surface would be one the reader has to plan again to get back.
-	sprintPlan *components.SprintPlan
-	// sprintClosed is the sprint this session closed, kept so the board can
-	// go on offering its report page: the file is renamed into the archive
-	// the moment it closes, and nothing else in the session remembers it.
-	sprintClosed *closedSprint
 	// contextOpen is which of the surface's folds the reader had open when
 	// they last left it, by label. It outlives the screen because the screen
 	// is rebuilt from the accounting on every opening.

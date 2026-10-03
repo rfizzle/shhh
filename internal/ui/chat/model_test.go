@@ -36,15 +36,17 @@ import (
 // can reach it. Nobody was counting, so nothing ever cost anything.
 //
 // Raising it is allowed and will happen. Raising it without noticing is what
-// this stops — a mode with more than a field or two of its own has an
-// alternative the surfaces here already use, a struct of its own held by one
+// this stops — a mode with more than a field or two of its own has two
+// alternatives the surfaces here already use: a struct of its own held by one
 // pointer that is nil while the mode is not up (pressure, review, the
-// overlays). A screen built once per opening has a third: its register row
+// overlays), or a value sub-struct gathering the fields, held by value and
+// cleared where its fields were cleared (approvalstate.go, todostate.go).
+// A screen built once per opening has a third: its register row
 // holds it (overlay.go's heldScreens), so it is no field here at all and the
 // session boundary resets it with the rest in one call. This is the same
 // guard overlay_test.go puts on the placement table: a table nobody reads is
 // a table that drifts.
-const modelFields = 231
+const modelFields = 228
 
 func TestModelHasAStatedBound(t *testing.T) {
 	got := reflect.TypeOf(Model{}).NumField()
@@ -56,7 +58,7 @@ func TestModelHasAStatedBound(t *testing.T) {
 		verb = "fallen to"
 	}
 	t.Errorf("Model has %s %d fields and the stated bound is %d.\n"+
-		"State on the Model is reachable from every mode and copied on every message: if this belongs here, raise modelFields on purpose and say in the commit what was added; if it is one mode's, give the mode a struct of its own held by a pointer that is nil while it is down.",
+		"State on the Model is reachable from every mode and copied on every message: if this belongs here, raise modelFields on purpose and say in the commit what was added; if it is one mode's, give the mode a struct of its own held by a pointer that is nil while it is down, or gather its fields into a value sub-struct the way approvalstate.go and todostate.go do, held by value and cleared where its fields were.",
 		verb, got, modelFields)
 }
 

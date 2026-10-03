@@ -297,10 +297,10 @@ func (m *Model) namedTodoRoot() string {
 	// A host that never said where the session stands has not said the
 	// backlog is somewhere else either, and answering from the process's
 	// own directory would name a root nobody chose.
-	if m.todoRootSaid || m.todo.wiring.Root == "" || m.workspace == "" {
+	if m.todo.rootSaid || m.todo.wiring.Root == "" || m.workspace == "" {
 		return ""
 	}
-	m.todoRootSaid = true
+	m.todo.rootSaid = true
 	if root, found := project.RootFound(m.workspace); found && root == m.todo.wiring.Root {
 		return ""
 	}
@@ -341,7 +341,7 @@ func (m Model) todoCommandFor(parts []string) (tea.Model, tea.Cmd) {
 	}
 	// A goal written while a proposal is in flight goes on the proposal:
 	// there is no sprint file to edit until the card is taken.
-	if len(parts) >= 3 && parts[1] == "sprint" && parts[2] == "goal" && m.sprintPlan != nil {
+	if len(parts) >= 3 && parts[1] == "sprint" && parts[2] == "goal" && m.todo.sprintPlan != nil {
 		return m.sprintGoalCommand(strings.Join(parts[3:], " "))
 	}
 	if len(parts) >= 2 && parts[1] == "run" {
@@ -586,7 +586,7 @@ func (m Model) openTodoScreen() (tea.Model, tea.Cmd) {
 	if !m.todosEnabled() {
 		return m.systemNotice("the backlog is unavailable in this session")
 	}
-	screen := &components.BacklogScreen{Prose: todoProse, Plan: m.sprintPlan, Noun: m.todo.wiring.Profile.Noun}
+	screen := &components.BacklogScreen{Prose: todoProse, Plan: m.todo.sprintPlan, Noun: m.todo.wiring.Profile.Noun}
 	screen.Priority, screen.Fields = todoScreenFieldSet(m.todo.wiring.Profile)
 	m.screens = m.screens.with(stateBacklog, screen)
 	m.reloadTodos()
@@ -667,12 +667,12 @@ func (m Model) todoScreenAct(cmd components.BacklogCommand) (tea.Model, tea.Cmd)
 	case components.BacklogSprintTake:
 		screen := m.screens.backlog()
 		note := m.writeSprintPlan(cmd.Slugs, sprintFileGoal(screen.Plan))
-		screen.Plan, m.sprintPlan = nil, nil
+		screen.Plan, m.todo.sprintPlan = nil, nil
 		m.reloadTodos()
 		screen.Notice = firstLine(note)
 		return m.systemNotice(note)
 	case components.BacklogSprintCancel:
-		m.screens.backlog().Plan, m.sprintPlan = nil, nil
+		m.screens.backlog().Plan, m.todo.sprintPlan = nil, nil
 		m.refreshTodoScreen()
 		return m.systemNotice("nothing written; no sprint was planned")
 	case components.BacklogSprintGoal:

@@ -112,7 +112,7 @@ func TestSprintPlan_CardIsTheReadingsSetInItsOwnOrder(t *testing.T) {
 	dropped2, _ := dropped.(Model).updateTodoScreen(key(' '))
 	final, _ := dropped2.(Model).updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyEnter})
 	done := final.(Model)
-	if done.screens.backlog().Plan != nil || done.sprintPlan != nil {
+	if done.screens.backlog().Plan != nil || done.todo.sprintPlan != nil {
 		t.Fatal("taking the card left the proposal up")
 	}
 	sp, err := todo.LoadSprint(root)
@@ -453,11 +453,11 @@ func TestSprintPlan_NamesTheSecondSprintOfADayApart(t *testing.T) {
 
 // planSlugs is the proposal's slugs in the order the card draws them.
 func planSlugs(m Model) []string {
-	if m.sprintPlan == nil {
+	if m.todo.sprintPlan == nil {
 		return nil
 	}
-	out := make([]string, len(m.sprintPlan.Rows))
-	for i, r := range m.sprintPlan.Rows {
+	out := make([]string, len(m.todo.sprintPlan.Rows))
+	for i, r := range m.todo.sprintPlan.Rows {
 		out[i] = r.Slug
 	}
 	return out
@@ -693,7 +693,7 @@ func TestSprintPlan_GoalGoesOnTheProposal(t *testing.T) {
 	if m.input.Value() != sprintGoalPrefix {
 		t.Fatalf("draft = %q", m.input.Value())
 	}
-	if m.sprintPlan == nil {
+	if m.todo.sprintPlan == nil {
 		t.Fatal("the proposal died with the surface")
 	}
 	m.input.SetValue(sprintGoalPrefix + "Make the cache trustworthy.")
@@ -712,7 +712,7 @@ func TestSprintPlan_GoalGoesOnTheProposal(t *testing.T) {
 	if sp.Goal != "Make the cache trustworthy.\n\nReads as a minor release." {
 		t.Fatalf("written goal = %q", sp.Goal)
 	}
-	if taken.(Model).sprintPlan != nil {
+	if taken.(Model).todo.sprintPlan != nil {
 		t.Fatal("taking the card left the proposal on the session")
 	}
 }
