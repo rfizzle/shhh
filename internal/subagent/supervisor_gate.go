@@ -440,34 +440,30 @@ func askTitle(name string, action agent.Action) string {
 	return "use " + name
 }
 
-// actionFor classifies a gated call for the mode policy.
+// actionFor is a gated call as the child's mode policy reads it: the
+// classifier's action, with the two things the child reads for itself. Every
+// call that reaches it is one the child's own registration gated, so the
+// child answers for every name it is asked about, and a name the classifier
+// does not know is answered as the strictest kind there is.
+// See docs/capabilities/approvals-and-safety.md#one-classifier-names-a-calls-tier.
 func actionFor(name string, args json.RawMessage) (agent.Action, error) {
-	switch {
-	case name == tools.ExecCommandName:
-		var a struct {
-			Command string `json:"command"`
-		}
-		if err := json.Unmarshal(args, &a); err != nil || strings.TrimSpace(a.Command) == "" {
-			return agent.Action{}, errors.New("invalid command arguments")
-		}
-		cmd := strings.TrimSpace(a.Command)
-		return agent.Action{
-			Kind:          agent.ActionCommand,
-			Command:       cmd,
-			SafetyFlagged: len(safety.Check(cmd)) > 0,
-		}, nil
-	case name == web.FetchToolName:
+	call, err := agent.ClassifyCall(name, args, agent.Answers{Has: func(string) bool { return true }})
+	if err != nil {
+		return agent.Action{}, err
+	}
+	a := call.Action
+	switch a.Kind {
+	case agent.ActionCommand:
+		// The child runs the line trimmed, and the trimmed line is what its
+		// policy, its title and its runner all read.
+		a.Command = strings.TrimSpace(a.Command)
+	case agent.ActionFetch:
 		// A child's fetch is decided on the same host the parent's card
 		// would have named, so a granted host is as quiet in a child as it
 		// is in the session that granted it.
-		// It carries the host's reading from the same function, so a host
-		// the lists vouch for is as quiet in a child as in the session, and
-		// one they warn about is put to the person from either.
-		return agent.Action{Kind: agent.ActionFetch, Host: web.FetchHost(args), Reading: web.ReadFetch(args)}, nil
-	case tools.IsMutating(name):
-		return agent.Action{Kind: agent.ActionEdit}, nil
+		a.Host = web.FetchHost(args)
 	}
-	return agent.Action{Kind: agent.ActionOther}, nil
+	return a, nil
 }
 
 // scopedAction fills in what a child's command reaches outside the working
