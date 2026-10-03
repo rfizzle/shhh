@@ -14,6 +14,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // Every mode says where it draws, and the placement decides what the rest of
@@ -248,5 +250,58 @@ func TestRegisterDerivedTablesOpenFromAZeroModel(t *testing.T) {
 	m.mouseOn, m.ready = true, true
 	if m.selectableSurface() {
 		t.Fatal("the transcript should not be selectable under a pane surface before a paint")
+	}
+}
+
+// The held screens that take the pane are built by one constructor, and each
+// still answers as its own row: the same command and rail door it always
+// had, the pane's flags, and nothing drawn while no screen is held.
+func TestOverlayPaneScreensKeepTheirRows(t *testing.T) {
+	want := []struct {
+		s       state
+		command string
+		door    string
+	}{
+		{stateContext, "/context", components.RailContext},
+		{stateSources, "/sources", ""},
+		{stateSteps, "/steps", components.RailSteps},
+		{stateReadings, "/readings", components.RailSummary},
+		{stateTurns, "/turns", components.RailTurn},
+		{stateAlerts, "/alerts", components.RailAlerts},
+		{stateSpend, "/stats", components.RailSpend},
+		{stateNotes, "/notes", ""},
+	}
+	overlays()
+	if len(overlayTable) != 44 {
+		t.Errorf("the register has %d rows, want 44", len(overlayTable))
+	}
+	for _, w := range want {
+		o := overlayFor(w.s)
+		if o == nil {
+			t.Errorf("state %d has no row in the register", w.s)
+			continue
+		}
+		if o.place != placePane || !o.holds || !o.borrows || !o.hidesRail || !o.noSelection {
+			t.Errorf("state %d lost a pane screen's flags: %+v", w.s, o)
+		}
+		if o.command == nil || o.command.name != w.command {
+			t.Errorf("state %d's command is not %s", w.s, w.command)
+		}
+		door := ""
+		if o.door != nil {
+			door = o.door.block
+		}
+		if door != w.door {
+			t.Errorf("state %d's rail door is %q, want %q", w.s, door, w.door)
+		}
+		if lines := o.Lines(Model{}, 80, 20); lines != nil {
+			t.Errorf("state %d drew %q with no screen held", w.s, lines)
+		}
+	}
+	if o := overlayFor(stateContext); !o.ownsQuit || o.answer == nil {
+		t.Error("the context screen no longer answers its own keys and the quit chord")
+	}
+	if o := overlayFor(stateSteps); len(o.doorAlso) != 1 || o.doorAlso[0] != components.RailPlan {
+		t.Errorf("the steps screen's PLAN door is %v", o.doorAlso)
 	}
 }

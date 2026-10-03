@@ -726,203 +726,16 @@ func buildOverlays() map[state]*mode {
 			// changeset, read in review mode.
 			door: &surfaceDoor{components.RailChanges, railDoor{Model.openSessionDiff, reviewShowing, Model.closeReview}},
 		},
-		stateContext: {
-			place:       placePane,
-			holds:       true,
-			borrows:     true,
-			ownsQuit:    true,
-			hidesRail:   true,
-			noSelection: true,
-			lines: func(m Model, width, height int) []string {
-				screen := m.screens.contextScreen()
-				if screen == nil {
-					return nil
-				}
-				screen.SetSize(width, height)
-				return strings.Split(screen.View(width), "\n")
-			},
-			hint:   (Model).renderContextHint,
-			answer: (*Model).answerContext,
-			// The occupancy surface reads the conversation and changes nothing
-			// in it, so it is not idleOnly: a window filling up mid-turn is
-			// exactly when the question gets asked.
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: "/context", desc: "the window as a meter, itemised down to the tool",
-					help: `the window as a meter, by category, with the tools itemised`},
-				bare: true,
-				open: bareOpen(Model.openContext),
-			},
-			door: &surfaceDoor{components.RailContext, railDoor{Model.openContext, contextShowing, Model.closeContextScreen}},
-		},
-		stateSources: {
-			place:       placePane,
-			holds:       true,
-			borrows:     true,
-			hidesRail:   true,
-			noSelection: true,
-			lines: func(m Model, width, height int) []string {
-				screen := m.screens.sources()
-				if screen == nil {
-					return nil
-				}
-				screen.SetSize(width, height)
-				return strings.Split(screen.View(width), "\n")
-			},
-			hint: (Model).renderSourcesHint,
-			keys: (Model).updateSources,
-			// The ledger of what the session read. Like the occupancy surface
-			// it reads and changes nothing, so it is not idleOnly: mid-turn is
-			// exactly when somebody asks where a claim came from.
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: "/sources", desc: "what this session read: every fetch and search, by host",
-					enabled: func(m *Model) bool { return m.sourceLedger != nil },
-					help:    `what this session read: every fetch and every search, its own and its children's, grouped by host — with the whole page under [enter] where the fetch kept one`},
-				bare: true,
-				open: bareOpen(Model.openSources),
-			},
-		},
-		stateSteps: {
-			place:       placePane,
-			holds:       true,
-			borrows:     true,
-			hidesRail:   true,
-			noSelection: true,
-			lines: func(m Model, width, height int) []string {
-				screen := m.screens.steps()
-				if screen == nil {
-					return nil
-				}
-				screen.SetSize(width, height)
-				return strings.Split(screen.View(width), "\n")
-			},
-			hint: (Model).renderStepsHint,
-			keys: (Model).updateSteps,
-			// The session's whole working list, each step beside what the
-			// transcript recorded for it. It reads and changes nothing, so it
-			// is not idleOnly: mid-turn is when somebody asks where the agent
-			// is (worksteps.go).
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: "/steps", desc: "the session's own working list, each step beside what the transcript recorded for it",
-					enabled: func(m *Model) bool { return m.codingSurfaces() },
-					help:    `the session's own working list on one screen: every step it declared, the paths each said it would touch, which it has marked done and the one it is on — and beside each, the calls the transcript titled for it, or not started where there are none. It reads and changes nothing`},
-				bare: true,
-				open: bareOpen(Model.openSteps),
-			},
-			door: &surfaceDoor{components.RailSteps, railDoor{Model.openSteps, stepsShowing, Model.closeStepsScreen}},
-			// PLAN stands where STEPS would while an approved plan is being
-			// executed, and the screen is then the plan's (worksteps.go).
-			doorAlso: []string{components.RailPlan},
-		},
-		stateReadings: {
-			place:       placePane,
-			holds:       true,
-			borrows:     true,
-			hidesRail:   true,
-			noSelection: true,
-			lines: func(m Model, width, height int) []string {
-				screen := m.screens.readings()
-				if screen == nil {
-					return nil
-				}
-				screen.SetSize(width, height)
-				return strings.Split(screen.View(width), "\n")
-			},
-			hint: (Model).renderReadingsHint,
-			keys: (Model).updateReadings,
-			// Every reading the session has taken of its own run. It reads and
-			// changes nothing, so it is not idleOnly: mid-turn is when somebody
-			// asks what the run has been saying about itself (readings.go).
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: "/readings", desc: "every reading the session has taken of its own run, each whole",
-					help: `every reading the session has taken of its own run on one screen, newest first: the round, the verdict, the whole reading with its reason and the instruction it was judged against, and whether it steered the turn and whether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing`},
-				bare: true,
-				open: bareOpen(Model.openReadings),
-			},
-			door: &surfaceDoor{components.RailSummary, railDoor{Model.openReadings, readingsShowing, Model.closeReadingsScreen}},
-		},
-		stateTurns: {
-			place:       placePane,
-			holds:       true,
-			borrows:     true,
-			hidesRail:   true,
-			noSelection: true,
-			lines: func(m Model, width, height int) []string {
-				screen := m.screens.turns()
-				if screen == nil {
-					return nil
-				}
-				screen.SetSize(width, height)
-				return strings.Split(screen.View(width), "\n")
-			},
-			hint: (Model).renderTurnsHint,
-			keys: (Model).updateTurns,
-			// Every turn the session has run, as its close row reads it. It
-			// reads and changes nothing, so it is not idleOnly: mid-turn is when
-			// somebody asks what the turns before this one cost (turns.go).
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: "/turns", desc: "every turn the session has run, as its close row reads it, each one's review a key away",
-					help: `every turn the session has run on one screen, newest first: how it ended, its steps, tools, time and spend, what it changed, its commit and its checks' verdict — the figures its close row drew, beside the close itself — with the turn in flight on top. [enter] opens a turn's review where it changed files. A turn from an ended sitting shows its files and says its figures were not kept. It reads and changes nothing`},
-				bare: true,
-				open: bareOpen(Model.openTurns),
-			},
-			door: &surfaceDoor{components.RailTurn, railDoor{Model.openTurns, turnsShowing, Model.closeTurnsScreen}},
-		},
-		stateAlerts: {
-			place:       placePane,
-			holds:       true,
-			borrows:     true,
-			hidesRail:   true,
-			noSelection: true,
-			lines: func(m Model, width, height int) []string {
-				screen := m.screens.alerts()
-				if screen == nil {
-					return nil
-				}
-				screen.SetSize(width, height)
-				return strings.Split(screen.View(width), "\n")
-			},
-			hint: (Model).renderAlertsHint,
-			keys: (Model).updateAlerts,
-			// Every alert the session has had, as the rail reads it. It reads
-			// and changes nothing, so it is not idleOnly: mid-turn is when
-			// somebody asks what has been failing and what fixed it (alerts.go).
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: "/alerts", desc: "every command this session broke, standing and superseded, each run a key away",
-					help: `every alert the session has had on one screen, standing first and then superseded, newest first: the command, its last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate passing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id its output was kept under where it was cut. It reads the rail's own alerts and changes nothing`},
-				bare: true,
-				open: bareOpen(Model.openAlerts),
-			},
-			door: &surfaceDoor{components.RailAlerts, railDoor{Model.openAlerts, alertsShowing, Model.closeAlertsScreen}},
-		},
-		stateSpend: {
-			place:       placePane,
-			holds:       true,
-			borrows:     true,
-			hidesRail:   true,
-			noSelection: true,
-			lines: func(m Model, width, height int) []string {
-				screen := m.screens.spend()
-				if screen == nil {
-					return nil
-				}
-				screen.SetSize(width, height)
-				return strings.Split(screen.View(width), "\n")
-			},
-			hint: (Model).renderStatsHint,
-			keys: (Model).updateStats,
-			// The session's whole bill, as the rail's SPEND block reads it. It
-			// reads and changes nothing, so it is not idleOnly: mid-turn is when
-			// somebody asks what the run is costing (stats.go). While attached
-			// to a child, /stats is the child's own answer and never reaches
-			// this row (attach.go).
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: "/stats", desc: "the session's whole bill: by model, by child and by turn",
-					help: `the session's whole bill on one screen, as the rail's SPEND block reads it: the session total with the kinds of request that make it up, each model's share with its own kinds and what the children on it cost, each child's share by name, and each turn's cost as its close row states it. [enter] on a turn opens it on the turns screen. What the context window is occupied by is /context. While attached to an agent, /stats is that agent's own. It reads and changes nothing`},
-				bare: true,
-				open: bareOpen(Model.openStats),
-			},
-			door: &surfaceDoor{components.RailSpend, railDoor{Model.openStats, statsShowing, Model.closeStatsScreen}},
-		},
+		// The screens the session holds while they take the pane. Each row is
+		// the screen's accessor and what is its own; paneScreen supplies the
+		// rest.
+		stateContext:  paneScreen(heldScreens.contextScreen, contextScreenRow()),
+		stateSources:  paneScreen(heldScreens.sources, sourcesScreenRow()),
+		stateSteps:    paneScreen(heldScreens.steps, stepsScreenRow()),
+		stateReadings: paneScreen(heldScreens.readings, readingsScreenRow()),
+		stateTurns:    paneScreen(heldScreens.turns, turnsScreenRow()),
+		stateAlerts:   paneScreen(heldScreens.alerts, alertsScreenRow()),
+		stateSpend:    paneScreen(heldScreens.spend, spendScreenRow()),
 		stateTools: {
 			place:       placePane,
 			holds:       true,
@@ -970,33 +783,7 @@ func buildOverlays() map[state]*mode {
 				open: bareOpen(Model.openSafety),
 			},
 		},
-		stateNotes: {
-			place:       placePane,
-			holds:       true,
-			borrows:     true,
-			hidesRail:   true,
-			noSelection: true,
-			lines: func(m Model, width, height int) []string {
-				screen := m.screens.notes()
-				if screen == nil {
-					return nil
-				}
-				screen.SetSize(width, height)
-				return strings.Split(screen.View(width), "\n")
-			},
-			hint: (Model).renderNotesHint,
-			keys: (Model).updateNotes,
-			command: &surfaceCommand{
-				slashCommand: slashCommand{name: "/notes", args: "[drop <n>|clear]", desc: "the session's shared notebook, as a screen: what the agents wrote for each other",
-					enabled: func(m *Model) bool { return m.notebook != nil },
-					argSpecs: staticArgs(
-						argOption{"drop", "remove one note by number"},
-						argOption{"clear", "empty the notebook, after confirming it"},
-					),
-					help: `the session's shared notebook — what the agents wrote for each other, and what a backlog run wrote up, listed by author. Dropping is yours alone: drop <n> removes one, clear empties it`},
-				open: func(m Model, parts []string) (tea.Model, tea.Cmd) { return m.notesCommand(parts[1:]) },
-			},
-		},
+		stateNotes: paneScreen(heldScreens.notes, notesScreenRow()),
 		stateBacklog: {
 			place:       placePane,
 			holds:       true,
@@ -1093,6 +880,177 @@ func buildOverlays() map[state]*mode {
 			borrows:   true,
 			hidesRail: true,
 			answer:    (*Model).answerModelList,
+		},
+	}
+}
+
+// paneScreen is the row of a screen the session holds while it takes the
+// pane: it borrows the turn, stands over the rail, keeps a drag from
+// selecting and sizes the held screen to the pane on every paint, drawing
+// nothing while none is held. row is what is the screen's own — its hint,
+// its keys, its command and its rail door — and screen is the accessor it
+// is held under.
+func paneScreen[T any, P interface {
+	*T
+	SetSize(width, height int)
+	View(width int) string
+}](screen func(heldScreens) P, row mode) *mode {
+	row.place = placePane
+	row.holds = true
+	row.borrows = true
+	row.hidesRail = true
+	row.noSelection = true
+	row.lines = func(m Model, width, height int) []string {
+		held := screen(m.screens)
+		if held == nil {
+			return nil
+		}
+		held.SetSize(width, height)
+		return strings.Split(held.View(width), "\n")
+	}
+	return &row
+}
+
+func contextScreenRow() mode {
+	return mode{
+		ownsQuit: true,
+		hint:     (Model).renderContextHint,
+		answer:   (*Model).answerContext,
+		// The occupancy surface reads the conversation and changes nothing
+		// in it, so it is not idleOnly: a window filling up mid-turn is
+		// exactly when the question gets asked.
+		command: &surfaceCommand{
+			slashCommand: slashCommand{name: "/context", desc: "the window as a meter, itemised down to the tool",
+				help: `the window as a meter, by category, with the tools itemised`},
+			bare: true,
+			open: bareOpen(Model.openContext),
+		},
+		door: &surfaceDoor{components.RailContext, railDoor{Model.openContext, contextShowing, Model.closeContextScreen}},
+	}
+}
+
+func sourcesScreenRow() mode {
+	return mode{
+		hint: (Model).renderSourcesHint,
+		keys: (Model).updateSources,
+		// The ledger of what the session read. Like the occupancy surface
+		// it reads and changes nothing, so it is not idleOnly: mid-turn is
+		// exactly when somebody asks where a claim came from.
+		command: &surfaceCommand{
+			slashCommand: slashCommand{name: "/sources", desc: "what this session read: every fetch and search, by host",
+				enabled: func(m *Model) bool { return m.sourceLedger != nil },
+				help:    `what this session read: every fetch and every search, its own and its children's, grouped by host — with the whole page under [enter] where the fetch kept one`},
+			bare: true,
+			open: bareOpen(Model.openSources),
+		},
+	}
+}
+
+func stepsScreenRow() mode {
+	return mode{
+		hint: (Model).renderStepsHint,
+		keys: (Model).updateSteps,
+		// The session's whole working list, each step beside what the
+		// transcript recorded for it. It reads and changes nothing, so it
+		// is not idleOnly: mid-turn is when somebody asks where the agent
+		// is (worksteps.go).
+		command: &surfaceCommand{
+			slashCommand: slashCommand{name: "/steps", desc: "the session's own working list, each step beside what the transcript recorded for it",
+				enabled: func(m *Model) bool { return m.codingSurfaces() },
+				help:    `the session's own working list on one screen: every step it declared, the paths each said it would touch, which it has marked done and the one it is on — and beside each, the calls the transcript titled for it, or not started where there are none. It reads and changes nothing`},
+			bare: true,
+			open: bareOpen(Model.openSteps),
+		},
+		door: &surfaceDoor{components.RailSteps, railDoor{Model.openSteps, stepsShowing, Model.closeStepsScreen}},
+		// PLAN stands where STEPS would while an approved plan is being
+		// executed, and the screen is then the plan's (worksteps.go).
+		doorAlso: []string{components.RailPlan},
+	}
+}
+
+func readingsScreenRow() mode {
+	return mode{
+		hint: (Model).renderReadingsHint,
+		keys: (Model).updateReadings,
+		// Every reading the session has taken of its own run. It reads and
+		// changes nothing, so it is not idleOnly: mid-turn is when somebody
+		// asks what the run has been saying about itself (readings.go).
+		command: &surfaceCommand{
+			slashCommand: slashCommand{name: "/readings", desc: "every reading the session has taken of its own run, each whole",
+				help: `every reading the session has taken of its own run on one screen, newest first: the round, the verdict, the whole reading with its reason and the instruction it was judged against, and whether it steered the turn and whether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing`},
+			bare: true,
+			open: bareOpen(Model.openReadings),
+		},
+		door: &surfaceDoor{components.RailSummary, railDoor{Model.openReadings, readingsShowing, Model.closeReadingsScreen}},
+	}
+}
+
+func turnsScreenRow() mode {
+	return mode{
+		hint: (Model).renderTurnsHint,
+		keys: (Model).updateTurns,
+		// Every turn the session has run, as its close row reads it. It
+		// reads and changes nothing, so it is not idleOnly: mid-turn is when
+		// somebody asks what the turns before this one cost (turns.go).
+		command: &surfaceCommand{
+			slashCommand: slashCommand{name: "/turns", desc: "every turn the session has run, as its close row reads it, each one's review a key away",
+				help: `every turn the session has run on one screen, newest first: how it ended, its steps, tools, time and spend, what it changed, its commit and its checks' verdict — the figures its close row drew, beside the close itself — with the turn in flight on top. [enter] opens a turn's review where it changed files. A turn from an ended sitting shows its files and says its figures were not kept. It reads and changes nothing`},
+			bare: true,
+			open: bareOpen(Model.openTurns),
+		},
+		door: &surfaceDoor{components.RailTurn, railDoor{Model.openTurns, turnsShowing, Model.closeTurnsScreen}},
+	}
+}
+
+func alertsScreenRow() mode {
+	return mode{
+		hint: (Model).renderAlertsHint,
+		keys: (Model).updateAlerts,
+		// Every alert the session has had, as the rail reads it. It reads
+		// and changes nothing, so it is not idleOnly: mid-turn is when
+		// somebody asks what has been failing and what fixed it (alerts.go).
+		command: &surfaceCommand{
+			slashCommand: slashCommand{name: "/alerts", desc: "every command this session broke, standing and superseded, each run a key away",
+				help: `every alert the session has had on one screen, standing first and then superseded, newest first: the command, its last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate passing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id its output was kept under where it was cut. It reads the rail's own alerts and changes nothing`},
+			bare: true,
+			open: bareOpen(Model.openAlerts),
+		},
+		door: &surfaceDoor{components.RailAlerts, railDoor{Model.openAlerts, alertsShowing, Model.closeAlertsScreen}},
+	}
+}
+
+func spendScreenRow() mode {
+	return mode{
+		hint: (Model).renderStatsHint,
+		keys: (Model).updateStats,
+		// The session's whole bill, as the rail's SPEND block reads it. It
+		// reads and changes nothing, so it is not idleOnly: mid-turn is when
+		// somebody asks what the run is costing (stats.go). While attached
+		// to a child, /stats is the child's own answer and never reaches
+		// this row (attach.go).
+		command: &surfaceCommand{
+			slashCommand: slashCommand{name: "/stats", desc: "the session's whole bill: by model, by child and by turn",
+				help: `the session's whole bill on one screen, as the rail's SPEND block reads it: the session total with the kinds of request that make it up, each model's share with its own kinds and what the children on it cost, each child's share by name, and each turn's cost as its close row states it. [enter] on a turn opens it on the turns screen. What the context window is occupied by is /context. While attached to an agent, /stats is that agent's own. It reads and changes nothing`},
+			bare: true,
+			open: bareOpen(Model.openStats),
+		},
+		door: &surfaceDoor{components.RailSpend, railDoor{Model.openStats, statsShowing, Model.closeStatsScreen}},
+	}
+}
+
+func notesScreenRow() mode {
+	return mode{
+		hint: (Model).renderNotesHint,
+		keys: (Model).updateNotes,
+		command: &surfaceCommand{
+			slashCommand: slashCommand{name: "/notes", args: "[drop <n>|clear]", desc: "the session's shared notebook, as a screen: what the agents wrote for each other",
+				enabled: func(m *Model) bool { return m.notebook != nil },
+				argSpecs: staticArgs(
+					argOption{"drop", "remove one note by number"},
+					argOption{"clear", "empty the notebook, after confirming it"},
+				),
+				help: `the session's shared notebook — what the agents wrote for each other, and what a backlog run wrote up, listed by author. Dropping is yours alone: drop <n> removes one, clear empties it`},
+			open: func(m Model, parts []string) (tea.Model, tea.Cmd) { return m.notesCommand(parts[1:]) },
 		},
 	}
 }
