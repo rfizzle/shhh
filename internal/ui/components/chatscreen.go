@@ -240,20 +240,10 @@ func (c *ChatScreen) updateConfirm(msg tea.KeyPressMsg) (bool, ChatResult) {
 // esc keeps the name, and everything else is typed into the row. A name that
 // was not changed asks the host for nothing.
 func (c *ChatScreen) updateRename(msg tea.KeyPressMsg) (bool, ChatResult) {
-	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Select.Cancel):
-		c.rename = nil
-		return false, ChatResult{}
-	case keys.Is(pressed, keys.Screen.Take):
-		name := strings.TrimSpace(string(c.rename.value))
-		c.rename = nil
-		row := c.currentShown(c.Rows)
-		if row == nil || name == "" || name == row.Name {
-			return false, ChatResult{}
-		}
+	name, committed := renameKey(&c.rename, msg)
+	if row := c.currentShown(c.Rows); committed && row != nil && name != "" && name != row.Name {
 		return false, ChatResult{Do: &ChatCommand{Act: ChatRename, ID: row.ID, Name: name}}
 	}
-	c.rename.update(msg)
 	return false, ChatResult{}
 }
 

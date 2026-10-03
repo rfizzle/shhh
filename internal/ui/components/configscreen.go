@@ -891,6 +891,24 @@ func (e *lineEdit) update(msg tea.KeyPressMsg) {
 	}
 }
 
+// renameKey answers a key while a browser's rename row is up: enter commits,
+// esc keeps the name, and everything else is typed into the row. Either of
+// the first two closes the row. It reports the name enter committed, trimmed;
+// the caller asks its host for nothing where the name is empty or unchanged.
+func renameKey(edit **lineEdit, msg tea.KeyPressMsg) (string, bool) {
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Select.Cancel):
+		*edit = nil
+		return "", false
+	case keys.Is(pressed, keys.Screen.Take):
+		name := strings.TrimSpace(string((*edit).value))
+		*edit = nil
+		return name, true
+	}
+	(*edit).update(msg)
+	return "", false
+}
+
 func (e *lineEdit) view() string {
 	row := ""
 	if e.lead != "" {

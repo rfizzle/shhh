@@ -20,8 +20,6 @@ package components
 // carries out against its own store, and the host hands back fresh Rows.
 
 import (
-	"strings"
-
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -205,20 +203,10 @@ func (s *SnippetScreen) updateConfirm(msg tea.KeyPressMsg) (bool, SnippetResult)
 // esc keeps the name, and everything else is typed into the row. A name that
 // was not changed asks the host for nothing.
 func (s *SnippetScreen) updateRename(msg tea.KeyPressMsg) (bool, SnippetResult) {
-	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Select.Cancel):
-		s.rename = nil
-		return false, SnippetResult{}
-	case keys.Is(pressed, keys.Screen.Take):
-		name := strings.TrimSpace(string(s.rename.value))
-		s.rename = nil
-		row := s.currentShown(s.Rows)
-		if row == nil || name == "" || name == row.Name {
-			return false, SnippetResult{}
-		}
+	name, committed := renameKey(&s.rename, msg)
+	if row := s.currentShown(s.Rows); committed && row != nil && name != "" && name != row.Name {
 		return false, SnippetResult{Do: &SnippetCommand{Act: SnippetRename, ID: row.ID, Name: name}}
 	}
-	s.rename.update(msg)
 	return false, SnippetResult{}
 }
 
