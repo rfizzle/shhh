@@ -101,11 +101,11 @@ func (m Model) todoRunDiff() []string {
 		seen[rel] = true
 		// Only a diff counts; git's complaint about a path or a tree is
 		// not one, and must not reach the reviewer as if it were.
-		if out, code := git(root, "diff", "--", rel); code == 0 && strings.HasPrefix(out, "diff --git") {
+		if out, code := run.Git(root, "diff", "--", rel); code == 0 && strings.HasPrefix(out, "diff --git") {
 			files = append(files, out)
 			continue
 		}
-		if out, _ := git(root, "diff", "--no-index", os.DevNull, rel); strings.HasPrefix(out, "diff --git") {
+		if out, _ := run.Git(root, "diff", "--no-index", os.DevNull, rel); strings.HasPrefix(out, "diff --git") {
 			files = append(files, out)
 		}
 	}

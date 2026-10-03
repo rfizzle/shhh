@@ -75,11 +75,11 @@ func (d *todoDriver) review(ctx context.Context, deadline time.Time, st *run.Sta
 func (d *todoDriver) reviewDiff(st *run.State) []string {
 	var out []string
 	for _, rel := range st.Paths {
-		if d, code := todoGit(d.tree, "diff", "--", rel); code == 0 && strings.HasPrefix(d, "diff --git") {
+		if d, code := run.Git(d.tree, "diff", "--", rel); code == 0 && strings.HasPrefix(d, "diff --git") {
 			out = append(out, d)
 			continue
 		}
-		if d, _ := todoGit(d.tree, "diff", "--no-index", os.DevNull, rel); strings.HasPrefix(d, "diff --git") {
+		if d, _ := run.Git(d.tree, "diff", "--no-index", os.DevNull, rel); strings.HasPrefix(d, "diff --git") {
 			out = append(out, d)
 		}
 	}

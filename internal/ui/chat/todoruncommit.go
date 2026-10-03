@@ -75,11 +75,6 @@ func (m Model) todoCommitCmd() tea.Cmd {
 	}
 }
 
-// git is the run package's reading of one git command (run.Git). It is the
-// reading side only — the diff a reviewer child is handed; the commit a run
-// makes is the run package's (run.Commit).
-var git = run.Git
-
 // finishTodoCommit applies the commit outcome.
 func (m Model) finishTodoCommit(msg todoCommitMsg) (tea.Model, tea.Cmd) {
 	st := m.todo.runner.state

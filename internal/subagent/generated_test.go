@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/meter"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
@@ -76,10 +77,10 @@ func sumRepo(t *testing.T) string {
 	writeInto(t, repo, "a.txt", "1")
 	writeInto(t, repo, "b.txt", "1")
 	writeSum(repo)
-	if _, err := wtree.RunGit(repo, "add", "-A"); err != nil {
+	if _, err := hostgit.Output(context.Background(), repo, "add", "-A"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := wtree.RunGit(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "base"); err != nil {
+	if _, err := hostgit.Output(context.Background(), repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "base"); err != nil {
 		t.Fatal(err)
 	}
 	return repo

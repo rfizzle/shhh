@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/provider"
-	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -541,7 +541,7 @@ func TestResumeTooSmallForItsPrologueIsRefused(t *testing.T) {
 	if children := sup.Snapshot(); len(children) != 0 {
 		t.Fatalf("a refused resume claimed a child slot: %+v", children)
 	}
-	out, listErr := wtree.RunGit(repo, "worktree", "list")
+	out, listErr := hostgit.Output(context.Background(), repo, "worktree", "list")
 	if listErr != nil {
 		t.Fatal(listErr)
 	}

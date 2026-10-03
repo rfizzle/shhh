@@ -97,7 +97,7 @@ func TestMakeSpool_IsInvisibleToGit(t *testing.T) {
 	root := t.TempDir()
 	for _, args := range [][]string{{"init", "-q"}, {"config", "user.email", "t@e"},
 		{"config", "user.name", "t"}, {"commit", "-q", "--allow-empty", "-m", "seed"}} {
-		if out, code := git(root, args...); code != 0 {
+		if out, code := Git(root, args...); code != 0 {
 			t.Fatalf("git %v: %s", args, out)
 		}
 	}

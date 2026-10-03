@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/rfizzle/shhh/internal/hostgit"
 )
 
 // worktreeLocks holds one lock per repository toplevel. Two `git worktree
@@ -59,12 +61,16 @@ func addWorktree(root string, untracked []string) (WorktreeHandle, error) {
 
 // AddWorktreeContext builds a writer workspace under the child's lifecycle
 // context. The ordinary wrapper keeps callers outside the supervisor working.
+// Its git runs under that context so a stopping writer interrupts the copy
+// rather than waiting for git's repository lock: a writer has not started its
+// turn until the copy exists, so a stop that cannot reach this command leaves
+// its slot and the parent waiting behind work it no longer wants.
 func AddWorktreeContext(ctx context.Context, root string, untracked []string) (WorktreeHandle, error) {
 	var h WorktreeHandle
 	if err := ctx.Err(); err != nil {
 		return h, err
 	}
-	top, err := runGitContext(ctx, root, "rev-parse", "--show-toplevel")
+	top, err := hostgit.Output(ctx, root, "rev-parse", "--show-toplevel")
 	if err != nil {
 		return h, fmt.Errorf("writer agents need a git repository: %w", err)
 	}
@@ -82,7 +88,7 @@ func AddWorktreeContext(ctx context.Context, root string, untracked []string) (W
 	if err != nil {
 		return WorktreeHandle{}, err
 	}
-	_, err = runGitContext(ctx, h.RepoTop, "worktree", "add", "--detach", h.Dir, "HEAD")
+	_, err = hostgit.Output(ctx, h.RepoTop, "worktree", "add", "--detach", h.Dir, "HEAD")
 	unlock()
 	if err != nil {
 		// The git error is the one worth reporting; a directory left behind
@@ -133,7 +139,7 @@ func AddWorktreeContext(ctx context.Context, root string, untracked []string) (W
 // to reconcile a conflict between their own work and work they asked for.
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
 func seedWorktree(repoTop, worktree string, untracked []string) (int, error) {
-	patch, err := GitOutput(repoTop, "diff", "HEAD", "--binary")
+	patch, err := hostgit.Output(context.Background(), repoTop, "diff", "HEAD", "--binary")
 	if err != nil {
 		return 0, err
 	}
@@ -266,7 +272,7 @@ func CommitBase(worktree, message string) error {
 	if err := stageAll(worktree); err != nil {
 		return err
 	}
-	_, err := RunGit(worktree,
+	_, err := hostgit.Output(context.Background(), worktree,
 		"-c", "user.name=shhh", "-c", "user.email=shhh@localhost",
 		"commit", "--quiet", "--no-verify", "--no-gpg-sign", "--allow-empty",
 		"-m", message)
@@ -281,8 +287,8 @@ func RemoveWorktree(repoTop, worktree string) {
 	}
 	if repoTop != "" {
 		unlock, _ := lockWorktrees(context.Background(), repoTop)
-		_, _ = RunGit(repoTop, "worktree", "remove", "--force", worktree)
-		_, _ = RunGit(repoTop, "worktree", "prune")
+		_, _ = hostgit.Output(context.Background(), repoTop, "worktree", "remove", "--force", worktree)
+		_, _ = hostgit.Output(context.Background(), repoTop, "worktree", "prune")
 		unlock()
 	}
 	_ = os.RemoveAll(worktree)

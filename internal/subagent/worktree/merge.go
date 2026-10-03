@@ -44,7 +44,7 @@ type patchMerge struct {
 // changing nothing: the question the landing's own all-or-nothing apply
 // answers, asked before a card is put up for a patch that could not land.
 func CheckPatch(repoTop, patch string) error {
-	_, err := gitWithEnv(repoTop, nil, patch, "apply", "--check", "--whitespace=nowarn")
+	_, err := hostgit.OutputWith(context.Background(), repoTop, hostgit.Options{Stdin: patch}, "apply", "--check", "--whitespace=nowarn")
 	return err
 }
 
@@ -94,7 +94,7 @@ func (a MergeSide) Textual() bool {
 // is regenerated over the merge rather than merged (RegenerateOver).
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
 func MergeWorktree(worktree, repoTop string, skip []string) (patchMerge, error) {
-	raw, err := GitOutput(worktree, "diff", "--cached", "--raw", "--no-renames", "--no-abbrev", "-z")
+	raw, err := hostgit.Output(context.Background(), worktree, "diff", "--cached", "--raw", "--no-renames", "--no-abbrev", "-z")
 	if err != nil {
 		return patchMerge{}, err
 	}
@@ -111,7 +111,7 @@ func MergeKept(repoTop, base, patch string, skip []string) (patchMerge, error) {
 	if err != nil {
 		return patchMerge{}, err
 	}
-	raw, err := GitOutput(repoTop, "diff-tree", "-r", "--raw", "--no-renames", "--no-abbrev", "-z", base+"^{tree}", theirs)
+	raw, err := hostgit.Output(context.Background(), repoTop, "diff-tree", "-r", "--raw", "--no-renames", "--no-abbrev", "-z", base+"^{tree}", theirs)
 	if err != nil {
 		return patchMerge{}, err
 	}
@@ -128,15 +128,15 @@ func KeptTree(repoTop, base, patch string) (string, error) {
 	}
 	defer func() { _ = os.RemoveAll(scratch) }()
 	index := []string{"GIT_INDEX_FILE=" + filepath.Join(scratch, "index")}
-	if _, err := gitWithEnv(repoTop, index, "", "read-tree", base); err != nil {
+	if _, err := hostgit.OutputWith(context.Background(), repoTop, hostgit.Options{Env: index}, "read-tree", base); err != nil {
 		return "", err
 	}
 	if strings.TrimSpace(patch) != "" {
-		if _, err := gitWithEnv(repoTop, index, patch, "apply", "--cached", "--whitespace=nowarn"); err != nil {
+		if _, err := hostgit.OutputWith(context.Background(), repoTop, hostgit.Options{Env: index, Stdin: patch}, "apply", "--cached", "--whitespace=nowarn"); err != nil {
 			return "", err
 		}
 	}
-	tree, err := gitWithEnv(repoTop, index, "", "write-tree")
+	tree, err := hostgit.OutputWith(context.Background(), repoTop, hostgit.Options{Env: index}, "write-tree")
 	return strings.TrimSpace(tree), err
 }
 
@@ -170,7 +170,7 @@ func mergeRaw(worktree, repoTop, raw string, skip []string) (patchMerge, error) 
 		theirs := MergeSide{Exists: head[1] != "000000", Mode: head[1], sha: head[3]}
 		for _, side := range []*MergeSide{&base, &theirs} {
 			if side.Exists {
-				if side.Text, err = GitOutput(worktree, "cat-file", "blob", side.sha); err != nil {
+				if side.Text, err = hostgit.Output(context.Background(), worktree, "cat-file", "blob", side.sha); err != nil {
 					return m, err
 				}
 			}
@@ -222,14 +222,14 @@ func mergeRaw(worktree, repoTop, raw string, skip []string) (patchMerge, error) 
 			fmt.Fprintf(&lines, "%s %s\t%s\x00", side.Mode, sha, e.path)
 		}
 		if lines.Len() > 0 {
-			if _, err := gitWithEnv(worktree, index, lines.String(), "update-index", "-z", "--index-info"); err != nil {
+			if _, err := hostgit.OutputWith(context.Background(), worktree, hostgit.Options{Env: index, Stdin: lines.String()}, "update-index", "-z", "--index-info"); err != nil {
 				return "", err
 			}
 		}
-		out, err := gitWithEnv(worktree, index, "", "write-tree")
+		out, err := hostgit.OutputWith(context.Background(), worktree, hostgit.Options{Env: index}, "write-tree")
 		return strings.TrimSpace(out), err
 	}
-	if _, err := gitWithEnv(worktree, index, "", "read-tree", "--empty"); err != nil {
+	if _, err := hostgit.OutputWith(context.Background(), worktree, hostgit.Options{Env: index}, "read-tree", "--empty"); err != nil {
 		return m, err
 	}
 	from, err := tree(func(e entry) MergeSide { return e.ours })
@@ -240,7 +240,7 @@ func mergeRaw(worktree, repoTop, raw string, skip []string) (patchMerge, error) 
 	if err != nil {
 		return m, err
 	}
-	patch, err := GitOutput(worktree, "diff-tree", "-p", "--binary", "--no-renames", "--full-index", from, to)
+	patch, err := hostgit.Output(context.Background(), worktree, "diff-tree", "-p", "--binary", "--no-renames", "--full-index", from, to)
 	if strings.TrimSpace(patch) == "" {
 		patch = ""
 	}
@@ -329,6 +329,6 @@ func mergeFile(scratch string, base, ours, theirs MergeSide) (MergeSide, bool, e
 // share, and nothing points at the blob until a landing commits it, so an
 // unlanded merge leaves only a dangling object git collects on its own.
 func hashBlob(dir, text string) (string, error) {
-	out, err := gitWithEnv(dir, nil, text, "hash-object", "-w", "--no-filters", "--stdin")
+	out, err := hostgit.OutputWith(context.Background(), dir, hostgit.Options{Stdin: text}, "hash-object", "-w", "--no-filters", "--stdin")
 	return strings.TrimSpace(out), err
 }

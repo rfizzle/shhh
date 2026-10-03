@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/rfizzle/shhh/internal/hostgit"
 )
 
 // Regenerator is the project's declaration of which files it generates, and
@@ -105,7 +107,7 @@ func RegenerateOver(ctx context.Context, gen Regenerator, root string, untracked
 func restoreFromBase(worktree string, paths []string) error {
 	var present []string
 	for _, p := range paths {
-		if _, err := GitOutput(worktree, "cat-file", "-e", "HEAD:"+p); err == nil {
+		if _, err := hostgit.Output(context.Background(), worktree, "cat-file", "-e", "HEAD:"+p); err == nil {
 			present = append(present, p)
 			continue
 		}
@@ -116,6 +118,6 @@ func restoreFromBase(worktree string, paths []string) error {
 	if len(present) == 0 {
 		return nil
 	}
-	_, err := RunGit(worktree, append([]string{"checkout", "HEAD", "--"}, present...)...)
+	_, err := hostgit.Output(context.Background(), worktree, append([]string{"checkout", "HEAD", "--"}, present...)...)
 	return err
 }

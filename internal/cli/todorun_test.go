@@ -43,7 +43,7 @@ func todoRepo(t *testing.T, slugs ...string) string {
 		{"config", "user.name", "t"},
 		{"commit", "-q", "--allow-empty", "-m", "seed"},
 	} {
-		if out, code := todoGit(root, args...); code != 0 {
+		if out, code := run.Git(root, args...); code != 0 {
 			t.Fatalf("git %v: %s", args, out)
 		}
 	}
@@ -115,7 +115,7 @@ func TestTodoRunHeadless_SprintCommitsAndArchivesEachItem(t *testing.T) {
 			t.Fatalf("%s should be archived: %+v", slug, it)
 		}
 	}
-	if log, _ := todoGit(root, "log", "--format=%s"); strings.Count(log, "Change a") != 2 {
+	if log, _ := run.Git(root, "log", "--format=%s"); strings.Count(log, "Change a") != 2 {
 		t.Fatalf("one commit per item, got:\n%s", log)
 	}
 	if _, live := run.Live(root); live {
@@ -126,7 +126,7 @@ func TestTodoRunHeadless_SprintCommitsAndArchivesEachItem(t *testing.T) {
 	}
 	// The backlog is never committed on the project's behalf, whatever the
 	// run changed.
-	if status, _ := todoGit(root, "status", "--porcelain"); !strings.Contains(status, todo.StateDir) {
+	if status, _ := run.Git(root, "status", "--porcelain"); !strings.Contains(status, todo.StateDir) {
 		t.Fatalf("the backlog files should be left unstaged and uncommitted: %q", status)
 	}
 }
@@ -279,7 +279,7 @@ func TestTodoRunHeadless_ContinuesACheckpoint(t *testing.T) {
 	if out.Stage != run.StageDone {
 		t.Fatalf("the continued run should have committed and finished: %+v", out)
 	}
-	if log, _ := todoGit(root, "log", "--format=%s", "-1"); log != "Change a" {
+	if log, _ := run.Git(root, "log", "--format=%s", "-1"); log != "Change a" {
 		t.Fatalf("subject = %q", log)
 	}
 }
@@ -389,7 +389,7 @@ func TestTodoRunHeadless_NothingToVerifyBlocksRatherThanPasses(t *testing.T) {
 	if it := mustItem(t, root, "a-one"); it.Archived {
 		t.Fatalf("an item nothing verified must not be archived: %+v", it)
 	}
-	if log, _ := todoGit(root, "log", "--format=%s"); strings.Contains(log, "Change a") {
+	if log, _ := run.Git(root, "log", "--format=%s"); strings.Contains(log, "Change a") {
 		t.Fatalf("an item nothing verified must not be committed:\n%s", log)
 	}
 }
@@ -933,10 +933,10 @@ func TestTodoRunHeadless_AFanOutBuildsEveryLaneInACopyAndLandsThePatches(t *test
 	}
 	// And the copies are gone: a worktree per lane left behind would make
 	// every later run of the same repository slower and stranger.
-	if trees, _ := todoGit(root, "worktree", "list"); strings.Count(trees, "\n") != 0 {
+	if trees, _ := run.Git(root, "worktree", "list"); strings.Count(trees, "\n") != 0 {
 		t.Errorf("the lanes' copies should be removed:\n%s", trees)
 	}
-	if log, _ := todoGit(root, "log", "--format=%s"); !strings.Contains(log, "Build it") {
+	if log, _ := run.Git(root, "log", "--format=%s"); !strings.Contains(log, "Build it") {
 		t.Fatalf("the integrated work should be committed:\n%s", log)
 	}
 }
@@ -1197,10 +1197,10 @@ func TestTodoRunHeadless_APreDirtyFileTheRunWroteIsCommitted(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if out, code := todoGit(root, "add", "shared.go", "stranger.go"); code != 0 {
+	if out, code := run.Git(root, "add", "shared.go", "stranger.go"); code != 0 {
 		t.Fatalf("git add: %s", out)
 	}
-	if out, code := todoGit(root, "commit", "-q", "-m", "seed files"); code != 0 {
+	if out, code := run.Git(root, "commit", "-q", "-m", "seed files"); code != 0 {
 		t.Fatalf("git commit: %s", out)
 	}
 	// Both were modified before the run started; only one of them is the
@@ -1228,10 +1228,10 @@ func TestTodoRunHeadless_APreDirtyFileTheRunWroteIsCommitted(t *testing.T) {
 	if strings.Join(st.Files, ",") != "shared.go" {
 		t.Fatalf("committed %v, want the run's own work on the file it edited", st.Files)
 	}
-	if files, _ := todoGit(root, "show", "--name-only", "--format=", "HEAD"); strings.TrimSpace(files) != "shared.go" {
+	if files, _ := run.Git(root, "show", "--name-only", "--format=", "HEAD"); strings.TrimSpace(files) != "shared.go" {
 		t.Fatalf("the commit holds %q", files)
 	}
-	if status, _ := todoGit(root, "status", "--porcelain"); !strings.Contains(status, "stranger.go") {
+	if status, _ := run.Git(root, "status", "--porcelain"); !strings.Contains(status, "stranger.go") {
 		t.Fatalf("somebody else's edit should be left where it was: %q", status)
 	}
 }
@@ -1404,7 +1404,7 @@ func TestTodoRunHeadless_AContinuedRunKeepsTheBaselineItStartedWith(t *testing.T
 	if done.Stage != run.StageDone {
 		t.Fatalf("the continued run stopped at %s — %s\n%s", done.Stage, done.Blocked, out.String())
 	}
-	if files, _ := todoGit(root, "show", "--name-only", "--format=", "HEAD"); !strings.Contains(files, "a.go") {
+	if files, _ := run.Git(root, "show", "--name-only", "--format=", "HEAD"); !strings.Contains(files, "a.go") {
 		t.Fatalf("the dead process's work was left behind, commit holds %q", files)
 	}
 }

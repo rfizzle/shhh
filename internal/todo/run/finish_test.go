@@ -24,7 +24,7 @@ func gitRepo(t *testing.T) string {
 		{"config", "user.name", "T"},
 		{"commit", "--allow-empty", "-q", "-m", "root"},
 	} {
-		if out, code := git(root, args...); code != 0 {
+		if out, code := Git(root, args...); code != 0 {
 			t.Fatalf("git %v: %s", args, out)
 		}
 	}
@@ -58,7 +58,7 @@ func TestCommit_StagesTheRunsPathsAndNothingElse(t *testing.T) {
 	if strings.Join(files, ",") != "a.go,b.go" {
 		t.Fatalf("committed %v", files)
 	}
-	out, code := git(root, "show", "--name-only", "--format=%s%n%n%b", "HEAD")
+	out, code := Git(root, "show", "--name-only", "--format=%s%n%n%b", "HEAD")
 	if code != 0 {
 		t.Fatalf("git show: %s", out)
 	}
@@ -79,7 +79,7 @@ func TestCommit_RefusesAnIndexItDidNotFill(t *testing.T) {
 	root := gitRepo(t)
 	write(t, root, "a.go", "package a\n")
 	write(t, root, "theirs.go", "package theirs\n")
-	if out, code := git(root, "add", "--", "theirs.go"); code != 0 {
+	if out, code := Git(root, "add", "--", "theirs.go"); code != 0 {
 		t.Fatalf("git add: %s", out)
 	}
 	_, err := Commit(root, []string{"a.go"}, "subject", "ask for it without one", true)

@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -218,7 +219,7 @@ const (
 // This is the one fact in the notice that cannot be built by hand: it is read
 // from the checkout, the way the survey around it is.
 func movedPaths(dir, was, now string) []string {
-	out, code := git(dir, "--no-pager", "diff", "--name-only", was+".."+now)
+	out, code := run.Git(dir, "--no-pager", "diff", "--name-only", was+".."+now)
 	if code != 0 {
 		return nil
 	}

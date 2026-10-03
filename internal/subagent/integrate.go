@@ -246,12 +246,12 @@ func integrationEvidence(repoTop, base, patch string, conflicts []string, source
 // blobSide is one file in a commit or tree of the shared object store,
 // absent where it does not hold the file.
 func blobSide(repoTop, treeish, path string) wtree.MergeSide {
-	entry, err := wtree.GitOutput(repoTop, "ls-tree", treeish, "--", path)
+	entry, err := hostgit.Output(context.Background(), repoTop, "ls-tree", treeish, "--", path)
 	mode, _, _ := strings.Cut(entry, " ")
 	if err != nil || mode == "" {
 		return wtree.MergeSide{}
 	}
-	text, err := wtree.GitOutput(repoTop, "cat-file", "blob", treeish+":"+path)
+	text, err := hostgit.Output(context.Background(), repoTop, "cat-file", "blob", treeish+":"+path)
 	if err != nil {
 		return wtree.MergeSide{}
 	}

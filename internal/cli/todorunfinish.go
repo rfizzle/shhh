@@ -120,12 +120,6 @@ func (d *todoDriver) paths(st *run.State) []string {
 	return run.Contents(st.Paths, d.wrote, run.DirtyPaths(d.tree), st.Prestart)
 }
 
-// todoGit is the run package's reading of one git command (run.Git). The
-// reading it is used for here is a diff, which is read as text; what a run
-// may stage is read by column, and that reading lives in the run package
-// beside the definition of what a commit holds (run.DirtyPaths).
-var todoGit = run.Git
-
 // finish writes what the run ended as onto the item: the archive and the
 // report for one that is done, the evidence for one that blocked. Either way
 // the checkpoint goes, because a run that ended has nothing to continue.

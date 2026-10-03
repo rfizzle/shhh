@@ -2,6 +2,7 @@ package worktree
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,7 +22,7 @@ func WorktreePatch(worktree string) (string, error) {
 	if err := stageAll(worktree); err != nil {
 		return "", err
 	}
-	return GitOutput(worktree, "diff", "--cached", "--binary")
+	return hostgit.Output(context.Background(), worktree, "diff", "--cached", "--binary")
 }
 
 // stageAll is `git add -A` over a copy a child wrote, with every gitlink the
@@ -34,7 +35,7 @@ func WorktreePatch(worktree string) (string, error) {
 // it is one the child made.
 // See docs/capabilities/containment.md#the-hosts-own-git-runs-nothing-a-command-wrote.
 func stageAll(worktree string) error {
-	listed, err := GitOutput(worktree, "ls-files", "--stage", "-z")
+	listed, err := hostgit.Output(context.Background(), worktree, "ls-files", "--stage", "-z")
 	if err != nil {
 		return err
 	}
@@ -45,7 +46,7 @@ func stageAll(worktree string) error {
 			args = append(args, ":(exclude,literal)"+path)
 		}
 	}
-	_, err = RunGit(worktree, args...)
+	_, err = hostgit.Output(context.Background(), worktree, args...)
 	return err
 }
 
@@ -61,14 +62,15 @@ func stageAll(worktree string) error {
 // commit's, so an ordinary apply matches. An ordinary apply is also all-or-
 // nothing, where a three-way merge would leave conflict markers in the
 // person's files for them to find.
+//
+// A refusal is git's own words and not the command's: the first line of it
+// is what the parent is told a patch failed with.
 func ApplyPatch(repoTop, patch string) error {
-	cmd := hostgit.Command(context.Background(), repoTop, "apply", "--whitespace=nowarn")
-	cmd.Stdin = strings.NewReader(patch)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("%s", strings.TrimSpace(string(out)))
+	_, err := hostgit.OutputWith(context.Background(), repoTop, hostgit.Options{Stdin: patch}, "apply", "--whitespace=nowarn")
+	if failed, ok := errors.AsType[*hostgit.Error](err); ok {
+		return errors.New(failed.Stderr)
 	}
-	return nil
+	return err
 }
 
 // PatchedFile is one file of an applied patch, read from the real checkout

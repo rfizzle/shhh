@@ -5,6 +5,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/hostgit"
 )
 
 // reseedBase is the committed file both writers work on: two lines far enough
@@ -16,7 +18,7 @@ func reseedRepo(t *testing.T) string {
 	t.Helper()
 	repo := initTestRepo(t)
 	writeInto(t, repo, "main.go", reseedBase)
-	if _, err := RunGit(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-am", "base"); err != nil {
+	if _, err := hostgit.Output(context.Background(), repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-am", "base"); err != nil {
 		t.Fatal(err)
 	}
 	return repo
@@ -86,7 +88,7 @@ func TestReseedWorktree_ACollisionLeavesTheCopyAsItWas(t *testing.T) {
 	}
 	mineText := strings.Replace(reseedBase, "var x = 0", "var x = 2", 1)
 	writeInto(t, mine.Root, "main.go", mineText)
-	head, _ := GitOutput(mine.Dir, "rev-parse", "HEAD")
+	head, _ := hostgit.Output(context.Background(), mine.Dir, "rev-parse", "HEAD")
 
 	_, err = ReseedWorktree(context.Background(), mine.Dir, landed, nil)
 	var clash *ReseedCollision
@@ -99,7 +101,7 @@ func TestReseedWorktree_ACollisionLeavesTheCopyAsItWas(t *testing.T) {
 	if got := readFrom(t, mine.Root, "main.go"); got != mineText {
 		t.Fatalf("the copy was changed by a refused reseed:\n%s", got)
 	}
-	if after, _ := GitOutput(mine.Dir, "rev-parse", "HEAD"); after != head {
+	if after, _ := hostgit.Output(context.Background(), mine.Dir, "rev-parse", "HEAD"); after != head {
 		t.Fatalf("the copy's base moved under a refused reseed: %s → %s", head, after)
 	}
 }

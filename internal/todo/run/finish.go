@@ -62,7 +62,7 @@ func Commit(root string, paths []string, message, without string, hooks bool) ([
 	// against the `--no-index` fallback the missing repository leaves
 	// behind. The directory either holds a repository or it does not, and
 	// that answer is the same on every version.
-	out, code := git(root, "diff", "--cached", "--quiet")
+	out, code := Git(root, "diff", "--cached", "--quiet")
 	switch {
 	case code == 0:
 	case code == 1:
@@ -78,7 +78,7 @@ func Commit(root string, paths []string, message, without string, hooks bool) ([
 	if err != nil {
 		return nil, err
 	}
-	if out, code := git(root, add...); code != 0 {
+	if out, code := Git(root, add...); code != 0 {
 		return nil, fmt.Errorf("git add: %s", out)
 	}
 	f, err := os.CreateTemp("", "shhh-todo-commit-*.txt")
@@ -95,7 +95,7 @@ func Commit(root string, paths []string, message, without string, hooks bool) ([
 	if err != nil {
 		return nil, err
 	}
-	if out, code := git(root, commit...); code != 0 {
+	if out, code := Git(root, commit...); code != 0 {
 		return nil, fmt.Errorf("git commit: %s", out)
 	}
 	return paths, nil
@@ -228,9 +228,6 @@ func Git(root string, args ...string) (string, int) {
 	out, code := gitLines(root, args...)
 	return strings.TrimSpace(out), code
 }
-
-// git is Git under the name this package's own callers use.
-var git = Git
 
 // gitLines is that without the trim, for a command whose output is read by
 // column. `git status --porcelain` states a path's staged mark in the first

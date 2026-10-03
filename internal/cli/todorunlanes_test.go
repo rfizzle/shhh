@@ -141,7 +141,7 @@ func TestTodoRunHeadless_AParallelSprintWorksItemsInLanesAndLandsEachOnTheBranch
 			t.Fatalf("%s's work should have landed on the checkout: %v", slug, err)
 		}
 	}
-	log, _ := todoGit(root, "log", "--format=%s %p")
+	log, _ := run.Git(root, "log", "--format=%s %p")
 	if strings.Count(log, "Build ") != 3 {
 		t.Fatalf("one commit per item on the branch:\n%s", log)
 	}
@@ -150,10 +150,10 @@ func TestTodoRunHeadless_AParallelSprintWorksItemsInLanesAndLandsEachOnTheBranch
 			t.Fatalf("a landing is a commit with one parent, never a merge:\n%s", log)
 		}
 	}
-	if list, _ := todoGit(root, "worktree", "list"); strings.Count(list, "\n") != 0 {
+	if list, _ := run.Git(root, "worktree", "list"); strings.Count(list, "\n") != 0 {
 		t.Fatalf("every lane's copy is taken away once it has landed:\n%s", list)
 	}
-	if status, _ := todoGit(root, "status", "--porcelain"); strings.Contains(status, ".go") {
+	if status, _ := run.Git(root, "status", "--porcelain"); strings.Contains(status, ".go") {
 		t.Fatalf("every lane's work is committed: %q", status)
 	}
 	if _, live := run.Live(root); live {
@@ -195,10 +195,10 @@ func TestTodoRunHeadless_AnUndeclaredItemIsWorkedAlone(t *testing.T) {
 // person to read, which the temporary directory's own cleanup cannot reach.
 func removeLaneCopies(t *testing.T, root string) {
 	t.Cleanup(func() {
-		list, _ := todoGit(root, "worktree", "list", "--porcelain")
+		list, _ := run.Git(root, "worktree", "list", "--porcelain")
 		for _, line := range strings.Split(list, "\n") {
 			if dir, ok := strings.CutPrefix(line, "worktree "); ok && filepath.Base(dir) != filepath.Base(root) {
-				_, _ = todoGit(root, "worktree", "remove", "--force", dir)
+				_, _ = run.Git(root, "worktree", "remove", "--force", dir)
 			}
 		}
 	})
@@ -237,7 +237,7 @@ func TestTodoRunHeadless_ALaneALandingWillNotCarryIntoBlocksAndTheSprintGoesOn(t
 	removeLaneCopies(t, root)
 	started := newLaneStarted()
 	landed := func() bool {
-		log, _ := todoGit(root, "log", "--format=%s")
+		log, _ := run.Git(root, "log", "--format=%s")
 		return strings.Contains(log, "Build a-one")
 	}
 	a := &laneAnswers{
@@ -302,7 +302,7 @@ func TestTodoRunHeadless_ALaneCarriesAnotherLanesLandingAtItsNextBoundary(t *tes
 	laneItem(t, root, "a-one", "a-one.go")
 	laneItem(t, root, "b-two", "b-two.go")
 	landed := func() bool {
-		log, _ := todoGit(root, "log", "--format=%s")
+		log, _ := run.Git(root, "log", "--format=%s")
 		return strings.Contains(log, "Build a-one")
 	}
 	var carried []byte
@@ -334,7 +334,7 @@ func TestTodoRunHeadless_ALaneCarriesAnotherLanesLandingAtItsNextBoundary(t *tes
 	if string(carried) != "package aone\n" {
 		t.Fatalf("b-two's copy should hold what a-one landed by its review: %q\n%s", carried, out.String())
 	}
-	files, _ := todoGit(root, "show", "--name-only", "--format=", "HEAD")
+	files, _ := run.Git(root, "show", "--name-only", "--format=", "HEAD")
 	if strings.TrimSpace(files) != "b-two.go" {
 		t.Fatalf("b-two's commit holds its own work alone: %q", files)
 	}
@@ -353,7 +353,7 @@ func TestTodoLane_ALandingThatConflictsKeepsBothPatches(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, args := range [][]string{{"add", "shared.txt"}, {"commit", "-q", "-m", "shared"}} {
-		if out, code := todoGit(root, args...); code != 0 {
+		if out, code := run.Git(root, args...); code != 0 {
 			t.Fatalf("git %v: %s", args, out)
 		}
 	}

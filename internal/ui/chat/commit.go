@@ -317,15 +317,15 @@ func (st *commitState) fields() []components.CardField {
 // report, and says so rather than reporting one from nowhere
 // (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
 func commitBranch(root string) (branch, ahead string) {
-	branch, code := git(root, "branch", "--show-current")
+	branch, code := run.Git(root, "branch", "--show-current")
 	if code != 0 {
 		return "", ""
 	}
-	upstream, code := git(root, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}")
+	upstream, code := run.Git(root, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}")
 	if code != 0 || upstream == "" {
 		return branch, "tracks no remote branch"
 	}
-	count, code := git(root, "rev-list", "--count", upstream+"..HEAD")
+	count, code := run.Git(root, "rev-list", "--count", upstream+"..HEAD")
 	if code != 0 {
 		return branch, ""
 	}
@@ -442,7 +442,7 @@ const commitHistoryDepth = 20
 // to read answers no: a lead invented for the first commit in a tree is a
 // convention nobody chose.
 func (m Model) leadsSubjectsWithAScope() bool {
-	out, code := git(m.workspace, "log", fmt.Sprintf("-%d", commitHistoryDepth), "--format=%s")
+	out, code := run.Git(m.workspace, "log", fmt.Sprintf("-%d", commitHistoryDepth), "--format=%s")
 	if code != 0 {
 		return false
 	}
@@ -608,7 +608,7 @@ func (m Model) makeCommit() (tea.Model, tea.Cmd) {
 			}
 			return commitDoneMsg{turn: turn, err: err}
 		}
-		sha, _ := git(root, "rev-parse", "--short", "HEAD")
+		sha, _ := run.Git(root, "rev-parse", "--short", "HEAD")
 		branch, ahead := commitBranch(root)
 		return commitDoneMsg{
 			turn: turn, sha: sha, branch: branch, ahead: ahead,
@@ -633,7 +633,7 @@ func unstage(root string, paths []string) string {
 	if len(paths) == 0 {
 		return ""
 	}
-	out, code := git(root, append([]string{"restore", "--staged", "--"}, paths...)...)
+	out, code := run.Git(root, append([]string{"restore", "--staged", "--"}, paths...)...)
 	if code == 0 {
 		return ""
 	}

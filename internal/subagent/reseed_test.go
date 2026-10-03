@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/provider"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
@@ -38,7 +39,7 @@ func reseedRepo(t *testing.T) string {
 	t.Helper()
 	repo := initTestRepo(t)
 	writeInto(t, repo, "main.go", reseedBase)
-	if _, err := wtree.RunGit(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-am", "base"); err != nil {
+	if _, err := hostgit.Output(context.Background(), repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-am", "base"); err != nil {
 		t.Fatal(err)
 	}
 	return repo

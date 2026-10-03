@@ -1,10 +1,12 @@
 package subagent
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/hostgit"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 )
 
@@ -398,7 +400,7 @@ func (c *child) keepWriterPatch(patch string, gen Regenerator) string {
 	// writer's own against it, so the two are what a later merge needs.
 	base := ""
 	if worktree != "" {
-		if out, err := wtree.GitOutput(worktree, "rev-parse", "HEAD"); err == nil {
+		if out, err := hostgit.Output(context.Background(), worktree, "rev-parse", "HEAD"); err == nil {
 			base = strings.TrimSpace(out)
 		}
 	}
@@ -431,7 +433,7 @@ func (s *Supervisor) PatchToKeep(name string) bool {
 	if worktree == "" {
 		return false
 	}
-	out, err := wtree.GitOutput(worktree, "status", "--porcelain")
+	out, err := hostgit.Output(context.Background(), worktree, "status", "--porcelain")
 	return err == nil && strings.TrimSpace(out) != ""
 }
 

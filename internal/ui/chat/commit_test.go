@@ -16,6 +16,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -201,7 +202,7 @@ func TestCommitCard_NeverStagesAPathTheTurnDidNotWrite(t *testing.T) {
 	if m.commit == nil || m.commit.banked == nil {
 		t.Fatalf("the commit should have landed: %+v", m.commit)
 	}
-	out, code := git(root, "show", "--name-only", "--format=", "HEAD")
+	out, code := run.Git(root, "show", "--name-only", "--format=", "HEAD")
 	if code != 0 {
 		t.Fatalf("git show: %s", out)
 	}
@@ -216,7 +217,7 @@ func TestCommitCard_NeverStagesAPathTheTurnDidNotWrite(t *testing.T) {
 	if err != nil || !strings.Contains(string(body), "mine") {
 		t.Fatalf("the reader's edit was not left alone: %v %q", err, body)
 	}
-	if out, _ := git(root, "status", "--porcelain"); !strings.Contains(out, "README.md") {
+	if out, _ := run.Git(root, "status", "--porcelain"); !strings.Contains(out, "README.md") {
 		t.Fatalf("the reader's edit should still be uncommitted, got %q", out)
 	}
 }
@@ -246,7 +247,7 @@ func TestCommitCard_LeavesOutAFileTheReaderChangedSinceTheTurn(t *testing.T) {
 	if !strings.Contains(notice, "round.go") || !strings.Contains(notice, "changed since") {
 		t.Fatalf("the notice should name the file and why, got %q", notice)
 	}
-	if out, _ := git(root, "log", "--oneline"); strings.Count(out, "\n") != 0 {
+	if out, _ := run.Git(root, "log", "--oneline"); strings.Count(out, "\n") != 0 {
 		t.Fatalf("nothing should have been committed, got:\n%s", out)
 	}
 }
@@ -274,10 +275,10 @@ func TestCommitCard_RefusesWhenTheTreeMovedUnderTheCard(t *testing.T) {
 	if !strings.Contains(m.commit.failure, "round.go") {
 		t.Fatalf("the card should name the file that moved, got %q", m.commit.failure)
 	}
-	if out, _ := git(root, "diff", "--cached", "--name-only"); out != "" {
+	if out, _ := run.Git(root, "diff", "--cached", "--name-only"); out != "" {
 		t.Fatalf("a refused commit stages nothing, got %q", out)
 	}
-	if out, _ := git(root, "log", "--oneline"); strings.Count(out, "\n") != 0 {
+	if out, _ := run.Git(root, "log", "--oneline"); strings.Count(out, "\n") != 0 {
 		t.Fatalf("history should not have moved, got:\n%s", out)
 	}
 }
@@ -298,7 +299,7 @@ func TestCommitCard_RunsNoGitThatWrites(t *testing.T) {
 		// nothing else, and only the paths it names.
 		"restore": true,
 	}
-	calls := regexp.MustCompile(`git\(\w+, (?:append\(\[\]string\{)?"([a-z-]+)"`).
+	calls := regexp.MustCompile(`run\.Git\(\w+, (?:append\(\[\]string\{)?"([a-z-]+)"`).
 		FindAllStringSubmatch(string(body), -1)
 	if len(calls) < 4 {
 		t.Fatalf("the readings this card is built from are gone; check what replaced them: %v", calls)
@@ -362,7 +363,7 @@ func TestCommit_AFailingHookCancelsAndChangesNothing(t *testing.T) {
 		[]byte("#!/bin/sh\necho 'gofmt -l found 2 files' >&2\nexit 1\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	before, _ := git(root, "rev-parse", "HEAD")
+	before, _ := run.Git(root, "rev-parse", "HEAD")
 
 	m = focusLastClose(t, m)
 	row := m.focusIdx
@@ -382,10 +383,10 @@ func TestCommit_AFailingHookCancelsAndChangesNothing(t *testing.T) {
 	if m.commit.banked != nil {
 		t.Fatalf("nothing was committed, so nothing was banked: %+v", m.commit.banked)
 	}
-	if after, _ := git(root, "rev-parse", "HEAD"); after != before {
+	if after, _ := run.Git(root, "rev-parse", "HEAD"); after != before {
 		t.Fatalf("history moved: %s → %s", before, after)
 	}
-	if out, _ := git(root, "diff", "--cached", "--name-only"); out != "" {
+	if out, _ := run.Git(root, "diff", "--cached", "--name-only"); out != "" {
 		t.Fatalf("a cancelled commit leaves nothing staged, got %q", out)
 	}
 	if c := m.transcript[row].close; c == nil || c.Commit != nil {
@@ -428,7 +429,7 @@ func TestCommitCard_AnswersNothingWhileGitHasIt(t *testing.T) {
 
 func TestCommitCard_EscLeavesTheChangesetAndTheOffer(t *testing.T) {
 	m, root, _ := commitRepo(t)
-	before, _ := git(root, "rev-parse", "HEAD")
+	before, _ := run.Git(root, "rev-parse", "HEAD")
 	m = focusLastClose(t, m)
 	row := m.focusIdx
 	m, _ = handOverRow(t, m)
@@ -441,7 +442,7 @@ func TestCommitCard_EscLeavesTheChangesetAndTheOffer(t *testing.T) {
 	if m.commit != nil {
 		t.Fatalf("nothing was committed, so nothing is kept: %+v", m.commit)
 	}
-	if after, _ := git(root, "rev-parse", "HEAD"); after != before {
+	if after, _ := run.Git(root, "rev-parse", "HEAD"); after != before {
 		t.Fatalf("esc wrote history: %s → %s", before, after)
 	}
 	view := ansi.Strip(m.transcript[row].close.View(160))

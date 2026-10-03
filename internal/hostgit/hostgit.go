@@ -13,7 +13,6 @@ package hostgit
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
@@ -137,17 +136,53 @@ func Command(ctx context.Context, dir string, args ...string) *exec.Cmd {
 // Output is Command run for its standard output alone, untrimmed: a patch
 // read with the error stream folded into it is a patch that will not apply,
 // and porcelain read by column loses its first column to a trim. A failure
-// answers no output and an error naming the arguments and what git wrote to
+// answers no output and an *Error naming the arguments and what git wrote to
 // its error stream, which os/exec keeps on the exit error since nothing else
 // asked for it; a git that never started has no stream to quote.
 func Output(ctx context.Context, dir string, args ...string) (string, error) {
-	out, err := Command(ctx, dir, args...).Output()
+	return OutputWith(ctx, dir, Options{}, args...)
+}
+
+// Options are what a call hands git beyond its arguments.
+type Options struct {
+	// Env is variables laid over this process's environment, under Env's
+	// overrides like the rest of it: a scratch index named by
+	// GIT_INDEX_FILE, so a tree can be built without touching the index a
+	// checkout's owner may have staged into.
+	Env []string
+	// Stdin is text for git's standard input, where it is not empty: a
+	// patch to apply, a blob to hash, an index to update.
+	Stdin string
+}
+
+// OutputWith is Output with opts applied.
+func OutputWith(ctx context.Context, dir string, opts Options, args ...string) (string, error) {
+	cmd := Command(ctx, dir, args...)
+	if len(opts.Env) > 0 {
+		cmd.Env = Env(append(os.Environ(), opts.Env...))
+	}
+	if opts.Stdin != "" {
+		cmd.Stdin = strings.NewReader(opts.Stdin)
+	}
+	out, err := cmd.Output()
 	if err != nil {
 		var stderr []byte
 		if exit, ok := errors.AsType[*exec.ExitError](err); ok {
 			stderr = exit.Stderr
 		}
-		return "", fmt.Errorf("git %s: %s", strings.Join(args, " "), strings.TrimSpace(string(stderr)))
+		return "", &Error{Args: args, Stderr: strings.TrimSpace(string(stderr))}
 	}
 	return string(out), nil
+}
+
+// Error is a git call that failed: the arguments it was given and what it
+// wrote to its error stream, trimmed. A caller whose reader is shown git's own
+// words, and not which command said them, takes Stderr.
+type Error struct {
+	Args   []string
+	Stderr string
+}
+
+func (e *Error) Error() string {
+	return "git " + strings.Join(e.Args, " ") + ": " + e.Stderr
 }

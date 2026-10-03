@@ -455,7 +455,7 @@ func (s *todoLanes) fromTop(files []string) []string {
 // todoRepoTop is the repository's toplevel with its links resolved, which is
 // how git names it and so how a patch's paths are anchored.
 func todoRepoTop(root string) string {
-	top, code := todoGit(root, "rev-parse", "--show-toplevel")
+	top, code := run.Git(root, "rev-parse", "--show-toplevel")
 	if code != 0 {
 		return root
 	}

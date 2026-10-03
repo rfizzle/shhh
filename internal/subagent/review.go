@@ -13,11 +13,12 @@ package subagent
 // See docs/capabilities/subagents.md#a-review-is-bounded-by-what-it-is-given.
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"unicode/utf8"
 
-	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
+	"github.com/rfizzle/shhh/internal/hostgit"
 )
 
 const (
@@ -87,7 +88,7 @@ func declaredEvidence(root string, paths []string) string {
 // reason to refuse the spawn.
 func workspaceDiff(root string, paths []string) string {
 	args := append([]string{"diff", "HEAD", "--"}, paths...)
-	out, err := wtree.RunGit(root, args...)
+	out, err := hostgit.Output(context.Background(), root, args...)
 	if err != nil {
 		return ""
 	}

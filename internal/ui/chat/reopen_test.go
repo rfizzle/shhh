@@ -11,6 +11,7 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/todo/run"
 )
 
 // The two commits a resumed session compares. Full ids, because the message
@@ -119,7 +120,7 @@ func twoCommitRepo(t *testing.T, files ...string) (dir, was, now string) {
 	dir = t.TempDir()
 	run := func(args ...string) string {
 		t.Helper()
-		out, code := git(dir, args...)
+		out, code := run.Git(dir, args...)
 		if code != 0 {
 			t.Fatalf("git %v: %s", args, out)
 		}

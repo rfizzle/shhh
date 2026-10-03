@@ -475,7 +475,7 @@ func TestTodoCommitCmd_StagesByNameAndRefusesForeignIndex(t *testing.T) {
 	}
 	root := t.TempDir()
 	gitc := func(args ...string) string {
-		out, code := git(root, args...)
+		out, code := run.Git(root, args...)
 		if code != 0 {
 			t.Fatalf("git %v: %s", args, out)
 		}
@@ -893,7 +893,7 @@ func TestTodoRun_ContinuedRunKeepsEarlierPaths(t *testing.T) {
 		t.Skip("git not installed")
 	}
 	m, root := runModel(t)
-	if out, code := git(root, "init", "-q"); code != 0 {
+	if out, code := run.Git(root, "init", "-q"); code != 0 {
 		t.Fatal(out)
 	}
 	m.input.SetValue("/todo run do-it")

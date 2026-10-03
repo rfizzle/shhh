@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/rfizzle/shhh/internal/hostgit"
 )
 
 // reseededBaseMessage is the base commit a live writer's copy takes when a
@@ -67,14 +69,14 @@ func ReseedWorktree(ctx context.Context, worktree, patch string, gen Regenerator
 	// A scratch index, so the writer's own index — which it may have staged
 	// into with a command of its own — is not what the base is built from.
 	index := []string{"GIT_INDEX_FILE=" + filepath.Join(scratch, "index")}
-	if _, err := gitWithEnv(worktree, index, "", "read-tree", "HEAD"); err != nil {
+	if _, err := hostgit.OutputWith(context.Background(), worktree, hostgit.Options{Env: index}, "read-tree", "HEAD"); err != nil {
 		return regen, err
 	}
-	if _, err := gitWithEnv(worktree, index, patch, "apply", "--cached", "--whitespace=nowarn"); err != nil {
+	if _, err := hostgit.OutputWith(context.Background(), worktree, hostgit.Options{Env: index, Stdin: patch}, "apply", "--cached", "--whitespace=nowarn"); err != nil {
 		return regen, collide(err.Error())
 	}
 	if carry != "" {
-		if _, err := gitWithEnv(worktree, nil, carry, "apply", "--check", "--whitespace=nowarn"); err != nil {
+		if _, err := hostgit.OutputWith(context.Background(), worktree, hostgit.Options{Stdin: carry}, "apply", "--check", "--whitespace=nowarn"); err != nil {
 			return regen, collide(err.Error())
 		}
 		if err := ApplyPatch(worktree, carry); err != nil {
@@ -86,29 +88,29 @@ func ReseedWorktree(ctx context.Context, worktree, patch string, gen Regenerator
 	// over a base that does not would hand it back as the writer's own work.
 	undo := func(err error) (reseedRegen, error) {
 		if carry != "" {
-			_, _ = gitWithEnv(worktree, nil, carry, "apply", "-R", "--whitespace=nowarn")
+			_, _ = hostgit.OutputWith(context.Background(), worktree, hostgit.Options{Stdin: carry}, "apply", "-R", "--whitespace=nowarn")
 		}
 		return regen, err
 	}
-	tree, err := gitWithEnv(worktree, index, "", "write-tree")
+	tree, err := hostgit.OutputWith(context.Background(), worktree, hostgit.Options{Env: index}, "write-tree")
 	if err != nil {
 		return undo(err)
 	}
 	// The identity and the signing flag are CommitBase's, for its reasons;
 	// commit-tree runs no hooks.
-	commit, err := gitWithEnv(worktree, nil, "",
+	commit, err := hostgit.Output(context.Background(), worktree,
 		"-c", "user.name=shhh", "-c", "user.email=shhh@localhost",
 		"commit-tree", strings.TrimSpace(tree), "-p", "HEAD", "--no-gpg-sign", "-m", reseededBaseMessage)
 	if err != nil {
 		return undo(err)
 	}
-	if _, err := RunGit(worktree, "update-ref", "--no-deref", "HEAD", strings.TrimSpace(commit)); err != nil {
+	if _, err := hostgit.Output(context.Background(), worktree, "update-ref", "--no-deref", "HEAD", strings.TrimSpace(commit)); err != nil {
 		return undo(err)
 	}
 	// The writer's index is put back on the new base and the working tree
 	// left alone: an index still on the old base would read the landed change
 	// as the writer's own to anything that asked it.
-	if _, err := RunGit(worktree, "reset", "--quiet"); err != nil {
+	if _, err := hostgit.Output(context.Background(), worktree, "reset", "--quiet"); err != nil {
 		return regen, err
 	}
 	if len(generated) == 0 {
@@ -138,7 +140,7 @@ type reseedRegen struct {
 func collidedPaths(worktree string, landed []string) []string {
 	changed := map[string]bool{}
 	for _, args := range [][]string{{"diff", "HEAD", "--name-only"}, {"ls-files", "--others", "--exclude-standard"}} {
-		out, err := GitOutput(worktree, args...)
+		out, err := hostgit.Output(context.Background(), worktree, args...)
 		if err != nil {
 			continue
 		}

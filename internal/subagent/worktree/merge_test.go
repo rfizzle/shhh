@@ -1,10 +1,13 @@
 package worktree
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/hostgit"
 )
 
 // mergeBase is the committed file the merge tests work on: a line the
@@ -18,7 +21,7 @@ func mergeRepo(t *testing.T) string {
 	t.Helper()
 	repo := initTestRepo(t)
 	writeInto(t, repo, "main.go", mergeBase)
-	if _, err := RunGit(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-am", "base"); err != nil {
+	if _, err := hostgit.Output(context.Background(), repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-am", "base"); err != nil {
 		t.Fatal(err)
 	}
 	return repo
@@ -77,10 +80,10 @@ func TestMergeWorktree_UnmovedFilesAreTheWritersOutright(t *testing.T) {
 	repo := mergeRepo(t)
 	writeInto(t, repo, "gone.txt", "bye\n")
 	writeInto(t, repo, "run.sh", "#!/bin/sh\n")
-	if _, err := RunGit(repo, "add", "-A"); err != nil {
+	if _, err := hostgit.Output(context.Background(), repo, "add", "-A"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := RunGit(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "more"); err != nil {
+	if _, err := hostgit.Output(context.Background(), repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "more"); err != nil {
 		t.Fatal(err)
 	}
 	h, err := addWorktree(repo, nil)

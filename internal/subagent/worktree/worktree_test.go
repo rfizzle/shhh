@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/hostgit/hostgittest"
 )
 
@@ -320,7 +321,7 @@ func TestWorktree_SeededFromTheParentsUncommittedWork(t *testing.T) {
 // the same empty patch it would have produced before any of this existed.
 func TestWorktree_CleanParentIsUntouched(t *testing.T) {
 	repo := initTestRepo(t)
-	head, err := GitOutput(repo, "rev-parse", "HEAD")
+	head, err := hostgit.Output(context.Background(), repo, "rev-parse", "HEAD")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -334,14 +335,14 @@ func TestWorktree_CleanParentIsUntouched(t *testing.T) {
 	if wt.Seeded != 0 {
 		t.Fatalf("a clean parent seeded %d paths, want none", wt.Seeded)
 	}
-	childHead, err := GitOutput(wt.Dir, "rev-parse", "HEAD")
+	childHead, err := hostgit.Output(context.Background(), wt.Dir, "rev-parse", "HEAD")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if childHead != head {
 		t.Fatalf("the child should stand on the parent's commit: %q, want %q", childHead, head)
 	}
-	status, err := GitOutput(wt.Dir, "status", "--porcelain")
+	status, err := hostgit.Output(context.Background(), wt.Dir, "status", "--porcelain")
 	if err != nil {
 		t.Fatal(err)
 	}

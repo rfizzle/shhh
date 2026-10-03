@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/hostgit"
 )
 
 // put and take are writeInto and readFrom for a child's own goroutine, which
@@ -89,10 +91,10 @@ func sumRepo(t *testing.T) string {
 	writeInto(t, repo, "a.txt", "1")
 	writeInto(t, repo, "b.txt", "1")
 	writeSum(repo)
-	if _, err := RunGit(repo, "add", "-A"); err != nil {
+	if _, err := hostgit.Output(context.Background(), repo, "add", "-A"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := RunGit(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "base"); err != nil {
+	if _, err := hostgit.Output(context.Background(), repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "base"); err != nil {
 		t.Fatal(err)
 	}
 	return repo
@@ -138,7 +140,7 @@ func TestReseedWorktree_AGeneratedFileIsRegeneratedInTheCopy(t *testing.T) {
 	if got := take(mine.Root, "gen/out.txt"); got != sumGolden("2", "2") {
 		t.Fatalf("the copy's golden should be generated over both:\n%s", got)
 	}
-	if base, _ := GitOutput(mine.Dir, "show", "HEAD:gen/out.txt"); base != sumGolden("2", "1") {
+	if base, _ := hostgit.Output(context.Background(), mine.Dir, "show", "HEAD:gen/out.txt"); base != sumGolden("2", "1") {
 		t.Fatalf("the base should hold the landed golden:\n%s", base)
 	}
 	patch, err := WorktreePatch(mine.Dir)
