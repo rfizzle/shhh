@@ -189,6 +189,69 @@ What the agent's own turns cost stays a separate figure from what the session
 cost, and both are shown. They answer different questions: one is what the
 work in front of you is costing, the other is the bill.
 
+## A session is assembled in one place
+
+Every surface that runs a conversation — the terminal session, a scripted
+run, a served session — stands on the same assembly: the working scope, the
+toolset and everything it opened, the local store, the roles the session may
+spawn, the memories it recalled, the sentence that tells the model where the
+work is, the price table and the spend ledger, and the session's environment
+(its provider, its model, its built prompt and its stream). One function
+builds that value, and it keeps what it opened on one stack that is closed in
+the reverse order it was opened, whichever surface holds it and however the
+assembly ends.
+
+The order is load-bearing, and it is the builder's rather than any caller's:
+
+1. **The scope comes first**, because everything that runs a command — the
+   gate, the sub-agents, the session's own runner — is built over it.
+2. **Then whatever the git stager reads**, named before the toolset that
+   holds the stager: what may be staged is what the session has written by
+   the time the call is made.
+3. **The toolset**, then **the surface's registrations**: the store, the
+   servers, the skills, the memories, the roles.
+4. **The scope sentence and the toolbox, after the last registration.** Every
+   optional tool joins on a condition, so this is the first point at which
+   the whole set is known, and a toolbox written earlier describes a toolset
+   the model does not have.
+5. **The ledger before the provider**, because the provider is handed out
+   through it (see [spend](#spend-is-counted-at-the-provider)).
+6. **The environment**, which builds the prompt from everything above, and
+   last the models a spawn may name, which are known only once the provider
+   is.
+
+The registrations are the one step whose order is the surface's own. The
+terminal session registers its roles before it opens the store and recalls
+memories before skills; the unattended surfaces register skills before
+memories and roles last. Both orders are what the model reads — the order of
+its tools and of the paragraphs that describe them — so the builder runs
+whichever order it is handed, at one point, rather than settling on one and
+changing what a surface says.
+
+The assembly ends at the environment rather than at a finished session,
+because past it the surfaces differ in order and not only in values: a
+scripted run reads its prompt before it builds its containment, so an empty
+prompt never starts a disposable container; the terminal session builds its
+classifier ahead of its containment and is the only one that offers to
+install a missing tool; the hooks' notes are written in each surface's own
+shape. What each keeps for itself:
+
+- **The terminal session**: its registrations, which add the remember tool,
+  the question tool, the working steps and the notebook; and everything after
+  the environment — containment, hooks, the record, the session boundary and
+  the screen.
+- **A scripted run**: the store it opens for itself, the delegation policy it
+  states on stderr, its prompt, the disposable container, the approver and
+  the loop.
+- **A served session**: the store it is handed, because one server serves
+  several sessions from it; a read record of its own; and the release that
+  closes the assembly with everything else the session opened.
+- **The sub-agent supervisor**, which is built from the assembly and from
+  what each surface makes after it: the record, the classifier and the hooks.
+  A child's own environment stays the supervisor's, because a child is not a
+  copy of its parent — its role decides its tools and its prompt, its spawn
+  decides its model, and its mode is read at every request.
+
 ## Design lives outside the repository
 
 The visual specification — tokens, components, artboards, and the guidelines
