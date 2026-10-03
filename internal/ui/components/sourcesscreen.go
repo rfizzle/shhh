@@ -268,16 +268,7 @@ func (s *SourcesScreen) offers(width int, field string) []KeyOffer {
 		acts = append(acts, keyOffer(keys.Sources.Open))
 	}
 	acts = append(acts, wayOut(backToPrompt))
-	rungs := [][]KeyOffer{append([]KeyOffer{keyOffer(keys.Sources.Move)}, acts...), acts}
-	if field == "" {
-		return rungs[0]
-	}
-	for _, rung := range rungs {
-		if fitsBeside(rung, field, width) {
-			return rung
-		}
-	}
-	return rungs[0]
+	return fitRungs(field, width, append([]KeyOffer{keyOffer(keys.Sources.Move)}, acts...), acts)
 }
 
 // keyList is every key the screen has, for `[?]`.
