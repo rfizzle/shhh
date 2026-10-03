@@ -179,6 +179,10 @@ type mode struct {
 	// door is the rail block whose heading and fold marker open this mode
 	// (railclick.go). nil is a mode the rail has no door to.
 	door *surfaceDoor
+	// doorCommand is the command a click on door runs, where it is not
+	// command: the session's whole changeset read in review mode is /diff's
+	// bare form, and /review is a turn's. "" is command's own (helpKeyRows).
+	doorCommand string
 	// doorAlso are further blocks whose heading and fold marker open this
 	// mode through the same door. A block belongs here only where it is never
 	// on the rail beside door's own, so the opener can tell from the session
@@ -663,7 +667,8 @@ func buildOverlays() map[state]*mode {
 			command: "/review",
 			// The CHANGES door is /diff's bare form: the session's whole
 			// changeset, read in review mode.
-			door: &surfaceDoor{components.RailChanges, railDoor{Model.openSessionDiff, reviewShowing, Model.closeReview}},
+			doorCommand: "/diff",
+			door:        &surfaceDoor{components.RailChanges, railDoor{Model.openSessionDiff, reviewShowing, Model.closeReview}},
 		},
 		// The screens the session holds while they take the pane. Each row is
 		// the screen's accessor and what is its own; paneScreen supplies the

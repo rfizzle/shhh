@@ -49,6 +49,13 @@ type Offer struct {
 	Help string
 }
 
+// RailDoors stands where the rail click's paragraph lists which block's
+// heading runs which command. The doors are the chat surface's register rows
+// and not keys, so the surface that declares them writes the list in, and a
+// door that opens something else cannot leave the paragraph naming the old
+// command.
+const RailDoors = "{rail doors}"
+
 // InputOffers are the input's keys and the paragraphs beside them: the bound
 // ones in the register's order, then the rows that bind nothing.
 func InputOffers() []Offer {
@@ -239,7 +246,7 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 		{
 			Weight: 240,
 			Key:    "rail click",
-			Help:   `on the inspector rail, a changed file opens its diff and a session's row moves the keyboard into it. A block's heading, or its … N more, opens the surface holding the whole block — SUMMARY is /readings, THIS TURN is /turns, ALERTS is /alerts, CHANGES is /diff, AGENTS is /agents, STEPS is /steps, TODO is /todo, CONTEXT is /context, SPEND is /stats, TOOLS is /mcp — and a click on the same cell closes it, as its own esc does. The rail never holds the keyboard, so each command is that door's key`,
+			Help:   `on the inspector rail, a changed file opens its diff and a session's row moves the keyboard into it. A block's heading, or its … N more, opens the surface holding the whole block — ` + RailDoors + ` — and a click on the same cell closes it, as its own esc does. The rail never holds the keyboard, so each command is that door's key`,
 		},
 		{
 			Weight: 350,

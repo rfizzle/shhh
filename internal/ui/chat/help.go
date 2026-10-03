@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -214,7 +215,48 @@ func helpKeyRows() []helpKeyRow {
 	slices.SortStableFunc(offers, func(a, b keys.Offer) int { return cmp.Compare(a.Weight, b.Weight) })
 	rows := make([]helpKeyRow, 0, len(offers))
 	for _, o := range offers {
-		rows = append(rows, helpKeyRow{binds: o.Binds, sep: o.Sep, key: o.Key, text: o.Help})
+		text := strings.Replace(o.Help, keys.RailDoors, railDoorList(), 1)
+		rows = append(rows, helpKeyRow{binds: o.Binds, sep: o.Sep, key: o.Key, text: text})
 	}
 	return rows
+}
+
+// railDoorOrder is the order the rail click's paragraph names the doors in.
+// Which command each door runs is not said here: it is read off the door's
+// register row (railDoorCommands), so the paragraph names what a click does.
+// A door missing from the order fails a test rather than the paragraph.
+var railDoorOrder = []string{
+	components.RailSummary, components.RailTurn, components.RailAlerts,
+	components.RailChanges, components.RailAgents, components.RailSteps,
+	components.RailTodo, components.RailContext, components.RailSpend,
+	components.RailTools,
+}
+
+// railDoorList is the rail click's door list: each block beside the command
+// its heading runs.
+func railDoorList() string {
+	commands := railDoorCommands()
+	doors := make([]string, 0, len(railDoorOrder))
+	for _, block := range railDoorOrder {
+		doors = append(doors, block+" is "+commands[block])
+	}
+	return strings.Join(doors, ", ")
+}
+
+// railDoorCommands is the command a click on each door runs, by the door's
+// block: the register row's own command, or the one its door names where a
+// click runs another form. A further block sharing a row's door is left out,
+// as it is never on the rail beside the door it shares.
+func railDoorCommands() map[string]string {
+	rows := []*mode{agentListMode()}
+	for _, o := range overlays() {
+		rows = append(rows, o)
+	}
+	commands := map[string]string{}
+	for _, o := range rows {
+		if o.door != nil {
+			commands[o.door.block] = cmp.Or(o.doorCommand, o.command)
+		}
+	}
+	return commands
 }

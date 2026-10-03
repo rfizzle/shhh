@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/todo"
+	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -241,5 +242,45 @@ func TestHelp_SaysOpenAndClose(t *testing.T) {
 		if strings.Contains(tc.text, "fold") {
 			t.Errorf("%s still promises a fold:\n%s", tc.name, tc.text)
 		}
+	}
+}
+
+// The rail click's paragraph names each door beside the command its click
+// runs, read off the door rows. The order is the one thing the help keeps,
+// so a door the order leaves out — or one it names that no row declares — is
+// caught here rather than missing from the paragraph.
+func TestHelp_TheRailClickNamesEveryDoorsCommand(t *testing.T) {
+	doors := railDoorCommands()
+	seen := map[string]bool{}
+	for _, block := range railDoorOrder {
+		if seen[block] {
+			t.Errorf("the rail click's order names %s twice", block)
+		}
+		seen[block] = true
+		c, ok := doors[block]
+		if !ok {
+			t.Errorf("the rail click's order names %s, which has no door", block)
+			continue
+		}
+		if row, ok := commands()[c]; !ok || row.name != c {
+			t.Errorf("the %s door runs %s, which is no command table row", block, c)
+		}
+	}
+	for block := range doors {
+		if !seen[block] {
+			t.Errorf("the %s door is missing from the rail click's order", block)
+		}
+	}
+	var text string
+	for _, r := range helpKeyRows() {
+		if strings.Contains(r.text, keys.RailDoors) {
+			t.Errorf("a key list row still carries the door list's marker: %.40q", r.text)
+		}
+		if r.key == "rail click" {
+			text = r.text
+		}
+	}
+	if !strings.Contains(text, components.RailChanges+" is /diff,") {
+		t.Errorf("the rail click's paragraph does not say CHANGES opens /diff:\n%s", text)
 	}
 }
