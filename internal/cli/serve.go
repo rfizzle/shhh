@@ -38,6 +38,7 @@ import (
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/rpc"
 	"github.com/rfizzle/shhh/internal/runner"
+	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -333,73 +334,38 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		ask: !opts.autoMode,
 	}
 
-	sc, err := sessionScope(cfg, session.addDirs)
+	// The store is the server's, handed to every session it serves, so this
+	// one neither opens nor closes it.
+	var own *writtenByCalls
+	asm, err := assembleSession(cmd, &session, assemblyOpts{
+		kind: "serve",
+		db:   db,
+		toolset: func(sc *scope.Scope) toolsetOpts {
+			// The paths this session's own calls write, named before the
+			// toolset because the git stager may stage nothing else.
+			own = &writtenByCalls{}
+			l.own = own
+			l.seen = tools.NewRecorder()
+			if session.lsp != nil {
+				// The language server's own staleness guard asks the same
+				// record a write asks: a line number is a coordinate in the
+				// file as it was read, and read from the process-wide record
+				// the guard would be answering about what another session was
+				// shown.
+				session.lsp.UseReadRecord(l.seen)
+			}
+			return toolsetOpts{scope: sc, resident: true, seen: l.seen, gitWrites: headlessWrites(session, own)}
+		},
+		register: unattendedRegistration(false, false),
+	})
 	if err != nil {
 		return nil, err
 	}
-	// The paths this session's own calls write, named before the toolset
-	// because the git stager may stage nothing else.
-	own := &writtenByCalls{}
-	l.own = own
-	l.seen = tools.NewRecorder()
-	if session.lsp != nil {
-		// The language server's own staleness guard asks the same record a
-		// write asks: a line number is a coordinate in the file as it was
-		// read, and read from the process-wide record the guard would be
-		// answering about what another session was shown.
-		session.lsp.UseReadRecord(l.seen)
-	}
-	ts, err := buildToolset(cmd, &session, "serve", toolsetOpts{scope: sc, resident: true, seen: l.seen, gitWrites: headlessWrites(session, own)})
-	if err != nil {
-		return nil, err
-	}
-	l.closers = append(l.closers, ts.close)
+	l.closers = append(l.closers, asm.close)
+	l.mcp = session.mcpTools
+	sc, ts, agents, prices, env := asm.sc, asm.ts, asm.agents, asm.prices, asm.env
+	l.ledger = asm.ledger
 	red, qgate, procSup := ts.evidence, ts.gate, ts.proc
-
-	session.sibling = readSibling(db)
-	if session.mcp {
-		l.closers = append(l.closers, session.attachMCP(cmd.Context(), db, false))
-		l.mcp = session.mcpTools
-	}
-	// What the session reads, kept the way a terminal session keeps it and
-	// put on the client's stream a row at a time.
-	// See docs/capabilities/headless.md#a-run-says-what-it-read.
-	session.openSourceLedger(db)
-	registerSkills(&session)
-	// The durable memories this project has accumulated, recalled the way a
-	// session recalls them (memory.go). The remember tool does not come with
-	// them: the protocol carries no card for a proposal.
-	recallMemory(cmd, &session, db)
-	// The question tool does come, where the session above said there is a
-	// client to draw its card. That is the difference between the two: the
-	// protocol carries a question and its answer, and carries nothing a
-	// memory proposal could be confirmed on (session.go).
-	session.toolDefs = askToolDefs(session)
-	// The roles this session can spawn, before the toolbox says what it has:
-	// the built-in two plus the user's own profiles, and a profile that does
-	// not load stops the session naming the file (subagents.go).
-	// Unless agents.delegation is off, which offers none (subagents.go).
-	var agents *agentProfiles
-	applyDelegation(ConfigFrom(cmd.Context()), &session)
-	if session.agents {
-		var err error
-		if agents, err = loadAgentProfiles(true); err != nil {
-			return nil, err
-		}
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles, subagent.Offer{})...)
-	}
-	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc, false))
-	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs, session.proactive))
-
-	prices := loadPricing()
-	l.ledger = meter.New(prices)
-	env, err := buildSessionEnv(cmd, session, l.ledger)
-	if err != nil {
-		return nil, err
-	}
-	if agents != nil {
-		session.toolDefs = spawnModels{env: env, agents: agents, prices: prices}.offerOn(agents.profiles, session.toolDefs)
-	}
 	cfg = env.cfg
 
 	// The containment, and then what it contains. A served session is a
