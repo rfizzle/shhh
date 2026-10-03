@@ -12,6 +12,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
 func snippetRows() []SnippetRow {
@@ -210,5 +211,61 @@ func TestSnippetScreen_EmptyRenders(t *testing.T) {
 	}
 	if done, result := s.Update(tea.KeyPressMsg{Code: tea.KeyEnter}); done || result.Run {
 		t.Fatalf("enter over an empty list took something: %+v", result)
+	}
+}
+
+// manySnippetRows are more snippets than a short screen holds, so the window
+// draws its markers.
+func manySnippetRows() []SnippetRow {
+	rows := snippetRows()
+	for _, name := range []string{"logs", "disk", "dns", "certs", "routes", "load", "mem", "temps", "users"} {
+		rows = append(rows, SnippetRow{ID: name, Name: name, Description: "check the " + name,
+			Command: "echo " + name, Saved: "last week"})
+	}
+	return rows
+}
+
+// TestGolden_SnippetScreen records every state the snippet browser draws: the
+// list and its preview, the filter row open, a filter that hid some rows and
+// one that hid them all, the rename row, the armed delete, the open register,
+// a notice, a window too short for the list, and a store with nothing in it.
+func TestGolden_SnippetScreen(t *testing.T) {
+	keyed := func(s *SnippetScreen, text string) *SnippetScreen {
+		typeIntoSnippets(s, text)
+		return s
+	}
+	states := []struct {
+		name, label string
+		screen      func() *SnippetScreen
+	}{
+		{"snippet-listing", "the list, the pointer on the second snippet and its command beside it",
+			func() *SnippetScreen { s := snippetScreen(); s.Focus = 1; return s }},
+		{"snippet-filter-open", "the filter row opened, saying what it filters by",
+			func() *SnippetScreen { return keyed(snippetScreen(), "/") }},
+		{"snippet-filtered", "a query that left one snippet, and the line counting what it hid",
+			func() *SnippetScreen { return keyed(snippetScreen(), "/xargs") }},
+		{"snippet-filter-nothing", "a query that left nothing",
+			func() *SnippetScreen { return keyed(snippetScreen(), "/zzz") }},
+		{"snippet-rename", "the rename row under the panes, holding the name",
+			func() *SnippetScreen { return keyed(snippetScreen(), "r") }},
+		{"snippet-confirm", "the delete asked before it is carried out",
+			func() *SnippetScreen { return keyed(snippetScreen(), "x") }},
+		{"snippet-keys", "the whole register open",
+			func() *SnippetScreen { return keyed(snippetScreen(), "?") }},
+		{"snippet-notice", "the line the last key left",
+			func() *SnippetScreen { s := snippetScreen(); s.Notice = "Copied ports to the clipboard."; return s }},
+		{"snippet-windowed", "more snippets than the screen holds",
+			func() *SnippetScreen {
+				s := &SnippetScreen{Rows: manySnippetRows(), Subject: "12 snippets", maxLines: 12}
+				s.Focus = 6
+				return s
+			}},
+		{"snippet-empty", "a store with no snippets",
+			func() *SnippetScreen { return &SnippetScreen{Subject: "no snippets", maxLines: 12} }},
+	}
+	for _, st := range states {
+		captureGolden(t, st.name, "the snippet browser", goldenWidths, func(width int) []golden.Panel {
+			return []golden.Panel{{Label: st.label, View: st.screen().View(width)}}
+		})
 	}
 }

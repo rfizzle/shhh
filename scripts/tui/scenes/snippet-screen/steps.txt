@@ -1,0 +1,30 @@
+# program test: none — the browser's host is the command package's snippets
+#   model, which the chat program test does not build; its keys are held by
+#   the snippet screen's own tests in the components package
+#
+# The snippet browser over three saved commands, at the pane's default width.
+# The store lists the newest first, so it opens on the last one written, with
+# its command beside it; the pointer moves and the preview follows; the filter row finds a snippet by its command and
+# counts what it hid; clearing an empty filter closes it and gives the row
+# keys back; the rename row opens under the panes holding the name; and the
+# one key that destroys something asks first. Nothing here runs a command.
+snap 01-list "nothing is run until [enter]" "shhh snippets · 3 snippets" "xargs git"
+keys j
+snap 02-moved "du -ah . | sort -rh | head -10" "the ten biggest files here"
+keys /
+snap 03-filter-open "type to filter by name or by command"
+keys "xargs"
+snap 04-filtered "1 of 3 match" "2 snippets hidden by the filter" "filtered by \"xargs\""
+keys C-u
+snap 05-cleared "3 of 3 match"
+keys C-u
+snap 06-closed "[/] filter" "nothing is run until [enter]"
+keys r
+snap 07-rename "rename ▸" "[enter] rename it"
+keys Escape
+snap 08-renamed-nothing "nothing is run until [enter]"
+keys x
+snap 09-confirm "Delete the snippet"
+keys Enter
+snap 10-declined "nothing is run until [enter]"
+keys q

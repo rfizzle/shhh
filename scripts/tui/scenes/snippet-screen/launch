@@ -1,0 +1,6 @@
+# The snippet browser is `shhh snippets`, its own entry point, so the scene
+# launches it rather than typing into a session. A store with nothing saved
+# prints a sentence instead of a browser, so the first run opens the run's
+# own store, the three snippets are written into it, and the second run is
+# the browser.
+$SHHH_BIN snippets --table >/dev/null 2>&1; python3 -c "import os,sqlite3; db=sqlite3.connect(os.path.join(os.environ['XDG_DATA_HOME'],'shhh','shhh.db')); db.executemany('INSERT INTO snippets (name, command, description) VALUES (?, ?, ?)', [('ports','lsof -nP -iTCP -sTCP:LISTEN','what is listening on this machine'),('big-files','du -ah . | sort -rh | head -10','the ten biggest files here'),('prune','git branch --merged | grep -v main | xargs git branch -d','drop every merged branch')]); db.commit()"; clear; $SHHH_BIN snippets
