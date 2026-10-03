@@ -33,7 +33,7 @@ func TestHeader_TheBranchFollowsAGitSwitch(t *testing.T) {
 		},
 		map[string]GatedPreviewFunc{
 			structural.GitWriteToolName: func(json.RawMessage) (GatedPreview, error) {
-				return GatedPreview{Title: "switch to feature/x", Write: true}, nil
+				return GatedPreview{Title: "switch to feature/x"}, nil
 			},
 		})
 	m.policy.mode = agent.ModeAcceptEdits

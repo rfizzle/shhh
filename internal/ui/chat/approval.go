@@ -45,13 +45,6 @@ type GatedPreview struct {
 	// cannot resolve these from the arguments the way it resolves a shell
 	// command's paths, so the tool that owns them supplies them.
 	Fields []GatedField
-	// Write puts the call at the write tier rather than the command tier: it
-	// proceeds where an edit proceeds, is asked where an edit is asked, and
-	// is refused in plan mode. It is for a tool that changes the machine
-	// without writing a file to it — the git writer is the one — and it is
-	// the tool's own statement rather than a guess, because nothing here can
-	// read a tier out of a schema.
-	Write bool
 	// Title is the card's act row where the tool's name is not the act —
 	// `commit 3 files` rather than `use git_write`. Empty keeps the name.
 	Title string
@@ -118,8 +111,8 @@ type approvalRequest struct {
 	// fields is a gated tool's own blast-radius block, from its
 	// GatedPreview.
 	fields []GatedField
-	// write marks a generic approval that sits at the write tier, from its
-	// GatedPreview: mode policy answers it the way it answers an edit.
+	// write marks a generic approval that sits at the write tier, from the
+	// classifier: mode policy answers it the way it answers an edit.
 	write bool
 	// host is the host a generic approval's outbound request leaves for,
 	// from its GatedPreview: what [a] grants and what the host lists answer.
@@ -226,56 +219,73 @@ func (m Model) WithGatedTools(previews map[string]GatedPreviewFunc) Model {
 	return m
 }
 
-// requiresApproval reports whether a tool call must go through the approval
-// queue instead of the auto-run executor path. File-modification tools are
-// always gated, mirroring how execute_command is intercepted.
-func (m Model) requiresApproval(tc provider.ToolCall) bool {
-	if tc.Name == tools.ExecCommandName && m.runFn != nil {
+// answers reports whether this session has an answer for a call to name: the
+// runner where it has one, the editor's diff card for the two file tools
+// whatever the toolset offered, the memory card, the question card where the
+// session handed the model the tool, the process tool where it manages
+// processes, and every tool that registered a preview. It is this surface's
+// statement of what it holds and nothing more; the tier each call sits at is
+// the classifier's.
+// See docs/capabilities/approvals-and-safety.md#one-classifier-names-a-calls-tier.
+func (m Model) answers(name string) bool {
+	switch {
+	case name == tools.ExecCommandName && m.runFn != nil,
+		tools.IsMutating(name),
+		// remember is always gated: agent-proposed memories persist only
+		// after explicit user confirmation.
+		name == memory.RememberToolName,
+		// And a question always stops the turn, because a question that
+		// ran without stopping would be a question nobody answered
+		// (question.go). Only where the session handed the model the tool:
+		// a call to a tool this run does not have is answered as one and
+		// never put on a card.
+		name == ask.ToolName && m.asks,
+		m.processes.Manage != nil && name == process.ToolName:
 		return true
 	}
-	if tools.IsMutating(tc.Name) {
-		return true
-	}
-	// remember is always gated: agent-proposed memories persist only
-	// after explicit user confirmation.
-	if tc.Name == memory.RememberToolName {
-		return true
-	}
-	// And a question always stops the turn, because a question that ran
-	// without stopping would be a question nobody answered (question.go).
-	// Only where the session handed the model the tool: a call to a tool
-	// this run does not have is answered as one and never put on a card.
-	if tc.Name == ask.ToolName && m.asks {
-		return true
-	}
-	// The process tool gates on its arguments: start launches a
-	// command and needs approval; status/read/input/stop auto-run.
-	if m.processes.Manage != nil && tc.Name == process.ToolName {
-		return process.NeedsApproval(json.RawMessage(tc.Arguments))
-	}
-	_, ok := m.gatedTools[tc.Name]
+	_, ok := m.gatedTools[name]
 	return ok
 }
 
-// buildApprovalRequest turns a queued tool call into its confirm prompt.
+// holds is what this session holds, as the classifier is handed it. The
+// process tool gates on its arguments — start launches a command and needs
+// approval; status, read, input and stop auto-run — so its reading goes with
+// it where the session manages processes.
+func (m Model) holds() agent.Answers {
+	h := agent.Answers{Has: m.answers}
+	if m.processes.Manage != nil {
+		h.Command = process.CommandOf
+	}
+	return h
+}
+
+// requiresApproval reports whether a tool call must go through the approval
+// queue instead of the auto-run executor path: the classifier puts it above
+// the read tier, and this session has an answer for it.
+func (m Model) requiresApproval(tc provider.ToolCall) bool {
+	call, _ := agent.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), m.holds())
+	return call.Gated
+}
+
+// buildApprovalRequest turns a queued tool call into its confirm prompt. What
+// the call is — its tier, the command it runs — is the classifier's; which
+// card shows it is this session's.
 func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, error) {
+	call, callErr := agent.ClassifyCall(tc.Name, json.RawMessage(tc.Arguments), m.holds())
 	if tc.Name == tools.ExecCommandName {
-		var args struct {
-			Command string `json:"command"`
-		}
-		if err := json.Unmarshal([]byte(tc.Arguments), &args); err != nil || strings.TrimSpace(args.Command) == "" {
+		if callErr != nil {
 			return nil, fmt.Errorf("invalid command arguments")
 		}
 		return &approvalRequest{
 			call:    tc,
 			kind:    approvalExec,
-			command: args.Command,
-			summary: firstLine(args.Command),
+			command: call.Action.Command,
+			summary: firstLine(call.Action.Command),
 			// The harmless form of the command, where there is one. It is
 			// derived here with everything else the card states about the
 			// call, not at render: the derivation reads the whole command
 			// line, and the card is rebuilt every frame.
-			dryCommand: dryRunForm(args.Command),
+			dryCommand: dryRunForm(call.Action.Command),
 		}, nil
 	}
 
@@ -294,17 +304,17 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 	// A process start is approved like a command: the card shows the
 	// command text, and mode policy treats it as one (allowlist, safety).
 	if m.processes.Manage != nil && tc.Name == process.ToolName {
-		name, command, err := process.StartSummary(json.RawMessage(tc.Arguments))
-		if err != nil {
-			return nil, err
+		if callErr != nil {
+			return nil, callErr
 		}
+		name, _, _ := process.StartSummary(json.RawMessage(tc.Arguments))
 		title := "start process " + name
 		return &approvalRequest{
 			call:    tc,
 			kind:    approvalGeneric,
 			title:   title,
-			command: command,
-			summary: title + ": " + firstLine(command),
+			command: call.Action.Command,
+			summary: title + ": " + firstLine(call.Action.Command),
 		}, nil
 	}
 
@@ -381,7 +391,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 		command:   p.DenyLine,
 		summary:   summary,
 		fields:    p.Fields,
-		write:     p.Write,
+		write:     call.Tier == agent.TierWrite,
 		host:      p.Host,
 		hostWarns: p.Host != "" && web.ReadFetch(json.RawMessage(tc.Arguments)).Warns(),
 		spawn:     p.Spawn,

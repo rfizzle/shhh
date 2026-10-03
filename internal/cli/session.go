@@ -2111,7 +2111,6 @@ func gitWriteGatedPreview(st *structural.Toolset, args json.RawMessage) (chat.Ga
 		Action:   w.Verb,
 		Summary:  w.Summary,
 		Fields:   fields,
-		Write:    true,
 		DenyLine: structural.WriteLine(args),
 	}, nil
 }

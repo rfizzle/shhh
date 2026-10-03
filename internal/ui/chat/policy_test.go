@@ -276,13 +276,13 @@ func TestPolicy_GenericGatedToolAlwaysPrompts(t *testing.T) {
 	}
 }
 
-// A gated tool that says it sits at the write tier is answered where an edit
-// is answered — and the deny line it carries is read first, whatever the mode
+// The writing half of git sits at the write tier and is answered where an
+// edit is answered — and the deny line it carries is read first, whatever the mode
 // says about edits.
 func TestPolicy_AWriteTierToolIsAnsweredLikeAnEdit(t *testing.T) {
 	preview := map[string]GatedPreviewFunc{
 		"git_write": func(raw json.RawMessage) (GatedPreview, error) {
-			return GatedPreview{Title: "commit", Summary: "feat: do it", Write: true, DenyLine: "git commit"}, nil
+			return GatedPreview{Title: "commit", Summary: "feat: do it", DenyLine: "git commit"}, nil
 		},
 	}
 	call := provider.ToolCall{ID: "call_gw", Name: "git_write", Arguments: `{"verb":"commit","message":"feat: do it"}`}

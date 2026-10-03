@@ -403,7 +403,7 @@ func TestGitWriteGatedPreview_StatesTheBoundariesOfTheAct(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !staging.Write || staging.DenyLine != "git add" || staging.Title != "stage 1 file" {
+	if staging.DenyLine != "git add" || staging.Title != "stage 1 file" {
 		t.Fatalf("a staging card: %+v", staging)
 	}
 	fields := labels(staging)

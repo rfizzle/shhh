@@ -1019,7 +1019,7 @@ func TestAutoApproval_NeverPrintsWhatTheRowBounds(t *testing.T) {
 		map[string]GatedPreviewFunc{
 			structural.GitWriteToolName: func(json.RawMessage) (GatedPreview, error) {
 				// What the real preview builds: every path, joined.
-				return GatedPreview{Title: "stage 20 files", Summary: strings.Join(paths, ", "), Write: true}, nil
+				return GatedPreview{Title: "stage 20 files", Summary: strings.Join(paths, ", ")}, nil
 			},
 		})
 	m.policy.mode = agent.ModeAcceptEdits
@@ -1304,7 +1304,8 @@ type gitWriteCard struct {
 // gitWriteCards are the four verbs' previews written out as the session
 // builds them. The function that builds them lives with the session's wiring
 // above this package, so what is held here is the shape it hands over: the
-// fields, the write tier and the deny line together.
+// fields and the deny line together; the write tier is the classifier's,
+// read off the name.
 func gitWriteCards() []gitWriteCard {
 	stages := GatedField{Label: "stages", Value: "this session's files only", Detail: "work that was already in the tree is never staged"}
 	push := GatedField{Label: "push", Value: "no", Detail: "shhh never pushes; the remote is yours"}
@@ -1332,7 +1333,6 @@ func gitWriteCards() []gitWriteCard {
 					{Label: "undo", Value: "git switch -", Detail: "the tree becomes the other branch's, and every file this session had read is re-read"}}}},
 	}
 	for i := range cards {
-		cards[i].preview.Write = true
 		cards[i].preview.DenyLine = "git " + cards[i].preview.Action
 	}
 	return cards
