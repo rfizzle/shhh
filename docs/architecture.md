@@ -210,8 +210,10 @@ screen. The screen names its fields, says what else a changed query puts
 away, and words the line saying how many rows the filter hid. The history
 browser takes the whole shape after the two browsers. The settings screen
 takes the filter and keeps its rails, its sub-surfaces and its own query
-keys, which never closed the line on an empty clear. The backlog's filter
-joins them once its screen is cut over.
+keys, which never closed the line on an empty clear. The backlog screen
+takes the rows showing and the match, and keeps on its side what only it
+has: the cycles by status, priority, a field and readiness, which narrow what
+the query left, and its own query keys, where the way back closes the line.
 
 ## Spend is counted at the provider
 

@@ -67,7 +67,7 @@ func (b *BacklogScreen) listRows(width, budget int) []string {
 // it, and the key that puts them back. It is drawn only while something is
 // hidden: a filter that hid nothing has nothing to confess.
 func (b *BacklogScreen) hiddenRows(width int) []string {
-	hidden := len(b.rows()) - len(b.shown)
+	hidden := len(b.rows()) - len(b.filter.shown)
 	if hidden <= 0 {
 		return nil
 	}
@@ -81,7 +81,7 @@ func (b *BacklogScreen) hiddenRows(width int) []string {
 // nothing in it and a filter that matched nothing are different answers, and
 // only one of them is fixed by clearing something.
 func (b *BacklogScreen) windowRows(width, budget int) []string {
-	if len(b.shown) == 0 {
+	if len(b.filter.shown) == 0 {
 		if len(b.rows()) == 0 {
 			return []string{sty.dim.Render(Clip(b.emptyWords(), width))}
 		}
@@ -90,12 +90,12 @@ func (b *BacklogScreen) windowRows(width, budget int) []string {
 	lo, hi := b.list.Range(budget)
 	rows := make([]string, 0, hi-lo)
 	for i := lo; i < hi; i++ {
-		rows = append(rows, b.itemRow(b.rows()[b.shown[i]], i == b.list.Focus, width))
+		rows = append(rows, b.itemRow(b.rows()[b.filter.shown[i]], i == b.list.Focus, width))
 	}
 	if above := lo; above > 0 {
 		rows = append([]string{sty.dim.Render(Clip(fmt.Sprintf("↑ %d above", above), width))}, rows...)
 	}
-	if below := len(b.shown) - hi; below > 0 {
+	if below := len(b.filter.shown) - hi; below > 0 {
 		rows = append(rows, sty.dim.Render(Clip(fmt.Sprintf("↓ %d below", below), width)))
 	}
 	return rows

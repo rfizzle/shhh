@@ -24,7 +24,7 @@ func pressAll(b *BacklogScreen, text string) (done bool, result backlogResult) {
 func slugsShowing(b *BacklogScreen) string {
 	b.sync()
 	var out []string
-	for _, i := range b.shown {
+	for _, i := range b.filter.shown {
 		out = append(out, b.rows()[i].Slug)
 	}
 	return strings.Join(out, " ")

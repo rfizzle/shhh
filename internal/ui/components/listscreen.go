@@ -17,6 +17,7 @@ package components
 // whatever it opens over the list.
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 
@@ -50,6 +51,13 @@ type listFilter struct {
 	// leaves it nil.
 	shown []int
 }
+
+// showing reports whether position row is one of the rows showing.
+func (f *listFilter) showing(row int) bool { return slices.Contains(f.shown, row) }
+
+// place is where position row is among the rows showing, and the first of
+// them where the filter hid it.
+func (f *listFilter) place(row int) int { return max(slices.Index(f.shown, row), 0) }
 
 // screenParts is what a screen hands the shared frame: its rows rebuilt into
 // the window, the chrome around the panes, and the panes.
@@ -261,22 +269,13 @@ func (l *listScreen[T]) movedShown(pressed string, move keys.Binding) bool {
 
 // at is where the pointer is among the rows showing, and the first of them
 // where the filter hid the row it was on.
-func (l *listScreen[T]) at() int {
-	for i, row := range l.shown {
-		if row == l.Focus {
-			return i
-		}
-	}
-	return 0
-}
+func (l *listScreen[T]) at() int { return l.place(l.Focus) }
 
 // currentShown is the row under the pointer among the rows showing, or nil
 // when the filter left none.
 func (l *listScreen[T]) currentShown(items []T) *T {
-	for _, i := range l.shown {
-		if i == l.Focus {
-			return &items[i]
-		}
+	if !l.showing(l.Focus) {
+		return nil
 	}
-	return nil
+	return &items[l.Focus]
 }

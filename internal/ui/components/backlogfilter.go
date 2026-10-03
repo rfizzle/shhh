@@ -13,9 +13,10 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// backlogFilter is the query row and the cycles. It owns the query and
-// whether its row is open, the three cycles' stops and the ready toggle;
-// the fields it cycles over are the host's, handed in by the screen. See
+// backlogFilter is the query row and the cycles over the list screens'
+// shared filter, which holds the rows showing. It owns the query and whether
+// its row is open, the three cycles' stops and the ready toggle; the fields
+// it cycles over are the host's, handed in by the screen. See
 // docs/architecture.md#the-backlog-screens-pieces.
 type backlogFilter struct {
 	// query and filtering are the text filter; the three indices are the
@@ -26,6 +27,7 @@ type backlogFilter struct {
 	priority  int
 	field     int
 	ready     bool
+	listFilter
 }
 
 // open puts the query row up, taking every letter.
@@ -110,15 +112,29 @@ func (b *backlogFilter) words(priority BacklogField, fields []BacklogField) stri
 	return strings.Join(parts, " · ")
 }
 
-// matches is the filter rule over one row. A file that will not parse
+// match is the positions of the rows the filters leave showing: the query,
+// trimmed, found in the slug or the title by the rule every list screen
+// matches with, and then the cycles.
+func (b *backlogFilter) match(rows []BacklogRow, priority BacklogField, fields []BacklogField) []int {
+	shown := Filter(rows, strings.TrimSpace(b.query), backlogQueryFields)
+	kept := shown[:0]
+	for _, i := range shown {
+		if b.cycled(rows[i], priority, fields) {
+			kept = append(kept, i)
+		}
+	}
+	return kept
+}
+
+// backlogQueryFields is what the query is found in: the slug and the title.
+func backlogQueryFields(row BacklogRow) []string { return []string{row.Slug, row.Title} }
+
+// cycled is the cycles' rule over one row. A file that will not parse
 // answers none of the field filters — it has no fields — and it survives
 // them rather than being hidden by one: the row is the only thing on screen
 // saying the file is there, and a filter that swallowed it would be hiding
 // exactly the item the reader has to go and fix.
-func (b *backlogFilter) matches(row BacklogRow, priority BacklogField, fields []BacklogField) bool {
-	if !matches(strings.TrimSpace(b.query), row.Slug, row.Title) {
-		return false
-	}
+func (b *backlogFilter) cycled(row BacklogRow, priority BacklogField, fields []BacklogField) bool {
 	if row.State == BacklogUnreadable {
 		return true
 	}

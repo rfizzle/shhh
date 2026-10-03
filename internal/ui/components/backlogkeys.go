@@ -201,7 +201,7 @@ func (b *BacklogScreen) jumpToDependency() {
 		// The pointer may be moving to a row the filters are hiding, so they
 		// come off: a jump that landed on nothing would be the filter
 		// swallowing the answer to the key that was just pressed.
-		if !b.showing(i) {
+		if !b.filter.showing(i) {
 			b.filter.clear()
 		}
 		b.focus[b.tab] = i

@@ -317,8 +317,7 @@ type BacklogScreen struct {
 	reader backlogReader
 	// list is the shared pointer and window over the positions the filters
 	// left showing (list.go).
-	list  List[int]
-	shown []int
+	list List[int]
 
 	confirm *Confirm
 	pending *BacklogCommand
@@ -399,10 +398,10 @@ func (b *BacklogScreen) count() string {
 		return fmt.Sprintf("%d of %s kept", len(b.Plan.kept()), plural(len(b.Plan.Rows), b.noun()))
 	}
 	total := len(b.rows())
-	if len(b.shown) == total {
+	if len(b.filter.shown) == total {
 		return plural(total, b.noun())
 	}
-	return fmt.Sprintf("%d of %s", len(b.shown), plural(total, b.noun()))
+	return fmt.Sprintf("%d of %s", len(b.filter.shown), plural(total, b.noun()))
 }
 
 // noun is what one row is called, with the fallback a host that named none
@@ -459,23 +458,14 @@ func (b *BacklogScreen) sync() {
 	case b.sprinting() && !b.sprintTab():
 		b.tab = backlogTabItems
 	}
-	b.shown = b.match()
-	b.list.Items = b.shown
-	b.list.Focus = b.optIndex(b.focus[b.tab])
+	b.filter.shown = b.match()
+	b.list.Items = b.filter.shown
+	b.list.Focus = b.filter.place(b.focus[b.tab])
 	b.list.normalize()
 }
 
 // match is the positions the filters left showing.
-func (b *BacklogScreen) match() []int {
-	rows := b.rows()
-	out := make([]int, 0, len(rows))
-	for i, row := range rows {
-		if b.filter.matches(row, b.Priority, b.Fields) {
-			out = append(out, i)
-		}
-	}
-	return out
-}
+func (b *BacklogScreen) match() []int { return b.filter.match(b.rows(), b.Priority, b.Fields) }
 
 // refilter re-runs the match after a key changed a filter, and puts the
 // pointer on the first row that survived it — the rows under it are not the
@@ -505,10 +495,10 @@ func (b *BacklogScreen) movedTyping(pressed string) bool {
 // any confirm the last key armed: the row it was about is no longer the row
 // under the pointer.
 func (b *BacklogScreen) after(moved bool) bool {
-	if !moved || len(b.shown) == 0 {
+	if !moved || len(b.filter.shown) == 0 {
 		return moved
 	}
-	b.focus[b.tab] = b.shown[min(max(b.list.Focus, 0), len(b.shown)-1)]
+	b.focus[b.tab] = b.filter.shown[min(max(b.list.Focus, 0), len(b.filter.shown)-1)]
 	b.confirm, b.pending = nil, nil
 	return true
 }
@@ -520,32 +510,8 @@ func (b *BacklogScreen) item() backlogItem {
 
 // current is the item under the pointer, or nil where the filters left none.
 func (b *BacklogScreen) current() *BacklogRow {
-	rows := b.rows()
-	for _, i := range b.shown {
-		if i == b.focus[b.tab] {
-			return &rows[i]
-		}
+	if !b.filter.showing(b.focus[b.tab]) {
+		return nil
 	}
-	return nil
-}
-
-// showing reports whether position i survived the filters.
-func (b *BacklogScreen) showing(i int) bool {
-	for _, at := range b.shown {
-		if at == i {
-			return true
-		}
-	}
-	return false
-}
-
-// optIndex maps a position in the tab's rows to its place in what is
-// showing. A row the filter hid takes the first one that is not.
-func (b *BacklogScreen) optIndex(row int) int {
-	for i, at := range b.shown {
-		if at == row {
-			return i
-		}
-	}
-	return 0
+	return &b.rows()[b.focus[b.tab]]
 }
