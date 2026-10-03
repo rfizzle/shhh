@@ -457,7 +457,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 // not at the top, where the containment refusal and the deny list would be
 // asked a second time about a call they have already passed.
 func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
-	m.pendingApproval = req
+	m.approval.request = req
 	if req.kind == approvalExec {
 		m.pendingRun = req.command
 	}
@@ -465,10 +465,10 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	// before the blast radius because the radius block carries it as a row —
 	// the card names it, the policy asks about it, and approving the call
 	// grants it.
-	m.pendingScope = m.scopeReachFor(req)
+	m.approval.scope = m.scopeReachFor(req)
 	// The blast radius is resolved once here, not inside View: it stats the
 	// filesystem and asks git about the paths it found.
-	m.pendingBlast = m.resolveRadius(req)
+	m.approval.blast = m.resolveRadius(req)
 	// A question is put to the person in every mode, because every gate
 	// below this one exists to decide which *acts* stop to ask — and a
 	// question is not an act. A --yes, a session grant, accept-edits and the
@@ -527,9 +527,9 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 		return m.executeApprovedTool()
 	case agent.Deny:
 		m.recordDecision(observe.DecisionDeny, observe.ReasonCode(reason))
-		m.pendingApproval = nil
+		m.approval.request = nil
 		m.pendingRun = ""
-		m.pendingScope = scopeReach{}
+		m.approval.scope = scopeReach{}
 		m.agent.ResolveApproval(m.refusedResult(req.call, denialResult(reason, req.command, m.policy.readOnlyExtra)))
 		m.appendCallRow(req.call.ID, deniedEntry(req, decidedByAuto, reason, 0))
 		m.viewport.SetLines(m.renderHistoryLines())
@@ -662,7 +662,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	// the session paid for is a change to what the session has spent.
 	m.notifyUsage()
 
-	req := m.pendingApproval
+	req := m.approval.request
 	act := m.approvalAction(req)
 	switch decision, reason := agent.ResolveAuto(act, v); decision {
 	case agent.Allow:
@@ -682,9 +682,9 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		m.recordDecision(observe.DecisionDeny, observe.ReasonClassifier)
 		why := req.summary + " — " + reason
 		m.lastDenial = why
-		m.pendingApproval = nil
+		m.approval.request = nil
 		m.pendingRun = ""
-		m.pendingScope = scopeReach{}
+		m.approval.scope = scopeReach{}
 		m.agent.ResolveApproval(m.refusedResult(req.call, denialResult(reason, req.command, m.policy.readOnlyExtra)))
 		// The outcome column names the rule, not the judgement: it is a
 		// closed vocabulary and the classifier's sentence is prose
@@ -726,7 +726,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		// decision was armed, before the classifier was asked, so the row
 		// joins that block here rather than waiting on a second resolution
 		// that nothing would make.
-		m.pendingBlast.addStanding(standing)
+		m.approval.blast.addStanding(standing)
 		m.armConfirm(req)
 		return m, nil
 	}
@@ -783,8 +783,8 @@ func denialResult(reason, command string, extra []string) string {
 // every approval takes on its way to executing, so no key has to remember to
 // call it and none of them can widen the scope without saying so.
 func (m *Model) applyScopeGrant() {
-	reach := m.pendingScope
-	m.pendingScope = scopeReach{}
+	reach := m.approval.scope
+	m.approval.scope = scopeReach{}
 	if note := m.grantScope(reach); note != "" {
 		m.noteGrant(note)
 	}
@@ -830,7 +830,7 @@ func (m Model) openDecisionNote(allow bool) (tea.Model, tea.Cmd) {
 	// and a field painting a second one would draw two.
 	field.SetVirtualCursor(false)
 	cmd := field.Focus()
-	m.decisionNote = &decisionNote{allow: allow, field: field}
+	m.approval.note = &decisionNote{allow: allow, field: field}
 	m.syncViewport()
 	return m, cmd
 }
@@ -842,19 +842,19 @@ func (m Model) openDecisionNote(allow bool) (tea.Model, tea.Cmd) {
 // row and the transcript search already do
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) updateDecisionNote(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	open := *m.decisionNote
+	open := *m.approval.note
 	switch {
 	case keys.Match(msg, keys.Select.Cancel):
 		// Back to the card with the decision exactly where it was. The
 		// sentence goes with the field: a draft nobody sent is not an answer,
 		// and keeping it would put words the reader abandoned on the next
 		// answer they give.
-		m.decisionNote = nil
+		m.approval.note = nil
 		m.syncViewport()
 		return m, nil
 	case keys.Match(msg, keys.Select.Take):
 		note := strings.TrimSpace(open.field.Value())
-		m.decisionNote = nil
+		m.approval.note = nil
 		// The sentence is said once and the answer under it is the card's,
 		// which on a fan-out card is the answer to every child on it
 		// (queue.go).
@@ -869,7 +869,7 @@ func (m Model) updateDecisionNote(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// would put this keystroke into the copy the last frame was drawn from.
 	var cmd tea.Cmd
 	open.field, cmd = open.field.Update(msg)
-	m.decisionNote = &open
+	m.approval.note = &open
 	m.syncViewport()
 	return m, cmd
 }
@@ -887,10 +887,10 @@ func (m Model) approvePending(note string) (tea.Model, tea.Cmd) {
 	if note != "" {
 		m.steering = append(m.steering, steeringItem{text: note, id: m.queue.next(), kind: queuedNote})
 	}
-	if m.pendingApproval != nil {
+	if m.approval.request != nil {
 		m.recordDecision(observe.DecisionAllow, observe.ReasonUser)
 	}
-	if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
+	if m.approval.request != nil && m.approval.request.kind != approvalExec {
 		return m.executeApprovedTool()
 	}
 	return m.executeRun()
@@ -916,10 +916,10 @@ func (m Model) declineApproval() (tea.Model, tea.Cmd) { return m.declineApproval
 // answer, and the model must not be able to tell the two paths apart.
 func (m Model) declineApprovalWith(note string) (tea.Model, tea.Cmd) {
 	m.recordDecision(observe.DecisionDeny, observe.ReasonUser)
-	req := m.pendingApproval
-	m.pendingApproval = nil
+	req := m.approval.request
+	m.approval.request = nil
 	m.pendingRun = ""
-	m.pendingScope = scopeReach{}
+	m.approval.scope = scopeReach{}
 	content := "error: the user declined this tool call"
 	switch req.kind {
 	case approvalExec:
@@ -992,7 +992,7 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	m.syncViewport()
 	a := m.agent
 	runID := a.RunID()
-	call := m.pendingApproval.call
+	call := m.approval.request.call
 	// A spawn may hand the child this conversation's last turns. They are
 	// copied here, on the goroutine that owns the conversation, because the
 	// call runs on another one and a cancel pressed meanwhile appends to the
@@ -1027,7 +1027,7 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	record := m.changeRecorder()
 	// What a hook in front of this call wanted the model to read leads the
 	// result, where every other notice goes (hooks.go).
-	lead := m.pendingApproval.hookContext
+	lead := m.approval.request.hookContext
 	return m, func() tea.Msg {
 		var result string
 		before := record.before()
@@ -1066,7 +1066,7 @@ type changeRecording struct {
 // changeRecorder describes what this approval would record. A call with no
 // file behind it (a command, a memory, a generic tool) records nothing.
 func (m Model) changeRecorder() changeRecording {
-	req := m.pendingApproval
+	req := m.approval.request
 	if req == nil || req.kind != approvalDiff || req.path == "" {
 		return changeRecording{}
 	}
@@ -1179,7 +1179,7 @@ func (m Model) approvalCard() *components.ApprovalCard {
 // model's for the reason the note field is: the card is rebuilt every frame
 // and what is being typed is not (amend.go).
 func (m Model) applyCommandEdit(card *components.ApprovalCard) {
-	e := m.commandEdit
+	e := m.approval.edit
 	if e == nil {
 		return
 	}
@@ -1193,8 +1193,8 @@ func (m Model) applyCommandEdit(card *components.ApprovalCard) {
 // answers on its own surface — and the field is the model's, because the card
 // is rebuilt every frame and what is being typed is not.
 func (m Model) applyDecisionNote(card *components.ApprovalCard) {
-	card.Noted = m.pendingApproval != nil && m.memoryAsk == nil
-	n := m.decisionNote
+	card.Noted = m.approval.request != nil && m.memoryAsk == nil
+	n := m.approval.note
 	if n == nil || !card.Noted {
 		return
 	}
@@ -1226,20 +1226,20 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		MaxLines: m.maxConfirmPanelHeight(),
 		// The card is rebuilt every frame, so its scroll rides the model
 		// and is reset whenever the card changes (armConfirm).
-		BodyOffset: m.cardScroll,
-		PanOffset:  m.cardPan,
+		BodyOffset: m.approval.scroll,
+		PanOffset:  m.approval.pan,
 	}
-	req := m.pendingApproval
+	req := m.approval.request
 	// Where this decision sits in the round, and the key that answers the
 	// rest of its category along with it.
 	card.QueuePos = m.queuePosition()
-	if card.Batch = len(m.pendingBatch) > 0; card.Batch {
-		card.BatchHint = fmt.Sprintf("answer all %d in one list", len(m.pendingBatch)+1)
+	if card.Batch = len(m.approval.batch) > 0; card.Batch {
+		card.BatchHint = fmt.Sprintf("answer all %d in one list", len(m.approval.batch)+1)
 	}
 	// The blast-radius block, resolved when the decision was armed.
 	// It also carries the safety risks, so the card states severity and
 	// warnings from one source rather than two.
-	m.pendingBlast.applyTo(card)
+	m.approval.blast.applyTo(card)
 	// Deferred, because the variants below decide the grant key and a
 	// judged card withdraws it once they have.
 	if req != nil {
@@ -1286,8 +1286,8 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 				// two things at once, and the key says both: [y]
 				// would add the directory for this session, [a] adds it and
 				// stops asking about this shape of command as well.
-				if m.pendingScope.any() {
-					card.AlwaysHint += ", and " + displayDir(m.pendingScope.first()) + " with it"
+				if m.approval.scope.any() {
+					card.AlwaysHint += ", and " + displayDir(m.approval.scope.first()) + " with it"
 				}
 			}
 		}
@@ -1315,7 +1315,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		if len(card.Warnings) == 0 {
 			card.AllowAlways = true
 			card.AlwaysHint = "allow edits in " + displayDir(filepath.Dir(req.path)) + " without asking"
-			if m.pendingScope.any() {
+			if m.approval.scope.any() {
 				card.AlwaysHint += " and add it to the working scope"
 			}
 		}
@@ -1381,7 +1381,7 @@ func withArticle(role string) string {
 // queue strip's were: the card is rebuilt every frame, and reading every
 // queued spawn's arguments on each of them is work no frame changes.
 func (m Model) applySpawnCard(card *components.ApprovalCard, req *approvalRequest) {
-	rows := m.pendingSpawns
+	rows := m.approval.spawns
 	if len(rows) == 0 {
 		rows = []components.SpawnRow{*req.spawn}
 	}
@@ -1512,13 +1512,13 @@ func (m Model) scrollCard(msg tea.KeyPressMsg, card *components.ApprovalCard) (t
 	maxBody, maxPan := card.ScrollBounds(m.contentWidth())
 	switch {
 	case keys.Match(msg, keys.Decision.ScrollUp):
-		m.cardScroll = max(m.cardScroll-1, 0)
+		m.approval.scroll = max(m.approval.scroll-1, 0)
 	case keys.Match(msg, keys.Decision.ScrollDown):
-		m.cardScroll = min(m.cardScroll+1, maxBody)
+		m.approval.scroll = min(m.approval.scroll+1, maxBody)
 	case keys.Match(msg, keys.Decision.PanLeft):
-		m.cardPan = max(m.cardPan-cardPanStep, 0)
+		m.approval.pan = max(m.approval.pan-cardPanStep, 0)
 	case keys.Match(msg, keys.Decision.PanRight):
-		m.cardPan = min(m.cardPan+cardPanStep, maxPan)
+		m.approval.pan = min(m.approval.pan+cardPanStep, maxPan)
 	}
 	return m, nil
 }
@@ -1560,11 +1560,11 @@ func (m Model) commandCardView() *components.OutputView {
 func (m Model) confirmLines() []string {
 	width := m.contentWidth()
 	// The queue strip sits above whichever surface is asking.
-	strip := m.pendingQueue.View(width)
+	strip := m.approval.strip.View(width)
 	if o := m.askOverlay(); o != nil {
 		return append(strip, o.Lines(m, width, 0)...)
 	}
-	if l := m.queueList; l != nil {
+	if l := m.approval.list; l != nil {
 		// The list replaces both the card and the strip above it: it is that
 		// strip opened, and drawing the two together would put every row on
 		// the screen twice — once as context and once as the decision — in a
@@ -1592,10 +1592,10 @@ func (m Model) confirmCursor(int) *tea.Cursor {
 	width := m.contentWidth()
 	var field textinput.Model
 	switch {
-	case m.decisionNote != nil:
-		field = m.decisionNote.drawn(width)
-	case m.commandEdit != nil:
-		field = m.commandEdit.drawn(width)
+	case m.approval.note != nil:
+		field = m.approval.note.drawn(width)
+	case m.approval.edit != nil:
+		field = m.approval.edit.drawn(width)
 	default:
 		return nil
 	}
@@ -1608,7 +1608,7 @@ func (m Model) confirmCursor(int) *tea.Cursor {
 		return nil
 	}
 	cur.X += x
-	cur.Y += y + len(m.pendingQueue.View(width))
+	cur.Y += y + len(m.approval.strip.View(width))
 	if m.decisionGated() {
 		// The rail that names the keyboard's owner leads the panel.
 		cur.Y++

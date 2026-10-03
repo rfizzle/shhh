@@ -309,7 +309,7 @@ func TestFrame_TheStatusIsTheOnlySpinner(t *testing.T) {
 					toolResult: "ok", duration: 4 * time.Second, turn: 1})
 			}
 			m.setTurnState(stateRunningCmd)
-			m.pendingApproval = &approvalRequest{kind: approvalExec}
+			m.approval.request = &approvalRequest{kind: approvalExec}
 			m.runningCommand = "go test ./internal/ui/"
 			m.runStart = clock().Add(-8 * time.Second)
 			m.runTail = &commandTail{}

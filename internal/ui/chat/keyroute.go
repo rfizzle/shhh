@@ -142,14 +142,27 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	if o := overlayFor(m.state); o != nil && o.aboveDecision {
 		return answered(m.routeOverlay(o, msg))
 	}
-	// The handover means one thing in both states a decision can be in:
-	// give the card the whole keyboard. From ungated it is the mid-sentence
-	// rule's transfer
-	// — every letter belonged to the draft, and now none do. From a card
-	// holding the keyboard by arrival it buys the keys that card left
-	// alone on purpose ([a], [d], [A]).
-	if m.interruptShowing() && keys.Match(msg, keys.Draft.Answer) && (m.decisionUngated() || m.heldOnArrival) {
+	// The decision card reads the key next: the handover, the grace window
+	// and esc back to the draft are its own (approvalstate.go). It answers
+	// ahead of the commit and row handovers below, which take the key only
+	// with no decision showing, while every key the card claims needs one.
+	cardMode := overlayFor(m.state)
+	card, act := m.approval.update(msg, decisionAt{
+		showing:   m.interruptShowing(),
+		escLeaves: m.escLeavesWaiting(),
+		floating:  cardMode != nil && cardMode.place == placeFloating,
+		discards:  m.graceDiscards(msg.String()),
+	})
+	m.approval = card
+	switch act {
+	case decisionGate:
 		return answered(m.gateDecision())
+	case decisionDiscard:
+		return m, nil, true
+	case decisionUngate:
+		return answered(m.ungateDecision())
+	case decisionRoute:
+		return answered(m.routeOverlay(cardMode, msg))
 	}
 	// With no decision waiting, the handover on a selected changed-files row
 	// hands the keyboard to that turn's commit card (commit.go), and on a
@@ -165,34 +178,6 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		// answered through rather than a chord of its own per offer.
 		if next, cmd, ok := m.rowHandoverKey(); ok {
 			return next, cmd, true
-		}
-	}
-	// The grace window on a card that took the keyboard by arriving on a
-	// warm keyboard (interrupt.go): the keys that would answer it are
-	// discarded until the keyboard has been quiet for a beat, because a
-	// key this soon after typing was part of the typing. The discard
-	// still moved the window's end, so the repaint is rescheduled off
-	// the bumped sequence (graceTickCmd).
-	if m.graceHolds() && m.graceDiscards(msg.String()) {
-		m.graceSeq++
-		return m, nil, true
-	}
-	// A decision that arrived on top of a sentence is inert until it holds the
-	// keyboard
-	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard):
-	// ungated, the handover above is the only key that is its own, and every
-	// letter belongs to the draft.
-	if !m.decisionUngated() {
-		if keys.Match(msg, keys.Draft.Clear) && m.escLeavesWaiting() {
-			// Esc leaves the decision waiting rather than denying it; [n]
-			// is how you say no.
-			return answered(m.ungateDecision())
-		}
-		// The two decision cards, which are the only modes the
-		// register places floating: they answer only once the handover
-		// has given them the keyboard.
-		if o := overlayFor(m.state); o != nil && o.place == placeFloating {
-			return answered(m.routeOverlay(o, msg))
 		}
 	}
 	// Every other mode. Which of them the state is in, whether it answers
@@ -213,7 +198,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	// decision that arrives unbidden the child's ask is inert until the
 	// handover gives it the keyboard, which is why the ask is only
 	// reached while the keyboard is held.
-	if m.agentList != nil || m.decisionHeld {
+	if m.agentList != nil || m.approval.held {
 		if o := m.coverOverlay(); o != nil {
 			return answered(m.routeOverlay(o, msg))
 		}
@@ -284,7 +269,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			// answers the decision no. No draft can produce the chord, so
 			// leaving it live is what keeps a waiting decision endable
 			// without first taking the keyboard.
-			m.decisionHeld = true
+			m.approval.held = true
 			return answered(m.routeDecision(msg))
 		}
 		if strings.TrimSpace(m.input.Value()) != "" {

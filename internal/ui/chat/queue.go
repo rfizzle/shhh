@@ -65,7 +65,7 @@ func (m Model) confirmPanelBound() int {
 	// The rail and the undressed draft a gated decision adds are paid for
 	// here too, so the card is never the thing clipped off the bottom to
 	// make room for them.
-	return m.maxConfirmPanelHeight() + m.pendingQueue.Rows() + m.gatedExtraRows()
+	return m.maxConfirmPanelHeight() + m.approval.strip.Rows() + m.gatedExtraRows()
 }
 
 // resolveQueue builds the strip above the card and the set the queue key
@@ -83,7 +83,7 @@ func (m Model) resolveQueue(cur *approvalRequest) (components.QueueStrip, []stri
 	// these one decision is that the card asks about all of them at once
 	// (docs/capabilities/subagents.md#spawning-is-a-decision).
 	batchable = batchable || cur.spawn != nil
-	first := m.approvalTotal - len(calls) + 1
+	first := m.approval.total - len(calls) + 1
 	label, detail := queueLabel(cur)
 	items := []components.QueueItem{{
 		Number: max(first, 1), Label: label, Detail: detail,
@@ -300,7 +300,7 @@ func (m Model) batchesWith(cur *approvalRequest, kind agent.ActionKind, batchabl
 	// asks for one, and a batch rebuilt from the queue's contents alone would
 	// sweep that row back in and let the next plain key overrule it
 	// (takeQueueAnswer).
-	if _, answered := m.batchAnswered[req.call.ID]; answered {
+	if _, answered := m.approval.batchAnswered[req.call.ID]; answered {
 		return false
 	}
 	if cur.spawn != nil {
@@ -489,10 +489,10 @@ func queueSeverity(req *approvalRequest) components.Severity {
 // the round, which the strip's dots — drawn over what is left — cannot say.
 func (m Model) queuePosition() string {
 	remaining := m.agent.QueuedApprovals()
-	if remaining < 2 && m.approvalTotal < 2 {
+	if remaining < 2 && m.approval.total < 2 {
 		return ""
 	}
-	total := max(m.approvalTotal, remaining)
+	total := max(m.approval.total, remaining)
 	return fmt.Sprintf("%d of %d", max(total-remaining+1, 1), total)
 }
 
@@ -526,12 +526,12 @@ type queueList struct {
 // on its own: a reader who learned it as "the rest like this one" presses it,
 // sees the set, and enter is still that answer.
 func (m Model) openQueueList() (tea.Model, tea.Cmd) {
-	req := m.pendingApproval
-	if req == nil || len(m.pendingBatch) == 0 {
+	req := m.approval.request
+	if req == nil || len(m.approval.batch) == 0 {
 		return m, nil
 	}
-	marked := make(map[string]bool, len(m.pendingBatch))
-	for _, id := range m.pendingBatch {
+	marked := make(map[string]bool, len(m.approval.batch))
+	for _, id := range m.approval.batch {
 		marked[id] = true
 	}
 	label, detail := queueLabel(req)
@@ -578,7 +578,7 @@ func (m Model) openQueueList() (tea.Model, tea.Cmd) {
 	// them, so refusing an empty answer would leave the reader no way to say
 	// the one thing the old key could never say.
 	sel.AllowNone = true
-	m.queueList = &queueList{sel: sel, ids: ids}
+	m.approval.list = &queueList{sel: sel, ids: ids}
 	m.syncViewport()
 	return m, nil
 }
@@ -605,7 +605,7 @@ func apartRow(n int) string {
 // one it is standing in front of
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) updateQueueList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	open := m.queueList
+	open := m.approval.list
 	done, res := open.sel.Update(msg)
 	if !done {
 		m.syncViewport()
@@ -616,7 +616,7 @@ func (m Model) updateQueueList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// answered, nothing marked, and the decision the card is showing
 		// still waiting
 		// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-		m.queueList = nil
+		m.approval.list = nil
 		m.syncViewport()
 		return m, nil
 	}
@@ -634,19 +634,19 @@ func (m Model) updateQueueList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // mode moved — and the queue drains front to back so that every one of them
 // is asked those questions again where the answers are current.
 func (m Model) answerQueueList(idx []int) (tea.Model, tea.Cmd) {
-	open := m.queueList
-	m.queueList = nil
+	open := m.approval.list
+	m.approval.list = nil
 	checked := make(map[int]bool, len(idx))
 	for _, i := range idx {
 		checked[i] = true
 	}
-	if m.batchAnswered == nil {
-		m.batchAnswered = make(map[string]bool, len(open.ids))
+	if m.approval.batchAnswered == nil {
+		m.approval.batchAnswered = make(map[string]bool, len(open.ids))
 	}
 	for i, id := range open.ids[1:] {
-		m.batchAnswered[id] = checked[i+1]
+		m.approval.batchAnswered[id] = checked[i+1]
 	}
-	req := m.pendingApproval
+	req := m.approval.request
 	if req == nil {
 		return m, nil
 	}
@@ -673,15 +673,15 @@ func (m Model) answerQueueList(idx []int) (tea.Model, tea.Cmd) {
 // the queue list answered carries that list's own marks, row by row, and a
 // head a rule answered was never a card anybody read.
 func (m *Model) answerSpawnSet(allow bool) {
-	req := m.pendingApproval
-	if req == nil || req.spawn == nil || len(m.pendingBatch) == 0 {
+	req := m.approval.request
+	if req == nil || req.spawn == nil || len(m.approval.batch) == 0 {
 		return
 	}
-	if m.batchAnswered == nil {
-		m.batchAnswered = make(map[string]bool, len(m.pendingBatch))
+	if m.approval.batchAnswered == nil {
+		m.approval.batchAnswered = make(map[string]bool, len(m.approval.batch))
 	}
-	for _, id := range m.pendingBatch {
-		m.batchAnswered[id] = allow
+	for _, id := range m.approval.batch {
+		m.approval.batchAnswered[id] = allow
 	}
 }
 
@@ -698,11 +698,11 @@ func (m *Model) answerSpawnSet(allow bool) {
 // refused call admissible, and a reader who unchecked a row is owed that
 // answer whatever the tree did in the meantime.
 func (m *Model) takeQueueAnswer(req *approvalRequest) (allow, answered bool) {
-	mark, ok := m.batchAnswered[req.call.ID]
+	mark, ok := m.approval.batchAnswered[req.call.ID]
 	if !ok {
 		return false, false
 	}
-	delete(m.batchAnswered, req.call.ID)
+	delete(m.approval.batchAnswered, req.call.ID)
 	if !mark {
 		return false, true
 	}
@@ -716,12 +716,12 @@ func (m *Model) takeQueueAnswer(req *approvalRequest) (allow, answered bool) {
 // armConfirm shows the confirm prompt for the pending decision, resolving the
 // queue strip and the set the queue key would list alongside it.
 func (m *Model) armConfirm(req *approvalRequest) {
-	m.pendingQueue, m.pendingBatch = m.resolveQueue(req)
-	m.pendingSpawns = m.resolveSpawns(req, m.pendingBatch)
+	m.approval.strip, m.approval.batch = m.resolveQueue(req)
+	m.approval.spawns = m.resolveSpawns(req, m.approval.batch)
 	// The block was resolved before the set was known, and a card drawing a
 	// row per child states its reason from what it draws.
-	if len(m.pendingSpawns) > 1 {
-		m.pendingBlast = m.genericRadius(req, true)
+	if len(m.approval.spawns) > 1 {
+		m.approval.blast = m.genericRadius(req, true)
 	}
 	// A fan-out card draws a row per child, so a strip over it listing the
 	// same children would put every decision on the screen twice inside a
@@ -729,12 +729,12 @@ func (m *Model) armConfirm(req *approvalRequest) {
 	// (docs/interface/principles.md#one-interaction-panel). The strip stays
 	// wherever it still has something to say — a decision of another kind
 	// queued behind the fan-out is exactly what it is for.
-	if len(m.pendingSpawns) > 1 && len(m.pendingSpawns) >= len(m.pendingQueue.Items) {
-		m.pendingQueue = components.QueueStrip{}
+	if len(m.approval.spawns) > 1 && len(m.approval.spawns) >= len(m.approval.strip.Items) {
+		m.approval.strip = components.QueueStrip{}
 	}
 	// A list open over the last decision is not a list over this one: it was
 	// answered, or escaped, before this card was armed.
-	m.queueList = nil
+	m.approval.list = nil
 	// setTurnState resets the card's scroll along with the keyboard: every
 	// arrival at a decision passes through it, this one included.
 	m.setTurnState(stateConfirmRun)
@@ -745,5 +745,5 @@ func (m *Model) armConfirm(req *approvalRequest) {
 // — /run, which is the user's own command and never queued — and with it the
 // list, which is that strip opened and cannot outlive it.
 func (m *Model) clearQueueStrip() {
-	m.pendingQueue, m.pendingBatch, m.queueList = components.QueueStrip{}, nil, nil
+	m.approval.strip, m.approval.batch, m.approval.list = components.QueueStrip{}, nil, nil
 }

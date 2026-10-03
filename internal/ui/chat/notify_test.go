@@ -129,11 +129,11 @@ func TestNotify_AnApprovalSaysWhatTheCardSays(t *testing.T) {
 func TestNotify_AQuestionSaysTheModelsOwnWords(t *testing.T) {
 	prev := notifyModel(t)
 	next := prev
-	next.pendingApproval = &approvalRequest{
+	next.approval.request = &approvalRequest{
 		kind:     approvalQuestion,
 		question: ask.Question{Question: "Which store should the cache use?", Shape: ask.ShapeChoose},
 	}
-	next.openQuestion(next.pendingApproval)
+	next.openQuestion(next.approval.request)
 	next.setTurnState(stateQuestion)
 
 	seq := notifyRaw(t, next.notifyCmd(prev))

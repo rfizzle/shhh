@@ -123,7 +123,7 @@ func (m Model) updateMemoryAsk(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if res.Index == 1 {
 		scope = memory.GlobalScope
 	}
-	req := m.pendingApproval
+	req := m.approval.request
 	text := req.memoryDraft.Text
 	if res.Note != "" {
 		text += " (" + res.Note + ")"
@@ -133,7 +133,7 @@ func (m Model) updateMemoryAsk(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if err != nil {
 		resultText = "error: cannot save memory: " + err.Error()
 	}
-	m.pendingApproval = nil
+	m.approval.request = nil
 	m.agent.ResolveApproval(resultText)
 	m.recordToolResult(req.call, time.Duration(0), resultText)
 	m.appendCallRow(req.call.ID, entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: resultText})
@@ -155,7 +155,7 @@ func memoryProposalLine(req *approvalRequest) string {
 // the scope selector card.
 func (m Model) memoryAskLines() []string {
 	var lines []string
-	if req := m.pendingApproval; req != nil {
+	if req := m.approval.request; req != nil {
 		for _, l := range strings.Split(m.wordWrap(memoryProposalLine(req), m.contentWidth()), "\n") {
 			lines = append(lines, sty.Header.Render(l))
 		}

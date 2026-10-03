@@ -273,7 +273,7 @@ func TestCard_RunningIsTheSameCard(t *testing.T) {
 	m := cardModel(t)
 	m.state = stateRunningCmd
 	m.turnStarted = goldenNow.Add(-time.Minute)
-	m.pendingApproval = &approvalRequest{kind: approvalExec}
+	m.approval.request = &approvalRequest{kind: approvalExec}
 	m.runningCommand = "go test ./..."
 	m.runStart = clock().Add(-42 * time.Second)
 	m.runTail = &commandTail{}
@@ -295,7 +295,7 @@ func TestCard_RunningIsTheSameCard(t *testing.T) {
 	}
 
 	m.state = stateInput
-	m.pendingApproval, m.runTail = nil, nil
+	m.approval.request, m.runTail = nil, nil
 	m.invalidateRenderCache()
 	if h := cardLine(cardLines(m), "wrote .plan/BACKLOG.md"); !strings.HasPrefix(h, " ▎✎ wrote") {
 		t.Errorf("the finished card is the same card with its own glyph: %q", h)
@@ -321,7 +321,7 @@ func TestCard_ARunningCardHasNoSpinner(t *testing.T) {
 	}
 	m.state = stateRunningCmd
 	m.turnStarted = goldenNow.Add(-time.Minute)
-	m.pendingApproval = &approvalRequest{kind: approvalExec}
+	m.approval.request = &approvalRequest{kind: approvalExec}
 	m.runningCommand = "go test ./internal/ui/"
 	m.runStart = goldenNow.Add(-8 * time.Second)
 	m.runTail = &commandTail{}
@@ -388,7 +388,7 @@ func runningCardModel(t *testing.T, width int) Model {
 	}
 	m.state = stateRunningCmd
 	m.turnStarted = goldenNow.Add(-time.Minute)
-	m.pendingApproval = &approvalRequest{kind: approvalExec}
+	m.approval.request = &approvalRequest{kind: approvalExec}
 	m.runningCommand = "go test ./internal/ui/"
 	m.runStart = goldenNow.Add(-8 * time.Second)
 	m.runTail = &commandTail{}
@@ -440,7 +440,7 @@ func TestCard_ARunningCardSaysRunning(t *testing.T) {
 		m := runningCardModel(t, width)
 		m.transcript = []entry{m.transcript[0], m.transcript[1], m.transcript[len(m.transcript)-1]}
 		m.transcript[2].duration, m.transcript[2].exitCode = 4*time.Second, tc.exitCode
-		m.state, m.pendingApproval, m.runTail, m.runningCommand = stateInput, nil, nil, ""
+		m.state, m.approval.request, m.runTail, m.runningCommand = stateInput, nil, nil, ""
 		m.invalidateRenderCache()
 		done := strings.TrimRight(cardLine(cardLines(m), "ran go test"), " ")
 		if !strings.HasSuffix(done, " "+tc.outcome) || strings.Contains(done, components.CardRunning) {
@@ -545,7 +545,7 @@ func waitingCardModel(t *testing.T, width int) Model {
 	}
 	m.state = stateConfirmRun
 	m.turnStarted = goldenNow.Add(-time.Minute)
-	m.pendingApproval = &approvalRequest{kind: approvalExec, command: "go test ./internal/ui/"}
+	m.approval.request = &approvalRequest{kind: approvalExec, command: "go test ./internal/ui/"}
 	m.invalidateRenderCache()
 	return m
 }
@@ -611,7 +611,7 @@ func failedLeadCardModel(t *testing.T, width int) Model {
 	}
 	m.state = stateRunningCmd
 	m.turnStarted = goldenNow.Add(-time.Minute)
-	m.pendingApproval = &approvalRequest{kind: approvalExec}
+	m.approval.request = &approvalRequest{kind: approvalExec}
 	m.runningCommand = "go test ./internal/ui/ -update-golden"
 	m.runStart = goldenNow.Add(-3 * time.Second)
 	m.runTail = &commandTail{}
@@ -637,7 +637,7 @@ func TestCard_RunningOutranksAnEarlierFailureWhileLive(t *testing.T) {
 	// The step ends: the failure is its word, and its mark.
 	m.transcript = append(m.transcript, entry{kind: entryCommand, text: "go test ./internal/ui/ -update-golden",
 		toolResult: "ok", duration: 3 * time.Second, started: goldenNow.Add(-3 * time.Second)})
-	m.state, m.pendingApproval, m.runTail, m.runningCommand = stateInput, nil, nil, ""
+	m.state, m.approval.request, m.runTail, m.runningCommand = stateInput, nil, nil, ""
 	m.invalidateRenderCache()
 	done := strings.TrimRight(cardLine(cardLines(m), "ran 2 commands"), " ")
 	if !strings.Contains(done, "✗") || !strings.HasSuffix(done, " exit 1 · 7.0s") || strings.Contains(done, components.CardRunning) {

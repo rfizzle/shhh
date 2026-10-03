@@ -26,21 +26,21 @@ func grantVia(t *testing.T, m Model, label string) (Model, tea.Cmd) {
 	t.Helper()
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	m = updated.(Model)
-	if m.grantChoice == nil {
+	if m.approval.grant == nil {
 		t.Fatalf("the always-allow key should open the grant list, state %d", m.state)
 	}
-	for i, opt := range m.grantChoice.options {
+	for i, opt := range m.approval.grant.options {
 		if opt.Label != label {
 			continue
 		}
-		for m.grantChoice.focus < i {
+		for m.approval.grant.focus < i {
 			updated, _ = m.Update(tea.KeyPressMsg{Code: 'j', Text: "j"})
 			m = updated.(Model)
 		}
 		updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 		return updated.(Model), cmd
 	}
-	t.Fatalf("the grant list offers no %q row: %+v", label, m.grantChoice.options)
+	t.Fatalf("the grant list offers no %q row: %+v", label, m.approval.grant.options)
 	return m, nil
 }
 
@@ -216,7 +216,7 @@ func TestGrantList_AFlaggedCardOffersNoGrant(t *testing.T) {
 		t.Fatal("a safety-flagged command must not offer a grant of any length")
 	}
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
-	if next := updated.(Model); next.grantChoice != nil {
+	if next := updated.(Model); next.approval.grant != nil {
 		t.Fatal("the key opened the grant list on a flagged card")
 	}
 	if !strings.Contains(m.View().Content, "shhh flagged this command") {
@@ -234,15 +234,15 @@ func TestGrantList_EscGrantsNothingAndTheCardsKeysAreInert(t *testing.T) {
 			m := grantCardModel(t, &ran, "go build ./one")
 			updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 			m = updated.(Model)
-			before := m.grantChoice.focus
+			before := m.approval.grant.focus
 			m = press(t, m, key)
-			if m.grantChoice == nil {
+			if m.approval.grant == nil {
 				t.Fatalf("%q closed the grant list", key)
 			}
-			if m.grantChoice.focus != before {
+			if m.approval.grant.focus != before {
 				t.Fatalf("%q moved the pointer", key)
 			}
-			if m.pendingApproval == nil || m.state != stateConfirmRun {
+			if m.approval.request == nil || m.state != stateConfirmRun {
 				t.Fatalf("%q answered the decision the list was opened over", key)
 			}
 			if len(ran) != 0 {
@@ -255,17 +255,17 @@ func TestGrantList_EscGrantsNothingAndTheCardsKeysAreInert(t *testing.T) {
 	m := grantCardModel(t, &ran, "go build ./one")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	m = press(t, updated.(Model), "esc")
-	if m.grantChoice != nil {
+	if m.approval.grant != nil {
 		t.Fatal("esc should close the grant list")
 	}
 	if m.policy.turn.Any() || len(m.policy.commands) != 0 {
 		t.Fatalf("esc granted something: %+v / %v", m.policy.turn, m.policy.commands)
 	}
-	if m.pendingApproval == nil || m.state != stateConfirmRun {
+	if m.approval.request == nil || m.state != stateConfirmRun {
 		t.Fatal("esc must leave the decision waiting")
 	}
 	// And the card's keys are keys again.
-	if m = press(t, m, "n"); m.pendingApproval != nil {
+	if m = press(t, m, "n"); m.approval.request != nil {
 		t.Fatal("the card's own answers should be live once the list is closed")
 	}
 }
@@ -396,8 +396,8 @@ func TestGrantList_AFetchCardHasNoNarrowRow(t *testing.T) {
 	m = handover(t, updated.(Model))
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	m = updated.(Model)
-	if got := len(m.grantChoice.options); got != 2 {
-		t.Fatalf("a fetch card's list has %d rows; want the two lengths: %+v", got, m.grantChoice.options)
+	if got := len(m.approval.grant.options); got != 2 {
+		t.Fatalf("a fetch card's list has %d rows; want the two lengths: %+v", got, m.approval.grant.options)
 	}
 }
 
@@ -423,11 +423,11 @@ func TestGrantList_TheRegisterRowIsTheKeysItAnswers(t *testing.T) {
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	m = updated.(Model)
 	moved := press(t, m, "j")
-	if moved.grantChoice == nil || moved.grantChoice.focus != 1 {
+	if moved.approval.grant == nil || moved.approval.grant.focus != 1 {
 		t.Fatal("the move key declared on the row does not move the list")
 	}
 	taken, _ := moved.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	if taken.(Model).grantChoice != nil {
+	if taken.(Model).approval.grant != nil {
 		t.Fatal("the take key declared on the row does not take a row")
 	}
 }

@@ -206,7 +206,7 @@ func TestApprovalFullDiff_RoundTrips(t *testing.T) {
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
-	if m.state != stateConfirmRun || m.pendingApproval == nil {
+	if m.state != stateConfirmRun || m.approval.request == nil {
 		t.Fatalf("esc should return to the approval with it still pending, got state %d", m.state)
 	}
 	// The keyboard comes back to the card it was opened from, not to the

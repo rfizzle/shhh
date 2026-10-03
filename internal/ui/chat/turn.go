@@ -92,30 +92,15 @@ func (m *Model) setTurnState(s state) {
 	// arriving on a draft nobody is typing into holds the keyboard itself
 	// rather than charging a handover for a sentence that is not there.
 	m.armDecision(s)
-	// Nor can a card inherit the last one's scroll: the offsets describe a
-	// body that has just been replaced, and a stale pan would blank the new
-	// card's rows outright. Reset on every arrival — /run, a !bang, the
-	// classifier skip and the queue all pass through here
+	// Nor can a card inherit the last one's scroll, nor the note, the
+	// amendment or the grant list the reader had open under it: each was
+	// about the call that has just been answered (approvalState.clear).
+	// Cleared on every arrival — /run, a !bang, the classifier skip and the
+	// queue all pass through here
 	// (docs/interface/surfaces.md#the-approval-card). A card's own
 	// full-screen [d] round trip is surface mechanics and never re-arrives.
 	if s == stateConfirmRun {
-		m.cardScroll, m.cardPan = 0, 0
-		// Nor the last one's half-written note: the sentence was about the
-		// call that has just been answered, and carrying it onto the next
-		// card would attach the reader's words to a decision they were
-		// written about something else (approval.go).
-		m.decisionNote = nil
-		// Nor a half-written amendment, and for a sharper version of the
-		// same reason: a line left over from the last card would be a
-		// command the reader wrote about a different call, one enter away
-		// from running (amend.go).
-		m.commandEdit = nil
-		// Nor a grant list left open over a card that has just been
-		// answered: its rows name the command, the directory or the host
-		// that belonged to that decision, and a row taken now would grant
-		// something the card in front of the reader never showed them
-		// (grant.go).
-		m.grantChoice = nil
+		m.approval.clear()
 	}
 	// A turn going idle stamps its end, so the inspector rail's elapsed time
 	// freezes at what the turn took instead of counting on.
@@ -186,11 +171,11 @@ func (m *Model) leaveSurface() {
 	// (interrupt.go). One that was already holding the keyboard keeps it:
 	// the reader took it on purpose, and the surface they just closed was
 	// most likely the card's own full-screen diff.
-	if m.arrivalGates(m.state) && !m.decisionHeld {
+	if m.arrivalGates(m.state) && !m.approval.held {
 		// (arrivesHeld answers the summoned case too, so a /run confirm
 		// picked from the block picker lands holding the keyboard.)
-		m.decisionHeld = m.arrivesHeld()
-		m.heldOnArrival = m.decisionHeld
+		m.approval.held = m.arrivesHeld()
+		m.approval.heldOnArrival = m.approval.held
 		m.armGrace()
 	}
 	// The pane is repainted on the way back whatever the geometry did. Its
@@ -376,7 +361,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		}
 		checkpoint := m.noteProgressProse(m.streaming)
 		auto, gated := m.agent.BeginToolRound(m.streaming, msg.calls, m.requiresApproval)
-		m.approvalTotal = len(gated)
+		m.approval.total = len(gated)
 		// A round is also where the session summary is scheduled:
 		// the round counter has just moved, which is the clock the reading
 		// interval is kept on. It is a no-op until one falls due.
@@ -470,11 +455,11 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// over the cap puts its middle in the evidence store, and a second
 		// call would file a second entry for the one command.
 		var formatted string
-		if m.pendingApproval != nil {
+		if m.approval.request != nil {
 			// The line the call carried, where the reader wrote another one
 			// in its place: the row records what ran and says whose line it
 			// was (amend.go).
-			amendedFrom = m.pendingApproval.amendedFrom
+			amendedFrom = m.approval.request.amendedFrom
 			out = m.reduceResult(tools.ExecCommandName, out)
 			result.Output = out
 			formatted = m.execToolResult(result)
@@ -489,7 +474,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			// decision is the same fact either way and the row is where it
 			// is stated. A `/run` the reader typed reaches neither — it was
 			// never gated, so there is no decision behind it to carry.
-			allowedBy, allowElapsed = m.pendingApproval.autoRule, m.pendingApproval.autoCost
+			allowedBy, allowElapsed = m.approval.request.autoRule, m.approval.request.autoCost
 			if allowedBy == "" {
 				approvedBy = decidedByYou
 			}
@@ -498,9 +483,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			exitCode: msg.exitCode, commandResult: result, localRun: msg.local, duration: msg.duration,
 			allowedBy: allowedBy, allowElapsed: allowElapsed, approvedBy: approvedBy,
 			amendedFrom: amendedFrom, end: msg.end})
-		if m.pendingApproval != nil {
-			call := m.pendingApproval.call
-			m.pendingApproval = nil
+		if m.approval.request != nil {
+			call := m.approval.request.call
+			m.approval.request = nil
 			// The command the repeat detector was written for reaches it
 			// here and nowhere else: an assistant command is dispatched by
 			// this model rather than by the tool executor. It is the whole
@@ -586,11 +571,11 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		return answered(m.finishExplain(msg))
 
 	case approvedToolDoneMsg:
-		if msg.runID != m.agent.RunID() || m.turnState() != stateRunningCmd || m.pendingApproval == nil {
+		if msg.runID != m.agent.RunID() || m.turnState() != stateRunningCmd || m.approval.request == nil {
 			return m, nil, true
 		}
-		req := m.pendingApproval
-		m.pendingApproval = nil
+		req := m.approval.request
+		m.approval.request = nil
 		m.agent.ResolveApproval(msg.result)
 		m.recordToolResult(req.call, msg.duration, msg.result)
 		// A git write is gated at the write tier, so this is the one place a
@@ -661,7 +646,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		return m, nil, true
 
 	case classifierDoneMsg:
-		if msg.runID != m.agent.RunID() || m.turnState() != stateClassifying || m.pendingApproval == nil {
+		if msg.runID != m.agent.RunID() || m.turnState() != stateClassifying || m.approval.request == nil {
 			return m, nil, true
 		}
 		m.classifierCancel = nil

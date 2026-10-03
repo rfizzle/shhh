@@ -45,8 +45,8 @@ func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 	m.pendingRun = blocks[idx]
 	// /run is the user's own command: it never runs contained, so the working
 	// scope has nothing to say about it.
-	m.pendingScope = scopeReach{}
-	m.pendingBlast = m.resolveRadius(nil)
+	m.approval.scope = scopeReach{}
+	m.approval.blast = m.resolveRadius(nil)
 	m.clearQueueStrip()
 	m.setTurnState(stateConfirmRun)
 	return "", true
@@ -67,26 +67,26 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// everything below it because it holds the keyboard: while it is up the
 	// card's letters, its digits and its chords are all text
 	// (approval.go).
-	if m.decisionNote != nil {
+	if m.approval.note != nil {
 		return m.updateDecisionNote(msg)
 	}
 	// And the card's other field, the command itself, for exactly the same
 	// reason: while it is up every letter is text (amend.go).
-	if m.commandEdit != nil {
+	if m.approval.edit != nil {
 		return m.updateCommandEdit(msg)
 	}
 	// And the queue, where the key over the stack opened it as a list. It
 	// holds the keyboard the way the fields above do, and for a reason of the
 	// same family: while it is up the keys are the selector's — its `a` ticks
 	// every row rather than granting the session (queue.go).
-	if m.queueList != nil {
+	if m.approval.list != nil {
 		return m.updateQueueList(msg)
 	}
 	// And the grants the always-allow key offers — the third surface the card
 	// holds under itself, after its two fields — answered here for the reason
 	// they are: it holds the keyboard, so the card's own letters, digits and
 	// chords are inert until it is closed (grant.go).
-	if m.grantChoice != nil {
+	if m.approval.grant != nil {
 		return m.updateGrantChoice(msg)
 	}
 	// The card's own scroll, answered before the decision keys so a held
@@ -132,7 +132,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case components.ApprovalFullDiff:
 		// [d] opens the pending edit full screen; esc returns here
 		// with the approval still pending.
-		if req := m.pendingApproval; req != nil && req.kind == approvalDiff {
+		if req := m.approval.request; req != nil && req.kind == approvalDiff {
 			return m.openDiffFull(&components.DiffView{
 				Path:   req.path,
 				Verb:   req.verb,
@@ -143,7 +143,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// A command card's [d] opens its own facts the same way: the whole
 		// command, the warnings and the blast radius, unclipped, with the
 		// decision still pending behind it.
-		if req := m.pendingApproval; req == nil || req.kind == approvalExec {
+		if req := m.approval.request; req == nil || req.kind == approvalExec {
 			return m.openOutputFull(m.commandCardView(), noOutputEntry, stateConfirmRun)
 		}
 	case components.ApprovalBatch:
@@ -177,7 +177,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// decision stays exactly where it was.
 		return m.releaseToDraft(msg)
 	case components.ApprovalDeny:
-		if m.pendingApproval != nil {
+		if m.approval.request != nil {
 			m.answerSpawnSet(false)
 			return m.declineApproval()
 		}
@@ -218,7 +218,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	m.syncViewport()
 	// An assistant command gets a ceiling; a command the reader typed does
 	// not, because they are here and the cancel key is their ceiling.
-	assistant := m.pendingApproval != nil
+	assistant := m.approval.request != nil
 	var ctx context.Context
 	var cancel context.CancelFunc
 	limit := time.Duration(0)
@@ -234,7 +234,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	tailFn := m.tailRunFn
 	// Assistant commands run contained when a mechanism is available;
 	// /run — the user's own command — stays on the plain runner.
-	if m.pendingApproval != nil && m.containment.Run != nil {
+	if m.approval.request != nil && m.containment.Run != nil {
 		runFn = m.containment.Run
 		tailFn = m.containment.TailRun
 	}
@@ -246,8 +246,8 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	hooks := m.hooks
 	hookLead, hookAt := "", m.hookPos()
 	hookCall := hook.Call{Name: tools.ExecCommandName, Arguments: command}
-	if assistant && m.pendingApproval != nil {
-		hookLead = m.pendingApproval.hookContext
+	if assistant && m.approval.request != nil {
+		hookLead = m.approval.request.hookContext
 	}
 	return m, func() tea.Msg {
 		start := time.Now()
@@ -349,10 +349,10 @@ func dryRunOffer(req *approvalRequest) []components.KeyOffer {
 // the two answers and nothing else, and this letter is the reader's sentence
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) dryRunKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
-	if !keys.Match(msg, keys.Decision.DryRun) || m.heldOnArrival {
+	if !keys.Match(msg, keys.Decision.DryRun) || m.approval.heldOnArrival {
 		return m, nil, false
 	}
-	req := m.pendingApproval
+	req := m.approval.request
 	if req == nil || req.kind != approvalExec || req.dryCommand == "" || req.dryRunning {
 		return m, nil, false
 	}
@@ -427,7 +427,7 @@ func (m Model) finishDryRun(msg dryRunDoneMsg) (tea.Model, tea.Cmd) {
 	row := entry{kind: entryCommand, text: msg.command, toolResult: out,
 		exitCode: msg.exitCode, commandResult: msg.result, localRun: true, duration: msg.duration, end: msg.end}
 	m.appendEntry(row)
-	req := m.pendingApproval
+	req := m.approval.request
 	// The command as well as the call: the reader can have amended the line
 	// while the form was running, and a screen reporting on a command the
 	// card is no longer about would be an answer to a question nobody is
@@ -513,10 +513,10 @@ func (m Model) explainOffer(req *approvalRequest) []components.KeyOffer {
 // its answers and nothing else, and this letter is the reader's sentence
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) explainKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
-	if !keys.Match(msg, keys.Decision.Explain) || m.heldOnArrival {
+	if !keys.Match(msg, keys.Decision.Explain) || m.approval.heldOnArrival {
 		return m, nil, false
 	}
-	req := m.pendingApproval
+	req := m.approval.request
 	if req == nil || req.kind != approvalExec || req.explaining || !m.explainer.Enabled() {
 		return m, nil, false
 	}
@@ -558,7 +558,7 @@ func (m Model) finishExplain(msg explainDoneMsg) (tea.Model, tea.Cmd) {
 	if msg.runID != m.agent.RunID() {
 		return m, nil
 	}
-	req := m.pendingApproval
+	req := m.approval.request
 	// The command as well as the call, for the reason the dry run reads
 	// both: a paragraph about the line the reader has just replaced is not
 	// an explanation of the card in front of them (amend.go).

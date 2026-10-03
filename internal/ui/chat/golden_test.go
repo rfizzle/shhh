@@ -522,7 +522,7 @@ func TestGolden_WaitLines(t *testing.T) {
 		}
 		return []golden.Panel{
 			{Label: "applying an approved change", View: build(stateRunningCmd, func(m *Model) {
-				m.pendingApproval = &approvalRequest{kind: approvalDiff}
+				m.approval.request = &approvalRequest{kind: approvalDiff}
 			})},
 			{Label: "listing the provider's models", View: build(stateModelList, nil)},
 			{Label: "running the quality gate the turn owes", View: build(stateCloseGate, nil)},
@@ -1940,7 +1940,7 @@ func TestGolden_Interrupt(t *testing.T) {
 		grace.width, grace.height = width, 40
 		grace.syncInputWidth()
 		grace.releaseDecision()
-		grace.lastDecisionLeft = time.Time{}
+		grace.approval.lastLeft = time.Time{}
 		grace.lastKeypress = goldenNow
 		grace.armDecision(stateConfirmRun)
 		grace.syncViewport()
@@ -2075,9 +2075,9 @@ func TestGolden_CommandAmended(t *testing.T) {
 			offered := amendGoldenModel(t, width, "npm test")
 			amended := amendGoldenModel(t, width, "echo hi")
 			amended = typeInto(t, press(t, amended, keys.Shown(keys.Decision.Amend)), "")
-			e := *amended.commandEdit
+			e := *amended.approval.edit
 			e.field.SetValue("rm -rf ./build")
-			amended.commandEdit = &e
+			amended.approval.edit = &e
 			updated, _ := amended.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 			amended = updated.(Model)
 			amended.syncViewport()
@@ -3777,7 +3777,7 @@ func TestGolden_FetchWait(t *testing.T) {
 			return m.renderHistory()
 		}
 		own := waiting(20 * time.Second)
-		own.pendingApproval = &approvalRequest{call: provider.ToolCall{Name: web.FetchToolName,
+		own.approval.request = &approvalRequest{call: provider.ToolCall{Name: web.FetchToolName,
 			Arguments: `{"url":"https://docs.rs/tokio/latest/tokio/runtime/index.html"}`}}
 		row, _ := own.fetchWaitRow(width)
 		return []golden.Panel{
@@ -4419,17 +4419,17 @@ func TestGolden_MultiEditCard(t *testing.T) {
 			{ID: "call_e", Name: "edit_file", Arguments: string(args)},
 		}})
 		m = updated.(Model)
-		if m.pendingApproval == nil {
+		if m.approval.request == nil {
 			t.Fatal("the three-edit call should arm one decision")
 		}
 		// The diff, the hunks and the card are the real ones; only the name
 		// on them is swapped, because the fixture lives at a temporary path
 		// that would be a different string in the golden on every machine.
-		m.pendingApproval.path = filepath.Join("internal", "agent", "loop.go")
-		m.pendingApproval.title = m.pendingApproval.verb + " " + m.pendingApproval.path
+		m.approval.request.path = filepath.Join("internal", "agent", "loop.go")
+		m.approval.request.title = m.approval.request.verb + " " + m.approval.request.path
 		// The severity's reading names that path too, and it was taken when
 		// the decision was armed — before the swap.
-		m.pendingBlast.reason = editReason(m.pendingApproval.path)
+		m.approval.blast.reason = editReason(m.approval.request.path)
 		return []golden.Panel{
 			{Label: "one card · three places in one file", View: strings.Join(m.confirmLines(), "\n")},
 		}

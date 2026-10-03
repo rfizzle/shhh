@@ -745,8 +745,8 @@ func TestChildAskScrollsItsBoundedBody(t *testing.T) {
 	}
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})
 	m = updated.(Model)
-	if m.cardScroll != 1 {
-		t.Fatalf("shift+↓ should move the routed card's body, cardScroll = %d", m.cardScroll)
+	if m.approval.scroll != 1 {
+		t.Fatalf("shift+↓ should move the routed card's body, scroll = %d", m.approval.scroll)
 	}
 	if after := ansi.Strip(m.View().Content); after == before {
 		t.Fatalf("shift+↓ changed nothing on screen:\n%s", after)
@@ -787,7 +787,7 @@ func TestChildAskHeldOnArrivalOffersNoExtraKeys(t *testing.T) {
 	ask.Command = "make"
 	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
 	m = updated.(Model)
-	if !m.heldOnArrival {
+	if !m.approval.heldOnArrival {
 		t.Fatal("an ask landing on an empty draft holds the keyboard by arrival")
 	}
 	if view := ansi.Strip(m.View().Content); strings.Contains(view, "attach to writer-1") {
@@ -918,7 +918,7 @@ func TestChildAskHeldOnArrivalStillReachesTheManager(t *testing.T) {
 	ask.Command = "make"
 	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
 	m = updated.(Model)
-	if !m.heldOnArrival {
+	if !m.approval.heldOnArrival {
 		t.Fatal("an ask landing on an empty draft holds the keyboard by arrival")
 	}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyF12})
@@ -1386,7 +1386,7 @@ func TestApprovingASpawnHandsOverTheTurnsAsTheyStoodAtDispatch(t *testing.T) {
 	m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: "spawning a checker"})
 
 	args := `{"role":"researcher","task":"check it","inherit":1}`
-	m.pendingApproval = &approvalRequest{call: provider.ToolCall{ID: "s1", Name: subagent.SpawnToolName, Arguments: args}}
+	m.approval.request = &approvalRequest{call: provider.ToolCall{ID: "s1", Name: subagent.SpawnToolName, Arguments: args}}
 	updated, _ := m.executeApprovedTool()
 	m = updated.(Model)
 	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: "a later ask"})

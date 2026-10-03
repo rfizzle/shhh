@@ -168,11 +168,11 @@ func (m Model) grantOffers(req *approvalRequest) ([]grantOffer, []components.Sel
 // permission would be a key nobody could afford to press
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
 func (m Model) openGrantChoice() (tea.Model, tea.Cmd) {
-	offers, options := m.grantOffers(m.pendingApproval)
+	offers, options := m.grantOffers(m.approval.request)
 	if len(offers) == 0 {
 		return m, nil
 	}
-	m.grantChoice = &grantChoice{offers: offers, options: options}
+	m.approval.grant = &grantChoice{offers: offers, options: options}
 	m.syncViewport()
 	return m, nil
 }
@@ -183,12 +183,12 @@ func (m Model) openGrantChoice() (tea.Model, tea.Cmd) {
 // they are while either of the card's fields is open
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) updateGrantChoice(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	open := *m.grantChoice
+	open := *m.approval.grant
 	switch {
 	case keys.Match(msg, keys.Select.Cancel):
 		// Back to the card with nothing granted and the decision exactly
 		// where it was.
-		m.grantChoice = nil
+		m.approval.grant = nil
 		m.syncViewport()
 		return m, nil
 	case keys.Match(msg, keys.Select.Take):
@@ -202,7 +202,7 @@ func (m Model) updateGrantChoice(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// the last frame was drawn from.
 		step := keys.Step(msg.String(), keys.Select.MoveJK)
 		open.focus = min(max(open.focus+step, 0), len(open.options)-1)
-		m.grantChoice = &open
+		m.approval.grant = &open
 		m.syncViewport()
 		return m, nil
 	}
@@ -213,8 +213,8 @@ func (m Model) updateGrantChoice(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // the act the card was asking about runs — which is what the key did before
 // the list stood in front of it.
 func (m Model) takeGrant(o grantOffer) (tea.Model, tea.Cmd) {
-	req := m.pendingApproval
-	m.grantChoice = nil
+	req := m.approval.request
+	m.approval.grant = nil
 	if req == nil {
 		m.syncViewport()
 		return m, nil
@@ -291,7 +291,7 @@ func grantNote(covers string, length grantLength) string {
 // for the reason the card's fields are: the card is rebuilt every frame and
 // where the pointer is standing is not.
 func (m Model) applyGrantChoice(card *components.ApprovalCard) {
-	c := m.grantChoice
+	c := m.approval.grant
 	if c == nil || !card.AllowAlways {
 		return
 	}

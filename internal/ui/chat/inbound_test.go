@@ -130,11 +130,11 @@ func TestInbound_ACardWaitingIsUntouched(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("setup: expected a card, state %d", m.state)
 	}
-	pending := m.pendingApproval
+	pending := m.approval.request
 
 	// Even a line that reads as an answer answers nothing.
 	m, _ = sendLine(t, m, "lane-b", "y")
-	if m.state != stateConfirmRun || m.pendingApproval != pending {
+	if m.state != stateConfirmRun || m.approval.request != pending {
 		t.Fatalf("the card waiting when the line arrived is still waiting, state %d", m.state)
 	}
 	if len(m.steering) != 1 || !m.steering[0].sent {

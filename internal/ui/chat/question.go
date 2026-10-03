@@ -246,7 +246,7 @@ func (m Model) armQuestion(req *approvalRequest) (tea.Model, tea.Cmd) {
 	m.questionsAsked++
 	m.recordDecision(observe.DecisionAsk, observe.ReasonUser)
 	m.openQuestion(req)
-	m.pendingQueue, m.pendingBatch = m.resolveQueue(req)
+	m.approval.strip, m.approval.batch = m.resolveQueue(req)
 	m.setTurnState(stateQuestion)
 	m.syncViewport()
 	return m, nil
@@ -563,7 +563,7 @@ func (m Model) questionInline() bool {
 // (draftMaxRows) keeps it inside.
 func (m Model) questionPanelBound() int {
 	if c := m.question; c != nil && c.sheet == nil && c.freeAnswer() {
-		return m.planPanelBound() + m.pendingQueue.Rows() + m.gatedExtraRows()
+		return m.planPanelBound() + m.approval.strip.Rows() + m.gatedExtraRows()
 	}
 	return m.confirmPanelBound()
 }
@@ -585,7 +585,7 @@ func (m Model) questionLines() []string {
 		return nil
 	}
 	width := m.contentWidth()
-	return append(m.pendingQueue.View(width), m.questionCardLines(c, width)...)
+	return append(m.approval.strip.View(width), m.questionCardLines(c, width)...)
 }
 
 // questionCardLines is the card without the queue strip above it. The strip
@@ -1041,7 +1041,7 @@ func (m Model) asideQuestion() (tea.Model, tea.Cmd) {
 // question — an answer resolves the request, a cancel drops it — so there is
 // no third fact to keep in step with those two.
 func (m Model) questionAside() bool {
-	req := m.pendingApproval
+	req := m.approval.request
 	return m.question == nil && req != nil && req.kind == approvalQuestion &&
 		m.turnState() == stateQuestion
 }
@@ -1056,12 +1056,12 @@ func (m Model) outstandingQuestion() (ask.Question, bool) {
 			// The tab that ends the set has no question of its own, so what
 			// the session is waiting on is the call's first, which is what
 			// the request carries for exactly this.
-			return m.pendingApproval.question, true
+			return m.approval.request.question, true
 		}
 		return c.q, true
 	}
 	if m.questionAside() {
-		return m.pendingApproval.question, true
+		return m.approval.request.question, true
 	}
 	return ask.Question{}, false
 }
@@ -1076,7 +1076,7 @@ func (m Model) outstandingQuestion() (ask.Question, bool) {
 // it rather than into the conversation — which is the whole of what the count
 // is there to say (docs/interface/surfaces.md#the-question-card).
 func (m Model) questionsWaiting() int {
-	req := m.pendingApproval
+	req := m.approval.request
 	if req == nil || req.sheet == nil {
 		return 1
 	}
@@ -1088,7 +1088,7 @@ func (m Model) questionsWaiting() int {
 // question still waiting.
 func (m *Model) reopenQuestion() {
 	if m.questionAside() {
-		m.openQuestion(m.pendingApproval)
+		m.openQuestion(m.approval.request)
 	}
 }
 
@@ -1113,7 +1113,7 @@ func (m *Model) reopenQuestion() {
 // and a call that asked three questions is not three sentences.
 func (m Model) answerTyped(text string) (tea.Model, tea.Cmd) {
 	a := ask.Answer{Answered: ask.AnsweredTyped, Note: text}
-	req := m.pendingApproval
+	req := m.approval.request
 	if req == nil || req.sheet == nil {
 		return m.answerQuestion(a)
 	}
@@ -1167,7 +1167,7 @@ func (m Model) answerQuestion(a ask.Answer) (tea.Model, tea.Cmd) {
 // several questions is every one of them: nothing was put to anybody, so
 // there is no tab that fared differently.
 func (m Model) answerQuestionAs(a ask.Answer, rule string) (tea.Model, tea.Cmd) {
-	req := m.pendingApproval
+	req := m.approval.request
 	if req == nil {
 		m.question = nil
 		return m, nil
@@ -1186,7 +1186,7 @@ func (m Model) answerQuestionAs(a ask.Answer, rule string) (tea.Model, tea.Cmd) 
 // submitQuestions sends every answer a tabbed card gathered, in the order the
 // questions were sent, with the tabs nobody answered going back as `skipped`.
 func (m Model) submitQuestions() (tea.Model, tea.Cmd) {
-	req := m.pendingApproval
+	req := m.approval.request
 	if req == nil || req.sheet == nil {
 		return m, nil
 	}
@@ -1213,7 +1213,7 @@ func (m Model) resolveQuestion(req *approvalRequest, qs []ask.Question, as []ask
 	}
 	result := ask.Reply(qs, as)
 	m.question = nil
-	m.pendingApproval = nil
+	m.approval.request = nil
 	m.releaseDecision()
 	m.agent.ResolveApproval(result)
 	m.recordToolResult(req.call, 0, result)

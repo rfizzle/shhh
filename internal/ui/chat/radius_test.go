@@ -141,7 +141,7 @@ func TestBlastRadius_TheFullViewKeepsTheStandingGlosses(t *testing.T) {
 	m := radiusModel(t, dir, Containment{Status: "contained: bwrap (workspace-netless profile)",
 		Mechanism: "bwrap", Profile: "workspace-netless"})
 	m.pendingRun = "sed -n 1p go.mod"
-	m.pendingBlast = m.commandRadius(m.pendingRun, cardContainment{assistant: true, mechanism: "bwrap"})
+	m.approval.blast = m.commandRadius(m.pendingRun, cardContainment{assistant: true, mechanism: "bwrap"})
 	full := strings.Join(m.commandCardView().Lines, "\n")
 	for _, want := range []string{
 		"touches  nothing — the command resolved to reads only",
@@ -202,7 +202,7 @@ func TestBlastRadius_UncontainedPromotesAndExplains(t *testing.T) {
 		t.Fatalf("the card body should not repeat the detector's reason:\n%s", view)
 	}
 	m.pendingRun = "make install"
-	m.pendingBlast = m.commandRadius(m.pendingRun, cardContainment{assistant: true})
+	m.approval.blast = m.commandRadius(m.pendingRun, cardContainment{assistant: true})
 	if full := strings.Join(m.commandCardView().Lines, "\n"); !strings.Contains(full, "bubblewrap (bwrap) not found on PATH; the command runs as you") {
 		t.Fatalf("the full view should keep the detector's reason:\n%s", full)
 	}

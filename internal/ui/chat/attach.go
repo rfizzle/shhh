@@ -374,9 +374,9 @@ func (m *Model) purgeChildAsks(name string) {
 	// reader. The next ask, if one is queued, arms on its own terms — this
 	// is not the queue advancing, because nothing here was answered, so no
 	// stamp is left to shut its grace window.
-	if active != nil && active.Agent == name && m.decisionHeld {
-		m.decisionHeld, m.heldOnArrival = false, false
-		m.graceFrom = time.Time{}
+	if active != nil && active.Agent == name && m.approval.held {
+		m.approval.held, m.approval.heldOnArrival = false, false
+		m.approval.graceFrom = time.Time{}
 		m.armArrival()
 	}
 }

@@ -104,7 +104,7 @@ func TestRemember_SaveProjectScope(t *testing.T) {
 	if got.scope != "/proj" || got.kind != "convention" || got.text != "prefers table-driven tests" {
 		t.Fatalf("save mismatch: %+v", got)
 	}
-	if m.memoryAsk != nil || m.pendingApproval != nil {
+	if m.memoryAsk != nil || m.approval.request != nil {
 		t.Fatal("prompt state should be cleared after saving")
 	}
 	last := m.Messages()[len(m.Messages())-1]

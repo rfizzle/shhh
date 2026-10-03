@@ -283,7 +283,7 @@ func TestPointer_WithACardWaitingTheChordIsTheDraftsUntilTheHandover(t *testing.
 	if m.state != stateConfirmRun {
 		t.Fatalf("the card should still be waiting, got state %d", m.state)
 	}
-	if m.cardScroll != 0 {
+	if m.approval.scroll != 0 {
 		t.Fatal("with the draft holding the keyboard the chord is not the card's scroll")
 	}
 	m = handover(t, m)

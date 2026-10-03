@@ -96,7 +96,7 @@ func TestUndo_TakesBackAnAppend(t *testing.T) {
 			Arguments: fmt.Sprintf(`{"path":%q,"append":"- two\n"}`, path)},
 	}})
 	m = updated.(Model)
-	req := m.pendingApproval
+	req := m.approval.request
 	if req == nil || req.title != "append "+path || len(req.hunks) == 0 {
 		t.Fatalf("the card should name the append and diff it, got %+v", req)
 	}

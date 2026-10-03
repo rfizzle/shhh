@@ -157,13 +157,13 @@ func (m Model) cardLive(blk transcriptBlock) bool {
 // in the card's duration. A command the reader typed is not the step's.
 func (m Model) cardHoldsCommand(blk transcriptBlock) bool {
 	return m.cardLive(blk) && m.state == stateRunningCmd && m.runTail != nil &&
-		m.pendingApproval != nil && m.pendingApproval.kind == approvalExec
+		m.approval.request != nil && m.approval.request.kind == approvalExec
 }
 
 // cardWaits reports whether the live card's step has stopped on the reader:
 // a call it asked for is on the approval card, waiting for an answer.
 func (m Model) cardWaits(blk transcriptBlock) bool {
-	return m.cardLive(blk) && m.turnState() == stateConfirmRun && m.pendingApproval != nil
+	return m.cardLive(blk) && m.turnState() == stateConfirmRun && m.approval.request != nil
 }
 
 // stepStarted is when the first of a step's calls began, where its rows

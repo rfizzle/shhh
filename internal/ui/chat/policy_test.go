@@ -894,7 +894,7 @@ func TestDenylist_RefusesInEveryModeBeforeACardIsDrawn(t *testing.T) {
 		if len(ran) != 0 {
 			t.Fatalf("%v mode ran a denied command: %v", mode, ran)
 		}
-		if m.pendingApproval != nil {
+		if m.approval.request != nil {
 			t.Fatalf("%v mode put a denied command on a card", mode)
 		}
 		refused := false

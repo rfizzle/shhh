@@ -837,7 +837,7 @@ func TestFetchWaitRow_TheSessionsOwnFetchShowsItsWait(t *testing.T) {
 	if _, ok := m.fetchWaitRow(80); ok {
 		t.Fatal("a session with no call in flight drew a waiting row")
 	}
-	m.pendingApproval = &approvalRequest{call: provider.ToolCall{
+	m.approval.request = &approvalRequest{call: provider.ToolCall{
 		Name: web.FetchToolName, Arguments: `{"url":"https://docs.rs/tokio/latest/tokio/"}`}}
 	row, ok := m.fetchWaitRow(80)
 	if !ok {

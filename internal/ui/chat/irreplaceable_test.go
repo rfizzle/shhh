@@ -52,7 +52,7 @@ func TestIrreplaceableTarget_RefusedBeforeTheClassifierAndTheCard(t *testing.T) 
 	if len(ran) != 0 {
 		t.Fatalf("a refused command ran: %v", ran)
 	}
-	if m.pendingApproval != nil {
+	if m.approval.request != nil {
 		t.Fatal("a rule's refusal drew a card")
 	}
 	row := m.transcript[len(m.transcript)-1]

@@ -452,7 +452,7 @@ func TestSummary_DriftQueuesButMovesNothingAtReadingTime(t *testing.T) {
 	if last := m.transcript[len(m.transcript)-1]; last.kind != entrySummary {
 		t.Fatalf("the one new entry is the reading, got kind %v", last.kind)
 	}
-	if m.pendingApproval != nil {
+	if m.approval.request != nil {
 		t.Fatal("a drift reading asks for nothing")
 	}
 	// It does queue the steer the boundary will deliver.

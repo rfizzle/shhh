@@ -907,34 +907,10 @@ type Model struct {
 	// /run, and its output stays out of the conversation.
 	pendingRunLocal bool
 	runCancel       context.CancelFunc
-	// pendingBlast is the approval card's blast-radius block for the decision
-	// showing now, resolved once when the confirm is armed because it
-	// reads the filesystem and git.
-	pendingBlast blastRadius
-	// pendingScope is what that decision reaches outside the working scope
-	//, resolved with the blast radius and consumed when the decision
-	// is answered: approving it grants the directories, refusing it grants
-	// nothing.
-	pendingScope scopeReach
-	// The approval queue made visible: pendingQueue is the strip
-	// above the card, pendingBatch the queued call IDs [A] would put on the
-	// list with the current one, and batchAnswered how that list answered
-	// them — allowed or denied — for calls that have not reached the head
-	// yet, so each is carried out when its turn comes instead of asking
-	// again. queueList is the list itself while it is open, and nil the rest
-	// of the time (queue.go). approvalTotal is how many decisions this tool
-	// round queued, so the card can say "2 of 5" once two have been answered.
-	pendingQueue  components.QueueStrip
-	pendingBatch  []string
-	batchAnswered map[string]bool
-	queueList     *queueList
-	approvalTotal int
-	// pendingSpawns are the children the card in front of the reader would
-	// start — the decision's own and every spawn of the round answered along
-	// with it. They are resolved with the strip and for the same reason: the
-	// card is rebuilt every frame and reading each queued spawn's arguments
-	// on all of them is work no frame changes (queue.go).
-	pendingSpawns []components.SpawnRow
+	// approval is the decision card's own state: the call it asks about,
+	// the queue behind it, what is open under it and whether it holds the
+	// keyboard (approvalstate.go).
+	approval approvalState
 	// Compact activity feed: verbosity is the surface's rung on the one
 	// density ladder (/ui verbosity, read through density); tailRunFn is the tail-capable command runner, and
 	// runningCommand/runStart/runTail drive the live row while a command runs.
@@ -943,10 +919,7 @@ type Model struct {
 	runningCommand string
 	runStart       time.Time
 	runTail        *commandTail
-	// Head of the agent's approval queue while its confirm prompt is showing,
-	// with everything needed to preview and execute it.
-	pendingApproval *approvalRequest
-	gatedTools      map[string]GatedPreviewFunc
+	gatedTools     map[string]GatedPreviewFunc
 	// What the session has stopped asking about, and the mode that frames it
 	// (policy.go).
 	policy policyState
@@ -1164,7 +1137,7 @@ type Model struct {
 	memoryAsk   *components.NoteSelect
 	// question is the card the model's own question is being asked on, and
 	// nil whenever none is outstanding (question.go). It rides beside
-	// pendingApproval rather than inside it because the request is what the
+	// approval.request rather than inside it because the request is what the
 	// call is and the card is what the reader is looking at.
 	question *questionCard
 	// asks says the session registered the question tool, which is what a
@@ -1226,39 +1199,16 @@ type Model struct {
 	subagents *subagent.Supervisor
 	childAsks []*subagent.Ask
 	// childBlast is each queued request's resolved blast-radius block, taken
-	// when the request arrives. It is stashed for the reason pendingBlast is:
+	// when the request arrives. It is stashed for the reason approval.blast is:
 	// a card is rebuilt every frame, and resolving one of these inside a
 	// render would stat the filesystem and shell out to git on every frame a
 	// child spends waiting for an answer (radius.go).
 	childBlast map[*subagent.Ask]blastRadius
-	// decisionHeld is whether the decision on screen holds the keyboard
-	//. A card that arrives on top of a sentence never does:
-	// until the handover chord it renders its keys as not-yet-live and every
-	// letter goes into the draft. One that arrives on an empty draft does,
-	// because there is no sentence for the letters to belong to — with the
-	// grace window covering the keys a warm keyboard could still have in
-	// flight (interrupt.go).
-	decisionHeld bool
-	// heldOnArrival narrows that: the decision holds the keyboard because it
-	// landed on an idle draft, not because the handover gave it to it. A
-	// card in that state answers only what it was walked up to be asked and
-	// hands the keyboard back for everything else (components/approval.go).
-	heldOnArrival bool
 	// lastKeypress is when the keyboard was last touched, whatever it was
 	// pointed at. It is the second half of "nobody is typing into it": an
 	// empty draft is not the same thing as an idle one, and a reader between
 	// two words has an empty draft for as long as the backspace held.
 	lastKeypress time.Time
-	// graceFrom is when the decision now holding the keyboard by arrival
-	// landed on a keyboard still warm — the open grace window (interrupt.go).
-	// Zero when no window is open; graceSeq names the window's current end,
-	// so a repaint tick scheduled for an end a key moved is stale.
-	graceFrom time.Time
-	graceSeq  int
-	// lastDecisionLeft is when a decision last left the screen, which is how
-	// a card replacing another (the queue advancing) is told apart from a
-	// card landing on fresh typing.
-	lastDecisionLeft time.Time
 	// resizeSeq names the latest resize, so the settle scheduled for an
 	// abandoned width recognises itself as stale (resizeSettledMsg).
 	resizeSeq int
@@ -1296,28 +1246,6 @@ type Model struct {
 	fullOutput   *components.OutputView
 	outputIdx    int
 	outputReturn state
-	// The approval card's scroll (docs/interface/surfaces.md#the-approval-card):
-	// the card is rebuilt every frame, so its offsets live here and are reset
-	// whenever the card changes (armConfirm).
-	cardScroll int
-	cardPan    int
-	// decisionNote is the one-line field a decision card's shifted answer
-	// opened, and the answer it will carry
-	// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
-	// It lives here for the reason the scroll does — the card is rebuilt
-	// every frame and what is typed has to outlive one — and it is cleared
-	// wherever the card changes (setTurnState).
-	decisionNote *decisionNote
-	// commandEdit is the command card's other field: the command itself,
-	// open for the reader to change before it runs (amend.go). It lives here
-	// for the same reason and is cleared in the same place; only one of the
-	// two is ever open, because only one thing can hold a keyboard.
-	commandEdit *commandEdit
-	// grantChoice is the third surface the card can open under itself: the
-	// grants the always-allow key offers, each with what it covers and when
-	// it ends (grant.go). It lives here and is cleared where the other two
-	// are, and only one of the three is ever open.
-	grantChoice *grantChoice
 	// readingCopied is the reading rail's note about the last [y] or [c]:
 	// what was copied and how far it ran. It stands until the next key in the mode,
 	// which is the moment the reader has moved on from the copy it captions.

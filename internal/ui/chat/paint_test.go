@@ -40,7 +40,7 @@ func TestNotice_TheWaitLinesDoNotSpin(t *testing.T) {
 		want string
 	}{
 		{"applying changes", stateRunningCmd, func(m *Model) {
-			m.pendingApproval = &approvalRequest{kind: approvalDiff}
+			m.approval.request = &approvalRequest{kind: approvalDiff}
 		}, "· Applying changes…"},
 		{"listing models", stateModelList, nil, "· Listing models…"},
 		{"running the quality gate", stateCloseGate, nil, "· Running the quality gate…"},

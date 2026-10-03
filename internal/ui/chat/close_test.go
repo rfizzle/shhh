@@ -582,7 +582,7 @@ func TestClose_NoTotalWhileTheTurnRuns(t *testing.T) {
 			r := m
 			r.setTurnState(tc.st)
 			if tc.cmd {
-				r.pendingApproval = &approvalRequest{kind: approvalExec}
+				r.approval.request = &approvalRequest{kind: approvalExec}
 				r.runningCommand = "go test ./..."
 				r.runStart = clock()
 				r.runTail = &commandTail{}

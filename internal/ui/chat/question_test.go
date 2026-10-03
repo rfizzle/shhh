@@ -340,7 +340,7 @@ func TestQuestion_EscHandsTheQuestionToTheDraft(t *testing.T) {
 	if m.question != nil {
 		t.Fatal("esc should close the card")
 	}
-	if m.pendingApproval == nil {
+	if m.approval.request == nil {
 		t.Fatal("esc must not resolve the call — the question stays outstanding")
 	}
 	if !m.questionAside() {
@@ -406,7 +406,7 @@ func TestQuestion_TheNextMessageAnswersItAndIsNotAlsoAMessage(t *testing.T) {
 	if len(m.steering) != 0 {
 		t.Errorf("an answer is not a steer: %+v", m.steering)
 	}
-	if m.questionAside() || m.pendingApproval != nil {
+	if m.questionAside() || m.approval.request != nil {
 		t.Error("the question should be answered and gone")
 	}
 }
@@ -510,7 +510,7 @@ func TestQuestion_TheHandoverBringsTheCardBackAndAnswersNothing(t *testing.T) {
 func TestQuestion_ACancelMakesTheNextMessageAnOrdinaryMessageAgain(t *testing.T) {
 	m := escapedQuestion(t, chooseArgs)
 	m.cancelStreaming()
-	if m.questionAside() || m.pendingApproval != nil || m.question != nil {
+	if m.questionAside() || m.approval.request != nil || m.question != nil {
 		t.Fatal("the cancel should have taken the question with the turn")
 	}
 	if got := stripANSI(m.noticeLine()); strings.Contains(got, "question waiting") {
@@ -755,7 +755,7 @@ func TestQuestion_ACancelledTurnTakesTheQuestionWithIt(t *testing.T) {
 	m := openedQuestion(t, agent.ModeManual, chooseArgs)
 	next, _ := m.cancelTurnNow()
 	m = next.(Model)
-	if m.question != nil || m.pendingApproval != nil {
+	if m.question != nil || m.approval.request != nil {
 		t.Fatal("the cancel should leave no question behind")
 	}
 	if m.graceDiscards(keys.Shown(keys.Decision.Allow)) != true {
@@ -916,7 +916,7 @@ func TestQuestion_SeveralInOneCallAreTabs(t *testing.T) {
 			t.Errorf("after one answer the strip does not say %q:\n%s", want, view)
 		}
 	}
-	if m.pendingApproval == nil {
+	if m.approval.request == nil {
 		t.Fatal("answering one tab must not answer the call")
 	}
 }
@@ -994,7 +994,7 @@ func TestQuestion_SubmitSendsEveryAnswerInSendOrder(t *testing.T) {
 	if got[2]["answered"] != string(ask.AnsweredSkipped) {
 		t.Errorf("a tab nobody answered goes back skipped: %+v", got[2])
 	}
-	if m.pendingApproval != nil || m.question != nil {
+	if m.approval.request != nil || m.question != nil {
 		t.Error("the submit answers the whole call")
 	}
 }
@@ -1011,7 +1011,7 @@ func TestQuestion_EscFromASecondTabClosesTheWholeCard(t *testing.T) {
 	if m.question != nil {
 		t.Fatal("esc closes the whole card rather than one tab of it")
 	}
-	if !m.questionAside() || m.pendingApproval == nil {
+	if !m.questionAside() || m.approval.request == nil {
 		t.Fatal("every unanswered question stays outstanding")
 	}
 	m = submitDraft(t, m, "use whatever is already in the checkout")
@@ -1050,14 +1050,14 @@ func TestQuestion_TheFullViewReadsARowAndAnswersNothing(t *testing.T) {
 			t.Errorf("the screen does not carry %q:\n%s", want, view)
 		}
 	}
-	if m.pendingApproval == nil {
+	if m.approval.request == nil {
 		t.Fatal("reading a row must not answer the question")
 	}
 	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
 	if m.state != stateQuestion || m.question == nil {
 		t.Fatalf("the screen gives itself back to the question, state = %d", m.state)
 	}
-	if m.pendingApproval == nil {
+	if m.approval.request == nil {
 		t.Fatal("the question is still waiting")
 	}
 	// The row the model did not write has a long form of its own, because
@@ -1142,7 +1142,7 @@ func TestQuestion_ReopeningATabbedCardKeepsWhatWasAnswered(t *testing.T) {
 	if n := m.question.sheet.answered(); n != 1 {
 		t.Errorf("the answer already given must survive, answered = %d", n)
 	}
-	if m.pendingApproval == nil {
+	if m.approval.request == nil {
 		t.Error("reopening answers nothing")
 	}
 }

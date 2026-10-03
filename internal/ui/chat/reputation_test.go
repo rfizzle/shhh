@@ -66,8 +66,8 @@ func TestReputation_AutoModeLetsAKnownHostThrough(t *testing.T) {
 	if m.state == stateConfirmRun || m.state == stateClassifying || judge.calls != 0 {
 		t.Fatalf("a known host was put to a card or a classifier (state %d, judged %d)", m.state, judge.calls)
 	}
-	if m.pendingApproval == nil || m.pendingApproval.autoRule != "known host (built-in list)" {
-		t.Fatalf("the fetch was not allowed by the reading: %+v", m.pendingApproval)
+	if m.approval.request == nil || m.approval.request.autoRule != "known host (built-in list)" {
+		t.Fatalf("the fetch was not allowed by the reading: %+v", m.approval.request)
 	}
 	m = drainApproved(t, m, cmd)
 	if fetched != 1 {
@@ -130,13 +130,13 @@ func TestReputation_AWarnedHostIsCardedWhereTheClassifierAllowed(t *testing.T) {
 				t.Fatalf("the classifier's yes let a %s host through (state %d)", c.name, m.state)
 			}
 			found := false
-			for _, f := range m.pendingApproval.fields {
+			for _, f := range m.approval.request.fields {
 				if f.Label == "standing" && f.Value == c.reason {
 					found = true
 				}
 			}
 			if !found {
-				t.Fatalf("the card does not say the standing: %+v", m.pendingApproval.fields)
+				t.Fatalf("the card does not say the standing: %+v", m.approval.request.fields)
 			}
 			if view := m.View().Content; !strings.Contains(view, c.reason) {
 				t.Fatalf("the standing is on the request and not on the card:\n%s", view)
@@ -198,7 +198,7 @@ func TestReputation_AnUnknownHostLeavesTheClassifiersAnswer(t *testing.T) {
 	m = updated.(Model)
 	updated, _ = m.Update(driveClassifierDone(t, cmd))
 	m = updated.(Model)
-	if m.state == stateConfirmRun || m.pendingApproval == nil || m.pendingApproval.autoRule != classifierRule {
+	if m.state == stateConfirmRun || m.approval.request == nil || m.approval.request.autoRule != classifierRule {
 		t.Fatalf("an unknown host changed the classifier's answer (state %d)", m.state)
 	}
 }

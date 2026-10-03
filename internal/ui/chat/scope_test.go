@@ -73,7 +73,7 @@ func TestApprovingAnOutOfScopeEditAddsTheDirectory(t *testing.T) {
 	m := scopedModel(t, root, agent.ModeManual)
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{writeCall("out", filepath.Join(outside, "config.toml"), "new\n")}})
 	m = updated.(Model)
-	if !m.pendingScope.any() {
+	if !m.approval.scope.any() {
 		t.Fatal("the pending decision should have resolved what it reaches")
 	}
 
@@ -226,7 +226,7 @@ func TestOutOfScopeDecisionsAreNeverBatched(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
 	m := scopedModel(t, root, agent.ModeManual)
 	req := &approvalRequest{kind: approvalDiff, path: filepath.Join(outside, "a.toml")}
-	m.pendingScope = m.scopeReachFor(req)
+	m.approval.scope = m.scopeReachFor(req)
 	if _, ok := m.batchCategory(req); ok {
 		t.Fatal("[A] must not sweep up a decision that leaves the working scope")
 	}

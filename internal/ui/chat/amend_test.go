@@ -46,12 +46,12 @@ func offersAmend(card *components.ApprovalCard) bool {
 func openAmend(t *testing.T, m Model, line string) Model {
 	t.Helper()
 	m = press(t, m, keys.Shown(keys.Decision.Amend))
-	if m.commandEdit == nil {
+	if m.approval.edit == nil {
 		t.Fatal("the amend key should open the command in a field")
 	}
-	e := *m.commandEdit
+	e := *m.approval.edit
 	e.field.SetValue(line)
-	m.commandEdit = &e
+	m.approval.edit = &e
 	return m
 }
 
@@ -69,7 +69,7 @@ func TestAmend_TheReadersLineRunsAndEverythingSaysSo(t *testing.T) {
 		t.Fatal("a command card offers to be amended")
 	}
 	m = openAmend(t, m, "npm test -- --runInBand")
-	if m.pendingApproval == nil || m.state != stateConfirmRun {
+	if m.approval.request == nil || m.state != stateConfirmRun {
 		t.Fatal("opening the field must settle nothing")
 	}
 
@@ -128,7 +128,7 @@ func TestAmend_TheBlockIsReadAgainstTheLineThatRuns(t *testing.T) {
 	if text := cardText(m.approvalCard(), m); !strings.Contains(text, "one.txt") {
 		t.Fatalf("the block should name what the original writes:\n%s", text)
 	}
-	if req := m.pendingApproval; req.dryCommand != "" {
+	if req := m.approval.request; req.dryCommand != "" {
 		t.Fatalf("the fixture wants a command with no harmless form, got %q", req.dryCommand)
 	}
 
@@ -139,7 +139,7 @@ func TestAmend_TheBlockIsReadAgainstTheLineThatRuns(t *testing.T) {
 
 	// The block is the amended line's, resolved before it ran rather than
 	// inherited from the card the key was pressed on.
-	block := m.pendingBlast
+	block := m.approval.blast
 	for _, f := range block.fields {
 		if strings.Contains(f.Value+f.Detail, "one.txt") {
 			t.Fatalf("the block still describes the line nobody ran: %+v", block.fields)
@@ -150,7 +150,7 @@ func TestAmend_TheBlockIsReadAgainstTheLineThatRuns(t *testing.T) {
 	}
 	// The dry-run offer is derived from the command text, so it is derived
 	// again too: rsync has a harmless form and the original had none.
-	if m.pendingApproval.dryCommand == "" {
+	if m.approval.request.dryCommand == "" {
 		t.Fatal("the offers should follow the line that will run")
 	}
 }
@@ -199,8 +199,8 @@ func TestAmend_ALineThatLeavesTheScopeIsPutBackToTheReader(t *testing.T) {
 			return "ok", 0
 		}))
 	m = execApproval(t, m, "echo hi > "+filepath.Join(root, "one.txt"))
-	if m.pendingScope.any() {
-		t.Fatalf("the fixture wants a line inside the scope, got %v", m.pendingScope.dirs)
+	if m.approval.scope.any() {
+		t.Fatalf("the fixture wants a line inside the scope, got %v", m.approval.scope.dirs)
 	}
 
 	m = openAmend(t, m, "echo hi > "+filepath.Join(outside, "two.txt"))
@@ -210,7 +210,7 @@ func TestAmend_ALineThatLeavesTheScopeIsPutBackToTheReader(t *testing.T) {
 	if len(ran) != 0 || m.state != stateConfirmRun {
 		t.Fatalf("a line that leaves the scope is asked about, got %v state=%d", ran, m.state)
 	}
-	if !m.pendingScope.any() {
+	if !m.approval.scope.any() {
 		t.Fatal("the working scope should have been read against the amended line")
 	}
 	if sc.Contains(filepath.Join(outside, "three.txt")) {
@@ -218,10 +218,10 @@ func TestAmend_ALineThatLeavesTheScopeIsPutBackToTheReader(t *testing.T) {
 	}
 	// And the card the reader is put back to names what it now reaches, so
 	// the directory is read before it is granted rather than after.
-	if !slices.ContainsFunc(m.pendingBlast.fields, func(f components.CardField) bool {
+	if !slices.ContainsFunc(m.approval.blast.fields, func(f components.CardField) bool {
 		return strings.Contains(f.Label, "scope")
 	}) {
-		t.Fatalf("the redrawn card should carry the scope row, got %+v", m.pendingBlast.fields)
+		t.Fatalf("the redrawn card should carry the scope row, got %+v", m.approval.blast.fields)
 	}
 }
 
@@ -243,10 +243,10 @@ func TestAmend_AHeavierLineDrawsTheHeavierCard(t *testing.T) {
 	if len(ran) != 0 || m.state != stateConfirmRun {
 		t.Fatalf("a heavier amendment is a card, not a run: %v state=%d", ran, m.state)
 	}
-	if m.commandEdit != nil {
+	if m.approval.edit != nil {
 		t.Fatal("the field closes: the card behind it is the thing to read")
 	}
-	if m.pendingApproval == nil || m.pendingRun != "rm -rf ./build" {
+	if m.approval.request == nil || m.pendingRun != "rm -rf ./build" {
 		t.Fatalf("the card is about the amended line now, got %q", m.pendingRun)
 	}
 	now := m.approvalCard()
@@ -286,8 +286,8 @@ func TestAmend_TheBatchMarkIsTakenAgainstTheLineTheReaderWrote(t *testing.T) {
 		{ID: "call_b", Name: tools.ExecCommandName, Arguments: `{"command":"echo two"}`},
 	}})
 	m = handover(t, updated.(Model))
-	if !slices.Equal(m.pendingBatch, []string{"call_b"}) {
-		t.Fatalf("the fixture wants a queue the card's [A] would answer, got %v", m.pendingBatch)
+	if !slices.Equal(m.approval.batch, []string{"call_b"}) {
+		t.Fatalf("the fixture wants a queue the card's [A] would answer, got %v", m.approval.batch)
 	}
 
 	// A line no [A] may ever cover takes the marks with it: a safety-flagged
@@ -298,8 +298,8 @@ func TestAmend_TheBatchMarkIsTakenAgainstTheLineTheReaderWrote(t *testing.T) {
 	if len(ran) != 0 || m.state != stateConfirmRun {
 		t.Fatalf("the fixture wants the heavier card drawn, got %v state=%d", ran, m.state)
 	}
-	if len(m.pendingBatch) != 0 {
-		t.Fatalf("the mark was taken against the model's line, got %v", m.pendingBatch)
+	if len(m.approval.batch) != 0 {
+		t.Fatalf("the mark was taken against the model's line, got %v", m.approval.batch)
 	}
 	if card := m.approvalCard(); card.Batch {
 		t.Fatal("a card that answers a batch must have a batch to answer")
@@ -322,17 +322,17 @@ func TestAmend_ARefusedLineNamesTheRuleAndLeavesTheDecisionWaiting(t *testing.T)
 	if len(ran) != 0 {
 		t.Fatalf("a deny-listed line must not run: %v", ran)
 	}
-	if m.pendingApproval == nil || m.pendingRun != "echo hi" || m.state != stateConfirmRun {
+	if m.approval.request == nil || m.pendingRun != "echo hi" || m.state != stateConfirmRun {
 		t.Fatal("the original decision is still waiting")
 	}
 	if len(m.transcript) != before {
 		t.Fatal("nothing was decided about the call, so nothing is filed against it")
 	}
-	if m.commandEdit == nil {
+	if m.approval.edit == nil {
 		t.Fatal("the reader is returned to the card, not to the draft")
 	}
-	if !strings.Contains(m.commandEdit.refused, "deny list") {
-		t.Fatalf("the refusal should name the rule, got %q", m.commandEdit.refused)
+	if !strings.Contains(m.approval.edit.refused, "deny list") {
+		t.Fatalf("the refusal should name the rule, got %q", m.approval.edit.refused)
 	}
 	view := m.View().Content
 	if !strings.Contains(view, "command_denylist") {
@@ -340,8 +340,8 @@ func TestAmend_ARefusedLineNamesTheRuleAndLeavesTheDecisionWaiting(t *testing.T)
 	}
 	// And the refusal stands only until the reader answers it.
 	m = press(t, m, "x")
-	if m.commandEdit == nil || m.commandEdit.refused != "" {
-		t.Fatalf("the next keystroke settles the refusal, got %+v", m.commandEdit)
+	if m.approval.edit == nil || m.approval.edit.refused != "" {
+		t.Fatalf("the next keystroke settles the refusal, got %+v", m.approval.edit)
 	}
 }
 
@@ -353,13 +353,13 @@ func TestAmend_EscRestoresTheOriginalAndSettlesNothing(t *testing.T) {
 	m := amendModel(t, "npm test", &ran)
 	m = press(t, openAmend(t, m, "rm -rf ./build"), "esc")
 
-	if m.commandEdit != nil {
+	if m.approval.edit != nil {
 		t.Fatal("esc should close the field")
 	}
 	if len(ran) != 0 {
 		t.Fatalf("esc never runs anything: %v", ran)
 	}
-	if m.pendingRun != "npm test" || m.pendingApproval == nil || m.pendingApproval.command != "npm test" {
+	if m.pendingRun != "npm test" || m.approval.request == nil || m.approval.request.command != "npm test" {
 		t.Fatalf("the original should be back on the card, got %q", m.pendingRun)
 	}
 	if m.approvalCard().Amended {
@@ -377,21 +377,21 @@ func TestAmend_EveryLetterIsTextWhileTheFieldIsOpen(t *testing.T) {
 		t.Run(key, func(t *testing.T) {
 			var ran []string
 			m := press(t, amendModel(t, "npm test", &ran), keys.Shown(keys.Decision.Amend))
-			if m.commandEdit == nil {
+			if m.approval.edit == nil {
 				t.Fatal("the amend key should open the field")
 			}
 			before := m.state
 			m = press(t, m, key)
-			if m.commandEdit == nil {
+			if m.approval.edit == nil {
 				t.Fatalf("%q closed the field", key)
 			}
-			if m.state != before || m.pendingApproval == nil {
+			if m.state != before || m.approval.request == nil {
 				t.Fatalf("%q answered the decision", key)
 			}
 			if len(ran) != 0 {
 				t.Fatalf("%q ran something: %v", key, ran)
 			}
-			if got := m.commandEdit.field.Value(); got != "npm test"+key {
+			if got := m.approval.edit.field.Value(); got != "npm test"+key {
 				t.Fatalf("%q should be text in the field, got %q", key, got)
 			}
 		})
@@ -410,7 +410,7 @@ func TestAmend_AMultiLineCommandIsNotOffered(t *testing.T) {
 	}
 	// And the letter is not a key there either, so it stays the reader's.
 	m = press(t, m, keys.Shown(keys.Decision.Amend))
-	if m.commandEdit != nil {
+	if m.approval.edit != nil {
 		t.Fatal("the key must not open a field the card did not offer")
 	}
 }
@@ -420,17 +420,17 @@ func TestAmend_AMultiLineCommandIsNotOffered(t *testing.T) {
 func TestAmend_TheFieldOpensOnTheCommandItself(t *testing.T) {
 	var ran []string
 	m := press(t, amendModel(t, "npm test", &ran), keys.Shown(keys.Decision.Amend))
-	if m.commandEdit == nil || m.commandEdit.field.Value() != "npm test" {
-		t.Fatalf("the field should open prefilled, got %+v", m.commandEdit)
+	if m.approval.edit == nil || m.approval.edit.field.Value() != "npm test" {
+		t.Fatalf("the field should open prefilled, got %+v", m.approval.edit)
 	}
 	m = typeInto(t, m, " -- --runInBand")
-	if got := m.commandEdit.field.Value(); got != "npm test -- --runInBand" {
+	if got := m.approval.edit.field.Value(); got != "npm test -- --runInBand" {
 		t.Fatalf("the caret should start past the line, got %q", got)
 	}
 	// And confirming the line unchanged is the plain allow the reader could
 	// have pressed instead, not an amendment.
 	m2 := press(t, press(t, amendModel(t, "npm test", &ran), keys.Shown(keys.Decision.Amend)), "enter")
-	if m2.pendingApproval != nil && m2.pendingApproval.amendedFrom != "" {
+	if m2.approval.request != nil && m2.approval.request.amendedFrom != "" {
 		t.Fatal("a line nobody changed is not an amendment")
 	}
 }

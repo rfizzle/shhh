@@ -74,7 +74,7 @@ func TestHook_PreToolDenyDrawsTheRuleDenialRow(t *testing.T) {
 	if len(ran) != 0 {
 		t.Fatalf("a refused command should not run: %v", ran)
 	}
-	if m.pendingApproval != nil {
+	if m.approval.request != nil {
 		t.Fatal("a refused command should not reach a card")
 	}
 	refused := false
@@ -116,7 +116,7 @@ func TestHook_AFailureOnAGatedCallAsks(t *testing.T) {
 	if len(ran) != 0 {
 		t.Fatalf("a broken hook must not let a command through: %v", ran)
 	}
-	if m.state != stateConfirmRun || m.pendingApproval == nil {
+	if m.state != stateConfirmRun || m.approval.request == nil {
 		t.Fatalf("a failed hook should put the call to the reader, state %d", m.state)
 	}
 	view := stripANSI(m.renderHistory())
@@ -139,14 +139,14 @@ func TestHook_UpdatedInputRebuildsThePreview(t *testing.T) {
 	}})
 	m = drivePreToolHook(t, updated.(Model), cmd)
 
-	if m.pendingApproval == nil {
+	if m.approval.request == nil {
 		t.Fatal("the rewritten call should still be put to the reader")
 	}
-	if got := m.pendingApproval.path; got != "other.go" {
+	if got := m.approval.request.path; got != "other.go" {
 		t.Fatalf("the card should preview the rewritten call, got %q", got)
 	}
-	if !strings.Contains(m.pendingApproval.call.Arguments, "rewritten") {
-		t.Fatalf("the call itself should carry the rewrite: %s", m.pendingApproval.call.Arguments)
+	if !strings.Contains(m.approval.request.call.Arguments, "rewritten") {
+		t.Fatalf("the call itself should carry the rewrite: %s", m.approval.request.call.Arguments)
 	}
 }
 

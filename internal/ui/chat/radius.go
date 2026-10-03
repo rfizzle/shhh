@@ -102,7 +102,7 @@ type radiusIn struct {
 // The containment it is handed distinguishes the agent's commands, which run
 // contained, from /run, which is the user's own and never is.
 func (m Model) commandRadius(command string, contain cardContainment) blastRadius {
-	return m.commandRadiusIn(radiusIn{m.workspace, m.tracker}, command, m.pendingScope, contain)
+	return m.commandRadiusIn(radiusIn{m.workspace, m.tracker}, command, m.approval.scope, contain)
 }
 
 // commandRadiusIn is commandRadius over a tree and a scope reading it is
@@ -285,9 +285,9 @@ func (m Model) editRadius(req *approvalRequest) blastRadius {
 	// An edit outside the working scope is the one thing an edit card cannot
 	// say with a diff: the diff shows what changes, not that it changes
 	// something the session was never scoped to.
-	if f, ok := scopeField(m.pendingScope); ok {
+	if f, ok := scopeField(m.approval.scope); ok {
 		b.fields = append(b.fields, f)
-		if m.pendingScope.class != scope.Ordinary {
+		if m.approval.scope.class != scope.Ordinary {
 			b.severity, b.reason = components.SeverityHigh, "edits a file outside the working scope"
 			b.safe = "not now — it keeps waiting"
 		}

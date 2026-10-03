@@ -326,7 +326,7 @@ func TestHistorySearch_ClosesWhenADecisionTakesTheKeyboard(t *testing.T) {
 	if m.historySearching() {
 		t.Fatal("the search stayed open under a card that holds the keyboard")
 	}
-	if m.state == stateConfirmRun && m.pendingApproval != nil {
+	if m.state == stateConfirmRun && m.approval.request != nil {
 		t.Fatal("the card's answer key filtered an invisible query instead of answering")
 	}
 }
@@ -603,7 +603,7 @@ func cardKeys(m Model, card *components.ApprovalCard) []string {
 // session behind it, the card's own scroll, and the screen. A key that
 // changes none of the three did nothing.
 func cardState(m Model) string {
-	return snapshot(m) + fmt.Sprintf(" scroll=%d/%d\n", m.cardScroll, m.cardPan) + m.View().Content
+	return snapshot(m) + fmt.Sprintf(" scroll=%d/%d\n", m.approval.scroll, m.approval.pan) + m.View().Content
 }
 
 // TestDecisionCards_EveryOfferedKeyDoesSomething is the other half of the

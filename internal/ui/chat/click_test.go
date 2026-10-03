@@ -411,7 +411,7 @@ func TestClick_TheGraceWindowHoldsTheRun(t *testing.T) {
 	})
 	// Re-arm the arrival on a keyboard still warm, so the window is open.
 	m.releaseDecision()
-	m.lastDecisionLeft = time.Time{}
+	m.approval.lastLeft = time.Time{}
 	m.lastKeypress = time.Now()
 	m.armDecision(stateConfirmRun)
 	if !m.graceShowing() {

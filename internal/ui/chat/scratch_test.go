@@ -120,10 +120,10 @@ func TestScratchDelete_AnythingShortOfItKeepsTheCard(t *testing.T) {
 			if p.calls != 0 {
 				t.Fatal("a flagged command that is not proven scratch was sent to the classifier")
 			}
-			if m.state != stateConfirmRun || m.pendingApproval == nil || len(ran) != 0 {
+			if m.state != stateConfirmRun || m.approval.request == nil || len(ran) != 0 {
 				t.Fatalf("expected the flagged card, got state %d, ran %v", m.state, ran)
 			}
-			if m.pendingApproval.scratch {
+			if m.approval.request.scratch {
 				t.Fatal("the card is up, but the reading called the delete scratch")
 			}
 		})

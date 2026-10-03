@@ -59,10 +59,10 @@ func TestDenyNoted_TheSentenceIsWhatTheModelIsToldAndWhatTheRowKeeps(t *testing.
 	})
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'N', Text: "N"})
 	m = updated.(Model)
-	if m.decisionNote == nil || m.decisionNote.allow {
+	if m.approval.note == nil || m.approval.note.allow {
 		t.Fatal("the shifted deny should open the field on the deny side")
 	}
-	if m.pendingApproval == nil {
+	if m.approval.request == nil {
 		t.Fatal("opening the field must settle nothing")
 	}
 	m = typeInto(t, m, why)
@@ -182,7 +182,7 @@ func TestAllowNoted_TheSentenceGoesOutAsYourOwnSteer(t *testing.T) {
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'Y', Text: "Y"})
 	m = updated.(Model)
-	if m.decisionNote == nil || !m.decisionNote.allow {
+	if m.approval.note == nil || !m.approval.note.allow {
 		t.Fatal("the shifted allow should open the field on the allow side")
 	}
 	if m.state != stateConfirmRun {
@@ -230,35 +230,35 @@ func TestDecisionNote_EveryLetterIsTextWhileTheFieldIsOpen(t *testing.T) {
 			m := press(t, notedCardModel(t), "N")
 			before := m.state
 			m = press(t, m, key)
-			if m.decisionNote == nil {
+			if m.approval.note == nil {
 				t.Fatalf("%q closed the field", key)
 			}
 			if m.state != before {
 				t.Fatalf("%q moved the session from state %d to %d", key, before, m.state)
 			}
-			if m.pendingApproval == nil {
+			if m.approval.request == nil {
 				t.Fatalf("%q answered the decision", key)
 			}
-			if got := m.decisionNote.field.Value(); got != key {
+			if got := m.approval.note.field.Value(); got != key {
 				t.Fatalf("%q should be text in the field, got %q", key, got)
 			}
 
 			// Esc closes the field, and the decision is exactly where it was
 			// — so the letter is a key again.
 			m = press(t, m, "esc")
-			if m.decisionNote != nil {
+			if m.approval.note != nil {
 				t.Fatalf("esc should close the field")
 			}
-			if m.pendingApproval == nil || m.state != before {
+			if m.approval.request == nil || m.state != before {
 				t.Fatal("esc must leave the decision waiting")
 			}
 			live := press(t, m, key)
 			// The card's other surfaces count as movement too: [a] opens the
 			// grants it can make and [A] the queue, and neither settles the
 			// decision or moves the scroll (grant.go, queue.go).
-			if live.state == before && live.pendingApproval != nil && live.decisionNote == nil &&
-				live.grantChoice == nil && live.queueList == nil &&
-				live.cardScroll == m.cardScroll {
+			if live.state == before && live.approval.request != nil && live.approval.note == nil &&
+				live.approval.grant == nil && live.approval.list == nil &&
+				live.approval.scroll == m.approval.scroll {
 				// Nothing moved: the key is inert now, which is only right
 				// for the keys this card does not offer.
 				if card := m.approvalCard(); offeredKey(card, key) {

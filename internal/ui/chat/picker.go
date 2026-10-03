@@ -578,7 +578,7 @@ func (m Model) openRunPick() (tea.Model, tea.Cmd, bool) {
 	}
 	model, cmd := m.openBlockPick("Run a code block", "take none", blocks, func(m *Model, idx int) (string, tea.Cmd) {
 		m.pendingRun = blocks[idx].body
-		m.pendingBlast = m.resolveRadius(nil)
+		m.approval.blast = m.resolveRadius(nil)
 		m.setTurnState(stateConfirmRun)
 		return "", nil
 	})

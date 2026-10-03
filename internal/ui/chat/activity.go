@@ -675,10 +675,10 @@ func (m Model) fetchWaitFields(toolName, toolArgs string) (outcome, counts strin
 // already, and gets its countdown there — so without this a twenty-second
 // wait would be twenty seconds of a session that had simply gone quiet.
 func (m Model) fetchWaitRow(width int) (string, bool) {
-	if m.pendingApproval == nil {
+	if m.approval.request == nil {
 		return "", false
 	}
-	call := m.pendingApproval.call
+	call := m.approval.request.call
 	outcome, counts, ok := m.fetchWaitFields(call.Name, call.Arguments)
 	if !ok {
 		return "", false

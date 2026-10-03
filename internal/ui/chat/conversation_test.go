@@ -34,8 +34,8 @@ func TestConversation_AFetchRunsWithoutACard(t *testing.T) {
 	if m.state == stateConfirmRun {
 		t.Fatal("a conversation put a fetch to the person")
 	}
-	if m.pendingApproval == nil || m.pendingApproval.autoRule != agent.ConversationReadReason {
-		t.Fatalf("the fetch was not allowed by the conversation's rule: %+v", m.pendingApproval)
+	if m.approval.request == nil || m.approval.request.autoRule != agent.ConversationReadReason {
+		t.Fatalf("the fetch was not allowed by the conversation's rule: %+v", m.approval.request)
 	}
 	m = drainApproved(t, m, cmd)
 	if len(fetched) != 1 {

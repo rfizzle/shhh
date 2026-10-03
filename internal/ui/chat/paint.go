@@ -309,7 +309,7 @@ func (m Model) liveBlock(width int) string {
 		if row, ok := m.fetchWaitRow(width); ok {
 			return row
 		}
-		if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
+		if m.approval.request != nil && m.approval.request.kind != approvalExec {
 			return waitNotice("Applying changes…", width)
 		}
 		// The running command renders as a live activity row whose tail is

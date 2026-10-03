@@ -194,13 +194,13 @@ func TestOutputDepths_ReadRowsOpenTheSameWay(t *testing.T) {
 // panned before it.
 func TestApprovalCard_ScrollResetsOnABangConfirm(t *testing.T) {
 	m := runCapableModel("no blocks here")
-	m.cardScroll, m.cardPan = 7, 25
+	m.approval.scroll, m.approval.pan = 7, 25
 	m = sendText(t, m, "!ls")
 	if m.state != stateConfirmRun {
 		t.Fatalf("expected the /run confirm, got state %d", m.state)
 	}
-	if m.cardScroll != 0 || m.cardPan != 0 {
-		t.Fatalf("a new card starts unscrolled, got %d/%d", m.cardScroll, m.cardPan)
+	if m.approval.scroll != 0 || m.approval.pan != 0 {
+		t.Fatalf("a new card starts unscrolled, got %d/%d", m.approval.scroll, m.approval.pan)
 	}
 }
 
@@ -214,10 +214,10 @@ func TestApprovalCard_ScrollResetsWhenTheCardChanges(t *testing.T) {
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
-	m.cardScroll, m.cardPan = 7, 15
+	m.approval.scroll, m.approval.pan = 7, 15
 	m = runExecApproval(t, m)
-	if m.cardScroll != 0 || m.cardPan != 0 {
-		t.Fatalf("a new card starts unscrolled, got %d/%d", m.cardScroll, m.cardPan)
+	if m.approval.scroll != 0 || m.approval.pan != 0 {
+		t.Fatalf("a new card starts unscrolled, got %d/%d", m.approval.scroll, m.approval.pan)
 	}
 }
 

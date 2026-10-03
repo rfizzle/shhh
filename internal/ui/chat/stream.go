@@ -279,7 +279,7 @@ func (m *Model) cancelStreaming() {
 	for _, tc := range m.agent.CancelTurn() {
 		m.appendCallRow(tc.ID, entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: cancelledToolResult})
 	}
-	m.pendingApproval = nil
+	m.approval.request = nil
 	m.memoryAsk = nil
 	// And the question, which the cancel answered with the turn's synthetic
 	// result. A card left behind here is not merely a stale pointer: the
@@ -293,7 +293,7 @@ func (m *Model) cancelStreaming() {
 	// The queue the strip described is gone with the turn, and so is every
 	// answer the list gave against it.
 	m.clearQueueStrip()
-	m.batchAnswered, m.approvalTotal = nil, 0
+	m.approval.batchAnswered, m.approval.total = nil, 0
 	// Ctrl+C is a cancellation, and the close rows say so.
 	m.turnOutcome = components.TurnCancelled
 	m.finishStreaming()

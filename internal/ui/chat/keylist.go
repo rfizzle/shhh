@@ -154,11 +154,11 @@ func (m Model) renderKeyListHint() string {
 // under it.
 func (m Model) confirmKeyList() string {
 	switch {
-	case m.askOverlay() != nil, m.decisionNote != nil, m.commandEdit != nil:
+	case m.askOverlay() != nil, m.approval.note != nil, m.approval.edit != nil:
 		return ""
-	case m.queueList != nil:
+	case m.approval.list != nil:
 		return "the approval card's queue list"
-	case m.grantChoice != nil:
+	case m.approval.grant != nil:
 		return "the approval card's grant list"
 	}
 	return "the approval card and the /run confirm"

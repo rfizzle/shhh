@@ -106,7 +106,7 @@ func (m Model) notifyWords() (title, body string) {
 		// card, and says its own thing — the same line the prompt itself
 		// leads with, so the notification and the screen agree (memory.go).
 		if m.memoryAsk != nil {
-			if req := m.pendingApproval; req != nil {
+			if req := m.approval.request; req != nil {
 				return "Remember this?", memoryProposalLine(req)
 			}
 			return "Remember this?", ""

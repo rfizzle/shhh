@@ -425,7 +425,7 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 		// point it reached. BeginToolRound appends the assistant message
 		// itself, which is why it is not appended above.
 		auto, gated := m.agent.BeginToolRound(res.text, res.calls, m.requiresApproval)
-		m.approvalTotal = len(gated)
+		m.approval.total = len(gated)
 		m.beginSpawnBatch()
 		if strings.TrimSpace(res.text) != "" {
 			e := m.stampStep(entry{kind: entryAssistant, text: res.text})

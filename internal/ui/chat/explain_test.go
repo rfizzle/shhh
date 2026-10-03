@@ -105,8 +105,8 @@ func TestApprovalCard_ExplainOpensTheParagraphAndDecidesNothing(t *testing.T) {
 	m = updated.(Model)
 	// The decision is exactly where it was while the reading is in flight,
 	// and the card says the answer is on its way.
-	if m.state != stateConfirmRun || m.pendingApproval == nil {
-		t.Fatalf("the card should still be waiting, got state %d pending %v", m.state, m.pendingApproval)
+	if m.state != stateConfirmRun || m.approval.request == nil {
+		t.Fatalf("the card should still be waiting, got state %d pending %v", m.state, m.approval.request)
 	}
 	if !strings.Contains(m.View().Content, "explain — asking") {
 		t.Fatalf("the card should say the explanation is being read:\n%s", m.View().Content)
@@ -128,8 +128,8 @@ func TestApprovalCard_ExplainOpensTheParagraphAndDecidesNothing(t *testing.T) {
 
 	// Esc comes back to the decision, which nothing has answered.
 	m = press(t, m, "esc")
-	if m.state != stateConfirmRun || m.pendingApproval == nil {
-		t.Fatalf("esc should come back to the waiting decision, got state %d pending %v", m.state, m.pendingApproval)
+	if m.state != stateConfirmRun || m.approval.request == nil {
+		t.Fatalf("esc should come back to the waiting decision, got state %d pending %v", m.state, m.approval.request)
 	}
 	// The paragraph never reaches the conversation: the model asked to run
 	// this command and is still waiting for the answer to that.
@@ -233,8 +233,8 @@ func TestApprovalCard_AFailedExplanationSaysSoAndReturns(t *testing.T) {
 			}
 			// It never counts as an answer.
 			m = press(t, m, "esc")
-			if m.state != stateConfirmRun || m.pendingApproval == nil {
-				t.Fatalf("the decision should still be waiting, got state %d pending %v", m.state, m.pendingApproval)
+			if m.state != stateConfirmRun || m.approval.request == nil {
+				t.Fatalf("the decision should still be waiting, got state %d pending %v", m.state, m.approval.request)
 			}
 			for _, msg := range m.Messages() {
 				if msg.Role == provider.RoleTool {
@@ -277,8 +277,8 @@ func TestApprovalCard_ExplainNotOfferedWithoutAModel(t *testing.T) {
 			if p.calls != 0 {
 				t.Fatalf("nothing should have been asked, got %d requests", p.calls)
 			}
-			if m.state != stateConfirmRun || m.pendingApproval == nil {
-				t.Fatalf("the card should still be waiting, got state %d pending %v", m.state, m.pendingApproval)
+			if m.state != stateConfirmRun || m.approval.request == nil {
+				t.Fatalf("the card should still be waiting, got state %d pending %v", m.state, m.approval.request)
 			}
 		})
 	}
@@ -292,8 +292,8 @@ func TestApprovalCard_ExplainIsNotOfferedOnAnEdit(t *testing.T) {
 	m := handover(t, interruptedModel(t, ""))
 	m = m.WithLedger(ledger).
 		WithExplainer(agent.NewExplainer(ledger.For(p, meter.SourceExplanation), agent.ExplainConfig{Model: "small", Prompt: explainWording}))
-	if m.pendingApproval == nil || m.pendingApproval.kind != approvalDiff {
-		t.Fatalf("the fixture should be sitting on an edit card, got %v", m.pendingApproval)
+	if m.approval.request == nil || m.approval.request.kind != approvalDiff {
+		t.Fatalf("the fixture should be sitting on an edit card, got %v", m.approval.request)
 	}
 	if card := m.approvalCard(); offersExplain(card) {
 		t.Fatalf("an edit card must not offer the key:\n%s", m.View().Content)

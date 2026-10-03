@@ -220,7 +220,7 @@ func TestGatedTool_QueueMixedWithExec(t *testing.T) {
 	m = updated.(Model)
 
 	// Exec approval first, with its command preview and safety-checked prompt.
-	if m.state != stateConfirmRun || m.pendingApproval == nil || m.pendingApproval.kind != approvalExec {
+	if m.state != stateConfirmRun || m.approval.request == nil || m.approval.request.kind != approvalExec {
 		t.Fatalf("expected exec approval first, got state=%d", m.state)
 	}
 	if m.pendingRun != "echo hi" {
@@ -240,7 +240,7 @@ func TestGatedTool_QueueMixedWithExec(t *testing.T) {
 	m = updated.(Model)
 
 	// The queue continues straight into the write_file diff approval.
-	if m.state != stateConfirmRun || m.pendingApproval == nil || m.pendingApproval.kind != approvalDiff {
+	if m.state != stateConfirmRun || m.approval.request == nil || m.approval.request.kind != approvalDiff {
 		t.Fatalf("expected diff approval after exec completes, got state=%d", m.state)
 	}
 	if !strings.Contains(m.View().Content, "write a.txt") {
@@ -394,7 +394,7 @@ func TestMutatingTool_WriteApprovedThroughQueue(t *testing.T) {
 	}})
 	m = updated.(Model)
 
-	if m.state != stateConfirmRun || m.pendingApproval == nil || m.pendingApproval.kind != approvalDiff {
+	if m.state != stateConfirmRun || m.approval.request == nil || m.approval.request.kind != approvalDiff {
 		t.Fatalf("write_file should enter diff approval, got state=%d", m.state)
 	}
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
@@ -445,7 +445,7 @@ func TestMutatingTool_EditDeclinedLeavesFileUntouched(t *testing.T) {
 	}})
 	m = updated.(Model)
 
-	if m.state != stateConfirmRun || m.pendingApproval == nil || m.pendingApproval.kind != approvalDiff {
+	if m.state != stateConfirmRun || m.approval.request == nil || m.approval.request.kind != approvalDiff {
 		t.Fatalf("edit_file should enter diff approval, got state=%d", m.state)
 	}
 	view := m.View().Content
@@ -598,7 +598,7 @@ func TestMutatingTool_SeveralEditsAreOneCardAndOneRecord(t *testing.T) {
 		{ID: "call_e", Name: "edit_file", Arguments: string(args)},
 	}})
 	m = updated.(Model)
-	if m.state != stateConfirmRun || m.pendingApproval == nil || m.pendingApproval.kind != approvalDiff {
+	if m.state != stateConfirmRun || m.approval.request == nil || m.approval.request.kind != approvalDiff {
 		t.Fatalf("a three-edit call should arm one diff approval, got state=%d", m.state)
 	}
 	// One card, and all three changes in the diff behind it: a decision put
@@ -606,7 +606,7 @@ func TestMutatingTool_SeveralEditsAreOneCardAndOneRecord(t *testing.T) {
 	// are read rather than the render, which clips a body taller than the
 	// panel bound and would make this an assertion about terminal height.
 	var changed []string
-	for _, h := range m.pendingApproval.hunks {
+	for _, h := range m.approval.request.hunks {
 		for _, l := range h.Lines {
 			if l.Kind != diff.Context {
 				changed = append(changed, l.Text)
@@ -629,7 +629,7 @@ func TestMutatingTool_SeveralEditsAreOneCardAndOneRecord(t *testing.T) {
 	if data, _ := os.ReadFile(path); string(data) != "one\ntwo\nthree\n" {
 		t.Fatalf("the approved call should apply every edit, got %q", data)
 	}
-	if m.pendingApproval != nil {
+	if m.approval.request != nil {
 		t.Fatal("one call is one decision; nothing should still be pending")
 	}
 	var diffs int
@@ -678,7 +678,7 @@ func TestMutatingTool_OverlappingEditsNeverReachACard(t *testing.T) {
 		{ID: "call_e", Name: "edit_file", Arguments: string(args)},
 	}})
 	m = updated.(Model)
-	if m.pendingApproval != nil {
+	if m.approval.request != nil {
 		t.Fatal("a call the write would refuse must not be put to the user")
 	}
 	last := m.Messages()[len(m.Messages())-1]
@@ -753,8 +753,8 @@ func TestApprovalCard_DryRunRunsTheDerivedFormAndDecidesNothing(t *testing.T) {
 		t.Fatalf("the plain runner must not see an assistant command, got %v", bare)
 	}
 	// The decision is exactly where it was: still asked, still unanswered.
-	if m.state != stateConfirmRun || m.pendingApproval == nil {
-		t.Fatalf("the card should still be waiting, got state %d pending %v", m.state, m.pendingApproval)
+	if m.state != stateConfirmRun || m.approval.request == nil {
+		t.Fatalf("the card should still be waiting, got state %d pending %v", m.state, m.approval.request)
 	}
 	if !strings.Contains(m.View().Content, "dry run — running") {
 		t.Fatalf("the card should say the dry run is running:\n%s", m.View().Content)
@@ -772,8 +772,8 @@ func TestApprovalCard_DryRunRunsTheDerivedFormAndDecidesNothing(t *testing.T) {
 	// And esc comes back to the decision, which nothing has answered: no tool
 	// result reached the conversation and the call is still pending.
 	m = press(t, m, "esc")
-	if m.state != stateConfirmRun || m.pendingApproval == nil {
-		t.Fatalf("esc should come back to the waiting decision, got state %d pending %v", m.state, m.pendingApproval)
+	if m.state != stateConfirmRun || m.approval.request == nil {
+		t.Fatalf("esc should come back to the waiting decision, got state %d pending %v", m.state, m.approval.request)
 	}
 	for _, msg := range m.Messages() {
 		if msg.Role == provider.RoleTool {
@@ -828,8 +828,8 @@ func TestApprovalCard_DryRunNotOfferedWithoutAHarmlessForm(t *testing.T) {
 	if len(contained) != 0 || len(bare) != 0 {
 		t.Fatalf("nothing should have run, got contained=%v bare=%v", contained, bare)
 	}
-	if m.state != stateConfirmRun || m.pendingApproval == nil {
-		t.Fatalf("the card should still be waiting, got state %d pending %v", m.state, m.pendingApproval)
+	if m.state != stateConfirmRun || m.approval.request == nil {
+		t.Fatalf("the card should still be waiting, got state %d pending %v", m.state, m.approval.request)
 	}
 }
 
@@ -842,7 +842,7 @@ func runOnce(t *testing.T, m Model, command string) (Model, string) {
 		{ID: "c" + command, Name: tools.ExecCommandName, Arguments: string(args)},
 	}})
 	m = updated.(Model)
-	if m.pendingApproval == nil || m.pendingApproval.kind != approvalExec {
+	if m.approval.request == nil || m.approval.request.kind != approvalExec {
 		t.Fatalf("expected an exec approval, got state=%d", m.state)
 	}
 	m = handover(t, m)
@@ -1159,7 +1159,7 @@ func TestSpawnCard_ARoundIsOneDecision(t *testing.T) {
 	}
 	// The card is the whole of what is waiting, so nothing counts the three
 	// children a second time above it or in its title.
-	if strings.Contains(view, "(1 of 3)") || len(m.pendingQueue.Items) != 0 {
+	if strings.Contains(view, "(1 of 3)") || len(m.approval.strip.Items) != 0 {
 		t.Errorf("a fan-out card is not also a queue of three:\n%s", view)
 	}
 	// One decision, so the plain answer answers the set: the two behind the
@@ -1167,8 +1167,8 @@ func TestSpawnCard_ARoundIsOneDecision(t *testing.T) {
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	for _, id := range []string{"s2", "s3"} {
-		if allow, ok := m.batchAnswered[id]; !ok || !allow {
-			t.Fatalf("[y] on the fan-out card must answer %s too: %v", id, m.batchAnswered)
+		if allow, ok := m.approval.batchAnswered[id]; !ok || !allow {
+			t.Fatalf("[y] on the fan-out card must answer %s too: %v", id, m.approval.batchAnswered)
 		}
 	}
 }
@@ -1213,14 +1213,14 @@ func TestSpawnCard_AnAnsweredChildIsNotAskedAgain(t *testing.T) {
 	}, map[string]GatedPreviewFunc{subagent.SpawnToolName: spawnPreview}))
 	// The list denied the third child and allowed the second; the head has
 	// run and the second is the card now.
-	m.batchAnswered = map[string]bool{"s3": false}
+	m.approval.batchAnswered = map[string]bool{"s3": false}
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		spawnCall("s2", `{"role":"researcher","task":"say where the limit is set","name":"researcher-2"}`),
 		spawnCall("s3", `{"role":"researcher","task":"say where the loop exits","name":"researcher-3"}`),
 	}})
 	m = handover(t, updated.(Model))
-	if slices.Contains(m.pendingBatch, "s3") {
-		t.Fatalf("an answered child is not part of the next decision: %v", m.pendingBatch)
+	if slices.Contains(m.approval.batch, "s3") {
+		t.Fatalf("an answered child is not part of the next decision: %v", m.approval.batch)
 	}
 	// It is still a queued decision, so the strip above the card still counts
 	// it; what it is not is a row of this decision.
@@ -1228,7 +1228,7 @@ func TestSpawnCard_AnAnsweredChildIsNotAskedAgain(t *testing.T) {
 		t.Errorf("an answered child is not drawn as a row again: %+v", rows)
 	}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
-	if allow := updated.(Model).batchAnswered["s3"]; allow {
+	if allow := updated.(Model).approval.batchAnswered["s3"]; allow {
 		t.Fatal("the plain key must not overrule a denial the reader already gave")
 	}
 }
@@ -1272,8 +1272,8 @@ func TestSpawnCard_AReadOnlyRoleIsGrantedForTheSession(t *testing.T) {
 	}
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	m = updated.(Model)
-	if m.grantChoice == nil || len(m.grantChoice.offers) != 1 {
-		t.Fatalf("a role grant is already exact, so the list is the one length: %+v", m.grantChoice)
+	if m.approval.grant == nil || len(m.approval.grant.offers) != 1 {
+		t.Fatalf("a role grant is already exact, so the list is the one length: %+v", m.approval.grant)
 	}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
@@ -1355,7 +1355,7 @@ func armGitWrite(t *testing.T, width, height int, c gitWriteCard) string {
 		{ID: "call_gw", Name: structural.GitWriteToolName, Arguments: c.args},
 	}})
 	m = updated.(Model)
-	if m.pendingApproval == nil {
+	if m.approval.request == nil {
 		t.Fatalf("%s: the git write should arm a decision", c.label)
 	}
 	return strings.Join(m.confirmLines(), "\n")
@@ -1412,7 +1412,7 @@ func TestGitWrite_RequiredContainmentPutsItToTheCard(t *testing.T) {
 	required.Refusal = refusal
 	for _, c := range gitWriteCards() {
 		m := arm(c, required)
-		if m.pendingApproval == nil {
+		if m.approval.request == nil {
 			t.Fatalf("%s: a git write under a required session should be put to its card", c.label)
 		}
 		for _, msg := range m.Messages() {

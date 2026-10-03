@@ -58,8 +58,8 @@ func (m Model) runBang(cmd string, local bool) (tea.Model, tea.Cmd) {
 	m.pendingRunLocal = local
 	// The user's own command: never contained, so the working scope has
 	// nothing to say about it — exactly as /run.
-	m.pendingScope = scopeReach{}
-	m.pendingBlast = m.resolveRadius(nil)
+	m.approval.scope = scopeReach{}
+	m.approval.blast = m.resolveRadius(nil)
 	m.clearQueueStrip()
 	m.setTurnState(stateConfirmRun)
 	m.syncViewport()

@@ -36,7 +36,7 @@ func openQueue(t *testing.T, m Model) Model {
 	t.Helper()
 	updated, _ := m.Update(keyA())
 	m = updated.(Model)
-	if m.queueList == nil {
+	if m.approval.list == nil {
 		t.Fatal("the queue key should have opened the queue as a list")
 	}
 	return m
@@ -152,7 +152,7 @@ func TestBatch_MembershipSpansOnlyTheSameCategory(t *testing.T) {
 
 	// The current decision is a command, so the batch is the queued commands
 	// and not the queued edit.
-	if got := m.pendingBatch; len(got) != 1 || got[0] != "c2" {
+	if got := m.approval.batch; len(got) != 1 || got[0] != "c2" {
 		t.Fatalf("batch should hold only the other command, got %v", got)
 	}
 	view := strings.Join(m.confirmLines(), "\n")
@@ -183,7 +183,7 @@ func TestBatch_ExcludesFlaggedActions(t *testing.T) {
 	m = updated.(Model)
 	m = handover(t, m)
 
-	if got := m.pendingBatch; len(got) != 1 || got[0] != "c3" {
+	if got := m.approval.batch; len(got) != 1 || got[0] != "c3" {
 		t.Fatalf("a safety-flagged command must be left out of the batch, got %v", got)
 	}
 	lines := m.confirmLines()
@@ -247,8 +247,8 @@ func TestBatch_ApprovesEveryMemberWithoutAskingAgain(t *testing.T) {
 	if m.state != stateStreaming || cmd == nil {
 		t.Fatal("the stream should resume once the batch drains")
 	}
-	if len(m.batchAnswered) != 0 {
-		t.Fatalf("the list's answers should be consumed as they are used, got %v", m.batchAnswered)
+	if len(m.approval.batchAnswered) != 0 {
+		t.Fatalf("the list's answers should be consumed as they are used, got %v", m.approval.batchAnswered)
 	}
 }
 
@@ -266,7 +266,7 @@ func TestBatch_EditsBatchTogether(t *testing.T) {
 	m = updated.(Model)
 	m = handover(t, m)
 
-	if got := m.pendingBatch; len(got) != 1 || got[0] != "w2" {
+	if got := m.approval.batch; len(got) != 1 || got[0] != "w2" {
 		t.Fatalf("the batch should hold the other edit only, got %v", got)
 	}
 	// The strip states an edit by its diff, so two writes are not one row
@@ -332,20 +332,20 @@ func TestBatch_KeyIsAbsentWithoutAQueue(t *testing.T) {
 
 	// The only other item is flagged, so there is no batch and no key for one
 	// — but [A] keeps its old meaning as the shifted spelling of [a].
-	if len(m.pendingBatch) != 0 {
-		t.Fatalf("no batch should be offered, got %v", m.pendingBatch)
+	if len(m.approval.batch) != 0 {
+		t.Fatalf("no batch should be offered, got %v", m.approval.batch)
 	}
 	if strings.Contains(strings.Join(m.confirmLines(), "\n"), "like this") {
 		t.Fatal("no batch key should be offered when nothing would join it")
 	}
 	updated, _ = m.Update(keyA())
 	m = updated.(Model)
-	if m.queueList != nil {
+	if m.approval.list != nil {
 		t.Fatal("[A] with nothing to list should not open a list")
 	}
 	// It keeps its old meaning as the shifted spelling of [a], which is now
 	// the grants the card can make rather than one of them (grant.go).
-	if m.grantChoice == nil {
+	if m.approval.grant == nil {
 		t.Fatal("[A] without a queue should still reach the grant list")
 	}
 }
@@ -362,18 +362,18 @@ func TestBatch_CancelledTurnDropsItsGrants(t *testing.T) {
 	m = updated.(Model)
 	m = handover(t, m)
 	m, _ = answerQueue(t, m)
-	if len(m.batchAnswered) != 2 {
-		t.Fatalf("the list should hold answers for the two queued commands, got %v", m.batchAnswered)
+	if len(m.approval.batchAnswered) != 2 {
+		t.Fatalf("the list should hold answers for the two queued commands, got %v", m.approval.batchAnswered)
 	}
 
 	// Cancelling the turn drops the queue the answers named, so the answers
 	// go with it: a later round's calls could reuse an id and must not
 	// inherit an answer given about a queue that no longer exists.
 	m.cancelStreaming()
-	if len(m.batchAnswered) != 0 {
-		t.Fatalf("a cancelled turn should drop the list's answers, got %v", m.batchAnswered)
+	if len(m.approval.batchAnswered) != 0 {
+		t.Fatalf("a cancelled turn should drop the list's answers, got %v", m.approval.batchAnswered)
 	}
-	if m.pendingQueue.Rows() != 0 {
+	if m.approval.strip.Rows() != 0 {
 		t.Fatal("a cancelled turn should drop its queue strip")
 	}
 }
@@ -399,7 +399,7 @@ func TestQueueList_CountsTheDecisionsItCouldNotTake(t *testing.T) {
 	m = handover(t, updated.(Model))
 	m = openQueue(t, m)
 
-	if got := m.queueList.ids; len(got) != 4 {
+	if got := m.approval.list.ids; len(got) != 4 {
 		t.Fatalf("the list should hold the head and the three marked, got %v", got)
 	}
 	view := strings.Join(m.confirmLines(), "\n")
@@ -411,7 +411,7 @@ func TestQueueList_CountsTheDecisionsItCouldNotTake(t *testing.T) {
 	}
 	// It opens as the answer the key used to give on its own, which is what
 	// makes enter the old act rather than a new one.
-	for i, checked := range m.queueList.sel.Checked[:4] {
+	for i, checked := range m.approval.list.sel.Checked[:4] {
 		if !checked {
 			t.Fatalf("row %d should open checked", i)
 		}
@@ -534,14 +534,14 @@ func TestQueueList_EscAnswersNothing(t *testing.T) {
 	updated, _ = m.Update(keyEsc)
 	m = updated.(Model)
 
-	if m.queueList != nil {
+	if m.approval.list != nil {
 		t.Fatal("esc should have closed the list")
 	}
-	if m.state != stateConfirmRun || m.pendingApproval == nil {
+	if m.state != stateConfirmRun || m.approval.request == nil {
 		t.Fatalf("the card should still be waiting, got state %d", m.state)
 	}
-	if len(m.batchAnswered) != 0 {
-		t.Fatalf("esc should have answered nothing, got %v", m.batchAnswered)
+	if len(m.approval.batchAnswered) != 0 {
+		t.Fatalf("esc should have answered nothing, got %v", m.approval.batchAnswered)
 	}
 	if len(ran) != 0 {
 		t.Fatalf("esc should have run nothing, got %v", ran)
@@ -567,7 +567,7 @@ func TestQueueList_WindowsALongQueue(t *testing.T) {
 	m = handover(t, updated.(Model))
 	m = openQueue(t, m)
 
-	if got := len(m.queueList.ids); got != 20 {
+	if got := len(m.approval.list.ids); got != 20 {
 		t.Fatalf("every command should be a row, got %d", got)
 	}
 	lines := m.confirmLines()

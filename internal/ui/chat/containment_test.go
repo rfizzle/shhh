@@ -211,7 +211,7 @@ func TestRunCommandStaysUnconfined(t *testing.T) {
 	m := containedModel(t, &bare, &contained, "contained: bwrap")
 	m.state = stateConfirmRun
 	m.pendingRun = "echo mine"
-	m.pendingApproval = nil
+	m.approval.request = nil
 	m = handover(t, m)
 
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
@@ -411,7 +411,7 @@ func TestRequiredContainmentNeverRefusesTheUsersOwnCommand(t *testing.T) {
 	m = updated.(Model)
 	m.state = stateConfirmRun
 	m.pendingRun = "echo mine"
-	m.pendingApproval = nil
+	m.approval.request = nil
 	m = handover(t, m)
 
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})

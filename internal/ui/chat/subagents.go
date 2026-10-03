@@ -112,7 +112,7 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 			// gets (setTurnState, turn.go). One arriving behind another card
 			// takes them from nobody, so it leaves them where they are: they
 			// still belong to whatever the reader is reading.
-			m.cardScroll, m.cardPan = 0, 0
+			m.approval.scroll, m.approval.pan = 0, 0
 		}
 		// A routed approval arrives the way every other decision does: on
 		// screen, and holding the keyboard only if there is no sentence for
@@ -288,7 +288,7 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 	// [g] is a bare letter, so it belongs to the card only while the card was
 	// handed the keyboard. One holding it by arrival claims nothing but its
 	// answers, and "go ahead, but…" is a sentence.
-	if keys.Match(msg, keys.Agent.Go) && !m.heldOnArrival && m.attachedTo != ask.Agent {
+	if keys.Match(msg, keys.Agent.Go) && !m.approval.heldOnArrival && m.attachedTo != ask.Agent {
 		m.attach(ask.Agent)
 		return m, nil
 	}
@@ -353,7 +353,7 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 	// body that has just been replaced, and a stale pan would blank the new
 	// card's rows outright — the reset the session's own arrivals get
 	// (setTurnState, turn.go).
-	m.cardScroll, m.cardPan = 0, 0
+	m.approval.scroll, m.approval.pan = 0, 0
 	m.forgetChildBlast(ask)
 	ask.Respond(approved)
 	verdict := "⊘ " + ask.Agent + "  declined ▸ " + ask.Title
@@ -383,8 +383,8 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 	card := &components.ApprovalCard{
 		// The card is rebuilt every frame, so its scroll rides the model and
 		// is reset whenever the presented ask changes (updateChildAsk).
-		BodyOffset: m.cardScroll,
-		PanOffset:  m.cardPan,
+		BodyOffset: m.approval.scroll,
+		PanOffset:  m.approval.pan,
 	}
 	defer m.applyNotYetLive(card)
 	// The blast-radius block, read where the request arrived rather than

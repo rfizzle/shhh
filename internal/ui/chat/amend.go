@@ -88,15 +88,15 @@ func amendOffer(req *approvalRequest) []components.KeyOffer {
 // its answers and nothing else, and this letter is the reader's sentence
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) amendKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
-	if !keys.Match(msg, keys.Decision.Amend) || m.heldOnArrival {
+	if !keys.Match(msg, keys.Decision.Amend) || m.approval.heldOnArrival {
 		return m, nil, false
 	}
 	// The key answers exactly where the card offered it and nowhere else, so
 	// the letter stays the reader's on every card that made no offer.
-	if len(amendOffer(m.pendingApproval)) == 0 {
+	if len(amendOffer(m.approval.request)) == 0 {
 		return m, nil, false
 	}
-	req := m.pendingApproval
+	req := m.approval.request
 	field := components.NewTextInput()
 	field.Prompt = ""
 	// The terminal's own cursor rather than a painted one: this session
@@ -110,7 +110,7 @@ func (m Model) amendKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	if req.amendedFrom != "" {
 		original = req.amendedFrom
 	}
-	m.commandEdit = &commandEdit{original: original, field: field}
+	m.approval.edit = &commandEdit{original: original, field: field}
 	m.syncViewport()
 	return m, cmd, true
 }
@@ -122,14 +122,14 @@ func (m Model) amendKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 // it and the selector's query row already do
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) updateCommandEdit(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	open := *m.commandEdit
+	open := *m.approval.edit
 	switch {
 	case keys.Match(msg, keys.Select.Cancel):
 		// The original comes back and the decision is exactly where it was.
 		// The line the reader was writing goes with the field: an edit
 		// nobody confirmed is not a command, and keeping it would put a
 		// half-written line in front of the next press of the key.
-		m.commandEdit = nil
+		m.approval.edit = nil
 		m.syncViewport()
 		return m, nil
 	case keys.Match(msg, keys.Select.Take):
@@ -143,7 +143,7 @@ func (m Model) updateCommandEdit(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	open.refused = ""
 	var cmd tea.Cmd
 	open.field, cmd = open.field.Update(msg)
-	m.commandEdit = &open
+	m.approval.edit = &open
 	m.syncViewport()
 	return m, cmd
 }
@@ -160,10 +160,10 @@ func (m Model) updateCommandEdit(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // lying about what it was answered for. Anything else runs, which is what the
 // key is for.
 func (m Model) confirmCommandEdit(line string) (tea.Model, tea.Cmd) {
-	open := *m.commandEdit
-	req := m.pendingApproval
+	open := *m.approval.edit
+	req := m.approval.request
 	if req == nil {
-		m.commandEdit = nil
+		m.approval.edit = nil
 		m.syncViewport()
 		return m, nil
 	}
@@ -172,7 +172,7 @@ func (m Model) confirmCommandEdit(line string) (tea.Model, tea.Cmd) {
 	// cleared the line and pressed enter meant to run something.
 	if line == "" {
 		open.refused = "a command cannot be empty"
-		m.commandEdit = &open
+		m.approval.edit = &open
 		m.syncViewport()
 		return m, nil
 	}
@@ -181,7 +181,7 @@ func (m Model) confirmCommandEdit(line string) (tea.Model, tea.Cmd) {
 	// have pressed. Reading it as one would put a `was` row and a sentence
 	// to the model on a decision where nothing changed.
 	if line == m.pendingRun {
-		m.commandEdit = nil
+		m.approval.edit = nil
 		return m.approvePending("")
 	}
 
@@ -190,7 +190,7 @@ func (m Model) confirmCommandEdit(line string) (tea.Model, tea.Cmd) {
 	// all answer about the line that will run rather than the one that was
 	// proposed. The old reading is kept beside it, because whether the
 	// reader has to be asked again is a comparison of the two (asksAgain).
-	was, wasReach := m.pendingBlast, m.pendingScope
+	was, wasReach := m.approval.blast, m.approval.scope
 	amended := *req
 	amended.command = line
 	amended.summary = firstLine(line)
@@ -207,27 +207,27 @@ func (m Model) confirmCommandEdit(line string) (tea.Model, tea.Cmd) {
 
 	if why := m.amendRefusal(&amended, reach); why != "" {
 		open.refused = why
-		m.commandEdit = &open
+		m.approval.edit = &open
 		m.syncViewport()
 		return m, nil
 	}
 
 	*req = amended
 	m.pendingRun = line
-	m.pendingScope = reach
-	// pendingScope is read by the radius resolver, so it is set first.
-	m.pendingBlast = m.resolveRadius(req)
+	m.approval.scope = reach
+	// approval.scope is read by the radius resolver, so it is set first.
+	m.approval.blast = m.resolveRadius(req)
 	// The queue behind the card was marked against the shape of the command
 	// the model proposed, and the reader has just made this one a different
 	// shape. So the marks are taken again from the amended line rather than
 	// carried or blanked: a line that is no longer batchable at all — a
 	// safety-flagged one — loses them by the same rule that would have
 	// refused them in the first place (batchCategory).
-	m.pendingQueue, m.pendingBatch = m.resolveQueue(req)
-	m.commandEdit = nil
-	m.cardScroll, m.cardPan = 0, 0
+	m.approval.strip, m.approval.batch = m.resolveQueue(req)
+	m.approval.edit = nil
+	m.approval.scroll, m.approval.pan = 0, 0
 
-	if asksAgain(was, m.pendingBlast, wasReach, reach) {
+	if asksAgain(was, m.approval.blast, wasReach, reach) {
 		// The reader is answering a card they have not read. It is drawn for
 		// them, with the line they wrote on it, and the decision is waiting
 		// exactly where it was.
