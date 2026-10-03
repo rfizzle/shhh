@@ -92,17 +92,15 @@ type SpendRow struct {
 // SpendScreen is `/stats`: a takeover in the chat, full width, owning the
 // keyboard for as long as it is up.
 type SpendScreen struct {
+	// The pointer is an index into Rows.
+	listScreen[SpendRow]
 	// Rows are the total, then the models, the children and the turns
 	// (newest first) — the order the list draws them in.
 	Rows []SpendRow
-	// Focus is an index into Rows.
-	Focus int
 	// MaxLines bounds the screen height. 0 is unbounded.
 	MaxLines int
 
-	list  Select
 	optAt map[int]int
-	keys  bool
 }
 
 // spendResult is what the screen leaves with: nothing, or the turn the
@@ -117,11 +115,11 @@ type spendResult struct {
 func (s *SpendScreen) Update(msg tea.KeyPressMsg) (done bool, result spendResult) {
 	pressed := msg.String()
 	switch {
-	case s.moved(pressed):
+	case s.moved(s.Rows, pressed, keys.Screen.Move):
 	case keys.Is(pressed, keys.Screen.Take):
 		// Only on a turn: a key that cannot act is not an offer, and the
 		// footer draws it grey (invariant 5).
-		if r := s.current(); r != nil && r.Kind == SpendTurn && r.Turn != nil {
+		if r := s.current(s.Rows); r != nil && r.Kind == SpendTurn && r.Turn != nil {
 			return true, spendResult{Turn: r.Turn.N}
 		}
 	case keys.Is(pressed, keys.Screen.List):
@@ -138,41 +136,35 @@ func (s *SpendScreen) SetSize(_, height int) { s.MaxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves.
-func (s *SpendScreen) View(width int) string {
-	if width <= 0 {
-		return ""
-	}
-	s.sync()
+func (s *SpendScreen) View(width int) string { return s.view(width, s) }
+
+// chrome is the header over the panes and the keys under them.
+func (s *SpendScreen) chrome(width int) screenChrome {
+	field := s.footField()
 	return screenChrome{
 		header:   s.header(),
-		foot:     s.footer(width).rows(width),
+		foot:     s.footer(s.offers(width, field), s.keyList(), field).rows(width),
 		maxLines: s.MaxLines,
-	}.view(width, func(budget int) []string { return s.panes().rows(width, budget) })
+	}
 }
 
 // panes is the body, split the way every screen with a list and a preview
-// splits it (screenpanes.go).
+// splits it (screenpanes.go): on the left the total, and the bill under it
+// three ways.
 func (s *SpendScreen) panes() screenPanes {
 	return screenPanes{
 		stackAt: spendStackWidth, listMin: spendListMin,
 		listMax: spendListMax, minPreview: spendMinPreview,
-		list:    s.listRows,
+		list: func(width, budget int) []string {
+			return s.listRows(s.Rows, "the session has not been billed for anything yet", width, budget)
+		},
 		preview: s.previewRows,
 	}
 }
 
-// listRows is the left pane: the total, and the bill under it three ways.
-func (s *SpendScreen) listRows(width, budget int) []string {
-	if len(s.Rows) == 0 {
-		return []string{sty.dim.Render(Clip("the session has not been billed for anything yet", width))}
-	}
-	body, _ := s.list.visibleRows(cardWidthFor(width), budget, false)
-	return body
-}
-
 // previewRows is the right pane: the row under the pointer's account.
 func (s *SpendScreen) previewRows(width int) []string {
-	r := s.current()
+	r := s.current(s.Rows)
 	if r == nil {
 		return []string{sty.dim.Render(Clip("nothing selected", width))}
 	}
@@ -308,7 +300,7 @@ func (r SpendRow) option() SelectOption {
 
 // header names the surface, what the bill is cut into, and the total.
 func (s *SpendScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/stats")}, keys: s.headerKeys()}
+	h := screenHeader{left: []RailSegment{screenTitle("/stats")}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)}
 	counts := map[SpendKind]int{}
 	total := ""
 	for _, r := range s.Rows {
@@ -335,40 +327,19 @@ func (s *SpendScreen) header() screenHeader {
 	return h
 }
 
-// headerKeys is the pair the header ends with, as on every screen of the
-// family (docs/interface/surfaces.md#the-supporting-screens).
-func (s *SpendScreen) headerKeys() string {
-	list := keys.Bracket(keys.Screen.List) + " " + keys.Words(keys.Screen.List)
-	if s.keys {
-		list = keys.Bracket(keys.Screen.List) + " hide the keys"
-	}
-	return list + " · " + words(keys.Screen.Quit, "back")
-}
-
-// footer is the keys the screen offers and the field that annotates them.
-func (s *SpendScreen) footer(width int) keyFooter {
-	field := s.footField()
-	return keyFooter{offers: s.offers(width, field), register: s.keyList(),
-		showing: s.keys, field: field}
-}
-
 // offers is the key row: the pointer's keys, the turn, and the way out, and
 // the last two alone where the field leaves no room for all three. Opening a
 // turn is drawn grey off a turn rather than dropped, so the row does not
 // change shape under a pointer walking the list.
 func (s *SpendScreen) offers(width int, field string) []KeyOffer {
 	var acts []KeyOffer
-	if r := s.current(); r != nil {
+	if r := s.current(s.Rows); r != nil {
 		open := keyOfferAs(keys.Screen.Take, "open the turn")
 		open.inert = r.Kind != SpendTurn
 		acts = append(acts, open)
 	}
 	acts = append(acts, wayOut(backToPrompt))
-	full := append([]KeyOffer{keyOffer(keys.Screen.Move)}, acts...)
-	if field == "" || fitsBeside(full, field, width) {
-		return full
-	}
-	return acts
+	return offersBeside(keyOffer(keys.Screen.Move), acts, field, width)
 }
 
 // keyList is every key the screen has, for `[?]`.
@@ -395,7 +366,7 @@ func (s *SpendScreen) footField() string {
 // before every View because the host may replace Rows, and the pointer has
 // to survive that.
 func (s *SpendScreen) sync() {
-	s.Focus = min(max(s.Focus, 0), max(len(s.Rows)-1, 0))
+	s.clamp(len(s.Rows))
 	s.optAt = make(map[int]int, len(s.Rows))
 	opts := make([]SelectOption, 0, len(s.Rows)+3)
 	group := ""
@@ -409,31 +380,7 @@ func (s *SpendScreen) sync() {
 		s.optAt[i] = len(opts)
 		opts = append(opts, r.option())
 	}
-	s.list.Options = opts
 	// The count the window's marker states is of rows, not of options: the
 	// headings are rows on the screen and not parts of the bill.
-	s.list.Total = len(s.Rows)
-	s.list.Unnumbered = true
-	s.list.Focus = s.optAt[s.Focus]
-}
-
-// moved walks the pointer through the rows, over the headings.
-func (s *SpendScreen) moved(pressed string) bool {
-	if len(s.Rows) == 0 {
-		return false
-	}
-	l := List[SpendRow]{Items: s.Rows, Focus: s.Focus}
-	if !l.Move(pressed, keys.Screen.Move) {
-		return false
-	}
-	s.Focus = l.Focus
-	return true
-}
-
-// current is the row under the pointer, or nil for an empty bill.
-func (s *SpendScreen) current() *SpendRow {
-	if s.Focus < 0 || s.Focus >= len(s.Rows) {
-		return nil
-	}
-	return &s.Rows[s.Focus]
+	s.show(opts, len(s.Rows), s.optAt[s.Focus])
 }

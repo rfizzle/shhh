@@ -43,7 +43,9 @@ func spendFixture() []SpendRow {
 
 // spendScreen is the screen over the fixture with the pointer on focus.
 func spendScreen(focus int) *SpendScreen {
-	return &SpendScreen{Rows: spendFixture(), Focus: focus, MaxLines: 24}
+	s := &SpendScreen{Rows: spendFixture(), MaxLines: 24}
+	s.Focus = focus
+	return s
 }
 
 // The list is the total and the bill three ways under headings, a model in
