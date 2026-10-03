@@ -44,7 +44,7 @@ func readingsFixture() ([]ReadingsItem, [][]string) {
 // the host builds it: an opened summary row per reading.
 func readingsScreen(focus int) *ReadingsScreen {
 	items, bodies := readingsFixture()
-	return &ReadingsScreen{
+	s := &ReadingsScreen{
 		Readings: items,
 		Row: func(i, _ int) ActivityRow {
 			r := items[i]
@@ -56,8 +56,10 @@ func readingsScreen(focus int) *ReadingsScreen {
 				Expanded: true, Detail: detail,
 			}
 		},
-		focus: focus, Subject: "5 readings", Cost: "$0.0142 spent", maxLines: 18,
+		Subject: "5 readings", Cost: "$0.0142 spent", maxLines: 18,
 	}
+	s.Focus = focus
+	return s
 }
 
 // The list is one row per reading in the rail's own marks, and the preview is
@@ -102,8 +104,8 @@ func TestReadingsScreen_SaysWhenTheOldestWereDropped(t *testing.T) {
 func TestReadingsScreen_MovesAndLeaves(t *testing.T) {
 	s := readingsScreen(0)
 	s.View(110)
-	if done := s.Update(tea.KeyPressMsg{Code: tea.KeyDown}); done || s.focus != 1 {
-		t.Fatalf("down: done %v, focus %d", done, s.focus)
+	if done := s.Update(tea.KeyPressMsg{Code: tea.KeyDown}); done || s.Focus != 1 {
+		t.Fatalf("down: done %v, focus %d", done, s.Focus)
 	}
 	if done := s.Update(tea.KeyPressMsg{Code: 'q', Text: "q"}); !done {
 		t.Fatal("q did not close the screen")

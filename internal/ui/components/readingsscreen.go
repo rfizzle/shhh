@@ -49,14 +49,14 @@ type ReadingsItem struct {
 // ReadingsScreen is `/readings`: a takeover in the chat, full width, owning
 // the keyboard for as long as it is up.
 type ReadingsScreen struct {
+	// The pointer is an index into Readings.
+	listScreen[ReadingsItem]
 	// Readings are newest first, the order the list draws them in.
 	Readings []ReadingsItem
 	// Row is the reading at an index as the transcript's opened summary row,
 	// built at the width it will be drawn at so its prose wraps there. It is
 	// the host's because the row's renderer is.
 	Row func(index, width int) ActivityRow
-	// focus is an index into Readings.
-	focus int
 	// Subject is what the header counts — `5 readings`; Cost is what they
 	// have cost the session, the tally that goes first when the row is short.
 	Subject string
@@ -66,9 +66,6 @@ type ReadingsScreen struct {
 	Dropped, Kept int
 	// maxLines bounds the screen height. 0 is unbounded.
 	maxLines int
-
-	list Select
-	keys bool
 }
 
 // Update is the screen's whole keyboard: it moves, it shows its keys, and it
@@ -76,7 +73,7 @@ type ReadingsScreen struct {
 func (s *ReadingsScreen) Update(msg tea.KeyPressMsg) (done bool) {
 	pressed := msg.String()
 	switch {
-	case s.moved(pressed):
+	case s.moved(s.Readings, pressed, keys.Screen.Move):
 	case keys.Is(pressed, keys.Screen.List):
 		s.keys = !s.keys
 	case keys.Is(pressed, keys.Screen.Quit):
@@ -91,26 +88,29 @@ func (s *ReadingsScreen) SetSize(_, height int) { s.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves.
-func (s *ReadingsScreen) View(width int) string {
-	if width <= 0 {
-		return ""
-	}
-	s.sync()
+func (s *ReadingsScreen) View(width int) string { return s.view(width, s) }
+
+// chrome is the header over the panes, the line saying what was let go, and
+// the keys under them.
+func (s *ReadingsScreen) chrome(width int) screenChrome {
+	field := s.footField()
 	return screenChrome{
 		header:   s.header(),
 		head:     s.droppedRows(width),
-		foot:     s.footer(width).rows(width),
+		foot:     s.footer(s.offers(width, field), s.keyList(), field).rows(width),
 		maxLines: s.maxLines,
-	}.view(width, func(budget int) []string { return s.panes().rows(width, budget) })
+	}
 }
 
 // panes is the body, split the way every screen with a list and a preview
-// splits it (screenpanes.go).
+// splits it (screenpanes.go): on the left the readings, newest first.
 func (s *ReadingsScreen) panes() screenPanes {
 	return screenPanes{
 		stackAt: readingsStackWidth, listMin: readingsListMin,
 		listMax: readingsListMax, minPreview: readingsMinPreview,
-		list:    s.listRows,
+		list: func(width, budget int) []string {
+			return s.listRows(s.Readings, "the session has taken no readings", width, budget)
+		},
 		preview: s.previewRows,
 	}
 }
@@ -130,25 +130,16 @@ func (s *ReadingsScreen) droppedRows(width int) []string {
 	return []string{sty.dim.Render(Clip(line, width))}
 }
 
-// listRows is the left pane: the readings, newest first.
-func (s *ReadingsScreen) listRows(width, budget int) []string {
-	if len(s.Readings) == 0 {
-		return []string{sty.dim.Render(Clip("the session has taken no readings", width))}
-	}
-	body, _ := s.list.visibleRows(cardWidthFor(width), budget, false)
-	return body
-}
-
 // previewRows is the right pane: the reading under the pointer, whole.
 func (s *ReadingsScreen) previewRows(width int) []string {
-	r := s.current()
+	r := s.current(s.Readings)
 	if r == nil {
 		return []string{sty.dim.Render(Clip("no reading selected", width))}
 	}
 	rows := []string{paneTitle(brightStyle().Render(readingLabel(*r)),
 		sty.dim.Render(fmt.Sprintf("turn %d", r.Turn)), width), ""}
 	if s.Row != nil {
-		rows = append(rows, strings.Split(s.Row(s.focus, width).View(width), "\n")...)
+		rows = append(rows, strings.Split(s.Row(s.Focus, width).View(width), "\n")...)
 	}
 	if r.Steered {
 		// What became of the reading is not in the row, which is the reading
@@ -183,7 +174,7 @@ func readingOutcome(r ReadingsItem) (string, FieldTone) {
 
 // header names the surface, what it counts and what the counting cost.
 func (s *ReadingsScreen) header() screenHeader {
-	h := screenHeader{left: []RailSegment{screenTitle("/readings")}, keys: s.headerKeys()}
+	h := screenHeader{left: []RailSegment{screenTitle("/readings")}, keys: s.headerKeys(keys.Screen.List, keys.Screen.Quit)}
 	if s.Subject != "" {
 		h.left = append(h.left, screenField(s.Subject))
 	}
@@ -193,32 +184,10 @@ func (s *ReadingsScreen) header() screenHeader {
 	return h
 }
 
-// headerKeys is the pair the header ends with, as on every screen of the
-// family (docs/interface/surfaces.md#the-supporting-screens).
-func (s *ReadingsScreen) headerKeys() string {
-	list := keys.Bracket(keys.Screen.List) + " " + keys.Words(keys.Screen.List)
-	if s.keys {
-		list = keys.Bracket(keys.Screen.List) + " hide the keys"
-	}
-	return list + " · " + words(keys.Screen.Quit, "back")
-}
-
-// footer is the keys the screen offers and the field that annotates them.
-func (s *ReadingsScreen) footer(width int) keyFooter {
-	field := s.footField()
-	return keyFooter{offers: s.offers(width, field), register: s.keyList(),
-		showing: s.keys, field: field}
-}
-
 // offers is the key row: the pointer's keys and the way out, and the way out
 // alone where the field leaves no room for both.
 func (s *ReadingsScreen) offers(width int, field string) []KeyOffer {
-	acts := []KeyOffer{wayOut(backToPrompt)}
-	full := append([]KeyOffer{keyOffer(keys.Screen.Move)}, acts...)
-	if field == "" || fitsBeside(full, field, width) {
-		return full
-	}
-	return acts
+	return offersBeside(keyOffer(keys.Screen.Move), []KeyOffer{wayOut(backToPrompt)}, field, width)
 }
 
 // keyList is every key the screen has, for `[?]`.
@@ -243,7 +212,7 @@ func (s *ReadingsScreen) footField() string {
 // sync rebuilds the list from Readings. It runs before every View because the
 // host may replace Readings, and the pointer has to survive that.
 func (s *ReadingsScreen) sync() {
-	s.focus = min(max(s.focus, 0), max(len(s.Readings)-1, 0))
+	s.clamp(len(s.Readings))
 	opts := make([]SelectOption, 0, len(s.Readings))
 	for _, r := range s.Readings {
 		// The rail's own mark leads, plain rather than painted for the steps
@@ -254,28 +223,5 @@ func (s *ReadingsScreen) sync() {
 		opt.Value, opt.valueTone = readingOutcome(r)
 		opts = append(opts, opt)
 	}
-	s.list.Options = opts
-	s.list.Unnumbered = true
-	s.list.Focus = s.focus
-}
-
-// moved walks the pointer between readings.
-func (s *ReadingsScreen) moved(pressed string) bool {
-	if len(s.Readings) == 0 {
-		return false
-	}
-	l := List[ReadingsItem]{Items: s.Readings, Focus: s.focus}
-	if !l.Move(pressed, keys.Screen.Move) {
-		return false
-	}
-	s.focus = l.Focus
-	return true
-}
-
-// current is the reading under the pointer, or nil for an empty list.
-func (s *ReadingsScreen) current() *ReadingsItem {
-	if s.focus < 0 || s.focus >= len(s.Readings) {
-		return nil
-	}
-	return &s.Readings[s.focus]
+	s.show(opts, 0, s.Focus)
 }
