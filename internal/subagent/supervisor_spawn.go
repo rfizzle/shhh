@@ -234,13 +234,105 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 // nil for every spawn a model asked for. It rides this path rather than one
 // of its own so an integration writer is admitted, claimed, counted and
 // slotted exactly as any other writer is.
+//
+// It runs in four phases — validate and claim, admit, build and register,
+// reply — each a helper over one spawnPlan. The locks stay here so their
+// scopes read in one place: a writer holds claimMu from before it takes its
+// place in spawn order until after it is in the list the claim check reads,
+// and mu is held twice, once to reserve the name and sequence and once to
+// register the child, never across anything that takes a child's lock.
 func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integration) (string, error) {
-	args, err := parseSpawnArgs(s.Profiles(), raw)
+	p, err := s.validateSpawn(caller, raw, integ)
 	if err != nil {
 		return "", err
 	}
+
+	if p.args.profile.Writes {
+		s.claimMu.Lock()
+		defer s.claimMu.Unlock()
+	}
+	s.mu.Lock()
+	err = s.reserveSpawn(p)
+	s.mu.Unlock()
+	if err != nil {
+		return "", err
+	}
+	if err := s.claimSpawn(p); err != nil {
+		return "", err
+	}
+
+	if err := s.admitSpawn(p); err != nil {
+		return "", err
+	}
+
+	c, err := s.buildChild(p)
+	if err != nil {
+		return "", err
+	}
+	s.mu.Lock()
+	at, _ := slices.BinarySearchFunc(s.children, c.seq, func(k *child, seq int) int { return k.seq - seq })
+	s.children = slices.Insert(s.children, at, c)
+	s.byName[p.name] = c
+	s.mu.Unlock()
+
+	s.wg.Add(1)
+	go s.run(c)
+	s.emitUpdate(c)
+
+	// The claim an overlapping writer shares is read now, with the child in
+	// the list and claimMu still held, so the reply is built from values.
+	sharedHolder, sharedClaim := "", ""
+	if p.args.profile.Writes && len(p.args.paths) > 0 && p.args.overlap {
+		if holder, claim, ok := s.claimShared(p.args.paths); ok && holder != p.name {
+			sharedHolder, sharedClaim = holder, claim
+		}
+	}
+	return spawnReply(p, sharedHolder, sharedClaim), nil
+}
+
+// spawnPlan is what the phases of one spawn hand each other. Each field is
+// written by one phase and read by the ones after it; the plan is the spawn
+// call's own and no other goroutine sees it.
+type spawnPlan struct {
+	caller string
+	integ  *integration
+	args   spawnArgs
+	// Written by validateSpawn.
+	unchecked string
+	depth     int
+	resume    Handoff
+	// Written by reserveSpawn.
+	name  string
+	seq   int
+	mode  agent.Mode
+	batch int
+	// Written by claimSpawn.
+	waitsOn, waitsFor string
+	model             string
+	turns             []provider.Message
+	inheritTurns      int
+	// Written by admitSpawn.
+	cctx                    context.Context
+	cancel                  context.CancelFunc
+	evidence                string
+	inheritance             string
+	prologue                string
+	inherited, setup, floor int64
+}
+
+// validateSpawn parses the arguments and refuses what can be refused before
+// anything is claimed: a closed session, a model the session cannot run, a
+// depth past the limit, a role the spawner may not delegate, a handoff that
+// cannot be resumed. It runs under no lock of the caller's; depthOf and
+// lookup take mu themselves. It reads the supervisor's options and writes
+// only the plan it returns.
+func (s *Supervisor) validateSpawn(caller string, raw json.RawMessage, integ *integration) (*spawnPlan, error) {
+	args, err := parseSpawnArgs(s.Profiles(), raw)
+	if err != nil {
+		return nil, err
+	}
 	if s.ctx.Err() != nil {
-		return "", ErrClosed
+		return nil, ErrClosed
 	}
 	// The model is checked first of all, for the reason depth is: a name
 	// the session cannot run is a child that fails on its first request,
@@ -249,7 +341,7 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 	// See docs/capabilities/subagents.md#the-model-is-offered-the-models-it-can-name.
 	unchecked, err := s.checkModel(args.Model)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	// Depth is checked with the role and before everything else that could
 	// claim something, for the reason the token admission is: a refusal that
@@ -257,71 +349,82 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 	// refusal that cost the session what it was refusing to spend.
 	depth := s.depthOf(caller) + 1
 	if depth > s.opts.MaxDepth {
-		return "", fmt.Errorf("delegation stops at depth %d and this agent would be depth %d; raise %s to let an agent this deep spawn, or report back and let the level above you spawn it",
+		return nil, fmt.Errorf("delegation stops at depth %d and this agent would be depth %d; raise %s to let an agent this deep spawn, or report back and let the level above you spawn it",
 			s.opts.MaxDepth, depth, MaxDepthKey)
 	}
 	// A descendant is never given more than the agent that spawned it. The
-	// mode clamp below is the same rule for a different grant, and both run
-	// before the child exists rather than at its first call, so a role the
-	// spawner may not delegate is a refused spawn and not a child that will
-	// be refused every tool it reaches for.
+	// mode clamp in claimSpawn is the same rule for a different grant, and
+	// both run before the child exists rather than at its first call, so a
+	// role the spawner may not delegate is a refused spawn and not a child
+	// that will be refused every tool it reaches for.
 	// See docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth.
 	if caller != "" && args.profile.Writes {
 		if up, err := s.lookup(caller); err == nil && !up.profile.Writes {
-			return "", fmt.Errorf("%s changes nothing, so it cannot delegate %s, which writes; an agent may only delegate what it could do itself", caller, args.role)
+			return nil, fmt.Errorf("%s changes nothing, so it cannot delegate %s, which writes; an agent may only delegate what it could do itself", caller, args.role)
 		}
 	}
 	resume := Handoff{}
 	if args.resumeHandoff != "" {
 		if s.opts.LoadHandoff == nil {
-			return "", errors.New("failure handoffs are unavailable for this session")
+			return nil, errors.New("failure handoffs are unavailable for this session")
 		}
 		data, loadErr := s.opts.LoadHandoff(args.resumeHandoff)
 		if loadErr != nil {
-			return "", fmt.Errorf("cannot resume handoff %q: %w", args.resumeHandoff, loadErr)
+			return nil, fmt.Errorf("cannot resume handoff %q: %w", args.resumeHandoff, loadErr)
 		}
 		if resume, loadErr = UnmarshalHandoff(data); loadErr != nil {
-			return "", fmt.Errorf("cannot resume handoff %q: %w", args.resumeHandoff, loadErr)
+			return nil, fmt.Errorf("cannot resume handoff %q: %w", args.resumeHandoff, loadErr)
 		}
 		profile, profileErr := s.Profiles().Parse(string(resume.Role))
 		if profileErr != nil {
-			return "", fmt.Errorf("cannot resume handoff %q: %w", args.resumeHandoff, profileErr)
+			return nil, fmt.Errorf("cannot resume handoff %q: %w", args.resumeHandoff, profileErr)
 		}
 		args.role, args.profile, args.Task, args.paths = resume.Role, profile, resume.Task, append([]string(nil), resume.Paths...)
 		if resume.RecommendedBudget > args.maxTokens {
 			args.maxTokens = resume.RecommendedBudget
 		}
 	}
+	return &spawnPlan{caller: caller, integ: integ, args: args, unchecked: unchecked, depth: depth, resume: resume}, nil
+}
 
-	if args.profile.Writes {
-		s.claimMu.Lock()
-		defer s.claimMu.Unlock()
-	}
-	s.mu.Lock()
+// reserveSpawn takes the child's place in spawn order: it refuses a session
+// at its limit or a name already taken, and otherwise names the child and
+// numbers it. It runs under mu, which the caller holds, and claimMu for a
+// writer. It reads the supervisor's children, names, parent mode and batch,
+// writes its role counter and spawn count, and writes the plan's name, seq,
+// mode and batch.
+func (s *Supervisor) reserveSpawn(p *spawnPlan) error {
 	if len(s.children) >= s.opts.MaxChildren {
-		s.mu.Unlock()
 		// The count is of starts, so a refusal with three children live must
 		// not read as a concurrency limit, which is max_concurrent's.
-		return "", fmt.Errorf("agent limit reached: this session has started %d of %d agents; the limit counts agents started, not agents running, so a finished agent still holds its slot — steer or retry the agents it has, or raise %s", len(s.children), s.opts.MaxChildren, MaxChildrenKey)
+		return fmt.Errorf("agent limit reached: this session has started %d of %d agents; the limit counts agents started, not agents running, so a finished agent still holds its slot — steer or retry the agents it has, or raise %s", len(s.children), s.opts.MaxChildren, MaxChildrenKey)
 	}
-	name := args.Name
+	name := p.args.Name
 	if name == "" {
-		s.counters[args.role]++
-		name = fmt.Sprintf("%s-%d", args.role, s.counters[args.role])
+		s.counters[p.args.role]++
+		name = fmt.Sprintf("%s-%d", p.args.role, s.counters[p.args.role])
 	}
 	if _, exists := s.byName[name]; exists {
-		s.mu.Unlock()
-		return "", fmt.Errorf("an agent named %q already exists", name)
+		return fmt.Errorf("an agent named %q already exists", name)
 	}
 	s.spawned++
-	seq := s.spawned
-	mode := s.parentMode
-	batch := s.batch
-	s.mu.Unlock()
+	p.name, p.seq, p.mode, p.batch = name, s.spawned, s.parentMode, s.batch
+	return nil
+}
+
+// claimSpawn settles what the child is given once it has its place: its
+// batch and mode ceiling, the writer's claim (refused, or queued behind the
+// claim ahead of it), its model and the parent turns it inherits. It runs
+// under claimMu for a writer, which the caller holds, and never under mu:
+// AgentMode takes a child's lock, and the claim walk and conversationOf take
+// mu themselves. It reads the claims of the live writers and writes the
+// plan's batch, mode, waitsOn, waitsFor, model, turns and inheritTurns.
+func (s *Supervisor) claimSpawn(p *spawnPlan) error {
+	args := p.args
 	// An integration writer joins the round its writer was spawned in, so
 	// its lane is drawn in the fan-out it is reconciling.
-	if integ != nil {
-		batch = integ.batch
+	if p.integ != nil {
+		p.batch = p.integ.batch
 	}
 	// A descendant's ceiling is the agent that spawned it, not the session:
 	// the session's mode is already the ceiling on that agent, so taking the
@@ -331,16 +434,16 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 	// Read through AgentMode rather than off the child, because a mode is the
 	// child's own field under the child's own lock — and taken here it would
 	// be a second lock held under the supervisor's.
-	if caller != "" {
-		if up, ok := s.AgentMode(caller); ok {
-			mode = up
+	if p.caller != "" {
+		if up, ok := s.AgentMode(p.caller); ok {
+			p.mode = up
 		}
 	}
 	// A profile may start its children stricter than the parent (a
 	// reviewer in plan mode under an auto session); childMode clamps it to
 	// the parent either way, so it can never start looser.
 	if args.profile.HasMode {
-		mode = args.profile.Mode
+		p.mode = args.profile.Mode
 	}
 
 	// Writers work in isolated worktrees, so they cannot overwrite each
@@ -349,11 +452,11 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 	// apply time.
 	//
 	// A spawn that asked to wait for the claim is queued behind it instead.
-	// It is still admitted below like any other, so a budget that could not
-	// start it is refused now rather than when the claim comes free; what it
-	// does not take until then is a slot and a copy of the tree.
+	// It is still admitted in admitSpawn like any other, so a budget that
+	// could not start it is refused now rather than when the claim comes
+	// free; what it does not take until then is a slot and a copy of the
+	// tree.
 	// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
-	waitsOn, waitsFor := "", ""
 	if args.profile.Writes {
 		if holder, claim, clash := s.claimConflict(args.paths, args.overlap); clash {
 			if !args.WaitForClaim {
@@ -361,22 +464,22 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 				// the writer already holding the file was spawned to have
 				// it to itself.
 				if args.overlap {
-					return "", fmt.Errorf("%s already claims %s, which overlaps this agent's paths, and was not spawned with overlap: allowed, so the claim is not shared; wait for it with agent_report, or narrow the paths so the two do not share files", holder, claim)
+					return fmt.Errorf("%s already claims %s, which overlaps this agent's paths, and was not spawned with overlap: allowed, so the claim is not shared; wait for it with agent_report, or narrow the paths so the two do not share files", holder, claim)
 				}
-				return "", fmt.Errorf("%s already claims %s, which overlaps this agent's paths; wait for it with agent_report, or narrow the paths so the two do not share files", holder, claim)
+				return fmt.Errorf("%s already claims %s, which overlaps this agent's paths; wait for it with agent_report, or narrow the paths so the two do not share files", holder, claim)
 			}
 			// Named as the writer it follows rather than the first of the
 			// claims ahead of it, the way its lane goes on naming it.
-			waitsOn, waitsFor = holder, claim
-			if h, c, ok := s.claimAhead(args.paths, seq, args.overlap); ok {
-				waitsOn, waitsFor = h, c
+			p.waitsOn, p.waitsFor = holder, claim
+			if h, c, ok := s.claimAhead(args.paths, p.seq, args.overlap); ok {
+				p.waitsOn, p.waitsFor = h, c
 			}
 		}
 	}
 
-	model := args.Model
+	p.model = args.Model
 	if s.opts.ModelFor != nil {
-		model = s.opts.ModelFor(args.role, depth, args.Model)
+		p.model = s.opts.ModelFor(args.role, p.depth, args.Model)
 	}
 
 	// The turns the child inherits are chosen before its environment is
@@ -387,12 +490,21 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 	// Read only where there are turns to hand over: an integration writer is
 	// spawned from a child's goroutine, and the session's conversation is
 	// only ever read on the goroutine that approved a spawn.
-	var turns []provider.Message
-	inheritTurns := 0
 	if args.inherit > 0 {
-		turns, inheritTurns = lastTurns(s.conversationOf(caller), args.inherit)
+		p.turns, p.inheritTurns = lastTurns(s.conversationOf(p.caller), args.inherit)
 	}
+	return nil
+}
 
+// admitSpawn gives the child its context, builds its environment as a
+// preflight and refuses a budget that cannot cover the admission floor:
+// the inherited prompt, the evidence, a resume prologue and the task. It
+// runs under claimMu for a writer, which the caller holds, and never under
+// mu. It reads the plan the earlier phases wrote and writes the plan's
+// context and cancel, evidence, inheritance, prologue and floor figures; on
+// a refusal it cancels the context it made, so nothing it took outlives it.
+func (s *Supervisor) admitSpawn(p *spawnPlan) error {
+	args := p.args
 	// The context is the child's from here, whether or not it has anywhere
 	// to work yet: a writer queued behind a full set of slots is one a kill
 	// has to reach, and the cancel is what reaches it.
@@ -400,13 +512,13 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 	// Construct the role environment before admitting the child, but never its
 	// worktree or record. A doomed budget must not consume either resource.
 	// A spawn is the first attempt, and says so as a retry's preflight does.
-	preflight, preflightErr := s.opts.NewEnv(cctx, Spec{Name: name, Role: args.role, Root: s.opts.Root,
-		Parent: caller, Depth: depth,
-		Model: model, Paths: args.paths, Worktree: args.profile.Writes, MaxTokens: args.maxTokens, Attempt: 1,
-		Inherit: inheritTurns, Integrates: integ.sourceName()})
+	preflight, preflightErr := s.opts.NewEnv(cctx, Spec{Name: p.name, Role: args.role, Root: s.opts.Root,
+		Parent: p.caller, Depth: p.depth,
+		Model: p.model, Paths: args.paths, Worktree: args.profile.Writes, MaxTokens: args.maxTokens, Attempt: 1,
+		Inherit: p.inheritTurns, Integrates: p.integ.sourceName()})
 	if preflightErr != nil {
 		cancel()
-		return "", fmt.Errorf("the agent's environment could not be built: %w", preflightErr)
+		return fmt.Errorf("the agent's environment could not be built: %w", preflightErr)
 	}
 	// A review's evidence is part of what it is admitted for: it arrives in
 	// the child's first turn, so a budget that could not carry it is a
@@ -414,10 +526,10 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 	// slot is open is the thing admission exists to prevent.
 	evidence := ""
 	switch {
-	case integ != nil:
+	case p.integ != nil:
 		// An integration writer's evidence is the conflict itself, and it is
 		// admitted for it the way a review is for its diff.
-		evidence = integ.evidence
+		evidence = p.integ.evidence
 	case args.profile.Reviews:
 		evidence = declaredEvidence(s.opts.Root, args.paths)
 	}
@@ -441,53 +553,64 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 	// once the child is admitted.
 	resumeText := ""
 	if args.resumeHandoff != "" {
-		resumeText = resumePrologue(resume, s.opts.EvidenceExists)
+		resumeText = resumePrologue(p.resume, s.opts.EvidenceExists)
 	}
-	inheritance := inheritedPrologue(turns, inheritTurns, preflight.Scrub, measuringArchive(preflight.Archive))
+	inheritance := inheritedPrologue(p.turns, p.inheritTurns, preflight.Scrub, measuringArchive(preflight.Archive))
 	inherited, setup, floor := admissionFloor(preflight, inheritance+evidence+resumeText+args.Task)
 	if args.maxTokens < floor {
 		cancel()
-		return "", errors.New(admissionRefusal(args.maxTokens, floor, inheritTurns, agent.EstimateTokens(inheritance)))
+		return errors.New(admissionRefusal(args.maxTokens, floor, p.inheritTurns, agent.EstimateTokens(inheritance)))
 	}
 	if preflight.Archive != nil {
-		inheritance = inheritedPrologue(turns, inheritTurns, preflight.Scrub, preflight.Archive)
+		inheritance = inheritedPrologue(p.turns, p.inheritTurns, preflight.Scrub, preflight.Archive)
 	}
-	prologue := inheritance + evidence + resumeText
+	p.cctx, p.cancel = cctx, cancel
+	p.evidence, p.inheritance, p.prologue = evidence, inheritance, inheritance+evidence+resumeText
+	p.inherited, p.setup, p.floor = inherited, setup, floor
+	return nil
+}
 
+// buildChild makes the admitted child, queued, and opens a reader's
+// workspace. It runs under claimMu for a writer, which the caller holds, and
+// never under mu; the child it builds is not yet in the list, so no other
+// goroutine can reach it. It reads the plan and the supervisor's options and
+// writes nothing shared; on a failure it cancels the plan's context.
+func (s *Supervisor) buildChild(p *spawnPlan) (*child, error) {
+	args := p.args
 	c := &child{
-		name:            name,
-		parent:          caller,
-		depth:           depth,
-		seq:             seq,
+		name:            p.name,
+		parent:          p.caller,
+		depth:           p.depth,
+		seq:             p.seq,
 		role:            args.role,
 		profile:         args.profile,
 		task:            args.Task,
-		model:           model,
+		model:           p.model,
 		paths:           args.paths,
-		batch:           batch,
+		batch:           p.batch,
 		steps:           args.steps,
-		evidence:        evidence,
-		inheritance:     inheritance,
-		inheritTurns:    inheritTurns,
-		inheritTokens:   agent.EstimateTokens(inheritance),
-		prologue:        prologue,
+		evidence:        p.evidence,
+		inheritance:     p.inheritance,
+		inheritTurns:    p.inheritTurns,
+		inheritTokens:   agent.EstimateTokens(p.inheritance),
+		prologue:        p.prologue,
 		root:            s.opts.Root,
-		mode:            mode,
+		mode:            p.mode,
 		maxRounds:       args.maxRounds,
 		maxTokens:       args.maxTokens,
-		inheritedTokens: inherited,
-		setupTokens:     setup,
-		admissionFloor:  floor,
-		ctx:             cctx,
-		cancel:          cancel,
+		inheritedTokens: p.inherited,
+		setupTokens:     p.setup,
+		admissionFloor:  p.floor,
+		ctx:             p.cctx,
+		cancel:          p.cancel,
 		done:            make(chan struct{}),
 		steerWake:       make(chan struct{}, 1),
 		state:           StateQueued,
-		detail:          queuedDetail(waitsOn),
+		detail:          queuedDetail(p.waitsOn),
 		waitClaim:       args.WaitForClaim && args.profile.Writes,
 		overlap:         args.overlap,
-		integrates:      integ,
-		waitsOn:         waitsOn,
+		integrates:      p.integ,
+		waitsOn:         p.waitsOn,
 		started:         s.clock()(),
 		now:             s.opts.Now,
 		attempt:         1,
@@ -499,24 +622,22 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 	// rather than a child that appears and immediately fails. A writer's
 	// waits for its slot (openWorkspace).
 	if !args.profile.Writes {
-		w, wErr := s.openWorkspace(c, cctx, args.maxRounds, c.attempt)
+		w, wErr := s.openWorkspace(c, p.cctx, args.maxRounds, c.attempt)
 		if wErr != nil {
-			cancel()
-			return "", wErr
+			p.cancel()
+			return nil, wErr
 		}
 		c.install(w)
 	}
+	return c, nil
+}
 
-	s.mu.Lock()
-	at, _ := slices.BinarySearchFunc(s.children, c.seq, func(k *child, seq int) int { return k.seq - seq })
-	s.children = slices.Insert(s.children, at, c)
-	s.byName[name] = c
-	s.mu.Unlock()
-
-	s.wg.Add(1)
-	go s.run(c)
-	s.emitUpdate(c)
-
+// spawnReply is what the spawn tool answers with: the child, its budget and
+// what the caller should know of how it works. It is pure string building
+// over the plan; sharedHolder and sharedClaim are the claim an overlapping
+// writer shares with another, read by the caller, empty when there is none.
+func spawnReply(p *spawnPlan, sharedHolder, sharedClaim string) string {
+	args := p.args
 	note := ""
 	if args.profile.Writes {
 		note = " It edits an isolated copy of the workspace; its changes come back as a single patch the user reviews."
@@ -525,15 +646,15 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 			if args.overlap {
 				note = " It edits an isolated copy of the workspace; its changes come back as a single patch the user reviews. It claims " +
 					strings.Join(args.paths, ", ") + " and allows overlap: another writer spawned with overlap: allowed may claim the same files, both patches land through the merge, and where the two change the same lines an integration writer is started to reconcile them."
-				if holder, claim, ok := s.claimShared(args.paths); ok && holder != name {
-					note += fmt.Sprintf(" It shares %s with %s.", claim, holder)
+				if sharedHolder != "" {
+					note += fmt.Sprintf(" It shares %s with %s.", sharedClaim, sharedHolder)
 				}
 			}
 		} else {
 			note += " It declared no paths, so nothing stops a second writer from touching the same files — pass paths when you fan out writers."
 		}
-		if waitsOn != "" {
-			note += fmt.Sprintf(" It has not started: %s claims %s, and it waits behind that claim without a slot or a copy of the workspace, starting from the tree as it stands once the claim is released.", waitsOn, waitsFor)
+		if p.waitsOn != "" {
+			note += fmt.Sprintf(" It has not started: %s claims %s, and it waits behind that claim without a slot or a copy of the workspace, starting from the tree as it stands once the claim is released.", p.waitsOn, p.waitsFor)
 		}
 	}
 	// The evidence a review opened on, so the caller knows whether it is
@@ -541,15 +662,15 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 	// saying for the reason an undeclared writer's scope is: the review is
 	// about to spend its pass finding what it was meant to be reading.
 	if args.profile.Reviews {
-		if evidence != "" {
+		if p.evidence != "" {
 			note = " It opens on the declared change under " + strings.Join(args.paths, ", ") + " and reports once it has examined it."
 		} else {
 			note = " It declared no paths, so it starts from your task text alone — pass paths and it opens on their diff instead of surveying for the change."
 		}
 	}
 	modelNote := ""
-	if model != "" {
-		modelNote = ", " + model
+	if p.model != "" {
+		modelNote = ", " + p.model
 	}
 	resumed := ""
 	if args.resumeHandoff != "" {
@@ -557,13 +678,13 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 	}
 	// What it was handed of this conversation, in the unit the call asked
 	// in, so a caller that asked for more turns than there were learns it.
-	if inheritTurns > 0 {
+	if p.inheritTurns > 0 {
 		resumed += fmt.Sprintf(" It was handed your %s (~%s tokens) ahead of its task.",
-			lastTurnsPhrase(inheritTurns), formatTokens(agent.EstimateTokens(inheritance)))
+			lastTurnsPhrase(p.inheritTurns), formatTokens(agent.EstimateTokens(p.inheritance)))
 	}
-	if unchecked != "" {
-		resumed += " " + unchecked
+	if p.unchecked != "" {
+		resumed += " " + p.unchecked
 	}
 	return fmt.Sprintf("Spawned %s (%s%s, %s, ~%s token budget).%s%s It works in the background: call agent_report with name=%q in a later step to wait for and collect its final report, or agent_report with no arguments for a status overview.",
-		name, args.role, modelNote, roundBudgetLabel(args.maxRounds), formatTokens(args.maxTokens), note, resumed, name), nil
+		p.name, args.role, modelNote, roundBudgetLabel(args.maxRounds), formatTokens(args.maxTokens), note, resumed, p.name)
 }

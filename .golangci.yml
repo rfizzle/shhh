@@ -68,10 +68,6 @@ linters:
       - linters: [gocognit]
         path: ^internal/reports/block\.go$
         text: 'func `\(Block\)\.validate`'
-      # The supervisor's spawn: claim, environment and launch in one body.
-      - linters: [gocognit]
-        path: ^internal/subagent/supervisor_spawn\.go$
-        text: 'func `\(\*Supervisor\)\.spawn`'
       # The SQL tokenizer: a hand-written scanner over every lexical case.
       - linters: [gocognit]
         path: ^internal/tools/sqlite\.go$
