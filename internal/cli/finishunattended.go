@@ -75,6 +75,9 @@ type tailOpts struct {
 	// sayCommands tells the model what its commands run under; a surface
 	// that offers no command has nothing for that to describe.
 	sayCommands bool
+	// initial is a conversation the session begins from in place of the
+	// fresh one, nil for the fresh one.
+	initial []provider.Message
 	// settings is the surface's own part of what the record is stamped
 	// with: the mode, the item and stage, the round cap and the classifier.
 	settings runSettings
@@ -170,8 +173,16 @@ func finishUnattended(cmd *cobra.Command, asm *assembly, session *chatSession, o
 	// in. The claim happens here rather than at the save so that two sessions
 	// started in the same second settle which of them owns the name before
 	// either writes a word to it.
+	messages := env.messages
+	if opts.initial != nil {
+		// A fork carries its parent's conversation, and the parent's system
+		// prompt with it: the two were built together and a fresh one over an
+		// old conversation would describe a different session.
+		messages = opts.initial
+		session.continueLast, session.resumeName = false, ""
+	}
 	db := asm.db
-	saved, messages, err := openHeadlessChat(db, *session, env.messages, env.sysPrompt)
+	saved, messages, err := openHeadlessChat(db, *session, messages, env.sysPrompt)
 	if err != nil {
 		return nil, err
 	}

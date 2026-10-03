@@ -37,7 +37,6 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/rpc"
-	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -368,71 +367,37 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	red, qgate, procSup := ts.evidence, ts.gate, ts.proc
 	cfg = env.cfg
 
-	// The containment, and then what it contains. A served session is a
-	// long-lived process and has no disposable container of its own: a
-	// sandbox is created for one run and torn down with it, which is not what
-	// a session that outlives every one of its turns is.
-	run := runner.RunCaptureResult
-	sandboxProfile := ""
-	containment, err := buildContainment(cfg, sc, procSup)
+	// The containment, and then what it contains, in the order a scripted
+	// run takes them too. A served session is a long-lived process and has
+	// no disposable container of its own: a sandbox is created for one run
+	// and torn down with it, which is not what a session that outlives every
+	// one of its turns is.
+	//
+	// A mode and a classifier only where --mode auto put them there. Left
+	// alone, approvals here are answered by a client one call at a time and
+	// neither of those two settings is what decided them.
+	recordedMode := ""
+	if opts.autoMode {
+		recordedMode = agent.ModeAuto.String()
+	}
+	tail, err := finishUnattended(cmd, asm, &session, tailOpts{
+		kind:        "serve",
+		sayCommands: true,
+		initial:     initial,
+		settings: runSettings{
+			mode:       recordedMode,
+			rounds:     roundCapFor(maxRoundsFor(cfg, opts.maxRounds, opts.maxRoundsSet)),
+			classifier: opts.autoMode,
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
-	if containment.Run != nil {
-		run = containment.Run
-		sandboxProfile = containment.Profile
-	}
-	// What the model is told about it, beside where it was told the work is
-	// (scope.go). It is joined to the prompt already built because the
-	// containment is resolved after the provider is, and the prompt had to
-	// exist for that.
-	env.addBuiltPrompt(commandEnvironmentBlock(commandEnvironment{
-		Mechanism: containment.Mechanism,
-		Profile:   containment.Profile,
-		Network:   containment.Network,
-		Hosts:     containment.Hosts,
-		Refused:   containment.Refusal != "",
-		Ceiling:   cfg.CommandTimeout(),
-		// A ceiling backgrounds a command that is still printing only where
-		// there is a supervisor to hand it to (process.go).
-		Backgrounds: procSup != nil,
-	}))
-	// And the declared tools its commands will not find, as nothing anyone
-	// here can install: a client answers cards for calls, and the install
-	// is not a call (toolchain.go).
-	env.addBuiltPrompt(toolchainPromptBlock(containment.Toolchain.Missing, false))
-	run = scrubResultRunner(session.vault, run)
-	// Nobody is at a keyboard to cancel a command that will not finish, which
-	// is the same reason an unattended run bounds one.
-	run = boundedRunner(run, cfg.CommandTimeout())
-
-	hookCwd, _ := os.Getwd()
-	hooked := hookSet(cfg)
-	for _, note := range hookNotes(hooked) {
-		fmt.Fprintf(os.Stderr, "» hooks: %s\n", note)
-	}
-	hooks := buildHooks(cfg, hooked, containment.Wrap, hookCwd)
-	hookStart := hooks.SessionStart(cmd.Context())
-	hookNoteLine(hookStart)
-	if hookStart.Context != "" {
-		env.sysPrompt = prompt.CombineExtra(env.sysPrompt, hookStart.Context)
-		if len(env.messages) > 0 && env.messages[0].Role == provider.RoleSystem {
-			env.messages[0].Content = env.sysPrompt
-		}
-	}
-
-	messages := env.messages
-	if initial != nil {
-		// A fork carries its parent's conversation, and the parent's system
-		// prompt with it: the two were built together and a fresh one over an
-		// old conversation would describe a different session.
-		messages = initial
-		session.continueLast, session.resumeName = false, ""
-	}
-	saved, messages, err := openHeadlessChat(db, session, messages, env.sysPrompt)
-	if err != nil {
-		return nil, err
-	}
+	// Released with everything else this session opened: the record, then
+	// the slot, ahead of the assembly.
+	l.closers = append(l.closers, tail.close)
+	run, hooks, hookCwd, messages := tail.run, tail.hooks, tail.hookCwd, tail.messages
+	l.recorder, l.saved = tail.recorder, tail.saved
 	// What the conversation this session begins from says it read, recorded
 	// as read-with-unknown-content. A fork's parent read those files into a
 	// record of its own and a resumed conversation read them in a process
@@ -442,12 +407,6 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// is the answer every other door gives a conversation that comes back.
 	// See docs/capabilities/approvals-and-safety.md#a-file-is-changed-from-what-was-read.
 	l.seen.NoteRestoredReads(messages)
-	l.saved = saved
-	l.closers = append(l.closers, func() {
-		if db != nil && saved != nil {
-			_ = db.ReleaseChatSlot(saved.slot)
-		}
-	})
 
 	a := agent.New(messages, env.stream)
 	a.SetSteering(steering(cfg, env.prompts))
@@ -464,30 +423,6 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	a.StoreElided(red.Keep)
 	a.SetMaxRounds(maxRoundsFor(cfg, opts.maxRounds, opts.maxRoundsSet))
 	l.agent = a
-
-	l.recorder = startObserveRecorder(db, "serve", env.prov.Name(), env.modelName, prices)
-	l.closers = append(l.closers, l.recorder.end)
-	hooks.SetSession(hookSession(l.recorder.sessionID()))
-	// A mode and a classifier only where --mode auto put them there. Left
-	// alone, approvals here are answered by a client one call at a time and
-	// neither of those two settings is what decided them.
-	recordedMode := ""
-	if opts.autoMode {
-		recordedMode = agent.ModeAuto.String()
-	}
-	l.recorder.stamp(env.prompts.fingerprintOf(env.sysPrompt), session.skills.Len(), projectFingerprintRoot(),
-		sessionSettings(cfg, runSettings{
-			mode:       recordedMode,
-			effort:     env.effort,
-			rounds:     roundCapFor(maxRoundsFor(cfg, opts.maxRounds, opts.maxRoundsSet)),
-			checkIn:    checkInFor(cfg.Behavior.CheckInIntervalRounds),
-			sandbox:    sandboxProfile,
-			model:      auxiliaryModel(cfg, env.provName, env.modelName),
-			summary:    cfg.HeadlessSummaryEnabled(),
-			classifier: opts.autoMode,
-		}))
-	recordGateVerdicts(qgate, l.recorder)
-	recordSearches(session.web, l.recorder)
 
 	// The events a client reads are the run's own, written by the same
 	// encoder to a writer that hands each finished line to the protocol
@@ -554,7 +489,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		allowlist:      cfg.Behavior.CommandAllowlist,
 		denylist:       cfg.Behavior.CommandDenylist,
 		run:            nudges.Ran(run),
-		containRefusal: containment.Refusal,
+		containRefusal: tail.refusal,
 		red:            red,
 		record:         answeredByClient(record),
 		webTools:       session.web,
@@ -574,7 +509,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 			allowlist:      cfg.Behavior.CommandAllowlist,
 			denylist:       cfg.Behavior.CommandDenylist,
 			run:            nudges.Ran(run),
-			containRefusal: containment.Refusal,
+			containRefusal: tail.refusal,
 			red:            red,
 			record:         record,
 			webTools:       session.web,
@@ -719,7 +654,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		}
 	}
 	resolveCall = own.wrap(resolveCall)
-	resolveCall = unattendedHooks(hooks, l.hookPos, hookNoteLine, record, containment.Refusal, procSup, resolveCall)
+	resolveCall = unattendedHooks(hooks, l.hookPos, hookNoteLine, record, tail.refusal, procSup, resolveCall)
 	if c := headlessTree(cfg, session.sibling, own); c != nil {
 		// The boundary re-check asks the same question the write asks, so it
 		// has to ask it of the same record: read from the process-wide one it
