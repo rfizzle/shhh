@@ -117,7 +117,9 @@ func commandName(text string) string {
 	return parts[0]
 }
 
-// runCommand dispatches one slash command from the orchestrator surface.
+// runCommand dispatches one slash command from the orchestrator surface: the
+// surface a register row opens (overlay.go), else the run the command table
+// declares under the name, else answerCommand.
 func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 	if m.working() {
 		if reason, ok := idleOnlyReason(name); ok {
@@ -139,170 +141,18 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 	if c, ok := registeredCommand(name); ok && (!c.bare || len(parts) == 1) {
 		return c.open(m, parts)
 	}
-	switch {
-	case name == "/paste":
-		// Attachments. Not idleOnly: staging bytes for the next
-		// message touches nothing the running turn is using.
-		return m.runPaste(parts)
-
-	case name == "/attach":
-		return m.attachCommand(parts)
-
-	case name == "/secret" || name == "/secrets":
-		// Not idleOnly: adding a secret mid-turn is exactly when the
-		// command is wanted — the model just asked for a key it lacks.
-		return m.secretCommand(parts[1:])
-
-	case name == "/skill":
-		// Explicit activation. Not idleOnly: while the agent works the
-		// content queues as steering, like any typed text.
-		if len(parts) < 2 {
-			return m.surfaceNotice("usage: /skill <name> [task]. /skills lists what can be activated")
-		}
-		return m.activateSkill(parts[1], strings.Join(parts[2:], " "))
-
-	case name == "/plan" && len(parts) == 1 && m.planRun != nil:
-		// The approved plan's checklist, read whole on the steps screen —
-		// the list the rail's PLAN block draws and whose heading opens the
-		// same screen. Not idleOnly: mid-turn is when somebody asks where
-		// the plan has got to, and below 130 columns there is no rail.
-		return m.openSteps()
-
-	case name == "/detach":
-		if m.attachedTo == "" {
-			return m.surfaceNotice("not attached to an agent. /attach <name> or /agents to pick one")
-		}
-		m.detachOne()
-		return m, nil
-
-	case name == "/clear" || name == "/new":
-		// The session boundary (model.go). Over a turn that is not over it
-		// asks first, the way quitting does and for the same reason: what a
-		// yes costs is the work the reader may not have noticed running, and
-		// a boundary is never crossed mid-turn.
-		if m.turnInFlight() {
-			return m.openNewSessionConfirm()
-		}
-		notes, save := m.startNewSession()
-		next, cmd := m.systemEntries(notes)
-		return next, tea.Batch(cmd, save)
-
-	case name == "/exit" || name == "/quit" || name == "/q":
-		// A typed command is deliberate, so an idle quit goes straight
-		// out; over a live turn even it confirms, because what it costs is
-		// the turn's work, not the reader's time.
-		if m.working() {
-			return m.openQuitConfirm()
-		}
-		return m, m.quitNow()
-
-	case name == "/run":
-		// Bare /run with several code blocks opens the picker; one
-		// block, /run <n>, and every no-op case go straight to startRun.
-		if len(parts) == 1 {
-			if picked, cmd, ok := m.openRunPick(); ok {
-				return picked, cmd
-			}
-		}
-		result, entersConfirm := m.startRun(parts)
-		if !entersConfirm {
-			m.appendEntry(entry{kind: entrySystem, text: result})
-		}
-		m.viewport.SetLines(m.renderHistoryLines())
-		m.viewport.GotoBottom()
-		return m, nil
-
-	case text == "/status":
-		// The rail's SUMMARY block in words, for the terminals
-		// below 130 columns that have no rail to draw it in — the same answer
-		// the rail's rules give for PLAN. It takes a fresh reading on the way out:
-		// asking for the summary is a reason to have a current one.
-		note, read := m.statusCommand()
-		next, cmd := m.systemNotice(note)
-		return next, tea.Batch(cmd, read)
-
-	case name == "/copy":
-		// The last response onto the clipboard. Answered here rather than
-		// in the handler table below because the copy may be a write the
-		// terminal takes, and a row of that table has nowhere to put one.
-		return m.copyCommand(parts)
-
-	case text == "/compact":
-		return m.startCompact()
-
-	case text == "/rewind":
-		// Bare /rewind opens the checkpoint picker; the numbered form
-		// goes through handleSlashCommand.
-		return m.openRewindPick()
-
-	case text == "/step":
-		// The in-flight step's detail, from the draft — the chord that
-		// answered this went to reading mode, and the question it answered
-		// is still asked mid-turn with a half-written sentence in the box
-		// (detail.go).
-		return m.detailFromDraft()
-
-	case name == "/undo":
-		// Put a turn's edits back from the session's own records;
-		// bare takes the most recent turn that changed anything.
-		return m.undoCommand(parts)
-
-	case text == "/model" && m.canPickModel():
-		// Bare /model opens the model picker; the named form and
-		// sessions with nothing to pick go through handleSlashCommand. A
-		// provider that can enumerate its endpoint is queried first.
-		return m.startModelPick()
-
-	case text == "/permissions" || text == "/perms" || text == "/mode":
-		// Bare /permissions opens the mode picker.
-		return m.openModePick()
-
-	case text == "/load" || text == "/chats":
-		// Bare /load and /chats open the saved-chat picker; with
-		// nothing saved they fall through to the listing below.
-		if picked, cmd, ok := m.openChatPick(); ok {
-			return picked, cmd
-		}
-
-	case name == "/help":
-		// Bare /help is the key list's register row (keypopup.go). With words
-		// after it, it writes the whole help — a sheet laid out at the pane's
-		// width rather than a sentence (helpsheet.go), so it is appended as one.
-		return m.helpNotice(m.helpSheet())
-
-	case name == "/ui":
-		// /ui mouse flips the terminal's own reporting. That is
-		// a field on the View rather than a command back to the program, so
-		// this setting takes the same path as every other /ui setting: change
-		// the model, say so in the transcript.
-		return m.systemNotice(m.uiCommand(parts))
-
-	case name == "/trust":
-		// The one answer that decides whether the checkout's skills, agent
-		// profiles, quality suites and servers load at all. Like trusting a
-		// server, it lands in the next session: the prompt naming the skills
-		// and the toolset holding the gate were built when this one started.
-		return m.systemNotice(m.trustCommand(parts[1:]))
-
-	case text == scaffoldCommandName:
-		// The scaffolding card: what it would write, before it writes it.
-		return m.scaffoldCommand()
-
-	case name == "/memory" && len(parts) > 1 && parts[1] == "edit":
-		// /memory edit hands the entry's text to the editor; every other
-		// /memory subcommand is textual and goes through handleSlashCommand.
-		if len(parts) != 3 {
-			return m.systemNotice("usage: /memory edit <id>")
-		}
-		return m.openMemoryEditor(parts[2])
-
-	case text == "/branches":
-		// Bare /branches opens the branch picker; a session with no
-		// branch family falls through.
-		if picked, cmd, ok := m.openBranchPick(); ok {
-			return picked, cmd
+	if c, ok := commands()[name]; ok && c.run != nil && (!c.exact || text == name) {
+		if next, cmd, handled := c.run(m, parts); handled {
+			return next, cmd
 		}
 	}
+	return m.answerCommand(text, name, parts)
+}
+
+// answerCommand is the dispatch for a line no surface and no command's run
+// took: a server's prompt, a skill under its own name, or the transcript row
+// handleSlashCommand answers with — the unknown-command hint included.
+func (m Model) answerCommand(text, name string, parts []string) (tea.Model, tea.Cmd) {
 	// A connected server's prompts are commands of this session
 	// (mcp.go). The name is namespaced by the server it came from, so
 	// nothing in the registry can collide with one, and the lookup is
@@ -376,10 +226,38 @@ func (m Model) attachCommand(parts []string) (tea.Model, tea.Cmd) {
 // The slash-command table.
 //
 // A command used to be a case label in a string switch nearly three hundred
-// lines long, with its aliases as extra labels on the same case — so nothing
-// could ask which names a session answers, or answer one, without reading the
-// whole switch. It is a map from the name to what the name does now, and an
-// alias is a row pointing at the same function.
+// lines long, with its aliases as extra labels on the same case — and then
+// two of them, one for what the front end does and one for the row the
+// transcript shows, so a command with both was declared twice. It is one row
+// per command now holding both, and an alias is a name on the row.
+//
+// A command whose job is opening a surface is not here: its register row
+// declares it (overlay.go). command_test.go holds both to the completion
+// registry, so a name cannot be offered without being answered, or answered
+// without being offered.
+
+// command is one row of the table. A row is where a command's name sits
+// beside what it does, so whatever else is said about a command — its menu
+// row, its /help paragraph — has a row to be a field of.
+type command struct {
+	name    string
+	aliases []string
+	// exact is a run taken only when the line is the name alone, spelled as
+	// typed; anything else goes on to answerCommand.
+	exact bool
+	// run is what the front end does with the line: open a picker, ask a
+	// confirm, hand the terminal a write. handled false is a form it leaves
+	// to the rest of the dispatch (answerCommand). nil is a command whose
+	// whole answer is the transcript row.
+	run commandRun
+	// answer is the row the transcript shows, which handleSlashCommand gives
+	// for the name. nil is a command the front end always carries out.
+	answer slashHandler
+}
+
+// commandRun is what one command does in the front end. parts is the whole
+// line split on whitespace, the command name included.
+type commandRun func(m Model, parts []string) (next tea.Model, cmd tea.Cmd, handled bool)
 
 // slashHandler is what one command does with the words it was typed with.
 // parts is the whole line split on whitespace, the command name included:
@@ -387,50 +265,246 @@ func (m Model) attachCommand(parts []string) (tea.Model, tea.Cmd) {
 // answer is the row the transcript shows.
 type slashHandler func(m *Model, parts []string) string
 
-var (
-	slashHandlerOnce  sync.Once
-	slashHandlerTable map[string]slashHandler
-)
-
-// slashHandlers is the table. Every name a session answers is a row of it,
-// which is what lets the completion registry be checked against what the
-// session will actually do with a name it offers.
-//
-// It is built on first use rather than at initialisation for the reason the
-// overlay register is (overlay.go): a command reads the session, and reading
-// the session eventually asks which mode has the screen — a loop the compiler
-// reads as an initialisation cycle in a package-level table.
-func slashHandlers() map[string]slashHandler {
-	slashHandlerOnce.Do(func() { slashHandlerTable = buildSlashHandlers() })
-	return slashHandlerTable
+// always is a run that handles every form of its command.
+func always(run func(m Model, parts []string) (tea.Model, tea.Cmd)) commandRun {
+	return func(m Model, parts []string) (tea.Model, tea.Cmd, bool) {
+		next, cmd := run(m, parts)
+		return next, cmd, true
+	}
 }
 
-func buildSlashHandlers() map[string]slashHandler {
-	return map[string]slashHandler{
-		"/help":        slashHelp,
-		"/model":       slashModel,
-		"/permissions": slashPermissions,
-		"/perms":       slashPermissions,
-		"/mode":        slashPermissions,
-		"/reasoning":   slashReasoning,
-		"/think":       slashReasoning,
-		"/ui":          slashUI,
-		"/add-dir":     slashAddDir,
-		"/adddir":      slashAddDir,
-		"/sandbox":     slashSandbox,
-		"/evidence":    slashEvidence,
-		"/gate":        slashGate,
-		"/ps":          slashProcesses,
-		"/memory":      slashMemory,
-		"/mcp":         slashMCP,
-		"/skills":      slashSkills,
-		"/plan":        slashPlan,
-		"/rewind":      slashRewind,
-		"/branches":    slashBranches,
-		"/save":        slashSave,
-		"/load":        slashLoad,
-		"/chats":       slashChats,
-		"/sessions":    slashSessions,
+// bareRun is a run that reads no words, for a command declared exact.
+func bareRun(run func(m Model) (tea.Model, tea.Cmd)) commandRun {
+	return func(m Model, _ []string) (tea.Model, tea.Cmd, bool) {
+		next, cmd := run(m)
+		return next, cmd, true
+	}
+}
+
+// picks is a run that opens a picker when there is something to pick, and
+// otherwise leaves the line to the command's answer, which says why not.
+func picks(open func(m Model) (tea.Model, tea.Cmd, bool)) commandRun {
+	return func(m Model, _ []string) (tea.Model, tea.Cmd, bool) { return open(m) }
+}
+
+var (
+	commandOnce    sync.Once
+	commandByName  map[string]*command
+	slashHandlerAt map[string]slashHandler
+)
+
+// commands is the table by every name a row answers to. slashHandlers is the
+// same table as handleSlashCommand reads it: the names whose row has an
+// answer.
+//
+// Both are built on first use rather than at initialisation for the reason
+// the overlay register is (overlay.go): a command reads the session, and
+// reading the session eventually asks which mode has the screen — a loop the
+// compiler reads as an initialisation cycle in a package-level table.
+func commands() map[string]*command {
+	commandOnce.Do(indexCommands)
+	return commandByName
+}
+
+func slashHandlers() map[string]slashHandler {
+	commandOnce.Do(indexCommands)
+	return slashHandlerAt
+}
+
+func indexCommands() {
+	commandByName = map[string]*command{}
+	slashHandlerAt = map[string]slashHandler{}
+	for _, c := range buildCommands() {
+		for _, n := range append([]string{c.name}, c.aliases...) {
+			commandByName[n] = c
+			if c.answer != nil {
+				slashHandlerAt[n] = c.answer
+			}
+		}
+	}
+}
+
+func buildCommands() []*command {
+	return []*command{
+		// Attachments. Not idleOnly: staging bytes for the next
+		// message touches nothing the running turn is using.
+		{name: "/paste", run: always(Model.runPaste)},
+		{name: "/attach", run: always(Model.attachCommand)},
+		{name: "/secret", aliases: []string{"/secrets"},
+			// Not idleOnly: adding a secret mid-turn is exactly when the
+			// command is wanted — the model just asked for a key it lacks.
+			run: always(func(m Model, parts []string) (tea.Model, tea.Cmd) {
+				return m.secretCommand(parts[1:])
+			})},
+		{name: "/skill",
+			// Explicit activation. Not idleOnly: while the agent works the
+			// content queues as steering, like any typed text.
+			run: always(func(m Model, parts []string) (tea.Model, tea.Cmd) {
+				if len(parts) < 2 {
+					return m.surfaceNotice("usage: /skill <name> [task]. /skills lists what can be activated")
+				}
+				return m.activateSkill(parts[1], strings.Join(parts[2:], " "))
+			})},
+		{name: "/plan",
+			// The approved plan's checklist, read whole on the steps screen —
+			// the list the rail's PLAN block draws and whose heading opens the
+			// same screen. Not idleOnly: mid-turn is when somebody asks where
+			// the plan has got to, and below 130 columns there is no rail.
+			run: func(m Model, parts []string) (tea.Model, tea.Cmd, bool) {
+				if len(parts) != 1 || m.planRun == nil {
+					return m, nil, false
+				}
+				next, cmd := m.openSteps()
+				return next, cmd, true
+			},
+			answer: slashPlan},
+		{name: "/detach", run: always(func(m Model, _ []string) (tea.Model, tea.Cmd) {
+			if m.attachedTo == "" {
+				return m.surfaceNotice("not attached to an agent. /attach <name> or /agents to pick one")
+			}
+			m.detachOne()
+			return m, nil
+		})},
+		{name: "/clear", aliases: []string{"/new"},
+			// The session boundary (model.go). Over a turn that is not over it
+			// asks first, the way quitting does and for the same reason: what a
+			// yes costs is the work the reader may not have noticed running, and
+			// a boundary is never crossed mid-turn.
+			run: always(func(m Model, _ []string) (tea.Model, tea.Cmd) {
+				if m.turnInFlight() {
+					return m.openNewSessionConfirm()
+				}
+				notes, save := m.startNewSession()
+				next, cmd := m.systemEntries(notes)
+				return next, tea.Batch(cmd, save)
+			})},
+		{name: "/exit", aliases: []string{"/quit", "/q"},
+			// A typed command is deliberate, so an idle quit goes straight
+			// out; over a live turn even it confirms, because what it costs is
+			// the turn's work, not the reader's time.
+			run: always(func(m Model, _ []string) (tea.Model, tea.Cmd) {
+				if m.working() {
+					return m.openQuitConfirm()
+				}
+				return m, m.quitNow()
+			})},
+		{name: "/run",
+			// Bare /run with several code blocks opens the picker; one
+			// block, /run <n>, and every no-op case go straight to startRun.
+			run: always(func(m Model, parts []string) (tea.Model, tea.Cmd) {
+				if len(parts) == 1 {
+					if picked, cmd, ok := m.openRunPick(); ok {
+						return picked, cmd
+					}
+				}
+				result, entersConfirm := m.startRun(parts)
+				if !entersConfirm {
+					m.appendEntry(entry{kind: entrySystem, text: result})
+				}
+				m.viewport.SetLines(m.renderHistoryLines())
+				m.viewport.GotoBottom()
+				return m, nil
+			})},
+		{name: "/status", exact: true,
+			// The rail's SUMMARY block in words, for the terminals
+			// below 130 columns that have no rail to draw it in — the same answer
+			// the rail's rules give for PLAN. It takes a fresh reading on the way out:
+			// asking for the summary is a reason to have a current one.
+			run: bareRun(func(m Model) (tea.Model, tea.Cmd) {
+				note, read := m.statusCommand()
+				next, cmd := m.systemNotice(note)
+				return next, tea.Batch(cmd, read)
+			})},
+		// The last response onto the clipboard. A run rather than an answer
+		// because the copy may be a write the terminal takes, and an answer
+		// has nowhere to put one.
+		{name: "/copy", run: always(Model.copyCommand)},
+		{name: "/compact", exact: true, run: bareRun(Model.startCompact)},
+		// Bare /rewind opens the checkpoint picker; the numbered form is
+		// the answer.
+		{name: "/rewind", exact: true, run: bareRun(Model.openRewindPick), answer: slashRewind},
+		// The in-flight step's detail, from the draft — the chord that
+		// answered this went to reading mode, and the question it answered
+		// is still asked mid-turn with a half-written sentence in the box
+		// (detail.go).
+		{name: "/step", exact: true, run: bareRun(Model.detailFromDraft)},
+		// Put a turn's edits back from the session's own records;
+		// bare takes the most recent turn that changed anything.
+		{name: "/undo", run: always(Model.undoCommand)},
+		{name: "/model", exact: true,
+			// Bare /model opens the model picker; the named form and
+			// sessions with nothing to pick get the answer. A provider that
+			// can enumerate its endpoint is queried first.
+			run: picks(func(m Model) (tea.Model, tea.Cmd, bool) {
+				if !m.canPickModel() {
+					return m, nil, false
+				}
+				next, cmd := m.startModelPick()
+				return next, cmd, true
+			}),
+			answer: slashModel},
+		// Bare /permissions opens the mode picker.
+		{name: "/permissions", aliases: []string{"/perms", "/mode"}, exact: true,
+			run: bareRun(Model.openModePick), answer: slashPermissions},
+		// Bare /load and /chats open the saved-chat picker; with nothing
+		// saved they go on to the listing their answer gives.
+		{name: "/load", exact: true, run: picks(Model.openChatPick), answer: slashLoad},
+		{name: "/chats", exact: true, run: picks(Model.openChatPick), answer: slashChats},
+		{name: "/help",
+			// Bare /help is the key list's register row (keypopup.go). With words
+			// after it, it writes the whole help — a sheet laid out at the pane's
+			// width rather than a sentence (helpsheet.go), so it is appended as one.
+			run: always(func(m Model, _ []string) (tea.Model, tea.Cmd) {
+				return m.helpNotice(m.helpSheet())
+			}),
+			answer: slashHelp},
+		{name: "/ui",
+			// /ui mouse flips the terminal's own reporting. That is
+			// a field on the View rather than a command back to the program, so
+			// this setting takes the same path as every other /ui setting: change
+			// the model, say so in the transcript.
+			run: always(func(m Model, parts []string) (tea.Model, tea.Cmd) {
+				return m.systemNotice(m.uiCommand(parts))
+			}),
+			answer: slashUI},
+		{name: "/trust",
+			// The one answer that decides whether the checkout's skills, agent
+			// profiles, quality suites and servers load at all. Like trusting a
+			// server, it lands in the next session: the prompt naming the skills
+			// and the toolset holding the gate were built when this one started.
+			run: always(func(m Model, parts []string) (tea.Model, tea.Cmd) {
+				return m.systemNotice(m.trustCommand(parts[1:]))
+			})},
+		// The scaffolding card: what it would write, before it writes it.
+		{name: scaffoldCommandName, exact: true, run: bareRun(Model.scaffoldCommand)},
+		{name: "/memory",
+			// /memory edit hands the entry's text to the editor; every other
+			// /memory subcommand is textual and gets the answer.
+			run: func(m Model, parts []string) (tea.Model, tea.Cmd, bool) {
+				if len(parts) < 2 || parts[1] != "edit" {
+					return m, nil, false
+				}
+				if len(parts) != 3 {
+					next, cmd := m.systemNotice("usage: /memory edit <id>")
+					return next, cmd, true
+				}
+				next, cmd := m.openMemoryEditor(parts[2])
+				return next, cmd, true
+			},
+			answer: slashMemory},
+		// Bare /branches opens the branch picker; a session with no
+		// branch family gets the answer.
+		{name: "/branches", exact: true, run: picks(Model.openBranchPick), answer: slashBranches},
+		{name: "/reasoning", aliases: []string{"/think"}, answer: slashReasoning},
+		{name: "/add-dir", aliases: []string{"/adddir"}, answer: slashAddDir},
+		{name: "/sandbox", answer: slashSandbox},
+		{name: "/evidence", answer: slashEvidence},
+		{name: "/gate", answer: slashGate},
+		{name: "/ps", answer: slashProcesses},
+		{name: "/mcp", answer: slashMCP},
+		{name: "/skills", answer: slashSkills},
+		{name: "/save", answer: slashSave},
+		{name: "/sessions", answer: slashSessions},
 	}
 }
 
@@ -663,7 +737,7 @@ func slashBranches(m *Model, parts []string) string {
 // (copyText), which is what carries the copy back over ssh to the reader
 // instead of leaving it on the server they are connected to. So the answer
 // is a clipboard write as well as a line for the transcript, which is more
-// than a row of the handler table can hand back.
+// than a command's answer can hand back: /copy is a run.
 func (m Model) copyCommand(parts []string) (tea.Model, tea.Cmd) {
 	text := m.lastAssistantText()
 	if text == "" {

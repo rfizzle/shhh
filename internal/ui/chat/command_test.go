@@ -290,3 +290,59 @@ func TestAttachCommand_HopsBetweenAgentsWhileAttached(t *testing.T) {
 		t.Fatal("expected the notice in the attached child's transcript")
 	}
 }
+
+// unofferedCommands are the names the command table answers that the
+// completion registry does not offer, each with why. Both are a second
+// spelling of a command the menu already lists, answered so a slip of habit is
+// not an unknown command, and kept off the menu where it would be a second row
+// for one command.
+var unofferedCommands = map[string]string{
+	"/secrets": "the plural of /secret",
+	"/adddir":  "/add-dir without its hyphen",
+}
+
+// The command table and the overlay register are what a typed name does; the
+// completion registry is what the menu, the palette and /help offer. Nothing
+// but this test stops the two drifting: a row offered with nothing to answer
+// it falls through to "unknown command", and a command answered with no row is
+// one nobody can find.
+func TestCommandTableAnswersWhatTheRegistryOffers(t *testing.T) {
+	offered := map[string]bool{}
+	for _, c := range buildSlashCommands() {
+		for _, n := range append([]string{c.name}, c.aliases...) {
+			offered[n] = true
+		}
+	}
+	for name := range offered {
+		_, surface := registeredCommand(name)
+		_, row := commands()[name]
+		if !surface && !row {
+			t.Errorf("the registry offers %s and neither the command table nor the register answers it", name)
+		}
+	}
+
+	answered := map[string]bool{}
+	for name, c := range commands() {
+		if c.run == nil && c.answer == nil {
+			t.Errorf("the command table declares %s with nothing to do when it is typed", name)
+		}
+		answered[name] = true
+	}
+	overlays()
+	for name := range registerCommands {
+		answered[name] = true
+	}
+	for name := range answered {
+		if !offered[name] && unofferedCommands[name] == "" {
+			t.Errorf("%s is answered and the completion registry does not offer it", name)
+		}
+	}
+	for name := range unofferedCommands {
+		if offered[name] {
+			t.Errorf("%s is offered now; it is no longer an exception", name)
+		}
+		if !answered[name] {
+			t.Errorf("%s is not answered; it is no longer an exception", name)
+		}
+	}
+}
