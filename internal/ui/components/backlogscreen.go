@@ -25,7 +25,6 @@ package components
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -249,7 +248,9 @@ type backlogResult struct {
 }
 
 // BacklogScreen is the backlog as a surface: a takeover, full width, owning
-// the keyboard for as long as it is up.
+// the keyboard for as long as it is up. It keeps the list, the tabs and the
+// confirm, and hands the item pane, the filters and the foot to pieces of
+// their own. See docs/architecture.md#the-backlog-screens-pieces.
 type BacklogScreen struct {
 	// Rows are the active items in backlog order, and Done the archive, as
 	// the host read them.
@@ -310,26 +311,14 @@ type BacklogScreen struct {
 	// tab, so moving between them keeps every place.
 	tab   int
 	focus [backlogTabs]int
-	// query and filtering are the text filter; the three indices are the
-	// cycles' stops and ready is the toggle.
-	query     string
-	filtering bool
-	status    int
-	priority  int
-	field     int
-	ready     bool
-	// reading is the body holding the keys, scrolled through pager.
-	reading bool
-	pager   Pager
+	// filter is the query row and the cycles, and reader the item pane and
+	// the mode that gives it the surface.
+	filter backlogFilter
+	reader backlogReader
 	// list is the shared pointer and window over the positions the filters
 	// left showing (list.go).
 	list  List[int]
 	shown []int
-	// body is the last markdown render and the row, width and palette it was
-	// made for. The screen redraws on every keystroke and a document is
-	// parsed rather than formatted, so the render outlives the frame.
-	body    []string
-	bodyKey string
 
 	confirm *Confirm
 	pending *BacklogCommand
@@ -349,7 +338,7 @@ func (b *BacklogScreen) View(width int) string {
 	b.sync()
 	return screenChrome{
 		header:   b.header(),
-		foot:     b.footRows(width),
+		foot:     b.foot().rows(width),
 		notice:   b.Notice,
 		maxLines: b.maxLines,
 	}.view(width, func(budget int) []string { return b.paneRows(width, budget) })
@@ -378,7 +367,7 @@ func (b *BacklogScreen) header() screenHeader {
 			h.left = append(h.left, screenField(b.Board.Name))
 		}
 	}
-	if words := b.filterWords(); words != "" && !b.planning() {
+	if words := b.filter.words(b.Priority, b.Fields); words != "" && !b.planning() {
 		h.left = append(h.left, screenField(words))
 	}
 	if b.Sprint != "" && b.tab == backlogTabItems {
@@ -400,30 +389,6 @@ func (b *BacklogScreen) headerKeys() string {
 	// key is for. What it will do is the foot's to say
 	// (docs/interface/surfaces.md#the-supporting-screens).
 	return list + " · " + words(keys.Backlog.Back, "back")
-}
-
-// filterWords is what the header says the filters are, in words rather than
-// as a state the reader has to remember pressing into. A list that is
-// shorter than the backlog must say why on the screen that shortened it
-// (docs/interface/principles.md#fold-never-hide).
-func (b *BacklogScreen) filterWords() string {
-	var parts []string
-	if q := strings.TrimSpace(b.query); q != "" {
-		parts = append(parts, "matching "+q)
-	}
-	if s := backlogStatuses[b.status]; s != "" {
-		parts = append(parts, s)
-	}
-	if p := b.priorityStop(); p != "" {
-		parts = append(parts, p+" priority")
-	}
-	if f := b.fieldStop(); f.field != "" {
-		parts = append(parts, f.field+" "+f.word)
-	}
-	if b.ready {
-		parts = append(parts, "ready")
-	}
-	return strings.Join(parts, " · ")
 }
 
 // count is the tally: how many rows the filters left, out of how many there
@@ -457,7 +422,7 @@ func (b *BacklogScreen) paneRows(width, budget int) []string {
 		// The proposal is one question about a set, so it has the surface
 		// to itself: a list of the backlog beside it would be answering a
 		// question nobody asked while one is open.
-		return b.planRows(width, budget)
+		return b.Plan.view(width, budget)
 	}
 	if b.sprinting() {
 		return b.sprintRows(width, budget)
@@ -470,10 +435,10 @@ func (b *BacklogScreen) paneRows(width, budget int) []string {
 // never sits beside a list too narrow to read — a pane of prose two columns
 // wide is a pane that says nothing.
 func (b *BacklogScreen) panes(width, budget int) []string {
-	if b.reading {
+	if b.reader.reading {
 		// The reader asked for the body, so the body gets the whole surface
 		// and the list steps out of the way.
-		return b.readingRows(width, budget)
+		return b.reader.readingRows(b.item(), width, budget)
 	}
 	if width < backlogStackWidth {
 		return b.stackedRows(width, budget)
@@ -505,35 +470,11 @@ func (b *BacklogScreen) match() []int {
 	rows := b.rows()
 	out := make([]int, 0, len(rows))
 	for i, row := range rows {
-		if b.matches(row) {
+		if b.filter.matches(row, b.Priority, b.Fields) {
 			out = append(out, i)
 		}
 	}
 	return out
-}
-
-// matches is the filter rule over one row. A file that will not parse
-// answers none of the field filters — it has no fields — and it survives
-// them rather than being hidden by one: the row is the only thing on screen
-// saying the file is there, and a filter that swallowed it would be hiding
-// exactly the item the reader has to go and fix.
-func (b *BacklogScreen) matches(row BacklogRow) bool {
-	if !matches(strings.TrimSpace(b.query), row.Slug, row.Title) {
-		return false
-	}
-	if row.State == BacklogUnreadable {
-		return true
-	}
-	if s := backlogStatuses[b.status]; s != "" && s != row.Status {
-		return false
-	}
-	if p := b.priorityStop(); p != "" && p != row.Priority {
-		return false
-	}
-	if f := b.fieldStop(); f.field != "" && f.word != row.Values[f.field] {
-		return false
-	}
-	return !b.ready || row.State == BacklogReady
 }
 
 // refilter re-runs the match after a key changed a filter, and puts the
@@ -541,7 +482,7 @@ func (b *BacklogScreen) matches(row BacklogRow) bool {
 // rows that were there a moment ago.
 func (b *BacklogScreen) refilter() {
 	b.confirm, b.pending = nil, nil
-	b.reading, b.pager.Offset = false, 0
+	b.reader.close()
 	if shown := b.match(); len(shown) > 0 {
 		b.focus[b.tab] = shown[0]
 	}
@@ -570,6 +511,11 @@ func (b *BacklogScreen) after(moved bool) bool {
 	b.focus[b.tab] = b.shown[min(max(b.list.Focus, 0), len(b.shown)-1)]
 	b.confirm, b.pending = nil, nil
 	return true
+}
+
+// item is the row under the pointer as the reader draws it.
+func (b *BacklogScreen) item() backlogItem {
+	return backlogItem{row: b.current(), sprint: b.Sprint, noun: b.noun(), tab: b.tab, prose: b.Prose}
 }
 
 // current is the item under the pointer, or nil where the filters left none.

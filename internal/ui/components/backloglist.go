@@ -19,7 +19,7 @@ func (b *BacklogScreen) splitRows(width, budget int) []string {
 	listWidth := min(max(width*2/5, backlogListMin), backlogListMax)
 	paneWidth := max(width-listWidth-lipgloss.Width(reviewDivider), 8)
 	list := b.listRows(listWidth, budget)
-	pane := b.itemRows(paneWidth)
+	pane := b.reader.itemRows(b.item(), paneWidth)
 	rows := max(len(list), len(pane))
 	if budget > 0 {
 		// The pane says what it could not fit rather than ending mid-item:
@@ -34,7 +34,7 @@ func (b *BacklogScreen) splitRows(width, budget int) []string {
 // stackedRows is the narrow layout: the list above, the item below, nothing
 // truncated sideways (invariant 4).
 func (b *BacklogScreen) stackedRows(width, budget int) []string {
-	pane := b.itemRows(width)
+	pane := b.reader.itemRows(b.item(), width)
 	if budget <= 0 {
 		return append(append(b.listRows(width, 0), screenRule(width)), pane...)
 	}
@@ -54,26 +54,13 @@ func (b *BacklogScreen) stackedRows(width, budget int) []string {
 // listRows is the left pane: the filter row where it is open, the window of
 // items, and the count of what the filter took out from under it.
 func (b *BacklogScreen) listRows(width, budget int) []string {
-	head := b.queryRows(width)
+	head := b.filter.rows(width)
 	if len(head) > 0 {
 		head = append(head, screenRule(width))
 	}
 	tail := b.hiddenRows(width)
 	rows := append(head, b.windowRows(width, listBudget(budget, len(head)+len(tail)))...)
 	return append(rows, tail...)
-}
-
-// queryRows is the filter row: what has been typed, and where the next
-// character goes.
-func (b *BacklogScreen) queryRows(width int) []string {
-	if !b.filtering {
-		return nil
-	}
-	typed := sty.info.Render(queryPrompt) + sty.queryText.Render(b.query+queryCursor)
-	if b.query == "" {
-		typed += sty.dim.Render(" type to filter by slug or title")
-	}
-	return []string{Clip(typed, width)}
 }
 
 // hiddenRows is the line under the list saying what the filters took out of
@@ -141,13 +128,13 @@ func (b *BacklogScreen) emptyWords() string {
 // because the pane beside the list carries it in full, which is what makes
 // the trade a fold rather than a loss (invariant 4).
 func (b *BacklogScreen) itemRow(row BacklogRow, focused bool, width int) string {
-	glyph, name := b.rowTone(row)
+	glyph, name := row.tone()
 	pointer := PointerColumn()
 	if focused {
 		pointer, name = sty.focusPointer.Render("❯ "), brightStyle()
 	}
 	lead := glyph + " " + name.Render(row.Slug)
-	if grade := b.grade(row); grade != "" {
+	if grade := grade(row, b.Priority, b.Fields); grade != "" {
 		lead += "  " + sty.dim.Render(grade)
 	}
 	inner := max(width-GridPointerWidth, 1)
@@ -168,7 +155,7 @@ func (b *BacklogScreen) itemRow(row BacklogRow, focused bool, width int) string 
 	// The order is the row's whole argument: what an item is called and where
 	// it stands are why the list is on screen, and the title is a sentence
 	// the pane beside it carries in full (invariant 4).
-	state := Clip("  "+b.stateWords(row), room)
+	state := Clip("  "+row.stateWords(), room)
 	rest := room - lipgloss.Width(state)
 	if row.Title == "" || rest < minBacklogTitle+2 {
 		return lit(lead + sty.dim.Render(state))
@@ -180,7 +167,7 @@ func (b *BacklogScreen) itemRow(row BacklogRow, focused bool, width int) string 
 // states an active item can be in are the rail's, drawn the same way, so a
 // row means the same thing in both places; the two this screen adds are the
 // archive's tick and the warning on a file that will not parse.
-func (b *BacklogScreen) rowTone(row BacklogRow) (string, lipgloss.Style) {
+func (row BacklogRow) tone() (string, lipgloss.Style) {
 	switch row.State {
 	case BacklogUnreadable:
 		return sty.warn.Render("⚠"), sty.warn
@@ -201,15 +188,15 @@ func (b *BacklogScreen) rowTone(row BacklogRow) (string, lipgloss.Style) {
 // the file left unset draws a hyphen rather than a blank, because a blank
 // column reads as a field missing from the row and this one is missing from
 // the file.
-func (b *BacklogScreen) grade(row BacklogRow) string {
+func grade(row BacklogRow, priority BacklogField, fields []BacklogField) string {
 	if row.State == BacklogUnreadable {
 		// A file that would not parse has no header to read a grade off,
 		// and hyphens where the letters go would be this screen claiming
 		// it did.
 		return ""
 	}
-	out := b.Priority.glyph(row.Priority)
-	for _, f := range b.Fields {
+	out := priority.glyph(row.Priority)
+	for _, f := range fields {
 		if f.lettered() {
 			out += f.glyph(row.Values[f.Name])
 		}
@@ -239,39 +226,10 @@ func (f BacklogField) lettered() bool {
 	return false
 }
 
-// priorityStops is the priority cycle: its words behind the empty stop.
-func (b *BacklogScreen) priorityStops() []string {
-	stops := make([]string, 0, len(b.Priority.Values)+1)
-	stops = append(stops, "")
-	for _, v := range b.Priority.Values {
-		stops = append(stops, v.Word)
-	}
-	return stops
-}
-
-// priorityStop is the word the priority cycle is standing on, and "" for
-// the stop that shows everything.
-func (b *BacklogScreen) priorityStop() string {
-	stops := b.priorityStops()
-	if b.priority >= len(stops) {
-		return ""
-	}
-	return stops[b.priority]
-}
-
-// fieldStop is where the field cycle is standing.
-func (b *BacklogScreen) fieldStop() stop {
-	stops := fieldStops(b.Fields)
-	if b.field >= len(stops) {
-		return stop{}
-	}
-	return stops[b.field]
-}
-
 // stateWords is the row's state field. A waiting item states what it is
 // waiting on rather than only that it is waiting: the slug is the reason,
 // and `[w]` goes to it.
-func (b *BacklogScreen) stateWords(row BacklogRow) string {
+func (row BacklogRow) stateWords() string {
 	// A row the host gave its own words to says those. It is how the sprint
 	// tab draws where a slug stands in the set — finished, waiting, dropped
 	// out of the backlog, or the stage the one in flight is at — which is a

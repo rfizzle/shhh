@@ -13,11 +13,62 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
+// backlogReader is the item pane and the reading mode. It owns whether the
+// body has the keys, the body's scroll, and the last render of an item's
+// prose; the screen hands it the item for each draw, and opens and closes it
+// as the row under it moves. See
+// docs/architecture.md#the-backlog-screens-pieces.
+type backlogReader struct {
+	// reading is the body holding the keys, scrolled through pager.
+	reading bool
+	pager   Pager
+	// body is the last markdown render and the row, width and palette it was
+	// made for. The screen redraws on every keystroke and a document is
+	// parsed rather than formatted, so the render outlives the frame.
+	body    []string
+	bodyKey string
+}
+
+// backlogItem is what the reader draws, read off the screen for one draw:
+// the row under the pointer, the words the screen says around it, the tab it
+// is on, and the host's prose renderer.
+type backlogItem struct {
+	row    *BacklogRow
+	sprint string
+	noun   string
+	tab    int
+	prose  func(src string, width int) []string
+}
+
+// open gives the body the keys, from its top; close hands them back to the
+// list, for a key that moved the row out from under it.
+func (b *backlogReader) open() { b.reading, b.pager.Offset = true, 0 }
+
+func (b *backlogReader) close() { b.reading, b.pager.Offset = false, 0 }
+
+// update is the keyboard while the body has it: the pager, and the way back
+// to the list. Back goes to the list rather than out of the screen, because
+// the reader is one level in and esc is a step back rather than an exit. The
+// register's key is the screen's, so it is handed back rather than answered.
+func (b *backlogReader) update(pressed string) (register bool) {
+	switch {
+	case keys.Is(pressed, keys.Backlog.Move):
+		b.pager.Offset += keys.Step(pressed, keys.Backlog.Move)
+	case keys.Is(pressed, keys.Backlog.Page):
+		b.pager.Offset += keys.Step(pressed, keys.Backlog.Page) * max(b.pager.Height, 1)
+	case keys.Is(pressed, keys.Backlog.Read), keys.Is(pressed, keys.Backlog.Back):
+		b.reading = false
+	case keys.Is(pressed, keys.Backlog.List):
+		return true
+	}
+	return false
+}
+
 // readingRows is the body with the surface to itself, scrolled through the
 // pager and counted at both ends: a fold that does not say how much it
 // folded is a fold nobody can act on.
-func (b *BacklogScreen) readingRows(width, budget int) []string {
-	rows := b.itemRows(width)
+func (b *backlogReader) readingRows(it backlogItem, width, budget int) []string {
+	rows := b.itemRows(it, width)
 	if budget <= 0 {
 		return rows
 	}
@@ -36,7 +87,7 @@ func (b *BacklogScreen) readingRows(width, budget int) []string {
 // scrollNote is the row under a folded body saying what is off each end. It
 // is only asked for once something has been folded, which is why none of its
 // three answers is a blank.
-func (b *BacklogScreen) scrollNote() string {
+func (b *backlogReader) scrollNote() string {
 	above, below := b.pager.above(), b.pager.below()
 	switch {
 	case above == 0:
@@ -53,8 +104,8 @@ func (b *BacklogScreen) scrollNote() string {
 //
 // It is a preview, not a second list: nothing in it is focusable, and the
 // keys reach it only once `[enter]` has said so.
-func (b *BacklogScreen) itemRows(width int) []string {
-	row := b.current()
+func (b *backlogReader) itemRows(it backlogItem, width int) []string {
+	row := it.row
 	if row == nil {
 		return []string{sty.dim.Render(Clip("no item selected", width))}
 	}
@@ -62,26 +113,26 @@ func (b *BacklogScreen) itemRows(width int) []string {
 	if row.Title != "" {
 		rows = append(rows, wrapDim(row.Title, width)...)
 	}
-	if fields := b.fieldRow(*row); fields != "" {
+	if fields := b.fieldRow(it, *row); fields != "" {
 		rows = append(rows, sty.dim.Render(Clip(fields, width)))
 	}
-	if edges := b.edgeRow(*row); edges != "" {
+	if edges := b.edgeRow(it, *row); edges != "" {
 		rows = append(rows, sty.dim.Render(Clip(edges, width)))
 	}
 	for _, w := range row.Warnings {
 		rows = append(rows, sty.warn.Render(Clip("⚠ "+w, width)))
 	}
 	rows = append(rows, screenRule(width), "")
-	return append(rows, b.bodyRows(*row, width)...)
+	return append(rows, b.bodyRows(it, *row, width)...)
 }
 
 // fieldRow is the header's own fields on one line: what sort of work it is,
 // how soon, how big, where it stands. The file has them one per line and
 // that is right for a file; on a pane beside a list they are a row.
-func (b *BacklogScreen) fieldRow(row BacklogRow) string {
+func (b *backlogReader) fieldRow(it backlogItem, row BacklogRow) string {
 	fields := append([]string(nil), row.Fields...)
 	if row.InSprint {
-		fields = append(fields, "in "+b.Sprint)
+		fields = append(fields, "in "+it.sprint)
 	}
 	return strings.Join(fields, " · ")
 }
@@ -90,14 +141,14 @@ func (b *BacklogScreen) fieldRow(row BacklogRow) string {
 // always said what an item waits on; what waits on *it* is the half that
 // decides whether finishing it is worth anything, and it has never been on
 // screen anywhere.
-func (b *BacklogScreen) edgeRow(row BacklogRow) string {
+func (b *backlogReader) edgeRow(it backlogItem, row BacklogRow) string {
 	var parts []string
 	if len(row.Waits) > 0 {
 		parts = append(parts, "waits on "+strings.Join(row.Waits, ", ")+
 			" · "+keys.Bracket(keys.Backlog.Depends)+" goes there")
 	}
 	if len(row.Blocks) > 0 {
-		parts = append(parts, plural(len(row.Blocks), b.noun())+" waits on this: "+
+		parts = append(parts, plural(len(row.Blocks), it.noun)+" waits on this: "+
 			strings.Join(row.Blocks, ", "))
 	}
 	return strings.Join(parts, "   ")
@@ -106,7 +157,7 @@ func (b *BacklogScreen) edgeRow(row BacklogRow) string {
 // bodyRows is the item's prose. An unreadable file has none, and what goes
 // there instead is the reason it would not load — which is the one thing
 // that row exists to say.
-func (b *BacklogScreen) bodyRows(row BacklogRow, width int) []string {
+func (b *backlogReader) bodyRows(it backlogItem, row BacklogRow, width int) []string {
 	if row.State == BacklogUnreadable {
 		return append(wrapWarn(row.Reason, width),
 			sty.dim.Render(Clip(row.Path+" is still on disk; "+
@@ -119,22 +170,22 @@ func (b *BacklogScreen) bodyRows(row BacklogRow, width int) []string {
 		}
 		return []string{sty.dim.Render(Clip("nothing written under the header yet", width))}
 	}
-	key := fmt.Sprintf("%s\x00%d\x00%d\x00%t", row.Slug, b.tab, width, Mono())
+	key := fmt.Sprintf("%s\x00%d\x00%d\x00%t", row.Slug, it.tab, width, Mono())
 	if key != b.bodyKey {
 		// A markdown body is parsed rather than formatted, and the screen
 		// redraws on every keystroke, so the render is kept until the row,
 		// the width or the palette moves under it.
 		b.bodyKey = key
-		b.body = b.prose(body, width)
+		b.body = b.prose(it, body, width)
 	}
 	return b.body
 }
 
 // prose is the body laid out, through the host's renderer where there is one
 // and as the file's own lines where there is not.
-func (b *BacklogScreen) prose(body string, width int) []string {
-	if b.Prose != nil {
-		return b.Prose(body, width)
+func (b *backlogReader) prose(it backlogItem, body string, width int) []string {
+	if it.prose != nil {
+		return it.prose(body, width)
 	}
 	var rows []string
 	for _, line := range strings.Split(body, "\n") {

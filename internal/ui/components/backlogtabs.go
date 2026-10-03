@@ -7,10 +7,6 @@ package components
 // the answer to "which rows, and under what head" is worth having in one
 // place rather than as a condition inside each of them.
 
-import (
-	"github.com/rfizzle/shhh/internal/ui/keys"
-)
-
 // swapTab steps to the next tab there is. The sprint tab is skipped where
 // the project has no sprint, so the key never lands on a tab with nothing
 // on it.
@@ -25,10 +21,10 @@ func (b *BacklogScreen) swapTab() {
 			break
 		}
 	}
-	b.reading, b.pager.Offset = false, 0
+	b.reader.close()
 	b.confirm, b.pending = nil, nil
 	if b.archived() {
-		b.status, b.ready = 0, false
+		b.filter.forArchive()
 	}
 	// The pointer is kept per tab rather than reset, so coming back lands
 	// where the reader left off. Dropping the two filters above can only
@@ -42,7 +38,7 @@ func (b *BacklogScreen) swapTab() {
 // the tab exists to state, and a head that scrolled away would leave a
 // list of slugs indistinguishable from the backlog's.
 func (b *BacklogScreen) sprintRows(width, budget int) []string {
-	head := b.boardRows(width)
+	head := b.Board.headRows(width)
 	if len(head) > 0 {
 		head = append(head, screenRule(width))
 	}
@@ -56,16 +52,6 @@ func (b *BacklogScreen) sprintRows(width, budget int) []string {
 		head = truncRows(head, max(budget-backlogMinBody, 1), width)
 	}
 	return append(head, b.panes(width, budget-len(head))...)
-}
-
-// sprintOffer is the one key here whose words depend on the row: the same
-// act reads as adding or as dropping according to whether the set already
-// names this item.
-func (b *BacklogScreen) sprintOffer(row BacklogRow) KeyOffer {
-	if row.InSprint {
-		return keyOfferAs(keys.Backlog.Sprint, "drop it from "+b.Sprint)
-	}
-	return keyOfferAs(keys.Backlog.Sprint, "add it to "+b.Sprint)
 }
 
 // archived, sprinting and planning are which tab the screen is on and

@@ -158,12 +158,12 @@ func (p *SprintPlan) sync() {
 	p.focus = p.list.Focus
 }
 
-// updatePlan is the keyboard while the plan card is up. Every key here is
-// the card's: the screen's own letters are not live under it, which is the
+// update is the keyboard while the plan card is up. Every key here is the
+// card's: the screen's own letters are not live under it, which is the
 // register's reading of a takeover and the reason the pair `j/k` works here
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-func (b *BacklogScreen) updatePlan(pressed string) (bool, backlogResult) {
-	p := b.Plan
+// The notice is the line the screen shows under it, empty for none.
+func (p *SprintPlan) update(pressed string) (backlogResult, string) {
 	p.sync()
 	switch {
 	case p.list.Move(pressed, keys.Sprint.Move):
@@ -175,7 +175,7 @@ func (b *BacklogScreen) updatePlan(pressed string) (bool, backlogResult) {
 	case keys.Is(pressed, keys.Sprint.Left) && len(p.Left) > 0:
 		p.open = !p.open
 	case keys.Is(pressed, keys.Sprint.Goal):
-		return false, backlogResult{Do: &BacklogCommand{Act: BacklogSprintGoal}}
+		return backlogResult{Do: &BacklogCommand{Act: BacklogSprintGoal}}, ""
 	case keys.Is(pressed, keys.Sprint.Take):
 		kept := p.kept()
 		if len(kept) == 0 {
@@ -183,24 +183,22 @@ func (b *BacklogScreen) updatePlan(pressed string) (bool, backlogResult) {
 			// ready list to nothing, which is the one file here nobody can
 			// work out of. The card says so and stays up, because the way
 			// back is one keystroke on the row the reader just cleared.
-			b.Notice = "nothing is left in the set; " + keys.Bracket(keys.Sprint.Toggle) +
+			return backlogResult{}, "nothing is left in the set; " + keys.Bracket(keys.Sprint.Toggle) +
 				" puts a row back, " + keys.Bracket(keys.Sprint.Cancel) + " writes nothing"
-			return false, backlogResult{}
 		}
-		return false, backlogResult{Do: &BacklogCommand{Act: BacklogSprintTake, Slugs: kept}}
+		return backlogResult{Do: &BacklogCommand{Act: BacklogSprintTake, Slugs: kept}}, ""
 	case keys.Is(pressed, keys.Sprint.Cancel):
-		return false, backlogResult{Do: &BacklogCommand{Act: BacklogSprintCancel}}
+		return backlogResult{Do: &BacklogCommand{Act: BacklogSprintCancel}}, ""
 	}
-	return false, backlogResult{}
+	return backlogResult{}, ""
 }
 
-// planRows is the plan card: the budget it was bounded by, the goal it would
+// view is the plan card: the budget it was bounded by, the goal it would
 // be written with, the proposed items with the line saying why each is in
 // the set, and under them what the reading left out. It is drawn as the
 // card it is rather than as a pane, because what it is asking for is one
 // answer about the whole set.
-func (b *BacklogScreen) planRows(width, budget int) []string {
-	p := b.Plan
+func (p *SprintPlan) view(width, budget int) []string {
 	p.sync()
 	rows := []string{Clip(sty.dim.Render("nothing is written until ")+
 		sty.key.Render(keys.Bracket(keys.Sprint.Take)), width)}
@@ -341,13 +339,12 @@ func (p *SprintPlan) row(i, width int) string {
 	return lit(lead + sty.dim.Render(Clip("  "+rest, room)))
 }
 
-// boardRows is the head above the sprint tab's two panes: what the set is
+// headRows is the head above the sprint tab's two panes: what the set is
 // for, how far through it is, what it has cost, and how it ended. Every one
 // of them is a row that is absent rather than empty when the host has
 // nothing to put in it — a board of blank fields says a sprint is going
 // badly when what it means is that nothing has happened yet.
-func (b *BacklogScreen) boardRows(width int) []string {
-	board := b.Board
+func (board *SprintBoard) headRows(width int) []string {
 	if board == nil {
 		return nil
 	}

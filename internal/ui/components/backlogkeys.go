@@ -3,9 +3,11 @@ package components
 // The backlog screen's keyboard: the ladder Update walks, the split between
 // keys that change nothing and keys that change a file, and the three modes —
 // the confirm, the filter row and the body — that take the keys off it while
-// they are up. It is its own file because a surface's whole register is the
-// thing the register's rules are checked against, and a key answered from
-// inside a renderer is a key no such reading finds.
+// they are up. The filter row and the body answer their own keys
+// (backlogfilter.go, backlogitem.go); the ladder is what hands them over.
+// It is its own file because a surface's whole register is the thing the
+// register's rules are checked against, and a key answered from inside a
+// renderer is a key no such reading finds.
 
 import (
 	tea "charm.land/bubbletea/v2"
@@ -27,17 +29,29 @@ func (b *BacklogScreen) Update(msg tea.KeyPressMsg) (done bool, result backlogRe
 	// way out: a card that is asking for one answer and a screen underneath
 	// it that closes on `q` would lose the proposal to a letter.
 	if b.planning() {
-		return b.updatePlan(pressed)
+		var res backlogResult
+		res, b.Notice = b.Plan.update(pressed)
+		return false, res
 	}
 	// With the query line open the query line is the surface, so every
 	// selector letter is a letter — the reading every list in the product
 	// makes. ctrl+u clears it, and clearing a filter that is already empty
 	// closes it, which is how the row keys are got back without leaving.
-	if b.filtering {
-		return b.editQuery(msg, pressed)
+	if b.filter.filtering {
+		// The list under the row is still a list, which is why the movement
+		// binding is the arrows and not j/k: a query being typed into has
+		// no letters to spare, and this screen would have had to break the
+		// pair here as well as on the list.
+		if !b.movedTyping(pressed) && b.filter.edit(msg, pressed) {
+			b.refilter()
+		}
+		return false, backlogResult{}
 	}
-	if b.reading {
-		return b.updateReading(pressed)
+	if b.reader.reading {
+		if b.reader.update(pressed) {
+			b.keys = !b.keys
+		}
+		return false, backlogResult{}
 	}
 	if keys.Is(pressed, keys.Backlog.Back) {
 		return true, backlogResult{canceled: true}
@@ -58,23 +72,23 @@ func (b *BacklogScreen) readKey(pressed string) bool {
 	case b.moved(pressed):
 	case keys.Is(pressed, keys.Backlog.Read):
 		if b.current() != nil {
-			b.reading, b.pager.Offset = true, 0
+			b.reader.open()
 		}
 	case keys.Is(pressed, keys.Backlog.Tab):
 		b.swapTab()
 	case keys.Is(pressed, keys.Backlog.Filter):
-		b.filtering = true
+		b.filter.open()
 	case keys.Is(pressed, keys.Backlog.Status) && !b.archived():
-		b.status = (b.status + 1) % len(backlogStatuses)
+		b.filter.cycleStatus()
 		b.refilter()
 	case keys.Is(pressed, keys.Backlog.Priority):
-		b.priority = (b.priority + 1) % len(b.priorityStops())
+		b.filter.cyclePriority(b.Priority)
 		b.refilter()
 	case keys.Is(pressed, keys.Backlog.Kind):
-		b.field = (b.field + 1) % len(fieldStops(b.Fields))
+		b.filter.cycleField(b.Fields)
 		b.refilter()
 	case keys.Is(pressed, keys.Backlog.Ready) && !b.archived():
-		b.ready = !b.ready
+		b.filter.toggleReady()
 		b.refilter()
 	case keys.Is(pressed, keys.Backlog.Depends):
 		b.jumpToDependency()
@@ -114,14 +128,14 @@ func (b *BacklogScreen) stateKey(pressed string) (bool, backlogResult) {
 		// the verbs are line edits on a header this one does not have. The
 		// row is still here, and the way to act on it is the editor.
 		if keys.Is(pressed, keys.Backlog.Edit) {
-			return false, b.act(BacklogEdit, row.Slug)
+			return false, act(BacklogEdit, row.Slug)
 		}
 	case keys.Is(pressed, keys.Backlog.Edit):
-		return false, b.act(BacklogEdit, row.Slug)
+		return false, act(BacklogEdit, row.Slug)
 	case keys.Is(pressed, keys.Backlog.Run) && !b.archived():
-		return false, b.act(BacklogRun, row.Slug)
+		return false, act(BacklogRun, row.Slug)
 	case keys.Is(pressed, keys.Backlog.Reopen):
-		return false, b.act(BacklogReopen, row.Slug)
+		return false, act(BacklogReopen, row.Slug)
 	case keys.Is(pressed, keys.Backlog.Block) && !b.archived():
 		b.ask(BacklogBlock, row.Slug, "Block "+row.Slug+"?")
 	case keys.Is(pressed, keys.Backlog.Archive) && !b.archived():
@@ -132,19 +146,14 @@ func (b *BacklogScreen) stateKey(pressed string) (bool, backlogResult) {
 		// of the two this is.
 		b.ask(BacklogDrop, row.Slug, "Drop "+row.Slug+"? The file is deleted, not archived.")
 	case keys.Is(pressed, keys.Backlog.Groom) && !b.archived():
-		return false, b.act(BacklogGroom, row.Slug)
+		return false, act(BacklogGroom, row.Slug)
 	case keys.Is(pressed, keys.Backlog.Sprint) && b.Sprint != "" && !b.archived():
 		if row.InSprint {
-			return false, b.act(BacklogSprintDrop, row.Slug)
+			return false, act(BacklogSprintDrop, row.Slug)
 		}
-		return false, b.act(BacklogSprintAdd, row.Slug)
+		return false, act(BacklogSprintAdd, row.Slug)
 	}
 	return false, backlogResult{}
-}
-
-// act is a key that asked for something with nothing to confirm.
-func (b *BacklogScreen) act(a backlogAct, slug string) backlogResult {
-	return backlogResult{Do: &BacklogCommand{Act: a, Slug: slug}}
 }
 
 // ask arms the inline confirm in front of a key that changes a file. The
@@ -175,60 +184,6 @@ func (b *BacklogScreen) updateConfirm(msg tea.KeyPressMsg) (bool, backlogResult)
 	return false, backlogResult{}
 }
 
-// editQuery is the keyboard while the filter row is open. Every letter is a
-// letter here, the arrows still move the pointer, and the two keys that are
-// not letters close the row.
-func (b *BacklogScreen) editQuery(msg tea.KeyPressMsg, pressed string) (bool, backlogResult) {
-	switch {
-	case b.movedTyping(pressed):
-		// The list under the row is still a list, which is why the movement
-		// binding is the arrows and not j/k: a query being typed into has
-		// no letters to spare, and this screen would have had to break the
-		// pair here as well as on the list.
-		return false, backlogResult{}
-	case keys.Is(pressed, keys.Backlog.ClearQ):
-		// An empty filter has nothing left to clear, so the same key closes
-		// the row and hands the letters back — the rule every selector in
-		// the product answers to.
-		if b.query == "" {
-			b.filtering = false
-			return false, backlogResult{}
-		}
-		b.query = ""
-	case keys.Is(pressed, keys.Backlog.Back) && pressed != keys.Shown(keys.Backlog.Back):
-		// The way out answers to three keystrokes and one of them is `q`.
-		// Here `q` is a letter, so only the two that no sentence produces
-		// close the row.
-		b.filtering, b.query = false, ""
-	case keys.Is(pressed, keys.Query.Rub):
-		if r := []rune(b.query); len(r) > 0 {
-			b.query = string(r[:len(r)-1])
-		}
-	default:
-		b.query += typedRunes(msg)
-	}
-	b.refilter()
-	return false, backlogResult{}
-}
-
-// updateReading is the keyboard while the body has it: the pager, and the
-// way back to the list. Back goes to the list rather than out of the screen,
-// because the reader is one level in and esc is a step back rather than an
-// exit.
-func (b *BacklogScreen) updateReading(pressed string) (bool, backlogResult) {
-	switch {
-	case keys.Is(pressed, keys.Backlog.Move):
-		b.pager.Offset += keys.Step(pressed, keys.Backlog.Move)
-	case keys.Is(pressed, keys.Backlog.Page):
-		b.pager.Offset += keys.Step(pressed, keys.Backlog.Page) * max(b.pager.Height, 1)
-	case keys.Is(pressed, keys.Backlog.Read), keys.Is(pressed, keys.Backlog.Back):
-		b.reading = false
-	case keys.Is(pressed, keys.Backlog.List):
-		b.keys = !b.keys
-	}
-	return false, backlogResult{}
-}
-
 // jumpToDependency puts the pointer on the first item the row is waiting on,
 // which is what makes the edge something you can follow rather than a slug
 // to remember. A dependency the backlog does not hold is the case the row's
@@ -247,18 +202,17 @@ func (b *BacklogScreen) jumpToDependency() {
 		// come off: a jump that landed on nothing would be the filter
 		// swallowing the answer to the key that was just pressed.
 		if !b.showing(i) {
-			b.clearFilters()
+			b.filter.clear()
 		}
 		b.focus[b.tab] = i
-		b.reading, b.pager.Offset = false, 0
+		b.reader.close()
 		b.sync()
 		return
 	}
 	b.Notice = "the backlog has no item named " + want
 }
 
-// clearFilters puts every filter back to showing everything.
-func (b *BacklogScreen) clearFilters() {
-	b.query, b.filtering = "", false
-	b.status, b.priority, b.field, b.ready = 0, 0, 0, false
+// act is a key that asked for something with nothing to confirm.
+func act(a backlogAct, slug string) backlogResult {
+	return backlogResult{Do: &BacklogCommand{Act: a, Slug: slug}}
 }

@@ -51,7 +51,7 @@ func TestBacklogScreen_FiltersNarrowAsStated(t *testing.T) {
 			if got := slugsShowing(b); got != tc.want {
 				t.Errorf("[%s] left %q, want %q", tc.press, got, tc.want)
 			}
-			if got := b.filterWords(); got != tc.says {
+			if got := b.filter.words(b.Priority, b.Fields); got != tc.says {
 				t.Errorf("the header says %q, want %q", got, tc.says)
 			}
 		})
@@ -81,19 +81,19 @@ func TestBacklogScreen_QueryRowKeepsTheLettersUntilItCloses(t *testing.T) {
 	b := goldenBacklogScreen()
 	b.Update(key("/"))
 	pressAll(b, "sr")
-	if b.query != "sr" || b.status != 0 || b.ready {
-		t.Fatalf("letters typed into the query cycled a filter: query=%q status=%d ready=%v", b.query, b.status, b.ready)
+	if b.filter.query != "sr" || b.filter.status != 0 || b.filter.ready {
+		t.Fatalf("letters typed into the query cycled a filter: query=%q status=%d ready=%v", b.filter.query, b.filter.status, b.filter.ready)
 	}
 	b.Update(key("ctrl+u"))
-	if b.query != "" || !b.filtering {
-		t.Fatalf("the first clear should empty the query and leave the row open, got %q filtering=%v", b.query, b.filtering)
+	if b.filter.query != "" || !b.filter.filtering {
+		t.Fatalf("the first clear should empty the query and leave the row open, got %q filtering=%v", b.filter.query, b.filter.filtering)
 	}
 	b.Update(key("ctrl+u"))
-	if b.filtering {
+	if b.filter.filtering {
 		t.Fatal("clearing an empty query should close the row")
 	}
 	pressAll(b, "s")
-	if b.status == 0 {
+	if b.filter.status == 0 {
 		t.Fatal("the letters should be live again once the row has closed")
 	}
 }
@@ -152,8 +152,8 @@ func TestBacklogScreen_JumpClearsAFilterHidingItsTarget(t *testing.T) {
 	if got := b.current(); got == nil || got.Slug != "rail-todo-block" {
 		t.Fatalf("[w] landed on %+v with a filter up", got)
 	}
-	if b.filterWords() != "" {
-		t.Errorf("the filter should have come off, header says %q", b.filterWords())
+	if b.filter.words(b.Priority, b.Fields) != "" {
+		t.Errorf("the filter should have come off, header says %q", b.filter.words(b.Priority, b.Fields))
 	}
 }
 
@@ -228,16 +228,16 @@ func TestBacklogScreen_StateKeysAreInertWhileATurnWorks(t *testing.T) {
 		}
 	}
 	view := ansi.Strip(b.View(110))
-	if !strings.Contains(view, b.whyInert()) {
+	if !strings.Contains(view, b.foot().whyInert()) {
 		t.Errorf("the footer never says why the keys are grey:\n%s", view)
 	}
-	for _, offer := range b.offers(110) {
+	for _, offer := range b.foot().offers(110) {
 		if strings.Contains(offer.Key, "[x]") {
 			t.Error("a key that cannot act is still being offered")
 		}
 	}
 	// Reading is untouched: the filters and the pointer change no file.
-	if _, r := pressAll(b, "/"); r.Do != nil || !b.filtering {
+	if _, r := pressAll(b, "/"); r.Do != nil || !b.filter.filtering {
 		t.Error("the filter should stay live while a turn works")
 	}
 }
@@ -249,7 +249,7 @@ func TestBacklogScreen_FootIsOneRow(t *testing.T) {
 	for _, width := range append([]int{40}, goldenWidths...) {
 		b := goldenBacklogScreen()
 		b.sync()
-		rows := b.footRows(width)
+		rows := b.foot().rows(width)
 		if len(rows) != 1 {
 			t.Fatalf("at %d columns the foot is %d rows:\n%s", width, len(rows), strings.Join(rows, "\n"))
 		}
@@ -277,7 +277,7 @@ func TestBacklogScreen_FootIsOneRow(t *testing.T) {
 	for _, width := range append([]int{40}, goldenWidths...) {
 		b := goldenBacklogScreen()
 		b.Update(key("tab"))
-		rows := b.footRows(width)
+		rows := b.foot().rows(width)
 		if len(rows) != 1 {
 			t.Fatalf("at %d columns the archive's foot is %d rows:\n%s", width, len(rows), strings.Join(rows, "\n"))
 		}
@@ -300,7 +300,7 @@ func TestBacklogScreen_FootIsOneRow(t *testing.T) {
 	for _, width := range goldenWidths {
 		b := goldenBacklogScreen()
 		pressAll(b, "/")
-		rows := b.footRows(width)
+		rows := b.foot().rows(width)
 		if len(rows) != 1 {
 			t.Fatalf("at %d columns the filter's foot is %d rows:\n%s", width, len(rows), strings.Join(rows, "\n"))
 		}
@@ -317,7 +317,7 @@ func TestBacklogScreen_FootIsOneRow(t *testing.T) {
 
 	b := goldenBacklogScreen()
 	pressAll(b, "?")
-	register := ansi.Strip(strings.Join(b.footRows(110), "\n"))
+	register := ansi.Strip(strings.Join(b.foot().rows(110), "\n"))
 	for _, want := range []string{"[s] cycle the status filter", "[tab] the backlog, the sprint, or what shipped", "[R] work it through", "[x] delete the file"} {
 		if !strings.Contains(register, want) {
 			t.Errorf("[?] never lists %q:\n%s", want, register)
@@ -332,8 +332,8 @@ func TestBacklogScreen_ArchiveTab(t *testing.T) {
 	b := goldenBacklogScreen()
 	pressAll(b, "s")
 	b.Update(key("tab"))
-	if !b.archived() || b.status != 0 {
-		t.Fatalf("the tab should carry no status filter, archive=%v status=%d", b.archived(), b.status)
+	if !b.archived() || b.filter.status != 0 {
+		t.Fatalf("the tab should carry no status filter, archive=%v status=%d", b.archived(), b.filter.status)
 	}
 	view := ansi.Strip(b.View(110))
 	for _, want := range []string{"backlog · done", "2 items", "the one place a key is written down"} {
@@ -346,7 +346,7 @@ func TestBacklogScreen_ArchiveTab(t *testing.T) {
 	}
 	// Reopening is the archive's own verb: its row offers it, and a turn
 	// greys out the same words.
-	if got := keyOffers(b.stateOffers()); !strings.Contains(ansi.Strip(got), "[o] put it back in the backlog") {
+	if got := keyOffers(b.foot().stateOffers()); !strings.Contains(ansi.Strip(got), "[o] put it back in the backlog") {
 		t.Errorf("the archive's verbs lost the reopen: %s", ansi.Strip(got))
 	}
 	if _, r := pressAll(b, "o"); r.Do == nil || r.Do.Act != BacklogReopen {
@@ -375,7 +375,7 @@ func TestBacklogScreen_ReadingTheBody(t *testing.T) {
 	b := goldenBacklogScreen()
 	b.maxLines = 12
 	b.Update(key("enter"))
-	if !b.reading {
+	if !b.reader.reading {
 		t.Fatal("[enter] should hand the body the keys")
 	}
 	b.Update(key("down"))
@@ -385,8 +385,8 @@ func TestBacklogScreen_ReadingTheBody(t *testing.T) {
 		t.Errorf("a scrolled body should say what is off the top:\n%s", view)
 	}
 	done, _ := b.Update(key("esc"))
-	if done || b.reading {
-		t.Fatalf("the way back from the body is the list, not the prompt (done=%v reading=%v)", done, b.reading)
+	if done || b.reader.reading {
+		t.Fatalf("the way back from the body is the list, not the prompt (done=%v reading=%v)", done, b.reader.reading)
 	}
 	if done, _ := b.Update(key("esc")); !done {
 		t.Fatal("the second press should leave the screen")
@@ -420,8 +420,8 @@ func TestBacklogScreen_QueryRowCorners(t *testing.T) {
 	b := goldenBacklogScreen()
 	b.Update(key("/"))
 	pressAll(b, "q")
-	if !b.filtering || b.query != "q" {
-		t.Fatalf("q closed the query row instead of typing into it: filtering=%v query=%q", b.filtering, b.query)
+	if !b.filter.filtering || b.filter.query != "q" {
+		t.Fatalf("q closed the query row instead of typing into it: filtering=%v query=%q", b.filter.filtering, b.filter.query)
 	}
 	b.Update(key("ctrl+u"))
 	b.Update(key("down"))
@@ -429,8 +429,8 @@ func TestBacklogScreen_QueryRowCorners(t *testing.T) {
 		t.Fatalf("the arrows should still move the pointer under an open query, landed on %+v", got)
 	}
 	done, _ := b.Update(key("esc"))
-	if done || b.filtering {
-		t.Fatalf("esc should close the row and not the screen (done=%v filtering=%v)", done, b.filtering)
+	if done || b.filter.filtering {
+		t.Fatalf("esc should close the row and not the screen (done=%v filtering=%v)", done, b.filter.filtering)
 	}
 }
 
@@ -447,7 +447,7 @@ func TestBacklogScreen_StartingAnItemWorksOnAnEmptyList(t *testing.T) {
 	if r.Do == nil || r.Do.Act != BacklogNew {
 		t.Fatalf("[n] on an empty list resolved to %+v", r.Do)
 	}
-	if !strings.Contains(view, ansi.Strip(keyOffers(b.fileOffers()))) {
+	if !strings.Contains(view, ansi.Strip(keyOffers(b.foot().fileOffers()))) {
 		t.Errorf("the empty list does not offer the key it answers:\n%s", view)
 	}
 }
@@ -529,13 +529,13 @@ func TestBacklogScreen_DrawsASecondVocabulary(t *testing.T) {
 	if got := slugsShowing(b); got != "why-tabs" {
 		t.Errorf("[k] left %q, want why-tabs", got)
 	}
-	if got := b.filterWords(); got != "kind reading" {
+	if got := b.filter.words(b.Priority, b.Fields); got != "kind reading" {
 		t.Errorf("the header says %q, want %q", got, "kind reading")
 	}
 	// The cycle runs on into the second field rather than stopping at the
 	// first, which is what one key over a list of fields has to do.
 	pressAll(b, "k")
-	if got := b.filterWords(); got != "depth quick" {
+	if got := b.filter.words(b.Priority, b.Fields); got != "depth quick" {
 		t.Errorf("after three presses the header says %q", got)
 	}
 }

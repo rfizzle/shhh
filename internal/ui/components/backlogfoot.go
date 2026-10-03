@@ -14,9 +14,47 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// footRows is the key row and, while a turn is running, the run of keys that
-// is not live and the sentence saying why.
-func (b *BacklogScreen) footRows(width int) []string {
+// backlogFoot is the screen's foot: the key row, the register and the grey
+// run a turn holds inert. It holds nothing of its own; it is read off the
+// screen and its pieces when the frame is drawn, so the three cannot come to
+// disagree about which keys there are. See
+// docs/architecture.md#the-backlog-screens-pieces.
+type backlogFoot struct {
+	plan      *SprintPlan
+	filtering bool
+	reading   bool
+	readOnly  bool
+	why       string
+	row       *BacklogRow
+	archived  bool
+	sprint    string
+	priority  BacklogField
+	fields    []BacklogField
+	confirm   *Confirm
+	keys      bool
+}
+
+// foot reads the foot off the screen for one draw.
+func (b *BacklogScreen) foot() backlogFoot {
+	return backlogFoot{
+		plan:      b.Plan,
+		filtering: b.filter.filtering,
+		reading:   b.reader.reading,
+		readOnly:  b.ReadOnly,
+		why:       b.Why,
+		row:       b.current(),
+		archived:  b.archived(),
+		sprint:    b.Sprint,
+		priority:  b.Priority,
+		fields:    b.Fields,
+		confirm:   b.confirm,
+		keys:      b.keys,
+	}
+}
+
+// rows is the key row and, while a turn is running, the run of keys that is
+// not live and the sentence saying why.
+func (b backlogFoot) rows(width int) []string {
 	f := keyFooter{
 		offers:   b.offers(width),
 		register: b.keyList(),
@@ -27,7 +65,7 @@ func (b *BacklogScreen) footRows(width int) []string {
 		f.taken = b.confirm.View(width)
 	}
 	rows := f.rows(width)
-	if b.confirm != nil || b.keys || !b.ReadOnly {
+	if b.confirm != nil || b.keys || !b.readOnly {
 		return rows
 	}
 	// The keys that change a file, in the treatment a surface that cannot
@@ -46,9 +84,9 @@ func (b *BacklogScreen) footRows(width int) []string {
 // whyInert is the sentence over the grey keys. The host's is used where
 // there is one, because the session knows what it is doing and this does
 // not.
-func (b *BacklogScreen) whyInert() string {
-	if b.Why != "" {
-		return b.Why
+func (b backlogFoot) whyInert() string {
+	if b.why != "" {
+		return b.why
 	}
 	return "the turn is running; these change the files it may be working from"
 }
@@ -56,9 +94,9 @@ func (b *BacklogScreen) whyInert() string {
 // offers is the key row for whichever surface holds the keyboard. While the
 // query line is open the row keys are letters, so they are not offered: a
 // key that cannot act is not an offer (invariant 5).
-func (b *BacklogScreen) offers(width int) []KeyOffer {
-	if b.planning() {
-		return sprintOffers(b.Plan)
+func (b backlogFoot) offers(width int) []KeyOffer {
+	if b.plan != nil {
+		return sprintOffers(b.plan)
 	}
 	if b.filtering {
 		return filterOffers(width)
@@ -113,13 +151,13 @@ func filterOffers(width int) []KeyOffer {
 // shorten before it is shed, since it is the one thing that tab is for. The
 // pointer's keys are never shed — this list moves on the arrows alone, which
 // no other list in the product teaches.
-func (b *BacklogScreen) listOffers(width int) []KeyOffer {
+func (b backlogFoot) listOffers(width int) []KeyOffer {
 	out := []KeyOffer{keyOffer(keys.Backlog.Move)}
-	if b.current() != nil {
+	if b.row != nil {
 		out = append(out, keyOfferAs(keys.Backlog.Read, "read"))
 	}
 	out = append(out, keyOfferAs(keys.Backlog.Filter, "filter"))
-	if !b.ReadOnly {
+	if !b.readOnly {
 		// While a turn works these two are in the grey run under the
 		// sentence instead: a key that cannot act is not an offer.
 		out = append(out, b.fileOffers()...)
@@ -148,9 +186,9 @@ func (b *BacklogScreen) listOffers(width int) []KeyOffer {
 // editor, or on the archive putting the item back, which is what that tab is
 // for — and starting a new item, which is about the backlog rather than the
 // row, so an empty list offers it too.
-func (b *BacklogScreen) fileOffers() []KeyOffer {
+func (b backlogFoot) fileOffers() []KeyOffer {
 	fresh := keyOfferAs(keys.Backlog.New, "new")
-	row := b.current()
+	row := b.row
 	if row == nil {
 		return []KeyOffer{fresh}
 	}
@@ -159,7 +197,7 @@ func (b *BacklogScreen) fileOffers() []KeyOffer {
 	case row.State == BacklogUnreadable:
 		// None of the verbs is a line edit this file's header could take.
 		verb = keyOfferAs(keys.Backlog.Edit, "fix the header")
-	case b.archived():
+	case b.archived:
 		verb = keyOfferAs(keys.Backlog.Reopen, "put it back in the backlog")
 	}
 	return []KeyOffer{verb, fresh}
@@ -181,8 +219,8 @@ func reworded(offers []KeyOffer, key, label string) []KeyOffer {
 // stateOffers are the keys that change a file: the run the footer greys out
 // while a turn is working, and offers live otherwise. They are one list so
 // the two treatments cannot come to disagree about which keys they are.
-func (b *BacklogScreen) stateOffers() []KeyOffer {
-	row := b.current()
+func (b backlogFoot) stateOffers() []KeyOffer {
+	row := b.row
 	if row == nil {
 		// A list with nothing on it still has one act: starting the item
 		// that would fill it.
@@ -194,7 +232,7 @@ func (b *BacklogScreen) stateOffers() []KeyOffer {
 		// None of the verbs is a line edit this file's header could take;
 		// the way to act on it is the editor.
 		out = []KeyOffer{keyOfferAs(keys.Backlog.Edit, "fix the header")}
-	case b.archived():
+	case b.archived:
 		out = []KeyOffer{
 			keyOfferAs(keys.Backlog.Reopen, "put it back in the backlog"),
 			keyOffer(keys.Backlog.Edit),
@@ -207,7 +245,7 @@ func (b *BacklogScreen) stateOffers() []KeyOffer {
 			out = append(out, keyOffer(keys.Backlog.Block))
 		}
 		out = append(out, keyOffer(keys.Backlog.Archive), keyOffer(keys.Backlog.Drop))
-		if b.Sprint != "" {
+		if b.sprint != "" {
 			out = append(out, b.sprintOffer(*row))
 		}
 	}
@@ -222,9 +260,9 @@ func (b *BacklogScreen) stateOffers() []KeyOffer {
 // the keyboard it is the card's keys and only those: a register listing keys
 // the surface in front of the reader does not answer is worse than no
 // register.
-func (b *BacklogScreen) keyList() []KeyOffer {
-	if b.planning() {
-		return sprintOffers(b.Plan)
+func (b backlogFoot) keyList() []KeyOffer {
+	if b.plan != nil {
+		return sprintOffers(b.plan)
 	}
 	out := []KeyOffer{
 		keyOfferAs(keys.Backlog.Move, "move between items"),
@@ -237,7 +275,7 @@ func (b *BacklogScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Backlog.Status, "cycle the status filter"),
 		keyOfferAs(keys.Backlog.Priority, "cycle the priority filter"),
 	}
-	if len(b.Fields) > 0 {
+	if len(b.fields) > 0 {
 		out = append(out, keyOfferAs(keys.Backlog.Kind, "cycle the "+b.fieldNames()+" filter"))
 	}
 	out = append(out, []KeyOffer{
@@ -251,8 +289,8 @@ func (b *BacklogScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Backlog.Drop, "delete the file, after confirming it"),
 		keyOfferAs(keys.Backlog.New, "start a new item"),
 	}...)
-	if b.Sprint != "" {
-		out = append(out, keyOfferAs(keys.Backlog.Sprint, "add it to "+b.Sprint+", or drop it"))
+	if b.sprint != "" {
+		out = append(out, keyOfferAs(keys.Backlog.Sprint, "add it to "+b.sprint+", or drop it"))
 	}
 	return append(out, wayOut(backToPrompt), keyOfferAs(keys.Backlog.Back, backToPrompt))
 }
@@ -260,9 +298,9 @@ func (b *BacklogScreen) keyList() []KeyOffer {
 // fieldNames is the fields the field-filter key cycles through, named: `kind
 // or size`. The names are the profile's, so a second profile's key says what
 // it narrows with nothing written here.
-func (b *BacklogScreen) fieldNames() string {
-	names := make([]string, len(b.Fields))
-	for i, f := range b.Fields {
+func (b backlogFoot) fieldNames() string {
+	names := make([]string, len(b.fields))
+	for i, f := range b.fields {
 		names[i] = f.Name
 	}
 	switch len(names) {
@@ -280,9 +318,9 @@ func (b *BacklogScreen) fieldNames() string {
 // unset`, one clause a field. A field whose letter is its word says the
 // letters alone. Nil where no field draws a letter, because then the rows
 // draw none (docs/interface/surfaces.md#the-backlog-screen).
-func (b *BacklogScreen) lettersLegend() []string {
+func (b backlogFoot) lettersLegend() []string {
 	var parts []string
-	for _, f := range append([]BacklogField{b.Priority}, b.Fields...) {
+	for _, f := range append([]BacklogField{b.priority}, b.fields...) {
 		if f.lettered() {
 			parts = append(parts, f.legend())
 		}
@@ -314,4 +352,14 @@ func (f BacklogField) legend() string {
 		sep = " "
 	}
 	return f.Name + " " + strings.Join(glyphs, sep)
+}
+
+// sprintOffer is the one key here whose words depend on the row: the same
+// act reads as adding or as dropping according to whether the set already
+// names this item.
+func (b backlogFoot) sprintOffer(row BacklogRow) KeyOffer {
+	if row.InSprint {
+		return keyOfferAs(keys.Backlog.Sprint, "drop it from "+b.sprint)
+	}
+	return keyOfferAs(keys.Backlog.Sprint, "add it to "+b.sprint)
 }
