@@ -20,7 +20,6 @@ package components
 // carries out against its own store, and the host hands back fresh Rows.
 
 import (
-	"strconv"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -107,10 +106,11 @@ type SnippetResult struct {
 // SnippetScreen is `shhh snippets`: a takeover surface, full width, no
 // inspector rail, owning the keyboard for as long as it is up.
 type SnippetScreen struct {
+	// The pointer is an index into Rows and survives the host rebuilding
+	// them; the rows showing are the ones the query left.
+	listScreen[SnippetRow]
 	// Rows are the snippets in the order the host read them.
 	Rows []SnippetRow
-	// Focus is an index into Rows and survives the host rebuilding them.
-	Focus int
 	// Subject is what the header says the screen is over — `12 snippets`. The
 	// host counts it, because counting is a reading of the store.
 	Subject string
@@ -121,11 +121,8 @@ type SnippetScreen struct {
 	// deleted. The host clears it on the next keystroke.
 	Notice string
 
-	list    Select
-	shown   []int
 	confirm *Confirm
 	rename  *lineEdit
-	keys    bool
 }
 
 // Update is the screen's whole keyboard. The confirm and the rename row
@@ -141,12 +138,12 @@ func (s *SnippetScreen) Update(msg tea.KeyPressMsg) (done bool, result SnippetRe
 	}
 	pressed := msg.String()
 	switch {
-	case s.moved(pressed):
+	case s.walked(pressed):
 		return false, SnippetResult{}
 	case keys.Is(pressed, keys.Screen.Rerun):
 		// The one key that leaves the screen with something to do. A list the
 		// filter emptied has nothing for it to take (invariant 5).
-		if row := s.current(); row != nil {
+		if row := s.currentShown(s.Rows); row != nil {
 			return true, SnippetResult{Run: true, iD: row.ID, Command: row.Command}
 		}
 		return false, SnippetResult{}
@@ -158,13 +155,8 @@ func (s *SnippetScreen) Update(msg tea.KeyPressMsg) (done bool, result SnippetRe
 	// makes. ctrl+u clears it, and clearing a filter that is already empty
 	// closes it, which is how the row keys are got back without leaving the
 	// screen.
-	if s.list.Filtering {
-		if keys.Is(pressed, keys.Screen.ClearQ) && s.list.Query == "" {
-			s.list.Filtering = false
-			return false, SnippetResult{}
-		}
-		s.list.editQuery(msg)
-		if s.list.QueryChanged() {
+	if open, changed := s.filterKey(msg); open {
+		if changed {
 			s.refilter()
 		}
 		return false, SnippetResult{}
@@ -177,11 +169,11 @@ func (s *SnippetScreen) Update(msg tea.KeyPressMsg) (done bool, result SnippetRe
 	case keys.Is(pressed, keys.Screen.List):
 		s.keys = !s.keys
 	case keys.Is(pressed, keys.Screen.Copy):
-		if row := s.current(); row != nil {
+		if row := s.currentShown(s.Rows); row != nil {
 			return false, SnippetResult{Do: &SnippetCommand{Act: SnippetCopy, ID: row.ID}}
 		}
 	case keys.Is(pressed, keys.Screen.Rename):
-		if row := s.current(); row != nil {
+		if row := s.currentShown(s.Rows); row != nil {
 			s.rename = &lineEdit{value: []rune(row.Name), lead: "rename", hint: "type a name"}
 		}
 	case keys.Is(pressed, keys.Screen.Delete):
@@ -189,7 +181,7 @@ func (s *SnippetScreen) Update(msg tea.KeyPressMsg) (done bool, result SnippetRe
 		// names what it would take rather than saying "this snippet". What is on
 		// disk is untouched, which the question says because a reader deleting a
 		// saved command has every reason to wonder.
-		if row := s.current(); row != nil {
+		if row := s.currentShown(s.Rows); row != nil {
 			s.confirm = &Confirm{Prompt: sty.body.Render(
 				"Delete the snippet " + quoted(row.Name) + "? Files on disk are untouched.")}
 		}
@@ -202,7 +194,7 @@ func (s *SnippetScreen) Update(msg tea.KeyPressMsg) (done bool, result SnippetRe
 // one under the pointer when it is answered.
 func (s *SnippetScreen) updateConfirm(msg tea.KeyPressMsg) (bool, SnippetResult) {
 	if answered, yes := confirmed(&s.confirm, msg); answered && yes {
-		if row := s.current(); row != nil {
+		if row := s.currentShown(s.Rows); row != nil {
 			return false, SnippetResult{Do: &SnippetCommand{Act: SnippetDelete, ID: row.ID}}
 		}
 	}
@@ -220,7 +212,7 @@ func (s *SnippetScreen) updateRename(msg tea.KeyPressMsg) (bool, SnippetResult) 
 	case keys.Is(pressed, keys.Screen.Take):
 		name := strings.TrimSpace(string(s.rename.value))
 		s.rename = nil
-		row := s.current()
+		row := s.currentShown(s.Rows)
 		if row == nil || name == "" || name == row.Name {
 			return false, SnippetResult{}
 		}
@@ -236,26 +228,39 @@ func (s *SnippetScreen) SetSize(_, height int) { s.maxLines = height }
 
 // View renders the screen: the shared chrome, with the two panes in the rows
 // it leaves and the rename row, when one is open, under them.
-func (s *SnippetScreen) View(width int) string {
-	if width <= 0 {
-		return ""
-	}
-	s.sync()
-	panes := screenPanes{
-		stackAt: snippetStackWidth, listMin: snippetListMin,
-		listMax: snippetListMax, minPreview: snippetMinPreview,
-		list:    s.listRows,
-		preview: s.previewRows,
+func (s *SnippetScreen) View(width int) string { return s.view(width, s) }
+
+// chrome is the header over the panes, the rename row under them, the keys,
+// and the line the last key left. Which keys those are depends on the field,
+// so it is read once here, and the confirm borrows the foot row while it is
+// up.
+func (s *SnippetScreen) chrome(width int) screenChrome {
+	field := s.footField()
+	foot := s.footer(s.offers(width, field), s.keyList(), field)
+	if s.confirm != nil {
+		foot.taken = s.confirm.View(width)
 	}
 	return screenChrome{
 		header:   s.header(),
-		foot:     s.footer(width).rows(width),
+		foot:     foot.rows(width),
 		notice:   s.Notice,
 		maxLines: s.maxLines,
-		reserve:  len(s.renameRows(width)),
-	}.view(width, func(budget int) []string {
-		return append(panes.rows(width, budget), s.renameRows(width)...)
-	})
+		tail:     s.renameRows(width),
+	}
+}
+
+// panes is the body, split the way every screen with a list and a preview
+// splits it (screenpanes.go): on the left the filter row pinned above the
+// window, and under it what the filter hid and the key that clears it.
+func (s *SnippetScreen) panes() screenPanes {
+	return screenPanes{
+		stackAt: snippetStackWidth, listMin: snippetListMin,
+		listMax: snippetListMax, minPreview: snippetMinPreview,
+		list: func(width, budget int) []string {
+			return s.queryListRows(len(s.Rows), func(n int) string { return plural(n, "snippet") }, width, budget)
+		},
+		preview: s.previewRows,
+	}
 }
 
 // renameRows is the open rename row, or nothing. It sits under the panes
@@ -269,35 +274,6 @@ func (s *SnippetScreen) renameRows(width int) []string {
 	return []string{Clip(s.rename.view(), width)}
 }
 
-// listRows is the left pane: the filter row pinned above the selector window,
-// the window itself with its markers, and — under it — what the filter hid
-// and the key that clears it.
-func (s *SnippetScreen) listRows(width, budget int) []string {
-	head := s.list.queryRows(cardWidthFor(width))
-	if len(head) > 0 {
-		head = append(head, screenRule(width))
-	}
-	tail := s.hiddenRows(width)
-	body, _ := s.list.visibleRows(cardWidthFor(width), listBudget(budget, len(head)+len(tail)), false)
-	return append(append(head, body...), tail...)
-}
-
-// hiddenRows is the line under the list saying what the filter took out of
-// it. It is only ever drawn while something is hidden — a filter that hid
-// nothing has nothing to confess (invariant 4).
-func (s *SnippetScreen) hiddenRows(width int) []string {
-	if !s.list.Filtering {
-		return nil
-	}
-	hidden := len(s.Rows) - len(s.shown)
-	if hidden <= 0 {
-		return nil
-	}
-	row := sty.dim.Render(plural(hidden, "snippet")+" hidden by the filter · ") +
-		sty.key.Render(keys.Bracket(keys.Screen.ClearQ)) + sty.dim.Render(" clear it")
-	return []string{screenRule(width), Clip(row, width)}
-}
-
 // previewRows is the right pane: the snippet the pointer is on. The name
 // leads it with when it was saved right-aligned, what it is for sits under
 // that, and the command is a grid row — the same grid the history browser
@@ -307,7 +283,7 @@ func (s *SnippetScreen) hiddenRows(width int) []string {
 // It is a preview, not a second list: nothing in it is focusable and no key
 // reaches it.
 func (s *SnippetScreen) previewRows(width int) []string {
-	row := s.current()
+	row := s.currentShown(s.Rows)
 	if row == nil {
 		return []string{sty.dim.Render(Clip("no snippet selected", width))}
 	}
@@ -329,26 +305,8 @@ func (s *SnippetScreen) header() screenHeader {
 	if s.Subject != "" {
 		head.left = append(head.left, screenField(s.Subject))
 	}
-	// The query is stated up here as well as on the row it is typed into,
-	// because the header is what says what the count under it is a count of:
-	// `4 of 12` on the query row is a reading of a list this row has already
-	// said is filtered.
-	if query := strings.TrimSpace(s.list.Query); query != "" {
-		head.left = append(head.left, screenField("filtered by "+strconv.Quote(query)))
-	}
+	head.left = s.filteredBy(head.left)
 	return head
-}
-
-// footer is the keys the screen offers and the field that annotates them.
-// Which keys those are depends on the field, so it is read once here.
-func (s *SnippetScreen) footer(width int) keyFooter {
-	field := s.footField()
-	f := keyFooter{offers: s.offers(width, field), register: s.keyList(),
-		showing: s.keys, field: field}
-	if s.confirm != nil {
-		f.taken = s.confirm.View(width)
-	}
-	return f
 }
 
 // offers is the key row for whichever surface holds the keyboard. While the
@@ -371,13 +329,13 @@ func (s *SnippetScreen) offers(width int, field string) []KeyOffer {
 	}
 	move := keyOffer(keys.Screen.Move)
 	var acts []KeyOffer
-	if s.current() != nil {
+	if s.currentShown(s.Rows) != nil {
 		acts = append(acts, keyOfferAs(keys.Screen.Rerun, "run it"))
 	}
 	if s.list.Filtering {
 		acts = append(acts, keyOfferAs(keys.Screen.ClearQ, "clear the filter, then close it"))
 	} else {
-		if s.current() != nil {
+		if s.currentShown(s.Rows) != nil {
 			acts = append(acts,
 				keyOffer(keys.Screen.Copy),
 				keyOffer(keys.Screen.Rename),
@@ -387,23 +345,11 @@ func (s *SnippetScreen) offers(width int, field string) []KeyOffer {
 	}
 	acts = append(acts, wayOut(backToShell))
 
-	rungs := [][]KeyOffer{
+	return fitRungs(field, width,
 		append([]KeyOffer{move}, acts...),
 		acts,
 		without(acts, keys.Bracket(keys.Screen.Copy)),
-		without(acts, keys.Bracket(keys.Screen.Copy), keys.Bracket(keys.Screen.Filter)),
-	}
-	if field == "" {
-		return rungs[0]
-	}
-	for _, rung := range rungs {
-		if fitsBeside(rung, field, width) {
-			return rung
-		}
-	}
-	// Nothing fits beside the field, so the field goes — and with nothing left
-	// to buy, the row keeps every offer it had and wraps.
-	return rungs[0]
+		without(acts, keys.Bracket(keys.Screen.Copy), keys.Bracket(keys.Screen.Filter)))
 }
 
 // keyList is every key the screen has, for `[?]`.
@@ -425,7 +371,7 @@ func (s *SnippetScreen) keyList() []KeyOffer {
 // footField annotates the key row with the sentence this screen asks the
 // reader to have read before they walk away: nothing here runs by itself.
 func (s *SnippetScreen) footField() string {
-	if s.current() == nil || s.rename != nil {
+	if s.currentShown(s.Rows) == nil || s.rename != nil {
 		return ""
 	}
 	return "nothing is run until " + keys.Bracket(keys.Screen.Rerun)
@@ -435,7 +381,7 @@ func (s *SnippetScreen) footField() string {
 // View because the host replaces Rows after each command, and the window and
 // the query the list is showing have to survive that.
 func (s *SnippetScreen) sync() {
-	s.shown = s.match()
+	s.shown = s.match(s.Rows, snippetFields)
 	opts := make([]SelectOption, 0, len(s.shown))
 	for _, i := range s.shown {
 		row := s.Rows[i]
@@ -443,90 +389,31 @@ func (s *SnippetScreen) sync() {
 			Label: row.Name, Desc: oneLine(row.Description), Meta: row.Saved,
 		})
 	}
-	s.list.Options = opts
-	s.list.Total = len(s.Rows)
-	s.list.Filterable = true
-	s.list.Unnumbered = true
-	s.list.QueryHint = "type to filter by name or by command"
-	s.list.Focus = s.optIndex(s.Focus)
+	s.showFiltered(opts, len(s.Rows), "type to filter by name or by command")
 }
 
-// match is the snippets the query left showing. A snippet is found by its
-// name, by what it is for or by the command itself, so a reader who
-// remembers any of the three can find it.
-func (s *SnippetScreen) match() []int {
-	query := strings.ToLower(strings.TrimSpace(s.list.Query))
-	out := make([]int, 0, len(s.Rows))
-	for i, row := range s.Rows {
-		if matches(query, row.Name, row.Description, row.Command) {
-			out = append(out, i)
-		}
-	}
-	return out
+// snippetFields are what a snippet is found by: its name, what it is for or
+// the command itself, so a reader who remembers any of the three can find it.
+func snippetFields(row SnippetRow) []string {
+	return []string{row.Name, row.Description, row.Command}
 }
 
-// refilter re-runs the match after a keystroke changed the query, and puts
-// the pointer on the first snippet that survived it — the rows under it are
-// not the rows that were there a moment ago.
+// refilter re-runs the match after a keystroke changed the query: the
+// pointer goes to the first snippet that survived it, and the delete question
+// asked about the row that was under it goes.
 func (s *SnippetScreen) refilter() {
 	s.confirm = nil
-	if shown := s.match(); len(shown) > 0 {
-		s.Focus = shown[0]
-	}
+	s.refocus(s.Rows, snippetFields)
 	s.sync()
 }
 
-// moved walks the pointer over the snippets the filter left showing and
-// reports whether the keystroke was the screen's own movement key. The
-// pointer is the snippet's place in the whole list rather than in the
-// filtered one, so what moves is a List over what is showing (list.go).
-func (s *SnippetScreen) moved(pressed string) bool {
-	if len(s.shown) == 0 {
+// walked walks the pointer over the snippets the filter left showing, and
+// puts away whatever was open on the row it left.
+func (s *SnippetScreen) walked(pressed string) bool {
+	if !s.movedShown(pressed, keys.Screen.Move) {
 		return false
 	}
-	l := List[int]{Items: s.shown, Focus: s.at()}
-	moved := false
-	if s.list.Filtering {
-		moved = l.moveTyping(pressed, keys.Screen.Move)
-	} else {
-		moved = l.Move(pressed, keys.Screen.Move)
-	}
-	if !moved {
-		return false
-	}
-	s.Focus = s.shown[l.Focus]
 	s.confirm, s.rename = nil, nil
 	s.sync()
 	return true
-}
-
-// at is where the pointer is among the snippets the filter left showing.
-func (s *SnippetScreen) at() int {
-	for i, row := range s.shown {
-		if row == s.Focus {
-			return i
-		}
-	}
-	return 0
-}
-
-// current is the snippet under the pointer, or nil when the filter left none.
-func (s *SnippetScreen) current() *SnippetRow {
-	for _, i := range s.shown {
-		if i == s.Focus {
-			return &s.Rows[i]
-		}
-	}
-	return nil
-}
-
-// optIndex maps a row index to its place in the list the card is drawing. A
-// row the filter hid takes the first one showing.
-func (s *SnippetScreen) optIndex(row int) int {
-	for i, at := range s.shown {
-		if at == row {
-			return i
-		}
-	}
-	return 0
 }

@@ -143,6 +143,23 @@ func offersBeside(move KeyOffer, acts []KeyOffer, field string, width int) []Key
 	return acts
 }
 
+// fitRungs is the first rung of a key row that leaves room for the field
+// beside it, the rungs ordered by what the row gives up first. Nothing is
+// ever truncated to make room (invariant 4): a segment goes whole or stays
+// whole. Where no rung fits, the field goes, and with nothing left to buy the
+// row keeps every offer it had and wraps.
+func fitRungs(field string, width int, rungs ...[]KeyOffer) []KeyOffer {
+	if field == "" {
+		return rungs[0]
+	}
+	for _, rung := range rungs {
+		if fitsBeside(rung, field, width) {
+			return rung
+		}
+	}
+	return rungs[0]
+}
+
 // match is the positions of the rows the query leaves showing: the query,
 // trimmed, found in any of the fields a screen names for a row.
 func (l *listScreen[T]) match(items []T, fields func(T) []string) []int {
