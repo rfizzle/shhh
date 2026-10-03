@@ -128,3 +128,16 @@ func (s *Supervisor) WrapExecutor(next func(name string, args json.RawMessage) (
 		return next(name, args)
 	}
 }
+
+// CommandOf is a call to this tool as the approval classifier reads it: ok is
+// false for any other tool, starts is whether the call runs something — only
+// a start does, and arguments that do not parse count as one, failing closed
+// as NeedsApproval does — and command and err are StartSummary's. A surface
+// that holds this tool hands it to the classifier, which cannot import it.
+func CommandOf(name string, args json.RawMessage) (command string, starts, ok bool, err error) {
+	if name != ToolName {
+		return "", false, false, nil
+	}
+	_, command, err = StartSummary(args)
+	return command, NeedsApproval(args), true, err
+}
