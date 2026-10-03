@@ -40,10 +40,6 @@ linters:
       - linters: [gocognit, nestif]
         path: _test\.go$
       # Cognitive complexity over 50, one rule per function.
-      # The one-shot: the terminal and the piped paths both inline in one constructor.
-      - linters: [gocognit]
-        path: ^internal/cli/cmd\.go$
-        text: 'func `newCmdCmd`'
       # The eval command: flag validation and the run inline in one constructor.
       - linters: [gocognit]
         path: ^internal/cli/eval\.go$
