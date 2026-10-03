@@ -29,7 +29,6 @@ import (
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
-	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -1103,38 +1102,14 @@ type Model struct {
 	closeGate closeGateRun
 	// processes backs /ps and process-start approval gating.
 	processes Processes
+	// todo is the project's backlog on this session: what the host wired,
+	// the store as last read, the run in progress, and the cards and the
+	// readings that work on it (todostate.go).
+	todo todoState
 	// memory backs /memory and the remember-tool confirm flow;
 	// memoryAsk is the open memory prompt while a proposal awaits the user.
-	memory Memory
-	// todos backs /todo and the TODO block; todoStore is the backlog as last
-	// read from disk, reloaded on the events that can change it.
-	todos     Todos
-	todoStore *todo.Store
-	// todoPropose is the open proposals card and todoProposals what it is
-	// showing; todoExtractRun numbers readings so a late one is dropped.
-	// The backlog run in progress, if any (todorun.go).
-	todoRunner        todoRunState
-	todoPropose       *components.MultiSelect
-	todoProposals     []todo.Proposal
-	todoExtracting    bool
-	todoExtractRun    int
-	todoExtractCancel context.CancelFunc
-	// todoDraft is the open draft card; todoDraftRun numbers draftings so a
-	// late one is dropped the way a late reading is. They are the drafting's
-	// own rather than the reading's because /clear retires a reading — the
-	// conversation it read is gone — and says nothing about a sentence
-	// somebody typed.
-	todoDraft     *todoDraft
-	todoDrafting  bool
-	todoDraftRun  int
-	todoDraftStop context.CancelFunc
-	// todoGroomer is the grooming pass in flight and todoGroom the card its
-	// reading is showing on (todogroom.go).
-	todoGroomer todoGroomState
-	todoGroom   *components.MultiSelect
-	// todoPlanner is the sprint planning turn in flight (todosprint.go).
-	todoPlanner todoPlanState
-	memoryAsk   *components.NoteSelect
+	memory    Memory
+	memoryAsk *components.NoteSelect
 	// question is the card the model's own question is being asked on, and
 	// nil whenever none is outstanding (question.go). It rides beside
 	// approval.request rather than inside it because the request is what the
@@ -1889,7 +1864,7 @@ func (m Model) Init() tea.Cmd {
 	if m.subagents != nil {
 		cmds = append(cmds, listenSubagents(m.subagents.Events()))
 	}
-	if m.todoRunner.following {
+	if m.todo.runner.following {
 		cmds = append(cmds, todoLanesTick())
 	}
 	if listen := listenInbound(m.inbound.lines); listen != nil {

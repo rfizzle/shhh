@@ -33,31 +33,31 @@ import (
 // that died is continued rather than replaced: its checkpoint names the item
 // it was on, and that item's own checkpoint names the stage.
 func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
-	if m.todoRunner.state != nil && !m.todoRunner.state.Over() {
-		return m.systemNotice(fmt.Sprintf("a run is already going: %s. /todo status shows it; /todo stop ends it", m.todoRunner.state.Summary()))
+	if m.todo.runner.state != nil && !m.todo.runner.state.Over() {
+		return m.systemNotice(fmt.Sprintf("a run is already going: %s. /todo status shows it; /todo stop ends it", m.todo.runner.state.Summary()))
 	}
-	if m.todoStore == nil {
+	if m.todo.store == nil {
 		return m.systemNotice("no backlog to run from")
 	}
 	if m.turnState() != stateInput {
 		return m.systemNotice("answer the open decision first; a sprint starts from an idle session")
 	}
-	noCommit := opt.noCommit || m.todos.NoCommit
-	steps := run.Options{NoCommit: noCommit, Pipeline: m.todos.Pipeline, Notebook: m.notebook != nil}.Steps()
+	noCommit := opt.noCommit || m.todo.wiring.NoCommit
+	steps := run.Options{NoCommit: noCommit, Pipeline: m.todo.wiring.Pipeline, Notebook: m.notebook != nil}.Steps()
 	if !steps.Runs() {
-		return m.systemNotice(fmt.Sprintf("the %s profile has no run, so there is no set to work: its items are worked by hand", m.todos.Profile.Name))
+		return m.systemNotice(fmt.Sprintf("the %s profile has no run, so there is no set to work: its items are worked by hand", m.todo.wiring.Profile.Name))
 	}
-	if ref, refused := steps.Refuse(m.todoRunCan(project.InRepo(m.todos.Root))); refused {
+	if ref, refused := steps.Refuse(m.todoRunCan(project.InRepo(m.todo.wiring.Root))); refused {
 		return m.systemNotice(m.todoRunRefusal(ref, ""))
 	}
-	if sp, live := run.Live(m.todos.Root); live && sp.Laned() {
+	if sp, live := run.Live(m.todo.wiring.Root); live && sp.Laned() {
 		return m.systemNotice("a sprint working several items at once is going — " + sp.Summary() +
 			". /todo stop ends it; if the process working it has gone, `shhh todo run --all` picks it up")
 	}
 	if opt.parallel > 1 {
 		return m.startParallelSprint(opt, noCommit)
 	}
-	if sp, live := run.Live(m.todos.Root); live {
+	if sp, live := run.Live(m.todo.wiring.Root); live {
 		// The invocation's answers stand over the checkpoint's, the same way
 		// a continued run's do: asking for the sprint again is asking for it
 		// under the answers given now, and the session it is picked up in is
@@ -66,11 +66,11 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 		if opt.max > 0 {
 			sp.Max = opt.max
 		}
-		sp.Bound(opt.costCap, m.todos.SprintCostCap)
+		sp.Bound(opt.costCap, m.todo.wiring.SprintCostCap)
 		model, _ := m.systemNotice("continuing the sprint from its checkpoint — " + sp.Summary())
 		next := model.(Model)
 		if slug, ok := sp.Resume(); ok {
-			if err := sp.Save(next.todos.Root); err != nil {
+			if err := sp.Save(next.todo.wiring.Root); err != nil {
 				return next.systemNotice("the sprint's checkpoint could not be written — " + err.Error())
 			}
 			return next.sprintRun(sp, slug)
@@ -78,9 +78,9 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 		return next.sprintNext(sp)
 	}
 	sp := run.StartSprint(m.sessionName, m.policy.mode.String(), opt.max, noCommit)
-	sp.Bound(opt.costCap, m.todos.SprintCostCap)
+	sp.Bound(opt.costCap, m.todo.wiring.SprintCostCap)
 	m.signal(observe.SignalRun, "sprint")
-	model, _ := m.systemNotice(todoSprintStartNote(sp, len(m.todoStore.Ready())))
+	model, _ := m.systemNotice(todoSprintStartNote(sp, len(m.todo.store.Ready())))
 	return model.(Model).sprintNext(sp)
 }
 
@@ -90,7 +90,7 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 // while it runs; the board and the rail follow it off its checkpoint.
 // See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
 func (m Model) startParallelSprint(opt todoRunArgs, noCommit bool) (tea.Model, tea.Cmd) {
-	if m.todos.Parallel == nil {
+	if m.todo.wiring.Parallel == nil {
 		return m.systemNotice("this session cannot start a sprint that works several items at once; `shhh todo run --all --parallel N` does")
 	}
 	args := []string{"--all", "--parallel", strconv.Itoa(opt.parallel)}
@@ -103,7 +103,7 @@ func (m Model) startParallelSprint(opt todoRunArgs, noCommit bool) (tea.Model, t
 	if noCommit {
 		args = append(args, "--no-commit")
 	}
-	log, err := m.todos.Parallel(args)
+	log, err := m.todo.wiring.Parallel(args)
 	if err != nil {
 		return m.systemNotice("the sprint could not be started — " + err.Error())
 	}
@@ -113,10 +113,10 @@ func (m Model) startParallelSprint(opt todoRunArgs, noCommit bool) (tea.Model, t
 		opt.parallel, log)
 	// The runner may not have written its checkpoint yet, so the session
 	// that started it arms the re-read without asking the file first.
-	if m.todoRunner.following {
+	if m.todo.runner.following {
 		return m.systemNotice(note)
 	}
-	m.todoRunner.following = true
+	m.todo.runner.following = true
 	model, _ := m.systemNotice(note)
 	return model, todoLanesTick()
 }
@@ -141,17 +141,17 @@ func (m Model) followLanes() (tea.Model, tea.Cmd) {
 	if m.lanesLive() {
 		return m, todoLanesTick()
 	}
-	m.todoRunner.following = false
+	m.todo.runner.following = false
 	return m, nil
 }
 
 // lanesLive reports that a sprint working several items at once is going in
 // this backlog, whoever started it.
 func (m Model) lanesLive() bool {
-	if m.todos.Root == "" {
+	if m.todo.wiring.Root == "" {
 		return false
 	}
-	sp, live := run.Live(m.todos.Root)
+	sp, live := run.Live(m.todo.wiring.Root)
 	return live && sp.Laned()
 }
 
@@ -162,10 +162,10 @@ func (m Model) lanesLive() bool {
 // See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
 func followingLanes(model tea.Model, cmd tea.Cmd) (tea.Model, tea.Cmd) {
 	m, ok := model.(Model)
-	if !ok || m.todoRunner.following || !m.lanesLive() {
+	if !ok || m.todo.runner.following || !m.lanesLive() {
 		return model, cmd
 	}
-	m.todoRunner.following = true
+	m.todo.runner.following = true
 	return m, tea.Batch(cmd, todoLanesTick())
 }
 
@@ -190,11 +190,11 @@ func todoSprintStartNote(sp *run.Sprint, ready int) string {
 // sprintNext starts the sprint's next item, or ends the sprint when there is
 // none.
 func (m Model) sprintNext(sp *run.Sprint) (tea.Model, tea.Cmd) {
-	it, ok := sp.Next(m.todoStore)
+	it, ok := sp.Next(m.todo.store)
 	if !ok {
 		return m.endTodoSprint(sp)
 	}
-	if err := sp.Save(m.todos.Root); err != nil {
+	if err := sp.Save(m.todo.wiring.Root); err != nil {
 		sp.Stop()
 		model, _ := m.systemNotice("the sprint's checkpoint could not be written — " + err.Error())
 		return model.(Model).endTodoSprint(sp)
@@ -209,12 +209,12 @@ func (m Model) sprintNext(sp *run.Sprint) (tea.Model, tea.Cmd) {
 func (m Model) sprintRun(sp *run.Sprint, slug string) (tea.Model, tea.Cmd) {
 	next, cmd := m.beginTodoRun(slug, sp.NoCommit, true)
 	started := next.(Model)
-	if started.todoRunner.state == nil || started.todoRunner.state.Over() {
+	if started.todo.runner.state == nil || started.todo.runner.state.Over() {
 		sp.Blocks(slug, "the run could not be started; the notice above says why")
 		ended, _ := started.endTodoSprint(sp)
 		return ended, cmd
 	}
-	started.todoRunner.sprintCost, started.todoRunner.sprintCap = sp.Cost, sp.CapCents
+	started.todo.runner.sprintCost, started.todo.runner.sprintCap = sp.Cost, sp.CapCents
 	return started, cmd
 }
 
@@ -227,7 +227,7 @@ func (m Model) sprintRun(sp *run.Sprint, slug string) (tea.Model, tea.Cmd) {
 // a stage needs — and a session per item is also what makes the record one
 // row per item rather than one row for the night.
 func (m Model) advanceSprint(done string) (tea.Model, tea.Cmd) {
-	sp, live := run.Live(m.todos.Root)
+	sp, live := run.Live(m.todo.wiring.Root)
 	if !live {
 		return m, nil
 	}
@@ -236,7 +236,7 @@ func (m Model) advanceSprint(done string) (tea.Model, tea.Cmd) {
 	// before the boundary resets the ledger it is read from: the checkpoint
 	// is the only thing that outlives the session it was spent in.
 	sp.Spent(int(m.turnCount), m.sessionSpend().Cost)
-	if err := sp.Save(m.todos.Root); err != nil {
+	if err := sp.Save(m.todo.wiring.Root); err != nil {
 		sp.Stop()
 		model, _ := m.systemNotice("the sprint's checkpoint could not be written — " + err.Error())
 		return model.(Model).endTodoSprint(sp)
@@ -251,7 +251,7 @@ func (m Model) advanceSprint(done string) (tea.Model, tea.Cmd) {
 	// find out what the sprint is about to work. It is its own row, beside
 	// the boundary's: the boundary states what happened to the conversation
 	// and this states what happens next, which are two facts.
-	if next := sprintNextNote(sp, m.todoStore); next != "" {
+	if next := sprintNextNote(sp, m.todo.store); next != "" {
 		notes = append(notes, entry{kind: entrySystem, text: next})
 	}
 	model, _ := m.systemEntries(notes)
@@ -283,7 +283,7 @@ func (m Model) endTodoSprint(sp *run.Sprint) (tea.Model, tea.Cmd) {
 	if sp.Ended == "" {
 		sp.Stop()
 	}
-	run.DiscardSprint(m.todos.Root)
+	run.DiscardSprint(m.todo.wiring.Root)
 	if prev, err := agent.ParseMode(sp.PrevMode); err == nil {
 		m.applyMode(prev)
 	}
@@ -308,19 +308,19 @@ func todoSprintEndNote(sp *run.Sprint) string {
 // smallest thing the runner can judge, so it is also the smallest thing the
 // cap can end: cutting a turn in half would leave a tree nothing has read.
 func (m Model) sprintCap(step run.Step) (run.Step, bool) {
-	st := m.todoRunner.state
-	if m.todos.ItemTimeout <= 0 || !st.Sprinting() || st.Over() {
+	st := m.todo.runner.state
+	if m.todo.wiring.ItemTimeout <= 0 || !st.Sprinting() || st.Over() {
 		return step, false
 	}
 	switch step.Action {
 	case run.ActionBlocked, run.ActionDone:
 		return step, false
 	}
-	sp, live := run.Live(m.todos.Root)
-	if !live || !sp.Expired(m.todos.ItemTimeout) {
+	sp, live := run.Live(m.todo.wiring.Root)
+	if !live || !sp.Expired(m.todo.wiring.ItemTimeout) {
 		return step, false
 	}
-	return st.Block(run.TimedOut(m.todos.ItemTimeout)), true
+	return st.Block(run.TimedOut(m.todo.wiring.ItemTimeout)), true
 }
 
 // sprintRunning puts what this session has spent on the sprint's item in
@@ -330,12 +330,12 @@ func (m Model) sprintCap(step run.Step) (run.Step, bool) {
 // for with it; the figure is the session's whole spend each time, replacing
 // the last one, so a stage is never counted twice (run.Sprint.Running).
 func (m Model) sprintRunning() {
-	if !m.todoRunner.state.Sprinting() {
+	if !m.todo.runner.state.Sprinting() {
 		return
 	}
-	if sp, live := run.Live(m.todos.Root); live {
+	if sp, live := run.Live(m.todo.wiring.Root); live {
 		sp.Running(m.sessionName, int(m.turnCount), m.sessionSpend().Cost)
-		_ = sp.Save(m.todos.Root)
+		_ = sp.Save(m.todo.wiring.Root)
 	}
 }
 
@@ -344,7 +344,7 @@ func (m Model) sprintRunning() {
 // left a sprint running and came back to one line about a turn would have to
 // go and look up which of thirty items it was.
 func (m Model) sprintCloseWords() string {
-	st := m.todoRunner.state
+	st := m.todo.runner.state
 	if !st.Sprinting() {
 		return ""
 	}
@@ -355,7 +355,7 @@ func (m Model) sprintCloseWords() string {
 	if st.Stage == run.StageDone {
 		words = "finished " + st.Slug
 	}
-	if sp, live := run.Live(m.todos.Root); live {
+	if sp, live := run.Live(m.todo.wiring.Root); live {
 		words += " · sprint " + sp.Count()
 	}
 	return words

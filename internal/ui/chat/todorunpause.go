@@ -20,7 +20,7 @@ import (
 // the size, the plan, and three answers — go ahead, re-plan with a note,
 // or stop. It borrows the bottom panel the way the memory prompt does.
 func (m Model) openTodoPause(step run.Step) (tea.Model, tea.Cmd) {
-	st := m.todoRunner.state
+	st := m.todo.runner.state
 	// The plan is on the card as a checklist and on the run's row as the
 	// research stage's answer. It used to be pasted into the transcript here
 	// as well, which put the same paragraphs in a third place — the one
@@ -32,7 +32,7 @@ func (m Model) openTodoPause(step run.Step) (tea.Model, tea.Cmd) {
 	}
 	ns := components.NewNoteSelect("Run paused — "+st.Paused, opts)
 	ns.Select.MaxLines = m.maxConfirmPanelHeight() - 1
-	m.todoRunner.pause = ns
+	m.todo.runner.pause = ns
 	m.enterSurface(stateTodoPause)
 	m.syncViewport()
 	m.viewport.SetLines(m.renderHistoryLines())
@@ -51,10 +51,10 @@ func (m Model) openTodoPause(step run.Step) (tea.Model, tea.Cmd) {
 // counted, which is what every other fold in the product does
 // (docs/interface/principles.md#fold-never-hide).
 func (m Model) todoPauseLines() []string {
-	if m.todoRunner.pause == nil || m.todoRunner.state == nil {
+	if m.todo.runner.pause == nil || m.todo.runner.state == nil {
 		return nil
 	}
-	st := m.todoRunner.state
+	st := m.todo.runner.state
 	width := m.contentWidth()
 	var lines []string
 	head := fmt.Sprintf("%s · %s %s", st.Slug, st.Profile.Grade, orDash(st.Grade))
@@ -65,7 +65,7 @@ func (m Model) todoPauseLines() []string {
 		head += fmt.Sprintf(" · %s", plural(len(st.Steps), "step"))
 	}
 	lines = append(lines, sty.Header.Render(head))
-	card := strings.Split(m.todoRunner.pause.View(width), "\n")
+	card := strings.Split(m.todo.runner.pause.View(width), "\n")
 	// What the plan may take: the panel less the head, the questions, the
 	// lanes and the selector itself.
 	room := m.maxConfirmPanelHeight() - len(lines) - len(card) - len(st.Questions) - len(st.Lanes)
@@ -111,14 +111,14 @@ func orDash(s string) string {
 
 // updateTodoPause routes keys while the pause card shows.
 func (m Model) updateTodoPause(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	done, res := m.todoRunner.pause.Update(msg)
+	done, res := m.todo.runner.pause.Update(msg)
 	if !done {
 		return m, nil
 	}
-	m.todoRunner.pause = nil
+	m.todo.runner.pause = nil
 	m.leaveSurface()
 	m.syncViewport()
-	st, it := m.todoRunner.state, m.todoRunner.item
+	st, it := m.todo.runner.state, m.todo.runner.item
 	if st == nil {
 		return m, nil
 	}

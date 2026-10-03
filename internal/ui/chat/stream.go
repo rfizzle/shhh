@@ -262,8 +262,8 @@ func (m *Model) cancelStreaming() {
 	// drawn while a suite is still running: the row it leaves is what the
 	// close block reads its verdict off (gate.go).
 	m.cancelCloseGate()
-	if m.todoRunner.state != nil && !m.todoRunner.state.Over() {
-		m.todoRunner.cancelled = true
+	if m.todo.runner.state != nil && !m.todo.runner.state.Over() {
+		m.todo.runner.cancelled = true
 	}
 	// Ctrl+C cancels the whole child tree with the turn.
 	m.cancelSubagents()

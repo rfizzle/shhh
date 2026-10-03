@@ -113,7 +113,7 @@ func (m Model) dispatchFollowUp() (tea.Model, tea.Cmd, bool) {
 	if m.followUpsHeld || len(m.followUps) == 0 {
 		return m, nil, false
 	}
-	if m.todoRunner.state != nil && !m.todoRunner.state.Over() {
+	if m.todo.runner.state != nil && !m.todo.runner.state.Over() {
 		return m, nil, false
 	}
 	item := m.followUps[0]

@@ -75,19 +75,19 @@ func (m Model) startTodoGroom(args []string) (tea.Model, tea.Cmd) {
 	if !m.todosEnabled() {
 		return m.systemNotice("the backlog is unavailable in this session")
 	}
-	if !m.todos.Profile.Grooms() {
-		return m.systemNotice(fmt.Sprintf("the %s profile does not groom: it says nothing about what one of its items claims, so there is nothing to read one against", m.todos.Profile.Name))
+	if !m.todo.wiring.Profile.Grooms() {
+		return m.systemNotice(fmt.Sprintf("the %s profile does not groom: it says nothing about what one of its items claims, so there is nothing to read one against", m.todo.wiring.Profile.Name))
 	}
-	if m.todoGroomer.going() {
-		return m.systemNotice(fmt.Sprintf("already reading %s; the card opens when the turn is over", m.todoGroomer.slug))
+	if m.todo.groomer.going() {
+		return m.systemNotice(fmt.Sprintf("already reading %s; the card opens when the turn is over", m.todo.groomer.slug))
 	}
-	if st := m.todoRunner.state; st != nil && !st.Over() {
+	if st := m.todo.runner.state; st != nil && !st.Over() {
 		return m.systemNotice(fmt.Sprintf("a run is going (%s · %s); /todo stop ends it, and grooming reads files that run is working from", st.Slug, st.Stage))
 	}
 	if m.turnState() != stateInput || m.working() {
 		return m.systemNotice("a reading starts from an idle session; this turn has to finish first")
 	}
-	s := m.todoStore
+	s := m.todo.store
 	if s == nil || s.Len() == 0 {
 		return m.systemNotice("no backlog to read")
 	}
@@ -95,7 +95,7 @@ func (m Model) startTodoGroom(args []string) (tea.Model, tea.Cmd) {
 	if note != "" {
 		return m.systemNotice(note)
 	}
-	m.todoGroomer = todoGroomState{queue: queue, prevMode: m.policy.mode.String(), stale: m.todoGroomer.stale}
+	m.todo.groomer = todoGroomState{queue: queue, prevMode: m.policy.mode.String(), stale: m.todo.groomer.stale}
 	return m.groomNext()
 }
 
@@ -128,14 +128,14 @@ func todoGroomQueue(s *todo.Store, args []string) ([]string, string) {
 // groomNext sends the reading for the next item in the queue, or ends the
 // pass when there is none left.
 func (m Model) groomNext() (tea.Model, tea.Cmd) {
-	g := &m.todoGroomer
+	g := &m.todo.groomer
 	for len(g.queue) > 0 {
 		slug := g.queue[0]
 		g.queue = g.queue[1:]
 		// The store is re-read between items, because a card accepted a
 		// moment ago changed a file and the next reading states the item as
 		// it now stands.
-		it, ok := m.todoStore.Find(slug)
+		it, ok := m.todo.store.Find(slug)
 		if !ok || it.Archived {
 			continue
 		}
@@ -143,18 +143,18 @@ func (m Model) groomNext() (tea.Model, tea.Cmd) {
 		g.turn = int(m.turnCount) + 1
 		g.mark = len(m.transcript)
 		m.applyMode(agent.ModePlan)
-		return m.sendUserMessageAs(run.GroomPrompt(m.todos.Pipeline, it), "groom "+slug)
+		return m.sendUserMessageAs(run.GroomPrompt(m.todo.wiring.Pipeline, it), "groom "+slug)
 	}
 	return m.endTodoGroom("")
 }
 
 // endTodoGroom closes the pass, restores the mode and says what came of it.
 func (m Model) endTodoGroom(why string) (tea.Model, tea.Cmd) {
-	g := m.todoGroomer
+	g := m.todo.groomer
 	if prev, err := agent.ParseMode(g.prevMode); err == nil {
 		m.applyMode(prev)
 	}
-	m.todoGroomer = todoGroomState{stale: g.stale}
+	m.todo.groomer = todoGroomState{stale: g.stale}
 	m.reloadTodos()
 	var b strings.Builder
 	if why != "" {
@@ -187,7 +187,7 @@ func (m Model) endTodoGroom(why string) (tea.Model, tea.Cmd) {
 // the model after the way the runner's is: a reading's turn ending is a
 // transition, and no one handler could be trusted to send it.
 func (m Model) todoGroomAfter(prev Model) (Model, tea.Cmd) {
-	g := m.todoGroomer
+	g := m.todo.groomer
 	if !g.going() || !prev.working() || m.working() {
 		return m, nil
 	}
@@ -198,24 +198,24 @@ func (m Model) todoGroomAfter(prev Model) (Model, tea.Cmd) {
 		// The turn that ended is not the reading's — a compaction, a skill,
 		// something a command started. Nothing about the item is wrong, so
 		// the pass stops rather than grading an answer that is not its own.
-		m.todoGroomer.planAfter = nil
+		m.todo.groomer.planAfter = nil
 		next, cmd := m.endTodoGroom("The reading's turn was displaced by another message.")
 		return next.(Model), cmd
 	}
 	reading, err := todo.Groom(g.item, m.groomAnswer())
 	if err != nil {
-		m.todoGroomer.planAfter = nil
+		m.todo.groomer.planAfter = nil
 		next, cmd := m.endTodoGroom("Could not read " + g.slug + " — " + err.Error() + ".")
 		return next.(Model), cmd
 	}
-	reading.Head = project.Head(m.todos.Root)
+	reading.Head = project.Head(m.todo.wiring.Root)
 	next, cmd := m.openTodoGroomCard(reading)
 	return next.(Model), cmd
 }
 
 // groomAnswer is the assistant's last message since the reading began.
 func (m Model) groomAnswer() string {
-	for i := len(m.transcript) - 1; i >= m.todoGroomer.mark && i >= 0; i-- {
+	for i := len(m.transcript) - 1; i >= m.todo.groomer.mark && i >= 0; i-- {
 		if e := m.transcript[i]; e.kind == entryAssistant {
 			return e.text
 		}
@@ -233,22 +233,22 @@ func (m Model) openTodoGroomCard(r todo.Reading) (tea.Model, tea.Cmd) {
 		// A turn that answered in no shape the reader can act on is worth
 		// saying out loud: the alternative is a card of one row that reads
 		// as an item nothing was found wrong with.
-		m.todoGroomer.slug = ""
+		m.todo.groomer.slug = ""
 		model, _ := m.systemNotice("the reading of " + r.Slug + " answered in no shape that could be read as verdicts; nothing was changed")
 		return model.(Model).groomAfterCard()
 	}
-	m.todoGroomer.reading = r
+	m.todo.groomer.reading = r
 	opts := make([]components.SelectOption, 0, len(changes)+1)
 	for _, f := range changes {
 		opts = append(opts, components.SelectOption{Label: todoGroomRow(f)})
 	}
-	opts = append(opts, components.SelectOption{Label: todoGroomStampRow(m.todoGroomer.item, r)})
+	opts = append(opts, components.SelectOption{Label: todoGroomStampRow(m.todo.groomer.item, r)})
 	card := components.NewMultiSelect(todoGroomTitle(r, len(changes)), opts)
 	for i := range card.Checked {
 		card.Checked[i] = true
 	}
 	card.MaxLines = m.maxConfirmPanelHeight()
-	m.todoGroom = card
+	m.todo.groom = card
 	m.enterSurface(stateTodoGroom)
 	m.syncViewport()
 	return m, nil
@@ -343,10 +343,10 @@ func todoGroomTone(v todo.Verdict) components.FieldTone {
 
 // todoGroomLines renders the card for the bottom panel.
 func (m Model) todoGroomLines() []string {
-	if m.todoGroom == nil {
+	if m.todo.groom == nil {
 		return nil
 	}
-	return strings.Split(m.todoGroom.View(m.contentWidth()), "\n")
+	return strings.Split(m.todo.groom.View(m.contentWidth()), "\n")
 }
 
 // updateTodoGroom routes keys while the card shows. Enter writes the lines
@@ -358,14 +358,14 @@ func (m Model) todoGroomLines() []string {
 // a turn, which is work the session owns and not something a mode should be
 // reporting as a row and a close.
 func (m Model) updateTodoGroom(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	done, res := m.todoGroom.Update(msg)
+	done, res := m.todo.groom.Update(msg)
 	if !done {
 		return m, nil
 	}
-	r := m.todoGroomer.reading
-	m.todoGroom = nil
-	m.todoGroomer.slug = ""
-	m.todoGroomer.reading = todo.Reading{}
+	r := m.todo.groomer.reading
+	m.todo.groom = nil
+	m.todo.groomer.slug = ""
+	m.todo.groomer.reading = todo.Reading{}
 	m.leaveSurface()
 	m.syncViewport()
 	if res.Canceled {
@@ -384,7 +384,7 @@ func (m Model) updateTodoGroom(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // its own step because the card and the queue are separate facts: the reader
 // answering one card is not the reader asking for the pass to end.
 func (m Model) groomAfterCard() (tea.Model, tea.Cmd) {
-	if len(m.todoGroomer.queue) > 0 {
+	if len(m.todo.groomer.queue) > 0 {
 		return m.groomNext()
 	}
 	return m.endTodoGroom("")
@@ -402,23 +402,23 @@ func (m *Model) writeGrooming(r todo.Reading, accepted []int) string {
 		case i >= 0 && i < len(changes):
 			take = append(take, changes[i])
 		case i == len(changes):
-			stamp = r.Stamp(m.todos.Profile)
+			stamp = r.Stamp(m.todo.wiring.Profile)
 		}
 	}
-	it := m.todoGroomer.item
+	it := m.todo.groomer.item
 	n, skipped, err := todo.Accept(it.Path, take, stamp)
 	if err != nil {
 		return "could not write " + r.Slug + " — " + err.Error()
 	}
-	m.todoGroomer.lines += n
+	m.todo.groomer.lines += n
 	if n > 0 {
-		m.todoGroomer.items++
+		m.todo.groomer.items++
 	}
 	// The reading is kept only where the person accepted it, because what a
 	// run is handed later has to be the reading they agreed to rather than
 	// the one they declined.
 	if stamp != "" {
-		if err := todo.SaveReading(m.todos.Root, r); err != nil {
+		if err := todo.SaveReading(m.todo.wiring.Root, r); err != nil {
 			m.appendEntry(entry{kind: entrySystem, text: "the reading of " + r.Slug + " could not be written down — " + err.Error()})
 		}
 	}
@@ -473,40 +473,40 @@ func orLine(now, claim string) string {
 // back with it, the way a run let go of at the boundary puts it back: plan
 // mode was the reading's, and the reading is over.
 func (m *Model) dropTodoGroom() {
-	if !m.todoGroomer.going() && m.todoGroom == nil {
+	if !m.todo.groomer.going() && m.todo.groom == nil {
 		return
 	}
-	if prev, err := agent.ParseMode(m.todoGroomer.prevMode); err == nil {
+	if prev, err := agent.ParseMode(m.todo.groomer.prevMode); err == nil {
 		m.applyMode(prev)
 	}
-	if m.todoGroom != nil {
-		m.todoGroom = nil
+	if m.todo.groom != nil {
+		m.todo.groom = nil
 		m.leaveSurface()
 	}
-	m.todoGroomer = todoGroomState{stale: m.todoGroomer.stale}
+	m.todo.groomer = todoGroomState{stale: m.todo.groomer.stale}
 }
 
 // refreshGroomStale re-reads how far behind each item's accepted reading has
 // fallen. It asks the repository one question per groomed item, so it is
 // called where the backlog is loaded and nowhere near a frame.
 func (m *Model) refreshGroomStale() {
-	if m.todoStore == nil {
-		m.todoGroomer.stale = nil
+	if m.todo.store == nil {
+		m.todo.groomer.stale = nil
 		return
 	}
-	m.todoGroomer.stale = todo.Stale(m.todos.Root, m.todos.Profile, m.todoStore.Items, m.todos.GroomStale)
+	m.todo.groomer.stale = todo.Stale(m.todo.wiring.Root, m.todo.wiring.Profile, m.todo.store.Items, m.todo.wiring.GroomStale)
 }
 
 // groomStaleNote is what a surface says about an item whose reading has
 // fallen behind, and empty for one whose has not — or one nobody has read
 // that way, because absence is not staleness.
 func (m Model) groomStaleNote(slug string) string {
-	n, ok := m.todoGroomer.stale[slug]
+	n, ok := m.todo.groomer.stale[slug]
 	if !ok {
 		return ""
 	}
 	// The distance is named because the number means nothing without it: a
 	// backlog measured in days and one measured in commits both say "50",
 	// and only one of them is a week.
-	return fmt.Sprintf("groomed %d %s ago", n, m.todos.Profile.Stale.Measure)
+	return fmt.Sprintf("groomed %d %s ago", n, m.todo.wiring.Profile.Stale.Measure)
 }

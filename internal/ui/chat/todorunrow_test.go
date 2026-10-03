@@ -96,7 +96,7 @@ func TestTodoRunRow_DrawnFromStartToDone(t *testing.T) {
 	updated, _ = m.Update(todoCommitMsg{slug: "do-it", files: []string{"a.go"}})
 	m = updated.(Model)
 
-	if m.todoRunner.state != nil {
+	if m.todo.runner.state != nil {
 		t.Fatal("the run should be over")
 	}
 	if lastTodoRunRow(m.transcript) < 0 {
@@ -127,7 +127,7 @@ func TestTodoRunRow_DrawnFromStartToDone(t *testing.T) {
 // this row watched none of them.
 func TestTodoRunRow_ContinuedDrawsRestoredNotPassed(t *testing.T) {
 	m, root := runModel(t)
-	it, ok := m.todoStore.Find("do-it")
+	it, ok := m.todo.store.Find("do-it")
 	if !ok {
 		t.Fatal("fixture")
 	}
@@ -203,7 +203,7 @@ func TestTodoRunRow_BlockedNamesTheFollowUpAndReopens(t *testing.T) {
 	if r.followUp == "" {
 		t.Fatal("the accepted follow-up should be named on the blocked row")
 	}
-	if _, ok := m.todoStore.Find(r.followUp); !ok {
+	if _, ok := m.todo.store.Find(r.followUp); !ok {
 		t.Fatalf("the follow-up %q the row names should be in the backlog", r.followUp)
 	}
 
@@ -299,13 +299,13 @@ func TestInspectorTodo_RunningItemFirstWithItsLanes(t *testing.T) {
 		}
 	}
 	m.reloadTodos()
-	if m.todoStore.Items[0].Slug == "do-it" {
+	if m.todo.store.Items[0].Slug == "do-it" {
 		t.Fatal("fixture: do-it should not already be first in backlog order")
 	}
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	m.todoRunner.state.Lanes = []run.Lane{{Name: "a", Done: true}, {Name: "b"}, {Name: "c"}}
+	m.todo.runner.state.Lanes = []run.Lane{{Name: "a", Done: true}, {Name: "b"}, {Name: "c"}}
 
 	block := m.inspectorTodo()
 	if block == nil || block.Rows[0].Slug != "do-it" {

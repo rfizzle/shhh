@@ -86,8 +86,8 @@ func TestTodoRun_StagesInOrder(t *testing.T) {
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	if m.todoRunner.state == nil || m.todoRunner.state.Stage != run.StageResearch || m.policy.mode != agent.ModePlan || !m.working() {
-		t.Fatalf("research should be in flight in plan mode: run=%+v mode=%s", m.todoRunner.state, m.policy.mode)
+	if m.todo.runner.state == nil || m.todo.runner.state.Stage != run.StageResearch || m.policy.mode != agent.ModePlan || !m.working() {
+		t.Fatalf("research should be in flight in plan mode: run=%+v mode=%s", m.todo.runner.state, m.policy.mode)
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it"); it.Status != todo.StatusInProgress {
 		t.Fatal("the item should be in progress")
@@ -100,34 +100,34 @@ func TestTodoRun_StagesInOrder(t *testing.T) {
 	}
 
 	m = answer(t, m, runPlan)
-	if m.todoRunner.state.Stage != run.StageImplement || m.policy.mode != agent.ModeAuto || !m.working() || m.state == statePlanApprove {
-		t.Fatalf("implement should follow research in auto mode, no plan card: stage=%s mode=%s state=%d", m.todoRunner.state.Stage, m.policy.mode, m.state)
+	if m.todo.runner.state.Stage != run.StageImplement || m.policy.mode != agent.ModeAuto || !m.working() || m.state == statePlanApprove {
+		t.Fatalf("implement should follow research in auto mode, no plan card: stage=%s mode=%s state=%d", m.todo.runner.state.Stage, m.policy.mode, m.state)
 	}
-	if m.todoRunner.state.Grade != "S" {
-		t.Fatalf("size should be re-graded from research, got %s", m.todoRunner.state.Grade)
+	if m.todo.runner.state.Grade != "S" {
+		t.Fatalf("size should be re-graded from research, got %s", m.todo.runner.state.Grade)
 	}
 
 	m = answer(t, m, "Changed a.go.")
-	if m.todoRunner.state.Stage != run.StageVerify || m.working() {
-		t.Fatalf("verify should follow implement: %s", m.todoRunner.state.Stage)
+	if m.todo.runner.state.Stage != run.StageVerify || m.working() {
+		t.Fatalf("verify should follow implement: %s", m.todo.runner.state.Stage)
 	}
 	updated, _ = m.Update(todoVerifyMsg{slug: "do-it", ok: true, output: "$ true → exit 0"})
 	m = updated.(Model)
-	if m.todoRunner.state.Stage != run.StageReview || !m.working() {
-		t.Fatalf("review should follow a passing verify: %s", m.todoRunner.state.Stage)
+	if m.todo.runner.state.Stage != run.StageReview || !m.working() {
+		t.Fatalf("review should follow a passing verify: %s", m.todo.runner.state.Stage)
 	}
 	m = answer(t, m, "verdict: clean")
-	if m.todoRunner.state.Stage != run.StageCommit || !m.working() {
-		t.Fatalf("commit turn should follow a clean review: %s", m.todoRunner.state.Stage)
+	if m.todo.runner.state.Stage != run.StageCommit || !m.working() {
+		t.Fatalf("commit turn should follow a clean review: %s", m.todo.runner.state.Stage)
 	}
 	m = answer(t, m, "COMMIT:\nDo it\n\nBody.\nREPORT:\n## Report\nSummary: did it")
-	if m.todoRunner.state.Message != "Do it\n\nBody." || m.working() {
-		t.Fatalf("the commit turn should be read and the commit started: %+v", m.todoRunner.state)
+	if m.todo.runner.state.Message != "Do it\n\nBody." || m.working() {
+		t.Fatalf("the commit turn should be read and the commit started: %+v", m.todo.runner.state)
 	}
 	updated, _ = m.Update(todoCommitMsg{slug: "do-it", files: []string{"a.go"}})
 	m = updated.(Model)
-	if m.todoRunner.state != nil || m.policy.mode != agent.ModeManual {
-		t.Fatalf("done should end the run and restore the mode: run=%v mode=%s", m.todoRunner.state, m.policy.mode)
+	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+		t.Fatalf("done should end the run and restore the mode: run=%v mode=%s", m.todo.runner.state, m.policy.mode)
 	}
 	s := todo.Load(todo.BuiltinCode(), root)
 	done, ok := s.Find("do-it")
@@ -148,8 +148,8 @@ func TestTodoRun_BlocksWithEvidenceAndKeepsTheTree(t *testing.T) {
 	updated, _ := m.submitInput()
 	m = updated.(Model)
 	m = answer(t, m, "## Plan: x\n\n1. a\n\nsize: S\nquestions:\n- keep the flag?\n")
-	if m.todoRunner.state != nil || m.policy.mode != agent.ModeManual {
-		t.Fatalf("an open question should block and restore the mode: %v %s", m.todoRunner.state, m.policy.mode)
+	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+		t.Fatalf("an open question should block and restore the mode: %v %s", m.todo.runner.state, m.policy.mode)
 	}
 	it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it")
 	if it.Status != todo.StatusBlocked || !strings.Contains(it.Body, "## Blocked\nopen questions after research:\n- keep the flag?") {
@@ -176,7 +176,7 @@ func TestTodoRun_StopReopensTheItem(t *testing.T) {
 	updated, _ = m.submitInput()
 	m = updated.(Model)
 
-	if m.todoRunner.state != nil || m.policy.mode != agent.ModeManual {
+	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
 		t.Fatal("run should end and mode restore")
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it"); it.Status != todo.StatusOpen {
@@ -201,7 +201,7 @@ func TestTodoRun_ANewSessionKeepsTheRunsCheckpoint(t *testing.T) {
 
 	notes, _ := m.startNewSession()
 
-	if m.todoRunner.state != nil || m.policy.mode != agent.ModeManual {
+	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
 		t.Fatal("the run should be let go of and the mode restored")
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it"); it.Status != todo.StatusInProgress {
@@ -255,7 +255,7 @@ func TestTodoRun_Guards(t *testing.T) {
 		t.Fatalf("the rail should name the stage: %+v", block)
 	}
 	m.changes = nil
-	m.todoRunner.state = nil
+	m.todo.runner.state = nil
 	m.input.SetValue("/todo run do-it")
 	m.state = stateInput
 	updated, _ = m.submitInput()
@@ -280,7 +280,7 @@ func TestTodoRun_RefusedWhereNothingSaysWhatCheckingMeans(t *testing.T) {
 	if !strings.Contains(note, ".shhh/quality.json") || !strings.Contains(note, "verify step") {
 		t.Fatalf("the refusal does not name the missing config: %q", note)
 	}
-	if next.todoRunner.state != nil {
+	if next.todo.runner.state != nil {
 		t.Fatal("a refused run must not have started")
 	}
 	// A step that names its own command is the project saying it, so the
@@ -291,10 +291,10 @@ func TestTodoRun_RefusedWhereNothingSaysWhatCheckingMeans(t *testing.T) {
 			steps[i].Command = "true"
 		}
 	}
-	m.todos.Pipeline = run.Pipeline{Name: "code", Steps: steps}
+	m.todo.wiring.Pipeline = run.Pipeline{Name: "code", Steps: steps}
 	m.input.SetValue("/todo run do-it")
 	updated, _ = m.submitInput()
-	if next := updated.(Model); next.todoRunner.state == nil {
+	if next := updated.(Model); next.todo.runner.state == nil {
 		t.Fatalf("a step naming its own command still asked for a config: %q",
 			next.transcript[len(next.transcript)-1].text)
 	}
@@ -306,8 +306,8 @@ func TestTodoRun_RefusedWhereNothingSaysWhatCheckingMeans(t *testing.T) {
 // run some other profile has.
 func TestTodoRun_AProfileWithNoRunSaysSoAndOffersDone(t *testing.T) {
 	m, _ := runModel(t)
-	m.todos.Profile.Name = "checklist"
-	m.todos.Pipeline = run.Pipeline{Name: "checklist"}
+	m.todo.wiring.Profile.Name = "checklist"
+	m.todo.wiring.Pipeline = run.Pipeline{Name: "checklist"}
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	next := updated.(Model)
@@ -315,7 +315,7 @@ func TestTodoRun_AProfileWithNoRunSaysSoAndOffersDone(t *testing.T) {
 	if !strings.Contains(note, "checklist profile has no run") || !strings.Contains(note, "/todo done do-it") {
 		t.Fatalf("the refusal does not say what to do instead: %q", note)
 	}
-	if next.todoRunner.state != nil {
+	if next.todo.runner.state != nil {
 		t.Fatal("a run started under a profile that states none")
 	}
 	// And the same for a whole set: there is no item to name, so the
@@ -330,8 +330,8 @@ func TestTodoRun_AProfileWithNoRunSaysSoAndOffersDone(t *testing.T) {
 
 func TestTodoVerifyCmd_RunsSnapshotAndReportsFailure(t *testing.T) {
 	m, root := runModel(t)
-	m.todoRunner.state = &run.State{Slug: "do-it", Tests: []string{"true", "exit 3"}}
-	m.todoRunner.item = todo.Item{Slug: "do-it", Body: "## Tests\n- echo MODEL-WROTE-THIS\n"}
+	m.todo.runner.state = &run.State{Slug: "do-it", Tests: []string{"true", "exit 3"}}
+	m.todo.runner.item = todo.Item{Slug: "do-it", Body: "## Tests\n- echo MODEL-WROTE-THIS\n"}
 	msg := m.todoVerifyCmd("")().(todoVerifyMsg)
 	if msg.ok || !strings.Contains(msg.output, "$ exit 3 → exit 3") || strings.Contains(msg.output, "MODEL-WROTE-THIS") {
 		t.Fatalf("verify = %+v", msg)
@@ -340,7 +340,7 @@ func TestTodoVerifyCmd_RunsSnapshotAndReportsFailure(t *testing.T) {
 	// nothing standing behind a pass — so the run stops rather than
 	// reporting one. It is the same answer the unattended runner gives: the
 	// item must not be able to tell which surface worked it.
-	m.todoRunner.state = &run.State{Slug: "do-it"}
+	m.todo.runner.state = &run.State{Slug: "do-it"}
 	msg = m.todoVerifyCmd("")().(todoVerifyMsg)
 	if msg.ok || !strings.Contains(msg.blocked, "nothing verifies this item") {
 		t.Fatalf("empty verify = %+v", msg)
@@ -360,9 +360,9 @@ func TestTodoVerifyCmd_SpoolsTheOutputAndQuotesBothEnds(t *testing.T) {
 		kept[id] = content
 		return id, true
 	}
-	m.todoRunner.state = &run.State{Slug: "do-it",
+	m.todo.runner.state = &run.State{Slug: "do-it",
 		Tests: []string{`sh -c 'echo FIRST FAILURE; i=0; while [ $i -lt 4000 ]; do echo filler line $i; i=$((i+1)); done; echo LAST LINE; exit 1'`}}
-	m.todoRunner.item = todo.Item{Slug: "do-it"}
+	m.todo.runner.item = todo.Item{Slug: "do-it"}
 	msg := m.todoVerifyCmd("")().(todoVerifyMsg)
 	if msg.ok || !strings.Contains(msg.output, "[full output: evidence ev-") {
 		t.Fatalf("the report does not cite the evidence: %.200q", msg.output)
@@ -393,7 +393,7 @@ func TestTodoRun_TextIsRefusedAndStaleResultsIgnored(t *testing.T) {
 	}
 	m = answer(t, m, runPlan)
 	m = answer(t, m, "done")
-	if m.todoRunner.state.Stage != run.StageVerify {
+	if m.todo.runner.state.Stage != run.StageVerify {
 		t.Fatal("should be verifying")
 	}
 	m.input.SetValue("quick question")
@@ -406,8 +406,8 @@ func TestTodoRun_TextIsRefusedAndStaleResultsIgnored(t *testing.T) {
 	m = updated.(Model)
 	updated, _ = m.Update(todoCommitMsg{slug: "do-it", files: []string{"x"}})
 	m = updated.(Model)
-	if m.todoRunner.state.Stage != run.StageVerify {
-		t.Fatalf("a stale verify or a commit in the wrong stage must be ignored, stage=%s", m.todoRunner.state.Stage)
+	if m.todo.runner.state.Stage != run.StageVerify {
+		t.Fatalf("a stale verify or a commit in the wrong stage must be ignored, stage=%s", m.todo.runner.state.Stage)
 	}
 }
 
@@ -421,7 +421,7 @@ func TestTodoRun_CancelStopsTheRun(t *testing.T) {
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
-	if m.todoRunner.state != nil {
+	if m.todo.runner.state != nil {
 		t.Fatal("a cancelled stage turn should stop the run, not be graded")
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it"); it.Status != todo.StatusOpen {
@@ -454,7 +454,7 @@ func TestTodoRun_ArchiveFailureAfterCommitReopensWithReport(t *testing.T) {
 
 func TestTodoRunPaths_OnlyThisRunUnderRootNeverBacklog(t *testing.T) {
 	m, root := runModel(t)
-	m.todoRunner.state = &run.State{Slug: "do-it", Turn: 3}
+	m.todo.runner.state = &run.State{Slug: "do-it", Turn: 3}
 	add := func(turn int64, path string) {
 		m.changes.Add(turn, changeset.Record{Path: path, Before: "a", After: "b", BeforeExists: true, AfterExists: true})
 	}
@@ -495,7 +495,7 @@ func TestTodoCommitCmd_StagesByNameAndRefusesForeignIndex(t *testing.T) {
 	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
 	// stray.go was already modified when the item started, so it is not the
 	// run's work and must not ride along in its commit.
-	m.todoRunner.state = &run.State{Slug: "x", Turn: 1, Message: "Change a\n\nBecause.",
+	m.todo.runner.state = &run.State{Slug: "x", Turn: 1, Message: "Change a\n\nBecause.",
 		Prestart: []string{"stray.go"}}
 	m.changes.Add(1, changeset.Record{Path: filepath.Join(root, "a.go"), Before: "package a\n", After: "package a // changed\n", BeforeExists: true, AfterExists: true})
 
@@ -525,7 +525,7 @@ func TestTodoRun_PauseCardGoAheadReplanStop(t *testing.T) {
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = answer(t, updated.(Model), largePlan)
-	if m.state != stateTodoPause || m.todoRunner.pause == nil || m.todoRunner.state.Paused == "" {
+	if m.state != stateTodoPause || m.todo.runner.pause == nil || m.todo.runner.state.Paused == "" {
 		t.Fatalf("an L plan should pause: state=%d", m.state)
 	}
 	lines := stripANSI(strings.Join(m.todoPauseLines(), "\n"))
@@ -543,10 +543,10 @@ func TestTodoRun_PauseCardGoAheadReplanStop(t *testing.T) {
 
 	// Re-plan with a note: research runs again with the answer in front.
 	m = press(t, m, "down")
-	m.todoRunner.pause.Note.SetValue("keep it")
+	m.todo.runner.pause.Note.SetValue("keep it")
 	m = press(t, m, "enter")
-	if m.state == stateTodoPause || m.todoRunner.state.Stage != run.StageResearch || !m.working() || m.policy.mode != agent.ModeManual && m.policy.mode != agent.ModePlan {
-		t.Fatalf("replan should send research again: stage=%s state=%d", m.todoRunner.state.Stage, m.state)
+	if m.state == stateTodoPause || m.todo.runner.state.Stage != run.StageResearch || !m.working() || m.policy.mode != agent.ModeManual && m.policy.mode != agent.ModePlan {
+		t.Fatalf("replan should send research again: stage=%s state=%d", m.todo.runner.state.Stage, m.state)
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it"); !strings.Contains(it.Body, "## Answers\nkeep it") {
 		t.Fatalf("the answer should be on the item: %q", it.Body)
@@ -560,8 +560,8 @@ func TestTodoRun_PauseCardGoAheadReplanStop(t *testing.T) {
 	}
 	m = press(t, m, "enter")
 	// A large item is divided before it is built; the split reads only.
-	if m.todoRunner.state.Stage != run.StageSplit || !m.working() || m.policy.mode != agent.ModePlan {
-		t.Fatalf("go ahead on L should split in plan mode: stage=%s mode=%s", m.todoRunner.state.Stage, m.policy.mode)
+	if m.todo.runner.state.Stage != run.StageSplit || !m.working() || m.policy.mode != agent.ModePlan {
+		t.Fatalf("go ahead on L should split in plan mode: stage=%s mode=%s", m.todo.runner.state.Stage, m.policy.mode)
 	}
 
 	// Stop from the card.
@@ -570,7 +570,7 @@ func TestTodoRun_PauseCardGoAheadReplanStop(t *testing.T) {
 	updated, _ = m2.submitInput()
 	m2 = answer(t, updated.(Model), largePlan)
 	m2 = press(t, m2, "esc")
-	if m2.todoRunner.state != nil || m2.state != stateInput {
+	if m2.todo.runner.state != nil || m2.state != stateInput {
 		t.Fatal("esc on the pause should stop the run")
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root2).Find("do-it"); it.Status != todo.StatusOpen {
@@ -583,12 +583,12 @@ func TestTodoRun_ReviewFallsBackWithoutASupervisor(t *testing.T) {
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: M", 1))
-	m.changes.Add(m.turnCount, changeset.Record{Path: filepath.Join(m.todos.Root, "a.go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true})
+	m.changes.Add(m.turnCount, changeset.Record{Path: filepath.Join(m.todo.wiring.Root, "a.go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true})
 	m = answer(t, m, "done")
 	updated, _ = m.Update(todoVerifyMsg{slug: "do-it", ok: true})
 	m = updated.(Model)
-	if m.todoRunner.state == nil || m.todoRunner.state.Stage != run.StageReview || !m.working() || m.todoRunner.state.Reviewer != "" {
-		t.Fatalf("no supervisor: the session should review itself: %+v", m.todoRunner.state)
+	if m.todo.runner.state == nil || m.todo.runner.state.Stage != run.StageReview || !m.working() || m.todo.runner.state.Reviewer != "" {
+		t.Fatalf("no supervisor: the session should review itself: %+v", m.todo.runner.state)
 	}
 	if !strings.Contains(m.transcript[len(m.transcript)-1].text, "no reviewer agent") {
 		t.Fatal("the fallback should say so")
@@ -597,18 +597,18 @@ func TestTodoRun_ReviewFallsBackWithoutASupervisor(t *testing.T) {
 
 func TestTodoRun_ReviewerChildAnswersTheStage(t *testing.T) {
 	m, _ := runModel(t)
-	sup := subagent.New(context.Background(), subagent.Options{Root: m.todos.Root, NewEnv: reportingEnv("Looked.\nverdict: clean")})
+	sup := subagent.New(context.Background(), subagent.Options{Root: m.todo.wiring.Root, NewEnv: reportingEnv("Looked.\nverdict: clean")})
 	t.Cleanup(sup.Close)
 	m = m.WithSubagents(sup)
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: M", 1))
-	m.changes.Add(m.turnCount, changeset.Record{Path: filepath.Join(m.todos.Root, "a.go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true})
+	m.changes.Add(m.turnCount, changeset.Record{Path: filepath.Join(m.todo.wiring.Root, "a.go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true})
 	m = answer(t, m, "done")
 	updated, _ = m.Update(todoVerifyMsg{slug: "do-it", ok: true})
 	m = updated.(Model)
-	if m.todoRunner.state == nil || m.todoRunner.state.Reviewer != "todo-review-do-it-1" || m.working() {
-		t.Fatalf("a reviewer child should be spawned: %+v", m.todoRunner.state)
+	if m.todo.runner.state == nil || m.todo.runner.state.Reviewer != "todo-review-do-it-1" || m.working() {
+		t.Fatalf("a reviewer child should be spawned: %+v", m.todo.runner.state)
 	}
 	if st, ok := sup.Get("todo-review-do-it-1"); !ok || st.Role != subagent.RoleReviewer {
 		t.Fatalf("child = %+v %v", st, ok)
@@ -624,8 +624,8 @@ func TestTodoRun_ReviewerChildAnswersTheStage(t *testing.T) {
 	}
 	updated, _ = m.handleSubagentEvent(ev)
 	m = updated.(Model)
-	if m.todoRunner.state.Stage != run.StageCommit || !m.working() || m.todoRunner.state.Reviewer != "" {
-		t.Fatalf("a clean verdict from the child should go to the commit turn: %+v", m.todoRunner.state)
+	if m.todo.runner.state.Stage != run.StageCommit || !m.working() || m.todo.runner.state.Reviewer != "" {
+		t.Fatalf("a clean verdict from the child should go to the commit turn: %+v", m.todo.runner.state)
 	}
 }
 
@@ -635,13 +635,13 @@ func TestTodoRun_ReviewerChildAnswersTheStage(t *testing.T) {
 func TestTodoRun_ReviewerVerdictIsOnTheLane(t *testing.T) {
 	m, _ := runModel(t)
 	report := "1. a.go:3 the flag is never read\n\nverdict: findings"
-	sup := subagent.New(context.Background(), subagent.Options{Root: m.todos.Root, NewEnv: reportingEnv(report)})
+	sup := subagent.New(context.Background(), subagent.Options{Root: m.todo.wiring.Root, NewEnv: reportingEnv(report)})
 	t.Cleanup(sup.Close)
 	m = m.WithSubagents(sup)
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: M", 1))
-	m.changes.Add(m.turnCount, changeset.Record{Path: filepath.Join(m.todos.Root, "a.go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true})
+	m.changes.Add(m.turnCount, changeset.Record{Path: filepath.Join(m.todo.wiring.Root, "a.go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true})
 	m = answer(t, m, "done")
 	updated, _ = m.Update(todoVerifyMsg{slug: "do-it", ok: true})
 	m = updated.(Model)
@@ -656,7 +656,7 @@ func TestTodoRun_ReviewerVerdictIsOnTheLane(t *testing.T) {
 	}
 	updated, _ = m.handleSubagentEvent(ev)
 	m = updated.(Model)
-	if s := m.todoRunner.state; s.Stage != run.StageRemediate || !strings.Contains(s.Findings, "the flag is never read") {
+	if s := m.todo.runner.state; s.Stage != run.StageRemediate || !strings.Contains(s.Findings, "the flag is never read") {
 		t.Fatalf("the findings above the verdict should reach the remediation: %+v", s)
 	}
 	st, ok := sup.Get("todo-review-do-it-1")
@@ -673,10 +673,10 @@ func TestTodoRun_BlockOffersAFollowUp(t *testing.T) {
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = answer(t, updated.(Model), "## Plan: x\n\n1. a\n\nsize: S\nquestions:\n- which?\n")
-	if m.state != stateTodoPropose || len(m.todoProposals) != 1 {
+	if m.state != stateTodoPropose || len(m.todo.proposals) != 1 {
 		t.Fatalf("a block should offer a follow-up: state=%d", m.state)
 	}
-	p := m.todoProposals[0]
+	p := m.todo.proposals[0]
 	if !strings.HasPrefix(p.Title, "Follow up do-it") || p.DependsOn[0] != "do-it" || !strings.Contains(p.Notes[0], "which?") {
 		t.Fatalf("follow-up = %+v", p)
 	}
@@ -757,11 +757,11 @@ func TestTodoRun_FailedReviewerFallsBackToReadingItHere(t *testing.T) {
 	ev := waitDone(t, sup)
 	updated, _ := m.handleSubagentEvent(ev)
 	m = updated.(Model)
-	if m.todoRunner.state == nil || m.todoRunner.state.Over() {
+	if m.todo.runner.state == nil || m.todo.runner.state.Over() {
 		t.Fatal("a killed reviewer should leave the run going")
 	}
-	if m.todoRunner.state.Reviewer != "" {
-		t.Fatalf("the reading is this session's now, reviewer = %q", m.todoRunner.state.Reviewer)
+	if m.todo.runner.state.Reviewer != "" {
+		t.Fatalf("the reading is this session's now, reviewer = %q", m.todo.runner.state.Reviewer)
 	}
 	found := false
 	for _, e := range m.transcript {
@@ -783,7 +783,7 @@ func TestTodoRun_StopKillsTheReviewer(t *testing.T) {
 	if ev.Status.Name != "todo-review-do-it-1" || ev.Status.State == subagent.StateDone {
 		t.Fatalf("stop should kill the reviewer: %+v", ev.Status)
 	}
-	if m.todoRunner.state != nil {
+	if m.todo.runner.state != nil {
 		t.Fatal("run should be over")
 	}
 }
@@ -796,7 +796,7 @@ func TestTodoRun_ReviewWithNoChangesBlocks(t *testing.T) {
 	m = answer(t, m, "done")
 	updated, _ = m.Update(todoVerifyMsg{slug: "do-it", ok: true})
 	m = updated.(Model)
-	if m.todoRunner.state != nil {
+	if m.todo.runner.state != nil {
 		t.Fatal("nothing changed: the run should block rather than review the whole tree")
 	}
 }
@@ -806,9 +806,9 @@ func TestTodoRun_GoAheadNoteReachesImplement(t *testing.T) {
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = answer(t, updated.(Model), largePlan)
-	m.todoRunner.pause.Note.SetValue("use the old flag")
+	m.todo.runner.pause.Note.SetValue("use the old flag")
 	m = press(t, m, "enter")
-	if !m.working() || m.todoRunner.state.Stage != run.StageSplit {
+	if !m.working() || m.todo.runner.state.Stage != run.StageSplit {
 		t.Fatal("go ahead on L should split")
 	}
 	if msgs := m.agent.Messages(); !strings.Contains(msgs[len(msgs)-1].Content, "use the old flag") {
@@ -816,7 +816,7 @@ func TestTodoRun_GoAheadNoteReachesImplement(t *testing.T) {
 	}
 	// And in front of the lanes and the integration after them.
 	m = answer(t, m, "lanes: none")
-	if !m.working() || m.todoRunner.state.Stage != run.StageImplement {
+	if !m.working() || m.todo.runner.state.Stage != run.StageImplement {
 		t.Fatal("no lanes should implement whole")
 	}
 	if msgs := m.agent.Messages(); !strings.Contains(msgs[len(msgs)-1].Content, "use the old flag") {
@@ -837,13 +837,13 @@ func TestTodoRun_ContinuesFromCheckpointAndDisplacementPauses(t *testing.T) {
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = answer(t, updated.(Model), runPlan)
-	if m.todoRunner.state.Stage != run.StageImplement {
+	if m.todo.runner.state.Stage != run.StageImplement {
 		t.Fatal("should be implementing")
 	}
 	// Another turn gets in ahead of the stage: a compaction-like user turn.
 	updated, _ = m.sendUserMessage("summarise")
 	m = answer(t, updated.(Model), "summary")
-	if m.todoRunner.state != nil {
+	if m.todo.runner.state != nil {
 		t.Fatal("a displaced stage should pause the run")
 	}
 	it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it")
@@ -865,14 +865,14 @@ func TestTodoRun_ContinuesFromCheckpointAndDisplacementPauses(t *testing.T) {
 	m2.input.SetValue("/todo run do-it")
 	updated, _ = m2.submitInput()
 	m2 = updated.(Model)
-	if m2.todoRunner.state == nil || m2.todoRunner.state.Stage != run.StageImplement || !m2.working() || m2.policy.mode != agent.ModeAuto {
-		t.Fatalf("should continue at implement in auto: %+v", m2.todoRunner.state)
+	if m2.todo.runner.state == nil || m2.todo.runner.state.Stage != run.StageImplement || !m2.working() || m2.policy.mode != agent.ModeAuto {
+		t.Fatalf("should continue at implement in auto: %+v", m2.todo.runner.state)
 	}
-	if len(m2.todoRunner.state.Steps) != 1 {
+	if len(m2.todo.runner.state.Steps) != 1 {
 		t.Fatal("the plan should come back with the checkpoint")
 	}
 	m2 = answer(t, m2, "done")
-	if m2.todoRunner.state.Stage != run.StageVerify {
+	if m2.todo.runner.state.Stage != run.StageVerify {
 		t.Fatal("the continued run should carry on")
 	}
 
@@ -927,21 +927,21 @@ func TestTodoRun_ContinuedRunKeepsEarlierPaths(t *testing.T) {
 
 func TestTodoRun_SameSessionContinueRespawnsAReviewer(t *testing.T) {
 	m, sup := reviewReadyModel(t, blockingEnv())
-	if m.todoRunner.state.Reviewer != "todo-review-do-it-1" {
-		t.Fatalf("reviewer = %q", m.todoRunner.state.Reviewer)
+	if m.todo.runner.state.Reviewer != "todo-review-do-it-1" {
+		t.Fatalf("reviewer = %q", m.todo.runner.state.Reviewer)
 	}
 	// Displace: a user turn while the reviewer reads pauses the run.
 	updated, _ := m.sendUserMessage("x")
 	m = answer(t, updated.(Model), "y")
-	if m.todoRunner.state != nil {
+	if m.todo.runner.state != nil {
 		t.Fatal("should have paused")
 	}
 	waitDone(t, sup)
 	m.input.SetValue("/todo run do-it")
 	updated, _ = m.submitInput()
 	m = updated.(Model)
-	if m.todoRunner.state == nil || m.todoRunner.state.Reviewer != "todo-review-do-it-2" {
-		t.Fatalf("a continued review should spawn a fresh child: %+v", m.todoRunner.state)
+	if m.todo.runner.state == nil || m.todo.runner.state.Reviewer != "todo-review-do-it-2" {
+		t.Fatalf("a continued review should spawn a fresh child: %+v", m.todo.runner.state)
 	}
 	if _, ok := sup.Get("todo-review-do-it-2"); !ok {
 		t.Fatal("the second child should exist")
@@ -988,17 +988,17 @@ func largeRunModel(t *testing.T, env subagent.EnvFactory) (Model, *subagent.Supe
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: L", 1))
-	if m.todoRunner.pause == nil {
+	if m.todo.runner.pause == nil {
 		t.Fatal("L should pause")
 	}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	if m.todoRunner.state == nil || m.todoRunner.state.Stage != run.StageSplit || !m.working() {
-		t.Fatalf("go ahead should start the split turn: %+v", m.todoRunner.state)
+	if m.todo.runner.state == nil || m.todo.runner.state.Stage != run.StageSplit || !m.working() {
+		t.Fatalf("go ahead should start the split turn: %+v", m.todo.runner.state)
 	}
 	m = answer(t, m, "LANE: alpha\npaths: a.go\ntask: change a\n\nLANE: beta\npaths: b.go\ntask: create b\n")
-	if m.todoRunner.state.Stage != run.StageFanOut || m.working() {
-		t.Fatalf("the split should fan out: %+v", m.todoRunner.state)
+	if m.todo.runner.state.Stage != run.StageFanOut || m.working() {
+		t.Fatalf("the split should fan out: %+v", m.todo.runner.state)
 	}
 	return m, sup
 }
@@ -1049,7 +1049,7 @@ func pumpSubagents(t *testing.T, m Model, sup *subagent.Supervisor, until func(M
 			updated, _ := m.handleSubagentEvent(ev)
 			m = updated.(Model)
 		case <-deadline:
-			t.Fatalf("timed out; run = %+v", m.todoRunner.state)
+			t.Fatalf("timed out; run = %+v", m.todo.runner.state)
 		}
 	}
 	return m
@@ -1066,16 +1066,16 @@ func TestTodoRun_LargeItemLanesLandAndIntegrate(t *testing.T) {
 	if _, ok := sup.Get("tw1-beta"); !ok {
 		t.Fatal("beta should be spawned")
 	}
-	m = pumpSubagents(t, m, sup, func(m Model) bool { return m.todoRunner.state == nil || m.todoRunner.state.Stage != run.StageFanOut })
-	if m.todoRunner.state == nil || m.todoRunner.state.Stage != run.StageImplement || !m.working() || !m.todoRunner.state.AllLanesDone() {
-		t.Fatalf("both lanes landing should start the integration turn: %+v", m.todoRunner.state)
+	m = pumpSubagents(t, m, sup, func(m Model) bool { return m.todo.runner.state == nil || m.todo.runner.state.Stage != run.StageFanOut })
+	if m.todo.runner.state == nil || m.todo.runner.state.Stage != run.StageImplement || !m.working() || !m.todo.runner.state.AllLanesDone() {
+		t.Fatalf("both lanes landing should start the integration turn: %+v", m.todo.runner.state)
 	}
 	if len(m.childAsks) != 0 {
 		t.Fatal("a lane's patch is the run's to take, never a card")
 	}
 	// The patches are on the real tree, recorded in the changeset, and so
 	// in what the run may stage.
-	if data, _ := os.ReadFile(filepath.Join(m.todos.Root, "b.go")); !strings.Contains(string(data), "changed") {
+	if data, _ := os.ReadFile(filepath.Join(m.todo.wiring.Root, "b.go")); !strings.Contains(string(data), "changed") {
 		t.Fatalf("beta's patch should have landed: %q", data)
 	}
 	paths := m.todoRunPaths()
@@ -1094,12 +1094,12 @@ func TestTodoRun_LargeItemLanesLandAndIntegrate(t *testing.T) {
 // laneNamed finds one of the run's lanes by the name the split gave it.
 func laneNamed(t *testing.T, m Model, name string) run.Lane {
 	t.Helper()
-	for _, l := range m.todoRunner.state.Lanes {
+	for _, l := range m.todo.runner.state.Lanes {
 		if l.Name == name {
 			return l
 		}
 	}
-	t.Fatalf("no lane %s in %+v", name, m.todoRunner.state)
+	t.Fatalf("no lane %s in %+v", name, m.todo.runner.state)
 	return run.Lane{}
 }
 
@@ -1113,7 +1113,7 @@ func TestTodoRun_LargeItemLanesIntegrateOnReportsNotPatches(t *testing.T) {
 	m, sup := largeRunModel(t, writingEnv("package a\n\nvar changed = true\n"))
 	var held []subagent.Event
 	crossed := func(m Model) bool {
-		return m.todoRunner.state != nil && laneNamed(t, m, "alpha").Done && laneNamed(t, m, "beta").Agent == ""
+		return m.todo.runner.state != nil && laneNamed(t, m, "alpha").Done && laneNamed(t, m, "beta").Agent == ""
 	}
 	deadline := time.After(laneDeadline)
 	for !crossed(m) {
@@ -1126,11 +1126,11 @@ func TestTodoRun_LargeItemLanesIntegrateOnReportsNotPatches(t *testing.T) {
 			updated, _ := m.handleSubagentEvent(ev)
 			m = updated.(Model)
 		case <-deadline:
-			t.Fatalf("timed out; run = %+v", m.todoRunner.state)
+			t.Fatalf("timed out; run = %+v", m.todo.runner.state)
 		}
 	}
-	if m.todoRunner.state.Stage != run.StageFanOut {
-		t.Fatalf("a landed patch is not a finished lane: %+v", m.todoRunner.state)
+	if m.todo.runner.state.Stage != run.StageFanOut {
+		t.Fatalf("a landed patch is not a finished lane: %+v", m.todo.runner.state)
 	}
 
 	for _, ev := range held {
@@ -1138,10 +1138,10 @@ func TestTodoRun_LargeItemLanesIntegrateOnReportsNotPatches(t *testing.T) {
 		m = updated.(Model)
 	}
 	m = pumpSubagents(t, m, sup, func(m Model) bool {
-		return m.todoRunner.state == nil || m.todoRunner.state.Stage != run.StageFanOut
+		return m.todo.runner.state == nil || m.todo.runner.state.Stage != run.StageFanOut
 	})
-	if m.todoRunner.state == nil || m.todoRunner.state.Stage != run.StageImplement || !m.working() {
-		t.Fatalf("the held report should start the integration turn: %+v", m.todoRunner.state)
+	if m.todo.runner.state == nil || m.todo.runner.state.Stage != run.StageImplement || !m.working() {
+		t.Fatalf("the held report should start the integration turn: %+v", m.todo.runner.state)
 	}
 	if got := laneNamed(t, m, "alpha").Report; got != "Wrote a.go. Wire it up." {
 		t.Errorf("the lane should carry the writer's report, not the event's detail line: %q", got)
@@ -1153,7 +1153,7 @@ func TestTodoRun_LargeItemLanesIntegrateOnReportsNotPatches(t *testing.T) {
 
 func TestTodoRun_WriterWithoutAPatchBlocksTheRun(t *testing.T) {
 	m, sup := largeRunModel(t, reportingEnv("I looked and changed nothing."))
-	m = pumpSubagents(t, m, sup, func(m Model) bool { return m.todoRunner.state == nil })
+	m = pumpSubagents(t, m, sup, func(m Model) bool { return m.todo.runner.state == nil })
 	found := false
 	for _, e := range m.transcript {
 		if strings.Contains(e.text, "patch did not land") {
@@ -1163,7 +1163,7 @@ func TestTodoRun_WriterWithoutAPatchBlocksTheRun(t *testing.T) {
 	if !found {
 		t.Fatal("the evidence should say the lane's patch did not land")
 	}
-	it, _ := m.todoStore.Find("do-it")
+	it, _ := m.todo.store.Find("do-it")
 	if it.Status != todo.StatusBlocked {
 		t.Fatalf("item should be blocked, is %s", it.Status)
 	}
@@ -1187,7 +1187,7 @@ func TestTodoRun_StopKillsTheWriters(t *testing.T) {
 	m.input.SetValue("/todo stop")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	if m.todoRunner.state != nil {
+	if m.todo.runner.state != nil {
 		t.Fatal("run should be over")
 	}
 	killed := 0
@@ -1211,8 +1211,8 @@ func TestTodoRun_FanOutWithoutASupervisorBuildsWhole(t *testing.T) {
 	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: L", 1))
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = answer(t, updated.(Model), "LANE: alpha\npaths: a.go\ntask: change a\n\nLANE: beta\npaths: b.go\ntask: create b\n")
-	if m.todoRunner.state == nil || m.todoRunner.state.Stage != run.StageImplement || !m.working() || len(m.todoRunner.state.Lanes) != 0 {
-		t.Fatalf("no supervisor should build the item in this session: %+v", m.todoRunner.state)
+	if m.todo.runner.state == nil || m.todo.runner.state.Stage != run.StageImplement || !m.working() || len(m.todo.runner.state.Lanes) != 0 {
+		t.Fatalf("no supervisor should build the item in this session: %+v", m.todo.runner.state)
 	}
 }
 
@@ -1235,8 +1235,8 @@ func TestTodoRun_OutsideARepositoryRefusesBeforeResearch(t *testing.T) {
 	updated, _ := m.submitInput()
 	m = updated.(Model)
 
-	if m.todoRunner.state != nil || m.working() {
-		t.Fatalf("no run should have started: run=%+v working=%v", m.todoRunner.state, m.working())
+	if m.todo.runner.state != nil || m.working() {
+		t.Fatalf("no run should have started: run=%+v working=%v", m.todo.runner.state, m.working())
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it"); it.Status != todo.StatusOpen {
 		t.Errorf("the item should be left open, got %s", it.Status)
@@ -1263,23 +1263,23 @@ func TestTodoRun_NoCommitArchivesAndSaysSo(t *testing.T) {
 	m.input.SetValue("/todo run do-it --no-commit")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	if m.todoRunner.state == nil || !m.todoRunner.state.NoCommit || m.todoRunner.state.Repo {
-		t.Fatalf("the run should have started without a commit: %+v", m.todoRunner.state)
+	if m.todo.runner.state == nil || !m.todo.runner.state.NoCommit || m.todo.runner.state.Repo {
+		t.Fatalf("the run should have started without a commit: %+v", m.todo.runner.state)
 	}
 
 	m = answer(t, m, runPlan)
-	m.changes.Add(int64(m.todoRunner.state.Turn), changeset.Record{
+	m.changes.Add(int64(m.todo.runner.state.Turn), changeset.Record{
 		Path: filepath.Join(root, "a.go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true,
 	})
 	m = answer(t, m, "Changed a.go.")
 	updated, _ = m.Update(todoVerifyMsg{slug: "do-it", ok: true, output: "$ true → exit 0"})
 	m = updated.(Model)
-	if m.todoRunner.state.Stage != run.StageReview {
-		t.Fatalf("review should follow a passing verify: %s", m.todoRunner.state.Stage)
+	if m.todo.runner.state.Stage != run.StageReview {
+		t.Fatalf("review should follow a passing verify: %s", m.todo.runner.state.Stage)
 	}
 	m = answer(t, m, "verdict: clean")
-	if m.todoRunner.state != nil || m.policy.mode != agent.ModeManual {
-		t.Fatalf("a clean review should end the run and restore the mode: %+v", m.todoRunner.state)
+	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+		t.Fatalf("a clean review should end the run and restore the mode: %+v", m.todo.runner.state)
 	}
 
 	done, ok := todo.Load(todo.BuiltinCode(), root).Find("do-it")
@@ -1351,7 +1351,7 @@ func TestTodoCommitCmd_EachGitExitDrawsItsOwnSentence(t *testing.T) {
 	m := frameModel(t, 130, 40)
 	m.changes = changeset.New(1 << 20)
 	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
-	m.todoRunner.state = &run.State{Slug: "x", Turn: 1, Message: "Change a\n\nBecause."}
+	m.todo.runner.state = &run.State{Slug: "x", Turn: 1, Message: "Change a\n\nBecause."}
 	m.changes.Add(1, changeset.Record{Path: filepath.Join(root, "a.go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true})
 
 	if _, err := exec.LookPath("git"); err == nil {
@@ -1387,11 +1387,11 @@ func sprintRunModel(t *testing.T) (Model, string) {
 // done.
 func finishSprintItem(t *testing.T, m Model, root, slug string) Model {
 	t.Helper()
-	if m.todoRunner.state == nil || m.todoRunner.state.Slug != slug {
-		t.Fatalf("expected a run on %s, got %+v", slug, m.todoRunner.state)
+	if m.todo.runner.state == nil || m.todo.runner.state.Slug != slug {
+		t.Fatalf("expected a run on %s, got %+v", slug, m.todo.runner.state)
 	}
 	m = answer(t, m, runPlan)
-	m.changes.Add(int64(m.todoRunner.state.Turn), changeset.Record{
+	m.changes.Add(int64(m.todo.runner.state.Turn), changeset.Record{
 		Path: filepath.Join(root, slug+".go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true,
 	})
 	m = answer(t, m, "Changed "+slug+".go.")
@@ -1409,8 +1409,8 @@ func TestTodoSprint_WorksTheReadyListOneItemPerSession(t *testing.T) {
 	m.input.SetValue("/todo run --all")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	if m.todoRunner.state == nil || !m.todoRunner.state.InSprint || m.todoRunner.state.Slug != "do-it" {
-		t.Fatalf("the sprint should have started the first ready item: %+v", m.todoRunner.state)
+	if m.todo.runner.state == nil || !m.todo.runner.state.InSprint || m.todo.runner.state.Slug != "do-it" {
+		t.Fatalf("the sprint should have started the first ready item: %+v", m.todo.runner.state)
 	}
 	sp, live := run.Live(root)
 	if !live || sp.Current != "do-it" {
@@ -1421,11 +1421,11 @@ func TestTodoSprint_WorksTheReadyListOneItemPerSession(t *testing.T) {
 
 	// The boundary: turns are numbered from one again, the transcript is the
 	// new session's, and the next item is already going in it.
-	if m.todoRunner.state == nil || m.todoRunner.state.Slug != "zz-later" || !m.todoRunner.state.InSprint {
-		t.Fatalf("the sprint should have crossed into the next item: %+v", m.todoRunner.state)
+	if m.todo.runner.state == nil || m.todo.runner.state.Slug != "zz-later" || !m.todo.runner.state.InSprint {
+		t.Fatalf("the sprint should have crossed into the next item: %+v", m.todo.runner.state)
 	}
-	if m.todoRunner.state.Turn != 1 {
-		t.Fatalf("the next item runs in a session of its own, from turn 1: turn %d", m.todoRunner.state.Turn)
+	if m.todo.runner.state.Turn != 1 {
+		t.Fatalf("the next item runs in a session of its own, from turn 1: turn %d", m.todo.runner.state.Turn)
 	}
 	sp, live = run.Live(root)
 	if !live || len(sp.Done) != 1 || sp.Done[0] != "do-it" || sp.Current != "zz-later" {
@@ -1434,8 +1434,8 @@ func TestTodoSprint_WorksTheReadyListOneItemPerSession(t *testing.T) {
 
 	m = finishSprintItem(t, m, root, "zz-later")
 
-	if m.todoRunner.state != nil {
-		t.Fatalf("the sprint should be over: %+v", m.todoRunner.state)
+	if m.todo.runner.state != nil {
+		t.Fatalf("the sprint should be over: %+v", m.todo.runner.state)
 	}
 	if _, live := run.Live(root); live {
 		t.Fatal("a sprint that ran out of ready items leaves no checkpoint")
@@ -1463,8 +1463,8 @@ func TestTodoSprint_StopsOnTheFirstBlock(t *testing.T) {
 	m = updated.(Model)
 	m = answer(t, m, "## Plan: x\n\n1. a\n\nsize: S\nquestions:\n- keep the flag?\n")
 
-	if m.todoRunner.state != nil || m.policy.mode != agent.ModeManual {
-		t.Fatalf("the block should have ended the run and restored the mode: %+v", m.todoRunner.state)
+	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+		t.Fatalf("the block should have ended the run and restored the mode: %+v", m.todo.runner.state)
 	}
 	if _, live := run.Live(root); live {
 		t.Fatal("a sprint that stopped on a block leaves no checkpoint")
@@ -1494,8 +1494,8 @@ func TestTodoSprint_MaxRunsOneAndStops(t *testing.T) {
 	updated, _ := m.submitInput()
 	m = finishSprintItem(t, updated.(Model), root, "do-it")
 
-	if m.todoRunner.state != nil {
-		t.Fatalf("the cap should have ended the sprint: %+v", m.todoRunner.state)
+	if m.todo.runner.state != nil {
+		t.Fatalf("the cap should have ended the sprint: %+v", m.todo.runner.state)
 	}
 	store := todo.Load(todo.BuiltinCode(), root)
 	if it, _ := store.Find("zz-later"); it.Archived || it.Status != todo.StatusOpen {
@@ -1515,8 +1515,8 @@ func TestTodoSprint_ResumesFromItsCheckpoint(t *testing.T) {
 	m = updated.(Model)
 	m = answer(t, m, runPlan)
 	m = answer(t, m, "Changed a.go.")
-	if m.todoRunner.state.Stage != run.StageVerify {
-		t.Fatalf("stage = %s", m.todoRunner.state.Stage)
+	if m.todo.runner.state.Stage != run.StageVerify {
+		t.Fatalf("stage = %s", m.todo.runner.state.Stage)
 	}
 
 	// The session ends with the run part-way through, the way /new ends one.
@@ -1528,10 +1528,10 @@ func TestTodoSprint_ResumesFromItsCheckpoint(t *testing.T) {
 	m.input.SetValue("/todo run --all")
 	updated, _ = m.submitInput()
 	m = updated.(Model)
-	if m.todoRunner.state == nil || m.todoRunner.state.Slug != "do-it" || m.todoRunner.state.Stage != run.StageVerify {
-		t.Fatalf("the sprint should have continued the item it was on: %+v", m.todoRunner.state)
+	if m.todo.runner.state == nil || m.todo.runner.state.Slug != "do-it" || m.todo.runner.state.Stage != run.StageVerify {
+		t.Fatalf("the sprint should have continued the item it was on: %+v", m.todo.runner.state)
 	}
-	if !m.todoRunner.state.InSprint {
+	if !m.todo.runner.state.InSprint {
 		t.Fatal("the continued run is still the sprint's")
 	}
 }
@@ -1550,8 +1550,8 @@ func TestTodoSprint_StopKeepsTheItemsCheckpoint(t *testing.T) {
 	updated, _ = m.submitInput()
 	m = updated.(Model)
 
-	if m.todoRunner.state != nil || m.policy.mode != agent.ModeManual {
-		t.Fatalf("the sprint should be over and the mode back: %+v", m.todoRunner.state)
+	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+		t.Fatalf("the sprint should be over and the mode back: %+v", m.todo.runner.state)
 	}
 	if _, live := run.Live(root); live {
 		t.Fatal("a stopped sprint leaves no checkpoint")
@@ -1571,7 +1571,7 @@ func TestTodoSprint_StopKeepsTheItemsCheckpoint(t *testing.T) {
 // thing the runner can end.
 func TestTodoSprint_ItemTimeoutBlocksTheItem(t *testing.T) {
 	m, root := sprintRunModel(t)
-	m.todos.ItemTimeout = time.Minute
+	m.todo.wiring.ItemTimeout = time.Minute
 	m.input.SetValue("/todo run --all")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
@@ -1584,8 +1584,8 @@ func TestTodoSprint_ItemTimeoutBlocksTheItem(t *testing.T) {
 	must(t, sp.Save(root))
 
 	m = answer(t, m, runPlan)
-	if m.todoRunner.state != nil {
-		t.Fatalf("the cap should have blocked the item: %+v", m.todoRunner.state)
+	if m.todo.runner.state != nil {
+		t.Fatalf("the cap should have blocked the item: %+v", m.todo.runner.state)
 	}
 	it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it")
 	if it.Status != todo.StatusBlocked || !strings.Contains(it.Body, "ran past the cap") {
@@ -1604,7 +1604,7 @@ func TestTodoSprint_RailNamesTheCurrentItem(t *testing.T) {
 	if block == nil || block.SprintItem != "do-it" || block.SprintStage != "research" {
 		t.Fatalf("the rail should name the sprint's item and stage: %+v", block)
 	}
-	m.todoRunner.state = nil
+	m.todo.runner.state = nil
 	if block := m.inspectorTodo(); block.SprintItem != "" {
 		t.Fatalf("with no run there is no current item: %+v", block)
 	}
@@ -1617,7 +1617,7 @@ func TestTodoSprint_ArmsTheCloseGate(t *testing.T) {
 	if m.closeGateArmed() {
 		t.Fatal("an interactive session leaves the gate off")
 	}
-	m.todoRunner.state = &run.State{Slug: "do-it", InSprint: true, Stage: run.StageResearch}
+	m.todo.runner.state = &run.State{Slug: "do-it", InSprint: true, Stage: run.StageResearch}
 	if !m.closeGateArmed() {
 		t.Fatal("a sprint's run arms the gate at every stage")
 	}
@@ -1636,7 +1636,7 @@ func TestTodoSprint_TurnCloseWordsNameTheItem(t *testing.T) {
 		t.Fatalf("turn-close words = %q", body)
 	}
 	run.DiscardSprint(root)
-	m.todoRunner.state = nil
+	m.todo.runner.state = nil
 	if _, body := m.turnCloseWords(); strings.Contains(body, "sprint") {
 		t.Fatalf("a session with no sprint says nothing about one: %q", body)
 	}
@@ -1688,8 +1688,8 @@ func TestTodoRun_ACutStageAnswerIsFinishedBeforeItIsRead(t *testing.T) {
 	// The size is split across the halves, so neither is a plan on its own.
 	tail := "ze: S\nquestions: none\n"
 	m = cutAnswer(t, m, strings.TrimSuffix(runPlan, tail))
-	if m.todoRunner.state.Stage != run.StageResearch {
-		t.Fatalf("half an answer is not the stage's answer, moved to %s", m.todoRunner.state.Stage)
+	if m.todo.runner.state.Stage != run.StageResearch {
+		t.Fatalf("half an answer is not the stage's answer, moved to %s", m.todo.runner.state.Stage)
 	}
 	if !m.working() {
 		t.Fatal("the run should have asked for the rest of the reply itself")
@@ -1700,11 +1700,11 @@ func TestTodoRun_ACutStageAnswerIsFinishedBeforeItIsRead(t *testing.T) {
 	}
 
 	m = answer(t, m, tail)
-	if m.todoRunner.state.Stage != run.StageImplement {
-		t.Fatalf("the finished answer should be read as the plan, stage %s", m.todoRunner.state.Stage)
+	if m.todo.runner.state.Stage != run.StageImplement {
+		t.Fatalf("the finished answer should be read as the plan, stage %s", m.todo.runner.state.Stage)
 	}
-	if m.todoRunner.state.Grade != "S" {
-		t.Fatalf("the size arrived in the second half, got %q", m.todoRunner.state.Grade)
+	if m.todo.runner.state.Grade != "S" {
+		t.Fatalf("the size arrived in the second half, got %q", m.todo.runner.state.Grade)
 	}
 }
 
@@ -1720,8 +1720,8 @@ func TestTodoRun_ASecondCeilingInAStageBlocksIt(t *testing.T) {
 	m = cutAnswer(t, m, "## Plan: do it\n\n1. Change a.go\n   files: a.g")
 	m = cutAnswer(t, m, "o\n   action: edit\n\nsi")
 
-	if m.todoRunner.state != nil || m.policy.mode != agent.ModeManual {
-		t.Fatalf("the run should have ended and the mode restored: %v %s", m.todoRunner.state, m.policy.mode)
+	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+		t.Fatalf("the run should have ended and the mode restored: %v %s", m.todo.runner.state, m.policy.mode)
 	}
 	it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it")
 	if it.Status != todo.StatusBlocked || !strings.Contains(it.Body, run.CutAtCeiling(run.StageResearch)) {
@@ -1743,8 +1743,8 @@ func TestTodoRun_ADroppedStageTurnPausesAtTheCheckpoint(t *testing.T) {
 	updated, _ = m.Update(streamErrMsg{err: networkFailure()})
 	m = updated.(Model)
 
-	if m.todoRunner.state != nil || m.policy.mode != agent.ModeManual {
-		t.Fatalf("the run should be let go of and the mode restored: %v %s", m.todoRunner.state, m.policy.mode)
+	if m.todo.runner.state != nil || m.policy.mode != agent.ModeManual {
+		t.Fatalf("the run should be let go of and the mode restored: %v %s", m.todo.runner.state, m.policy.mode)
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it"); it.Status != todo.StatusInProgress {
 		t.Fatalf("nothing about the item is wrong, so it stays in progress, is %s", it.Status)
@@ -1763,21 +1763,21 @@ func TestTodoRun_ADroppedStageTurnPausesAtTheCheckpoint(t *testing.T) {
 // project's file says rather than the built-in words.
 func TestTodoRun_TheSessionsWordingsReachTheRun(t *testing.T) {
 	m, root := runModel(t)
-	m.todos.Wordings = run.Wordings{"research": "READ IT MY WAY"}
-	m = m.WithTodos(m.todos)
+	m.todo.wiring.Wordings = run.Wordings{"research": "READ IT MY WAY"}
+	m = m.WithTodos(m.todo.wiring)
 	updated, _ := m.startTodoRun("do-it", false)
 	m = updated.(Model)
-	if m.todoRunner.state == nil {
+	if m.todo.runner.state == nil {
 		t.Fatal("the run did not start")
 	}
-	if m.todoRunner.state.Wordings["research"] != "READ IT MY WAY" {
-		t.Fatalf("the run's wordings = %+v", m.todoRunner.state.Wordings)
+	if m.todo.runner.state.Wordings["research"] != "READ IT MY WAY" {
+		t.Fatalf("the run's wordings = %+v", m.todo.runner.state.Wordings)
 	}
 
 	// A run continued from a checkpoint takes the wordings this session
 	// read: the checkpoint holds none, because they are files on disk and a
 	// session that starts reads them as they now stand.
-	if err := m.todoRunner.state.Save(root); err != nil {
+	if err := m.todo.runner.state.Save(root); err != nil {
 		t.Fatal(err)
 	}
 	m2 := frameModel(t, 130, 40)
@@ -1790,11 +1790,11 @@ func TestTodoRun_TheSessionsWordingsReachTheRun(t *testing.T) {
 	})
 	updated, _ = m2.startTodoRun("do-it", false)
 	m2 = updated.(Model)
-	if m2.todoRunner.state == nil || m2.todoRunner.state.Stage != run.StageResearch {
-		t.Fatalf("the run did not continue from the checkpoint: %+v", m2.todoRunner.state)
+	if m2.todo.runner.state == nil || m2.todo.runner.state.Stage != run.StageResearch {
+		t.Fatalf("the run did not continue from the checkpoint: %+v", m2.todo.runner.state)
 	}
-	if m2.todoRunner.state.Wordings["research"] != "READ IT ANOTHER WAY" {
-		t.Fatalf("a continued run did not take this session's wordings: %+v", m2.todoRunner.state.Wordings)
+	if m2.todo.runner.state.Wordings["research"] != "READ IT ANOTHER WAY" {
+		t.Fatalf("a continued run did not take this session's wordings: %+v", m2.todo.runner.state.Wordings)
 	}
 }
 
@@ -1852,20 +1852,20 @@ func TestTodoRun_AReadingRunsInAConversation(t *testing.T) {
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	if m.todoRunner.state == nil || m.todoRunner.state.Stage != "scope" {
-		t.Fatalf("the run should be scoping: %+v", m.todoRunner.state)
+	if m.todo.runner.state == nil || m.todo.runner.state.Stage != "scope" {
+		t.Fatalf("the run should be scoping: %+v", m.todo.runner.state)
 	}
 	m = answer(t, m, "## Plan: read it\n\n1. Read the paper\n   files: none\n   action: read\n\nquestions: none\n")
-	if m.todoRunner.state.Stage != "review" {
-		t.Fatalf("the reading should be read back: %s", m.todoRunner.state.Stage)
+	if m.todo.runner.state.Stage != "review" {
+		t.Fatalf("the reading should be read back: %s", m.todo.runner.state.Stage)
 	}
 	m = answer(t, m, "verdict: clean")
-	if m.todoRunner.state.Stage != "file" {
-		t.Fatalf("the write-up should follow a clean reading: %s", m.todoRunner.state.Stage)
+	if m.todo.runner.state.Stage != "file" {
+		t.Fatalf("the write-up should follow a clean reading: %s", m.todo.runner.state.Stage)
 	}
 	m = answer(t, m, "REPORT:\n## Report\nSummary: read the paper and wrote it up")
-	if m.todoRunner.state != nil {
-		t.Fatalf("the run should be over: %+v", m.todoRunner.state)
+	if m.todo.runner.state != nil {
+		t.Fatalf("the run should be over: %+v", m.todo.runner.state)
 	}
 	notes := m.notebook.List()
 	if len(notes) != 1 || notes[0].Title != "do-it" || notes[0].Author != run.NoteAuthor ||
@@ -1888,8 +1888,8 @@ func TestTodoRun_AWriteStepIsRefusedInAConversation(t *testing.T) {
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	if m.todoRunner.state != nil {
-		t.Fatalf("nothing should have started: %+v", m.todoRunner.state)
+	if m.todo.runner.state != nil {
+		t.Fatalf("nothing should have started: %+v", m.todo.runner.state)
 	}
 	last := m.transcript[len(m.transcript)-1].text
 	if !strings.Contains(last, "the implement step changes the tree and this session does not track changes") {
@@ -1927,8 +1927,8 @@ func TestTodoRun_APersonaStepFallsBackToTheRole(t *testing.T) {
 // write-up that archives it.
 func finishReading(t *testing.T, m Model, slug string) Model {
 	t.Helper()
-	if m.todoRunner.state == nil || m.todoRunner.state.Slug != slug {
-		t.Fatalf("expected a run on %s, got %+v", slug, m.todoRunner.state)
+	if m.todo.runner.state == nil || m.todo.runner.state.Slug != slug {
+		t.Fatalf("expected a run on %s, got %+v", slug, m.todo.runner.state)
 	}
 	m = answer(t, m, "## Plan: read it\n\n1. Read\n   files: none\n   action: read\n\nquestions: none\n")
 	m = answer(t, m, "verdict: clean")
@@ -1947,17 +1947,17 @@ func TestTodoSprint_CrossesTheBoundaryInAConversation(t *testing.T) {
 	m.input.SetValue("/todo run --all")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	if m.todoRunner.state == nil || !m.todoRunner.state.InSprint || m.todoRunner.state.Slug != "do-it" {
-		t.Fatalf("the sprint should have started the first ready item: %+v", m.todoRunner.state)
+	if m.todo.runner.state == nil || !m.todo.runner.state.InSprint || m.todo.runner.state.Slug != "do-it" {
+		t.Fatalf("the sprint should have started the first ready item: %+v", m.todo.runner.state)
 	}
 
 	m = finishReading(t, m, "do-it")
 
-	if m.todoRunner.state == nil || m.todoRunner.state.Slug != "zz-later" || !m.todoRunner.state.InSprint {
-		t.Fatalf("the sprint should have crossed into the next item: %+v", m.todoRunner.state)
+	if m.todo.runner.state == nil || m.todo.runner.state.Slug != "zz-later" || !m.todo.runner.state.InSprint {
+		t.Fatalf("the sprint should have crossed into the next item: %+v", m.todo.runner.state)
 	}
-	if m.todoRunner.state.Turn != 1 {
-		t.Fatalf("the next item runs in a session of its own, from turn 1: turn %d", m.todoRunner.state.Turn)
+	if m.todo.runner.state.Turn != 1 {
+		t.Fatalf("the next item runs in a session of its own, from turn 1: turn %d", m.todo.runner.state.Turn)
 	}
 	sp, live := run.Live(root)
 	if !live || len(sp.Done) != 1 || sp.Done[0] != "do-it" || sp.Current != "zz-later" {
@@ -1965,8 +1965,8 @@ func TestTodoSprint_CrossesTheBoundaryInAConversation(t *testing.T) {
 	}
 
 	m = finishReading(t, m, "zz-later")
-	if m.todoRunner.state != nil {
-		t.Fatalf("the sprint should be over: %+v", m.todoRunner.state)
+	if m.todo.runner.state != nil {
+		t.Fatalf("the sprint should be over: %+v", m.todo.runner.state)
 	}
 	if len(m.notebook.List()) != 2 {
 		t.Fatalf("each reading leaves its write-up in the notebook: %+v", m.notebook.List())
@@ -2010,7 +2010,7 @@ func TestTodoRun_ALongWriteUpIsCutRatherThanRefused(t *testing.T) {
 // the ceiling the sprint ends capped naming both figures.
 func TestTodoSprint_CostCapEndsItBetweenItems(t *testing.T) {
 	m, root := sprintRunModel(t)
-	m.todos.SprintCostCap = 99999
+	m.todo.wiring.SprintCostCap = 99999
 	m.input.SetValue("/todo run --all --cost-cap 500")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
@@ -2035,8 +2035,8 @@ func TestTodoSprint_CostCapEndsItBetweenItems(t *testing.T) {
 
 	m = finishSprintItem(t, m, root, "do-it")
 
-	if m.todoRunner.state != nil {
-		t.Fatalf("the ceiling should have ended the sprint: %+v", m.todoRunner.state)
+	if m.todo.runner.state != nil {
+		t.Fatalf("the ceiling should have ended the sprint: %+v", m.todo.runner.state)
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("zz-later"); it.Archived || it.Status != todo.StatusOpen {
 		t.Fatalf("the second item should not have been started: %+v", it)
@@ -2072,8 +2072,8 @@ func TestTodoSprint_EachStageBoundaryLeavesTheItemsSpend(t *testing.T) {
 	if !live || back.Cost != 1.5 || back.Turns != 2 || back.ItemLedger == "a-session-that-died" {
 		t.Fatalf("the dead session's figure should join the total once: %+v", back)
 	}
-	if next.todoRunner.state == nil || next.todoRunner.state.Slug != "do-it" {
-		t.Fatalf("the picked-up sprint should go back to its item: %+v", next.todoRunner.state)
+	if next.todo.runner.state == nil || next.todo.runner.state.Slug != "do-it" {
+		t.Fatalf("the picked-up sprint should go back to its item: %+v", next.todo.runner.state)
 	}
 }
 
@@ -2090,11 +2090,11 @@ func TestTodoSprint_RailSaysTheSpendAgainstTheCeiling(t *testing.T) {
 	if block := m.inspectorTodo(); block == nil || block.SprintStage != "research · "+run.SpendWords(session, 2000) {
 		t.Fatalf("rail = %+v", block)
 	}
-	m.todoRunner.sprintCost = 4.1
+	m.todo.runner.sprintCost = 4.1
 	if block := m.inspectorTodo(); block.SprintStage != "research · "+run.SpendWords(4.1+session, 2000) {
 		t.Fatalf("rail = %q", block.SprintStage)
 	}
-	m.todoRunner.sprintCap = 0
+	m.todo.runner.sprintCap = 0
 	if block := m.inspectorTodo(); block.SprintStage != "research" {
 		t.Fatalf("without a ceiling the row names only the stage: %q", block.SprintStage)
 	}
@@ -2108,15 +2108,15 @@ func TestTodoRun_OverSpendBlocksTheItem(t *testing.T) {
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = answer(t, updated.(Model), runPlan)
-	if m.todoRunner.state == nil || m.todoRunner.state.Stage != run.StageImplement || !m.working() {
-		t.Fatalf("implement should be in flight: %+v", m.todoRunner.state)
+	if m.todo.runner.state == nil || m.todo.runner.state.Stage != run.StageImplement || !m.working() {
+		t.Fatalf("implement should be in flight: %+v", m.todo.runner.state)
 	}
 	refused := fmt.Errorf("stream: %w", &meter.CapError{Cap: 2, Spent: 2.04})
 	updated, _ = m.Update(streamErrMsg{err: refused})
 	m = updated.(Model)
 
-	if m.todoRunner.state != nil {
-		t.Fatalf("the refusal should have ended the run: %+v", m.todoRunner.state)
+	if m.todo.runner.state != nil {
+		t.Fatalf("the refusal should have ended the run: %+v", m.todo.runner.state)
 	}
 	it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it")
 	want := run.OverSpend(run.StageImplement, 2.04, 2)

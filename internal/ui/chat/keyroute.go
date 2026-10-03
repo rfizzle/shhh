@@ -203,6 +203,15 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			return answered(m.routeOverlay(o, msg))
 		}
 	}
+	// The backlog chord (todostate.go). It is read here, where the draft's
+	// own chords are, and ahead of them only in the source: the register
+	// gives no draft keystroke two acts, so nothing below could have
+	// answered it first.
+	backlog, backlogKey := m.todo.update(msg)
+	m.todo = backlog
+	if backlogKey == todoOpenScreen {
+		return answered(m.openTodoScreen())
+	}
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Draft.Quit):
 		// Quitting over a live turn is a question, not a chord: the
@@ -300,14 +309,6 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		// textarea meaning (character back).
 		if m.subagents != nil {
 			return answered(m.openAgentList())
-		}
-	case keys.Is(pressed, keys.Draft.Backlog):
-		// The backlog screen. It reads the project rather than the
-		// session, so it opens over a running turn as well as an idle
-		// one — and a session with no backlog wired keeps the key's
-		// textarea meaning (character forward).
-		if m.todosEnabled() {
-			return answered(m.openTodoScreen())
 		}
 	case keys.Is(pressed, keys.Draft.NextAgent):
 		// One step along the rail's session map, which is where the map

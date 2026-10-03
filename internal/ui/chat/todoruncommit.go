@@ -40,8 +40,8 @@ type todoCommitMsg struct {
 // held modified for the run.
 // See docs/capabilities/todo.md#where-the-backlog-lives.
 func (m Model) todoRunPaths() []string {
-	root := m.todos.Root
-	st := m.todoRunner.state
+	root := m.todo.wiring.Root
+	st := m.todo.runner.state
 	if st == nil {
 		return nil
 	}
@@ -67,9 +67,9 @@ func (m Model) todoRunPaths() []string {
 // unattended runner uses, so the one act of a run that cannot be taken back
 // cannot mean two things depending on who asked for it.
 func (m Model) todoCommitCmd() tea.Cmd {
-	root := m.todos.Root
-	slug := m.todoRunner.state.Slug
-	message := m.todoRunner.state.Message
+	root := m.todo.wiring.Root
+	slug := m.todo.runner.state.Slug
+	message := m.todo.runner.state.Message
 	paths := m.todoRunPaths()
 	// A commit hook is a program the checkout can point git at, so it runs
 	// under the same answer everything else the checkout declares runs under.
@@ -108,7 +108,7 @@ func git(root string, args ...string) (string, int) {
 
 // finishTodoCommit applies the commit outcome.
 func (m Model) finishTodoCommit(msg todoCommitMsg) (tea.Model, tea.Cmd) {
-	st := m.todoRunner.state
+	st := m.todo.runner.state
 	if st == nil || st.Over() || msg.slug != st.Slug {
 		return m, nil
 	}

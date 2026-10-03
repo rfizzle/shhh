@@ -88,7 +88,7 @@ func (m *Model) resetTranscript() {
 	// The round's order is where in a transcript its rows go, and this one
 	// no longer exists.
 	m.batch = callBatch{}
-	m.todoRunner.rowIdx, m.todoRunner.followUpRow = 0, 0
+	m.todo.runner.rowIdx, m.todo.runner.followUpRow = 0, 0
 	// The checklist is read off the transcript, so a transcript that is gone
 	// takes the approved plan with it rather than pointing at entries that no
 	// longer exist.

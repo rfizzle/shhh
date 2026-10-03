@@ -4348,8 +4348,8 @@ func TestGolden_TodoSprint(t *testing.T) {
 			"out: cache-audit too big\n"
 		planned := func() Model {
 			p := m
-			p.todoPlanner = todoPlanState{going: true, candidates: p.todoStore.Ready()}
-			card, _ := p.openPlanCard(todo.ParsePlan(p.todos.Profile, answer, p.todoStore.Ready(), nil))
+			p.todo.planner = todoPlanState{going: true, candidates: p.todo.store.Ready()}
+			card, _ := p.openPlanCard(todo.ParsePlan(p.todo.wiring.Profile, answer, p.todo.store.Ready(), nil))
 			return card.(Model)
 		}
 		// Each panel plans again: the card is a pointer the screen holds, so
@@ -4840,7 +4840,7 @@ func TestGolden_TodoGroom(t *testing.T) {
 		m := frameModel(t, width, 40)
 		m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
 			Detail: func(*todo.Store, todo.Item) string { return "" }})
-		m.todoGroomer.item = it
+		m.todo.groomer.item = it
 		card, _ := m.openTodoGroomCard(r)
 		return []golden.Panel{
 			{Label: "four corrections and the stamp · moved, changed, already done, gone",

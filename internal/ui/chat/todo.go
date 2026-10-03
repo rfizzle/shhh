@@ -92,12 +92,12 @@ type Todos struct {
 
 // WithTodos enables /todo and the TODO block.
 func (m Model) WithTodos(t Todos) Model {
-	m.todos = t
+	m.todo.wiring = t
 	m.reloadTodos()
 	// A session opened beside a parallel sprint follows it from its first
 	// frame, the way the session that started it does: Init starts the
 	// re-read this marks as armed.
-	m.todoRunner.following = m.lanesLive()
+	m.todo.runner.following = m.lanesLive()
 	return m
 }
 
@@ -110,23 +110,23 @@ func (m Model) WithTodos(t Todos) Model {
 // particular run may start here is a question about that run's steps, asked
 // of them one at a time when one is asked for (todorun.go).
 // See docs/capabilities/chat.md#the-backlog-is-here-too.
-func (m *Model) todosEnabled() bool { return m.todos.Manage != nil }
+func (m *Model) todosEnabled() bool { return m.todo.enabled() }
 
 // reloadTodos re-reads the backlog from disk. It is cheap — a directory
 // listing and a handful of small files — and it is called only on events,
 // never per frame, so the rail can be drawn from the cached store.
 func (m *Model) reloadTodos() {
-	if m.todos.Root == "" {
-		m.todoStore = nil
+	if m.todo.wiring.Root == "" {
+		m.todo.store = nil
 		return
 	}
-	m.todoStore = todo.Load(m.todos.Profile, m.todos.Root)
+	m.todo.store = todo.Load(m.todo.wiring.Profile, m.todo.wiring.Root)
 	// A parallel sprint is worked by another process, so what its lanes are
 	// doing is read off its checkpoint here, with the backlog, and not by
 	// the rail as it draws.
-	m.todoRunner.lanes = nil
-	if sp, live := run.Live(m.todos.Root); live && sp.Laned() {
-		m.todoRunner.lanes = sp.Lanes
+	m.todo.runner.lanes = nil
+	if sp, live := run.Live(m.todo.wiring.Root); live && sp.Laned() {
+		m.todo.runner.lanes = sp.Lanes
 	}
 	// How far behind each item's last reading has fallen is a question for
 	// the repository, so it is asked here — where the backlog is read —
@@ -150,7 +150,7 @@ const todoHintRail = "/todo for the whole backlog"
 // the first few rows drawn and the rest counted. Nil without a backlog, so
 // the block is omitted rather than drawn empty.
 func (m Model) inspectorTodo() *components.InspectorTodo {
-	s := m.todoStore
+	s := m.todo.store
 	if s == nil || s.Len() == 0 {
 		return nil
 	}
@@ -164,7 +164,7 @@ func (m Model) inspectorTodo() *components.InspectorTodo {
 	// who is not watching the transcript finds out which. The stage comes
 	// with it because a slug on its own says a sprint is going and not
 	// whether it is moving.
-	if lanes := m.todoRunner.lanes; len(lanes) > 0 && !m.todoRunner.state.Sprinting() {
+	if lanes := m.todo.runner.lanes; len(lanes) > 0 && !m.todo.runner.state.Sprinting() {
 		// Several items at once are counted rather than named: the board
 		// lists them with their stages, and the rail has one row for it.
 		t.SprintItem = plural(len(lanes), "item")
@@ -172,23 +172,23 @@ func (m Model) inspectorTodo() *components.InspectorTodo {
 			t.SprintItem, t.SprintStage = lanes[0].Slug, string(lanes[0].Stage)
 		}
 	}
-	if st := m.todoRunner.state; st.Sprinting() {
+	if st := m.todo.runner.state; st.Sprinting() {
 		t.SprintItem, t.SprintStage = st.Slug, string(st.Stage)
 		// Under a ceiling the row says how near the set is to it, in the
 		// board's words. The figure is the checkpoint as the item was taken
 		// plus this session's ledger: the rail is drawn every frame and the
 		// checkpoint is a file, so it is read where the item starts and not
 		// here (todorunsprint.go).
-		if words := run.SpendWords(m.todoRunner.sprintCost+m.sessionSpend().Cost, m.todoRunner.sprintCap); words != "" {
+		if words := run.SpendWords(m.todo.runner.sprintCost+m.sessionSpend().Cost, m.todo.runner.sprintCap); words != "" {
 			t.SprintStage += " · " + words
 		}
 	}
-	for _, it := range todoRailOrder(s.Items, m.todoRunner.state) {
+	for _, it := range todoRailOrder(s.Items, m.todo.runner.state) {
 		if len(t.Rows) == todoRailRows {
 			t.More++
 			continue
 		}
-		t.Rows = append(t.Rows, m.todoStaleRow(todoRow(s, it, m.todoRunner.state)))
+		t.Rows = append(t.Rows, m.todoStaleRow(todoRow(s, it, m.todo.runner.state)))
 	}
 	return t
 }
@@ -297,15 +297,15 @@ func (m *Model) namedTodoRoot() string {
 	// A host that never said where the session stands has not said the
 	// backlog is somewhere else either, and answering from the process's
 	// own directory would name a root nobody chose.
-	if m.todoRootSaid || m.todos.Root == "" || m.workspace == "" {
+	if m.todoRootSaid || m.todo.wiring.Root == "" || m.workspace == "" {
 		return ""
 	}
 	m.todoRootSaid = true
-	if root, found := project.RootFound(m.workspace); found && root == m.todos.Root {
+	if root, found := project.RootFound(m.workspace); found && root == m.todo.wiring.Root {
 		return ""
 	}
 	return "this directory is part of no project, so the backlog is the one at " +
-		project.Abbreviate(m.todos.Root)
+		project.Abbreviate(m.todo.wiring.Root)
 }
 
 // todoCommandFor is the verb itself.
@@ -369,7 +369,7 @@ func (m Model) todoCommandFor(parts []string) (tea.Model, tea.Cmd) {
 		}
 		return m.openTodoEditor(parts[2])
 	}
-	note := m.todos.Manage(parts[1:])
+	note := m.todo.wiring.Manage(parts[1:])
 	m.reloadTodos()
 	return m.systemNotice(note)
 }
@@ -513,7 +513,7 @@ func (m Model) openTodoEditor(slug string) (tea.Model, tea.Cmd) {
 	if reason, refused := m.editorRefusal(); refused {
 		return m.surfaceNotice(reason)
 	}
-	it, ok := m.todoStore.Find(slug)
+	it, ok := m.todo.store.Find(slug)
 	if !ok {
 		return m.systemNotice(fmt.Sprintf("no backlog item %q; /todo lists them", slug))
 	}
@@ -536,7 +536,7 @@ func (m Model) todoEditorFinished(msg todoEditorDoneMsg) (tea.Model, tea.Cmd) {
 	if _, err := os.Stat(msg.path); err != nil {
 		return m.systemNotice(fmt.Sprintf("%s is gone; the backlog no longer has %s", filepath.Base(msg.path), msg.slug))
 	}
-	it, err := todo.LoadFile(m.todos.Profile, msg.path)
+	it, err := todo.LoadFile(m.todo.wiring.Profile, msg.path)
 	if err != nil {
 		return m.systemNotice(fmt.Sprintf("%s does not load as an item now — %v. It stays on disk; fix the header and it comes back", filepath.Base(msg.path), err))
 	}
@@ -555,11 +555,11 @@ func (m Model) todoEditorFinished(msg todoEditorDoneMsg) (tea.Model, tea.Cmd) {
 // todoSlugArgs completes an active item's slug for the /todo subcommands
 // that take one.
 func todoSlugArgs(m *Model) []argOption {
-	if m.todoStore == nil {
+	if m.todo.store == nil {
 		return nil
 	}
 	var out []argOption
-	for _, it := range m.todoStore.Items {
+	for _, it := range m.todo.store.Items {
 		out = append(out, argOption{it.Slug, it.Title})
 	}
 	return out
@@ -586,8 +586,8 @@ func (m Model) openTodoScreen() (tea.Model, tea.Cmd) {
 	if !m.todosEnabled() {
 		return m.systemNotice("the backlog is unavailable in this session")
 	}
-	screen := &components.BacklogScreen{Prose: todoProse, Plan: m.sprintPlan, Noun: m.todos.Profile.Noun}
-	screen.Priority, screen.Fields = todoScreenFieldSet(m.todos.Profile)
+	screen := &components.BacklogScreen{Prose: todoProse, Plan: m.sprintPlan, Noun: m.todo.wiring.Profile.Noun}
+	screen.Priority, screen.Fields = todoScreenFieldSet(m.todo.wiring.Profile)
 	m.screens = m.screens.with(stateBacklog, screen)
 	m.reloadTodos()
 	m.enterSurface(stateBacklog)
@@ -655,7 +655,7 @@ func (m Model) todoScreenAct(cmd components.BacklogCommand) (tea.Model, tea.Cmd)
 		return m.openTodoEditor(cmd.Slug)
 	case components.BacklogRun:
 		m.shutTodoScreen()
-		return m.startTodoRun(cmd.Slug, m.todos.NoCommit)
+		return m.startTodoRun(cmd.Slug, m.todo.wiring.NoCommit)
 	case components.BacklogNew:
 		m.shutTodoScreen()
 		return m.composeTodoNew()
@@ -720,15 +720,15 @@ func (m Model) composeTodoNew() (tea.Model, tea.Cmd) {
 func (m Model) todoScreenVerb(cmd components.BacklogCommand) string {
 	switch cmd.Act {
 	case components.BacklogBlock:
-		return m.todos.Manage([]string{"block", cmd.Slug})
+		return m.todo.wiring.Manage([]string{"block", cmd.Slug})
 	case components.BacklogArchive:
-		return m.todos.Manage([]string{"done", cmd.Slug})
+		return m.todo.wiring.Manage([]string{"done", cmd.Slug})
 	case components.BacklogDrop:
-		return m.todos.Manage([]string{"drop", cmd.Slug})
+		return m.todo.wiring.Manage([]string{"drop", cmd.Slug})
 	case components.BacklogSprintAdd:
-		return m.todos.Manage([]string{"sprint", "add", cmd.Slug})
+		return m.todo.wiring.Manage([]string{"sprint", "add", cmd.Slug})
 	case components.BacklogSprintDrop:
-		return m.todos.Manage([]string{"sprint", "drop", cmd.Slug})
+		return m.todo.wiring.Manage([]string{"sprint", "drop", cmd.Slug})
 	case components.BacklogReopen:
 		return m.todoReopen(cmd.Slug)
 	}
@@ -744,14 +744,14 @@ func (m Model) todoScreenVerb(cmd components.BacklogCommand) string {
 // active item and archives it at the end, so an item in the archive is one
 // no run still has in flight.
 func (m Model) todoReopen(slug string) string {
-	if it, ok := m.todoStore.Find(slug); ok && it.Archived {
-		to, err := todo.Reopen(m.todos.Root, slug)
+	if it, ok := m.todo.store.Find(slug); ok && it.Archived {
+		to, err := todo.Reopen(m.todo.wiring.Root, slug)
 		if err != nil {
 			return failed("todo", err.Error())
 		}
 		return fmt.Sprintf("reopened %s; the file is back in the backlog at %s", slug, to)
 	}
-	return m.todos.Manage([]string{"open", slug})
+	return m.todo.wiring.Manage([]string{"open", slug})
 }
 
 // refreshTodoScreen rebuilds the screen's rows from the store. It is called
@@ -763,7 +763,7 @@ func (m Model) refreshTodoScreen() {
 	if screen == nil {
 		return
 	}
-	s := m.todoStore
+	s := m.todo.store
 	screen.Rows = m.todoScreenRows(s, false)
 	screen.Done = m.todoScreenRows(s, true)
 	screen.Board = m.sprintBoard()

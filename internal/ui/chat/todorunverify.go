@@ -38,14 +38,14 @@ const verifyTimeout = 15 * time.Minute
 // have edited the file — the model is told to tick boxes in it, and a
 // command it wrote itself must not be one shhh runs unasked.
 func (m Model) todoVerifyCmd(named string) tea.Cmd {
-	root := m.todos.Root
-	slug := m.todoRunner.item.Slug
-	tests := m.todoRunner.state.Tests
+	root := m.todo.wiring.Root
+	slug := m.todo.runner.item.Slug
+	tests := m.todo.runner.state.Tests
 	gate := m.gate.Run
 	// A run whose implement stage closed on a passing gate carries that
 	// verdict here rather than paying for the suite twice over a tree that
 	// did not move between the two (run.State.Checks).
-	checked := m.todoRunner.state.Checked
+	checked := m.todo.runner.state.Checked
 	if named != "" {
 		// A step that names its own command runs that and nothing else: the
 		// project said what checking this work means, and the item's own
@@ -136,7 +136,7 @@ func keptAs(keep func(tool, content string) (string, bool), tool, content string
 
 // finishTodoVerify applies the verify outcome.
 func (m Model) finishTodoVerify(msg todoVerifyMsg) (tea.Model, tea.Cmd) {
-	st := m.todoRunner.state
+	st := m.todo.runner.state
 	if st == nil || st.Over() || msg.slug != st.Slug {
 		return m, nil
 	}
@@ -156,5 +156,5 @@ func (m Model) finishTodoVerify(msg todoVerifyMsg) (tea.Model, tea.Cmd) {
 		label = "failed"
 	}
 	model, _ := m.systemNotice(fmt.Sprintf("▸ todo run %s · verify %s\n%s", st.Slug, label, msg.output))
-	return model.(Model).todoRunStep(st.VerifyResult(m.todoRunner.item, msg.ok, msg.output))
+	return model.(Model).todoRunStep(st.VerifyResult(m.todo.runner.item, msg.ok, msg.output))
 }

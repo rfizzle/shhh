@@ -16,7 +16,7 @@ import (
 func TestTodoSprint_ParallelHandsTheSprintToTheRunner(t *testing.T) {
 	m, _ := runModel(t)
 	var asked []string
-	m.todos.Parallel = func(args []string) (string, error) {
+	m.todo.wiring.Parallel = func(args []string) (string, error) {
 		asked = args
 		return "/r/.shhh/todo/.run/sprint.log", nil
 	}
@@ -27,7 +27,7 @@ func TestTodoSprint_ParallelHandsTheSprintToTheRunner(t *testing.T) {
 	if got := strings.Join(asked, " "); got != "--all --parallel 3 --max 5 --cost-cap 2000 --no-commit" {
 		t.Fatalf("the runner is handed the sprint's answers, got %q", got)
 	}
-	if m.todoRunner.state != nil || m.working() {
+	if m.todo.runner.state != nil || m.working() {
 		t.Fatal("the session itself works nothing; the runner does")
 	}
 	note := m.transcript[len(m.transcript)-1].text
@@ -52,7 +52,7 @@ func TestTodoSprint_AParallelSprintIsAskedToStop(t *testing.T) {
 	m.input.SetValue("/todo run --all")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	if m.todoRunner.state != nil || !strings.Contains(m.transcript[len(m.transcript)-1].text, "several items at once is going") {
+	if m.todo.runner.state != nil || !strings.Contains(m.transcript[len(m.transcript)-1].text, "several items at once is going") {
 		t.Fatalf("a second sprint over the running one is refused: %q", m.transcript[len(m.transcript)-1].text)
 	}
 
@@ -133,9 +133,9 @@ func TestTodoSprint_ASessionOpenedBesideLanesFollowsThem(t *testing.T) {
 		{Slug: "c-three", Stage: run.StageResearch},
 	}
 	must(t, sp.Save(root))
-	m = m.WithTodos(m.todos)
+	m = m.WithTodos(m.todo.wiring)
 
-	if !m.todoRunner.following || m.Init() == nil {
+	if !m.todo.runner.following || m.Init() == nil {
 		t.Fatal("a session opened beside a running parallel sprint arms the re-read")
 	}
 	if block := m.inspectorTodo(); block == nil || block.SprintItem != "3 items" {
@@ -164,7 +164,7 @@ func TestTodoSprint_ASessionOpenedBesideLanesFollowsThem(t *testing.T) {
 	must(t, sp.Save(root))
 	updated, cmd := m.followLanes()
 	m = updated.(Model)
-	if cmd != nil || m.todoRunner.following {
+	if cmd != nil || m.todo.runner.following {
 		t.Fatal("the re-read stops when the sprint ends")
 	}
 }
@@ -173,7 +173,7 @@ func TestTodoSprint_ASessionOpenedBesideLanesFollowsThem(t *testing.T) {
 // a second event while one is pending does not start a second chain.
 func TestTodoSprint_ABacklogEventArmsTheReReadOnce(t *testing.T) {
 	m, root := runModel(t)
-	if m.todoRunner.following {
+	if m.todo.runner.following {
 		t.Fatal("nothing is followed while no sprint is going")
 	}
 	sp := run.StartSprint("elsewhere", "", 0, false)
@@ -183,7 +183,7 @@ func TestTodoSprint_ABacklogEventArmsTheReReadOnce(t *testing.T) {
 
 	updated, cmd := m.todoCommand([]string{"/todo", "list"})
 	m = updated.(Model)
-	if cmd == nil || !m.todoRunner.following {
+	if cmd == nil || !m.todo.runner.following {
 		t.Fatal("a /todo event arms the re-read")
 	}
 	if _, again := followingLanes(m, nil); again != nil {

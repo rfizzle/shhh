@@ -146,6 +146,33 @@ func TestTodoScreen_ChordOpensAndAWorkingTurnMakesItReadOnly(t *testing.T) {
 	}
 }
 
+// The backlog's keyboard claims its chord only on a session with a backlog
+// wired, and nothing else: an unwired session keeps the key's textarea
+// meaning, and every other key goes on to the draft.
+func TestTodoState_TheChordIsTheBacklogsOnlyWhenWired(t *testing.T) {
+	chord := tea.KeyPressMsg{Code: 'f', Mod: tea.ModCtrl}
+	wired := todoModel(t, todoTestRoot(t)).todo
+	for _, tc := range []struct {
+		name  string
+		state todoState
+		msg   tea.KeyPressMsg
+		want  todoKey
+	}{
+		{"wired chord", wired, chord, todoOpenScreen},
+		{"unwired chord", todoState{}, chord, todoPass},
+		{"wired letter", wired, key('f'), todoPass},
+	} {
+		if _, got := tc.state.update(tc.msg); got != tc.want {
+			t.Errorf("%s: update = %d, want %d", tc.name, got, tc.want)
+		}
+	}
+	m := frameModel(t, 130, 40)
+	updated, _ := m.Update(chord)
+	if got := updated.(Model); got.state == stateBacklog {
+		t.Fatal("the chord should not open a backlog nobody wired")
+	}
+}
+
 // Every act on the screen goes through the handler the typed verb goes
 // through, so the two cannot come to mean different things.
 func TestTodoScreen_KeysGoThroughTheSameVerbs(t *testing.T) {
@@ -203,7 +230,7 @@ func TestTodoScreen_DoneTabShowsTheReportAndReopens(t *testing.T) {
 	if _, err := os.Stat(done); !os.IsNotExist(err) {
 		t.Fatalf("the archived file should have moved, stat err = %v", err)
 	}
-	it, ok := m3.todoStore.Find("z-shipped")
+	it, ok := m3.todo.store.Find("z-shipped")
 	if !ok || it.Archived || it.Status != todo.StatusOpen {
 		t.Fatalf("the item should be back in the backlog and open, got %+v", it)
 	}
@@ -257,7 +284,7 @@ func TestTodoCommand_SubcommandReloadsTheStore(t *testing.T) {
 	m.input.SetValue("/todo block d-ready")
 	updated, _ := m.submitInput()
 	next := updated.(Model)
-	if next.todoStore.Count(todo.StatusBlocked) != 2 {
+	if next.todo.store.Count(todo.StatusBlocked) != 2 {
 		t.Fatal("the store should be re-read after a subcommand")
 	}
 }
@@ -276,7 +303,7 @@ func TestTodoEditor_ReloadsAndReportsTheFile(t *testing.T) {
 	if !strings.HasPrefix(last, "saved d-ready: Ready now (medium, open).") || !strings.Contains(last, `unknown size "xl"`) {
 		t.Fatalf("note = %q", last)
 	}
-	if it, _ := next.todoStore.Find("d-ready"); it.Title != "Ready now" {
+	if it, _ := next.todo.store.Find("d-ready"); it.Title != "Ready now" {
 		t.Fatal("the store was not re-read after the editor")
 	}
 
@@ -346,10 +373,10 @@ func TestTodo_TurnEndReloadsTheStore(t *testing.T) {
 		t.Fatal(err)
 	}
 	m.setTurnState(stateInput)
-	if m.todoStore.Count(todo.StatusBlocked) != 2 {
+	if m.todo.store.Count(todo.StatusBlocked) != 2 {
 		t.Fatal("a turn ending should re-read the backlog")
 	}
-	if row := todoRow(m.todoStore, todo.Item{Slug: "x", Priority: todo.PriorityLow, Profile: todo.BuiltinCode()}, nil); row.Grade != "-" || row.Priority != "L" {
+	if row := todoRow(m.todo.store, todo.Item{Slug: "x", Priority: todo.PriorityLow, Profile: todo.BuiltinCode()}, nil); row.Grade != "-" || row.Priority != "L" {
 		t.Fatalf("ungraded row = %+v", row)
 	}
 }

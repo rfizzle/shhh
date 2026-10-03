@@ -531,16 +531,16 @@ func (m Model) todoRunRowView(e entry, width int, sel rowSel) string {
 // and gets a second row, because the first one is in a transcript this
 // session no longer has.
 func (m *Model) openTodoRunRow() {
-	m.appendEntry(entry{kind: entryTodoRun, todorun: newTodoRunRow(m.todoRunner.state)})
-	m.todoRunner.rowIdx = len(m.transcript)
+	m.appendEntry(entry{kind: entryTodoRun, todorun: newTodoRunRow(m.todo.runner.state)})
+	m.todo.runner.rowIdx = len(m.transcript)
 }
 
 // todoRunRowEntry is the run's row, or nil where no run is drawn.
 func (m Model) todoRunRowEntry() *todoRunRow {
-	if m.todoRunner.rowIdx <= 0 || m.todoRunner.rowIdx > len(m.transcript) {
+	if m.todo.runner.rowIdx <= 0 || m.todo.runner.rowIdx > len(m.transcript) {
 		return nil
 	}
-	return m.transcript[m.todoRunner.rowIdx-1].todorun
+	return m.transcript[m.todo.runner.rowIdx-1].todorun
 }
 
 // observeTodoRunRow tells the row a transition happened. The row is redrawn
@@ -562,5 +562,5 @@ func (m *Model) closeTodoRunRow(how string) {
 		r.closed = how
 		m.invalidateRenderCache()
 	}
-	m.todoRunner.rowIdx = 0
+	m.todo.runner.rowIdx = 0
 }

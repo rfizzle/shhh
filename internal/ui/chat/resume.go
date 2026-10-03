@@ -123,8 +123,8 @@ func (m Model) handleStreamFailure(msg streamErrMsg) (tea.Model, tea.Cmd) {
 	// path, which draws the row and ends the turn broken. That is right for
 	// the session and wrong for the run's step: the run reads it when the
 	// turn has ended and blocks on the figures (todorun.go).
-	if c, ok := meter.AsCap(msg.err); ok && m.todoRunner.state != nil && !m.todoRunner.state.Over() {
-		m.todoRunner.overSpend = c
+	if c, ok := meter.AsCap(msg.err); ok && m.todo.runner.state != nil && !m.todo.runner.state.Over() {
+		m.todo.runner.overSpend = c
 	}
 	calls := provider.CompletedToolCalls(msg.calls)
 	// The thinking behind the calls that survived the drop survives with

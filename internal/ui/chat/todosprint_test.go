@@ -53,10 +53,10 @@ func TestTodoSprintPlan_AProfileThatDoesNotPlanRefusesTheVerb(t *testing.T) {
 	m, _ := sprintModel(t, "")
 	quiet := todo.BuiltinCode()
 	quiet.Name, quiet.Plan = "notes", ""
-	m.todos.Profile = quiet
+	m.todo.wiring.Profile = quiet
 	next, _ := m.startTodoSprintPlan(nil)
 	got := next.(Model)
-	if got.todoPlanner.going || got.working() {
+	if got.todo.planner.going || got.working() {
 		t.Fatal("a profile with no planning started a proposal")
 	}
 	if last := got.transcript[len(got.transcript)-1].text; !strings.Contains(last, "notes profile does not plan sets") {
@@ -68,9 +68,9 @@ func TestTodoSprintPlan_AProfileThatDoesNotPlanRefusesTheVerb(t *testing.T) {
 // would have produced it: what the card is answering is the reading, and
 // standing up a provider to reach it would test neither.
 func planned(m Model, answer string, budget todo.SprintBudget) Model {
-	candidates := m.todoStore.Ready()
-	m.todoPlanner = todoPlanState{going: true, budget: budget, candidates: candidates}
-	next, _ := m.openPlanCard(todo.ParsePlan(m.todos.Profile, answer, candidates, budget))
+	candidates := m.todo.store.Ready()
+	m.todo.planner = todoPlanState{going: true, budget: budget, candidates: candidates}
+	next, _ := m.openPlanCard(todo.ParsePlan(m.todo.wiring.Profile, answer, candidates, budget))
 	return next.(Model)
 }
 
@@ -152,7 +152,7 @@ func TestSprintPlan_TurnAnswersWithTheSetAndTheRecordSaysSo(t *testing.T) {
 	m.input.SetValue("/todo sprint plan")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	if !m.working() || m.policy.mode != agent.ModePlan || !m.todoPlanner.going {
+	if !m.working() || m.policy.mode != agent.ModePlan || !m.todo.planner.going {
 		t.Fatalf("the planning turn should be in flight in plan mode: mode=%s working=%t", m.policy.mode, m.working())
 	}
 	m = answer(t, m, planAnswerForFixture)
@@ -222,10 +222,10 @@ func TestSprintPlan_ReadsTheCandidatesBeforeItGroupsThem(t *testing.T) {
 	m, _ := sprintModel(t, "")
 	updated, _ := m.startTodoSprintPlan(nil)
 	next := updated.(Model)
-	if !next.todoGroomer.going() || next.todoGroomer.planAfter == nil {
-		t.Fatalf("groomer = %+v", next.todoGroomer)
+	if !next.todo.groomer.going() || next.todo.groomer.planAfter == nil {
+		t.Fatalf("groomer = %+v", next.todo.groomer)
 	}
-	if got := len(next.todoGroomer.queue) + 1; got != 4 {
+	if got := len(next.todo.groomer.queue) + 1; got != 4 {
 		t.Fatalf("%d items queued for reading, want every ready one", got)
 	}
 	if last := next.transcript[len(next.transcript)-2].text; !strings.Contains(last, "against the tree first") {
@@ -244,11 +244,11 @@ func TestSprintPlan_SkipsTheReadingsThatStand(t *testing.T) {
 	}
 	updated, _ := m.startTodoSprintPlan(nil)
 	next := updated.(Model)
-	if next.todoGroomer.going() {
-		t.Fatalf("a groomed backlog was read again: %+v", next.todoGroomer)
+	if next.todo.groomer.going() {
+		t.Fatalf("a groomed backlog was read again: %+v", next.todo.groomer)
 	}
-	if !next.todoPlanner.going || len(next.todoPlanner.candidates) != 4 {
-		t.Fatalf("planner = %+v", next.todoPlanner)
+	if !next.todo.planner.going || len(next.todo.planner.candidates) != 4 {
+		t.Fatalf("planner = %+v", next.todo.planner)
 	}
 }
 
@@ -268,7 +268,7 @@ func TestSprintPlan_RefusalsWriteNothing(t *testing.T) {
 	if last := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.Contains(last, "no ready item fits that budget") {
 		t.Fatalf("budget nothing fits = %q", last)
 	}
-	if updated.(Model).todoGroomer.going() {
+	if updated.(Model).todo.groomer.going() {
 		t.Fatal("a refused plan started reading the backlog anyway")
 	}
 	if sp, _ := todo.LoadSprint(root); sp == nil || strings.Join(sp.Slugs, ",") != "a-high" {
@@ -357,8 +357,8 @@ func TestTodoRun_CarriesTheSprintGoal(t *testing.T) {
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	next := updated.(Model)
-	if next.todoRunner.state == nil || next.todoRunner.state.Sprint != "Make the cache trustworthy." {
-		t.Fatalf("run = %+v", next.todoRunner.state)
+	if next.todo.runner.state == nil || next.todo.runner.state.Sprint != "Make the cache trustworthy." {
+		t.Fatalf("run = %+v", next.todo.runner.state)
 	}
 }
 
@@ -372,15 +372,15 @@ func TestTodoRunDone_ClosesAFinishedSprint(t *testing.T) {
 	}
 	m.reloadTodos()
 	var published reports.Document
-	m.todos.PublishReport = func(doc reports.Document) (string, error) {
+	m.todo.wiring.PublishReport = func(doc reports.Document) (string, error) {
 		published = doc
 		return "http://127.0.0.1:8731/r/rp-0123456789abcdef", nil
 	}
-	it, _ := m.todoStore.Find("do-it")
-	m.todoRunner.item = it
-	m.todoRunner.state = run.Start(it, "sess", "manual", 1, run.Options{NoCommit: true})
-	m.todoRunner.state.Report = "## Report\nSummary: done.\n"
-	m.todoRunner.state.Stage = run.StageDone
+	it, _ := m.todo.store.Find("do-it")
+	m.todo.runner.item = it
+	m.todo.runner.state = run.Start(it, "sess", "manual", 1, run.Options{NoCommit: true})
+	m.todo.runner.state.Report = "## Report\nSummary: done.\n"
+	m.todo.runner.state.Stage = run.StageDone
 	updated, _ := m.todoRunDone()
 	last := updated.(Model).transcript[len(updated.(Model).transcript)-1].text
 	if !strings.Contains(last, "last item in the sprint") {
@@ -469,7 +469,7 @@ func planSlugs(m Model) []string {
 func TestSprintPlan_AndProposalsAnswerTheirOwnLists(t *testing.T) {
 	m, root := sprintModel(t, "")
 	m = planned(m, planAnswerForFixture, nil)
-	if m.todoProposals != nil {
+	if m.todo.proposals != nil {
 		t.Fatal("the plan left proposals behind")
 	}
 	over, _ := m.openTodoProposals([]todo.Proposal{{Title: "Write the doc"}}, "1 proposed")
@@ -490,7 +490,7 @@ func TestSprintPlan_AndProposalsAnswerTheirOwnLists(t *testing.T) {
 // the plan waits rather than being replaced a moment after it appears.
 func TestSprintPlan_WaitsForAReadingInFlight(t *testing.T) {
 	m, _ := sprintModel(t, "")
-	m.todoExtracting = true
+	m.todo.extracting = true
 	updated, _ := m.startTodoSprintPlan(nil)
 	next := updated.(Model)
 	if next.state == stateTodoPropose {
@@ -542,9 +542,9 @@ func TestSprintTitle_SaysTheCountAndTheItem(t *testing.T) {
 	if got := m.sprintTitle(); got != "" {
 		t.Fatalf("title with no run = %q", got)
 	}
-	it, _ := m.todoStore.Find("a-high")
-	m.todoRunner.state = run.Start(it, "sess", "manual", 1, run.Options{Sprint: "goal", InSprint: true})
-	m.todoRunner.state.Stage = run.StageImplement
+	it, _ := m.todo.store.Find("a-high")
+	m.todo.runner.state = run.Start(it, "sess", "manual", 1, run.Options{Sprint: "goal", InSprint: true})
+	m.todo.runner.state.Stage = run.StageImplement
 	if got := m.sprintTitle(); got != "sprint 0/3 · a-high" {
 		t.Fatalf("title = %q", got)
 	}
@@ -560,9 +560,9 @@ func TestSprintTitle_SaysTheCountAndTheItem(t *testing.T) {
 // would have to look up which of thirty items it was.
 func TestSprintCloseWords_NameTheItemThatFinished(t *testing.T) {
 	m, root := sprintModel(t, "---\nname: caching\n---\ngoal\n\n## Items\n- a-high\n")
-	it, _ := m.todoStore.Find("a-high")
-	m.todoRunner.state = run.Start(it, "sess", "manual", 1, run.Options{InSprint: true})
-	m.todoRunner.state.Stage = run.StageDone
+	it, _ := m.todo.store.Find("a-high")
+	m.todo.runner.state = run.Start(it, "sess", "manual", 1, run.Options{InSprint: true})
+	m.todo.runner.state.Stage = run.StageDone
 	sp := run.StartSprint("sess", "manual", 0, true)
 	sp.Finished("a-high")
 	must(t, sp.Save(root))
@@ -576,12 +576,12 @@ func TestSprintCloseWords_NameTheItemThatFinished(t *testing.T) {
 func TestSprintNextNote_NamesTheItemComingUp(t *testing.T) {
 	m, _ := sprintModel(t, "")
 	sp := run.StartSprint("sess", "manual", 0, true)
-	if got := sprintNextNote(sp, m.todoStore); !strings.Contains(got, "next in the sprint: a-high · High one") {
+	if got := sprintNextNote(sp, m.todo.store); !strings.Contains(got, "next in the sprint: a-high · High one") {
 		t.Fatalf("note = %q", got)
 	}
 	capped := run.StartSprint("sess", "manual", 1, true)
 	capped.Attempts = []string{"a-high"}
-	if got := sprintNextNote(capped, m.todoStore); !strings.Contains(got, "nothing is left") {
+	if got := sprintNextNote(capped, m.todo.store); !strings.Contains(got, "nothing is left") {
 		t.Fatalf("capped note = %q", got)
 	}
 }
@@ -597,7 +597,7 @@ func TestSprintReport_IsAPageOfTheSameBlocks(t *testing.T) {
 		t.Fatal(err)
 	}
 	m.reloadTodos()
-	doc := sprintReportDoc(m.todoStore.Sprint, m.todoStore.SprintEntries(), 12, 1.42, 0)
+	doc := sprintReportDoc(m.todo.store.Sprint, m.todo.store.SprintEntries(), 12, 1.42, 0)
 	if err := doc.Validate(); err != nil {
 		t.Fatalf("the page does not validate: %v", err)
 	}
@@ -653,7 +653,7 @@ func TestSprintClose_PublishesThePageAndTheBoardOffersIt(t *testing.T) {
 	// run itself takes, and a page built from the session's stale copy of
 	// the backlog would report the item that just finished as unfinished.
 	var published reports.Document
-	m.todos.PublishReport = func(doc reports.Document) (string, error) {
+	m.todo.wiring.PublishReport = func(doc reports.Document) (string, error) {
 		published = doc
 		return "http://127.0.0.1:8731/r/rp-0123456789abcdef", nil
 	}

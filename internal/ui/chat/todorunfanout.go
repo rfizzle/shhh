@@ -23,7 +23,7 @@ import (
 // item: the session builds it whole and the step label says why.
 // See docs/capabilities/todo.md#a-large-item-is-built-in-lanes.
 func (m Model) startTodoFanOut() (tea.Model, tea.Cmd) {
-	st, it := m.todoRunner.state, m.todoRunner.item
+	st, it := m.todo.runner.state, m.todo.runner.item
 	if m.subagents == nil {
 		return m.todoRunStep(st.NoLanes(it, "no agent supervisor; building in this session"))
 	}
@@ -55,7 +55,7 @@ func (m Model) startTodoFanOut() (tea.Model, tea.Cmd) {
 		}
 		spawned = append(spawned, lane.Agent)
 	}
-	_ = st.Save(m.todos.Root)
+	_ = st.Save(m.todo.wiring.Root)
 	return m.systemNotice(fmt.Sprintf("▸ todo run %s · fan-out: %s", st.Slug, strings.Join(spawned, ", ")))
 }
 
@@ -67,7 +67,7 @@ func (m Model) startTodoFanOut() (tea.Model, tea.Cmd) {
 // writer asks — a command the classifier could not decide — goes to the
 // person the way every child's ask does: that is the steering.
 func (m Model) todoLaneAsk(ask *subagent.Ask) (tea.Model, tea.Cmd, bool) {
-	st := m.todoRunner.state
+	st := m.todo.runner.state
 	if st == nil || st.Over() || ask == nil || ask.Kind != subagent.AskPatch {
 		return m, nil, false
 	}
@@ -88,9 +88,9 @@ func (m Model) todoLaneAsk(ask *subagent.Ask) (tea.Model, tea.Cmd, bool) {
 
 // todoLanePatched is a writer's patch landing on the tree.
 func (m Model) todoLanePatched(p *subagent.PatchApplied) {
-	if st := m.todoRunner.state; st != nil && !st.Over() && p != nil {
+	if st := m.todo.runner.state; st != nil && !st.Over() && p != nil {
 		st.LanePatched(p.Agent)
-		_ = st.Save(m.todos.Root)
+		_ = st.Save(m.todo.wiring.Root)
 	}
 }
 
@@ -98,7 +98,7 @@ func (m Model) todoLanePatched(p *subagent.PatchApplied) {
 // and, when it is the last, the integration turn starts. A writer that
 // did not finish blocks the run the way a failed reviewer does.
 func (m Model) todoWriterDone(status subagent.Status) (tea.Model, tea.Cmd, bool) {
-	st := m.todoRunner.state
+	st := m.todo.runner.state
 	if st == nil || st.Over() {
 		return m, nil, false
 	}
@@ -109,6 +109,6 @@ func (m Model) todoWriterDone(status subagent.Status) (tea.Model, tea.Cmd, bool)
 	if !ok || state != subagent.StateDone {
 		report = status.Detail
 	}
-	next, cmd := m.todoRunStep(st.LaneDone(m.todoRunner.item, status.Name, ok && state == subagent.StateDone, report))
+	next, cmd := m.todoRunStep(st.LaneDone(m.todo.runner.item, status.Name, ok && state == subagent.StateDone, report))
 	return next, cmd, true
 }

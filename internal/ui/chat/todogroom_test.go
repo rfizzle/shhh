@@ -87,7 +87,7 @@ func TestTodoGroom_AProfileThatDoesNotGroomRefusesTheVerb(t *testing.T) {
 	m, _ := groomModel(t, map[string]string{"cache-ttl.md": groomItem})
 	quiet := todo.BuiltinCode()
 	quiet.Name, quiet.Groom = "checklist", ""
-	m.todos.Profile = quiet
+	m.todo.wiring.Profile = quiet
 	next, _ := m.startTodoGroom([]string{"cache-ttl"})
 	if started := next.(Model); started.working() || started.state == stateTodoGroom {
 		t.Fatalf("a profile with no grooming started a reading: state = %d", started.state)
@@ -101,18 +101,18 @@ func TestTodoGroom_AProfileThatDoesNotGroomRefusesTheVerb(t *testing.T) {
 func TestTodoGroom_TheCardIsTheProposedLinesAndTheStamp(t *testing.T) {
 	m, _ := groomModel(t, map[string]string{"cache-ttl.md": groomItem})
 	m = groom(t, m, "/todo groom cache-ttl", groomAnswer)
-	if m.state != stateTodoGroom || m.todoGroom == nil {
+	if m.state != stateTodoGroom || m.todo.groom == nil {
 		t.Fatalf("no card: state = %d", m.state)
 	}
 	// Two corrections and the stamp; the claim that holds proposes nothing
 	// and is counted in the title instead.
-	if got := len(m.todoGroom.Options); got != 3 {
-		t.Fatalf("rows = %d: %+v", got, m.todoGroom.Options)
+	if got := len(m.todo.groom.Options); got != 3 {
+		t.Fatalf("rows = %d: %+v", got, m.todo.groom.Options)
 	}
-	if !strings.Contains(m.todoGroom.Title, "1 holds") {
-		t.Errorf("title = %q", m.todoGroom.Title)
+	if !strings.Contains(m.todo.groom.Title, "1 holds") {
+		t.Errorf("title = %q", m.todo.groom.Title)
 	}
-	for i, c := range m.todoGroom.Checked {
+	for i, c := range m.todo.groom.Checked {
 		if !c {
 			t.Errorf("row %d starts unchecked", i)
 		}
@@ -187,16 +187,16 @@ func TestTodoGroom_AllStopsOnEscKeepingWhatWasAccepted(t *testing.T) {
 		"cache-warm.md": strings.Replace(groomItem, "priority: high", "priority: low", 1),
 	})
 	m = groom(t, m, "/todo groom --all", groomAnswer)
-	if m.todoGroomer.item.Slug != "cache-ttl" {
-		t.Fatalf("backlog order not kept: %q first", m.todoGroomer.item.Slug)
+	if m.todo.groomer.item.Slug != "cache-ttl" {
+		t.Fatalf("backlog order not kept: %q first", m.todo.groomer.item.Slug)
 	}
 	m = press(t, m, "enter")
-	if !m.working() || m.todoGroomer.item.Slug != "cache-warm" {
-		t.Fatalf("the pass did not carry on: working=%t on %q", m.working(), m.todoGroomer.item.Slug)
+	if !m.working() || m.todo.groomer.item.Slug != "cache-warm" {
+		t.Fatalf("the pass did not carry on: working=%t on %q", m.working(), m.todo.groomer.item.Slug)
 	}
 	m = answer(t, m, groomAnswer)
 	m = press(t, m, "esc")
-	if m.todoGroomer.going() {
+	if m.todo.groomer.going() {
 		t.Error("esc did not stop the pass")
 	}
 	s := todo.Load(todo.BuiltinCode(), root)
@@ -212,7 +212,7 @@ func TestTodoGroom_AllStopsOnEscKeepingWhatWasAccepted(t *testing.T) {
 // nothing at all about an item nobody has read that way.
 func TestTodoGroom_StaleIsDrawnOnlyForAnItemThatWasRead(t *testing.T) {
 	m, _ := groomModel(t, map[string]string{"cache-ttl.md": groomItem})
-	m.todoGroomer.stale = map[string]int{"cache-ttl": 62}
+	m.todo.groomer.stale = map[string]int{"cache-ttl": 62}
 	rail := m.inspectorTodo()
 	if rail == nil || len(rail.Rows) != 1 {
 		t.Fatalf("rail = %+v", rail)
@@ -220,18 +220,18 @@ func TestTodoGroom_StaleIsDrawnOnlyForAnItemThatWasRead(t *testing.T) {
 	if !rail.Rows[0].Stale || !strings.Contains(rail.Rows[0].Note, "62") {
 		t.Errorf("row = %+v", rail.Rows[0])
 	}
-	row := m.todoScreenRow(m.todoStore, m.todoStore.Items[0])
+	row := m.todoScreenRow(m.todo.store, m.todo.store.Items[0])
 	if len(row.Warnings) != 1 || !strings.Contains(row.Warnings[0], "62 commits ago") {
 		t.Errorf("warnings = %v", row.Warnings)
 	}
 	// The note names the distance as well as the number, because a backlog
 	// measured in days and one measured in commits both say 62 and only one
 	// of them is two months.
-	m.todos.Profile.Stale = todo.Staleness{Measure: todo.MeasureDays, Threshold: 30}
-	if row := m.todoScreenRow(m.todoStore, m.todoStore.Items[0]); !strings.Contains(row.Warnings[0], "62 days ago") {
+	m.todo.wiring.Profile.Stale = todo.Staleness{Measure: todo.MeasureDays, Threshold: 30}
+	if row := m.todoScreenRow(m.todo.store, m.todo.store.Items[0]); !strings.Contains(row.Warnings[0], "62 days ago") {
 		t.Errorf("under a days profile the warning says %v", row.Warnings)
 	}
-	m.todoGroomer.stale = nil
+	m.todo.groomer.stale = nil
 	if rail := m.inspectorTodo(); rail.Rows[0].Stale {
 		t.Error("an item nobody read is not stale")
 	}
@@ -247,8 +247,8 @@ func TestTodoGroom_TheScreenKeyStartsTheReading(t *testing.T) {
 	if m.state == stateBacklog {
 		t.Fatal("the screen should have closed for the reading")
 	}
-	if !m.todoGroomer.going() || m.todoGroomer.slug != "cache-ttl" {
-		t.Fatalf("groomer = %+v", m.todoGroomer)
+	if !m.todo.groomer.going() || m.todo.groomer.slug != "cache-ttl" {
+		t.Fatalf("groomer = %+v", m.todo.groomer)
 	}
 }
 
@@ -261,7 +261,7 @@ func TestTodoGroom_ADisplacedTurnStopsThePass(t *testing.T) {
 	m = updated.(Model)
 	m.turnCount++
 	m = answer(t, m, groomAnswer)
-	if m.todoGroomer.going() || m.state == stateTodoGroom {
+	if m.todo.groomer.going() || m.state == stateTodoGroom {
 		t.Fatal("the pass should have stopped")
 	}
 	data, _ := os.ReadFile(filepath.Join(todo.Dir(root), "cache-ttl.md"))
@@ -281,7 +281,7 @@ func TestTodoGroom_AllTalliesWhatThePassWrote(t *testing.T) {
 	m = press(t, m, "enter")
 	m = answer(t, m, groomAnswer)
 	m = press(t, m, "enter")
-	if m.todoGroomer.going() {
+	if m.todo.groomer.going() {
 		t.Fatal("the pass should be over")
 	}
 	if note := lastSystem(t, m); !strings.Contains(note, "6 lines") || !strings.Contains(note, "2 items") {
@@ -298,8 +298,8 @@ func TestTodoGroom_TheSessionBoundaryDropsThePass(t *testing.T) {
 		t.Fatalf("no card: state = %d", m.state)
 	}
 	m.startNewSession()
-	if m.todoGroomer.going() || m.todoGroom != nil || m.state == stateTodoGroom {
-		t.Errorf("the pass survived the boundary: %+v", m.todoGroomer)
+	if m.todo.groomer.going() || m.todo.groom != nil || m.state == stateTodoGroom {
+		t.Errorf("the pass survived the boundary: %+v", m.todo.groomer)
 	}
 	if m.policy.mode != agent.ModeManual {
 		t.Errorf("the mode was not restored: %s", m.policy.mode)

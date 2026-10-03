@@ -68,7 +68,7 @@ func (m Model) Wiring() Wiring {
 		Gate:            m.gate.Run != nil,
 		Processes:       m.processes.Manage != nil,
 		Skills:          m.skills != nil,
-		Todos:           m.todos.Manage != nil,
+		Todos:           m.todo.wiring.Manage != nil,
 		Scope:           m.scope != nil,
 		Notebook:        m.notebook != nil,
 		Ask:             m.asks,

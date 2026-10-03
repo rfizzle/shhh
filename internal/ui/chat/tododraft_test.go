@@ -45,7 +45,7 @@ func runDraft(t *testing.T, m Model) Model {
 	m.input.SetValue("/todo new the cache never expires anything")
 	updated, cmd := m.submitInput()
 	next := updated.(Model)
-	if cmd == nil || !next.todoDrafting {
+	if cmd == nil || !next.todo.drafting {
 		t.Fatal("/todo new <sentence> should start a drafting")
 	}
 	if last := next.transcript[len(next.transcript)-1].text; !strings.HasPrefix(last, "drafting the item") {
@@ -76,7 +76,7 @@ func TestTodoNew_TheCardWritesTheItem(t *testing.T) {
 	var signals []string
 	p := &scriptedProvider{args: draftFixture}
 	m := runDraft(t, draftModel(t, root, p, &signals))
-	if m.state != stateTodoDraft || m.todoDraft == nil {
+	if m.state != stateTodoDraft || m.todo.draft == nil {
 		t.Fatalf("the card should be showing: state=%d", m.state)
 	}
 	// The sentence is what the drafting was given, and it travels as data.
@@ -98,11 +98,11 @@ func TestTodoNew_TheCardWritesTheItem(t *testing.T) {
 	// The header is set in place: down to the size row and one step of the
 	// scale, which is M → L.
 	m = pressKeys(t, m, keyDown, keyDown, keySpace)
-	if m.todoDraft.proposal.Fields["size"] != "L" {
-		t.Fatalf("size = %q, want L", m.todoDraft.proposal.Fields["size"])
+	if m.todo.draft.proposal.Fields["size"] != "L" {
+		t.Fatalf("size = %q, want L", m.todo.draft.proposal.Fields["size"])
 	}
 	m = pressKeys(t, m, keyEnter)
-	if m.state != stateInput || m.todoDraft != nil {
+	if m.state != stateInput || m.todo.draft != nil {
 		t.Fatalf("enter should close the card, state=%d", m.state)
 	}
 	note := m.transcript[len(m.transcript)-1].text
@@ -141,7 +141,7 @@ func TestTodoNew_TheCardWritesTheItem(t *testing.T) {
 func TestTodoNew_AMissingDependencyIsAWarningAndIsNotWritten(t *testing.T) {
 	root := todoTestRoot(t)
 	m := runDraft(t, draftModel(t, root, &scriptedProvider{args: draftFixture}, nil))
-	if w := m.todoDraft.fields.Warning; !strings.Contains(w, "nothing-like-this") || strings.Contains(w, "a-high") {
+	if w := m.todo.draft.fields.Warning; !strings.Contains(w, "nothing-like-this") || strings.Contains(w, "a-high") {
 		t.Fatalf("warning = %q", w)
 	}
 	m = pressKeys(t, m, keyEnter)
@@ -160,7 +160,7 @@ func TestTodoNew_EscapeWritesNothing(t *testing.T) {
 	var signals []string
 	m := runDraft(t, draftModel(t, root, &scriptedProvider{args: draftFixture}, &signals))
 	m = pressKeys(t, m, keyEsc)
-	if m.state != stateInput || m.todoDraft != nil {
+	if m.state != stateInput || m.todo.draft != nil {
 		t.Fatalf("esc should close the card, state=%d", m.state)
 	}
 	if last := m.transcript[len(m.transcript)-1].text; !strings.Contains(last, "nothing written") {
@@ -182,7 +182,7 @@ func TestTodoNew_TheDependencyPickerSetsThem(t *testing.T) {
 	root := todoTestRoot(t)
 	m := runDraft(t, draftModel(t, root, &scriptedProvider{args: draftFixture}, nil))
 	m = pressKeys(t, m, keyDown, keyDown, keyDown, keySpace)
-	if m.todoDraft.picker == nil {
+	if m.todo.draft.picker == nil {
 		t.Fatal("the dependency row should open the picker")
 	}
 	card := strings.Join(m.todoDraftLines(), "\n")
@@ -190,24 +190,24 @@ func TestTodoNew_TheDependencyPickerSetsThem(t *testing.T) {
 		t.Fatalf("the picker should offer the backlog:\n%s", card)
 	}
 	// a-high is the first row and is checked, because the draft names it.
-	if !m.todoDraft.picker.Checked[0] {
+	if !m.todo.draft.picker.Checked[0] {
 		t.Fatal("a dependency the draft names should open checked")
 	}
 	// Uncheck it and take the empty answer.
 	m = pressKeys(t, m, keySpace, keyEnter)
-	if m.todoDraft.picker != nil {
+	if m.todo.draft.picker != nil {
 		t.Fatal("the picker should close on enter")
 	}
-	if len(m.todoDraft.proposal.DependsOn) != 0 {
-		t.Fatalf("depends_on = %v", m.todoDraft.proposal.DependsOn)
+	if len(m.todo.draft.proposal.DependsOn) != 0 {
+		t.Fatalf("depends_on = %v", m.todo.draft.proposal.DependsOn)
 	}
-	if m.todoDraft.fields.Warning != "" {
-		t.Fatalf("clearing the dependencies should clear the warning: %q", m.todoDraft.fields.Warning)
+	if m.todo.draft.fields.Warning != "" {
+		t.Fatalf("clearing the dependencies should clear the warning: %q", m.todo.draft.fields.Warning)
 	}
 	// Now check the second row and keep it.
 	m = pressKeys(t, m, keySpace, keyDown, keySpace, keyEnter)
-	if strings.Join(m.todoDraft.proposal.DependsOn, ",") != "b-waits" {
-		t.Fatalf("depends_on = %v", m.todoDraft.proposal.DependsOn)
+	if strings.Join(m.todo.draft.proposal.DependsOn, ",") != "b-waits" {
+		t.Fatalf("depends_on = %v", m.todo.draft.proposal.DependsOn)
 	}
 }
 
@@ -220,24 +220,24 @@ func TestTodoAdd_TheHeaderIsSetOnTheProposalsCard(t *testing.T) {
 		t.Fatal("the proposals card should offer the header key")
 	}
 	m = pressKeys(t, m, tea.KeyPressMsg{Code: 'e', Text: "e"})
-	if m.state != stateTodoDraft || m.todoDraft == nil || m.todoDraft.from != 0 {
+	if m.state != stateTodoDraft || m.todo.draft == nil || m.todo.draft.from != 0 {
 		t.Fatalf("e should open the focused proposal's header: state=%d", m.state)
 	}
 	// The other proposals' titles resolve to slugs when they are accepted,
 	// so they are not warned about; a name nothing answers is.
-	if w := m.todoDraft.fields.Warning; !strings.Contains(w, "nothing-like-this") || strings.Contains(w, "Build the store") {
+	if w := m.todo.draft.fields.Warning; !strings.Contains(w, "nothing-like-this") || strings.Contains(w, "Build the store") {
 		t.Fatalf("warning = %q", w)
 	}
 	// Size row, one step: M → L.
 	m = pressKeys(t, m, keyDown, keyDown, keySpace, keyEnter)
-	if m.state != stateTodoPropose || m.todoDraft != nil {
+	if m.state != stateTodoPropose || m.todo.draft != nil {
 		t.Fatalf("enter should go back to the proposals card, state=%d", m.state)
 	}
-	if m.todoProposals[0].Fields["size"] != "L" {
-		t.Fatalf("the proposal keeps the header it was given: %+v", m.todoProposals[0])
+	if m.todo.proposals[0].Fields["size"] != "L" {
+		t.Fatalf("the proposal keeps the header it was given: %+v", m.todo.proposals[0])
 	}
-	if !strings.Contains(m.todoPropose.Options[0].Meta, "story · high · L") {
-		t.Fatalf("the row = %q", m.todoPropose.Options[0].Meta)
+	if !strings.Contains(m.todo.propose.Options[0].Meta, "story · high · L") {
+		t.Fatalf("the row = %q", m.todo.propose.Options[0].Meta)
 	}
 	// And the file lands with it.
 	m = pressKeys(t, m, keyEnter)
@@ -252,11 +252,11 @@ func TestTodoAdd_TheHeaderIsSetOnTheProposalsCard(t *testing.T) {
 func TestTodoAdd_LeavingAHeaderKeepsTheProposals(t *testing.T) {
 	m := runExtract(t, extractModel(t, todoTestRoot(t), &scriptedProvider{args: proposalsFixture}))
 	m = pressKeys(t, m, tea.KeyPressMsg{Code: 'e', Text: "e"}, keyDown, keyDown, keySpace, keyEsc)
-	if m.state != stateTodoPropose || m.todoDraft != nil || len(m.todoProposals) != 3 {
+	if m.state != stateTodoPropose || m.todo.draft != nil || len(m.todo.proposals) != 3 {
 		t.Fatalf("esc should go back to the proposals card: state=%d", m.state)
 	}
-	if m.todoProposals[0].Fields["size"] != "M" {
-		t.Fatalf("the proposal should be as it was: %+v", m.todoProposals[0])
+	if m.todo.proposals[0].Fields["size"] != "M" {
+		t.Fatalf("the proposal should be as it was: %+v", m.todo.proposals[0])
 	}
 }
 
@@ -293,7 +293,7 @@ func TestTodoNew_UsageNoDrafterAndDoubleStart(t *testing.T) {
 
 func TestTodoNew_AFailedDraftingIsASentence(t *testing.T) {
 	m := runDraft(t, draftModel(t, todoTestRoot(t), &scriptedProvider{args: "not json"}, nil))
-	if m.state != stateInput || m.todoDrafting {
+	if m.state != stateInput || m.todo.drafting {
 		t.Fatal("a failed drafting should return to the input")
 	}
 	if last := lastNote(m); !strings.Contains(last, "could not be drafted") || !strings.Contains(last, "by hand") {
@@ -357,11 +357,11 @@ func TestTodoNew_TheEditorHandsTheItemBack(t *testing.T) {
 	if m.state != stateTodoDraft {
 		t.Fatalf("the card should come back up: state=%d", m.state)
 	}
-	if m.todoDraft.proposal.Title != "A lifetime, renamed" || m.todoDraft.proposal.Fields["size"] != "S" {
-		t.Fatalf("the edit should be the draft: %+v", m.todoDraft.proposal)
+	if m.todo.draft.proposal.Title != "A lifetime, renamed" || m.todo.draft.proposal.Fields["size"] != "S" {
+		t.Fatalf("the edit should be the draft: %+v", m.todo.draft.proposal)
 	}
-	if !strings.Contains(m.todoDraft.body, "Rewritten by hand.") {
-		t.Fatalf("body = %q", m.todoDraft.body)
+	if !strings.Contains(m.todo.draft.body, "Rewritten by hand.") {
+		t.Fatalf("body = %q", m.todo.draft.body)
 	}
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		t.Fatal("the temporary file outlived the handoff")
@@ -393,7 +393,7 @@ func TestTodo_TheRecordSaysHowTheBacklogGrew(t *testing.T) {
 	// The editor coming back off an item file is the third.
 	signals = nil
 	m = draftModel(t, root, nil, nil).WithObserver(record)
-	it, ok := m.todoStore.Find("a-high")
+	it, ok := m.todo.store.Find("a-high")
 	if !ok {
 		t.Fatal("the fixture should hold a-high")
 	}
@@ -415,7 +415,7 @@ func TestTodoNew_TheSessionBoundaryRetiresADraftingInFlight(t *testing.T) {
 	updated, cmd := m.submitInput()
 	m = updated.(Model)
 	m.startNewSession()
-	if m.todoDrafting {
+	if m.todo.drafting {
 		t.Fatal("/new should retire the drafting")
 	}
 	updated, _ = m.Update(cmd())
@@ -431,7 +431,7 @@ func TestTodoNew_AnEmptyBacklogSaysWhyTheRowDoesNotOpen(t *testing.T) {
 	m := draftModel(t, root, &scriptedProvider{args: draftFixture}, nil)
 	m = runDraft(t, m)
 	m = pressKeys(t, m, keyDown, keyDown, keyDown, keySpace)
-	if m.todoDraft == nil || m.todoDraft.picker != nil {
+	if m.todo.draft == nil || m.todo.draft.picker != nil {
 		t.Fatal("there is no backlog to pick from, and the card should still be up")
 	}
 	if !strings.Contains(lastNote(m), "nothing in the backlog to wait on") {

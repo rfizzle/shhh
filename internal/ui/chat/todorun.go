@@ -97,7 +97,7 @@ func (m Model) todoRunCan(repo bool) run.Can {
 // says what is wrong with it where it runs. Only "there is no file" is the
 // absence a run is turned away for.
 func (m Model) todoProjectNamesChecks() bool {
-	_, err := quality.LoadConfig(m.todos.Root)
+	_, err := quality.LoadConfig(m.todo.wiring.Root)
 	return !os.IsNotExist(err)
 }
 
@@ -109,13 +109,13 @@ func (m Model) todoProjectNamesChecks() bool {
 func (m Model) todoRunRefusal(ref run.Refusal, slug string) string {
 	switch ref.Need {
 	case run.NeedRepo:
-		root := project.Abbreviate(m.todos.Root)
+		root := project.Abbreviate(m.todo.wiring.Root)
 		if slug == "" {
 			return todoNoRepoSprintNotice(root)
 		}
 		return todoNoRepoNotice(root, slug)
 	case run.NeedChecks:
-		return todoNoChecksNotice(project.Abbreviate(m.todos.Root), ref.Step)
+		return todoNoChecksNotice(project.Abbreviate(m.todo.wiring.Root), ref.Step)
 	}
 	return "this backlog's run cannot start here: " + ref.Why
 }
@@ -144,11 +144,11 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 	// the project to make no commits and wants one on this item can make
 	// it themselves, and the run that made one against the setting would
 	// be the surprise worth avoiding.
-	noCommit = noCommit || m.todos.NoCommit
-	if m.todoRunner.state != nil && !m.todoRunner.state.Over() {
-		return m.systemNotice(fmt.Sprintf("a run is already going: %s. /todo status shows it; /todo stop ends it", m.todoRunner.state.Summary()))
+	noCommit = noCommit || m.todo.wiring.NoCommit
+	if m.todo.runner.state != nil && !m.todo.runner.state.Over() {
+		return m.systemNotice(fmt.Sprintf("a run is already going: %s. /todo status shows it; /todo stop ends it", m.todo.runner.state.Summary()))
 	}
-	s := m.todoStore
+	s := m.todo.store
 	if s == nil {
 		return m.systemNotice("no backlog to run from")
 	}
@@ -170,15 +170,15 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 	if m.turnState() != stateInput {
 		return m.systemNotice("answer the open decision first; a run starts from an idle session")
 	}
-	repo := project.InRepo(m.todos.Root)
+	repo := project.InRepo(m.todo.wiring.Root)
 	opt := run.Options{NoCommit: noCommit, Repo: repo, Sprint: m.sprintGoal(),
 		CloseGate: m.workspaceClosesGate(), InSprint: inSprint,
 		// A reading the person accepted and has not edited past is what the
 		// run's first step is told instead of taking the same reading again
 		// several steps before it is needed.
-		Groomed:  todo.GroomingBlock(m.todos.Root, it),
-		Wordings: m.todos.Wordings,
-		Pipeline: m.todos.Pipeline,
+		Groomed:  todo.GroomingBlock(m.todo.wiring.Root, it),
+		Wordings: m.todo.wiring.Wordings,
+		Pipeline: m.todo.wiring.Pipeline,
 		// A write-up is read in the session's shared notebook, so a finish
 		// that spends a turn on one asks whether there is a notebook first.
 		Notebook: m.notebook != nil}
@@ -186,7 +186,7 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 	// it needs is a person doing it, so the offer is the one verb that files
 	// it rather than a run that would describe the work instead of doing it.
 	if !opt.Steps().Runs() {
-		return m.systemNotice(fmt.Sprintf("the %s profile has no run: its items are worked by hand. /todo done %s files this one", m.todos.Profile.Name, it.Slug))
+		return m.systemNotice(fmt.Sprintf("the %s profile has no run: its items are worked by hand. /todo done %s files this one", m.todo.wiring.Profile.Name, it.Slug))
 	}
 	// What this session must be able to do is what the run's steps ask for,
 	// step by step: a pipeline that never writes wants no changeset and one
@@ -199,7 +199,7 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 	// starting over: the plan and the rounds spent are in the checkpoint,
 	// and the work of the stages before it is in the tree.
 	if it.Status == todo.StatusInProgress {
-		if st, err := run.Load(m.todos.Root, it.Slug); err == nil && !st.Over() {
+		if st, err := run.Load(m.todo.wiring.Root, it.Slug); err == nil && !st.Over() {
 			from := st.Session
 			st.Session = m.sessionName
 			st.PrevMode = m.policy.mode.String()
@@ -213,8 +213,8 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 			st.InSprint = inSprint
 			st.Groomed = opt.Groomed
 			st.Wordings, st.Pipeline = opt.Wordings, opt.Steps()
-			m.todoRunner.state = st
-			m.todoRunner.item = it
+			m.todo.runner.state = st
+			m.todo.runner.item = it
 			m.openTodoRunRow()
 			model, _ := m.systemNotice(fmt.Sprintf("continuing the run on %s from its %s stage (checkpoint from session %s)", it.Slug, st.Stage, orDash(from)))
 			return model.(Model).todoRunStep(st.Continue(it))
@@ -224,26 +224,26 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 	if err := todo.SetStatus(it.Path, todo.StatusInProgress); err != nil {
 		return m.systemNotice("could not mark the item in progress: " + err.Error())
 	}
-	m.todoRunner.state = run.Start(it, m.sessionName, m.policy.mode.String(), int(m.turnCount)+1, opt)
+	m.todo.runner.state = run.Start(it, m.sessionName, m.policy.mode.String(), int(m.turnCount)+1, opt)
 	// The tree as this item found it. Only what moves after this is the
 	// run's to commit — a file somebody left modified is not the run's work
 	// — and it is taken here, once, because everything after this point is
 	// the run changing the tree it would otherwise be reading a baseline off.
-	m.todoRunner.state.Prestart = run.DirtyPaths(m.todos.Root)
-	m.todoRunner.item = it
+	m.todo.runner.state.Prestart = run.DirtyPaths(m.todo.wiring.Root)
+	m.todo.runner.item = it
 	m.openTodoRunRow()
 	m.reloadTodos()
-	return m.todoRunStep(m.todoRunner.state.First(it, ""))
+	return m.todoRunStep(m.todo.runner.state.First(it, ""))
 }
 
 // todoRunStep carries out one step the machine handed back.
 func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
-	st := m.todoRunner.state
+	st := m.todo.runner.state
 	if capped, ok := m.sprintCap(step); ok {
 		step = capped
 	}
 	st.Paths = m.todoRunPaths()
-	if err := st.Save(m.todos.Root); err != nil {
+	if err := st.Save(m.todo.wiring.Root); err != nil {
 		m.appendEntry(entry{kind: entrySystem, text: "the run's checkpoint could not be written — " + err.Error()})
 	}
 	m.sprintRunning()
@@ -258,12 +258,12 @@ func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
 			mode = agent.ModePlan
 		}
 		m.applyMode(mode)
-		m.todoRunner.mark = len(m.transcript)
-		m.todoRunner.turn = int(m.turnCount) + 1
+		m.todo.runner.mark = len(m.transcript)
+		m.todo.runner.turn = int(m.turnCount) + 1
 		// Every stage gets its own continuation, and this is the stage
 		// starting.
-		m.todoRunner.continued, m.todoRunner.carried = false, ""
-		m.todoRunner.overSpend = nil
+		m.todo.runner.continued, m.todo.runner.carried = false, ""
+		m.todo.runner.overSpend = nil
 		return m.sendUserMessageAs(step.Prompt, step.Shown)
 	case run.ActionVerify:
 		// The row already says the run is verifying; what a notice would add
@@ -296,7 +296,7 @@ func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
 // It waits out a round-limit pause, a hold and a decision card — those are
 // the reader's — and reads the answer only when the turn is truly over.
 func (m Model) todoRunAfter(prev Model) (Model, tea.Cmd) {
-	st := m.todoRunner.state
+	st := m.todo.runner.state
 	if st == nil || st.Over() || !prev.working() || m.working() {
 		return m, nil
 	}
@@ -314,7 +314,7 @@ func (m Model) todoRunAfter(prev Model) (Model, tea.Cmd) {
 		// The finish turn was already read; the commit itself is in flight.
 		return m, nil
 	}
-	if int(m.turnCount) != m.todoRunner.turn {
+	if int(m.turnCount) != m.todo.runner.turn {
 		// The turn that ended is not the stage's — a compaction, a skill
 		// activation, something a command started. Its answer is not the
 		// stage's answer and the stage cannot be judged, but nothing about
@@ -324,10 +324,10 @@ func (m Model) todoRunAfter(prev Model) (Model, tea.Cmd) {
 		next, cmd := m.stopTodoRunKeeping(fmt.Sprintf("the %s turn was displaced by another message", st.Stage))
 		return next.(Model), cmd
 	}
-	if m.todoRunner.cancelled {
+	if m.todo.runner.cancelled {
 		// The cancel chord ended the stage turn with a partial answer. A
 		// cancel is the reader stopping the run, not evidence to grade.
-		m.todoRunner.cancelled = false
+		m.todo.runner.cancelled = false
 		next, cmd := m.stopTodoRun()
 		return next.(Model), cmd
 	}
@@ -336,15 +336,15 @@ func (m Model) todoRunAfter(prev Model) (Model, tea.Cmd) {
 	// step. The item blocks on the ledger's figures rather than being graded
 	// on that half, which is the reading the unattended runner makes of the
 	// same refusal (run.OverSpend).
-	if c := m.todoRunner.overSpend; c != nil {
-		m.todoRunner.overSpend = nil
+	if c := m.todo.runner.overSpend; c != nil {
+		m.todo.runner.overSpend = nil
 		next, cmd := m.todoRunStep(st.Block(run.OverSpend(st.Stage, c.Spent, c.Cap)))
 		return next.(Model), cmd
 	}
 	if res, ok := m.todoStageStopped(); ok {
 		return m.todoRunUnfinished(res)
 	}
-	next, cmd := m.todoRunStep(st.Observe(m.todoRunner.item, m.todoStageAnswer()))
+	next, cmd := m.todoRunStep(st.Observe(m.todo.runner.item, m.todoStageAnswer()))
 	return next.(Model), cmd
 }
 
@@ -359,7 +359,7 @@ func (m Model) todoRunAfter(prev Model) (Model, tea.Cmd) {
 // ceiling has a whole reply under its row, and that reply is the answer; a
 // row already acted on stops it for the same reason.
 func (m Model) todoStageStopped() (*streamResume, bool) {
-	for i := len(m.transcript) - 1; i >= m.todoRunner.mark && i >= 0; i-- {
+	for i := len(m.transcript) - 1; i >= m.todo.runner.mark && i >= 0; i-- {
 		switch e := m.transcript[i]; e.kind {
 		case entryStreamDrop:
 			if e.resume == nil || e.resume.spent {
@@ -380,7 +380,7 @@ func (m Model) todoStageStopped() (*streamResume, bool) {
 // is a judgement the row offers a reader and a run may not make for itself.
 // See docs/capabilities/todo.md#a-run-is-turns-with-gates-between-them.
 func (m Model) todoRunUnfinished(res *streamResume) (Model, tea.Cmd) {
-	st := m.todoRunner.state
+	st := m.todo.runner.state
 	if !res.truncated {
 		// Nothing about the item is wrong — the transport failed — so the
 		// run lets go at its checkpoint the way a displaced turn does,
@@ -388,7 +388,7 @@ func (m Model) todoRunUnfinished(res *streamResume) (Model, tea.Cmd) {
 		next, cmd := m.stopTodoRunKeeping(fmt.Sprintf("the %s turn dropped mid-reply", st.Stage))
 		return next.(Model), cmd
 	}
-	if m.todoRunner.continued {
+	if m.todo.runner.continued {
 		next, cmd := m.todoRunStep(st.Block(run.CutAtCeiling(st.Stage)))
 		return next.(Model), cmd
 	}
@@ -396,7 +396,7 @@ func (m Model) todoRunUnfinished(res *streamResume) (Model, tea.Cmd) {
 	// draft of it: the model was told to carry on from where it stopped
 	// rather than to write the answer again, so what comes back is the rest
 	// and the stage is judged on the two together.
-	m.todoRunner.continued, m.todoRunner.carried = true, res.text
+	m.todo.runner.continued, m.todo.runner.carried = true, res.text
 	next, cmd := m.continueStream(res)
 	return next.(Model), cmd
 }
@@ -409,16 +409,16 @@ func (m Model) todoRunHoldsInput() (string, bool) {
 	// A grooming reading is a turn of the same kind and is held for the
 	// same reason: text typed into it steers the reading, and text typed
 	// between two of them starts a turn the pass would then read as one.
-	if m.todoGroomer.going() {
-		return fmt.Sprintf("a backlog item is being read against the tree (%s) — the card opens when the turn is over; commands still work", m.todoGroomer.slug), true
+	if m.todo.groomer.going() {
+		return fmt.Sprintf("a backlog item is being read against the tree (%s) — the card opens when the turn is over; commands still work", m.todo.groomer.slug), true
 	}
-	if m.todoPlanner.going {
+	if m.todo.planner.going {
 		return "a sprint is being planned — the proposal opens when the turn is over; commands still work", true
 	}
-	if m.todoRunner.state == nil || m.todoRunner.state.Over() {
+	if m.todo.runner.state == nil || m.todo.runner.state.Over() {
 		return "", false
 	}
-	return fmt.Sprintf("a backlog run is going (%s · %s) — /todo stop ends it, /todo status shows it; commands still work", m.todoRunner.state.Slug, m.todoRunner.state.Stage), true
+	return fmt.Sprintf("a backlog run is going (%s · %s) — /todo stop ends it, /todo status shows it; commands still work", m.todo.runner.state.Slug, m.todo.runner.state.Stage), true
 }
 
 // todoStageAnswer is the assistant's last message since the stage began,
@@ -431,20 +431,20 @@ func (m Model) todoRunHoldsInput() (string, bool) {
 // above it is already in hand and reading it twice would hand the stage its
 // own first half again.
 func (m Model) todoStageAnswer() string {
-	for i := len(m.transcript) - 1; i >= m.todoRunner.mark && i >= 0; i-- {
+	for i := len(m.transcript) - 1; i >= m.todo.runner.mark && i >= 0; i-- {
 		switch e := m.transcript[i]; e.kind {
 		case entryStreamDrop:
-			return m.todoRunner.carried
+			return m.todo.runner.carried
 		case entryAssistant:
-			return m.todoRunner.carried + e.text
+			return m.todo.runner.carried + e.text
 		}
 	}
-	return m.todoRunner.carried
+	return m.todo.runner.carried
 }
 
 // endTodoRun restores the session's mode and retires the checkpoint.
 func (m *Model) endTodoRun() {
-	st := m.todoRunner.state
+	st := m.todo.runner.state
 	if st == nil {
 		return
 	}
@@ -454,15 +454,15 @@ func (m *Model) endTodoRun() {
 	// A reviewer still reading, or a writer still building, is spending on
 	// a run that is over.
 	m.killTodoAgents(st)
-	run.Discard(m.todos.Root, st.Slug)
+	run.Discard(m.todo.wiring.Root, st.Slug)
 	// The row keeps the state it ended on and is not the next run's; the
 	// state itself is no longer written to, so the row is frozen by the run
 	// being over rather than by a copy being taken.
-	m.todoRunner.rowIdx = 0
-	m.todoRunner.state = nil
-	m.todoRunner.item = todo.Item{}
-	if m.todoRunner.pause != nil {
-		m.todoRunner.pause = nil
+	m.todo.runner.rowIdx = 0
+	m.todo.runner.state = nil
+	m.todo.runner.item = todo.Item{}
+	if m.todo.runner.pause != nil {
+		m.todo.runner.pause = nil
 		m.leaveSurface()
 	}
 	m.reloadTodos()
@@ -481,7 +481,7 @@ func (m Model) stopTodoRunKeeping(why string) (tea.Model, tea.Cmd) {
 // the new one's transcript rather than to the transcript being dropped
 // (model.go).
 func (m *Model) keepTodoRun(why string) string {
-	st, it := m.todoRunner.state, m.todoRunner.item
+	st, it := m.todo.runner.state, m.todo.runner.item
 	if prev, err := agent.ParseMode(st.PrevMode); err == nil {
 		m.applyMode(prev)
 	}
@@ -491,11 +491,11 @@ func (m *Model) keepTodoRun(why string) string {
 		st.Lanes[i].Agent = ""
 	}
 	st.Paths = m.todoRunPaths()
-	_ = st.Save(m.todos.Root)
+	_ = st.Save(m.todo.wiring.Root)
 	m.signal(observe.SignalRun, "kept")
 	m.closeTodoRunRow("kept")
-	m.todoRunner.state = nil
-	m.todoRunner.item = todo.Item{}
+	m.todo.runner.state = nil
+	m.todo.runner.item = todo.Item{}
 	m.reloadTodos()
 	return todoRunKeptNote(it, st, why)
 }
@@ -509,12 +509,12 @@ func todoRunKeptNote(it todo.Item, st *run.State, why string) string {
 // stopTodoRun is /todo stop: the run is abandoned, the item goes back to
 // open, and whatever was changed stays in the tree.
 func (m Model) stopTodoRun() (tea.Model, tea.Cmd) {
-	st := m.todoRunner.state
+	st := m.todo.runner.state
 	// A sprint working several items at once is another process's, and it
 	// is asked to stop rather than ended here: its lanes are interrupted at
 	// the step they are on and it writes its own ending.
-	if sp, live := run.Live(m.todos.Root); live && sp.Laned() && (st == nil || st.Over()) {
-		if err := run.RequestStop(m.todos.Root); err != nil {
+	if sp, live := run.Live(m.todo.wiring.Root); live && sp.Laned() && (st == nil || st.Over()) {
+		if err := run.RequestStop(m.todo.wiring.Root); err != nil {
 			return m.systemNotice("the sprint could not be asked to stop — " + err.Error())
 		}
 		return m.systemNotice("asked the sprint to stop: each lane is interrupted at the step it is on and its item goes back to open, with its work kept in its copy of the checkout")
@@ -524,7 +524,7 @@ func (m Model) stopTodoRun() (tea.Model, tea.Cmd) {
 	// one caller that started the item without being asked about it, so
 	// throwing its work away on a stop nobody aimed at that item would be
 	// the surprise.
-	if sp, live := run.Live(m.todos.Root); live {
+	if sp, live := run.Live(m.todo.wiring.Root); live {
 		kept := ""
 		if st != nil && !st.Over() {
 			kept = m.keepTodoRun("the sprint was stopped")
@@ -539,7 +539,7 @@ func (m Model) stopTodoRun() (tea.Model, tea.Cmd) {
 	if st == nil || st.Over() {
 		return m.systemNotice("no run is going")
 	}
-	it := m.todoRunner.item
+	it := m.todo.runner.item
 	_ = todo.SetStatus(it.Path, todo.StatusOpen)
 	m.signal(observe.SignalRun, "stopped")
 	m.closeTodoRunRow("stopped")
@@ -558,7 +558,7 @@ func (m Model) todoRunStatus() (tea.Model, tea.Cmd) {
 	// The sprint is not on the row: a row is one run, and how far through the
 	// set that run is belongs to the loop above it. It is said first, so the
 	// row the answer opens on is still the last thing on screen.
-	if sp, live := run.Live(m.todos.Root); live {
+	if sp, live := run.Live(m.todo.wiring.Root); live {
 		model, _ := m.systemNotice("▸ " + sp.Summary())
 		m = model.(Model)
 	}

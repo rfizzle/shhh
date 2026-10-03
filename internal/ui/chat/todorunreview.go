@@ -25,7 +25,7 @@ import (
 // supervisor, or a spawn the supervisor refuses, the orchestrator reads in
 // its own turn and the step label says so.
 func (m Model) startTodoReview() (tea.Model, tea.Cmd) {
-	st, it := m.todoRunner.state, m.todoRunner.item
+	st, it := m.todo.runner.state, m.todo.runner.item
 	// A pipeline that changes the tree and changed nothing has produced
 	// nothing to read, which is a run that went wrong rather than one with
 	// a clean review. A pipeline whose steps only read has no change to
@@ -45,7 +45,7 @@ func (m Model) startTodoReview() (tea.Model, tea.Cmd) {
 		model, _ := m.systemNotice("no reviewer agent could be spawned — " + err.Error())
 		return model.(Model).todoRunStep(st.SelfReview(it))
 	}
-	_ = st.Save(m.todos.Root)
+	_ = st.Save(m.todo.wiring.Root)
 	return m.systemNotice(fmt.Sprintf("▸ todo run %s · review by %s", st.Slug, st.Reviewer))
 }
 
@@ -78,14 +78,14 @@ func (m Model) todoReviewRole(st *run.State) string {
 // spent in order hands over the first files whole and never mentions the
 // rest, and a diff that stops looks exactly like a change that ended.
 func (m Model) todoRunDiff() []string {
-	root := m.todos.Root
+	root := m.todo.wiring.Root
 	var files []string
 	seen := map[string]bool{}
 	// Paths from an earlier session have no record here; git's diff of
 	// the tree stands in, with an untracked file shown whole.
 	recorded := map[string]bool{}
 	for _, t := range m.changes.Turns() {
-		if int(t.N) < m.todoRunner.state.Turn {
+		if int(t.N) < m.todo.runner.state.Turn {
 			continue
 		}
 		for _, r := range t.Records {
@@ -94,7 +94,7 @@ func (m Model) todoRunDiff() []string {
 			}
 		}
 	}
-	for _, rel := range m.todoRunner.state.Paths {
+	for _, rel := range m.todo.runner.state.Paths {
 		if recorded[rel] || seen[rel] {
 			continue
 		}
@@ -110,7 +110,7 @@ func (m Model) todoRunDiff() []string {
 		}
 	}
 	for _, t := range m.changes.Turns() {
-		if int(t.N) < m.todoRunner.state.Turn {
+		if int(t.N) < m.todo.runner.state.Turn {
 			continue
 		}
 		for _, r := range t.Records {
@@ -156,7 +156,7 @@ func runRelPath(root, p string) string {
 // turn rather than being graded on whatever the placeholder for a failed
 // child happens to say.
 func (m Model) todoReviewDone(status subagent.Status) (tea.Model, tea.Cmd, bool) {
-	st := m.todoRunner.state
+	st := m.todo.runner.state
 	if st == nil || st.Over() || st.Reviewer == "" || status.Name != st.Reviewer {
 		return m, nil, false
 	}
@@ -170,9 +170,9 @@ func (m Model) todoReviewDone(status subagent.Status) (tea.Model, tea.Cmd, bool)
 		// this was.
 		model, _ := m.systemNotice(fmt.Sprintf("the reviewer %s did not finish (%s) — reading the change in this session instead",
 			st.Reviewer, status.Detail))
-		next, cmd := model.(Model).todoRunStep(st.SelfReview(m.todoRunner.item))
+		next, cmd := model.(Model).todoRunStep(st.SelfReview(m.todo.runner.item))
 		return next, cmd, true
 	}
-	next, cmd := m.todoRunStep(st.ReviewResult(m.todoRunner.item, report))
+	next, cmd := m.todoRunStep(st.ReviewResult(m.todo.runner.item, report))
 	return next, cmd, true
 }

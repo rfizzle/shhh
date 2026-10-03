@@ -37,7 +37,7 @@ type todoProposalsMsg struct {
 
 // todoExtractEnabled reports whether the session can read itself into items.
 func (m *Model) todoExtractEnabled() bool {
-	return m.todosEnabled() && m.todos.Extractor.Enabled()
+	return m.todosEnabled() && m.todo.wiring.Extractor.Enabled()
 }
 
 // startTodoExtract takes the reading. The transcript is digested here, on
@@ -47,19 +47,19 @@ func (m Model) startTodoExtract() (tea.Model, tea.Cmd) {
 	if !m.todoExtractEnabled() {
 		return m.systemNotice("no model is configured to read the session into items. /todo add <text> adds one by hand")
 	}
-	if m.todoExtracting {
+	if m.todo.extracting {
 		return m.systemNotice("still reading the session — the proposals card opens when it is done")
 	}
 	if len(m.transcript) == 0 {
 		return m.systemNotice("nothing to read yet: the session has no conversation")
 	}
-	m.todoExtracting = true
-	m.todoExtractRun++
-	runID := m.todoExtractRun
-	extractor := m.todos.Extractor
+	m.todo.extracting = true
+	m.todo.extractRun++
+	runID := m.todo.extractRun
+	extractor := m.todo.wiring.Extractor
 	req := m.todoExtractRequest()
 	ctx, cancel := context.WithCancel(context.Background())
-	m.todoExtractCancel = cancel
+	m.todo.extractCancel = cancel
 	model, _ := m.systemNotice("reading the session for backlog items…")
 	return model, func() tea.Msg {
 		defer cancel()
@@ -70,12 +70,12 @@ func (m Model) startTodoExtract() (tea.Model, tea.Cmd) {
 // dropTodoExtract retires a reading in flight: /clear calls it, so the
 // result cannot land as proposals for a conversation that is gone.
 func (m *Model) dropTodoExtract() {
-	if m.todoExtractCancel != nil {
-		m.todoExtractCancel()
-		m.todoExtractCancel = nil
+	if m.todo.extractCancel != nil {
+		m.todo.extractCancel()
+		m.todo.extractCancel = nil
 	}
-	m.todoExtracting = false
-	m.todoExtractRun++
+	m.todo.extracting = false
+	m.todo.extractRun++
 }
 
 // todoExtractRequest is the digest: what was said on each side, the tool
@@ -108,11 +108,11 @@ func (m Model) todoExtractRequest() todo.ExtractRequest {
 // because accepting the lot is the common case and dropping one is the
 // exception worth a keystroke.
 func (m Model) finishTodoExtract(msg todoProposalsMsg) (tea.Model, tea.Cmd) {
-	if !m.todoExtracting || msg.runID != m.todoExtractRun {
+	if !m.todo.extracting || msg.runID != m.todo.extractRun {
 		return m, nil
 	}
-	m.todoExtracting = false
-	m.todoExtractCancel = nil
+	m.todo.extracting = false
+	m.todo.extractCancel = nil
 	r := msg.result
 	if r.Failed {
 		return m.systemNotice("the session could not be read into items — " + r.Err + ". /todo add <text> adds one by hand")
@@ -122,14 +122,14 @@ func (m Model) finishTodoExtract(msg todoProposalsMsg) (tea.Model, tea.Cmd) {
 
 // openTodoProposals shows proposals on the card, everything checked.
 func (m Model) openTodoProposals(proposals []todo.Proposal, what string) (tea.Model, tea.Cmd) {
-	m.todoProposals = proposals
+	m.todo.proposals = proposals
 	opts := make([]components.SelectOption, len(proposals))
 	for i, p := range proposals {
 		// A multi-select draws the label and the right-hand meta and nothing
 		// else, so the facts the reader decides on go in the meta.
 		opts[i] = components.SelectOption{
 			Label: p.Title,
-			Meta:  todoProposalMeta(m.todos.Profile, p),
+			Meta:  todoProposalMeta(m.todo.wiring.Profile, p),
 		}
 	}
 	card := components.NewMultiSelect(fmt.Sprintf("%s — %s toggles, %s all or none, %s writes the checked ones, %s writes nothing",
@@ -144,7 +144,7 @@ func (m Model) openTodoProposals(proposals []todo.Proposal, what string) (tea.Mo
 	// before anything is written — the alternative being a file written with
 	// the reading's answers and then edited back.
 	card.Actions = []components.KeyOffer{components.OfferAs(keys.Backlog.Edit, "its header")}
-	m.todoPropose = card
+	m.todo.propose = card
 	m.enterSurface(stateTodoPropose)
 	m.syncViewport()
 	return m, nil
@@ -175,23 +175,23 @@ func (m *Model) answerTodoPropose(msg tea.KeyPressMsg) (bool, overlayAction) {
 	// The focused proposal's header, on the card the draft uses. It is the
 	// one key here that does not answer this card.
 	if keys.Is(msg.String(), keys.Backlog.Edit) &&
-		m.todoPropose.Focus < len(m.todoProposals) {
-		m.openTodoDraft(m.todoProposals[m.todoPropose.Focus], m.todoPropose.Focus)
+		m.todo.propose.Focus < len(m.todo.proposals) {
+		m.openTodoDraft(m.todo.proposals[m.todo.propose.Focus], m.todo.propose.Focus)
 		return false, overlayAction{}
 	}
-	done, res := m.todoPropose.Update(msg)
+	done, res := m.todo.propose.Update(msg)
 	if !done {
 		return false, overlayAction{}
 	}
-	proposals := m.todoProposals
+	proposals := m.todo.proposals
 	// The row a blocked run left is claimed here whatever the answer was: a
 	// card the reader declined wrote nothing to name on it, and leaving the
 	// claim standing would put the next card's first item on a run that
 	// never asked for it.
-	followUp := m.todoRunner.followUpRow
-	m.todoPropose = nil
-	m.todoProposals = nil
-	m.todoRunner.followUpRow = 0
+	followUp := m.todo.runner.followUpRow
+	m.todo.propose = nil
+	m.todo.proposals = nil
+	m.todo.runner.followUpRow = 0
 	if res.Canceled {
 		return true, overlayAction{close: true, note: "nothing written; the proposals are dropped"}
 	}
@@ -213,7 +213,7 @@ func (m *Model) answerTodoPropose(msg tea.KeyPressMsg) (bool, overlayAction) {
 // caller that offered the proposals for a reason — a blocked run's follow-up
 // — has to be able to name what came of them.
 func (m *Model) writeProposals(proposals []todo.Proposal, accepted []int) (string, []string) {
-	s := m.todoStore
+	s := m.todo.store
 	taken := map[string]bool{}
 	if s != nil {
 		for _, it := range s.Items {
@@ -263,8 +263,8 @@ func (m *Model) writeProposals(proposals []todo.Proposal, accepted []int) (strin
 			}
 		}
 		a.DependsOn = deps
-		it := a.Item(m.todos.Profile, a.slug, created, m.sessionName)
-		if _, err := todo.Create(m.todos.Profile, m.todos.Root, it); err != nil {
+		it := a.Item(m.todo.wiring.Profile, a.slug, created, m.sessionName)
+		if _, err := todo.Create(m.todo.wiring.Profile, m.todo.wiring.Root, it); err != nil {
 			fmt.Fprintf(&b, "\ncould not write %s: %v", a.slug, err)
 			continue
 		}
@@ -273,7 +273,7 @@ func (m *Model) writeProposals(proposals []todo.Proposal, accepted []int) (strin
 		fmt.Fprintf(&b, "\n  %s  %s · %s · %s", a.slug, it.Priority, gradeOrDash(it), it.Title)
 	}
 	m.reloadTodos()
-	head := fmt.Sprintf("wrote %s to %s", plural(written, "backlog item"), todo.Dir(m.todos.Root))
+	head := fmt.Sprintf("wrote %s to %s", plural(written, "backlog item"), todo.Dir(m.todo.wiring.Root))
 	if written == 0 {
 		head = "wrote nothing"
 	}
@@ -336,10 +336,10 @@ func uniqueSlug(slug string, taken map[string]bool) string {
 
 // todoProposeLines renders the proposals card for the bottom panel.
 func (m Model) todoProposeLines() []string {
-	if m.todoPropose == nil {
+	if m.todo.propose == nil {
 		return nil
 	}
-	return strings.Split(m.todoPropose.View(m.contentWidth()), "\n")
+	return strings.Split(m.todo.propose.View(m.contentWidth()), "\n")
 }
 
 // /todo new <sentence>: the same proposal machinery entered from the other
@@ -576,7 +576,7 @@ func (d *todoDraft) setDepends(indices []int) {
 
 // todoDraftEnabled reports whether the session can draft an item.
 func (m *Model) todoDraftEnabled() bool {
-	return m.todosEnabled() && m.todos.Drafter.Enabled()
+	return m.todosEnabled() && m.todo.wiring.Drafter.Enabled()
 }
 
 // startTodoDraft takes the drafting. Like the reading, it is a background
@@ -590,15 +590,15 @@ func (m Model) startTodoDraft(sentence string) (tea.Model, tea.Cmd) {
 	if !m.todoDraftEnabled() {
 		return m.systemNotice("no model is configured to draft an item. /todo add <text> adds one by hand")
 	}
-	if m.todoDrafting {
+	if m.todo.drafting {
 		return m.systemNotice("still drafting — the card opens when it is done")
 	}
-	m.todoDrafting = true
-	m.todoDraftRun++
-	runID, drafter := m.todoDraftRun, m.todos.Drafter
+	m.todo.drafting = true
+	m.todo.draftRun++
+	runID, drafter := m.todo.draftRun, m.todo.wiring.Drafter
 	req := todo.DraftRequest{Sentence: sentence, Existing: m.todoDraftExisting()}
 	ctx, cancel := context.WithCancel(context.Background())
-	m.todoDraftStop = cancel
+	m.todo.draftStop = cancel
 	model, _ := m.systemNotice("drafting the item…")
 	return model, func() tea.Msg {
 		defer cancel()
@@ -611,7 +611,7 @@ func (m Model) startTodoDraft(sentence string) (tea.Model, tea.Cmd) {
 // answer names is a slug that is there, and the session's notes after it.
 func (m Model) todoDraftExisting() []string {
 	var out []string
-	if s := m.todoStore; s != nil {
+	if s := m.todo.store; s != nil {
 		for _, it := range s.Items {
 			out = append(out, it.Slug+" — "+it.Title)
 		}
@@ -631,11 +631,11 @@ func (m Model) todoDraftExisting() []string {
 // finishTodoDraft applies a drafting: a failed one is a sentence in the
 // transcript, a good one is the card.
 func (m Model) finishTodoDraft(msg todoDraftMsg) (tea.Model, tea.Cmd) {
-	if !m.todoDrafting || msg.runID != m.todoDraftRun {
+	if !m.todo.drafting || msg.runID != m.todo.draftRun {
 		return m, nil
 	}
-	m.todoDrafting = false
-	m.todoDraftStop = nil
+	m.todo.drafting = false
+	m.todo.draftStop = nil
 	if msg.result.Failed {
 		return m.systemNotice("the item could not be drafted — " + msg.result.Err +
 			". /todo add <text> adds one by hand")
@@ -649,24 +649,24 @@ func (m Model) finishTodoDraft(msg todoDraftMsg) (tea.Model, tea.Cmd) {
 // went out against this session and its answer would otherwise open a card in
 // the next one, and be written with that session's name on it.
 func (m *Model) dropTodoDraft() {
-	if m.todoDraftStop != nil {
-		m.todoDraftStop()
-		m.todoDraftStop = nil
+	if m.todo.draftStop != nil {
+		m.todo.draftStop()
+		m.todo.draftStop = nil
 	}
-	m.todoDrafting = false
-	m.todoDraftRun++
+	m.todo.drafting = false
+	m.todo.draftRun++
 }
 
 // openTodoDraft puts one proposal on the card.
 func (m *Model) openTodoDraft(p todo.Proposal, from int) {
-	m.todoDraft = newTodoDraft(m.todos.Profile, p, m.todoDraftDeps(), m.todoDraftKnown(from), from)
+	m.todo.draft = newTodoDraft(m.todo.wiring.Profile, p, m.todoDraftDeps(), m.todoDraftKnown(from), from)
 	m.enterSurface(stateTodoDraft)
 	m.syncViewport()
 }
 
 // todoDraftDeps is the active backlog as the picker offers it.
 func (m Model) todoDraftDeps() []components.SelectOption {
-	s := m.todoStore
+	s := m.todo.store
 	if s == nil {
 		return nil
 	}
@@ -686,7 +686,7 @@ func (m Model) todoDraftDeps() []components.SelectOption {
 // about to exist.
 func (m Model) todoDraftKnown(from int) []string {
 	var out []string
-	if s := m.todoStore; s != nil {
+	if s := m.todo.store; s != nil {
 		for _, it := range s.Items {
 			out = append(out, it.Slug)
 		}
@@ -697,7 +697,7 @@ func (m Model) todoDraftKnown(from int) []string {
 	if from < 0 {
 		return out
 	}
-	for i, p := range m.todoProposals {
+	for i, p := range m.todo.proposals {
 		if i != from {
 			out = append(out, p.Title)
 		}
@@ -707,7 +707,7 @@ func (m Model) todoDraftKnown(from int) []string {
 
 // todoDraftLines renders the card for the bottom panel.
 func (m Model) todoDraftLines() []string {
-	d := m.todoDraft
+	d := m.todo.draft
 	if d == nil {
 		return nil
 	}
@@ -728,7 +728,7 @@ func (m Model) todoDraftLines() []string {
 
 // answerTodoDraft routes keys while the draft card shows.
 func (m *Model) answerTodoDraft(msg tea.KeyPressMsg) (bool, overlayAction) {
-	d := m.todoDraft
+	d := m.todo.draft
 	if d == nil {
 		return true, overlayAction{close: true}
 	}
@@ -767,7 +767,7 @@ func (m *Model) answerTodoDraft(msg tea.KeyPressMsg) (bool, overlayAction) {
 	case res.Canceled && d.from >= 0:
 		return true, m.leaveTodoDraft()
 	case res.Canceled:
-		m.todoDraft = nil
+		m.todo.draft = nil
 		return true, overlayAction{close: true, note: "nothing written; the draft is dropped"}
 	}
 	return true, m.takeTodoDraft()
@@ -776,18 +776,18 @@ func (m *Model) answerTodoDraft(msg tea.KeyPressMsg) (bool, overlayAction) {
 // takeTodoDraft is enter: a file, or — for a draft opened from the proposals
 // card — the header the row it came from now carries.
 func (m *Model) takeTodoDraft() overlayAction {
-	d := m.todoDraft
+	d := m.todo.draft
 	if d.from >= 0 {
-		if d.from < len(m.todoProposals) {
-			m.todoProposals[d.from] = d.proposal
-			if m.todoPropose != nil && d.from < len(m.todoPropose.Options) {
-				m.todoPropose.Options[d.from].Meta = todoProposalMeta(d.profile, d.proposal)
+		if d.from < len(m.todo.proposals) {
+			m.todo.proposals[d.from] = d.proposal
+			if m.todo.propose != nil && d.from < len(m.todo.propose.Options) {
+				m.todo.propose.Options[d.from].Meta = todoProposalMeta(d.profile, d.proposal)
 			}
 		}
 		return m.leaveTodoDraft()
 	}
 	note, written := m.writeTodoDraft(d)
-	m.todoDraft = nil
+	m.todo.draft = nil
 	// Only a file that landed is a backlog that grew: a write that failed
 	// counted in the record would put a rate over a number that includes the
 	// times nothing happened.
@@ -801,8 +801,8 @@ func (m *Model) takeTodoDraft() overlayAction {
 // from. leaveSurface would hand it to the turn instead — it is the way out of
 // the last surface — and the proposals card is still standing under this one.
 func (m *Model) leaveTodoDraft() overlayAction {
-	m.todoDraft = nil
-	if m.todoPropose == nil {
+	m.todo.draft = nil
+	if m.todo.propose == nil {
 		// Nothing to go back to. It cannot happen through the keyboard —
 		// the card that opened this one is what is under it — and a guard
 		// that fails closed costs nothing, where going to a nil card would
@@ -824,7 +824,7 @@ func (m *Model) leaveTodoDraft() overlayAction {
 // and the card warned about it before enter was pressed.
 func (m *Model) writeTodoDraft(d *todoDraft) (string, bool) {
 	taken := map[string]bool{}
-	if s := m.todoStore; s != nil {
+	if s := m.todo.store; s != nil {
 		for _, it := range s.Items {
 			taken[it.Slug] = true
 		}
@@ -837,14 +837,14 @@ func (m *Model) writeTodoDraft(d *todoDraft) (string, bool) {
 	it.Body = d.body
 	var deps, dropped []string
 	for _, dep := range d.proposal.DependsOn {
-		if m.todoStore != nil && has(m.todoStore, dep) {
+		if m.todo.store != nil && has(m.todo.store, dep) {
 			deps = append(deps, dep)
 			continue
 		}
 		dropped = append(dropped, dep)
 	}
 	it.DependsOn = deps
-	path, err := todo.Create(d.profile, m.todos.Root, it)
+	path, err := todo.Create(d.profile, m.todo.wiring.Root, it)
 	if err != nil {
 		return fmt.Sprintf("could not write %s: %v", slug, err), false
 	}
@@ -870,7 +870,7 @@ func (m *Model) editTodoDraft() overlayAction {
 	if m.working() || m.frameWorking() {
 		return overlayAction{note: "not while the turn is running — the editor takes the terminal with it. The draft is still on the card"}
 	}
-	path, err := writeTodoDraftFile(m.todoDraft.profile, m.todoDraft.proposal, m.todoDraft.body)
+	path, err := writeTodoDraftFile(m.todo.draft.profile, m.todo.draft.proposal, m.todo.draft.body)
 	if err != nil {
 		return overlayAction{note: "could not write the draft out — " + err.Error() + ". The draft is still on the card"}
 	}
@@ -909,7 +909,7 @@ func writeTodoDraftFile(profile todo.Profile, p todo.Proposal, body string) (str
 // temporary file is removed.
 func (m Model) todoDraftEditorFinished(msg todoDraftEditorDoneMsg) (tea.Model, tea.Cmd) {
 	defer func() { _ = os.Remove(msg.path) }()
-	d := m.todoDraft
+	d := m.todo.draft
 	if d == nil {
 		return m, nil
 	}

@@ -59,7 +59,7 @@ func runExtract(t *testing.T, m Model) Model {
 	m.input.SetValue("/todo add")
 	updated, cmd := m.submitInput()
 	next := updated.(Model)
-	if cmd == nil || !next.todoExtracting {
+	if cmd == nil || !next.todo.extracting {
 		t.Fatal("a bare /todo add should start a reading")
 	}
 	if last := next.transcript[len(next.transcript)-1].text; !strings.HasPrefix(last, "reading the session") {
@@ -74,7 +74,7 @@ func TestTodoAdd_ProposalsCardWritesTheCheckedOnes(t *testing.T) {
 	root := todoTestRoot(t)
 	p := &scriptedProvider{args: proposalsFixture}
 	m := runExtract(t, extractModel(t, root, p))
-	if m.state != stateTodoPropose || m.todoPropose == nil || len(m.todoProposals) != 3 {
+	if m.state != stateTodoPropose || m.todo.propose == nil || len(m.todo.proposals) != 3 {
 		t.Fatalf("the card should be showing: state=%d", m.state)
 	}
 	for _, want := range []string{"Let's design the backlog feature", "Here is the plan", "a-high — High one", "UNTRUSTED DIGEST"} {
@@ -88,13 +88,13 @@ func TestTodoAdd_ProposalsCardWritesTheCheckedOnes(t *testing.T) {
 	if !strings.Contains(p.prompt, "read_file") {
 		t.Error("the tool call itself is evidence")
 	}
-	for i, c := range m.todoPropose.Checked {
+	for i, c := range m.todo.propose.Checked {
 		if !c {
 			t.Fatalf("proposal %d should start checked", i)
 		}
 	}
-	if m.todoPropose.Options[0].Meta != "story · high · M · after Build the store, a-high, nothing-like-this" {
-		t.Fatalf("row = %+v", m.todoPropose.Options[0])
+	if m.todo.propose.Options[0].Meta != "story · high · M · after Build the store, a-high, nothing-like-this" {
+		t.Fatalf("row = %+v", m.todo.propose.Options[0])
 	}
 	card := strings.Join(m.todoProposeLines(), "\n")
 	if !strings.Contains(card, "Show the backlog in the rail") || !strings.Contains(card, "chore · medium · S") {
@@ -106,7 +106,7 @@ func TestTodoAdd_ProposalsCardWritesTheCheckedOnes(t *testing.T) {
 		updated, _ := m.Update(k)
 		m = updated.(Model)
 	}
-	if m.state != stateInput || m.todoPropose != nil {
+	if m.state != stateInput || m.todo.propose != nil {
 		t.Fatalf("enter should close the card, state=%d", m.state)
 	}
 	note := m.transcript[len(m.transcript)-1].text
@@ -124,8 +124,8 @@ func TestTodoAdd_ProposalsCardWritesTheCheckedOnes(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(todo.Dir(root), "build-the-store.md")); !os.IsNotExist(err) {
 		t.Fatal("an unchecked proposal was written")
 	}
-	if m.todoStore.Len() != 7 {
-		t.Fatalf("store should be re-read after writing, has %d", m.todoStore.Len())
+	if m.todo.store.Len() != 7 {
+		t.Fatalf("store should be re-read after writing, has %d", m.todo.store.Len())
 	}
 }
 
@@ -144,7 +144,7 @@ func TestTodoAdd_CancelWritesNothing(t *testing.T) {
 
 func TestTodoAdd_FailedReadingIsASentence(t *testing.T) {
 	m := runExtract(t, extractModel(t, todoTestRoot(t), &scriptedProvider{args: "not json"}))
-	if m.state != stateInput || m.todoExtracting {
+	if m.state != stateInput || m.todo.extracting {
 		t.Fatal("a failed reading should return to the input")
 	}
 	if last := m.transcript[len(m.transcript)-1].text; !strings.Contains(last, "could not be read into items") || !strings.Contains(last, "by hand") {
@@ -183,7 +183,7 @@ func TestTodoAdd_ClearDropsAReadingInFlight(t *testing.T) {
 	updated, cmd := m.submitInput()
 	m = updated.(Model)
 	m.startNewSession()
-	if m.todoExtracting {
+	if m.todo.extracting {
 		t.Fatal("/clear should retire the reading")
 	}
 	updated, _ = m.Update(cmd())
@@ -196,7 +196,7 @@ func TestWriteProposals_DuplicateTitlesAndHostileFields(t *testing.T) {
 	root := t.TempDir()
 	m := frameModel(t, 130, 40)
 	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
-	m.todoStore = nil
+	m.todo.store = nil
 	ps, ok := todo.ParseProposals(todo.BuiltinCode(), `{"items": [
 		{"title": "Fix it", "acceptance_criteria": ["a"]},
 		{"title": "fix it", "acceptance_criteria": ["b"], "depends_on": ["Fix it"]},

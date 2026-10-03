@@ -59,12 +59,12 @@ type todoPlanState struct {
 // candidate left out is named with the word for why.
 // See docs/capabilities/todo.md#a-sprint-is-what-ships-together.
 func (m Model) startTodoSprintPlan(args []string) (tea.Model, tea.Cmd) {
-	s := m.todoStore
+	s := m.todo.store
 	if s == nil {
 		return m.systemNotice("the backlog is unavailable in this session")
 	}
-	if !m.todos.Profile.Plans() {
-		return m.systemNotice(fmt.Sprintf("the %s profile does not plan sets: it says nothing about what makes its items belong together, so a proposal would be a reading of nothing", m.todos.Profile.Name))
+	if !m.todo.wiring.Profile.Plans() {
+		return m.systemNotice(fmt.Sprintf("the %s profile does not plan sets: it says nothing about what makes its items belong together, so a proposal would be a reading of nothing", m.todo.wiring.Profile.Name))
 	}
 	if s.Sprint.Open() {
 		return m.systemNotice(fmt.Sprintf("%s is still open — one sprint at a time. /todo sprint shows it; /todo sprint close ends it", s.Sprint.Name))
@@ -73,15 +73,15 @@ func (m Model) startTodoSprintPlan(args []string) (tea.Model, tea.Cmd) {
 	// cards cannot hold the surface, and the one that arrived second would
 	// be the one the person answers — so the plan waits rather than being
 	// replaced by proposals a moment after it is on screen.
-	if m.todoExtracting {
+	if m.todo.extracting {
 		return m.systemNotice("still reading the session for items — the proposals card opens when it is done, and /todo sprint plan works after it")
 	}
 	if note, held := m.planHeld(); held {
 		return m.systemNotice(note)
 	}
-	budget, err := parseSprintPlanArgs(m.todos.Profile, args)
+	budget, err := parseSprintPlanArgs(m.todo.wiring.Profile, args)
 	if err != nil {
-		return m.systemNotice(sprintPlanUsage(m.todos.Profile) + " — " + err.Error())
+		return m.systemNotice(sprintPlanUsage(m.todo.wiring.Profile) + " — " + err.Error())
 	}
 	candidates := s.Ready()
 	if len(candidates) == 0 {
@@ -98,9 +98,9 @@ func (m Model) startTodoSprintPlan(args []string) (tea.Model, tea.Cmd) {
 	// without reading its items goes straight to the proposal: there is no
 	// reading to take, and queueing one would send a turn with nothing in
 	// it to instruct the turn.
-	if unread := m.planReadingsNeeded(candidates); m.todos.Profile.Grooms() && len(unread) > 0 {
-		m.todoGroomer = todoGroomState{
-			queue: unread, prevMode: m.policy.mode.String(), stale: m.todoGroomer.stale,
+	if unread := m.planReadingsNeeded(candidates); m.todo.wiring.Profile.Grooms() && len(unread) > 0 {
+		m.todo.groomer = todoGroomState{
+			queue: unread, prevMode: m.policy.mode.String(), stale: m.todo.groomer.stale,
 			planAfter: &sprintPlanRequest{budget: budget},
 		}
 		next, _ := m.systemNotice(fmt.Sprintf("reading %s against the tree first; the proposal comes after the readings", plural(len(unread), "item")))
@@ -115,12 +115,12 @@ func (m Model) startTodoSprintPlan(args []string) (tea.Model, tea.Cmd) {
 // to grade.
 func (m Model) planHeld() (string, bool) {
 	switch {
-	case m.todoPlanner.going:
+	case m.todo.planner.going:
 		return "A sprint is already being planned; the card opens when the turn is over.", true
-	case m.todoGroomer.going():
-		return fmt.Sprintf("A backlog item is being read against the tree (%s); the plan waits for the reading.", m.todoGroomer.slug), true
-	case m.todoRunner.state != nil && !m.todoRunner.state.Over():
-		st := m.todoRunner.state
+	case m.todo.groomer.going():
+		return fmt.Sprintf("A backlog item is being read against the tree (%s); the plan waits for the reading.", m.todo.groomer.slug), true
+	case m.todo.runner.state != nil && !m.todo.runner.state.Over():
+		st := m.todo.runner.state
 		return fmt.Sprintf("A run is going (%s · %s); /todo stop ends it, and planning reads the files that run is working from.", st.Slug, st.Stage), true
 	case m.turnState() != stateInput || m.working():
 		return "A plan starts from an idle session; this turn has to finish first.", true
@@ -135,7 +135,7 @@ func (m Model) planHeld() (string, bool) {
 func (m Model) planReadingsNeeded(candidates []todo.Item) []string {
 	var out []string
 	for _, it := range candidates {
-		if _, ok := todo.LoadReading(m.todos.Root, it.Slug); ok && m.groomStaleNote(it.Slug) == "" {
+		if _, ok := todo.LoadReading(m.todo.wiring.Root, it.Slug); ok && m.groomStaleNote(it.Slug) == "" {
 			continue
 		}
 		out = append(out, it.Slug)
@@ -148,12 +148,12 @@ func (m Model) planReadingsNeeded(candidates []todo.Item) []string {
 // taken.
 func (m Model) startSprintPlanTurn(budget todo.SprintBudget) (tea.Model, tea.Cmd) {
 	m.reloadTodos()
-	s := m.todoStore
+	s := m.todo.store
 	candidates := s.Ready()
 	if len(candidates) == 0 {
 		return m.systemNotice("nothing is ready, so there is no set to propose. /todo shows what each item waits on")
 	}
-	m.todoPlanner = todoPlanState{
+	m.todo.planner = todoPlanState{
 		going: true, budget: budget, candidates: candidates,
 		turn: int(m.turnCount) + 1, mark: len(m.transcript), prevMode: m.policy.mode.String(),
 	}
@@ -165,7 +165,7 @@ func (m Model) startSprintPlanTurn(budget todo.SprintBudget) (tea.Model, tea.Cmd
 // reading's are: a planning turn ending is a transition, and no one handler
 // could be trusted to send it.
 func (m Model) todoPlanAfter(prev Model) (Model, tea.Cmd) {
-	p := m.todoPlanner
+	p := m.todo.planner
 	if !p.going || !prev.working() || m.working() {
 		return m, nil
 	}
@@ -179,7 +179,7 @@ func (m Model) todoPlanAfter(prev Model) (Model, tea.Cmd) {
 		next, cmd := m.endSprintPlan("The planning turn was displaced by another message.")
 		return next.(Model), cmd
 	}
-	plan := todo.ParsePlan(m.todos.Profile, m.planAnswer(), p.candidates, p.budget)
+	plan := todo.ParsePlan(m.todo.wiring.Profile, m.planAnswer(), p.candidates, p.budget)
 	if len(plan.Items) == 0 {
 		next, cmd := m.endSprintPlan("The reading proposed no set that could be read as items; nothing was written.")
 		return next.(Model), cmd
@@ -190,7 +190,7 @@ func (m Model) todoPlanAfter(prev Model) (Model, tea.Cmd) {
 
 // planAnswer is the assistant's last message since the planning turn began.
 func (m Model) planAnswer() string {
-	for i := len(m.transcript) - 1; i >= m.todoPlanner.mark && i >= 0; i-- {
+	for i := len(m.transcript) - 1; i >= m.todo.planner.mark && i >= 0; i-- {
 		if e := m.transcript[i]; e.kind == entryAssistant {
 			return e.text
 		}
@@ -200,10 +200,10 @@ func (m Model) planAnswer() string {
 
 // endSprintPlan closes the planning turn and puts the mode back.
 func (m Model) endSprintPlan(why string) (tea.Model, tea.Cmd) {
-	if prev, err := agent.ParseMode(m.todoPlanner.prevMode); err == nil {
+	if prev, err := agent.ParseMode(m.todo.planner.prevMode); err == nil {
 		m.applyMode(prev)
 	}
-	m.todoPlanner = todoPlanState{}
+	m.todo.planner = todoPlanState{}
 	return m.systemNotice(why)
 }
 
@@ -213,15 +213,15 @@ func (m Model) endSprintPlan(why string) (tea.Model, tea.Cmd) {
 // way to tell a planner that reads the backlog from one that agrees with
 // whoever is holding the keyboard.
 func (m Model) openPlanCard(plan todo.Plan) (tea.Model, tea.Cmd) {
-	if prev, err := agent.ParseMode(m.todoPlanner.prevMode); err == nil {
+	if prev, err := agent.ParseMode(m.todo.planner.prevMode); err == nil {
 		m.applyMode(prev)
 	}
-	budget := m.todoPlanner.budget
+	budget := m.todo.planner.budget
 	titles := map[string]string{}
-	for _, it := range m.todoPlanner.candidates {
+	for _, it := range m.todo.planner.candidates {
 		titles[it.Slug] = it.Title
 	}
-	m.todoPlanner = todoPlanState{}
+	m.todo.planner = todoPlanState{}
 	m.signal(observe.SignalTodo, observe.PlanReason(len(plan.Items)))
 	card := &components.SprintPlan{
 		Budget:  sprintBudgetWords(budget),
@@ -272,13 +272,13 @@ func sprintFileGoal(p *components.SprintPlan) string {
 // for a conversation that is gone — and the mode goes back with it, the way
 // a reading let go of at the boundary puts it back.
 func (m *Model) dropTodoPlan() {
-	if !m.todoPlanner.going {
+	if !m.todo.planner.going {
 		return
 	}
-	if prev, err := agent.ParseMode(m.todoPlanner.prevMode); err == nil {
+	if prev, err := agent.ParseMode(m.todo.planner.prevMode); err == nil {
 		m.applyMode(prev)
 	}
-	m.todoPlanner = todoPlanState{}
+	m.todo.planner = todoPlanState{}
 }
 
 // openWithPlan puts the screen up with the proposal on its sprint tab. The
@@ -373,14 +373,14 @@ func (m *Model) writeSprintPlan(chosen []string, goal string) string {
 		// the card would be one more thing to answer before any of it is
 		// on screen. `/todo sprint goal` says what it is for; the header's
 		// name line is a line like any other to change.
-		Name:    freeSprintName(m.todos.Root, todo.Slugify(created)),
+		Name:    freeSprintName(m.todo.wiring.Root, todo.Slugify(created)),
 		Status:  todo.SprintOpen,
 		Created: created,
 		Session: m.sessionName,
 		Goal:    goal,
 		Slugs:   chosen,
 	}
-	path, err := todo.CreateSprint(m.todos.Root, sp)
+	path, err := todo.CreateSprint(m.todo.wiring.Root, sp)
 	if err != nil {
 		return "the sprint could not be written — " + err.Error()
 	}
@@ -403,7 +403,7 @@ const sprintGoalPlaceholder = todo.GoalPlaceholder
 // sprintGoal is what a run carries into its research stage: the open
 // sprint's goal, or nothing at all.
 func (m Model) sprintGoal() string {
-	s := m.todoStore
+	s := m.todo.store
 	if s == nil {
 		return ""
 	}
@@ -440,7 +440,7 @@ func (m *Model) closeFinishedSprint() string {
 	// what the sprint said at the moment it stopped being a plan.
 	sp, entries := m.sprintAsClosed()
 	turns, cost, capCents := m.sprintSpendNow()
-	to, err := todo.CloseSprintIfDone(m.todos.Profile, m.todos.Root, run.SpendFigure(cost, capCents))
+	to, err := todo.CloseSprintIfDone(m.todo.wiring.Profile, m.todo.wiring.Root, run.SpendFigure(cost, capCents))
 	if err != nil {
 		return "\nThe sprint could not be closed — " + err.Error()
 	}
@@ -460,9 +460,9 @@ func (m Model) closeSprintCommand() (tea.Model, tea.Cmd) {
 	m.reloadTodos()
 	sp, entries := m.sprintAsClosed()
 	turns, cost, capCents := m.sprintSpendNow()
-	note := m.todos.Manage([]string{"sprint", "close"})
+	note := m.todo.wiring.Manage([]string{"sprint", "close"})
 	m.reloadTodos()
-	if m.todoStore.Sprint == nil {
+	if m.todo.store.Sprint == nil {
 		note += m.sprintReportPage(sp, entries, turns, cost, capCents)
 	}
 	m.refreshTodoScreen()
@@ -472,10 +472,10 @@ func (m Model) closeSprintCommand() (tea.Model, tea.Cmd) {
 // sprintAsClosed is the sprint and its entries as they stand, for the page
 // written about them once they are gone.
 func (m Model) sprintAsClosed() (*todo.Sprint, []todo.SprintEntry) {
-	if m.todoStore == nil {
+	if m.todo.store == nil {
 		return nil, nil
 	}
-	return m.todoStore.Sprint, m.todoStore.SprintEntries()
+	return m.todo.store.Sprint, m.todo.store.SprintEntries()
 }
 
 // sprintSpendNow is what the set has cost, from the checkpoint where one is
@@ -484,7 +484,7 @@ func (m Model) sprintAsClosed() (*todo.Sprint, []todo.SprintEntry) {
 // account of the last item left. The ceiling comes with it, because a figure
 // stated against one is the figure the board showed.
 func (m Model) sprintSpendNow() (int, float64, int64) {
-	if sp, live := run.Live(m.todos.Root); live {
+	if sp, live := run.Live(m.todo.wiring.Root); live {
 		turns, cost := m.sprintSpend(sp)
 		return turns, cost, sp.CapCents
 	}
@@ -495,7 +495,7 @@ func (m Model) sprintSpendNow() (int, float64, int64) {
 // and how much of it is done. It is nil without an open sprint, so the row
 // is absent rather than empty.
 func (m Model) inspectorSprint() (name string, done, total int) {
-	s := m.todoStore
+	s := m.todo.store
 	if s == nil || !s.Sprint.Open() {
 		return "", 0, 0
 	}
@@ -518,14 +518,14 @@ type closedSprint struct {
 // is, what it has cost, and how it stopped. nil is a project with no sprint
 // and none closed here, which is a tab that is absent rather than empty.
 func (m Model) sprintBoard() *components.SprintBoard {
-	s := m.todoStore
+	s := m.todo.store
 	if s == nil {
 		return nil
 	}
 	if s.Sprint.Open() {
 		return m.openSprintBoard(s)
 	}
-	if sp, live := run.Live(m.todos.Root); live && sp.Laned() {
+	if sp, live := run.Live(m.todo.wiring.Root); live && sp.Laned() {
 		return m.lanesBoard(s, sp)
 	}
 	if c := m.sprintClosed; c != nil {
@@ -562,7 +562,7 @@ func (m Model) openSprintBoard(s *todo.Store) *components.SprintBoard {
 		}
 		break
 	}
-	if sp, live := run.Live(m.todos.Root); live {
+	if sp, live := run.Live(m.todo.wiring.Root); live {
 		turns, cost := m.sprintSpend(sp)
 		board.Spend = sprintSpendWords(turns, cost, sp.CapCents)
 		if next, ok := sp.Peek(s); ok {
@@ -633,10 +633,10 @@ func (m Model) sprintBoardRow(s *todo.Store, e todo.SprintEntry) components.Back
 	// The one item being worked says which stage it is at. A slug that only
 	// says "in progress" tells the reader a sprint is going and not whether
 	// it is moving, which is the question a board is opened to answer.
-	if st := m.todoRunner.state; st.Sprinting() && !st.Over() && st.Slug == e.Slug {
+	if st := m.todo.runner.state; st.Sprinting() && !st.Over() && st.Slug == e.Slug {
 		row.Note = string(st.Stage)
 	}
-	for _, l := range m.todoRunner.lanes {
+	for _, l := range m.todo.runner.lanes {
 		if l.Slug == e.Slug && l.Stage != "" {
 			row.Note = string(l.Stage)
 		}
@@ -688,17 +688,17 @@ func sprintSpendWords(turns int, cost float64, capCents int64) string {
 // eight windows open is asking exactly those two things of the one they
 // left running, and the tab is where they see it from the next window over.
 func (m Model) sprintTitle() string {
-	st := m.todoRunner.state
+	st := m.todo.runner.state
 	if !st.Sprinting() || st.Over() {
 		return ""
 	}
-	done, total := m.todoStore.SprintProgress()
+	done, total := m.todo.store.SprintProgress()
 	if total == 0 {
 		// A sprint over the whole ready list has no file to count against,
 		// so the cap is the only denominator there is. Without one the tab
 		// says which item and no ratio: a count with an invented total is
 		// worse than no count.
-		if sp, live := run.Live(m.todos.Root); live {
+		if sp, live := run.Live(m.todo.wiring.Root); live {
 			done, total = len(sp.Done), sp.Max
 		}
 	}
@@ -717,10 +717,10 @@ func (m Model) sprintTitle() string {
 // and inventing a second vocabulary for it would give the product two report
 // designs to keep in step.
 func (m *Model) sprintReportPage(sp *todo.Sprint, entries []todo.SprintEntry, turns int, cost float64, capCents int64) string {
-	if m.todos.PublishReport == nil || sp == nil {
+	if m.todo.wiring.PublishReport == nil || sp == nil {
 		return ""
 	}
-	url, err := m.todos.PublishReport(sprintReportDoc(sp, entries, turns, cost, capCents))
+	url, err := m.todo.wiring.PublishReport(sprintReportDoc(sp, entries, turns, cost, capCents))
 	if err != nil {
 		return "\nThe sprint's report page could not be written — " + err.Error()
 	}

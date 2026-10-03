@@ -40,7 +40,7 @@ func todoRunDoneNote(st *run.State, to string) string {
 
 // todoRunDone archives the item with its report and ends the run.
 func (m Model) todoRunDone() (tea.Model, tea.Cmd) {
-	st := m.todoRunner.state
+	st := m.todo.runner.state
 	to, err := m.fileTodoRun(st)
 	note := todoRunDoneNote(st, to) + m.closeFinishedSprint()
 	if err != nil {
@@ -72,9 +72,9 @@ func (m Model) todoRunDone() (tea.Model, tea.Cmd) {
 func (m Model) fileTodoRun(st *run.State) (string, error) {
 	st.Sources = m.runSources(st.Report)
 	if ending, ok := st.Pipeline.Ending(); ok && ending == run.FinishNote && m.notebook != nil {
-		return run.FileNote(m.todos.Root, st, m.todoRunner.item, m.writeRunNote)
+		return run.FileNote(m.todo.wiring.Root, st, m.todo.runner.item, m.writeRunNote)
 	}
-	return run.File(m.todos.Root, st, m.todoRunner.item)
+	return run.File(m.todo.wiring.Root, st, m.todo.runner.item)
 }
 
 // runSources is what the run's write-up rests on: the pages the session
@@ -142,20 +142,20 @@ func runNoteBody(report string) string {
 // todoRunBlocked ends the run with its evidence on the item. The work
 // already done stays in the tree, uncommitted, and the note says so.
 func (m Model) todoRunBlocked() (tea.Model, tea.Cmd) {
-	st := m.todoRunner.state
-	it := m.todoRunner.item
+	st := m.todo.runner.state
+	it := m.todo.runner.item
 	_ = todo.SetStatus(it.Path, todo.StatusBlocked)
 	_ = todo.Append(it.Path, fmt.Sprintf("## Blocked\n%s\n\n_run in session %s, stage %s, %s_", st.Blocked, st.Session, st.Stage, time.Now().Format("2006-01-02 15:04")))
 	paths := []string{}
 	if m.changes != nil {
 		paths = m.todoRunPaths()
 	}
-	blockedRow := m.todoRunner.rowIdx
+	blockedRow := m.todo.runner.rowIdx
 	m.endTodoRun()
 	// The proposal card that follows writes the follow-up item; the row that
 	// blocked is where it belongs, so the reader finds the block and what
 	// was written about it in one place.
-	m.todoRunner.followUpRow = blockedRow
+	m.todo.runner.followUpRow = blockedRow
 	note := fmt.Sprintf("✗ todo run %s blocked — %s", it.Slug, st.Blocked)
 	if len(paths) > 0 {
 		note += "\nWork so far stays in the tree, uncommitted: " + strings.Join(paths, ", ")
@@ -168,7 +168,7 @@ func (m Model) todoRunBlocked() (tea.Model, tea.Cmd) {
 	// end is said before the follow-up card opens, because the card takes
 	// the screen and a sentence behind it is a sentence nobody read.
 	if st.Sprinting() {
-		if sp, live := run.Live(m.todos.Root); live {
+		if sp, live := run.Live(m.todo.wiring.Root); live {
 			// A blocked item's spend is the set's as much as a finished
 			// one's, which is how the unattended runner counts it too.
 			sp.Spent(int(m.turnCount), m.sessionSpend().Cost)

@@ -76,7 +76,7 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	// stages already done are in the tree, and putting the item back to open
 	// would throw that work away for the price of one sentence.
 	kept := ""
-	if m.todoRunner.state != nil && !m.todoRunner.state.Over() {
+	if m.todo.runner.state != nil && !m.todo.runner.state.Over() {
 		kept = m.keepTodoRun("this session ended")
 	}
 	if m.attachedTo != "" {
@@ -135,7 +135,7 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	// A backlog run's bookkeeping is counted in those turns and indexed into
 	// that transcript, and a cancel mark left standing would end the first
 	// stage turn of the next run before it was read.
-	m.todoRunner.turn, m.todoRunner.mark, m.todoRunner.cancelled = 0, 0, false
+	m.todo.runner.turn, m.todo.runner.mark, m.todo.runner.cancelled = 0, 0, false
 	m.resetSummary()
 	// The handoff belongs to the conversation that was compacted, and this is
 	// a different one: carried across, the new slot would open on a summary of

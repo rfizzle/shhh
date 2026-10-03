@@ -329,7 +329,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// grooming reading is the same: it is a plan-mode turn whose answer
 		// is verdicts, and what is put to the reader is its card. So is a
 		// sprint planning turn, whose answer is a set.
-		if m.policy.mode == agent.ModePlan && hadText && m.todoRunner.state == nil && !m.todoGroomer.going() && !m.todoPlanner.going {
+		if m.policy.mode == agent.ModePlan && hadText && m.todo.runner.state == nil && !m.todo.groomer.going() && !m.todo.planner.going {
 			m.setTurnState(statePlanApprove)
 			m.armPlan()
 			m.syncViewport()
