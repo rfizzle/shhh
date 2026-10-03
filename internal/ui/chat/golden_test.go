@@ -1940,7 +1940,7 @@ func TestGolden_Interrupt(t *testing.T) {
 		grace.width, grace.height = width, 40
 		grace.syncInputWidth()
 		grace.releaseDecision()
-		grace.approval.lastLeft = time.Time{}
+		grace.interrupt.lastLeft = time.Time{}
 		grace.lastKeypress = goldenNow
 		grace.armDecision(stateConfirmRun)
 		grace.syncViewport()

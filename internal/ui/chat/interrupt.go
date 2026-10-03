@@ -68,11 +68,11 @@ func (m Model) interruptShowing() bool {
 // still holds the keyboard. Usually that is a card on screen with the
 // sentence under it; a question set aside is the same state with nothing
 // drawn (question.go).
-func (m Model) decisionUngated() bool { return m.interruptShowing() && !m.approval.held }
+func (m Model) decisionUngated() bool { return m.interruptShowing() && !m.interrupt.held }
 
 // decisionGated is after the handover: the card holds the keyboard and its
 // keys are live.
-func (m Model) decisionGated() bool { return m.interruptShowing() && m.approval.held }
+func (m Model) decisionGated() bool { return m.interruptShowing() && m.interrupt.held }
 
 // decisionRides reports the decision that draws above the frame instead of
 // replacing it. Every decision does while the draft still holds the keyboard,
@@ -96,11 +96,10 @@ func (m Model) decisionRides() bool { return m.decisionUngated() || m.questionIn
 // previous one was given. The departure is stamped: a card that appears
 // moments after one left is the queue advancing, which armGrace reads.
 func (m *Model) releaseDecision() {
-	if m.approval.held || m.approval.heldOnArrival {
-		m.approval.lastLeft = clock()
+	if m.interrupt.held || m.interrupt.heldOnArrival {
+		m.interrupt.lastLeft = clock()
 	}
-	m.approval.held, m.approval.heldOnArrival = false, false
-	m.approval.graceFrom = time.Time{}
+	m.interrupt.clear()
 }
 
 // arrivesHeld reports whether a decision arriving now takes the keyboard
@@ -154,8 +153,8 @@ const graceReplace = 500 * time.Millisecond
 // armGrace opens the grace window for the decision that just took the
 // keyboard by arrival, when there is anything for the window to absorb.
 func (m *Model) armGrace() {
-	m.approval.graceFrom = time.Time{}
-	if !m.approval.heldOnArrival || m.summoned() {
+	m.interrupt.graceFrom = time.Time{}
+	if !m.interrupt.heldOnArrival || m.summoned() {
 		// No hold, nothing to protect; a summoned card was asked for by the
 		// very keystroke a window would count against it.
 		return
@@ -166,11 +165,11 @@ func (m *Model) armGrace() {
 		// protects nobody.
 		return
 	}
-	if !m.approval.lastLeft.IsZero() && clock().Sub(m.approval.lastLeft) < graceReplace {
+	if !m.interrupt.lastLeft.IsZero() && clock().Sub(m.interrupt.lastLeft) < graceReplace {
 		return
 	}
-	m.approval.graceFrom = clock()
-	m.approval.graceSeq++
+	m.interrupt.graceFrom = clock()
+	m.interrupt.graceSeq++
 }
 
 // settleGrace closes the window if its conditions have passed — the quiet
@@ -178,11 +177,11 @@ func (m *Model) armGrace() {
 // the clock, because the question is whether the keyboard was quiet up to
 // this key, not including it. A window never reopens: closed is closed.
 func (m *Model) settleGrace(now time.Time) {
-	if m.approval.graceFrom.IsZero() {
+	if m.interrupt.graceFrom.IsZero() {
 		return
 	}
-	if now.Sub(m.approval.graceFrom) >= graceMax || now.Sub(m.lastKeypress) >= graceQuiet {
-		m.approval.graceFrom = time.Time{}
+	if now.Sub(m.interrupt.graceFrom) >= graceMax || now.Sub(m.lastKeypress) >= graceQuiet {
+		m.interrupt.graceFrom = time.Time{}
 	}
 }
 
@@ -190,11 +189,11 @@ func (m *Model) settleGrace(now time.Time) {
 // clock rather than the settle, so the card un-dims when the quiet arrives
 // even if no key ever does.
 func (m Model) graceShowing() bool {
-	if m.approval.graceFrom.IsZero() || !m.decisionGated() || !m.approval.heldOnArrival {
+	if m.interrupt.graceFrom.IsZero() || !m.decisionGated() || !m.interrupt.heldOnArrival {
 		return false
 	}
 	now := clock()
-	return now.Sub(m.approval.graceFrom) < graceMax && now.Sub(m.lastKeypress) < graceQuiet
+	return now.Sub(m.interrupt.graceFrom) < graceMax && now.Sub(m.lastKeypress) < graceQuiet
 }
 
 // graceDiscards reports whether the window swallows this key: the keys that
@@ -231,11 +230,11 @@ type graceTickMsg struct{}
 // this message. The tick lands just past the earlier of the window's two
 // ends; a window a key extended schedules a fresh one.
 func (m Model) graceTickCmd(prev Model) tea.Cmd {
-	if m.approval.graceSeq == prev.approval.graceSeq || !m.graceShowing() {
+	if m.interrupt.graceSeq == prev.interrupt.graceSeq || !m.graceShowing() {
 		return nil
 	}
 	end := m.lastKeypress.Add(graceQuiet)
-	if hardEnd := m.approval.graceFrom.Add(graceMax); hardEnd.Before(end) {
+	if hardEnd := m.interrupt.graceFrom.Add(graceMax); hardEnd.Before(end) {
 		end = hardEnd
 	}
 	wait := end.Sub(clock()) + 10*time.Millisecond
@@ -262,16 +261,15 @@ func (m Model) summoned() bool {
 func (m *Model) armDecision(s state) {
 	// A transition away from a showing decision is that decision leaving;
 	// the stamp is what tells a queue advance from fresh typing (armGrace).
-	if m.interruptShowing() && (m.approval.held || m.approval.heldOnArrival) {
-		m.approval.lastLeft = clock()
+	if m.interruptShowing() && (m.interrupt.held || m.interrupt.heldOnArrival) {
+		m.interrupt.lastLeft = clock()
 	}
 	if m.state.isSurface() || !m.arrivalGates(s) {
-		m.approval.held, m.approval.heldOnArrival = false, false
-		m.approval.graceFrom = time.Time{}
+		m.interrupt.clear()
 		return
 	}
-	m.approval.held = m.arrivesHeld()
-	m.approval.heldOnArrival = m.approval.held
+	m.interrupt.held = m.arrivesHeld()
+	m.interrupt.heldOnArrival = m.interrupt.held
 	m.armGrace()
 }
 
@@ -282,13 +280,13 @@ func (m *Model) armDecision(s state) {
 // landed in front of anyone, and otherwise it depends on whether there is a
 // sentence to protect.
 func (m *Model) armArrival() {
-	if m.approval.held || m.state.isSurface() || m.activeChildAsk() == nil {
+	if m.interrupt.held || m.state.isSurface() || m.activeChildAsk() == nil {
 		// Nothing to arm without a card on screen: a hold with no decision
 		// behind it would be inherited by whatever ask comes next.
 		return
 	}
-	m.approval.held = m.arrivesHeld()
-	m.approval.heldOnArrival = m.approval.held
+	m.interrupt.held = m.arrivesHeld()
+	m.interrupt.heldOnArrival = m.interrupt.held
 	m.armGrace()
 }
 
@@ -353,10 +351,10 @@ func (m Model) gateDecision() (tea.Model, tea.Cmd) {
 	// is waiting — which is why reopening a question costs no keystroke of
 	// its own, and it answers nothing (question.go).
 	m.reopenQuestion()
-	m.approval.held, m.approval.heldOnArrival = true, false
+	m.interrupt.held, m.interrupt.heldOnArrival = true, false
 	// The handover is deliberate, so any grace window closes with it: the
 	// reader who asked for the keys gets them live.
-	m.approval.graceFrom = time.Time{}
+	m.interrupt.graceFrom = time.Time{}
 	// The completion menu belongs to the draft, and the draft no longer has
 	// the keyboard; leaving it open would offer keys nothing would answer.
 	m.dismissCompletions()
@@ -686,6 +684,6 @@ func (m Model) applyNotYetLive(card *components.ApprovalCard) {
 	// A card that took the keyboard by arriving on an idle draft claims less
 	// than one the reader handed it: it says so on the card, and says
 	// what the handover would still buy.
-	card.HeldOnArrival = m.approval.heldOnArrival
+	card.HeldOnArrival = m.interrupt.heldOnArrival
 	card.Grace = m.graceShowing()
 }

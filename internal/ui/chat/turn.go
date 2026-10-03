@@ -171,11 +171,11 @@ func (m *Model) leaveSurface() {
 	// (interrupt.go). One that was already holding the keyboard keeps it:
 	// the reader took it on purpose, and the surface they just closed was
 	// most likely the card's own full-screen diff.
-	if m.arrivalGates(m.state) && !m.approval.held {
+	if m.arrivalGates(m.state) && !m.interrupt.held {
 		// (arrivesHeld answers the summoned case too, so a /run confirm
 		// picked from the block picker lands holding the keyboard.)
-		m.approval.held = m.arrivesHeld()
-		m.approval.heldOnArrival = m.approval.held
+		m.interrupt.held = m.arrivesHeld()
+		m.interrupt.heldOnArrival = m.interrupt.held
 		m.armGrace()
 	}
 	// The pane is repainted on the way back whatever the geometry did. Its

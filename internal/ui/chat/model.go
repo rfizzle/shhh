@@ -906,10 +906,12 @@ type Model struct {
 	// /run, and its output stays out of the conversation.
 	pendingRunLocal bool
 	runCancel       context.CancelFunc
-	// approval is the decision card's own state: the call it asks about,
-	// the queue behind it, what is open under it and whether it holds the
-	// keyboard (approvalstate.go).
+	// approval is the approval card's own state: the call it asks about,
+	// the queue behind it and what is open under it (approvalstate.go).
 	approval approvalState
+	// interrupt is whether the decision on screen, whichever card it is,
+	// holds the keyboard, and its grace window (interruptstate.go).
+	interrupt interruptState
 	// Compact activity feed: verbosity is the surface's rung on the one
 	// density ladder (/ui verbosity, read through density); tailRunFn is the tail-capable command runner, and
 	// runningCommand/runStart/runTail drive the live row while a command runs.

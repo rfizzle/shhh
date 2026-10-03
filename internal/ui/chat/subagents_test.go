@@ -787,7 +787,7 @@ func TestChildAskHeldOnArrivalOffersNoExtraKeys(t *testing.T) {
 	ask.Command = "make"
 	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
 	m = updated.(Model)
-	if !m.approval.heldOnArrival {
+	if !m.interrupt.heldOnArrival {
 		t.Fatal("an ask landing on an empty draft holds the keyboard by arrival")
 	}
 	if view := ansi.Strip(m.View().Content); strings.Contains(view, "attach to writer-1") {
@@ -918,7 +918,7 @@ func TestChildAskHeldOnArrivalStillReachesTheManager(t *testing.T) {
 	ask.Command = "make"
 	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
 	m = updated.(Model)
-	if !m.approval.heldOnArrival {
+	if !m.interrupt.heldOnArrival {
 		t.Fatal("an ask landing on an empty draft holds the keyboard by arrival")
 	}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyF12})

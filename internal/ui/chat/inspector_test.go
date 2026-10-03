@@ -175,7 +175,7 @@ func TestTwoPane_HiddenByTakeoverSurfaces(t *testing.T) {
 		// A decision is a takeover only once it holds the keyboard (the
 		// mid-sentence rule); until then the panes behind it are still what is
 		// being read.
-		m.approval.held = true
+		m.interrupt.held = true
 		if m.twoPane() {
 			t.Fatalf("%s spans both panes and hides the rail", c.name)
 		}

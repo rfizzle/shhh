@@ -156,7 +156,7 @@ func TestInterrupt_TheDraftSurvivesTheWholeRoundTrip(t *testing.T) {
 	// Answer it. The keyboard comes back to the draft, at the same character.
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
-	if m.approval.held {
+	if m.interrupt.held {
 		t.Fatal("answering hands the keyboard back to the draft")
 	}
 	if got := m.input.Value(); got != draft {
@@ -177,7 +177,7 @@ func TestInterrupt_EscLeavesTheDecisionWaitingRatherThanDenyingIt(t *testing.T) 
 	if m.state != stateConfirmRun {
 		t.Fatalf("esc leaves the decision unanswered, state is now %d", m.state)
 	}
-	if m.approval.held {
+	if m.interrupt.held {
 		t.Fatal("esc hands the keyboard back to the draft")
 	}
 	if got := m.input.Value(); got != "half a sentence" {
@@ -232,7 +232,7 @@ func TestInterrupt_ASecondDecisionArrivesWithoutTheKeyboard(t *testing.T) {
 	// Answer the first; the next one arms behind it.
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	m = updated.(Model)
-	if m.approval.held {
+	if m.interrupt.held {
 		t.Fatal("the keyboard goes back to the draft between decisions")
 	}
 
@@ -245,7 +245,7 @@ func TestInterrupt_ASecondDecisionArrivesWithoutTheKeyboard(t *testing.T) {
 	}
 	// It does not inherit the handed gate: it takes the keyboard the way any
 	// card landing on an empty draft does, claiming only the arrival keys.
-	if !m.approval.heldOnArrival {
+	if !m.interrupt.heldOnArrival {
 		t.Fatal("a decision may never inherit the keyboard the last one was given")
 	}
 	// And the queue advancing opens no grace window: the keystroke a moment
@@ -374,7 +374,7 @@ func TestArrival_ACardLandingOnAnIdleDraftHoldsTheKeyboard(t *testing.T) {
 	if !m.decisionGated() {
 		t.Fatal("a card landing on a draft nobody is typing into should hold the keyboard")
 	}
-	if !m.approval.heldOnArrival {
+	if !m.interrupt.heldOnArrival {
 		t.Fatal("the card took the keyboard by arriving, not by a handover")
 	}
 	view := ansi.Strip(m.View().Content)
@@ -408,10 +408,10 @@ func TestArrival_AWarmKeyboardOpensTheGraceWindow(t *testing.T) {
 	// so a `y` the burst had in flight cannot approve a command nobody read.
 	m := interruptedModel(t, "")
 	m.releaseDecision()
-	m.approval.lastLeft = time.Time{} // fixture reset: this is a fresh arrival, not the queue advancing
+	m.interrupt.lastLeft = time.Time{} // fixture reset: this is a fresh arrival, not the queue advancing
 	m.lastKeypress = time.Now()
 	m.armDecision(stateConfirmRun)
-	if !m.approval.held || !m.approval.heldOnArrival {
+	if !m.interrupt.held || !m.interrupt.heldOnArrival {
 		t.Fatal("a card landing on an empty draft takes the keyboard")
 	}
 	if !m.graceShowing() {
@@ -451,7 +451,7 @@ func TestArrival_AWarmKeyboardOpensTheGraceWindow(t *testing.T) {
 func TestArrival_TheGraceWindowEndsAtItsCap(t *testing.T) {
 	m := interruptedModel(t, "")
 	m.releaseDecision()
-	m.approval.lastLeft = time.Time{}
+	m.interrupt.lastLeft = time.Time{}
 	m.lastKeypress = time.Now()
 	m.armDecision(stateConfirmRun)
 	if !m.graceShowing() {
@@ -459,7 +459,7 @@ func TestArrival_TheGraceWindowEndsAtItsCap(t *testing.T) {
 	}
 	// Typing continued past the cap: every stamp is recent, but the window
 	// opened longer than graceMax ago.
-	m.approval.graceFrom = time.Now().Add(-graceMax - time.Millisecond)
+	m.interrupt.graceFrom = time.Now().Add(-graceMax - time.Millisecond)
 	m.lastKeypress = time.Now()
 	if m.graceShowing() {
 		t.Fatal("the window must end at its cap under continuous typing")
@@ -495,7 +495,7 @@ func TestSpawnCard_AYTheSendHadInFlightWaitsForTheKeys(t *testing.T) {
 		spawnCall("s3", `{"role":"writer","task":"find where entries are evicted","name":"writer-3"}`),
 	}})
 	m = updated.(Model)
-	if !m.approval.heldOnArrival || !m.graceShowing() {
+	if !m.interrupt.heldOnArrival || !m.graceShowing() {
 		t.Fatal("fixture: a card landing a moment after the send takes the keyboard with the grace window open")
 	}
 	view := ansi.Strip(m.View().Content)
@@ -525,7 +525,7 @@ func TestSpawnCard_AYTheSendHadInFlightWaitsForTheKeys(t *testing.T) {
 // opens, and the first key answers.
 func TestArrival_AQuietKeyboardOpensNoWindow(t *testing.T) {
 	m := interruptedModel(t, "")
-	if !m.approval.held || !m.approval.heldOnArrival {
+	if !m.interrupt.held || !m.interrupt.heldOnArrival {
 		t.Fatal("fixture: the card should hold the keyboard by arrival")
 	}
 	if m.graceShowing() {
@@ -535,7 +535,7 @@ func TestArrival_AQuietKeyboardOpensNoWindow(t *testing.T) {
 
 func TestArrival_AnUnansweredKeyGoesToTheDraftAndLeavesTheDecisionWaiting(t *testing.T) {
 	m := interruptedModel(t, "")
-	if !m.approval.heldOnArrival {
+	if !m.interrupt.heldOnArrival {
 		t.Fatal("the fixture should be a card holding the keyboard by arrival")
 	}
 
@@ -607,10 +607,10 @@ func TestArrival_ADecisionParkedBehindASurfaceArmsWhenItLands(t *testing.T) {
 	// window open, absorbing the closing key's successors.
 	m := interruptedModel(t, "")
 	m.releaseDecision()
-	m.approval.lastLeft = time.Time{}
+	m.interrupt.lastLeft = time.Time{}
 	m.enterSurface(stateFocus)
 	m.setTurnState(stateConfirmRun)
-	if m.approval.held {
+	if m.interrupt.held {
 		t.Fatal("a decision behind a surface holds no keyboard")
 	}
 	m.lastKeypress = time.Now()
@@ -618,7 +618,7 @@ func TestArrival_ADecisionParkedBehindASurfaceArmsWhenItLands(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("leaving the surface should land on the decision, got %d", m.state)
 	}
-	if !m.approval.held || !m.approval.heldOnArrival {
+	if !m.interrupt.held || !m.interrupt.heldOnArrival {
 		t.Fatal("the landing decision takes the empty draft's keyboard")
 	}
 	if !m.graceShowing() {
@@ -636,7 +636,7 @@ func TestArrival_ACardYouAskedForHoldsTheKeyboard(t *testing.T) {
 	m.approval.request, m.pendingRun = nil, "go test ./..."
 	m.lastKeypress = time.Now()
 	m.armDecision(stateConfirmRun)
-	if !m.approval.held {
+	if !m.interrupt.held {
 		t.Fatal("a confirm the reader summoned should arrive holding the keyboard")
 	}
 }
@@ -650,7 +650,7 @@ func TestArrival_AnsweringAChildAskArmsTheNextQueuedOne(t *testing.T) {
 	second := subagent.NewAsk("writer-1", subagent.AskCommand, "run go vet")
 	m.childAsks = []*subagent.Ask{first, second}
 	m.armArrival()
-	if !m.approval.held || !m.approval.heldOnArrival {
+	if !m.interrupt.held || !m.interrupt.heldOnArrival {
 		t.Fatal("fixture: the first ask should hold the quiet keyboard")
 	}
 
@@ -659,7 +659,7 @@ func TestArrival_AnsweringAChildAskArmsTheNextQueuedOne(t *testing.T) {
 	if got := m.activeChildAsk(); got != second {
 		t.Fatalf("answering should surface the queued ask, got %v", got)
 	}
-	if !m.approval.held || !m.approval.heldOnArrival {
+	if !m.interrupt.held || !m.interrupt.heldOnArrival {
 		t.Fatal("the queued ask must arm the way any arrival does")
 	}
 	if m.graceShowing() {
@@ -675,7 +675,7 @@ func TestArrival_PurgingTheHeldAskReleasesItsHold(t *testing.T) {
 	next := subagent.NewAsk("writer-1", subagent.AskCommand, "run go vet")
 	m.childAsks = []*subagent.Ask{doomed, next}
 	m.armArrival()
-	if !m.approval.held {
+	if !m.interrupt.held {
 		t.Fatal("fixture: the doomed ask should hold the keyboard")
 	}
 
@@ -685,7 +685,7 @@ func TestArrival_PurgingTheHeldAskReleasesItsHold(t *testing.T) {
 	if got := m.activeChildAsk(); got != next {
 		t.Fatalf("the writer's ask should be active, got %v", got)
 	}
-	if m.approval.held {
+	if m.interrupt.held {
 		t.Fatal("a hold must not survive the ask it belonged to: there is a sentence in the box now")
 	}
 	// With the sentence there, a y is a letter.
@@ -701,14 +701,14 @@ func TestArrival_PurgingTheHeldAskReleasesItsHold(t *testing.T) {
 func TestArrival_ClassifierSkipArmsTheCard(t *testing.T) {
 	m := interruptedModel(t, "")
 	m.releaseDecision()
-	m.approval.lastLeft = time.Time{}
+	m.interrupt.lastLeft = time.Time{}
 	m.state = stateClassifying
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if m.state != stateConfirmRun {
 		t.Fatalf("ctrl+c should skip the classifier into the card, got %d", m.state)
 	}
-	if !m.approval.held || !m.approval.heldOnArrival {
+	if !m.interrupt.held || !m.interrupt.heldOnArrival {
 		t.Fatal("the card must take the empty draft's keyboard like any arrival")
 	}
 }

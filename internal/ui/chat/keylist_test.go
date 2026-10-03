@@ -21,7 +21,7 @@ var questionMark = tea.KeyPressMsg{Code: '?', Text: "?"}
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func TestKeyList_ACardAnswersQuestionMarkWithItsRegister(t *testing.T) {
 	m := notedCardModel(t)
-	if !m.decisionGated() && !m.approval.held {
+	if !m.decisionGated() && !m.interrupt.held {
 		t.Fatal("the fixture's card does not hold the keyboard")
 	}
 	m = pressOn(t, m, questionMark)

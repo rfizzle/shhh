@@ -349,7 +349,7 @@ func dryRunOffer(req *approvalRequest) []components.KeyOffer {
 // the two answers and nothing else, and this letter is the reader's sentence
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) dryRunKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
-	if !keys.Match(msg, keys.Decision.DryRun) || m.approval.heldOnArrival {
+	if !keys.Match(msg, keys.Decision.DryRun) || m.interrupt.heldOnArrival {
 		return m, nil, false
 	}
 	req := m.approval.request
@@ -513,7 +513,7 @@ func (m Model) explainOffer(req *approvalRequest) []components.KeyOffer {
 // its answers and nothing else, and this letter is the reader's sentence
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) explainKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
-	if !keys.Match(msg, keys.Decision.Explain) || m.approval.heldOnArrival {
+	if !keys.Match(msg, keys.Decision.Explain) || m.interrupt.heldOnArrival {
 		return m, nil, false
 	}
 	req := m.approval.request

@@ -88,7 +88,7 @@ func amendOffer(req *approvalRequest) []components.KeyOffer {
 // its answers and nothing else, and this letter is the reader's sentence
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) amendKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
-	if !keys.Match(msg, keys.Decision.Amend) || m.approval.heldOnArrival {
+	if !keys.Match(msg, keys.Decision.Amend) || m.interrupt.heldOnArrival {
 		return m, nil, false
 	}
 	// The key answers exactly where the card offered it and nowhere else, so

@@ -135,17 +135,17 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		return answered(m.routeOverlay(o, msg))
 	}
 	// The decision card reads the key next: the handover, the grace window
-	// and esc back to the draft are its own (approvalstate.go). It answers
+	// and esc back to the draft are its own (interruptstate.go). It answers
 	// ahead of the commit and row handovers below, which take the key only
 	// with no decision showing, while every key the card claims needs one.
 	cardMode := overlayFor(m.state)
-	card, act := m.approval.update(msg, decisionAt{
+	interrupt, act := m.interrupt.update(msg, decisionAt{
 		showing:   m.interruptShowing(),
 		escLeaves: m.escLeavesWaiting(),
 		floating:  cardMode != nil && cardMode.place == placeFloating,
 		discards:  m.graceDiscards(msg.String()),
 	})
-	m.approval = card
+	m.interrupt = interrupt
 	switch act {
 	case decisionGate:
 		return answered(m.gateDecision())
@@ -190,7 +190,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	// decision that arrives unbidden the child's ask is inert until the
 	// handover gives it the keyboard, which is why the ask is only
 	// reached while the keyboard is held.
-	if m.agentList != nil || m.approval.held {
+	if m.agentList != nil || m.interrupt.held {
 		if o := m.coverOverlay(); o != nil {
 			return answered(m.routeOverlay(o, msg))
 		}
@@ -270,7 +270,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			// answers the decision no. No draft can produce the chord, so
 			// leaving it live is what keeps a waiting decision endable
 			// without first taking the keyboard.
-			m.approval.held = true
+			m.interrupt.held = true
 			return answered(m.routeDecision(msg))
 		}
 		if strings.TrimSpace(m.input.Value()) != "" {
