@@ -26,11 +26,11 @@ type classifierState struct {
 }
 
 // stopSideJobs cancels the side jobs a leaving session stops: the
-// classifier's check, the model list query and a /run command. They are the
-// set quitNow has always cancelled; the summary's and the title's readings
-// are not in it, and a session boundary (newsession.go) and a new slot
-// (resetTitle) stop their own sets. Every cancel is nil-safe, so the idle
-// path shares it.
+// classifier's check, the model list query, a /run command, and the
+// summary's and the title's readings. A reading out when the session leaves
+// is about a conversation nobody is left to read it for. A session boundary
+// (newsession.go) and a new slot (resetTitle) stop their own sets. Every
+// cancel is nil-safe, so the idle path shares it.
 func (m *Model) stopSideJobs() {
 	if m.runCancel != nil {
 		m.runCancel()
@@ -44,5 +44,13 @@ func (m *Model) stopSideJobs() {
 	if m.picker.models.cancel != nil {
 		m.picker.models.cancel()
 		m.picker.models.cancel = nil
+	}
+	if m.summary.cancel != nil {
+		m.summary.cancel()
+		m.summary.cancel = nil
+	}
+	if m.titles.cancel != nil {
+		m.titles.cancel()
+		m.titles.cancel = nil
 	}
 }
