@@ -155,6 +155,63 @@ of what a non-answer means — and the result is a program that hangs on one
 emulator in a way no one can reproduce. Keeping the wire in one component
 means there is one thing to reason about and one thing to fix.
 
+## A list screen is one shape with its own rows
+
+Most take-over screens are a list on the left, the item under the pointer
+laid out on the right, and the shared chrome around both. Each of them had
+written the list half for itself — the pointer, the walk over the rows, the
+row under the pointer, the window that draws them, the key that shows the
+whole register, the pair of keys the header ends with, and the frame — and
+the copies differed only in their names. Two of them filtered as well, and so
+did three other screens, and each wrote the query line's handling again. A
+rule moved in one copy and not the next is a screen that walks or filters
+differently from its neighbour for no reason a reader could name.
+
+So the list half is one embeddable shape, and a screen supplies its rows. It
+holds:
+
+- **the pointer**, an index into the screen's own rows — all of them, never
+  only the ones showing, so it survives a filter and a host that hands the
+  rows back rebuilt;
+- **the selector window** the list is drawn in, which remembers where it was
+  between keystrokes;
+- **whether the register is open**, the state behind the header's first key;
+- **the rows showing**, for a screen that filters its list or draws it in an
+  order of its own: their positions in the screen's rows, in the order they
+  are drawn.
+
+What it does with them is the part that was copied: it walks the pointer on
+the screen's own movement binding (over the rows showing where there are
+any, and on only the half of the binding no sentence produces while the query
+line is open); it answers which row is under the pointer; it draws the list
+pane, or the one sentence a screen with nothing to list says instead; it
+writes the header's key pair and the footer from the screen's offers; and it
+draws the frame around the two panes.
+
+The screens adopt it one at a time, in order of risk, each change proving
+that every capture of every screen is byte-for-byte what it was: first the
+seven that do not filter — the bill, the turns, the tools, the steps, the
+readings, the sources ledger and the alerts — and then the two that do, the
+saved-chat browser and the snippet browser. What a screen keeps for itself is
+everything that is a fact about that screen: what its rows are and how one is
+drawn, the headings it groups them under, its preview, its header's fields
+and tally, which keys it offers and what they do, the sub-surfaces it opens
+(a confirm, a rename row, an episode's runs, a plan's drift) and the numbers
+its panes are split by.
+
+The filter is the shape's own part rather than a screen's, and it replaces
+the five that were written by hand. It owns the rows showing, the match —
+the query, folded and trimmed, found inside any of the fields a screen names
+for a row — and what a changed query does: the pointer goes to the first row
+that survived it, because the rows under it are not the ones that were there
+a moment ago. The query line's keys are its too: a clear on an empty query
+closes the line, which is how the row keys come back without leaving the
+screen. The screen names its fields, says what else a changed query puts
+away, and words the line saying how many rows the filter hid. The history
+browser and the settings screen take the filter without the rest of the
+shape where their lists are drawn differently; the backlog's filter joins
+them once its screen is cut over.
+
 ## Spend is counted at the provider
 
 Every request shhh makes is a call to a provider: the agent's own rounds, the
