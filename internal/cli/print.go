@@ -930,114 +930,28 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if err := headlessFlagCheck(session); err != nil {
 		return err
 	}
-	// The working scope, mirroring the interactive session: the
-	// directory the run was started in, plus config's scope_dirs and any
-	// --add-dir. Nobody is here to grant a directory mid-run, so what the
-	// flags and the config say is the whole scope for the run.
-	sc, err := sessionScope(ConfigFrom(cmd.Context()), session.addDirs)
-	if err != nil {
-		return err
-	}
-
-	// The same registration the interactive session runs, on the same
-	// conditions (toolset.go) — one definition rather than a copy here that
-	// agrees with it on the day it is written. What differs is the browser: a
-	// run with nobody in front of it never pops one, because nobody is
-	// guaranteed to be at the desktop and the URL reaches the transcript
-	// either way.
 	// What this run wrote is read off the calls that wrote it, where a
 	// session hands in its changeset; it is named before the toolset because
 	// the git stager reads it, and it is the same list the tree reading
-	// subtracts below.
-	own := &writtenByCalls{}
-	ts, err := buildToolset(cmd, &session, "print", toolsetOpts{scope: sc, gitWrites: headlessWrites(session, own)})
+	// subtracts below. Nobody is here to grant a directory mid-run, so what
+	// the flags and the config say is the whole scope for the run, and a run
+	// with nobody in front of it never pops a browser: nobody is guaranteed
+	// to be at the desktop, and the URL reaches the transcript either way.
+	var own *writtenByCalls
+	asm, err := assembleSession(cmd, &session, assemblyOpts{
+		kind: "print",
+		toolset: func(sc *scope.Scope) toolsetOpts {
+			own = &writtenByCalls{}
+			return toolsetOpts{scope: sc, gitWrites: headlessWrites(session, own)}
+		},
+		register: unattendedRegistration(true, true),
+	})
 	if err != nil {
 		return err
 	}
-	defer ts.close()
+	defer asm.close()
+	sc, ts, db, agents, prices, ledger, env := asm.sc, asm.ts, asm.db, asm.agents, asm.prices, asm.ledger, asm.env
 	red, qgate, procSup := ts.evidence, ts.gate, ts.proc
-
-	// The local store is opened here rather than with the recorder below
-	// because trust for a project MCP server is read from it.
-	db, _ := openStore()
-	if db != nil {
-		defer db.Close()
-	}
-	// Pointed at the store before the prompt and the tree reading are built
-	// from it, exactly as a session does. A run nobody is watching is the one
-	// that most needs the answer: told nothing, it sets about explaining or
-	// reverting a change another session made, and there is nobody there to
-	// stop it.
-	// See docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone.
-	session.sibling = readSibling(db)
-	// MCP servers, mirroring the interactive session. A read-only server's
-	// tools run; every other server's calls are gated and resolved the way
-	// web_fetch is — --yes opts in, the default denies. A conversation takes
-	// only the servers marked read-only, here as on the screen: which
-	// servers a surface may reach is the surface's, not the screen's.
-	// See docs/capabilities/mcp.md#what-a-conversation-may-reach.
-	if session.mcp {
-		defer session.attachMCP(cmd.Context(), db, session.conversation)()
-	}
-	// What the run read, kept the way a session keeps it and stated in both
-	// JSON shapes, because a write-up nobody watched is judged against it.
-	// See docs/capabilities/headless.md#a-run-says-what-it-read.
-	session.openSourceLedger(db)
-
-	registerSkills(&session)
-
-	// The durable memories this project has accumulated, recalled the way a
-	// session recalls them (memory.go). The remember tool does not come with
-	// them: a proposal has to be confirmed, and this run has nobody to ask.
-	recallMemory(cmd, &session, db)
-
-	// Sub-agent orchestration, where this run was started with an answer to
-	// the spawn card: --yes, which answers every other gated call, or auto
-	// mode, whose classifier answers this one the way it answers the rest
-	// (code.go). The roles are the built-in two plus whatever profiles the
-	// user wrote; a profile that does not load stops the run naming the file,
-	// exactly as it stops a session.
-	// See docs/capabilities/headless.md#a-run-can-delegate.
-	//
-	// Where the run could delegate, the policy it delegates under is said on
-	// stderr before anything starts: off is the one answer that takes the
-	// tools away, and a script that passed --yes expecting children would
-	// otherwise read their absence as a model that chose not to.
-	var agents *agentProfiles
-	if session.agents {
-		fmt.Fprintf(os.Stderr, "» delegation: %s\n", delegationWords(ConfigFrom(cmd.Context()).AgentDelegation()))
-	}
-	applyDelegation(ConfigFrom(cmd.Context()), &session)
-	if session.agents {
-		agents, err = loadAgentProfiles(true)
-		if err != nil {
-			return err
-		}
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles, subagent.Offer{})...)
-	}
-
-	// The model is told where the work is; a headless run cannot be
-	// asked for a directory mid-flight, so knowing the boundary is the
-	// difference between a report that names it and a round spent retrying.
-	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc, false))
-
-	// …and what it has to work with, for the same reason: nobody is
-	// there to suggest the tool it did not know it had.
-	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs, session.proactive))
-
-	// Headless runs bill through the same gate the TUI does; a print run
-	// that under-reported would be the harder one to notice, because nobody
-	// is watching a rail while it works.
-	prices := loadPricing()
-	ledger := meter.New(prices)
-
-	env, err := buildSessionEnv(cmd, session, ledger)
-	if err != nil {
-		return err
-	}
-	if agents != nil {
-		session.toolDefs = spawnModels{env: env, agents: agents, prices: prices}.offerOn(agents.profiles, session.toolDefs)
-	}
 	cfg := env.cfg
 
 	initialPrompt := ""

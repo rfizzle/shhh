@@ -1,12 +1,17 @@
 package cli
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/prompt"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/spf13/cobra"
 )
 
@@ -137,4 +142,81 @@ func assembleSession(cmd *cobra.Command, session *chatSession, opts assemblyOpts
 		session.toolDefs = spawnModels{env: a.env, agents: a.agents, prices: a.prices}.offerOn(a.agents.profiles, session.toolDefs)
 	}
 	return a, nil
+}
+
+// unattendedRegistration is the registrations of the two surfaces nobody
+// answers at a keyboard: a scripted run, which opens its own store and says
+// its delegation policy on stderr, and a served session, which is handed the
+// store its server holds.
+func unattendedRegistration(ownStore, sayDelegation bool) func(*cobra.Command, *assembly, *chatSession) error {
+	return func(cmd *cobra.Command, a *assembly, session *chatSession) error {
+		if ownStore {
+			// The local store is opened here rather than with the recorder
+			// because trust for a project MCP server is read from it.
+			a.db, a.storeErr = openStore()
+			if db := a.db; db != nil {
+				a.closers = append(a.closers, func() { db.Close() })
+			}
+		}
+		// Pointed at the store before the prompt and the tree reading are
+		// built from it, exactly as a session does. A run nobody is watching
+		// is the one that most needs the answer: told nothing, it sets about
+		// explaining or reverting a change another session made, and there is
+		// nobody there to stop it.
+		// See docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone.
+		session.sibling = readSibling(a.db)
+		// MCP servers, mirroring the interactive session. A read-only
+		// server's tools run; every other server's calls are gated and
+		// resolved the way web_fetch is — --yes or a client opts in, the
+		// default denies. A conversation takes only the
+		// servers marked read-only, here as on the screen: which servers a
+		// surface may reach is the surface's, not the screen's.
+		// See docs/capabilities/mcp.md#what-a-conversation-may-reach.
+		if session.mcp {
+			a.closers = append(a.closers, session.attachMCP(cmd.Context(), a.db, session.conversation))
+		}
+		// What the run read, kept the way a session keeps it and stated to
+		// whoever reads the run, because a write-up nobody watched is judged
+		// against it.
+		// See docs/capabilities/headless.md#a-run-says-what-it-read.
+		session.openSourceLedger(a.db)
+
+		registerSkills(session)
+
+		// The durable memories this project has accumulated, recalled the
+		// way a session recalls them (memory.go). The remember tool does not
+		// come with them: a proposal has to be confirmed, and neither surface
+		// carries a card to confirm it on.
+		a.mem = recallMemory(cmd, session, a.db)
+		// The question tool does come, where there is a client to draw its
+		// card: the protocol carries a question and its answer. A scripted
+		// run has nobody to ask, and is handed its toolset unchanged.
+		session.toolDefs = askToolDefs(*session)
+
+		// Sub-agent orchestration, where the surface has an answer to the
+		// spawn card: a client, --yes, or auto mode's classifier (code.go,
+		// serve.go). The roles are the built-in two plus whatever profiles
+		// the user wrote; a profile that does not load stops the surface
+		// naming the file, exactly as it stops a session.
+		// See docs/capabilities/headless.md#a-run-can-delegate.
+		//
+		// Where a scripted run could delegate, the policy it delegates under
+		// is said on stderr before anything starts: off is the one answer
+		// that takes the tools away, and a script that passed --yes expecting
+		// children would otherwise read their absence as a model that chose
+		// not to.
+		if sayDelegation && session.agents {
+			fmt.Fprintf(os.Stderr, "» delegation: %s\n", delegationWords(ConfigFrom(cmd.Context()).AgentDelegation()))
+		}
+		applyDelegation(ConfigFrom(cmd.Context()), session)
+		if session.agents {
+			agents, err := loadAgentProfiles(true)
+			if err != nil {
+				return err
+			}
+			a.agents = agents
+			session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles, subagent.Offer{})...)
+		}
+		return nil
+	}
 }
