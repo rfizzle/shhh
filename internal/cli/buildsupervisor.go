@@ -8,12 +8,15 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/hook"
+	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -107,47 +110,7 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 		// sentence that says it can see none of the conversation.
 		sysPrompt = prompt.Inherited(sysPrompt, spec.Inherit)
 
-		// Approved non-exec gated calls: file mutations dispatch through their
-		// own path (never the auto-run executor), everything else falls back to
-		// the child's base chain.
-		gatedExec := agent.ToolExecutor(func(name string, args json.RawMessage) (string, error) {
-			if tools.IsMutating(name) {
-				return tools.ExecuteMutating(name, args)
-			}
-			return base(name, args)
-		})
-		autoExec := base
-		if red != nil {
-			autoExec = red.WrapExecutor(autoExec)
-			gatedExec = red.WrapExecutor(gatedExec)
-		}
-		// Repeat detection, one detector per child so its window is
-		// its own work, and shared across both paths so an approved call and
-		// an auto-run one are the same history. A sub-agent is the least
-		// supervised thing the session runs, and its rounds are spent out of
-		// sight.
-		repeats := agent.NewRepeatDetector()
-		autoExec = repeats.WrapExecutor(autoExec)
-		gatedExec = repeats.WrapExecutor(gatedExec)
-		// An applied edit carries the language server's verdict on the file
-		// it touched, as one applied on the session's own screen does — with
-		// the session's queue of late answers left alone, which is what
-		// childMutationHook is for.
-		//
-		// It sits outside the reduction rather than inside it, where the
-		// session's own hook sits. A verdict is bounded by the server that
-		// gave it and by this package's own caps, so there is nothing for the
-		// reduction to do to it, and a block replaced by a notice saying an
-		// id can be paged would cost the child the round the block was there
-		// to save. The vault's scrub is outside both, so the text still
-		// passes through it.
-		//
-		// The person's own post-tool hooks ride the same seam they ride in a
-		// session: a write and an edit are dispatched through the mutating
-		// tools, which is the one place a write can be seen, so a formatter
-		// that runs after an edit goes on running after a child's edits too.
-		gatedExec = withDiagnostics(
-			chainMutation(childMutationHook(session.lsp), childPostMutation(hooks)), gatedExec)
+		autoExec, gatedExec, repeats := childExecutors(base, red, session.lsp, hooks)
 
 		streamDefs := defs
 		// The child's model is resolved by the supervisor (spawn argument →
@@ -177,43 +140,20 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 		// paragraph about refused commands would describe a tool it never had.
 		commandsRefused := childCommandsRefused(cfg, writer, avail) && holdsCommand(streamDefs)
 
-		stream := agent.StreamFunc(func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-			sctx, cancel := context.WithCancel(cctx)
-			// Children think as hard as the session does unless their
-			// profile says otherwise: the level is a session setting, and
-			// one that stopped at the orchestrator would be true of the
-			// rail and false of the work.
-			effort := env.effort
-			if env.reasoning != nil {
-				effort = env.reasoning()
-			}
-			effort = agents.effortFor(role, effort)
-			msgs = session.vault.ScrubMessages(msgs)
-			// The mode is read at each request rather than taken from the
-			// spawn, because a child's mode moves under it: the parent's
-			// ceiling changes, or the person sets it from the lane.
-			if refusable && choice != provider.ToolChoiceNone {
-				mode := spec.Mode
-				if m, ok := sup.AgentMode(spec.Name); ok {
-					mode = m
-				}
-				msgs = withModeInstructions(msgs, mode, cfg.Behavior.ReadOnlyCommands, streamDefs)
-			}
-			if commandsRefused && choice != provider.ToolChoiceNone {
-				msgs = withRefusedCommands(msgs)
-			}
-			ev, sErr := childProvider.StreamCompletion(sctx, msgs, provider.CompletionOpts{
-				Model:      childModel,
-				Tools:      streamDefs,
-				ToolChoice: choice,
-				Effort:     effort,
-			})
-			if sErr != nil {
-				cancel()
-				return nil, nil, sErr
-			}
-			return ev, cancel, nil
-		})
+		stream := childStream{
+			ctx:             cctx,
+			env:             env,
+			agents:          agents,
+			vault:           session.vault,
+			sup:             sup,
+			spec:            spec,
+			readOnlyExtra:   cfg.Behavior.ReadOnlyCommands,
+			defs:            streamDefs,
+			model:           childModel,
+			provider:        childProvider,
+			refusable:       refusable,
+			commandsRefused: commandsRefused,
+		}.stream()
 
 		return subagent.Env{
 			SystemPrompt: sysPrompt,
@@ -411,6 +351,119 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 		session.gateRunner.Slot = sup.CheckSlot
 	}
 	return sup
+}
+
+// childExecutors wires a child's two dispatchers on top of its base chain:
+// the one its auto-run calls go through and the one an approved gated call
+// goes through, both wrapped by the same repeat detector, which comes back
+// too because the child's environment asks it what ground the child has
+// covered.
+func childExecutors(base agent.ToolExecutor, red *evidence.Reducer, ts *lsp.Toolset,
+	hooks *hook.Runner) (autoExec, gatedExec agent.ToolExecutor, repeats *agent.RepeatDetector) {
+	// Approved non-exec gated calls: file mutations dispatch through their
+	// own path (never the auto-run executor), everything else falls back to
+	// the child's base chain.
+	gatedExec = agent.ToolExecutor(func(name string, args json.RawMessage) (string, error) {
+		if tools.IsMutating(name) {
+			return tools.ExecuteMutating(name, args)
+		}
+		return base(name, args)
+	})
+	autoExec = base
+	if red != nil {
+		autoExec = red.WrapExecutor(autoExec)
+		gatedExec = red.WrapExecutor(gatedExec)
+	}
+	// Repeat detection, one detector per child so its window is
+	// its own work, and shared across both paths so an approved call and
+	// an auto-run one are the same history. A sub-agent is the least
+	// supervised thing the session runs, and its rounds are spent out of
+	// sight.
+	repeats = agent.NewRepeatDetector()
+	autoExec = repeats.WrapExecutor(autoExec)
+	gatedExec = repeats.WrapExecutor(gatedExec)
+	// An applied edit carries the language server's verdict on the file
+	// it touched, as one applied on the session's own screen does — with
+	// the session's queue of late answers left alone, which is what
+	// childMutationHook is for.
+	//
+	// It sits outside the reduction rather than inside it, where the
+	// session's own hook sits. A verdict is bounded by the server that
+	// gave it and by this package's own caps, so there is nothing for the
+	// reduction to do to it, and a block replaced by a notice saying an
+	// id can be paged would cost the child the round the block was there
+	// to save. The vault's scrub is outside both, so the text still
+	// passes through it.
+	//
+	// The person's own post-tool hooks ride the same seam they ride in a
+	// session: a write and an edit are dispatched through the mutating
+	// tools, which is the one place a write can be seen, so a formatter
+	// that runs after an edit goes on running after a child's edits too.
+	gatedExec = withDiagnostics(
+		chainMutation(childMutationHook(ts), childPostMutation(hooks)), gatedExec)
+	return autoExec, gatedExec, repeats
+}
+
+// childStream is what a child's stream is built from: the spawn it serves,
+// the session it inherits its effort, its vault and its supervisor from, and
+// what newEnv already settled about it — the definitions it is offered, the
+// model and the provider it bills through, and which of the two mode
+// paragraphs are its to read.
+type childStream struct {
+	ctx             context.Context
+	env             *sessionEnv
+	agents          *agentProfiles
+	vault           *secret.Vault
+	sup             *subagent.Supervisor
+	spec            subagent.Spec
+	readOnlyExtra   []string
+	defs            []provider.Tool
+	model           string
+	provider        provider.Provider
+	refusable       bool
+	commandsRefused bool
+}
+
+// stream is the child's stream function. Each request is a fresh read of the
+// effort and the mode, because both move under a running child.
+func (c childStream) stream() agent.StreamFunc {
+	return agent.StreamFunc(func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		sctx, cancel := context.WithCancel(c.ctx)
+		// Children think as hard as the session does unless their
+		// profile says otherwise: the level is a session setting, and
+		// one that stopped at the orchestrator would be true of the
+		// rail and false of the work.
+		effort := c.env.effort
+		if c.env.reasoning != nil {
+			effort = c.env.reasoning()
+		}
+		effort = c.agents.effortFor(c.spec.Role, effort)
+		msgs = c.vault.ScrubMessages(msgs)
+		// The mode is read at each request rather than taken from the
+		// spawn, because a child's mode moves under it: the parent's
+		// ceiling changes, or the person sets it from the lane.
+		if c.refusable && choice != provider.ToolChoiceNone {
+			mode := c.spec.Mode
+			if m, ok := c.sup.AgentMode(c.spec.Name); ok {
+				mode = m
+			}
+			msgs = withModeInstructions(msgs, mode, c.readOnlyExtra, c.defs)
+		}
+		if c.commandsRefused && choice != provider.ToolChoiceNone {
+			msgs = withRefusedCommands(msgs)
+		}
+		ev, sErr := c.provider.StreamCompletion(sctx, msgs, provider.CompletionOpts{
+			Model:      c.model,
+			Tools:      c.defs,
+			ToolChoice: choice,
+			Effort:     effort,
+		})
+		if sErr != nil {
+			cancel()
+			return nil, nil, sErr
+		}
+		return ev, cancel, nil
+	})
 }
 
 // gateCommands answers the command lines the project's trusted quality config
