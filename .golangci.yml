@@ -7,16 +7,114 @@
 # where a failed write is the terminal's problem; `fmt.Sscanf` on a config
 # value leaves the zero, which is what an unparsable value means. Anything
 # outside that list is still checked.
+#
+# Two size gates on top. gocognit at 50 fails a function a reader can no
+# longer hold in their head: well past the linter's default of 30, so a long
+# but flat switch still lands, and low enough that a function heading for
+# hundreds of lines is stopped on the way. nestif at 10 fails an `if` whose
+# nested branches score 10 or more, the depth where the reader loses which
+# condition they are inside. Tests are out of both: a table walk or a
+# scripted session reads top to bottom, and the gate is for product code.
+#
+# The tree did not start under either line. Each product function over a
+# threshold when the gates went in is excluded below by path and name, one
+# per function, with the reason it is still that size. The list is debt to
+# burn down, not a place to add to: a new function over the line is split,
+# and a split that brings an excluded one under deletes its entry.
 version: "2"
 linters:
   default: standard
+  enable:
+    - gocognit
+    - nestif
+  settings:
+    gocognit:
+      min-complexity: 50
+    nestif:
+      min-complexity: 10
   exclusions:
     rules:
       - linters: [errcheck]
         text: 'Error return value of `((.*\.)?(Close|Rollback|Flush)|fmt\.Fprint(f|ln)?|fmt\.Sscanf)` is not checked'
+      # Tests read top to bottom; the size gates are for product code.
+      - linters: [gocognit, nestif]
+        path: _test\.go$
+      # Cognitive complexity over 50, one rule per function.
+      # The headless agent loop: every turn outcome handled in one place.
+      - linters: [gocognit]
+        path: ^internal/agent/headless\.go$
+        text: 'func `\(\*Headless\)\.Run`'
+      # The one-shot: the terminal and the piped paths both inline in one constructor.
+      - linters: [gocognit]
+        path: ^internal/cli/cmd\.go$
+        text: 'func `newCmdCmd`'
+      # The eval command: flag validation and the run inline in one constructor.
+      - linters: [gocognit]
+        path: ^internal/cli/eval\.go$
+        text: 'func `newEvalCmd`'
+      # The scripted session: setup, the run and teardown still in one body.
+      - linters: [gocognit]
+        path: ^internal/cli/print\.go$
+        text: 'func `runPrintSession`'
+      # The headless approver: every approval kind decided in one closure.
+      - linters: [gocognit]
+        path: ^internal/cli/print\.go$
+        text: 'func `headlessApprover`'
+      # The chat session: setup, the program and teardown still in one body.
+      - linters: [gocognit]
+        path: ^internal/cli/session\.go$
+        text: 'func `runChatSession`'
+      # The /todo subcommands: every verb carried out in one switch.
+      - linters: [gocognit]
+        path: ^internal/cli/todo\.go$
+        text: 'func `todoVerb`'
+      # The digest of a tool argument: every known tool's shape handled in one function.
+      - linters: [gocognit]
+        path: ^internal/digest/digest\.go$
+        text: 'func `Arg`'
+      # The Responses stream: every event type decoded in one loop.
+      - linters: [gocognit]
+        path: ^internal/provider/openai_responses_stream\.go$
+        text: 'func `streamResponses`'
+      # Report block validation: every block kind checked in one switch.
+      - linters: [gocognit]
+        path: ^internal/reports/block\.go$
+        text: 'func `\(Block\)\.validate`'
+      # The supervisor's spawn: claim, environment and launch in one body.
+      - linters: [gocognit]
+        path: ^internal/subagent/supervisor_spawn\.go$
+        text: 'func `\(\*Supervisor\)\.spawn`'
+      # The SQL tokenizer: a hand-written scanner over every lexical case.
+      - linters: [gocognit]
+        path: ^internal/tools/sqlite\.go$
+        text: 'func `tokenizeSQL`'
+      # The step card: a block's density and every part of its card in one function.
+      - linters: [gocognit]
+        path: ^internal/ui/chat/card\.go$
+        text: 'func `\(Model\)\.stepCardFor`'
+      # A click on a row: every clickable row and its offers answered in one function.
+      - linters: [gocognit]
+        path: ^internal/ui/chat/click\.go$
+        text: 'func `\(Model\)\.clickRow`'
+      # The key router: every overlay and mode's keys routed in one function.
+      - linters: [gocognit]
+        path: ^internal/ui/chat/keyroute\.go$
+        text: 'func `\(Model\)\.updateKey`'
+      # The turn update: every message a turn reports handled in one switch.
+      - linters: [gocognit]
+        path: ^internal/ui/chat/turn\.go$
+        text: 'func `\(Model\)\.updateTurn`'
+      # Nesting over 10, one rule per function.
+      # activityRowDetail: the command row's detail is built in one nested branch.
+      - linters: [nestif]
+        path: ^internal/ui/chat/activity\.go$
+        text: '`if e\.kind == entryCommand` has complex nested blocks'
 issues:
   # Every finding, every time: a cap on identical messages hides the rest
   # of a class behind three examples, and a gate that hides findings is
-  # not a gate.
+  # not a gate. For the same reason a second finding on a line is not
+  # folded into the first: a complexity finding must not vanish behind
+  # another linter's on the same function.
   max-issues-per-linter: 0
   max-same-issues: 0
+  uniq-by-line: false
