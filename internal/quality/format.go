@@ -18,13 +18,7 @@ func (r *Result) Format(current Fingerprint) string {
 	fmt.Fprintf(&b, "Quality gate %q: %s", r.Suite, strings.ToUpper(string(r.Verdict)))
 	switch r.Verdict {
 	case VerdictPass, VerdictFail:
-		passed := 0
-		for _, c := range r.Checks {
-			if c.OK() {
-				passed++
-			}
-		}
-		fmt.Fprintf(&b, " — %d/%d checks passed (%s)", passed, len(r.Checks), roundDuration(r.Duration))
+		fmt.Fprintf(&b, " — %d/%d checks passed (%s)", r.passed(), len(r.Checks), roundDuration(r.Duration))
 	case VerdictBlocked:
 		b.WriteString(" — the gate could not run: " + r.Reason + ". Blocked is never a pass.")
 	case VerdictCancelled:
@@ -34,21 +28,43 @@ func (r *Result) Format(current Fingerprint) string {
 	if r.Contained != "" {
 		b.WriteString("Containment: " + r.Contained + "\n")
 	}
-	switch {
-	case r.ChangedDuringRun:
-		b.WriteString("STALE: the tree changed while the checks ran — this verdict (even a pass) does not apply to the current tree; run the gate again.\n")
-	// An unhashed fingerprint has to be caught before the equality test: two
-	// of them can compare equal while the content underneath differs, which
-	// is exactly the silent pass the fingerprint exists to prevent.
-	case r.Fingerprint.Repo && current.Repo && (r.Fingerprint.Unhashed || current.Unhashed):
-		b.WriteString("STALE: too many changed paths to hash their content, so an edit to one of them cannot be detected — this verdict (even a pass) does not apply to the current tree; commit or clean up, then run the gate again.\n")
-	case r.Fingerprint.Repo && current.Repo && r.Fingerprint != current:
-		b.WriteString("STALE: the tree has changed since this run — this verdict (even a pass) does not apply to the current tree; run the gate again.\n")
+	if note := r.staleNote(current); note != "" {
+		b.WriteString("STALE: " + note + "\n")
 	}
 	for _, c := range r.Checks {
 		b.WriteString(formatCheck(c))
 	}
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// staleNote is why the result does not apply to the tree whose fingerprint
+// is current, and empty where it does. Format writes it as the STALE line and
+// Summary reads it as the stale mark, so the two cannot disagree about which
+// results are stale.
+func (r *Result) staleNote(current Fingerprint) string {
+	switch {
+	case r.ChangedDuringRun:
+		return "the tree changed while the checks ran — this verdict (even a pass) does not apply to the current tree; run the gate again."
+	// An unhashed fingerprint has to be caught before the equality test: two
+	// of them can compare equal while the content underneath differs, which
+	// is exactly the silent pass the fingerprint exists to prevent.
+	case r.Fingerprint.Repo && current.Repo && (r.Fingerprint.Unhashed || current.Unhashed):
+		return "too many changed paths to hash their content, so an edit to one of them cannot be detected — this verdict (even a pass) does not apply to the current tree; commit or clean up, then run the gate again."
+	case r.Fingerprint.Repo && current.Repo && r.Fingerprint != current:
+		return "the tree has changed since this run — this verdict (even a pass) does not apply to the current tree; run the gate again."
+	}
+	return ""
+}
+
+// passed is how many of the result's checks came back clean.
+func (r *Result) passed() int {
+	n := 0
+	for _, c := range r.Checks {
+		if c.OK() {
+			n++
+		}
+	}
+	return n
 }
 
 func formatCheck(c CheckResult) string {
@@ -85,31 +101,38 @@ func roundDuration(d time.Duration) string {
 	return d.Round(100 * time.Millisecond).String()
 }
 
-// Summary is what a caller can learn from a formatted result without holding
-// the Result itself: which suite ran, its verdict, the check tally and
-// whether the verdict still applies to the tree. It is parsed here, beside
-// Format, so the one place that writes the string is the one place that reads
-// it back.
+// Summary is what a reader of the gate learns about one run: which suite
+// ran, its verdict, the check tally and whether the verdict still applies to
+// the tree. It has two sources. A row the session made itself holds the
+// Result and reads it with Result.Summary; a row that exists only as text —
+// a tool result the model asked for, a reopened session, a child's
+// transcript — reads it back with Summarize, beside Format, so the one place
+// that writes the string is the one place that reads it back. A round-trip
+// test holds the two to the same answer.
 type Summary struct {
 	Suite         string
 	Verdict       Verdict
 	Passed, Total int
 	Duration      string
-	// Stale marks a verdict the run itself disowned — the tree moved under
-	// it. A stale pass is not a pass.
+	// Stale marks a verdict that does not apply to the tree it was read
+	// against — the tree moved under it. A stale pass is not a pass.
 	Stale bool
-	// Skipped is every skip line the result carried, under the check that
-	// reported it.
-	Skipped []Skipped
 }
 
 // OK reports a verdict a caller may treat as green: a pass over the tree it
 // actually ran against.
 func (s Summary) OK() bool { return s.Verdict == VerdictPass && !s.Stale }
 
-// checkLinePattern is the head of formatCheck's row, which names the check
-// the indented lines under it belong to.
-var checkLinePattern = regexp.MustCompile(`^  [✓✗!] (.+?) — `)
+// Summary is the result read against the tree whose fingerprint is current:
+// what Summarize would read back from Format(current), without the text.
+func (r *Result) Summary(current Fingerprint) Summary {
+	s := Summary{Suite: r.Suite, Verdict: r.Verdict, Stale: r.staleNote(current) != ""}
+	switch r.Verdict {
+	case VerdictPass, VerdictFail:
+		s.Passed, s.Total, s.Duration = r.passed(), len(r.Checks), roundDuration(r.Duration)
+	}
+	return s
+}
 
 var summaryPattern = regexp.MustCompile(
 	`^Quality gate "([^"]*)": ([A-Z]+)(?: — (\d+)/(\d+) checks passed \(([^)]*)\))?`)
@@ -130,18 +153,5 @@ func Summarize(result string) (Summary, bool) {
 	}
 	s.Passed, _ = strconv.Atoi(m[3])
 	s.Total, _ = strconv.Atoi(m[4])
-	check := ""
-	for _, line := range strings.Split(result, "\n") {
-		if c := checkLinePattern.FindStringSubmatch(line); c != nil {
-			check = c[1]
-			continue
-		}
-		if check == "" || !strings.HasPrefix(line, "    ") {
-			continue
-		}
-		if sk, ok := parseSkipLine(check, strings.TrimPrefix(line, "    ")); ok {
-			s.Skipped = append(s.Skipped, sk)
-		}
-	}
 	return s, true
 }

@@ -743,7 +743,7 @@ func TestInspectorAlerts_AFailureAfterAPassIsANewEpisode(t *testing.T) {
 	m := inspectorModel(t, 144, 40)
 	m.turnCount = 2
 	m.appendEntry(entry{kind: entryUser, text: "check it"})
-	m.appendCloseGateRow("default", gateResult("PASS", 5, 5))
+	appendGateText(&m, gateResult("PASS", 5, 5))
 	m.appendEntry(entry{kind: entryCommand, text: "go test ./...", exitCode: 1})
 	alerts := m.inspectorAlerts()
 	if len(alerts) != 2 || !alerts[0].Superseded || alerts[1].Superseded {

@@ -11,10 +11,19 @@ import (
 )
 
 // gateResult is a formatted quality-gate result the way the runner writes one,
-// so the reading under test is the same parse every surface makes.
+// so the reading under test is the gate's own reader of the text — the one a
+// row that exists only as text is read with.
 func gateResult(verdict string, passed, total int) string {
 	return fmt.Sprintf("Quality gate %q: %s — %d/%d checks passed (1.4s)\nTree: clean",
 		"default", verdict, passed, total)
+}
+
+// appendGateText puts a gate row in the transcript that exists only as
+// text, the way a run the model asked for lands: what reads it is the gate's
+// reader of the text, not a verdict the session held.
+func appendGateText(m *Model, text string) {
+	m.appendEntry(entry{kind: entryTool, toolName: quality.ToolName,
+		toolArgs: `{"action":"run","suite":"default"}`, toolResult: text})
 }
 
 func failedTest() entry {

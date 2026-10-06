@@ -7,7 +7,6 @@ import (
 	"io"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -21,7 +20,7 @@ import (
 
 // SkipLine is the one spelling of a skip-reason line: written by the test
 // reader at the end of its output, pulled out of a check's capture by the
-// runner, and read back by Summarize.
+// runner, and carried on the check's own row by Format.
 func SkipLine(count int, reason string) string {
 	return fmt.Sprintf("skipped %d: %s", count, reason)
 }
@@ -199,14 +198,6 @@ func flushPackage(w io.Writer, lines []pkgLine, failedTests map[string]bool, fai
 	}
 }
 
-// Skipped is one skip line as a formatted result carries it: the check it
-// was reported under, the count and the reason.
-type Skipped struct {
-	Check  string
-	Count  int
-	Reason string
-}
-
 // splitSkips pulls the skip lines out of a check's capture: the lines
 // themselves, and the capture without them, which is what the excerpt is
 // cut from so a failing check does not print them twice.
@@ -224,13 +215,4 @@ func splitSkips(captured string) ([]string, string) {
 		rest.WriteString(line)
 	}
 	return skips, rest.String()
-}
-
-func parseSkipLine(check, line string) (Skipped, bool) {
-	m := skipLinePattern.FindStringSubmatch(line)
-	if m == nil {
-		return Skipped{}, false
-	}
-	n, _ := strconv.Atoi(m[1])
-	return Skipped{Check: check, Count: n, Reason: m[2]}, true
 }

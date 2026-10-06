@@ -25,6 +25,7 @@ import (
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -692,6 +693,13 @@ type entry struct {
 	// where the original went. Nil on every row that still holds its own
 	// output, which is all of them until a trim runs.
 	elided *elidedRow
+	// gate is the verdict of a gate row the session made itself, read off
+	// the result it held when it built the row (gate.go). It is what every
+	// reading of the row takes in preference to the text, which is the
+	// model's; nil on a gate row that exists only as text — a run the model
+	// asked for, a reopened session, a child's transcript — and on every
+	// row that is not the gate's.
+	gate *quality.Summary
 	// compact is the account behind an entryCompactSummary block: what the
 	// receipt row says the compaction did, and what its fold counts
 	// (context.go). Nil on nothing else, because nothing else is a receipt.

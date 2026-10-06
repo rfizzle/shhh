@@ -194,25 +194,24 @@ func (m Model) finishCloseGate(msg closeGateMsg) (tea.Model, tea.Cmd) {
 				Suite: msg.suite, Verdict: quality.VerdictBlocked, Reason: msg.err.Error(),
 				Fingerprint: quality.TakeFingerprint(m.workspace),
 			}
-			m.appendCloseGateRow(msg.suite, res.Format(res.Fingerprint))
+			m.appendCloseGateRow(res, res.Fingerprint)
 		}
 		return m.settleCloseGate()
 	}
 	_, retries := m.closeGateSuite()
-	text := msg.res.Format(quality.TakeFingerprint(m.workspace))
-	m.appendCloseGateRow(msg.suite, text)
+	current := quality.TakeFingerprint(m.workspace)
+	m.appendCloseGateRow(msg.res, current)
 	// A backlog run's verify stage is about to ask the same question of the
 	// same tree. It is told the answer here rather than paying for it again
-	// (run.State.Checks). The reading is the formatted result's own, so
-	// what counts as a pass is the one definition every surface uses — a
-	// stale pass among them, which is not one.
+	// (run.State.Checks). The reading is the one the row holds, so what
+	// counts as a pass is the one definition every surface uses — a stale
+	// pass among them, which is not one.
 	if m.todo.runner.state.ClosesWithGate() {
 		// The suite ran and its verdict is in front of us, so the answer is
 		// one of the two the close can give about work it saw: a close that
 		// ran nothing never reaches here at all.
-		sum, ok := quality.Summarize(text)
 		closing := quality.ClosingFailed
-		if ok && sum.OK() {
+		if msg.res.Summary(current).OK() {
 			closing = quality.ClosingPassed
 		}
 		m.todo.runner.state.Checks(closing)
@@ -223,7 +222,7 @@ func (m Model) finishCloseGate(msg closeGateMsg) (tea.Model, tea.Cmd) {
 		// The same text the tool returns, and nothing around it: a session
 		// that phrased this failure its own way would be teaching the model
 		// a second vocabulary for an event it already knows one for.
-		m.agent.AppendMachine(text)
+		m.agent.AppendMachine(msg.res.Format(current))
 		return m.resumeForCloseGate()
 	}
 	return m.settleCloseGate()
@@ -243,13 +242,18 @@ func hasGateRow(es []entry) bool {
 // appendCloseGateRow puts the verdict in the transcript as the gate tool row
 // it would have been had the model asked for it. One shape for both, so the
 // close row's tally, the staleness reading and the observer all see one kind
-// of gate run rather than two.
-func (m *Model) appendCloseGateRow(suite, text string) {
+// of gate run rather than two. The row carries the result's text, which is
+// what the model reads and what a reopened session will have, and the
+// verdict read off the result itself against the tree as it stands now,
+// which is what the screen reads while the session holds it.
+func (m *Model) appendCloseGateRow(res *quality.Result, current quality.Fingerprint) {
+	verdict := res.Summary(current)
 	m.appendEntry(entry{
 		kind:       entryTool,
 		toolName:   quality.ToolName,
-		toolArgs:   fmt.Sprintf(`{"action":"run","suite":%q}`, suite),
-		toolResult: text,
+		toolArgs:   fmt.Sprintf(`{"action":"run","suite":%q}`, res.Suite),
+		toolResult: res.Format(current),
+		gate:       &verdict,
 	})
 }
 
@@ -319,7 +323,7 @@ func (m *Model) cancelCloseGate() {
 		Reason:      "the run was cancelled before completing",
 		Fingerprint: quality.TakeFingerprint(m.workspace),
 	}
-	m.appendCloseGateRow(suite, res.Format(res.Fingerprint))
+	m.appendCloseGateRow(res, res.Fingerprint)
 }
 
 // closeGateBlock is the live tail while the run is going. The gate is the one

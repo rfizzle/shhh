@@ -79,7 +79,13 @@ func (v verification) settled(i int) bool { return v >= 0 && i < int(v) }
 // gateVerdict is the quality-gate reading a row carries, and false for every
 // row that is not one.
 //
-// It reads what the trim kept in preference to the row's own body. A trim
+// A row the session made itself holds the verdict it read off the result,
+// and that is what is read: the text is the model's, and a word added to it
+// for the model is no business of the screen's. Every other gate row exists
+// only as text, and is read back through the gate's own reader of it.
+//
+// Of the text, it reads what the trim kept in preference to the row's own
+// body. A trim
 // replaces a tool result with a placeholder, and a caller that parsed the
 // placeholder would find no gate there and report a settled turn as unsettled
 // — while the close row it has to agree with was drawn once, before the trim,
@@ -88,6 +94,9 @@ func (v verification) settled(i int) bool { return v >= 0 && i < int(v) }
 func gateVerdict(e entry) (quality.Summary, bool) {
 	if e.kind != entryTool || !receipt.IsGate(e.toolName) {
 		return quality.Summary{}, false
+	}
+	if e.gate != nil {
+		return *e.gate, true
 	}
 	if e.elided != nil && e.elided.verdict != "" {
 		return quality.Summarize(e.elided.verdict)

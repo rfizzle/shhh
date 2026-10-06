@@ -4448,7 +4448,7 @@ func TestGolden_OnCloseGate(t *testing.T) {
 	captureGolden(t, "on-close-gate", "the close of a turn that ran its own checks", []int{60, 80, 110}, func(width int) []golden.Panel {
 		rows := func(res *quality.Result) string {
 			m := frameModel(t, width, 40)
-			m.appendCloseGateRow(res.Suite, res.Format(res.Fingerprint))
+			m.appendCloseGateRow(res, res.Fingerprint)
 			m.appendEntry(entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
 				State: components.TurnDone, Steps: 2, Tools: 5,
 				Elapsed: "41.3s", Spend: "$0.12",
@@ -4515,7 +4515,7 @@ func TestGolden_ResolvedVerification(t *testing.T) {
 						{Name: "vet", Command: "go vet ./...", Duration: 1800 * time.Millisecond},
 					},
 				}
-				m.appendCloseGateRow(res.Suite, res.Format(res.Fingerprint))
+				m.appendCloseGateRow(res, res.Fingerprint)
 			}
 			m.appendEntry(entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
 				State: components.TurnDone, Steps: 2, Tools: 6,
@@ -4600,7 +4600,7 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 						toolResult: "--- FAIL: TestLoopRounds\n    loop_test.go:214: want 3 rounds, got 4"})
 				}
 				if stage == "recovered" || stage == "regressed" || stage == "completed" {
-					m.appendCloseGateRow("default", gateResult("PASS", 5, 5))
+					appendGateText(&m, gateResult("PASS", 5, 5))
 				}
 				if stage == "regressed" {
 					// Something new breaks after the pass. The two answered

@@ -487,3 +487,59 @@ func TestCloseGate_ARaceWithAnotherRunStillLeavesTheTurnAVerdict(t *testing.T) {
 		t.Errorf("verdict = %q, want blocked", sum.Verdict)
 	}
 }
+
+// A gate row the session made itself is read off the result it held, not off
+// the text it wrote for the model: with the text replaced by something the
+// gate's text reader does not recognise, the verdict, the tally and the stale
+// mark are still the ones the result carried.
+func TestGate_TheScreenReadsTheStruct(t *testing.T) {
+	fp := quality.Fingerprint{Repo: true, Head: "abc", StatusHash: "s1"}
+	moved := quality.Fingerprint{Repo: true, Head: "abc", StatusHash: "s2"}
+	checks := []quality.CheckResult{
+		{Name: "test", Command: "make test"},
+		{Name: "vet", Command: "go vet ./...", ExitCode: 1},
+	}
+	tests := []struct {
+		name    string
+		res     quality.Result
+		current quality.Fingerprint
+		ok      bool
+		counts  string
+	}{
+		{"a pass", quality.Result{Suite: "fast", Verdict: quality.VerdictPass, Fingerprint: fp,
+			Checks: checks[:1]}, fp, true, "1 of 1 checks · 0s"},
+		{"a fail", quality.Result{Suite: "fast", Verdict: quality.VerdictFail, Fingerprint: fp,
+			Checks: checks}, fp, false, "1 of 2 checks · 0s"},
+		{"a pass the tree moved under", quality.Result{Suite: "fast", Verdict: quality.VerdictPass,
+			Fingerprint: fp, ChangedDuringRun: true, Checks: checks[:1]}, fp, false, "1 of 1 checks · 0s · stale"},
+		{"a pass over a tree that changed since", quality.Result{Suite: "fast", Verdict: quality.VerdictPass,
+			Fingerprint: fp, Checks: checks[:1]}, moved, false, "1 of 1 checks · 0s · stale"},
+		{"blocked", quality.Result{Suite: "fast", Verdict: quality.VerdictBlocked, Reason: "no such suite",
+			Fingerprint: fp}, fp, false, "0 of 0 checks"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			m := gatedModel(t, nil, nil)
+			m.appendCloseGateRow(&tc.res, tc.current)
+			row := &m.transcript[len(m.transcript)-1]
+			if _, ok := quality.Summarize(row.toolResult); !ok {
+				t.Fatalf("the row's text is not the model's formatted result: %q", row.toolResult)
+			}
+			row.toolResult = "a sentence the gate's text reader does not recognise"
+			got, ok := gateVerdict(*row)
+			if !ok || got != tc.res.Summary(tc.current) {
+				t.Fatalf("gateVerdict = %+v (ok %v), want the result's own %+v", got, ok, tc.res.Summary(tc.current))
+			}
+			if got.OK() != tc.ok {
+				t.Errorf("OK() = %v, want %v", got.OK(), tc.ok)
+			}
+			r := resolveChecks(m.transcript)
+			if len(r.attempts) != 1 || r.attempts[0].label != "quality gate fast" || r.attempts[0].counts != tc.counts {
+				t.Fatalf("resolveChecks = %+v, want one attempt reading %q", r.attempts, tc.counts)
+			}
+			if passed := r.attempts[0].outcome == checkPassed; passed != tc.ok {
+				t.Errorf("the attempt passed = %v, want %v", passed, tc.ok)
+			}
+		})
+	}
+}

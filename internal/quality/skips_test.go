@@ -3,6 +3,7 @@ package quality
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -106,8 +107,7 @@ func TestRun_SkipLinesReachTheResultOfAPassingCheck(t *testing.T) {
 		t.Fatalf("verdict = %s", res.Verdict)
 	}
 	text := res.Format(res.Fingerprint)
-	want := "  ✓ check — sh -c "
-	i := strings.Index(text, want)
+	i := strings.Index(text, "  ✓ check — sh -c ")
 	if i < 0 {
 		t.Fatalf("no check row:\n%s", text)
 	}
@@ -115,21 +115,9 @@ func TestRun_SkipLinesReachTheResultOfAPassingCheck(t *testing.T) {
 		t.Errorf("the skip lines are not under the check's row:\n%s", text)
 	}
 
-	s, ok := Summarize(text)
-	if !ok {
-		t.Fatal("the result did not read back")
-	}
-	wantSkips := []Skipped{
-		{Check: "check", Count: 9, Reason: "no Seatbelt containment here"},
-		{Check: "check", Count: 1, Reason: "git not on PATH"},
-	}
-	if len(s.Skipped) != len(wantSkips) {
-		t.Fatalf("Skipped = %+v, want %+v", s.Skipped, wantSkips)
-	}
-	for i := range wantSkips {
-		if s.Skipped[i] != wantSkips[i] {
-			t.Errorf("Skipped[%d] = %+v, want %+v", i, s.Skipped[i], wantSkips[i])
-		}
+	want := []string{"skipped 9: no Seatbelt containment here", "skipped 1: git not on PATH"}
+	if got := res.Checks[0].Skips; !slices.Equal(got, want) {
+		t.Errorf("Skips = %q, want %q", got, want)
 	}
 }
 
