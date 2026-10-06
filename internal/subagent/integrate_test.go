@@ -96,9 +96,7 @@ func conflictingWriters(repo string, integrate func(root string)) *integrationSc
 					close(wrote2)
 					// writer-2 answers once writer-1's patch is on the
 					// checkout, which is what makes its own conflict.
-					for take(repo, "main.go") != yIsOne {
-						time.Sleep(10 * time.Millisecond)
-					}
+					eventually(func() bool { return take(repo, "main.go") == yIsOne })
 					once.Do(func() { close(landed) })
 				},
 			},

@@ -9,7 +9,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
@@ -302,16 +301,13 @@ func TestAProcessStartFindsWhatTheToolchainInstalled(t *testing.T) {
 	if _, err := sup.Execute(json.RawMessage(`{"action":"start","name":"tool","command":"shhh-declared-tool"}`)); err != nil {
 		t.Fatal(err)
 	}
-	deadline := time.Now().Add(10 * time.Second)
-	for {
-		out, err := sup.Execute(json.RawMessage(`{"action":"read","name":"tool"}`))
-		if err == nil && strings.Contains(out, "declared-tool-ran") {
-			return
-		}
-		if time.Now().After(deadline) {
-			t.Fatalf("a started process did not find what the toolchain installed: %q %v", out, err)
-		}
-		time.Sleep(20 * time.Millisecond)
+	var out string
+	var err error
+	if !eventually(func() bool {
+		out, err = sup.Execute(json.RawMessage(`{"action":"read","name":"tool"}`))
+		return err == nil && strings.Contains(out, "declared-tool-ran")
+	}) {
+		t.Fatalf("a started process did not find what the toolchain installed: %q %v", out, err)
 	}
 }
 

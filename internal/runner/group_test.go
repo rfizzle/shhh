@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -17,9 +18,8 @@ import (
 // shell's children. A cancellation that signals only the shell leaves them
 // running with nothing watching them.
 func TestCancellingACommandKillsWhatItStarted(t *testing.T) {
-	if _, err := exec.LookPath("sh"); err != nil {
-		t.Skip("no shell")
-	}
+	needShell(t)
+	t.Setenv("SHELL", "/bin/sh")
 	dir := t.TempDir()
 	marker := filepath.Join(dir, "still-alive")
 
@@ -29,23 +29,27 @@ func TestCancellingACommandKillsWhatItStarted(t *testing.T) {
 	go func() {
 		defer close(done)
 		// A child that outlives its parent shell unless the group is
-		// signalled, and that leaves evidence behind if it does. It says so
-		// once it is running, which is the moment there is a child to leave
-		// behind.
-		RunCaptureTail(ctx, "sh -c 'echo started; sleep 5; touch "+marker+"' & sleep 5", sendLine(lines))
+		// signalled, and that leaves evidence behind if it does. The shell
+		// names itself, and so the group, and the child says once it is
+		// running, which is the moment there is a child to leave behind.
+		// Its life is long beside the kill's grace, so a slow host cannot
+		// let it reach the marker before the kill was ever due.
+		RunCaptureTail(ctx, "echo shell $$; sh -c 'echo started; sleep 20; touch "+marker+"' & sleep 20", sendLine(lines))
 	}()
 
+	pgid := awaitGroup(t, lines)
 	awaitLine(t, lines, "started")
 	cancel()
 
 	select {
 	case <-done:
-	case <-time.After(15 * time.Second):
+	case <-time.After(waitDelay + 10*time.Second):
 		t.Fatal("the runner did not return after cancellation")
 	}
 
-	// Past when the grandchild would have written, had it survived.
-	time.Sleep(6 * time.Second)
+	// The group being empty is the fact: nothing in it can write the marker
+	// any more, so its absence then is the answer rather than a guess.
+	awaitGroupGone(t, pgid)
 	if _, err := os.Stat(marker); err == nil {
 		t.Fatal("a process the cancelled command started outlived it")
 	}
@@ -58,12 +62,15 @@ func TestCancellingReturnsWithoutWaitingOnAHeldPipe(t *testing.T) {
 		t.Skip("no shell")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
+	lines := make(chan string, 4)
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		RunCapture(ctx, "sleep 30")
+		RunCaptureTail(ctx, "echo started; sleep 30", sendLine(lines))
 	}()
-	time.Sleep(200 * time.Millisecond)
+	// Cancelled once it is running, so the wait delay is what is measured
+	// and not a command that never got as far as starting.
+	awaitLine(t, lines, "started")
 	cancel()
 
 	select {
@@ -113,36 +120,85 @@ func TestQuittingStopsACommandThatIgnoresTheInterrupt(t *testing.T) {
 	dir := t.TempDir()
 	marker := filepath.Join(dir, "still-alive")
 
-	commandLife := 5 * time.Second
+	// The command's own life, long beside the drain's bound, so a drain that
+	// waited for the command instead of killing it shows as one that took
+	// this long, on any host.
+	const commandLife = 20 * time.Second
 	lines := make(chan string, 4)
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		// Ignoring the interrupt is the whole case: asking it to stop does
 		// nothing, so only the kill behind the grace ends it, and it leaves
-		// evidence behind if it survives. It says so once the trap is in
-		// place, since a drain before that stops it on the interrupt and
-		// proves nothing.
-		RunCaptureTail(context.Background(), "trap '' INT; echo armed; sleep 5; touch "+marker, sendLine(lines))
+		// evidence behind if it survives. It names its group once the trap
+		// is in place, since a drain before that stops it on the interrupt
+		// and proves nothing.
+		RunCaptureTail(context.Background(), "trap '' INT; echo shell $$; sleep 20; touch "+marker, sendLine(lines))
 	}()
 
-	awaitLine(t, lines, "armed")
+	pgid := awaitGroup(t, lines)
 	armed := time.Now()
 	StopCaptured()
-	if took := time.Since(armed); took > killGrace+time.Second {
-		t.Errorf("the drain took %s; a quit is bounded at %s", took.Round(time.Millisecond), killGrace)
+	if took := time.Since(armed); took >= commandLife {
+		t.Errorf("the drain took %s, as long as the command lives; a quit is bounded at %s", took.Round(time.Millisecond), killGrace)
 	}
 
 	select {
 	case <-done:
-	case <-time.After(waitDelay + 5*time.Second):
+	case <-time.After(waitDelay + 10*time.Second):
 		t.Fatal("the runner did not return after the drain")
 	}
 
-	// Past when the command would have written, had it survived.
-	time.Sleep(time.Until(armed.Add(commandLife + 500*time.Millisecond)))
+	// The group being empty is the fact: nothing in it can write the marker
+	// any more, so its absence then is the answer rather than a guess.
+	awaitGroupGone(t, pgid)
 	if _, err := os.Stat(marker); err == nil {
 		t.Fatal("a command that ignores the interrupt outlived the session that started it")
+	}
+}
+
+// awaitGroup reads the line a fixture shell prints as `shell $$` and returns
+// the process group that shell leads, which is the group the runner made for
+// the command.
+func awaitGroup(t *testing.T, lines <-chan string) int {
+	t.Helper()
+	timeout := time.After(15 * time.Second)
+	for {
+		select {
+		case line := <-lines:
+			pid, ok := strings.CutPrefix(line, "shell ")
+			if !ok {
+				continue
+			}
+			n, err := strconv.Atoi(pid)
+			if err != nil {
+				t.Fatalf("the fixture named its shell as %q", line)
+			}
+			pgid, err := syscall.Getpgid(n)
+			if err != nil {
+				t.Fatalf("the fixture's shell %d has no group: %v", n, err)
+			}
+			return pgid
+		case <-timeout:
+			t.Fatal("the command never named its shell")
+		}
+	}
+}
+
+// awaitGroupGone blocks until no process is left in the group. Its bound is
+// longer than any fixture here lives, so a survivor finishes its work — and
+// leaves its marker — before the wait gives up, rather than being missed.
+func awaitGroupGone(t *testing.T, pgid int) {
+	t.Helper()
+	tick := time.NewTicker(10 * time.Millisecond)
+	defer tick.Stop()
+	deadline := time.After(60 * time.Second)
+	for syscall.Kill(-pgid, 0) == nil {
+		select {
+		case <-tick.C:
+		case <-deadline:
+			t.Fatalf("process group %d is still there", pgid)
+		}
 	}
 }
 
@@ -238,11 +294,17 @@ func TestAHandedOverCommandIsNotDrained(t *testing.T) {
 		t.Fatalf("the ceiling did not hand the command over: %q", out)
 	}
 
+	// The drain signals only what is on the live list, so a command missing
+	// from it is one the drain cannot reach: that is the fact, read before
+	// the drain rather than inferred from a pause after it.
+	liveMu.Lock()
+	still := len(live)
+	liveMu.Unlock()
+	if still != 0 {
+		t.Fatalf("a handed-over command is still on the drain's list (%d live)", still)
+	}
 	StopCaptured()
 
-	// The supervisor learns a process has gone through its own wait, so give
-	// that a moment to have happened before asking it.
-	time.Sleep(300 * time.Millisecond)
 	if list := sup.List(); !strings.Contains(list, "running") {
 		t.Errorf("the drain stopped a command it had already handed on:\n%s", list)
 	}

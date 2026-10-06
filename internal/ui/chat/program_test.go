@@ -167,18 +167,44 @@ func (w watched) View() tea.View {
 // waited on puts there.
 func waitForText(t *testing.T, tm *program, s string) {
 	t.Helper()
-	deadline := time.Now().Add(10 * time.Second)
-	for time.Now().Before(deadline) {
-		if f := tm.frame.Load(); f != nil && strings.Contains(*f, s) {
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
+	if eventually(func() bool { f := tm.frame.Load(); return f != nil && strings.Contains(*f, s) }) {
+		return
 	}
 	last := ""
 	if f := tm.frame.Load(); f != nil {
 		last = *f
 	}
 	t.Fatalf("the program never drew %q; the last frame was:\n%s", s, last)
+}
+
+// factBound is how long a test waits for a fact before it calls the fact
+// missing. It is a ceiling and never a pace: a fact that holds ends the wait
+// at once, so only a failing test spends the bound, and it is long because a
+// host running three gates at once draws slowly.
+const factBound = 30 * time.Second
+
+// eventually reports whether cond came to hold within factBound, looking
+// again every few milliseconds. It is the one poll in the package's tests,
+// so every wait on a frame or a state reads the same way: what it waits for,
+// never how long the machine might take.
+func eventually(cond func() bool) bool {
+	if cond() {
+		return true
+	}
+	tick := time.NewTicker(5 * time.Millisecond)
+	defer tick.Stop()
+	deadline := time.NewTimer(factBound)
+	defer deadline.Stop()
+	for {
+		select {
+		case <-tick.C:
+			if cond() {
+				return true
+			}
+		case <-deadline.C:
+			return cond()
+		}
+	}
 }
 
 // finalFrame quits the program and returns the screen it ended on, stripped

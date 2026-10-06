@@ -309,20 +309,25 @@ func TestAKillDuringTheWaitStopsTheRetry(t *testing.T) {
 	if err := sup.Kill("researcher-1"); err != nil {
 		t.Fatalf("a waiting child must be killable: %v", err)
 	}
+	// The retry's wait says it gave up on its way out, so the note is the
+	// fact that the only goroutine able to start the child again has gone.
+	if !eventually(func() bool {
+		return transcriptHas(sup.Transcript("researcher-1"), EntrySystem, "The retry did not start — the agent was killed.")
+	}) {
+		t.Fatalf("the transcript must say the kill stopped it: %+v", sup.Transcript("researcher-1"))
+	}
 	waitState(t, sup, "researcher-1", StateFailed)
 	releaseOnce()
 
-	// Nothing starts after the kill: the teardown it was waiting for has
-	// finished and the child is still where the kill left it.
-	deadline := time.Now().Add(200 * time.Millisecond)
-	for time.Now().Before(deadline) {
-		if st, _ := sup.Get("researcher-1"); st.State != StateFailed {
-			t.Fatalf("the killed retry started anyway (%s)", st.State)
-		}
-		time.Sleep(5 * time.Millisecond)
+	// Nothing starts after the kill: once the teardown it was waiting for has
+	// finished, the child is still where the kill left it.
+	select {
+	case <-doneOf(sup, "researcher-1"):
+	case <-time.After(factBound):
+		t.Fatal("the first attempt never finished its teardown")
 	}
-	if !transcriptHas(sup.Transcript("researcher-1"), EntrySystem, "The retry did not start — the agent was killed.") {
-		t.Fatalf("the transcript must say the kill stopped it: %+v", sup.Transcript("researcher-1"))
+	if st, _ := sup.Get("researcher-1"); st.State != StateFailed {
+		t.Fatalf("the killed retry started anyway (%s)", st.State)
 	}
 }
 

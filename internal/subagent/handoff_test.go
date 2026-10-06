@@ -238,16 +238,15 @@ func TestADeclinedPatchIsKeptAndReviewedFromItsRow(t *testing.T) {
 	}
 	// Declining the review leaves the patch kept and offered again.
 	ask.Respond(false)
-	deadline := time.Now().Add(5 * time.Second)
-	for {
-		if next, err := sup.ReviewKept("writer-1"); err == nil && next != ask {
+	if !eventually(func() bool {
+		next, err := sup.ReviewKept("writer-1")
+		if err == nil && next != ask {
 			ask = next
-			break
+			return true
 		}
-		if time.Now().After(deadline) {
-			t.Fatal("a declined review took the kept patch with it")
-		}
-		time.Sleep(10 * time.Millisecond)
+		return false
+	}) {
+		t.Fatal("a declined review took the kept patch with it")
 	}
 	if !statusOf(t, sup, "writer-1").PatchKept {
 		t.Fatal("a declined review stopped offering the patch")
@@ -258,18 +257,14 @@ func TestADeclinedPatchIsKeptAndReviewedFromItsRow(t *testing.T) {
 		if p.Agent != "writer-1" || len(p.Files) != 1 {
 			t.Fatalf("the applied patch should be recorded as writer-1's, got %+v", p)
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(factBound):
 		t.Fatal("the reviewed patch never landed")
 	}
 	if _, err := os.Stat(filepath.Join(repo, "kept.go")); err != nil {
 		t.Fatalf("the approved patch did not reach the checkout: %v", err)
 	}
-	deadline = time.Now().Add(5 * time.Second)
-	for statusOf(t, sup, "writer-1").PatchKept {
-		if time.Now().After(deadline) {
-			t.Fatal("an applied patch is still offered for review")
-		}
-		time.Sleep(10 * time.Millisecond)
+	if !eventually(func() bool { return !statusOf(t, sup, "writer-1").PatchKept }) {
+		t.Fatal("an applied patch is still offered for review")
 	}
 	if _, err := sup.ReviewKept("writer-1"); err == nil {
 		t.Fatal("a patch that landed was offered again")
@@ -319,12 +314,8 @@ func TestAKilledWriterKeepsItsPatchAndTheHandoffNamesIt(t *testing.T) {
 	if data, _ := MarshalHandoff(h); strings.Contains(string(data), "package kept") {
 		t.Fatalf("the handoff carries the patch as well as its handle: %s", data)
 	}
-	deadline := time.Now().Add(5 * time.Second)
-	for linkedWorktrees(t, repo) != 0 {
-		if time.Now().After(deadline) {
-			t.Fatal("the killed writer's copy of the checkout was kept as well as its patch")
-		}
-		time.Sleep(10 * time.Millisecond)
+	if !eventually(func() bool { return linkedWorktrees(t, repo) == 0 }) {
+		t.Fatal("the killed writer's copy of the checkout was kept as well as its patch")
 	}
 }
 
@@ -429,32 +420,24 @@ func TestAnAppliedKeptPatchSettlesTheHandoff(t *testing.T) {
 		t.Fatal(err)
 	}
 	ask.Respond(false)
-	deadline := time.Now().Add(5 * time.Second)
-	for {
-		if next, err := sup.ReviewKept("writer-1"); err == nil && next != ask {
+	if !eventually(func() bool {
+		next, err := sup.ReviewKept("writer-1")
+		if err == nil && next != ask {
 			ask = next
-			break
+			return true
 		}
-		if time.Now().After(deadline) {
-			t.Fatal("a declined review took the kept patch with it")
-		}
-		time.Sleep(10 * time.Millisecond)
+		return false
+	}) {
+		t.Fatal("a declined review took the kept patch with it")
 	}
 	if h := store.read(t, handle); h.PatchEvidence != "ev-0000000000000001" || h.Landed {
 		t.Fatalf("a declined review should leave the handoff as it was, got %+v", h)
 	}
 
 	ask.Respond(true)
-	deadline = time.Now().Add(5 * time.Second)
 	var h Handoff
-	for {
-		if h = store.read(t, handle); h.Landed {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatalf("the applied patch left the handoff unsettled: %+v", h)
-		}
-		time.Sleep(10 * time.Millisecond)
+	if !eventually(func() bool { h = store.read(t, handle); return h.Landed }) {
+		t.Fatalf("the applied patch left the handoff unsettled: %+v", h)
 	}
 	if h.PatchEvidence != "" || !slices.Contains(h.WrittenPaths, "kept.go") {
 		t.Fatalf("the settled handoff should name no patch and keep what was written, got %+v", h)

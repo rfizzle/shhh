@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -187,12 +186,16 @@ func closeLines(frame string) []int {
 // waits for a phrase.
 func waitForFrame(t *testing.T, tm *program, what string, ok func(string) bool) string {
 	t.Helper()
-	deadline := time.Now().Add(10 * time.Second)
-	for time.Now().Before(deadline) {
-		if f := tm.frame.Load(); f != nil && ok(*f) {
-			return *f
+	var drawn string
+	if eventually(func() bool {
+		f := tm.frame.Load()
+		if f != nil && ok(*f) {
+			drawn = *f
+			return true
 		}
-		time.Sleep(10 * time.Millisecond)
+		return false
+	}) {
+		return drawn
 	}
 	last := ""
 	if f := tm.frame.Load(); f != nil {

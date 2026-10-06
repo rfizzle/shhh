@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // endpointProvider is a provider whose endpoint reports the context length it
@@ -39,16 +40,11 @@ func (e endpointProvider) ModelWindows(context.Context) (map[string]int64, error
 // expect no answer pass a short one.
 func await(t *testing.T, lookup func(string) (int64, bool), model string, wait time.Duration) (int64, bool) {
 	t.Helper()
-	deadline := time.Now().Add(wait)
-	for {
-		if w, ok := lookup(model); ok {
-			return w, true
-		}
-		if time.Now().After(deadline) {
-			return 0, false
-		}
-		time.Sleep(time.Millisecond)
+	var w int64
+	if eventuallyWithin(wait, func() bool { var ok bool; w, ok = lookup(model); return ok }) {
+		return w, true
 	}
+	return 0, false
 }
 
 func TestEndpointWindowsFor(t *testing.T) {
@@ -58,7 +54,7 @@ func TestEndpointWindowsFor(t *testing.T) {
 	}
 	// The catalog's ids are lower-cased, so the session's own spelling of the
 	// model still finds them.
-	if w, ok := await(t, lookup, "Qwen3:8B", 2*time.Second); !ok || w != 262_144 {
+	if w, ok := await(t, lookup, "Qwen3:8B", factBound); !ok || w != 262_144 {
 		t.Fatalf("window = %d, %v; want 262144, true", w, ok)
 	}
 	if _, ok := lookup("claude-opus-5"); ok {
@@ -207,6 +203,17 @@ func TestResumeChat_WithoutAStore(t *testing.T) {
 // heldChat saves name and hands the slot to another running process, the way
 // a second session's autosave leaves it. The parent is the one process a
 // test can name portably and still know is alive.
+// olderChat moves a saved chat's last save a minute back, so a chat saved
+// after it is the newer one by its stamp and not by how far the clock moved
+// between two saves in the same millisecond.
+func olderChat(t *testing.T, db *storage.DB, name string) {
+	t.Helper()
+	if _, err := db.SQL().Exec(
+		`UPDATE chat_sessions SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now','-1 minute') WHERE name = ?`, name); err != nil {
+		t.Fatalf("backdate %s: %v", name, err)
+	}
+}
+
 func heldChat(t *testing.T, db *storage.DB, name string) {
 	t.Helper()
 	if err := db.SaveChat(name, []provider.Message{
@@ -237,7 +244,7 @@ func TestResumeChat_ContinueRefusesASlotSomebodyElseHolds(t *testing.T) {
 		{Role: provider.RoleUser, Content: "mine"}}); err != nil {
 		t.Fatalf("save: %v", err)
 	}
-	time.Sleep(2 * time.Millisecond)
+	olderChat(t, db, "older")
 	heldChat(t, db, "newest")
 
 	_, err := chatSession{continueLast: true}.resumeChat(db)
@@ -509,6 +516,13 @@ func (assemblyProvider) StreamCompletion(context.Context, []provider.Message, pr
 func buildSession(t *testing.T, args ...string) chat.Wiring {
 	t.Helper()
 	home := t.TempDir()
+	// The session installs its host reading for the whole process, over the
+	// lists in this home's cache, and nothing a test-ended session runs takes
+	// it down again. Left standing it holds the directory past the test: the
+	// next host read anywhere in the process opens a list that the cleanup
+	// is deleting, finds it gone and starts a download into it. Taken down
+	// here, registered after the directory so it runs before the removal.
+	t.Cleanup(func() { web.UseReputation(nil) })
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "config"))
 	t.Setenv("XDG_DATA_HOME", filepath.Join(home, "data"))

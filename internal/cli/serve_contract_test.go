@@ -102,11 +102,8 @@ func serveOnUnixSocket(t *testing.T, s printSession) string {
 			t.Logf("server stderr: %s", errs.String())
 		}
 	})
-	for deadline := time.Now().Add(30 * time.Second); time.Now().Before(deadline); {
-		if _, err := os.Stat(path); err == nil {
-			return path
-		}
-		time.Sleep(10 * time.Millisecond)
+	if eventually(func() bool { _, err := os.Stat(path); return err == nil }) {
+		return path
 	}
 	t.Fatalf("the server never opened %s\nstderr: %s", path, errs.String())
 	return ""

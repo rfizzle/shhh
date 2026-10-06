@@ -253,8 +253,13 @@ func TestHeadlessRun_SteerInjectedBetweenRounds(t *testing.T) {
 }
 
 func TestHeadlessRun_InterruptCancelsTurn(t *testing.T) {
-	// The stream blocks until its cancel func fires, like a real provider.
+	// The stream blocks until its cancel func fires, like a real provider,
+	// and says when it has been asked, which is the moment there is a turn
+	// for the interrupt to cancel.
+	asked := make(chan struct{})
+	var askedOnce sync.Once
 	stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		defer askedOnce.Do(func() { close(asked) })
 		ch := make(chan provider.StreamEvent)
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
@@ -272,7 +277,11 @@ func TestHeadlessRun_InterruptCancelsTurn(t *testing.T) {
 		_, runErr = h.Run("go")
 		close(done)
 	}()
-	time.Sleep(20 * time.Millisecond)
+	select {
+	case <-asked:
+	case <-time.After(30 * time.Second):
+		t.Fatal("Run never asked its provider")
+	}
 	h.Interrupt()
 	select {
 	case <-done:
@@ -405,6 +414,7 @@ func TestHeadlessRun_ARoundsReadsOverlap(t *testing.T) {
 	inFlight.Add(2)
 	overlapped := make(chan struct{})
 	go func() { inFlight.Wait(); close(overlapped) }()
+	fastBack := make(chan struct{})
 	a.SetExecutor(func(name string, args json.RawMessage) (string, error) {
 		inFlight.Done()
 		select {
@@ -418,8 +428,11 @@ func TestHeadlessRun_ARoundsReadsOverlap(t *testing.T) {
 		}
 		if q.Q == "slow" {
 			// Come back last, so what is recorded below is the call order and
-			// not the order the results happened to arrive in.
-			time.Sleep(20 * time.Millisecond)
+			// not the order the results happened to arrive in: the slow call
+			// waits until the fast one has answered.
+			<-fastBack
+		} else {
+			defer close(fastBack)
 		}
 		return q.Q, nil
 	})

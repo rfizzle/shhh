@@ -159,13 +159,42 @@ func (w *syncLines) String() string {
 // answering a request, so there is no other moment to read.
 func waitFor(t *testing.T, why string, want func() bool) {
 	t.Helper()
-	for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); {
-		if want() {
-			return
-		}
-		time.Sleep(2 * time.Millisecond)
+	if !eventually(want) {
+		t.Fatalf("timed out waiting for %s", why)
 	}
-	t.Fatalf("timed out waiting for %s", why)
+}
+
+// factBound is how long a test waits for a fact before it calls the fact
+// missing. It is a ceiling and never a pace: a fact that holds ends the wait
+// at once, so only a failing test spends the bound, and it is long because a
+// host running three gates at once is slow at everything.
+const factBound = 30 * time.Second
+
+// eventually reports whether cond came to hold within factBound.
+func eventually(cond func() bool) bool { return eventuallyWithin(factBound, cond) }
+
+// eventuallyWithin reports whether cond came to hold within bound, looking
+// again every couple of milliseconds. It is the one poll in the package's
+// tests, so every wait on a state reads the same way: what it waits for,
+// never how long the machine might take.
+func eventuallyWithin(bound time.Duration, cond func() bool) bool {
+	if cond() {
+		return true
+	}
+	tick := time.NewTicker(2 * time.Millisecond)
+	defer tick.Stop()
+	deadline := time.NewTimer(bound)
+	defer deadline.Stop()
+	for {
+		select {
+		case <-tick.C:
+			if cond() {
+				return true
+			}
+		case <-deadline.C:
+			return cond()
+		}
+	}
 }
 
 // A client driving a served session is told about the children its turn

@@ -18,6 +18,10 @@ type slowProvider struct {
 	// the words of one reading from the digest of the next.
 	text  string
 	delay time.Duration
+	// hold, when set, keeps every reading from answering until it is
+	// closed, so a test can act while a reading is certainly in flight
+	// rather than while one probably still is.
+	hold chan struct{}
 
 	mu    sync.Mutex
 	calls int
@@ -33,7 +37,12 @@ func (p *slowProvider) StreamCompletion(ctx context.Context, msgs []provider.Mes
 	}
 	p.reqs = append(p.reqs, b.String())
 	p.mu.Unlock()
+	if p.hold != nil {
+		<-p.hold
+	}
 	if p.delay > 0 {
+		// No fact to wait on: this is the reader's own latency, which the
+		// fixture stands in for so a run has something to overlap.
 		time.Sleep(p.delay)
 	}
 	state := p.state
@@ -86,12 +95,9 @@ func testSummaryRun(t *testing.T, p provider.Provider, target string) (*SummaryR
 // waitVerdict ticks until a reading comes back, or gives up.
 func waitVerdict(t *testing.T, r *SummaryRun, rounds int) SummaryVerdict {
 	t.Helper()
-	deadline := time.Now().Add(2 * time.Second)
-	for time.Now().Before(deadline) {
-		if v, ok := r.Tick(rounds); ok {
-			return v
-		}
-		time.Sleep(time.Millisecond)
+	var v SummaryVerdict
+	if eventually(func() bool { var ok bool; v, ok = r.Tick(rounds); return ok }) {
+		return v
 	}
 	t.Fatal("no reading came back")
 	return SummaryVerdict{}
@@ -100,16 +106,27 @@ func waitVerdict(t *testing.T, r *SummaryRun, rounds int) SummaryVerdict {
 // A summary is never the reason a run is slower: the request goes out in the
 // background and the round carries on without it.
 func TestSummaryRun_TickNeverBlocksOnTheRequest(t *testing.T) {
-	p := &slowProvider{delay: 300 * time.Millisecond}
+	// The reading is held unanswered for the whole tick, so a tick that
+	// returns at all has not waited on it — the fact, where a stopwatch
+	// against a slow reader was a guess a loaded host could lose.
+	p := &slowProvider{hold: make(chan struct{})}
 	r, _ := testSummaryRun(t, p, "ship the parser")
 
-	start := time.Now()
-	if _, ok := r.Tick(FirstSummaryRound); ok {
-		t.Fatal("the first tick starts a reading, it does not have one yet")
+	ticked := make(chan bool, 1)
+	go func() {
+		_, ok := r.Tick(FirstSummaryRound)
+		ticked <- ok
+	}()
+	select {
+	case ok := <-ticked:
+		if ok {
+			t.Fatal("the first tick starts a reading, it does not have one yet")
+		}
+	case <-time.After(factBound):
+		close(p.hold)
+		t.Fatal("the round waited on a background reading")
 	}
-	if elapsed := time.Since(start); elapsed > 100*time.Millisecond {
-		t.Fatalf("the round waited %v on a background reading", elapsed)
-	}
+	close(p.hold)
 	waitVerdict(t, r, FirstSummaryRound+1)
 }
 
@@ -136,10 +153,7 @@ func TestSummaryRun_FirstReadingComesEarlyThenOnTheInterval(t *testing.T) {
 		t.Fatalf("readings = %d inside the interval, want 1", p.count())
 	}
 	r.Tick(FirstSummaryRound + 10)
-	deadline := time.Now().Add(time.Second)
-	for p.count() < 2 && time.Now().Before(deadline) {
-		time.Sleep(time.Millisecond)
-	}
+	eventually(func() bool { return p.count() >= 2 })
 	if p.count() != 2 {
 		t.Fatalf("readings = %d after a full interval, want 2", p.count())
 	}
@@ -167,10 +181,7 @@ func TestSummaryRun_AnInterventionEarnsAnEarlyReadingThatIsToldAboutIt(t *testin
 	}
 
 	r.Tick(steered + FirstSummaryRound)
-	deadline := time.Now().Add(time.Second)
-	for p.count() < 2 && time.Now().Before(deadline) {
-		time.Sleep(time.Millisecond)
-	}
+	eventually(func() bool { return p.count() >= 2 })
 	if p.count() != 2 {
 		t.Fatalf("readings = %d, want a second one %d rounds after the steer", p.count(), FirstSummaryRound)
 	}
@@ -182,15 +193,17 @@ func TestSummaryRun_AnInterventionEarnsAnEarlyReadingThatIsToldAboutIt(t *testin
 
 // A reading still in flight when the next falls due is not asked twice.
 func TestSummaryRun_NeverTwoInFlight(t *testing.T) {
-	p := &slowProvider{delay: 200 * time.Millisecond}
+	// The reading is held until the ticks are done, so it is in flight for
+	// all of them on any host rather than for as long as a delay lasts.
+	p := &slowProvider{hold: make(chan struct{})}
+	t.Cleanup(func() { close(p.hold) })
 	r, _ := testSummaryRun(t, p, "x")
 	r.Tick(FirstSummaryRound) // starts one
 
 	// Wait for it to actually be in flight, then tick well past several
 	// intervals while it still is.
-	deadline := time.Now().Add(time.Second)
-	for p.count() == 0 && time.Now().Before(deadline) {
-		time.Sleep(time.Millisecond)
+	if !eventually(func() bool { return p.count() != 0 }) {
+		t.Fatal("the first reading never went out")
 	}
 	for i := FirstSummaryRound + 1; i < FirstSummaryRound+40; i++ {
 		r.Tick(i)
@@ -383,14 +396,38 @@ func TestSummaryRun_NilWhenNotConfigured(t *testing.T) {
 // waitFor polls until cond holds, or fails the test saying what it waited for.
 func waitFor(t *testing.T, what string, cond func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(2 * time.Second)
-	for time.Now().Before(deadline) {
-		if cond() {
-			return
-		}
-		time.Sleep(time.Millisecond)
+	if !eventually(cond) {
+		t.Fatalf("timed out waiting for %s", what)
 	}
-	t.Fatalf("timed out waiting for %s", what)
+}
+
+// factBound is how long a test waits for a fact before it calls the fact
+// missing. It is a ceiling and never a pace: a fact that holds ends the wait
+// at once, so only a failing test spends the bound.
+const factBound = 30 * time.Second
+
+// eventually reports whether cond came to hold within factBound, looking
+// again every millisecond. It is the one poll in the package's tests, so
+// every wait on a state reads the same way: what it waits for, never how
+// long the machine might take.
+func eventually(cond func() bool) bool {
+	if cond() {
+		return true
+	}
+	tick := time.NewTicker(time.Millisecond)
+	defer tick.Stop()
+	deadline := time.NewTimer(factBound)
+	defer deadline.Stop()
+	for {
+		select {
+		case <-tick.C:
+			if cond() {
+				return true
+			}
+		case <-deadline.C:
+			return cond()
+		}
+	}
 }
 
 // A person steering an unattended run — the orchestrator steering a child is

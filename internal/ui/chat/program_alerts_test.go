@@ -20,15 +20,22 @@ func TestProgram_AlertsOpensEveryAlertAndItsRuns(t *testing.T) {
 		return "checking", code
 	}))
 	tm := runProgramAt(t, m, 130, 40)
+	// The card going is the approval, not the run: the command is still
+	// running on the frame that drops the card, and a second ! sent then is
+	// refused until the turn is finished. The frame back at idle is the fact
+	// that the run has landed and been counted.
 	runBang := func() {
 		send(tm, "!make check")
 		waitForText(t, tm, "run it once")
 		tm.Send(programAllow)
 		waitForGone(t, tm, "run it once")
+		waitForText(t, tm, "╭─ idle")
 	}
 
+	// The rail's own count is the fact that both failing runs are in.
 	runBang()
 	runBang()
+	waitForText(t, tm, "exit 2 · 2 runs")
 	send(tm, "/alerts")
 	waitForAll(t, tm, "/alerts · 1 standing", "✗ make check", "exit 2 · 2 runs", "not yet")
 	programPress(t, tm, "enter")
@@ -36,7 +43,10 @@ func TestProgram_AlertsOpensEveryAlertAndItsRuns(t *testing.T) {
 	programPress(t, tm, "esc")
 	waitForGone(t, tm, "/alerts · 1 standing")
 
+	// The clean run answers the alert, and the rail stops counting it as
+	// standing once it has.
 	runBang()
+	waitForGone(t, tm, "1 standing")
 	send(tm, "/alerts")
 	waitForAll(t, tm, "/alerts · 1 superseded", "✓ make check")
 

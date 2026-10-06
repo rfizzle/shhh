@@ -11,7 +11,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -425,9 +424,7 @@ func TestProgram_TheNotebookIsReadAndCorrectedOnItsScreen(t *testing.T) {
 	// in, so its close is the one that counts them.
 	written := make(chan struct{})
 	go func() {
-		for nb.Len() < 2 {
-			time.Sleep(5 * time.Millisecond)
-		}
+		eventually(func() bool { return nb.Len() >= 2 })
 		close(written)
 	}()
 	m, _ := agentSession(t, root, nb, children{

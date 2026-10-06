@@ -68,7 +68,9 @@ func (w *claimWriters) factory(repo string) EnvFactory {
 			// The environment a spawn builds before it is admitted takes
 			// real time, and it is built after the claim is checked: a
 			// writer handed over beside this one has that long to check its
-			// own claim and find this one absent.
+			// own claim and find this one absent. No fact to wait on: this
+			// stands in for that build's own duration, opening the window the
+			// claim queue has to close, and the test passes however long it is.
 			time.Sleep(20 * time.Millisecond)
 		}
 		round := 0

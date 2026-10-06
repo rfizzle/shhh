@@ -447,16 +447,15 @@ func supervisorRecordingRows(t *testing.T, env *scriptedEnv, rows *rowRecorder, 
 // testing anything.
 func retryWhenReady(t *testing.T, sup *Supervisor, name string) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for {
-		err := sup.Retry(name)
-		if err == nil {
-			return
-		}
-		if !strings.Contains(err.Error(), "shutting down") || time.Now().After(deadline) {
-			t.Fatalf("retry %s: %v", name, err)
-		}
-		time.Sleep(5 * time.Millisecond)
+	// The previous run's done channel closes last of all, once it has let go
+	// of everything, so it is the fact the retry waits on.
+	select {
+	case <-doneOf(sup, name):
+	case <-time.After(factBound):
+		t.Fatalf("the previous run of %s never let go", name)
+	}
+	if err := sup.Retry(name); err != nil {
+		t.Fatalf("retry %s: %v", name, err)
 	}
 }
 
@@ -659,12 +658,8 @@ func (p *heldReader) waitAsked(t *testing.T) {
 // says "the run is under way" without knowing how fast the machine is.
 func waitToolCalls(t *testing.T, sup *Supervisor, name string, n int) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
-		if st, ok := sup.Get(name); ok && st.ToolCalls >= n {
-			return
-		}
-		time.Sleep(time.Millisecond)
+	if eventually(func() bool { st, ok := sup.Get(name); return ok && st.ToolCalls >= n }) {
+		return
 	}
 	st, _ := sup.Get(name)
 	t.Fatalf("agent %s ran %d tool calls, want %d", name, st.ToolCalls, n)
@@ -674,14 +669,17 @@ func waitToolCalls(t *testing.T, sup *Supervisor, name string, n int) {
 // returns the first one.
 func waitSignal(t *testing.T, rec *testRecorder, code string) recordedEvent {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
+	var found recordedEvent
+	if eventually(func() bool {
 		for _, e := range rec.of("signal") {
 			if e.outcome == code {
-				return e
+				found = e
+				return true
 			}
 		}
-		time.Sleep(time.Millisecond)
+		return false
+	}) {
+		return found
 	}
 	t.Fatalf("no %s signal was recorded, got %+v", code, rec.of("signal"))
 	return recordedEvent{}
@@ -724,7 +722,10 @@ func TestChildFilesALateReadingAtTheRoundItRead(t *testing.T) {
 	// A moment in, the second attempt has started its turn — which is where
 	// it sets the counter — and is waiting on its provider, so the verdict is
 	// let go to land there. Waiting for the child to say so instead would
-	// order the two goroutines the detector is being asked about.
+	// order the two goroutines the detector is being asked about. No fact to
+	// wait on, by design: any handle the test held would be that ordering. The
+	// assertion below holds whenever the verdict lands; the pause only makes
+	// it likely to land inside the second attempt's round.
 	time.Sleep(roundWait / 4)
 	close(reader.release)
 
@@ -838,24 +839,14 @@ func TestChildEndsWithABudgetReasonAndItsRetryIsTheSecondAttempt(t *testing.T) {
 	waitState(t, sup, "researcher-1", StateDone)
 	// The second attempt's row is closed on its own goroutine, after the
 	// state it reports; the specs are opened before the run either way.
-	specs, _ := rec.snapshot()
-	for len(specs) < 2 {
-		time.Sleep(time.Millisecond)
-		specs, _ = rec.snapshot()
-	}
+	var specs []Spec
+	eventually(func() bool { specs, _ = rec.snapshot(); return len(specs) >= 2 })
 
 	if len(specs) != 2 || specs[0].Attempt != 1 || specs[1].Attempt != 2 {
 		t.Fatalf("attempts stamped %+v, want a row per attempt numbered 1 then 2", specs)
 	}
-	deadline := time.Now().Add(5 * time.Second)
 	var ends []observe.ChildEnd
-	for time.Now().Before(deadline) {
-		if _, ends = rec.snapshot(); len(ends) == 2 {
-			break
-		}
-		time.Sleep(time.Millisecond)
-	}
-	if len(ends) != 2 {
+	if !eventually(func() bool { _, ends = rec.snapshot(); return len(ends) == 2 }) {
 		t.Fatalf("expected an end per attempt, got %+v", ends)
 	}
 	if ends[0].Reason != observe.ChildBudget || ends[0].Attempt != 1 {
@@ -905,14 +896,8 @@ func TestAChildsEndCarriesTheReadingInTheRecordsOwnWord(t *testing.T) {
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)
 	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
 
-	deadline := time.Now().Add(5 * time.Second)
 	var ends []observe.ChildEnd
-	for time.Now().Before(deadline) {
-		if _, ends = rec.snapshot(); len(ends) == 1 && ends[0].Verdict != "" {
-			break
-		}
-		time.Sleep(time.Millisecond)
-	}
+	eventually(func() bool { _, ends = rec.snapshot(); return len(ends) == 1 && ends[0].Verdict != "" })
 	if len(ends) != 1 {
 		t.Fatalf("expected one closed row, got %+v", ends)
 	}

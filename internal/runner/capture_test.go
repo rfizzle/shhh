@@ -125,11 +125,13 @@ func TestACancelledCommandIsNotToldItHitALimit(t *testing.T) {
 	withSupervisor(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		time.Sleep(200 * time.Millisecond)
-		cancel()
-	}()
-	out, _ := RunCapture(ctx, "echo running; sleep 30")
+	defer cancel()
+	// Cancelled once it is running: the line it prints is the moment.
+	out, _ := RunCaptureTail(ctx, "echo running; sleep 30", func(line string) {
+		if line == "running" {
+			cancel()
+		}
+	})
 	if strings.Contains(out, "time limit") || strings.Contains(out, "moved to the background") {
 		t.Errorf("a cancellation is neither a ceiling nor a handover: %q", out)
 	}

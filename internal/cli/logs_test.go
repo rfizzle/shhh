@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -290,14 +289,9 @@ func TestTheLogPathIsJoinedHereAndNotInTheLogPackage(t *testing.T) {
 
 func waitForLogs(t *testing.T, ok func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
-		if ok() {
-			return
-		}
-		time.Sleep(logs.FollowInterval / 4)
+	if !eventually(ok) {
+		t.Fatalf("the follow never caught up")
 	}
-	t.Fatalf("the follow never caught up")
 }
 
 // syncWriter is written by the follow's goroutine and read by the test.

@@ -11,7 +11,6 @@ import (
 	"strings"
 	"syscall"
 	"testing"
-	"time"
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
@@ -283,14 +282,10 @@ func TestBuildContainment_AStartCarriesItsOwnEnv(t *testing.T) {
 	}
 
 	var out string
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
+	eventually(func() bool {
 		out, _ = sup.Execute(json.RawMessage(`{"action":"read","name":"env","stream":"stdout","offset":0}`))
-		if strings.Contains(out, "port=") {
-			break
-		}
-		time.Sleep(20 * time.Millisecond)
-	}
+		return strings.Contains(out, "port=")
+	})
 	if !strings.Contains(out, "port=3001") {
 		t.Fatalf("the start's own env must reach the contained process:\n%s", out)
 	}

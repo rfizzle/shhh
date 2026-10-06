@@ -614,7 +614,7 @@ func TestTodoRun_ReviewerChildAnswersTheStage(t *testing.T) {
 		t.Fatalf("child = %+v %v", st, ok)
 	}
 	var ev subagent.Event
-	deadline := time.After(5 * time.Second)
+	deadline := time.After(laneDeadline)
 	for ev.Kind != subagent.EventDone {
 		select {
 		case ev = <-sup.Events():
@@ -646,7 +646,7 @@ func TestTodoRun_ReviewerVerdictIsOnTheLane(t *testing.T) {
 	updated, _ = m.Update(todoVerifyMsg{slug: "do-it", ok: true})
 	m = updated.(Model)
 	var ev subagent.Event
-	deadline := time.After(5 * time.Second)
+	deadline := time.After(laneDeadline)
 	for ev.Kind != subagent.EventDone {
 		select {
 		case ev = <-sup.Events():
@@ -723,7 +723,7 @@ func reviewReadyModel(t *testing.T, env subagent.EnvFactory) (Model, *subagent.S
 
 func waitDone(t *testing.T, sup *subagent.Supervisor) subagent.Event {
 	t.Helper()
-	deadline := time.After(5 * time.Second)
+	deadline := time.After(laneDeadline)
 	for {
 		select {
 		case ev := <-sup.Events():
@@ -1032,25 +1032,34 @@ func writingEnv(content string) subagent.EnvFactory {
 	}
 }
 
-// laneDeadline is how long a lane test waits for its writers before it calls
-// the run hung. It guards against a hang and measures nothing: the writers
-// add their worktrees one at a time, and on a loaded host one `git worktree
-// add` has been seen to take five seconds by itself.
+// laneDeadline is how long a lane test waits for the supervisor's next event
+// before it calls the run hung. It bounds silence, never the whole run: the
+// writers add their worktrees one at a time, on a loaded host one `git
+// worktree add` has been seen to take five seconds by itself, and a run that
+// is still saying things is a slow run rather than a hung one.
 const laneDeadline = 30 * time.Second
 
+// nextEvent waits for the supervisor's next event, failing once it has heard
+// nothing for laneDeadline. Each event is the fact a lane test waits on, so
+// the bound restarts with every one.
+func nextEvent(t *testing.T, m Model, sup *subagent.Supervisor) subagent.Event {
+	t.Helper()
+	select {
+	case ev := <-sup.Events():
+		return ev
+	case <-time.After(laneDeadline):
+		t.Fatalf("no event for %s; run = %+v", laneDeadline, m.todo.runner.state)
+		return subagent.Event{}
+	}
+}
+
 // pumpSubagents feeds supervisor events to the model until every lane has
-// reported or the deadline passes.
+// reported, or until the supervisor falls silent.
 func pumpSubagents(t *testing.T, m Model, sup *subagent.Supervisor, until func(Model) bool) Model {
 	t.Helper()
-	deadline := time.After(laneDeadline)
 	for !until(m) {
-		select {
-		case ev := <-sup.Events():
-			updated, _ := m.handleSubagentEvent(ev)
-			m = updated.(Model)
-		case <-deadline:
-			t.Fatalf("timed out; run = %+v", m.todo.runner.state)
-		}
+		updated, _ := m.handleSubagentEvent(nextEvent(t, m, sup))
+		m = updated.(Model)
 	}
 	return m
 }
@@ -1115,19 +1124,14 @@ func TestTodoRun_LargeItemLanesIntegrateOnReportsNotPatches(t *testing.T) {
 	crossed := func(m Model) bool {
 		return m.todo.runner.state != nil && laneNamed(t, m, "alpha").Done && laneNamed(t, m, "beta").Agent == ""
 	}
-	deadline := time.After(laneDeadline)
 	for !crossed(m) {
-		select {
-		case ev := <-sup.Events():
-			if ev.Kind == subagent.EventDone && ev.Status.Name == "tw1-alpha" {
-				held = append(held, ev)
-				continue
-			}
-			updated, _ := m.handleSubagentEvent(ev)
-			m = updated.(Model)
-		case <-deadline:
-			t.Fatalf("timed out; run = %+v", m.todo.runner.state)
+		ev := nextEvent(t, m, sup)
+		if ev.Kind == subagent.EventDone && ev.Status.Name == "tw1-alpha" {
+			held = append(held, ev)
+			continue
 		}
+		updated, _ := m.handleSubagentEvent(ev)
+		m = updated.(Model)
 	}
 	if m.todo.runner.state.Stage != run.StageFanOut {
 		t.Fatalf("a landed patch is not a finished lane: %+v", m.todo.runner.state)
@@ -1168,7 +1172,7 @@ func TestTodoRun_WriterWithoutAPatchBlocksTheRun(t *testing.T) {
 		t.Fatalf("item should be blocked, is %s", it.Status)
 	}
 	// The other writer is not left running on a run that is over.
-	deadline := time.After(5 * time.Second)
+	deadline := time.After(laneDeadline)
 	for {
 		active, _ := sup.ActiveCounts()
 		if active == 0 {
@@ -1191,7 +1195,7 @@ func TestTodoRun_StopKillsTheWriters(t *testing.T) {
 		t.Fatal("run should be over")
 	}
 	killed := 0
-	deadline := time.After(5 * time.Second)
+	deadline := time.After(laneDeadline)
 	for killed < 2 {
 		select {
 		case ev := <-sup.Events():

@@ -569,14 +569,9 @@ func transcriptContains(m Model, s string) bool {
 
 func waitFor(t *testing.T, cond func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
-		if cond() {
-			return
-		}
-		time.Sleep(5 * time.Millisecond)
+	if !eventually(cond) {
+		t.Fatal("condition never became true")
 	}
-	t.Fatal("condition never became true")
 }
 
 // --- what the routed card carries ---

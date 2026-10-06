@@ -127,7 +127,10 @@ func TestSpawnDeclaredSteps(t *testing.T) {
 // status: the declared step count comes back on it, progress never runs past
 // that denominator, and elapsed keeps moving until the child settles.
 func TestStatusStepsAndElapsed(t *testing.T) {
-	c := &child{name: "writer-1", steps: 3, started: time.Now().Add(-2 * time.Second)}
+	// The child reads a clock the test holds, so "elapsed stops moving" is
+	// a fact about the clock having moved and not a guess about a sleep.
+	now := time.Now()
+	c := &child{name: "writer-1", steps: 3, started: now.Add(-2 * time.Second), now: func() time.Time { return now }}
 
 	st := c.status()
 	if st.Steps.Total != 3 || st.Steps.Done != 0 {
@@ -158,7 +161,7 @@ func TestStatusStepsAndElapsed(t *testing.T) {
 
 	c.set(StateDone, "done · 7 tools")
 	settled := c.status().Elapsed
-	time.Sleep(10 * time.Millisecond)
+	now = now.Add(time.Minute)
 	if again := c.status().Elapsed; again != settled {
 		t.Fatalf("a finished child's elapsed moved: %v then %v", settled, again)
 	}

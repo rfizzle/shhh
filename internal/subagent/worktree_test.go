@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
 
 // initTestRepo builds a git repository with one committed file, skipping the
@@ -71,13 +70,10 @@ func linkedWorktrees(t *testing.T, repo string) int {
 	// its turn.
 	var out []byte
 	var err error
-	for try := 0; try < 100; try++ {
+	eventually(func() bool {
 		out, err = exec.Command("git", "-C", repo, "worktree", "list", "--porcelain").CombinedOutput()
-		if err == nil {
-			break
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
+		return err == nil
+	})
 	if err != nil {
 		t.Fatalf("git worktree list: %v\n%s", err, out)
 	}

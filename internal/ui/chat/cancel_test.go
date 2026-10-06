@@ -267,15 +267,24 @@ func TestQuit_StopsACommandTheSessionWasRunning(t *testing.T) {
 	t.Setenv("SHELL", "/bin/sh")
 
 	ran := make(chan struct{})
+	started := make(chan struct{})
 	go func() {
 		defer close(ran)
 		// Nothing else stops this: the model under test holds no cancel for
 		// it, which is exactly the case of a command started through some
-		// other surface of the same session.
-		runner.RunCapture(context.Background(), "sleep 30")
+		// other surface of the same session. It says when it is running,
+		// which is the moment there is a command to leave behind.
+		runner.RunCaptureTail(context.Background(), "echo started; sleep 30", func(line string) {
+			if line == "started" {
+				close(started)
+			}
+		})
 	}()
-	// Let it get as far as being spawned.
-	time.Sleep(300 * time.Millisecond)
+	select {
+	case <-started:
+	case <-time.After(factBound):
+		t.Fatal("the command never started")
+	}
 
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream)
@@ -283,11 +292,12 @@ func TestQuit_StopsACommandTheSessionWasRunning(t *testing.T) {
 	m = updated.(Model)
 	m.quitNow()
 
-	// The drain is synchronous, so the command is already gone; the window
-	// is for the runner's own return behind it, not for the stop.
+	// The drain is synchronous, so the command is already gone; the bound
+	// is for the runner's own return behind it, not for the stop. A command
+	// the quit missed sleeps out its thirty seconds, past the bound.
 	select {
 	case <-ran:
-	case <-time.After(2 * time.Second):
+	case <-time.After(20 * time.Second):
 		t.Fatal("quitting left a running command behind")
 	}
 }

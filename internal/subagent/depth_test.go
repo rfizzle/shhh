@@ -354,18 +354,11 @@ func TestDepth_ThreeWaitingAgentsAndAQueuedGrandchildAllFinish(t *testing.T) {
 	// held by an agent that will not release it until that grandchild has
 	// answered. That is the arrangement, and it needs no synchronising here:
 	// the scripts put every agent in it.
-	deadline := time.Now().Add(20 * time.Second)
 	for _, name := range kids {
-		for {
-			st, ok := sup.Get(name)
-			if ok && st.State == StateDone {
-				break
-			}
-			if time.Now().After(deadline) {
-				t.Fatalf("%s never finished (last: %v) — three agents each waiting on a queued "+
-					"descendant is the deadlock the per-depth slots prevent", name, st.State)
-			}
-			time.Sleep(5 * time.Millisecond)
+		if !eventually(func() bool { st, ok := sup.Get(name); return ok && st.State == StateDone }) {
+			st, _ := sup.Get(name)
+			t.Fatalf("%s never finished (last: %v) — three agents each waiting on a queued "+
+				"descendant is the deadlock the per-depth slots prevent", name, st.State)
 		}
 	}
 }
@@ -487,17 +480,13 @@ func TestDepth_AKilledAgentComesOutOfItsWaitOnADescendant(t *testing.T) {
 	if err := sup.Kill("parent"); err != nil {
 		t.Fatal(err)
 	}
-	deadline := time.Now().Add(10 * time.Second)
-	for {
+	if !eventually(func() bool {
 		st, ok := sup.Get("parent")
-		if ok && (st.State == StateFailed || st.State == StateDone) {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatalf("a killed agent is still %v — it is held inside agent_report by a descendant "+
-				"that is not going to answer", st.State)
-		}
-		time.Sleep(5 * time.Millisecond)
+		return ok && (st.State == StateFailed || st.State == StateDone)
+	}) {
+		st, _ := sup.Get("parent")
+		t.Fatalf("a killed agent is still %v — it is held inside agent_report by a descendant "+
+			"that is not going to answer", st.State)
 	}
 }
 

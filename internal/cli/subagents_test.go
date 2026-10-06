@@ -780,6 +780,8 @@ func serveFakeLSP(in io.Reader, out io.Writer) {
 			`,"diagnostics":[{"range":{"start":{"line":3,"character":1},"end":{"line":3,"character":8}},` +
 			`"severity":1,"source":"fake","message":"undefined: greeet"}]}}`)
 	}
+	late := make(chan string, 16)
+	var lateOnce sync.Once
 	for {
 		body, err := readLSPFrame(r)
 		if err != nil {
@@ -807,17 +809,33 @@ func serveFakeLSP(in io.Reader, out io.Writer) {
 		case "textDocument/didOpen", "textDocument/didChange":
 			// A file named for it is answered after the client has stopped
 			// waiting, which is the case the held queue exists for and the
-			// one a child must not leave behind.
+			// one a child must not leave behind. The test says when that is
+			// by writing <file>.answer once the edit has come back, so the
+			// answer is late by the fact and not by a guess at a delay, and
+			// the late answers go out in the order the files were opened.
 			if strings.Contains(msg.Params.TextDocument.URI, "late") {
-				uri := msg.Params.TextDocument.URI
-				go func() {
-					time.Sleep(150 * time.Millisecond)
-					diagnose(uri)
-				}()
+				lateOnce.Do(func() { go answerLate(late, diagnose) })
+				late <- msg.Params.TextDocument.URI
 				continue
 			}
 			diagnose(msg.Params.TextDocument.URI)
 		}
+	}
+}
+
+// answerLate answers each late file in the order it was opened, once the test
+// has written the file's release beside it.
+func answerLate(late <-chan string, diagnose func(uri string)) {
+	tick := time.NewTicker(5 * time.Millisecond)
+	defer tick.Stop()
+	for uri := range late {
+		release := strings.TrimPrefix(uri, "file://") + ".answer"
+		for range tick.C {
+			if _, err := os.Stat(release); err == nil {
+				break
+			}
+		}
+		diagnose(uri)
 	}
 }
 
@@ -918,8 +936,8 @@ func TestAChildLeavesTheSessionsLateAnswersAlone(t *testing.T) {
 		}
 		return path
 	}
-	// A wait short enough that the fake's late answer never makes it, so
-	// every edit below leaves an open question behind.
+	// The fake holds a late file's answer until the test releases it, so
+	// every edit below leaves an open question behind whatever the wait.
 	ts := lsp.NewToolset(lsp.NewManager(root, []lsp.ServerSpec{{
 		Name:       "fake",
 		Command:    os.Args[0],
@@ -947,9 +965,24 @@ func TestAChildLeavesTheSessionsLateAnswersAlone(t *testing.T) {
 	if out := edit(childMutationHook(ts), child); strings.Contains(out, "undefined") {
 		t.Fatalf("a child's edit carried a verdict it should not have: %q", out)
 	}
-	// Both answers have landed by now. Only the session's is waiting.
-	time.Sleep(250 * time.Millisecond)
-	held := ts.Manager.TakeHeldDiagnostics()
+	// A last edit of the session's own, opened after the child's, so its
+	// answer is the one that says the two before it have landed.
+	sentinel := write("late-sentinel.go")
+	edit(lspMutationHook(ts), sentinel)
+
+	// Every edit has stopped waiting, so every answer is let go. The server
+	// writes them in the order the files were opened, on one pipe, so once
+	// the sentinel's has landed the child's and the session's have too.
+	for _, path := range []string{session, child, sentinel} {
+		if err := os.WriteFile(path+".answer", nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var held string
+	eventually(func() bool {
+		held += ts.Manager.TakeHeldDiagnostics()
+		return strings.Contains(held, filepath.Base(sentinel))
+	})
 	if !strings.Contains(held, filepath.Base(session)) {
 		t.Errorf("the session's own late answer was lost: %q", held)
 	}

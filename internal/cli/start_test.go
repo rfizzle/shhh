@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
@@ -134,7 +133,7 @@ func TestBuildStartInfo_OffersTheNewestSlotNobodyElseHolds(t *testing.T) {
 	if err := db.SaveChat("loop refactor", testChatMessages()); err != nil {
 		t.Fatalf("save: %v", err)
 	}
-	time.Sleep(2 * time.Millisecond)
+	olderChat(t, db, "loop refactor")
 	heldChat(t, db, "someone else's")
 
 	info := buildStartInfo(project.Survey(""), db, false, chat.Trust{}, config.Project{}, nil)

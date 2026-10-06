@@ -43,9 +43,10 @@ func scriptedSession(turns ...programTurn) (Model, *programProvider) {
 // quietHold is a hold released once the keyboard has been quiet for the
 // grace window's beat, so the card the held turn brings arrives on a cold
 // keyboard and takes it with no window open — the arrival a scene gets by
-// waiting for the card before it presses anything (interrupt.go). The sleep
-// is a lower bound on elapsed time, which a clock can promise, not a guess
-// about how fast a machine draws.
+// waiting for the card before it presses anything (interrupt.go). No fact to
+// wait on: a quiet keyboard is time passing and nothing else, so the sleep is
+// a lower bound on elapsed time, which a clock can promise, not a guess about
+// how fast a machine draws.
 func quietHold(t *testing.T) (chan struct{}, func()) {
 	t.Helper()
 	hold := make(chan struct{})
@@ -91,12 +92,8 @@ func waitForAll(t *testing.T, tm *program, phrases ...string) {
 // a surface or a state to go away.
 func waitForGone(t *testing.T, tm *program, s string) {
 	t.Helper()
-	deadline := time.Now().Add(10 * time.Second)
-	for time.Now().Before(deadline) {
-		if f := tm.frame.Load(); f != nil && !strings.Contains(*f, s) {
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
+	if eventually(func() bool { f := tm.frame.Load(); return f != nil && !strings.Contains(*f, s) }) {
+		return
 	}
 	t.Fatalf("the program went on drawing %q:\n%s", s, *tm.frame.Load())
 }

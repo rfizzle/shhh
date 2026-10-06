@@ -42,17 +42,14 @@ func TestPruneStoreOnce_RunsOncePerProcessOnTheGivenConnection(t *testing.T) {
 
 	setHistoryRetention(90)
 	pruneStoreOnce(db)
-	deadline := time.Now().Add(5 * time.Second)
-	for count() != 0 && time.Now().Before(deadline) {
-		time.Sleep(10 * time.Millisecond)
-	}
-	if count() != 0 {
+	if !eventually(func() bool { return count() == 0 }) {
 		t.Fatal("the first open should purge the old rows")
 	}
 
+	// The once has fired, so this open starts no sweep at all: there is no
+	// goroutine to wait for, and the count is final as soon as it returns.
 	addOld()
 	pruneStoreOnce(db)
-	time.Sleep(50 * time.Millisecond)
 	if count() != 1 {
 		t.Fatal("a second open in the same process purges nothing more")
 	}
@@ -81,9 +78,10 @@ func TestPruneStoreOnce_PrunesTheRecordOnTheSameOpen(t *testing.T) {
 		return n
 	}
 
+	// With no window set the open returns before it starts a sweep, so the
+	// count is final as soon as it returns.
 	purge.once, purge.days, purge.chatDays, purge.observeDays = sync.Once{}, 0, 0, 0
 	pruneStoreOnce(db)
-	time.Sleep(50 * time.Millisecond)
 	if sessions() != 1 {
 		t.Fatal("with no window set the record is left alone")
 	}
@@ -91,11 +89,7 @@ func TestPruneStoreOnce_PrunesTheRecordOnTheSameOpen(t *testing.T) {
 	purge.once = sync.Once{}
 	setObserveRetention(180)
 	pruneStoreOnce(db)
-	deadline := time.Now().Add(5 * time.Second)
-	for sessions() != 0 && time.Now().Before(deadline) {
-		time.Sleep(10 * time.Millisecond)
-	}
-	if sessions() != 0 {
+	if !eventually(func() bool { return sessions() == 0 }) {
 		t.Fatal("the first open should prune the session past the window")
 	}
 	var events int
@@ -128,9 +122,10 @@ func TestPruneStoreOnce_PrunesSavedChatsOnTheWindowItIsGiven(t *testing.T) {
 		return n
 	}
 
+	// With no window given the open returns before it starts a sweep, so
+	// the count is final as soon as it returns.
 	purge.once, purge.days, purge.chatDays, purge.observeDays = sync.Once{}, 0, 0, 0
 	pruneStoreOnce(db)
-	time.Sleep(50 * time.Millisecond)
 	if chats() != 1 {
 		t.Fatal("with no window given a saved chat is kept whatever its age")
 	}
@@ -138,11 +133,7 @@ func TestPruneStoreOnce_PrunesSavedChatsOnTheWindowItIsGiven(t *testing.T) {
 	purge.once = sync.Once{}
 	setChatsRetention(90)
 	pruneStoreOnce(db)
-	deadline := time.Now().Add(5 * time.Second)
-	for chats() != 0 && time.Now().Before(deadline) {
-		time.Sleep(10 * time.Millisecond)
-	}
-	if chats() != 0 {
+	if !eventually(func() bool { return chats() == 0 }) {
 		t.Fatal("the first open should prune the chat past the window")
 	}
 	setChatsRetention(0)
@@ -174,10 +165,7 @@ func TestPruneStoreOnce_SweepsOnceADayAndNotOncePerProcess(t *testing.T) {
 	}
 	swept := func(want int) {
 		t.Helper()
-		deadline := time.Now().Add(5 * time.Second)
-		for count() != want && time.Now().Before(deadline) {
-			time.Sleep(10 * time.Millisecond)
-		}
+		eventually(func() bool { return count() == want })
 	}
 	// A fresh process each time, which is what resetting the once stands for.
 	nextProcess := func() { purge.once = sync.Once{} }
@@ -195,6 +183,9 @@ func TestPruneStoreOnce_SweepsOnceADayAndNotOncePerProcess(t *testing.T) {
 	addOld()
 	nextProcess()
 	pruneStoreOnce(db)
+	// No fact to wait on: the sweep runs on a goroutine the open never
+	// joins, and one that rightly finds the day's claim taken leaves nothing
+	// behind to see. The pause gives a wrong sweep the time to show.
 	time.Sleep(50 * time.Millisecond)
 	if count() != 1 {
 		t.Fatal("a second process the same day swept again")

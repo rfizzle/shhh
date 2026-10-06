@@ -79,17 +79,16 @@ func TestBoundedRunnerImposesNoDeadlineWithoutALimit(t *testing.T) {
 // different answers at the other end.
 func TestBoundedRunnerPassesACancellationThrough(t *testing.T) {
 	var cause error
+	ctx, cancel := context.WithCancel(context.Background())
 	run := boundedRunner(func(ctx context.Context, _ string) tools.ExecResult {
+		// Cancelled once the command is running, which is the case: a
+		// cancellation that reaches a command under way.
+		cancel()
 		<-ctx.Done()
 		cause = ctx.Err()
 		return tools.ExecResult{Output: "stopped", ExitCode: -1, Outcome: tools.ExecStopped}
 	}, time.Hour)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		time.Sleep(30 * time.Millisecond)
-		cancel()
-	}()
 	run(ctx, "sleep 30")
 	if cause != context.Canceled {
 		t.Errorf("a cancellation is not a timeout: %v", cause)

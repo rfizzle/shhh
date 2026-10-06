@@ -35,6 +35,10 @@ type streamStep struct {
 	// other than the ordinary one. The zero value is a reply the model
 	// finished, which is what every step that says nothing means.
 	stop provider.StopReason
+	// held, when set, keeps the step from answering until it is closed, so a
+	// test can read the state a request is in while the request is still out
+	// instead of racing an answer that is otherwise instant.
+	held <-chan struct{}
 }
 
 // scriptedEnv builds an EnvFactory whose children replay steps in order. The
@@ -133,7 +137,17 @@ func (s *scriptedEnv) factory() EnvFactory {
 			delay := s.delay
 			s.mu.Unlock()
 			if delay > 0 {
+				// No fact to wait on: this is the provider's own latency, which
+				// the fixture stands in for. Nothing is waited for here; the
+				// round is made to take time so a reading beside it can land.
 				time.Sleep(delay)
+			}
+			if step.held != nil {
+				select {
+				case <-step.held:
+				case <-ctx.Done():
+					return nil, nil, ctx.Err()
+				}
 			}
 
 			if step.fail != nil {
@@ -917,14 +931,8 @@ func TestAPersonsRedirectClearsTheCountItAnswers(t *testing.T) {
 	reader := &readingProvider{state: "off_target"}
 	sup := judgedChild(t, reader, 200)
 
-	deadline := time.After(10 * time.Second)
-	for statusOf(t, sup, "researcher-1").Steers == 0 {
-		select {
-		case <-deadline:
-			t.Fatal("no steer was delivered to the child")
-		default:
-		}
-		time.Sleep(time.Millisecond)
+	if !eventually(func() bool { return statusOf(t, sup, "researcher-1").Steers != 0 }) {
+		t.Fatal("no steer was delivered to the child")
 	}
 
 	// Nothing further is owed a steer, so what the count ends on is what the
@@ -1102,12 +1110,8 @@ func TestParseSpawnArgsClampsBudgets(t *testing.T) {
 // waitState polls until the named child reaches the wanted state.
 func waitState(t *testing.T, sup *Supervisor, name string, want State) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
-		if st, ok := sup.Get(name); ok && st.State == want {
-			return
-		}
-		time.Sleep(5 * time.Millisecond)
+	if eventually(func() bool { st, ok := sup.Get(name); return ok && st.State == want }) {
+		return
 	}
 	st, _ := sup.Get(name)
 	t.Fatalf("agent %s never reached %s (last: %s)", name, want, st.State)
@@ -1944,15 +1948,8 @@ func TestKillWakesAChildWaitingOutAProvider(t *testing.T) {
 	sup := newTestSupervisor(t, env)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the code"}`)
 
-	deadline := time.Now().Add(5 * time.Second)
-	for {
-		if st, ok := sup.Get("researcher-1"); ok && strings.Contains(st.Detail, "retry") {
-			break
-		}
-		if time.Now().After(deadline) {
-			t.Fatal("the child never reached its retry wait")
-		}
-		time.Sleep(5 * time.Millisecond)
+	if !eventually(func() bool { st, ok := sup.Get("researcher-1"); return ok && strings.Contains(st.Detail, "retry") }) {
+		t.Fatal("the child never reached its retry wait")
 	}
 
 	if err := sup.Kill("researcher-1"); err != nil {
@@ -2037,6 +2034,15 @@ func TestRetryStartsFromTheTreeAsItIsNow(t *testing.T) {
 	if st, _ := sup.Get("writer-1"); st.Seeded != 0 {
 		t.Fatalf("a clean parent seeded %d paths, want none", st.Seeded)
 	}
+	// The child says it failed before its teardown has run, and the retry
+	// joins that teardown — a git process, as slow as the machine is busy.
+	// The attempt's done channel closes last of all, so waiting on it is
+	// waiting on the teardown itself, and the retry below starts at once.
+	select {
+	case <-doneOf(sup, "writer-1"):
+	case <-time.After(factBound):
+		t.Fatal("the failed attempt never finished its teardown")
+	}
 
 	// The session keeps working while the child is down.
 	if err := os.WriteFile(filepath.Join(repo, "notes.md"), []byte("written since\n"), 0o644); err != nil {
@@ -2059,12 +2065,8 @@ func TestRetryStartsFromTheTreeAsItIsNow(t *testing.T) {
 // waitHeld polls until the named child has parked at its own round boundary.
 func waitHeld(t *testing.T, sup *Supervisor, name string, want bool) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
-		if st, ok := sup.Get(name); ok && st.Held == want {
-			return
-		}
-		time.Sleep(5 * time.Millisecond)
+	if eventually(func() bool { st, ok := sup.Get(name); return ok && st.Held == want }) {
+		return
 	}
 	st, _ := sup.Get(name)
 	t.Fatalf("agent %s held = %v, want %v (state %s)", name, st.Held, want, st.State)
@@ -2487,14 +2489,38 @@ func TestAStatusSaysWhereTheLastSteerCameFrom(t *testing.T) {
 // waiting for rather than the sleep it guessed at.
 func waitFor(t *testing.T, cond func() bool) {
 	t.Helper()
-	deadline := time.After(10 * time.Second)
-	for !cond() {
+	if !eventually(cond) {
+		t.Fatal("the condition never held")
+	}
+}
+
+// factBound is how long a test waits for a fact before it calls the fact
+// missing. It is a ceiling and never a pace: a fact that holds ends the wait
+// at once, so only a failing test spends the bound, and it is long because a
+// loaded host makes every git process slow.
+const factBound = 30 * time.Second
+
+// eventually reports whether cond came to hold within factBound, looking
+// again every couple of milliseconds. It is the one poll in the package's
+// tests, so every wait on a state reads the same way: what it waits for,
+// never how long the machine might take.
+func eventually(cond func() bool) bool {
+	if cond() {
+		return true
+	}
+	tick := time.NewTicker(2 * time.Millisecond)
+	defer tick.Stop()
+	deadline := time.NewTimer(factBound)
+	defer deadline.Stop()
+	for {
 		select {
-		case <-deadline:
-			t.Fatal("the condition never held")
-		default:
+		case <-tick.C:
+			if cond() {
+				return true
+			}
+		case <-deadline.C:
+			return cond()
 		}
-		time.Sleep(time.Millisecond)
 	}
 }
 

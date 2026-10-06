@@ -25,9 +25,13 @@ import (
 // answer rather than being handed the old one.
 // See docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it.
 func TestAFinishedChildTakesAFollowUpInItsOwnConversation(t *testing.T) {
+	// The follow-up's answer is held until the claim has been read: a
+	// scripted answer is otherwise instant, and the follow-up could finish
+	// between the steer and the read.
+	answer := make(chan struct{})
 	env := &scriptedEnv{steps: []streamStep{
 		{text: "the exporter lives in otel.go"},
-		{text: "it retries twice, then pauses"},
+		{text: "it retries twice, then pauses", held: answer},
 	}}
 	sup := newTestSupervisor(t, env)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)
@@ -51,6 +55,7 @@ func TestAFinishedChildTakesAFollowUpInItsOwnConversation(t *testing.T) {
 	if st.State == StateDone || st.FollowUp != "how often does it retry?" {
 		t.Fatalf("the follow-up should be claimed as it is sent, got %+v", st)
 	}
+	close(answer)
 
 	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
 	if !strings.Contains(report, "it retries twice") || strings.Contains(report, "otel.go") {

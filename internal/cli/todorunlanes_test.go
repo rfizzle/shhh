@@ -263,10 +263,7 @@ func TestTodoRunHeadless_ALaneALandingWillNotCarryIntoBlocksAndTheSprintGoesOn(t
 			}
 			// b-two finishes building only once a-one has landed, so its
 			// next step is the one that finds the branch moved.
-			deadline := time.Now().Add(30 * time.Second)
-			for !landed() && time.Now().Before(deadline) {
-				time.Sleep(20 * time.Millisecond)
-			}
+			eventually(landed)
 		},
 	}
 	d, out := laneDriverFor(t, root, a)
@@ -318,10 +315,7 @@ func TestTodoRunHeadless_ALaneCarriesAnotherLanesLandingAtItsNextBoundary(t *tes
 		case run.StageResearch:
 			started.arrive()
 		case run.StageImplement:
-			deadline := time.Now().Add(30 * time.Second)
-			for !landed() && time.Now().Before(deadline) {
-				time.Sleep(20 * time.Millisecond)
-			}
+			eventually(landed)
 		case run.StageReview:
 			carried, _ = os.ReadFile(filepath.Join(dir, "a-one.go"))
 		}
@@ -481,12 +475,11 @@ func TestTodoParallelStarter_StartsTheRunnerWithItsLinesInALog(t *testing.T) {
 	if log != filepath.Join(run.Dir(root), "sprint.log") {
 		t.Fatalf("the log is beside the checkpoint, got %s", log)
 	}
-	deadline := time.Now().Add(10 * time.Second)
-	for time.Now().Before(deadline) {
-		if data, _ := os.ReadFile(log); strings.Contains(string(data), "todo run --all --parallel 3") {
-			return
-		}
-		time.Sleep(20 * time.Millisecond)
+	if eventually(func() bool {
+		data, _ := os.ReadFile(log)
+		return strings.Contains(string(data), "todo run --all --parallel 3")
+	}) {
+		return
 	}
 	data, _ := os.ReadFile(log)
 	t.Fatalf("the runner was started as `todo run` with the sprint's answers; the log holds %q", data)

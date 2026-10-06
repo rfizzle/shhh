@@ -534,6 +534,8 @@ func TestExecuteCalls_BoundedByMaxParallel(t *testing.T) {
 				break
 			}
 		}
+		// No fact to wait on: the call is held a moment so calls overlap and
+		// the peak has something to count. The bound holds whatever it is.
 		time.Sleep(time.Millisecond)
 		atomic.AddInt64(&live, -1)
 		return name, nil
