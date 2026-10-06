@@ -273,6 +273,11 @@ const (
 	// card, because the reader asked for it — from the start screen's offer
 	// or by typing /toolchain.
 	stateToolchainDraft
+	// stateFlakes: the flakes screen is up — every check that failed and
+	// passed on its rerun in this checkout, with how many times. A takeover
+	// like the readings screen: full width, the rail hidden, esc returns,
+	// and it changes nothing (gate.go).
+	stateFlakes
 )
 
 // minPanelHeight is the fewest rows the bottom panel takes: what a surface

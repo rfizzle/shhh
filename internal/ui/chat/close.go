@@ -367,6 +367,12 @@ func turnChecksRow(es []entry, gated bool) *components.TurnChecks {
 	if suite := suiteOfTurn(es); gated && r.suites() > 0 && suite != "" {
 		row.Again = "/gate run " + suite
 	}
+	for _, a := range standing {
+		if a.flakes != "" {
+			row.Flakes = a.flakes
+			break
+		}
+	}
 	if len(standing) == 1 {
 		row.Failed = standing[0].outcome == checkFailed
 		row.Label, row.Counts = standing[0].label, standing[0].counts

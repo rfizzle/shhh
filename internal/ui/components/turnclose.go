@@ -110,6 +110,11 @@ type TurnChecks struct {
 	// nobody is looking at any more, and re-running that is not the row's
 	// to suggest.
 	Again string
+	// Flakes is what the checkout's ledger says about a check that flaked
+	// in the verdict — `flaked 3 times before · /gate flakes` — said in the
+	// note column, beside what the verdict answered. Empty on a first flake
+	// and on a run with none.
+	Flakes string
 }
 
 // TurnClose is the block a finished turn appends. Steps, Tools, Elapsed and
@@ -485,6 +490,9 @@ func (c TurnClose) View(width int) string {
 		var notes []string
 		if ck.Superseded > 0 {
 			notes = append(notes, plural(ck.Superseded, "earlier failure")+" since passed")
+		}
+		if ck.Flakes != "" {
+			notes = append(notes, ck.Flakes)
 		}
 		if ck.Again != "" {
 			again := append(append([]string{}, notes...), ck.Again+" runs it again")

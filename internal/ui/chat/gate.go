@@ -13,10 +13,15 @@ package chat
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/receipt"
+	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // Gate wires the quality gate into the chat TUI. Manage backs the
@@ -28,6 +33,9 @@ type Gate struct {
 	// runner's verify stage and the on-close run use it. Nil when the
 	// project has no gate.
 	Run func(ctx context.Context, suite string) (*quality.Result, error)
+	// Flakes reads the checkout's flake ledger, which /gate flakes opens
+	// as a screen; nil where the session has no store to read it from.
+	Flakes func() ([]storage.Flake, error)
 }
 
 // WithGate enables the /gate command.
@@ -371,4 +379,71 @@ func (m *Model) gateToggle(args []string) (bool, string) {
 		return true, "A closing turn will run the gate once " + quality.ConfigRelPath + " names an on_close suite. It names none."
 	}
 	return true, fmt.Sprintf("A turn that changed files will run the %q suite as it closes.", suite)
+}
+
+// gateOpen is the front end's share of /gate: `flakes` opens the ledger as
+// a screen, and every other form — `flakes` included, in a session with no
+// ledger to read — is the transcript row slashGate answers.
+func gateOpen(m Model, parts []string) (tea.Model, tea.Cmd) {
+	if len(parts) == 2 && parts[1] == "flakes" && m.gate.Flakes != nil {
+		return m.openFlakes()
+	}
+	return m.answerCommand(strings.Join(parts, " "), parts[0], parts)
+}
+
+// openFlakes puts the flakes screen up: every check that failed and passed
+// on its rerun in this checkout, the latest first. It is built once per
+// opening, like the readings screen, so a flake landing from a background
+// run does not move the pointer off the row being read. An empty ledger or
+// one that will not read is a line in the transcript rather than a screen
+// with nothing on it.
+// See docs/capabilities/testing.md#a-flake-is-counted-where-it-happened.
+func (m Model) openFlakes() (tea.Model, tea.Cmd) {
+	flakes, err := m.gate.Flakes()
+	switch {
+	case err != nil:
+		return m.surfaceNotice(failed("gate flakes", "the flake ledger could not be read: "+err.Error()))
+	case len(flakes) == 0:
+		return m.surfaceNotice("no check has flaked in this checkout")
+	}
+	screen := flakesScreenData(flakes, clock())
+	m.screens = m.screens.with(stateFlakes, &screen)
+	m.enterSurface(stateFlakes)
+	return m, nil
+}
+
+// flakesScreenData words the ledger's rows for the screen against now.
+func flakesScreenData(flakes []storage.Flake, now time.Time) components.FlakesScreen {
+	rows := make([]components.FlakesRow, len(flakes))
+	for i, f := range flakes {
+		rows[i] = components.FlakesRow{
+			Check: f.Check, Suite: f.Suite, Command: f.Command, Seen: f.Seen,
+			LastSeen: agoLabel(f.LastAt, now), FirstSeen: agoLabel(f.FirstAt, now),
+			FirstExit: f.FirstExit, Session: f.LastSession,
+		}
+	}
+	return components.FlakesScreen{Rows: rows}
+}
+
+// updateFlakes routes keys while the screen is up.
+func (m Model) updateFlakes(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	screen := m.screens.flakes()
+	if screen == nil || screen.Update(msg) {
+		return m.closeFlakesScreen()
+	}
+	return m, nil
+}
+
+// closeFlakesScreen hands the screen back to the turn.
+func (m Model) closeFlakesScreen() (tea.Model, tea.Cmd) {
+	m.screens = m.screens.without(stateFlakes)
+	m.leaveSurface()
+	m.syncViewport()
+	return m, nil
+}
+
+// renderFlakesHint is the one line the screen leaves where the draft box
+// was: the way out and nothing else, the way the readings screen's does.
+func (m Model) renderFlakesHint() string {
+	return sty.SystemMsg.Render("flakes · ") + segAs(keys.Screen.Quit, "back to the prompt").render()
 }

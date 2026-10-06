@@ -32,7 +32,7 @@
   ✗ quality gate fast failing · 1 of 2 checks · 2.1s
 
 
-· a check failed and passed on its rerun, and the pass says it flaked
+· a check failed and passed on its rerun, the pass says it flaked, and how often it has before
                                                       
  ▎$ ran quality gate · fast · 4 checks                
     Quality gate "fast": PASS — 4/4 checks … 7 lines  
@@ -66,7 +66,7 @@
   ␛[91m✗␛[m ␛[38;5;252mquality gate fast failing␛[m␛[38;5;241m · 1 of 2 checks · 2.1s␛[m
 
 
-· a check failed and passed on its rerun, and the pass says it flaked
+· a check failed and passed on its rerun, the pass says it flaked, and how often it has before
 ␛[48;5;234m                                                      ␛[m
 ␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mquality gate · fast · 4 checks␛[m␛[48;5;234m                ␛[m
 ␛[48;5;234m    ␛[38;5;245mQuality gate "fast": PASS — 4/4 checks …␛[m␛[48;5;234m ␛[38;5;241m7 lines␛[m␛[48;5;234m  ␛[m

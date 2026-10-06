@@ -114,7 +114,9 @@ func gateVerdictLine(e entry) string {
 	}
 	kept := []string{firstLine(e.toolResult)}
 	for _, line := range strings.Split(e.toolResult, "\n") {
-		if strings.HasPrefix(line, "STALE:") {
+		// A flaked check's line too: it carries the ledger's count, which
+		// the close row reads back.
+		if strings.HasPrefix(line, "STALE:") || strings.HasPrefix(line, "  ~ ") {
 			kept = append(kept, line)
 		}
 	}
@@ -151,6 +153,25 @@ type checkAttempt struct {
 	// that can answer for an attempt before it, and its presence is what
 	// puts the re-run offer on a row.
 	suite bool
+	// flakes is the ledger's count for a gate run that flaked, worded for
+	// the close row's note column; empty on a first flake and on a run with
+	// none.
+	flakes string
+}
+
+// flakedBeforeNote is how often the checks that flaked in a gate run had
+// flaked in this checkout before, read off the result's own flaked line, and
+// where the whole ledger is: the reason a reader stops trusting the check
+// rather than the gate, beside the row that says it passed.
+// See docs/capabilities/testing.md#a-flake-is-counted-where-it-happened.
+func flakedBeforeNote(s quality.Summary) string {
+	switch {
+	case s.Flaked == 0 || s.FlakedBefore <= 0:
+		return ""
+	case s.FlakedBefore == 1:
+		return "flaked 1 time before · /gate flakes"
+	}
+	return fmt.Sprintf("flaked %d times before · /gate flakes", s.FlakedBefore)
 }
 
 // resolvedChecks is a turn's verification read as one state: every attempt in
@@ -195,6 +216,7 @@ func resolveChecks(es []entry) resolvedChecks {
 				label:   "quality gate " + s.Suite,
 				counts:  counts,
 				suite:   true,
+				flakes:  flakedBeforeNote(s),
 			}
 			if s.OK() {
 				a.outcome, r.verified = checkPassed, verification(i)

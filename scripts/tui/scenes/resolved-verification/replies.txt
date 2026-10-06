@@ -1,8 +1,17 @@
 # One turn: the tests fail, the code is fixed, and the repository's own suite
 # is run over the tree that came out of it. The close row is the reading of
 # all three.
+[session]
 Check where the rounds are counted
 +tool:execute_command:{"command":"make test"}
 Off by one at the loop bound. Fixing it, then verifying against the suite
 +tool:quality_gate:{"action":"run","suite":"default"}
 The bound is fixed and the suite is green.
+Running the suite once more over the fix
++tool:quality_gate:{"action":"run","suite":"default"}
+Green again; vet flaked a second time.
+
+# The session's own readings of its run take a reply of their own rather than
+# one of the second turn's rounds.
+[reading]
+The turn is running the suite again over the fix.

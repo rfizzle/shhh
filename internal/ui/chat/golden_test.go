@@ -4489,7 +4489,7 @@ func TestGolden_OnCloseGate(t *testing.T) {
 			Contained: contained, Fingerprint: fp, Duration: 2100 * time.Millisecond,
 			Checks: []quality.CheckResult{
 				{Name: "vet", Command: "go vet ./...", Duration: 300 * time.Millisecond},
-				{Name: "test", Command: "make test", Flaked: true, Duration: 1200 * time.Millisecond,
+				{Name: "test", Command: "make test", Flaked: true, FlakedBefore: 3, Duration: 1200 * time.Millisecond,
 					RerunDuration: 900 * time.Millisecond, Output: "--- FAIL: TestLandingReseeds"},
 				{Name: "lint", Command: "make lint", Duration: 400 * time.Millisecond},
 				{Name: "docs", Command: "python3 scripts/check-docs.py", Duration: 200 * time.Millisecond},
@@ -4498,7 +4498,7 @@ func TestGolden_OnCloseGate(t *testing.T) {
 		return []golden.Panel{
 			{Label: "the suite passed, and the turn closes on it", View: rows(passed)},
 			{Label: "the suite failed after its last hand-back", View: rows(failed)},
-			{Label: "a check failed and passed on its rerun, and the pass says it flaked", View: rows(flaked)},
+			{Label: "a check failed and passed on its rerun, the pass says it flaked, and how often it has before", View: rows(flaked)},
 		}
 	})
 }

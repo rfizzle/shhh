@@ -176,6 +176,10 @@ type mode struct {
 	// completion row, its /help paragraph and what typing it does are
 	// declared. "" is a mode no command of its own opens.
 	command string
+	// commandArgs are the words after command that open this mode, for a
+	// command whose other forms do other things: `/gate flakes` is the
+	// flakes screen, and `/gate run` is not. nil is the command alone.
+	commandArgs []string
 	// door is the rail block whose heading and fold marker open this mode
 	// (railclick.go). nil is a mode the rail has no door to.
 	door *surfaceDoor
@@ -275,6 +279,10 @@ func (h heldScreens) turns() *components.TurnsScreen {
 
 func (h heldScreens) alerts() *components.AlertsScreen {
 	return heldAs[components.AlertsScreen](h, stateAlerts)
+}
+
+func (h heldScreens) flakes() *components.FlakesScreen {
+	return heldAs[components.FlakesScreen](h, stateFlakes)
 }
 
 func (h heldScreens) spend() *components.SpendScreen {
@@ -680,6 +688,7 @@ func buildOverlays() map[state]*mode {
 		stateTurns:    paneScreen(heldScreens.turns, turnsScreenRow()),
 		stateAlerts:   paneScreen(heldScreens.alerts, alertsScreenRow()),
 		stateSpend:    paneScreen(heldScreens.spend, spendScreenRow()),
+		stateFlakes:   paneScreen(heldScreens.flakes, flakesScreenRow()),
 		stateTools: paneScreenDrawn((Model).toolsLines, mode{
 			hint:    (Model).renderToolsHint,
 			keys:    (Model).updateTools,
@@ -842,6 +851,15 @@ func spendScreenRow() mode {
 		keys:    (Model).updateStats,
 		command: "/stats",
 		door:    &surfaceDoor{components.RailSpend, railDoor{Model.openStats, statsShowing, Model.closeStatsScreen}},
+	}
+}
+
+func flakesScreenRow() mode {
+	return mode{
+		hint:        (Model).renderFlakesHint,
+		keys:        (Model).updateFlakes,
+		command:     "/gate",
+		commandArgs: []string{"flakes"},
 	}
 }
 

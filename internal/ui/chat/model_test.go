@@ -1234,6 +1234,9 @@ func heldScreensModel(t *testing.T) Model {
 			Model: "fast", IntervalRounds: 10, MinGap: -1,
 		}))
 	_, _, _ = m.notebook.Write(notebook.Orchestrator, "The freeze is the target", "better, not wider")
+	m = m.WithGate(Gate{Manage: func([]string) string { return "" }, Flakes: func() ([]storage.Flake, error) {
+		return []storage.Flake{{Suite: "default", Check: "test", Command: "make test", Seen: 2}}, nil
+	}})
 	landReading(&m, agent.SummaryVerdict{Text: "Reading the loop.", State: agent.SummaryOnTarget, Round: 3})
 	m.workSteps = stepsCalled(t, `{"steps":[{"title":"Locate the round accounting."},{"title":"Patch the limit"}]}`)
 	m.transcript = append(m.transcript,
@@ -1273,7 +1276,7 @@ func TestNewSession_TakesEveryHeldScreenWithIt(t *testing.T) {
 		if !ok || c.open == nil {
 			t.Fatalf("state %d holds a screen and no command opens it", s)
 		}
-		next, _ := c.open(m, []string{name})
+		next, _ := c.open(m, append([]string{name}, overlays()[s].commandArgs...))
 		m = next.(Model)
 		if m.state != s || m.screens[s] == nil {
 			t.Fatalf("%s did not put its own screen up: state=%d, held=%v", name, m.state, m.screens[s])
