@@ -176,6 +176,13 @@ func resolveChecks(es []entry) resolvedChecks {
 		switch s, isGate := gateVerdict(e); {
 		case isGate:
 			counts := fmt.Sprintf("%d of %d checks", s.Passed, s.Total)
+			// A flake is said on the row as it is in the result, because a
+			// check that passed only on its rerun is a pass a reader should
+			// still know about.
+			// See docs/capabilities/testing.md#how-do-quality-gates-stay-repeatable.
+			if s.Flaked > 0 {
+				counts += fmt.Sprintf(" · %d flaked", s.Flaked)
+			}
 			if s.Duration != "" {
 				counts += " · " + s.Duration
 			}

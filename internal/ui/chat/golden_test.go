@@ -4443,9 +4443,11 @@ func TestGolden_MultiEditCard(t *testing.T) {
 // Both verdicts are captured because the failing one is the whole point of
 // the mechanism — a turn never closes with a hidden failure — and because the
 // two rows differ in more than a colour: the failing check contributes its
-// output excerpt, which is what makes the block a different height.
+// output excerpt, which is what makes the block a different height. The
+// flaked pass is the third: a check that failed and passed on its rerun is a
+// pass, and the row says so with the count beside the tally.
 func TestGolden_OnCloseGate(t *testing.T) {
-	captureGolden(t, "on-close-gate", "the close of a turn that ran its own checks", []int{60, 80, 110}, func(width int) []golden.Panel {
+	captureGolden(t, "on-close-gate", "the close of a turn that ran its own checks", goldenWidths, func(width int) []golden.Panel {
 		rows := func(res *quality.Result) string {
 			m := frameModel(t, width, 40)
 			m.appendCloseGateRow(res, res.Fingerprint)
@@ -4482,9 +4484,21 @@ func TestGolden_OnCloseGate(t *testing.T) {
 				{Name: "docs", Command: "python3 scripts/check-docs.py", Duration: 400 * time.Millisecond},
 			},
 		}
+		flaked := &quality.Result{
+			Suite: "fast", Verdict: quality.VerdictPass, Trusted: true,
+			Contained: contained, Fingerprint: fp, Duration: 2100 * time.Millisecond,
+			Checks: []quality.CheckResult{
+				{Name: "vet", Command: "go vet ./...", Duration: 300 * time.Millisecond},
+				{Name: "test", Command: "make test", Flaked: true, Duration: 1200 * time.Millisecond,
+					RerunDuration: 900 * time.Millisecond, Output: "--- FAIL: TestLandingReseeds"},
+				{Name: "lint", Command: "make lint", Duration: 400 * time.Millisecond},
+				{Name: "docs", Command: "python3 scripts/check-docs.py", Duration: 200 * time.Millisecond},
+			},
+		}
 		return []golden.Panel{
 			{Label: "the suite passed, and the turn closes on it", View: rows(passed)},
 			{Label: "the suite failed after its last hand-back", View: rows(failed)},
+			{Label: "a check failed and passed on its rerun, and the pass says it flaked", View: rows(flaked)},
 		}
 	})
 }
