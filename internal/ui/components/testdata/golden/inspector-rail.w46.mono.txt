@@ -76,6 +76,17 @@
   opus · $12.34 main · 2 more · $0.02 ◇       
   session total · $12.36                      
 
+· a turn just closed · the heading keeps the turn's figure until the next opens
+  THIS TURN                             step 2
+  2 files this turn +18 −6 · 9 tools          
+
+  CONTEXT                          38% of 200k
+  ▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱                   76k
+
+  SPEND                                $0.0870
+  gpt-5.2 · $0.4120 main                      
+  session total · $0.4120                     
+
 · every block, height 16 (truncating)
   SUMMARY                       as of round 24
   … 4 more                                    
@@ -465,6 +476,17 @@
   ␛[1;38;5;254mSPEND␛[m                                  ␛[38;5;254m$0.41␛[m
   ␛[38;5;244mopus · $12.34 main · 2 more · $0.02 ◇␛[m       
   ␛[38;5;244msession total · $12.36␛[m                      
+
+· a turn just closed · the heading keeps the turn's figure until the next opens
+  ␛[1;38;5;254mTHIS TURN␛[m                             ␛[38;5;244mstep 2␛[m
+  ␛[38;5;244m2 files this turn␛[m ␛[38;5;254m+18␛[m ␛[38;5;254m−6␛[m␛[38;5;244m · ␛[m␛[38;5;244m9 tools␛[m          
+
+  ␛[1;38;5;254mCONTEXT␛[m                          ␛[38;5;254m38% of 200k␛[m
+  ␛[38;5;254m▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m                   ␛[38;5;254m76k␛[m
+
+  ␛[1;38;5;254mSPEND␛[m                                ␛[38;5;254m$0.0870␛[m
+  ␛[38;5;244mgpt-5.2 · $0.4120 main␛[m                      
+  ␛[38;5;244msession total · $0.4120␛[m                     
 
 · every block, height 16 (truncating)
   ␛[1;38;5;254mSUMMARY␛[m                       ␛[38;5;244mas of round 24␛[m

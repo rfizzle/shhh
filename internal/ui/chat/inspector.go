@@ -767,7 +767,7 @@ func (m Model) inspectorSpend() *components.InspectorSpend {
 		return nil
 	}
 	s := components.InspectorSpend{
-		Turn:    m.totalsLabel(m.turnSpend()),
+		Turn:    m.totalsLabel(m.railTurnSpend()),
 		Session: m.totalsLabel(total),
 	}
 	for _, share := range m.spendShares() {
@@ -782,6 +782,24 @@ func (m Model) inspectorSpend() *components.InspectorSpend {
 		s.Models = append(s.Models, row)
 	}
 	return &s
+}
+
+// railTurnSpend is the figure the SPEND heading carries: the running turn's
+// cost while one is open, and once it has closed what it came to, until the
+// next turn opens (docs/interface/surfaces.md#the-inspector-rail). The turn's
+// books are closed into the history at its end (vitals.endTurn), which zeroes
+// the running figure, so reading that alone drew the heading blank beside a
+// close row stating what the turn cost.
+func (m Model) railTurnSpend() meter.Totals {
+	running := m.turnSpend()
+	if m.vitals.open || running.In+running.Out > 0 || running.Cost > 0 {
+		return running
+	}
+	v, ok := m.vitals.lastTurn()
+	if !ok {
+		return meter.Totals{}
+	}
+	return meter.Totals{In: v.In, Out: v.Out, Cached: v.Cached, Cost: v.Cost, Priced: v.Priced}
 }
 
 // billTotal is the figure the block's `session total` row states and the

@@ -1,0 +1,5 @@
+# The round limit is fifty by default, which is fifty scripted replies away,
+# so the session starts under a ceiling of one round: the second turn's one
+# read is the whole of its budget, and the turn stops at the limit there.
+# [behavior] is the last table the harness writes, so the bare key lands in it.
+printf 'max_tool_rounds = 1\n' >> $XDG_CONFIG_HOME/shhh/config.toml && $SHHH_BIN code

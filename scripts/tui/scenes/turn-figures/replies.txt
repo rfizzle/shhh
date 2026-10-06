@@ -1,0 +1,6 @@
+# The first turn is one plain reply: it closes, and the rail's SPEND heading is
+# read after the close. The second is one read, which uses the turn's only
+# round, so it stops at the limit before the reply after it is asked for.
+The first turn is a plain answer, and it closes here.
+tool:read_file:{"path":"notes.md"}
+The read is done.

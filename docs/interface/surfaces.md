@@ -1741,8 +1741,9 @@ screens](#the-supporting-screens)): every source, the tools each brought, and
 for one that is not up what would move it.
 
 The last block is the bill. Its heading carries what the running turn has
-cost; the rows under it are the session's bill in shares, one per model that
-answered — the model, what its own requests cost and what kinds of request
+cost, and once the turn has closed what it came to — the figure its close row
+states — until the next turn opens; the rows under it are the session's bill
+in shares, one per model that answered — the model, what its own requests cost and what kinds of request
 they were, then what the children that ran on it cost after their `◇` — and
 the last row is `session total`, which the shares add up to. The machinery
 around a turn — the permission classifier, the session's readings, the title

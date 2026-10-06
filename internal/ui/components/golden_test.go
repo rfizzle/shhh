@@ -2118,9 +2118,21 @@ func TestGolden_InspectorRail(t *testing.T) {
 					Children: "$0.02"},
 			}},
 		}
+		// A turn that has just closed: THIS TURN at rest on what the turn
+		// did, and SPEND's heading still carrying what the turn cost — the
+		// figure its close row states — until the next turn opens.
+		closed := InspectorRail{
+			Turn:    &InspectorTurn{Step: 2, Tools: 9, Files: 2, Added: 18, Removed: 6},
+			Context: &InspectorContext{Pct: 38, Tokens: 76000, Window: 200000},
+			Spend: &InspectorSpend{Turn: "$0.0870", Session: "$0.4120", Models: []InspectorSpendModel{
+				{Model: "gpt-5.2", Cost: "$0.4120", Sources: []string{"main"}},
+			}},
+		}
 		return []golden.Panel{
 			{Label: "every block, unbounded height", View: full.View(width, 0)},
 			{Label: "spend · the machinery on the session's model", View: oneModel.View(width, 0)},
+			{Label: "a turn just closed · the heading keeps the turn's figure until the next opens",
+				View: closed.View(width, 0)},
 			{Label: "every block, height 16 (truncating)", View: full.View(width, 16)},
 			{Label: "blocks with nothing to say are omitted", View: quiet.View(width, 0)},
 			{Label: "eight files, four turns deep", View: session.View(width, 0)},

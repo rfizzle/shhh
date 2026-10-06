@@ -213,3 +213,36 @@ func TestSpend_SummaryIsAttributedToTheSummary(t *testing.T) {
 		t.Fatalf("and not to the agent, got %+v", got)
 	}
 }
+
+// The heading's turn figure is the turn's cost, and a turn that has closed
+// still cost what its close row says: the heading keeps that figure until
+// the next turn opens, rather than going blank the moment the turn's books
+// are closed into the history (docs/interface/surfaces.md#the-inspector-rail).
+func TestSpend_TheTurnFigureSurvivesTheClose(t *testing.T) {
+	m := turnModel(t)
+	m = sendText(t, m, "raise the cap")
+	m.accumulateUsage(&provider.Usage{PromptTokens: 1200, CompletionTokens: 80})
+	running := m.inspectorSpend()
+	if running == nil || running.Turn == "" {
+		t.Fatalf("a running turn that has spent states it on the heading: %+v", running)
+	}
+
+	m = finishTurn(t, m)
+	if m.turnOpen || m.vitals.open {
+		t.Fatalf("the turn should have closed: open %v, books open %v", m.turnOpen, m.vitals.open)
+	}
+	closed := m.inspectorSpend()
+	if closed == nil || closed.Turn != running.Turn {
+		t.Fatalf("the closed turn's figure went from the heading: running %q, closed %+v", running.Turn, closed)
+	}
+	if c := lastClose(t, m); c.Spend != closed.Turn {
+		t.Fatalf("the heading and the close row state the turn two ways: heading %q, close %q", closed.Turn, c.Spend)
+	}
+
+	// The next turn opening is what retires it: the heading is that turn's
+	// own from there, and it has spent nothing yet.
+	m.vitals.startTurn()
+	if next := m.inspectorSpend(); next == nil || next.Turn != "" {
+		t.Fatalf("the next turn's heading carried the last turn's figure: %+v", next)
+	}
+}
