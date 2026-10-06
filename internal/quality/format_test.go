@@ -73,3 +73,40 @@ func TestFormat_SummarizeReadsEveryLineFormatWrites(t *testing.T) {
 		})
 	}
 }
+
+// A pass is one a caller may act on only over the tree it ran against. Every
+// surface that holds a Result asks OK, and OK has to agree with the reading
+// the close row stores, so a stale pass cannot count on one surface and not
+// on another.
+func TestResult_OKIsTheCloseRowsReading(t *testing.T) {
+	clean := Fingerprint{Repo: true, Head: "abc", StatusHash: "s1"}
+	moved := Fingerprint{Repo: true, Head: "abc", StatusHash: "s2"}
+	tests := []struct {
+		name    string
+		res     Result
+		current Fingerprint
+		want    bool
+	}{
+		{"a pass over the current tree", Result{Verdict: VerdictPass, Fingerprint: clean}, clean, true},
+		{"a pass outside a repository", Result{Verdict: VerdictPass}, Fingerprint{}, true},
+		{"a pass whose tree changed while the checks ran",
+			Result{Verdict: VerdictPass, Fingerprint: clean, ChangedDuringRun: true}, clean, false},
+		{"a pass outside a repository whose tree changed while the checks ran",
+			Result{Verdict: VerdictPass, ChangedDuringRun: true}, Fingerprint{}, false},
+		{"a pass over a tree that has moved since", Result{Verdict: VerdictPass, Fingerprint: clean}, moved, false},
+		{"a fail", Result{Verdict: VerdictFail, Fingerprint: clean}, clean, false},
+		{"a blocked run", Result{Verdict: VerdictBlocked}, Fingerprint{}, false},
+		{"a cancelled run", Result{Verdict: VerdictCancelled}, Fingerprint{}, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.res.OK(tc.current)
+			if got != tc.want {
+				t.Errorf("OK = %v, want %v", got, tc.want)
+			}
+			if row := tc.res.Summary(tc.current).OK(); got != row {
+				t.Errorf("OK = %v, the close row reads %v", got, row)
+			}
+		})
+	}
+}

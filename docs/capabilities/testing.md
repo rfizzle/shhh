@@ -52,6 +52,13 @@ gate therefore neither depends on permission to update a shared cache nor
 takes a different branch because a developer happened to export a local
 setting.
 
+A verdict is about the tree the checks ran over, so a gate run that saw the
+tree change while it ran, or whose tree has moved since, is stale: it says so,
+and a stale pass is not a pass. Every place that acts on the verdict reads it
+the same way. The closing check's row marks it stale, and a backlog run's
+verify stage counts it as a failure, reports it in the same words, and does
+not close the item on it, whichever surface is working the backlog.
+
 The separately named contract and integration targets complete the evidence:
 they run on a prepared host and certify capabilities deliberately absent from
 the session boundary. Together the tiers make a result both repeatable where

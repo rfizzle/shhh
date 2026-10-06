@@ -1290,6 +1290,10 @@ type headlessCloseGate struct {
 	// most wants the answer.
 	mu   sync.Mutex
 	last *quality.Result
+	// at is the tree the last verdict was read against as the close
+	// reported it, so the answer a backlog run takes from state is the one
+	// the stderr line gave, a stale pass included.
+	at quality.Fingerprint
 	// ran says the suite was started, which is what separates the two
 	// answers a nil result carries: a turn with nothing to check, and one
 	// whose suite could not be run.
@@ -1316,10 +1320,11 @@ func (g *headlessCloseGate) close(string) string {
 		// verdict is the one the turn is about to be judged on anyway.
 		return ""
 	}
+	current := quality.TakeFingerprint(g.gate.Workspace)
 	g.mu.Lock()
-	g.last = res
+	g.last, g.at = res, current
 	g.mu.Unlock()
-	text := res.Format(quality.TakeFingerprint(g.gate.Workspace))
+	text := res.Format(current)
 	// The verdict goes to stderr beside the run's other activity rather than
 	// into the answer on stdout, which belongs to whatever is reading it.
 	fmt.Fprintf(os.Stderr, "» %s\n", text)
@@ -1350,7 +1355,10 @@ func (g *headlessCloseGate) state() quality.Closing {
 	if !g.ran || g.last == nil {
 		return quality.ClosingNotRun
 	}
-	return quality.ClosingOf(g.last.Verdict)
+	if g.last.OK(g.at) {
+		return quality.ClosingPassed
+	}
+	return quality.ClosingFailed
 }
 
 // alerts is the last verdict as the standing bad news a reading is given: the

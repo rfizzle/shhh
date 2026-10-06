@@ -55,14 +55,6 @@ const (
 	ClosingFailed Closing = "failed"
 )
 
-// ClosingOf is the verdict a run reached, said in the three answers.
-func ClosingOf(v Verdict) Closing {
-	if v == VerdictPass {
-		return ClosingPassed
-	}
-	return ClosingFailed
-}
-
 // Run ceilings.
 const (
 	// DefaultCheckTimeout bounds one check when the suite sets no timeout.

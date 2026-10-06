@@ -55,6 +55,11 @@ func (d *todoDriver) verify(ctx context.Context, st *run.State, named string) to
 		silent = ""
 	case d.gate != nil:
 		res, err := d.gate.Run(ctx, "")
+		// The tree the verdict is read against is the one the next stage will
+		// commit, and a pass over any other — the tree moved while the checks
+		// ran, or since — is stale, which the report says in the close row's
+		// words (Result.Format) and counts as a failure.
+		current := quality.TakeFingerprint(d.tree)
 		switch {
 		case err != nil:
 			fmt.Fprintf(&b, "quality gate: %v\n", err)
@@ -67,8 +72,8 @@ func (d *todoDriver) verify(ctx context.Context, st *run.State, named string) to
 			// person writes.
 			fmt.Fprintf(&b, "quality gate: %s\n", res.Reason)
 			silent = "the project has no " + quality.ConfigRelPath
-		case res.Verdict != quality.VerdictPass:
-			b.WriteString(res.Format(quality.TakeFingerprint(d.tree)) + "\n")
+		case !res.OK(current):
+			b.WriteString(res.Format(current) + "\n")
 			ok, silent = false, ""
 		default:
 			fmt.Fprintf(&b, "quality gate %q: pass\n", res.Suite)

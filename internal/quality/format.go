@@ -123,6 +123,14 @@ type Summary struct {
 // actually ran against.
 func (s Summary) OK() bool { return s.Verdict == VerdictPass && !s.Stale }
 
+// OK reports whether the result is a pass a caller may act on, read against
+// the tree whose fingerprint is current. It is the one reading of "passed"
+// for every surface that holds a Result — the close row, the backlog run's
+// verify stage, the unattended close — so a stale pass, which the close row
+// marks stale, is not a pass anywhere else either.
+// See docs/capabilities/testing.md#how-do-quality-gates-stay-repeatable.
+func (r *Result) OK(current Fingerprint) bool { return r.Summary(current).OK() }
+
 // Summary is the result read against the tree whose fingerprint is current:
 // what Summarize would read back from Format(current), without the text.
 func (r *Result) Summary(current Fingerprint) Summary {

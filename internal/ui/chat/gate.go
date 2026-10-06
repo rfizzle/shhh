@@ -211,7 +211,7 @@ func (m Model) finishCloseGate(msg closeGateMsg) (tea.Model, tea.Cmd) {
 		// one of the two the close can give about work it saw: a close that
 		// ran nothing never reaches here at all.
 		closing := quality.ClosingFailed
-		if msg.res.Summary(current).OK() {
+		if msg.res.OK(current) {
 			closing = quality.ClosingPassed
 		}
 		m.todo.runner.state.Checks(closing)

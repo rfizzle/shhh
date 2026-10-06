@@ -85,6 +85,11 @@ func (m Model) todoVerifyCmd(named string) tea.Cmd {
 		case gate == nil:
 		default:
 			res, err := gate(ctx, "")
+			// The tree the verdict is read against is the one the next stage will
+			// commit, and a pass over any other — the tree moved while the checks
+			// ran, or since — is stale, which the report says in the close row's
+			// words (Result.Format) and counts as a failure.
+			current := quality.TakeFingerprint(root)
 			switch {
 			case err != nil:
 				fmt.Fprintf(&b, "quality gate: %v\n", err)
@@ -97,8 +102,8 @@ func (m Model) todoVerifyCmd(named string) tea.Cmd {
 				// not exist.
 				fmt.Fprintf(&b, "quality gate: %s\n", res.Reason)
 				silent = "the project has no " + quality.ConfigRelPath
-			case res.Verdict != quality.VerdictPass:
-				b.WriteString(res.Format(quality.TakeFingerprint(root)) + "\n")
+			case !res.OK(current):
+				b.WriteString(res.Format(current) + "\n")
 				ok, silent = false, ""
 			default:
 				fmt.Fprintf(&b, "quality gate %q: pass\n", res.Suite)
