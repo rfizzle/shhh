@@ -19,6 +19,20 @@ test never starts the download from the public price table or writes into the
 developer's own cache. That is the suite a session can run again after an
 edit and obtain the same answer.
 
+The same answer has to hold on a busy machine, because three worktree gates
+run side by side as a matter of course. So a test waits on a fact, never on a
+clock: a channel the code under test closes, a state it polls with a bound,
+the line a fixture prints once it is ready, or a fake clock it advances
+itself. A sleep is a guess about how fast the machine is, and every guess
+loses to a head start. A bound is a ceiling and never a pace: a fact that
+holds ends the wait at once, so the bound is spent only by a test that is
+failing, and it is set long enough that load alone never spends it. The few
+pauses that remain are where time passing is itself the thing tested — a
+quiet keyboard, a fixture standing in for a provider's latency — and each
+says so beside it. A scene obeys the same rule: a snap waits for text only
+the surface draws, and a step that has nothing on screen to wait for lets the
+binary's own window run out rather than racing it.
+
 ## When does a real boundary belong in a test?
 
 Some claims cannot be made from an invented peer: that a built command reaches
