@@ -102,6 +102,13 @@ type CheckResult struct {
 	// Output and carried whatever the verdict: a check that passed with
 	// tests skipped has to say so.
 	Skips []string
+	// Flaked marks a check that failed and then passed when it was run
+	// again, alone, over the same tree. It counts as passed, and it is
+	// never silent: Output and EvidenceID stay the first run's, the failure
+	// a reader would want to see, and RerunDuration is the run that passed.
+	// See docs/capabilities/testing.md#how-do-quality-gates-stay-repeatable.
+	Flaked        bool
+	RerunDuration time.Duration
 }
 
 // OK reports whether the check ran and passed.
@@ -380,6 +387,7 @@ func (r *Runner) execute(ctx context.Context, suiteName string) *Result {
 		}(i, check)
 	}
 	wg.Wait()
+	r.rerunFailed(ctx, suiteName, suite, argvs, timeout, before, res.Checks)
 
 	res.Fingerprint = TakeFingerprint(r.Workspace)
 	res.ChangedDuringRun = before != res.Fingerprint
@@ -400,11 +408,56 @@ func (r *Runner) execute(ctx context.Context, suiteName string) *Result {
 	return res
 }
 
+// rerunFailed runs each check that exited non-zero once more, one at a time
+// and with nothing else of the suite running, so a check that failed under
+// the load of its siblings is given the run it did not get. A pass on the
+// rerun marks the first result Flaked and makes it a pass; a second failure
+// leaves the first result exactly as it was.
+//
+// It never lowers the bar. A check that timed out or did not start is not
+// rerun. Nothing is rerun when the tree moved while the suite ran, because
+// the rerun would then be a verdict about a different tree; the caller
+// fingerprints again after this returns, so a tree that moves during a rerun
+// still makes the whole result stale.
+// See docs/capabilities/testing.md#how-do-quality-gates-stay-repeatable.
+func (r *Runner) rerunFailed(ctx context.Context, suiteName string, suite Suite, argvs [][]string, timeout time.Duration, before Fingerprint, checks []CheckResult) {
+	if suite.Reruns() < 1 || ctx.Err() != nil {
+		return
+	}
+	var failed []int
+	for i, c := range checks {
+		if c.Err == "" && !c.TimedOut && c.ExitCode != 0 {
+			failed = append(failed, i)
+		}
+	}
+	if len(failed) == 0 || TakeFingerprint(r.Workspace) != before {
+		return
+	}
+	for _, i := range failed {
+		if ctx.Err() != nil {
+			return
+		}
+		again := r.spawnCheck(ctx, r.Workspace, suiteName, suite.Checks[i], argvs[i], timeout, false)
+		if !again.OK() {
+			continue
+		}
+		c := &checks[i]
+		c.ExitCode, c.Flaked, c.RerunDuration, c.Skips = 0, true, again.Duration, again.Skips
+	}
+}
+
 // runCheck spawns one check with its timeout and output ceilings, storing the
 // bounded capture as evidence and keeping an inline tail excerpt. dir is where
 // it runs: the workspace for a suite's check, and the tree being regenerated
 // for a generator.
 func (r *Runner) runCheck(ctx context.Context, dir, suite string, check Check, argv []string, timeout time.Duration) CheckResult {
+	return r.spawnCheck(ctx, dir, suite, check, argv, timeout, true)
+}
+
+// spawnCheck is runCheck, with store false for a rerun: whichever way a
+// rerun goes the first run's result is the one kept, evidence included, so
+// a capture of the rerun would be an entry nothing points at.
+func (r *Runner) spawnCheck(ctx context.Context, dir, suite string, check Check, argv []string, timeout time.Duration, store bool) CheckResult {
 	cr := CheckResult{
 		Name:    check.Name,
 		Command: strings.Join(append([]string{check.Exe}, check.Args...), " "),
@@ -456,7 +509,7 @@ func (r *Runner) runCheck(ctx context.Context, dir, suite string, check Check, a
 	if scrub != nil {
 		captured = scrub(captured)
 	}
-	if r.Evidence != nil && captured != "" {
+	if store && r.Evidence != nil && captured != "" {
 		if id, err := r.Evidence(ToolName+":"+suite+":"+check.Name, []byte(captured)); err == nil {
 			cr.EvidenceID = id
 		}

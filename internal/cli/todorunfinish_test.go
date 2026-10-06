@@ -24,11 +24,14 @@ func TestVerify_AStalePassIsNotAPass(t *testing.T) {
 		{"a pass over the tree it ran against", "true", true, `quality gate "default": pass`},
 		{"a pass whose tree changed while the checks ran", "echo moved >> moved.txt", false,
 			"STALE: the tree changed while the checks ran"},
+		{"a pass on a rerun", "if [ -e SCRATCH/ran ]; then exit 0; fi; touch SCRATCH/ran; exit 1", true,
+			"PASS — 1/1 checks passed, 1 flaked ("},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ws := gitWorkspace(t)
-			suite := `{"checks": [{"name": "c", "exe": "sh", "args": ["-c", "` + tc.check + `"]}]}`
+			check := strings.ReplaceAll(tc.check, "SCRATCH", t.TempDir())
+			suite := `{"checks": [{"name": "c", "exe": "sh", "args": ["-c", "` + check + `"]}]}`
 			writeQualityConfig(t, ws, `{"on_close": "default", "suites": {"default": `+suite+`}}`)
 			gate := &quality.Runner{Workspace: ws}
 

@@ -105,6 +105,13 @@ func (m Model) todoVerifyCmd(named string) tea.Cmd {
 			case !res.OK(current):
 				b.WriteString(res.Format(current) + "\n")
 				ok, silent = false, ""
+			case res.Summary(current).Flaked > 0:
+				// A pass with a check that passed only on its rerun is reported
+				// whole, in the words the close row and the model read, so the
+				// flake is not lost between the gate and the item's report.
+				// See docs/capabilities/testing.md#how-do-quality-gates-stay-repeatable.
+				b.WriteString(res.Format(current) + "\n")
+				silent = ""
 			default:
 				fmt.Fprintf(&b, "quality gate %q: pass\n", res.Suite)
 				silent = ""

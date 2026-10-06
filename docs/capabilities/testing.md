@@ -59,6 +59,35 @@ the same way. The closing check's row marks it stale, and a backlog run's
 verify stage counts it as a failure, reports it in the same words, and does
 not close the item on it, whichever surface is working the backlog.
 
+A check that fails is run once more, on its own, before the verdict is
+reached: after the whole suite has finished, each check that exited with a
+failure is run again with nothing else of the suite beside it, so a test that
+failed only because its siblings were loading the machine is given the run it
+did not get. That second run happens only over the tree the suite started on.
+When the tree moved while the checks ran, nothing is run again and the result
+is stale as before, and a tree that moves during the second run makes the
+whole result stale too. A check that timed out or never started is not run
+again, because neither is a verdict about the code.
+
+A check that failed and then passed is a **flake**, and a flake is never
+silent. Its line in the result says it flaked, with both runs' durations; the
+result's first line counts it beside the tally; the closing check's row says
+it beside the count of checks; a backlog run's verify report carries the same
+text; and the model is told that a flaked check counts as passed, so it does
+not spend a round fixing a failure that did not recur. The failure stays on
+the record as the check's evidence, because why it flaked is what a person
+looking at it next wants to read.
+
+A flake never lowers the bar. The verdict is a pass only because the second
+run passed, over the same tree, and a check that fails twice is a failure
+exactly as it was before. There is one second run and not more: a check
+allowed three tries passes when it fails two times in three, and the gate
+would then be vouching for the odds rather than the code. One run is enough
+to tell a check that failed under load from one that fails, and a check that
+keeps needing it is a check to distrust, which the count beside the tally is
+there to make visible. A suite that wants every failure to stand turns the
+second run off.
+
 The separately named contract and integration targets complete the evidence:
 they run on a prepared host and certify capabilities deliberately absent from
 the session boundary. Together the tiers make a result both repeatable where

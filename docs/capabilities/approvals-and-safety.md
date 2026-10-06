@@ -1185,6 +1185,13 @@ An integration target is explicit about its prerequisites and fails its
 selected runner when they are absent. A skip is useful on another platform;
 it is not evidence that the platform-specific contract held.
 
+A failing check is run once more, alone, over the same tree, and a pass on
+that second run is reported as a flake rather than hidden
+([why one run, and why it never lowers the verdict](testing.md#how-do-quality-gates-stay-repeatable)).
+A suite sets this with `rerun_failed`: `1`, the default when the key is
+absent, runs a failed check once more, and `0` lets every failure stand. No
+other number is accepted.
+
 The suite can also be told to run on its own, as a turn closes over work it
 changed. That changes nothing about what a check may do — the commands are
 still only the ones in your file, still run read-only and contained where a

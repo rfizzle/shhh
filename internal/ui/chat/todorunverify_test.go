@@ -28,6 +28,10 @@ func TestVerify_AStalePassIsNotAPass(t *testing.T) {
 		{"a pass whose tree changed while the checks ran",
 			quality.Result{Suite: "default", Verdict: quality.VerdictPass, ChangedDuringRun: true},
 			false, "STALE: the tree changed while the checks ran"},
+		{"a pass with a check that passed on its rerun",
+			quality.Result{Suite: "default", Verdict: quality.VerdictPass, Checks: []quality.CheckResult{
+				{Name: "test", Command: "make test", Flaked: true}}},
+			true, "1/1 checks passed, 1 flaked"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

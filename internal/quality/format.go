@@ -18,7 +18,11 @@ func (r *Result) Format(current Fingerprint) string {
 	fmt.Fprintf(&b, "Quality gate %q: %s", r.Suite, strings.ToUpper(string(r.Verdict)))
 	switch r.Verdict {
 	case VerdictPass, VerdictFail:
-		fmt.Fprintf(&b, " — %d/%d checks passed (%s)", r.passed(), len(r.Checks), roundDuration(r.Duration))
+		fmt.Fprintf(&b, " — %d/%d checks passed", r.passed(), len(r.Checks))
+		if n := r.flaked(); n > 0 {
+			fmt.Fprintf(&b, ", %d flaked", n)
+		}
+		fmt.Fprintf(&b, " (%s)", roundDuration(r.Duration))
 	case VerdictBlocked:
 		b.WriteString(" — the gate could not run: " + r.Reason + ". Blocked is never a pass.")
 	case VerdictCancelled:
@@ -67,6 +71,19 @@ func (r *Result) passed() int {
 	return n
 }
 
+// flaked is how many of the result's checks passed only on their rerun.
+func (r *Result) flaked() int {
+	n := 0
+	for _, c := range r.Checks {
+		if c.Flaked {
+			n++
+		}
+	}
+	return n
+}
+
+// formatCheck is the one place a check's outcome is worded. The screen and
+// the model read the same text, so a flake is spelled here and nowhere else.
 func formatCheck(c CheckResult) string {
 	var b strings.Builder
 	evidence := ""
@@ -80,6 +97,11 @@ func formatCheck(c CheckResult) string {
 		fmt.Fprintf(&b, "  ✗ %s — %s (timed out after %s)%s\n", c.Name, c.Command, roundDuration(c.Duration), evidence)
 	case c.ExitCode != 0:
 		fmt.Fprintf(&b, "  ✗ %s — %s (exit %d, %s)%s\n", c.Name, c.Command, c.ExitCode, roundDuration(c.Duration), evidence)
+	case c.Flaked:
+		// The evidence named is the first run's, the failure: the pass is
+		// the rerun, and what made the check flake is what a reader opens.
+		fmt.Fprintf(&b, "  ~ %s — %s (flaked: failed then passed, %s + %s)%s\n", c.Name, c.Command,
+			roundDuration(c.Duration), roundDuration(c.RerunDuration), evidence)
 	default:
 		fmt.Fprintf(&b, "  ✓ %s — %s (%s)%s\n", c.Name, c.Command, roundDuration(c.Duration), evidence)
 	}
@@ -113,7 +135,9 @@ type Summary struct {
 	Suite         string
 	Verdict       Verdict
 	Passed, Total int
-	Duration      string
+	// Flaked is how many of the passed checks passed only on their rerun.
+	Flaked   int
+	Duration string
 	// Stale marks a verdict that does not apply to the tree it was read
 	// against — the tree moved under it. A stale pass is not a pass.
 	Stale bool
@@ -137,13 +161,13 @@ func (r *Result) Summary(current Fingerprint) Summary {
 	s := Summary{Suite: r.Suite, Verdict: r.Verdict, Stale: r.staleNote(current) != ""}
 	switch r.Verdict {
 	case VerdictPass, VerdictFail:
-		s.Passed, s.Total, s.Duration = r.passed(), len(r.Checks), roundDuration(r.Duration)
+		s.Passed, s.Total, s.Flaked, s.Duration = r.passed(), len(r.Checks), r.flaked(), roundDuration(r.Duration)
 	}
 	return s
 }
 
 var summaryPattern = regexp.MustCompile(
-	`^Quality gate "([^"]*)": ([A-Z]+)(?: — (\d+)/(\d+) checks passed \(([^)]*)\))?`)
+	`^Quality gate "([^"]*)": ([A-Z]+)(?: — (\d+)/(\d+) checks passed(?:, (\d+) flaked)? \(([^)]*)\))?`)
 
 // Summarize reads back a result rendered by Format. It reports false for
 // anything else — a status line, an error, a tool result from elsewhere — so
@@ -156,10 +180,11 @@ func Summarize(result string) (Summary, bool) {
 	s := Summary{
 		Suite:    m[1],
 		Verdict:  Verdict(strings.ToLower(m[2])),
-		Duration: m[5],
+		Duration: m[6],
 		Stale:    strings.Contains(result, "\nSTALE:"),
 	}
 	s.Passed, _ = strconv.Atoi(m[3])
 	s.Total, _ = strconv.Atoi(m[4])
+	s.Flaked, _ = strconv.Atoi(m[5])
 	return s, true
 }

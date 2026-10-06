@@ -19,12 +19,18 @@ import (
 const ToolName = "quality_gate"
 
 // ToolDefinition is the quality_gate tool registered for agent sessions.
+//
+// The flake sentence is there so a model reading a `~` line does not spend a
+// round fixing a check that passed: the rerun is the gate's, over the same
+// tree, and the verdict already counts it.
+// See docs/capabilities/testing.md#how-do-quality-gates-stay-repeatable.
 func ToolDefinition() provider.Tool {
 	return provider.Tool{
 		Name: ToolName,
 		Description: "Verify your work with the repository's own quality checks (tests, linters). " +
 			"Suites are named in the project's trusted config (" + ConfigRelPath + "); you pick a suite by name and can never supply command text. " +
 			"Action \"run\" executes a suite (blocking; suite defaults to \"" + DefaultSuite + "\") and returns pass/fail/blocked/cancelled with each check's outcome. " +
+			"A check that failed and then passed on its rerun is reported as flaked and counts as passed. " +
 			"Action \"result\" re-reports the last run and whether it is stale (the tree changed since). " +
 			"Run the gate before declaring a task complete, and treat any verdict other than a non-stale pass as not done.",
 		Parameters: json.RawMessage(`{

@@ -56,6 +56,25 @@ type Suite struct {
 	// AllowWrite grants the suite's checks write access to the workspace
 	// inside containment; the default is a read-only workspace.
 	AllowWrite bool `json:"allow_write"`
+	// RerunFailed is how many times a check that failed is run again, alone,
+	// over an unchanged tree. A pointer because zero is an answer: a suite
+	// that wants every failure to stand writes 0, where an absent key takes
+	// DefaultRerunFailed. One is the most it may be.
+	// See docs/capabilities/testing.md#how-do-quality-gates-stay-repeatable.
+	RerunFailed *int `json:"rerun_failed"`
+}
+
+// DefaultRerunFailed is how many reruns a failing check earns when the suite
+// names no number: one, which is what tells a check that failed under load
+// from one that fails.
+const DefaultRerunFailed = 1
+
+// Reruns is how many times this suite runs a failed check again.
+func (s Suite) Reruns() int {
+	if s.RerunFailed == nil {
+		return DefaultRerunFailed
+	}
+	return *s.RerunFailed
 }
 
 // Config is the trusted quality-gate configuration.
@@ -139,6 +158,12 @@ func (c Config) validate() error {
 		}
 		if len(suite.Checks) == 0 {
 			return fmt.Errorf("suite %q has no checks", name)
+		}
+		// More than one rerun is refused rather than clamped: a check given
+		// three tries passes when it fails two times in three, and the gate
+		// would then be vouching for the odds rather than the code.
+		if n := suite.Reruns(); n < 0 || n > 1 {
+			return fmt.Errorf("suite %q: rerun_failed is %d; it is 0 (failures stand) or 1 (a failure is run once more)", name, n)
 		}
 		for i, check := range suite.Checks {
 			if check.Name == "" {
