@@ -319,6 +319,10 @@ func (d *todoDriver) laneDriver(l *todoLane) *todoDriver {
 	// contained in the tree it writes, as the checkout's is.
 	if d.gate != nil {
 		c.gate = &quality.Runner{Workspace: c.tree, WrapIn: d.gate.WrapIn}
+		// A flake in the lane's copy is the checkout's flake: the ledger is
+		// keyed on the checkout the copy was made from, never the copy,
+		// which is gone once the lane lands.
+		recordGateFlakes(c.gate, d.root, func() string { return recordedSession(d.rec) })
 	}
 	return &c
 }

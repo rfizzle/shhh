@@ -109,6 +109,11 @@ type CheckResult struct {
 	// See docs/capabilities/testing.md#how-do-quality-gates-stay-repeatable.
 	Flaked        bool
 	RerunDuration time.Duration
+	// FlakedBefore is how many times the checkout's ledger had seen this
+	// check flake before this run: what tells a check that needs fixing
+	// from a machine that was busy. Zero on a check that did not flake, on
+	// its first flake, and wherever no ledger is wired.
+	FlakedBefore int
 }
 
 // OK reports whether the check ran and passed.
@@ -141,6 +146,18 @@ type Result struct {
 	Contained        string
 	Duration         time.Duration
 }
+
+// Flake is one flake as the ledger is told it: the check that failed and
+// then passed on its rerun, and the exit code the failing run gave, which
+// the result no longer carries once the rerun passed.
+type Flake struct {
+	Suite, Check, Command string
+	FirstExit             int
+}
+
+// FlakeFunc records one flake and answers how many times the same check had
+// flaked in the checkout before it.
+type FlakeFunc func(Flake) (before int)
 
 // Runner owns a session's gate runs: it loads the trusted config fresh per
 // run, executes at most one run at a time, and keeps the latest result for
@@ -183,6 +200,15 @@ type Runner struct {
 	// before the first run and never reassigned, as Observe is.
 	// See docs/capabilities/subagents.md#what-they-share.
 	Slot func(ctx context.Context) (release func(), ok bool)
+	// Flakes records a flake in the checkout's ledger and answers how many
+	// times the same check had flaked there before it, which the check
+	// carries as FlakedBefore; nil records nothing. It answers a count and
+	// never an error, because a ledger that cannot be written is the
+	// ledger's problem and never the verdict's: the hook drops what it
+	// could not record. Set before the first run and never reassigned, as
+	// Observe is.
+	// See docs/capabilities/testing.md#a-flake-is-counted-where-it-happened.
+	Flakes FlakeFunc
 
 	mu sync.Mutex
 	// scrub rewrites a check's captured output before any of it is kept;
@@ -442,7 +468,11 @@ func (r *Runner) rerunFailed(ctx context.Context, suiteName string, suite Suite,
 			continue
 		}
 		c := &checks[i]
+		first := c.ExitCode
 		c.ExitCode, c.Flaked, c.RerunDuration, c.Skips = 0, true, again.Duration, again.Skips
+		if r.Flakes != nil {
+			c.FlakedBefore = max(r.Flakes(Flake{Suite: suiteName, Check: c.Name, Command: c.Command, FirstExit: first}), 0)
+		}
 	}
 }
 

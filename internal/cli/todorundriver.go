@@ -208,6 +208,7 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 	// gets no gate at all rather than one that refuses when it is reached.
 	if projectTrust().Allows() {
 		d.gate = &quality.Runner{Workspace: root}
+		recordGateFlakes(d.gate, root, func() string { return recordedSession(d.rec) })
 		_, _, d.closeGate = onCloseGate(d.gate)
 		// A generated file is regenerated in the copy it lands through
 		// rather than merged, and the generator writes that copy — so it is

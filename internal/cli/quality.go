@@ -3,6 +3,9 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
@@ -10,6 +13,8 @@ import (
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
+	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/todo"
 )
 
 // openQualityGate builds the session's quality-gate runner: suites
@@ -32,6 +37,11 @@ func openQualityGate(cfg config.Config, red *evidence.Reducer, sc *scope.Scope) 
 		return nil
 	}
 	r := &quality.Runner{Workspace: ws}
+	// Beside the verdict's hook, which recordGateVerdicts sets once there is
+	// a session to report to: the ledger needs none, so every surface built
+	// on this runner — a served session's among them — counts its flakes
+	// from the first run, and the session is named where one is recording.
+	recordGateFlakes(r, todo.Root(ws), func() string { return "" })
 	if red != nil {
 		r.Evidence = red.Store().Put
 	}
@@ -84,6 +94,56 @@ func recordGateVerdicts(gate *quality.Runner, rec *observeRecorder) {
 	// A session that is not recording leaves the hook nil, which the runner
 	// reads as "record nothing".
 	gate.Observe = observe.GateHook(rec.observer())
+	// The ledger is written whether or not the session records — it is the
+	// checkout's count, not the session's, and openQualityGate already set
+	// it — so all this adds is the session's name on the row.
+	recordGateFlakes(gate, todo.Root(gate.Workspace), func() string { return recordedSession(rec) })
+}
+
+// recordGateFlakes points a gate runner at the checkout's flake ledger, under
+// root — the checkout's, which a lane's runner does not stand in — so every
+// runner that can rerun a check counts its flakes in the same rows. session
+// names the session a flake happened in, read when it happens because the
+// session's record row is opened after the runner is built.
+//
+// It is one function for the reason recordGateVerdicts is: a runner built
+// without it reruns and calls a check flaked, and the count the next run
+// reads says it never happened.
+//
+// Nothing it does can reach the verdict. A store that will not open or a
+// write that fails is dropped here, and the check says it flaked without
+// saying how often: the gate's reading of the code does not depend on the
+// bookkeeping about it, and an error written to the terminal would land on
+// top of whatever surface is drawing.
+// See docs/capabilities/testing.md#a-flake-is-counted-where-it-happened.
+func recordGateFlakes(gate *quality.Runner, root string, session func() string) {
+	if gate == nil || root == "" {
+		return
+	}
+	gate.Flakes = func(f quality.Flake) int {
+		db, err := openStore()
+		if err != nil {
+			return 0
+		}
+		defer db.Close()
+		before, err := db.RecordFlake(storage.Flake{
+			Root: root, Suite: f.Suite, Check: f.Check, Command: f.Command,
+			FirstExit: f.FirstExit, LastSession: session(),
+		}, time.Now())
+		if err != nil {
+			return 0
+		}
+		return before
+	}
+}
+
+// recordedSession is a session as the ledger names it: its record's row id,
+// which `shhh observe session` opens, or nothing where nothing is recorded.
+func recordedSession(rec *observeRecorder) string {
+	if id := rec.sessionID(); id > 0 {
+		return strconv.FormatInt(id, 10)
+	}
+	return ""
 }
 
 // onCloseGate is the workspace's on-close setting, read fresh off the
@@ -126,7 +186,40 @@ func gateManager(r *quality.Runner) func(args []string) string {
 			return r.Start(suite)
 		case len(args) == 1 && args[0] == "result":
 			return r.Status()
+		case len(args) == 1 && args[0] == "flakes":
+			return flakesText(gateFlakes(r)())
 		}
-		return "usage: /gate run [suite] · /gate result · /gate on · /gate off"
+		return "usage: /gate run [suite] · /gate result · /gate flakes · /gate on · /gate off"
 	}
+}
+
+// gateFlakes reads the flake ledger of the checkout the runner stands in,
+// which /gate flakes lists.
+func gateFlakes(r *quality.Runner) func() ([]storage.Flake, error) {
+	root := todo.Root(r.Workspace)
+	return func() ([]storage.Flake, error) {
+		db, err := openStore()
+		if err != nil {
+			return nil, err
+		}
+		defer db.Close()
+		return db.FlakesFor(root)
+	}
+}
+
+// flakesText is the ledger as one answer, for a surface with no screen to
+// open it on: a line a check, the most recent flake first.
+func flakesText(flakes []storage.Flake, err error) string {
+	switch {
+	case err != nil:
+		return "the flake ledger could not be read: " + err.Error()
+	case len(flakes) == 0:
+		return "no check has flaked in this checkout"
+	}
+	lines := []string{"checks that failed and passed on their rerun in this checkout:"}
+	for _, f := range flakes {
+		lines = append(lines, fmt.Sprintf("  %s · %s · %s · last %s — %s",
+			f.Check, f.Suite, countOf(f.Seen, "time", "times"), f.LastAt.Local().Format("2006-01-02 15:04"), f.Command))
+	}
+	return strings.Join(lines, "\n")
 }

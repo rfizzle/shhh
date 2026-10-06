@@ -1,6 +1,7 @@
 package quality
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -26,6 +27,10 @@ func TestFormat_SummarizeReadsEveryLineFormatWrites(t *testing.T) {
 		{Name: "absent", Command: "tokei", Err: "executable not found"},
 		{Name: "flaky", Command: "go test ./internal/subagent", Flaked: true, Duration: 1200 * time.Millisecond,
 			RerunDuration: 900 * time.Millisecond, Output: "--- FAIL: TestLanding", EvidenceID: "ev3"},
+		{Name: "flakier", Command: "sh -c 'f(a, b) (x)'", Flaked: true, FlakedBefore: 3, Duration: time.Second,
+			RerunDuration: time.Second},
+		{Name: "flaky-twice", Command: "make lint", Flaked: true, FlakedBefore: 1, Duration: time.Second,
+			RerunDuration: time.Second, EvidenceID: "ev4"},
 	}
 	tests := []struct {
 		name    string
@@ -37,13 +42,16 @@ func TestFormat_SummarizeReadsEveryLineFormatWrites(t *testing.T) {
 			Duration: 2250 * time.Millisecond, Checks: every[:2]}, clean,
 			Summary{Suite: "default", Verdict: VerdictPass, Passed: 2, Total: 2, Duration: "2.3s"}},
 		{"a fail over every check state", Result{Suite: "full", Verdict: VerdictFail, Fingerprint: clean,
-			Duration: 65 * time.Second, Contained: "bubblewrap", Checks: every}, clean,
+			Duration: 65 * time.Second, Contained: "bubblewrap", Checks: every[:6]}, clean,
 			Summary{Suite: "full", Verdict: VerdictFail, Passed: 3, Total: 6, Flaked: 1, Duration: "1m5s"}},
 		{"a pass with a flake", Result{Suite: "default", Verdict: VerdictPass, Fingerprint: clean,
 			Duration: 2100 * time.Millisecond, Checks: []CheckResult{every[0], every[5]}}, clean,
 			Summary{Suite: "default", Verdict: VerdictPass, Passed: 2, Total: 2, Flaked: 1, Duration: "2.1s"}},
+		{"a pass whose flakes were seen before, the most of them read back", Result{Suite: "default", Verdict: VerdictPass,
+			Fingerprint: clean, Duration: 3 * time.Second, Checks: every[5:]}, clean,
+			Summary{Suite: "default", Verdict: VerdictPass, Passed: 3, Total: 3, Flaked: 3, FlakedBefore: 3, Duration: "3s"}},
 		{"a stale pass with a flake", Result{Suite: "default", Verdict: VerdictPass, Fingerprint: clean,
-			ChangedDuringRun: true, Duration: 2100 * time.Millisecond, Checks: every[5:]}, clean,
+			ChangedDuringRun: true, Duration: 2100 * time.Millisecond, Checks: every[5:6]}, clean,
 			Summary{Suite: "default", Verdict: VerdictPass, Passed: 1, Total: 1, Flaked: 1, Duration: "2.1s", Stale: true}},
 		{"a fail with no checks", Result{Suite: "empty", Verdict: VerdictFail}, Fingerprint{},
 			Summary{Suite: "empty", Verdict: VerdictFail, Duration: "0s"}},
@@ -147,6 +155,34 @@ func TestFormat_AFlakeIsOnTheLineAndInTheSummary(t *testing.T) {
 	s, ok := Summarize(text)
 	if !ok || s.Flaked != 1 || s.Passed != 4 || !s.OK() {
 		t.Errorf("Summarize = %+v, %v; want 4 passed, 1 flaked, a pass", s, ok)
+	}
+}
+
+// The ledger's count rides the flaked line, as the reason a reader stops
+// trusting the check rather than the gate; a first flake says nothing more
+// than that it flaked, and the verdict is the rerun's either way.
+func TestFormat_TheFlakedLineSaysHowManyTimesBefore(t *testing.T) {
+	tests := []struct {
+		before int
+		want   string
+	}{
+		{0, "  ~ test — make test (flaked: failed then passed, 1.2s + 900ms) [full output: evidence ev1]"},
+		{1, "  ~ test — make test (flaked: failed then passed, 1.2s + 900ms, 1 time before) [full output: evidence ev1]"},
+		{3, "  ~ test — make test (flaked: failed then passed, 1.2s + 900ms, 3 times before) [full output: evidence ev1]"},
+	}
+	for _, tc := range tests {
+		t.Run(fmt.Sprint(tc.before), func(t *testing.T) {
+			res := Result{Suite: "default", Verdict: VerdictPass, Duration: 2100 * time.Millisecond,
+				Checks: []CheckResult{{Name: "test", Command: "make test", Flaked: true, FlakedBefore: tc.before,
+					Duration: 1200 * time.Millisecond, RerunDuration: 900 * time.Millisecond, EvidenceID: "ev1"}}}
+			text := res.Format(res.Fingerprint)
+			if !strings.Contains(text, tc.want) {
+				t.Errorf("Format lacks %q:\n%s", tc.want, text)
+			}
+			if s, _ := Summarize(text); s.FlakedBefore != tc.before || !s.OK() {
+				t.Errorf("Summarize = %+v; want %d before, a pass", s, tc.before)
+			}
+		})
 	}
 }
 

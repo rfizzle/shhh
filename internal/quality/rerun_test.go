@@ -216,3 +216,53 @@ func TestLoadConfig_RerunFailed(t *testing.T) {
 		})
 	}
 }
+
+// A flake is told to the ledger with the exit code the failing run gave,
+// which the check no longer carries once the rerun passed, and the ledger's
+// answer is the check's FlakedBefore and the line's clause. A check that
+// passed first time or failed twice is told nothing, and the ledger can only
+// answer a count: whatever it says, the verdict is the rerun's.
+func TestRunner_AFlakeIsToldToTheLedger(t *testing.T) {
+	tests := []struct {
+		name       string
+		script     string // %[1]q is a marker outside the tree
+		answer     int
+		wantTold   []Flake
+		wantBefore int
+		wantLine   string
+	}{
+		{"a flake is told, and the count rides the line",
+			`if [ -e %[1]q ]; then exit 0; fi; touch %[1]q; exit 5`, 3,
+			[]Flake{{Suite: "default", Check: "check", FirstExit: 5}}, 3, ", 3 times before)"},
+		{"a ledger that could not count answers nothing, and the pass stands",
+			`if [ -e %[1]q ]; then exit 0; fi; touch %[1]q; exit 1`, -1,
+			[]Flake{{Suite: "default", Check: "check", FirstExit: 1}}, 0, "(flaked: failed then passed, "},
+		{"a pass is not a flake", `: %[1]q; exit 0`, 9, nil, 0, "✓ check"},
+		{"two failures are not a flake", `: %[1]q; exit 2`, 9, nil, 0, "✗ check"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ws := gitFixture(t)
+			writeConfig(t, ws, rerunSuite("", fmt.Sprintf(tc.script, filepath.Join(t.TempDir(), "ran"))))
+			var told []Flake
+			r := &Runner{Workspace: ws, Flakes: func(f Flake) int {
+				f.Command = ""
+				told = append(told, f)
+				return tc.answer
+			}}
+			res := mustRun(t, r, "default")
+			if fmt.Sprint(told) != fmt.Sprint(tc.wantTold) {
+				t.Errorf("the ledger was told %+v, want %+v", told, tc.wantTold)
+			}
+			if c := res.Checks[0]; c.FlakedBefore != tc.wantBefore {
+				t.Errorf("FlakedBefore = %d, want %d", c.FlakedBefore, tc.wantBefore)
+			}
+			if out := res.Format(res.Fingerprint); !strings.Contains(out, tc.wantLine) {
+				t.Errorf("the result lacks %q:\n%s", tc.wantLine, out)
+			}
+			if tc.wantTold != nil && res.Verdict != VerdictPass {
+				t.Errorf("verdict = %s; a flake is a pass whatever the ledger says", res.Verdict)
+			}
+		})
+	}
+}

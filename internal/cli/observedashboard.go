@@ -49,7 +49,11 @@ type observeData struct {
 	// worked rather than how often it fired.
 	Interventions []storage.AgentInterventionOutcome
 	Gates         []storage.AgentGateVerdict
-	Outcomes      []storage.AgentSessionOutcome
+	// Flakes is this checkout's flake ledger, the checks that last flaked
+	// inside the window: the one gate reading kept per checkout rather than
+	// per session.
+	Flakes   []storage.Flake
+	Outcomes []storage.AgentSessionOutcome
 }
 
 // readObserveData runs every aggregate the dashboard draws. Each query is
@@ -77,6 +81,7 @@ func readObserveData(db *storage.DB, window string, since time.Time) (observeDat
 			return
 		}},
 		{"gate verdicts", func() (err error) { data.Gates, err = db.AgentGateVerdicts(since); return }},
+		{"flakes", func() (err error) { data.Flakes, err = flakesSince(db, projectFingerprintRoot(), since); return }},
 		{"outcomes", func() (err error) { data.Outcomes, err = db.AgentSessionOutcomes(since); return }},
 	} {
 		if err := q.read(); err != nil {
@@ -116,7 +121,7 @@ func observeReport(data observeData) report.Report {
 		{Header: "TURNS", Rows: observeTurnRows(data.Turns)},
 		{Header: "SIGNALS", Rows: observeSignalRows(data.Signals)},
 		{Header: "INTERVENED", Rows: observeInterventionRows(data.Interventions)},
-		{Header: "GATE", Rows: observeGateRows(data.Gates)},
+		{Header: "GATE", Rows: append(observeGateRows(data.Gates), observeFlakeRows(data.Flakes)...)},
 		{Header: "OUTCOMES", Rows: observeOutcomeRows(data.Outcomes)},
 		{Header: "SESSIONS", Rows: observeSessionRows(data.Sessions)},
 	} {
@@ -459,6 +464,48 @@ func observeGateRows(gates []storage.AgentGateVerdict) []report.Row {
 		i = j
 	}
 	return rows
+}
+
+// flakesSince is the checkout's ledger with the checks whose last flake fell
+// before since left out. A dashboard outside any checkout has none.
+func flakesSince(db *storage.DB, root string, since time.Time) ([]storage.Flake, error) {
+	if root == "" {
+		return nil, nil
+	}
+	all, err := db.FlakesFor(root)
+	if err != nil {
+		return nil, err
+	}
+	var kept []storage.Flake
+	for _, f := range all {
+		if !f.LastAt.Before(since) {
+			kept = append(kept, f)
+		}
+	}
+	return kept, nil
+}
+
+// observeFlakeRows is the gate section's flakes line: how many checks in this
+// checkout passed only on their rerun in the window, how often, and the one
+// that did it most — a pass rate that counts a flake as a pass is a number
+// that hides the check a reader should stop trusting
+// (docs/capabilities/testing.md#a-flake-is-counted-where-it-happened).
+func observeFlakeRows(flakes []storage.Flake) []report.Row {
+	if len(flakes) == 0 {
+		return nil
+	}
+	total, most := 0, flakes[0]
+	for _, f := range flakes {
+		total += f.Seen
+		if f.Seen > most.Seen {
+			most = f
+		}
+	}
+	return []report.Row{{State: report.Warn, Name: "flakes",
+		Subject:     countOf(len(flakes), "check", "checks") + " in this checkout",
+		Detail:      fmt.Sprintf("most %s (%s) · %s", most.Check, most.Suite, countOf(most.Seen, "time", "times")),
+		Outcome:     countOf(total, "flake", "flakes"),
+		Consequence: "a flake counts as a pass above · `/gate flakes` lists them"}}
 }
 
 // observeGateState is one gate verdict's weight. Blocked and cancelled are

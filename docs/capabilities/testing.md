@@ -96,6 +96,32 @@ Continuous integration selects those targets in separate jobs, so preparing a
 listener or an operating-system mechanism cannot change the result of the
 ordinary contained gate.
 
+## A flake is counted where it happened
+
+One flake is a machine that was busy; the ninth is a check that needs fixing,
+and the word on the row cannot tell the two apart. So every flake is counted,
+per checkout, suite and check, with when it first and last happened, the
+session it last happened in and the exit code the failing run gave — the one
+place that code is kept, since the result reports the check as passed. The
+count before this run rides the flaked line itself, `, 3 times before`, so the
+model reads it where the screen does, and the closing check's row says
+`flaked 3 times before · /gate flakes` in its note column where there is room.
+`/gate flakes` lists the whole ledger, the most recent first, and `shhh
+observe` carries a line for the checks that flaked in its window. Every runner
+that can rerun a check writes to the same ledger — a session's, an unattended
+run's, a backlog run's and each of its lanes — and a lane's flake is counted
+against the checkout the lane was copied from, because the copy is gone once
+it lands.
+
+The ledger lives in shhh's own data directory, keyed on the checkout's root,
+and not in the checkout. It is a reading of how this machine ran the checks
+rather than a fact about the code, so a file in the checkout would travel with
+a clone to a machine that never flaked, and writing it would move the very
+tree the gate fingerprints, making every flaked run stale the moment it was
+counted. The count is bookkeeping about the verdict and never part of it: a
+ledger that cannot be opened or written costs the count, and the check still
+says it flaked and still counts as passed.
+
 ## A skipped test is counted
 
 A test that skips did not run, and a green suite with skips in it is a suite

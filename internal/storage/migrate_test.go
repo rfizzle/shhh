@@ -27,6 +27,7 @@ var releasedMigrations = []string{
 	"ba718793e0d302bc", // 42: agents_require_sandbox
 	"734dc351b1d043f1", // 43: chat_sessions.steps
 	"4d85d670321782d4", // 44: agent_events.purpose
+	"4f7ad90fa8c1faf9", // 45: gate_flakes
 }
 
 func migrationDigest(m string) string {

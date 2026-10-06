@@ -594,6 +594,27 @@ var migrations = []string{
 	// Empty on every row written before it, which the dashboard counts as
 	// unrecorded rather than as other.
 	`ALTER TABLE agent_events ADD COLUMN purpose TEXT NOT NULL DEFAULT '';`,
+
+	// A quality check that failed and then passed on its rerun, counted per
+	// checkout, with the exit code the failing run gave. The count lives here
+	// rather than in the checkout for the reason the offers above do, and
+	// one more: it is a reading of how this machine ran the checks, not a
+	// fact about the code, so a file in the checkout would travel with a
+	// clone to a machine that never flaked — and writing it would move the
+	// very tree the gate fingerprints, making every flaked run stale
+	// (docs/capabilities/testing.md#a-flake-is-counted-where-it-happened).
+	`CREATE TABLE IF NOT EXISTS gate_flakes (
+		root         TEXT NOT NULL,
+		suite        TEXT NOT NULL,
+		"check"      TEXT NOT NULL,
+		command      TEXT NOT NULL,
+		seen         INTEGER NOT NULL,
+		first_exit   INTEGER NOT NULL,
+		first_at     TEXT NOT NULL,
+		last_at      TEXT NOT NULL,
+		last_session TEXT NOT NULL DEFAULT '',
+		PRIMARY KEY (root, suite, "check")
+	);`,
 }
 
 const (

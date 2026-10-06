@@ -100,8 +100,8 @@ func formatCheck(c CheckResult) string {
 	case c.Flaked:
 		// The evidence named is the first run's, the failure: the pass is
 		// the rerun, and what made the check flake is what a reader opens.
-		fmt.Fprintf(&b, "  ~ %s — %s (flaked: failed then passed, %s + %s)%s\n", c.Name, c.Command,
-			roundDuration(c.Duration), roundDuration(c.RerunDuration), evidence)
+		fmt.Fprintf(&b, "  ~ %s — %s (flaked: failed then passed, %s + %s%s)%s\n", c.Name, c.Command,
+			roundDuration(c.Duration), roundDuration(c.RerunDuration), timesBefore(c.FlakedBefore), evidence)
 	default:
 		fmt.Fprintf(&b, "  ✓ %s — %s (%s)%s\n", c.Name, c.Command, roundDuration(c.Duration), evidence)
 	}
@@ -117,6 +117,20 @@ func formatCheck(c CheckResult) string {
 		}
 	}
 	return b.String()
+}
+
+// timesBefore is the flaked line's count of the check's earlier flakes in
+// this checkout — `, 3 times before` — and nothing on a first flake. It is
+// the reason a reader stops trusting the check rather than the gate.
+// See docs/capabilities/testing.md#a-flake-is-counted-where-it-happened.
+func timesBefore(n int) string {
+	switch {
+	case n <= 0:
+		return ""
+	case n == 1:
+		return ", 1 time before"
+	}
+	return fmt.Sprintf(", %d times before", n)
 }
 
 func roundDuration(d time.Duration) string {
@@ -136,8 +150,11 @@ type Summary struct {
 	Verdict       Verdict
 	Passed, Total int
 	// Flaked is how many of the passed checks passed only on their rerun.
-	Flaked   int
-	Duration string
+	Flaked int
+	// FlakedBefore is the most times any check that flaked in this run had
+	// flaked in the checkout before it.
+	FlakedBefore int
+	Duration     string
 	// Stale marks a verdict that does not apply to the tree it was read
 	// against — the tree moved under it. A stale pass is not a pass.
 	Stale bool
@@ -162,9 +179,20 @@ func (r *Result) Summary(current Fingerprint) Summary {
 	switch r.Verdict {
 	case VerdictPass, VerdictFail:
 		s.Passed, s.Total, s.Flaked, s.Duration = r.passed(), len(r.Checks), r.flaked(), roundDuration(r.Duration)
+		for _, c := range r.Checks {
+			if c.Flaked {
+				s.FlakedBefore = max(s.FlakedBefore, c.FlakedBefore)
+			}
+		}
 	}
 	return s
 }
+
+// flakedBeforePattern reads timesBefore's clause back off a flaked check's
+// line. The clause sits just inside the line's closing parenthesis, after two
+// durations that hold neither a comma nor a parenthesis, so a command
+// holding either is never read as one.
+var flakedBeforePattern = regexp.MustCompile(`(?m)^  ~ .*\(flaked: failed then passed, [^,()]*, (\d+) times? before\)`)
 
 // summaryPattern reads the suite as the whole Go-quoted token Format's %q
 // writes, escapes and all, so a name holding a quote or a backslash is read
@@ -193,5 +221,9 @@ func Summarize(result string) (Summary, bool) {
 	s.Passed, _ = strconv.Atoi(m[3])
 	s.Total, _ = strconv.Atoi(m[4])
 	s.Flaked, _ = strconv.Atoi(m[5])
+	for _, f := range flakedBeforePattern.FindAllStringSubmatch(result, -1) {
+		n, _ := strconv.Atoi(f[1])
+		s.FlakedBefore = max(s.FlakedBefore, n)
+	}
 	return s, true
 }
