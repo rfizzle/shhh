@@ -991,7 +991,7 @@ func TestTodoRunHeadless_TheReviewGoesToAReaderGivenTheDiff(t *testing.T) {
 // Outside a repository there is no change to hand over, so the reading falls
 // back to the run's own turn — and says which of the two it did.
 func TestTodoRunHeadless_WithNoRepositoryTheRunReadsItsOwnWork(t *testing.T) {
-	root := aBacklogOf(t, t.TempDir(), "size: M\n", "a-one")
+	root := aBacklogOf(t, outsideAnyCheckout(t), "size: M\n", "a-one")
 	var read string
 	d, _ := headlessDriver(t, root, nil)
 	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {

@@ -153,7 +153,7 @@ func TestBuildStartInfo_OffersTheNewestSlotNobodyElseHolds(t *testing.T) {
 // next session in that checkout once it has been refused, and never made
 // where the file is already there.
 func TestBuildScaffold_OffersOnceAndRemembersTheRefusal(t *testing.T) {
-	dir := t.TempDir()
+	dir := outsideAnyCheckout(t)
 	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
 		t.Fatalf("open db: %v", err)
@@ -176,7 +176,7 @@ func TestBuildScaffold_OffersOnceAndRemembersTheRefusal(t *testing.T) {
 	}
 
 	// A different checkout is a different answer.
-	other := t.TempDir()
+	other := outsideAnyCheckout(t)
 	if !buildScaffold(db, other).Offer {
 		t.Fatal("one checkout's refusal answered for another")
 	}

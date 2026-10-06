@@ -1429,7 +1429,7 @@ func TestOnCloseGate_IsACleanNoOpWithoutAUsableConfig(t *testing.T) {
 }
 
 func TestHeadlessCloseGate_RunsNothingForAChangesetWithNoWorkInIt(t *testing.T) {
-	ws := t.TempDir()
+	ws := outsideAnyCheckout(t)
 	writeQualityConfig(t, ws, passingSuites)
 	for _, tc := range []struct {
 		name  string
