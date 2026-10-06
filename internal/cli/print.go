@@ -1363,10 +1363,10 @@ func (g *headlessCloseGate) state() quality.Closing {
 
 // alerts is the last verdict as the standing bad news a reading is given: the
 // gate's own word for how it came back, and a row per check that is not
-// green. A pass, a cancellation and a turn that ran no suite say nothing —
-// this field is what the digest calls failing checks, and a reader handed an
-// empty one for a green tree would be told the checks are a subject when they
-// are not.
+// green. A pass, a cancellation and a turn that ran no suite say nothing — a
+// stale pass is not a pass, so it says something — because this field is
+// what the digest calls failing checks, and a reader handed an empty one for
+// a green tree would be told the checks are a subject when they are not.
 //
 // It states a check's name and how it came back and never a byte the check
 // printed. The formatted verdict carries the tail of each failing check's
@@ -1380,18 +1380,14 @@ func (g *headlessCloseGate) alerts() []string {
 	}
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	if g.last == nil {
-		return nil
-	}
-	switch g.last.Verdict {
-	case quality.VerdictFail, quality.VerdictBlocked:
-	default:
+	word, failed := g.failed()
+	if !failed {
 		return nil
 	}
 	// The gate's own sentence for a blocked run — an unknown suite, a check
 	// that never started — is shhh's text and not the check's, and without it
 	// "blocked" is a word with no way to act on it.
-	head := fmt.Sprintf("quality gate %q — %s", g.last.Suite, g.last.Verdict)
+	head := fmt.Sprintf("quality gate %q — %s", g.last.Suite, word)
 	if g.last.Verdict == quality.VerdictBlocked && g.last.Reason != "" {
 		head += ": " + g.last.Reason
 	}
@@ -1419,21 +1415,37 @@ func checkOutcome(c quality.CheckResult) string {
 
 // err is what the last verdict says about the exit code. A pass, a
 // cancellation and a turn that never ran the suite are all nil: cancelled is
-// the run being stopped, which the interrupt already answers for.
+// the run being stopped, which the interrupt already answers for. A stale
+// pass is not a pass.
 func (g *headlessCloseGate) err() error {
 	if g == nil {
 		return nil
 	}
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	if g.last == nil {
-		return nil
-	}
-	switch g.last.Verdict {
-	case quality.VerdictFail, quality.VerdictBlocked:
-		return fmt.Errorf("quality gate %q: %s", g.last.Suite, g.last.Verdict)
+	if word, failed := g.failed(); failed {
+		return fmt.Errorf("quality gate %q: %s", g.last.Suite, word)
 	}
 	return nil
+}
+
+// failed reports whether the last verdict fails the run, and the word it
+// came back as. It is read off the result against the tree the close read it
+// against — the reading state gives — so a pass whose tree moved fails the
+// run and raises the alert as the stale mark on its row says, rather than
+// exiting 0 on a verdict that does not apply to what is on disk. A
+// cancellation is the run being stopped, which the interrupt answers for.
+// The caller holds mu.
+// See docs/capabilities/headless.md#the-exit-code-is-the-contract.
+func (g *headlessCloseGate) failed() (string, bool) {
+	if g.last == nil || g.last.Verdict == quality.VerdictCancelled || g.last.OK(g.at) {
+		return "", false
+	}
+	word := string(g.last.Verdict)
+	if g.last.Summary(g.at).Stale {
+		word += " (stale)"
+	}
+	return word, true
 }
 
 // headlessTurnOutcome is how a headless run's single turn ended, in the

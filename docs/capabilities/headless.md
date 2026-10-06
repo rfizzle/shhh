@@ -38,7 +38,7 @@ meaning it, and a script can branch on it without reading a word of output.
 | `2` | The turn used up its tool rounds | The work is unfinished, not wrong. Raise `--max-rounds`, or `--max-rounds 0` for a run you are content to leave going, and continue it with `-p --continue` |
 | `3` | The run was interrupted | Somebody or something stopped it. The conversation is saved and well-formed; re-run or continue it |
 | `4` | The provider stopped answering | The waits are already built in — this is what is left after them. Retry later; nothing about the request was wrong |
-| `5` | The checks failed | The turn finished and the suite it closes on did not pass. The tree changed; look at it before you ship it |
+| `5` | The checks failed | The turn finished and the suite it closes on did not pass — a pass over a tree that moved while the checks ran is stale, and fails here too. The tree changed; look at it before you ship it |
 | `6` | A call was refused | Policy denied the last approval the run asked for, so it did not do what it was asked. Re-run with `--yes`, or with `--allow` for the command shapes you meant to permit |
 | `7` | A backlog item blocked | `shhh todo run` only. The item was worked as far as it could go and stopped with the evidence written on it; the work so far is in the tree, uncommitted. Read the item, settle what it names, and reopen it |
 | `8` | The provider refused the request | Not a stall — the request itself was objected to: a key that was not taken, an account with nothing left on it, a model id the endpoint does not serve, a request past the window. Asking again unchanged gets the same answer. Fix what was named and re-run |
@@ -79,6 +79,14 @@ answer. They are ordered — the suite before the refusal — because a verdict
 about the tree as it now stands is the more actionable of the two facts, and
 because a refusal that mattered usually leaves nothing behind for a suite to
 have an opinion about.
+
+A stale pass is a `5`. A check that writes into the tree it checks — a
+formatter, a generator, a build that leaves its own manifest — passes over a
+tree that is not the one it started on, and that verdict says nothing about
+what is on disk now. The close row marks it stale, the alert names it, and
+the exit code reads it the same way, because `0` on a verdict every other
+surface refuses is the one answer a script would take and ship
+([how gates stay repeatable](testing.md#how-do-quality-gates-stay-repeatable)).
 
 A refusal is the *last* verdict and not any verdict. A run that was denied one
 command, found another way and finished did the work; reporting that as a
