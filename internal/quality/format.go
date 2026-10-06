@@ -166,8 +166,11 @@ func (r *Result) Summary(current Fingerprint) Summary {
 	return s
 }
 
+// summaryPattern reads the suite as the whole Go-quoted token Format's %q
+// writes, escapes and all, so a name holding a quote or a backslash is read
+// back rather than ending the match early; Summarize unquotes it.
 var summaryPattern = regexp.MustCompile(
-	`^Quality gate "([^"]*)": ([A-Z]+)(?: — (\d+)/(\d+) checks passed(?:, (\d+) flaked)? \(([^)]*)\))?`)
+	`^Quality gate ("(?:[^"\\]|\\.)*"): ([A-Z]+)(?: — (\d+)/(\d+) checks passed(?:, (\d+) flaked)? \(([^)]*)\))?`)
 
 // Summarize reads back a result rendered by Format. It reports false for
 // anything else — a status line, an error, a tool result from elsewhere — so
@@ -177,8 +180,12 @@ func Summarize(result string) (Summary, bool) {
 	if m == nil {
 		return Summary{}, false
 	}
+	suite, err := strconv.Unquote(m[1])
+	if err != nil {
+		return Summary{}, false
+	}
 	s := Summary{
-		Suite:    m[1],
+		Suite:    suite,
 		Verdict:  Verdict(strings.ToLower(m[2])),
 		Duration: m[6],
 		Stale:    strings.Contains(result, "\nSTALE:"),

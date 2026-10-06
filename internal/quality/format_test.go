@@ -65,6 +65,12 @@ func TestFormat_SummarizeReadsEveryLineFormatWrites(t *testing.T) {
 		{"a blocked run that is also stale", Result{Suite: "default", Verdict: VerdictBlocked,
 			Reason: "a check could not start", Fingerprint: clean}, moved,
 			Summary{Suite: "default", Verdict: VerdictBlocked, Stale: true}},
+		{"a suite named with quotes", Result{Suite: `"smoke"`, Verdict: VerdictPass, Fingerprint: clean,
+			Duration: time.Second, Checks: every[:1]}, clean,
+			Summary{Suite: `"smoke"`, Verdict: VerdictPass, Passed: 1, Total: 1, Duration: "1s"}},
+		{"a suite named with a backslash", Result{Suite: `ci\nightly`, Verdict: VerdictFail, Fingerprint: clean,
+			Duration: time.Second, Checks: every[2:3]}, clean,
+			Summary{Suite: `ci\nightly`, Verdict: VerdictFail, Passed: 0, Total: 1, Duration: "1s"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -78,6 +84,37 @@ func TestFormat_SummarizeReadsEveryLineFormatWrites(t *testing.T) {
 			}
 			if held := tc.res.Summary(tc.current); held != got {
 				t.Errorf("Result.Summary = %+v, but the text reads back as %+v", held, got)
+			}
+		})
+	}
+}
+
+// Format writes the suite with %q, so a name holding a quote or a backslash
+// reaches the text escaped. The reader takes the whole quoted token and
+// unquotes it, so the name comes back exactly as the suite is called — even
+// one that carries the header's own shape — rather than the row going unread.
+func TestFormat_AQuotedSuiteNameRoundTrips(t *testing.T) {
+	tests := []struct {
+		name, suite, header string
+	}{
+		{"quotes", `"smoke": FAIL`, `Quality gate "\"smoke\": FAIL": PASS — 1/1 checks passed (1s)`},
+		{"backslashes", `ci\nightly\`, `Quality gate "ci\\nightly\\": PASS — 1/1 checks passed (1s)`},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res := Result{Suite: tc.suite, Verdict: VerdictPass, Duration: time.Second,
+				Checks: []CheckResult{{Name: "ok", Command: "true", Duration: time.Second}}}
+			text := res.Format(Fingerprint{})
+			if first := strings.SplitN(text, "\n", 2)[0]; first != tc.header {
+				t.Fatalf("Format's first line = %q, want %q", first, tc.header)
+			}
+			got, ok := Summarize(text)
+			if !ok {
+				t.Fatalf("Summarize did not recognise Format's text:\n%s", text)
+			}
+			want := Summary{Suite: tc.suite, Verdict: VerdictPass, Passed: 1, Total: 1, Duration: "1s"}
+			if got != want {
+				t.Errorf("Summarize read %+v, want %+v", got, want)
 			}
 		})
 	}
