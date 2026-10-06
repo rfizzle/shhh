@@ -18,7 +18,21 @@ or a *gap*, where no artboard draws the surface at all and the binary had to
 decide. A gap is closed by drawing the artboard, and where the two then differ
 the artboard wins.
 
+Each section opens on one line saying when it was filed and what closes it:
+the artboard for a gap, a decision for a disagreement, or the binary for a
+disagreement already settled in the artboard's favour. A section that has been
+closed or withdrawn says so there instead, so an entry ages where it can be
+seen.
+
+<!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
+
+**47 open gaps · 24 open disagreements · 11 closed or withdrawn**
+
+<!-- END generated departure counts -->
+
 ## The transcript search has no filter view
+
+_Filed 2026-09-09 · closes by a decision_
 
 *A disagreement.* The `Search` artboard draws a third window: the search as a
 filter, where only the matching rows are drawn and every run without one is
@@ -44,17 +58,23 @@ the view when it is built.
 
 ## Diff line numbers are as wide as the file
 
+_Filed 2026-08-29 · closes by a decision_
+
 The design fixes the gutter width. Padding a short file out to that width
 takes columns from the code the row exists to show, so the gutter is as wide
 as the largest line number actually in the hunk.
 
 ## A deletion's gutter marker is a hyphen
 
+_Filed 2026-08-29 · closes by a decision_
+
 The design uses a true minus sign, which is the right character for a *count*
 — and it is used for counts. In the gutter the marker is part of a unified
 diff, which is a format other tools parse, so it stays a hyphen.
 
 ## The inspector rail is drawn at one width and rendered at several
+
+_Filed 2026-09-04 · closes by the artboard_
 
 The rail's artboard is drawn at its narrowest, which is the width the surface
 splits at and the one most terminals show. It is not the only width the binary
@@ -67,6 +87,8 @@ is the narrow end of a range rather than the whole of it, which is a gap and
 not a disagreement.
 
 ## The wide frame's vitals are drawn on the rule, not in a row under it
+
+_Filed 2026-09-09 · closes by a decision_
 
 This is a disagreement. The Frame artboard gives the vitals a row of their
 own inside the box, with a `├──┤` rule above it separating them from the
@@ -91,6 +113,8 @@ border for the same reason, which the artboard draws and agrees with.
 
 ## The backlog block opens with a sprint row
 
+_Filed 2026-09-04 · closes by a decision_
+
 The Backlog artboard draws the block as a heading and a list of items. A set
 being worked has a name and a size, and both are what tell the reader whether
 the rows below are the whole backlog or the eight things chosen for this week
@@ -100,6 +124,8 @@ is absent altogether where no set is open, so a backlog worked without one
 looks exactly as the artboard draws it.
 
 ## The backlog run's row has no artboard
+
+_Filed 2026-09-04 · closes by the artboard_
 
 There is no artboard for a run's row. What the binary draws is the step
 header's grammar — the same fold state, the same lead columns, the same faint
@@ -128,6 +154,8 @@ because a stage that is already done is not what the row is about.
 
 ## The light table's rungs were chosen in the binary
 
+_Filed 2026-09-04 · closes by the artboard_
+
 `tokens/colors.css` has one column. It states a hex and the 256 index that hex
 stands for, for every token, chosen against a dark ground — and every one of
 those choices is a choice about the ground as much as about the hue, which is
@@ -147,6 +175,8 @@ wins.
 
 ## A theme is a table, and CharmTone is one of them
 
+_Filed 2026-09-04 · closes by the artboard_
+
 The design system describes one palette. A second table of the same jobs drawn in CharmTone is not a divergence from it — nothing about the
 product's colours changes for anyone who does not ask for it — but it is a set
 of colours that no artboard states, so it is written down here.
@@ -158,6 +188,8 @@ handed its green back to whatever the user's config says would not be that
 palette.
 
 ## The band's light and CharmTone values were chosen in the binary
+
+_Filed 2026-10-01 · closes by the artboard_
 
 *A gap.* The design system draws the band a step card rests on for the dark
 ground only: `#1c1c1c`, 234 at 256 colours, on its screen `#0f1117`, 233,
@@ -183,6 +215,8 @@ When the artboard draws a band on either ground, where the two differ the
 artboard wins.
 
 ## A card on a painted ground steps its band up
+
+_Filed 2026-10-02 · withdrawn_
 
 *Withdrawn.* The band no longer steps. The dark theme's ground was once
 `#1c1c1c`, 234, the band's own grey, and with that ground painted the band
@@ -219,6 +253,8 @@ both halves of the pair the same way.
 
 ## Enter walks a card through three depths
 
+_Filed 2026-10-02 · withdrawn_
+
 *Withdrawn: a card has two depths, not three.* The `Rows` catalogue draws a
 large step "after [enter]" as the card open on its calls; the `Cards`
 artboard once drew a card "folded by the reader", with `▸` in the pointer
@@ -239,6 +275,8 @@ card's own header always means the card.
 
 ## A run nothing titled, and a refused call, are cards
 
+_Filed 2026-10-02 · closes by the artboard_
+
 *A gap.* The catalogue draws a card titled by the model's prose and a card
 whose body is a reading; it does not draw a run of calls the model said
 nothing over and no reading followed. The binary draws that run as a card
@@ -254,6 +292,8 @@ who refused it, because the header counts only what ran.
 
 ## The strip starts at eight calls
 
+_Filed 2026-10-02 · closes by the artboard_
+
 *A gap.* The catalogue ends a large step's footer in the strip — one glyph per
 call — and draws a step of seven calls without one and a step of twenty-two
 with one, without saying where large begins. The binary draws it from eight:
@@ -261,6 +301,8 @@ past that, the counts on the header stop being enough to hold the order the
 calls came in.
 
 ## The open card's strip starts at two calls, and a group's line at two
+
+_Filed 2026-10-02 · closes by the artboard_
 
 *A gap.* The catalogue draws the open strip under a step of twenty-two calls
 and says a group line appears only from two calls; it does not say where the
@@ -272,6 +314,8 @@ line over it, so its row is the stop the group's line would have been.
 
 ## The strip's cursor starts on its last call and lets go on a move
 
+_Filed 2026-10-02 · closes by the artboard_
+
 *A gap.* The catalogue says the cursor starts on the last glyph and the
 arrows move it a call at a time. The binary puts the cursor on the strip with
 the first arrow pressed on an open card, at its last call, and moves it from
@@ -281,6 +325,8 @@ card rung, with the reading cursor on it.
 
 ## An open card's cursor keeps the pointer column
 
+_Filed 2026-10-02 · closes by a decision_
+
 *A disagreement.* The catalogue draws the open card's lit call row with its
 `❯` two columns in, beside the call. The binary keeps the `❯` in the
 transcript's one pointer column, where it stands on the card's header and on
@@ -289,6 +335,8 @@ it is on; the band runs to where the line's own marks begin and the highlight
 starts there, as the catalogue lights it.
 
 ## A failed call in an open card keeps its mark and its body
+
+_Filed 2026-10-02 · closes by a decision_
 
 *A disagreement.* The catalogue draws the failed command inside an open card
 as `$` in red, its error line beside the command and no body under it. The
@@ -301,6 +349,8 @@ while the body is shut.
 
 ## A call in an open card names its verb where its group does not
 
+_Filed 2026-10-02 · closes by the artboard_
+
 *A gap.* The catalogue's rows inside an open card name the call's subject
 alone, the group's line carrying the verb. The binary does the same where the
 group's verb is the call's — a command run, a file read, an edit made, a
@@ -309,6 +359,8 @@ committing are commands, and `add` and `commit` are what tell their rows apart.
 
 ## A card's header keeps a column between its sides
 
+_Filed 2026-10-02 · closes by a decision_
+
 *A disagreement.* The `Cards` artboard's drop table gives, for each header,
 the narrowest pane that still draws a field, measured with the receipt and
 the right-hand run touching. The binary keeps at least one blank column
@@ -316,6 +368,8 @@ between them, so each field goes one column earlier than the table says; a
 receipt that ran into its outcome would read as one word.
 
 ## What the turn's total says where the catalogue left it open
+
+_Filed 2026-10-02 · closes by the artboard_
 
 *A gap.* The Rows catalogue draws the total done and failed, and the
 changed-files line under a done one. The binary decided the rest.
@@ -336,6 +390,8 @@ card, which says `running` where its outcome will go, and its command's last
 line. The total appears once, when the turn ends, in the state it ended in.
 
 ## Only the frame's status moves
+
+_Filed 2026-10-02 · closes by a decision_
 
 *A disagreement, and a gap.* The catalogue's running fan-out lane reads
 `◇ writer-1 docs/loop.md · ✎ 1 file writing · 41s`. The binary draws the
@@ -366,6 +422,8 @@ directly above where the line stood.
 
 ## A failure card's header carries the class
 
+_Filed 2026-10-02 · closes by the artboard_
+
 *A gap.* The catalogue's error card names the class on the header's right
 (`stream error`) and gives the body to what the failure means. The binary
 puts the class as the provider's status and class word there, and writes the
@@ -386,6 +444,8 @@ again · same prompt, now on gpt-4.1`.
 
 ## A reading's row opens to its argument
 
+_Filed 2026-10-02 · closes by the artboard_
+
 *A gap.* The catalogue draws a reading's row closed. Opened, the row adds the
 reason behind a departure and the instruction the verdict was reached
 against, at the body column under the sentence; the verdict is already on the
@@ -400,6 +460,8 @@ titled.
 
 ## The turn's total and the retry draw two marks the pages do not list
 
+_Filed 2026-10-02 · closes by the artboard_
+
 *A gap.* `∗` is the total of a turn that is done and `↻` the retry's line.
 The Rows catalogue and the Cards artboard draw both, and no glyph page lists
 either. Each is a mark of one line: `∗` is the done state of the one slot
@@ -408,6 +470,8 @@ account and never an alarm; `↻` stands in the prompt's column because the
 retry stands where the reader's words would.
 
 ## Where the verdict, a search's count and the window go
+
+_Filed 2026-10-02 · closes by the artboard_
 
 *A gap.* The catalogue puts the reading's verdict on the header of a card
 with no footer and at the right of the footer of one that has one, without
@@ -420,6 +484,8 @@ the footer's right-hand run, which keeps its place at every width.
 
 ## The narrow rollup counts what the wide one names
 
+_Filed 2026-10-02 · closes by the artboard_
+
 *A gap.* A kind with one call names what it was about in the receipt (`ran
 git status --short .plan/`). Behind the header's verb, a name like that is
 what makes a rollup too long to keep, and the artboard's drop order would
@@ -429,6 +495,8 @@ the rest of the receipt; the call that leads keeps its name and is cut, as the
 artboard draws.
 
 ## Thinking is prose and the rung bounds it
+
+_Filed 2026-10-02 · closes by the artboard_
 
 The think row folded what the model thought into one line counting what it
 held and opened it through three depths. The catalogue draws thinking as
@@ -449,6 +517,8 @@ nothing stands there to end the card, and the step stays one card.
 
 ## Thinking and the checkpoint take the body column, the answer keeps its own
 
+_Filed 2026-10-02 · withdrawn_
+
 *Withdrawn: every block of prose is at the body column.* The catalogue sets
 every paragraph of prose at the body column, and the binary once moved only
 thinking and the progress checkpoint there, leaving the answer and a mid-turn
@@ -457,6 +527,8 @@ column now too, with the code blocks inside them, so nothing is left of the
 departure. The heading keeps its name for the citations that point here.
 
 ## A notice's words where the catalogue drew none
+
+_Filed 2026-10-02 · closes by the artboard_
 
 The catalogue draws a notice as one sentence. The session's notices that sat
 on the grid — a conversation reopened, a session saved, a steer, a queued
@@ -481,6 +553,8 @@ fold states what it holds without a key.
 
 ## A card's footer says the tree moved in the step's own words
 
+_Filed 2026-10-02 · closes by the artboard_
+
 The catalogue words one case, `tree moved under me · 1 file I'd read
 changed`. The binary keeps that lead and says after it everything the notice
 said — a head or a branch that moved, how many paths and whose, the files the
@@ -493,6 +567,8 @@ with the rest of the footer.
 
 ## A returned picture is a stop of its own
 
+_Filed 2026-10-02 · closes by the artboard_
+
 The catalogue says the picture row opens like an attachment and leaves open
 how a cursor reaches a row inside a card whose enter walks its depths. The
 binary makes the row a reading-mode stop of its own beside the card's header:
@@ -502,6 +578,8 @@ sent it, and on a narrow pane the right-hand words go first and then the
 picture's facts, never its name.
 
 ## A foreign colour arrives as a token and a foreign ground does not arrive
+
+_Filed 2026-09-09 · closes by the artboard_
 
 *A gap.* No artboard draws a detail body a program painted itself. What the
 design system states is the rule — output a program painted is re-painted into
@@ -548,6 +626,8 @@ this differ, the artboard wins.
 
 ## Markdown emphasis in model prose is drawn italic
 
+_Filed 2026-09-09 · closes by the artboard_
+
 *A gap.* No artboard draws a reply containing `*emphasis*`, and the type rule
 it would be read under — italic is reserved for quoted model output — settles
 the question rather than raising it: an emphasis the model wrote is the model's
@@ -558,6 +638,8 @@ The gap is closed by drawing a reply that emphasises something. Where that
 artboard and this differ, the artboard wins.
 
 ## The backlog screen's layout was decided in the binary
+
+_Filed 2026-09-04 · closes by the artboard_
 
 *A gap, mostly closed.* The Backlog artboard now draws `/todo` as the screen
 the binary draws, and it draws the first four decisions below as they are
@@ -609,6 +691,8 @@ artboard wins.
 
 ## The item draft card's layout was decided in the binary
 
+_Filed 2026-09-04 · closes by the artboard_
+
 There is no artboard for it. Most of the card needed no decision — the frame,
 the title rail and its chip, the pointer, the windowed rows and the counted
 overflow marker are the selector's, drawn already. Four things it could not
@@ -645,6 +729,8 @@ When there is an artboard, these four decisions are what it has to reconcile
 with, and where the two differ the artboard wins.
 
 ## The sprint board's layout was decided in the binary
+
+_Filed 2026-09-04 · closes by the artboard_
 
 There is no artboard for it, and one is owed. Most of the tab needed no
 decision — the two panes, the windowed list, the header, the rule and the key
@@ -706,6 +792,8 @@ with, and where the two differ the artboard wins.
 
 ## The safety reading's layout was decided in the binary
 
+_Filed 2026-09-27 · closes by the artboard_
+
 *A gap.* No artboard draws `/safety`; it is the family's chrome over sections
 that wrap rather than clip, read through a pager whose two ends name the
 sections they fold ([the safety reading](surfaces.md#the-safety-reading)).
@@ -736,6 +824,8 @@ When there is an artboard, these three decisions are what it has to
 reconcile with, and where the two differ the artboard wins.
 
 ## The alerts screen's layout was decided in the binary
+
+_Filed 2026-09-30 · closes by the artboard_
 
 *A gap.* No artboard draws `/alerts`, and the InspectorRail component draws
 the ALERTS block's heading as a label rather than as a door to anything. The
@@ -771,6 +861,8 @@ reconcile with, and where the two differ the artboard wins.
 
 ## The spend screen's layout was decided in the binary
 
+_Filed 2026-09-30 · closes by the artboard_
+
 *A gap.* No artboard draws `/stats` as a screen, and the InspectorRail
 component draws the SPEND block's heading as a label rather than as a door to
 anything. The binary draws a screen behind that heading and its marker ([the
@@ -798,6 +890,8 @@ When there is an artboard, these three decisions are what it has to
 reconcile with, and where the two differ the artboard wins.
 
 ## The tools screen's layout was decided in the binary
+
+_Filed 2026-09-30 · closes by the artboard_
 
 *A gap.* No artboard draws a screen behind the TOOLS block, and the
 InspectorRail component draws its heading as a label rather than as a door.
@@ -830,6 +924,8 @@ reconcile with, and where the two differ the artboard wins.
 
 ## The explanation's screen wears the full view's title, not a rail label
 
+_Filed 2026-09-08 · closes by a decision_
+
 *A disagreement.* The artboard draws the command explanation with a rail
 label reading `EXPLAIN` above the paragraph. The binary draws it on the same
 full-screen viewer the dry run and the card's own facts already open on,
@@ -853,6 +949,8 @@ screen was opened to read.
 
 ## The grant list's narrow row is drawn only where there is one
 
+_Filed 2026-09-08 · closes by the artboard_
+
 *A gap.* The artboard draws the `Allow without asking` list over a command:
 three rows at seventy-two columns, the pattern each grant would match on the
 row and its end in the short field. Nothing is drawn for the other two cards
@@ -874,6 +972,8 @@ of the two a row is would be the first thing the terminal dropped.
 
 ## The tab strip is the question card's, and the backlog screen keeps its rail
 
+_Filed 2026-09-08 · closes by the artboard_
+
 *A gap.* The `Questions` artboard draws a tab strip over a card carrying
 several questions, and the question card draws exactly that. What the artboard
 does not settle is where the strip lives, and the only other tabbed surface in
@@ -891,6 +991,8 @@ drawing the backlog screen's own tabs, and if that artboard puts them on this
 strip, this is where they will already be.
 
 ## The frame's phase is a lower-case word, and there are four of them
+
+_Filed 2026-09-09 · closes by a decision_
 
 *A disagreement.* The `Sheet` artboard draws the frame's top rail as
 `⠹ WORKING · 12.4s`; the `Frame` artboard draws the same corner as
@@ -914,6 +1016,8 @@ apart ([the input frame](surfaces.md#the-input-frame)).
 
 ## The attached rail states no elapsed beside the child's phase
 
+_Filed 2026-09-09 · closes by a decision_
+
 *A disagreement.* Both the `Frame` and the `Agents` artboards put a duration
 on the top rail of a frame attached to a child — `⠹ writing · 8s`, `⠹ 8s`. The
 binary draws the phase alone there.
@@ -930,6 +1034,8 @@ what the column means. The gap is closed by the supervisor reporting a child's
 turn, at which point the rail can draw what the artboard draws.
 
 ## The mode segment names the mode, not its class
+
+_Filed 2026-09-09 · closes by a decision_
 
 *A disagreement.* The palette row offers three words for the mode — `gated,
 auto or read-only` — and the artboards draw two of them: `⏵⏵ auto` in add on
@@ -961,11 +1067,15 @@ the artboard and the binary say the same thing.
 
 ## The frame's border is chrome, and the mode segment carries the mode
 
+_Filed 2026-09-27 · closed_
+
 *Closed.* The `Frame` and `Main` artboards, and every other artboard that
 draws the input frame, now draw its border in chrome in every mode; the mode
 segment on the rail keeps its tone, which is where the binary says the mode.
 
 ## A read's glyph is chrome
+
+_Filed 2026-09-27 · closes by a decision_
 
 *A disagreement.* The `Main`, `Approvals` and `Agents` artboards, like every
 artboard that draws a read's row but `WorkList`, draw a read's `⚙` in the
@@ -985,6 +1095,8 @@ closed by the artboards drawing a read's glyph dim and the guideline
 giving the accent to the rail, a card's weight and the context meter.
 
 ## A row with no kind of its own carries its outcome in the glyph column
+
+_Filed 2026-09-09 · closes by the artboard_
 
 *A gap.* The glyph guideline closes the outcome table with a rule and a list:
 five state glyphs override the kind glyph, `✓` is not one of them, and `✓`
@@ -1013,6 +1125,8 @@ has no kind in it states its outcome there. Where that guideline and this
 differ, the guideline wins.
 
 ## The rewind picker's frame is a card's
+
+_Filed 2026-09-13 · closes by a decision_
 
 *A disagreement.* The `Rewind` artboard's timeline is drawn otherwise in three
 places, each decided by a guideline or by what the binary can see.
@@ -1043,6 +1157,8 @@ the row states.
 
 ## A fan-out lane keeps its kind glyph, and a manager row does not
 
+_Filed 2026-09-13 · closes by the artboard_
+
 *A gap.* The rule in the heading is not itself a departure. The states
 guideline names a fan-out lane among the things its overriding rule is not
 about, the `Agents` artboard draws a lane keeping `◇` and a manager row giving
@@ -1059,6 +1175,8 @@ on. The gap is closed by drawing a lane in those two states, and where that
 artboard and this differ, the artboard wins.
 
 ## The current one is marked, and four other marks the pages do not list
+
+_Filed 2026-09-13 · closes by the artboard_
 
 *A gap.* Five marks the binary draws are on no guideline page. Three of them
 are on artboards; two had nowhere to come from.
@@ -1088,6 +1206,8 @@ row](#the-backlog-runs-row-has-no-artboard).
 
 ## The paste fold is written in angle quotes
 
+_Filed 2026-09-13 · closes by the artboard_
+
 *A gap.* The guideline pages carry no mark for a fold standing inside a
 sentence, and the `Paste` artboard needed one: a log too big for the draft
 leaves a token where it was pasted, and the token has to be legible as *this
@@ -1114,6 +1234,8 @@ sentence in the transcript and the fold row under it all spell it through the
 one renderer, so there is no second spelling to drift.
 
 ## The attachment chips mark what kind of file is staged
+
+_Filed 2026-09-13 · closes by the artboard_
 
 *A gap.* The `Paste` artboard draws the staged strip's chips with `≡` and
 `▣`, as the binary does, and no glyph page lists either there: the kit has no
@@ -1142,6 +1264,8 @@ the whole distinction, which is what makes the strip read the same in mono
 
 ## A sent attachment's tray keeps the sentence's handle and the session's facts
 
+_Filed 2026-10-01 · closes by a decision_
+
 *A disagreement.* The `Tray` artboard draws a PDF's row as `⟨▤ Doc#1⟩`. The
 binary spells it `⟨▤ File#1⟩`, because the rule the artboard states is that
 the row spells the handle the way the sentence spells it, and the sentence,
@@ -1164,6 +1288,8 @@ On the dark table the tray's band is the card's, `#1c1c1c` on the painted
 
 ## Two surfaces draw with blocks rather than in them
 
+_Filed 2026-09-13 · closes by the artboard_
+
 *A gap.* The drawing kit's eight sparkline blocks are cells of a bar. Two
 surfaces use block characters as ink instead, for pictures rather than
 measurements, and the glyph pages list the blocks only as a bar's cells.
@@ -1182,6 +1308,8 @@ keeps the set closed lists them so that the next block character to arrive has
 to say which of the two it is.
 
 ## The summary's fourth verdict shares the third's mark
+
+_Filed 2026-09-13 · closes by the artboard_
 
 *A gap.* The tools guideline says a reading of the session "carries its
 verdict in the outcome field, in the marks the rail's SUMMARY block uses", and
@@ -1206,6 +1334,8 @@ thing in motion and nothing else.
 
 ## The drafter's rail marks a step nothing was asked at
 
+_Filed 2026-09-13 · closes by the artboard_
+
 *A gap.* The `Drafter` artboard draws its rail in three states — `● brief`,
 `● questions`, `● draft`, with `✓` behind and `·` ahead — and never draws a
 step that was skipped. Its own caption says why: "the rail keeps the step it
@@ -1221,6 +1351,8 @@ not a fourth one. `✓ questions` was the alternative and is a lie: it would be
 the rail claiming an exchange that never happened.
 
 ## A line that answers the one above hangs from it
+
+_Filed 2026-09-23 · closes by the artboard_
 
 *A gap.* No guideline page lists `↳` and no artboard draws the two places it
 appears. Both are a line whose whole meaning is that it answers the line
@@ -1240,6 +1372,8 @@ meaning both sites already give it, and a third line that hangs from its
 parent takes this mark rather than inventing another.
 
 ## An unattended run's activity lines lead with a chevron
+
+_Filed 2026-09-24 · closes by the artboard_
 
 *A gap.* No artboard draws what an unattended run writes to stderr, and no
 guideline page lists `»`. The binary leads every line of a run's activity
@@ -1264,6 +1398,8 @@ as [above](#a-line-that-answers-the-one-above-hangs-from-it).
 
 ## A profile in the older shape is marked with a diamond
 
+_Filed 2026-10-01 · closes by the artboard_
+
 *A gap in the guideline pages.* The `Drafter` artboard's section on moving a
 profile into sections draws `◆ older shape` after where a role's file lives,
 and again at the head of the drafter opened on such a file; no guideline page
@@ -1281,6 +1417,8 @@ rewritten](../capabilities/subagents.md#an-older-profile-is-moved-into-sections-
 
 ## The start screen's trust row has no artboard
 
+_Filed 2026-09-23 · closes by the artboard_
+
 *A gap.* The start screen's artboard draws a checkout shhh has never seen and
 no trust row at all. The binary draws one in two states, as one of the
 labelled notes under the facts and last among them: `withheld`, with the
@@ -1295,6 +1433,8 @@ rest dim, joined with ` · `, no full stop — and a trusted, unchanged checkout
 draws nothing, so the screen the artboard draws is the one most sessions see.
 
 ## A picture is drawn in its own colours
+
+_Filed 2026-09-23 · closes by a decision_
 
 *A disagreement.* No surface may reach for a colour outside the palette
 ([the rule](principles.md#a-colour-is-three-values-and-a-ground)), and output
@@ -1321,6 +1461,8 @@ sixteen colours: both get the drawing kit's density ramp
 
 ## A turn with no round limit still draws a bound
 
+_Filed 2026-09-23 · closes by the artboard_
+
 *A gap.* The `Frame` artboard draws the round segment with its bound —
 `round 7 of 25` — and nothing draws a
 turn that has none: a sub-agent, a session started with the limit off, or a
@@ -1341,10 +1483,14 @@ and this differ, the artboard wins.
 
 ## The round is counted on the rail and not on the close row
 
+_Filed 2026-09-27 · closed_
+
 *Closed.* `Changeset` and `Scroll` now draw the Done row without the round;
 it is stated once, on the rail, as the binary draws it.
 
 ## The working label arrives, and a light runs along it
+
+_Filed 2026-09-23 · closes by a decision_
 
 *A disagreement.* The readme knows one animation: the spinner. The binary
 moves the word beside it as well, in two ways. When a turn starts the label
@@ -1370,10 +1516,14 @@ closed by the readme naming the label's motion beside the spinner's.
 
 ## A turn that changed no files says so
 
+_Filed 2026-09-23 · closed_
+
 *Closed.* The `rail-session-scope` guideline now draws `0 files this turn`
 for a turn that changed nothing, as the binary does: that zero was measured.
 
 ## The AGENTS block's meter is on the detail row
+
+_Filed 2026-09-23 · closed_
 
 *Closed.* The `Main` artboard now draws a child's meter at the head of the
 line under its name, the one slot saying how a child is moving, and the
@@ -1381,17 +1531,23 @@ binary draws it there too.
 
 ## The children's tally says who needs you first
 
+_Filed 2026-09-23 · closed_
+
 *Closed.* The `Agents` artboard now heads the manager `Agents ─ 1 needs you ·
 3 running`, the ask in del and the count dim, and draws every count on a
 lane and on the rail dim, as the binary does.
 
 ## A fan-out offers the manager, not the answer
 
+_Filed 2026-09-27 · closed_
+
 *Closed.* The `Agents` artboard now draws the line under a waiting lane as
 the manager's key and no answer key, as the binary does: the routed card is
 the one surface that owns an answer.
 
 ## A confirm prompt and a card title keep their capital
+
+_Filed 2026-09-26 · closes by a decision_
 
 *A disagreement.* The voice every notice is written in is lower case almost
 everywhere, with no closing full stop and a failure named after a `✗`. Four
@@ -1412,6 +1568,8 @@ skip. It is also what every other card already does — `Approve command`,
 exception rather than the voice.
 
 ## A card row's gloss is a fact about the call, or nothing
+
+_Filed 2026-09-27 · closes by a decision_
 
 *A disagreement.* The `Approvals` and `Commit` artboards gloss every row of a
 card's body, and every gloss they draw is a fact about the call in front of
@@ -1452,6 +1610,8 @@ never pushes; the remote is yours*.
 
 ## A code block's heading where the artboard left it open
 
+_Filed 2026-10-01 · closes by a decision_
+
 *A gap, and one disagreement.* The `Blocks` artboard and the Rows catalogue
 draw a heading row over every fenced block in a reply: the language word in
 dim, `code` for a bare fence, no key, the row itself the click target. They
@@ -1486,6 +1646,8 @@ the artboard's own rule for mono.
 
 ## A card the reader gave back at low keeps that shape
 
+_Filed 2026-10-02 · withdrawn_
+
 *Withdrawn: at `low` a card opens like any card.* The `Cards` artboard draws
 the ladder at `low`, `normal` and `high` and says a card the reader opened
 stays as they left it at any rung. The binary once gave a card back at `low`
@@ -1499,6 +1661,8 @@ An open made at `low` is kept when the rung moves, and a card closed at
 folded card. The heading keeps its name for the citations that point here.
 
 ## Only a card's header answers a click
+
+_Filed 2026-10-02 · closes by the artboard_
 
 *A gap.* The artboards draw no pointer on a card. The binary makes the
 header the card's one control and every other line of it text: a click on
@@ -1515,6 +1679,8 @@ did and what is left to open is the call itself; esc gives the card back.
 
 ## The key list names a card's acts beside the register
 
+_Filed 2026-10-02 · closes by the artboard_
+
 *A gap.* The `Cards` artboard puts the strip's keys on the hint bar and draws
 no key list over a card. Reading mode's `?` with the cursor on a card, a
 group's line or the strip lists what the mode's keys do there — `[enter]
@@ -1526,6 +1692,8 @@ cursor, so closing the list comes back to the call it was on.
 
 ## A fan-out lane sets its name in a slot
 
+_Filed 2026-10-02 · closes by a decision_
+
 *A disagreement, with the manager.* The `Rows` artboard draws a fan-out's
 children as a card's footer rows, the name in a ten-column slot and what the
 child is doing after it, and the binary draws them so. The manager and the
@@ -1536,6 +1704,8 @@ column, and the facts after it start there, because two children of one
 profile cut to the slot are one name.
 
 ## A fan-out child's row answers the click its lane did
+
+_Filed 2026-10-02 · closes by the artboard_
 
 *A gap.* The artboard draws no pointer on a fan-out's card. Its header opens
 it and closes it, as every card's header does. A child's row is the lane, and
@@ -1550,6 +1720,8 @@ no act on one.
 
 ## A fan-out's rows keep their words and their costs
 
+_Filed 2026-10-02 · closes by a decision_
+
 *A disagreement.* The artboard draws a returned child's state as its bare
 mark, `✓ · 1m 12s`, a running one as the role's own verb, `⠋ writing`, and
 leaves out what each child cost. The binary keeps the state in words beside
@@ -1562,6 +1734,8 @@ name. The line that said how many of the others keep running is gone; the
 header says they work in parallel, and each row says how it stands.
 
 ## A fan-out's card and a plan's card are drawn whole at every rung
+
+_Filed 2026-10-02 · withdrawn_
 
 *Withdrawn: the two cards have the step card's two depths.* The binary once
 drew both whole at every rung and let a click on the header fold either to
@@ -1583,6 +1757,8 @@ own dim `▸` in its glyph column, which is the plan's mark and not a fold. The
 heading keeps its name for the citations that point here.
 
 ## A plan's card says what can be put back on the right
+
+_Filed 2026-10-02 · closes by a decision_
 
 *A disagreement.* The artboard draws `reversible` at the end of the plan's
 receipt and the count of writes on the right. The binary draws both on the

@@ -137,10 +137,12 @@ test-integration: ## Run the containment tier (needs the host's sandbox mechanis
 # staleness check, and `make ci` therefore performs it too.
 # `docs` writes one package at a time: the settings table and the keymap
 # reference are two regions of one document, and two packages rewriting it
-# at once would each write back the other's region as it found it.
+# at once would each write back the other's region as it found it. The
+# departures page's count is written by the docs checker, which reads it back.
 docs: ## Rewrite the documentation sections generated from the code
 	@echo "${MAGENTA}Writing the generated documentation sections...${RESET}"
 	@SHHH_UPDATE_DOCS=1 $(GOTEST) -p 1 -count=1 -run TestReference ./internal/config ./internal/ui/keys ./internal/project
+	@python3 scripts/check-docs.py --write
 
 docs-check: ## Verify every docs/ citation resolves and every generated section is current
 	@echo "${MAGENTA}Checking documentation citations...${RESET}"
