@@ -1328,7 +1328,12 @@ func (g *headlessCloseGate) close(string) string {
 	// The verdict goes to stderr beside the run's other activity rather than
 	// into the answer on stdout, which belongs to whatever is reading it.
 	fmt.Fprintf(os.Stderr, "» %s\n", text)
-	if res.Verdict != quality.VerdictFail && res.Verdict != quality.VerdictBlocked {
+	// A pass over a tree that moved while the checks ran is not a pass, and
+	// it is handed back for the same retry a failure gets rather than left to
+	// exit on: the screen retries it, and the unattended run takes the same
+	// path on the same verdict. A cancellation is the run being stopped.
+	// See docs/capabilities/headless.md#the-exit-code-is-the-contract.
+	if res.Verdict == quality.VerdictCancelled || res.OK(current) {
 		return ""
 	}
 	if g.fed >= g.retries {
