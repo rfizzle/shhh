@@ -110,6 +110,30 @@ turn 2                                                  done
 
 [enter] open the turn · [esc] back to the prompt
 
+· a paused turn · the figure its pause row kept, the time and rounds it used
+/stats · 2 models        $0.4210 spent · [?] keys · [q] back
+────────────────────────────────────────────────────────────
+
+  session total                                      $0.4210
+by model
+  claude-opus-5-5 · main · classifier · $0.0520 ◇    $0.3650
+  claude-haiku-4-5 · summary · $0.0030 ◇             $0.0010
+by child
+  ◇ writer-1 · claude-opus-5-5                       $0.0520
+  ◇ researcher-1 · claude-haiku-4-5                  $0.0030
+by turn
+❯ ⚠ turn 3  paused                                   $0.0410
+  ✓ turn 2  done                                     $0.2870
+  ⊘ turn 1  cancelled                                $0.0930
+────────────────────────────────────────────────────────────
+turn 3                                                paused
+
+  spent        $0.0410
+  took         4m 12s
+  rounds       50 of 50 used
+
+[enter] open the turn · [esc] back to the prompt
+
 · empty · a session that has spent nothing
 /stats                                   [?] keys · [q] back
 ────────────────────────────────────────────────────────────
@@ -218,6 +242,30 @@ nothing selected
 
   ␛[38;5;244mspent        ␛[m␛[38;5;254m$0.2870␛[m
   ␛[38;5;244mtook         ␛[m␛[38;5;254m2m 10s␛[m
+
+␛[38;5;254m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+
+· a paused turn · the figure its pause row kept, the time and rounds it used
+␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m        ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
+
+  ␛[38;5;254msession total␛[m                                      ␛[38;5;244m$0.4210␛[m
+␛[1;38;5;254mby model␛[m
+  ␛[38;5;254mclaude-opus-5-5␛[m␛[38;5;244m · ␛[m␛[38;5;244mmain · classifier␛[m␛[38;5;244m · ␛[m␛[38;5;244m$0.0520 ◇␛[m    ␛[38;5;244m$0.3650␛[m
+  ␛[38;5;254mclaude-haiku-4-5␛[m␛[38;5;244m · ␛[m␛[38;5;244msummary␛[m␛[38;5;244m · ␛[m␛[38;5;244m$0.0030 ◇␛[m             ␛[38;5;244m$0.0010␛[m
+␛[1;38;5;254mby child␛[m
+  ␛[38;5;254m◇ writer-1␛[m␛[38;5;244m · ␛[m␛[38;5;244mclaude-opus-5-5␛[m                       ␛[38;5;244m$0.0520␛[m
+  ␛[38;5;254m◇ researcher-1␛[m␛[38;5;244m · ␛[m␛[38;5;244mclaude-haiku-4-5␛[m                  ␛[38;5;244m$0.0030␛[m
+␛[1;38;5;254mby turn␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ turn 3  paused                                   $0.0410␛[m
+  ␛[38;5;254m✓ turn 2␛[m  ␛[38;5;254mdone␛[m                                     ␛[38;5;244m$0.2870␛[m
+  ␛[38;5;254m⊘ turn 1␛[m  ␛[38;5;244mcancelled␛[m                                ␛[38;5;244m$0.0930␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
+␛[1;38;5;254mturn 3␛[m                                                ␛[38;5;244mpaused␛[m
+
+  ␛[38;5;244mspent        ␛[m␛[38;5;254m$0.0410␛[m
+  ␛[38;5;244mtook         ␛[m␛[38;5;254m4m 12s␛[m
+  ␛[38;5;244mrounds       ␛[m␛[38;5;254m50 of 50 used␛[m
 
 ␛[38;5;254m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 

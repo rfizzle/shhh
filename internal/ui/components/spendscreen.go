@@ -9,9 +9,10 @@ package components
 // child, each sub-agent's share by name; and by turn, what each turn cost as
 // its close row states it. The three cuts are three readings of one total,
 // not three parts of it: a child's share is on its model's row and on its
-// own. The preview is the row under the pointer laid out, and `[enter]` on a
-// turn opens it on the turns screen. This is a renderer; the figures are the
-// host's.
+// own. A turn stopped at its round limit has no close, and is on the bill at
+// the figure its pause row kept. The preview is the row under the pointer
+// laid out, and `[enter]` on a turn opens it on the turns screen. This is a
+// renderer; the figures are the host's.
 
 import (
 	"fmt"
@@ -49,7 +50,8 @@ const (
 	SpendModel
 	// SpendChild is one sub-agent's share, by name.
 	SpendChild
-	// SpendTurn is one turn's cost, as its close row states it.
+	// SpendTurn is one turn's cost, as its close row states it, or its
+	// pause row where it stopped at its round limit.
 	SpendTurn
 )
 
@@ -173,8 +175,15 @@ func (s *SpendScreen) previewRows(width int) []string {
 	var fields []field
 	if r.Kind == SpendTurn && r.Turn != nil {
 		fields = append(fields, field{"spent", r.Cost})
-		if r.Turn.Close != nil && r.Turn.Close.Elapsed != "" {
+		switch {
+		case r.Turn.Close != nil:
 			fields = append(fields, field{"took", r.Turn.Close.Elapsed})
+		case r.Turn.Paused != nil:
+			// A turn stopped at its round limit took its wall time up to the
+			// stop, and the rounds it used are why it stopped.
+			p := r.Turn.Paused
+			fields = append(fields, field{"took", p.Elapsed},
+				field{"rounds", fmt.Sprintf("%d of %d used", p.Used, p.Limit)})
 		}
 	} else {
 		fields = append(fields, field{"spent", r.Cost})

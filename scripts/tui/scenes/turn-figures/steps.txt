@@ -1,11 +1,13 @@
 # program test: TestProgram_ATypedLineFetchesAReplyOntoTheFrame,
-#   TestProgram_TurnsOpensEveryTurnAndReviewsOne
+#   TestProgram_TurnsOpensEveryTurnAndReviewsOne,
+#   TestProgram_StatsOpensTheBillAndATurnFromIt
 #
 # Two figures a closed or paused turn still has. A turn that has closed keeps
 # its cost on the rail's SPEND heading until the next turn opens, rather than
 # the heading going blank at the close; and a turn stopped at its round limit
 # is drawn on the turns screen from its pause row's rounds, time and cost,
-# rather than as a turn whose figures were not kept
+# rather than as a turn whose figures were not kept, and on the spend screen's
+# bill at the same cost, with the rounds it used
 # (docs/interface/surfaces.md#the-inspector-rail,
 # docs/interface/surfaces.md#the-supporting-screens). Drive it at 130 columns
 # or wider, where the rail is on screen.
@@ -20,3 +22,10 @@ keys "read the notes" Enter
 snap 03-paused "the turn's own bound" "1 of 1 used"
 keys "/turns" Enter
 snap 04-turns "Paused at its round limit" "⚠ turn 2" "paused" "rounds used" "✓ turn 1"
+keys q
+keys "/stats" Enter
+# The paused turn is on the bill under the pause row's word, beside the turn
+# that closed; the total over them is the session's.
+snap 05-stats "by turn" "⚠ turn 2" "paused" "✓ turn 1" "session total"
+keys Down Down
+snap 06-stats-paused "rounds       1 of 1 used" "turn 2" "spent        " "took         "

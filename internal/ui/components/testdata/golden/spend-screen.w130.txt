@@ -82,6 +82,24 @@ by turn                                                      │
 
 [↑↓/jk] move · [enter] open the turn · [esc] back to the prompt             the session's bill, as the rail's SPEND block reads it
 
+· a paused turn · the figure its pause row kept, the time and rounds it used
+/stats · 2 models · 2 children · 3 turns                                                       $0.4210 spent · [?] keys · [q] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  session total                                      $0.4210 │ turn 3                                                       paused
+by model                                                     │ 
+  claude-opus-5-5 · main · classifier · $0.0520 ◇    $0.3650 │   spent        $0.0410
+  claude-haiku-4-5 · summary · $0.0030 ◇             $0.0010 │   took         4m 12s
+by child                                                     │   rounds       50 of 50 used
+  ◇ writer-1 · claude-opus-5-5                       $0.0520 │ 
+  ◇ researcher-1 · claude-haiku-4-5                  $0.0030 │ 
+by turn                                                      │ 
+❯ ⚠ turn 3  paused                                   $0.0410 │ 
+  ✓ turn 2  done                                     $0.2870 │ 
+  ⊘ turn 1  cancelled                                $0.0930 │ 
+
+[↑↓/jk] move · [enter] open the turn · [esc] back to the prompt             the session's bill, as the rail's SPEND block reads it
+
 · empty · a session that has spent nothing
 /stats                                                                                                         [?] keys · [q] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -159,6 +177,24 @@ the session has not been billed for anything yet             │ nothing selecte
 ␛[1;94mby turn␛[m                                                     ␛[38;5;241m │ ␛[m
   ␛[38;5;252m▸ turn 3␛[m  ␛[38;5;214mrunning␛[m                                  ␛[38;5;241m$0.0410␛[m␛[38;5;241m │ ␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;62m✓ turn 2  done                                     $0.2870␛[m␛[38;5;241m │ ␛[m
+  ␛[38;5;252m⊘ turn 1␛[m  ␛[38;5;241mcancelled␛[m                                ␛[38;5;241m$0.0930␛[m␛[38;5;241m │ ␛[m
+
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open the turn␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mthe session's bill, as the rail's SPEND block reads it␛[m
+
+· a paused turn · the figure its pause row kept, the time and rounds it used
+␛[1;97m/stats␛[m␛[38;5;241m · 2 models␛[m␛[38;5;241m · 2 children␛[m␛[38;5;241m · 3 turns␛[m                                                       ␛[38;5;241m$0.4210 spent␛[m␛[38;5;241m · [?] keys · [q] back␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[38;5;252msession total␛[m                                      ␛[38;5;241m$0.4210␛[m␛[38;5;241m │ ␛[m␛[1;97mturn 3␛[m                                                       ␛[38;5;241mpaused␛[m
+␛[1;94mby model␛[m                                                    ␛[38;5;241m │ ␛[m
+  ␛[38;5;252mclaude-opus-5-5␛[m␛[38;5;241m · ␛[m␛[38;5;241mmain · classifier␛[m␛[38;5;241m · ␛[m␛[38;5;241m$0.0520 ◇␛[m    ␛[38;5;241m$0.3650␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mspent        ␛[m␛[38;5;252m$0.0410␛[m
+  ␛[38;5;252mclaude-haiku-4-5␛[m␛[38;5;241m · ␛[m␛[38;5;241msummary␛[m␛[38;5;241m · ␛[m␛[38;5;241m$0.0030 ◇␛[m             ␛[38;5;241m$0.0010␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mtook         ␛[m␛[38;5;252m4m 12s␛[m
+␛[1;94mby child␛[m                                                    ␛[38;5;241m │ ␛[m  ␛[38;5;243mrounds       ␛[m␛[38;5;252m50 of 50 used␛[m
+  ␛[38;5;252m◇ writer-1␛[m␛[38;5;241m · ␛[m␛[38;5;241mclaude-opus-5-5␛[m                       ␛[38;5;241m$0.0520␛[m␛[38;5;241m │ ␛[m
+  ␛[38;5;252m◇ researcher-1␛[m␛[38;5;241m · ␛[m␛[38;5;241mclaude-haiku-4-5␛[m                  ␛[38;5;241m$0.0030␛[m␛[38;5;241m │ ␛[m
+␛[1;94mby turn␛[m                                                     ␛[38;5;241m │ ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m⚠ turn 3  paused                                   $0.0410␛[m␛[38;5;241m │ ␛[m
+  ␛[38;5;252m✓ turn 2␛[m  ␛[92mdone␛[m                                     ␛[38;5;241m$0.2870␛[m␛[38;5;241m │ ␛[m
   ␛[38;5;252m⊘ turn 1␛[m  ␛[38;5;241mcancelled␛[m                                ␛[38;5;241m$0.0930␛[m␛[38;5;241m │ ␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open the turn␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mthe session's bill, as the rail's SPEND block reads it␛[m

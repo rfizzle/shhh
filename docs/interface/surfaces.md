@@ -3115,7 +3115,9 @@ each row the block's own — the model, what its own requests cost and what
 kinds of request they were, and what the children that ran on it cost after
 their `◇`; by child, each sub-agent's share by name with the model it ran
 on; and by turn, newest first, each turn's cost as its close row states it,
-in the turns screen's mark and word. The three cuts are three readings of one
+in the turns screen's mark and word — a turn stopped at its round limit has
+no close, and is billed at what its pause row kept, its account adding the
+time it ran and the rounds it used. The three cuts are three readings of one
 total and not three parts of it — a child's share is on its model's row and
 on its own — so the header counts them as fields beside the total rather than
 adding them up. Beside the row under the pointer is its account: what it

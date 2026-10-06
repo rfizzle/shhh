@@ -882,7 +882,8 @@ sources ledger groups its hosts.
 because the three cuts overlap and a sum of them would be no figure at all.
 
 **The account is labelled lines, then the kinds.** `spent`, `model`,
-`tokens` and `requests` in a label column, then `by kind of request` with one
+`tokens` and `requests` in a label column — on a turn `spent` and `took`, and
+`rounds` on one paused at its round limit — then `by kind of request` with one
 line per kind — its cost, its tokens and its requests — and `children` after
 their `◇` on a model.
 

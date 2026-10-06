@@ -172,6 +172,11 @@ func (m Model) spendScreenData() components.SpendScreen {
 		case t.Running != nil:
 			// The rail's own reading of the turn under way: its heading.
 			cost = m.totalsLabel(m.turnSpend())
+		case t.Paused != nil:
+			// A turn stopped at its round limit has no close; its pause row
+			// kept what it had cost, and its requests are already in the
+			// total above, so the row is that figure and nothing is added.
+			cost = t.Paused.Spend
 		}
 		if cost == "" {
 			// A turn whose cost was not kept, or that has spent nothing, has

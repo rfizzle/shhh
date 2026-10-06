@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -144,6 +145,48 @@ func TestSpendScreen_EachTurnAtItsClosesCost(t *testing.T) {
 	turns := rowsOf(m.spendScreenData(), components.SpendTurn)
 	if len(turns) != 2 || turns[0].Turn.N != 2 || turns[0].Cost != "$0.3400" || turns[1].Turn.N != 1 || turns[1].Cost != "$0.1200" {
 		t.Fatalf("the two closed turns, newest first, at their close's cost: %+v", turns)
+	}
+}
+
+// A turn stopped at its round limit has no close, so its pause row's figure
+// is what puts it on the bill: listed under the pause row's word at what the
+// turn had cost when it stopped, and counted in the total once — its
+// requests were billed as they came back, so the row adds nothing to it.
+func TestStats_APausedTurnIsOnTheBill(t *testing.T) {
+	m := turnModel(t).WithMaxToolRounds(1)
+	m = sendText(t, m, "fix the round accounting")
+	m.accumulateUsage(&provider.Usage{PromptTokens: 1200, CompletionTokens: 80})
+	spend := m.totalsLabel(m.turnSpend())
+	m = applyWrite(t, m, filepath.Join(t.TempDir(), "loop.go"), "package agent\n", "y")
+	if m.roundPause == nil || m.turnOpen || spend == "" {
+		t.Fatalf("the turn should have stopped at its ceiling and closed, open %v, spend %q", m.turnOpen, spend)
+	}
+	pause := pauseEntry(t, m)
+
+	s := m.spendScreenData()
+	turns := rowsOf(s, components.SpendTurn)
+	if len(turns) != 1 || turns[0].Turn == nil || turns[0].Turn.Paused == nil || turns[0].Turn.N != 1 {
+		t.Fatalf("want the paused turn on the bill, got %+v", turns)
+	}
+	if turns[0].Cost != spend || turns[0].Cost != pause.pause.spend {
+		t.Fatalf("the paused turn is billed at %q, want its pause row's %q", turns[0].Cost, spend)
+	}
+	// The one turn is the whole of the session's spend, so the total is its
+	// figure exactly: counted twice it would be double.
+	totals := rowsOf(s, components.SpendTotal)
+	if len(totals) != 1 || totals[0].Cost != spend {
+		t.Fatalf("the total %+v should be the paused turn's %q, counted once", totals, spend)
+	}
+
+	for s.Focus < len(s.Rows)-1 {
+		s.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	}
+	view := stripANSI(s.View(130))
+	for _, want := range []string{"⚠ turn 1", "paused", "spent        " + spend,
+		"took         " + components.FormatElapsed(pause.duration), "rounds       1 of 1 used"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the paused turn's preview is missing %q:\n%s", want, view)
+		}
 	}
 }
 

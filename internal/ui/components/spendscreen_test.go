@@ -48,6 +48,30 @@ func spendScreen(focus int) *SpendScreen {
 	return s
 }
 
+// pausedSpendScreen is the screen over the fixture with the running turn
+// replaced by one stopped at its round limit, the pointer on it.
+func pausedSpendScreen() *SpendScreen {
+	s := spendScreen(5)
+	s.Rows[5] = SpendRow{Kind: SpendTurn, Cost: "$0.0410", Turn: &TurnsItem{N: 3,
+		Paused: &TurnsPause{Used: 50, Limit: 50, Elapsed: "4m 12s", Spend: "$0.0410"}}}
+	return s
+}
+
+// A turn stopped at its round limit is on the bill under the pause row's
+// mark and word, at the figure it kept, and its account says how long it ran
+// and the rounds it used.
+func TestSpendScreen_APausedTurnIsItsPauseRowsFigures(t *testing.T) {
+	view := ansi.Strip(pausedSpendScreen().View(130))
+	for _, want := range []string{"⚠ turn 3", "paused", "$0.0410", "took         4m 12s", "rounds       50 of 50 used"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the paused turn is missing %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, "no figures kept") {
+		t.Errorf("a paused turn was drawn as one whose figures were not kept:\n%s", view)
+	}
+}
+
 // The list is the total and the bill three ways under headings, a model in
 // the SPEND block's own words, and the header counts the cuts beside the
 // total.
@@ -127,7 +151,8 @@ func TestSpendScreen_EmptySaysNothingWasBilled(t *testing.T) {
 
 // TestGolden_SpendScreen captures `/stats` over a bill of two models, two
 // children and three turns: the pointer on the total, on a model, on a
-// child and on a turn, and a session that has spent nothing.
+// child and on a turn, on a turn paused at its round limit, and a session
+// that has spent nothing.
 func TestGolden_SpendScreen(t *testing.T) {
 	captureGolden(t, "spend-screen", "the spend screen", goldenWidths, func(width int) []golden.Panel {
 		return []golden.Panel{
@@ -135,6 +160,7 @@ func TestGolden_SpendScreen(t *testing.T) {
 			{Label: "a model · its own kinds of request, and its children's share after the ◇", View: spendScreen(1).View(width)},
 			{Label: "a child · its share by name, and the model it ran on", View: spendScreen(3).View(width)},
 			{Label: "a turn · its cost as its close states it, enter opens it on the turns screen", View: spendScreen(6).View(width)},
+			{Label: "a paused turn · the figure its pause row kept, the time and rounds it used", View: pausedSpendScreen().View(width)},
 			{Label: "empty · a session that has spent nothing", View: (&SpendScreen{MaxLines: 12}).View(width)},
 		}
 	})
