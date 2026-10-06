@@ -7,6 +7,10 @@ package chat
 // screen reads — the block itself, not a second count of it — so a turn reads
 // the same here as it does in the feed.
 //
+// A turn stopped at its round limit has no close either: its pause row
+// stands in for one (rounds.go), and the screen draws it from the figures
+// that row kept — the rounds, the wall time and the cost when it stopped.
+//
 // A resumed conversation is the gap. A close block is never saved with the
 // messages, so the turns of an ended sitting come back with no close (or,
 // for the last one with files, the bare changeset row restoreTurnClose puts
@@ -94,11 +98,12 @@ func (m Model) renderTurnsHint() string {
 
 // turnsScreenData builds the screen, newest first, over every number the
 // session has handed a turn. A turn is drawn from the close row it left, the
-// running one from the rail's THIS TURN reading, and one with neither from
-// the files the changeset store still holds for it; a turn with none of the
-// three has nothing true to put on a row, and is left out.
+// running one from the rail's THIS TURN reading, one stopped at its round
+// limit from its pause row, and one with none of those from the files the
+// changeset store still holds for it; a turn with none of the four has
+// nothing true to put on a row, and is left out.
 func (m Model) turnsScreenData() components.TurnsScreen {
-	closes := map[int64]entry{}
+	closes, pauses := map[int64]entry{}, map[int64]entry{}
 	tools := 0
 	for i := len(m.transcript) - 1; i >= 0; i-- {
 		e := m.transcript[i]
@@ -110,6 +115,13 @@ func (m Model) turnsScreenData() components.TurnsScreen {
 		if e.kind == entryTurnClose && e.close != nil {
 			if _, seen := closes[e.turn]; !seen {
 				closes[e.turn] = e
+			}
+		}
+		// A granted pause stops again with a row of its own, which carries
+		// the whole turn's figures so far; the newest is the one that stands.
+		if e.kind == entryRoundPause && e.pause != nil {
+			if _, seen := pauses[e.turn]; !seen {
+				pauses[e.turn] = e
 			}
 		}
 	}
@@ -131,6 +143,12 @@ func (m Model) turnsScreenData() components.TurnsScreen {
 				// Nothing measured yet, and nothing reported: the turn is
 				// running and that is all that is known.
 				item.Running = &components.InspectorTurn{Running: m.working()}
+			}
+		case pauses[n].pause != nil:
+			p := pauses[n]
+			item.Paused = &components.TurnsPause{Used: p.pause.used, Limit: p.pause.limit, Spend: p.pause.spend}
+			if p.duration > 0 {
+				item.Paused.Elapsed = components.FormatElapsed(p.duration)
 			}
 		case len(item.Files) == 0:
 			continue

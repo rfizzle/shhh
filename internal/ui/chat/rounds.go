@@ -66,6 +66,10 @@ type roundPause struct {
 	// files, added and removed are the turn's changeset when it stopped.
 	files          int
 	added, removed int
+	// spend is what the turn had cost when it stopped, in the words a close
+	// states it: the turns screen draws a paused turn from this, since the
+	// pause row stands in for the close that would have carried it.
+	spend string
 	// stale marks a turn whose last edit landed after the last thing that
 	// checked it. It is the difference between "it stopped" and "it stopped
 	// halfway through something".
@@ -87,6 +91,9 @@ func (m Model) pauseAtRoundLimit() (tea.Model, tea.Cmd) {
 		limit:   m.effectiveMaxToolRounds(),
 		granted: m.roundGrant,
 		stale:   checksStale(m.turnEntries()),
+		// Taken before the state change below closes the turn's books: the
+		// running figure is the turn's whole cost up to this stop.
+		spend: m.totalsLabel(m.turnSpend()),
 	}
 	if t, ok := m.changes.Turn(m.turnCount); ok {
 		p.files, p.added, p.removed = t.Files(), t.Added, t.Removed

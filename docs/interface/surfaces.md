@@ -3055,6 +3055,10 @@ one turn two ways; the close's own keys are not offered there, since this
 screen answers none of them. Under it are the files the turn changed. The turn
 still running is on top, marked `running` and drawn from the rail's own
 reading of it: the step it is on, its tools, and what it has written so far.
+A turn that stopped at [its round limit](#the-recovery-row) and was not given
+more has no close, because its pause row stands in for one; it is marked
+`paused` with the pause row's `⚠`, and drawn from the figures that row kept —
+the rounds it used, its time and its cost when it stopped.
 `[enter]` opens the turn's review, whose esc comes back to the list, and it is
 grey on a turn that changed no files. The header counts the turns and their
 tools and states the session's spend as `/stats` states it. A resumed

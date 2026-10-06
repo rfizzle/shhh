@@ -8,10 +8,12 @@ package components
 // cost. The preview is that turn's close block drawn by the close's own
 // renderer, from the very figures the transcript's close row was drawn from,
 // so the screen and the row cannot report one turn two ways. A turn still in
-// flight has no close yet and is drawn from the rail's reading of it; a turn
-// the session holds files for and no close — one from a sitting that has
-// ended — is drawn as its number and its files, and says its figures were
-// not kept rather than reporting zeros nobody measured
+// flight has no close yet and is drawn from the rail's reading of it; one
+// that stopped at its round limit has no close either, and is drawn from the
+// figures its pause row kept; a turn the session holds files for and no
+// close — one from a sitting that has ended — is drawn as its number and its
+// files, and says its figures were not kept rather than reporting zeros
+// nobody measured
 // (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
 // This is a renderer; the turns are the host's.
 
@@ -20,6 +22,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -48,14 +51,31 @@ type TurnsFile struct {
 	Added, Removed int
 }
 
+// TurnsPause is a turn that stopped at its round limit and was never given
+// more: it has no close, because the pause row stands in for one
+// (docs/interface/surfaces.md#the-recovery-row), and these are that row's
+// figures — the rounds it used and what the turn had cost when it stopped.
+type TurnsPause struct {
+	// Used and Limit are the round counter the pause row states.
+	Used, Limit int
+	// Elapsed is the turn's wall time when it stopped, pre-formatted by
+	// FormatElapsed, and Spend its cost, or its token count where the
+	// pricing table did not know the model, the way a close states both.
+	Elapsed string
+	Spend   string
+}
+
 // TurnsItem is one turn, already resolved to what the screen draws. Exactly
-// one of Running and Close says what the turn came to; with neither, the
-// turn is one whose figures were not kept.
+// one of Running, Paused and Close says what the turn came to; with none,
+// the turn is one whose figures were not kept.
 type TurnsItem struct {
 	// N is the turn's number, the one its close row and its review carry.
 	N int64
 	// Running is the turn in flight, as the rail's THIS TURN block reads it.
 	Running *InspectorTurn
+	// Paused is the turn that stopped at its round limit, as its pause row
+	// left it.
+	Paused *TurnsPause
 	// Close is the block the turn closed with — the transcript row's own
 	// figures, not a copy of them.
 	Close *TurnClose
@@ -157,12 +177,13 @@ func (s *TurnsScreen) previewRows(width int) []string {
 	switch {
 	case t.Running != nil:
 		rows = append(rows, runningRows(*t.Running, width)...)
+	case t.Paused != nil:
+		rows = append(rows, pausedRows(*t.Paused, width)...)
 	case t.Close != nil:
 		rows = append(rows, strings.Split(t.Close.readOnly().View(width), "\n")...)
 	default:
 		// No close is held for the turn — it was never saved with a resumed
-		// conversation, or the turn stopped at its round limit and closed
-		// with the pause row — so the one thing this screen can say about it
+		// conversation — so the one thing this screen can say about it
 		// beyond its files is that.
 		rows = append(rows,
 			closeLine(closeLead("", sty.dim.Render("·")), sty.body.Render(noFiguresKept), "", width),
@@ -210,6 +231,35 @@ func runningRows(r InspectorTurn, width int) []string {
 	return append(rows, closeLine(closeLead(sty.accent.Render("▎"), sty.accent.Render("✎")), files, "", width))
 }
 
+// pausedRows is a turn stopped at its round limit, on the close's grid: the
+// pause row's glyph and its counter, then the turn's wall time and cost as a
+// close would state them, and a line saying why there is no close — the
+// pause row stands in for it. Where the figures do not fit beside the words
+// they carry on at the words' column, a whole figure at a time: a cost cut
+// between its number and its unit is not a figure on either line.
+func pausedRows(p TurnsPause, width int) []string {
+	stats := []string{fmt.Sprintf("%d of %d rounds used", p.Used, p.Limit)}
+	for _, f := range []string{p.Elapsed, p.Spend} {
+		if f != "" {
+			stats = append(stats, f)
+		}
+	}
+	under := closeLead("", " ")
+	sep := " · "
+	line := closeLead("", sty.accent.Render("⚠")) + sty.body.Render("Paused at its round limit")
+	var rows []string
+	for _, f := range stats {
+		if lipgloss.Width(line)+lipgloss.Width(sep+f) > width {
+			rows = append(rows, strings.TrimRight(Clip(line, width), " "))
+			line = under + sty.dim.Render(f)
+			continue
+		}
+		line += sty.dim.Render(sep + f)
+	}
+	rows = append(rows, strings.TrimRight(Clip(line, width), " "))
+	return append(rows, closeLine(under, sty.dimmer.Render("its pause row stands in for the close"), "", width))
+}
+
 // readOnly is the block as a preview draws it: the same figures with none of
 // the row's offers, because the keys a close row offers are answered by
 // reading mode on the transcript and this screen answers none of them.
@@ -234,6 +284,8 @@ func turnWord(t TurnsItem) (string, FieldTone) {
 	switch {
 	case t.Running != nil:
 		return "running", ToneOpen
+	case t.Paused != nil:
+		return "paused", ToneOpen
 	case t.Close == nil:
 		return noFiguresKept, ToneQuiet
 	}
@@ -247,13 +299,16 @@ func turnWord(t TurnsItem) (string, FieldTone) {
 }
 
 // turnGlyph is the row's leading mark: the close's own glyph for a turn that
-// closed, ▸ for the one in flight, · for one whose figures were not kept. It
+// closed, ▸ for the one in flight, the pause row's ⚠ for one stopped at its
+// round limit, · for one whose figures were not kept. It
 // is plain rather than painted for the steps screen's reason, and the word
 // beside it says the same thing (invariant 1).
 func turnGlyph(t TurnsItem) string {
 	switch {
 	case t.Running != nil:
 		return "▸"
+	case t.Paused != nil:
+		return "⚠"
 	case t.Close == nil:
 		return "·"
 	}
@@ -349,8 +404,11 @@ func (s *TurnsScreen) sync() {
 	for _, t := range s.Turns {
 		opt := SelectOption{Label: fmt.Sprintf("%s turn %d", turnGlyph(t), t.N), Detail: turnDetail(t)}
 		opt.Value, opt.valueTone = turnWord(t)
-		if t.Close != nil && t.Close.Spend != "" {
+		switch {
+		case t.Close != nil && t.Close.Spend != "":
 			opt.Meta, opt.metaTone = t.Close.Spend, ToneQuiet
+		case t.Paused != nil && t.Paused.Spend != "":
+			opt.Meta, opt.metaTone = t.Paused.Spend, ToneQuiet
 		}
 		opts = append(opts, opt)
 	}

@@ -1,11 +1,13 @@
 package chat
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -84,6 +86,46 @@ func TestTurnsScreen_AResumedTurnIsItsFilesAndNoFigures(t *testing.T) {
 	screen := s
 	if view := stripANSI(screen.View(130)); !strings.Contains(view, "no figures kept") || strings.Contains(view, "Done") {
 		t.Errorf("a restored turn claimed figures it does not have:\n%s", view)
+	}
+}
+
+// A turn that stopped at its round limit and was never given more has no
+// close, because its pause row stands in for one; the screen draws it from
+// the figures that row kept — the rounds, the wall time and the cost — and
+// never as a turn whose figures were not kept.
+func TestTurns_APausedTurnKeepsItsFigures(t *testing.T) {
+	m := turnModel(t).WithMaxToolRounds(1)
+	m = sendText(t, m, "fix the round accounting")
+	m.accumulateUsage(&provider.Usage{PromptTokens: 1200, CompletionTokens: 80})
+	spend := m.totalsLabel(m.turnSpend())
+	m = applyWrite(t, m, filepath.Join(t.TempDir(), "loop.go"), "package agent\n", "y")
+	if m.roundPause == nil || m.turnOpen {
+		t.Fatalf("the turn should have stopped at its ceiling and closed, open %v", m.turnOpen)
+	}
+	pause := pauseEntry(t, m)
+
+	s := m.turnsScreenData()
+	if len(s.Turns) != 1 {
+		t.Fatalf("want the paused turn, got %+v", s.Turns)
+	}
+	turn := s.Turns[0]
+	if turn.Close != nil || turn.Running != nil || turn.Paused == nil {
+		t.Fatalf("the paused turn is not its pause row's figures: %+v", turn)
+	}
+	p := turn.Paused
+	if p.Used != pause.pause.used || p.Limit != pause.pause.limit || p.Spend != spend || spend == "" ||
+		p.Elapsed != components.FormatElapsed(pause.duration) {
+		t.Fatalf("the paused turn's figures: %+v, want %d of %d, %q, %s", p, pause.pause.used,
+			pause.pause.limit, spend, components.FormatElapsed(pause.duration))
+	}
+	view := stripANSI(s.View(130))
+	for _, want := range []string{"⚠ turn 1", "paused", spend, "Paused at its round limit"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the screen is missing %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, "no figures kept") {
+		t.Errorf("a paused turn was drawn as one whose figures were not kept:\n%s", view)
 	}
 }
 

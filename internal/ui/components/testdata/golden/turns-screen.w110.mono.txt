@@ -79,6 +79,20 @@
 
 [↑↓/jk] move · [enter] review turn 2 · [esc] back to the prompt            each turn as its close row reads it
 
+· a turn paused at its round limit · the pause row's rounds, time and cost
+/turns · 6 turns · 26 tools                                                $0.1580 spent · [?] keys · [q] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+❯ ⚠ turn 6  paused · ▎1 file +4 −1              $0.3140 │ turn 6                                        paused
+  ✓ turn 5  done · changed no files             $0.0210 │ 
+  ✓ turn 4  done · ▎2 files +18 −6              $0.0870 │   ⚠ Paused at its round limit · 50 of 50 rounds used
+  ✓ turn 3  done · ▎1 file +3 −3                $0.0440 │     4m 12s · $0.3140
+  · turn 2  no figures kept · ▎2 files +11 −1           │     its pause row stands in for the close
+  ⊘ turn 1  cancelled                           $0.0060 │ 
+                                                        │   files internal/agent/loop.go +4 −1
+
+[↑↓/jk] move · [enter] review turn 6 · [esc] back to the prompt            each turn as its close row reads it
+
 ── ansi ────────────────────────────────────────────────────
 · the turn in flight · the rail's reading of it, on the close's grid
 ␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m␛[38;5;244m · 26 tools␛[m                                                ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
@@ -148,3 +162,17 @@
                                                        ␛[38;5;244m │ ␛[m        ␛[38;5;254mdocs/loop.md␛[m ␛[38;5;254m+2␛[m ␛[38;5;254m−1␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn 2␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m            ␛[38;5;244meach turn as its close row reads it␛[m
+
+· a turn paused at its round limit · the pause row's rounds, time and cost
+␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m␛[38;5;244m · 26 tools␛[m                                                ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ turn 6  paused · ▎1 file +4 −1              $0.3140␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mturn 6␛[m                                        ␛[38;5;244mpaused␛[m
+  ␛[38;5;254m✓ turn 5␛[m  ␛[38;5;254mdone␛[m␛[38;5;244m · ␛[m␛[38;5;244mchanged no files␛[m             ␛[38;5;244m$0.0210␛[m␛[38;5;244m │ ␛[m
+  ␛[38;5;254m✓ turn 4␛[m  ␛[38;5;254mdone␛[m␛[38;5;244m · ␛[m␛[38;5;254m▎␛[m␛[38;5;244m2 files ␛[m␛[38;5;254m+18␛[m␛[38;5;244m ␛[m␛[38;5;254m−6␛[m              ␛[38;5;244m$0.0870␛[m␛[38;5;244m │ ␛[m  ␛[38;5;254m⚠␛[m ␛[38;5;254mPaused at its round limit␛[m␛[38;5;244m · 50 of 50 rounds used␛[m
+  ␛[38;5;254m✓ turn 3␛[m  ␛[38;5;254mdone␛[m␛[38;5;244m · ␛[m␛[38;5;254m▎␛[m␛[38;5;244m1 file ␛[m␛[38;5;254m+3␛[m␛[38;5;244m ␛[m␛[38;5;254m−3␛[m                ␛[38;5;244m$0.0440␛[m␛[38;5;244m │ ␛[m    ␛[38;5;244m4m 12s␛[m␛[38;5;244m · $0.3140␛[m
+  ␛[38;5;254m· turn 2␛[m  ␛[38;5;244mno figures kept␛[m␛[38;5;244m · ␛[m␛[38;5;254m▎␛[m␛[38;5;244m2 files ␛[m␛[38;5;254m+11␛[m␛[38;5;244m ␛[m␛[38;5;254m−1␛[m          ␛[38;5;244m │ ␛[m    ␛[38;5;244mits pause row stands in for the close␛[m
+  ␛[38;5;254m⊘ turn 1␛[m  ␛[38;5;244mcancelled␛[m                           ␛[38;5;244m$0.0060␛[m␛[38;5;244m │ ␛[m
+                                                       ␛[38;5;244m │ ␛[m  ␛[38;5;244mfiles ␛[m␛[38;5;254minternal/agent/loop.go␛[m ␛[38;5;254m+4␛[m ␛[38;5;254m−1␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn 6␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m            ␛[38;5;244meach turn as its close row reads it␛[m

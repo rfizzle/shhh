@@ -129,9 +129,20 @@ func TestTurnsScreen_NarrowStacksThePanes(t *testing.T) {
 	}
 }
 
+// pausedTurnsScreen is the fixture with its newest turn stopped at its round
+// limit rather than running: no close, the pause row's figures, and the file
+// it wrote before it stopped.
+func pausedTurnsScreen() *TurnsScreen {
+	s := turnsScreen(0)
+	s.Turns[0] = TurnsItem{N: 6, Paused: &TurnsPause{Used: 50, Limit: 50, Elapsed: "4m 12s", Spend: "$0.3140"},
+		Files: []TurnsFile{{Path: "internal/agent/loop.go", Added: 4, Removed: 1}}, Added: 4, Removed: 1, Reviewable: true}
+	return s
+}
+
 // TestGolden_TurnsScreen captures `/turns` over six turns: the one running,
 // one that wrote nothing, one that committed, one whose check failed, one
-// restored with no figures kept, and one that was stopped.
+// restored with no figures kept, one that was stopped, and — in place of the
+// running one — a turn paused at its round limit.
 func TestGolden_TurnsScreen(t *testing.T) {
 	captureGolden(t, "turns-screen", "the turns screen", goldenWidths, func(width int) []golden.Panel {
 		return []golden.Panel{
@@ -140,6 +151,7 @@ func TestGolden_TurnsScreen(t *testing.T) {
 			{Label: "a turn that committed · its close whole, and its files", View: turnsScreen(2).View(width)},
 			{Label: "a failing check · the close's verdict, none of the row's keys", View: turnsScreen(3).View(width)},
 			{Label: "a restored turn · its files, and no figures kept", View: turnsScreen(4).View(width)},
+			{Label: "a turn paused at its round limit · the pause row's rounds, time and cost", View: pausedTurnsScreen().View(width)},
 		}
 	})
 }
