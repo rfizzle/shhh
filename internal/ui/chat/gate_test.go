@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -539,6 +540,64 @@ func TestGate_TheScreenReadsTheStruct(t *testing.T) {
 			}
 			if passed := r.attempts[0].outcome == checkPassed; passed != tc.ok {
 				t.Errorf("the attempt passed = %v, want %v", passed, tc.ok)
+			}
+		})
+	}
+}
+
+// A pass over a tree that moved while the checks ran is not a pass: the row
+// marks it stale, and the close hands it back for the same retry a failure
+// gets, inside the same budget, rather than closing on it.
+func TestCloseGate_AStalePassIsRetried(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		retries int
+	}{
+		{"no retries", 0},
+		{"two retries", 2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ws := gateWorkspace(t, fmt.Sprintf(`{"on_close": "fast", "on_close_retries": %d, "suites": {
+				"fast": {"checks": [{"name": "vet", "exe": "sh", "args": ["-c", "true"]}]}}}`, tc.retries))
+			runs := 0
+			gate := Gate{
+				Manage: func([]string) string { return "gate says" },
+				Run: func(ctx context.Context, suite string) (*quality.Result, error) {
+					runs++
+					return &quality.Result{
+						Suite: suite, Verdict: quality.VerdictPass, Trusted: true, ChangedDuringRun: true,
+						Checks:      []quality.CheckResult{{Name: "vet", Command: "go vet ./..."}},
+						Fingerprint: quality.TakeFingerprint(ws),
+					}, nil
+				},
+			}
+			m := turnModel(t).WithWorkspace(ws).WithGate(gate)
+			m.closeGate.on = true
+			m = startEditedTurn(t, m)
+
+			for i := range tc.retries {
+				m = closeTurnWithGate(t, m)
+				if m.turnState() != stateStreaming {
+					t.Fatalf("stale pass %d closed the turn, state %v", i+1, m.turnState())
+				}
+				msgs := m.agent.Messages()
+				last := msgs[len(msgs)-1]
+				if last.Role != provider.RoleUser || !strings.Contains(last.Content, "STALE:") {
+					t.Fatalf("the stale verdict never reached the request: %+v", last)
+				}
+				if sum, ok := quality.Summarize(last.Content); !ok || sum.OK() {
+					t.Fatalf("the model was told something other than the gate's own stale text: %q", last.Content)
+				}
+			}
+			m = closeTurnWithGate(t, m)
+			if m.turnState() == stateStreaming {
+				t.Fatalf("the hand-backs ran past on_close_retries %d", tc.retries)
+			}
+			if runs != tc.retries+1 {
+				t.Fatalf("the suite ran %d times, want %d", runs, tc.retries+1)
+			}
+			if c := lastClose(t, m); c.Checks == nil || !c.Checks.Failed {
+				t.Fatalf("a turn never closes on a stale pass as if it passed: %+v", c.Checks)
 			}
 		})
 	}

@@ -216,7 +216,11 @@ func (m Model) finishCloseGate(msg closeGateMsg) (tea.Model, tea.Cmd) {
 		}
 		m.todo.runner.state.Checks(closing)
 	}
-	failed := msg.res.Verdict == quality.VerdictFail || msg.res.Verdict == quality.VerdictBlocked
+	// A pass over a tree that moved while the checks ran is not a pass, the
+	// row says so, and it is handed back for the same retry a failure gets:
+	// closing on it would close the turn on a verdict about a tree that is
+	// no longer the one on disk. A cancellation is the person stopping it.
+	failed := msg.res.Verdict != quality.VerdictCancelled && !msg.res.OK(current)
 	if failed && m.closeGate.fed < retries {
 		m.closeGate.fed++
 		// The same text the tool returns, and nothing around it: a session
