@@ -1144,6 +1144,8 @@ own file could hold.
 | `progress_interval_calls` | number | 12 calls | How many tool calls without assistant prose earn a public progress checkpoint. |
 | `progress_interval_seconds` | number | 90 seconds | How long a tool run may stay silent before it earns a public progress checkpoint. |
 | `provider_retries` | number | 3 attempts | How many times one stall — a rate limit, an overloaded provider, a connection that died before a token — is asked again before the failure stands; zero is a machine that would rather see the failure than sit out a wait. |
+| `flake_alert_count` | number | 3 flakes | How many times a quality check must have flaked in this checkout before the rail's ALERTS block stands it as an alert. |
+| `flake_alert_days` | number | 7 days | How long that alert stands after the check's latest flake; it settles once this many days pass without another. |
 
 **`[sandbox]`**
 

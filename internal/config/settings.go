@@ -349,6 +349,12 @@ var settings = []Setting{
 	}, {
 		Key: "behavior.provider_retries", Kind: KindInt, Default: "3 attempts", Literal: "3",
 		Desc: "How many times one stall — a rate limit, an overloaded provider, a connection that died before a token — is asked again before the failure stands; zero is a machine that would rather see the failure than sit out a wait.",
+	}, {
+		Key: "behavior.flake_alert_count", Kind: KindInt, Default: "3 flakes", Literal: "3",
+		Desc: "How many times a quality check must have flaked in this checkout before the rail's ALERTS block stands it as an alert.",
+	}, {
+		Key: "behavior.flake_alert_days", Kind: KindInt, Default: "7 days", Literal: "7",
+		Desc: "How long that alert stands after the check's latest flake; it settles once this many days pass without another.",
 	},
 
 	{

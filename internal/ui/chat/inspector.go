@@ -34,7 +34,9 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -369,35 +371,132 @@ func (m Model) inspectorChanges() *components.InspectorChanges {
 // transcript reads differently, which is the whole of what an alert is a
 // function of: a command lands, or the trim rewrites what a landed one says
 // (transcriptReading).
+//
+// The checkout's flake ledger is the block's other source, and a session
+// with nothing in its transcript can still have a check that keeps flaking —
+// so even the first read of an empty transcript scans rather than taking the
+// empty box as its answer.
 func (m Model) inspectorAlerts() components.InspectorAlerts {
 	if m.alertMemo == nil {
 		return m.scanAlerts()
 	}
 	reading := m.transcriptReading()
-	// The zero box is the reading of a session with nothing in it, whose
-	// answer is no alerts — which is the answer, so the first read of an
-	// empty transcript is a hit that happens to be right rather than a miss.
-	if m.alertMemo.reading != reading {
-		*m.alertMemo = alertMemo{reading: reading, alerts: m.scanAlerts()}
+	if !m.alertMemo.scanned || m.alertMemo.reading != reading {
+		alerts := m.scanAlerts()
+		m.alertMemo.reading, m.alertMemo.alerts, m.alertMemo.scanned = reading, alerts, true
 	}
 	return m.alertMemo.alerts
 }
 
 // alertMemo is the last scan and the reading it was a scan of. A reading that
 // still matches is a scan that is still true (model.go).
+//
+// It also keeps the last read of the flake ledger and how many gate verdicts
+// the transcript held when it was taken. The ledger is a store on disk and
+// the scan runs on every row that lands, so it is read again only when a new
+// verdict has landed — the one thing in a session that writes to it.
 type alertMemo struct {
 	reading transcriptReading
+	scanned bool
 	alerts  components.InspectorAlerts
+
+	flakes     []storage.Flake
+	verdicts   int
+	ledgerRead bool
 }
 
 // scanAlerts is the block's reading of the walk: each episode's alert, in the
 // order the walk hands them back.
 func (m Model) scanAlerts() components.InspectorAlerts {
 	var alerts components.InspectorAlerts
-	for _, ep := range alertEpisodes(m.transcript) {
+	for _, ep := range alertEpisodes(m.transcript, m.flakyEpisodes()) {
 		alerts = append(alerts, ep.alert)
 	}
 	return alerts
+}
+
+// flakyEpisodes is the checkout's flake ledger read against the held clock:
+// a standing episode for each check that has flaked often enough and
+// recently enough to be news (flakyAlerts).
+func (m Model) flakyEpisodes() []alertEpisode {
+	count, days := m.gate.FlakeAlertCount, m.gate.FlakeAlertDays
+	if count <= 0 {
+		count = config.DefaultFlakeAlertCount
+	}
+	if days <= 0 {
+		days = config.DefaultFlakeAlertDays
+	}
+	return flakyAlerts(m.flakeLedger(), count, days, clock())
+}
+
+// flakeLedger is the checkout's ledger, read again only when a gate verdict
+// has landed since the last read (alertMemo). A ledger that will not read is
+// no flaky alerts: the rail is not where a store's failure is reported, and
+// `/gate flakes` says it in words.
+func (m Model) flakeLedger() []storage.Flake {
+	if m.gate.Flakes == nil {
+		return nil
+	}
+	read := func() []storage.Flake {
+		flakes, err := m.gate.Flakes()
+		if err != nil {
+			return nil
+		}
+		return flakes
+	}
+	if m.alertMemo == nil {
+		return read()
+	}
+	verdicts := 0
+	for _, e := range m.transcript {
+		if _, ok := gateVerdict(e); ok {
+			verdicts++
+		}
+	}
+	if !m.alertMemo.ledgerRead || m.alertMemo.verdicts != verdicts {
+		m.alertMemo.flakes, m.alertMemo.verdicts, m.alertMemo.ledgerRead = read(), verdicts, true
+	}
+	return m.alertMemo.flakes
+}
+
+// flakyAlerts is the ledger's standing news: every check that has flaked at
+// least count times in this checkout and last flaked inside the window of
+// days before now. A check stops being news when the window passes without
+// another flake, which is the only thing that settles one — a gate that
+// passes does not, because a flake is a pass (docs/interface/surfaces.md#the-inspector-rail).
+//
+// The ledger keeps a count and the first and latest moments rather than every
+// flake, so the count is said as "in the window" only where the first flake
+// is inside it too; otherwise the row says the whole count and that the
+// latest was in the window, rather than claim all of it happened this week.
+func flakyAlerts(flakes []storage.Flake, count, days int, now time.Time) []alertEpisode {
+	since := now.Add(-time.Duration(days) * 24 * time.Hour)
+	var out []alertEpisode
+	for _, f := range flakes {
+		if f.Seen < count || f.LastAt.IsZero() || !f.LastAt.After(since) {
+			continue
+		}
+		note := fmt.Sprintf("flaked %d× %s", f.Seen, flakeWindow(days))
+		if f.FirstAt.IsZero() || !f.FirstAt.After(since) {
+			note = fmt.Sprintf("flaked %d× · again %s", f.Seen, flakeWindow(days))
+		}
+		out = append(out, alertEpisode{
+			alert:    components.InspectorAlert{Label: f.Check, Note: note, Flaky: true},
+			lastFail: noAnswer, answer: noAnswer,
+		})
+	}
+	return out
+}
+
+// flakeWindow says the window of days the way a reader says it.
+func flakeWindow(days int) string {
+	switch days {
+	case 1:
+		return "in the last day"
+	case 7:
+		return "this week"
+	}
+	return fmt.Sprintf("in the last %d days", days)
 }
 
 // alertEpisode is one command's alert as the walk read it: the alert the
@@ -416,7 +515,16 @@ type alertEpisode struct {
 // noAnswer is an episode nothing has answered yet.
 const noAnswer = -1
 
-// alertEpisodes is the walk itself, over es in transcript order.
+// alertEpisodes is the walk itself, over es in transcript order, with the
+// flaky checks the ledger stands (flakyAlerts) ahead of every command's
+// episode.
+//
+// A flaky check is never an answer to anything and nothing in the transcript
+// answers it, so it takes no part in the walk; and it goes first, as the
+// oldest news, so a failure always takes a drawn row ahead of it and a flake
+// is the first thing behind the block's fold. A flake never supersedes a
+// failure: every run behind it passed, and the command that is failing now
+// is the thing that wants an answer.
 //
 // An alert is one command rather than one command line: an agent that runs a
 // formatter over three directories has one thing wrong with its workspace and
@@ -437,7 +545,7 @@ const noAnswer = -1
 // one from the start. It never stood long enough to be news, so it is never a
 // row — but it was red, and the fold is the account of how much red it took
 // to get to green (docs/interface/surfaces.md#the-inspector-rail).
-func alertEpisodes(es []entry) []alertEpisode {
+func alertEpisodes(es []entry, flaky []alertEpisode) []alertEpisode {
 	verified := lastVerification(es)
 	var closed []*alertEpisode
 	open := map[string]*alertEpisode{}
@@ -516,9 +624,10 @@ func alertEpisodes(es []entry) []alertEpisode {
 	// sits where its most recent failure is and the block draws it as the
 	// recent news it is.
 	sort.Slice(closed, func(a, b int) bool { return closed[a].lastFail < closed[b].lastFail })
-	episodes := make([]alertEpisode, len(closed))
-	for i, ep := range closed {
-		episodes[i] = *ep
+	episodes := make([]alertEpisode, 0, len(flaky)+len(closed))
+	episodes = append(episodes, flaky...)
+	for _, ep := range closed {
+		episodes = append(episodes, *ep)
 	}
 	return episodes
 }

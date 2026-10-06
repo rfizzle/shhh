@@ -564,7 +564,16 @@ func (m Model) summaryAlerts() []string {
 	}
 	out := make([]string, 0, len(alerts))
 	for _, a := range alerts {
+		// A flaky check is the rail's to show and not the reading's to
+		// state: the result already told the model the check flaked, and
+		// how often (docs/capabilities/testing.md#a-flake-is-counted-where-it-happened).
+		if a.Flaky {
+			continue
+		}
 		out = append(out, strings.TrimSpace(a.Label+" — "+a.Note))
+	}
+	if len(out) == 0 {
+		return nil
 	}
 	return out
 }

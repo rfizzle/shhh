@@ -38,3 +38,21 @@ func TestProgram_GateFlakesListsTheCheckoutsLedger(t *testing.T) {
 
 	frameHas(t, finalFrame(t, tm), "fast · 5 times", "make lint", "the failing run exited 2")
 }
+
+// A check the ledger says has flaked three times this week reaches the rail
+// through the whole program, under ALERTS, before the session has run
+// anything.
+func TestProgram_AFlakyCheckStandsOnTheRail(t *testing.T) {
+	now := time.Now()
+	m := frameModel(t, 130, 40).WithGate(Gate{
+		Manage: func([]string) string { return "" },
+		Flakes: func() ([]storage.Flake, error) {
+			return []storage.Flake{{Suite: "default", Check: "vet", Command: "./checks/vet.sh", Seen: 3,
+				FirstExit: 1, FirstAt: now.Add(-48 * time.Hour), LastAt: now.Add(-time.Hour)}}, nil
+		},
+	})
+	tm := runProgramAt(t, m, 130, 40)
+
+	waitForText(t, tm, "flaked 3× this week")
+	frameHas(t, finalFrame(t, tm), "ALERTS", "1 standing", "~ vet")
+}

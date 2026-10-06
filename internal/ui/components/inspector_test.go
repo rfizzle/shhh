@@ -1354,3 +1354,46 @@ func TestModelFamilyWord(t *testing.T) {
 		}
 	}
 }
+
+// A flaky check reads `~` and its account, with no turn field and no ✗, and
+// counts as standing; behind two failures it is the alert that folds, so a
+// flake never takes a failure's row.
+func TestInspectorAlerts_AFlakyCheckIsATildeAndAWord(t *testing.T) {
+	flaky := InspectorAlert{Label: "go test", Note: "flaked 3× this week", Flaky: true}
+	tests := []struct {
+		name   string
+		alerts InspectorAlerts
+		want   []string
+		absent []string
+	}{
+		{
+			name:   "alone",
+			alerts: InspectorAlerts{flaky},
+			want:   []string{"ALERTS", "1 standing", "~ go test  flaked 3× this week"},
+			absent: []string{"✗", "turn"},
+		},
+		{
+			name: "behind two failures",
+			alerts: InspectorAlerts{flaky,
+				{Label: "go build", Note: OutcomeExit(2), Runs: 1, Turn: 2},
+				{Label: "go vet", Note: OutcomeExit(1), Runs: 1, Turn: 3}},
+			want:   []string{"3 standing", "✗ go build", "✗ go vet", "… 1 more"},
+			absent: []string{"~ go test"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			view := stripANSI(InspectorRail{Alerts: tt.alerts}.View(InspectorWidth, 0))
+			for _, w := range tt.want {
+				if !strings.Contains(view, w) {
+					t.Errorf("the rail is missing %q:\n%s", w, view)
+				}
+			}
+			for _, a := range tt.absent {
+				if strings.Contains(view, a) {
+					t.Errorf("the rail should not carry %q:\n%s", a, view)
+				}
+			}
+		})
+	}
+}

@@ -36,11 +36,19 @@ type Gate struct {
 	// Flakes reads the checkout's flake ledger, which /gate flakes opens
 	// as a screen; nil where the session has no store to read it from.
 	Flakes func() ([]storage.Flake, error)
+	// FlakeAlertCount and FlakeAlertDays are when the rail stands a check
+	// from that ledger as an alert: this many flakes, the latest inside this
+	// many days. Zero keeps the built-in value.
+	FlakeAlertCount, FlakeAlertDays int
 }
 
-// WithGate enables the /gate command.
+// WithGate enables the /gate command. The rail's alert memo starts over,
+// because what it read of the flake ledger was read through the gate it had.
 func (m Model) WithGate(g Gate) Model {
 	m.gate = g
+	if m.alertMemo != nil {
+		m.alertMemo = &alertMemo{}
+	}
 	return m
 }
 

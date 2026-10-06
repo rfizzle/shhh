@@ -186,6 +186,11 @@ func (s *AlertsScreen) previewRows(width int) []string {
 	}
 	word, _ := alertStanding(*a)
 	rows := []string{paneTitle(brightStyle().Render(a.Alert.Label), sty.dim.Render(word), width), ""}
+	// A flaky check has no runs in this session and nothing answers it: its
+	// account is the ledger's, and that is the one line it has.
+	if a.Alert.Flaky {
+		return append(rows, alertsField("ledger", sty.body.Render(a.Alert.Note), width))
+	}
 	runs := fmt.Sprintf("%d", max(a.Alert.Runs, 1))
 	if a.Alert.Turns > 1 {
 		runs += fmt.Sprintf(", in %d turns", a.Alert.Turns)
@@ -273,6 +278,9 @@ func joinTurn(fact string, turn int64) string {
 // alertStanding is how an episode stands, in the word the list and the
 // preview both say, and the tone the list reads it in.
 func alertStanding(a AlertsItem) (string, FieldTone) {
+	if a.Alert.Flaky {
+		return "flaky", ToneOpen
+	}
 	if a.Alert.Superseded {
 		return "superseded", ToneQuiet
 	}
@@ -280,10 +288,13 @@ func alertStanding(a AlertsItem) (string, FieldTone) {
 }
 
 // alertGlyph is the row's leading mark: the rail row's ✗ for one still
-// standing, ✓ for one something has answered. It is plain rather than
-// painted for the steps screen's reason, and the word beside it says the
-// same thing (invariant 1).
+// standing, ✓ for one something has answered, and the rail's ~ for a check
+// that keeps flaking. It is plain rather than painted for the steps screen's
+// reason, and the word beside it says the same thing (invariant 1).
 func alertGlyph(a AlertsItem) string {
+	if a.Alert.Flaky {
+		return "~"
+	}
 	if a.Alert.Superseded {
 		return "✓"
 	}

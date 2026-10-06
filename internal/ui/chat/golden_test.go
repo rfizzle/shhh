@@ -4613,10 +4613,10 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 						duration: 3800 * time.Millisecond, turn: 4,
 						toolResult: "--- FAIL: TestLoopRounds\n    loop_test.go:214: want 3 rounds, got 4"})
 				}
-				if stage == "recovered" || stage == "regressed" || stage == "completed" {
+				if stage == "recovered" || stage == "regressed" || stage == "completed" || stage == "flaky" {
 					appendGateText(&m, gateResult("PASS", 5, 5))
 				}
-				if stage == "regressed" {
+				if stage == "regressed" || stage == "flaky" {
 					// Something new breaks after the pass. The two answered
 					// episodes are two superseded entries — the suite's three
 					// turns of failure are one of them, not three.
@@ -4633,6 +4633,18 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 								Files: 1, Added: 12, Removed: 3, Note: "all tracked",
 							},
 							Checks: turnChecksRow(m.transcript, false),
+						}})
+				}
+				if stage == "flaky" {
+					// The checkout's ledger has the suite's vet check failing
+					// and passing on its rerun three times this week. The
+					// pass above leaves it standing — a flake is a pass — and
+					// it stands ahead of the vet failure rather than over it.
+					now := clock()
+					m = m.WithGate(Gate{Manage: func([]string) string { return "" },
+						Flakes: func() ([]storage.Flake, error) {
+							return []storage.Flake{{Suite: "default", Check: "vet", Command: "go vet ./...",
+								Seen: 3, FirstExit: 1, FirstAt: now.Add(-50 * time.Hour), LastAt: now.Add(-time.Hour)}}, nil
 						}})
 				}
 				m.invalidateRenderCache()
@@ -4652,6 +4664,8 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 					View: build("regressed")},
 				{Label: "completed · the turn closes and the rail has no bad news",
 					View: build("completed")},
+				{Label: "flaky · a check that keeps flaking stands beside a failure, never over it",
+					View: build("flaky")},
 			}
 		})
 }

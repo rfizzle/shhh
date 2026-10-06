@@ -56,6 +56,15 @@ type InspectorAlert struct {
 	// block can still account for — but it is never drawn as a row, so an
 	// answered failure cannot push a changed file off the rail.
 	Superseded bool
+	// Flaky marks a check the checkout's flake ledger says keeps failing and
+	// passing on its rerun, rather than a command this session broke. It is
+	// standing news without being a failure — every one of those runs
+	// passed — so it reads `~` and the word `flaked` where a failure reads
+	// `✗`, and Note carries the whole account (`flaked 3× this week`). It is
+	// settled by time rather than answered, so it is never Superseded: a
+	// settled one is simply not handed to the block
+	// (docs/interface/surfaces.md#the-inspector-rail).
+	Flaky bool
 }
 
 // InspectorAlerts is the ALERTS block: every command this session has broken,
@@ -129,6 +138,9 @@ func (r InspectorRail) alertsBlock(width int) (railBlock, bool) {
 // bought nothing with the half of a command name it gave up for them
 // (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
 func alertRow(a InspectorAlert, width int) string {
+	if a.Flaky {
+		return flakyRow(a, width)
+	}
 	turn := ""
 	if a.Turn > 0 {
 		turn = sty.dim.Render(alertTurn(a))
@@ -141,6 +153,22 @@ func alertRow(a InspectorAlert, width int) string {
 		}
 	}
 	return railRow(left, turn, width, inspectorIndent)
+}
+
+// flakyRow is a flaky check on one row: the warn-toned `~` the gate's own
+// flaked line uses, the check's name, and the account beside it. It has no
+// turn field, because the flakes behind it happened across sessions rather
+// than in a turn of this one; the account is dropped whole where it will not
+// fit, for alertRow's reason.
+func flakyRow(a InspectorAlert, width int) string {
+	left := " " + sty.warn.Render("~") + " " + sty.body.Render(a.Label)
+	if a.Note != "" {
+		stated := left + "  " + sty.dim.Render(a.Note)
+		if lipgloss.Width(stated) <= railRoom(width, "", inspectorIndent) {
+			left = stated
+		}
+	}
+	return railRow(left, "", width, inspectorIndent)
 }
 
 // alertTurn is the row's turn field: the turn it broke in, said as the turn it

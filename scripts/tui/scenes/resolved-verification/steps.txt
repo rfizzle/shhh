@@ -1,5 +1,6 @@
 # program test: TestProgram_TheGatesPassSettlesTheFailureBeforeIt,
 #   TestProgram_GateFlakesListsTheCheckoutsLedger,
+#   TestProgram_AFlakyCheckStandsOnTheRail,
 #   TestProgram_TheQuitChordArmsThenLeaves
 #
 # One turn watches its tests fail, fixes the code, and runs the repository's
@@ -18,8 +19,13 @@
 # on-close-gate golden's flaked state does. A second turn runs the suite
 # again: vet flakes a second time, and the close row's note column says it
 # has flaked once before, the ledger's count, as the golden's flaked state
-# says three times. `/gate flakes` then lists the checkout's ledger, read
-# against the flakes-screen golden: vet in default, 2 times.
+# says three times — below 130 columns, because the rail drawn at 130 leaves
+# the transcript too narrow for the note column, as the golden's own narrow
+# panels drop it. `/gate flakes` then lists the checkout's ledger, read
+# against the flakes-screen golden: vet in default, 2 times. A third turn
+# runs the suite once more and vet flakes a third time inside the week, so
+# the rail stands it under ALERTS as `~ vet  flaked 3× this week` beside the
+# answered make test, read against the inspector-alerts golden's flaky state.
 setup mkdir -p .shhh checks
 setup printf 'test:\n\t@echo "--- FAIL: TestLoopRounds"; echo "    loop_test.go:214: want 3 rounds, got 4"; exit 1\n' > Makefile
 setup printf '#!/bin/sh\necho "ok  github.com/tui/agent  0.4s"\n' > checks/unit.sh; chmod +x checks/unit.sh
@@ -33,12 +39,17 @@ keys y
 snap 03-alert-standing "▎✗ ran make test" "exit 2"
 snap 04-resolved "quality gate default passing" "exit 2 · approved by you" "· 2 of 2 checks · 1 flaked ·"
 keys "run the suite once more" Enter
-snap 05-flaked-again "flaked 1 time before · /gate flakes" "· 2 of 2 checks · 1 flaked ·"
+narrow 130 snap 05-flaked-again "flaked 1 time before · /gate flakes" "· 2 of 2 checks · 1 flaked ·"
+wide 130 snap 05-flaked-again "Green again; vet flaked a second time." "· 2 of 2 checks · 1 flaked ·"
 keys "/gate flakes" Enter
 snap 06-flakes "flaked 2 times in this checkout" "/gate flakes · 1 check · 2 flakes" "default · 2 times" "./checks/vet.sh" "the failing run exited 1"
 keys q
 snap 07-back "vet flaked a second time"
+keys "run the suite a third time" Enter
+wide 130 snap 08-flaky-standing "flaked 3× this week" "~ vet" "1 standing"
+wide 130 snap 09-flaky-closed "vet keeps flaking" "~ vet  flaked 3× this week" "· 2 of 2 checks · 1 flaked ·"
+narrow 130 snap 09-third-close "vet keeps flaking" "flaked 2 times before · /gate flakes"
 keys C-c
-snap 08-quit-armed "again quits"
+snap 10-quit-armed "again quits"
 keys C-c
-snap 09-exit "that is everything the screen was holding"
+snap 11-exit "that is everything the screen was holding"

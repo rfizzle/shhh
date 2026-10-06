@@ -687,6 +687,13 @@ type BehaviorConfig struct {
 	// looks like the provider rather than like a default.
 	// See docs/capabilities/providers.md#a-stall-is-waited-out-on-one-schedule.
 	ProviderRetries *int `toml:"provider_retries"`
+	// FlakeAlertCount is how many times a quality check must have flaked in
+	// the checkout before the rail stands it as an alert, and
+	// FlakeAlertDays how long that alert stands after its latest flake.
+	// Zero or less keeps the built-in value
+	// (docs/interface/surfaces.md#the-inspector-rail).
+	FlakeAlertCount int `toml:"flake_alert_count"`
+	FlakeAlertDays  int `toml:"flake_alert_days"`
 }
 
 // AgentsConfig configures sub-agent defaults: which model children
@@ -984,6 +991,14 @@ const (
 	DefaultMemoryMaxTokens  = 1200
 )
 
+// A check that has flaked three times inside a week is one that needs fixing
+// rather than a machine that was busy, and a week without a flake is what
+// settles it (docs/interface/surfaces.md#the-inspector-rail).
+const (
+	DefaultFlakeAlertCount = 3
+	DefaultFlakeAlertDays  = 7
+)
+
 // DefaultHookCeiling bounds one hook. It is short because every seam a hook
 // sits on has something waiting on the other side of it, and a hook is a
 // formatter or a path check rather than a build.
@@ -1198,6 +1213,20 @@ func (c Config) EffectiveMemoryMaxEntries() int {
 		return c.Behavior.MemoryMaxEntries
 	}
 	return DefaultMemoryMaxEntries
+}
+
+func (c Config) EffectiveFlakeAlertCount() int {
+	if c.Behavior.FlakeAlertCount > 0 {
+		return c.Behavior.FlakeAlertCount
+	}
+	return DefaultFlakeAlertCount
+}
+
+func (c Config) EffectiveFlakeAlertDays() int {
+	if c.Behavior.FlakeAlertDays > 0 {
+		return c.Behavior.FlakeAlertDays
+	}
+	return DefaultFlakeAlertDays
 }
 
 func (c Config) EffectiveMemoryMaxTokens() int {

@@ -86,7 +86,7 @@ func (m Model) renderAlertsHint() string {
 // then the superseded, each newest first — the order the block would draw
 // them in if it drew them all.
 func (m Model) alertsScreenData() components.AlertsScreen {
-	episodes := alertEpisodes(m.transcript)
+	episodes := alertEpisodes(m.transcript, m.flakyEpisodes())
 	sort.SliceStable(episodes, func(a, b int) bool {
 		sa, sb := episodes[a].alert.Superseded, episodes[b].alert.Superseded
 		if sa != sb {

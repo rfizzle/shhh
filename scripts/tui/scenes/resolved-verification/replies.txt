@@ -10,6 +10,9 @@ The bound is fixed and the suite is green.
 Running the suite once more over the fix
 +tool:quality_gate:{"action":"run","suite":"default"}
 Green again; vet flaked a second time.
+Running the suite a third time
++tool:quality_gate:{"action":"run","suite":"default"}
+Green a third time; vet keeps flaking.
 
 # The session's own readings of its run take a reply of their own rather than
 # one of the second turn's rounds.

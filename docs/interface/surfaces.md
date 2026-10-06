@@ -1588,6 +1588,28 @@ changed file is ever pushed off the rail to keep an answered failure on it.
 When nothing is live the block goes with them: a block whose only news has
 been answered is history, and the transcript is where history is read.
 
+One alert is not a command this session ran. A check the gate has had to run
+twice to pass is a flake, and the checkout keeps count of them
+([a flake is counted where it
+happened](../capabilities/testing.md#a-flake-is-counted-where-it-happened));
+one is a busy machine, but a check that has flaked three times in a week is
+one that needs fixing, and tolerating it is the failure the block is for. So
+it stands too, read off that count rather than the transcript, as a mark and a
+word rather than a colour: `~ go test  flaked 3× this week`, with no turn
+field, because the flakes behind it happened across sessions rather than in
+a turn of this one. Where the first of them is older than the week the row
+says the whole count and that the latest was this week — `flaked 9× · again
+this week` — rather than claim all nine for it. A gate that passes does not
+answer it, because every flake was a pass; what settles it is a week going by
+without another, and a settled one is not superseded but gone, since it was
+never this session's to answer. The count and the week are the person's
+(`behavior.flake_alert_count`, `behavior.flake_alert_days`). It never stands
+over a failure: it is the oldest news in the block, so the failures take the
+drawn rows first and it is the first thing behind the marker, and nothing a
+flake says answers a command that is failing now. It is the rail's alone —
+the session's reading of its own run leaves it out, because the gate's result
+already told the model the check flaked and how often.
+
 Where the session has declared its own working steps rather than executing
 an approved plan, the plan's place is taken by a block that reads as a
 child's lane does: `2 of 4 · <the step it is on>`, one row under the label
@@ -3079,7 +3101,8 @@ had ([the inspector rail](#the-inspector-rail)) — the two the block draws, the
 older standing ones behind its marker, and every superseded one it only
 counts. Standing come first and then superseded, each newest first, one row
 an episode in the block row's own words: the mark (`✗` standing, `✓`
-superseded) and the command's name, `standing` or `superseded`, the last
+superseded, `~` a check that keeps flaking, whose one line of account is the
+ledger's) and the command's name, `standing` or `superseded`, the last
 run's outcome and the runs behind it, and the turn it broke in — `since turn
 3` where it has gone on breaking. Beside the one under the pointer is its
 account: the last run, the runs and the turns they took, the turn it first

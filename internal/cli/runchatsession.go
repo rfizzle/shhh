@@ -400,7 +400,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		model = model.WithMutationHook(mutation)
 	}
 	if gate != nil {
-		model = model.WithGate(chat.Gate{Manage: gateManager(gate), Run: gate.Run, Flakes: gateFlakes(gate)})
+		model = model.WithGate(chat.Gate{Manage: gateManager(gate), Run: gate.Run, Flakes: gateFlakes(gate),
+			FlakeAlertCount: cfg.EffectiveFlakeAlertCount(), FlakeAlertDays: cfg.EffectiveFlakeAlertDays()})
 	}
 	if procSup != nil {
 		model = model.WithProcesses(chat.Processes{
