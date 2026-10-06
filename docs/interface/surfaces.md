@@ -2918,15 +2918,18 @@ under that the account the session kept of where it left off
 renaming and deleting the picker inside a session already offers
 (../capabilities/sessions-and-memory.md#housekeeping).
 
-Seventeen surfaces take the whole terminal this way — those seven, the reading
+Eighteen surfaces take the whole terminal this way — those seven, the reading
 of what is in the session's context, the ledger of what the session read
 (`/sources`, [what was read](../capabilities/chat.md#what-was-read)), the
 session's own working list (`/steps`, below), the readings it has taken of its
 own run (`/readings`, below), the turns it has run (`/turns`, below), every
-alert it has had (`/alerts`, below), its bill (`/stats`, below), where its tools came from (`/mcp`, below), the session's shared notebook
+alert it has had (`/alerts`, below), every check that has flaked in the
+checkout (`/gate flakes`, [a flake is counted where it
+happened](../capabilities/testing.md#a-flake-is-counted-where-it-happened)),
+its bill (`/stats`, below), where its tools came from (`/mcp`, below), the session's shared notebook
 (`/notes`, below), the reading of the session's boundary (`/safety`, [the
 safety reading](#the-safety-reading)) and the drafting flow for a new agent
-profile — and they are one family rather than eighteen screens: the same header, the same
+profile — and they are one family rather than nineteen screens: the same header, the same
 ground given up in the same order as the terminal narrows, the same key row at
 the foot and the same `[?]` behind it. The two that arrived last had each been
 drawing a chrome of their own, and the way that showed was not in either of
@@ -2940,7 +2943,7 @@ act in one word: `quit` where the screen was opened from a command line,
 under the key a reader reaches for without thinking, and there it is a phrase:
 **back to the shell** on doctor, metrics, history, snippets and the saved-chat
 browser, **back to the prompt** on the context reading, the sources ledger, the
-working list, the readings, the turns, the alerts, the bill, the tools, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
+working list, the readings, the turns, the alerts, the flakes, the bill, the tools, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
 For leaving a screen and changing nothing there is no third wording.
 
 Three of them leave by doing something rather than nothing, and each says what
