@@ -23,10 +23,12 @@ keys "survey the round accounting" Enter
 snap 02-spawn-card "Start 2 writers"
 sleep 1
 keys y
-sleep 10
 # The close of the session's own turn: the line naming what the children left
 # in the notebook, with no rail and nothing in the glyph column, because a
 # reading of what the session already holds changed nothing about the machine.
+# Both children's rounds come first, so it is the slowest snap here; it waits
+# on the line itself, never on a guess at how long two children take, and a
+# loaded host gets the longer ceiling SHHH_TUI_SLOW gives it.
 snap 03-close "2 notes from writer-1, writer-2"
 keys "/notes" Enter
 # The screen: the notes under the agents that signed them, the one the

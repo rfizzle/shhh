@@ -63,10 +63,15 @@ sleep 3
 snap 04-nested "└◇ reader-3a"
 # Everything then asks to run a command at once: the session's own request is
 # a card of its own, and the children's are routed here to be answered. The
-# queue counter is what says how many are standing behind this one.
+# queue counter is what says how many are standing behind this one. It comes
+# a dozen seconds after the row above on an idle host, every child's round in
+# front of it, so it is a wait on the counter and nothing shorter: a loaded
+# host needs the longer ceiling SHHH_TUI_SLOW gives it.
 snap 05-routed "DECISION"
 # The session's own is declined, which leaves the routed ones — and a routed
-# request nobody has answered is what makes a child blocked.
+# request nobody has answered is what makes a child blocked. The card has just
+# landed, so the decision waits out its grace window, as the spawn card does.
+sleep 1
 keys n
 sleep 3
 snap 06-blocked "waiting approval"
@@ -164,9 +169,14 @@ keys C-Space
 keys n
 sleep 2
 snap 15-next-card "DECISION"
+sleep 1
 keys n
 sleep 2
 keys C-c
 snap 16-quit-armed "again quits"
-keys C-c
+# The quit's window is two seconds on the binary's clock and the snap spends
+# part of it, so it is let shut and the quit armed and taken in one tmux
+# command, as command-errors does.
+sleep 2.5
+press 0.3 C-c C-c
 snap 17-exit "that is everything the screen was holding"

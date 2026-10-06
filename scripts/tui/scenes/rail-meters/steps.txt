@@ -29,8 +29,10 @@ snap 03-mid-turn "CONTEXT" "THIS TURN" "% of 32k"
 # The frame's phase is what says the chord will reach the command
 # rather than the turn: CONTEXT is on the rail from the round before this one.
 # The live tail underneath would do as well but is only ever one second old,
-# so a capture is not guaranteed to find any particular line of it.
-snap 04-running "acting…" "round 1 counted"
+# so a capture is not guaranteed to find any particular line of it: one a
+# loaded host takes a second late finds `round 2 counted` where `round 1` was.
+# The row's own outcome field is what stays while the command runs.
+snap 04-running "acting…" "running · "
 keys C-c
 # A command the reader stopped is not a command that failed, and a process a
 # signal ended has no exit status to print — so the row says `stopped` in the
@@ -44,5 +46,9 @@ snap 06-answered "The limit is counted in one place"
 snap 07-idle "[enter] send"
 keys C-c
 snap 08-quit-armed "again quits"
-keys C-c
+# The quit's window is two seconds on the binary's clock and the snap spends
+# part of it, so it is let shut and the quit armed and taken in one tmux
+# command, as command-errors does.
+sleep 2.5
+press 0.3 C-c C-c
 snap 09-exit "that is everything the screen was holding"

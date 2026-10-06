@@ -110,9 +110,16 @@ snap 11-declined "writer-2  declined"
 # field opens under the row it will reach and is named for it, and while it
 # has the keyboard the list's own keys leave the key row
 # (docs/interface/surfaces.md#the-agent-manager).
+#
+# The walk counts rows, and the decline above moves them: writer-2 stops
+# needing the reader and writer-3's request takes the top. So the order is
+# seen settled before the keys that walk it — the pointer on writer-3, the one
+# still asking — and the destination is seen before the letter that acts on it.
+snap 11b-order "❯ ⚠ writer-3"
 keys k
 keys j
 keys j
+snap 11c-on-writer-1 "❯ ◇ writer-1"
 keys s
 sleep 1
 keys "read the exit condition too"

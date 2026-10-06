@@ -43,7 +43,11 @@ snap 05-folded "folded 2 rows"
 # terminal's, not the product's — two escapes written into the pty together
 # arrive as one sequence — and it is kept by tmux rather than by a step of its
 # own, because a process started between the presses can outlast the
-# gesture's half second on a loaded host.
+# gesture's half second on a loaded host. The half second is measured by the
+# binary between handling the two presses, so it is given a settled screen to
+# handle them on: the fold is still redrawing when its text first appears, and
+# a press that queues behind that redraw is handled late.
+sleep 1
 press 0.2 Escape Escape
 snap 06-rewind "pick a turn to return to"
 # Esc leaves the picker having changed nothing, and the session ends the way
@@ -52,5 +56,9 @@ keys Escape
 sleep 0.3
 keys C-c
 snap 07-quit-armed "again quits"
-keys C-c
+# The quit's window is two seconds on the binary's clock and the snap spends
+# part of it, so it is let shut and the quit armed and taken in one tmux
+# command, as command-errors does.
+sleep 2.5
+press 0.3 C-c C-c
 snap 08-exit "that is everything the screen was holding"

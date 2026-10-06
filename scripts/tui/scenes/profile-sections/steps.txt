@@ -20,7 +20,11 @@ snap 03-note "what to change in Method"
 keys "run go vet as well"
 keys Enter
 snap 04-refined "Method · refined once" "Never change an expected value" "Add table-driven tests"
+# The editor opens on the section under the pointer, so the pointer is seen
+# on Restrictions before the key that opens it: a press counted against rows
+# still being drawn would open another section.
 keys Up
+snap 04b-on-restrictions "❯ Restrictions"
 keys e
 snap 05-edited "Restrictions · edited by you" "NEVER change an expected value"
 keys Escape
@@ -46,6 +50,7 @@ snap 11-taken "read + write" "[enter] open the selector"
 # marked, with the note's own row under them holding the pointer. esc there
 # takes the note back from every section it changed.
 keys Up Up Up
+snap 11b-on-restrictions "❯ Restrictions"
 keys e
 snap 12-mine "Restrictions · edited by you"
 keys R

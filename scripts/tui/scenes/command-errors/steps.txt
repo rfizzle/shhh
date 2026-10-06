@@ -48,5 +48,11 @@ snap 14-no-working-directory "did not start · working dir" "Nothing ran: a comm
 snap 15-no-working-directory-answer "The command could not start"
 keys C-c
 snap 16-quit-armed "again quits"
-keys C-c
+# The second press is timed by the binary: the window is two seconds on its
+# own clock, and the snap above spends part of it capturing the screen, which
+# a loaded host stretches past the window so the press arms it again instead.
+# So the window is let shut — a lower bound the clock keeps — and the quit is
+# armed and taken in one tmux command, whose gap the server keeps.
+sleep 2.5
+press 0.3 C-c C-c
 snap 17-exit "that is everything the screen was holding"

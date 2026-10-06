@@ -426,12 +426,23 @@ than leaving it out.
   `COLS` for anything bound by the forty-per-cent panel rule.
 - **The keyboard is the same on every host.** The run reads its knobs from
   the environment — `SHHH_BIN`, `COLS` and `ROWS`, `OUT`, `WAIT`, `COMPARE`,
-  `PORT` and `SOCK`, `TMUX_TMPDIR` and `FAKE_PACE_MS` — and none of them
+  `SHHH_TUI_SLOW`, `PORT` and `SOCK`, `TMUX_TMPDIR` and `FAKE_PACE_MS` — and none of them
   picks a keyboard: nothing ships on alt, so a scene's keys and its snap text
   hold on a Mac as on Linux
   (docs/interface/reserved-keys.md#one-keyboard-on-every-platform). The one sentence
   that follows the host is `/help`'s word moves (`option+←`/`option+→` on a
   Mac), so a snap does not wait on it.
+- **`SHHH_TUI_SLOW=1` is the loaded host's ceiling.** A snap waits for its
+  text and returns the moment it is drawn, so the wait is a fact; what the
+  host decides is only how long a missing text is waited for before the run
+  calls it missing. With `SHHH_TUI_SLOW=1` in the environment that ceiling is
+  60 seconds rather than 20, and a compared string is looked for again for 6
+  rather than 2, so three gates side by side do not read as broken scenes.
+  The batch orchestrator sets it; an explicit `WAIT` or `COMPARE` still wins.
+  It never makes a passing run slower, and it is no cure for a step that
+  races the binary: a key pressed inside a window the binary times, or rows
+  walked before they have settled, needs the settle steps below, not a
+  longer wait.
 - **A card that lands just after a keypress drops the next key.** An
   approval card arriving within 400 ms of the last key opens a grace window,
   and a decision key pressed inside it is discarded by design
@@ -441,6 +452,14 @@ than leaving it out.
   stays up and the scene reads as flaky. A scene sleeps a second before
   answering such a card — `snap`, `sleep 1`, then `keys y`, as `fanout-lanes`
   does.
+- **A second press is timed by the binary, not by the scene.** `again quits`
+  stays open two seconds on the binary's clock, and a snap on it followed by
+  `keys C-c` spends that window on capturing the screen and starting
+  processes, which a loaded host can stretch past it: the second press arms
+  the window again and the exit snap times out. A scene that captures the
+  armed hint lets the window shut (`sleep 2.5`, a lower bound the clock
+  keeps) and then quits with `press 0.3 C-c C-c`, whose gap the tmux server
+  keeps, as `command-errors` does.
 - **The start screen is the first frame.** A scene that types straight away
   is typing over the pick list, which is fine — the draft takes it — but the
   first snap should be the start screen, so a change to it is seen.

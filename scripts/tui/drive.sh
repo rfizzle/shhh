@@ -92,6 +92,7 @@
 # over the scene's own size, else 120x40), OUT (captures; default
 # bin/tui/<scene>), WAIT (seconds a snap waits for its text; default 20),
 # COMPARE (seconds a compared string is looked for again; default 2),
+# SHHH_TUI_SLOW (1 makes those defaults 60 and 6, for a loaded host),
 # PORT and SOCK (the provider's port and the tmux server's name; both per run
 # unless set), and TMUX_TMPDIR (the tmux socket directory; a directory of the
 # run's own under $TMPDIR unless set).
@@ -124,6 +125,15 @@ scene_cols=; scene_rows=
 COLS=${COLS:-${scene_cols:-120}}
 ROWS=${ROWS:-${scene_rows:-40}}
 OUT=${OUT:-$root/bin/tui/$name}
+# A snap returns the moment its text is drawn, so WAIT is a ceiling and never
+# a pace: it is spent only by a text that is not coming. A loaded host — three
+# gates side by side, which is what the batch orchestrator runs — draws the
+# same texts later, so SHHH_TUI_SLOW=1 raises the ceiling rather than letting
+# load read as a broken scene. An explicit WAIT or COMPARE still wins.
+if [ "${SHHH_TUI_SLOW:-}" = 1 ]; then
+	WAIT=${WAIT:-60}
+	COMPARE=${COMPARE:-6}
+fi
 WAIT=${WAIT:-20}
 COMPARE=${COMPARE:-2}
 # Named for this run rather than for the script, so a second run does not
