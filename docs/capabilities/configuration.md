@@ -904,6 +904,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `commit.take` | `enter` | commit | yes |
 | `commit.edit` | `e` | edit the message | yes |
 | `commit.hunks` | `s` | read the hunks | yes |
+| `commit.override` | `!` | commit with the secret | yes |
 | `commit.cancel` | `esc` | not now | yes |
 | `rewind.both` | `b` | both | yes |
 | `rewind.code` | `c` | code only | yes |
@@ -1331,6 +1332,12 @@ own file could hold.
 | `item_timeout_minutes` | number | 0 (no cap) | How long one item of a sprint may take before it is blocked and the sprint stops; zero leaves it uncapped. |
 | `sprint_cost_cap_cents` | number | 0 (off) | Priced spend, in cents, across a whole sprint after which it starts no further item; provider.cost_cap_cents still bounds each item's own session. `--cost-cap` is read ahead of the file. |
 | `groom_stale_commits` | number | the profile's own | How far an item's last reading may fall behind — in whatever the profile measures staleness by — before the backlog says so; unset keeps the profile's own threshold, and a negative number turns the warning off. |
+
+**`[commit]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `secret_ignore` | list | (empty — every file is read) | Path globs of the files whose credential shapes are there on purpose, such as test fixtures; a commit that adds a shape anywhere else is refused, and one in a file named here is drawn dim on the card and committed. |
 
 <!-- END generated settings reference -->
 

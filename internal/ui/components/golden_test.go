@@ -481,6 +481,22 @@ func TestGolden_CommitCard(t *testing.T) {
 					Detail: "internal/agent/round.go changed since the turn wrote it",
 				}}, c.Fields[1:]...)...)
 			})},
+			// A credential shape in a line the turn adds is named after
+			// the hooks, by kind, file and line and never by value, and
+			// the one press past it is offered only while it stands.
+			{Label: "a secret in the diff · named, and the override offered", View: card(func(c *CommitCard) {
+				c.Fields = append(c.Fields[:3:3], secretsField(ToneWarn, "nothing is committed while it stands"), c.Fields[3])
+				c.Override = true
+			})},
+			{Label: "the override taken · committing on your say", View: card(func(c *CommitCard) {
+				c.Fields = append(c.Fields[:3:3], secretsField(ToneWarn, "committing on your say — it stays in history"), c.Fields[3])
+				c.Running = true
+			})},
+			// A fixture the checkout's ignore list names is still named,
+			// dim, and stops nothing.
+			{Label: "an ignored fixture · drawn dim and committed", View: card(func(c *CommitCard) {
+				c.Fields = append(c.Fields[:3:3], secretsField(ToneQuiet, "a fixture commit.secret_ignore names, so it is committed"), c.Fields[3])
+			})},
 			// Asked for and not back. The keys stay on the card and none of
 			// them is live, with the state in words beside them — the same
 			// grammar every other dead key row in the catalog uses.
@@ -497,6 +513,11 @@ func TestGolden_CommitCard(t *testing.T) {
 			}.View(width)},
 		}
 	})
+}
+
+// secretsField is the commit card's row for one GitHub token on line 12.
+func secretsField(tone FieldTone, detail string) CardField {
+	return CardField{Label: "secrets", Value: "1 github token · config/dev.env:12", Tone: tone, Detail: detail}
 }
 
 // TestGolden_TurnStatus captures the running turn's status line: the four

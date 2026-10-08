@@ -57,6 +57,9 @@ type todoDriver struct {
 	// and a continued sprint's own.
 	costCap, costCapFlag int64
 	noCommit             bool
+	// secretIgnore is commit.secret_ignore, the fixtures a run's commit may
+	// carry a credential shape in.
+	secretIgnore []string
 	// itemTurns and itemCost are what the item being worked has spent so
 	// far, one turn per stage process and its cost off that process's own
 	// record row. They are the item's half of the sprint's running total,
@@ -203,6 +206,7 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 		wordings:    prompts.todo,
 		pipeline:    todoPipeline(),
 	}
+	d.secretIgnore = cfg.Commit.SecretIgnore
 	// The suites are command text out of a file that arrived with the clone
 	// and the runner spends no approval on them, so an untrusted checkout
 	// gets no gate at all rather than one that refuses when it is reached.

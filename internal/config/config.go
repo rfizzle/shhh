@@ -36,6 +36,7 @@ type Config struct {
 	MCP        MCPConfig        `toml:"mcp"`
 	Prompts    PromptsConfig    `toml:"prompts"`
 	Todo       TodoConfig       `toml:"todo"`
+	Commit     CommitConfig     `toml:"commit"`
 	Hooks      HooksConfig      `toml:"hooks"`
 }
 
@@ -126,6 +127,17 @@ type TodoConfig struct {
 	// every file that already set it says.
 	// See docs/capabilities/todo.md#an-item-is-checked-before-it-is-worked.
 	GroomStaleCommits int `toml:"groom_stale_commits"`
+}
+
+// CommitConfig is what a commit shhh makes is told about this checkout.
+type CommitConfig struct {
+	// SecretIgnore is the path globs of the files whose credential shapes
+	// are there on purpose — a scrub's test fixtures, a documented example
+	// key. A commit that adds a shape anywhere else is refused; one in a
+	// file this names is drawn dim on the card and committed. It is a
+	// checkout's key because what is a fixture is a fact about the tree.
+	// See docs/capabilities/secrets.md#a-secret-does-not-get-committed.
+	SecretIgnore []string `toml:"secret_ignore"`
 }
 
 // PromptsConfig names files whose contents replace shhh's own wordings. The

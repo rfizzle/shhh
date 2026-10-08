@@ -691,6 +691,11 @@ var settings = []Setting{
 		Key: "todo.groom_stale_commits", Kind: KindInt, Default: "the profile's own", Literal: "0",
 		Desc: "How far an item's last reading may fall behind — in whatever the profile measures staleness by — before the backlog says so; unset keeps the profile's own threshold, and a negative number turns the warning off.",
 	},
+
+	{
+		Key: "commit.secret_ignore", Kind: KindList, Default: "(empty — every file is read)",
+		Desc: "Path globs of the files whose credential shapes are there on purpose, such as test fixtures; a commit that adds a shape anywhere else is refused, and one in a file named here is drawn dim on the card and committed.",
+	},
 }
 
 // Settings is every key the file holds, in the order the file's tables run.

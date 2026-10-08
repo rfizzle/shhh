@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/hostgit"
@@ -46,7 +47,14 @@ const gitNotInstalled = 127
 // the rule about what a commit may carry could quietly disagree. hooks is the
 // checkout's trust answer, which is what decides whether the checkout's own
 // commit hooks run.
-func Commit(root string, paths []string, message, without string, hooks bool) ([]string, error) {
+//
+// secrets is what the commit is told about credentials: a shape in a line
+// it adds is refused before anything is staged, by kind, file and line, so
+// the card, the session's run and the unattended runner refuse it alike —
+// unless the file is a fixture the ignore list names, or the person pressed
+// the card's override.
+// See docs/capabilities/secrets.md#a-secret-does-not-get-committed.
+func Commit(root string, paths []string, message, without string, hooks bool, secrets Secrets) ([]string, error) {
 	if len(paths) == 0 {
 		return nil, errors.New("the run changed no files under the repository")
 	}
@@ -74,6 +82,15 @@ func Commit(root string, paths []string, message, without string, hooks bool) ([
 	default:
 		return nil, fmt.Errorf("git diff --cached exited %d: %s", code, out)
 	}
+	if !secrets.Allow {
+		found, err := SecretsIn(root, paths, secrets.Ignore)
+		if err != nil {
+			return nil, err
+		}
+		if err := structural.RefuseSecrets(found); err != nil {
+			return nil, err
+		}
+	}
 	add, err := structural.AddArgv(paths)
 	if err != nil {
 		return nil, err
@@ -99,6 +116,48 @@ func Commit(root string, paths []string, message, without string, hooks bool) ([
 		return nil, fmt.Errorf("git commit: %s", out)
 	}
 	return paths, nil
+}
+
+// Secrets is what a commit is told about the credential shapes in it.
+type Secrets struct {
+	// Ignore is commit.secret_ignore, the checkout's fixtures.
+	Ignore []string
+	// Allow is the person's own say on the card that this commit carries
+	// what it carries. Nothing unattended sets it.
+	Allow bool
+}
+
+// SecretsIn is the scan over what a commit of paths would add: each file as
+// it stands on disk against the same file at HEAD, line by line. A file HEAD
+// does not hold is new and all of it is added; one that is gone from disk
+// adds nothing. A file that is there and cannot be read is an error rather
+// than a clean file, because `git add` would stage it all the same.
+func SecretsIn(root string, paths []string, ignore []string) ([]structural.CommitFinding, error) {
+	var out []structural.CommitFinding
+	for _, p := range paths {
+		if filepath.IsAbs(p) {
+			rel, err := filepath.Rel(root, p)
+			if err != nil {
+				return nil, fmt.Errorf("cannot place %s to check it for secrets; nothing was committed", p)
+			}
+			p = rel
+		}
+		after, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(p)))
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("cannot read %s to check it for secrets; nothing was committed: %w", p, err)
+		}
+		// `./` makes the path relative to root rather than to the top of
+		// the repository, which is how every path here is named.
+		before, code := gitLines(root, "cat-file", "blob", "HEAD:./"+filepath.ToSlash(p))
+		if code != 0 {
+			before = ""
+		}
+		out = append(out, structural.CommitFindings(p, before, string(after), ignore)...)
+	}
+	return out, nil
 }
 
 // Source is one page a run's write-up rests on: the URL that answered and

@@ -20,6 +20,7 @@ package secret
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -229,4 +230,96 @@ func redact(s string) string {
 		s = sh.re.ReplaceAllLiteralString(s, Redacted(sh.kind))
 	}
 	return s
+}
+
+// Finding is one credential shape found in a text: its kind and the line it
+// starts on, counted from one. It carries no part of the match, and that is
+// the whole of its design — a finding is something a surface draws, a
+// receipt keeps and a refusal sends the model, and every one of those is a
+// place the value would be copied to.
+// See docs/capabilities/secrets.md#a-secret-does-not-get-committed.
+type Finding struct {
+	Kind string
+	Line int
+}
+
+// Find names every known credential shape in text, by kind and line, in the
+// order the lines run. It is the redaction's own table read the other way:
+// where the scrub replaces a match, this says where it was. Each shape's
+// matches are taken out of the text before the next shape is tried, as the
+// scrub takes them out, so a bearer JWT is one jwt and not a jwt and a
+// bearer token besides.
+func Find(text string) []Finding {
+	spans := findSpans(text)
+	out := make([]Finding, 0, len(spans))
+	for _, s := range spans {
+		out = append(out, Finding{Kind: s.kind, Line: s.first})
+	}
+	return out
+}
+
+// FindAdded is Find over after, keeping only what is on a line before did
+// not hold: the shapes a change adds to a file rather than the ones it was
+// already carrying. A line counts as added when no line of before reads the
+// same, so a secret moved within a file is not new and a secret written
+// beside an old one is. A match spanning lines — a private key — is kept
+// when any of its lines is added, because the delimiter lines of two keys
+// read the same and the body is what differs.
+func FindAdded(before, after string) []Finding {
+	spans := findSpans(after)
+	if len(spans) == 0 {
+		return nil
+	}
+	old := map[string]bool{}
+	for l := range strings.SplitSeq(before, "\n") {
+		old[l] = true
+	}
+	lines := strings.Split(after, "\n")
+	var out []Finding
+	for _, s := range spans {
+		for n := s.first; n <= s.last && n <= len(lines); n++ {
+			if !old[lines[n-1]] {
+				out = append(out, Finding{Kind: s.kind, Line: s.first})
+				break
+			}
+		}
+	}
+	return out
+}
+
+// span is one match, by the lines it starts and ends on.
+type span struct {
+	kind        string
+	first, last int
+}
+
+// findSpans is the matching under Find. A match is replaced in the working
+// copy with its placeholder and the newlines it held, so the shapes after it
+// cannot match it again and every line keeps its number.
+func findSpans(text string) []span {
+	var out []span
+	for _, sh := range shapes {
+		if !sh.matches(text) {
+			continue
+		}
+		locs := sh.re.FindAllStringIndex(text, -1)
+		if len(locs) == 0 {
+			continue
+		}
+		var b strings.Builder
+		prev := 0
+		for _, loc := range locs {
+			first := 1 + strings.Count(text[:loc[0]], "\n")
+			breaks := strings.Count(text[loc[0]:loc[1]], "\n")
+			out = append(out, span{kind: sh.kind, first: first, last: first + breaks})
+			b.WriteString(text[prev:loc[0]])
+			b.WriteString(Redacted(sh.kind))
+			b.WriteString(strings.Repeat("\n", breaks))
+			prev = loc[1]
+		}
+		b.WriteString(text[prev:])
+		text = b.String()
+	}
+	slices.SortStableFunc(out, func(a, b span) int { return a.first - b.first })
+	return out
 }

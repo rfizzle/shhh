@@ -148,10 +148,17 @@ const (
 	// figures and not on the words holding them apart
 	// (docs/interface/principles.md#weight-tracks-risk).
 	ToneQuiet
+	// ToneWarn marks a finding the reader has to answer before the act goes
+	// ahead — a credential shape in a commit's diff. It is the warning the
+	// classifier's refusal is drawn in on the approval card, so the two
+	// reasons the product stopped read alike.
+	ToneWarn
 )
 
 func (t FieldTone) style() lipgloss.Style {
 	switch t {
+	case ToneWarn:
+		return sty.warn
 	case ToneSafe:
 		return sty.add
 	case ToneOpen:

@@ -353,7 +353,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 				// shown.
 				session.lsp.UseReadRecord(l.seen)
 			}
-			return toolsetOpts{scope: sc, resident: true, seen: l.seen, gitWrites: headlessWrites(session, own)}
+			return toolsetOpts{scope: sc, resident: true, seen: l.seen, gitWrites: headlessWrites(session, own, cfg.Commit.SecretIgnore)}
 		},
 		register: unattendedRegistration(false, false),
 	})

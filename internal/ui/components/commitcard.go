@@ -66,7 +66,15 @@ type CommitCard struct {
 	// optimistically is that the answer is still owed: a hook can refuse,
 	// and a card that had already gone would have nowhere to say so.
 	Running bool
+	// Override offers the commit on the reader's own say, which the card
+	// draws only while a credential shape it found in the diff stands
+	// (docs/capabilities/secrets.md#a-secret-does-not-get-committed).
+	Override bool
 }
+
+// overrideWords is what the override says beside its key: the act, and
+// the fact the reader is taking on by pressing it.
+const overrideWords = " — it stays in history"
 
 // View renders the card at the given width.
 func (c CommitCard) View(width int) string {
@@ -84,6 +92,9 @@ func (c CommitCard) View(width int) string {
 		rows = append(rows, deadRows(plainCommitRun(), nil, committingWords, width)...)
 	} else {
 		rows = append(rows, runRows(commitRun(), inner)...)
+		if c.Override {
+			rows = append(rows, commitOverrideRow(inner))
+		}
 		rows = append(rows, commitEscRow(inner))
 	}
 	// The tone is the mutation rail's, the same Accent the changed-files row
@@ -173,6 +184,16 @@ func commitEscRow(inner int) string {
 	esc := keys.Shown(keys.Commit.Cancel)
 	words := keys.Words(keys.Commit.Cancel) + " — nothing is committed, and the offer stays"
 	return Clip(safeSegment(esc, fitClauses("["+esc+"] ", words, inner)), inner)
+}
+
+// commitOverrideRow is the override on a row of its own, above esc, in the
+// warning colour the secrets field is drawn in: it is the one key on the
+// card that writes something the reader cannot take back out of history,
+// and a segment among the ordinary keys would read as one of them.
+func commitOverrideRow(inner int) string {
+	mark := keys.Bracket(keys.Commit.Override)
+	words := fitClauses(mark+" ", keys.Words(keys.Commit.Override)+overrideWords, inner)
+	return Clip(sty.key.Render(mark)+" "+sty.warn.Render(words), inner)
 }
 
 // CommitMessage is the proposed message opened as a draft: the field under a

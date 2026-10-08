@@ -83,6 +83,51 @@
 │ [esc] not now — nothing is committed, and the offer stays                                                                      │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
+· a secret in the diff · named, and the override offered
+╭─ Commit this turn ───────────────────────────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
+│ $ agent: cap rounds at the limit instead of erroring                                                                           │
+│                                                                                                                                │
+│ stages    3 files +30 −4 — exactly what this turn changed                                                                      │
+│ leaves    your 1 uncommitted edit — README.md changed by you, never staged                                                     │
+│ branch    loop-refactor — will be 2 ahead of origin/main                                                                       │
+│ hooks     pre-commit runs                                                                                                      │
+│ secrets   1 github token · config/dev.env:12 — nothing is committed while it stands                                            │
+│ push      no                                                                                                                   │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ [enter] commit · [e] edit the message · [s] read the hunks · [?] keys                                                          │
+│ [!] commit with the secret — it stays in history                                                                               │
+│ [esc] not now — nothing is committed, and the offer stays                                                                      │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+· the override taken · committing on your say
+╭─ Commit this turn ───────────────────────────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
+│ $ agent: cap rounds at the limit instead of erroring                                                                           │
+│                                                                                                                                │
+│ stages    3 files +30 −4 — exactly what this turn changed                                                                      │
+│ leaves    your 1 uncommitted edit — README.md changed by you, never staged                                                     │
+│ branch    loop-refactor — will be 2 ahead of origin/main                                                                       │
+│ hooks     pre-commit runs                                                                                                      │
+│ secrets   1 github token · config/dev.env:12 — committing on your say — it stays in history                                    │
+│ push      no                                                                                                                   │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ [enter] commit · [e] edit the message · [s] read the hunks                                             committing — git has it │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+· an ignored fixture · drawn dim and committed
+╭─ Commit this turn ───────────────────────────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
+│ $ agent: cap rounds at the limit instead of erroring                                                                           │
+│                                                                                                                                │
+│ stages    3 files +30 −4 — exactly what this turn changed                                                                      │
+│ leaves    your 1 uncommitted edit — README.md changed by you, never staged                                                     │
+│ branch    loop-refactor — will be 2 ahead of origin/main                                                                       │
+│ hooks     pre-commit runs                                                                                                      │
+│ secrets   1 github token · config/dev.env:12 — a fixture commit.secret_ignore names, so it is committed                        │
+│ push      no                                                                                                                   │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ [enter] commit · [e] edit the message · [s] read the hunks · [?] keys                                                          │
+│ [esc] not now — nothing is committed, and the offer stays                                                                      │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
 · asked · the keys are drawn and none is live
 ╭─ Commit this turn ───────────────────────────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
 │ $ agent: cap rounds at the limit instead of erroring                                                                           │
@@ -180,6 +225,51 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mdrifted   ␛[m␛[38;5;214m1 file left out␛[m␛[38;5;245m — internal/agent/round.go changed since the turn wrote it␛[m                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mbranch    ␛[m␛[38;5;252mloop-refactor␛[m␛[38;5;245m — will be 2 ahead of origin/main␛[m                                                                       ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m                                                                                                      ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                                                                                                   ␛[38;5;214m│␛[m
+␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the message␛[m␛[38;5;241m · ␛[m␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                                                          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[92m[esc] not now — nothing is committed, and the offer stays␛[m                                                                      ␛[38;5;214m│␛[m
+␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+
+· a secret in the diff · named, and the override offered
+␛[38;5;214m╭─ ␛[m␛[1;97mCommit this turn ␛[m␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97magent: cap rounds at the limit instead of erroring␛[m                                                                           ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m                                                                                                                                ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mstages    ␛[m␛[38;5;252m3 files ␛[m␛[92m+30␛[m ␛[91m−4␛[m␛[38;5;245m — exactly what this turn changed␛[m                                                                      ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mleaves    ␛[m␛[38;5;214myour 1 uncommitted edit␛[m␛[38;5;245m — README.md changed by you, never staged␛[m                                                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mbranch    ␛[m␛[38;5;252mloop-refactor␛[m␛[38;5;245m — will be 2 ahead of origin/main␛[m                                                                       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m                                                                                                      ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243msecrets   ␛[m␛[91m1 github token · config/dev.env:12␛[m␛[38;5;245m — nothing is committed while it stands␛[m                                            ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                                                                                                   ␛[38;5;214m│␛[m
+␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the message␛[m␛[38;5;241m · ␛[m␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                                                          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[!]␛[m ␛[91mcommit with the secret — it stays in history␛[m                                                                               ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[92m[esc] not now — nothing is committed, and the offer stays␛[m                                                                      ␛[38;5;214m│␛[m
+␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+
+· the override taken · committing on your say
+␛[38;5;214m╭─ ␛[m␛[1;97mCommit this turn ␛[m␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97magent: cap rounds at the limit instead of erroring␛[m                                                                           ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m                                                                                                                                ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mstages    ␛[m␛[38;5;252m3 files ␛[m␛[92m+30␛[m ␛[91m−4␛[m␛[38;5;245m — exactly what this turn changed␛[m                                                                      ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mleaves    ␛[m␛[38;5;214myour 1 uncommitted edit␛[m␛[38;5;245m — README.md changed by you, never staged␛[m                                                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mbranch    ␛[m␛[38;5;252mloop-refactor␛[m␛[38;5;245m — will be 2 ahead of origin/main␛[m                                                                       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m                                                                                                      ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243msecrets   ␛[m␛[91m1 github token · config/dev.env:12␛[m␛[38;5;245m — committing on your say — it stays in history␛[m                                    ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                                                                                                   ␛[38;5;214m│␛[m
+␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[38;5;214m│␛[m ␛[38;5;245m[enter] commit␛[m␛[38;5;241m · ␛[m␛[38;5;245m[e] edit the message␛[m␛[38;5;241m · ␛[m␛[38;5;245m[s] read the hunks␛[m                                             ␛[38;5;241mcommitting — git has it␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+
+· an ignored fixture · drawn dim and committed
+␛[38;5;214m╭─ ␛[m␛[1;97mCommit this turn ␛[m␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97magent: cap rounds at the limit instead of erroring␛[m                                                                           ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m                                                                                                                                ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mstages    ␛[m␛[38;5;252m3 files ␛[m␛[92m+30␛[m ␛[91m−4␛[m␛[38;5;245m — exactly what this turn changed␛[m                                                                      ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mleaves    ␛[m␛[38;5;214myour 1 uncommitted edit␛[m␛[38;5;245m — README.md changed by you, never staged␛[m                                                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mbranch    ␛[m␛[38;5;252mloop-refactor␛[m␛[38;5;245m — will be 2 ahead of origin/main␛[m                                                                       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m                                                                                                      ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243msecrets   ␛[m␛[38;5;241m1 github token · config/dev.env:12␛[m␛[38;5;245m — a fixture commit.secret_ignore names, so it is committed␛[m                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                                                                                                   ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the message␛[m␛[38;5;241m · ␛[m␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                                                          ␛[38;5;214m│␛[m

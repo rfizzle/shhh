@@ -515,7 +515,13 @@ hooks run, and that nothing is pushed. Those are the facts a reader is
 entitled to check before pressing enter and cannot check afterwards. A file
 the turn wrote and the reader has edited since is on the card as a statement
 of its own: it is neither theirs nor the turn's any more, so it is left out of
-the commit rather than folded into either answer. The card's `[s]` opens the
+the commit rather than folded into either answer. A credential shape in a line
+the commit adds is a `secrets` field after `hooks` — `1 github token ·
+config/dev.env:12`, the kind and the line and never the value, in the warning
+colour — and while it stands enter is refused and the card offers `[!]` to
+commit it on purpose; a fixture the checkout's ignore list names is drawn dim
+and refuses nothing ([a secret does not get
+committed](../capabilities/secrets.md#a-secret-does-not-get-committed)). The card's `[s]` opens the
 turn's review, to read the hunks it is about to carry. The
 message is proposed rather than asked for: it is the turn's own question under
 the lead this repository's recent subjects use, and a key opens it as a draft

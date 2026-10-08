@@ -1,12 +1,15 @@
 # One reply per request. The last line repeats once these run out.
 # The first turn edits a file the repository already tracks, so the
 # changeset it closes with is one tracked file and the reader's own edit to
-# README.md is not in it. The second is the commit, asked of the model: it
-# stages the turn's file and commits it through the write tool, each step
-# under a card of its own.
+# README.md is not in it. It also writes a settings file with a GitHub token
+# on its twelfth line — the shapes table's own test fixture, which belongs to
+# nobody — so the card has a secret to name and refuse. The second is the
+# commit, asked of the model: it stages the turn's one clean file and commits
+# it through the write tool, each step under a card of its own.
 [session]
 tool:read_file:{"path":"loop.go"}
 tool:edit_file:{"path":"loop.go","old_text":"const limit = 25","new_text":"const limit = 50"}
+tool:write_file:{"path":"config/dev.env","content":"# dev settings\n# a\n# b\n# c\n# d\n# e\n# f\n# g\n# h\n# i\n# j\nGITHUB_TOKEN=ghp_016C4C7C4C7C4C7C4C7C4C7C4C7C4C7C4C7C\n"}
 The rounds are capped at the limit now.
 tool:git_write:{"verb":"add","paths":["loop.go"]}
 tool:git_write:{"verb":"commit","message":"cap rounds at the limit"}

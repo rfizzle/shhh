@@ -56,7 +56,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 					// itself, so it is behind the same answer every other
 					// thing a checkout declares is behind.
 					// See docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs.
-					Hooks: projectTrust().RunsOwnPrograms(),
+					Hooks:        projectTrust().RunsOwnPrograms(),
+					SecretIgnore: ConfigFrom(cmd.Context()).Commit.SecretIgnore,
 				}
 			}
 			// A session pops a browser for a page the model published,
@@ -351,7 +352,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithModelOptions(provider.KnownModels(env.prov.Name())).
 		WithModelLister(env.endpointModels.picker()).
 		WithEndpointWindows(endpointWindowsFor(env.prov))
-	model = model.WithNotebook(session.notebook).WithSources(session.sources)
+	model = model.WithNotebook(session.notebook).WithSources(session.sources).
+		WithCommitSecretIgnore(cfg.Commit.SecretIgnore)
 	if session.conversation {
 		// No start screen, but the header still names the checkout the
 		// conversation was opened in, from the survey the prompt was built on.

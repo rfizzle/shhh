@@ -169,10 +169,11 @@
 
   COMMIT
 
-  · take    enter · commit  [shipped]
-  · edit    e · edit the message  [shipped]
-  · hunks   s · read the hunks  [shipped]
-  · cancel  esc · not now  [shipped]
+  · take      enter · commit  [shipped]
+  · edit      e · edit the message  [shipped]
+  · hunks     s · read the hunks  [shipped]
+  · override  ! · commit with the secret  [shipped]
+  · cancel    esc · not now  [shipped]
 
   REWIND
 
@@ -350,4 +351,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  257 keys · 1 moved
+  258 keys · 1 moved

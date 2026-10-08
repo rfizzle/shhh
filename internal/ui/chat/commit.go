@@ -23,6 +23,7 @@ package chat
 // of it are two places the rule about what it may carry can quietly disagree.
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -32,6 +33,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -68,6 +70,12 @@ type commitState struct {
 	// leaves are the reader's own uncommitted paths — the ones this commit
 	// deliberately does not carry.
 	leaves []string
+	// secrets are the credential shapes in the lines this commit adds,
+	// ignored fixtures among them, and override is the reader's own say
+	// that it carries them anyway
+	// (docs/capabilities/secrets.md#a-secret-does-not-get-committed).
+	secrets  []structural.CommitFinding
+	override bool
 	// failure is why the last attempt made no commit, drawn on the card.
 	failure string
 	// running marks a commit that has been asked for and has not come back.
@@ -134,7 +142,16 @@ type commitDoneMsg struct {
 	files  int
 	hooks  bool
 	leaves []string
-	err    error
+	// secrets is how many findings the commit carried on the reader's say.
+	secrets int
+	err     error
+}
+
+// WithCommitSecretIgnore supplies commit.secret_ignore: the fixtures a
+// commit made from this session may carry a credential shape in.
+func (m Model) WithCommitSecretIgnore(globs []string) Model {
+	m.policy.secretIgnore = globs
+	return m
 }
 
 // commitWords are what the handover does on a selected changed-files row.
@@ -184,6 +201,7 @@ func (m Model) openCommitCard(row int, turn int64) (tea.Model, tea.Cmd) {
 		drift[f.Path()] = f.Drifted
 	}
 	var staging []commitPath
+	var secrets []structural.CommitFinding
 	var carried, left []string
 	var added, removed int
 	for _, r := range t.Records {
@@ -199,6 +217,9 @@ func (m Model) openCommitCard(row int, turn int64) (tea.Model, tea.Cmd) {
 			continue
 		}
 		staging = append(staging, commitPath{rel: rel, abs: r.Path, want: r.After, exists: r.AfterExists})
+		if r.AfterExists {
+			secrets = append(secrets, structural.CommitFindings(rel, r.Before, r.After, m.policy.secretIgnore)...)
+		}
 		carried = append(carried, rel)
 		added, removed = added+r.Added, removed+r.Removed
 	}
@@ -211,6 +232,13 @@ func (m Model) openCommitCard(row int, turn int64) (tea.Model, tea.Cmd) {
 		return m.systemNotice(fmt.Sprintf(
 			"turn %d changed nothing under %s, so there is nothing here to commit", turn, root))
 	}
+	// The commit itself reads each file on disk against HEAD, which also
+	// holds any uncommitted line of the reader's own in a file the turn
+	// wrote. The card names those too, so it never refuses for a finding it
+	// does not draw, and the override never covers one nobody was shown.
+	if more, err := run.SecretsIn(root, carried, m.policy.secretIgnore); err == nil {
+		secrets = mergeFindings(secrets, more)
+	}
 	branch, ahead := commitBranch(root)
 	st := &commitState{
 		turn:    turn,
@@ -219,6 +247,7 @@ func (m Model) openCommitCard(row int, turn int64) (tea.Model, tea.Cmd) {
 		added:   added,
 		removed: removed,
 		drifted: left,
+		secrets: secrets,
 		hooks:   m.trust().Granted,
 		branch:  branch,
 		ahead:   ahead,
@@ -253,7 +282,20 @@ func (m Model) commitCard() components.CommitCard {
 		Fields:     st.fields(),
 		Failure:    st.failure,
 		Running:    st.running,
+		Override:   len(st.liveSecrets()) > 0 && !st.override,
 	}
+}
+
+// liveSecrets are the findings that refuse the commit: every one outside a
+// fixture the checkout's ignore list names.
+func (st *commitState) liveSecrets() []structural.CommitFinding {
+	var out []structural.CommitFinding
+	for _, f := range st.secrets {
+		if !f.Ignored {
+			out = append(out, f)
+		}
+	}
+	return out
 }
 
 // fields are the statements under the counts, in the order a reader checks
@@ -306,10 +348,80 @@ func (st *commitState) fields() []components.CardField {
 			Detail: strings.Join(st.drifted, ", ") + " changed since the turn wrote it",
 		})
 	}
-	return append(fields, branch, hooks, components.CardField{
+	fields = append(fields, branch, hooks)
+	if f, ok := st.secretsField(); ok {
+		fields = append(fields, f)
+	}
+	return append(fields, components.CardField{
 		Label: "push", Value: "no", Tone: components.ToneSafe,
 		Detail: "shhh never pushes; the remote is yours",
 	})
+}
+
+// secretsField is the row a credential shape in the diff adds after hooks:
+// how many and of what, and the first file and line, with the value nowhere
+// on it. The label is in the status grey and the value in the warning
+// colour, as the approval card draws the classifier's refusal; a shape in a
+// fixture the ignore list names is drawn dim, because it does not stop the
+// commit. A clean diff has no row.
+// See docs/capabilities/secrets.md#a-secret-does-not-get-committed.
+func (st *commitState) secretsField() (components.CardField, bool) {
+	found, tone := st.liveSecrets(), components.ToneWarn
+	detail := "nothing is committed while it stands"
+	if st.override {
+		detail = "committing on your say — it stays in history"
+	}
+	if len(found) == 0 {
+		found, tone = st.secrets, components.ToneQuiet
+		detail = "a fixture commit.secret_ignore names, so it is committed"
+	}
+	if len(found) == 0 {
+		return components.CardField{}, false
+	}
+	if len(found) > 1 {
+		rest := make([]string, 0, len(found)-1)
+		for _, f := range found[1:] {
+			rest = append(rest, f.Where())
+		}
+		detail = "and " + strings.Join(rest, ", ")
+	}
+	return components.CardField{
+		Label: "secrets", Value: secretCount(found) + " · " + found[0].Where(),
+		Tone: tone, Detail: detail,
+	}, true
+}
+
+// mergeFindings is a with every finding of b it does not already hold.
+func mergeFindings(a, b []structural.CommitFinding) []structural.CommitFinding {
+	seen := map[structural.CommitFinding]bool{}
+	for _, f := range a {
+		seen[f] = true
+	}
+	for _, f := range b {
+		if !seen[f] {
+			seen[f] = true
+			a = append(a, f)
+		}
+	}
+	return a
+}
+
+// secretCount is the findings counted by kind where they share one, `1
+// github token`, and as secrets where they do not.
+func secretCount(found []structural.CommitFinding) string {
+	for _, f := range found[1:] {
+		if f.Kind != found[0].Kind {
+			return plural(len(found), "secret")
+		}
+	}
+	return plural(len(found), found[0].Words())
+}
+
+// secretRefused is what the card says when the commit was refused for a
+// secret: what to do about it, with the key that does the other thing. The
+// kind, file and line are on the secrets row above it already.
+func secretRefused() string {
+	return "a secret is in the diff — remove it, or commit it on purpose with " + keys.Bracket(keys.Commit.Override)
 }
 
 // commitBranch is where the commit will land and how far that leaves the
@@ -476,6 +588,14 @@ func (m Model) updateCommitCard(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.closeCommitCard()
 	case keys.Is(pressed, keys.Commit.Take):
 		return m.makeCommit()
+	case keys.Is(pressed, keys.Commit.Override) && len(m.commit.liveSecrets()) > 0:
+		// The one press past the refusal, recorded as the reader's: what
+		// lands in history is theirs to have said yes to.
+		m.recordDecision(observe.DecisionAllow, observe.ReasonUser)
+		st := *m.commit
+		st.override = true
+		m.commit = &st
+		return m.makeCommit()
 	case keys.Is(pressed, keys.Commit.Edit):
 		return m.openCommitMessage()
 	case keys.Is(pressed, keys.Commit.Hunks):
@@ -578,6 +698,11 @@ func (m Model) makeCommit() (tea.Model, tea.Cmd) {
 	m.commit = &st
 	root, turn := m.workspace, st.turn
 	staging, message, hooks := st.staging, st.message, st.hooks
+	secrets := run.Secrets{Ignore: m.policy.secretIgnore, Allow: st.override}
+	carried := 0
+	if st.override {
+		carried = len(st.liveSecrets())
+	}
 	paths := relPaths(staging)
 	// The way through when a repository will not take a commit is to leave
 	// the changeset where it is, which is what esc already does — so the
@@ -594,7 +719,7 @@ func (m Model) makeCommit() (tea.Model, tea.Cmd) {
 				"%s changed since this card was drawn; nothing was committed — open the card again to read the tree afresh",
 				strings.Join(moved, ", "))}
 		}
-		files, err := run.Commit(root, paths, message, without, hooks)
+		files, err := run.Commit(root, paths, message, without, hooks, secrets)
 		if err != nil {
 			// The card said a hook failure cancels and changes nothing, and
 			// the staging is a change: git add succeeds and git commit is
@@ -613,6 +738,7 @@ func (m Model) makeCommit() (tea.Model, tea.Cmd) {
 		return commitDoneMsg{
 			turn: turn, sha: sha, branch: branch, ahead: ahead,
 			files: len(files), hooks: hooks, leaves: commitLeaves(root, nil),
+			secrets: carried,
 		}
 	}
 }
@@ -652,8 +778,12 @@ func (m Model) finishCommit(msg commitDoneMsg) (tea.Model, tea.Cmd) {
 	}
 	if msg.err != nil {
 		next := *st
-		next.running = false
+		next.running, next.override = false, false
 		next.failure = strings.TrimSpace(msg.err.Error())
+		var refused *structural.SecretRefusal
+		if errors.As(msg.err, &refused) {
+			next.failure = secretRefused()
+		}
 		m.commit = &next
 		m.state = stateCommitCard
 		m.syncViewport()
@@ -691,9 +821,14 @@ func (m *Model) bankTurnClose(msg commitDoneMsg) {
 		if e.kind != entryTurnClose || e.turn != msg.turn || e.close == nil {
 			continue
 		}
-		e.close.Commit = &components.TurnCommit{
-			Receipt: firstLine(structural.CommitReceipt(msg.files, msg.sha, msg.branch, msg.hooks)),
+		receipt := firstLine(structural.CommitReceipt(msg.files, msg.sha, msg.branch, msg.hooks))
+		if msg.secrets > 0 {
+			// The override stays on the row for as long as the row does: a
+			// commit that carries a credential is one the reader is owed a
+			// record of having said yes to.
+			receipt += " · committed with " + plural(msg.secrets, "secret") + ", on your say"
 		}
+		e.close.Commit = &components.TurnCommit{Receipt: receipt}
 		if e.close.Changes != nil {
 			// The two offers a committed changeset no longer has: undo,
 			// because the honest way back from a commit is `git revert` and

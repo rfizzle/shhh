@@ -1092,6 +1092,10 @@ type policyState struct {
 	// command lists stand to a command.
 	allowHosts []string
 	denyHosts  []string
+	// secretIgnore is commit.secret_ignore, the fixtures a commit made from
+	// this session may carry a credential shape in (commit.go). It is no
+	// grant either: it is the checkout's word on which files are fixtures.
+	secretIgnore []string
 	// timeout bounds one assistant-run command; zero means no ceiling.
 	timeout time.Duration
 	// The blanket grants: every edit, every command, until revoked. They are

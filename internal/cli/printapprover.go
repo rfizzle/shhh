@@ -127,12 +127,13 @@ func headlessGate(name string) bool {
 // headlessWrites is what a run with nobody in front of it hands the git
 // stager. A conversation gets nothing: it has no editor, so it has no work of
 // its own to stage. Everything else stages exactly the paths its own calls
-// wrote, which is the rule a session states with its changeset.
-func headlessWrites(session chatSession, own *writtenByCalls) *structural.Writes {
+// wrote, which is the rule a session states with its changeset. ignore is
+// commit.secret_ignore, the fixtures a commit may carry a credential shape in.
+func headlessWrites(session chatSession, own *writtenByCalls, ignore []string) *structural.Writes {
 	if session.conversation {
 		return nil
 	}
-	return &structural.Writes{Files: own.paths, Hooks: projectTrust().RunsOwnPrograms()}
+	return &structural.Writes{Files: own.paths, Hooks: projectTrust().RunsOwnPrograms(), SecretIgnore: ignore}
 }
 
 // headlessApproval is what the unattended approver answers a call with: the

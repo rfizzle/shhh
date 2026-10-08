@@ -1,12 +1,14 @@
 package run
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/todo"
 )
 
@@ -51,7 +53,7 @@ func TestCommit_StagesTheRunsPathsAndNothingElse(t *testing.T) {
 	write(t, root, "b.go", "package b\n")
 	write(t, root, "stranger.go", "package stranger\n")
 
-	files, err := Commit(root, []string{"a.go", "b.go"}, "feat(a): do the thing\n\nBecause.", "ask for it without one", true)
+	files, err := Commit(root, []string{"a.go", "b.go"}, "feat(a): do the thing\n\nBecause.", "ask for it without one", true, Secrets{})
 	if err != nil {
 		t.Fatalf("commit: %v", err)
 	}
@@ -82,7 +84,7 @@ func TestCommit_RefusesAnIndexItDidNotFill(t *testing.T) {
 	if out, code := Git(root, "add", "--", "theirs.go"); code != 0 {
 		t.Fatalf("git add: %s", out)
 	}
-	_, err := Commit(root, []string{"a.go"}, "subject", "ask for it without one", true)
+	_, err := Commit(root, []string{"a.go"}, "subject", "ask for it without one", true, Secrets{})
 	if err == nil || !strings.Contains(err.Error(), "already holds staged changes") {
 		t.Fatalf("err = %v", err)
 	}
@@ -93,7 +95,7 @@ func TestCommit_RefusesAnIndexItDidNotFill(t *testing.T) {
 func TestCommit_OutsideARepositorySaysSoAndOffersTheWayThrough(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "a.go", "package a\n")
-	_, err := Commit(root, []string{"a.go"}, "subject", "--no-commit runs it without one", true)
+	_, err := Commit(root, []string{"a.go"}, "subject", "--no-commit runs it without one", true, Secrets{})
 	if err == nil || !strings.Contains(err.Error(), "not a git repository") ||
 		!strings.Contains(err.Error(), "--no-commit runs it without one") {
 		t.Fatalf("err = %v", err)
@@ -103,9 +105,72 @@ func TestCommit_OutsideARepositorySaysSoAndOffersTheWayThrough(t *testing.T) {
 // A run that changed nothing has nothing to commit, and says that rather
 // than making an empty one.
 func TestCommit_RefusesAnEmptyRun(t *testing.T) {
-	if _, err := Commit(t.TempDir(), nil, "subject", "ask", true); err == nil ||
+	if _, err := Commit(t.TempDir(), nil, "subject", "ask", true, Secrets{}); err == nil ||
 		!strings.Contains(err.Error(), "changed no files") {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+// Every commit a run, a session's card or the unattended runner makes goes
+// through Commit, so the refusal is here: a credential shape in a line the
+// commit adds is refused by kind, file and line before anything is staged,
+// and the value is in neither the error nor the index. A fixture the ignore
+// list names is committed, and so is a finding the person said yes to.
+func TestCommit_ASecretIsRefusedOnEveryPath(t *testing.T) {
+	const token = "ghp_016C4C7C4C7C4C7C4C7C4C7C4C7C4C7C4C7C"
+	body := strings.Repeat("# line\n", 11) + "GITHUB_TOKEN=" + token + "\n"
+
+	root := gitRepo(t)
+	write(t, root, "config/dev.env", body)
+	_, err := Commit(root, []string{"config/dev.env"}, "subject", "ask", true, Secrets{})
+	var refused *structural.SecretRefusal
+	if !errors.As(err, &refused) {
+		t.Fatalf("err = %v, want the secret refusal", err)
+	}
+	if msg := err.Error(); !strings.Contains(msg, "github token at config/dev.env:12") || strings.Contains(msg, token[:10]) {
+		t.Errorf("the refusal names the kind, file and line and never the value: %q", msg)
+	}
+	if out, _ := Git(root, "diff", "--cached", "--name-only"); out != "" {
+		t.Errorf("a refused commit staged %q", out)
+	}
+
+	// The same file under a glob the checkout's list names is a fixture.
+	if _, err := Commit(root, []string{"config/dev.env"}, "subject", "ask", true, Secrets{Ignore: []string{"config/*.env"}}); err != nil {
+		t.Fatalf("an ignored fixture was refused: %v", err)
+	}
+
+	// And a finding the person said yes to on the card is theirs to commit.
+	root = gitRepo(t)
+	write(t, root, "config/dev.env", body)
+	if _, err := Commit(root, []string{"config/dev.env"}, "subject", "ask", true, Secrets{Allow: true}); err != nil {
+		t.Fatalf("the override was refused: %v", err)
+	}
+
+	// A secret already in history is not this commit's to refuse: only the
+	// lines it adds are read.
+	write(t, root, "config/dev.env", body+"OTHER=1\n")
+	if _, err := Commit(root, []string{"config/dev.env"}, "subject", "ask", true, Secrets{}); err != nil {
+		t.Fatalf("a line already committed was read as added: %v", err)
+	}
+}
+
+func TestSecretIgnored_ReadsGlobsTheWayAnIgnoreFileDoes(t *testing.T) {
+	for _, c := range []struct {
+		globs []string
+		path  string
+		want  bool
+	}{
+		{[]string{"testdata"}, "internal/secret/testdata/key.pem", true},
+		{[]string{"*.fixture"}, "a/b/c.fixture", true},
+		{[]string{"internal/secret/testdata"}, "internal/secret/testdata/key.pem", true},
+		{[]string{"config/*.env"}, "config/dev.env", true},
+		{[]string{"config/*.env"}, "other/config/dev.env", false},
+		{[]string{"testdata"}, "internal/secret/patterns.go", false},
+		{nil, "config/dev.env", false},
+	} {
+		if got := structural.SecretIgnored(c.globs, c.path); got != c.want {
+			t.Errorf("SecretIgnored(%v, %q) = %v, want %v", c.globs, c.path, got, c.want)
+		}
 	}
 }
 

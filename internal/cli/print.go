@@ -531,7 +531,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		kind: "print",
 		toolset: func(sc *scope.Scope) toolsetOpts {
 			own = &writtenByCalls{}
-			return toolsetOpts{scope: sc, gitWrites: headlessWrites(session, own)}
+			return toolsetOpts{scope: sc, gitWrites: headlessWrites(session, own, ConfigFrom(cmd.Context()).Commit.SecretIgnore)}
 		},
 		register: unattendedRegistration(true, true),
 	})

@@ -15,6 +15,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -350,6 +351,110 @@ func TestCommit_TheReceiptLandsOnTheCloseRowAndWithdrawsUndo(t *testing.T) {
 	}
 }
 
+// secretTurn is commitRepo's repository with a turn that writes a GitHub
+// token into a file, on its twelfth line, under the given ignore list.
+func secretTurn(t *testing.T, ignore []string) (Model, string) {
+	t.Helper()
+	m, root, _ := commitRepo(t)
+	m = m.WithCommitSecretIgnore(ignore)
+	m.state = stateInput
+	m = sendText(t, m, "add the dev settings")
+	body := strings.Repeat("# setting\n", 11) + "GITHUB_TOKEN=ghp_016C4C7C4C7C4C7C4C7C4C7C4C7C4C7C4C7C\n"
+	m = applyWrite(t, m, filepath.Join(root, "dev.env"), body, "y")
+	m = finishTurn(t, m)
+	return m, root
+}
+
+// A credential shape in a line the turn adds is named on the card by kind,
+// file and line, the commit is refused with the card's own sentence and
+// nothing staged, and the one press past it is the reader's: recorded as
+// their allow, and kept on the receipt.
+func TestCommitCard_ASecretIsNamedRefusedAndOverriddenOnlyByThePerson(t *testing.T) {
+	m, root := secretTurn(t, nil)
+	var decisions [][2]string
+	m = m.WithObserver(observe.Observer{Decision: func(_ observe.Pos, decision, reason string) {
+		decisions = append(decisions, [2]string{decision, reason})
+	}})
+	m = focusLastClose(t, m)
+	row := m.focusIdx
+	m, _ = handOverRow(t, m)
+	view := ansi.Strip(m.commitCard().View(110))
+	if !strings.Contains(view, "secrets   1 github token · dev.env:12") {
+		t.Fatalf("the card should name the kind, file and line, got:\n%s", view)
+	}
+	if strings.Contains(view, "ghp_") {
+		t.Fatalf("the card draws the value:\n%s", view)
+	}
+	if !strings.Contains(view, "[!] commit with the secret — it stays in history") {
+		t.Fatalf("the override is offered while the finding stands, got:\n%s", view)
+	}
+
+	next, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = settle(t, next.(Model), cmd)
+	if m.commit == nil || m.commit.failure != "a secret is in the diff — remove it, or commit it on purpose with [!]" {
+		t.Fatalf("the refusal should be the card's sentence, got %+v", m.commit)
+	}
+	if out, _ := run.Git(root, "diff", "--cached", "--name-only"); out != "" {
+		t.Fatalf("a refused commit staged %q", out)
+	}
+	if len(decisions) != 0 {
+		t.Fatalf("a refusal records no decision, got %v", decisions)
+	}
+
+	m, cmd = typeLetter(t, m, "!")
+	m = settle(t, m, cmd)
+	if len(decisions) != 1 || decisions[0] != [2]string{observe.DecisionAllow, observe.ReasonUser} {
+		t.Fatalf("the override is the reader's allow, got %v", decisions)
+	}
+	c := m.transcript[row].close
+	if c == nil || c.Commit == nil || !strings.Contains(c.Commit.Receipt, "committed with 1 secret, on your say") {
+		t.Fatalf("the receipt should keep the override, got %+v", c)
+	}
+}
+
+// The commit reads each file against HEAD, so a token the reader had left
+// uncommitted in a file the turn then edits is carried by the commit too —
+// and the card names it, so it never refuses for a row it does not draw.
+func TestCommitCard_NamesASecretTheTurnsFileAlreadyHeldUncommitted(t *testing.T) {
+	m, root, _ := commitRepo(t)
+	// The reader's token, uncommitted, and then the turn's line under it:
+	// the record's two sides both hold the token, HEAD does not.
+	held := "package agent\n\nconst token = \"ghp_016C4C7C4C7C4C7C4C7C4C7C4C7C4C7C4C7C\"\n"
+	after := held + "\nconst limit = 50\n"
+	path := filepath.Join(root, "loop.go")
+	if err := os.WriteFile(path, []byte(after), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m = focusLastClose(t, m)
+	m.changes.Add(m.transcript[m.focusIdx].turn, changeset.Record{
+		Path: path, Before: held, BeforeExists: true, After: after, AfterExists: true,
+	})
+	m, _ = handOverRow(t, m)
+	view := ansi.Strip(m.commitCard().View(110))
+	if !strings.Contains(view, "1 github token · loop.go:3") || !strings.Contains(view, "[!] commit with the secret") {
+		t.Fatalf("the card should name what the commit would refuse, got:\n%s", view)
+	}
+}
+
+// A fixture the checkout's list names is drawn dim and does not refuse, and
+// no override is offered for it.
+func TestCommitCard_AnIgnoredFixtureIsDrawnAndCommitted(t *testing.T) {
+	m, _ := secretTurn(t, []string{"*.env"})
+	m = focusLastClose(t, m)
+	row := m.focusIdx
+	m, _ = handOverRow(t, m)
+	view := ansi.Strip(m.commitCard().View(110))
+	if !strings.Contains(view, "1 github token · dev.env:12") || strings.Contains(view, "[!]") {
+		t.Fatalf("an ignored fixture is named with no override, got:\n%s", view)
+	}
+	next, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = settle(t, next.(Model), cmd)
+	c := m.transcript[row].close
+	if c == nil || c.Commit == nil || strings.Contains(c.Commit.Receipt, "secret") {
+		t.Fatalf("the fixture commits with the plain receipt, got %+v", c)
+	}
+}
+
 // A pre-commit hook that exits non-zero cancels the whole thing, which is
 // what the card said it would do: no commit, the changeset where it was, and
 // the reason on the card rather than in a notice the reader has to go find.
@@ -568,7 +673,9 @@ func TestCommitKeys_AreTheRegistersOwn(t *testing.T) {
 	if got := commitOffer().Key; got != keys.Bracket(keys.Draft.Answer) {
 		t.Fatalf("the row reaches the card through the handover, got %q", got)
 	}
-	var card components.CommitCard
+	// The override is drawn only while a secret stands, so the card is one
+	// with a finding on it.
+	card := components.CommitCard{Override: true}
 	view := ansi.Strip(card.View(110))
 	for _, b := range keys.Commit.All() {
 		if !strings.Contains(view, keys.Bracket(b)) {

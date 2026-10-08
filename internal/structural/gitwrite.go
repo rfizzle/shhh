@@ -15,12 +15,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt/describe"
+	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -41,7 +43,7 @@ var gitWriteTool = provider.Tool{
 	Description: "Write to this repository: stage files, commit them, create a branch, switch to one. " +
 		"Use this rather than running git through execute_command — the message is a field here, so no quoting is involved and no approval is spent on punctuation. " +
 		"add stages only files this session changed: anything else is refused by name, and there is no way to stage everything. " +
-		"commit needs a staged index and writes the message verbatim. branch creates and never deletes; switch moves to an existing branch, or to a new one off the current commit with create. " +
+		"commit needs a staged index and writes the message verbatim; a commit that adds a credential shape is refused and names it, by kind, file and line. branch creates and never deletes; switch moves to an existing branch, or to a new one off the current commit with create. " +
 		"Nothing else is reachable here: push, reset, clean, checkout, rebase, merge, stash, tag, amend and force have no field, and pushing stays with execute_command.",
 	Parameters: json.RawMessage(`{
 		"type": "object",
@@ -121,6 +123,10 @@ type Writes struct {
 	// commits with --no-verify, which holds back the pre-commit and
 	// commit-msg hooks and no others, and says which.
 	Hooks bool
+	// SecretIgnore is commit.secret_ignore: the path globs of the fixtures
+	// whose credential shapes are there on purpose. A commit that adds a
+	// shape anywhere else is refused (SecretRefusal).
+	SecretIgnore []string
 }
 
 // AllowWrites registers the write tool on a toolset that already found git.
@@ -374,6 +380,17 @@ func (t *Toolset) commit(args gitWriteArgs) (string, error) {
 	if err := f.Close(); err != nil {
 		return "", fmt.Errorf("cannot write the commit message: %w", err)
 	}
+	// The last reading before history is written: a credential shape in a
+	// line this commit adds is refused by kind, file and line, and the
+	// model has no way past it — the override is the person's, on the card.
+	// See docs/capabilities/secrets.md#a-secret-does-not-get-committed.
+	found, err := t.stagedSecrets()
+	if err != nil {
+		return "", err
+	}
+	if err := RefuseSecrets(found); err != nil {
+		return "", err
+	}
 	hooks := t.hooksRun()
 	argv, err := buildGitWriteArgv(args, nil, f.Name(), hooks)
 	if err != nil {
@@ -409,6 +426,148 @@ func CommitReceipt(files int, head, branch string, hooks bool) string {
 	}
 	return r
 }
+
+// CommitFinding is one credential shape in a line a commit adds: its kind,
+// the file and line it is on, and whether the file is a fixture the
+// checkout's commit.secret_ignore names. It never holds the value, because
+// it is drawn on the card, sent to the model and kept on the receipt.
+// See docs/capabilities/secrets.md#a-secret-does-not-get-committed.
+type CommitFinding struct {
+	Kind    string
+	Path    string
+	Line    int
+	Ignored bool
+}
+
+// Words is the kind as a reader says it: `github token`.
+func (f CommitFinding) Words() string { return strings.ReplaceAll(f.Kind, "-", " ") }
+
+// Where is the file and line, `config/dev.env:12`.
+func (f CommitFinding) Where() string { return fmt.Sprintf("%s:%d", f.Path, f.Line) }
+
+// CommitFindings is the scan a commit takes over one file: the shapes on the
+// lines after adds to before, each marked ignored where the file is a
+// fixture the list names. rel is the path as the reader and git name it.
+func CommitFindings(rel, before, after string, ignore []string) []CommitFinding {
+	found := secret.FindAdded(before, after)
+	if len(found) == 0 {
+		return nil
+	}
+	ignored := SecretIgnored(ignore, rel)
+	out := make([]CommitFinding, 0, len(found))
+	for _, f := range found {
+		out = append(out, CommitFinding{Kind: f.Kind, Path: filepath.ToSlash(rel), Line: f.Line, Ignored: ignored})
+	}
+	return out
+}
+
+// SecretIgnored reports whether commit.secret_ignore names rel. A glob with
+// no slash in it is matched against every segment of the path, the way an
+// ignore file reads one, so `testdata` covers every testdata directory; a
+// glob with a slash is matched against the path from the root and every
+// directory above the file, so `internal/secret/testdata` covers what is
+// under it. path.Match does the matching, and a glob it cannot read
+// matches nothing.
+func SecretIgnored(globs []string, rel string) bool {
+	segs := strings.Split(path.Clean(filepath.ToSlash(rel)), "/")
+	for _, g := range globs {
+		g = strings.Trim(strings.TrimSpace(filepath.ToSlash(g)), "/")
+		if g == "" {
+			continue
+		}
+		if !strings.Contains(g, "/") {
+			for _, s := range segs {
+				if ok, _ := path.Match(g, s); ok {
+					return true
+				}
+			}
+			continue
+		}
+		for i := len(segs); i > 0; i-- {
+			if ok, _ := path.Match(g, strings.Join(segs[:i], "/")); ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// SecretRefusal is a commit refused because a line it adds carries a
+// credential shape. Findings are the ones that refused it — never an
+// ignored fixture.
+type SecretRefusal struct {
+	Findings []CommitFinding
+}
+
+// Error is the sentence every path that commits answers with, the model's
+// tool result included: what, where, that nothing was written, and what to
+// do about it.
+func (e *SecretRefusal) Error() string {
+	where := make([]string, 0, len(e.Findings))
+	for _, f := range e.Findings {
+		where = append(where, f.Words()+" at "+f.Where())
+	}
+	lead := "a secret is"
+	if len(e.Findings) > 1 {
+		lead = fmt.Sprintf("%d secrets are", len(e.Findings))
+	}
+	return lead + " in the lines this commit adds: " + strings.Join(where, ", ") +
+		"; nothing was committed — take it out of the file, or list a test fixture in commit.secret_ignore"
+}
+
+// RefuseSecrets is the refusal for what a scan found, and nil where every
+// finding is an ignored fixture or there are none.
+func RefuseSecrets(found []CommitFinding) error {
+	var live []CommitFinding
+	for _, f := range found {
+		if !f.Ignored {
+			live = append(live, f)
+		}
+	}
+	if len(live) == 0 {
+		return nil
+	}
+	return &SecretRefusal{Findings: live}
+}
+
+// stagedSecrets scans what the index is about to commit, file by file: the
+// blob at HEAD against the blob staged. A file with no HEAD blob is new and
+// every line of it is added; a file with no staged blob is being deleted and
+// adds nothing.
+//
+// It cannot pass what it could not read. The list is read NUL-separated, so a
+// name git would quote is still the name; deletions are left off it, so every
+// path on it has a staged blob; and a blob that will not read, or reads past
+// the cap, is a refusal rather than a file taken to be clean.
+func (t *Toolset) stagedSecrets() ([]CommitFinding, error) {
+	var ignore []string
+	if t.writes != nil {
+		ignore = t.writes.SecretIgnore
+	}
+	list, err := t.run(GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "diff", "--cached", "--name-only", "-z", "--diff-filter=d", "--no-ext-diff", "--no-textconv"})
+	if err != nil {
+		return nil, fmt.Errorf("cannot read what is staged to check it for secrets; nothing was committed: %w", err)
+	}
+	var out []CommitFinding
+	for p := range strings.SplitSeq(list, "\x00") {
+		if p == "" {
+			continue
+		}
+		after, over, err := t.spawn(GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "cat-file", "blob", ":" + p}, maxScannedBlob)
+		if err != nil || over {
+			return nil, fmt.Errorf("cannot read all of %s to check it for secrets; nothing was committed", p)
+		}
+		// No blob at HEAD is a new file, all of it added.
+		before, _, _ := t.spawn(GitWriteToolName, []string{"--no-pager", "--no-optional-locks", "cat-file", "blob", "HEAD:" + p}, maxScannedBlob)
+		out = append(out, CommitFindings(p, before, after, ignore)...)
+	}
+	return out, nil
+}
+
+// maxScannedBlob is the most of one staged file the secret scan reads. A
+// file past it is refused rather than read in part, because the part not
+// read is where a key would be committed unseen.
+const maxScannedBlob = 32 << 20
 
 // The three readings a commit needs around itself: what is staged, what sha
 // landed, and where. Their argv is written out here rather than built,

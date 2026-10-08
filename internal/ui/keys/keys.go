@@ -882,19 +882,26 @@ type CommitKeys struct {
 	// Hunks opens the turn's review, the surface /diff and the row itself
 	// open, rather than a second one: what is about to be committed is read
 	// in the one place a turn's hunks are read.
-	Hunks  Binding
-	Cancel Binding
+	Hunks Binding
+	// Override commits a diff the card found a credential shape in, on the
+	// reader's own say. It is offered only while a finding stands, and it is
+	// `!` because that is the keystroke a row's own override already is
+	// (Row.Uncap): the one press that takes the product's stop off on
+	// purpose (docs/capabilities/secrets.md#a-secret-does-not-get-committed).
+	Override Binding
+	Cancel   Binding
 }
 
 // All is the card's keys in the order it offers them.
 func (k CommitKeys) All() []Binding {
-	return []Binding{k.Take, k.Edit, k.Hunks, k.Cancel}
+	return []Binding{k.Take, k.Edit, k.Hunks, k.Override, k.Cancel}
 }
 
 var Commit = CommitKeys{
-	Take:  bind("enter", "commit", "enter"),
-	Edit:  bind("e", "edit the message", "e"),
-	Hunks: bind("s", "read the hunks", "s"),
+	Take:     bind("enter", "commit", "enter"),
+	Edit:     bind("e", "edit the message", "e"),
+	Hunks:    bind("s", "read the hunks", "s"),
+	Override: bind("!", "commit with the secret", "!"),
 	// The words say what is left standing rather than "cancel": a changeset
 	// nobody committed is still there, and so is the offer
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).

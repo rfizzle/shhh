@@ -69,8 +69,11 @@ func (m Model) todoCommitCmd() tea.Cmd {
 	// under the same answer everything else the checkout declares runs under.
 	hooks := m.trust().Granted
 	without := fmt.Sprintf("/todo run %s --no-commit runs it without one, or todo.commit = false makes that the default", slug)
+	// A run is nobody's say on a secret, so it has no override: it blocks
+	// on the refusal and the person decides.
+	secrets := run.Secrets{Ignore: m.policy.secretIgnore}
 	return func() tea.Msg {
-		files, err := run.Commit(root, paths, message, without, hooks)
+		files, err := run.Commit(root, paths, message, without, hooks, secrets)
 		return todoCommitMsg{slug: slug, files: files, err: err}
 	}
 }

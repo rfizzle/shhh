@@ -119,7 +119,10 @@ func (d *todoDriver) commit(st *run.State) ([]string, error) {
 		// A commit hook is a program the checkout can point git at, so it
 		// runs under the same answer everything else the checkout declares
 		// runs under.
-		projectTrust().RunsOwnPrograms())
+		projectTrust().RunsOwnPrograms(),
+		// Nobody is here to say yes to a secret, so there is no override:
+		// the item blocks on the refusal.
+		run.Secrets{Ignore: d.secretIgnore})
 }
 
 // paths is what the run may stage, in the definition both surfaces share

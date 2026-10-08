@@ -392,6 +392,82 @@ func TestExecuteGitWriteEndToEnd(t *testing.T) {
 	}
 }
 
+// The model's commit is refused like every other when a line it adds carries
+// a credential shape, and the result it reads names the kind, file and line
+// and never the value. It has no override: that is the person's, on the
+// card. A fixture the checkout's list names is committed.
+func TestExecuteGitWriteRefusesACommitThatAddsASecret(t *testing.T) {
+	if _, ok := lookPath("git"); !ok {
+		t.Skip("git is not on PATH")
+	}
+	const token = "AKIAIOSFODNN7EXAMPLE"
+	root := writeRepo(t)
+	if err := os.MkdirAll(filepath.Join(root, "testdata"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"deploy.sh", "testdata/aws.txt"} {
+		if err := os.WriteFile(filepath.Join(root, name), []byte("#!/bin/sh\nexport AWS_ACCESS_KEY_ID="+token+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	changed := []string{"deploy.sh", "testdata/aws.txt"}
+	ts := writeToolset(t, root, Writes{Files: func() []string { return changed }, Hooks: true, SecretIgnore: []string{"testdata"}})
+
+	if _, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"add","paths":["deploy.sh","testdata/aws.txt"]}`)); err != nil {
+		t.Fatalf("add: %v", err)
+	}
+	_, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"add the deploy script"}`))
+	if err == nil {
+		t.Fatal("a commit adding an aws key was made")
+	}
+	if msg := err.Error(); !strings.Contains(msg, "aws access key at deploy.sh:2") ||
+		strings.Contains(msg, "testdata/aws.txt") || strings.Contains(msg, token) {
+		t.Fatalf("the refusal = %q, want the kind, file and line of the one outside the fixtures and no value", msg)
+	}
+	if out, code := gitOut(t, root, "log", "--oneline"); code == 0 && strings.Contains(out, "deploy script") {
+		t.Fatalf("the commit landed: %q", out)
+	}
+
+	if _, code := gitOut(t, root, "restore", "--staged", "--", "deploy.sh"); code != 0 {
+		t.Fatal("could not unstage deploy.sh")
+	}
+	if out, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"add the fixture"}`)); err != nil ||
+		!strings.HasPrefix(out, "committed 1 file") {
+		t.Fatalf("an ignored fixture was refused: %q %v", out, err)
+	}
+	if !strings.Contains(gitWriteTool.Description, "a commit that adds a credential shape is refused and names it") {
+		t.Error("the definition does not tell the model a commit with a secret is refused")
+	}
+}
+
+// The scan cannot pass what it did not read: a name git would quote, and a
+// key past the cap the tool's own output is held to, are both still read.
+func TestExecuteGitWriteReadsEveryStagedFileWhole(t *testing.T) {
+	if _, ok := lookPath("git"); !ok {
+		t.Skip("git is not on PATH")
+	}
+	const token = "AKIAIOSFODNN7EXAMPLE"
+	for name, body := range map[string]string{
+		"données.env": "KEY=" + token + "\n",
+		"big.txt":     strings.Repeat("filler line of text\n", 8000) + "KEY=" + token + "\n",
+	} {
+		root := writeRepo(t)
+		if err := os.WriteFile(filepath.Join(root, name), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		changed := []string{name}
+		ts := writeToolset(t, root, Writes{Files: func() []string { return changed }, Hooks: true})
+		args, _ := json.Marshal(map[string]any{"verb": "add", "paths": []string{name}})
+		if _, err := ts.Execute(GitWriteToolName, args); err != nil {
+			t.Fatalf("%s: add: %v", name, err)
+		}
+		_, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"commit","message":"add it"}`))
+		if err == nil || !strings.Contains(err.Error(), "aws access key at ") {
+			t.Errorf("%s: err = %v, want the secret refused", name, err)
+		}
+	}
+}
+
 // A switch that would lose work is refused the way git refuses it, and there
 // is no flag here that discards.
 func TestExecuteGitWriteRefusesASwitchThatWouldLoseWork(t *testing.T) {

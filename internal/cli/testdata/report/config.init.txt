@@ -1,10 +1,10 @@
   shhh config init — /home/dev/.config/shhh
 
-  ✓ wrote /home/dev/.config/shhh/config.toml · 143 settings, each comme…  [user]
+  ✓ wrote /home/dev/.config/shhh/config.toml · 144 settings, each comme…  [user]
         uncomment a line to change one; above each key is what it decides
   ✓ wrote /home/dev/.config/shhh/prompts/ · 14 wordings, each the built…  [user]
         edit one and it is what a session is told; delete it and the built-in
         words are back
-  ✓ wrote /home/dev/.config/shhh/keybindings.toml · 257 keys, each comm…  [user]
+  ✓ wrote /home/dev/.config/shhh/keybindings.toml · 258 keys, each comm…  [user]
         uncomment a line to move a key; shhh keys check reads it the way a
         session will

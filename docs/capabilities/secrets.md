@@ -158,6 +158,51 @@ recognised, and neither is a private key whose closing line never arrived
 because the output was cut. Redaction is a floor under the accidents, not a
 guarantee about a determined leak.
 
+## A secret does not get committed
+
+The scrub keeps a value out of what the model reads; it cannot keep one out of
+what the model writes. A key the model put into a `.env`, a test or a script is
+on disk in the clear, and the commit at the end of the turn is the one act that
+cannot be taken back — once it is in history it is in every clone and every
+push after it. So every commit shhh makes reads its own diff first, with the
+same table of shapes.
+
+**What is read is the lines the commit adds**, file by file: the file as it
+will be committed against the same file before it, and a line counts as added
+when the file did not already hold it. A credential that was already in
+history is not this commit's to refuse, and a commit that refused every file
+carrying an old one would refuse every commit in that repository until somebody
+rewrote history — which is not a change a commit card can ask for.
+
+**What is drawn is the kind and the line, never the value.** The commit card
+gains a `secrets` field after `hooks` — `1 github token · config/dev.env:12` —
+in the warning colour the classifier's refusal is drawn in, and pressing enter
+on it is refused with `a secret is in the diff — remove it, or commit it on
+purpose with [!]`. The same refusal stops the commit a backlog run ends with,
+the unattended runner's, and the model's own through the write tool, whose
+result names the kind, file and line so the model can take the value out and
+stage the file again. Nothing that records the finding — the card, the
+refusal, the receipt — ever holds the value, because each of them is a place
+it would be copied to.
+
+**The override is the person's and nobody else's.** While a finding stands,
+the card offers `[!] commit with the secret — it stays in history`: one press,
+recorded as the person's own allow, and the turn's receipt says `committed
+with 1 secret, on your say` for as long as the row is there. The model has no
+way past the refusal and neither does a run with nobody in front of it; they
+stop, and the person decides.
+
+**A fixture is not a leak.** A scrub's own tests, a documented example key and
+a recorded API response carry credential shapes on purpose, so a checkout lists
+them in `commit.secret_ignore`: path globs read the way an ignore file reads
+one, a bare name matching any segment of the path and a name with a slash
+matching from the root. A shape in a file the list names is still drawn on the
+card, dim, and does not refuse the commit.
+
+The limit is the table's: a credential with no marker is not recognised here
+either, and a commit is read only where shhh makes it — a commit typed in a
+shell of the person's own is theirs.
+
 ## The names that do not travel
 
 The other half is by name, and it happens before the command runs rather than
