@@ -18,7 +18,10 @@ type ChatListEntry struct {
 	// was written (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
 	Summary   string
 	UpdatedAt time.Time
-	Turns     int
+	// Turns is every user turn the record holds, the ones a compaction folded
+	// away (stored at seq < 0) included, for the list and the search alike
+	// (docs/interface/surfaces.md#selectors).
+	Turns int
 	// Live marks a slot another running session is writing to. Opening one
 	// means reading a conversation that is still being added to elsewhere,
 	// and the next autosave over there takes the slot back

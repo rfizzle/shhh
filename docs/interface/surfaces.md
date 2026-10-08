@@ -2629,7 +2629,10 @@ fastest way in. Spending that first
 keystroke on opening the row it would have gone into is the card asking to be
 asked. The saved chats are the one catalog that still opens as a list: its
 rows carry the keys that delete and rename, and those keys are what the reader
-came for.
+came for. A saved chat's row says how many turns it has, and the count is every
+turn the record holds, compaction included: the turns a compaction folded are
+drawn again when the session is reopened, so the count is the count of what is
+shown. The search's rows count the same way.
 
 The cursor on that row is the terminal's own wherever the surface holding the
 card places one, and a painted block only where it does not: a card knows
