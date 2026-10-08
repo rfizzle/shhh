@@ -53,6 +53,9 @@ type sessionEnv struct {
 	// model reads the session's model as it is now, which /model and a
 	// provider switch move; modelName is the one it opened on.
 	model func() string
+	// providerNow reads the provider the session is on as it is now, which
+	// a provider switch moves; provName is the one it opened on.
+	providerNow func() string
 	// endpointModels is the opening provider's own model list, nil where it
 	// cannot list one: the picker and the spawn's model check share it.
 	endpointModels *endpointModels
@@ -154,6 +157,17 @@ func (e *sessionEnv) currentModel() string {
 		return e.modelName
 	}
 	return e.model()
+}
+
+// childModel is the session layer a child's model resolves to. Children are
+// bound to the provider the session opened on, so it is the current model
+// only while the session is still on that provider; after a provider switch
+// it is the opening model, which that provider can run.
+func (e *sessionEnv) childModel() string {
+	if e.providerNow != nil && e.providerNow() != e.provName {
+		return e.modelName
+	}
+	return e.currentModel()
 }
 
 // addBuiltPrompt joins a block to a system prompt that has already been
@@ -356,6 +370,11 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 			sessionMu.Lock()
 			defer sessionMu.Unlock()
 			return currentModel
+		},
+		providerNow: func() string {
+			sessionMu.Lock()
+			defer sessionMu.Unlock()
+			return currentProvider
 		},
 		endpointModels: newEndpointModels(modelListerFor(p)),
 		effort:         effort,

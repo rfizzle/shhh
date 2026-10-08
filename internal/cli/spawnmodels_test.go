@@ -242,9 +242,11 @@ func TestSpawnModelListFollowsAProviderSwitch(t *testing.T) {
 		want string
 	}{
 		{
+			// Children stay on the opening provider, so the list does not
+			// name the model the new provider moved the session to.
 			name: "a provider switch",
 			move: func(_ *testing.T, env *sessionEnv, _ *agentProfiles) error { return env.switchProvider("other") },
-			want: "other-default ($1.00 in / $10.00 out per Mtok)",
+			want: "opening-model.",
 		},
 		{
 			name: "a /model switch",
@@ -271,17 +273,19 @@ func TestSpawnModelListFollowsAProviderSwitch(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			current := "opening-model"
+			current, onProvider := "opening-model", "opening"
 			tools := subagent.Definitions(nil, subagent.Offer{})
 			env := &sessionEnv{
-				prov:      assemblyProvider{},
-				modelName: current,
-				model:     func() string { return current },
+				prov:        assemblyProvider{},
+				modelName:   current,
+				provName:    onProvider,
+				model:       func() string { return current },
+				providerNow: func() string { return onProvider },
 				switchModel: func(name string) {
 					current = name
 				},
 				switchProvider: func(name string) error {
-					current = name + "-default"
+					current, onProvider = name+"-default", name
 					return nil
 				},
 				replaceTools: func(edit func([]provider.Tool) []provider.Tool) { tools = edit(tools) },
@@ -299,6 +303,9 @@ func TestSpawnModelListFollowsAProviderSwitch(t *testing.T) {
 			}
 			if !strings.Contains(desc, "The models this session can run: "+tc.want) {
 				t.Fatalf("the next request's spawn_agent does not offer the session's model now:\n%s", desc)
+			}
+			if strings.Contains(desc, "other-default") {
+				t.Fatalf("spawn_agent names a model of a provider a child cannot run on:\n%s", desc)
 			}
 		})
 	}
@@ -346,5 +353,46 @@ func TestSpawnRefusalTakesNoSlotAndRaisesNoCard(t *testing.T) {
 				t.Fatalf("%d agents started", started)
 			}
 		})
+	}
+}
+
+// A child is bound to the provider the session opened on, so after a
+// provider switch the session layer is the opening model and the list names
+// no model of the provider the session moved to
+// (docs/capabilities/subagents.md#the-model-a-depth-runs-on).
+func TestAChildFollowsTheSessionsProviderSwitch(t *testing.T) {
+	current, onProvider := "opening-model", "opening"
+	env := &sessionEnv{
+		prov:        assemblyProvider{},
+		provName:    "opening",
+		modelName:   "opening-model",
+		model:       func() string { return current },
+		providerNow: func() string { return onProvider },
+	}
+	agents := &agentProfiles{profiles: subagent.BuiltinProfiles(), definitions: map[string]config.AgentDefinition{}}
+	onProvider, current = "other", "other-default"
+	if got := agents.modelFor(config.Config{}, subagent.Role("explore"), 1, "", env.childModel()); got != "opening-model" {
+		t.Fatalf("a child after a provider switch runs on %q, want the opening model", got)
+	}
+	ids := spawnModels{env: env, agents: agents}.ids()
+	if slices.Contains(ids, "other-default") || !slices.Contains(ids, "opening-model") {
+		t.Fatalf("the list after a provider switch is %v, want the opening provider's models only", ids)
+	}
+}
+
+// A /model pick on the opening provider reaches a child that names no model.
+func TestAChildFollowsTheSessionsModelSwitch(t *testing.T) {
+	current := "opening-model"
+	env := &sessionEnv{
+		prov:        assemblyProvider{},
+		provName:    "opening",
+		modelName:   "opening-model",
+		model:       func() string { return current },
+		providerNow: func() string { return "opening" },
+	}
+	agents := &agentProfiles{profiles: subagent.BuiltinProfiles(), definitions: map[string]config.AgentDefinition{}}
+	current = "picked-model"
+	if got := agents.modelFor(config.Config{}, subagent.Role("explore"), 1, "", env.childModel()); got != "picked-model" {
+		t.Fatalf("a child that names no model runs on %q, want the /model pick", got)
 	}
 }

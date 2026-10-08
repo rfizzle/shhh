@@ -107,13 +107,14 @@ func (m spawnModels) endpoint() *endpointModels {
 
 // ids is spawnableModels over the session as it stands now. The catalog is
 // the one the picker opened on, the provider's the session started with,
-// because that is the provider a child is sent to.
+// because that is the provider a child is sent to. The session's model is
+// listed only while the session is still on that provider (childModel).
 func (m spawnModels) ids() []string {
 	var catalog []string
 	if m.env.prov != nil {
 		catalog = provider.KnownModels(m.env.prov.Name())
 	}
-	return spawnableModels(m.env.cfg, m.agents, catalog, m.env.currentModel(), m.strict())
+	return spawnableModels(m.env.cfg, m.agents, catalog, m.env.childModel(), m.strict())
 }
 
 // offer is the list as spawn_agent's model argument describes it, each id
@@ -175,7 +176,9 @@ func (m spawnModels) offerOn(profiles subagent.Profiles, defs []provider.Tool) [
 }
 
 // followSpawnModels rebuilds spawn_agent after a /model switch and a provider
-// switch, so the next request offers the list the session now has.
+// switch, so the next request offers the list the session now has. A provider
+// switch leaves the list on the opening provider's models, and the rebuild
+// keeps it from naming the model the new provider moved the session to.
 func followSpawnModels(env *sessionEnv, spawn spawnModels, profiles func() subagent.Profiles) {
 	switchModel, switchProvider := env.switchModel, env.switchProvider
 	if switchModel != nil {

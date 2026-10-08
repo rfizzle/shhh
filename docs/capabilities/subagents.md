@@ -629,7 +629,9 @@ Five layers answer the question, and the first that has an answer wins:
 2. the role's own — the profile file's `model`, or `[agents.profiles.<role>]`,
 3. the depth's — `[agents.depth.<n>] model`,
 4. `[agents] model`,
-5. the session's model.
+5. the session's model — the current `/model` choice while the session is on
+   the provider it opened on, and the model it opened on after a provider
+   switch, because a child is bound to the opening provider.
 
 The role is above the depth on purpose. A profile with a `model` is a role
 somebody chose a model for, and it takes that model wherever it runs; a depth

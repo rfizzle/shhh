@@ -304,7 +304,7 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 		// auto-mode session does not turn into one prompt per child command.
 		Classifier: classifier,
 		ModelFor: func(role subagent.Role, depth int, requested string) string {
-			return agents.modelFor(cfg, role, depth, requested, env.modelName)
+			return agents.modelFor(cfg, role, depth, requested, env.childModel())
 		},
 		CheckModel:    spawnable.check,
 		Profiles:      agents.snapshot(),
