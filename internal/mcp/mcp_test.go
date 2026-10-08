@@ -608,9 +608,12 @@ func TestDial_ACancelledDialWritesNothing(t *testing.T) {
 		t.Fatal("a cancelled dial must not report a connected server")
 	}
 
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		body, _ := os.ReadFile(path)
-		t.Errorf("a cancelled dial wrote a log line: %v, %s", err, body)
+	// The log is process-wide, so a dial another test left running can write
+	// its own line into this file while this one is open. What this test owns
+	// is the line that would name its server.
+	body, _ := os.ReadFile(path)
+	if strings.Contains(string(body), "server=slow") {
+		t.Errorf("a cancelled dial wrote a log line: %s", body)
 	}
 }
 

@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -32,6 +34,28 @@ func withSupervisor(t *testing.T) *process.Supervisor {
 	return sup
 }
 
+// onDemandCeiling is a context whose deadline is reported as 300 ms out and
+// whose expiry is the caller's to trigger: it ends as a deadline does, at the
+// moment a fact is true instead of after a guess at how long the fact takes.
+type onDemandCeiling struct {
+	context.Context
+	at time.Time
+}
+
+func (c onDemandCeiling) Deadline() (time.Time, bool) { return c.at, true }
+
+func (c onDemandCeiling) Err() error {
+	if c.Context.Err() != nil {
+		return context.DeadlineExceeded
+	}
+	return nil
+}
+
+func ceilingOnDemand(after time.Duration) (context.Context, context.CancelFunc) {
+	inner, cancel := context.WithCancel(context.Background())
+	return onDemandCeiling{Context: inner, at: time.Now().Add(after)}, cancel
+}
+
 func needShell(t *testing.T) {
 	t.Helper()
 	if _, err := exec.LookPath("sh"); err != nil {
@@ -46,9 +70,25 @@ func TestACommandStillPrintingAtItsCeilingIsMovedNotKilled(t *testing.T) {
 	needShell(t)
 	sup := withSupervisor(t)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
-	defer cancel()
-	out, code := RunCapture(ctx, "echo listening; sleep 1; echo later; sleep 30")
+	// The ceiling arrives when the command has printed, not after a count of
+	// milliseconds a loaded host may spend starting the shell.
+	printed := filepath.Join(t.TempDir(), "printed")
+	ctx, arrive := ceilingOnDemand(300 * time.Millisecond)
+	defer arrive()
+	go func() {
+		for {
+			if _, err := os.Stat(printed); err == nil {
+				arrive()
+				return
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(5 * time.Millisecond):
+			}
+		}
+	}()
+	out, code := RunCapture(ctx, "echo listening; touch '"+printed+"'; sleep 1; echo later; sleep 30")
 
 	if !strings.Contains(out, "listening") {
 		t.Errorf("what it printed before the ceiling has to come back: %q", out)
