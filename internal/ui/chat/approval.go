@@ -603,9 +603,10 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	decision, reason := m.policyDecision(req)
 	// A write that adds a credential shape is asked in every mode and under
 	// every grant, as a classifier that failed is: the plan and read-only
-	// refusals stand, but nothing that would have run unasked does
+	// refusals stand, but nothing that would have run unasked does. An Ask
+	// stays an ask too, so the classifier is never consulted about one
 	// (docs/capabilities/approvals-and-safety.md#a-write-that-adds-a-secret-is-always-asked).
-	if req.secret != "" && decision == agent.Allow {
+	if req.secret != "" && decision != agent.Deny {
 		m.recordDecision(observe.DecisionAsk, observe.ReasonSafety)
 		m.armConfirm(req)
 		return m, nil

@@ -437,6 +437,8 @@ key the file already held is not the edit's to answer for
 sub-agent's write is asked the same way: its routed card carries the same row,
 and the child's own mode does not answer it
 ([`subagents.md`](subagents.md#a-child-answers-to-the-session)).
+The classifier is not consulted about one: where the policy asks, the answer
+stays an ask, and a classifier that would have allowed it is never run.
 
 Why it asks and does not refuse: the person may mean it — a fixture, a
 template with a placeholder that happens to match. But a key written to disk

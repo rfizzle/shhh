@@ -16,8 +16,10 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/runner"
+	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -1462,5 +1464,57 @@ func TestApproval_AWriteWithASecretAsks(t *testing.T) {
 	}
 	if write(agent.ModeAcceptEdits, false, "KEY=none\n").state == stateConfirmRun {
 		t.Fatal("a clean write should still run unasked in accept-edits mode")
+	}
+}
+
+// In auto mode a write that adds a credential shape is never put to the
+// classifier, whatever it would have said: the policy's ask is a card
+// recorded as a safety ask, as the child's gate answers it
+// (docs/capabilities/approvals-and-safety.md#a-write-that-adds-a-secret-is-always-asked).
+func TestApproval_AWriteWithASecretSkipsTheClassifier(t *testing.T) {
+	const key = "sk-ant-api03-" + "AbCdEfGhIjKlMnOpQrStUvWxYz0123456789AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-AbCdEfGh-AA"
+	// Ordinary directories, not the test process's TMPDIR, which production
+	// classifies as sensitive and the classifier is never asked about.
+	base, err := os.MkdirTemp(".", ".secret-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(base) })
+	root, outside := filepath.Join(base, "root"), filepath.Join(base, "outside")
+	for _, d := range []string{root, outside} {
+		if err := os.MkdirAll(d, 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	sc, problems := scope.New(root)
+	if sc == nil {
+		t.Fatalf("scope.New(%q): %v", root, problems)
+	}
+	write := func(content string) (Model, *verdictProvider, *[][2]string) {
+		var ran []string
+		judge := &verdictProvider{decision: "allow", reason: "a fixture"}
+		decisions := &[][2]string{}
+		m := recordingDecisions(classifierModel(t, &ran, judge), decisions).WithScope(sc)
+		path := filepath.Join(outside, "dev.env")
+		updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+			{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":%q}`, path, content)},
+		}})
+		return updated.(Model), judge, decisions
+	}
+	// Control: the same out-of-scope write without a secret does reach the
+	// classifier, so what follows proves a skip and not an unreachable path.
+	if m, _, _ := write("KEY=none\n"); m.state != stateClassifying {
+		t.Fatalf("a clean out-of-scope write should be classified in auto mode, got state %d", m.state)
+	}
+	m, judge, decisions := write("# dev\n# a\nKEY=" + key + "\n")
+	if m.state != stateConfirmRun {
+		t.Fatalf("a write with a secret must wait for the reader in auto mode, got state %d", m.state)
+	}
+	if judge.calls != 0 {
+		t.Fatalf("the classifier must not be asked about a write with a secret, asked %d times", judge.calls)
+	}
+	want := [2]string{observe.DecisionAsk, observe.ReasonSafety}
+	if len(*decisions) != 1 || (*decisions)[0] != want {
+		t.Fatalf("the ask should be recorded as a safety ask, got %v", *decisions)
 	}
 }
