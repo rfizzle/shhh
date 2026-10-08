@@ -227,7 +227,7 @@ func (m Model) suggestRequest() agent.SuggestRequest {
 			req.Verdict += ": " + text
 		}
 	}
-	msgs := stripResumeContext(m.agent.Messages())
+	msgs := agent.StripResumeContext(m.agent.Messages())
 	for i := len(msgs) - 1; i >= 0; i-- {
 		if msgs[i].Role == provider.RoleUser && !msgs[i].Machine && strings.TrimSpace(msgs[i].Content) != "" {
 			req.Instruction = msgs[i].Content

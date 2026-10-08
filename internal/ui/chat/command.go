@@ -1247,7 +1247,7 @@ func slashSave(m *Model, parts []string) string {
 	if len(parts) > 1 {
 		name = strings.Join(parts[1:], " ")
 	}
-	if err := m.db.SaveChat(name, stripResumeContext(m.agent.Messages())); err != nil {
+	if err := m.db.SaveChat(name, agent.StripResumeContext(m.agent.Messages())); err != nil {
 		return failed("save", err.Error())
 	}
 	// The generated title goes with the conversation into its named

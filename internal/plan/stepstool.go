@@ -141,7 +141,7 @@ func CarriedSteps(l Checklist) string {
 
 // CarriedStepsPrefix opens the carried list, so a surface that has to take a
 // carried copy back out of a conversation can recognise it.
-const CarriedStepsPrefix = "Your working list, as your last steps call left it:"
+const CarriedStepsPrefix = agent.CarriedStepsPrefix
 
 // WrapStepsExecutor answers the steps tool: it checks the call and replies
 // with the list the call names, and passes every other tool on. It keeps no

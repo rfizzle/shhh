@@ -132,7 +132,7 @@ func TestWorkSteps_SavedResumedAndDroppedAtTheBoundary(t *testing.T) {
 	if !carried(back.agent.Messages()) {
 		t.Fatal("the resumed conversation was not told its working list")
 	}
-	if carried(stripResumeContext(back.agent.Messages())) {
+	if carried(agent.StripResumeContext(back.agent.Messages())) {
 		t.Fatal("the carried list would be saved with the conversation")
 	}
 

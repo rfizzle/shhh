@@ -1597,9 +1597,9 @@ func (m Model) saveCmd(revise func() string) tea.Cmd {
 	// The reading this opening put in front of the conversation is left out
 	// of what the slot keeps: it is rebuilt from the checkout every time the
 	// conversation is opened (reopen.go).
-	msgs := stripResumeContext(m.agent.RequestMessages())
+	msgs := agent.StripResumeContext(m.agent.RequestMessages())
 	// And the turns a compaction folded stay, beside it, in the record.
-	folded := foldedWithoutReading(append([]provider.Message(nil), m.agent.Folded()...))
+	folded := agent.FoldedWithoutReading(append([]provider.Message(nil), m.agent.Folded()...))
 	return func() tea.Msg {
 		// A slot another session has taken over is not written to; the
 		// store puts the conversation in one of this session's own and

@@ -33,6 +33,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/plan"
@@ -739,7 +740,7 @@ func (m *Model) rewindConversation(n int, filesNote string) string {
 	branchNote := "chat persistence is unavailable, so the abandoned tail was discarded"
 	if m.db != nil {
 		branch := branchName(m.sessionName, n)
-		if err := m.db.SaveChatBranch(m.sessionName, branch, stripResumeContext(full)); err != nil {
+		if err := m.db.SaveChatBranch(m.sessionName, branch, agent.StripResumeContext(full)); err != nil {
 			branchNote = "could not keep the abandoned tail as a branch: " + err.Error()
 		} else {
 			branchNote = fmt.Sprintf("the abandoned tail (%s) is kept as branch %q — /branches to switch back", plural(dropped, "message"), branch)
@@ -893,7 +894,7 @@ func (m *Model) switchToBranch(target string) string {
 		return fmt.Sprintf("Already on %q.", target)
 	}
 	if len(m.agent.Messages()) > 1 {
-		if err := m.db.SaveChat(m.sessionName, stripResumeContext(m.agent.Messages())); err != nil {
+		if err := m.db.SaveChat(m.sessionName, agent.StripResumeContext(m.agent.Messages())); err != nil {
 			return failed("branches", "could not save the current branch before switching: "+err.Error())
 		}
 	}

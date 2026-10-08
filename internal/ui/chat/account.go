@@ -77,7 +77,7 @@ func (m *Model) noteAccountTurn() {
 // accountRequest is the evidence a reading is taken from: the standing
 // account, and the conversation as the slot keeps it.
 func (m Model) accountRequest() agent.AccountRequest {
-	return agent.AccountRequestFrom(m.compactSummary, stripResumeContext(m.agent.Messages()))
+	return agent.AccountRequestFrom(m.compactSummary, agent.StripResumeContext(m.agent.Messages()))
 }
 
 // accountCloseCmd asks for a reading once enough turns have closed since the

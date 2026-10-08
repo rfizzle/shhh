@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -227,7 +228,7 @@ func TestStripResumeContext_ReplacesTheEarlierReading(t *testing.T) {
 		{Role: provider.RoleUser, Content: resumeSummaryPrefix + "\n\nolder still"},
 		{Role: provider.RoleUser, Content: "the real first turn"},
 	}
-	kept := stripResumeContext(msgs)
+	kept := agent.StripResumeContext(msgs)
 	if len(kept) != 2 || kept[0].Role != provider.RoleSystem || kept[1].Content != "the real first turn" {
 		t.Fatalf("the reading should come off the head of the conversation, got %+v", kept)
 	}
@@ -236,7 +237,7 @@ func TestStripResumeContext_ReplacesTheEarlierReading(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "hello"},
 	}
-	if got := stripResumeContext(plain); len(got) != 2 {
+	if got := agent.StripResumeContext(plain); len(got) != 2 {
 		t.Fatalf("nothing to strip should change nothing, got %d", len(got))
 	}
 	// A turn that happens to open the way the summary half does is somebody's
@@ -246,7 +247,7 @@ func TestStripResumeContext_ReplacesTheEarlierReading(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: resumeSummaryPrefix + "\n\nI wrote this myself"},
 	}
-	if got := stripResumeContext(typed); len(got) != 2 {
+	if got := agent.StripResumeContext(typed); len(got) != 2 {
 		t.Fatalf("a message is not a reading just because it opens like one, got %d", len(got))
 	}
 	// Nor is a first turn that happens to start with the same characters: the
@@ -255,7 +256,7 @@ func TestStripResumeContext_ReplacesTheEarlierReading(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: resumeMessagePrefix + "why does the row say this?"},
 	}
-	if got := stripResumeContext(opener); len(got) != 2 {
+	if got := agent.StripResumeContext(opener); len(got) != 2 {
 		t.Fatalf("a turn that opens with those characters is still a turn, got %d", len(got))
 	}
 }
@@ -368,7 +369,7 @@ func TestResumeConversation_SecondOpeningReplacesTheFirstsReading(t *testing.T) 
 		WithResumedMessages("yesterday", saved)
 
 	// What the session would save is the conversation without the reading.
-	stored := stripResumeContext(m.Messages())
+	stored := agent.StripResumeContext(m.Messages())
 	if len(stored) != len(saved) {
 		t.Fatalf("the slot keeps the conversation and not the reading, got %d messages", len(stored))
 	}
