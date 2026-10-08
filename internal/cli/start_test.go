@@ -316,3 +316,30 @@ func TestStartBranch_CountsWhatIsAheadOfTheDefaultAndWhetherItWentUp(t *testing.
 		t.Fatalf("branch = %+v, want 2 ahead and pushed", got)
 	}
 }
+
+func TestStartBranch_CountsAgainstTheRemoteDefaultWhenThereIsNoLocalOne(t *testing.T) {
+	dir := t.TempDir()
+	run := func(args ...string) {
+		t.Helper()
+		full := append([]string{"-C", dir, "-c", "user.email=t@t", "-c", "user.name=t"}, args...)
+		if out, err := exec.Command("git", full...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v: %s", args, err, out)
+		}
+	}
+	run("init", "-q", "-b", "main")
+	run("commit", "-q", "--allow-empty", "-m", "seed")
+	// The remote's default exists only as origin/main; there is no local main.
+	run("update-ref", "refs/remotes/origin/main", "HEAD")
+	run("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
+	run("checkout", "-q", "-b", "work")
+	run("branch", "-q", "-D", "main")
+	run("commit", "-q", "--allow-empty", "-m", "one")
+	if got := startBranch(dir, "work"); got.Ahead != 1 || got.Pushed {
+		t.Fatalf("branch = %+v, want 1 ahead of origin/main and not pushed", got)
+	}
+	// Neither a local nor a remote copy: nothing to verify, no offer.
+	run("update-ref", "-d", "refs/remotes/origin/main")
+	if got := startBranch(dir, "work"); got != (chat.StartBranch{}) {
+		t.Fatalf("branch = %+v, want no offer without any default", got)
+	}
+}

@@ -171,12 +171,17 @@ func startBranch(dir, branch string) chat.StartBranch {
 
 // defaultBranch is the branch the checkout's work goes up against: the
 // remote's own HEAD where there is one, else main or master, whichever
-// exists.
+// exists. It is a ref to count against: the local branch, or origin/<name>
+// where the remote's default has no local copy.
 func defaultBranch(dir string) string {
 	ctx := context.Background()
 	if out, err := hostgit.Output(ctx, dir, "symbolic-ref", "--short", "refs/remotes/origin/HEAD"); err == nil {
 		if name := strings.TrimPrefix(strings.TrimSpace(out), "origin/"); name != "" {
-			return name
+			for _, ref := range []string{"refs/heads/" + name, "refs/remotes/origin/" + name} {
+				if _, err := hostgit.Output(ctx, dir, "rev-parse", "--verify", "--quiet", ref); err == nil {
+					return strings.TrimPrefix(ref, "refs/heads/")
+				}
+			}
 		}
 	}
 	for _, name := range []string{"main", "master"} {
