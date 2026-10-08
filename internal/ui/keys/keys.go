@@ -1547,7 +1547,7 @@ type OneShotKeys struct {
 }
 
 var OneShot = OneShotKeys{
-	Run:          bind("↵", "run", "enter"),
+	Run:          bind("enter", "run", "enter"),
 	Confirm:      bind("y", "run it", "y"),
 	Step:         bind("t", "step by step", "t"),
 	DryRun:       bind("d", "dry run", "d"),

@@ -3706,6 +3706,10 @@ the keys. Where the command is flagged as dangerous, the *default key moves* —
 the safe key states the blast radius and a second key runs it — so the
 decision is taken once, on screen, rather than as an afterthought prompt.
 
+The bar spells the enter key `[enter]`, as every session surface and the
+alternatives card beside it do: one key, one spelling, so `[enter] run` and
+`[enter] send` do not read as two keys.
+
 **And the ones it did not pick.** A generator that can only say one thing has
 already chosen for you: asked to find what is listening on a port, the model
 weighs three utilities, picks one, and throws the reasoning away — and the one

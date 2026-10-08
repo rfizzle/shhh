@@ -7,6 +7,6 @@
 #
 # The key row is the surface's own and says how many other commands the
 # generation offered, so it is what the wait is on.
-snap 01-result "2 others" "[↵] run" "⛨ no sudo" "awk keeps the rows"
+snap 01-result "2 others" "[enter] run" "⛨ no sudo" "awk keeps the rows"
 keys Escape
 snap 02-quit

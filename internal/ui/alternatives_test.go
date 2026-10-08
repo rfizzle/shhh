@@ -60,7 +60,7 @@ func TestAlternatives_TheirAbsenceChangesNothing(t *testing.T) {
 		t.Errorf("a response with no alternatives offered a key for them:\n%s", plain)
 	}
 	// The key that is not there is not a gap in the row either.
-	if !strings.Contains(plain, "[↵] run") || !strings.Contains(plain, "[esc] quit") {
+	if !strings.Contains(plain, "[enter] run") || !strings.Contains(plain, "[esc] quit") {
 		t.Errorf("the row is not the row it was:\n%s", plain)
 	}
 	m := press(t, armed(t, "ls -la", nil), "a")
@@ -167,7 +167,7 @@ func TestAlternatives_TheChosenCommandIsArmedLikeTheFirstOne(t *testing.T) {
 	m = press(t, press(t, press(t, m, "a"), "down"), "enter")
 
 	view := m.View().Content
-	if !strings.Contains(view, "[↵] show what it would affect") || !strings.Contains(view, "[y] run it") {
+	if !strings.Contains(view, "[enter] show what it would affect") || !strings.Contains(view, "[y] run it") {
 		t.Errorf("the safe default did not move with the chosen command:\n%s", view)
 	}
 	if got := m.Reach().Reach(); !strings.Contains(view, "⛨ "+got) {

@@ -113,7 +113,7 @@ func TestGenerate_ActionBarAppearsInView(t *testing.T) {
 	m = drainStream(m, 2)
 
 	view := m.View().Content
-	if !strings.Contains(view, "[↵] run") {
+	if !strings.Contains(view, "[enter] run") {
 		t.Error("expected action bar visible after stream completes")
 	}
 	if !strings.Contains(view, "echo hello") {
@@ -582,7 +582,7 @@ func TestGenerate_ReviseActionBarReappearsAfterRestream(t *testing.T) {
 	m = drainStream(m, 2)
 
 	view := m.View().Content
-	if !strings.Contains(view, "[↵] run") {
+	if !strings.Contains(view, "[enter] run") {
 		t.Error("expected action bar visible after re-stream")
 	}
 	if !strings.Contains(view, "ls -la") {
@@ -886,7 +886,7 @@ func TestGenerate_ExplainPersistsAfterReturn(t *testing.T) {
 	if !strings.Contains(view, "lists files in detail") {
 		t.Error("expected explanation to persist in action bar view")
 	}
-	if !strings.Contains(view, "[↵] run") {
+	if !strings.Contains(view, "[enter] run") {
 		t.Error("expected action bar visible after explain")
 	}
 }
@@ -998,7 +998,7 @@ func TestGenerate_ACorrectionLeavesNoKeysOverAnEmptyCommand(t *testing.T) {
 	if m.Phase() != phaseStreaming {
 		t.Fatalf("the surface kept the action phase while the correction opened: %v", m.Phase())
 	}
-	if strings.Contains(m.View().Content, "[↵] run") {
+	if strings.Contains(m.View().Content, "[enter] run") {
 		t.Errorf("the keys were offered over a command that is not there yet:\n%s", m.View().Content)
 	}
 }
@@ -1117,7 +1117,7 @@ func TestGenerate_LongExplainStreamsThenShowsActionBar(t *testing.T) {
 	if !strings.Contains(view, "lists files in detail") {
 		t.Error("expected explanation text to persist in action view")
 	}
-	if !strings.Contains(view, "[↵] run") {
+	if !strings.Contains(view, "[enter] run") {
 		t.Error("expected action bar visible after auto-explain")
 	}
 }

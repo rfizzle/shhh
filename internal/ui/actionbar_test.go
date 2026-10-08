@@ -155,7 +155,7 @@ const barWidth = 200
 func TestActionBar_ViewIsOneRowOfBracketedKeys(t *testing.T) {
 	view := NewActionBarModel().View(barWidth)
 	for _, want := range []string{
-		"[↵] run", "[e] edit", "[r] revise", "[x] explain",
+		"[enter] run", "[e] edit", "[r] revise", "[x] explain",
 		"[c] copy", "[s] save", "[esc] quit",
 	} {
 		if !strings.Contains(view, want) {
@@ -174,7 +174,7 @@ func TestActionBar_NarrowRowBreaksBetweenKeysAndKeepsThemAll(t *testing.T) {
 	const width = 60
 	view := NewActionBarModel().SetDanger(true).SetDryRun(true).View(width)
 	for _, want := range []string{
-		"[↵] show what it would affect", "[y] run it", "[d] dry run",
+		"[enter] show what it would affect", "[y] run it", "[d] dry run",
 		"[e] edit", "[r] revise", "[x] explain", "[c] copy", "[s] save",
 		"[esc] quit",
 	} {
@@ -202,14 +202,14 @@ func TestActionBar_NarrowRowKeepsTheRevisionCountBesideTheFirstKey(t *testing.T)
 	if !strings.HasPrefix(first, "revision 2") {
 		t.Errorf("the revision count is not leading the row:\n%s", view)
 	}
-	if !strings.Contains(first, "[↵] run") {
+	if !strings.Contains(first, "[enter] run") {
 		t.Errorf("the count took a row of its own:\n%s", view)
 	}
 }
 
 func TestActionBar_DangerViewNamesBothHalves(t *testing.T) {
 	view := NewActionBarModel().SetDanger(true).SetDryRun(true).View(barWidth)
-	for _, want := range []string{"[↵] show what it would affect", "[y] run it", "[d] dry run"} {
+	for _, want := range []string{"[enter] show what it would affect", "[y] run it", "[d] dry run"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("destructive bar is missing %q:\n%s", want, view)
 		}

@@ -399,7 +399,7 @@ func TestResult_TheKeysAreOnScreenBeforeTheExplanationIsAskedFor(t *testing.T) {
 		t.Error("the surface does not know it is waiting on a stream")
 	}
 	view := m.View().Content
-	if !strings.Contains(view, "[↵] run") {
+	if !strings.Contains(view, "[enter] run") {
 		t.Errorf("the keys are not on screen while the explanation is being asked for:\n%s", view)
 	}
 	if !strings.Contains(view, "ls -la") {
@@ -516,7 +516,7 @@ func TestResult_TheCommandIsUsableWhileItIsChecked(t *testing.T) {
 	if !strings.Contains(view, "ls -la") {
 		t.Errorf("the command is not on screen while it is being checked:\n%s", view)
 	}
-	if !strings.Contains(view, "[↵] run") {
+	if !strings.Contains(view, "[enter] run") {
 		t.Errorf("the keys are not live while the command is being checked:\n%s", view)
 	}
 }
@@ -581,7 +581,7 @@ func TestResult_TheBundledExplanationNeedsNoSecondRequest(t *testing.T) {
 	if strings.Contains(view, "explanation:") {
 		t.Errorf("the one-liner rendered as the long form's block:\n%s", view)
 	}
-	if !strings.Contains(view, "[↵] run") {
+	if !strings.Contains(view, "[enter] run") {
 		t.Errorf("the keys are not on screen with it:\n%s", view)
 	}
 }
