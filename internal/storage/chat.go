@@ -323,6 +323,19 @@ func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.
 	); err != nil {
 		return fmt.Errorf("carry resume state to branch: %w", err)
 	}
+	// The folded turns go to the branch too, so it draws what its parent
+	// drew: compaction replaced them in the model's list, never in the record.
+	if _, err := tx.Exec(`DELETE FROM chat_messages WHERE session_id = ? AND seq < 0`, branchID); err != nil {
+		return fmt.Errorf("clear branch folded: %w", err)
+	}
+	if _, err := tx.Exec(
+		`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint, machine_kind)
+		 SELECT ?, m.seq, m.role, m.content, m.tool_calls, m.tool_call_id, m.attachments, m.machine, m.turn, m.round, m.checkpoint, m.machine_kind
+		 FROM chat_messages m JOIN chat_sessions p ON p.id = m.session_id
+		 WHERE p.name = ? AND m.seq < 0`, branchID, parentName,
+	); err != nil {
+		return fmt.Errorf("carry folded turns to branch: %w", err)
+	}
 	if err := tx.Commit(); err != nil {
 		return err
 	}
@@ -393,6 +406,12 @@ func (db *DB) saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (
 		if _, err := tx.Exec(`UPDATE chat_sessions SET updated_at = ? WHERE id = ?`, now, sessionID); err != nil {
 			return 0, fmt.Errorf("update session: %w", err)
 		}
+		// A slot this process never wrote is another conversation's: the
+		// folded turns beside it go with it, so a reopen never draws them
+		// over the conversation written in its place.
+		if err := clearStrangersFold(tx, sessionID, seen); err != nil {
+			return 0, err
+		}
 		if seen && stored < len(messages) && chatDigest(messages[:stored+1]) == mine.digest {
 			from = stored + 1
 		} else if _, err := tx.Exec(`DELETE FROM chat_messages WHERE session_id = ? AND seq >= 0`, sessionID); err != nil {
@@ -407,6 +426,18 @@ func (db *DB) saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (
 	}
 
 	return sessionID, nil
+}
+
+// clearStrangersFold drops the folded turns of a slot this process never
+// wrote; one it did write keeps them through a rewrite.
+func clearStrangersFold(tx *sql.Tx, sessionID int64, seen bool) error {
+	if seen {
+		return nil
+	}
+	if _, err := tx.Exec(`DELETE FROM chat_messages WHERE session_id = ? AND seq < 0`, sessionID); err != nil {
+		return fmt.Errorf("clear folded: %w", err)
+	}
+	return nil
 }
 
 // insertChatMessage writes one message at seq in a session's slot.
@@ -454,11 +485,12 @@ func insertChatMessage(tx *sql.Tx, sessionID int64, seq int, msg provider.Messag
 	return nil
 }
 
-// storedChatSeq is the highest seq the slot holds, or -1 when it holds no
-// messages at all.
+// storedChatSeq is the highest seq the slot's conversation holds, or -1 when
+// it holds none. Folded turns (seq below zero) sit beside the conversation,
+// not in it, so a slot with only those reads as empty.
 func storedChatSeq(tx *sql.Tx, sessionID int64) (int, error) {
 	var seq sql.NullInt64
-	if err := tx.QueryRow(`SELECT MAX(seq) FROM chat_messages WHERE session_id = ?`, sessionID).Scan(&seq); err != nil {
+	if err := tx.QueryRow(`SELECT MAX(seq) FROM chat_messages WHERE session_id = ? AND seq >= 0`, sessionID).Scan(&seq); err != nil {
 		return 0, fmt.Errorf("read slot seq: %w", err)
 	}
 	if !seq.Valid {
