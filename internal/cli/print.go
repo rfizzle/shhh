@@ -295,6 +295,11 @@ type headlessChat struct {
 	// none would take away the one a session left
 	// (docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps).
 	steps string
+	// folded is the turns a compaction took out of the conversation, which
+	// the slot keeps beside it: loaded when the slot is reopened, handed to
+	// the agent so a compaction in this run adds to them, and written back
+	// after each save (keepFolded), as the screen's autosave does.
+	folded []provider.Message
 }
 
 // openHeadlessChat resolves what this run carries on from and where it will
@@ -328,6 +333,7 @@ func openHeadlessChat(db *storage.DB, session chatSession, initial []provider.Me
 			notice := chat.ResumeContext(db, c.slot, "", false)
 			c.summary = notice.Summary
 			c.steps = notice.Steps
+			c.folded, _ = db.LoadChatFolded(c.slot)
 			msgs, c.at, c.head = spliceAfterSystem(msgs, notice.Messages)
 		}
 	}
@@ -472,10 +478,21 @@ func (c *headlessChat) save(msgs []provider.Message) {
 		return
 	}
 	c.slot = slot
+	// The turns a compaction folded stay, beside it, in the record.
+	if err := c.db.SaveChatFolded(slot, c.folded); err != nil {
+		fmt.Fprintf(os.Stderr, "» the turns this run folded could not be kept: %v\n", err)
+	}
 	// And what the conversation is opened again on. The commit is read here,
 	// at the save, so the slot says where the tree was when the conversation
 	// was last written down rather than where it was when the run started.
 	_ = c.db.SetChatResume(slot, storage.ChatResume{Summary: c.summary, Head: project.Head(""), Root: project.Root("."), Steps: c.steps})
+}
+
+// keepFolded notes the turns the agent has folded, for the next save to write.
+func (c *headlessChat) keepFolded(folded []provider.Message) {
+	if c != nil {
+		c.folded = append([]provider.Message(nil), folded...)
+	}
 }
 
 // reviseAccount takes one reading of the slot's standing account over the
@@ -617,6 +634,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	saved, messages, recorder := tail.saved, tail.messages, tail.recorder
 
 	a := agent.New(messages, env.stream)
+	if saved != nil {
+		a.SetFolded(saved.folded)
+	}
 	a.SetSteering(steering(cfg, env.prompts))
 	a.SetProgressIntervals(cfg.Behavior.ProgressIntervalCalls,
 		time.Duration(cfg.Behavior.ProgressIntervalSeconds)*time.Second)
@@ -972,6 +992,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// the save that carries it, so a run resumed with --resume says what it
 	// did (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
 	saved.reviseAccount(headlessAccountant(cfg, env, ledger), a.Messages())
+	saved.keepFolded(a.Folded())
 	saved.save(a.Messages())
 	recorder.link(saved.slot)
 	// Where this run can be picked up, in the three forms both JSON shapes
