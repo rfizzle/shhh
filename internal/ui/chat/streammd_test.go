@@ -319,3 +319,38 @@ func TestStreamMarkdown_AnOpenFenceHasNoHeadingYet(t *testing.T) {
 		t.Fatalf("the closed fence should be headed:\n%s", closed)
 	}
 }
+
+// A fence closes on its own marker and nothing else. A bare ``` line inside a
+// ~~~ fence is code, so the blank line after it is not a place to cut: the
+// parser still has the fence open. Counting fence lines called that even and
+// cached the prefix.
+func TestStreamMarkdown_AMismatchedFenceIsNotABoundary(t *testing.T) {
+	monoRestore(t)
+	components.SetMono(true)
+	tests := []struct {
+		name string
+		doc  string
+		cut  string // the prefix that must not be a boundary
+		safe bool
+	}{
+		{"backticks inside tildes", "~~~\ncode\n```\n\nmore code\n~~~\n\nafter\n", "~~~\ncode\n```\n\n", false},
+		{"tildes inside backticks", "```\ncode\n~~~\n\nmore code\n```\n\nafter\n", "```\ncode\n~~~\n\n", false},
+		{"a shorter run does not close", "````\ncode\n```\n\nmore\n````\n\nafter\n", "````\ncode\n```\n\n", false},
+		{"a run with an info string does not close", "```\ncode\n```go\n\nmore\n```\n\nafter\n", "```\ncode\n```go\n\n", false},
+		{"a matching closer does", "~~~\ncode\n~~~\n\nafter\n", "~~~\ncode\n~~~\n\n", true},
+		{"a longer closer does", "```\ncode\n`````\n\nafter\n", "```\ncode\n`````\n\n", true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := safeBoundaryAt(tc.doc, len(tc.cut)); got != tc.safe {
+				t.Errorf("safeBoundaryAt(%q) = %v, want %v", tc.cut, got, tc.safe)
+			}
+			var s streamingMarkdown
+			for i := 1; i <= len(tc.doc); i++ {
+				if got, want := s.Render(tc.doc[:i], 60), renderMarkdown(tc.doc[:i], 60); got != want {
+					t.Fatalf("glued render differs from the whole render at byte %d:\n%q\nwant\n%q", i, got, want)
+				}
+			}
+		})
+	}
+}

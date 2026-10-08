@@ -55,9 +55,9 @@ type streamingMarkdown struct {
 	stablePrefixRender string
 	// Cumulative state measured at the boundary, so a new candidate is
 	// validated against the delta rather than by re-scanning the prefix.
-	// baseFences is always even — an odd count is never a safe boundary — so
+	// baseFence is never open — an open fence is never a safe boundary — so
 	// the delta scan always starts outside a fence.
-	baseFences     int
+	baseFence      openFence
 	baseListMarker bool
 }
 
@@ -138,7 +138,7 @@ func (s *streamingMarkdown) adopt(content string, p, width int) {
 	} else {
 		s.stablePrefixRender += "\n" + renderContinuation(chunk, width)
 	}
-	s.baseFences += countFenceLines(chunk)
+	s.baseFence = scanFences(chunk, s.baseFence)
 	s.baseListMarker = s.baseListMarker || hasListMarker(chunk)
 	s.stablePrefix = content[:p]
 }
@@ -163,7 +163,7 @@ func (s *streamingMarkdown) boundaryAfter(content string) int {
 // the cumulative state plus a scan of the delta.
 func (s *streamingMarkdown) safeIncremental(content string, p int) bool {
 	delta := content[len(s.stablePrefix):p]
-	if (s.baseFences+countFenceLines(delta))%2 != 0 {
+	if scanFences(delta, s.baseFence).open() {
 		return false
 	}
 	if hasHTMLOrLinkRef(delta) {
@@ -190,7 +190,7 @@ func findSafeBoundary(content string) int {
 func safeBoundaryAt(content string, p int) bool {
 	prefix := content[:p]
 	// An unclosed fence would syntax-highlight the tail as prose.
-	if countFenceLines(prefix)%2 != 0 {
+	if scanFences(prefix, openFence{}).open() {
 		return false
 	}
 	// An HTML block or a link reference definition reaches across the cut: the
@@ -270,19 +270,51 @@ func mdLines(s string) func(func(string) bool) {
 	}
 }
 
-// countFenceLines counts the lines that toggle a fenced code block: three or
-// more backticks or tildes as the first non-space content of a line, after at
-// most three spaces of indent (CommonMark). An even count means every fence
-// that opened has closed. Openers and closers are not told apart — toggling
-// is all the boundary check needs.
-func countFenceLines(s string) int {
-	n := 0
-	for line := range mdLines(s) {
-		if isFenceLine(line) {
-			n++
-		}
+// openFence is the fenced code block a scan is inside: the marker character
+// and the length of the run that opened it. The zero value is outside every
+// fence. A fence closes only on its own marker, at least as long, with nothing
+// after it (CommonMark), so a ``` line inside a ~~~ fence is content and not a
+// closer.
+type openFence struct {
+	ch byte
+	n  int
+}
+
+func (f openFence) open() bool { return f.n > 0 }
+
+// next is the state after line.
+func (f openFence) next(line string) openFence {
+	i := indentEnd(line)
+	if !isFenceLine(line) {
+		return f
 	}
-	return n
+	c := line[i]
+	run := 0
+	for j := i; j < len(line) && line[j] == c; j++ {
+		run++
+	}
+	rest := line[i+run:]
+	if f.open() {
+		if c == f.ch && run >= f.n && isSpacesOnly(rest) {
+			return openFence{}
+		}
+		return f
+	}
+	// A backtick fence's info string may not hold a backtick: that line is
+	// inline code, not a fence.
+	if c == '`' && strings.Contains(rest, "`") {
+		return f
+	}
+	return openFence{ch: c, n: run}
+}
+
+// scanFences returns the fence state after s, starting from f. An open result
+// means a fence opened in s has not closed, so s is not a safe place to cut.
+func scanFences(s string, f openFence) openFence {
+	for line := range mdLines(s) {
+		f = f.next(line)
+	}
+	return f
 }
 
 func isFenceLine(line string) bool {
@@ -313,12 +345,13 @@ func indentEnd(line string) int {
 
 // hasListMarker reports whether any line outside a fence is a list item.
 func hasListMarker(s string) bool {
-	inFence := false
+	var fence openFence
 	for line := range mdLines(s) {
 		if isFenceLine(line) {
-			inFence = !inFence
+			fence = fence.next(line)
 			continue
 		}
+		inFence := fence.open()
 		if !inFence && isListMarker(strings.TrimLeft(line, " \t")) {
 			return true
 		}
@@ -331,12 +364,13 @@ func hasListMarker(s string) bool {
 // carried from one part of a document to another, and so cannot survive being
 // rendered as two documents.
 func hasHTMLOrLinkRef(s string) bool {
-	inFence := false
+	var fence openFence
 	for line := range mdLines(s) {
 		if isFenceLine(line) {
-			inFence = !inFence
+			fence = fence.next(line)
 			continue
 		}
+		inFence := fence.open()
 		if !inFence && (isHTMLBlockOpener(line) || isLinkRefDefinition(line)) {
 			return true
 		}
