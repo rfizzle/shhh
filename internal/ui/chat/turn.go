@@ -574,6 +574,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// The one tick, advancing the one frame (spin.go). The guard
 		// that used to stand here decided whether to answer at all, and a
 		// tick it declined took the chain with it.
+		m.noteTail()
 		return answered(m.spinTick(msg))
 	}
 	return m, nil, false

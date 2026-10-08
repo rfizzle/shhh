@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -88,5 +89,63 @@ func TestTurnTime_ASplitSumsToTheTurn(t *testing.T) {
 	// wait and the run after it, and nothing arrived during it.
 	if q := c.split.Quiet; q.Took != 6*time.Second || q.On != agent.WaitPerson || q.Delivered != 0 {
 		t.Fatalf("quiet stretch = %+v", q)
+	}
+}
+
+// A command that is still printing is not a stretch in which the screen had
+// nothing: each new line of its live tail is counted the way a stream event
+// that drew nothing is, so the long build reads as quiet with a count and
+// the one that printed nothing reads as waiting.
+func TestQuietStretch_APrintingCommandIsNotWaiting(t *testing.T) {
+	run := func(lines ...string) agent.Quiet {
+		now := time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC)
+		was := clock
+		clock = func() time.Time { return now }
+		t.Cleanup(func() { clock = was })
+
+		var got []agent.TurnSplit
+		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+			WithObserver(observe.Observer{
+				TurnTimed: func(_, _ int64, _ time.Duration, _ string, s agent.TurnSplit) { got = append(got, s) },
+				Turn:      func(int64, int64, time.Duration, string) { t.Fatal("a timed turn was reported untimed") },
+			})
+		next, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
+		m = next.(Model)
+		next, _ = m.sendUserMessage("build it")
+		m = next.(Model)
+		update := func(msg tea.Msg) {
+			t.Helper()
+			next, _ := m.Update(msg)
+			m = next.(Model)
+		}
+		now = now.Add(time.Second)
+		update(tokenMsg{text: "Building."})
+		call := provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"main.go"}`}
+		update(toolCallsMsg{calls: []provider.ToolCall{call}})
+		m.setTurnState(stateRunningCmd)
+		tail := &commandTail{}
+		m.runTail = tail
+		for _, l := range lines {
+			now = now.Add(2 * time.Second)
+			tail.Set(l)
+			update(spinner.TickMsg{})
+			// The same line on the next frame is the same line.
+			update(spinner.TickMsg{})
+		}
+		now = now.Add(2 * time.Second)
+		m.state = stateStreaming
+		update(toolResultsMsg{runID: m.agent.RunID(), results: []agent.ToolResult{{Call: call, Result: "ok"}}})
+		update(doneMsg{})
+		if len(got) != 1 {
+			t.Fatalf("turn closes = %d, want one", len(got))
+		}
+		return got[0].Quiet
+	}
+
+	if q := run("compiling a", "compiling b", "linking"); q.On != agent.WaitTool || q.Delivered != 3 {
+		t.Fatalf("a printing command's stretch = %+v, want the tool's with 3 delivered", q)
+	}
+	if q := run(); q.On != agent.WaitTool || q.Delivered != 0 {
+		t.Fatalf("a silent command's stretch = %+v, want the tool's with none delivered", q)
 	}
 }

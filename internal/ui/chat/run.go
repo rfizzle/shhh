@@ -215,6 +215,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	m.runStart = clock()
 	tail := &commandTail{}
 	m.runTail = tail
+	m.timing.tailSeen = ""
 	m.syncViewport()
 	// An assistant command gets a ceiling; a command the reader typed does
 	// not, because they are here and the cancel key is their ceiling.

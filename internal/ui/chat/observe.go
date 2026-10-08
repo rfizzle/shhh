@@ -33,6 +33,9 @@ type timing struct {
 	// the startup row that measures how long the person waited for one;
 	// nil tells nobody.
 	firstPaint func()
+	// tailSeen is the last line of a running command's output the clock was
+	// told about, so a line is counted once however many frames show it.
+	tailSeen string
 }
 
 // WithFirstPaint is told when the first frame with the prompt in it has
@@ -171,6 +174,23 @@ func (m *Model) noteEvent(drew bool) {
 	if m.turnOpen {
 		m.timing.turn.Event(clock(), drew)
 	}
+}
+
+// noteTail marks a running command's output reaching the screen. The runner
+// sets the tail line from its own goroutine and no message says so, so the
+// line is read where the screen's tick already looks. A new line is an event
+// the way a stream delta is: it counts in the stretch it arrived in, and the
+// stretch stays the tool's, where a command that printed nothing is waiting.
+func (m *Model) noteTail() {
+	if !m.turnOpen || m.state != stateRunningCmd || m.runTail == nil {
+		return
+	}
+	line := m.runTail.Line()
+	if line == "" || line == m.timing.tailSeen {
+		return
+	}
+	m.timing.tailSeen = line
+	m.timing.turn.Event(clock(), false)
 }
 
 // noteDrew marks a row the turn's own work landed on the screen.
