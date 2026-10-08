@@ -376,6 +376,11 @@ func (s *Supervisor) clock() func() time.Time {
 func (c *child) status() Status {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	return c.statusLocked()
+}
+
+// statusLocked is status for a caller already holding c.mu.
+func (c *child) statusLocked() Status {
 	end := c.ended
 	if end.IsZero() {
 		end = c.at()

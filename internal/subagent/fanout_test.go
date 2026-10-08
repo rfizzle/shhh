@@ -185,6 +185,61 @@ func TestStatusSummary(t *testing.T) {
 	}
 }
 
+// A child's last word on the stream is its end. An update read while the
+// child was still queued is on the stream before the child can end, so it
+// never arrives after the event saying it did, where a reader would take it
+// for the child starting again. The end is started while the update holds
+// the child's lock mid-read, so it waits on that lock, and it looks at the
+// stream as it sets the child's end.
+func TestAChildsStatusNeverFollowsItsEnd(t *testing.T) {
+	sup := New(t.Context(), Options{Root: t.TempDir()})
+	t.Cleanup(sup.Close)
+
+	// The child's clock is read under its lock: once by the update's read,
+	// then by the end as it stamps when the child ended.
+	start := time.Now()
+	var reads, onStream int
+	ended := make(chan struct{})
+	end := func(c *child) {
+		// The end as run makes it: the state is set, and the event saying
+		// so is sent after.
+		c.set(StateDone, "done")
+		sup.emit(Event{Kind: EventDone, Status: c.status()})
+		close(ended)
+	}
+	c := &child{name: "researcher-1", state: StateQueued, detail: "queued", started: start}
+	c.now = func() time.Time {
+		reads++
+		switch reads {
+		case 1:
+			go end(c)
+		case 2:
+			onStream = len(sup.Events())
+		}
+		return start
+	}
+
+	sup.emitUpdate(c)
+	<-ended
+
+	if onStream != 1 {
+		t.Errorf("the child ended with %d events on the stream, want the update read before it already there", onStream)
+	}
+	var got []Event
+	for len(sup.Events()) > 0 {
+		got = append(got, <-sup.Events())
+	}
+	if len(got) != 2 {
+		t.Fatalf("the stream carried %d events, want the update and the end: %+v", len(got), got)
+	}
+	if got[0].Kind != EventUpdate || got[0].Status.State != StateQueued {
+		t.Errorf("the first event is %v reading %v, want the update read while queued", got[0].Kind, got[0].Status.State)
+	}
+	if got[1].Kind != EventDone || got[1].Status.State != StateDone {
+		t.Errorf("the last event is %v reading %v, want the child's end", got[1].Kind, got[1].Status.State)
+	}
+}
+
 // A queued lane is a task waiting, not a checkout waiting. Four lanes over
 // three slots leaves one writer in the queue, and a writer given its copy of
 // the repository at spawn would hold a whole checkout on disk for as long as

@@ -594,14 +594,23 @@ func (s *Supervisor) emit(ev Event) {
 
 // emitUpdate delivers a best-effort progress update; drops are fine because
 // rendering reads live snapshots.
+//
+// The snapshot is taken and sent under the child's lock, the one every state
+// change takes, so an update is on the stream before any change after its
+// snapshot is made. A child's end is such a change and its event is sent after
+// it, so an update read before the child ended cannot arrive after the event
+// saying it did, where a reader would take it for the child starting again.
+// The send never blocks, so holding the lock across it costs nothing.
 func (s *Supervisor) emitUpdate(c *child) {
 	s.sendMu.RLock()
 	defer s.sendMu.RUnlock()
 	if s.closed {
 		return
 	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	select {
-	case s.events <- Event{Kind: EventUpdate, Status: c.status()}:
+	case s.events <- Event{Kind: EventUpdate, Status: c.statusLocked()}:
 	default:
 	}
 }
