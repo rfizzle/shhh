@@ -1713,3 +1713,41 @@ func TestAReviewerProfileKeepsTheWebItNames(t *testing.T) {
 		t.Errorf("a reviewer profile naming the web lost it: %v", toolsetNames(defs))
 	}
 }
+
+// A profile saved from the agent manager while a child spawns writes the
+// maps the spawn reads. Both sides start on one closed channel, so the
+// writes and the reads overlap by construction rather than by a wait, and
+// under -race an unguarded map is a failure.
+func TestAProfileSaveDuringASpawnIsNotARace(t *testing.T) {
+	agents := &agentProfiles{profiles: subagent.BuiltinProfiles(), definitions: map[string]config.AgentDefinition{}}
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		<-start
+		for i := range 200 {
+			name := "saved-" + strconv.Itoa(i)
+			agents.mu.Lock()
+			agents.definitions[name] = config.AgentDefinition{Name: name, Model: "m-" + name}
+			agents.profiles[subagent.Role(name)] = subagent.Profile{Name: subagent.Role(name)}
+			agents.mu.Unlock()
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		<-start
+		for i := range 200 {
+			role := subagent.Role("saved-" + strconv.Itoa(i))
+			agents.modelFor(config.Config{}, role, 1, "", "session")
+			agents.definition(role)
+			agents.writes(role)
+			agents.snapshot()
+		}
+	}()
+	close(start)
+	wg.Wait()
+	if got := agents.modelFor(config.Config{}, "saved-7", 1, "", "session"); got != "m-saved-7" {
+		t.Errorf("model of a saved profile = %q, want m-saved-7", got)
+	}
+}

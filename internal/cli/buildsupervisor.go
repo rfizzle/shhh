@@ -84,7 +84,8 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 		var defs []provider.Tool
 		gated := map[string]bool{}
 		var base agent.ToolExecutor
-		if def, ok := agents.definitions[string(role)]; ok {
+		def, ok := agents.definition(role)
+		if ok {
 			rolePrompt, defs, base = profileEnv(def, spec, info, extra, session.web, session.gateRunner, gated)
 		} else {
 			sysPrompt, defs, base = builtinEnv(role, spec, info, extra, session.web, gated)
@@ -103,7 +104,7 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 		// branch left, so a delegation wrap installed before either would
 		// disappear and the call would come back an unknown tool — the trap
 		// the quality gate's own ordering already answers.
-		defs, base = withDelegation(sup, agents, spawnable.offer(), agents.definitions[string(role)], spec, defs, base, gated)
+		defs, base = withDelegation(sup, agents, spawnable.offer(), def, spec, defs, base, gated)
 		defs, base, sysPrompt, keepResult := withSessionTools(
 			session, red, notebookSignature(sup, spec), croot, defs, base, rolePrompt)
 		// A child handed its parent's last turns is told so, in place of the
@@ -134,7 +135,7 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 		// is asked once, here, and the runner below is handed the same
 		// answer, so the paragraph the child reads and the refusal its
 		// commands get cannot disagree.
-		writer := agents.profiles[role].Writes
+		writer := agents.writes(role)
 		avail := childContainment()
 		// A profile that may write and not execute holds no command, and a
 		// paragraph about refused commands would describe a tool it never had.
@@ -306,7 +307,7 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 			return agents.modelFor(cfg, role, depth, requested, env.modelName)
 		},
 		CheckModel:    spawnable.check,
-		Profiles:      agents.profiles,
+		Profiles:      agents.snapshot(),
 		MaxConcurrent: cfg.Agents.MaxConcurrent,
 		MaxDepth:      cfg.AgentMaxDepth(),
 		MaxChildren:   cfg.Agents.MaxChildren,

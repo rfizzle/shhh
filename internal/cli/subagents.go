@@ -40,6 +40,38 @@ type agentProfiles struct {
 	definitions map[string]config.AgentDefinition
 }
 
+// definition is the file definition of a role, read under the read lock the
+// manager's save takes to write it. A read of a running session's maps goes
+// through this, writes or snapshot rather than the map. None of them is
+// called with the lock already held: a recursive read lock deadlocks once a
+// writer is waiting.
+func (a *agentProfiles) definition(role subagent.Role) (config.AgentDefinition, bool) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	def, ok := a.definitions[string(role)]
+	return def, ok
+}
+
+// writes reports whether the role's profile grants a writing tier.
+func (a *agentProfiles) writes(role subagent.Role) bool {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.profiles[role].Writes
+}
+
+// snapshot is the profiles as they stand, copied under the read lock, for a
+// reader that outlives the call: the supervisor's own set, which a save
+// replaces through AddProfile rather than by writing into this map.
+func (a *agentProfiles) snapshot() subagent.Profiles {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	out := make(subagent.Profiles, len(a.profiles))
+	for k, v := range a.profiles {
+		out[k] = v
+	}
+	return out
+}
+
 // loadAgentProfiles reads the user's agent profiles and lays them over the
 // built-in roles. A file named researcher.toml or writer.toml replaces the
 // built-in of that name, which is how the shipped roles get a different
@@ -217,7 +249,7 @@ func (a *agentProfiles) modelFor(cfg config.Config, role subagent.Role, depth in
 		return requested
 	}
 	if a != nil {
-		if def, ok := a.definitions[string(role)]; ok {
+		if def, ok := a.definition(role); ok {
 			if m := def.ProfileModel(); m != "" {
 				return m
 			}
