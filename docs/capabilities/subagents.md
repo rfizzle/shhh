@@ -677,7 +677,10 @@ The endpoint is asked lazily. A name outside the list is checked against the
 endpoint's own list where the provider can give one, and that list is asked
 for at most once, by whichever wants it first: the spawn's check or the
 `/model` picker, which then share the answer. It is never asked at startup,
-and it is bounded by the picker's own wait. A listing that fails does not
+and it is bounded by the picker's own wait. In a session with a screen the
+check runs as a command, with the spawn showing the spinner a pending call
+already shows, so the first unknown name costs a wait and not a frozen
+screen. A listing that fails does not
 refuse the spawn: a check that could not be made is not evidence the name is
 wrong, so the spawn goes ahead and its result says the model could not be
 checked.

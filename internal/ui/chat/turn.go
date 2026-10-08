@@ -424,6 +424,11 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		}
 		return answered(m.finishPreToolHook(msg))
 
+	case gateCheckMsg:
+		// A gated tool's check in front of its card has answered; the queue
+		// picks up where it left off (approval.go).
+		return answered(m.finishGateCheck(msg))
+
 	case preCompactMsg:
 		// The hooks in front of a compaction have answered; the summary is
 		// asked for, or the refusal is said (context.go).

@@ -224,6 +224,21 @@ func (m Model) WithGatedTools(previews map[string]GatedPreviewFunc) Model {
 	return m
 }
 
+// GatedCheckFunc is a gated tool's refusal ahead of its card: it answers for
+// a call's arguments with an error where no answer the person gives could make
+// the call good. It may wait on the network, so the queue runs it off the
+// screen's goroutine and builds the card from what comes back
+// (docs/capabilities/subagents.md#the-model-is-offered-the-models-it-can-name).
+type GatedCheckFunc func(args json.RawMessage) error
+
+// WithGatedChecks registers the refusals that stand in front of a gated
+// tool's preview. The preview stays a pure reading of the arguments; the
+// check is what may be slow.
+func (m Model) WithGatedChecks(checks map[string]GatedCheckFunc) Model {
+	m.approval.checks = checks
+	return m
+}
+
 // answers reports whether this session has an answer for a call to name: the
 // runner where it has one, the editor's diff card for the two file tools
 // whatever the toolset offered, the memory card, the question card where the
@@ -413,13 +428,64 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	if !ok {
 		return m.resumeToolLoop()
 	}
+	if m.approval.checks[tc.Name] != nil {
+		return m.startGateCheck(tc, nil)
+	}
+	return m.admitApproval(tc)
+}
+
+// skipApproval answers a queued call that cannot be carded: the model reads
+// the error as the call's result, the transcript files the skipped row, and
+// the queue moves to the next call.
+func (m Model) skipApproval(tc provider.ToolCall, err error) (tea.Model, tea.Cmd) {
+	m.agent.ResolveApproval(m.refusedResult(tc, "error: "+err.Error()))
+	m.appendCallRow(tc.ID, m.skippedCallEntry(tc, err))
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	return m.advanceApprovalQueue()
+}
+
+// startGateCheck runs a gated tool's check in the background; what it came to
+// arrives as gateCheckMsg. The session holds the decision while it runs, in
+// the state a hook in front of the call holds it in, so the screen keeps
+// drawing and the queue does not move: the next call is not taken until this
+// one is answered. after is the hook answer that asked for the check again
+// because it rewrote the arguments, nil for the call as the model made it.
+func (m Model) startGateCheck(tc provider.ToolCall, after *preToolHookMsg) (tea.Model, tea.Cmd) {
+	m.setTurnState(stateRunningCmd)
+	m.syncViewport()
+	check := m.approval.checks[tc.Name]
+	runID := m.agent.RunID()
+	return m, func() tea.Msg {
+		return gateCheckMsg{runID: runID, call: tc, after: after, err: check(json.RawMessage(tc.Arguments))}
+	}
+}
+
+// finishGateCheck applies the check's answer: a refusal is the skipped call,
+// raised once, and anything else carries on to the card the queue was always
+// going to build, or to the hook answer that was waiting on it.
+func (m Model) finishGateCheck(msg gateCheckMsg) (tea.Model, tea.Cmd) {
+	// An answer for a run that was cancelled is somebody else's.
+	if msg.runID != m.agent.RunID() {
+		return m, nil
+	}
+	if msg.err != nil {
+		return m.skipApproval(msg.call, fmt.Errorf("invalid arguments: %w", msg.err))
+	}
+	if msg.after != nil {
+		msg.after.checked = true
+		return m.finishPreToolHook(*msg.after)
+	}
+	return m.admitApproval(msg.call)
+}
+
+// admitApproval builds the card for a queued call and puts it through the
+// standing answers: everything the queue does once a call has passed its
+// check.
+func (m Model) admitApproval(tc provider.ToolCall) (tea.Model, tea.Cmd) {
 	req, err := m.buildApprovalRequest(tc)
 	if err != nil {
-		m.agent.ResolveApproval(m.refusedResult(tc, "error: "+err.Error()))
-		m.appendCallRow(tc.ID, m.skippedCallEntry(tc, err))
-		m.viewport.SetLines(m.renderHistoryLines())
-		m.viewport.GotoBottom()
-		return m.advanceApprovalQueue()
+		return m.skipApproval(tc, err)
 	}
 	// A session that requires containment answers a command here, before
 	// anything is drawn: the card exists to put a decision to the reader, and
@@ -642,7 +708,9 @@ func (m Model) startPreToolHook(req *approvalRequest) (tea.Model, tea.Cmd) {
 // decision that was always going to be made.
 func (m Model) finishPreToolHook(msg preToolHookMsg) (tea.Model, tea.Cmd) {
 	req, v := msg.req, msg.verdict
-	m.hookNotes(v)
+	if !msg.checked {
+		m.hookNotes(v)
+	}
 	if v.Denied() {
 		m.recordDecision(observe.DecisionDeny, observe.ReasonHook)
 		m.lastDenial = req.summary + " — " + hookWhy(v.Reason)
@@ -661,6 +729,11 @@ func (m Model) finishPreToolHook(msg preToolHookMsg) (tea.Model, tea.Cmd) {
 		// the error, exactly as invalid arguments from the model are.
 		call := req.call
 		call.Arguments = string(v.Input)
+		// The rewrite is a call the check has not seen, so it is asked
+		// again, off the screen as the first was.
+		if !msg.checked && m.approval.checks[call.Name] != nil {
+			return m.startGateCheck(call, &msg)
+		}
 		rebuilt, err := m.buildApprovalRequest(call)
 		if err != nil {
 			m.agent.ResolveApproval(m.refusedResult(call, "error: "+err.Error()))

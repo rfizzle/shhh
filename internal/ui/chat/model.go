@@ -391,6 +391,19 @@ type preToolHookMsg struct {
 	runID   int
 	req     *approvalRequest
 	verdict hook.Verdict
+	// checked is set once a rewrite has been through the tool's check, so
+	// the answer is applied once and its notes are not said twice.
+	checked bool
+}
+
+// gateCheckMsg carries what a gated tool's check in front of its card came
+// to (approval.go). The call rides on it because the queue has already taken
+// it; after is the hook answer waiting on a rewritten call's check.
+type gateCheckMsg struct {
+	runID int
+	call  provider.ToolCall
+	after *preToolHookMsg
+	err   error
 }
 
 // preCompactMsg carries what the hooks in front of a compaction came to. The

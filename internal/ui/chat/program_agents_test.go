@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
@@ -481,4 +482,65 @@ func withNotebook(nb *notebook.Store, name string, next agent.ToolExecutor) agen
 		return next
 	}
 	return nb.WrapExecutor(name, next)
+}
+
+// A spawn's check asks the endpoint, which can take as long as its timeout.
+// It is run as a command, so the screen keeps taking input while the listing
+// is held, and what the check came to is raised once: a refusal is the
+// skipped call and the card is never drawn, a pass is the card
+// (docs/capabilities/subagents.md#the-model-is-offered-the-models-it-can-name).
+func TestProgram_ASpawnCheckDoesNotStallTheScreen(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		refuse  bool
+		settled string
+	}{
+		{name: "a name the endpoint does not list", refuse: true, settled: "The model was corrected."},
+		{name: "a name the endpoint lists", settled: "Start a researcher"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			hold, release := quietHold(t)
+			root := fixtureDir(t, map[string]string{"loop.go": "package agent\n"})
+			lead := spawns("Fanning one reader.\n", "researcher", "reader-1")
+			lead.hold = hold
+			m, _ := agentSession(t, root, nil, nil, lead, programTurn{text: "The model was corrected."})
+
+			listing := make(chan struct{})
+			listed := make(chan struct{}, 2)
+			var asked atomic.Int32
+			m = m.WithGatedChecks(map[string]GatedCheckFunc{subagent.SpawnToolName: func(json.RawMessage) error {
+				asked.Add(1)
+				listed <- struct{}{}
+				<-listing
+				if tc.refuse {
+					return fmt.Errorf("model %q is not one this session can run", "m-typo")
+				}
+				return nil
+			}})
+			tm := runProgramAt(t, m, 120, 44)
+
+			send(tm, "survey the round accounting")
+			release()
+			<-listed
+			// The listing is held. The screen is not: a draft typed now is
+			// drawn, and no card or refusal has been raised yet.
+			tm.Type("still typing")
+			waitForText(t, tm, "still typing")
+			if frame := *tm.frame.Load(); strings.Contains(frame, "Start a researcher") {
+				t.Fatalf("the card was drawn before the check answered:\n%s", frame)
+			}
+
+			close(listing)
+			waitForText(t, tm, tc.settled)
+			if !tc.refuse {
+				tm.Send(programAllow)
+			}
+			if n := asked.Load(); n != 1 {
+				t.Fatalf("the check ran %d times for one spawn", n)
+			}
+			if frame := *tm.frame.Load(); tc.refuse && strings.Contains(frame, "Start a researcher") {
+				t.Fatalf("a refused spawn drew its card:\n%s", frame)
+			}
+		})
+	}
 }

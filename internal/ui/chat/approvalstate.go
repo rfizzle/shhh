@@ -22,6 +22,10 @@ type approvalState struct {
 	// request is the head of the agent's approval queue while its confirm
 	// prompt is showing, with everything needed to preview and execute it.
 	request *approvalRequest
+	// checks are the refusals that stand in front of a gated tool's
+	// preview, run off the screen's goroutine (WithGatedChecks). Session
+	// wiring, so clear leaves it.
+	checks map[string]GatedCheckFunc
 	// blast is the card's blast-radius block for the decision showing now,
 	// resolved once when the confirm is armed because it reads the
 	// filesystem and git.

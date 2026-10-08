@@ -488,6 +488,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// classifier. A conversation's fetch never reaches the card: its policy
 	// allows one past the host deny list (docs/capabilities/chat.md#a-conversation-has-one-mode).
 	gatedPreviews := map[string]chat.GatedPreviewFunc{}
+	gatedChecks := map[string]chat.GatedCheckFunc{}
 	// What this session may fetch without asking, which a spawn card states
 	// and a host grant grows. It is read and written on the UI goroutine
 	// alone — the fetcher keeps its own copy behind its own lock, because
@@ -533,7 +534,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	if sup != nil {
 		writerCommands := writerContainment(cfg, childContainment()).field()
-		gatedPreviews[subagent.SpawnToolName] = checkedSpawnPreview(sup, func(args json.RawMessage) (chat.GatedPreview, error) {
+		gatedChecks[subagent.SpawnToolName] = spawnModelCheck(sup)
+		gatedPreviews[subagent.SpawnToolName] = func(args json.RawMessage) (chat.GatedPreview, error) {
 			summary, err := subagent.SpawnSummary(agents.profiles, args)
 			if err != nil {
 				return chat.GatedPreview{}, err
@@ -599,7 +601,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 					Task: plan.Task, Touches: plan.Scope, Writer: plan.Writer,
 				},
 			}, nil
-		})
+		}
 		model = model.WithSubagents(sup).WithPersonas(buildPersonas(session, env, agents, sup, ledger, prices))
 	}
 	// The writing half of git is gated at the write tier: it proceeds where
@@ -654,6 +656,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	})
 	if len(gatedPreviews) > 0 {
 		model = model.WithGatedTools(gatedPreviews)
+		model = model.WithGatedChecks(gatedChecks)
 	}
 	// Last, because the tool seams ask the model which calls it gates and
 	// every registration above is part of that answer (chat/hooks.go).

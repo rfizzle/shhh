@@ -21,7 +21,6 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/testhttp"
-	"github.com/rfizzle/shhh/internal/ui/chat"
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -306,8 +305,8 @@ func TestSpawnModelListFollowsAProviderSwitch(t *testing.T) {
 }
 
 // The session's own spawn is refused before its card is drawn, and an
-// unattended run's before its verdict: the preview the card is built from is
-// never asked, no classifier round is spent, and no agent is started. A spawn
+// unattended run's before its verdict: the check the screen runs ahead of the
+// preview refuses it, no classifier round is spent, and no agent is started. A spawn
 // naming a listed model, or none, reaches both as it always did.
 func TestSpawnRefusalTakesNoSlotAndRaisesNoCard(t *testing.T) {
 	env := &sessionEnv{prov: assemblyProvider{}, modelName: "m-a"}
@@ -327,14 +326,9 @@ func TestSpawnRefusalTakesNoSlotAndRaisesNoCard(t *testing.T) {
 				NewEnv: (&scriptedChildren{steps: []childStep{{text: "done"}}}).factory(), CheckModel: spawn.check})
 			t.Cleanup(sup.Close)
 
-			carded := false
-			preview := checkedSpawnPreview(sup, func(json.RawMessage) (chat.GatedPreview, error) {
-				carded = true
-				return chat.GatedPreview{Action: "spawn"}, nil
-			})
-			_, err := preview(json.RawMessage(tc.args))
-			if tc.refused != (err != nil) || carded == tc.refused {
-				t.Fatalf("the session's card: refused %v, drawn %v (%v)", err != nil, carded, err)
+			err := spawnModelCheck(sup)(json.RawMessage(tc.args))
+			if tc.refused != (err != nil) {
+				t.Fatalf("the session's check: refused %v (%v)", err != nil, err)
 			}
 			if tc.refused && !strings.Contains(err.Error(), `model "m-typo" is not one this session can run; name one of m-a`) {
 				t.Fatalf("the refusal does not name the list: %v", err)

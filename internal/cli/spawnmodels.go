@@ -195,19 +195,18 @@ func followSpawnModels(env *sessionEnv, spawn spawnModels, profiles func() subag
 	}
 }
 
-// checkedSpawnPreview puts the session's model check in front of the spawn
-// card's preview. A model the session cannot run is refused there, before the
-// card and before a slot: no answer the person gives makes it one the
-// provider serves, and the refusal names the ones it does, so the model
-// corrects itself in the same turn. The endpoint's list, where it is asked,
-// is asked once, on the first name outside the session's own, and the wait is
-// bounded by the lister's timeout.
+// spawnModelCheck is the session's model check in front of the spawn card's
+// preview. A model the session cannot run is refused there, before the card
+// and before a slot: no answer the person gives makes it one the provider
+// serves, and the refusal names the ones it does, so the model corrects
+// itself in the same turn. The endpoint's list, where it is asked, is asked
+// once, on the first name outside the session's own, and the wait is bounded
+// by the lister's timeout. The check may wait, so the screen runs it as a
+// command and never on its own goroutine (chat.GatedCheckFunc).
 // See docs/capabilities/subagents.md#the-model-is-offered-the-models-it-can-name.
-func checkedSpawnPreview(sup *subagent.Supervisor, preview chat.GatedPreviewFunc) chat.GatedPreviewFunc {
-	return func(args json.RawMessage) (chat.GatedPreview, error) {
-		if _, err := sup.CheckModel(args); err != nil {
-			return chat.GatedPreview{}, err
-		}
-		return preview(args)
+func spawnModelCheck(sup *subagent.Supervisor) chat.GatedCheckFunc {
+	return func(args json.RawMessage) error {
+		_, err := sup.CheckModel(args)
+		return err
 	}
 }
