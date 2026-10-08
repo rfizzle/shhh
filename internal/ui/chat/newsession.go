@@ -279,6 +279,8 @@ func (m *Model) setSystemPrompt(text string) {
 			text = msgs[0].Content
 		}
 	}
+	// A conversation put back to its prompt has no past to have folded.
+	m.agent.SetFolded(nil)
 	if text == "" {
 		m.agent.SetMessages(nil)
 		return
@@ -289,6 +291,15 @@ func (m *Model) setSystemPrompt(text string) {
 // loadConversation replaces the current conversation and rebuilds the
 // transcript from the stored messages.
 func (m *Model) loadConversation(msgs []provider.Message) {
+	m.loadConversationFolded(m.agent.Folded(), msgs)
+}
+
+// loadConversationFolded is loadConversation for a conversation that was
+// compacted: msgs is what the model is handed, and folded the turns the
+// compaction replaced, which the transcript draws ahead of them out of the
+// window, as the session that compacted drew them. The model never sees
+// them; they are the record.
+func (m *Model) loadConversationFolded(folded, msgs []provider.Message) {
 	// A loaded conversation is a session with a past; the start screen does
 	// not come back after it is cleared.
 	m.spendStartScreen()
@@ -296,18 +307,24 @@ func (m *Model) loadConversation(msgs []provider.Message) {
 	// cut from, and this is a different one (rewind.go).
 	m.retireRewoundFolds()
 	m.agent.SetMessages(msgs)
+	m.agent.SetFolded(folded)
 	m.resetTranscript()
 	// Follow-ups were written against the conversation being replaced, so
 	// none of them may fire into this one.
 	m.followUps = nil
 	m.followUpsHeld = false
 	m.checkpoints = checkpointsFromMessages(msgs)
+	from := len(m.transcript)
+	m.appendMessageEntries(folded)
+	for i := from; i < len(m.transcript); i++ {
+		m.transcript[i].outOfWindow = true
+	}
 	m.appendMessageEntries(msgs)
 	// The prompts that conversation was made of are what ↑ recalls in it
 	// (recall.go). They are seeded here rather than by each of the four
 	// callers, for the same reason the transcript is: every path back to a
 	// stored conversation passes through this one function.
-	m.recallFromMessages(msgs)
+	m.recallFromMessages(append(append([]provider.Message(nil), folded...), msgs...))
 }
 
 // appendMessageEntries renders a run of messages into the transcript: the

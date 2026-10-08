@@ -395,56 +395,63 @@ func (db *DB) saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (
 		}
 		if seen && stored < len(messages) && chatDigest(messages[:stored+1]) == mine.digest {
 			from = stored + 1
-		} else if _, err := tx.Exec(`DELETE FROM chat_messages WHERE session_id = ?`, sessionID); err != nil {
+		} else if _, err := tx.Exec(`DELETE FROM chat_messages WHERE session_id = ? AND seq >= 0`, sessionID); err != nil {
 			return 0, fmt.Errorf("clear messages: %w", err)
 		}
 	}
 
 	for i := from; i < len(messages); i++ {
-		msg := messages[i]
-		var toolCallsJSON *string
-		if len(msg.ToolCalls) > 0 {
-			b, err := json.Marshal(msg.ToolCalls)
-			if err != nil {
-				return 0, fmt.Errorf("marshal tool calls: %w", err)
-			}
-			s := string(b)
-			toolCallsJSON = &s
-		}
-		// Attachment bytes are saved with the turn that carried them
-		//, so resuming a session keeps the screenshot the question
-		// was about rather than a sentence pointing at nothing.
-		var attachmentsJSON *string
-		if len(msg.Attachments) > 0 {
-			b, err := json.Marshal(msg.Attachments)
-			if err != nil {
-				return 0, fmt.Errorf("marshal attachments: %w", err)
-			}
-			s := string(b)
-			attachmentsJSON = &s
-		}
-		// The turn and the round the message was written in ride with it,
-		// so a recorded event can be joined to the words it came from
-		// (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
-		// The machine message's kind is NULL where it has none, the way a
-		// row written before the column reads.
-		var machineKind *string
-		if msg.MachineKind != "" {
-			k := string(msg.MachineKind)
-			machineKind = &k
-		}
-		_, err := tx.Exec(
-			`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint, machine_kind)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			sessionID, i, string(msg.Role), msg.Content, toolCallsJSON, msg.ToolCallID, attachmentsJSON, msg.Machine,
-			msg.Turn, msg.Round, msg.Checkpoint, machineKind,
-		)
-		if err != nil {
-			return 0, fmt.Errorf("insert message %d: %w", i, err)
+		if err := insertChatMessage(tx, sessionID, i, messages[i]); err != nil {
+			return 0, err
 		}
 	}
 
 	return sessionID, nil
+}
+
+// insertChatMessage writes one message at seq in a session's slot.
+func insertChatMessage(tx *sql.Tx, sessionID int64, seq int, msg provider.Message) error {
+	var toolCallsJSON *string
+	if len(msg.ToolCalls) > 0 {
+		b, err := json.Marshal(msg.ToolCalls)
+		if err != nil {
+			return fmt.Errorf("marshal tool calls: %w", err)
+		}
+		s := string(b)
+		toolCallsJSON = &s
+	}
+	// Attachment bytes are saved with the turn that carried them
+	//, so resuming a session keeps the screenshot the question
+	// was about rather than a sentence pointing at nothing.
+	var attachmentsJSON *string
+	if len(msg.Attachments) > 0 {
+		b, err := json.Marshal(msg.Attachments)
+		if err != nil {
+			return fmt.Errorf("marshal attachments: %w", err)
+		}
+		s := string(b)
+		attachmentsJSON = &s
+	}
+	// The turn and the round the message was written in ride with it,
+	// so a recorded event can be joined to the words it came from
+	// (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
+	// The machine message's kind is NULL where it has none, the way a
+	// row written before the column reads.
+	var machineKind *string
+	if msg.MachineKind != "" {
+		k := string(msg.MachineKind)
+		machineKind = &k
+	}
+	_, err := tx.Exec(
+		`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint, machine_kind)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		sessionID, seq, string(msg.Role), msg.Content, toolCallsJSON, msg.ToolCallID, attachmentsJSON, msg.Machine,
+		msg.Turn, msg.Round, msg.Checkpoint, machineKind,
+	)
+	if err != nil {
+		return fmt.Errorf("insert message %d: %w", seq, err)
+	}
+	return nil
 }
 
 // storedChatSeq is the highest seq the slot holds, or -1 when it holds no
@@ -486,6 +493,66 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 	return messages, nil
 }
 
+// SaveChatFolded keeps the turns a compaction folded beside the slot's
+// conversation, replacing whatever folded turns it held. They are the record
+// of what the model no longer carries, so a reopen can draw them and open
+// their pictures as the live session did, while LoadChat goes on handing the
+// model the compacted list.
+//
+// They live in the slot's own message table at seq below zero, oldest first,
+// so a save of the conversation (which owns seq zero and up) never touches
+// them and no migration is needed. An empty folded clears the slot's.
+// See docs/interface/surfaces.md#the-compaction-receipt.
+func (db *DB) SaveChatFolded(name string, folded []provider.Message) error {
+	db.chatMu.Lock()
+	defer db.chatMu.Unlock()
+	return retryBusy(func() error {
+		tx, err := db.sql.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+
+		var sessionID int64
+		err = tx.QueryRow(`SELECT id FROM chat_sessions WHERE name = ?`, name).Scan(&sessionID)
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("lookup session: %w", err)
+		}
+		// Folded turns only ever grow within one conversation, so the same
+		// count is the same turns; checking it keeps an autosave from
+		// rewriting every picture on each turn.
+		var held int
+		if err := tx.QueryRow(`SELECT COUNT(*) FROM chat_messages WHERE session_id = ? AND seq < 0`, sessionID).Scan(&held); err != nil {
+			return fmt.Errorf("count folded: %w", err)
+		}
+		if held == len(folded) {
+			return nil
+		}
+		if _, err := tx.Exec(`DELETE FROM chat_messages WHERE session_id = ? AND seq < 0`, sessionID); err != nil {
+			return fmt.Errorf("clear folded: %w", err)
+		}
+		for i, msg := range folded {
+			if err := insertChatMessage(tx, sessionID, i-len(folded), msg); err != nil {
+				return err
+			}
+		}
+		return tx.Commit()
+	})
+}
+
+// LoadChatFolded is the turns a compaction folded out of a slot's
+// conversation, oldest first, or none for a slot that was never compacted.
+func (db *DB) LoadChatFolded(name string) ([]provider.Message, error) {
+	return queryRows(db, scanChatMessage,
+		`SELECT m.role, m.content, m.tool_calls, m.tool_call_id, m.attachments, m.machine, m.turn, m.round, m.checkpoint, m.machine_kind
+		 FROM chat_messages m JOIN chat_sessions s ON s.id = m.session_id
+		 WHERE s.name = ? AND m.seq < 0 ORDER BY m.seq`, name,
+	)
+}
+
 // chatMessages is one slot's conversation by row id, which is how anything
 // holding a reference to a conversation rather than its name reads it: a
 // name can be renamed out from under the row that named it, and the record's
@@ -494,7 +561,7 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 func (db *DB) chatMessages(sessionID int64) ([]provider.Message, error) {
 	return queryRows(db, scanChatMessage,
 		`SELECT role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint, machine_kind
-		 FROM chat_messages WHERE session_id = ? ORDER BY seq`, sessionID,
+		 FROM chat_messages WHERE session_id = ? AND seq >= 0 ORDER BY seq`, sessionID,
 	)
 }
 

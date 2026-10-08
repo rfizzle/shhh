@@ -1582,6 +1582,8 @@ func (m Model) saveCmd(revise func() string) tea.Cmd {
 	// of what the slot keeps: it is rebuilt from the checkout every time the
 	// conversation is opened (reopen.go).
 	msgs := stripResumeContext(m.agent.RequestMessages())
+	// And the turns a compaction folded stay, beside it, in the record.
+	folded := foldedWithoutReading(append([]provider.Message(nil), m.agent.Folded()...))
 	return func() tea.Msg {
 		// A slot another session has taken over is not written to; the
 		// store puts the conversation in one of this session's own and
@@ -1595,6 +1597,9 @@ func (m Model) saveCmd(revise func() string) tea.Cmd {
 			// read.
 			logs.Logger().Warn("conversation not saved", "slot", name, "error", err)
 			return autosaveFailedMsg{slot: name, err: err}
+		}
+		if err := db.SaveChatFolded(slot, folded); err != nil {
+			logs.Logger().Warn("folded turns not saved", "slot", slot, "error", err)
 		}
 		// The title rides every save, so a slot written after the reading
 		// landed carries it and /save name takes it along.

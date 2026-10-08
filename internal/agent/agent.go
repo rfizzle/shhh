@@ -78,6 +78,7 @@ type Agent struct {
 	executor ToolExecutor
 
 	messages  []provider.Message
+	folded    []provider.Message
 	runID     int
 	rounds    int
 	maxRounds int

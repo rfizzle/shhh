@@ -901,7 +901,7 @@ func (m *Model) switchToBranch(target string) string {
 	if err != nil {
 		return failed("branches", err.Error())
 	}
-	m.loadConversation(msgs)
+	m.loadConversationFolded(nil, msgs)
 	m.adoptSlot(target)
 	// The title stays: a branch is the same conversation, and the next
 	// autosave stamps it on the branch's row so the listing shows both

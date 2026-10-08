@@ -698,6 +698,12 @@ about. A transcript that dropped them would be answering a question nobody
 asked it — the record is of what happened on this machine, and compaction is
 about the model's memory.
 
+They go nowhere on a reopen either. The store keeps the folded turns beside
+the summary and the turns kept, so a session opened again draws them as the
+live one did — out of the window, pictures and all — while the model is handed
+only the compacted list. A picture sent before a compaction opens after a
+reopen.
+
 A compaction with nothing left to fold says so instead of pretending: what it
 freed, and what is still in the window that no summary can stand in for — a
 plan, a changeset, the turns it is keeping. That line is a break, `✗` in the

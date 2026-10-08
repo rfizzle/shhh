@@ -159,14 +159,34 @@ func CompactKeptTurns(kept []provider.Message) int {
 // what a fresh budget is for.
 func (a *Agent) Compact(summary string, kept []provider.Message) {
 	rebuilt := make([]provider.Message, 0, 2+len(kept))
+	first := 0
 	if len(a.messages) > 0 && a.messages[0].Role == provider.RoleSystem {
 		rebuilt = append(rebuilt, a.messages[0])
+		first = 1
+	}
+	// What the summary replaces leaves the model's list and not the record:
+	// the turns are set aside, in order, for a surface that keeps the record
+	// to draw again (Folded). The kept tail is the end of the list, so what
+	// is folded is what lies between the prompt and it.
+	if end := len(a.messages) - len(kept); end > first {
+		a.folded = append(a.folded, a.messages[first:end]...)
 	}
 	rebuilt = append(rebuilt, provider.Message{
 		Role: provider.RoleUser, Content: CompactSummaryMessage(summary), Machine: true})
 	rebuilt = append(rebuilt, kept...)
 	a.SetMessages(rebuilt)
 }
+
+// Folded is the turns compactions have taken out of the model's list since
+// the conversation was last replaced, oldest first, summaries included. The
+// returned slice is the Agent's own; callers must not mutate it.
+func (a *Agent) Folded() []provider.Message { return a.folded }
+
+// SetFolded replaces the folded turns, for a surface that has put a
+// conversation back from a record that kept them, or that has started a new
+// one and has none. SetMessages leaves them alone, because a rebuild of the
+// same conversation (a new workspace block, a resume reading) folds nothing.
+func (a *Agent) SetFolded(folded []provider.Message) { a.folded = folded }
 
 // streamOn opens a completion over a stream of the caller's own. The scrub
 // belongs to the conversation and not to the stream that happens to carry it,

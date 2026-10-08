@@ -299,10 +299,19 @@ func storedChatSummary(db *storage.DB, slot string) string {
 // reading, and the row that accounts for it cannot be forgotten by one of
 // them.
 func (m *Model) resumeConversation(slot string, msgs []provider.Message) {
-	m.loadConversation(stripResumeContext(msgs))
+	// A compacted conversation comes back with the turns it folded, which the
+	// slot kept beside it: the model is handed the compacted list and the
+	// transcript draws both. A slot that kept none, or a session with no
+	// store, has none to draw.
+	var folded []provider.Message
+	if slot != "" && m.db != nil {
+		folded, _ = m.db.LoadChatFolded(slot)
+		folded = foldedWithoutReading(folded)
+	}
+	m.loadConversationFolded(folded, stripResumeContext(msgs))
 	// The handles go on from the highest this conversation already used, so a
 	// reopened one does not hand out a second Image#1 (attachments.go).
-	m.seedHandles(msgs)
+	m.seedHandles(append(append([]provider.Message(nil), folded...), msgs...))
 	if slot != "" {
 		// The sitting being replaced has its own records in memory. They
 		// belong to that conversation; Restore would otherwise skip and
@@ -382,6 +391,17 @@ func opensAReading(content string) bool {
 	}
 	line, _, _ := strings.Cut(content, "\n")
 	return strings.HasSuffix(line, "]")
+}
+
+// foldedWithoutReading is the folded turns without the reading a reopening put
+// in front of the conversation before it was compacted: it was rebuilt from
+// the checkout every time and is not part of what was said.
+func foldedWithoutReading(folded []provider.Message) []provider.Message {
+	if len(folded) == 0 {
+		return folded
+	}
+	withPrompt := append([]provider.Message{{Role: provider.RoleSystem}}, folded...)
+	return stripResumeContext(withPrompt)[1:]
 }
 
 func stripResumeContext(msgs []provider.Message) []provider.Message {
