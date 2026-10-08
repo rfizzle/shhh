@@ -3097,8 +3097,10 @@ func TestGolden_AgentRows(t *testing.T) {
 // TestGolden_LiveCardWords captures the live card's right side as the step's
 // state has it: a call waiting on the approval card says `waiting for you`,
 // a command running after one that broke says `running` with the failure
-// held back, and a step of reads between calls shows its own clock from its
-// first call (docs/interface/surfaces.md#the-step).
+// held back, a step of reads whose calls have returned states what they took
+// while the model is asked, and so does a step of seven commands after an
+// approval wait — the calls' own seconds, never the wall's minutes
+// (docs/interface/surfaces.md#the-step).
 func TestGolden_LiveCardWords(t *testing.T) {
 	captureGolden(t, "live-card-words", "a live card's word and time", goldenWidths, func(width int) []golden.Panel {
 		// The two command cards are drawn at goldenNow, before the reading
@@ -3110,8 +3112,27 @@ func TestGolden_LiveCardWords(t *testing.T) {
 			{Label: "a command running after one that broke", View: failed.renderHistory()},
 		}
 		reading := readingCardModel(t, width, advance)
-		return append(panels, golden.Panel{Label: "a step of reads between calls, its clock from its first call",
-			View: reading.renderHistory()})
+		after := waitingCardModel(t, width)
+		after.transcript = after.transcript[:2]
+		for _, c := range []struct {
+			cmd  string
+			took time.Duration
+		}{
+			{"go test ./internal/ui/chat/", 3 * time.Second}, {"make lint", 2 * time.Second},
+			{"go vet ./...", 800 * time.Millisecond}, {"gofmt -l .", 325 * time.Millisecond},
+			{"go build ./...", 325 * time.Millisecond}, {"go test ./internal/ui/", 325 * time.Millisecond},
+			{"make docs-check", 325 * time.Millisecond},
+		} {
+			after.transcript = append(after.transcript, entry{kind: entryCommand, text: c.cmd, toolResult: "ok", duration: c.took})
+		}
+		after.approval.request = nil
+		after.setTurnState(stateStreaming)
+		after.invalidateRenderCache()
+		return append(panels,
+			golden.Panel{Label: "a step of reads whose calls have returned, while the model is asked",
+				View: reading.renderHistory()},
+			golden.Panel{Label: "seven commands after an approval wait, the model asked: what they ran",
+				View: after.renderHistory()})
 	})
 }
 

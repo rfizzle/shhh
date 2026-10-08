@@ -14,7 +14,6 @@ package chat
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
@@ -166,16 +165,23 @@ func (m Model) cardWaits(blk transcriptBlock) bool {
 	return m.cardLive(blk) && m.turnState() == stateConfirmRun && m.approval.request != nil
 }
 
-// stepStarted is when the first of a step's calls began, where its rows
-// carry a start.
-func stepStarted(es []entry, at []int) (time.Time, bool) {
-	var from time.Time
-	for _, i := range at {
-		if s := es[i].started; !s.IsZero() && (from.IsZero() || s.Before(from)) {
-			from = s
-		}
+// cardCallsOut reports whether the live card's step still has calls out:
+// one running, a batch running behind it, one being decided, or one queued
+// for the reader. A step whose last call has returned is not running,
+// whatever the turn goes on to wait on — the model's next answer is the
+// turn's wait, and the frame states it (docs/interface/surfaces.md#the-step).
+func (m Model) cardCallsOut(blk transcriptBlock) bool {
+	if !m.cardLive(blk) {
+		return false
 	}
-	return from, !from.IsZero()
+	switch m.turnState() {
+	case stateRunningCmd:
+		// A command the reader typed is not the step's call.
+		return m.approval.request != nil
+	case stateClassifying, stateConfirmRun:
+		return true
+	}
+	return m.agent.Executing() || m.agent.QueuedApprovals() > 0
 }
 
 // liveCardHoldsCommand reports whether the transcript's live card has taken
@@ -262,19 +268,16 @@ func (m Model) stepCardFor(blk transcriptBlock, es []entry, width int, selected 
 	// not come out yet, and the failure is its word again once it has. A
 	// step whose every call was refused did nothing and says so.
 	// See docs/interface/surfaces.md#the-step.
-	if s.Running || (m.cardLive(blk) && c.State != components.ActivityDenied) {
+	if s.Running || (m.cardCallsOut(blk) && c.State != components.ActivityDenied) {
 		c.State = components.ActivityRunning
 	}
-	if c.State == components.ActivityRunning && m.cardLive(blk) {
-		// The live step's clock is the wall's, from its first call to now,
-		// so it moves while the step reads, thinks or waits between calls
-		// as well as while a command runs. A step whose calls carry no
-		// start counts what they took, and the command still running.
-		if from, ok := stepStarted(es, at); ok {
-			c.Duration = turnDuration(clock().Sub(from))
-		} else if m.cardHoldsCommand(blk) {
-			c.Duration = turnDuration(s.Duration + clock().Sub(m.runStart))
-		}
+	// The step's clock is its calls' own spans added up, and the command
+	// still running is the one span still growing. A wait between calls —
+	// on the reader, on the classifier, on the model — is nobody's call, so
+	// it is no part of the figure: a step of seconds of work around minutes
+	// of waiting reads as the seconds (docs/interface/surfaces.md#the-step).
+	if m.cardHoldsCommand(blk) {
+		c.Duration = turnDuration(s.Duration + clock().Sub(m.runStart))
 	}
 	if m.cardHoldsCommand(blk) {
 		// The command's last line out stands under the body.
@@ -321,8 +324,11 @@ func (m Model) stepCardFor(blk transcriptBlock, es []entry, width int, selected 
 		c.Evidence = refusalReason(es[at[len(at)-1]])
 	case c.State == components.ActivityRunning && m.cardWaits(blk):
 		// The step has stopped on the reader: a call it asked for is on the
-		// approval card, and `running` would say it is working.
+		// approval card, and `running` would say it is working. Nor is
+		// there a figure beside it: the step's clock has stopped, and a
+		// stopped figure beside a word about waiting reads as the wait's.
 		c.Outcome, c.OutcomeAccent = components.CardWaiting, true
+		c.Duration = ""
 	case c.State == components.ActivityRunning:
 		// A step still going has no answer yet: the card says `running`
 		// where the answer will go, and an earlier call's `ok` or line

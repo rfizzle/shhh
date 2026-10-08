@@ -10,6 +10,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -530,7 +531,7 @@ func movableClock(t *testing.T) (advance func(time.Duration)) {
 	return func(d time.Duration) { now = now.Add(d) }
 }
 
-// waitingCardModel is a turn whose step ran a command twelve seconds ago and
+// waitingCardModel is a turn whose step ran a command for two seconds and
 // has asked to run it again, the approval card up for the second run.
 func waitingCardModel(t *testing.T, width int) Model {
 	t.Helper()
@@ -540,8 +541,7 @@ func waitingCardModel(t *testing.T, width int) Model {
 	m.transcript = []entry{
 		{kind: entryUser, text: "run the ui tests"},
 		{kind: entryAssistant, text: "Running the UI tests twice."},
-		{kind: entryCommand, text: "go test ./internal/ui/", toolResult: "ok", duration: 2 * time.Second,
-			started: goldenNow.Add(-12 * time.Second)},
+		{kind: entryCommand, text: "go test ./internal/ui/", toolResult: "ok", duration: 2 * time.Second},
 	}
 	m.state = stateConfirmRun
 	m.turnStarted = goldenNow.Add(-time.Minute)
@@ -551,19 +551,19 @@ func waitingCardModel(t *testing.T, width int) Model {
 }
 
 // While a call in the live step waits for the reader's approval, the card's
-// slot says so in the gate's accent rather than `running`: the step has
-// stopped on the reader. Once the call is approved and runs, the slot says
-// `running` again, the clock having gone on from the step's first call
+// slot says so in the gate's accent rather than `running`, and states no
+// figure: the step's clock has stopped on the reader. Once the call is
+// approved and runs, the slot says `running` again and the clock goes on
+// from what the step's calls had taken, not from when the step began
 // (docs/interface/surfaces.md#the-step).
 func TestCard_AWaitingCardSaysWaiting(t *testing.T) {
 	advance := movableClock(t)
 	const width = 110
 	m := waitingCardModel(t, width)
 	h := strings.TrimRight(cardLine(cardLines(m), "ran go test"), " ")
-	const want = " ▎$ ran go test ./internal/ui/                                            waiting for you · 12s"
-	if squeezed(h) != squeezed(want) || !strings.HasPrefix(h, " ▎$ ran go test ./internal/ui/ ") ||
-		!strings.HasSuffix(h, " waiting for you · 12s") || strings.Contains(h, components.CardRunning) {
-		t.Errorf("the waiting card's header is\n%q, want\n%q", h, want)
+	if !strings.HasPrefix(h, " ▎$ ran go test ./internal/ui/ ") || !strings.HasSuffix(h, " waiting for you") ||
+		strings.Contains(h, components.CardRunning) {
+		t.Errorf("the waiting card's header is\n%q, want waiting for you and no figure", h)
 	}
 
 	// The word wears the accent a gated decision wears, not the colour of
@@ -578,25 +578,28 @@ func TestCard_AWaitingCardSaysWaiting(t *testing.T) {
 		t.Errorf("the waiting word should be drawn in the accent as %q:\n%s", accent, view)
 	}
 
-	// Approved: the command runs on the card, and the slot is `running`.
-	advance(2 * time.Second)
+	// Approved after two minutes, and a second into the run: the slot is
+	// `running`, and the clock is the first run's two seconds and this one's
+	// one, not the wait.
+	advance(2 * time.Minute)
 	m.state = stateRunningCmd
 	m.runningCommand = "go test ./internal/ui/"
 	m.runStart = clock()
 	m.runTail = &commandTail{}
 	m.runTail.Set("ok  github.com/rfizzle/shhh/internal/ui  0.412s")
+	advance(time.Second)
 	m.invalidateRenderCache()
 	ran := strings.TrimRight(cardLine(cardLines(m), "ran go test"), " ")
-	if !strings.HasSuffix(ran, " running · 14s") || strings.Contains(ran, components.CardWaiting) {
-		t.Errorf("once approved the header is %q, want running · 14s", ran)
+	if !strings.HasSuffix(ran, " running · 3.0s") || strings.Contains(ran, components.CardWaiting) {
+		t.Errorf("once approved the header is %q, want running · 3.0s", ran)
 	}
 	if lipgloss.Width(ran) != lipgloss.Width(h) {
 		t.Errorf("the waiting and running headers end at columns %d and %d", lipgloss.Width(h), lipgloss.Width(ran))
 	}
 }
 
-// failedLeadCardModel is a step whose first command broke twelve seconds
-// ago and whose second has been running for three.
+// failedLeadCardModel is a step whose first command broke after four seconds
+// and whose second has been running for three.
 func failedLeadCardModel(t *testing.T, width int) Model {
 	t.Helper()
 	m := activityModel(t)
@@ -606,8 +609,7 @@ func failedLeadCardModel(t *testing.T, width int) Model {
 		{kind: entryUser, text: "run the ui tests"},
 		{kind: entryAssistant, text: "Running the UI tests, then the goldens."},
 		{kind: entryCommand, text: "go test ./internal/ui/", exitCode: 1,
-			toolResult: "--- FAIL: TestReplyGolden: reply_copy.golden differs\nFAIL", duration: 4 * time.Second,
-			started: goldenNow.Add(-12 * time.Second)},
+			toolResult: "--- FAIL: TestReplyGolden: reply_copy.golden differs\nFAIL", duration: 4 * time.Second},
 	}
 	m.state = stateRunningCmd
 	m.turnStarted = goldenNow.Add(-time.Minute)
@@ -629,14 +631,14 @@ func TestCard_RunningOutranksAnEarlierFailureWhileLive(t *testing.T) {
 	const width = 110
 	m := failedLeadCardModel(t, width)
 	live := strings.TrimRight(cardLine(cardLines(m), "ran go test"), " ")
-	if !strings.HasPrefix(live, " ▎$ ran go test") || !strings.HasSuffix(live, " running · 12s") ||
+	if !strings.HasPrefix(live, " ▎$ ran go test") || !strings.HasSuffix(live, " running · 7.0s") ||
 		strings.Contains(live, "exit 1") || strings.Contains(live, "✗") {
-		t.Errorf("the live card with a failure behind it is %q, want the $ glyph and running · 12s", live)
+		t.Errorf("the live card with a failure behind it is %q, want the $ glyph and running · 7.0s", live)
 	}
 
 	// The step ends: the failure is its word, and its mark.
 	m.transcript = append(m.transcript, entry{kind: entryCommand, text: "go test ./internal/ui/ -update-golden",
-		toolResult: "ok", duration: 3 * time.Second, started: goldenNow.Add(-3 * time.Second)})
+		toolResult: "ok", duration: 3 * time.Second})
 	m.state, m.approval.request, m.runTail, m.runningCommand = stateInput, nil, nil, ""
 	m.invalidateRenderCache()
 	done := strings.TrimRight(cardLine(cardLines(m), "ran 2 commands"), " ")
@@ -645,10 +647,9 @@ func TestCard_RunningOutranksAnEarlierFailureWhileLive(t *testing.T) {
 	}
 }
 
-// readingCardModel is a step of three reads still going, landed a row at a
-// time on the clock advance moves: reads of 0.4s each, landing 0.4s, 1.7s
-// and 3.0s into the step, so they took 1.2s between them, and a second
-// later the step has been going four.
+// readingCardModel is a step of three reads that have all returned, landed a
+// row at a time on the clock advance moves: reads of 0.4s each, so they took
+// 1.2s between them, and the turn has asked the model what next.
 func readingCardModel(t *testing.T, width int, advance func(time.Duration)) Model {
 	t.Helper()
 	m := activityModel(t)
@@ -667,40 +668,102 @@ func readingCardModel(t *testing.T, width int, advance func(time.Duration)) Mode
 	return m
 }
 
-// A live step with no command running still shows its time going by: the
-// clock runs from the step's first call to now, not over what the calls took,
-// and it is on the tick at every rung (docs/interface/surfaces.md#the-step).
-func TestCard_ADurationTicksWhileAStepReads(t *testing.T) {
+// A live step whose calls have all returned is not running: the model's next
+// answer is the turn's wait and not the step's, so the card states what its
+// calls took and nothing moves it on. A batch of its calls out again is the
+// step running again (docs/interface/surfaces.md#the-step).
+func TestCard_AStepWhoseCallsReturnedStopsItsClock(t *testing.T) {
 	advance := movableClock(t)
 	const width = 110
 	m := readingCardModel(t, width, advance)
-	for _, tc := range []struct {
-		after time.Duration
-		want  string
-	}{
-		{0, " running · 4.0s"},
-		{2 * time.Second, " running · 6.0s"},
-	} {
-		advance(tc.after)
+	for _, after := range []time.Duration{0, 2 * time.Minute} {
+		advance(after)
 		m.invalidateRenderCache()
 		h := strings.TrimRight(cardLine(cardLines(m), "read 3 files"), " ")
-		if !strings.HasPrefix(h, "  ⚙ read 3 files in internal/ui/ ") || !strings.HasSuffix(h, tc.want) {
-			t.Errorf("the reading card's header is %q, want %q on its right", h, tc.want)
-		}
-	}
-	for _, rung := range []verbosity{verbosityLow, verbosityNormal, verbosityHigh} {
-		m.verbosity = rung
-		if !m.liveCardTicks() {
-			t.Errorf("at %s the live card's clock is not on the tick", rung)
+		if !strings.HasPrefix(h, "  ⚙ read 3 files in internal/ui/ ") || !strings.HasSuffix(h, " 1.2s") ||
+			strings.Contains(h, components.CardRunning) {
+			t.Errorf("%s on, the returned step's header is %q, want 1.2s and no running", after, h)
 		}
 	}
 
-	// The step ends: its time is what the calls took.
-	m.setTurnState(stateInput)
+	m.agent.BeginToolRound("", []provider.ToolCall{{ID: "r4", Name: "read_file",
+		Arguments: `{"path":"internal/ui/rail.go"}`}}, nil)
 	m.invalidateRenderCache()
-	if h := strings.TrimRight(cardLine(cardLines(m), "read 3 files"), " "); !strings.HasSuffix(h, " 1.2s") ||
-		strings.Contains(h, components.CardRunning) {
-		t.Errorf("the finished card's header is %q, want 1.2s", h)
+	if h := strings.TrimRight(cardLine(cardLines(m), "read 3 files"), " "); !strings.HasSuffix(h, " running · 1.2s") {
+		t.Errorf("with a batch out the header is %q, want running · 1.2s", h)
+	}
+}
+
+// Session 133's step: seven commands that ran 7.1s between them, a 2m 45s
+// wait on the approval card among them, and 3m 27s of silence from the model
+// after the last returned. The card states no figure while it waits on the
+// reader, the run's seconds while a command runs, and the plain 7.1s once
+// the last call has returned — never the wall's 6m44s
+// (docs/interface/surfaces.md#the-step).
+func TestStepCard_ClockExcludesAnApprovalAndTheSilenceAfter(t *testing.T) {
+	advance := movableClock(t)
+	const width = 110
+	m := activityModel(t)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+	m = updated.(Model)
+	m.turnStarted = clock()
+	m.transcript = []entry{
+		{kind: entryUser, text: "run the chat tests and the linter, then fix what breaks"},
+		{kind: entryAssistant, text: "Running the chat tests, then the linter."},
+	}
+	header := func() string {
+		m.invalidateRenderCache()
+		return strings.TrimRight(cardLine(cardLines(m), "▎$ ran"), " ")
+	}
+	start := func(cmd string) {
+		m.state = stateRunningCmd
+		m.approval.request = &approvalRequest{kind: approvalExec, command: cmd}
+		m.runningCommand, m.runStart = cmd, clock()
+		m.runTail = &commandTail{}
+		m.runTail.Set("ok")
+	}
+	land := func(cmd string, took time.Duration) {
+		m.transcript = append(m.transcript, entry{kind: entryCommand, text: cmd, toolResult: "ok", duration: took})
+		m.approval.request, m.runTail, m.runningCommand = nil, nil, ""
+	}
+	ran := func(cmd string, took time.Duration) {
+		start(cmd)
+		advance(took)
+		land(cmd, took)
+	}
+	ran("go test ./internal/ui/chat/", 3*time.Second)
+	ran("make lint", 2*time.Second)
+
+	// The third waits on the reader for 2m 45s: no figure, and none moving.
+	m.state = stateConfirmRun
+	m.approval.request = &approvalRequest{kind: approvalExec, command: "go vet ./..."}
+	for _, wait := range []time.Duration{0, 2*time.Minute + 45*time.Second} {
+		advance(wait)
+		if h := header(); !strings.HasSuffix(h, " "+components.CardWaiting) {
+			t.Fatalf("%s into the approval the header is %q, want %q and no figure", wait, h, components.CardWaiting)
+		}
+	}
+
+	// Approved: the clock runs on from the five seconds, not from the wait.
+	start("go vet ./...")
+	advance(500 * time.Millisecond)
+	if h := header(); !strings.HasSuffix(h, " running · 5.5s") {
+		t.Errorf("half a second into the third command the header is %q, want running · 5.5s", h)
+	}
+	advance(300 * time.Millisecond)
+	land("go vet ./...", 800*time.Millisecond)
+	for _, cmd := range []string{"gofmt -l .", "git diff --stat", "go build ./...", "git status --short"} {
+		ran(cmd, 325*time.Millisecond)
+	}
+
+	// The last has returned and the model is asked: 3m 27s of nothing.
+	m.setTurnState(stateStreaming)
+	for _, wait := range []time.Duration{0, 3*time.Minute + 27*time.Second} {
+		advance(wait)
+		h := header()
+		if !strings.HasSuffix(h, " 7.1s") || strings.Contains(h, components.CardRunning) || strings.Contains(h, "6m") {
+			t.Errorf("%s after the last call the header is %q, want the plain 7.1s", wait, h)
+		}
 	}
 }
 

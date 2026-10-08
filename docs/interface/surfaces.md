@@ -307,16 +307,22 @@ motion so that mono, which has neither, still finds it. The word follows
 the step's state rather than its calls': while a call the step asked for
 waits on the approval card the slot says `waiting for you`, in the accent a
 gated decision wears, because the step has stopped on the reader and
-`running` over it would send them looking for work nobody is doing; once the
-call is approved the slot says `running` again. An earlier call's `ok`, line
-count or failure is not the step's answer while the step is still going —
-a command that broke and a command after it still running is a step still
-running — so the slot says `running` until the step ends and then says what
-it came to, `ok · 14s` or `exit 1 · 4.0s`, the failure's `✗` with it. The
-time beside the word is the step's own clock, from its first call to now,
-so it moves while the step reads or thinks between calls as well as while a
-command runs; once the step ends it is what the calls took. Every rung draws
-the same right side: the one row at low and the open card's header at high.
+`running` over it would send them looking for work nobody is doing, and it
+states no figure beside it; once the call is approved the slot says
+`running` again. An earlier call's `ok`, line count or failure is not the
+step's answer while the step is still going — a command that broke and a
+command after it still running is a step still running — so the slot says
+`running` while the step has a call out and then says what it came to,
+`ok · 14s` or `exit 1 · 4.0s`, the failure's `✗` with it. The step comes
+out when its last call returns, not when the turn ends: what the turn waits
+on after that is the model, and the frame's top rail says so. The time
+beside the word is the step's run time, its calls' own spans added up, with
+the command still running counted as far as it has got. A wait between calls
+is nobody's call — the reader at the approval card, the model asked what
+next — so it is no part of the figure: seven commands that ran for seven
+seconds around a three-minute approval read as seconds, not as a run of
+minutes. Every rung draws the same right side: the one row at low and the
+open card's header at high.
 The running command's last line stands under the body, and the row under the
 transcript does not draw the command a second time.
 

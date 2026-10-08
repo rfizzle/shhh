@@ -33,9 +33,6 @@ func (m *Model) appendEntry(e entry) int {
 	if e.turn == 0 {
 		e.turn = m.turnCount
 	}
-	if isActivityEntry(e) && e.started.IsZero() {
-		e.started = clock().Add(-e.duration)
-	}
 	at := len(m.transcript)
 	if e.callSeq > 0 {
 		at = m.placeCall(e.callSeq)

@@ -20,7 +20,7 @@
 
 
 
-  ⚙ read internal/ui/chat/turn.go                                   running
+  ⚙ read internal/ui/chat/turn.go
 
 
 
@@ -35,7 +35,7 @@
 
 
 
-  ⚙ read internal/ui/chat/turn.go                                   running
+  ⚙ read internal/ui/chat/turn.go
 
 
 
@@ -52,7 +52,7 @@
 
 
 
-  ⚙ read internal/ui/chat/turn.go                                   running
+  ⚙ read internal/ui/chat/turn.go
 
 
 
@@ -67,7 +67,7 @@
 
 
 
-  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/ui/chat/turn.go␛[m                                   ␛[38;5;254mrunning␛[m
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/ui/chat/turn.go␛[m
 
 
 
@@ -82,7 +82,7 @@
 
 
 
-  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/ui/chat/turn.go␛[m                                   ␛[38;5;254mrunning␛[m
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/ui/chat/turn.go␛[m
 
 
 
@@ -99,6 +99,6 @@
 
 
 
-  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/ui/chat/turn.go␛[m                                   ␛[38;5;254mrunning␛[m
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244minternal/ui/chat/turn.go␛[m
 
 

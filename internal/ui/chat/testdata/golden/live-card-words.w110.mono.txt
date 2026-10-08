@@ -15,7 +15,7 @@
 ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 
- ▎$ ran go test ./internal/ui/                                                   waiting for you · 12s
+ ▎$ ran go test ./internal/ui/                                                         waiting for you
     Running the UI tests twice.
     ok                                                                                          1 line
 
@@ -26,20 +26,31 @@
 ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 
- ▎$ ran go test ./internal/ui/                                                           running · 12s
+ ▎$ ran go test ./internal/ui/                                                          running · 7.0s
     Running the UI tests, then the goldens.
     ok  github.com/rfizzle/shhh/internal/ui  0.412s
     FAIL                                                                                       2 lines
 
 
 
-· a step of reads between calls, its clock from its first call
+· a step of reads whose calls have returned, while the model is asked
 ❯ survey the ui
 ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 
-  ⚙ read 3 files in internal/ui/                                                        running · 4.0s
+  ⚙ read 3 files in internal/ui/                                                                  1.2s
     Reading the views.
+
+
+
+· seven commands after an approval wait, the model asked: what they ran
+❯ run the ui tests
+────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+ ▎$ ran 7 commands                                                                                7.1s
+    Running the UI tests twice.
+    ok                                                                                          1 line
 
 
 
@@ -49,7 +60,7 @@
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 
- ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mran␛[m ␛[38;5;244mgo test ./internal/ui/␛[m                                                   ␛[38;5;254mwaiting for you␛[m␛[38;5;244m · ␛[m␛[38;5;244m12s␛[m
+ ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mran␛[m ␛[38;5;244mgo test ./internal/ui/␛[m                                                         ␛[38;5;254mwaiting for you␛[m
     ␛[38;5;254mRunning the UI tests twice.␛[m
     ␛[38;5;244mok␛[m                                                                                          ␛[38;5;244m1 line␛[m
 
@@ -60,19 +71,30 @@
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 
- ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mran␛[m ␛[38;5;244mgo test ./internal/ui/␛[m                                                           ␛[38;5;254mrunning␛[m␛[38;5;244m · ␛[m␛[38;5;244m12s␛[m
+ ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mran␛[m ␛[38;5;244mgo test ./internal/ui/␛[m                                                          ␛[38;5;254mrunning␛[m␛[38;5;244m · ␛[m␛[38;5;244m7.0s␛[m
     ␛[38;5;254mRunning the UI tests, then the goldens.␛[m
     ␛[38;5;244mok  github.com/rfizzle/shhh/internal/ui  0.412s␛[m
     ␛[38;5;244mFAIL␛[m                                                                                       ␛[38;5;244m2 lines␛[m
 
 
 
-· a step of reads between calls, its clock from its first call
+· a step of reads whose calls have returned, while the model is asked
 ␛[38;5;254m❯␛[m survey the ui
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 
-  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m␛[38;5;244m 3 files in internal/ui/␛[m                                                        ␛[38;5;254mrunning␛[m␛[38;5;244m · ␛[m␛[38;5;244m4.0s␛[m
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m␛[38;5;244m 3 files in internal/ui/␛[m                                                                  ␛[38;5;244m1.2s␛[m
     ␛[38;5;254mReading the views.␛[m
+
+
+
+· seven commands after an approval wait, the model asked: what they ran
+␛[38;5;254m❯␛[m run the ui tests
+␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+
+ ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mran␛[m␛[38;5;244m 7 commands␛[m                                                                                ␛[38;5;244m7.1s␛[m
+    ␛[38;5;254mRunning the UI tests twice.␛[m
+    ␛[38;5;244mok␛[m                                                                                          ␛[38;5;244m1 line␛[m
 
 

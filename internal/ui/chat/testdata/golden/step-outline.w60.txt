@@ -157,7 +157,7 @@
 ──────────────────────────────────────────────────────
 
                                                       
-  ⚙ read 2 files · searched once             running  
+  ⚙ read 2 files · searched once                      
     Locate the round accounting                       
                                                       
 
@@ -175,7 +175,7 @@
     has to come from there.
 
                                                       
-  ⚙ read internal/agent/round.go             running  
+  ⚙ read internal/agent/round.go · searched once      
                                                       
 
 
@@ -194,7 +194,7 @@
     has to come from there.
 
                                                       
-  ⚙ read internal/agent/round.go             running  
+  ⚙ read internal/agent/round.go · searched once      
                                                       
 
 
@@ -346,7 +346,7 @@
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 2 files · searched once␛[m␛[48;5;234m             ␛[38;5;205mrunning␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 2 files · searched once␛[m␛[48;5;234m                      ␛[m
 ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                       ␛[m
 ␛[48;5;234m                                                      ␛[m
 
@@ -364,7 +364,7 @@
     ␛[3;38;5;245mhas to come from there.␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/round.go␛[m␛[48;5;234m             ␛[38;5;205mrunning␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/round.go␛[m␛[48;5;234m␛[38;5;241m · searched once␛[m␛[48;5;234m      ␛[m
 ␛[48;5;234m                                                      ␛[m
 
 
@@ -383,6 +383,6 @@
     ␛[3;38;5;245mhas to come from there.␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/round.go␛[m␛[48;5;234m             ␛[38;5;205mrunning␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/round.go␛[m␛[48;5;234m␛[38;5;241m · searched once␛[m␛[48;5;234m      ␛[m
 ␛[48;5;234m                                                      ␛[m
 
