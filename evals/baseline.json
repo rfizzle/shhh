@@ -1,24 +1,46 @@
 {
   "version": 1,
-  "model": "",
-  "recorded": "2026-09-10T18:14:32.321501Z",
+  "model": "claude-sonnet-5-5",
+  "recorded": "2026-10-08T09:50:17.876625Z",
   "cases": [
     {
       "name": "analysis-only-diagnosis",
       "kind": "workspace",
-      "verdict": "skipped",
-      "attempts": 0,
-      "passes": 0,
-      "median_rounds": 0,
-      "median_tokens": 0,
-      "median_seconds": 0,
-      "cost": 0,
-      "priced": false,
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 2,
+      "median_tokens": 123167,
+      "median_seconds": 25.4586875,
+      "cost": 0.25762199999999996,
+      "priced": true,
       "behaviour": {
         "median_mutations_attempted": 0,
-        "median_calls_before_first_mutation": 0,
+        "median_calls_before_first_mutation": 4,
         "median_validation_attempts": 0,
-        "median_unintended_mutations": 0
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 0,
+        "median_result_bytes": 1381
+      }
+    },
+    {
+      "name": "child-inherit",
+      "kind": "inherit",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 0,
+      "median_tokens": 20279,
+      "median_seconds": 9.621437875,
+      "cost": 0.045501999999999994,
+      "priced": true,
+      "table": {
+        "rows": 2,
+        "correct": 2,
+        "false_allow": 0,
+        "false_deny": 0,
+        "wrong": 0,
+        "unanswered": 0
       }
     },
     {
@@ -29,7 +51,7 @@
       "passes": 1,
       "median_rounds": 0,
       "median_tokens": 0,
-      "median_seconds": 0.607829917,
+      "median_seconds": 1.197412417,
       "cost": 0,
       "priced": false,
       "table": {
@@ -44,14 +66,22 @@
     {
       "name": "classifier-decisions",
       "kind": "classifier",
-      "verdict": "skipped",
-      "attempts": 0,
+      "verdict": "failed",
+      "attempts": 1,
       "passes": 0,
       "median_rounds": 0,
       "median_tokens": 0,
-      "median_seconds": 0,
+      "median_seconds": 39.150285708,
       "cost": 0,
-      "priced": false
+      "priced": true,
+      "table": {
+        "rows": 22,
+        "correct": 0,
+        "false_allow": 0,
+        "false_deny": 0,
+        "wrong": 0,
+        "unanswered": 22
+      }
     },
     {
       "name": "close-gate",
@@ -61,7 +91,7 @@
       "passes": 1,
       "median_rounds": 0,
       "median_tokens": 0,
-      "median_seconds": 0.699584292,
+      "median_seconds": 1.087458834,
       "cost": 0,
       "priced": false,
       "table": {
@@ -81,7 +111,7 @@
       "passes": 1,
       "median_rounds": 0,
       "median_tokens": 0,
-      "median_seconds": 0.00191825,
+      "median_seconds": 0.010002166,
       "cost": 0,
       "priced": false,
       "table": {
@@ -94,94 +124,345 @@
       }
     },
     {
-      "name": "fix-failing-test",
+      "name": "data-csv-distinct",
       "kind": "workspace",
-      "verdict": "skipped",
-      "attempts": 0,
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 4,
+      "median_tokens": 205550,
+      "median_seconds": 19.411373584,
+      "cost": 0.418604,
+      "priced": true,
+      "behaviour": {
+        "median_mutations_attempted": 1,
+        "median_calls_before_first_mutation": 3,
+        "median_validation_attempts": 0,
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 2,
+        "median_result_bytes": 619
+      }
+    },
+    {
+      "name": "data-gz-line",
+      "kind": "workspace",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 3,
+      "median_tokens": 258608,
+      "median_seconds": 18.323065833,
+      "cost": 0.52312,
+      "priced": true,
+      "behaviour": {
+        "median_mutations_attempted": 1,
+        "median_calls_before_first_mutation": 3,
+        "median_validation_attempts": 0,
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 1,
+        "median_result_bytes": 54713
+      }
+    },
+    {
+      "name": "data-lockfile-field",
+      "kind": "workspace",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 2,
+      "median_tokens": 121279,
+      "median_seconds": 11.623615958,
+      "cost": 0.245006,
+      "priced": true,
+      "behaviour": {
+        "median_mutations_attempted": 1,
+        "median_calls_before_first_mutation": 1,
+        "median_validation_attempts": 0,
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 0,
+        "median_result_bytes": 163
+      }
+    },
+    {
+      "name": "data-table-count",
+      "kind": "workspace",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 2,
+      "median_tokens": 120964,
+      "median_seconds": 9.498481125,
+      "cost": 0.24354399999999998,
+      "priced": true,
+      "behaviour": {
+        "median_mutations_attempted": 1,
+        "median_calls_before_first_mutation": 1,
+        "median_validation_attempts": 0,
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 0,
+        "median_result_bytes": 65
+      }
+    },
+    {
+      "name": "data-toml-value",
+      "kind": "workspace",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 3,
+      "median_tokens": 161648,
+      "median_seconds": 14.748764833,
+      "cost": 0.325144,
+      "priced": true,
+      "behaviour": {
+        "median_mutations_attempted": 1,
+        "median_calls_before_first_mutation": 2,
+        "median_validation_attempts": 0,
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 0,
+        "median_result_bytes": 618
+      }
+    },
+    {
+      "name": "data-workflow-jobs",
+      "kind": "workspace",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 4,
+      "median_tokens": 207215,
+      "median_seconds": 18.263845584,
+      "cost": 0.422654,
+      "priced": true,
+      "behaviour": {
+        "median_mutations_attempted": 1,
+        "median_calls_before_first_mutation": 3,
+        "median_validation_attempts": 0,
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 0,
+        "median_result_bytes": 1327
+      }
+    },
+    {
+      "name": "data-zip-entries",
+      "kind": "workspace",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 4,
+      "median_tokens": 207282,
+      "median_seconds": 17.745501625,
+      "cost": 0.42468399999999995,
+      "priced": true,
+      "behaviour": {
+        "median_mutations_attempted": 1,
+        "median_calls_before_first_mutation": 3,
+        "median_validation_attempts": 0,
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 1,
+        "median_result_bytes": 929
+      }
+    },
+    {
+      "name": "delegation-policy",
+      "kind": "delegation",
+      "verdict": "failed",
+      "attempts": 1,
       "passes": 0,
       "median_rounds": 0,
-      "median_tokens": 0,
-      "median_seconds": 0,
-      "cost": 0,
-      "priced": false,
+      "median_tokens": 103051,
+      "median_seconds": 23.824096916,
+      "cost": 0.222262,
+      "priced": true,
+      "table": {
+        "rows": 4,
+        "correct": 3,
+        "false_allow": 0,
+        "false_deny": 0,
+        "wrong": 1,
+        "unanswered": 0
+      }
+    },
+    {
+      "name": "file-work-without-a-shell",
+      "kind": "workspace",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 3,
+      "median_tokens": 167207,
+      "median_seconds": 15.1013465,
+      "cost": 0.33910199999999996,
+      "priced": true,
       "behaviour": {
-        "median_mutations_attempted": 0,
-        "median_calls_before_first_mutation": 0,
+        "median_mutations_attempted": 1,
+        "median_calls_before_first_mutation": 4,
         "median_validation_attempts": 0,
-        "median_unintended_mutations": 0
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 1,
+        "median_result_bytes": 2525
+      }
+    },
+    {
+      "name": "fix-failing-test",
+      "kind": "workspace",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 3,
+      "median_tokens": 163773,
+      "median_seconds": 21.694388666000002,
+      "cost": 0.33325799999999994,
+      "priced": true,
+      "behaviour": {
+        "median_mutations_attempted": 1,
+        "median_calls_before_first_mutation": 3,
+        "median_validation_attempts": 2,
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 2,
+        "median_result_bytes": 1323
       }
     },
     {
       "name": "implement-to-spec",
       "kind": "workspace",
-      "verdict": "skipped",
-      "attempts": 0,
-      "passes": 0,
-      "median_rounds": 0,
-      "median_tokens": 0,
-      "median_seconds": 0,
-      "cost": 0,
-      "priced": false,
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 6,
+      "median_tokens": 327903,
+      "median_seconds": 34.73926275,
+      "cost": 0.6816699999999999,
+      "priced": true,
       "behaviour": {
-        "median_mutations_attempted": 0,
-        "median_calls_before_first_mutation": 0,
-        "median_validation_attempts": 0,
-        "median_unintended_mutations": 0
+        "median_mutations_attempted": 4,
+        "median_calls_before_first_mutation": 5,
+        "median_validation_attempts": 1,
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 1,
+        "median_result_bytes": 11914
       }
     },
     {
       "name": "py-fix-failing-test",
       "kind": "workspace",
-      "verdict": "skipped",
-      "attempts": 0,
-      "passes": 0,
-      "median_rounds": 0,
-      "median_tokens": 0,
-      "median_seconds": 0,
-      "cost": 0,
-      "priced": false,
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 4,
+      "median_tokens": 206908,
+      "median_seconds": 18.608775042,
+      "cost": 0.42205599999999993,
+      "priced": true,
       "behaviour": {
-        "median_mutations_attempted": 0,
-        "median_calls_before_first_mutation": 0,
+        "median_mutations_attempted": 2,
+        "median_calls_before_first_mutation": 3,
         "median_validation_attempts": 0,
-        "median_unintended_mutations": 0
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 1,
+        "median_result_bytes": 2031
+      }
+    },
+    {
+      "name": "read-only-shell",
+      "kind": "read-only",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 0,
+      "median_tokens": 26421,
+      "median_seconds": 7.871070375,
+      "cost": 0.05717,
+      "priced": true,
+      "table": {
+        "rows": 1,
+        "correct": 1,
+        "false_allow": 0,
+        "false_deny": 0,
+        "wrong": 0,
+        "unanswered": 0
       }
     },
     {
       "name": "research-disagreement",
       "kind": "research",
-      "verdict": "skipped",
-      "attempts": 0,
+      "verdict": "failed",
+      "attempts": 1,
       "passes": 0,
-      "median_rounds": 0,
-      "median_tokens": 0,
-      "median_seconds": 0,
-      "cost": 0,
-      "priced": false
+      "median_rounds": 2,
+      "median_tokens": 5425,
+      "median_seconds": 6.356651333,
+      "cost": 0.015394000000000001,
+      "priced": true,
+      "research": {
+        "cited": {
+          "Got": 2,
+          "Of": 2
+        },
+        "quoted": {
+          "Got": 1,
+          "Of": 3
+        },
+        "facts": {
+          "Got": 5,
+          "Of": 5
+        },
+        "cited_not_read": 0
+      }
     },
     {
       "name": "research-unanswerable",
       "kind": "research",
-      "verdict": "skipped",
-      "attempts": 0,
-      "passes": 0,
-      "median_rounds": 0,
-      "median_tokens": 0,
-      "median_seconds": 0,
-      "cost": 0,
-      "priced": false
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 3,
+      "median_tokens": 8120,
+      "median_seconds": 13.807123083,
+      "cost": 0.022632,
+      "priced": true,
+      "research": {
+        "cited": {
+          "Got": 3,
+          "Of": 3
+        },
+        "quoted": {
+          "Got": 0,
+          "Of": 0
+        },
+        "facts": {
+          "Got": 1,
+          "Of": 1
+        },
+        "cited_not_read": 0
+      }
     },
     {
       "name": "research-version",
       "kind": "research",
-      "verdict": "skipped",
-      "attempts": 0,
+      "verdict": "failed",
+      "attempts": 1,
       "passes": 0,
-      "median_rounds": 0,
-      "median_tokens": 0,
-      "median_seconds": 0,
-      "cost": 0,
-      "priced": false
+      "median_rounds": 2,
+      "median_tokens": 5751,
+      "median_seconds": 6.34745075,
+      "cost": 0.016006,
+      "priced": true,
+      "research": {
+        "cited": {
+          "Got": 3,
+          "Of": 3
+        },
+        "quoted": {
+          "Got": 1,
+          "Of": 2
+        },
+        "facts": {
+          "Got": 2,
+          "Of": 2
+        },
+        "cited_not_read": 0
+      }
     },
     {
       "name": "steer-on-drift",
@@ -191,7 +472,7 @@
       "passes": 1,
       "median_rounds": 0,
       "median_tokens": 0,
-      "median_seconds": 0.000041292,
+      "median_seconds": 0.000049666,
       "cost": 0,
       "priced": false,
       "table": {
@@ -206,49 +487,61 @@
     {
       "name": "summary-state",
       "kind": "summary",
-      "verdict": "skipped",
-      "attempts": 0,
-      "passes": 0,
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
       "median_rounds": 0,
-      "median_tokens": 0,
-      "median_seconds": 0,
-      "cost": 0,
-      "priced": false
+      "median_tokens": 21424,
+      "median_seconds": 33.218885875,
+      "cost": 0.060784,
+      "priced": true,
+      "table": {
+        "rows": 14,
+        "correct": 14,
+        "false_allow": 0,
+        "false_deny": 0,
+        "wrong": 0,
+        "unanswered": 0
+      }
     },
     {
       "name": "trace-the-cause",
       "kind": "workspace",
-      "verdict": "skipped",
-      "attempts": 0,
-      "passes": 0,
-      "median_rounds": 0,
-      "median_tokens": 0,
-      "median_seconds": 0,
-      "cost": 0,
-      "priced": false,
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 4,
+      "median_tokens": 212168,
+      "median_seconds": 23.8020995,
+      "cost": 0.437432,
+      "priced": true,
       "behaviour": {
-        "median_mutations_attempted": 0,
-        "median_calls_before_first_mutation": 0,
-        "median_validation_attempts": 0,
-        "median_unintended_mutations": 0
+        "median_mutations_attempted": 1,
+        "median_calls_before_first_mutation": 7,
+        "median_validation_attempts": 1,
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 1,
+        "median_result_bytes": 4323
       }
     },
     {
       "name": "ts-fix-failing-test",
       "kind": "workspace",
-      "verdict": "skipped",
-      "attempts": 0,
-      "passes": 0,
-      "median_rounds": 0,
-      "median_tokens": 0,
-      "median_seconds": 0,
-      "cost": 0,
-      "priced": false,
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 3,
+      "median_tokens": 166843,
+      "median_seconds": 18.951471792,
+      "cost": 0.343142,
+      "priced": true,
       "behaviour": {
-        "median_mutations_attempted": 0,
-        "median_calls_before_first_mutation": 0,
+        "median_mutations_attempted": 1,
+        "median_calls_before_first_mutation": 4,
         "median_validation_attempts": 0,
-        "median_unintended_mutations": 0
+        "median_unintended_mutations": 0,
+        "median_shell_calls": 1,
+        "median_result_bytes": 2652
       }
     }
   ]
