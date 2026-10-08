@@ -423,6 +423,32 @@ to a card — the fallback is a refusal instead, and a classifier's no stands as
 the refusal it is: the same commitment with the one remaining answer taken
 away ([`headless.md`](headless.md#auto-mode-fails-closed)).
 
+## A write that adds a secret is always asked
+
+An edit or a write whose added lines hold a credential shape is put to the
+person in every mode that would have run it unasked: accept-edits, auto, and a
+session grant of edits all answer before the card, and none of them answers
+this one. The card says so first — a warning row beside the level, `⚠ adds 1
+anthropic key · line 12`, naming the kind and the line and never the value —
+and offers no grant, as a flagged card offers none. The lines are read with
+the scrub's own table of shapes, and only the lines the change adds count: a
+key the file already held is not the edit's to answer for
+([`secrets.md`](secrets.md#the-shapes-it-knows-without-being-told)).
+
+Why it asks and does not refuse: the person may mean it — a fixture, a
+template with a placeholder that happens to match. But a key written to disk
+is a key in the next commit, the next backup and the next paste, and the
+cheapest place to stop it is the first door, before the file exists, rather
+than the last, where the commit refuses it
+([`secrets.md`](secrets.md#a-secret-does-not-get-committed)). It is the
+fail-closed stance of [the classifier](#the-classifier-fails-closed) applied
+to a different doubt: where the product cannot tell an intended write from a
+leak, the answer is a person, never a yes.
+
+Plan and read-only mode still refuse the write outright, and the deny lists
+still answer first. A no is the ordinary denial; the model is told nothing
+new, and reads it as it reads any declined edit.
+
 ## The classifier is shown what the session did, never what it read
 
 The evidence a verdict is reached on is the recent conversation, the proposed

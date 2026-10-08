@@ -292,6 +292,9 @@ func (m Model) editRadius(req *approvalRequest) blastRadius {
 			b.safe = "not now — it keeps waiting"
 		}
 	}
+	if req.secret != "" {
+		b.risks = append(b.risks, req.secret)
+	}
 	switch {
 	case m.changes == nil:
 		b.reversibility = "undo none — this session records no changeset"

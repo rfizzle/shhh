@@ -35,7 +35,9 @@ keys C-Space
 sleep 0.3
 keys y
 # The settings file is a write of its own, and so a card of its own.
-snap 02b-write-card "config/dev.env"
+# It adds a token on line 12, and the card says so before it lands
+# (docs/capabilities/approvals-and-safety.md#a-write-that-adds-a-secret-is-always-asked).
+snap 02b-write-card "config/dev.env" "adds 1 github token · line 12"
 sleep 1
 keys C-Space
 sleep 0.3

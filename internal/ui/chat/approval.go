@@ -24,6 +24,7 @@ import (
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/receipt"
+	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -158,6 +159,10 @@ type approvalRequest struct {
 	// has to outlive the card, which esc puts down with the answers already
 	// on it. Nil is a call that asked one question.
 	sheet *questionSheet
+	// secret is what the lines an edit adds hold of credential shapes, as the
+	// card's warning row reads it (addedSecrets). It out-ranks the mode and
+	// the grants as a hook's ask does, and is empty on a clean edit.
+	secret string
 	// mustAsk is a hook in front of this call having asked for it, or having
 	// failed on a call there is somebody to ask about. It out-ranks the batch
 	// approval, the mode and the classifier, all of which answer the question
@@ -337,6 +342,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 			path:    mut.Path,
 			hunks:   diff.Compute(mut.OldText, mut.NewText),
 			summary: title,
+			secret:  addedSecrets(mut.OldText, mut.NewText),
 		}, nil
 	}
 	p, err := preview(json.RawMessage(tc.Arguments))
@@ -358,6 +364,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 			hunks:   diff.Compute(p.OldText, p.NewText),
 			summary: title,
 			fields:  p.Fields,
+			secret:  addedSecrets(p.OldText, p.NewText),
 		}, nil
 	}
 	summary := p.Summary
@@ -527,7 +534,17 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	// Mode policy: the permissive modes and session
 	// grants skip the prompt, plan mode refuses the call outright, and
 	// safety-flagged commands always prompt.
-	switch decision, reason := m.policyDecision(req); decision {
+	decision, reason := m.policyDecision(req)
+	// A write that adds a credential shape is asked in every mode and under
+	// every grant, as a classifier that failed is: the plan and read-only
+	// refusals stand, but nothing that would have run unasked does
+	// (docs/capabilities/approvals-and-safety.md#a-write-that-adds-a-secret-is-always-asked).
+	if req.secret != "" && decision == agent.Allow {
+		m.recordDecision(observe.DecisionAsk, observe.ReasonSafety)
+		m.armConfirm(req)
+		return m, nil
+	}
+	switch decision {
 	case agent.Allow:
 		m.recordDecision(observe.DecisionAllow, observe.ReasonCode(reason))
 		req.autoRule = reason
@@ -575,6 +592,30 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	m.recordDecision(observe.DecisionAsk, observe.AskReason(m.approvalAction(req)))
 	m.armConfirm(req)
 	return m, nil
+}
+
+// addedSecrets is the card's warning for the credential shapes an edit adds
+// to its file, by kind and line and never by value: `adds 1 anthropic key ·
+// line 12`. Shapes the file already held are not the edit's to answer for
+// (secret.FindAdded). Empty where the edit adds none.
+func addedSecrets(before, after string) string {
+	found := secret.FindAdded(before, after)
+	if len(found) == 0 {
+		return ""
+	}
+	noun := strings.ReplaceAll(found[0].Kind, "-", " ")
+	lines := make([]string, len(found))
+	for i, f := range found {
+		lines[i] = strconv.Itoa(f.Line)
+		if f.Kind != found[0].Kind {
+			noun = "secret"
+		}
+	}
+	where := "line " + lines[0]
+	if len(lines) > 1 {
+		where = "lines " + strings.Join(lines, ", ")
+	}
+	return "adds " + plural(len(found), noun) + " · " + where
 }
 
 // startPreToolHook runs the hooks in front of a gated call in the

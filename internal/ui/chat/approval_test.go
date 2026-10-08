@@ -1426,3 +1426,41 @@ func TestGitWrite_RequiredContainmentPutsItToTheCard(t *testing.T) {
 		}
 	}
 }
+
+// A write that adds a credential shape asks in the modes that would have
+// run it, with the shape named by kind and line on the card and the value
+// nowhere on it
+// (docs/capabilities/approvals-and-safety.md#a-write-that-adds-a-secret-is-always-asked).
+func TestApproval_AWriteWithASecretAsks(t *testing.T) {
+	const key = "sk-ant-api03-" + "AbCdEfGhIjKlMnOpQrStUvWxYz0123456789AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-AbCdEfGh-AA"
+	secretly := "# dev\n# a\nKEY=" + key + "\n"
+	write := func(mode agent.Mode, grant bool, content string) Model {
+		var ran []string
+		m := execModel(t, &ran)
+		m.policy.mode, m.policy.allEdits = mode, grant
+		path := filepath.Join(t.TempDir(), "dev.env")
+		updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+			{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":%q}`, path, content)},
+		}})
+		return updated.(Model)
+	}
+	for _, mode := range []agent.Mode{agent.ModeAcceptEdits, agent.ModeAuto} {
+		m := write(mode, false, secretly)
+		if m.state != stateConfirmRun {
+			t.Fatalf("a write with a secret must wait for the reader in %s mode", mode)
+		}
+		card := strings.Join(m.confirmLines(), "\n")
+		if !strings.Contains(card, "adds 1 anthropic key · line 3") {
+			t.Fatalf("%s: the card should name the kind and line, got:\n%s", mode, card)
+		}
+		if strings.Contains(card, "AbCdEfGh") {
+			t.Fatalf("%s: the card must not carry the value, got:\n%s", mode, card)
+		}
+	}
+	if write(agent.ModeManual, true, secretly).state != stateConfirmRun {
+		t.Fatal("a session grant must not answer a write with a secret")
+	}
+	if write(agent.ModeAcceptEdits, false, "KEY=none\n").state == stateConfirmRun {
+		t.Fatal("a clean write should still run unasked in accept-edits mode")
+	}
+}

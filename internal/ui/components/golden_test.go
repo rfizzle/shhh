@@ -722,6 +722,18 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Hunks, c.FullDiff = goldenHunks(), true
 				c.Reversibility = "undo yes — recorded, and git has this file"
 			})},
+			// A write that adds a credential shape: the warning row names the
+			// kind and the line beside the level, the value is nowhere, and no
+			// grant is offered because the write asks in every mode.
+			{Label: "variant · edit, adds a secret", View: card(func(c *ApprovalCard) {
+				c.Variant, c.Title = ApprovalEdit, "Approve write"
+				c.ActGlyph, c.Act = "✎", "write config/dev.env"
+				c.Answer = "apply the change"
+				c.Severity, c.SeverityReason = SeverityMedium, "writes one file under config/"
+				c.Warnings = []string{"adds 1 anthropic key · line 12"}
+				c.Hunks, c.FullDiff = goldenHunks(), true
+				c.Reversibility = "undo yes — recorded, and it needs no git to restore"
+			})},
 			// The state every card is in the moment it appears beside a live
 			// draft: the decision keys not yet live, and the one
 			// key that hands the keyboard over offered under them.
