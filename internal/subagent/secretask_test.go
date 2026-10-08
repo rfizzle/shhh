@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -31,20 +30,18 @@ func TestRoutedApproval_AChildsWriteWithASecretAsks(t *testing.T) {
 		t.Cleanup(sup.Close)
 		sup.SetParentMode(mode)
 		execTool(t, sup, SpawnToolName, `{"role":"writer","task":"write the file"}`)
-		select {
-		case ev := <-sup.Events():
-			for ev.Kind != EventAsk {
-				select {
-				case ev = <-sup.Events():
-				case <-time.After(5 * time.Second):
-					return nil
-				}
+		// The child blocks on an ask until it is answered, so its end event
+		// without an ask first is the fact that nothing was put to the parent.
+		for ev := range sup.Events() {
+			switch ev.Kind {
+			case EventAsk:
+				ev.Ask.Respond(false)
+				return ev.Ask
+			case EventDone:
+				return nil
 			}
-			ev.Ask.Respond(false)
-			return ev.Ask
-		case <-time.After(5 * time.Second):
-			return nil
 		}
+		return nil
 	}
 	secretly := "# dev\n# a\nKEY=" + key + "\n"
 	for _, mode := range []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto} {
