@@ -214,12 +214,17 @@ func TestProgram_ACardAnswersToItsOwnKeys(t *testing.T) {
 func TestProgram_AnEditCardAppliesTheEdit(t *testing.T) {
 	dir := fixtureDir(t, map[string]string{"loop.go": "package agent\n\nconst limit = 25\n"})
 	loop := filepath.Join(dir, "loop.go")
-	m, _ := scriptedSession(
-		programTurn{calls: []provider.ToolCall{call("r1", tools.ReadFileName, fmt.Sprintf(`{"path":%q}`, loop))}},
+	// The read names the file relative, as reads does, so the card's header is
+	// `read loop.go · wrote 1 file` whatever the temporary directory is called:
+	// a read's absolute path is cut by the pane before the rollup is, and the
+	// rollup is what the test reads. The edit names it absolute because the
+	// approval card resolves a path against the process's directory, which a
+	// test may never change, and the write's own row is not in the header.
+	m := readingSession(dir,
+		programTurn{calls: reads("loop.go")},
 		programTurn{calls: []provider.ToolCall{call("e1", "edit_file", fmt.Sprintf(`{"path":%q,"old_text":"const limit = 25","new_text":"const limit = 50"}`, loop))}},
 		programTurn{text: "The rounds are capped at the limit now"},
 	)
-	m = m.WithWorkspace(dir).WithToolExecutor(tools.Execute)
 	tm := runProgram(t, m)
 
 	send(tm, "cap rounds at the limit")
@@ -233,8 +238,13 @@ func TestProgram_AnEditCardAppliesTheEdit(t *testing.T) {
 	if err != nil || !strings.Contains(string(got), "const limit = 50") {
 		t.Fatalf("the allowed edit did not reach the file (%v): %q\n%s", err, got, frame)
 	}
-	// The read and the edit are one card, whose glyph is the write's.
-	frameHas(t, frame, "✎ read", "wrote 1 file", "The rounds are capped at the limit now")
+	// The read and the edit are one card, whose glyph is the write's. The
+	// header names the write by its path where the pane has room and counts it
+	// (`wrote 1 file`) where it has not, and which of the two it draws is the
+	// pane's width and not this test's question, so it reads the verb after the
+	// read. Both forms are pinned where the header is built, in the receipt
+	// package's header test.
+	frameHas(t, frame, "✎ read loop.go · wrote ", "The rounds are capped at the limit now")
 }
 
 // programKey is one keystroke spelled the way the register spells it —

@@ -36,10 +36,16 @@ func TestTodoListing(t *testing.T) {
 		"✗ third   Third · medium  [blocked]",
 		"shhh todo — 3 items",
 		"1 ready · 1 blocked · 1 archived",
-		"bad.md:",
-		"skipped: no header",
 	} {
 		if !strings.Contains(out, want) {
+			t.Errorf("listing lacks %q:\n%s", want, out)
+		}
+	}
+	// The diagnostic leads with the file's absolute path, so where it wraps is
+	// the temporary directory's to decide; it is read as one line.
+	oneLine := strings.Join(strings.Fields(out), " ")
+	for _, want := range []string{"bad.md:", "skipped: no header"} {
+		if !strings.Contains(oneLine, want) {
 			t.Errorf("listing lacks %q:\n%s", want, out)
 		}
 	}

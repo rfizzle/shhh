@@ -71,17 +71,20 @@ func TestProgram_EscFoldsWhatThePointerOpened(t *testing.T) {
 		"loop.go":  "package agent\n\nfunc loop() {}\n",
 		"round.go": "package agent\n\nconst limit = 25\n",
 	})
-	// A read and a search are a group of one call each, so each is a row
-	// the pointer can stand on once the card is open.
+	// A read and a glob are a group of one call each, so each is a row the
+	// pointer can stand on once the card is open. The second is a glob and not
+	// a search because a search names every match by its absolute path, which
+	// the pane cuts at a width the temporary directory decides; a glob names
+	// them relative to its root.
 	tm := runProgram(t, readingSession(dir,
-		programTurn{calls: []provider.ToolCall{reads("loop.go")[0], call("s1", "search", `{"pattern":"const limit"}`)}},
+		programTurn{calls: []provider.ToolCall{reads("loop.go")[0], call("g1", "glob", `{"pattern":"*.go"}`)}},
 		programTurn{text: "The limit is a checkpoint, not a wall."},
 	))
 
 	send(tm, "how is the round limit counted")
 	waitForText(t, tm, "not a wall")
 	programPress(t, tm, "shift+up", "shift+up", "shift+up", "shift+up", "shift+right", "shift+down", "shift+right")
-	waitForText(t, tm, "const limit = 25")
+	waitForText(t, tm, "round.go")
 	programPress(t, tm, "esc")
 	programPress(t, tm, "esc")
 	waitForText(t, tm, "folded 2 rows")
@@ -90,7 +93,7 @@ func TestProgram_EscFoldsWhatThePointerOpened(t *testing.T) {
 
 	frame := finalFrame(t, tm)
 	frameHas(t, frame, "pick a turn to return to")
-	if strings.Contains(frame, "const limit = 25") {
+	if strings.Contains(frame, "round.go") {
 		t.Fatalf("the rows the pointer opened are still open:\n%s", frame)
 	}
 }
