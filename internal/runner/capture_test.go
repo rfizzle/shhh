@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -70,25 +68,16 @@ func TestACommandStillPrintingAtItsCeilingIsMovedNotKilled(t *testing.T) {
 	needShell(t)
 	sup := withSupervisor(t)
 
-	// The ceiling arrives when the command has printed, not after a count of
-	// milliseconds a loaded host may spend starting the shell.
-	printed := filepath.Join(t.TempDir(), "printed")
+	// The ceiling arrives once the capture has read the line: onLine runs after
+	// the line is in the capture's buffer, the fact the product reads. A marker
+	// the shell touched is not that fact; the pipe read lags the write.
 	ctx, arrive := ceilingOnDemand(300 * time.Millisecond)
 	defer arrive()
-	go func() {
-		for {
-			if _, err := os.Stat(printed); err == nil {
-				arrive()
-				return
-			}
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(5 * time.Millisecond):
-			}
+	out, code := RunCaptureTail(ctx, "echo listening; sleep 1; echo later; sleep 30", func(line string) {
+		if strings.Contains(line, "listening") {
+			arrive()
 		}
-	}()
-	out, code := RunCapture(ctx, "echo listening; touch '"+printed+"'; sleep 1; echo later; sleep 30")
+	})
 
 	if !strings.Contains(out, "listening") {
 		t.Errorf("what it printed before the ceiling has to come back: %q", out)
