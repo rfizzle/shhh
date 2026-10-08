@@ -554,6 +554,9 @@ func (m Model) childEditRadius(ask *subagent.Ask) blastRadius {
 	if ask.Path != "" {
 		b.reason = editReason(ask.Path)
 	}
+	if ask.Secret != "" {
+		b.risks = append(b.risks, ask.Secret)
+	}
 	b.fields = append(b.fields, landsInField(ask))
 	b.reversibility = "undo none here — this session records the agent's patch, not its edits"
 	return b

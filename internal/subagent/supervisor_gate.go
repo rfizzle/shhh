@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
+	"github.com/rfizzle/shhh/internal/secret"
 	wtree "github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
@@ -45,6 +46,9 @@ type Ask struct {
 	Hunks    []diff.Hunk // AskEdit / AskPatch: the change to review
 	Summary  string      // AskGeneric: one-line description
 	Path     string      // AskEdit: the file, spelled as the child's own row spells it
+	// Secret is the card's warning for the credential shapes an AskEdit adds
+	// to its file (secret.AddedNote), empty where it adds none.
+	Secret string
 
 	// The rest is what the parent's approval card needs to say more about a
 	// routed request than its title. A card that only says what the action
@@ -228,6 +232,12 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		}
 		return agent.ModeRefusedResult(reason, refused, policy.ReadOnlyExtra)
 	}
+	// A write that adds a credential shape is asked in every mode that would
+	// have run it, as the session's own is: the denials above stand, but
+	// nothing that would have run unasked does, and the classifier is not
+	// asked to remove the prompt
+	// (docs/capabilities/approvals-and-safety.md#a-write-that-adds-a-secret-is-always-asked).
+	addsSecret, decision := secretAsks(tc.Name, rooted, action, decision)
 	// Whether the classifier is what decided, because from here the rule has
 	// a name of its own and a duration behind it — which the policy's reason
 	// never has, and which the record's code can never carry.
@@ -239,7 +249,7 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 	// judged is the classifier's sentence where it said no and a person is
 	// there to be asked instead, which the ask carries to the card.
 	var judged string
-	if decision == agent.Ask {
+	if decision == agent.Ask && !addsSecret {
 		var denial string
 		var byClassifier bool
 		decision, cost, denial, byClassifier = s.classify(c, policy.Mode, tc, action)
@@ -279,6 +289,9 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		askCode := observe.AskReason(action)
 		if code := observe.HostReason(web.StandingOf(standing)); code != "" {
 			askCode = code
+		}
+		if addsSecret {
+			askCode = observe.ReasonSafety
 		}
 		if judged != "" {
 			record(observe.DecisionDeny, observe.ReasonClassifier)
@@ -621,11 +634,35 @@ func askFor(c *child, name string, rooted json.RawMessage, action agent.Action) 
 		ask := NewAsk(c.name, AskEdit, mut.Action+" "+path)
 		ask.Path = path
 		ask.Hunks = diff.Compute(mut.OldText, mut.NewText)
+		ask.Secret = secret.AddedNote(mut.OldText, mut.NewText)
 		return ask, nil
 	}
 	ask := NewAsk(c.name, AskGeneric, "use "+name)
 	ask.Summary = compactArgs(rooted)
 	return ask, nil
+}
+
+// secretAsks reports whether the call is a write that adds a credential
+// shape, and the decision with a yes turned into an ask where it is.
+func secretAsks(name string, rooted json.RawMessage, action agent.Action, decision agent.Decision) (bool, agent.Decision) {
+	if action.Kind != agent.ActionEdit || editSecret(name, rooted) == "" {
+		return false, decision
+	}
+	if decision == agent.Allow {
+		decision = agent.Ask
+	}
+	return true, decision
+}
+
+// editSecret is the note the card would draw for the credential shapes this
+// edit adds, empty where it adds none or the call does not preview (the ask
+// reports that error itself).
+func editSecret(name string, rooted json.RawMessage) string {
+	mut, err := tools.PreviewMutation(name, rooted)
+	if err != nil {
+		return ""
+	}
+	return secret.AddedNote(mut.OldText, mut.NewText)
 }
 
 // await routes one ask to the parent and blocks the child until the user

@@ -433,7 +433,10 @@ anthropic key · line 12`, naming the kind and the line and never the value —
 and offers no grant, as a flagged card offers none. The lines are read with
 the scrub's own table of shapes, and only the lines the change adds count: a
 key the file already held is not the edit's to answer for
-([`secrets.md`](secrets.md#the-shapes-it-knows-without-being-told)).
+([`secrets.md`](secrets.md#the-shapes-it-knows-without-being-told)). A
+sub-agent's write is asked the same way: its routed card carries the same row,
+and the child's own mode does not answer it
+([`subagents.md`](subagents.md#a-child-answers-to-the-session)).
 
 Why it asks and does not refuse: the person may mean it — a fixture, a
 template with a placeholder that happens to match. But a key written to disk

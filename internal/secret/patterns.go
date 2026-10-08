@@ -21,6 +21,7 @@ package secret
 import (
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -285,6 +286,35 @@ func FindAdded(before, after string) []Finding {
 		}
 	}
 	return out
+}
+
+// AddedNote is the warning an approval card draws for the credential shapes
+// a change adds to its file, by kind and line and never by value: `adds 1
+// anthropic key · line 12`. Shapes the file already held are not the change's
+// to answer for (FindAdded). Empty where the change adds none. The session's
+// card and a child's routed card both read it, so the two say the same words.
+func AddedNote(before, after string) string {
+	found := FindAdded(before, after)
+	if len(found) == 0 {
+		return ""
+	}
+	noun := strings.ReplaceAll(found[0].Kind, "-", " ")
+	lines := make([]string, len(found))
+	for i, f := range found {
+		lines[i] = strconv.Itoa(f.Line)
+		if f.Kind != found[0].Kind {
+			noun = "secret"
+		}
+	}
+	count := "1 " + noun
+	if len(found) != 1 {
+		count = strconv.Itoa(len(found)) + " " + noun + "s"
+	}
+	where := "line " + lines[0]
+	if len(lines) > 1 {
+		where = "lines " + strings.Join(lines, ", ")
+	}
+	return "adds " + count + " · " + where
 }
 
 // span is one match, by the lines it starts and ends on.

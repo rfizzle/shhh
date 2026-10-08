@@ -1398,3 +1398,18 @@ func TestApprovingASpawnHandsOverTheTurnsAsTheyStoodAtDispatch(t *testing.T) {
 		t.Fatal("the child never opened")
 	}
 }
+
+// A child's routed write that adds a credential shape draws the session
+// card's warning row, in the same panel
+// (docs/capabilities/approvals-and-safety.md#a-write-that-adds-a-secret-is-always-asked).
+func TestRoutedApproval_AChildsWriteDrawsTheSecretRow(t *testing.T) {
+	ask := subagent.NewAsk("writer-1", subagent.AskEdit, "edit dev.env")
+	ask.Path, ask.Root, ask.Worktree = "dev.env", t.TempDir(), true
+	ask.Hunks = diff.Compute("", "KEY=x\n")
+	ask.Secret = "adds 1 anthropic key · line 3"
+	m := routedModel(t, ask)
+	view := ansi.Strip(m.View().Content)
+	if !strings.Contains(view, "⚠ adds 1 anthropic key · line 3") {
+		t.Fatalf("the routed card should carry the warning row:\n%s", view)
+	}
+}

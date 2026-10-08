@@ -357,7 +357,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 			path:    mut.Path,
 			hunks:   diff.Compute(mut.OldText, mut.NewText),
 			summary: title,
-			secret:  addedSecrets(mut.OldText, mut.NewText),
+			secret:  secret.AddedNote(mut.OldText, mut.NewText),
 		}, nil
 	}
 	p, err := preview(json.RawMessage(tc.Arguments))
@@ -379,7 +379,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 			hunks:   diff.Compute(p.OldText, p.NewText),
 			summary: title,
 			fields:  p.Fields,
-			secret:  addedSecrets(p.OldText, p.NewText),
+			secret:  secret.AddedNote(p.OldText, p.NewText),
 		}, nil
 	}
 	summary := p.Summary
@@ -658,30 +658,6 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	m.recordDecision(observe.DecisionAsk, observe.AskReason(m.approvalAction(req)))
 	m.armConfirm(req)
 	return m, nil
-}
-
-// addedSecrets is the card's warning for the credential shapes an edit adds
-// to its file, by kind and line and never by value: `adds 1 anthropic key ·
-// line 12`. Shapes the file already held are not the edit's to answer for
-// (secret.FindAdded). Empty where the edit adds none.
-func addedSecrets(before, after string) string {
-	found := secret.FindAdded(before, after)
-	if len(found) == 0 {
-		return ""
-	}
-	noun := strings.ReplaceAll(found[0].Kind, "-", " ")
-	lines := make([]string, len(found))
-	for i, f := range found {
-		lines[i] = strconv.Itoa(f.Line)
-		if f.Kind != found[0].Kind {
-			noun = "secret"
-		}
-	}
-	where := "line " + lines[0]
-	if len(lines) > 1 {
-		where = "lines " + strings.Join(lines, ", ")
-	}
-	return "adds " + plural(len(found), noun) + " · " + where
 }
 
 // startPreToolHook runs the hooks in front of a gated call in the
