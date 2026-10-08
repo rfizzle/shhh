@@ -179,7 +179,8 @@ func newObserveCmd() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(exportCmd, sessionCmd, classifyCmd, purgeCmd, newObserveCompareCmd(&window))
+	cmd.AddCommand(exportCmd, sessionCmd, classifyCmd, purgeCmd, newObserveCompareCmd(&window),
+		newObserveStartupCmd(&window), newObserveQuietCmd(&window))
 	return cmd
 }
 

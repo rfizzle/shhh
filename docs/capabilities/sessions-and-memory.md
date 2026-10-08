@@ -851,9 +851,22 @@ round cap writes its stretch at the pause, since the person may never take
 it up again; granted more rounds, it writes another only if a longer one
 came after.
 
+**The record is read three ways, by arithmetic and with no model.**
+`shhh observe startup` ranks each phase and each server over the window by its
+median and its worst, with how the connects came out, and says on the line of
+a server that timed out or took over half its bound the keys that set it.
+`shhh observe quiet` lists the ten longest stretches with the session, the
+turn, what it waited on and whether the stream delivered anything, and the
+dashboard names the longest and the way in. A session's page draws each
+turn's split under its row. Where a turn's time was not split the reading
+says so and never counts it as zero; a figure summed across a turn's rows
+takes the last row of each turn, since a turn granted more rounds writes its
+whole split again.
+
 The timing rows go to the local record and nowhere else: not to the trace a
-collector receives, and not to the session's page or the export's event
-list, which carry what the session did rather than what it waited on. A
+collector receives, and not to the session's timeline or the export's event
+list, which carry what the session did rather than what it waited on; the
+split on a turn's row is read from them. A
 surface that does not split its turns leaves the four columns empty, which
 reads as unrecorded rather than as a turn that waited on nothing.
 

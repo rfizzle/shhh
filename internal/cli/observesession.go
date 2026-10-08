@@ -40,7 +40,12 @@ func renderObserveSession(cmd *cobra.Command, db *storage.DB, id int64, transcri
 	if err != nil {
 		return fmt.Errorf("query calls: %w", err)
 	}
-	return report.Fprint(cmd.OutOrStdout(), observeSessionReport(s, events, firstWrite, calls, transcript))
+	timings, err := db.AgentTimings(id)
+	if err != nil {
+		return fmt.Errorf("query timings: %w", err)
+	}
+	return report.Fprint(cmd.OutOrStdout(),
+		observeWithTurnSplit(observeSessionReport(s, events, firstWrite, calls, transcript), timings))
 }
 
 // observeSessionReport builds that page. It is separate from the query so

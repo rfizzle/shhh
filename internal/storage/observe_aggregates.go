@@ -628,3 +628,45 @@ func (db *DB) AgentTimings(sessionID int64) ([]AgentTiming, error) {
 		 WHERE session_id = ? AND (kind IN (?, ?) OR (kind = ? AND model_first_ms IS NOT NULL))
 		 ORDER BY id`, sessionID, AgentEventStartup, AgentEventQuiet, AgentEventTurn)
 }
+
+// AgentStartupTiming is one startup row of the window: a phase, the server's
+// name where the phase is a server's connect, the outcome word, and how long
+// it took.
+type AgentStartupTiming struct {
+	Phase, Name, Outcome string
+	DurationMs           int64
+}
+
+// AgentStartupTimings is every startup row written since the cutoff, oldest
+// first. The median and the worst are taken by the reader, since SQLite has
+// no median and a window's rows are few: a session writes a handful.
+func (db *DB) AgentStartupTimings(since time.Time) ([]AgentStartupTiming, error) {
+	return queryRows(db, scanFields(func(t *AgentStartupTiming) []any {
+		return []any{&t.Phase, &t.Name, &t.Outcome, &t.DurationMs}
+	}), `SELECT reason, tool, outcome, COALESCE(duration_ms, 0)
+		 FROM agent_events WHERE kind = ? AND `+observeEventWindow+` ORDER BY id`,
+		AgentEventStartup, observeCutoff(since))
+}
+
+// AgentQuietStretch is one turn's longest stretch with nothing on screen:
+// which session and turn, what the turn waited on, whether the stream
+// delivered anything in it (the outcome word), and how long it was.
+type AgentQuietStretch struct {
+	SessionID, Turn int64
+	Wait, Outcome   string
+	Delivered       int64
+	DurationMs      int64
+}
+
+// AgentQuietStretches is the longest of the window's quiet stretches, longest
+// first, at most limit of them. A turn granted more rounds after a pause may
+// have written a second row, so a turn counts once, by its longest.
+func (db *DB) AgentQuietStretches(since time.Time, limit int) ([]AgentQuietStretch, error) {
+	return queryRows(db, scanFields(func(q *AgentQuietStretch) []any {
+		return []any{&q.SessionID, &q.Turn, &q.Wait, &q.Outcome, &q.Delivered, &q.DurationMs}
+	}), `SELECT session_id, turn, reason, outcome, COALESCE(delivered, 0), MAX(COALESCE(duration_ms, 0))
+		 FROM agent_events WHERE kind = ? AND `+observeEventWindow+`
+		 GROUP BY session_id, turn
+		 ORDER BY MAX(COALESCE(duration_ms, 0)) DESC, session_id DESC, turn LIMIT ?`,
+		AgentEventQuiet, observeCutoff(since), limit)
+}

@@ -54,6 +54,8 @@ type observeData struct {
 	// per session.
 	Flakes   []storage.Flake
 	Outcomes []storage.AgentSessionOutcome
+	// Quiet is the window's longest quiet stretch, at most one.
+	Quiet []storage.AgentQuietStretch
 }
 
 // readObserveData runs every aggregate the dashboard draws. Each query is
@@ -83,6 +85,7 @@ func readObserveData(db *storage.DB, window string, since time.Time) (observeDat
 		{"gate verdicts", func() (err error) { data.Gates, err = db.AgentGateVerdicts(since); return }},
 		{"flakes", func() (err error) { data.Flakes, err = flakesSince(db, projectFingerprintRoot(), since); return }},
 		{"outcomes", func() (err error) { data.Outcomes, err = db.AgentSessionOutcomes(since); return }},
+		{"quiet stretches", func() (err error) { data.Quiet, err = db.AgentQuietStretches(since, 1); return }},
 	} {
 		if err := q.read(); err != nil {
 			return observeData{}, fmt.Errorf("query %s: %w", q.name, err)
@@ -129,6 +132,7 @@ func observeReport(data observeData) report.Report {
 			r.Sections = append(r.Sections, section)
 		}
 	}
+	r.Notes = append(r.Notes, observeLongestQuiet(data.Quiet)...)
 	r.Notes = append(r.Notes, report.Note{State: report.Run,
 		Text: "`shhh observe session <id>` shows one session turn by turn"})
 	return r
