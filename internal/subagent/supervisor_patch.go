@@ -147,6 +147,10 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 		// one approval after the patch had already landed.
 		held = "; the patch would have touched " + wtree.PatchPaths(touched)
 		approved, ok := s.await(c, ask)
+		// The wait stood in front of the person, whichever way it ended, and
+		// the turn is still open: it is booked on this goroutine, which owns
+		// the clock, and c.mu is not held across the await.
+		c.tookAnswer()
 		switch {
 		case !ok:
 			settle("cancelled before the patch was reviewed; no files were changed" + c.keepPatch(land, merged) + held)
