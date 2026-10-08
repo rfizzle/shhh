@@ -64,9 +64,10 @@ func TestStartup_OneRowPerPhaseAndPerServer(t *testing.T) {
 		t.Fatalf("rows written before the record was attached: %+v", got)
 	}
 	s.Attach(rec.startupRow)
-	firstPaint(s)()
-	firstPaint(s)() // a second paint of a fresh hook is a second session's
-	paint := firstPaint(s)
+	now := func(write func()) { write() }
+	firstPaintOn(s, now)()
+	firstPaintOn(s, now)() // a second paint of a fresh hook is a second session's
+	paint := firstPaintOn(s, now)
 	paint()
 	paint() // the same hook answers once
 
@@ -259,5 +260,30 @@ func TestQuietStretch_TellsAQuietStreamFromASilentOne(t *testing.T) {
 	}
 	if got := perTurn[5]; len(got) != 2 || *got[1].DurationMs != 60000 {
 		t.Errorf("a paused turn whose stretch grew wrote %+v", got)
+	}
+}
+
+// The first-paint hook runs inside the frame being drawn, so it writes
+// nothing itself: the row is handed to the queue, and it is in the record
+// once the queue has run it, once however many frames call the hook.
+func TestFirstPaint_IsNotWrittenFromView(t *testing.T) {
+	db, rec := startupStore(t)
+	s := &observe.Startup{}
+	s.Attach(rec.startupRow)
+	var queued []func()
+	paint := firstPaintOn(s, func(write func()) { queued = append(queued, write) })
+	paint()
+	paint()
+	paint()
+	if got := timings(t, db, rec); len(got) != 0 {
+		t.Fatalf("%d rows written from the frame, want none", len(got))
+	}
+	if len(queued) != 1 {
+		t.Fatalf("%d writes queued, want one", len(queued))
+	}
+	queued[0]()
+	got := timings(t, db, rec)
+	if len(got) != 1 || got[0].Reason != observe.PhaseFirstPaint {
+		t.Fatalf("rows after the queue ran = %+v, want the first-paint row", got)
 	}
 }

@@ -97,14 +97,24 @@ func openSessionLSP(ctx context.Context) *lsp.Toolset {
 // firstPaint is what the chat model calls once its first frame is drawn,
 // filing the phase measured from the process start. It runs once however
 // often it is called, since the model calls it from every frame it draws.
+// The row is a store write and the call comes from the frame being drawn, so
+// the write is queued on a goroutine of its own: a frame never waits on the
+// store's lock, and the figure is the time at the call, not at the write.
 func firstPaint(s *observe.Startup) func() {
+	return firstPaintOn(s, func(write func()) { go write() })
+}
+
+// firstPaintOn is firstPaint with the queue the write is handed to, so a
+// test holds the write and releases it by hand.
+func firstPaintOn(s *observe.Startup, queue func(write func())) func() {
 	if s == nil {
 		return nil
 	}
 	var once atomic.Bool
 	return func() {
 		if once.CompareAndSwap(false, true) {
-			notePhase(s, observe.PhaseFirstPaint, time.Since(processStart))
+			took := time.Since(processStart)
+			queue(func() { notePhase(s, observe.PhaseFirstPaint, took) })
 		}
 	}
 }
