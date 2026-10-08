@@ -298,6 +298,17 @@ on the person. Asking about one server alone prints what it said about
 itself and everything it offers: its tools, its prompts as the commands they
 became, and its resources by uri.
 
+## A slow connect is said when it is paid
+
+A server that connects is not a row, but one that took more than five seconds
+to is a line before the session opens, with its time and the two keys that
+bound it, `mcp.startup_timeout_seconds` and `timeout_seconds` under the
+server's own table: a server that costs ninety seconds before every prompt is
+found on the next launch, not in a table weeks later. The line is a function
+of the settled connect, so any surface that has one can say it. The record's
+startup reading ranks the same servers across a window
+([`sessions-and-memory.md#startup-and-waits-are-timed`](sessions-and-memory.md#startup-and-waits-are-timed)).
+
 ## A server that dies is noticed
 
 A server that answered the handshake can still go: the process crashes, the

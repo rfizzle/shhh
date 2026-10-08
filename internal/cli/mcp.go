@@ -132,7 +132,8 @@ func openMCP(ctx context.Context, cfg config.Config, readOnlyOnly bool) (*mcp.To
 
 // mcpStartupNotes are the lines a session prints before it starts: every
 // server that did not connect, and why, so a missing tool is never a
-// silent one. Nothing for a server that connected — the prompt block and
+// silent one, and a server that connected but took long enough to be felt
+// (mcpSlowConnectNote). Nothing for a server that connected promptly — the prompt block and
 // /mcp carry those.
 func mcpStartupNotes(ts *mcp.Toolset, cat *mcp.Catalog) []string {
 	var out []string
@@ -145,6 +146,9 @@ func mcpStartupNotes(ts *mcp.Toolset, cat *mcp.Catalog) []string {
 		return out
 	}
 	for _, r := range ts.Reports {
+		if note := mcpSlowConnectNote(r); note != "" {
+			out = append(out, note)
+		}
 		switch r.Status {
 		case mcp.StatusConnected, mcp.StatusDisabled, mcp.StatusExcluded:
 			continue
@@ -152,6 +156,25 @@ func mcpStartupNotes(ts *mcp.Toolset, cat *mcp.Catalog) []string {
 		out = append(out, "mcp: "+r.Definition.Name+": "+mcpOutcome(r)+" — "+mcpConsequence(r))
 	}
 	return out
+}
+
+// mcpSlowConnect is how long a connect may take before it is said. A server
+// that answers inside it costs a start nothing worth a line; past it, the
+// person is waiting on that server before every prompt.
+const mcpSlowConnect = 5 * time.Second
+
+// mcpSlowConnectNote is the line for a connect that succeeded but took longer
+// than mcpSlowConnect: the server, its time and the keys that bound it, so
+// the cost is said when it is paid and not found in a table later. It reads
+// only a settled report, so any surface that has one can say it, whenever it
+// has one (docs/capabilities/mcp.md#a-slow-connect-is-said-when-it-is-paid).
+// Empty for every other report.
+func mcpSlowConnectNote(r mcp.Report) string {
+	if r.Status != mcp.StatusConnected || r.Took <= mcpSlowConnect {
+		return ""
+	}
+	return fmt.Sprintf("mcp: %s: connected in %s of its %s bound — set `mcp.startup_timeout_seconds`, or `timeout_seconds` under `[mcp.servers.%s]`",
+		r.Definition.Name, r.Took.Round(100*time.Millisecond), r.Definition.StartupTimeout(), r.Definition.Name)
 }
 
 // mcpOutcome is the right-hand word for a report: what became of it.

@@ -339,3 +339,20 @@ func TestMCPTurnBoundaryIsSilentWhenNothingMoved(t *testing.T) {
 		t.Fatalf("a quiet boundary wrote %q", said)
 	}
 }
+
+func TestMCPStartupNotes_ASlowConnectIsSaid(t *testing.T) {
+	def := mcp.Definition{Name: "docs", Timeout: 20 * time.Second}
+	ts := &mcp.Toolset{Reports: []mcp.Report{
+		{Definition: def, Status: mcp.StatusConnected, Took: 7200 * time.Millisecond},
+		{Definition: mcp.Definition{Name: "quick"}, Status: mcp.StatusConnected, Took: 5 * time.Second},
+	}}
+	notes := mcpStartupNotes(ts, nil)
+	if len(notes) != 1 {
+		t.Fatalf("notes = %v, want one line for the slow server only", notes)
+	}
+	for _, want := range []string{"docs", "7.2s", "20s", "mcp.startup_timeout_seconds", "[mcp.servers.docs]", "timeout_seconds"} {
+		if !strings.Contains(notes[0], want) {
+			t.Errorf("note %q missing %q", notes[0], want)
+		}
+	}
+}
