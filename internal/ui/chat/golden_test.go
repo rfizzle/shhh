@@ -5501,3 +5501,23 @@ func TestGolden_StartOffers(t *testing.T) {
 		}
 	})
 }
+
+func TestGolden_StartInstruction(t *testing.T) {
+	captureGolden(t, "start-instruction", "the start screen saying what the instruction file lost, and offering to assess it", goldenWidths, func(width int) []golden.Panel {
+		build := func(ready StartReady, check project.InstructionCheck) string {
+			info := startFixture()
+			info.Recent = StartRecent{}
+			info.Project.Dirty = 0
+			info.Ready = ready
+			check.File, check.Modified = "AGENTS.md", startNow
+			info.Project.Instruction = check
+			m := frameModel(t, width, 40).WithStartScreen(info)
+			return m.renderHistory()
+		}
+		item := StartReady{Present: true, Slug: "cache-ttl", Title: "Give the cache a lifetime", Noun: "story"}
+		return []golden.Panel{
+			{Label: "a cut file and a dead path", View: build(StartReady{}, project.InstructionCheck{Dropped: 412, Gone: 1})},
+			{Label: "a dead path and a ready item · the item outranks the assessment", View: build(item, project.InstructionCheck{Gone: 2})},
+		}
+	})
+}

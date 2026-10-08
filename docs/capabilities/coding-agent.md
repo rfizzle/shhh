@@ -1604,6 +1604,32 @@ block is not re-read and it is not left to stand unchallenged either. Where
 the reading of the tree names an instruction file, it says in one sentence
 that the block in the prompt is the older reading of it.
 
+The one file every session reads is worth keeping worth reading, and the
+start screen offers to assess it
+([surfaces.md](../interface/surfaces.md#the-start-screen)). What a good
+instruction file is, is a view and not a fact, so it is written down here as a
+list a person can read and change, and the offer's prompt is built from this
+list's own text — the two cannot drift, because they are one text. The
+assessment asks:
+
+<!-- BEGIN generated instruction rubric — written by `make docs` from internal/project/instruction_rubric.md; edit that, not this. -->
+
+- whether it says how to build, test and lint the project, and whether those
+  commands exist
+- whether it names paths that are gone
+- whether it fits the budget the session reads it under, and what the cut
+  dropped
+- whether it repeats what the tree already states — the file list, the module
+  name — in place of what the tree cannot: conventions, invariants, gotchas
+- whether it says what not to do
+- what another instruction file beside it — a `CLAUDE.md` beside an
+  `AGENTS.md` — says that it does not
+
+<!-- END generated instruction rubric -->
+
+The product's only claim is to ask the questions. The answers are the
+model's reading, reported and acted on by nobody until the person decides to.
+
 ## The tree can move under a session
 
 The survey is taken once, and a session that is alone in its checkout can

@@ -135,7 +135,11 @@ func (s chatSession) systemPrompt(configExtra string) (text string, projectToken
 	// so the workspace block and the start screen, which are both written
 	// from it, cannot state two different answers.
 	survey.Sibling = s.sibling.since()
-	block := project.InstructionBlock(instructions, prompt.InstructionBudget)
+	block, dropped := project.InstructionBlockCut(instructions, prompt.InstructionBudget)
+	// What the cut dropped and what the files name that is gone ride on the
+	// survey too, for the screen: the count is this block's, so the screen
+	// cannot state a cut the prompt did not make.
+	survey.Instruction = project.CheckInstructions(instructions, survey.Root, dropped)
 	extra := prompt.CombineExtra(configExtra, block, project.PromptBlock(survey), trustPromptBlock(projectTrust(), s.conversation), s.promptExtra)
 	return s.buildPrompt(info, extra), agent.EstimateTokens(block), survey
 }

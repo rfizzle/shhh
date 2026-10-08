@@ -1,4 +1,5 @@
-# program test: TestProgram_TheStartScreenOffersTheBranchAndTheReadyItem
+# program test: TestProgram_TheStartScreenOffersTheBranchAndTheReadyItem,
+#   TestProgram_TheStartScreenSaysTheInstructionFileNamesAFileThatIsGone
 #
 # The start screen's read-only slot offers what the checkout says is next
 # (docs/interface/surfaces.md#the-start-screen). The workspace is a clean
@@ -9,6 +10,11 @@
 # backlog is a store under .shhh/todo (the backlog's own place), committed on
 # main so the tree is clean and the dirty-tree offer does not take the row.
 #
+# The checkout's AGENTS.md, committed beside it, names docs/cache.md, which is
+# not there: the line naming what was read into the system prompt says the
+# file names one file that is gone. The assessment that count earns ranks
+# after the branch and the item, so it takes no row here.
+#
 # The identity is repository-local because the pane runs under a home of its
 # own, so there is no global one for the commits to find.
 setup git config user.email tui@shhh
@@ -16,7 +22,8 @@ setup git config user.name tui
 setup git branch -m main
 setup mkdir -p .shhh/todo
 setup printf -- '---\ntitle: Give the cache a lifetime\nsize: S\n---\n## Tests\n- `go test ./cache -run TestTTL`\n' > .shhh/todo/cache-ttl.md
-setup git add .shhh/todo/cache-ttl.md
+setup printf '# Agents\n\nThe cache is documented in docs/cache.md.\n' > AGENTS.md
+setup git add .shhh/todo/cache-ttl.md AGENTS.md
 setup git commit -q -m 'file the cache item'
 setup git checkout -q -b cache-work
 setup printf 'package cache\n' > cache.go
@@ -25,4 +32,4 @@ setup git commit -q -m 'start the cache package'
 setup printf 'package cache\n\nconst ttl = 60\n' > cache.go
 setup git add cache.go
 setup git commit -q -m 'name the lifetime'
-snap 01-start "Some things worth doing first" "review what this branch changes before it goes up" "2 commits ahead · not pushed" "read cache-ttl and say what it would take" "Give the cache a lifetime"
+snap 01-start "Some things worth doing first" "review what this branch changes before it goes up" "2 commits ahead · not pushed" "read cache-ttl and say what it would take" "Give the cache a lifetime" "AGENTS.md — in the system prompt · names 1 file that is gone"

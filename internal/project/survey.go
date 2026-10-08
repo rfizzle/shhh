@@ -79,6 +79,10 @@ type Info struct {
 	// Root where they sit inside it. Empty means the model was told nothing
 	// about this project, which is worth saying out loud.
 	ContextFiles []string
+	// Instruction is what the start screen says of those files beyond their
+	// names. Like Sibling it is filled in by whoever built the prompt from
+	// them, because the cut it reports is that prompt's and no other.
+	Instruction InstructionCheck
 	// Root is the directory this project's own state is keyed on and
 	// RootDisplay the same path home-abbreviated. It is Dir in the ordinary
 	// case and something above it in a subdirectory, and it is stated

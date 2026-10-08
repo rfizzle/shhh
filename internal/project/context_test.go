@@ -434,7 +434,7 @@ func TestCutToFit_StaysInsideTheBudget(t *testing.T) {
 	}
 	for i, text := range files {
 		for n := 1; n < len(text); n = n*3 + 1 {
-			got, dropped := cutToFit(text, n)
+			got, dropped, _ := cutToFit(text, n)
 			if len(got) > n {
 				t.Fatalf("file %d cut to %d bytes came to %d", i, n, len(got))
 			}
@@ -450,7 +450,7 @@ func TestCutToFit_StaysInsideTheBudget(t *testing.T) {
 func TestCutToFit_DoesNotResumeInsideACodeFence(t *testing.T) {
 	text := "# Title\n\n## One\n" + strings.Repeat("a\n", 400) +
 		"## Two\n\n```sh\n# not a heading\n" + strings.Repeat("echo hello\n", 40) + "```\n"
-	got, dropped := cutToFit(text, 900)
+	got, dropped, _ := cutToFit(text, 900)
 	if dropped == 0 {
 		t.Fatalf("nothing was cut from the middle:\n%s", got)
 	}
@@ -463,7 +463,7 @@ func TestCutToFit_DoesNotResumeInsideACodeFence(t *testing.T) {
 	// let the heading below it be taken for a section boundary.
 	mixed := "# Title\n\n## One\n" + strings.Repeat("a\n", 400) +
 		"## Two\n\n```sh\n~~~\n# not a heading\n" + strings.Repeat("echo hello\n", 40) + "```\n"
-	got, dropped = cutToFit(mixed, 900)
+	got, dropped, _ = cutToFit(mixed, 900)
 	if dropped == 0 {
 		t.Fatalf("nothing was cut from the middle:\n%s", got)
 	}

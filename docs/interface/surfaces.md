@@ -2866,6 +2866,32 @@ session to resume leaves; the screen chooses which three and never grows to
 four. Every one of them reads and reports: the line each runs is a prompt, and
 nothing reaches the model until it is taken and sent like a typed line.
 
+The line naming what was read into the system prompt also says what that
+reading lost, and only then. Where the instruction files were cut to fit their
+budget it adds `cut to fit · N lines dropped`, the count of the very cut the
+prompt was built with rather than a second reckoning of it. Where they name
+paths that are not in the checkout it adds `names N files that are gone`: a
+word with a directory in it, starting under `internal/`, `docs/` or
+`scripts/` or under a first directory that is there, that names nothing under
+the root or beside the file. A bare file name says which file and not where,
+and a path written from somewhere else is not this checkout's, so neither is
+counted. The check reads the files once, asks no model and walks no tree, and
+a checkout with no instruction file is not checked. A file that fits and
+names nothing missing adds nothing, because a clause that reads the same on
+every session is not read.
+
+Either count, or a file nobody has edited in fourteen days — dated from its
+last write, so a fresh edit is not asked about — puts one more offer in the
+read-only slot, after the work the checkout states and before the toolchain
+draft and the tours: `assess AGENTS.md against what this session does with
+it`, naming the file it is about, `.shhh/project.md` or `CLAUDE.md` where that
+is the one read. It reads only, then reports. The questions it asks are the
+documentation's list, not the screen's
+([coding-agent.md](../capabilities/coding-agent.md#the-agent-reads-what-the-project-already-wrote-down)):
+a view of a good instruction file is the person's to change, and the offer is
+built from that list's own text. A checkout with no instruction file has the
+scaffold offer instead, and nothing is added.
+
 A checkout with no state directory of its own has told the model nothing
 about itself, and the last of the three becomes the offer to scaffold one.
 Choosing it opens an approval card listing the files, because a suggestion

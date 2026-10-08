@@ -1,11 +1,13 @@
 package project
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 )
 
 // contextFilenames are the recognized project-context files, in precedence
@@ -338,8 +340,19 @@ const instructionPreamble = "# Project instructions\n" +
 // keeping the overview it could have guessed.
 // See docs/capabilities/configuration.md#project-context-is-opt-in-and-lives-with-the-project.
 func InstructionBlock(files []Instruction, budget int) string {
+	block, _ := InstructionBlockCut(files, budget)
+	return block
+}
+
+// InstructionBlockCut is InstructionBlock with the lines the cut dropped,
+// across every file, beside it: zero where everything fit. The start screen
+// states that count, and it is taken from the call that built the prompt
+// rather than worked out again, because a second reckoning of the same cut
+// is a second answer that can disagree with what the model was handed
+// (docs/interface/surfaces.md#the-start-screen).
+func InstructionBlockCut(files []Instruction, budget int) (block string, dropped int) {
 	if len(files) == 0 {
-		return ""
+		return "", 0
 	}
 	total := 0
 	for _, f := range files {
@@ -363,7 +376,9 @@ func InstructionBlock(files []Instruction, budget int) string {
 				room = 0
 			}
 			over -= len(text) - room
-			text, middle = cutToFit(text, room)
+			var lines int
+			text, middle, lines = cutToFit(text, room)
+			dropped += lines
 			cut = true
 		}
 		// The trailing newline every text file ends with goes before the next
@@ -385,7 +400,165 @@ func InstructionBlock(files []Instruction, budget int) string {
 			b.WriteString("\n" + text)
 		}
 	}
-	return b.String()
+	return b.String(), dropped
+}
+
+// InstructionCheck is what the start screen says about the checkout's
+// instruction files beyond naming them: what the prompt's cut dropped, how
+// many paths they name that are gone, and which file an assessment of them
+// would be about. The zero value is a checkout with nothing to say.
+type InstructionCheck struct {
+	// File is the nearest of the project's own files, as Display states it,
+	// and Modified when it was last written. Empty where the project wrote
+	// none.
+	File     string
+	Modified time.Time
+	// Dropped is the lines the prompt's cut left out (InstructionBlockCut),
+	// and Gone the distinct paths the project's files name that are not
+	// there (GonePaths).
+	Dropped, Gone int
+}
+
+// CheckInstructions reads what InstructionBlockCut cannot know about the
+// files: which of them is the project's nearest, when it was written, and
+// how many paths they name that are gone under root. dropped is the count
+// the prompt's own cut gave, carried rather than worked out again. A file
+// outside root is not the project's — the user's own, which names paths of
+// its own — and is neither checked nor offered.
+func CheckInstructions(files []Instruction, root string, dropped int) InstructionCheck {
+	var own []Instruction
+	for _, f := range files {
+		if within(root, f.Path) {
+			own = append(own, f)
+		}
+	}
+	if len(own) == 0 {
+		return InstructionCheck{}
+	}
+	near := own[len(own)-1]
+	check := InstructionCheck{File: near.Display, Dropped: dropped, Gone: GonePaths(own, root)}
+	if check.File == "" {
+		check.File = filepath.Base(near.Path)
+	}
+	if info, err := os.Stat(near.Path); err == nil {
+		check.Modified = info.ModTime()
+	}
+	return check
+}
+
+// within reports whether path sits inside root.
+func within(root, path string) bool {
+	if root == "" || path == "" {
+		return false
+	}
+	rel, err := filepath.Rel(root, path)
+	return err == nil && !filepath.IsAbs(rel) && rel != ".." &&
+		!strings.HasPrefix(rel, ".."+string(filepath.Separator))
+}
+
+// GonePaths counts the distinct path-shaped words in files that name
+// nothing under root or beside the file that names them. It reads the text
+// and asks the filesystem one stat per word, and nothing else: no walk of
+// the tree and no model, so it is cheap enough to ask at every session's
+// open.
+//
+// A word is path-shaped when it has a directory in it and starts where a
+// path in this checkout would: under internal/, docs/ or scripts/, or under
+// a first directory that is there. That leaves out a bare name — `start.go`
+// says which file, not where, and only a walk of the tree could say it is
+// gone — and a path stated from somewhere else, an import path or a path
+// written from inside a package, which would otherwise be counted as gone
+// on every session in a checkout that has lost nothing.
+// See docs/interface/surfaces.md#the-start-screen.
+func GonePaths(files []Instruction, root string) int {
+	gone := map[string]bool{}
+	for _, f := range files {
+		dir := filepath.Dir(f.Path)
+		for _, tok := range pathTokens(f.Text) {
+			if gone[tok] || !pathShaped(tok, root, dir) {
+				continue
+			}
+			if exists(root, tok) || exists(dir, tok) {
+				continue
+			}
+			gone[tok] = true
+		}
+	}
+	return len(gone)
+}
+
+// pathTokens is every word of text that could be a relative path, with the
+// sentence's punctuation and any #anchor taken off. A word carrying a
+// placeholder or a pattern (`<pkg>`, `*`, `{a,b}`, `...`) names a shape
+// rather than a path and is left out, as is a URL or an absolute path,
+// which is not the checkout's to have lost.
+func pathTokens(text string) []string {
+	words := strings.FieldsFunc(text, func(r rune) bool {
+		switch r {
+		case ' ', '\t', '\n', '\r', '`', '"', '\'', '(', ')', '[', ']', ',', ';', '|':
+			return true
+		}
+		return false
+	})
+	var out []string
+	for _, w := range words {
+		if i := strings.IndexByte(w, '#'); i >= 0 {
+			w = w[:i]
+		}
+		// Emphasis around a path is Markdown, not the path: left on, its
+		// asterisks would read as a pattern and hide a path that is gone.
+		w = strings.Trim(strings.TrimRight(w, ".:!?"), "*_")
+		w = strings.TrimRight(w, ".:!?")
+		w = strings.TrimPrefix(w, "./")
+		if w == "" || strings.HasPrefix(w, "/") || strings.HasPrefix(w, "~") ||
+			strings.Contains(w, "..") || strings.ContainsAny(w, "<>*{}$@:…=%\\") {
+			continue
+		}
+		out = append(out, w)
+	}
+	return out
+}
+
+// pathShaped reports whether tok reads as a path in this checkout: a
+// directory in it, and a first directory that is one of the three named
+// above, or one that is there under root or beside the file.
+func pathShaped(tok, root, dir string) bool {
+	first, _, ok := strings.Cut(tok, "/")
+	if !ok || first == "" || first == "." {
+		return false
+	}
+	switch first {
+	case "internal", "docs", "scripts":
+		return true
+	}
+	return exists(root, first) || exists(dir, first)
+}
+
+// InstructionRubric is what an assessment of an instruction file asks of
+// it, one question an item. It is the text the start screen's offer is
+// built from and the text the documentation's list is generated from (make
+// docs), so what the model is asked and what a person reads are one text:
+// the view of a good instruction file is the person's, and the product's
+// only claim is to ask the question.
+// See docs/capabilities/coding-agent.md#the-agent-reads-what-the-project-already-wrote-down.
+//
+//go:embed instruction_rubric.md
+var InstructionRubric string
+
+// RubricItems is the rubric's list, one entry an item, its wrapped lines
+// joined and its bullet taken off.
+func RubricItems() []string {
+	var items []string
+	for _, line := range strings.Split(InstructionRubric, "\n") {
+		line = strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(line, "- "):
+			items = append(items, strings.TrimPrefix(line, "- "))
+		case line != "" && len(items) > 0:
+			items[len(items)-1] += " " + line
+		}
+	}
+	return items
 }
 
 // cutNoticeBudget is the room cutToFit holds back for the note it puts at
@@ -411,18 +584,19 @@ func cutNotice(dropped int, resumes string) string {
 }
 
 // cutToFit reduces s to at most n bytes and reports how many it dropped from
-// the middle — zero when it could only cut the head off.
+// the middle — zero when it could only cut the head off — and how many of
+// its lines are gone wherever they were cut from.
 //
 // It keeps the end of the file in half of what is left and fills the rest
 // with the head. Whole sections wherever they fit, because half a section
 // read out of order is worse than no section: it has no heading to say what
 // it governs, and its first sentence usually depends on the one above.
-func cutToFit(s string, n int) (string, int) {
+func cutToFit(s string, n int) (text string, middle, lines int) {
 	if n >= len(s) {
-		return s, 0
+		return s, 0, 0
 	}
 	if n <= 0 {
-		return "", 0
+		return "", 0, lineCount(s)
 	}
 	tail, resumes := lastSections(s, n/2)
 	head := trimToLine(s, n-len(tail)-cutNoticeBudget)
@@ -430,10 +604,21 @@ func cutToFit(s string, n int) (string, int) {
 	// file in the middle of nowhere, and a head that leaves no room for the
 	// note is the plain cut this is a refinement of.
 	if tail == "" || head == "" {
-		return trimToLine(s, n), 0
+		head = trimToLine(s, n)
+		return head, 0, lineCount(s) - lineCount(head)
 	}
 	dropped := len(s) - len(head) - len(tail)
-	return head + cutNotice(dropped, resumes) + tail, dropped
+	return head + cutNotice(dropped, resumes) + tail, dropped, lineCount(s) - lineCount(head) - lineCount(tail)
+}
+
+// lineCount is how many lines s holds, a last line with no newline after it
+// counted like any other.
+func lineCount(s string) int {
+	n := strings.Count(s, "\n")
+	if s != "" && !strings.HasSuffix(s, "\n") {
+		n++
+	}
+	return n
 }
 
 // lastSections returns the longest suffix of s that fits in max bytes, and a

@@ -458,7 +458,7 @@ func startNotes(info StartInfo) []components.StartNote {
 		// named is the one nearest this directory and the one with the last
 		// word.
 		context.Value = strings.Join(files, " · ")
-		context.Detail = "in the system prompt"
+		context.Detail = "in the system prompt" + instructionLoss(info.Project.Instruction)
 	}
 
 	gate := components.StartNote{Label: "gate", Value: "not configured", Detail: info.Gate.Path}
@@ -517,6 +517,56 @@ func startNotes(info StartInfo) []components.StartNote {
 		})
 	}
 	return notes
+}
+
+// instructionLoss is what the context line adds where the instruction files
+// lost something: the lines the prompt's cut dropped, and the paths they name
+// that are gone. A file that fits and names nothing missing adds nothing,
+// because a clause that reads the same on every session is one nobody reads
+// (docs/interface/surfaces.md#the-start-screen).
+func instructionLoss(c project.InstructionCheck) string {
+	var s string
+	if c.Dropped > 0 {
+		s += " · cut to fit · " + plural(c.Dropped, "line") + " dropped"
+	}
+	if c.Gone > 0 {
+		verb := " that are gone"
+		if c.Gone == 1 {
+			verb = " that is gone"
+		}
+		s += " · names " + plural(c.Gone, "file") + verb
+	}
+	return s
+}
+
+// instructionReview is how long an instruction file goes unedited before the
+// read-only slot offers to assess it with nothing wrong in it: a default
+// taken rather than measured, dated from the file's last write so that a
+// fresh edit is not asked about.
+const instructionReview = 14 * 24 * time.Hour
+
+// assessOffer is the offer to assess the project's instruction file, where
+// one is due: where the cut dropped lines or the file names paths that are
+// gone, or where nobody has edited it in instructionReview. The line it
+// runs is the rubric's own text, so what the model is asked and what the
+// documentation lists cannot drift apart
+// (docs/capabilities/coding-agent.md#the-agent-reads-what-the-project-already-wrote-down).
+func assessOffer(info StartInfo) (readOnlyOffer, bool) {
+	c := info.Project.Instruction
+	if c.File == "" {
+		return readOnlyOffer{}, false
+	}
+	now := info.Now
+	if now.IsZero() {
+		now = clock()
+	}
+	stale := !c.Modified.IsZero() && now.Sub(c.Modified) >= instructionReview
+	if c.Dropped == 0 && c.Gone == 0 && !stale {
+		return readOnlyOffer{}, false
+	}
+	title := "assess " + c.File + " against what this session does with it"
+	return readOnlyOffer{title, "reads only, then reports",
+		title + ", without changing anything, and report: " + strings.Join(project.RubricItems(), "; ")}, true
 }
 
 // startSuggestions is the three offers, paired with the input line each one
@@ -588,7 +638,8 @@ type readOnlyOffer struct{ title, detail, action string }
 // (docs/interface/surfaces.md#the-start-screen). Among the facts, a changed
 // file nobody has accounted for keeps its slot; the rest are the work in hand
 // before the work in the queue, ranked by queued: a branch with commits not
-// pushed, then the next ready item, then a pushed branch. The toolchain draft
+// pushed, then the next ready item, then a pushed branch, then the upkeep of
+// the instruction file every session reads (assessOffer). The toolchain draft
 // (draft is its title, empty where it is not offered) follows them — its
 // checks being runnable in a sandbox is worth more than a tour, and less than
 // what the checkout says is next — except in the one row a resume leaves a
@@ -627,6 +678,9 @@ func readOnlyOffers(info StartInfo, draft string, room int) []readOnlyOffer {
 	}
 	if info.Branch.Pushed {
 		branch()
+	}
+	if o, ok := assessOffer(info); ok {
+		queued = append(queued, o)
 	}
 	var drafting []readOnlyOffer
 	if draft != "" {
