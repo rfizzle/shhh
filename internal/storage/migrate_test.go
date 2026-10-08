@@ -28,6 +28,11 @@ var releasedMigrations = []string{
 	"734dc351b1d043f1", // 43: chat_sessions.steps
 	"4d85d670321782d4", // 44: agent_events.purpose
 	"4f7ad90fa8c1faf9", // 45: gate_flakes
+	"6c54453d72935b4e", // 46: agent_events.model_first_ms
+	"d6c53e67860675ff", // 47: agent_events.model_stream_ms
+	"aefd0811c920e9a5", // 48: agent_events.tool_ms
+	"e60b89d96ddc2dea", // 49: agent_events.person_ms
+	"fc63a107a89a0285", // 50: agent_events.delivered
 }
 
 func migrationDigest(m string) string {

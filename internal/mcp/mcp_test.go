@@ -398,7 +398,7 @@ func TestConnectReportsAServerThatWillNotStart(t *testing.T) {
 	c := &Catalog{Servers: []Definition{{Name: "bad", Scope: ScopeUser, Transport: TransportStdio, Command: "/nonexistent/mcp-server"}}}
 	ts := Connect(context.Background(), c, Options{Timeout: 5 * time.Second})
 	r := ts.Reports[0]
-	if r.Status != StatusFailed || !strings.Contains(r.Error, "server bad") {
+	if r.Status != StatusFailed || r.TimedOut || !strings.Contains(r.Error, "server bad") {
 		t.Errorf("report = %+v", r)
 	}
 	if ts.Len() != 0 {
@@ -1288,7 +1288,7 @@ func TestConnectGivesUpOnAServerThatNeverAnswers(t *testing.T) {
 	defer ts.Close()
 	took := time.Since(started)
 	r := ts.Reports[0]
-	if r.Status != StatusFailed || !strings.Contains(r.Error, "no answer within 150ms") {
+	if r.Status != StatusFailed || !r.TimedOut || !strings.Contains(r.Error, "no answer within 150ms") {
 		t.Fatalf("report = %s / %q", r.Status, r.Error)
 	}
 	if took > 3*time.Second {

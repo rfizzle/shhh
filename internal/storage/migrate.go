@@ -615,6 +615,23 @@ var migrations = []string{
 		last_session TEXT NOT NULL DEFAULT '',
 		PRIMARY KEY (root, suite, "check")
 	);`,
+
+	// Where a turn's time went and how long a session took to start
+	// (docs/capabilities/sessions-and-memory.md#startup-and-waits-are-timed).
+	// The four waits ride the turn row they split, so a reader adds four
+	// columns to get the duration beside them rather than joining rows; the
+	// count is the stream events a quiet stretch's row says arrived and drew
+	// nothing. A startup phase and a quiet stretch are rows of kinds of their
+	// own in the columns already here. Nullable, and NULL on every row
+	// written before them and on a surface that does not split its turns,
+	// which reads as unrecorded rather than as a turn that waited on nothing.
+	// One column a step, so a step replayed against a store that already has
+	// its column is skipped rather than refused (skipAddedColumn).
+	`ALTER TABLE agent_events ADD COLUMN model_first_ms INTEGER;`,
+	`ALTER TABLE agent_events ADD COLUMN model_stream_ms INTEGER;`,
+	`ALTER TABLE agent_events ADD COLUMN tool_ms INTEGER;`,
+	`ALTER TABLE agent_events ADD COLUMN person_ms INTEGER;`,
+	`ALTER TABLE agent_events ADD COLUMN delivered INTEGER;`,
 }
 
 const (

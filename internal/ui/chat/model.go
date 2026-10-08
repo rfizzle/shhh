@@ -1145,6 +1145,9 @@ type Model struct {
 	observer      observe.Observer
 	turnCount     int64
 	toolDefTokens int64
+	// timing is what the session times for the record: where the turn's
+	// time goes, and the first frame drawn (observe.go).
+	timing timing
 	// subagents supervises spawned child agents; childAsks queues
 	// their approval requests routed into this session's approval surface.
 	subagents *subagent.Supervisor

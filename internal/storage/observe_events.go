@@ -14,16 +14,18 @@ import (
 // signals, outcome is the signal code and reason its qualifier — and for the
 // one signal that names a subject as well, the gate's verdict, tool carries
 // the suite that ran. A tool event for a command carries its purpose word
-// beside the class.
+// beside the class. Startup and quiet rows are described at their kinds.
 //
 // The write is retried while a lock is refused (storage.go): an event is the
 // record of something that happened, so dropping one under contention would
 // make the dashboard quietest exactly when the checkout is busiest.
 func (db *DB) RecordAgentEvent(sessionID int64, e AgentEvent) error {
 	return db.execRetry(
-		`INSERT INTO agent_events (session_id, kind, tool, duration_ms, outcome, reason, turn, round, purpose)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO agent_events (session_id, kind, tool, duration_ms, outcome, reason, turn, round, purpose,
+		   model_first_ms, model_stream_ms, tool_ms, person_ms, delivered)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sessionID, e.Kind, e.Tool, e.DurationMs, e.Outcome, e.Reason, e.Turn, e.Round, e.Purpose,
+		e.ModelFirstMs, e.ModelStreamMs, e.ToolMs, e.PersonMs, e.Delivered,
 	)
 }
 

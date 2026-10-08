@@ -46,6 +46,10 @@ type Report struct {
 	Error   string
 	Missing []string
 	Took    time.Duration
+	// TimedOut is a failure that was the startup wait running out rather
+	// than the server refusing, which the record files under a word of its
+	// own because the two are fixed differently.
+	TimedOut bool
 	// Withheld names the inherited variables the mask kept out of a stdio
 	// server's environment. It is on the report rather than on the server
 	// because the reader who needs it most is looking at one that would not
@@ -96,6 +100,13 @@ type Options struct {
 	// server is a person saying that server is slow, and a session-wide
 	// number is what the rest of them get.
 	CallTimeout time.Duration
+	// Observe is handed each definition's report as its connect settles —
+	// one that connected, failed or timed out, and one that was never
+	// started — from the goroutine that settled it, so it must be safe for
+	// concurrent use. It is how the time a connect took reaches the
+	// session's record (docs/capabilities/sessions-and-memory.md#startup-and-waits-are-timed).
+	// nil observes nothing.
+	Observe func(Report)
 }
 
 // Toolset is the session's connected servers and what they offer,
@@ -173,6 +184,7 @@ func Connect(ctx context.Context, c *Catalog, opts Options) *Toolset {
 		if status, missing := admit(def, opts); status != "" {
 			ts.Reports[i].Status = status
 			ts.Reports[i].Missing = missing
+			opts.observe(ts.Reports[i])
 			continue
 		}
 		wg.Add(1)
@@ -380,13 +392,15 @@ func connectOne(ctx context.Context, def Definition, opts Options) Report {
 		done <- dialed{s, err}
 	}()
 	var (
-		s   *Server
-		err error
+		s        *Server
+		err      error
+		timedOut bool
 	)
 	select {
 	case d := <-done:
 		s, err = d.s, d.err
 	case <-time.After(timeout):
+		timedOut = true
 		err = fmt.Errorf("server %s: no answer within %s", def.Name, timeout)
 		go func() {
 			if d := <-done; d.s != nil {
@@ -395,13 +409,19 @@ func connectOne(ctx context.Context, def Definition, opts Options) Report {
 		}()
 	}
 	r.Took = time.Since(started)
+	// Whatever came of it, the figure goes to the record as well as to the
+	// listing: a slow server is time before the first paint, and without
+	// this it was time no row anywhere held.
+	defer func() { opts.observe(r) }()
 	if err != nil {
 		r.Status = StatusFailed
 		r.Error = err.Error()
+		r.TimedOut = timedOut
 		if ctx.Err() != nil {
 			// The session went away mid-dial: that is not the server's
 			// fault, and the row should not say it was.
 			r.Error = fmt.Sprintf("server %s: the session ended before it answered", def.Name)
+			r.TimedOut = false
 		}
 		return r
 	}
@@ -418,6 +438,13 @@ func connectOne(ctx context.Context, def Definition, opts Options) Report {
 	r.Status = StatusConnected
 	r.Server = s
 	return r
+}
+
+// observe hands a settled report to the session's observer, if it has one.
+func (o Options) observe(r Report) {
+	if o.Observe != nil {
+		o.Observe(r)
+	}
 }
 
 // describe is the tool description the model reads: the server's own, led

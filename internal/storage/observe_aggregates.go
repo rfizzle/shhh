@@ -598,3 +598,33 @@ func (db *DB) agentSessionOutcomes(scope string, args ...any) ([]AgentSessionOut
 		return []any{&o.Outcome, &o.Count}
 	}), agentSessionOutcomesQuery, scope, nil, args)
 }
+
+// AgentTiming is one of a session's timing rows: a startup phase, a split
+// turn, or a turn's longest quiet stretch, in the columns AgentEvent
+// describes for each kind. The split and the count are nil where the row
+// does not carry them.
+type AgentTiming struct {
+	Kind                        string
+	Turn                        int64
+	Tool, Outcome, Reason       string
+	DurationMs                  *int64
+	ModelFirstMs, ModelStreamMs *int64
+	ToolMs, PersonMs            *int64
+	Delivered                   *int64
+}
+
+// AgentTimings is one session's timing rows in the order they were written:
+// its startup phases, each turn whose time was split, and each turn's
+// longest quiet stretch
+// (docs/capabilities/sessions-and-memory.md#startup-and-waits-are-timed).
+// A turn row from a surface that did not split its time is not one of them.
+func (db *DB) AgentTimings(sessionID int64) ([]AgentTiming, error) {
+	return queryRows(db, scanFields(func(t *AgentTiming) []any {
+		return []any{&t.Kind, &t.Turn, &t.Tool, &t.Outcome, &t.Reason, &t.DurationMs,
+			&t.ModelFirstMs, &t.ModelStreamMs, &t.ToolMs, &t.PersonMs, &t.Delivered}
+	}), `SELECT kind, turn, tool, outcome, reason, duration_ms,
+		   model_first_ms, model_stream_ms, tool_ms, person_ms, delivered
+		 FROM agent_events
+		 WHERE session_id = ? AND (kind IN (?, ?) OR (kind = ? AND model_first_ms IS NOT NULL))
+		 ORDER BY id`, sessionID, AgentEventStartup, AgentEventQuiet, AgentEventTurn)
+}

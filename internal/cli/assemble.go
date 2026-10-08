@@ -153,7 +153,7 @@ func unattendedRegistration(ownStore, sayDelegation bool) func(*cobra.Command, *
 		if ownStore {
 			// The local store is opened here rather than with the recorder
 			// because trust for a project MCP server is read from it.
-			a.db, a.storeErr = openStore()
+			a.db, a.storeErr = openSessionStore(cmd.Context())
 			if db := a.db; db != nil {
 				a.closers = append(a.closers, func() { db.Close() })
 			}

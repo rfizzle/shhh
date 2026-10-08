@@ -204,6 +204,9 @@ func finishUnattended(cmd *cobra.Command, asm *assembly, session *chatSession, o
 	// no parent to link to.
 	t.recorder = startObserveRecorder(db, opts.kind, env.prov.Name(), env.modelName, asm.prices)
 	t.closers = append(t.closers, t.recorder.end)
+	// The phases paid before this row existed; a run with no screen has no
+	// first paint to add to them (startup.go).
+	startupFrom(cmd.Context()).Attach(t.recorder.startupRow)
 	t.hooks.SetSession(hookSession(t.recorder.sessionID()))
 	own := opts.settings
 	t.recorder.stamp(env.prompts.fingerprintOf(env.sysPrompt), session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{

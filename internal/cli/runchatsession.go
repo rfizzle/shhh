@@ -191,6 +191,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// mode decisions) are recorded to storage; failure just disables recording.
 	recorder := startObserveRecorder(db, session.kind, env.prov.Name(), env.modelName, prices)
 	defer recorder.end()
+	// The phases paid before this row existed are written to it now, and
+	// the first paint, still to come, as it lands (startup.go).
+	startupFrom(cmd.Context()).Attach(recorder.startupRow)
 	hooks.SetSession(hookSession(recorder.sessionID()))
 	// The starting mode is stamped here, as a setting, rather than left to
 	// the mode-change signal: that signal fires only on a change, so a
@@ -300,6 +303,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithTitle(session.title).
 		WithWorkspace(cwd).
 		WithObserver(recorder.observer()).
+		WithFirstPaint(firstPaint(startupFrom(cmd.Context()))).
 		WithNewSession(newSession).
 		WithSessions(sessionsFor(db)).
 		WithWorkspaceBlock(env.workspaceBlock).

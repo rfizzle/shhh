@@ -798,6 +798,65 @@ The word goes to the local record and its JSON export and nowhere else — not
 to the trace a collector receives, not to the session's page, not to the
 model.
 
+### Startup and waits are timed
+
+A session that took twenty seconds to show its prompt left no row anywhere,
+and a turn that ran eight minutes was one number on one row. "It hung" was
+then a guess at a cause. The record now holds where that time went.
+
+**Startup is a row per phase.** Reading the configuration and the keymap;
+opening the store, catching it up on its migrations and scheduling its prune;
+each MCP server's connect; looking for the language servers; and the first
+prompt drawn. Each row has its duration. The first prompt's is measured from
+the process starting rather than from the phase before it, so it is the whole
+of what the person waited, and the phases before it say what that was made
+of. The phases run before the session's record exists — the configuration is
+read before any command, the servers connect before the session opens its
+row — so their rows are held until the record opens and written to it then.
+
+**A server's row carries its name and a word for how its connect came out.**
+The name is an identifier, on the footing a server's tool already has in the
+record. The word is the connect's own status — connected, failed, disabled,
+untrusted, missing an environment variable, or excluded from a conversation
+— with a connect that ran out of time told apart from one that failed,
+because the two are fixed differently: one wants a longer wait or a warmer
+cache, the other wants its definition read. What the server or its transport
+said about why is never in the row. That text can carry a URL with a token in
+it, and the record is content-free by construction rather than by a scrub.
+
+**A turn's time is split four ways.** At every moment a turn is waiting on
+one thing: the model before the first event of the request it is answering,
+the model writing from that first event to its last, the round's tools —
+running, or being decided by the policy, the classifier or a hook — and the
+person, from a card put in front of them to their answer. The approval card,
+a question, a plan and a paused or held round are all the person's. The four
+are summed from the stamps the turn's own duration is measured from, so they
+add up to it: an eight-minute turn reads as six minutes of a command, one of
+a person deciding and one of the model, with the gap between an `ask` and
+its answer read directly instead of by subtracting two rows.
+
+**The longest quiet stretch is recorded once per turn.** It is the longest
+time in the turn in which nothing reached the screen — no prose, no shown
+reasoning, no row, no card — with what the turn waited on through most of it,
+and how many stream events arrived in it that drew nothing: a keepalive, or
+reasoning on a rung that hides it. A stretch where some arrived is filed as
+quiet, and one spent waiting on the model where none did as silent. They are
+different faults: a quiet stream is a model thinking where nobody can see it,
+and a silent one is a connection that may be gone. A stretch spent mostly on
+a tool or a person is filed as waiting, because no stream was open to say
+anything, and a long build is not a dead connection. **The events are counted
+and never kept.** A reasoning delta is the model's own words, and the count
+is the whole of what telling the faults apart needs. A turn paused at its
+round cap writes its stretch at the pause, since the person may never take
+it up again; granted more rounds, it writes another only if a longer one
+came after.
+
+The timing rows go to the local record and nowhere else: not to the trace a
+collector receives, and not to the session's page or the export's event
+list, which carry what the session did rather than what it waited on. A
+surface that does not split its turns leaves the four columns empty, which
+reads as unrecorded rather than as a turn that waited on nothing.
+
 ### The record is kept for a window
 
 The record is pruned the way command history and generated report pages are:

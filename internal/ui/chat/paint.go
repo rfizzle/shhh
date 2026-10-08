@@ -58,6 +58,11 @@ func (m Model) View() tea.View {
 	// turned them off, and the frame after the last one all want.
 	v.WindowTitle = m.windowTitle()
 	v.ProgressBar = m.progressBar()
+	// The first frame drawn at the terminal's size is the one with the
+	// prompt in it, which is where the person's wait for the session ends.
+	if m.ready && m.timing.firstPaint != nil {
+		m.timing.firstPaint()
+	}
 	return v
 }
 

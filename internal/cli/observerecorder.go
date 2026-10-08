@@ -41,6 +41,12 @@ type observeRecorder struct {
 	// linked is the saved conversation the row was last linked to, so an
 	// autosave that lands in the same slot costs no write.
 	linked string
+	// quietTurn and quietTook are the turn whose longest quiet stretch was
+	// last written and how long it was, so a turn paused at its cap and
+	// then granted more rounds writes its stretch again only if it grew
+	// (closeTurn).
+	quietTurn int64
+	quietTook time.Duration
 	// outcome is the session outcome the last closing turn wrote, so the
 	// end knows whether anything ever said how the session came out.
 	outcome string
@@ -469,13 +475,14 @@ func (r *observeRecorder) observer() observe.Observer {
 		return observe.Observer{}
 	}
 	return observe.Observer{
-		Usage:    r.usagePriced,
-		ToolCall: r.toolCallAt,
-		Decision: r.decisionAt,
-		Turn:     r.turn,
-		Signal:   r.signal,
-		Gate:     r.gate,
-		Session:  r.link,
+		Usage:     r.usagePriced,
+		ToolCall:  r.toolCallAt,
+		Decision:  r.decisionAt,
+		Turn:      r.turn,
+		TurnTimed: r.turnTimed,
+		Signal:    r.signal,
+		Gate:      r.gate,
+		Session:   r.link,
 	}
 }
 
@@ -553,6 +560,34 @@ func (r *observeRecorder) decisionAt(at observe.Pos, decision, reason string) {
 // because the session that most needs an outcome is the one whose exit never
 // runs (docs/capabilities/sessions-and-memory.md#whether-it-worked).
 func (r *observeRecorder) turn(turn, rounds int64, duration time.Duration, outcome string) {
+	r.closeTurn(turn, rounds, duration, outcome, nil)
+}
+
+// turnTimed is turn from a surface that split the turn's time: the four
+// waits ride the turn row, in milliseconds that add up to its duration, and
+// the turn's longest quiet stretch is a row of its own. A pause at the round
+// cap writes the split it has so far and no stretch, because the turn is not
+// over: the stretch is written once, when it is
+// (docs/capabilities/sessions-and-memory.md#startup-and-waits-are-timed).
+func (r *observeRecorder) turnTimed(turn, rounds int64, duration time.Duration, outcome string, split agent.TurnSplit) {
+	r.closeTurn(turn, rounds, duration, outcome, &split)
+}
+
+// startupRow writes one startup phase. A server's row carries its name in the
+// tool column, where an MCP tool's name already sits, and its outcome word;
+// nothing the server said is among them. The span takes none of these: the
+// export's attribute set is closed on its own terms (otel.go).
+func (r *observeRecorder) startupRow(row observe.StartupRow) {
+	if r == nil {
+		return
+	}
+	ms := row.Took.Milliseconds()
+	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
+		Kind: storage.AgentEventStartup, Tool: row.Name, Outcome: row.Outcome, Reason: row.Phase, DurationMs: &ms,
+	})
+}
+
+func (r *observeRecorder) closeTurn(turn, rounds int64, duration time.Duration, outcome string, split *agent.TurnSplit) {
 	if r == nil {
 		return
 	}
@@ -564,9 +599,28 @@ func (r *observeRecorder) turn(turn, rounds int64, duration time.Duration, outco
 	// inside the same process replaces.
 	_ = r.db.BeatAgentSession(r.id)
 	ms := duration.Milliseconds()
-	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
+	ev := storage.AgentEvent{
 		Kind: storage.AgentEventTurn, Outcome: outcome, DurationMs: &ms, Turn: turn, Round: rounds,
-	})
+	}
+	if split != nil {
+		parts := observe.TurnMillis(duration, *split)
+		ev.ModelFirstMs, ev.ModelStreamMs, ev.ToolMs, ev.PersonMs = &parts[0], &parts[1], &parts[2], &parts[3]
+	}
+	_ = r.db.RecordAgentEvent(r.id, ev)
+	// The stretch is written at a pause as well as at the close, because a
+	// paused turn the person never grants more rounds to has no close. A
+	// turn that is granted them reports its whole span again at its end, so
+	// the close writes a stretch only where one longer than the pause's came
+	// after it: one row per turn, unless the turn's longest moved.
+	if split != nil && split.Quiet.Took > 0 && (r.quietTurn != turn || split.Quiet.Took > r.quietTook) {
+		q := split.Quiet
+		r.quietTurn, r.quietTook = turn, q.Took
+		took, delivered := q.Took.Milliseconds(), int64(q.Delivered)
+		_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
+			Kind: storage.AgentEventQuiet, Outcome: observe.StretchWord(q), Reason: observe.WaitWord(q.On),
+			DurationMs: &took, Delivered: &delivered, Turn: turn, Round: rounds,
+		})
+	}
 	if o := observe.SessionOutcome(outcome); o != "" {
 		if err := r.db.SetAgentSessionOutcome(r.id, o); err == nil {
 			r.outcome = o

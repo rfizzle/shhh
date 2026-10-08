@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	"charm.land/fang/v2"
 	"charm.land/lipgloss/v2"
@@ -15,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/profile"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -146,6 +148,7 @@ func NewRootCmd() *cobra.Command {
 			// a session is about to borrow. It opens nothing: a command that
 			// logs nothing leaves no file behind.
 			openLog()
+			configStarted := time.Now()
 
 			// A file that will not load stops every command here, the way
 			// an unreadable prompt file stops a session: a setting the
@@ -234,6 +237,14 @@ func NewRootCmd() *cobra.Command {
 			// model and provider, and this is where the config is read
 			// (observe.go).
 			setObserveExport(cfg.Otel.Endpoint)
+
+			// The command's startup rows start here, with the phase that
+			// read what the person wrote down: the keymap before the
+			// command tree, and everything above. They wait on the context
+			// until a session's record is open to take them (startup.go).
+			startup := &observe.Startup{}
+			notePhase(startup, observe.PhaseConfig, time.Duration(keymapTook.Load())+time.Since(configStarted))
+			cmd.SetContext(withStartup(cmd.Context(), startup))
 
 			return nil
 		},

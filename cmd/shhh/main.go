@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/cli"
 	"github.com/rfizzle/shhh/internal/config"
@@ -33,7 +34,12 @@ func main() {
 	// quietly running a keyboard that is neither the file's nor shhh's.
 	// A line naming a key shhh has since given up is read and does nothing,
 	// and is named here for the same reason a refusal is.
-	if err := keys.Load(config.KeymapPaths()...); err != nil {
+	// How long the read took joins the session's first startup row (the
+	// configuration's), since there is no command yet to hold it.
+	keymapStarted := time.Now()
+	err := keys.Load(config.KeymapPaths()...)
+	cli.NoteKeymap(time.Since(keymapStarted))
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "shhh: keybindings refused:", err)
 	} else if dead := keys.Dead(); len(dead) > 0 {
 		fmt.Fprintf(os.Stderr, "shhh: keybindings: %s names a key shhh no longer has; the line does nothing\n",

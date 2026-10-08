@@ -123,7 +123,11 @@ func openMCP(ctx context.Context, cfg config.Config, readOnlyOnly bool) (*mcp.To
 		return nil, nil
 	}
 	mcp.SetVersion(version)
-	return mcp.Connect(ctx, cat, mcpOptions(cfg, readOnlyOnly)), cat
+	opts := mcpOptions(cfg, readOnlyOnly)
+	// Each server's connect is a startup phase of its own: one slow server
+	// is the usual cause of a slow start, and a sum would hide which.
+	opts.Observe = serverStartup(startupFrom(ctx))
+	return mcp.Connect(ctx, cat, opts), cat
 }
 
 // mcpStartupNotes are the lines a session prints before it starts: every

@@ -367,11 +367,16 @@ func exportSession(s AgentSessionSummary) AgentExportSession {
 	return out
 }
 
+// exportAgentEvents is the events the timeline and the export carry. The
+// timing rows are left out of both: they are read by AgentTimings, whose
+// shape is theirs, and a startup row drawn as a timeline event would be a
+// phase with no turn read as something the session did.
 func (db *DB) exportAgentEvents(sessionID int64) ([]AgentExportEvent, error) {
 	return queryRows(db, scanFields(func(e *AgentExportEvent) []any {
 		return []any{&e.CreatedAt, &e.Kind, &e.Turn, &e.Round, &e.Tool, &e.DurationMs, &e.Outcome, &e.Reason, &e.Purpose}
 	}), `SELECT created_at, kind, turn, round, tool, duration_ms, outcome, reason, purpose
-		 FROM agent_events WHERE session_id = ? ORDER BY id`, sessionID)
+		 FROM agent_events WHERE session_id = ? AND kind NOT IN (?, ?) ORDER BY id`,
+		sessionID, AgentEventStartup, AgentEventQuiet)
 }
 
 // PruneAgentObservability deletes the sessions that ended before the window

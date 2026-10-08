@@ -76,6 +76,12 @@ type Observer struct {
 	// reports once as paused and, if granted more rounds, once more when
 	// it finally ends.
 	Turn func(turn, rounds int64, duration time.Duration, outcome string)
+	// TurnTimed is Turn from a surface that also split the turn's time by
+	// what it waited on, and kept its longest quiet stretch. A surface that
+	// splits calls it instead of Turn, never as well, so a turn is one row
+	// either way; the split's four parts add up to duration.
+	// See docs/capabilities/sessions-and-memory.md#startup-and-waits-are-timed.
+	TurnTimed func(turn, rounds int64, duration time.Duration, outcome string, split agent.TurnSplit)
 	// Signal reports one of the loop's own safeguards or a workflow
 	// transition firing, with a qualifier from a closed set.
 	Signal func(at Pos, code, reason string)

@@ -95,7 +95,7 @@ func newCodeCmd() *cobra.Command {
 				resumePick:     resumeChat == resumeFromPicker,
 				resumeName:     resumeNamed(resumeChat),
 				web:            openWebTools(ConfigFrom(cmd.Context())),
-				lsp:            openLSP(ConfigFrom(cmd.Context())),
+				lsp:            openSessionLSP(cmd.Context()),
 				structural:     structural.Detect(),
 				gate:           true,
 				processes:      true,

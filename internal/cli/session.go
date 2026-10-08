@@ -282,7 +282,7 @@ func registerChat(cmd *cobra.Command, a *assembly, session *chatSession) error {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles, subagent.Offer{})...)
 	}
 
-	db, storeErr := openStore()
+	db, storeErr := openSessionStore(cmd.Context())
 	if storeErr != nil {
 		fmt.Fprintf(os.Stderr, "warning: chat persistence unavailable: %v\n", storeErr)
 	}

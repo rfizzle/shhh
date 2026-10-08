@@ -43,6 +43,15 @@ const (
 	// AgentEventSignal is one of the loop's own safeguards or a workflow
 	// transition firing: outcome is the signal code, reason its qualifier.
 	AgentEventSignal = "signal"
+	// AgentEventStartup is one startup phase: reason is the phase, tool the
+	// server's name where the phase is a server's connect, outcome the
+	// server's outcome word, duration_ms how long it took.
+	AgentEventStartup = "startup"
+	// AgentEventQuiet is a turn's longest stretch with nothing on the
+	// screen: reason is what the turn waited on through most of it, outcome
+	// whether the stream delivered anything in it, delivered how many events
+	// it delivered, duration_ms how long it was. One per turn that closed.
+	AgentEventQuiet = "quiet"
 )
 
 // AgentEvent is one content-free event. Turn and Round place it in the
@@ -62,6 +71,13 @@ type AgentEvent struct {
 	// rather than the reason because a command that failed carries its
 	// failure's class there, and one row has to say both.
 	Purpose string
+	// The turn's time by what it waited on, on a turn row from a surface
+	// that splits it, and nil everywhere else. Where they are set they add
+	// up to DurationMs.
+	ModelFirstMs, ModelStreamMs, ToolMs, PersonMs *int64
+	// Delivered is a quiet stretch's count of stream events that drew
+	// nothing, nil on every other row.
+	Delivered *int64
 }
 
 // AgentProvenance is what a session ran under, stamped once it is known.

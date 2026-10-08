@@ -86,6 +86,9 @@ func (m *Model) setTurnState(s state) {
 		!m.pausedAtRoundLimit() && m.turnOutcome == components.TurnDone && m.closeGateOwed() {
 		s = stateCloseGate
 	}
+	// And the turn's clock, after the redirect above: a turn going to its
+	// checks is waiting on them, not on whatever it waited on last.
+	m.noteWait(s)
 	// Every arrival at a decision, and every departure from one, passes
 	// through here — so this is where the keyboard is decided. A card can
 	// never inherit the gate the last one was given, and one
@@ -259,6 +262,10 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		m.clearRetryChain()
 		m.appendThinking(msg.think)
 		m.streaming += msg.text
+		// What drew is the answer's prose, and reasoning on a rung that
+		// shows it; an empty batch or hidden reasoning arrived and drew
+		// nothing, which the record counts against the quiet stretch.
+		m.noteEvent(msg.text != "" || (msg.think != "" && !m.compacting && m.showThink()))
 		// The repaint rides the spinner's tick rather than the chunk (the
 		// streaming render). A chunk that arrives while the loop is running only
 		// records that one is owed; one that arrives with nothing ticking — the
@@ -278,6 +285,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 
 	case toolDeltaMsg:
 		m.appendCompose(msg.delta)
+		m.noteEvent(!m.compacting && m.showCompose() && m.composed >= composeFloor)
 		// A round writing a call sends fragments with nothing between them,
 		// so most arrive as a message of their own rather than at the end of
 		// a token batch. The repaint rule is the batch's either way: ride the
@@ -291,10 +299,17 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		return m, waitForEvent(m.events), true
 
 	case doneMsg:
+		m.noteEvent(true)
 		return answered(m.finishReply(msg))
 
 	case toolCallsMsg:
 		m.clearRetryChain()
+		// The round's calls are in hand and their rows are about to be
+		// drawn: the model is done and the tools begin.
+		m.noteEvent(true)
+		if m.turnOpen {
+			m.timing.turn.Tool(clock())
+		}
 		m.accumulateUsage(msg.usage)
 		// The thinking behind these calls has to travel with them into the
 		// next request.
@@ -359,6 +374,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			return m, nil, true
 		}
 		m.agent.RecordAutoResults(msg.results)
+		m.noteDrew()
 		for _, r := range msg.results {
 			m.recordToolResult(r.Call, r.Duration, r.Result)
 			if agent.IsRepeatNotice(r.Result) {
@@ -380,6 +396,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		return answered(m.resumeToolLoop())
 
 	case cmdDoneMsg:
+		m.noteDrew()
 		return answered(m.finishCommand(msg))
 
 	case dryRunDoneMsg:
@@ -396,6 +413,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		return answered(m.finishExplain(msg))
 
 	case approvedToolDoneMsg:
+		m.noteDrew()
 		return answered(m.finishApprovedTool(msg))
 
 	case preToolHookMsg:
