@@ -51,7 +51,7 @@ func childReachesWeb(session chatSession, agents *agentProfiles, role subagent.R
 	if session.web == nil || agents == nil {
 		return false
 	}
-	def, ok := agents.definitions[string(role)]
+	def, ok := agents.definition(role)
 	if !ok {
 		return true
 	}

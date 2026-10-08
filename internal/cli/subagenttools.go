@@ -119,7 +119,7 @@ func withDelegation(sup *subagent.Supervisor, agents *agentProfiles, offer subag
 	if !def.Allows(subagent.SpawnToolName) && !def.Allows(subagent.ReportToolName) {
 		return defs, base
 	}
-	defs = append(defs, subagent.Definitions(agents.profiles, offer)...)
+	defs = append(defs, subagent.Definitions(agents.snapshot(), offer)...)
 	// Starting an agent is a decision wherever it is taken, so a child's
 	// spawn is carded like its commands and its edits and reaches the person
 	// the same way. The other three start nothing and are auto-run, as they
@@ -419,14 +419,14 @@ func holdsCommand(defs []provider.Tool) bool {
 // never handed them. Empty for the person's own profiles and for one that
 // states nothing.
 func (a *agentProfiles) checkoutIntent(role subagent.Role) string {
-	if p, ok := a.profiles[role]; ok && p.Checkout {
+	if p, ok := a.snapshot()[role]; ok && p.Checkout {
 		return strings.TrimSpace(p.Intent)
 	}
 	return ""
 }
 
 func (a *agentProfiles) runsCommands(role subagent.Role) bool {
-	if def, ok := a.definitions[string(role)]; ok {
+	if def, ok := a.definition(role); ok {
 		return def.Has(config.PermissionExecute) && def.Allows(tools.ExecCommandName)
 	}
 	return role == subagent.RoleWriter

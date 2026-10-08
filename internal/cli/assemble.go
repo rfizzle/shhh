@@ -139,7 +139,7 @@ func assembleSession(cmd *cobra.Command, session *chatSession, opts assemblyOpts
 		return nil, err
 	}
 	if a.agents != nil {
-		session.toolDefs = spawnModels{env: a.env, agents: a.agents, prices: a.prices}.offerOn(a.agents.profiles, session.toolDefs)
+		session.toolDefs = spawnModels{env: a.env, agents: a.agents, prices: a.prices}.offerOn(a.agents.snapshot(), session.toolDefs)
 	}
 	return a, nil
 }
@@ -215,7 +215,7 @@ func unattendedRegistration(ownStore, sayDelegation bool) func(*cobra.Command, *
 				return err
 			}
 			a.agents = agents
-			session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles, subagent.Offer{})...)
+			session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.snapshot(), subagent.Offer{})...)
 		}
 		return nil
 	}

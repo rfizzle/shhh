@@ -279,7 +279,7 @@ func registerChat(cmd *cobra.Command, a *assembly, session *chatSession) error {
 		a.agents = agents
 		// The models it may name are known once the provider is, and are
 		// put on the definition then (offerOn).
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles, subagent.Offer{})...)
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.snapshot(), subagent.Offer{})...)
 	}
 
 	db, storeErr := openSessionStore(cmd.Context())

@@ -536,11 +536,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		writerCommands := writerContainment(cfg, childContainment()).field()
 		gatedChecks[subagent.SpawnToolName] = spawnModelCheck(sup)
 		gatedPreviews[subagent.SpawnToolName] = func(args json.RawMessage) (chat.GatedPreview, error) {
-			summary, err := subagent.SpawnSummary(agents.profiles, args)
+			summary, err := subagent.SpawnSummary(agents.snapshot(), args)
 			if err != nil {
 				return chat.GatedPreview{}, err
 			}
-			plan, err := subagent.SpawnPlan(agents.profiles, args)
+			plan, err := subagent.SpawnPlan(agents.snapshot(), args)
 			if err != nil {
 				return chat.GatedPreview{}, err
 			}

@@ -1751,3 +1751,40 @@ func TestAProfileSaveDuringASpawnIsNotARace(t *testing.T) {
 		t.Errorf("model of a saved profile = %q, want m-saved-7", got)
 	}
 }
+
+// A spawn card reads the same maps a save writes: every helper it asks goes
+// through the lock, so the two released together are not a race.
+func TestAProfileSaveDuringASpawnCardIsNotARace(t *testing.T) {
+	agents := &agentProfiles{profiles: subagent.BuiltinProfiles(), definitions: map[string]config.AgentDefinition{}}
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		<-start
+		for i := range 200 {
+			name := "saved-" + strconv.Itoa(i)
+			agents.mu.Lock()
+			agents.definitions[name] = config.AgentDefinition{Name: name}
+			agents.profiles[subagent.Role(name)] = subagent.Profile{Name: subagent.Role(name), Checkout: true, Intent: "i"}
+			agents.mu.Unlock()
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		<-start
+		for i := range 200 {
+			role := subagent.Role("saved-" + strconv.Itoa(i))
+			agents.effortFor(role, provider.EffortHigh)
+			childReachesWeb(chatSession{web: &web.Toolset{}}, agents, role)
+			agents.checkoutIntent(role)
+			agents.runsCommands(role)
+			subagent.Definitions(agents.snapshot(), subagent.Offer{})
+		}
+	}()
+	close(start)
+	wg.Wait()
+	if got := agents.checkoutIntent("saved-7"); got != "i" {
+		t.Errorf("intent of a saved profile = %q, want i", got)
+	}
+}

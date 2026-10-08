@@ -224,7 +224,7 @@ func (a *agentProfiles) effortFor(role subagent.Role, session provider.Effort) p
 	if a == nil {
 		return session
 	}
-	def, ok := a.definitions[string(role)]
+	def, ok := a.definition(role)
 	if !ok || def.InheritsReasoning() {
 		return session
 	}
