@@ -378,8 +378,12 @@ func openOneShot(cmd *cobra.Command, cfg config.Config, flags resolve.Opts, user
 	// behind at all.
 	// See docs/capabilities/sessions-and-memory.md#every-composition-is-one-population.
 	pending := startRecord(func() (*storage.DB, *observeRecorder) {
-		db, _ := openStore()
+		db, _ := openSessionStore(cmd.Context())
 		rec := startObserveRecorder(db, "cmd", p.Name(), resolved.Model, prices)
+		// The phases paid before this row existed — the configuration and
+		// the store — are written to it now. A one-shot draws no prompt of
+		// its own, so there is no first paint to add (startup.go).
+		startupFrom(cmd.Context()).Attach(rec.startupRow)
 		rec.stamp(sysPrompt, 0, projectFingerprintRoot(), settings)
 		return db, rec
 	})

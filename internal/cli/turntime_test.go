@@ -116,6 +116,29 @@ func TestTurnTime_EverySurfaceSplitsItsTurn(t *testing.T) {
 		check(t, splitTurn(t, db, rec), parts{first: true, stream: true, tool: true})
 	})
 
+	// The same, through the real commands on the wall clock: what the
+	// cases above prove of the parts, these prove of the wiring.
+	for _, c := range []struct {
+		kind, name string
+		args       []string
+	}{
+		{"print", "headless command", []string{"code", "-p", "list files"}},
+		{"cmd", "one-shot command", []string{"cmd", "--raw", "list files"}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			var turns []storage.AgentTiming
+			for _, r := range runSurface(t, c.kind, "", c.args...) {
+				if r.Kind == storage.AgentEventTurn {
+					turns = append(turns, r)
+				}
+			}
+			if len(turns) != 1 {
+				t.Fatalf("split turn rows = %+v, want one", turns)
+			}
+			check(t, turns[0], parts{})
+		})
+	}
+
 	t.Run("serve", func(t *testing.T) {
 		db, rec := startupStore(t)
 		clock := newSteppingClock()

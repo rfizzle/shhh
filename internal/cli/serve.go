@@ -118,7 +118,9 @@ func newServeCmd() *cobra.Command {
 // and a server holding several would trade that for a class of lock
 // contention nobody can reproduce.
 func runServe(cmd *cobra.Command, opts serveOpts) error {
-	db, _ := openStore()
+	// Opened as a startup phase, held until the first session's record
+	// opens to take it (startup.go).
+	db, _ := openSessionStore(cmd.Context())
 	if db != nil {
 		defer db.Close()
 	}
@@ -310,7 +312,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		continueLast:   p.Continue,
 		resumeName:     p.Resume,
 		web:            openWebTools(cfg),
-		lsp:            openLSP(cfg),
+		lsp:            openSessionLSP(cmd.Context()),
 		structural:     structural.Detect(),
 		gate:           true,
 		processes:      true,
