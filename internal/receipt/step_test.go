@@ -396,6 +396,9 @@ func TestStepReceipt_TheHeaderSplitsForTheDropOrder(t *testing.T) {
 		{"a clause that does not open with its verb counts behind it",
 			[]Act{lookupAct(), lookupAct()},
 			Header{Verb: "looked up", Rollup: "twice", Bare: "twice"}},
+		{"a write behind the lead is named wide and counted narrow",
+			[]Act{readAct("a.go"), editAct("b.go")},
+			Header{Verb: "read", Subject: "a.go", Rollup: "wrote b.go", Bare: "wrote 1 file"}},
 		{"nothing that ran is no header", nil, Header{}},
 	}
 	for _, tc := range cases {
