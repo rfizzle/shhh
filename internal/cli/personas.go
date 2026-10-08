@@ -51,7 +51,7 @@ func buildPersonas(session chatSession, env *sessionEnv, agents *agentProfiles, 
 		for name := range sup.Profiles() {
 			builtins = append(builtins, string(name))
 		}
-		return persona.Existing(agents.definitions, builtins...)
+		return persona.Existing(agents.defs(), builtins...)
 	}
 	// register reads a profile file and makes the role it defines the one
 	// this session spawns: the drafter's save and the manager's editor both
@@ -75,6 +75,8 @@ func buildPersonas(session chatSession, env *sessionEnv, agents *agentProfiles, 
 		if kind == persona.KindChat && prof.Writes {
 			return fmt.Errorf("agent profile %s: grants a tier that writes, and a conversation spawns only roles that read", path)
 		}
+		// Both maps are written under one hold of mu; AddProfile and offerOn
+		// below take their own locks, so mu is released before them.
 		agents.mu.Lock()
 		agents.definitions[def.Name] = def
 		agents.profiles[prof.Name] = prof

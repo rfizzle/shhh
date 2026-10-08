@@ -63,11 +63,10 @@ func spawnableModels(cfg config.Config, agents *agentProfiles, catalog []string,
 		add(cfg.Agents.Profiles[role].Model)
 	}
 	if agents != nil {
-		agents.mu.RLock()
-		for _, role := range slices.Sorted(maps.Keys(agents.definitions)) {
-			add(agents.definitions[role].ProfileModel())
+		defs := agents.defs()
+		for _, role := range slices.Sorted(maps.Keys(defs)) {
+			add(defs[role].ProfileModel())
 		}
-		agents.mu.RUnlock()
 	}
 	return out
 }

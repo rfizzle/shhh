@@ -72,6 +72,18 @@ func (a *agentProfiles) snapshot() subagent.Profiles {
 	return out
 }
 
+// defs is the file definitions as they stand, copied under the read lock,
+// for a reader that walks them: the map itself is written by the save.
+func (a *agentProfiles) defs() map[string]config.AgentDefinition {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	out := make(map[string]config.AgentDefinition, len(a.definitions))
+	for k, v := range a.definitions {
+		out[k] = v
+	}
+	return out
+}
+
 // loadAgentProfiles reads the user's agent profiles and lays them over the
 // built-in roles. A file named researcher.toml or writer.toml replaces the
 // built-in of that name, which is how the shipped roles get a different
@@ -169,10 +181,11 @@ func fromCheckout(def config.AgentDefinition, cwd string) bool {
 
 // readers is the subset of profiles that can change nothing: what a
 // conversation may spawn. The definitions map is kept whole — a reader's
-// model and prompt still come from its file.
+// model and prompt still come from its file. Both maps are copied under a's
+// lock, so the result owns its maps and its own lock.
 func (a *agentProfiles) readers() *agentProfiles {
-	out := &agentProfiles{profiles: subagent.Profiles{}, definitions: a.definitions}
-	for name, p := range a.profiles {
+	out := &agentProfiles{profiles: subagent.Profiles{}, definitions: a.defs()}
+	for name, p := range a.snapshot() {
 		if !p.Writes {
 			out.profiles[name] = p
 		}
@@ -199,10 +212,11 @@ func (a *agentProfiles) roles(cwd string) []chat.SpawnableRole {
 		return nil
 	}
 	projectDir := config.ProjectAgentDir(cwd)
-	out := make([]chat.SpawnableRole, 0, len(a.profiles))
-	for name, p := range a.profiles {
+	profiles, defs := a.snapshot(), a.defs()
+	out := make([]chat.SpawnableRole, 0, len(profiles))
+	for name, p := range profiles {
 		role := chat.SpawnableRole{Name: string(name), Description: p.Description, Scope: roleBuiltIn}
-		if def, ok := a.definitions[string(name)]; ok && def.Path != "" {
+		if def, ok := defs[string(name)]; ok && def.Path != "" {
 			role.Path, role.Scope = def.Path, string(persona.ScopeGlobal)
 			role.Older = !def.Current()
 			if filepath.Dir(def.Path) == projectDir {

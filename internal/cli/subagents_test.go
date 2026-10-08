@@ -1788,3 +1788,43 @@ func TestAProfileSaveDuringASpawnCardIsNotARace(t *testing.T) {
 		t.Errorf("intent of a saved profile = %q, want i", got)
 	}
 }
+
+// A save writes both maps under one hold of mu while the manager's list and
+// the spawnable-models walk read them: released together, no sleep.
+func TestAProfileSaveDuringARolesWalkIsNotARace(t *testing.T) {
+	agents := &agentProfiles{profiles: subagent.BuiltinProfiles(), definitions: map[string]config.AgentDefinition{}}
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		<-start
+		for i := range 200 {
+			name := "saved-" + strconv.Itoa(i)
+			agents.mu.Lock()
+			agents.definitions[name] = config.AgentDefinition{Name: name, Path: "/x/" + name + ".toml"}
+			agents.profiles[subagent.Role(name)] = subagent.Profile{Name: subagent.Role(name), Checkout: true, Intent: "i"}
+			agents.mu.Unlock()
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		<-start
+		for range 200 {
+			agents.roles("/x")
+			agents.readers()
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		<-start
+		for range 200 {
+			spawnableModels(config.Config{}, agents, nil, "", false)
+		}
+	}()
+	close(start)
+	wg.Wait()
+	if got := len(agents.roles("/x")); got != len(subagent.BuiltinProfiles())+200 {
+		t.Errorf("roles after 200 saves = %d, want %d", got, len(subagent.BuiltinProfiles())+200)
+	}
+}
