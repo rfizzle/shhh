@@ -300,6 +300,11 @@ type headlessChat struct {
 	// the agent so a compaction in this run adds to them, and written back
 	// after each save (keepFolded), as the screen's autosave does.
 	folded []provider.Message
+	// loaded is how many of folded the slot already held when it was opened:
+	// the turns a compaction in this run adds come after them, and the
+	// reading this opening spliced in front of the conversation is at the head
+	// of those (keepFolded).
+	loaded int
 }
 
 // openHeadlessChat resolves what this run carries on from and where it will
@@ -334,6 +339,8 @@ func openHeadlessChat(db *storage.DB, session chatSession, initial []provider.Me
 			c.summary = notice.Summary
 			c.steps = notice.Steps
 			c.folded, _ = db.LoadChatFolded(c.slot)
+			c.folded = agent.FoldedWithoutReading(c.folded)
+			c.loaded = len(c.folded)
 			msgs, c.at, c.head = spliceAfterSystem(msgs, notice.Messages)
 		}
 	}
@@ -489,9 +496,24 @@ func (c *headlessChat) save(msgs []provider.Message) {
 }
 
 // keepFolded notes the turns the agent has folded, for the next save to write.
+// The reading this opening put in front of the conversation is not one of
+// them: a compaction folds it with the turns after it, at the head of what
+// this run added, and it is cut there as the screen cuts it
+// (agent.FoldedWithoutReading).
 func (c *headlessChat) keepFolded(folded []provider.Message) {
+	if c == nil {
+		return
+	}
+	had := min(c.loaded, len(folded))
+	kept := append([]provider.Message(nil), folded[:had]...)
+	c.folded = append(kept, agent.FoldedWithoutReading(folded[had:])...)
+}
+
+// adopt hands the slot's folded turns to the agent, so a compaction in this
+// run adds to them rather than to none. A run that opened no slot has none.
+func (c *headlessChat) adopt(a *agent.Agent) {
 	if c != nil {
-		c.folded = append([]provider.Message(nil), folded...)
+		a.SetFolded(c.folded)
 	}
 }
 
@@ -634,9 +656,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	saved, messages, recorder := tail.saved, tail.messages, tail.recorder
 
 	a := agent.New(messages, env.stream)
-	if saved != nil {
-		a.SetFolded(saved.folded)
-	}
+	saved.adopt(a)
 	a.SetSteering(steering(cfg, env.prompts))
 	a.SetProgressIntervals(cfg.Behavior.ProgressIntervalCalls,
 		time.Duration(cfg.Behavior.ProgressIntervalSeconds)*time.Second)

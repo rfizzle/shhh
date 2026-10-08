@@ -415,6 +415,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	l.seen.NoteRestoredReads(messages)
 
 	a := agent.New(messages, env.stream)
+	l.saved.adopt(a)
 	a.SetSteering(steering(cfg, env.prompts))
 	a.SetProgressIntervals(cfg.Behavior.ProgressIntervalCalls,
 		time.Duration(cfg.Behavior.ProgressIntervalSeconds)*time.Second)
@@ -1069,8 +1070,7 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	// with --resume says how far this session got
 	// (docs/capabilities/headless.md#something-else-can-drive-it).
 	l.account.turnClosed(l.saved, l.agent.Messages())
-	l.saved.save(l.agent.Messages())
-	l.recorder.link(l.saved.slot)
+	l.saveConversation()
 	// What the session read goes with its conversation, bound once the save
 	// has settled the slot and again wherever a save moved it. The feed does
 	// the binding so the rows a resumed slot already held are not streamed to
@@ -1100,6 +1100,14 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	l.events.closed(l.obs.pos(), outcome, headlessExitCode(outcome, gateErr != nil, refused), final, nil, usage,
 		l.saved.handles(l.recorder), out)
 	return final, out
+}
+
+// saveConversation writes the session's conversation to its slot, with the
+// turns a compaction has folded out of it, and tells the record which slot.
+func (l *serveLoop) saveConversation() {
+	l.saved.keepFolded(l.agent.Folded())
+	l.saved.save(l.agent.Messages())
+	l.recorder.link(l.saved.slot)
 }
 
 // snapshot takes the conversation as it stands, which is what a client
@@ -1145,8 +1153,7 @@ func (l *serveLoop) release() {
 	// store goes, and the save carries it: a session ended after two turns
 	// would otherwise leave its slot with no account at all.
 	if l.agent != nil && l.account.leaving(l.saved, l.agent.Messages()) {
-		l.saved.save(l.agent.Messages())
-		l.recorder.link(l.saved.slot)
+		l.saveConversation()
 	}
 	for i := len(l.closers) - 1; i >= 0; i-- {
 		l.closers[i]()
