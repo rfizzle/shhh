@@ -5478,3 +5478,26 @@ func TestGolden_SteerFromASession(t *testing.T) {
 		}
 	})
 }
+
+// TestGolden_StartOffers captures the read-only slot when the checkout states
+// what is next: the backlog's ready item, and a branch ahead of its default.
+// The branch with commits not pushed outranks the item, and a pushed one
+// does not (docs/interface/surfaces.md#the-start-screen).
+func TestGolden_StartOffers(t *testing.T) {
+	captureGolden(t, "start-offers", "the start screen offering the ready item and the branch in flight", goldenWidths, func(width int) []golden.Panel {
+		build := func(ready StartReady, branch StartBranch) string {
+			info := startFixture()
+			info.Recent = StartRecent{}
+			info.Project.Dirty = 0
+			info.Ready, info.Branch = ready, branch
+			m := frameModel(t, width, 40).WithStartScreen(info)
+			return m.renderHistory()
+		}
+		item := StartReady{Present: true, Slug: "cache-ttl", Title: "Give the cache a lifetime", Noun: "story"}
+		return []golden.Panel{
+			{Label: "a ready item in the backlog", View: build(item, StartBranch{})},
+			{Label: "a branch ahead with commits not pushed · it outranks the item", View: build(item, StartBranch{Ahead: 2})},
+			{Label: "a branch ahead and pushed · the item outranks it", View: build(item, StartBranch{Ahead: 2, Pushed: true})},
+		}
+	})
+}

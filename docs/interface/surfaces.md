@@ -2847,6 +2847,22 @@ Three suggestions follow, ordered by what the working tree suggests — a
 session to resume, then something read-only, then something needing a single
 approval — and each says what it will cost you in permission.
 
+The read-only slot offers what the checkout itself says is next, in this
+order: a changed file nobody has accounted for, which keeps its slot where
+the tree is dirty; then, where the branch is ahead of its default branch with
+commits not pushed, `review what this branch changes before it goes up`, with
+`N commits ahead · not pushed` as its detail; then the backlog's next ready
+item, `read <id> and say what it would take`, with the item's title as its
+detail, in the words of the backlog's profile
+([todo.md](../capabilities/todo.md#a-profile-says-what-the-work-is)); then a
+pushed branch, whose work is already out of hand. The tours — walking through
+the project, summarising its last commits — come after every fact, because an
+offer the code can verify is worth more than one that guessed. The first two
+ranked take the two read-only rows, and the first alone takes the one a
+session to resume leaves; the screen chooses which three and never grows to
+four. Every one of them reads and reports: the line each runs is a prompt, and
+nothing reaches the model until it is taken and sent like a typed line.
+
 A checkout with no state directory of its own has told the model nothing
 about itself, and the last of the three becomes the offer to scaffold one.
 Choosing it opens an approval card listing the files, because a suggestion

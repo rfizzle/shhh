@@ -75,6 +75,25 @@ type StartProfile struct {
 	From string
 }
 
+// StartReady is the backlog's next item that can be started, named in the
+// profile's own words. The zero value is no backlog, or none ready.
+type StartReady struct {
+	Present bool
+	// Slug is the item's name, what a command takes; Title is its heading;
+	// Noun is what the profile calls one item ("story", "task").
+	Slug, Title, Noun string
+}
+
+// StartBranch is the checkout's branch when it is ahead of the default
+// branch: the work in hand. The zero value is a checkout that is not on
+// such a branch.
+type StartBranch struct {
+	// Ahead is the commits the branch holds that the default branch does not.
+	Ahead int
+	// Pushed marks that none of them is missing from the branch's upstream.
+	Pushed bool
+}
+
 // StartInfo is everything the start screen renders, gathered once by the CLI
 // at session start.
 type StartInfo struct {
@@ -104,6 +123,11 @@ type StartInfo struct {
 	// that is small and one that is small for a reason, and it backs
 	// /status and /trust for the same reading (trust.go).
 	Trust Trust
+	// Ready and Branch are the two facts the checkout states about what is
+	// next, read once at session start. They feed the read-only slot and
+	// nothing else (readOnlyOffers).
+	Ready  StartReady
+	Branch StartBranch
 	// Now fixes the clock the "4m ago" clause is measured against; the zero
 	// value means time.Now, which is what the product uses and the tests do
 	// not.
@@ -528,29 +552,11 @@ func startSuggestions(info StartInfo, scaffold, setup bool, draft string) ([]com
 		add("▸", "pick up "+r.Name, recentDetail(r, info.Now), "/load "+r.Name)
 	}
 
-	if info.Project.Repo && info.Project.Dirty > 0 {
-		add("⚙", "explain what changed in the working tree", "reads only, no writes",
-			"explain what changed in the working tree")
-	} else {
-		add("⚙", "walk me through what this project does", "reads only, no writes",
-			"walk me through what this project does, starting from its entry point")
-	}
-
-	switch {
-	case draft != "" && len(out) < 2:
-		add("⚙", draft, "reads only, then asks", toolchainCommandName)
-	case draft != "":
-		last := len(out) - 1
-		out[last] = components.StartSuggestion{Glyph: "⚙", Title: draft, Detail: "reads only, then asks"}
-		actions[last] = toolchainCommandName
-	}
-
-	// Three offers, always. Without a session to pick up there is room for a
-	// second read-only offer; with one there is not, and the resume is the
-	// better use of the row.
-	if len(out) < 2 {
-		add("⚙", "summarise the last ten commits", "reads only, no writes",
-			"summarise the last ten commits and what they were working towards")
+	// The read-only slot: one row where a session is to be resumed, two
+	// where not. A draft offer takes the last of them, as it always has.
+	room := 2 - len(out)
+	for _, o := range readOnlyOffers(info, draft, room) {
+		add("⚙", o.title, o.detail, o.action)
 	}
 
 	if setup {
@@ -568,6 +574,85 @@ func startSuggestions(info StartInfo, scaffold, setup bool, draft string) ([]com
 	verify := verifyPrompt(info)
 	add("⚙", verify, "one approval, then it reports back", verify)
 	return out, actions
+}
+
+// readOnlyOffer is one row for the read-only slot.
+type readOnlyOffer struct{ title, detail, action string }
+
+// readOnlyOffers is the read-only slot's rows: room of them, one where a
+// session to resume has the first row and two where not. This is the one
+// place the slot is ranked, so a new kind of offer is a new rank here and not
+// a change to the layout above it.
+//
+// A fact the checkout states outranks a tour of it
+// (docs/interface/surfaces.md#the-start-screen). Among the facts, a changed
+// file nobody has accounted for keeps its slot; the rest are the work in hand
+// before the work in the queue, ranked by queued: a branch with commits not
+// pushed, then the next ready item, then a pushed branch. The toolchain draft
+// (draft is its title, empty where it is not offered) follows them — its
+// checks being runnable in a sandbox is worth more than a tour, and less than
+// what the checkout says is next — except in the one row a resume leaves a
+// dirty tree, which it has always taken. The tours are last.
+func readOnlyOffers(info StartInfo, draft string, room int) []readOnlyOffer {
+	const reads = "reads only, no writes"
+	dirty := info.Project.Repo && info.Project.Dirty > 0
+	var changed, queued []readOnlyOffer
+	if dirty {
+		changed = append(changed, readOnlyOffer{"explain what changed in the working tree", reads,
+			"explain what changed in the working tree"})
+	}
+	branch := func() {
+		b := info.Branch
+		if b.Ahead <= 0 {
+			return
+		}
+		state := "not pushed"
+		if b.Pushed {
+			state = "pushed"
+		}
+		queued = append(queued, readOnlyOffer{"review what this branch changes before it goes up",
+			plural(b.Ahead, "commit") + " ahead · " + state,
+			"review what this branch changes before it goes up: read its commits and diff against the default branch and say what you would flag"})
+	}
+	if !info.Branch.Pushed {
+		branch()
+	}
+	if r := info.Ready; r.Present {
+		noun := r.Noun
+		if noun == "" {
+			noun = "item"
+		}
+		queued = append(queued, readOnlyOffer{"read " + r.Slug + " and say what it would take", r.Title + " · " + reads,
+			"read the " + noun + " " + r.Slug + " (" + r.Title + ") in the backlog and say what it would take to do, without changing anything"})
+	}
+	if info.Branch.Pushed {
+		branch()
+	}
+	var drafting []readOnlyOffer
+	if draft != "" {
+		drafting = append(drafting, readOnlyOffer{draft, "reads only, then asks", toolchainCommandName})
+	}
+	walk := readOnlyOffer{"walk me through what this project does", reads,
+		"walk me through what this project does, starting from its entry point"}
+	commits := readOnlyOffer{"summarise the last ten commits", reads,
+		"summarise the last ten commits and what they were working towards"}
+
+	var rows []readOnlyOffer
+	switch {
+	case room == 1 && dirty:
+		rows = append(drafting, changed...)
+	case room == 1:
+		rows = append(append(queued, drafting...), walk)
+	case dirty:
+		rows = append(append(append(changed, queued...), drafting...), commits)
+	default:
+		rows = append(append(append(queued, drafting...), walk), commits)
+		if len(queued) == 0 && draft != "" {
+			// As it has always read: the tour, then the draft.
+			rows = []readOnlyOffer{walk, drafting[0], commits}
+		}
+	}
+	return rows[:room]
 }
 
 // verifyPrompt is the offer that costs an approval: the configured gate where

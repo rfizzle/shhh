@@ -1,0 +1,28 @@
+# program test: TestProgram_TheStartScreenOffersTheBranchAndTheReadyItem
+#
+# The start screen's read-only slot offers what the checkout says is next
+# (docs/interface/surfaces.md#the-start-screen). The workspace is a clean
+# repository on `main` holding a backlog with one ready item, and a branch two
+# commits ahead of it with nothing pushed: the branch is the work in hand, so
+# its offer takes the first read-only row with `2 commits ahead · not pushed`
+# and the ready item the second, which is what the capture is read for. The
+# backlog is a store under .shhh/todo (the backlog's own place), committed on
+# main so the tree is clean and the dirty-tree offer does not take the row.
+#
+# The identity is repository-local because the pane runs under a home of its
+# own, so there is no global one for the commits to find.
+setup git config user.email tui@shhh
+setup git config user.name tui
+setup git branch -m main
+setup mkdir -p .shhh/todo
+setup printf -- '---\ntitle: Give the cache a lifetime\nsize: S\n---\n## Tests\n- `go test ./cache -run TestTTL`\n' > .shhh/todo/cache-ttl.md
+setup git add .shhh/todo/cache-ttl.md
+setup git commit -q -m 'file the cache item'
+setup git checkout -q -b cache-work
+setup printf 'package cache\n' > cache.go
+setup git add cache.go
+setup git commit -q -m 'start the cache package'
+setup printf 'package cache\n\nconst ttl = 60\n' > cache.go
+setup git add cache.go
+setup git commit -q -m 'name the lifetime'
+snap 01-start "Some things worth doing first" "review what this branch changes before it goes up" "2 commits ahead · not pushed" "read cache-ttl and say what it would take" "Give the cache a lifetime"

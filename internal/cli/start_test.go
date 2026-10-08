@@ -2,6 +2,7 @@ package cli
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -284,5 +285,34 @@ func TestBuildStartInfo_CarriesTheCheckoutsSettingsFile(t *testing.T) {
 	bare := buildStartInfo(project.Survey(""), nil, false, chat.Trust{}, config.Project{}, nil)
 	if bare.Project.ConfigFile != "" {
 		t.Fatalf("a checkout with no settings file named one: %q", bare.Project.ConfigFile)
+	}
+}
+
+func TestStartBranch_CountsWhatIsAheadOfTheDefaultAndWhetherItWentUp(t *testing.T) {
+	dir := t.TempDir()
+	run := func(args ...string) {
+		t.Helper()
+		full := append([]string{"-C", dir, "-c", "user.email=t@t", "-c", "user.name=t"}, args...)
+		if out, err := exec.Command("git", full...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v: %s", args, err, out)
+		}
+	}
+	run("init", "-q", "-b", "main")
+	run("commit", "-q", "--allow-empty", "-m", "seed")
+	if got := startBranch(dir, "main"); got != (chat.StartBranch{}) {
+		t.Fatalf("the default branch is ahead of itself: %+v", got)
+	}
+	run("checkout", "-q", "-b", "work")
+	run("commit", "-q", "--allow-empty", "-m", "one")
+	run("commit", "-q", "--allow-empty", "-m", "two")
+	if got := startBranch(dir, "work"); got.Ahead != 2 || got.Pushed {
+		t.Fatalf("branch = %+v, want 2 ahead and not pushed", got)
+	}
+	// The branch is its own upstream, which is what pushed means: nothing
+	// the upstream lacks.
+	run("config", "branch.work.remote", ".")
+	run("config", "branch.work.merge", "refs/heads/work")
+	if got := startBranch(dir, "work"); got.Ahead != 2 || !got.Pushed {
+		t.Fatalf("branch = %+v, want 2 ahead and pushed", got)
 	}
 }

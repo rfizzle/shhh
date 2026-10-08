@@ -652,3 +652,97 @@ func TestStartScreen_ComesBackWholeWhenASurfaceCloses(t *testing.T) {
 		t.Fatalf("the start screen came back without its list:\n%s", pane)
 	}
 }
+
+// startRows is the offers' titles and the line of input behind each, in the
+// order the screen draws them.
+func startRows(m Model) (titles, actions []string) {
+	screen, actions := m.startScreen()
+	for _, s := range screen.Suggestions {
+		titles = append(titles, s.Title)
+	}
+	return titles, actions
+}
+
+func TestStart_OffersTheNextReadyItem(t *testing.T) {
+	info := startFixture()
+	info.Recent = StartRecent{}
+	info.Project.Dirty = 0
+	info.Ready = StartReady{Present: true, Slug: "cache-ttl", Title: "Give the cache a lifetime", Noun: "story"}
+	m := startModel(t, info)
+
+	titles, actions := startRows(m)
+	if len(titles) != 3 || titles[0] != "read cache-ttl and say what it would take" {
+		t.Fatalf("offers = %q, want the ready item first of three", titles)
+	}
+	view := startText(m)
+	if !strings.Contains(view, "Give the cache a lifetime") || !strings.Contains(view, "reads only, no writes") {
+		t.Fatalf("the offer lacks the item's title or its cost:\n%s", view)
+	}
+	// A prompt naming the item in the profile's words, not a run of it.
+	if !strings.Contains(actions[0], "story cache-ttl") || strings.HasPrefix(actions[0], "/") {
+		t.Fatalf("action = %q, want a prompt naming the story", actions[0])
+	}
+
+	// A dirty tree keeps the first row: the item takes the second.
+	info.Project.Dirty = 3
+	titles, _ = startRows(startModel(t, info))
+	if len(titles) != 3 || titles[0] != "explain what changed in the working tree" ||
+		titles[1] != "read cache-ttl and say what it would take" {
+		t.Fatalf("dirty offers = %q", titles)
+	}
+
+	// The resume has the first row, so a dirty tree keeps the only read-only
+	// one and the item has no row; a clean tree gives it to the item.
+	info.Recent = startFixture().Recent
+	titles, _ = startRows(startModel(t, info))
+	if len(titles) != 3 || titles[1] != "explain what changed in the working tree" {
+		t.Fatalf("resume and dirty offers = %q", titles)
+	}
+	info.Project.Dirty = 0
+	titles, _ = startRows(startModel(t, info))
+	if len(titles) != 3 || titles[1] != "read cache-ttl and say what it would take" {
+		t.Fatalf("resume and clean offers = %q", titles)
+	}
+
+	// No backlog, or none ready: as it was.
+	info.Ready = StartReady{}
+	titles, _ = startRows(startModel(t, info))
+	if titles[1] != "walk me through what this project does" {
+		t.Fatalf("offers without a ready item = %q", titles)
+	}
+}
+
+func TestStart_OffersTheBranchInFlight(t *testing.T) {
+	info := startFixture()
+	info.Recent = StartRecent{}
+	info.Project.Dirty = 0
+	info.Ready = StartReady{Present: true, Slug: "cache-ttl", Title: "Give the cache a lifetime"}
+	const branch = "review what this branch changes before it goes up"
+
+	// Unpushed commits are the work in hand: they outrank the queue.
+	info.Branch = StartBranch{Ahead: 2}
+	m := startModel(t, info)
+	titles, _ := startRows(m)
+	if titles[0] != branch || titles[1] != "read cache-ttl and say what it would take" {
+		t.Fatalf("unpushed offers = %q, want the branch first", titles)
+	}
+	if view := startText(m); !strings.Contains(view, "2 commits ahead · not pushed") {
+		t.Fatalf("the branch offer lacks its detail:\n%s", view)
+	}
+
+	// Pushed, it is work already out of hand and the item outranks it.
+	info.Branch = StartBranch{Ahead: 1, Pushed: true}
+	m = startModel(t, info)
+	titles, _ = startRows(m)
+	if titles[0] != "read cache-ttl and say what it would take" || titles[1] != branch {
+		t.Fatalf("pushed offers = %q, want the item first", titles)
+	}
+	if view := startText(m); !strings.Contains(view, "1 commit ahead · pushed") {
+		t.Fatalf("the pushed branch offer lacks its detail:\n%s", view)
+	}
+
+	// Always three rows.
+	if n := countOffers(startText(m)); n != 3 {
+		t.Fatalf("offers = %d, want 3", n)
+	}
+}

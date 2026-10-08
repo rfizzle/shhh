@@ -1,0 +1,2 @@
+# No turn is taken: the screen is read as it opens.
+on_target: Nothing is sent.

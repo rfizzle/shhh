@@ -15,11 +15,15 @@ package cli
 // because it speaks turn after turn and the answer changes underneath it.
 
 import (
+	"context"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -108,6 +112,10 @@ func buildStartInfo(survey project.Info, db *storage.DB, gateEnabled bool, trust
 	if gateEnabled {
 		info.Gate = startGate(wd)
 	}
+	info.Ready = startReady(todo.Root(wd))
+	if survey.Repo && survey.Branch != "" {
+		info.Branch = startBranch(wd, survey.Branch)
+	}
 	if db != nil {
 		if recent, ok, err := db.MostRecentChat(); err == nil && ok {
 			info.Recent = chat.StartRecent{
@@ -127,6 +135,70 @@ func buildStartInfo(survey project.Info, db *storage.DB, gateEnabled bool, trust
 		}
 	}
 	return info
+}
+
+// startReady is the backlog's next item that can be started, in the words of
+// the profile the backlog is written in. A root with no backlog, or none
+// ready, is the zero value and the slot is as it was.
+func startReady(root string) chat.StartReady {
+	p := todoProfile()
+	ready := todo.Load(p, root).Ready()
+	if len(ready) == 0 {
+		return chat.StartReady{}
+	}
+	it := ready[0]
+	return chat.StartReady{Present: true, Slug: it.Slug, Title: it.Title, Noun: p.Noun}
+}
+
+// startBranch reads how far the checkout's branch is ahead of its default
+// branch, and whether those commits are on its upstream. Any failure — no
+// default branch to compare with, the branch being the default — is the zero
+// value: an offer the code cannot verify is not made.
+func startBranch(dir, branch string) chat.StartBranch {
+	base := defaultBranch(dir)
+	if base == "" || base == branch {
+		return chat.StartBranch{}
+	}
+	ahead := countCommits(dir, base+"..HEAD")
+	if ahead <= 0 {
+		return chat.StartBranch{}
+	}
+	// A branch with no upstream has nothing pushed; one with an upstream is
+	// pushed when it holds nothing the upstream lacks.
+	unpushed := countCommits(dir, "@{upstream}..HEAD")
+	return chat.StartBranch{Ahead: ahead, Pushed: unpushed == 0}
+}
+
+// defaultBranch is the branch the checkout's work goes up against: the
+// remote's own HEAD where there is one, else main or master, whichever
+// exists.
+func defaultBranch(dir string) string {
+	ctx := context.Background()
+	if out, err := hostgit.Output(ctx, dir, "symbolic-ref", "--short", "refs/remotes/origin/HEAD"); err == nil {
+		if name := strings.TrimPrefix(strings.TrimSpace(out), "origin/"); name != "" {
+			return name
+		}
+	}
+	for _, name := range []string{"main", "master"} {
+		if _, err := hostgit.Output(ctx, dir, "rev-parse", "--verify", "--quiet", "refs/heads/"+name); err == nil {
+			return name
+		}
+	}
+	return ""
+}
+
+// countCommits is how many commits a range holds, and -1 where git has no
+// answer for it.
+func countCommits(dir, rng string) int {
+	out, err := hostgit.Output(context.Background(), dir, "rev-list", "--count", rng)
+	if err != nil {
+		return -1
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(out))
+	if err != nil {
+		return -1
+	}
+	return n
 }
 
 // scaffoldOffer names the offer in the store. It is a value in a table, so
