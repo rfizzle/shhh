@@ -33,6 +33,14 @@ func commandAction(t *testing.T, command string) agent.Action {
 // is the directories the person added, never the parent's root.
 func scopeFixture(t *testing.T, added ...string) (root, worktree string, sup *Supervisor) {
 	t.Helper()
+	// shhh's own directories move off the temporary directory, which a
+	// session's own tmpdir puts inside them: a checkout under them is shhh's
+	// own state to the scope before it is the parent's, and the reason a test
+	// reads back would be the wrong one.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, ".local", "share"))
 	root, worktree = t.TempDir(), t.TempDir()
 	sc, problems := scope.New(root, added...)
 	if len(problems) > 0 {

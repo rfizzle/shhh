@@ -169,6 +169,15 @@ func TestSafety_AHostGrantIsReadLive(t *testing.T) {
 // scope classifies it, and only where there is a repository to have one.
 func TestSafety_TheRepositoryStoreIsSensitiveWhereThereIsOne(t *testing.T) {
 	const words = "the repository's store and hooks"
+	// A session's own temporary directory sits under the home directory and
+	// inside shhh's state directory, which would make the repository a child of
+	// both: its store would be classified as shhh's own state before it is read
+	// as a repository's, and drawn as ~/… where the test spells it out. Home and
+	// shhh's directories move off it, the way the scope command's test moves them.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, ".local", "share"))
 	if where := strings.Join(sectionNamed(t, safetyModel(t), "where it may write").Lines, "\n"); strings.Contains(where, words) {
 		t.Errorf("a workspace in no repository names a store:\n%s", where)
 	}
