@@ -573,6 +573,47 @@ func (r *observeRecorder) turnTimed(turn, rounds int64, duration time.Duration, 
 	r.closeTurn(turn, rounds, duration, outcome, &split)
 }
 
+// turnTimer is one turn's clock on a surface with no screen of its own: begun
+// at the turn's start stamp, marked by the run it is handed to and by the
+// surface where a card goes to a person, and read at the stamp the turn's
+// duration ends on, so the split adds up to it.
+// See docs/capabilities/sessions-and-memory.md#startup-and-waits-are-timed.
+type turnTimer struct {
+	// now is the clock the stamps are read off; nil is the wall clock.
+	now   func() time.Time
+	start time.Time
+	clock agent.TurnClock
+}
+
+func (t *turnTimer) stamp() time.Time {
+	if t.now != nil {
+		return t.now()
+	}
+	return time.Now()
+}
+
+// begin starts the turn now.
+func (t *turnTimer) begin() {
+	t.start = t.stamp()
+	t.clock.Begin(t.start)
+}
+
+// drive hands the clock to the run that marks it.
+func (t *turnTimer) drive(h *agent.Headless) {
+	h.Clock, h.Now = &t.clock, t.stamp
+}
+
+// person marks a card put to whoever is answering, and working the answer
+// coming back to the call that asked for it.
+func (t *turnTimer) person()  { t.clock.Ask(t.stamp()) }
+func (t *turnTimer) working() { t.clock.Tool(t.stamp()) }
+
+// close writes the turn's row with its split, ending it now.
+func (t *turnTimer) close(r *observeRecorder, turn, rounds int64, outcome string) {
+	end := t.stamp()
+	r.turnTimed(turn, rounds, end.Sub(t.start), outcome, t.clock.Split(end))
+}
+
 // startupRow writes one startup phase. A server's row carries its name in the
 // tool column, where an MCP tool's name already sits, and its outcome word;
 // nothing the server said is among them. The span takes none of these: the

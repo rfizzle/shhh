@@ -159,17 +159,24 @@ func (s *Supervisor) run(c *child) {
 	// A child's turn closes with the same event a session's does, so the two
 	// populations answer "how many rounds did that take, and how did it end"
 	// the same way. The rounds ride the position, as they do everywhere else.
+	// Its time is split by what it waited on, from the same two stamps its
+	// duration is, so the four add up to it.
 	var turnStart time.Time
 	endTurn := func(outcome string) {
-		if c.rec.Turn == nil {
+		at := c.pos()
+		end := c.at()
+		if c.rec.TurnTimed != nil {
+			c.rec.TurnTimed(at.Turn, at.Round, end.Sub(turnStart), outcome, c.clock.Split(end))
 			return
 		}
-		at := c.pos()
-		c.rec.Turn(at.Turn, at.Round, time.Since(turnStart), outcome)
+		if c.rec.Turn != nil {
+			c.rec.Turn(at.Turn, at.Round, end.Sub(turnStart), outcome)
+		}
 	}
 	for {
 		c.beginTurn()
-		turnStart = time.Now()
+		turnStart = c.at()
+		c.clock.Begin(turnStart)
 		report, err := h.Run(turn)
 		next, answered, ok := s.afterTurn(c, report, err, worktree, endTurn, finish)
 		if !ok {
@@ -453,7 +460,9 @@ func (s *Supervisor) newHeadless(c *child) *agent.Headless {
 		if refusal, refused := s.refuseUncontained(c, tc); refused {
 			return refusal
 		}
-		return gated(tc)
+		out := gated(tc)
+		c.tookAnswer()
+		return out
 	}
 	compact := childCompactor(c.model, c.env)
 	if compact != nil {
@@ -465,6 +474,8 @@ func (s *Supervisor) newHeadless(c *child) *agent.Headless {
 	h := &agent.Headless{
 		Agent:   c.agent,
 		Compact: compact,
+		Clock:   &c.clock,
+		Now:     c.at,
 		// A child is as unwatched as a headless run, and its task is the
 		// instruction every reading is judged against. Nil where
 		// summary.subagents turned the reading off.

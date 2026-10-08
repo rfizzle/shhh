@@ -161,6 +161,18 @@ type Headless struct {
 	// worth reading.
 	OnCompact func(n CompactNotice)
 
+	// Clock, when set, is marked with what the run waits on as it goes: a
+	// request out, each stream event, a round of calls, a hold. The caller
+	// begins it at the turn's start stamp and reads its split at the turn's
+	// end stamp, so the four waits add up to the duration it records; the
+	// run never begins or reads it. A wait the run cannot see — a card a
+	// Resolve puts to a person — is the caller's to mark, from the same
+	// goroutine, since the clock is not safe for concurrent use.
+	// See docs/capabilities/sessions-and-memory.md#startup-and-waits-are-timed.
+	Clock *TurnClock
+	// Now is what the clock's marks are stamped with; nil is the wall clock.
+	Now func() time.Time
+
 	// retry is the bound across the whole turn, not across one request: three
 	// rate limits in a row are three attempts and not three fresh chances
 	// (retry.go).
@@ -497,6 +509,7 @@ func (h *Headless) finishReply(text string, stop provider.StopReason, progressPe
 // values, continued and carried; the caller has already cleared both for the
 // fresh round a tool round is.
 func (h *Headless) runTools(text string, calls []provider.ToolCall) {
+	h.mark((*TurnClock).Tool)
 	auto, _ := h.Agent.BeginToolRound(text, calls, h.Gate)
 	// The round's auto calls go out together, through the same bounded
 	// dispatcher the session uses. The prompt tells the model its
@@ -690,6 +703,7 @@ func (h *Headless) recoverOverflow(err error) bool {
 // model, and a ratio measured on one tokenizer and applied to another is a
 // correction that is confidently wrong.
 func (h *Headless) askSummary(msgs []provider.Message, choice string) (string, error) {
+	h.mark((*TurnClock).Request)
 	events, cancel, err := h.Compact.open(h.Agent, msgs, choice)
 	if err != nil {
 		return "", err
@@ -785,6 +799,8 @@ func (h *Headless) closeFeedback(final string) string {
 	if h.OnClose == nil || h.wasInterrupted() {
 		return ""
 	}
+	// The checks are the turn working, the way a round of calls is.
+	h.mark((*TurnClock).Tool)
 	return h.OnClose(final)
 }
 
@@ -806,6 +822,7 @@ func (h *Headless) deliverTree(turnStart bool) {
 // stream, and why the model stopped writing. Like the TUI's terminalMsg, a
 // tool-call event ends the stream.
 func (h *Headless) streamOnce(bufferText bool) (string, []provider.ToolCall, provider.StopReason, error) {
+	h.mark((*TurnClock).Request)
 	events, cancel, err := h.Agent.Stream(h.Agent.RequestMessages())
 	if err != nil {
 		return "", nil, provider.StopEnd, err
@@ -827,6 +844,13 @@ func (h *Headless) streamOnce(bufferText bool) (string, []provider.ToolCall, pro
 
 	var text strings.Builder
 	for ev := range events {
+		// What reached the front-end is the answer's words as they stream
+		// and the event that ends the request; a usage report, or a status
+		// held back until the response says what it is, arrived and showed
+		// nothing, which the clock counts against the quiet stretch.
+		if h.Clock != nil && ev.Err == nil {
+			h.Clock.Event(h.now(), (ev.Token != "" && !bufferText) || len(ev.ToolCalls) > 0 || ev.Done)
+		}
 		if ev.Err != nil {
 			if h.wasInterrupted() {
 				// The abort we caused is not a real stream failure.
@@ -907,6 +931,8 @@ func (h *Headless) waitOnHold() bool {
 	if release == nil {
 		return true
 	}
+	// A hold is a person's: the run waits on whoever holds the fan-out.
+	h.mark((*TurnClock).Ask)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	h.mu.Lock()
@@ -933,6 +959,8 @@ func (h *Headless) waitOnHold() bool {
 // that can happen during it: a wait holds no stream, owes no results, and
 // leaves the conversation exactly as the failed request found it.
 func (h *Headless) waitToRetry(n RetryNotice) bool {
+	// The wait is for the model: the request is asked again at its end.
+	h.mark((*TurnClock).Request)
 	if h.OnRetry != nil {
 		h.OnRetry(n)
 	}
@@ -957,4 +985,18 @@ func (h *Headless) waitToRetry(n RetryNotice) bool {
 	case <-ctx.Done():
 	}
 	return !h.wasInterrupted()
+}
+
+// mark moves the turn's clock, where the caller handed the run one.
+func (h *Headless) mark(to func(*TurnClock, time.Time)) {
+	if h.Clock != nil {
+		to(h.Clock, h.now())
+	}
+}
+
+func (h *Headless) now() time.Time {
+	if h.Now != nil {
+		return h.Now()
+	}
+	return time.Now()
 }

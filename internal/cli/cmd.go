@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -290,7 +289,7 @@ type oneShotRun struct {
 	effort      provider.Effort
 	ledger      *meter.Ledger
 	pending     *pendingRecord
-	started     time.Time
+	timer       *oneShotTimer
 	outcome     string
 	closed      bool
 }
@@ -359,6 +358,10 @@ func openOneShot(cmd *cobra.Command, cfg config.Config, flags resolve.Opts, user
 	ledger := meter.New(prices)
 	ledger.SetBudget(spendBudget(cfg))
 	p = meter.WithFallbackModel(ledger.For(p, meter.SourceOneShot), resolved.Model)
+	// And timed, so the turn's row says where the time went: every request
+	// the interaction makes marks the clock as it streams (cmdtime.go).
+	timer := &oneShotTimer{answered: !pipeMode}
+	p = timedProvider{Provider: p, timer: timer}
 
 	// The one-shot is one request, so it is one turn — and recording
 	// it as a single-turn session is what lets it join every
@@ -381,6 +384,8 @@ func openOneShot(cmd *cobra.Command, cfg config.Config, flags resolve.Opts, user
 		return db, rec
 	})
 
+	// The turn starts here, where its row's duration always has.
+	timer.begin()
 	return &oneShotRun{
 		cmd:         cmd,
 		cfg:         cfg,
@@ -393,7 +398,7 @@ func openOneShot(cmd *cobra.Command, cfg config.Config, flags resolve.Opts, user
 		effort:      effort,
 		ledger:      ledger,
 		pending:     pending,
-		started:     time.Now(),
+		timer:       timer,
 		outcome:     observe.TurnDone,
 	}, nil
 }
@@ -416,7 +421,8 @@ func (r *oneShotRun) finish() {
 	}
 	t := r.ledger.Total()
 	recorder.usagePriced(1, t.In, t.Out, t.Cost, t.Priced)
-	recorder.turn(1, 0, time.Since(r.started), r.outcome)
+	took, split := r.timer.span()
+	recorder.turnTimed(1, 0, took, r.outcome, split)
 	recorder.end()
 }
 
@@ -499,6 +505,7 @@ func (r *oneShotRun) act(result ui.GenerateResult, metrics *storage.StreamMetric
 		return nil
 	}
 
+	r.timer.working()
 	r.perform(result, db, requestID)
 
 	// Saving a snippet writes a description, and a save with no

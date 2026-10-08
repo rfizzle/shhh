@@ -866,9 +866,11 @@ whole split again.
 The timing rows go to the local record and nowhere else: not to the trace a
 collector receives, and not to the session's timeline or the export's event
 list, which carry what the session did rather than what it waited on; the
-split on a turn's row is read from them. A
-surface that does not split its turns leaves the four columns empty, which
-reads as unrecorded rather than as a turn that waited on nothing.
+split on a turn's row is read from them. Every surface splits its turns: the
+chat, an unattended run, a served session, a sub-agent and the one-shot, whose
+person is the one reading the command it drew. A turn recorded before its
+surface did leaves the four columns empty, which reads as unrecorded rather
+than as a turn that waited on nothing.
 
 ### The record is kept for a window
 

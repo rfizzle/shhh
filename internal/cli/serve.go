@@ -273,6 +273,10 @@ type serveLoop struct {
 	// session: a stop hook is told what the session came out with, the way an
 	// unattended run's is told the one answer that run had.
 	final string
+	// timing is the running turn's clock. Only the turn's own goroutine
+	// touches it: the run marks it, and so do the calls it resolves where
+	// one waits on the client.
+	timing turnTimer
 }
 
 // openServeLoop assembles one session. initial, when set, is the conversation
@@ -593,9 +597,11 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		// two and then goes away leaves the third answered `nobody to ask`
 		// rather than leaving the turn parked.
 		answers := make([]ask.Answer, 0, len(qs))
+		l.timing.person()
 		for _, q := range qs {
 			answers = append(answers, seams.Question(rpc.Question{Ask: q, Turn: l.turnNow(), Round: int64(a.Rounds())}))
 		}
+		l.timing.working()
 		if answers[0].Notice == "" {
 			answers[0].Notice = notice
 		}
@@ -609,7 +615,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		if judged != nil {
 			return judged(tc)
 		}
-		if seams.Ask(rpc.Call{Tool: tc.Name, Arguments: tc.Arguments, Turn: l.turnNow(), Round: int64(a.Rounds())}) {
+		if l.putToClient(seams.Ask, rpc.Call{Tool: tc.Name, Arguments: tc.Arguments, Turn: l.turnNow(), Round: int64(a.Rounds())}) {
 			return allowed(tc)
 		}
 		// Nothing behind a refusal can turn it into a yes, so it is stated
@@ -718,6 +724,14 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 
 	ok = true
 	return l, nil
+}
+
+// putToClient puts a call to the client. The wait for its answer is the
+// person's time on the turn's clock, and what follows it the call's own.
+func (l *serveLoop) putToClient(ask func(rpc.Call) bool, call rpc.Call) bool {
+	l.timing.person()
+	defer l.timing.working()
+	return ask(call)
 }
 
 // answeredByClient rewrites the one verdict the unattended approver spells
@@ -1016,7 +1030,10 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	// file this turn's reading beside the next one's interruptions.
 	l.headless.OnSummary = l.obs.inTurn(turn).summary
 
-	started := time.Now()
+	// The turn's clock spans every pass below, as its duration does: one
+	// protocol turn is one row, split once.
+	l.timing.begin()
+	l.timing.drive(l.headless)
 	final, runErr := l.headless.Run(prompt)
 	rounds := int64(l.agent.Rounds())
 	// A steer that landed while the model was writing its final answer never
@@ -1045,7 +1062,7 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 		rounds += int64(l.agent.Rounds())
 	}
 	outcome := headlessTurnOutcome(runErr)
-	l.recorder.turn(turn, rounds, time.Since(started), outcome)
+	l.timing.close(l.recorder, turn, rounds, outcome)
 	// The standing account rides the save, so a slot a person later opens
 	// with --resume says how far this session got
 	// (docs/capabilities/headless.md#something-else-can-drive-it).

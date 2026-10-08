@@ -749,11 +749,13 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		obs.summary(v)
 	}
 	// A headless run is one turn; it closes here with the rounds it took,
-	// the same event an interactive turn ends with.
+	// the same event an interactive turn ends with, and with where its time
+	// went, split by the run itself (turnTimer).
 	var runErr error
-	runStart := time.Now()
+	var turnTime turnTimer
+	turnTime.begin()
 	defer func() {
-		recorder.turn(1, int64(a.Rounds()), time.Since(runStart), headlessTurnOutcome(runErr))
+		turnTime.close(recorder, 1, int64(a.Rounds()), headlessTurnOutcome(runErr))
 	}()
 
 	var usage provider.Usage
@@ -904,6 +906,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		},
 	}
 	h.SetRetryLimit(cfg.Behavior.ProviderRetries)
+	turnTime.drive(h)
 	// The checks run at the close of an unattended turn without being asked
 	// for, because this is the surface where "the model said it was done" is
 	// otherwise the only signal there is: nobody read the answer, and

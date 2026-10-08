@@ -100,6 +100,15 @@ type child struct {
 	// dropped with the rest of an attempt's counts on a retry, whose
 	// conversation has been told nothing.
 	nudges *nudge.Turn
+	// clock splits the running turn by what it waited on. Only the goroutine
+	// that drives the child touches it: the run marks it, the call that went
+	// to the parent marks its wait (tookAnswer), and the turn's close reads
+	// it.
+	clock agent.TurnClock
+	// askedAt and answeredAt are when the child last went blocked on an
+	// approval and when it came out of it, stamped by set where its state
+	// says so and taken by the goroutine that owns the clock.
+	askedAt, answeredAt time.Time
 	// round is the tool round the child last started, copied off its agent
 	// by the goroutine that drives it, so a status taken from anywhere can
 	// state it: the agent's own counter is written unguarded by that
@@ -315,6 +324,14 @@ type child struct {
 
 func (c *child) set(state State, detail string) {
 	c.mu.Lock()
+	// A blocked child is waiting on the person its parent puts the card to,
+	// which its turn's clock is told once the call is back (tookAnswer).
+	switch {
+	case state == StateBlocked && c.state != StateBlocked:
+		c.askedAt, c.answeredAt = c.at(), time.Time{}
+	case state != StateBlocked && c.state == StateBlocked:
+		c.answeredAt = c.at()
+	}
 	c.state = state
 	c.detail = detail
 	// Any transition ends a hold. A child sits in its wait between two of
@@ -360,6 +377,25 @@ func (c *child) unpark(hold chan struct{}) bool {
 	}
 	c.heldOn = nil
 	return true
+}
+
+// tookAnswer books the approval the call just resolved waited on, if it went
+// to the parent, to the turn's clock: the person's time from the card to the
+// answer, and the call's own again from there. A call ended before an answer
+// came is the person's up to now.
+func (c *child) tookAnswer() {
+	c.mu.Lock()
+	asked, answered := c.askedAt, c.answeredAt
+	c.askedAt, c.answeredAt = time.Time{}, time.Time{}
+	c.mu.Unlock()
+	if asked.IsZero() {
+		return
+	}
+	if answered.IsZero() {
+		answered = c.at()
+	}
+	c.clock.Ask(asked)
+	c.clock.Tool(answered)
 }
 
 // at is the time on the child's clock.
