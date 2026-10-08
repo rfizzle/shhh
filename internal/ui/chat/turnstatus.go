@@ -5,7 +5,7 @@ package chat
 // to say `WORKING` — which is true of every moment of every turn and
 // therefore says nothing — and what the turn was doing was reported only
 // after the fact. This is that slot given the turn's live account of itself:
-// which of the four phases it is in, and how long the turn has been running.
+// which of the five phases it is in, and how long the turn has been running.
 //
 // The call it is in that phase for is not on it. The feed already draws the
 // act as a row — the command whole, its outcome, and its last line of output
@@ -39,7 +39,13 @@ package chat
 // (docs/interface/surfaces.md#the-input-frame).
 
 import (
+	"fmt"
+	"math"
+	"time"
+
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -52,7 +58,7 @@ func (m Model) turnStatus() (components.TurnStatus, bool) {
 	if !running {
 		return m.resolvedTurnStatus()
 	}
-	s := components.TurnStatus{Frame: m.spinFrame, Phase: phase}
+	s := components.TurnStatus{Frame: m.spinFrame, Phase: phase, Wait: m.modelWait(phase)}
 	// A turn with no start stamp reports no elapsed rather than counting from
 	// the zero time; every turn the user starts has one.
 	if !m.turnStarted.IsZero() {
@@ -68,9 +74,9 @@ func (m Model) turnStatus() (components.TurnStatus, bool) {
 	return s, true
 }
 
-// turnPhase is which of the four phases the turn is in, and whether the turn
+// turnPhase is which of the five phases the turn is in, and whether the turn
 // is in any of them at all. The vocabulary is closed: a state that is not one
-// of the four picks the nearest rather than becoming a fifth.
+// of the five picks the nearest rather than becoming a fifth.
 //
 // What is running is read here and not reported: the phase is the answer, and
 // the call that produced it has a row of its own in the feed.
@@ -85,14 +91,99 @@ func (m Model) turnPhase() (components.TurnPhase, bool) {
 		switch {
 		case m.agent.Executing():
 			return components.PhaseActing, true
-		case m.streaming != "":
+		case m.streaming != "" || m.timing.request.answering:
+			// Prose, or a call being written: the answer is arriving.
 			return components.PhaseStreaming, true
+		case m.timing.request.reasoning > 0 || (m.timing.request.asked.IsZero() && m.thinkIdx > 0):
+			// Reasoning has arrived, which is the one thing that says
+			// the model is thinking.
+			return components.PhaseThinking, true
 		}
-		// Nothing has arrived yet: the model is reasoning before it acts,
-		// which is the phase a reasoning stream would fill in.
-		return components.PhaseThinking, true
+		// Nothing the answer is made of has arrived: the turn is waiting
+		// on the model, and the line says so rather than guessing that it
+		// is thinking (docs/interface/surfaces.md#the-input-frame).
+		return components.PhaseWaiting, true
 	}
 	return components.PhaseThinking, false
+}
+
+// retryWarning is how long before the stream's idle deadline a silent wait
+// says the retry is coming. Inside it the countdown is the one thing about
+// the wait the reader can act on; before it, a countdown from two minutes
+// would be a second clock with nothing to say.
+const retryWarning = 30 * time.Second
+
+// modelWait is what the frame says about a request with nothing drawable
+// back yet: how long since it went out, and what has arrived — nothing,
+// events that draw nothing, or reasoning — read off the same stamps the
+// turn's record is split at. A request the clock is not timing states
+// nothing, rather than a figure counted from somewhere else.
+// See docs/interface/surfaces.md#the-input-frame.
+func (m Model) modelWait(phase components.TurnPhase) components.ModelWait {
+	r := m.timing.request
+	if r.asked.IsZero() || (phase != components.PhaseWaiting && phase != components.PhaseThinking) {
+		return components.ModelWait{}
+	}
+	now := clock()
+	w := components.ModelWait{Since: components.FormatElapsed(now.Sub(r.asked))}
+	switch {
+	case r.reasoning > 0:
+		w.Stretch = reasoningCount(r.reasoning)
+		w.Heard = "last " + sinceLast(now.Sub(r.last)) + " ago"
+	case phase == components.PhaseThinking:
+		// Reasoning this request's clock did not hear arrive: the count
+		// would be wrong, so only the clock is stated.
+	case r.events > 0:
+		w.Stretch = observe.StretchQuiet
+		w.Heard = "keepalives only, last " + sinceLast(now.Sub(r.last)) + " ago"
+	default:
+		w.Stretch = observe.StretchSilent
+		if in, ok := m.retryIn(now.Sub(r.asked)); ok {
+			w.RetryIn = in
+		} else {
+			w.Heard = "nothing arrived"
+		}
+	}
+	return w
+}
+
+// retryIn is how long until a silent request's idle deadline gives it up
+// and asks again, where that is close enough to say: within retryWarning of
+// it, and never where the deadline is off.
+func (m Model) retryIn(waited time.Duration) (string, bool) {
+	idle := m.timing.idle
+	switch {
+	case idle < 0:
+		return "", false
+	case idle == 0:
+		idle = provider.DefaultStreamIdle
+	}
+	left := max(idle-waited, 0)
+	if left > retryWarning {
+		return "", false
+	}
+	return fmt.Sprintf("%ds", int(math.Ceil(left.Seconds()))), true
+}
+
+// reasoningCount is the reasoning a request has heard, in events: the count
+// the record's quiet stretch keeps, so the screen and the row agree.
+func reasoningCount(n int) string {
+	if n == 1 {
+		return "1 reasoning event"
+	}
+	return fmt.Sprintf("%d reasoning events", n)
+}
+
+// sinceLast is the time since a request's last event: tenths under a second,
+// where a live stream's gaps are, and whole seconds above it.
+func sinceLast(d time.Duration) string {
+	switch {
+	case d < time.Second:
+		return fmt.Sprintf("%.1fs", d.Seconds())
+	case d < time.Minute:
+		return fmt.Sprintf("%ds", int(d.Seconds()))
+	}
+	return components.FormatElapsed(d)
 }
 
 // liveTurnTokens is what the turn has spent so far: the requests it has

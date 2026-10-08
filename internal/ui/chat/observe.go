@@ -36,6 +36,32 @@ type timing struct {
 	// tailSeen is the last line of a running command's output the clock was
 	// told about, so a line is counted once however many frames show it.
 	tailSeen string
+	// request is the request in flight as the frame's waiting state reads
+	// it, marked at the same stamps the turn's clock is.
+	request requestHeard
+	// idle is provider.stream_idle_seconds as the file spells it: zero for
+	// the built-in deadline, a negative for none.
+	idle time.Duration
+}
+
+// requestHeard is what one request has heard back: when it went out, when
+// its last event arrived, how many events have, how many of them were
+// reasoning, and whether the answer itself — prose, or a call being written —
+// has begun. A request that has heard nothing drawable is a wait on the
+// model, and these are what the frame says about it
+// (docs/interface/surfaces.md#the-input-frame).
+type requestHeard struct {
+	asked, last time.Time
+	events      int
+	reasoning   int
+	answering   bool
+}
+
+// WithStreamIdle is the stream's idle deadline in whole seconds as the
+// settings file spells it, so a silent wait can say when the retry is coming.
+func (m Model) WithStreamIdle(seconds int) Model {
+	m.timing.idle = time.Duration(seconds) * time.Second
+	return m
 }
 
 // WithFirstPaint is told when the first frame with the prompt in it has
@@ -153,8 +179,10 @@ func (m *Model) noteWait(s state) {
 			m.timing.turn.Begin(m.turnStarted)
 		}
 		m.timing.turn.Request(now)
+		m.timing.request = requestHeard{asked: now}
 	case stateRetryWait:
 		m.timing.turn.Request(now)
+		m.timing.request = requestHeard{asked: now}
 	case stateRunningCmd, stateClassifying, stateCloseGate:
 		m.timing.turn.Tool(now)
 	case stateConfirmRun, stateQuestion, statePlanApprove:
@@ -174,6 +202,22 @@ func (m *Model) noteEvent(drew bool) {
 	if m.turnOpen {
 		m.timing.turn.Event(clock(), drew)
 	}
+}
+
+// noteHeard marks what a stream event carried, for the frame's account of
+// the request: reasoning, the answer itself, or neither — a keepalive. It is
+// stamped on the clock the turn's own marks read.
+func (m *Model) noteHeard(reasoning, answering bool) {
+	r := &m.timing.request
+	if !m.turnOpen || r.asked.IsZero() {
+		return
+	}
+	r.last = clock()
+	r.events++
+	if reasoning {
+		r.reasoning++
+	}
+	r.answering = r.answering || answering
 }
 
 // noteTail marks a running command's output reaching the screen. The runner

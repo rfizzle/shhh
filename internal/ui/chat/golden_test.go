@@ -1147,8 +1147,23 @@ func TestGolden_TurnStatus(t *testing.T) {
 			mut(&m)
 			return promptSurface(m)
 		}
+		// A request gone out, with what it has heard back, on the held clock.
+		heard := func(asked, last time.Duration, events, reasoning int) func(*Model) {
+			return func(m *Model) {
+				m.timing.request = requestHeard{asked: goldenNow.Add(-asked), events: events, reasoning: reasoning}
+				if events > 0 {
+					m.timing.request.last = goldenNow.Add(-last)
+				}
+			}
+		}
 		return []golden.Panel{
-			{Label: "phase · thinking", View: frame(func(m *Model) {})},
+			// A request the clock is not timing states no figure of its
+			// own, and still never claims the model is thinking.
+			{Label: "phase · waiting, the request untimed", View: frame(func(m *Model) {})},
+			{Label: "waiting · nothing arrived", View: frame(heard(14*time.Second, 0, 0, 0))},
+			{Label: "waiting · keepalives only", View: frame(heard(48*time.Second, 3*time.Second, 3, 0))},
+			{Label: "thinking · reasoning arriving", View: frame(heard(48*time.Second, 400*time.Millisecond, 38, 38))},
+			{Label: "waiting · a retry coming", View: frame(heard(108*time.Second, 0, 0, 0))},
 			// The command is not on the rail: what a running turn puts there
 			// is the phase and the turn's own clock, and the command itself
 			// is the feed's row (live-command.*).
@@ -1163,7 +1178,7 @@ func TestGolden_TurnStatus(t *testing.T) {
 			// capturable here — it is read off the turn's own age, and this
 			// fixture's turn is a minute old so its elapsed does not depend
 			// on the clock — so the components catalog captures that half.
-			{Label: "phase · thinking, mid-sweep", View: frame(func(m *Model) {
+			{Label: "phase · waiting, mid-sweep", View: frame(func(m *Model) {
 				m.spinFrame = 8
 			})},
 			// One frame of a round's report arriving. The climb is the vitals

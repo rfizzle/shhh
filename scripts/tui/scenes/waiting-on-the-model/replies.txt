@@ -1,0 +1,13 @@
+# The launch rewrites the settings file whole, which takes the harness's
+# switch for a queue-less scene with it, so the replies are the session's
+# queue and the title and the standing account are answered by the
+# provider's own lines. The first reply is a step of two commands, each
+# asked on the approval card; the second is a request the endpoint accepts,
+# answers with headers, and then writes nothing to for ten minutes — which
+# the session's idle deadline cuts at forty seconds, and the one retry asks
+# again into the same silence.
+[session]
+Running the chat tests, then the linter.
++tool:execute_command:{"command":"echo ok  github.com/rfizzle/shhh/internal/ui/chat"}
++tool:execute_command:{"command":"echo lint clean"}
+wait:600

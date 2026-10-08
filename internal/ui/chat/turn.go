@@ -266,6 +266,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// shows it; an empty batch or hidden reasoning arrived and drew
 		// nothing, which the record counts against the quiet stretch.
 		m.noteEvent(msg.text != "" || (msg.think != "" && !m.compacting && m.showThink()))
+		m.noteHeard(msg.think != "", msg.text != "")
 		// The repaint rides the spinner's tick rather than the chunk (the
 		// streaming render). A chunk that arrives while the loop is running only
 		// records that one is owed; one that arrives with nothing ticking — the
@@ -286,6 +287,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 	case toolDeltaMsg:
 		m.appendCompose(msg.delta)
 		m.noteEvent(!m.compacting && m.showCompose() && m.composed >= composeFloor)
+		// A call being written is the model answering, drawn or not: the
+		// wait for it is over.
+		m.noteHeard(false, true)
 		// A round writing a call sends fragments with nothing between them,
 		// so most arrive as a message of their own rather than at the end of
 		// a token batch. The repaint rule is the batch's either way: ride the

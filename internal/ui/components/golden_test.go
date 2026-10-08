@@ -520,7 +520,7 @@ func secretsField(tone FieldTone, detail string) CardField {
 	return CardField{Label: "secrets", Value: "1 github token · config/dev.env:12", Tone: tone, Detail: detail}
 }
 
-// TestGolden_TurnStatus captures the running turn's status line: the four
+// TestGolden_TurnStatus captures the running turn's status line: the five
 // phases, the elapsed ticking, the collapse ladder, and the three ways it
 // resolves. The line states no account and names no call, so what is left of
 // it fits the narrowest terminal the frame draws on and the capture widths
@@ -557,6 +557,32 @@ func TestGolden_TurnStatus(t *testing.T) {
 				s.Phase = PhaseStreaming
 			})},
 			{Label: "slot · elapsed goes, leaving the phase", View: slot(12)},
+			// A wait on the model: its own clock, labelled, and what has
+			// arrived (docs/interface/surfaces.md#the-input-frame).
+			{Label: "waiting · nothing arrived", View: live(func(s *TurnStatus) {
+				s.Phase, s.Elapsed, s.Wait = PhaseWaiting, "1m 02s",
+					ModelWait{Since: "14s", Stretch: "silent", Heard: "nothing arrived"}
+			})},
+			{Label: "waiting · keepalives only", View: live(func(s *TurnStatus) {
+				s.Phase, s.Elapsed, s.Wait = PhaseWaiting, "1m 36s",
+					ModelWait{Since: "48s", Stretch: "quiet", Heard: "keepalives only, last 3s ago"}
+			})},
+			{Label: "thinking · reasoning arriving", View: live(func(s *TurnStatus) {
+				s.Phase, s.Elapsed, s.Wait = PhaseThinking, "1m 36s",
+					ModelWait{Since: "48s", Stretch: "38 reasoning events", Heard: "last 0.4s ago"}
+			})},
+			{Label: "waiting · a retry coming", View: live(func(s *TurnStatus) {
+				s.Phase, s.Elapsed, s.Wait = PhaseWaiting, "2m 36s",
+					ModelWait{Since: "1m 48s", Stretch: "silent", RetryIn: "12s"}
+			})},
+			// The ladder: the turn's clock goes first, then what arrived;
+			// the word, the model's clock and the stretch word are the floor.
+			{Label: "slot · a wait sheds the turn, then what arrived", View: strings.Join([]string{
+				TurnStatus{Phase: PhaseWaiting, Elapsed: "1m 36s",
+					Wait: ModelWait{Since: "48s", Stretch: "quiet", Heard: "keepalives only, last 3s ago"}}.View(64),
+				TurnStatus{Phase: PhaseWaiting, Elapsed: "1m 36s",
+					Wait: ModelWait{Since: "48s", Stretch: "quiet", Heard: "keepalives only, last 3s ago"}}.View(40),
+			}, "\n")},
 			// The resolved line is the outcome alone: the span, the tools and
 			// the bill are the row the turn left in the transcript
 			// (docs/interface/surfaces.md#the-input-frame).

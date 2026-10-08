@@ -38,22 +38,24 @@ package components
 // reader was watching it run (docs/interface/surfaces.md#the-input-frame).
 //
 // Three rules are enforced here rather than left to the hosts. The phases are
-// a closed vocabulary of four, so a state nobody defined has to pick the
-// nearest rather than invent a fifth. The one field the line can shed as the
-// terminal narrows is the running line's elapsed, and the phase never leaves,
-// because what the turn is doing is the thing the line exists to say. And the
+// a closed vocabulary of five, so a state nobody defined has to pick the
+// nearest rather than invent a sixth. The fields the line can shed as the
+// terminal narrows are the running line's elapsed and then what a wait on the
+// model has heard, and the phase never leaves, because what the turn is doing
+// is the thing the line exists to say. And the
 // spinner frame is passed in rather than kept, so this line, the running activity row and anything else that
 // moves show the same frame from the one tick source.
 
 import "charm.land/lipgloss/v2"
 
-// TurnPhase is the turn status's closed vocabulary. There are four; anything
+// TurnPhase is the turn status's closed vocabulary. There are five; anything
 // else is a phase nobody defined.
 type TurnPhase int
 
 const (
-	// PhaseThinking is the model reasoning before it acts — the reasoning
-	// stream, where a provider has one.
+	// PhaseThinking is the model reasoning before it acts: reasoning has
+	// arrived on the stream. It is never drawn over a stream that has sent
+	// nothing, which is PhaseWaiting.
 	PhaseThinking TurnPhase = iota
 	// PhaseDeciding is the auto-mode classifier judging a call (the vitals
 	// rail's `✦ deciding`, seen from the frame).
@@ -63,6 +65,11 @@ const (
 	PhaseActing
 	// PhaseStreaming is prose arriving.
 	PhaseStreaming
+	// PhaseWaiting is a request gone out with nothing drawable back from it
+	// yet. The line says what it is waiting on and what has arrived, so a
+	// model that is slow, a stream that is quiet and one that is silent read
+	// as three things (docs/interface/surfaces.md#the-input-frame).
+	PhaseWaiting
 )
 
 // phaseWords is the vocabulary itself. The phase a call in flight puts the
@@ -78,10 +85,11 @@ var phaseWords = map[TurnPhase]string{
 	PhaseDeciding:  "deciding…",
 	PhaseActing:    "acting…",
 	PhaseStreaming: "streaming…",
+	PhaseWaiting:   "waiting…",
 }
 
 // word is the phase's word. A phase outside the vocabulary reads as thinking
-// rather than as blank: the nearest of the four is the rule.
+// rather than as blank: the nearest of the five is the rule.
 func (p TurnPhase) word() string {
 	if w, ok := phaseWords[p]; ok {
 		return w
@@ -92,11 +100,15 @@ func (p TurnPhase) word() string {
 // Field-drop levels (guidelines/turnstatus-drop-order). The phase and the
 // outcome are not on the ladder. The guideline's earlier rungs are gone with
 // the fields they shed: the line carries no tool argument and no tool count,
-// so the running line's elapsed is the one field a narrowing slot reaches,
-// and the resolved line has nothing to shed at all.
+// so the running line's elapsed is the first field a narrowing slot reaches,
+// what a wait on the model has heard the second, and the resolved line has
+// nothing to shed at all. A wait's floor is the word, its own clock and its
+// stretch word, or the retry where one is coming: those say whether the
+// stream is alive, which is what the line is read for during a wait.
 const (
 	turnDropNone    = iota // every field the host supplied
-	turnDropElapsed        // the running line's elapsed goes; the floor is the word
+	turnDropElapsed        // the running line's elapsed goes
+	turnDropHeard          // what the wait has heard goes; the floor is the word and the wait
 )
 
 // TurnStatus is the line. A host fills the live fields while the turn runs
@@ -116,6 +128,11 @@ type TurnStatus struct {
 	// word `turn`, which is what says it is not the clock on the command's
 	// own row in the feed.
 	Elapsed string
+
+	// Wait is a wait on the model, stated after the word while the turn is
+	// waiting or thinking: its own clock, labelled `model`, and what has
+	// arrived since the request. Zero states nothing.
+	Wait ModelWait
 
 	// Done resolves the line into the summary it becomes: the outcome's glyph
 	// where the spinner was and its word where the phase was, and nothing
@@ -148,6 +165,53 @@ func (s TurnStatus) doneGlyph() (string, string, lipgloss.Style) {
 	return "✓", doneWords[TurnDone], sty.add
 }
 
+// ModelWait is a request's wait as the line states it. Every field is
+// pre-formatted by the host, which owns the clock; the line owns the words
+// that join them and the order they leave in.
+type ModelWait struct {
+	// Since is the time since the request went out, behind the word `model`:
+	// the turn's clock beside it is labelled `turn`, so the two are told
+	// apart by their words and not by their sizes.
+	Since string
+	// Stretch is the wait's floor: `silent`, `quiet`, or a count of the
+	// reasoning that has arrived. It never drops.
+	Stretch string
+	// Heard is what arrived and since when — `nothing arrived`,
+	// `keepalives only, last 3s ago`, `last 0.4s ago` — the second field a
+	// narrowing slot gives up.
+	Heard string
+	// RetryIn is set in the last stretch before the stream's idle deadline,
+	// and takes Heard's place in the floor: a retry coming is the one thing
+	// about a silent wait the reader can act on.
+	RetryIn string
+}
+
+// clause is the wait's fields as the line draws them at a drop level, each
+// led by its separator.
+func (w ModelWait) clause(phase TurnPhase, drop int) string {
+	if w.Since == "" {
+		return ""
+	}
+	out := " · model " + w.Since
+	if w.Stretch == "" {
+		return out
+	}
+	out += " · " + w.Stretch
+	switch {
+	case w.RetryIn != "":
+		out += " — retry in " + w.RetryIn
+	case w.Heard != "" && drop < turnDropHeard:
+		// A count reads on into its clause; a stretch word is named and
+		// then described.
+		sep := " — "
+		if phase == PhaseThinking {
+			sep = ", "
+		}
+		out += sep + w.Heard
+	}
+	return out
+}
+
 // View renders the line at the widest fidelity that fits width, dropping in
 // the turn status's order. A width that cannot hold even the floor clips it
 // rather than rendering nothing: a line that says only what it is doing is
@@ -158,7 +222,7 @@ func (s TurnStatus) View(width int) string {
 	}
 	for drop := turnDropNone; ; drop++ {
 		out := s.render(drop)
-		if lipgloss.Width(out) <= width || drop >= turnDropElapsed {
+		if lipgloss.Width(out) <= width || drop >= turnDropHeard {
 			return Clip(out, width)
 		}
 	}
@@ -175,9 +239,14 @@ func (s TurnStatus) render(drop int) string {
 	// never touches it, but it belongs to the same string so the line is
 	// measured and clipped as one. The word in front of it is what makes it
 	// the turn's clock rather than a second reading of the command's.
-	var tail string
+	// The wait comes first: it is what the turn is in, and the turn's clock
+	// is the field that goes first.
+	tail := s.Wait.clause(s.Phase, drop)
 	if s.Elapsed != "" && drop < turnDropElapsed {
-		tail += sty.dim.Render(" · " + turnClock(s.Elapsed))
+		tail += " · " + turnClock(s.Elapsed)
+	}
+	if tail != "" {
+		tail = sty.dim.Render(tail)
 	}
 	// The line's moving part. The spinner's frame leads, outside the sweep
 	// because its eight-frame cycle is not the label's; the label arrives

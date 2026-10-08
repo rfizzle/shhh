@@ -962,18 +962,48 @@ the one that is the decision would stop being the one that stands out. This
 departs from the artboards that colour the border by mode:
 [the frame's border is chrome](departures.md#the-frames-border-is-chrome-and-the-mode-segment-carries-the-mode).
 
-The top rail states what one turn is doing — which of four phases it is in,
+The top rail states what one turn is doing — which of five phases it is in,
 and how long the turn has been running — and it states it while it is
 happening rather than after the fact. Nothing else on screen says the same
 thing twice: the phase is named here, not also under the transcript.
 
-The four are `thinking…`, `deciding…`, `acting…` and `streaming…`. The third
+The five are `thinking…`, `deciding…`, `acting…`, `streaming…` and
+`waiting…`. The third
 is not `running`, because that is the word the [row for a call in
 flight](#the-activity-row) already carries as its outcome, a few rows above
 this one: one word with two subjects on one screen is read as one subject, and
 which of the two is meant — the whole turn, or the one command — is the thing
 the two lines exist to keep apart. Each vocabulary keeps the word about its own
 subject, so the turn acts and the command runs.
+
+The fifth is the wait between a request going out and the first thing back
+from it that draws. A model working through a long problem, a gateway that
+has gone quiet and a card waiting on the reader used to read alike — the
+turn's clock ticking over a phase that guessed — and a guess is what the
+reader acts on wrongly: they wait out a dead connection or stop a model that
+was nearly done. So the wait says what it is waiting on and what it has
+heard: `waiting… · model 14s · silent — nothing arrived · turn 1m 02s`. Its
+own clock is labelled `model`, the way the turn's is labelled `turn`, and
+counts from the request rather than the turn. Then the stretch's word, the
+one the session's record files it under: `silent` when nothing has arrived,
+`quiet` when the stream is delivering something that draws nothing, with what
+that is and how long since the last of it — `quiet — keepalives only, last 3s
+ago`. A quiet stream is alive; a silent one may not be, and the two are told
+apart on the screen as they are in the record
+([startup and waits are timed](../capabilities/sessions-and-memory.md#startup-and-waits-are-timed)).
+
+`thinking…` is the one word that claims the model is thinking, so it is drawn
+only once reasoning has arrived, with how many reasoning events and how long
+since the last — `thinking… · model 48s · 38 reasoning events, last 0.4s
+ago`. With nothing arrived the line says nothing arrived, whatever the model
+may be doing out of sight. A silent wait in its last thirty seconds before
+`provider.stream_idle_seconds` says the retry is coming in place of what
+arrived — `silent — retry in 12s` — because a retry is the one thing about
+that wait the reader can act on before it happens. As the slot narrows the
+turn's clock goes first and what arrived second; the word, the model's clock
+and `silent` or `quiet` (or the retry) stay, since whether the stream is alive
+is what the line is read for during a wait. The spinner and the word are in
+the spinner's colour and everything after them is dim, as for every phase.
 
 The act the phase is for is named the other way round. A running command is
 [a row in the feed](#the-activity-row) — the command itself, what it is

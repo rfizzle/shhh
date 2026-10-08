@@ -1,0 +1,6 @@
+# The harness writes provider_retries = 0 so that no scene sits out a wait;
+# this one is about a wait that ends in a retry, so the file is written again
+# with one retry, and with an idle deadline of forty seconds, so the last
+# thirty before it — where a silent wait says the retry is coming — arrive ten
+# seconds into the stall rather than ninety.
+printf '[provider]\nstream_idle_seconds = 40\n\n[behavior]\nprovider_retries = 1\n' > $XDG_CONFIG_HOME/shhh/config.toml && $SHHH_BIN code

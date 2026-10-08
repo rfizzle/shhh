@@ -991,7 +991,7 @@ goldens, and nothing in the question card asks for one. The gap is closed by
 drawing the backlog screen's own tabs, and if that artboard puts them on this
 strip, this is where they will already be.
 
-## The frame's phase is a lower-case word, and there are four of them
+## The frame's phase is a lower-case word, and there are five of them
 
 _Filed 2026-09-09 · closes by a decision_
 
@@ -1014,6 +1014,16 @@ neither half of it: the tool's name is the feed's row rather than a second
 clipped copy on the rail, and `running` is that row's own outcome word, so the
 rail says `acting…` instead of putting one word with two subjects a few rows
 apart ([the input frame](surfaces.md#the-input-frame)).
+
+The fifth word came later and from an artboard of its own: `Waiting` adds
+`waiting…`, for a request gone out with nothing drawable back from it yet.
+Before it the binary drew `thinking…` there — the nearest of the four — which
+claimed the model was thinking when nothing had arrived to say so, and drew
+`acting…` and a ticking step card over minutes of silence after a round of
+calls. A wait on the model is a state of its own that the reader acts on
+differently — wait it out, or stop a connection that has gone — so it is not
+folded into the nearest word, and `thinking…` is kept for reasoning that has
+arrived ([the input frame](surfaces.md#the-input-frame)).
 
 ## The attached rail states no elapsed beside the child's phase
 

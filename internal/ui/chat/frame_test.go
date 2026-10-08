@@ -273,7 +273,7 @@ func TestFrame_GutterAndHintsSwapWhileWorking(t *testing.T) {
 	view = stripANSI(m.View().Content)
 	// The activity slot is the running turn's status line now:
 	// `WORKING` was true of every moment of every turn and said nothing.
-	if !strings.Contains(view, "│ ▸ ") || !strings.Contains(view, "thinking…") {
+	if !strings.Contains(view, "│ ▸ ") || !strings.Contains(view, "waiting…") {
 		t.Fatalf("working frame missing the steering gutter and the turn status:\n%s", view)
 	}
 	if !strings.Contains(view, "[ctrl+c] ×2 stop the run · [enter] add to this turn · [/] commands") {
@@ -917,7 +917,7 @@ func TestEmptyDraftCostsItsMinimumAtEveryTerminalHeight(t *testing.T) {
 		mut  func(*Model)
 	}{
 		{"idle", func(*Model) {}},
-		{"thinking", func(m *Model) { m.state = stateStreaming }},
+		{"waiting", func(m *Model) { m.state = stateStreaming }},
 		{"streaming", func(m *Model) { m.state = stateStreaming; m.streaming = "Reading the round accounting" }},
 		{"running", func(m *Model) { m.state = stateRunningCmd }},
 		{"completed", func(m *Model) {

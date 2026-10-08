@@ -1,0 +1,27 @@
+# program test: TestProgram_ARequestThatHearsNothingSaysSo
+#
+# A turn waiting on the model, through the built binary: a step of two
+# commands, each asked on the approval card, and then a request the endpoint
+# answers with headers and nothing else. Read the cells against the `Waiting`
+# artboard and the turn-status and live-card-words goldens.
+#
+# While the second command waits on the reader, the step's card says
+# `waiting for you` with no figure beside it: its clock has stopped on the
+# reader (docs/interface/surfaces.md#the-step). Once the last command has
+# returned the card is finished — its outcome and the commands' own seconds,
+# not `running` and the wall's minutes — and the frame's top rail says what
+# the turn is waiting on instead: `waiting…`, the model's clock since the
+# request, and `silent — nothing arrived`, never `acting…` or `thinking…`
+# (docs/interface/surfaces.md#the-input-frame). The idle deadline is forty
+# seconds here, so ten seconds into the silence the clause becomes the retry
+# coming, `silent — retry in`.
+snap 01-start "Some things worth doing first"
+keys "run the chat tests and the linter" Enter
+snap 02-first-card "[y] run it once"
+sleep 1
+keys y
+snap 03-second-card "waiting for you" "[y] run it once" "▎$ ran echo ok"
+sleep 1
+keys y
+snap 04-silent "silent — nothing arrived" "waiting… · model " "▎$ ran 2 commands" "· turn "
+snap 05-retry-coming "silent — retry in " "waiting… · model " "▎$ ran 2 commands"

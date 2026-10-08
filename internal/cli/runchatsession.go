@@ -339,6 +339,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithProgressIntervals(cfg.Behavior.ProgressIntervalCalls,
 			time.Duration(cfg.Behavior.ProgressIntervalSeconds)*time.Second).
 		WithRetryLimit(cfg.Behavior.ProviderRetries).
+		WithStreamIdle(cfg.ProviderStreamIdle()).
 		WithClassifier(classifier).
 		WithExplainer(explainer).
 		WithSummarizer(summarizer).

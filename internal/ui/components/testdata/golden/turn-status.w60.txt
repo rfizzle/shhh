@@ -25,6 +25,22 @@
 · slot · elapsed goes, leaving the phase
 ⠋ acting…
 
+· waiting · nothing arrived
+⠋ waiting… · model 14s · silent — nothing arrived
+
+· waiting · keepalives only
+⠋ waiting… · model 48s · quiet
+
+· thinking · reasoning arriving
+⠋ thinking… · model 48s · 38 reasoning events, last 0.4s ago
+
+· waiting · a retry coming
+⠋ waiting… · model 1m 48s · silent — retry in 12s
+
+· slot · a wait sheds the turn, then what arrived
+⠋ waiting… · model 48s · quiet — keepalives only, last 3s ago
+⠋ waiting… · model 48s · quiet
+
 · resolved · done, and the account is the close row's
 ✓ done
 
@@ -49,6 +65,22 @@
 
 · slot · elapsed goes, leaving the phase
 ␛[38;5;205m⠋ acting…␛[m
+
+· waiting · nothing arrived
+␛[38;5;205m⠋ waiting…␛[m␛[38;5;241m · model 14s · silent — nothing arrived␛[m
+
+· waiting · keepalives only
+␛[38;5;205m⠋ waiting…␛[m␛[38;5;241m · model 48s · quiet␛[m
+
+· thinking · reasoning arriving
+␛[38;5;205m⠋ thinking…␛[m␛[38;5;241m · model 48s · 38 reasoning events, last 0.4s ago␛[m
+
+· waiting · a retry coming
+␛[38;5;205m⠋ waiting…␛[m␛[38;5;241m · model 1m 48s · silent — retry in 12s␛[m
+
+· slot · a wait sheds the turn, then what arrived
+␛[38;5;205m⠋ waiting…␛[m␛[38;5;241m · model 48s · quiet — keepalives only, last 3s ago␛[m
+␛[38;5;205m⠋ waiting…␛[m␛[38;5;241m · model 48s · quiet␛[m
 
 · resolved · done, and the account is the close row's
 ␛[92m✓ done␛[m

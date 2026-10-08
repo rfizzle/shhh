@@ -39,9 +39,10 @@ func settleCounts(m *Model) {
 func TestTurnStatus_PhaseFollowsWhatTheTurnIsDoing(t *testing.T) {
 	m := statusModel(t)
 
-	// Nothing has arrived yet: the model is reasoning before it acts.
-	if p, ok := m.turnPhase(); !ok || p != components.PhaseThinking {
-		t.Fatalf("a silent stream = phase %d ok=%v, want thinking", p, ok)
+	// Nothing has arrived yet: the turn is waiting on the model, which is
+	// not the same as the model thinking.
+	if p, ok := m.turnPhase(); !ok || p != components.PhaseWaiting {
+		t.Fatalf("a silent stream = phase %d ok=%v, want waiting", p, ok)
 	}
 
 	m.streaming = "here is what I found"
@@ -247,7 +248,7 @@ func TestTurnStatus_FrameRailShowsTheTurnAndThenItsSummary(t *testing.T) {
 	// is the settled word, and how it gets there is the test below.
 	m.turnStarted = time.Now().Add(-2 * time.Second)
 	view := stripANSI(m.View().Content)
-	if !strings.Contains(view, "thinking…") {
+	if !strings.Contains(view, "waiting…") {
 		t.Fatalf("the top rail should carry the live status:\n%s", view)
 	}
 
@@ -258,7 +259,7 @@ func TestTurnStatus_FrameRailShowsTheTurnAndThenItsSummary(t *testing.T) {
 	if !strings.Contains(view, "╭─ ✓ done ─") {
 		t.Fatalf("the top rail should resolve into the turn's outcome and nothing after it:\n%s", view)
 	}
-	if strings.Contains(view, "thinking…") {
+	if strings.Contains(view, "waiting…") {
 		t.Fatalf("the live line should be finished, not still running:\n%s", view)
 	}
 }
@@ -270,11 +271,11 @@ func TestTurnStatus_FrameRailShowsTheTurnAndThenItsSummary(t *testing.T) {
 func TestTurnStatus_TheLabelArrivesWithTheTurn(t *testing.T) {
 	m := statusModel(t)
 	m.runTail = nil
-	if view := stripANSI(m.View().Content); !strings.Contains(view, "·") || strings.Contains(view, "thinking…") {
+	if view := stripANSI(m.View().Content); !strings.Contains(view, "·") || strings.Contains(view, "waiting…") {
 		t.Fatalf("a turn that just started should still be spelling its label out:\n%s", view)
 	}
 	m.turnStarted = time.Now().Add(-2 * time.Second)
-	if view := stripANSI(m.View().Content); !strings.Contains(view, "thinking…") {
+	if view := stripANSI(m.View().Content); !strings.Contains(view, "waiting…") {
 		t.Fatalf("a second in, the label should have arrived:\n%s", view)
 	}
 	// The width the slot needs never changes while the word fills in: a cell
@@ -308,7 +309,7 @@ func TestTurnStatus_WaitingDecisionOutranksTheStatus(t *testing.T) {
 	if !strings.Contains(view, "waiting") {
 		t.Fatalf("an ungated decision should claim the activity slot:\n%s", view)
 	}
-	if strings.Contains(view, "thinking…") {
+	if strings.Contains(view, "waiting…") {
 		t.Fatalf("the status line should not share the slot with the waiting chip:\n%s", view)
 	}
 }
