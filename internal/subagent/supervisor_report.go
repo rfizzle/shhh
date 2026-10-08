@@ -601,6 +601,11 @@ func (s *Supervisor) emit(ev Event) {
 // it, so an update read before the child ended cannot arrive after the event
 // saying it did, where a reader would take it for the child starting again.
 // The send never blocks, so holding the lock across it costs nothing.
+//
+// A child whose end has not been announced yet sends nothing: a retry or a
+// follow-up can queue it before the event saying it ended, and its update
+// would then come ahead of an event carrying the old ended status. The
+// update is held and announceEnd sends it once the event is out.
 func (s *Supervisor) emitUpdate(c *child) {
 	s.sendMu.RLock()
 	defer s.sendMu.RUnlock()
@@ -609,6 +614,10 @@ func (s *Supervisor) emitUpdate(c *child) {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if c.endsOwed > 0 {
+		c.updateHeld = true
+		return
+	}
 	select {
 	case s.events <- Event{Kind: EventUpdate, Status: c.statusLocked()}:
 	default:

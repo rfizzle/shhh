@@ -52,8 +52,7 @@ func (s *Supervisor) run(c *child) {
 	c.mu.Unlock()
 	announced := false
 	announce := func() {
-		close(done)
-		s.emit(Event{Kind: EventDone, Status: ended})
+		s.announceEnd(c, done, ended)
 		announced = true
 	}
 	defer func() {
@@ -254,6 +253,28 @@ func (s *Supervisor) run(c *child) {
 	}
 }
 
+// announceEnd is the last step of an attempt's end: it releases the waiters
+// on the child, sends the one event that says it ended, and then lets out
+// the update held back while that event was owed, so a reader sees the
+// ending, then the restart that followed it, and never the other way round.
+// It holds no lock across the send: emit can block on the event stream.
+func (s *Supervisor) announceEnd(c *child, done chan struct{}, ended Status) {
+	close(done)
+	s.emit(Event{Kind: EventDone, Status: ended})
+	c.mu.Lock()
+	if c.endsOwed > 0 {
+		c.endsOwed--
+	}
+	held := c.endsOwed == 0 && c.updateHeld
+	if held {
+		c.updateHeld = false
+	}
+	c.mu.Unlock()
+	if held {
+		s.emitUpdate(c)
+	}
+}
+
 // endAttempt is the one way an attempt ends, and it returns the status the
 // attempt ended on, taken at the transition. It settles the end reason (a
 // kill or an ancestor's kill outranks what the run made of it), meets the
@@ -283,6 +304,11 @@ func (s *Supervisor) endAttempt(c *child, started bool, state State, reason, det
 		reason = observe.ChildKilled
 	}
 	c.endReason = reason
+	// From here until announceEnd has sent the end's event, no update of
+	// this child goes out (emitUpdate): a retry or a follow-up that queues
+	// the child in that window would otherwise put its update ahead of an
+	// event that still carries the status the child ended on.
+	c.endsOwed++
 	final := c.report
 	c.mu.Unlock()
 	// The seam at a child's end, for an attempt that ended any way but

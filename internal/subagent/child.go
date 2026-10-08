@@ -65,6 +65,11 @@ type child struct {
 	env      Env
 	rec      Recorder
 	done     chan struct{}
+	// endsOwed counts the attempt ends whose EventDone has not gone out
+	// yet, and updateHeld says an update was held back meanwhile
+	// (emitUpdate). Both are guarded by mu.
+	endsOwed   int
+	updateHeld bool
 	// steerWake nudges an idle child that new steering arrived (buffered 1).
 	steerWake chan struct{}
 	// steered is closed and replaced each time a steer is queued, under mu,

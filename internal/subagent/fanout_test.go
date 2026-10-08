@@ -319,3 +319,44 @@ func TestAChildsStepsCallIsTheListItsLaneCounts(t *testing.T) {
 		t.Fatalf("a later call should replace the list whole, got %+v", sc)
 	}
 }
+
+// A retry that claims a child between the end's state change and the event
+// saying it ended must be read as a restart. The claim is made in that gap
+// itself, after the child has ended and before its end is announced; the
+// stream must carry the end, and the claim after it, never the claim ahead of
+// an end that still reads failed.
+func TestARetryAfterTheEndIsReadAsARestart(t *testing.T) {
+	sup := New(t.Context(), Options{Root: t.TempDir()})
+	t.Cleanup(sup.Close)
+
+	c := &child{name: "researcher-1", state: StateRunning, detail: "running", done: make(chan struct{})}
+	ended := sup.endAttempt(c, false, StateFailed, "failed", "failed · boom")
+	if ended.State != StateFailed {
+		t.Fatalf("the attempt ended %v, want failed", ended.State)
+	}
+
+	// What Retry does with a child it finds failed: claims it and says so.
+	c.mu.Lock()
+	c.state, c.detail = StateQueued, retryWaitDetail
+	c.mu.Unlock()
+	sup.emitUpdate(c)
+	if n := len(sup.Events()); n != 0 {
+		t.Fatalf("the claim put %d events on the stream ahead of the end", n)
+	}
+
+	sup.announceEnd(c, c.done, ended)
+
+	var got []Event
+	for len(sup.Events()) > 0 {
+		got = append(got, <-sup.Events())
+	}
+	if len(got) != 2 {
+		t.Fatalf("the stream carried %d events, want the end and the restart: %+v", len(got), got)
+	}
+	if got[0].Kind != EventDone || got[0].Status.State != StateFailed {
+		t.Errorf("the first event is %v reading %v, want the end reading failed", got[0].Kind, got[0].Status.State)
+	}
+	if got[1].Kind != EventUpdate || got[1].Status.State != StateQueued {
+		t.Errorf("the last event is %v reading %v, want the restart reading queued", got[1].Kind, got[1].Status.State)
+	}
+}
