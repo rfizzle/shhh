@@ -285,6 +285,15 @@ var configJudges = map[string]func(string) error{
 		_, err := agent.ParseClassifierBackend(v)
 		return err
 	},
+	// A percentage, so 1 to 100. Zero or less would quietly mean the
+	// default and anything over 100 would refuse every call, and neither is
+	// what somebody typing the number meant.
+	"behavior.classifier_threshold": func(v string) error {
+		if n, err := strconv.Atoi(v); err != nil || n < 1 || n > 100 {
+			return fmt.Errorf("%q is not a percentage from 1 to 100", v)
+		}
+		return nil
+	},
 	"behavior.mode_cycle": func(v string) error {
 		for name := range strings.SplitSeq(v, ",") {
 			if name = strings.TrimSpace(name); name == "" {

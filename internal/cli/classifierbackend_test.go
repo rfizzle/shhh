@@ -64,4 +64,14 @@ func TestConfigSet_JudgesTheClassifierBackend(t *testing.T) {
 	if err := checkConfigValue("behavior.classifier_backend", "oracle"); err == nil {
 		t.Fatal("an unknown backend was accepted")
 	}
+	for _, v := range []string{"1", "80", "100"} {
+		if err := checkConfigValue("behavior.classifier_threshold", v); err != nil {
+			t.Errorf("threshold %s: %v", v, err)
+		}
+	}
+	for _, v := range []string{"0", "-5", "101", "0.8"} {
+		if err := checkConfigValue("behavior.classifier_threshold", v); err == nil {
+			t.Errorf("threshold %s was accepted", v)
+		}
+	}
 }
