@@ -25,4 +25,4 @@ keys "write the spend notes" Enter
 # session model's, naming what it was spent on.
 # The cheap model answers the classifier and the suggestion, so its row folds
 # to one source and its name shortens to the family word the rail keeps.
-snap 06-two-models "The notes file is there" "mini · " "1 more" "classifier" "session total · "
+snap 06-two-models "The notes file is there" "mini · " "2 more" "classifier" "session total · "
