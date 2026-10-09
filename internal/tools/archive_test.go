@@ -691,3 +691,41 @@ func TestArchives_TheDescriptionsNameTheBounds(t *testing.T) {
 		t.Error("list_directory's description says an archive lists like a directory")
 	}
 }
+
+// A listing of a path that runs into a file is refused at the entry that
+// makes it one: the entries past it are never read. The proof is an entry laid
+// after the file that would turn the path into a directory, had the pass gone
+// on to find it. A name an earlier entry already put things under is a
+// directory, and the pass reads on.
+func TestArchives_AListingOfAPathIntoAFileStopsAtTheFile(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "t.tar")
+	writeTar(t, p, false, []fixtureEntry{
+		{name: "docs/one.txt", body: "1"},
+		{name: "a.txt", body: "a"},
+		{name: "a.txt/inside.txt", body: "x"},
+		{name: "z.txt", body: "z"},
+	})
+
+	if _, err := listArchive(p, "a.txt", 1); err == nil || !strings.Contains(err.Error(), "is a file inside the archive") {
+		t.Errorf("a file named as a directory: want the file refusal, got %v", err)
+	}
+	if _, err := listArchive(p, "a.txt/inside.txt/deeper", 1); err == nil || !strings.Contains(err.Error(), "has no directory") {
+		t.Errorf("a path below a file: want no directory, got %v", err)
+	}
+	got, err := listArchive(p, "docs", 1)
+	if err != nil || len(got) != 1 || got[0] != "file: one.txt\t1 B" {
+		t.Errorf("a real directory is listed whole: got %v, %v", got, err)
+	}
+
+	q := filepath.Join(dir, "u.tar")
+	writeTar(t, q, false, []fixtureEntry{
+		{name: "a.txt/inside.txt", body: "x"},
+		{name: "a.txt", body: "a"},
+		{name: "a.txt/late.txt", body: "y"},
+	})
+	got, err = listArchive(q, "a.txt", 1)
+	if err != nil || len(got) != 2 {
+		t.Errorf("a name with entries under it is a directory: got %v, %v", got, err)
+	}
+}

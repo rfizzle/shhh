@@ -600,12 +600,31 @@ func (c *archiveRows) full() bool { return c.n >= MaxListEntries }
 // would drop that line first. The pass stops reading the archive once the
 // rows are more than the listing holds, so a huge tar costs the headers of
 // the rows shown and not every header it has.
+//
+// A directory that is not there cannot be told from one still to come until a
+// tar's end, but a path that runs into a file can: the first entry that names
+// the listed path, or a directory above it, as something other than a
+// directory settles the refusal, and the pass stops there unless an earlier
+// entry already put something under that name.
 func listArchive(archive, inner string, depth int) ([]string, error) {
 	if compressedName(inner) || nestedArchive(inner) != "" {
 		return nil, nestedRefusal(archive, inner)
 	}
 	rows := &archiveRows{start: cleanEntryName(inner), depth: depth, seen: map[string]bool{}}
+	implied := map[string]bool{} // the directories the entries so far lie under
 	s, err := scanArchive(archive, func(e archiveEntry, _ io.Reader) (bool, error) {
+		if !unsafeEntryName(e.name) {
+			name := cleanEntryName(e.name)
+			if !e.dir && rows.start != "" && !implied[name] &&
+				(name == rows.start || strings.HasPrefix(rows.start, name+"/")) {
+				return false, nil
+			}
+			for i := 0; i < len(name); i++ {
+				if name[i] == '/' {
+					implied[name[:i]] = true
+				}
+			}
+		}
 		return !rows.add(e), nil
 	})
 	if err != nil {
