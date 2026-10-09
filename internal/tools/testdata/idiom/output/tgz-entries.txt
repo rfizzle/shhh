@@ -1,0 +1,8 @@
+# output of `tar tzf release.tar.gz`, run in testdata/idiom
+ledger/
+ledger/LICENSE
+ledger/README.md
+ledger/bin/
+ledger/bin/ledger
+ledger/config/
+ledger/config/default.toml

@@ -28,28 +28,37 @@ func TestDataReaders_AnswerEachIdiomInOneCallNoLargerThanIt(t *testing.T) {
 		tool   string
 		args   map[string]any
 		answer []string // what both the idiom and the tool must say
+		// sized is true for a listing whose rows carry a kind label and the
+		// file's size, which tar tzf's bare names do not: the sizes are
+		// what tar tzvf adds. The tool keeps them, since a model sizing up
+		// an archive reads them next, so each row's label and size are
+		// allowed on top of the idiom's bytes.
+		sized bool
 	}{
 		{"lockfile-field", QueryName,
 			map[string]any{"paths": []string{idiomRoot + "/package-lock.json"}, "expression": `.packages["node_modules/left-pad"].version`},
-			[]string{"1.3.0"}},
+			[]string{"1.3.0"}, false},
 		{"workflow-jobs", QueryName,
 			map[string]any{"paths": []string{idiomRoot + "/workflows/ci.yml"}, "expression": ".jobs | keys[]"},
-			[]string{"build", "lint", "test"}},
+			[]string{"build", "lint", "test"}, false},
 		{"toml-value", QueryName,
 			map[string]any{"paths": []string{idiomRoot + "/Cargo.toml"}, "expression": ".package.version"},
-			[]string{"0.4.1"}},
+			[]string{"0.4.1"}, false},
 		{"csv-distinct", QueryName,
 			map[string]any{"paths": []string{idiomRoot + "/sales.csv"}, "expression": "map(.region) | unique[]", "slurp": true},
-			[]string{"east", "north", "west"}},
+			[]string{"east", "north", "west"}, false},
 		{"table-count", SqliteName,
 			map[string]any{"path": idiomRoot + "/app.db", "sql": "SELECT count(*) FROM orders"},
-			[]string{"42"}},
+			[]string{"42"}, false},
 		{"zip-entries", ListDirectoryName,
 			map[string]any{"path": idiomRoot + "/release.zip", "depth": 3},
-			[]string{"README.md", "LICENSE", "ledger", "default.toml", "49", "47", "384", "39"}},
+			[]string{"README.md", "LICENSE", "ledger", "default.toml", "49", "47", "384", "39"}, false},
+		{"tgz-entries", ListDirectoryName,
+			map[string]any{"path": idiomRoot + "/release.tar.gz", "depth": 3},
+			[]string{"README.md", "LICENSE", "ledger", "default.toml", "bin/ledger"}, true},
 		{"gz-line", SearchName,
 			map[string]any{"pattern": "ERROR", "path": idiomRoot + "/logs/app.log.gz", "context_lines": 0},
-			[]string{"ERROR payments: card processor timed out after 30s (order 1187)"}},
+			[]string{"ERROR payments: card processor timed out after 30s (order 1187)"}, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -85,10 +94,32 @@ func TestDataReaders_AnswerEachIdiomInOneCallNoLargerThanIt(t *testing.T) {
 				}
 			}
 			t.Logf("%s: %d bytes, the idiom %d", tc.tool, len(got), len(idiom))
-			if len(got) > len(idiom) {
+			budget := len(idiom)
+			if tc.sized {
+				budget += rowFurniture(got)
+			}
+			if len(got) > budget {
 				t.Errorf("%s answered in %d bytes where the idiom costs %d:\n%s\n--- the idiom, as the model reads it:\n%s",
-					tc.tool, len(got), len(idiom), got, idiom)
+					tc.tool, len(got), budget, got, idiom)
 			}
 		})
 	}
+}
+
+// rowFurniture is the bytes a listing spends on each row beyond the name the
+// idiom prints: the `file: ` or `dir: ` label that says what the entry is,
+// and on a file the tab and size after it.
+func rowFurniture(listing string) int {
+	n := 0
+	for _, row := range strings.Split(listing, "\n") {
+		for _, label := range []string{"file: ", "dir: "} {
+			if strings.HasPrefix(row, label) {
+				n += len(label)
+			}
+		}
+		if _, size, ok := strings.Cut(row, "\t"); ok {
+			n += 1 + len(size)
+		}
+	}
+	return n
 }
