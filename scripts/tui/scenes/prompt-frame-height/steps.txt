@@ -9,11 +9,17 @@
 # move when the state did.
 #
 # It should be four in all of them — the top rail, the one row the sentence
-# is typed on, the vitals rail and the key rail — and the transcript should
+# is typed on, the vitals rail and the foot row — and the transcript should
 # reach to within four rows of the bottom. Read the .txt against the Frame
 # artboard for the rails' contents, and look at the .gif for the thing the
 # cells cannot carry: whether the box below the accent border reads as a
 # place to type or as a hole in the screen.
+#
+# The foot row is a ladder that sheds from the right (docs/interface/surfaces.md
+# #the-input-frame), so the floor of each state is asserted at every width
+# this scene is run at — COLS=80 and COLS=110 by hand, the 160 it is sized
+# for in the gate — and the whole ladder only where the pane can hold it
+# (`wide 130`, the box being the pane less its padding).
 #
 # A 52-row terminal is the point. A box that opened at three rows took the
 # same three here as on the 24-row terminal the complaint was filed from, and
@@ -23,7 +29,8 @@ snap 01-idle "Some things worth doing first"
 keys "run the checks" Enter
 # The model has not said its first word yet: the rail names the phase, the
 # box is one row, and the pane below is entirely transcript.
-snap 02-waiting "waiting…" "[ctrl+c] stop the run"
+snap 02-waiting "waiting…" "[ctrl+p] hold · [ctrl+c] stop the run"
+wide 130 snap 02a-working-ladder "[ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys"
 snap 03-card "[y] run it once"
 keys y
 # A command in flight, which is the state the empty box looked worst in: the
@@ -32,7 +39,8 @@ snap 04-running "running…"
 snap 05-tail "0.412s"
 # And the turn resolved, which is where a reader spends the longest with
 # nothing typed.
-snap 06-completed "the frame is four" "[enter] send"
+snap 06-completed "the frame is four" "[enter] send" "[ctrl+]] keys"
+wide 130 snap 06a-idle-ladder "[enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys · [ctrl+n] queue · [ctrl+c] ×2 quit"
 keys C-c
 snap 07-quit-armed "again quits"
 keys C-c

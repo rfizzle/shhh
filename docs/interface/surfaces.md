@@ -1139,6 +1139,57 @@ account and the position is what that block is on screen to say. A rail that goe
 quiet about what a child is burning goes quiet exactly where somebody is
 watching it, which is the one moment those figures are being read for.
 
+The root session's frame has the same five rows at every width it is drawn
+at: the top rail, the prompt, the vitals rail, the foot row of keys and the
+box's closing corners. At sixty and eighty columns the vitals used to share
+the closing rail with nothing to say beside them, and a terminal that narrow
+was the one place a person could not see which key stops a run. An attached
+child's frame keeps the single closing rail below the wide layout, with the
+way back on the top rail.
+
+The foot row is a ladder, floor first, and offers leave from the right as the
+width runs out. Nothing on it is cut in half against the corner
+([fold, never hide](principles.md#fold-never-hide)): a rung that does not fit
+is not drawn, and the rungs above it keep their place. Idle, the ladder reads
+
+`[enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys · [ctrl+n] queue · [ctrl+c] ×2 quit`
+
+and it sheds in the order the quit, the queue, the commands and the mode, so
+that the floor every width keeps is `[enter] send · [ctrl+]] keys`: how a
+message leaves and the door to every other key. While a turn works the
+ladder leads with the two keys a person reaches for with a turn running:
+
+`[ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys · [ctrl+n] queue`
+
+and it sheds the queue, the keys, the commands, the mode and the steer, so
+that the working floor is `[ctrl+p] hold · [ctrl+c] stop the run`. The working
+stop does not say `×2`: the first press stops the run, and the second, if it
+comes, is a new first press that quits, which only the idle offer says
+(quit is one rule, stated below). The quit is the last rung idle
+because it is the offer a person who has found the rest can do without; it is
+named on every row wide enough to hold the whole ladder, since a key whose
+first press is silent has to be told before it is pressed. With text in the
+draft the same slot says `[ctrl+c] clear`.
+
+The editor and the attach chord are not rungs. A rarity does not earn the
+editor a slot, and the key list holds it; attach is offered where it is useful
+and nowhere else. While the clipboard holds something the chord would take — an
+image, or a file — the top rail's far side carries `[ctrl+v] attach
+clipboard.png` in the dim tone, above the prompt where the eye already is, and
+never as a slot on the foot row. The clipboard is read once when the frame
+goes idle and once when the window comes back to the front, the two moments a
+person has been somewhere else and copied something, and at no other moment; the
+key itself is always live and always in the key list. When the top rail is too
+short for the name the name goes first, then the label. An offered next step
+keeps its place at the head of the ladder, `[→] take the suggestion` (`[→] take
+it` below the wide layout, where the floor needs the room).
+
+The design side is the kit's foot-row ladder guideline, `layout-foot-ladder`,
+beside `layout-drop-order`, and the `Frame` board draws the row at 60, 80, 110
+and 130 columns. The board's wide boxes are the full column count; the frame's
+are the terminal less its padding, so each rung that depends on the last four
+columns arrives four columns later on the live frame than on the board.
+
 That segment carries the mode's own name, and the mark in front of it carries
 the class: `⏵⏵` in add where a mode lets work through, `⏸` in accent where it
 asks first or where nothing can be written at all. Five modes and five words —
