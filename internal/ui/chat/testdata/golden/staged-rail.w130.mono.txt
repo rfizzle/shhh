@@ -15,28 +15,28 @@
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸                                                                                                                          │
 ├─ ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ──────────────────────────────────────────────────────────────────────────────────┤
-╰─ [enter] send · [ctrl+v] attach · [ctrl+/] commands · [shift+tab] change mode · [ctrl+d] ×2 quit · [ctrl+]] keys ──────────╯
+╰─ [enter] send · [ctrl+v] attach · [ctrl+/] commands · [shift+tab] change mode · [ctrl+c] ×2 quit · [ctrl+]] keys ──────────╯
 
 · two screenshots with one name · the handle tells them apart
 ▣ Image#1 clipboard.png 412 KB · ▣ Image#2 clipboard.png 380 KB                                                               
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸                                                                                                                          │
 ├─ ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ──────────────────────────────────────────────────────────────────────────────────┤
-╰─ [enter] send · [ctrl+v] attach · [ctrl+/] commands · [shift+tab] change mode · [ctrl+d] ×2 quit · [ctrl+]] keys ──────────╯
+╰─ [enter] send · [ctrl+v] attach · [ctrl+/] commands · [shift+tab] change mode · [ctrl+c] ×2 quit · [ctrl+]] keys ──────────╯
 
 · one of each kind · only the text has lines to count
 ▣ Image#1 shot.png 412 KB · ≡ File#1 notes.md 2 KB 84 lines · ▤ File#2 spec.pdf 1.1 MB                                        
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸                                                                                                                          │
 ├─ ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ──────────────────────────────────────────────────────────────────────────────────┤
-╰─ [enter] send · [ctrl+v] attach · [ctrl+/] commands · [shift+tab] change mode · [ctrl+d] ×2 quit · [ctrl+]] keys ──────────╯
+╰─ [enter] send · [ctrl+v] attach · [ctrl+/] commands · [shift+tab] change mode · [ctrl+c] ×2 quit · [ctrl+]] keys ──────────╯
 
 · a staged paste · the height is what names it
 ≡ Paste#1 paste-1.txt 4 KB 178 lines                                                                                          
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸                                                                                                                          │
 ├─ ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 · Paste#1 will cost ~1.0k tokens ─────────────────────────────────────────────────┤
-╰─ [enter] send · [ctrl+v] attach · [ctrl+/] commands · [shift+tab] change mode · [ctrl+d] ×2 quit · [ctrl+]] keys ──────────╯
+╰─ [enter] send · [ctrl+v] attach · [ctrl+/] commands · [shift+tab] change mode · [ctrl+c] ×2 quit · [ctrl+]] keys ──────────╯
 
 · a notice above it · transient first, then what rides
 [f2] edit the queue                                                                                                           
@@ -45,7 +45,7 @@ steering   and check the parser
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸                                                                                                                          │
 ├─ ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ──────────────────────────────────────────────────────────────────────────────────┤
-╰─ [enter] send · [ctrl+v] attach · [ctrl+/] commands · [shift+tab] change mode · [ctrl+d] ×2 quit · [ctrl+]] keys ──────────╯
+╰─ [enter] send · [ctrl+v] attach · [ctrl+/] commands · [shift+tab] change mode · [ctrl+c] ×2 quit · [ctrl+]] keys ──────────╯
 
 · reading mode on the strip · the cursor on the second of three chips, the strip's keys under it
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -72,28 +72,28 @@ steering   and check the parser
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                                                                                        ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+v]␛[38;5;244m attach · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[shift+tab]␛[38;5;244m change mode · ␛[38;5;254m[ctrl+d]␛[38;5;244m ×2 quit · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────╯␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+v]␛[38;5;244m attach · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[shift+tab]␛[38;5;244m change mode · ␛[38;5;254m[ctrl+c]␛[38;5;244m ×2 quit · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────╯␛[m
 
 · two screenshots with one name · the handle tells them apart
 ␛[38;5;254m▣ Image#1 clipboard.png␛[38;5;244m 412 KB · ␛[38;5;254m▣ Image#2 clipboard.png␛[38;5;244m 380 KB␛[m                                                               
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                                                                                        ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+v]␛[38;5;244m attach · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[shift+tab]␛[38;5;244m change mode · ␛[38;5;254m[ctrl+d]␛[38;5;244m ×2 quit · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────╯␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+v]␛[38;5;244m attach · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[shift+tab]␛[38;5;244m change mode · ␛[38;5;254m[ctrl+c]␛[38;5;244m ×2 quit · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────╯␛[m
 
 · one of each kind · only the text has lines to count
 ␛[38;5;254m▣ Image#1 shot.png␛[38;5;244m 412 KB · ␛[38;5;254m≡ File#1 notes.md␛[38;5;244m 2 KB 84 lines · ␛[38;5;254m▤ File#2 spec.pdf␛[38;5;244m 1.1 MB␛[m                                        
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                                                                                        ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+v]␛[38;5;244m attach · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[shift+tab]␛[38;5;244m change mode · ␛[38;5;254m[ctrl+d]␛[38;5;244m ×2 quit · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────╯␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+v]␛[38;5;244m attach · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[shift+tab]␛[38;5;244m change mode · ␛[38;5;254m[ctrl+c]␛[38;5;244m ×2 quit · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────╯␛[m
 
 · a staged paste · the height is what names it
 ␛[38;5;254m≡ Paste#1 paste-1.txt␛[38;5;244m 4 KB 178 lines␛[m                                                                                          
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                                                                                        ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51 · Paste#1 will cost ~1.0k tokens␛[m ␛[38;5;244m─────────────────────────────────────────────────┤␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+v]␛[38;5;244m attach · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[shift+tab]␛[38;5;244m change mode · ␛[38;5;254m[ctrl+d]␛[38;5;244m ×2 quit · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────╯␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+v]␛[38;5;244m attach · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[shift+tab]␛[38;5;244m change mode · ␛[38;5;254m[ctrl+c]␛[38;5;244m ×2 quit · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────╯␛[m
 
 · a notice above it · transient first, then what rides
 ␛[38;5;254m[f2] edit the queue␛[m                                                                                                           
@@ -102,7 +102,7 @@ steering   and check the parser
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                                                                                        ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+v]␛[38;5;244m attach · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[shift+tab]␛[38;5;244m change mode · ␛[38;5;254m[ctrl+d]␛[38;5;244m ×2 quit · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────╯␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+v]␛[38;5;244m attach · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[shift+tab]␛[38;5;244m change mode · ␛[38;5;254m[ctrl+c]␛[38;5;244m ×2 quit · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────╯␛[m
 
 · reading mode on the strip · the cursor on the second of three chips, the strip's keys under it
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m

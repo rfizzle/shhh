@@ -288,7 +288,6 @@ type DraftKeys struct {
 
 	Clear  Binding
 	Cancel Binding
-	Quit   Binding
 }
 
 // Draft's keys, in the order the input frame and /help name them.
@@ -384,8 +383,7 @@ var Draft = DraftKeys{
 	// box happens to be empty. Interrupting is the cancel chord's alone
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 	Clear:  bind("esc", "clear the input, or fold what is open", "esc"),
-	Cancel: bind("ctrl+c", "cancel the turn (press twice), then the input", "ctrl+c"),
-	Quit:   bind("ctrl+d", "quit (press twice; a live turn asks)", "ctrl+d"),
+	Cancel: bind("ctrl+c", "stop the run, else clear the input, else quit (press twice)", "ctrl+c"),
 }
 
 // SearchKeys are the input history search's: the incremental reverse search
@@ -1143,7 +1141,6 @@ type SelectKeys struct {
 	Delete  Binding
 	Rename  Binding
 	Cancel  Binding
-	Quit    Binding
 	Palette PaletteKeys
 }
 
@@ -1172,7 +1169,6 @@ var Select = SelectKeys{
 	Delete: bind("x", "delete", "x"),
 	Rename: bind("r", "rename", "r"),
 	Cancel: bind("esc", "cancel", "esc", "ctrl+c"),
-	Quit:   bind("ctrl+d", "quit", "ctrl+d"),
 	Palette: PaletteKeys{
 		Prev:  bind("↑", "move", "up", "ctrl+p"),
 		Next:  bind("↓", "move", "down", "ctrl+n"),

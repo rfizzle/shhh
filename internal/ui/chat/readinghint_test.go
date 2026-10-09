@@ -577,7 +577,7 @@ func TestEscFold_ADraftWithTextIsClearedAndNoRowMoves(t *testing.T) {
 func TestEscFold_RunsUnderAStreamingTurnAndSpendsNoArmedWindow(t *testing.T) {
 	m := escFoldModel(t)
 	m.state = stateStreaming
-	m.armPress(armCancel, "ctrl+c")
+	m.armPress(armQuit, "ctrl+c")
 	was := m.armed
 
 	m, _ = pressKey(t, m, escK)

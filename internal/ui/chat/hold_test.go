@@ -151,10 +151,9 @@ func TestHold_TheCancelChordEndsAHeldTurnRatherThanQuitting(t *testing.T) {
 	m := heldModel(t)
 
 	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
-	if note, ok := m.armedHint(); !ok || !strings.Contains(note.label, "cancels the turn") {
-		t.Fatalf("the first press should arm the cancel, not the quit: %+v", note)
+	if note, ok := m.armedHint(); ok {
+		t.Fatalf("the press gives the turn up and arms no quit: %+v", note)
 	}
-	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	if m.quitting {
 		t.Fatal("the chord quit the session instead of giving the turn up")
 	}
@@ -228,7 +227,7 @@ func TestHold_TheRailSaysHowToLetTheTurnGo(t *testing.T) {
 	for _, want := range []string{
 		keys.Bracket(keys.Draft.Pause) + " resume the turn",
 		keys.Bracket(keys.Draft.Send) + " add to this turn",
-		keys.Bracket(keys.Draft.Cancel) + " ×2 cancel it",
+		keys.Bracket(keys.Draft.Cancel) + " cancel it",
 	} {
 		if !strings.Contains(hints, want) {
 			t.Errorf("the held rail should offer %q, got %q", want, hints)

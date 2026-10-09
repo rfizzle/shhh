@@ -1,0 +1,4 @@
+# One reply per request. The last line repeats once these run out.
+# One command card, then the prose the denial lets the model write.
+tool:execute_command:{"command":"echo hello from the scripted provider"}
+The command was not run, and the session never closed.

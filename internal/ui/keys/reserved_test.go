@@ -55,6 +55,26 @@ func TestKeptChordsAreSpentReservedAndReasoned(t *testing.T) {
 	}
 }
 
+// ctrl+d is end of input in a shell and a tmux chord, so no act of the
+// keyboard shhh ships is bound to it and it is not among the kept chords.
+func TestKeys_CtrlDIsReserved(t *testing.T) {
+	if _, ok := Reservation("ctrl+d"); !ok {
+		t.Fatal("ctrl+d must be reserved")
+	}
+	if _, ok := kept["ctrl+d"]; ok {
+		t.Error("ctrl+d must not be kept: no act of shhh's spends it")
+	}
+	for _, s := range all() {
+		for _, b := range s.Bindings {
+			for _, k := range b.Keys() {
+				if k == "ctrl+d" {
+					t.Errorf("%s: %q is bound to ctrl+d", s.Name, Words(b))
+				}
+			}
+		}
+	}
+}
+
 // Every reserved chord is spelled the way the decoder spells a keystroke —
 // lower case, modifiers in the order ctrl, alt, shift — or the refusal
 // would never match what a file wrote.

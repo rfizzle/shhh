@@ -808,8 +808,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `draft.redraw` | `ctrl+l` | redraw the screen | yes |
 | `draft.answer` | `ctrl+space`, `ctrl+y` | answer it | yes |
 | `draft.clear` | `esc` | clear the input, or fold what is open | yes |
-| `draft.cancel` | `ctrl+c` | cancel the turn (press twice), then the input | yes |
-| `draft.quit` | `ctrl+d` | quit (press twice; a live turn asks) | yes |
+| `draft.cancel` | `ctrl+c` | stop the run, else clear the input, else quit (press twice) | yes |
 | `search.older` | `ctrl+r` | an older match | yes |
 | `search.keep` | `enter` | keep it in the draft | yes |
 | `search.cancel` | `esc`, `ctrl+c` | put the draft back | yes |
@@ -890,7 +889,6 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `select.delete` | `x` | delete | yes |
 | `select.rename` | `r` | rename | yes |
 | `select.cancel` | `esc`, `ctrl+c` | cancel | yes |
-| `select.quit` | `ctrl+d` | quit | yes |
 | `select.palette.prev` | `up`, `ctrl+p` | move | yes |
 | `select.palette.next` | `down`, `ctrl+n` | move | yes |
 | `select.palette.run` | `enter` | run it | yes |

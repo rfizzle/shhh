@@ -1495,23 +1495,28 @@ A conversation quit while held comes back held. The slot remembers that the
 turn was parked and where it had got to, so reopening it is the same place
 rather than an idle prompt with an unanswered round in front of it.
 
-Abandoning work is never one keystroke. A turn in flight is minutes of work,
-and the keys that end things are the keys a reflex produces — so the first
-press of an interrupt opens a short window and the rails say what a second
-press will do; only the second press inside the window cancels, and a window
-that expires costs nothing and says nothing. The cancel chord is that
-interrupt and the only key that is: Esc means go back, and a key that backs
-out of a diff, a menu and a selection cannot also be the one that abandons a
-turn on the press where the draft happened to be empty. So an interrupt costs
-two presses of a chord no reflex produces, and interrupting keeps everything
-the turn already did. Quitting from an idle session takes the same two
-presses. Quitting over a live turn is a real question rather than a window:
-the inline confirm states what will be cancelled and what the autosave keeps,
-and the default is No. Ending the session without quitting asks the same
-question in the same words, because it costs the same thing. Keys that end
-something already scoped — a running command, the permission classifier, a
-decision on its card — keep their single press, because those are reversible
-acts, not abandoned work.
+Quit is one rule, and the rule is `ctrl+c`: the chord everyone already knows
+as cancel-and-exit, escalating one step per press. While a turn works the
+first press stops the run and the foot row says `[ctrl+c] stop the run`;
+what the turn already did is kept. Idle with a draft it clears the draft
+(`[ctrl+c] clear`). Idle with an empty draft the first press arms and a
+second press of the same chord inside the window quits (`[ctrl+c] ×2 quit`);
+a window that expires costs nothing and says nothing. Cancel first, then
+quit: a stop or a clear is a first step and opens no window, so the next
+press after one is a new first press. The window is keyed by the chord that
+opened it, so no other chord completes a quit. Over a card or a picker the
+first press does what it has always done there — backs out, or denies on an
+approval card — and opens the window, so a second `ctrl+c` inside it quits. Esc means go back and is never an interrupt: a key that backs out of a
+diff, a menu and a selection cannot also be the one that stops a turn.
+`ctrl+d` quits nowhere: it is end of input in a shell and a tmux chord, and
+the register reserves it
+([reserved keys](reserved-keys.md)). Typing `/quit` over a live turn is a real
+question rather than a window: the inline confirm states what will be
+cancelled and what the autosave keeps, and the default is No. Ending the
+session without quitting asks the same question in the same words, because it
+costs the same thing. Keys that end something already scoped — a running
+command, the permission classifier, a decision on its card — are single
+presses, because those are reversible acts, not abandoned work.
 
 ### The completion menu
 

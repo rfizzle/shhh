@@ -801,13 +801,26 @@ func TestGolden_PressAgain(t *testing.T) {
 			m = mm.(Model)
 			return m.takeoverPanel(m.contentWidth())
 		}
+		idle := func() string { return promptSurface(goldenModel(t, width)) }
+		drafted := func() string {
+			m := goldenModel(t, width)
+			m.input.SetValue("half a thought")
+			return promptSurface(m)
+		}
+		working := func() string {
+			m := goldenModel(t, width)
+			m.state = stateStreaming
+			return promptSurface(m)
+		}
 		return []golden.Panel{
 			// The key is read from the register rather than written down:
-			// only the cancel chord can arm the interrupt, and a literal
-			// here would go on printing whatever it was written as.
-			{Label: "cancel armed · a second press abandons the turn", View: armed(armCancel, keys.Shown(keys.Draft.Cancel), stateStreaming)},
-			{Label: "quit armed · idle", View: armed(armQuit, keys.Shown(keys.Draft.Quit), stateInput)},
-			{Label: "quit confirm · over a live turn", View: confirm()},
+			// the quit is one chord, and a literal here would go on
+			// printing whatever it was written as.
+			{Label: "idle · empty draft", View: idle()},
+			{Label: "quit armed · idle, empty draft", View: armed(armQuit, quitChord(), stateInput)},
+			{Label: "idle · with a draft", View: drafted()},
+			{Label: "working · the first press stops the run", View: working()},
+			{Label: "quit confirm · /quit over a live turn", View: confirm()},
 		}
 	})
 }

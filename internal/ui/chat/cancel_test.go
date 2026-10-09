@@ -43,42 +43,35 @@ var (
 	escK  = tea.KeyPressMsg{Code: tea.KeyEscape}
 )
 
-func TestCancel_FirstPressArmsSecondCancels(t *testing.T) {
-	m := streamingCancelModel(t)
+// idleCancelModel is a ready session with nothing running and an empty draft:
+// the state the quit's first press is about.
+func idleCancelModel(t *testing.T) Model {
+	t.Helper()
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	return updated.(Model)
+}
 
-	m, _ = pressKey(t, m, ctrlC)
-	if m.state != stateStreaming {
-		t.Fatal("a single ctrl+c must leave the stream live")
-	}
-	if note, ok := m.armedHint(); !ok || note.render() != armedCancelHint() {
-		t.Fatalf("the rail must say what the second press does, got %+v", note)
-	}
+// The first press of the one chord stops a working run, arms nothing, and
+// leaves nothing behind that a second press could mistake for a quit.
+func TestCancel_FirstPressStopsTheRun(t *testing.T) {
+	m := streamingCancelModel(t)
 
 	m, _ = pressKey(t, m, ctrlC)
 	if m.state != stateInput {
-		t.Fatal("the second ctrl+c inside the window must cancel the turn")
+		t.Fatal("the first ctrl+c over a working turn must stop it")
 	}
-}
-
-func TestCancel_ExpiredWindowArmsAgain(t *testing.T) {
-	m := streamingCancelModel(t)
-
-	m, _ = pressKey(t, m, ctrlC)
-	// Advance the clock past the window by moving its deadline behind now.
-	m.armed.deadline = time.Now().Add(-100 * time.Millisecond)
-
-	m, _ = pressKey(t, m, ctrlC)
-	if m.state != stateStreaming {
-		t.Fatal("a press after the window expired must arm again, not cancel")
+	if note, ok := m.armedHint(); ok {
+		t.Fatalf("a stop must open no window, the rail says %+v", note)
 	}
-	if _, ok := m.armedHint(); !ok {
-		t.Fatal("the late press should have re-armed the window")
+	if m.quitting {
+		t.Fatal("a stop must not quit")
 	}
 }
 
 // Esc is the key that leaves whatever is open, so it never stops a turn: on
-// an empty draft under a streaming one it does nothing at all, including to
-// a window the cancel chord opened
+// an empty draft under a streaming one it does nothing at all
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
 func TestCancel_EscOnAnEmptyStreamingDraftIsInert(t *testing.T) {
 	m := streamingCancelModel(t)
@@ -94,19 +87,6 @@ func TestCancel_EscOnAnEmptyStreamingDraftIsInert(t *testing.T) {
 	if m.state != stateStreaming {
 		t.Fatal("a second esc must not cancel the turn either")
 	}
-
-	m, _ = pressKey(t, m, ctrlC)
-	if note, ok := m.armedHint(); !ok || note.render() != armedCancelHint() {
-		t.Fatalf("only the cancel chord arms, and the rail names it: %+v", note)
-	}
-	m, _ = pressKey(t, m, escK)
-	if note, ok := m.armedHint(); !ok || note.render() != armedCancelHint() {
-		t.Fatalf("esc must leave an open window as it found it, got %+v", note)
-	}
-	m, _ = pressKey(t, m, ctrlC)
-	if m.state != stateInput {
-		t.Fatal("the cancel chord's second press must still cancel the turn")
-	}
 }
 
 func TestCancel_EscWithDraftClearsItFirst(t *testing.T) {
@@ -121,23 +101,26 @@ func TestCancel_EscWithDraftClearsItFirst(t *testing.T) {
 		t.Fatal("esc spent on the draft must not touch the turn")
 	}
 	if _, ok := m.armedHint(); ok {
-		t.Fatal("clearing the draft must not arm the cancel")
+		t.Fatal("clearing the draft must not arm the quit")
 	}
 }
 
 func TestCancel_AnotherKeystrokeDisarms(t *testing.T) {
-	m := streamingCancelModel(t)
+	m := idleCancelModel(t)
 
 	m, _ = pressKey(t, m, ctrlC)
 	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: 'x', Text: "x"})
 	m, _ = pressKey(t, m, ctrlC)
-	if m.state != stateStreaming {
+	if m.quitting {
 		t.Fatal("typing between the presses must disarm the window")
+	}
+	if m.input.Value() != "" {
+		t.Fatalf("the press after typing is the clear, got draft %q", m.input.Value())
 	}
 }
 
 func TestCancel_ExpiryMessageRevertsTheHint(t *testing.T) {
-	m := streamingCancelModel(t)
+	m := idleCancelModel(t)
 
 	m, _ = pressKey(t, m, ctrlC)
 	updated, _ := m.Update(armExpiredMsg{seq: m.armed.seq})
@@ -154,12 +137,15 @@ func TestCancel_ExpiryMessageRevertsTheHint(t *testing.T) {
 	}
 }
 
+// Quitting over a live turn by the typed command is a question, not a chord:
+// the confirm names what it would cancel and what the autosave keeps.
 func TestQuit_OverALiveTurnAsksFirst(t *testing.T) {
 	m := streamingCancelModel(t)
 
-	m, _ = pressKey(t, m, ctrlD)
+	next, _ := m.openQuitConfirm()
+	m = next.(Model)
 	if m.state != stateQuitConfirm {
-		t.Fatalf("ctrl+d over a live turn must open the confirm, got state %d", m.state)
+		t.Fatalf("quitting over a live turn must open the confirm, got state %d", m.state)
 	}
 	if m.quitAsk == nil || !strings.Contains(m.quitAsk.Prompt, "cancelled") {
 		t.Fatal("the confirm must say what quitting cancels")
@@ -175,79 +161,165 @@ func TestQuit_OverALiveTurnAsksFirst(t *testing.T) {
 	}
 
 	// Asked again and answered yes, it quits.
-	m, _ = pressKey(t, m, ctrlD)
+	next, _ = m.openQuitConfirm()
+	m = next.(Model)
 	m, cmd = pressKey(t, m, tea.KeyPressMsg{Code: 'y', Text: "y"})
 	if !m.quitting || cmd == nil {
 		t.Fatal("[y] on the quit confirm must emit the quit cmd")
 	}
 }
 
-// A takeover surface leaves the session on the chord rather than leaving the
-// surface, and it does not arm: one press is the answer, because a reader who
-// pressed it over a card was looking at the card and meant it.
-func TestQuit_ASurfaceLeavesOnOnePress(t *testing.T) {
-	m := readyModel(t)
-	m.input.SetValue("/mode")
-	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = updated.(Model)
-	if m.state != statePick {
-		t.Fatalf("/mode should open the picker, got state %d", m.state)
+// Over a card or a picker the chord escalates as it does everywhere: cancel
+// first, then quit. The first press does what the surface lets it do (back
+// out) and opens the quit window; a second press of the same chord inside it
+// quits, and a different key inside the window completes nothing.
+func TestQuit_NeedsTwoOfTheSameChordEverywhere(t *testing.T) {
+	surfaces := []struct {
+		name string
+		open func(t *testing.T) Model
+		held state
+	}{
+		{"a picker", func(t *testing.T) Model {
+			m := readyModel(t)
+			m.input.SetValue("/mode")
+			updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+			return updated.(Model)
+		}, statePick},
+		{"the key list", func(t *testing.T) Model {
+			m := readyModel(t)
+			next, _ := m.openKeyList(keys.OnInput, nil)
+			return next.(Model)
+		}, stateKeyList},
 	}
+	for _, tc := range surfaces {
+		t.Run(tc.name, func(t *testing.T) {
+			m := tc.open(t)
+			if m.state != tc.held {
+				t.Fatalf("setup: want state %d, got %d", tc.held, m.state)
+			}
 
-	m, cmd := pressKey(t, m, ctrlD)
-	if !m.quitting || cmd == nil {
-		t.Fatal("one ctrl+d over a picker must quit")
+			m, _ = pressKey(t, m, ctrlC)
+			if m.quitting {
+				t.Fatal("one ctrl+c must not quit")
+			}
+			if m.state == tc.held {
+				t.Fatal("the first press must do the surface's own cancel")
+			}
+			if !m.armed.openOn(armQuit, quitChord()) {
+				t.Fatal("the first press must open the quit window")
+			}
+
+			// Another key inside the window completes no quit.
+			other, _ := pressKey(t, m, ctrlD)
+			if other.quitting {
+				t.Fatal("ctrl+d inside the window must not quit")
+			}
+
+			m, cmd := pressKey(t, m, ctrlC)
+			if !m.quitting || cmd == nil {
+				t.Fatal("the second ctrl+c inside the window must quit")
+			}
+		})
 	}
 }
 
-// The quit confirm is the exception, because that surface is the question the
-// chord asks: pressing it again must not answer it.
-func TestQuit_TheConfirmIsNotLeftOnTheChord(t *testing.T) {
+// ctrl+c is the one quit and it escalates one step at a time: stop the run,
+// then (draft or none) clear it, then arm, then quit. A stop never becomes a
+// quit by itself, so the press after a stop is a new first press.
+func TestQuit_CtrlCEscalatesAndNeverSkipsAStep(t *testing.T) {
 	m := streamingCancelModel(t)
 
-	m, _ = pressKey(t, m, ctrlD)
-	if m.state != stateQuitConfirm {
-		t.Fatalf("ctrl+d over a live turn must open the confirm, got state %d", m.state)
+	// Working: the first press stops, and nothing is armed.
+	m, _ = pressKey(t, m, ctrlC)
+	if m.state != stateInput || m.quitting {
+		t.Fatalf("working: the first press must stop the run only (state %d, quitting %v)", m.state, m.quitting)
 	}
-	m, cmd := pressKey(t, m, ctrlD)
-	if m.quitting || cmd != nil {
-		t.Fatal("the chord must not answer the confirm it opened")
+	// The window is clear, so the next press is a first press: it arms.
+	m, _ = pressKey(t, m, ctrlC)
+	if m.quitting {
+		t.Fatal("the press after a stop must not quit")
 	}
-	if m.state != stateQuitConfirm {
-		t.Fatalf("the confirm must still be asking, got state %d", m.state)
+	if _, ok := m.armedHint(); !ok {
+		t.Fatal("the press after a stop must arm the quit")
+	}
+	// A run begins inside the open window: the next press stops it and
+	// does not carry the quit out.
+	m.state = stateStreaming
+	m, _ = pressKey(t, m, ctrlC)
+	if m.quitting {
+		t.Fatal("a stop must never become a quit by itself")
+	}
+	if _, ok := m.armedHint(); ok {
+		t.Fatal("a stop must leave the window clear")
+	}
+
+	// Idle with a draft: clears it, arms nothing.
+	m.input.SetValue("half a thought")
+	m, _ = pressKey(t, m, ctrlC)
+	if m.input.Value() != "" || m.quitting {
+		t.Fatalf("idle with a draft: the press must clear it only (draft %q)", m.input.Value())
+	}
+	if _, ok := m.armedHint(); ok {
+		t.Fatal("clearing a draft must not arm the quit")
+	}
+
+	// Idle and empty: arm, then quit.
+	m, _ = pressKey(t, m, ctrlC)
+	if m.quitting {
+		t.Fatal("the first press on an empty idle draft must only arm")
+	}
+	m, cmd := pressKey(t, m, ctrlC)
+	if !m.quitting || cmd == nil {
+		t.Fatal("the second press inside the window must quit")
 	}
 }
 
 func TestQuit_IdleTakesTwoPresses(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
-	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
-	m = updated.(Model)
+	m := idleCancelModel(t)
 
-	m, _ = pressKey(t, m, ctrlD)
+	m, _ = pressKey(t, m, ctrlC)
 	if m.quitting {
-		t.Fatal("a single ctrl+d must not quit")
+		t.Fatal("a single ctrl+c must not quit")
 	}
 	if note, ok := m.armedHint(); !ok || note.render() != armedQuitHint() {
 		t.Fatalf("the rail must offer the second press, got %+v", note)
 	}
 
-	m, cmd := pressKey(t, m, ctrlD)
+	m, cmd := pressKey(t, m, ctrlC)
 	if !m.quitting || cmd == nil {
-		t.Fatal("the second ctrl+d inside the window must quit")
+		t.Fatal("the second ctrl+c inside the window must quit")
+	}
+}
+
+// ctrl+d is reserved, so it quits nowhere: not idle, not twice, not over a
+// working turn.
+func TestQuit_CtrlDQuitsNowhere(t *testing.T) {
+	m := idleCancelModel(t)
+	m, _ = pressKey(t, m, ctrlD)
+	m, _ = pressKey(t, m, ctrlD)
+	if m.quitting {
+		t.Fatal("ctrl+d must not quit an idle session")
+	}
+	if _, ok := m.armedHint(); ok {
+		t.Fatal("ctrl+d must arm nothing")
+	}
+	m = streamingCancelModel(t)
+	m, _ = pressKey(t, m, ctrlD)
+	if m.quitting || m.state != stateStreaming {
+		t.Fatal("ctrl+d must not touch a working turn")
 	}
 }
 
 func TestQuit_ExpiredWindowArmsAgain(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
-	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
-	m = updated.(Model)
+	m := idleCancelModel(t)
 
-	m, _ = pressKey(t, m, ctrlD)
-	m.armed.deadline = time.Now().Add(-100 * time.Millisecond)
+	m, _ = pressKey(t, m, ctrlC)
+	was := clock
+	now := time.Now()
+	clock = func() time.Time { return now.Add(pressAgain + time.Second) }
+	t.Cleanup(func() { clock = was })
 
-	m, cmd := pressKey(t, m, ctrlD)
+	m, cmd := pressKey(t, m, ctrlC)
 	if m.quitting || cmd == nil {
 		t.Fatal("a press after the window expired must arm again, not quit")
 	}
@@ -302,13 +374,9 @@ func TestQuit_StopsACommandTheSessionWasRunning(t *testing.T) {
 	}
 }
 
-// armedCancelHint and armedQuitHint are the two rows an open window puts on
-// the rail, built the way the rail builds them so a change to the grammar
-// moves the test with the code rather than against it.
-func armedCancelHint() string {
-	return hintSeg{key: keys.Shown(keys.Draft.Cancel), label: "again cancels the turn"}.render()
-}
-
+// armedQuitHint is the row an open window puts on the rail, built the way
+// the rail builds it so a change to the grammar moves the test with the code
+// rather than against it.
 func armedQuitHint() string {
-	return hintSeg{key: keys.Shown(keys.Draft.Quit), label: "again quits"}.render()
+	return hintSeg{key: keys.Shown(keys.Draft.Cancel), label: "again quits"}.render()
 }

@@ -149,9 +149,8 @@ var reserved = func() []Reserved {
 // shipped acts' alone (shipped, below): a file that moved some other act
 // onto one of these is refused like any other.
 var kept = map[string]string{
-	"ctrl+c":      "the interrupt is shhh's own in raw mode, and it does what the hand expects on every surface: cancel, back, then quit",
+	"ctrl+c":      "the interrupt is shhh's own in raw mode, and it is the one quit, escalating: stop the run, clear the draft, then press twice to quit",
 	"ctrl+z":      "the suspend is shhh's own in raw mode, and it hands the terminal back the way the shell would",
-	"ctrl+d":      "end of input is shhh's own in raw mode, and it quits the way a shell does",
 	"ctrl+space":  "its alias ctrl+y is the cover where the desktop takes it, which the register says beside it",
 	"ctrl+j":      "the newline's own byte, declared as the cover for shift+enter",
 	"shift+enter": "the key nearly every terminal reports for a newline; ctrl+j covers the ones that do not",

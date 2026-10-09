@@ -1,27 +1,26 @@
 package chat
 
-// Abandoning work takes a second press (
-// docs/interface/surfaces.md#the-input-frame).
+// ctrl+c is the one quit, and it escalates one step per press
+// (docs/interface/surfaces.md#the-input-frame): while a turn works the first
+// press stops the run; idle with a draft it clears the draft; idle with an
+// empty draft the first press arms a short window and a second press of the
+// same chord inside it quits. Over a card or a picker the first press is the
+// surface's own cancel (back, deny) and it opens that window too: cancel
+// first, then quit. Stopping a run is reversible work already kept
+// and autosaved, so it takes one press; leaving the session is the act that
+// takes two, and a stop never becomes a quit by itself — a press that stops
+// the run opens no window, so the next one is a new first press.
 //
-// A turn in flight is minutes of work, and the keys that end it — the
-// interrupt, the quit chord — are exactly the keys a reflex produces. So the
-// first press of one opens a short window and says so on the rails, and only
-// a second press inside the window carries the act out. The window expires
-// silently: a press that was a reflex costs nothing, which is the same
-// judgement the esc invariant makes about exploration
-// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+// The window expires silently: a press that was a reflex costs nothing, which
+// is the same judgement the esc invariant makes about exploration
+// (docs/interface/principles.md#esc-is-always-the-safe-answer). It is keyed
+// by the chord that opened it, so no other chord completes a quit.
 //
-// There is one window, not one per key, and the interrupt's is fed by the
-// cancel chord alone. Esc used to arm it too, which put the one key that
-// leaves every surface in the product — a diff, a menu, a selection — in
-// charge of abandoning a turn whenever the draft happened to be empty. So
-// the key that arms is always the same one now, and the notice always names
-// it.
-//
-// Quitting arms the same machine under its own kind — and quitting over a
-// live turn is not a window at all but a real question, the inline confirm
-// (docs/interface/surfaces.md#the-inline-confirm), because there the second
-// press would destroy the very work the reader may not have noticed running.
+// ctrl+d quits nowhere: it is end of input in a shell and a tmux chord, and
+// is reserved (docs/interface/reserved-keys.md). Typing /quit over a live
+// turn is a real question, the inline confirm
+// (docs/interface/surfaces.md#the-inline-confirm), because the second press
+// there would destroy work the reader may not have noticed running.
 
 import (
 	"fmt"
@@ -39,8 +38,6 @@ type armKind int
 
 const (
 	armNone armKind = iota
-	// armCancel: the next interrupt press cancels the streaming turn.
-	armCancel
 	// armQuit: the next quit press ends the session.
 	armQuit
 	// armRewind: the next esc on the empty idle draft opens the rewind
@@ -74,6 +71,12 @@ func (a armedPress) open(kind armKind) bool {
 	return a.kind == kind && clock().Before(a.deadline)
 }
 
+// openOn is open for the chord that armed it: a window completes only on a
+// press of the key that opened it.
+func (a armedPress) openOn(kind armKind, key string) bool {
+	return a.open(kind) && a.key == key
+}
+
 // armExpiredMsg is the window shutting on its own. The handler repaints, so
 // the hint reverts without waiting for the next keystroke.
 type armExpiredMsg struct{ seq int }
@@ -95,21 +98,15 @@ func (m *Model) armPressFor(kind armKind, key string, window time.Duration) tea.
 // window just shut stays recognisable as stale.
 func (m *Model) disarm() { m.armed = armedPress{kind: armNone, seq: m.armed.seq} }
 
-// armedHint is the offer the rails print while a window is open. Each kind is
-// stated only in the state its second press would act in, so a window the
-// turn outran (the stream ended between presses) says nothing rather than
-// promising a cancel with nothing to cancel.
+// armedHint is the offer the rails print while a window is open. The quit is
+// stated only while nothing works, so a window the turn outran (a turn began
+// between presses, and the next press stops it) says nothing rather than
+// promising a quit the press will not carry out.
 //
 // The key is named, and named in the brackets every other offer on the rail
-// wears: the rail this replaces was already saying `[ctrl+c] ×2 stop the run`
-// before the first press, and a window that answered it in a second notation
-// would read as a different key
-// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// wears (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) armedHint() (hintSeg, bool) {
-	switch {
-	case m.armed.open(armCancel) && (m.turnState() == stateStreaming || m.turnState() == stateCloseGate || m.heldAtBoundary()):
-		return hintSeg{key: m.armed.key, label: "again cancels the turn"}, true
-	case m.armed.open(armQuit) && !m.working():
+	if m.armed.open(armQuit) && !m.working() {
 		return hintSeg{key: m.armed.key, label: "again quits"}, true
 	}
 	return hintSeg{}, false
@@ -156,23 +153,48 @@ func (m *Model) quitNow() tea.Cmd {
 	return m.quitCmd()
 }
 
-// surfaceKey routes a key to the surface holding the keyboard, answering the
-// quit chord ahead of it. Every takeover surface answers that chord the same
-// way — leave the session, not the surface — so it is answered once here
-// rather than at the top of each surface's own key handler, where the copies
-// drifted into cancelling different halves of what was still running.
-//
-// It does not arm. The two-press arming belongs to the draft, where a stray
-// chord is a typo in a sentence; a reader who pressed it over a card was
-// looking at the card and meant it. Two branches of the ladder are not routed
-// through here: the quit confirm, because that surface is the question the
-// chord asks, and the context screen, which has never answered it.
-func (m Model) surfaceKey(msg tea.KeyPressMsg, to func(tea.KeyPressMsg) (tea.Model, tea.Cmd)) (tea.Model, tea.Cmd) {
-	if keys.Match(msg, keys.Draft.Quit) {
+// quitChord is the one quit, as the register spells it.
+func quitChord() string { return keys.Shown(keys.Draft.Cancel) }
+
+// quitPress is the quit's two presses: the first arms the window, a second
+// press of the same chord inside it carries the quit out. prior is the window
+// as it stood before this key, which updateKey consumed on the way in.
+func (m Model) quitPress(prior armedPress) (tea.Model, tea.Cmd) {
+	if prior.openOn(armQuit, quitChord()) {
 		cmd := m.quitNow()
 		return m, cmd
 	}
-	return to(msg)
+	cmd := m.armPress(armQuit, quitChord())
+	return m, cmd
+}
+
+// surfaceKey routes a key to the surface holding the keyboard, answering the
+// quit chord around it. The chord escalates here as it does everywhere:
+// cancel first, then quit. The first press does what the surface has always
+// let it do — back out of a picker, a preview or the key list, deny on an
+// approval card — and opens the quit window; a second press of the same
+// chord inside the window leaves the session. A single press never quits
+// over a card. It is answered once here rather than at the top of each
+// surface's own key handler, where the copies drifted into cancelling
+// different halves of what was still running. Two branches of the ladder are
+// not routed through here: the quit confirm, because that surface is the
+// question the chord asks, and the context screen, which has never answered
+// it.
+func (m Model) surfaceKey(msg tea.KeyPressMsg, to func(tea.KeyPressMsg) (tea.Model, tea.Cmd)) (tea.Model, tea.Cmd) {
+	if !keys.Match(msg, keys.Draft.Cancel) {
+		return to(msg)
+	}
+	if m.pressed.openOn(armQuit, quitChord()) {
+		cmd := m.quitNow()
+		return m, cmd
+	}
+	next, cmd := to(msg)
+	nm, ok := next.(Model)
+	if !ok {
+		return next, cmd
+	}
+	arm := nm.armPress(armQuit, quitChord())
+	return nm, tea.Batch(cmd, arm)
 }
 
 // openQuitConfirm asks before quitting over a live turn: what the quit

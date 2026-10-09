@@ -207,8 +207,7 @@ The chords the keyboard shhh ships spends although the list names them. Each is 
 
 | Chord | Why |
 |---|---|
-| `ctrl+c` | the interrupt is shhh's own in raw mode, and it does what the hand expects on every surface: cancel, back, then quit |
-| `ctrl+d` | end of input is shhh's own in raw mode, and it quits the way a shell does |
+| `ctrl+c` | the interrupt is shhh's own in raw mode, and it is the one quit, escalating: stop the run, clear the draft, then press twice to quit |
 | `ctrl+j` | the newline's own byte, declared as the cover for shift+enter |
 | `ctrl+space` | its alias ctrl+y is the cover where the desktop takes it, which the register says beside it |
 | `ctrl+v` | Windows Terminal's paste is what the chord means there, and pasted text arrives as a paste event |
@@ -216,6 +215,13 @@ The chords the keyboard shhh ships spends although the list names them. Each is 
 | `shift+enter` | the key nearly every terminal reports for a newline; ctrl+j covers the ones that do not |
 
 <!-- END generated reserved keys -->
+
+`ctrl+d` is reserved and spent on nothing. It is end of input in a shell and
+a tmux chord, so a key that quit the session on it would be a key a hand
+trained on either one reaches by reflex. Quit is `ctrl+c` alone: it cancels
+first (stops a run, clears a draft, backs out), then quits on a second press
+of the same chord
+([the input frame](surfaces.md#the-input-frame)).
 
 ## What is left
 

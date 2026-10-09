@@ -46,7 +46,7 @@ import (
 // session boundary resets it with the rest in one call. This is the same
 // guard overlay_test.go puts on the placement table: a table nobody reads is
 // a table that drifts.
-const modelFields = 230
+const modelFields = 231
 
 func TestModelHasAStatedBound(t *testing.T) {
 	got := reflect.TypeOf(Model{}).NumField()
@@ -469,19 +469,19 @@ func TestExit_CtrlD(t *testing.T) {
 	m = updated.(Model)
 
 	// The first press arms the quit window; the second quits.
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if m.quitting {
-		t.Fatal("a single Ctrl+D should arm, not quit")
+		t.Fatal("a single Ctrl+C should arm, not quit")
 	}
-	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
 	if !m.quitting {
-		t.Fatal("Ctrl+D twice should set quitting")
+		t.Fatal("Ctrl+C twice should set quitting")
 	}
 	if cmd == nil {
-		t.Fatal("Ctrl+D twice should return a quit cmd")
+		t.Fatal("Ctrl+C twice should return a quit cmd")
 	}
 }
 
@@ -2525,11 +2525,9 @@ func TestSteering_CtrlCRestoresQueueToInput(t *testing.T) {
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
-	m = updated.(Model)
 
 	if m.state != stateInput {
-		t.Fatal("Ctrl+C twice must keep its hard-cancel semantics")
+		t.Fatal("Ctrl+C must stop the run on the first press")
 	}
 	if len(m.steering) != 0 {
 		t.Fatal("cancel should drain the steering queue")

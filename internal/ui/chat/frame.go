@@ -365,16 +365,9 @@ func (m Model) frameHints(room int) string {
 		hints = []hintSeg{
 			segAs(keys.Draft.Answer, keys.Words(keys.Draft.Answer)),
 			segAs(keys.Draft.Send, "add to this turn"),
-			twoPress(keys.Draft.Cancel, "stop the run"),
+			m.ctrlCHint(),
 		}
 	case m.attachedTo != "":
-		// The quit chord acts on the whole session even from a child, so
-		// its armed window is said here too.
-		if note, ok := m.armedHint(); ok {
-			hints = []hintSeg{note}
-			armed = true
-			break
-		}
 		hints = []hintSeg{
 			segAs(keys.Agent.Detach, "back to your session"),
 			segAs(keys.Draft.Agents, "agents").givesUp(1),
@@ -416,7 +409,7 @@ func (m Model) frameHints(room int) string {
 		hints = []hintSeg{
 			segAs(keys.Draft.Pause, "resume the turn"),
 			segAs(keys.Draft.Send, "add to this turn").givesUp(1),
-			twoPress(keys.Draft.Cancel, "cancel it"),
+			m.ctrlCHint(),
 		}
 	case m.working():
 		// An open two-press window replaces the hints: what the next
@@ -434,7 +427,7 @@ func (m Model) frameHints(room int) string {
 		// rail is the one place that says so, because esc doing nothing
 		// looks exactly like esc being unread.
 		steer := segAs(keys.Draft.Send, "add to this turn")
-		stop := twoPress(keys.Draft.Cancel, "stop the run")
+		stop := m.ctrlCHint()
 		agents := segAs(keys.Draft.Agents, "agents").givesUp(1)
 		active, _ := m.activeAgents()
 		if m.turnState() == stateStreaming {
@@ -481,7 +474,7 @@ func (m Model) frameHints(room int) string {
 			segAs(keys.Draft.Attach, "attach").givesUp(3),
 			segAs(keys.Draft.Palette, "commands").givesUp(1),
 			segAs(keys.Draft.Mode, "change mode"),
-			twoPress(keys.Draft.Quit, "quit").givesUp(2),
+			m.ctrlCHint().givesUp(2),
 		}
 		// A conversation has no mode to cycle, so the rail does not offer
 		// the key for one (conversation.go).
@@ -506,6 +499,25 @@ func (m Model) frameHints(room int) string {
 		hints = append(hints, segAs(keys.Draft.KeyList, keys.Words(keys.Screen.List)).givesUp(1))
 	}
 	return joinSegs(fitSegs(hints, room))
+}
+
+// ctrlCHint is the foot row's one offer for the one quit chord, whatever the
+// press would do now: cancel a held turn, stop a working run, clear a draft,
+// or (idle and empty) arm the quit, whose count is stated before the first
+// press because the first press is silent by design (cancel.go). It is the
+// single place the chord's wording is decided, so a re-ranking of the rail
+// moves the segment's givesUp where it is placed and never the words.
+func (m Model) ctrlCHint() hintSeg {
+	chord := quitChord()
+	switch {
+	case m.heldAtBoundary():
+		return hintSeg{key: chord, label: "cancel it"}
+	case m.working() || m.decisionUngated():
+		return hintSeg{key: chord, label: "stop the run"}
+	case strings.TrimSpace(m.input.Value()) != "":
+		return hintSeg{key: chord, label: "clear"}
+	}
+	return twoPress(keys.Draft.Cancel, "quit")
 }
 
 // slashHint is the command menu as an offer. The slash is not a binding —

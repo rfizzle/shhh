@@ -214,7 +214,7 @@ func TestPalette_AliasFindsItsCommand(t *testing.T) {
 	}
 	// The binding is the row's meta field, right-aligned by the
 	// card rather than padded into the label by this package.
-	if first.meta != "ctrl+d" {
+	if first.meta != "ctrl+c" {
 		t.Fatalf("a command with a key binding should show it, got %q", first.meta)
 	}
 }

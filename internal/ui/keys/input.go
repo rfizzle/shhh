@@ -207,12 +207,7 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 		{
 			Weight: 310,
 			Binds:  []Binding{Draft.Cancel},
-			Help:   `cancel the running turn — press twice, and what the turn already did is kept. Also clears the input, and quits from an empty idle draft (twice again)`,
-		},
-		{
-			Weight: 320,
-			Binds:  []Binding{Draft.Quit},
-			Help:   `quit — press twice; with a turn running it asks first, saying what is cancelled and what the autosave keeps`,
+			Help:   `the one quit, and it escalates one step per press. While a turn works the first press stops the run, and what the turn already did is kept. Idle with text in the box it clears the box. Idle with the box empty the first press arms and the second within two seconds quits; over a picker or a card the first press backs out or denies and opens the same window. A stop never turns into a quit by itself: after a run stops the next press is a first press. Typing /quit asks first when a turn is running. ctrl+d quits nowhere — it is end of input in a shell and a tmux chord`,
 		},
 
 		// What the input answers that the register does not bind: a leading

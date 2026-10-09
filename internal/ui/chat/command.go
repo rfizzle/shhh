@@ -450,7 +450,7 @@ func buildCommands() []*command {
 				return next, tea.Batch(cmd, save)
 			})},
 		{name: "/exit",
-			slash: &slashCommand{aliases: []string{"/quit", "/q"}, desc: "quit (also /quit, /q)", key: keys.Shown(keys.Draft.Quit),
+			slash: &slashCommand{aliases: []string{"/quit", "/q"}, desc: "quit (also /quit, /q)", key: keys.Shown(keys.Draft.Cancel),
 				help: `quit (also /quit, /q)`},
 			aliases: []string{"/quit", "/q"},
 			// A typed command is deliberate, so an idle quit goes straight

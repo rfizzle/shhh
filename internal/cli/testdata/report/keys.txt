@@ -34,8 +34,7 @@
   · redraw           ctrl+l · redraw the screen  [shipped]
   · answer           ctrl+space ctrl+y · answer it  [shipped]
   · clear            esc · clear the input, or fold what is open  [shipped]
-  · cancel           ctrl+c · cancel the turn (press twice), then th…  [shipped]
-  · quit             ctrl+d · quit (press twice; a live turn asks)  [shipped]
+  · cancel           ctrl+c · stop the run, else clear the input, el…  [shipped]
 
   SEARCH
 
@@ -152,7 +151,6 @@
   · delete         x · delete  [shipped]
   · rename         r · rename  [shipped]
   · cancel         esc ctrl+c · cancel  [shipped]
-  · quit           ctrl+d · quit  [shipped]
   · palette.prev   up ctrl+p · move  [shipped]
   · palette.next   down ctrl+n · move  [shipped]
   · palette.run    enter · run it  [shipped]
@@ -351,4 +349,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  258 keys · 1 moved
+  256 keys · 1 moved

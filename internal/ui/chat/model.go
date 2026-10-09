@@ -1262,7 +1262,11 @@ type Model struct {
 	// session boundary. The act is set with the confirm rather than read off
 	// a flag beside it, because a flag can say one thing while the words on
 	// screen say another.
-	armed      armedPress
+	armed armedPress
+	// pressed is the window as it stood when the key now being routed
+	// arrived: every key consumes the open window on its way in, and the
+	// surfaces that answer the quit chord read what it consumed.
+	pressed    armedPress
 	quitAsk    *components.Confirm
 	quitAskYes func(*Model) tea.Cmd
 	// workspace is the directory the session's relative paths belong to. It

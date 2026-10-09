@@ -170,7 +170,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 			Draft.Agents, Draft.Backlog, Draft.NextAgent, Draft.PrevAgent,
 			Draft.Mouse, Draft.KeyList, Draft.Suspend, Draft.Redraw,
 			Draft.Answer, Draft.Clear,
-			Draft.Cancel, Draft.Quit}},
+			Draft.Cancel}},
 		{"Search", []Binding{Search.Older, Search.Keep, Search.Cancel}},
 		{"Reading", Reading.All()},
 		{"Find", Find.All()},

@@ -94,6 +94,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	// answered a card — was not confirming anything. The draft's own
 	// handlers below read the captured value and re-arm as their answer.
 	armed := m.armed
+	m.pressed = armed
 	m.disarm()
 	// And every key clears the fold's account of the press before it, and
 	// the mouse chord is answered ahead of every surface (pointerstate.go).
@@ -205,17 +206,6 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		return answered(m.openTodoScreen())
 	}
 	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Draft.Quit):
-		// Quitting over a live turn is a question, not a chord: the
-		// confirm names what it would cancel and what the autosave
-		// keeps (docs/interface/surfaces.md#the-inline-confirm).
-		if m.working() {
-			return answered(m.openQuitConfirm())
-		}
-		if armed.open(armQuit) {
-			return m, m.quitNow(), true
-		}
-		return m, m.armPress(armQuit, keys.Shown(keys.Draft.Quit)), true
 	case keys.Is(pressed, keys.Draft.Cancel):
 		// While attached, Ctrl+C acts on the child: cancel its turn.
 		if m.attachedTo != "" {
@@ -241,29 +231,20 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			return m, nil, true
 		}
 		if m.state == stateStreaming || m.state == stateCloseGate {
-			// The first press arms the cancel and the rails say so;
-			// only a second within the window abandons the turn
-			// (docs/interface/surfaces.md#the-input-frame). The
-			// scoped cancels — a child, the classifier, a running
-			// command, and a compaction, which costs one summary
-			// request and keeps the conversation — stay single-press:
-			// those are reversible acts, not minutes of work.
-			if m.compacting || armed.open(armCancel) {
-				return answered(m.cancelTurnNow())
-			}
-			return m, m.armPress(armCancel, keys.Shown(keys.Draft.Cancel)), true
+			// The first press stops the run and arms nothing: what the
+			// turn already did is kept and autosaved, and a stop never
+			// becomes a quit by itself, so the next press is a new
+			// first press (cancel.go).
+			return answered(m.cancelTurnNow())
 		}
 		if m.heldAtBoundary() {
 			// A held turn is what the chord has to reach next: the turn
-			// is parked rather than finished, and without this the two
-			// presses fall through to the empty idle draft below and
-			// quit the session instead of giving the turn up (hold.go).
-			if armed.open(armCancel) {
-				m.dropHold()
-				m.setTurnState(stateStreaming)
-				return answered(m.cancelTurnNow())
-			}
-			return m, m.armPress(armCancel, keys.Shown(keys.Draft.Cancel)), true
+			// is parked rather than finished, and without this the
+			// press falls through to the empty idle draft below and
+			// arms a quit instead of giving the turn up (hold.go).
+			m.dropHold()
+			m.setTurnState(stateStreaming)
+			return answered(m.cancelTurnNow())
 		}
 		if m.decisionUngated() {
 			// Ctrl+C keeps the meaning the card has always given it: it
@@ -278,11 +259,9 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			return m, nil, true
 		}
 		// An empty idle draft: the chord means quit, and quitting is
-		// two presses like every other way of walking away.
-		if armed.open(armQuit) {
-			return m, m.quitNow(), true
-		}
-		return m, m.armPress(armQuit, keys.Shown(keys.Draft.Cancel)), true
+		// two presses of the same chord like every other way of walking
+		// away.
+		return answered(m.quitPress(armed))
 	case keys.Is(pressed, keys.Draft.Mode):
 		// Cycle the permission mode; attached, it cycles the
 		// child's mode clamped to the orchestrator's ceiling. A

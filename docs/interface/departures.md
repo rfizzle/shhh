@@ -26,9 +26,25 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**47 open gaps · 24 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 24 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
+
+## Quit is ctrl+c twice, and ctrl+d quits nowhere
+
+_Filed 2026-10-09 · closes by the artboard_
+
+*A disagreement.* The frame artboards draw the idle foot row's last offer as
+`[ctrl+d] ×2 quit`. The binary draws `[ctrl+c] ×2 quit`, and `ctrl+d` quits
+nowhere.
+
+The reason is what each chord is known for. `ctrl+c` is the chord everyone
+knows as cancel-and-exit, so it escalates the way it does in every terminal
+program: it stops a working run, clears a draft, backs out of or denies a surface,
+then quits on a second press of the same chord. `ctrl+d` is end of input in a shell and a
+tmux chord, so it goes back to the register as reserved
+([reserved keys](reserved-keys.md)). The artboard closes the departure by
+drawing the offer as `[ctrl+c] ×2 quit`.
 
 ## The transcript search has no filter view
 

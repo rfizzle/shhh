@@ -181,16 +181,16 @@ func TestModePick_BareModeOpensPickerAndApplies(t *testing.T) {
 	}
 }
 
-func TestPick_CtrlDQuits(t *testing.T) {
+func TestPick_CtrlDQuitsNowhere(t *testing.T) {
 	m := readyModel(t)
 	m.input.SetValue("/mode")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
 	m = updated.(Model)
-	if !m.quitting || cmd == nil {
-		t.Fatal("ctrl+d in a picker should quit")
+	if m.quitting {
+		t.Fatal("ctrl+d in a picker must not quit")
 	}
 }
 

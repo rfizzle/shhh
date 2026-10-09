@@ -26,5 +26,5 @@ snap 03b-allowed "auto-allowed · conversation read"
 keys q
 keys BTab
 snap 04-one-mode "A conversation has one mode" "⏸ read-only"
-keys C-d
-keys C-d
+keys C-c
+keys C-c

@@ -10,7 +10,7 @@
 # rail under a command that is still running, and the window an armed cancel
 # opens over both. The keys are info and the words beside them grey in the
 # picture; the .txt is the notation and the shed order.
-snap 01-start "Some things worth doing first" "[ctrl+d] ×2 quit"
+snap 01-start "Some things worth doing first" "[ctrl+c] ×2 quit"
 # The idle rail first, so the rail a reader meets before anything happens is
 # the one the rest are read against.
 keys "watch the suite while it runs" Enter
@@ -19,18 +19,14 @@ sleep 1
 keys y
 # The command is a wait, so the turn stays open long enough for the working
 # rail to be read whole.
-snap 03-working "[ctrl+c] ×2 stop the run" "[enter] add to this turn"
-# The hold parks the turn at the round boundary the wait ends at, which is the
-# one state where the cancel chord arms rather than acting at once — a running
-# command is cancelled by a single press, being a reversible act rather than
-# minutes of work (cancel.go).
+snap 03-working "[ctrl+c] stop the run" "[enter] add to this turn"
+# The hold parks the turn at the round boundary the wait ends at; the chord
+# gives it up on the first press, as it stops any working run (cancel.go).
 keys C-p
 snap 04-holding "holding after this round"
 snap 05-held "⏸ held"
 keys C-c
-snap 06-armed "again cancels the turn" "[ctrl+c] again cancels the turn"
-keys C-c
-snap 07-idle "[ctrl+d] ×2 quit" "[enter] send"
+snap 07-idle "[ctrl+c] ×2 quit" "[enter] send"
 # And the session ends the way every scene ends: the cancel chord, twice, with
 # the window between the presses saying which key it is waiting for.
 keys C-c

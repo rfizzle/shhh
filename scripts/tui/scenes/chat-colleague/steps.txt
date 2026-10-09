@@ -30,6 +30,6 @@ keys y
 # And the child runs in the lane every spawn gets.
 snap 05-lane "The security reviewer is reading the token check."
 snap 06-working "running · 1 tool" "◇ sec-1 ·"
-keys C-d
+keys C-c
 snap 07-quit-armed "again quits"
-keys C-d
+keys C-c
