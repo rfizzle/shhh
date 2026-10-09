@@ -160,14 +160,14 @@ func (m Model) receiptOf(e entry) receipt.Receipt {
 		}
 		return receipt.Build(receipt.Call{Args: e.text, Result: e.toolResult, Exec: &ended})
 	}
-	return m.callReceipt(e.toolName, e.toolArgs, e.toolResult)
+	return m.callReceipt(e.toolName, e.toolArgs, e.toolResult, gateValue(e.gate))
 }
 
 // callReceipt is the receipt of one tool call, told what this session knows
 // about the server the tool belongs to, if any.
-func (m Model) callReceipt(name, args, result string, atts ...provider.Attachment) receipt.Receipt {
+func (m Model) callReceipt(name, args, result string, value json.RawMessage, atts ...provider.Attachment) receipt.Receipt {
 	served := m.mcp.Has != nil && m.mcp.Has(name)
-	return receipt.Build(receipt.Call{Name: name, Args: args, Result: result,
+	return receipt.Build(receipt.Call{Name: name, Args: args, Result: result, Value: value,
 		Served: served, ReadOnly: served && m.mcp.ReadOnly(name), Attachments: atts})
 }
 
@@ -196,7 +196,7 @@ func activityKind(k receipt.Kind) components.ActivityKind {
 // toolKind is the glyph of a call to the named tool, for a caller that has
 // no result to read: the card a call is put to.
 func (m Model) toolKind(name string) components.ActivityKind {
-	return activityKind(m.callReceipt(name, "", "").Kind)
+	return activityKind(m.callReceipt(name, "", "", nil).Kind)
 }
 
 func formatDuration(d time.Duration) string {
@@ -654,7 +654,7 @@ func (m Model) fetchWaitRow(width int) (string, bool) {
 	if !ok {
 		return "", false
 	}
-	rc := m.callReceipt(call.Name, call.Arguments, "")
+	rc := m.callReceipt(call.Name, call.Arguments, "", nil)
 	row := components.ActivityRow{
 		Kind:    activityKind(rc.Kind),
 		State:   components.ActivityRunning,

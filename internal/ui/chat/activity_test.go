@@ -234,7 +234,7 @@ func TestActivityKinds_ServerCallsDrawByTheUsersWord(t *testing.T) {
 	if got := m.toolKind("gh__create_issue"); got != components.ActivityRemote {
 		t.Fatalf("gated server call kind = %d, want remote", got)
 	}
-	if got := m.callReceipt("gh__create_issue", "", "").Verb; got != "mcp" {
+	if got := m.callReceipt("gh__create_issue", "", "", nil).Verb; got != "mcp" {
 		t.Fatalf("verb = %q", got)
 	}
 	if got := digest.Arg("gh__create_issue", `{"title":"Bug","body":"long\ntext"}`); got != "gh create_issue body=long text title=Bug" {
@@ -1142,7 +1142,7 @@ func TestActivityRow_TheGateRowCountsItsChecks(t *testing.T) {
 		{Name: "test"}, {Name: "vet"}, {Name: "lint"}, {Name: "fmt-check"}, {Name: "docs-check"},
 	}}
 	row := m.activityRowFor(entry{kind: entryTool, toolName: quality.ToolName,
-		toolArgs: `{"action":"run","suite":"default"}`, toolResult: res.Format(res.Fingerprint)})
+		toolArgs: `{"action":"run","suite":"default"}`, toolResult: res.Format(res.Fingerprint), gate: heldSummary(res)})
 	if want := "quality gate · default · 5 checks"; row.Target != want {
 		t.Errorf("finished gate row: target = %q, want %q", row.Target, want)
 	}
@@ -1158,7 +1158,7 @@ func TestActivityRow_TheGateRowCountsItsChecks(t *testing.T) {
 	fell := &quality.Result{Suite: "fast", Verdict: quality.VerdictFail,
 		Checks: []quality.CheckResult{{Name: "test", ExitCode: 1}}}
 	row = m.activityRowFor(entry{kind: entryTool, toolName: quality.ToolName,
-		toolArgs: `{"action":"run"}`, toolResult: fell.Format(fell.Fingerprint)})
+		toolArgs: `{"action":"run"}`, toolResult: fell.Format(fell.Fingerprint), gate: heldSummary(fell)})
 	if want := "quality gate · fast · 1 check"; row.Target != want {
 		t.Errorf("gate row that named no suite: target = %q, want %q", row.Target, want)
 	}

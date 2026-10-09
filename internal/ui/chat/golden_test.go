@@ -4701,7 +4701,7 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 						toolResult: "--- FAIL: TestLoopRounds\n    loop_test.go:214: want 3 rounds, got 4"})
 				}
 				if stage == "recovered" || stage == "regressed" || stage == "completed" || stage == "flaky" {
-					appendGateText(&m, gateResult("PASS", 5, 5))
+					appendGateRow(&m, gateSummary("PASS", 5, 5))
 				}
 				if stage == "regressed" || stage == "flaky" {
 					// Something new breaks after the pass. The two answered

@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -788,9 +789,9 @@ func TestExcerpt(t *testing.T) {
 	}
 }
 
-// Summarize reads back what Format writes: the round trip is the
-// point, so the fixtures here are real runs rather than hand-typed strings.
-func TestSummarize_RoundTripsAFormattedResult(t *testing.T) {
+// The summary a real run holds, and the value it travels as: the fixtures
+// here are real runs rather than hand-typed results.
+func TestSummary_OfARealRunSurvivesItsValue(t *testing.T) {
 	ws := t.TempDir()
 	writeConfig(t, ws, `{"suites": {
 		"good": {"checks": [{"name": "ok", "exe": "sh", "args": ["-c", "echo fine"]}]},
@@ -802,29 +803,29 @@ func TestSummarize_RoundTripsAFormattedResult(t *testing.T) {
 	r := &Runner{Workspace: ws}
 
 	res := mustRun(t, r, "good")
-	s, ok := Summarize(res.Format(res.Fingerprint))
+	s, ok := SummaryOf(res.Summary(res.Fingerprint).Value())
 	if !ok {
-		t.Fatal("a formatted pass should summarize")
+		t.Fatal("a pass should summarize")
 	}
 	if s.Suite != "good" || s.Verdict != VerdictPass || !s.OK() {
 		t.Fatalf("pass summary = %+v", s)
 	}
 	if s.Passed != 1 || s.Total != 1 || s.Duration == "" {
-		t.Fatalf("the tally and duration should survive the round trip: %+v", s)
+		t.Fatalf("the tally and duration should survive the value: %+v", s)
 	}
 
 	res = mustRun(t, r, "bad")
-	if s, _ = Summarize(res.Format(res.Fingerprint)); s.Verdict != VerdictFail || s.Passed != 1 || s.Total != 2 || s.OK() {
+	if s, _ = SummaryOf(res.Summary(res.Fingerprint).Value()); s.Verdict != VerdictFail || s.Passed != 1 || s.Total != 2 || s.OK() {
 		t.Fatalf("fail summary = %+v", s)
 	}
 }
 
-func TestSummarize_AStalePassIsNotAPass(t *testing.T) {
+func TestSummary_AStalePassIsNotAPass(t *testing.T) {
 	res := &Result{
 		Suite: "default", Verdict: VerdictPass, ChangedDuringRun: true,
 		Checks: []CheckResult{{Name: "ok"}},
 	}
-	s, ok := Summarize(res.Format(res.Fingerprint))
+	s, ok := SummaryOf(res.Summary(res.Fingerprint).Value())
 	if !ok || !s.Stale {
 		t.Fatalf("a verdict the run disowned is stale, got %+v (ok=%v)", s, ok)
 	}
@@ -833,15 +834,33 @@ func TestSummarize_AStalePassIsNotAPass(t *testing.T) {
 	}
 }
 
-func TestSummarize_RejectsAnythingElse(t *testing.T) {
-	for _, in := range []string{
-		"", "error: no such tool",
-		"No gate runs this session yet. Suites are defined in .shhh/quality.json.",
-		"A gate run (suite \"default\") is in progress; ask again shortly.",
-	} {
-		if s, ok := Summarize(in); ok {
-			t.Errorf("Summarize(%q) should report false, got %+v", in, s)
+func TestSummaryOf_RejectsAnythingElse(t *testing.T) {
+	for _, in := range []string{"", "null", "{}", `"text"`, "not json", `{"Suite":"x"}`} {
+		if s, ok := SummaryOf(json.RawMessage(in)); ok {
+			t.Errorf("SummaryOf(%q) should report false, got %+v", in, s)
 		}
+	}
+}
+
+// A gate call's result leaves its summary beside the text for the loop that
+// records it, under the text it was written in, whichever action asked.
+func TestExecuteTool_LeavesTheSummaryBesideTheText(t *testing.T) {
+	ws := t.TempDir()
+	writeConfig(t, ws, `{"suites": {"good": {"checks": [{"name": "ok", "exe": "sh", "args": ["-c", "echo fine"]}]}}}`)
+	r := &Runner{Workspace: ws}
+	for _, action := range []string{`{"action":"run","suite":"good"}`, `{"action":"result"}`} {
+		_, err := r.ExecuteTool(json.RawMessage(action))
+		if err != nil {
+			t.Fatalf("%s: %v", action, err)
+		}
+		s, ok := SummaryOf(provider.TakeValue(ToolName, action))
+		if !ok || s.Suite != "good" || s.Verdict != VerdictPass || s.Total != 1 {
+			t.Errorf("%s: value = %+v, %v; want the good suite's pass", action, s, ok)
+		}
+	}
+	_, _ = (&Runner{Workspace: t.TempDir()}).ExecuteTool(json.RawMessage(`{"action":"result"}`))
+	if provider.TakeValue(ToolName, `{"action":"result"}`) != nil {
+		t.Error("a sentence that is not a gate result carries no value")
 	}
 }
 

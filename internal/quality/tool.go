@@ -60,13 +60,14 @@ func Describers() map[string]describe.Describer {
 // scanning the column knows how much was verified without opening anything
 // (docs/interface/principles.md#one-grid).
 //
-// The suite comes off the verdict rather than off the call once there is a
-// verdict to read, because a run that named no suite fell back to the
-// configured default and the row would otherwise never say which one that was.
+// The suite comes off the verdict (the value the result carried, not its
+// text) rather than off the call once there is a verdict to read, because a
+// run that named no suite fell back to the configured default and the row
+// would otherwise never say which one that was.
 // Everything else — a re-report, a run still in flight, a call that was
 // refused — has no verdict, and keeps the subject the arguments gave it.
 func gateSubject(c describe.Call) string {
-	s, ok := Summarize(c.Result)
+	s, ok := SummaryOf(c.Value)
 	if !ok || s.Suite == "" {
 		return c.Arg
 	}
@@ -99,9 +100,13 @@ func (r *Runner) executeTool(ctx context.Context, args json.RawMessage) (string,
 		if err != nil {
 			return "", err
 		}
-		return res.Format(res.Fingerprint), nil
+		text := res.Format(res.Fingerprint)
+		provider.NoteValue(ToolName, args, res.Summary(res.Fingerprint).Value())
+		return text, nil
 	case "result":
-		return r.Status(), nil
+		text, value := r.status()
+		provider.NoteValue(ToolName, args, value)
+		return text, nil
 	}
 	return "", fmt.Errorf("unknown action %q (valid: run, result)", a.Action)
 }

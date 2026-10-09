@@ -10,7 +10,10 @@
 // (docs/architecture.md#one-agent-several-front-ends).
 package describe
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // Kind is what sort of act a call was: the closed set a front-end chooses a
 // glyph and the mutation rail by. Three kinds of read are told apart — a read
@@ -88,6 +91,10 @@ type Call struct {
 	Arg string
 	// Result is what came back, or nothing yet.
 	Result string
+	// Value is what the result carried beside its text, as the tool encoded
+	// it (provider.Message.Value). A describer whose subject depends on the
+	// outcome reads it here rather than parsing Result.
+	Value json.RawMessage
 }
 
 // Describer is what one tool declares about how its calls read.

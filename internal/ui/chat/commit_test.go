@@ -617,7 +617,7 @@ func TestProposedCommitMessage_ReadsTheTurnAndThePaths(t *testing.T) {
 // be a line nobody is looking at.
 func TestChecksRow_NamesTheRerunOnlyForASuite(t *testing.T) {
 	gate := []entry{{kind: entryTool, toolName: quality.ToolName,
-		toolResult: `Quality gate "default": PASS — 4/4 checks passed (1s)`}}
+		gate: gateSummary("PASS", 4, 4)}}
 	if c := turnChecksRow(gate, true); c == nil || c.Again != "/gate run default" {
 		t.Fatalf("a gate verdict names /gate run for its suite, got %+v", c)
 	}

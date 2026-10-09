@@ -42,7 +42,11 @@ type ToolResult struct {
 	// message, so the providers that can show the model a picture do, and the
 	// ones that cannot are left with the notice the tool wrote.
 	Attachments []provider.Attachment
-	Duration    time.Duration
+	// Value is what the result carries beside its text
+	// (provider.Message.Value): the quality gate's verdict, which the rows
+	// read in place of the text.
+	Value    json.RawMessage
+	Duration time.Duration
 }
 
 // DefaultMaxToolRounds bounds how many consecutive tool-call rounds one user
@@ -446,6 +450,7 @@ func (a *Agent) ExecuteCalls(calls []provider.ToolCall) []ToolResult {
 				Call:        tc,
 				Result:      result,
 				Attachments: attachment.TakeResult(result),
+				Value:       provider.TakeValue(tc.Name, tc.Arguments),
 				Duration:    time.Since(start),
 			}
 		}(i, tc)
@@ -481,6 +486,7 @@ func (a *Agent) RecordAutoResults(results []ToolResult) {
 			Content:     r.Result,
 			ToolCallID:  r.Call.ID,
 			Attachments: r.Attachments,
+			Value:       r.Value,
 		})
 	}
 	a.executing = false
@@ -506,18 +512,23 @@ func (a *Agent) NextApproval() (provider.ToolCall, bool) {
 }
 
 // ResolveApproval records content as the head approval's tool result — its
-// output, a decline, or an argument error — and pops it from the queue.
-func (a *Agent) ResolveApproval(content string) {
+// output, a decline, or an argument error — and pops it from the queue. It
+// returns the value the result carried beside its text, which the message
+// now holds and the caller's row reads.
+func (a *Agent) ResolveApproval(content string) json.RawMessage {
 	if len(a.queue) == 0 {
-		return
+		return nil
 	}
+	value := provider.TakeValue(a.queue[0].Name, a.queue[0].Arguments)
 	a.Append(provider.Message{
 		Role:       provider.RoleTool,
 		Content:    content,
 		ToolCallID: a.queue[0].ID,
+		Value:      value,
 	})
 	a.queue = a.queue[1:]
 	a.pending = a.queue
+	return value
 }
 
 // CancelTurn aborts the current round: outstanding calls get synthetic error

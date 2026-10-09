@@ -132,7 +132,7 @@ func Build(c Call) Receipt {
 	if r.gitVerb != "" {
 		r.Verb = r.gitVerb
 	}
-	read := describe.Call{Name: c.Name, Args: c.Args, Arg: r.arg, Result: c.Result}
+	read := describe.Call{Name: c.Name, Args: c.Args, Arg: r.arg, Result: c.Result, Value: c.Value}
 	r.Subject = r.arg
 	if d.Subject != nil {
 		r.Subject = d.Subject(read)

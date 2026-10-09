@@ -638,7 +638,7 @@ func (s *Supervisor) newHeadless(c *child) *agent.Headless {
 			s.emitUpdate(c)
 		},
 		OnToolResult: func(r agent.ToolResult) {
-			c.settleToolEntry(r.Call.ID, r.Result)
+			c.settleToolEntry(r.Call.ID, r.Result, r.Value)
 			c.noteWrite(r.Call, r.Result)
 			if c.rec.ToolCall != nil {
 				outcome, class := observe.ToolOutcome(r.Result)

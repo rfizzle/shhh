@@ -7,13 +7,12 @@ import (
 	"time"
 )
 
-// Summarize is the one reader of the text Format writes, for the gate rows
-// that exist only as text. A word Format adds for the model must not stop a
+// The summary is what the screen reads of a gate result, and it rides beside
+// the text as a value. A word Format adds for the model must not stop a
 // verdict counting on the screen, so every check state and every staleness
-// Format can write is read back here, and the reading has to agree both with
-// the values the result holds and with Result.Summary, which the rows that
-// hold the result read instead.
-func TestFormat_SummarizeReadsEveryLineFormatWrites(t *testing.T) {
+// is held here by the values the result holds, and the value the summary
+// travels as reads back as the same answer.
+func TestResult_SummaryOverEveryCheckStateSurvivesItsValue(t *testing.T) {
 	clean := Fingerprint{Repo: true, Head: "abc", StatusHash: "s1"}
 	moved := Fingerprint{Repo: true, Head: "abc", StatusHash: "s2"}
 	unhashed := Fingerprint{Repo: true, Head: "abc", Unhashed: true}
@@ -82,26 +81,22 @@ func TestFormat_SummarizeReadsEveryLineFormatWrites(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			text := tc.res.Format(tc.current)
-			got, ok := Summarize(text)
-			if !ok {
-				t.Fatalf("Summarize did not recognise Format's text:\n%s", text)
+			held := tc.res.Summary(tc.current)
+			if held != tc.want {
+				t.Errorf("Result.Summary = %+v, want %+v, over:\n%s", held, tc.want, tc.res.Format(tc.current))
 			}
-			if got != tc.want {
-				t.Errorf("Summarize read %+v, want %+v, from:\n%s", got, tc.want, text)
-			}
-			if held := tc.res.Summary(tc.current); held != got {
-				t.Errorf("Result.Summary = %+v, but the text reads back as %+v", held, got)
+			got, ok := SummaryOf(held.Value())
+			if !ok || got != held {
+				t.Errorf("the value reads back as %+v, %v; want %+v", got, ok, held)
 			}
 		})
 	}
 }
 
 // Format writes the suite with %q, so a name holding a quote or a backslash
-// reaches the text escaped. The reader takes the whole quoted token and
-// unquotes it, so the name comes back exactly as the suite is called — even
-// one that carries the header's own shape — rather than the row going unread.
-func TestFormat_AQuotedSuiteNameRoundTrips(t *testing.T) {
+// reaches the text escaped, and the value carries the name exactly as the
+// suite is called — even one that carries the header's own shape.
+func TestFormat_AQuotedSuiteNameIsEscapedAndKeptByItsValue(t *testing.T) {
 	tests := []struct {
 		name, suite, header string
 	}{
@@ -116,20 +111,17 @@ func TestFormat_AQuotedSuiteNameRoundTrips(t *testing.T) {
 			if first := strings.SplitN(text, "\n", 2)[0]; first != tc.header {
 				t.Fatalf("Format's first line = %q, want %q", first, tc.header)
 			}
-			got, ok := Summarize(text)
-			if !ok {
-				t.Fatalf("Summarize did not recognise Format's text:\n%s", text)
-			}
+			got, ok := SummaryOf(res.Summary(Fingerprint{}).Value())
 			want := Summary{Suite: tc.suite, Verdict: VerdictPass, Passed: 1, Total: 1, Duration: "1s"}
-			if got != want {
-				t.Errorf("Summarize read %+v, want %+v", got, want)
+			if !ok || got != want {
+				t.Errorf("the value read %+v, %v; want %+v", got, ok, want)
 			}
 		})
 	}
 }
 
 // A flake is worded once, in the check's line, and counted once, on the first
-// line, where both readers of the text find it. The verdict stays pass: the
+// line, and the summary counts it the same. The verdict stays pass: the
 // rerun passed, and that is the only reason it does.
 func TestFormat_AFlakeIsOnTheLineAndInTheSummary(t *testing.T) {
 	res := Result{Suite: "default", Verdict: VerdictPass, Duration: 2100 * time.Millisecond,
@@ -152,9 +144,8 @@ func TestFormat_AFlakeIsOnTheLineAndInTheSummary(t *testing.T) {
 	if strings.Contains(text, "TestLanding") {
 		t.Errorf("a check that counts as passed carries no failure excerpt inline:\n%s", text)
 	}
-	s, ok := Summarize(text)
-	if !ok || s.Flaked != 1 || s.Passed != 4 || !s.OK() {
-		t.Errorf("Summarize = %+v, %v; want 4 passed, 1 flaked, a pass", s, ok)
+	if s := res.Summary(res.Fingerprint); s.Flaked != 1 || s.Passed != 4 || !s.OK() {
+		t.Errorf("Summary = %+v; want 4 passed, 1 flaked, a pass", s)
 	}
 }
 
@@ -179,8 +170,8 @@ func TestFormat_TheFlakedLineSaysHowManyTimesBefore(t *testing.T) {
 			if !strings.Contains(text, tc.want) {
 				t.Errorf("Format lacks %q:\n%s", tc.want, text)
 			}
-			if s, _ := Summarize(text); s.FlakedBefore != tc.before || !s.OK() {
-				t.Errorf("Summarize = %+v; want %d before, a pass", s, tc.before)
+			if s := res.Summary(res.Fingerprint); s.FlakedBefore != tc.before || !s.OK() {
+				t.Errorf("Summary = %+v; want %d before, a pass", s, tc.before)
 			}
 		})
 	}

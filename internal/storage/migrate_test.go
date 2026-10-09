@@ -36,6 +36,7 @@ var releasedMigrations = []string{
 	"01aea1e77eff5f44", // 51: proposals_declined
 	"8a824f224d138d5c", // 52: agent_sessions.classifier_backend
 	"1ecc266b88dca342", // 53: chat_sessions.handoff
+	"849da27ff7ef403d", // 54: chat_messages.value
 }
 
 func migrationDigest(m string) string {

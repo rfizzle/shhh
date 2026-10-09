@@ -392,8 +392,8 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 				continue
 			}
 			m.appendCallRow(r.Call.ID, entry{kind: entryTool, toolName: r.Call.Name, toolArgs: r.Call.Arguments,
-				toolResult: r.Result, duration: r.Duration})
-			m.appendPicture(r.Call.ID, m.callReceipt(r.Call.Name, r.Call.Arguments, r.Result, r.Attachments...))
+				toolResult: r.Result, duration: r.Duration, gate: gateOf(r.Call.Name, r.Value)})
+			m.appendPicture(r.Call.ID, m.callReceipt(r.Call.Name, r.Call.Arguments, r.Result, r.Value, r.Attachments...))
 		}
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
@@ -802,7 +802,7 @@ func (m Model) finishApprovedTool(msg approvedToolDoneMsg) (tea.Model, tea.Cmd) 
 	}
 	req := m.approval.request
 	m.approval.request = nil
-	m.agent.ResolveApproval(msg.result)
+	value := m.agent.ResolveApproval(msg.result)
 	m.recordToolResult(req.call, msg.duration, msg.result)
 	// A git write is gated at the write tier, so this is the one place a
 	// switch lands.
@@ -821,7 +821,7 @@ func (m Model) finishApprovedTool(msg approvedToolDoneMsg) (tea.Model, tea.Cmd) 
 	row := entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments,
 		toolResult: msg.result, duration: msg.duration,
 		allowedBy: req.autoRule, allowElapsed: req.autoCost,
-		callSeq: m.callPlace(req.call.ID)}
+		callSeq: m.callPlace(req.call.ID), gate: gateOf(req.call.Name, value)}
 	if req.autoRule == "" {
 		row.approvedBy = decidedByYou
 	}

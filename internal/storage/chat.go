@@ -329,8 +329,8 @@ func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.
 		return fmt.Errorf("clear branch folded: %w", err)
 	}
 	if _, err := tx.Exec(
-		`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint, machine_kind)
-		 SELECT ?, m.seq, m.role, m.content, m.tool_calls, m.tool_call_id, m.attachments, m.machine, m.turn, m.round, m.checkpoint, m.machine_kind
+		`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint, machine_kind, value)
+		 SELECT ?, m.seq, m.role, m.content, m.tool_calls, m.tool_call_id, m.attachments, m.machine, m.turn, m.round, m.checkpoint, m.machine_kind, m.value
 		 FROM chat_messages m JOIN chat_sessions p ON p.id = m.session_id
 		 WHERE p.name = ? AND m.seq < 0`, branchID, parentName,
 	); err != nil {
@@ -473,11 +473,18 @@ func insertChatMessage(tx *sql.Tx, sessionID int64, seq int, msg provider.Messag
 		k := string(msg.MachineKind)
 		machineKind = &k
 	}
+	// The value a tool result carried beside its text is NULL where it
+	// carried none, the way a row written before the column reads.
+	var value *string
+	if len(msg.Value) > 0 {
+		v := string(msg.Value)
+		value = &v
+	}
 	_, err := tx.Exec(
-		`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint, machine_kind)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint, machine_kind, value)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sessionID, seq, string(msg.Role), msg.Content, toolCallsJSON, msg.ToolCallID, attachmentsJSON, msg.Machine,
-		msg.Turn, msg.Round, msg.Checkpoint, machineKind,
+		msg.Turn, msg.Round, msg.Checkpoint, machineKind, value,
 	)
 	if err != nil {
 		return fmt.Errorf("insert message %d: %w", seq, err)
@@ -579,7 +586,7 @@ func (db *DB) SaveChatFolded(name string, folded []provider.Message) error {
 // conversation, oldest first, or none for a slot that was never compacted.
 func (db *DB) LoadChatFolded(name string) ([]provider.Message, error) {
 	return queryRows(db, scanChatMessage,
-		`SELECT m.role, m.content, m.tool_calls, m.tool_call_id, m.attachments, m.machine, m.turn, m.round, m.checkpoint, m.machine_kind
+		`SELECT m.role, m.content, m.tool_calls, m.tool_call_id, m.attachments, m.machine, m.turn, m.round, m.checkpoint, m.machine_kind, m.value
 		 FROM chat_messages m JOIN chat_sessions s ON s.id = m.session_id
 		 WHERE s.name = ? AND m.seq < 0 ORDER BY m.seq`, name,
 	)
@@ -592,7 +599,7 @@ func (db *DB) LoadChatFolded(name string) ([]provider.Message, error) {
 // (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
 func (db *DB) chatMessages(sessionID int64) ([]provider.Message, error) {
 	return queryRows(db, scanChatMessage,
-		`SELECT role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint, machine_kind
+		`SELECT role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint, machine_kind, value
 		 FROM chat_messages WHERE session_id = ? AND seq >= 0 ORDER BY seq`, sessionID,
 	)
 }
@@ -603,12 +610,12 @@ func scanChatMessage(r rowScanner) (provider.Message, error) {
 	var (
 		role, content, toolCallID      string
 		toolCallsJSON, attachmentsJSON *string
-		machineKind                    *string
+		machineKind, value             *string
 		machine, checkpoint            bool
 		turn, round                    int64
 	)
 	if err := r.Scan(&role, &content, &toolCallsJSON, &toolCallID, &attachmentsJSON, &machine,
-		&turn, &round, &checkpoint, &machineKind); err != nil {
+		&turn, &round, &checkpoint, &machineKind, &value); err != nil {
 		return provider.Message{}, err
 	}
 	msg := provider.Message{
@@ -627,6 +634,9 @@ func scanChatMessage(r rowScanner) (provider.Message, error) {
 	}
 	if machineKind != nil {
 		msg.MachineKind = provider.MachineKind(*machineKind)
+	}
+	if value != nil {
+		msg.Value = json.RawMessage(*value)
 	}
 	if toolCallsJSON != nil {
 		if err := json.Unmarshal([]byte(*toolCallsJSON), &msg.ToolCalls); err != nil {

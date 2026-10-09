@@ -16,6 +16,7 @@ package chat
 // outcome and its time; what it loses is the vote.
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -79,18 +80,13 @@ func (v verification) settled(i int) bool { return v >= 0 && i < int(v) }
 // gateVerdict is the quality-gate reading a row carries, and false for every
 // row that is not one.
 //
-// A row the session made itself holds the verdict it read off the result,
-// and that is what is read: the text is the model's, and a word added to it
-// for the model is no business of the screen's. Every other gate row exists
-// only as text, and is read back through the gate's own reader of it.
-//
-// Of the text, it reads what the trim kept in preference to the row's own
-// body. A trim
-// replaces a tool result with a placeholder, and a caller that parsed the
-// placeholder would find no gate there and report a settled turn as unsettled
-// — while the close row it has to agree with was drawn once, before the trim,
-// and says the opposite forever. A verdict outlives the text it was written
-// in (context.go).
+// A gate row holds the reading its result carried as a value (entry.gate):
+// the session's own close row from the Result it ran, every other row from the
+// value that rode beside the text through the agent, the stored message or a
+// child's transcript. The text is the model's, and a word added to it for the
+// model is no business of the screen's. A row that outlives a trim keeps its
+// reading with it, because the reading was never in the text the trim takes
+// (context.go).
 func gateVerdict(e entry) (quality.Summary, bool) {
 	if e.kind != entryTool || !receipt.IsGate(e.toolName) {
 		return quality.Summary{}, false
@@ -98,29 +94,28 @@ func gateVerdict(e entry) (quality.Summary, bool) {
 	if e.gate != nil {
 		return *e.gate, true
 	}
-	if e.elided != nil && e.elided.verdict != "" {
-		return quality.Summarize(e.elided.verdict)
-	}
-	return quality.Summarize(e.toolResult)
+	return quality.Summary{}, false
 }
 
-// gateVerdictLine is what a trim keeps of a gate result: the verdict line and
-// the staleness line under it, verbatim, which are the whole of what a later
-// reading takes. Empty for a row that carries no verdict to keep, which is
-// every row but the gate's.
-func gateVerdictLine(e entry) string {
-	if _, ok := gateVerdict(e); !ok {
-		return ""
+// gateOf is the reading a gate call's value holds, and nil for every call
+// that is not the gate's and for a gate result that carried none — a session
+// stored before the value was kept.
+func gateOf(tool string, value json.RawMessage) *quality.Summary {
+	if !receipt.IsGate(tool) {
+		return nil
 	}
-	kept := []string{firstLine(e.toolResult)}
-	for _, line := range strings.Split(e.toolResult, "\n") {
-		// A flaked check's line too: it carries the ledger's count, which
-		// the close row reads back.
-		if strings.HasPrefix(line, "STALE:") || strings.HasPrefix(line, "  ~ ") {
-			kept = append(kept, line)
-		}
+	if s, ok := quality.SummaryOf(value); ok {
+		return &s
 	}
-	return strings.Join(kept, "\n")
+	return nil
+}
+
+// gateValue is gateOf's inverse, for the receipt that reads a gate row.
+func gateValue(s *quality.Summary) json.RawMessage {
+	if s == nil {
+		return nil
+	}
+	return s.Value()
 }
 
 // checkOutcome is what one verification attempt came to.

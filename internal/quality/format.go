@@ -1,8 +1,8 @@
 package quality
 
 import (
+	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -180,12 +180,10 @@ func roundDuration(d time.Duration) string {
 
 // Summary is what a reader of the gate learns about one run: which suite
 // ran, its verdict, the check tally and whether the verdict still applies to
-// the tree. It has two sources. A row the session made itself holds the
-// Result and reads it with Result.Summary; a row that exists only as text —
-// a tool result the model asked for, a reopened session, a child's
-// transcript — reads it back with Summarize, beside Format, so the one place
-// that writes the string is the one place that reads it back. A round-trip
-// test holds the two to the same answer.
+// the tree. It is read off the Result with Result.Summary, and rides beside
+// the text of a gate call's result as a value (Value, SummaryOf) — through
+// the agent, the stored message and a child's transcript — so no row parses
+// the text Format writes.
 type Summary struct {
 	Suite         string
 	Verdict       Verdict
@@ -214,7 +212,7 @@ func (s Summary) OK() bool { return s.Verdict == VerdictPass && !s.Stale }
 func (r *Result) OK(current Fingerprint) bool { return r.Summary(current).OK() }
 
 // Summary is the result read against the tree whose fingerprint is current:
-// what Summarize would read back from Format(current), without the text.
+// what Format(current) states, without the text.
 func (r *Result) Summary(current Fingerprint) Summary {
 	s := Summary{Suite: r.Suite, Verdict: r.Verdict, Stale: r.staleNote(current) != ""}
 	switch r.Verdict {
@@ -229,42 +227,28 @@ func (r *Result) Summary(current Fingerprint) Summary {
 	return s
 }
 
-// flakedBeforePattern reads timesBefore's clause back off a flaked check's
-// line. The clause sits just inside the line's closing parenthesis, after two
-// durations that hold neither a comma nor a parenthesis, so a command
-// holding either is never read as one.
-var flakedBeforePattern = regexp.MustCompile(`(?m)^  ~ .*\(flaked: failed then passed, [^,()]*, (\d+) times? before\)`)
-
-// summaryPattern reads the suite as the whole Go-quoted token Format's %q
-// writes, escapes and all, so a name holding a quote or a backslash is read
-// back rather than ending the match early; Summarize unquotes it.
-var summaryPattern = regexp.MustCompile(
-	`^Quality gate ("(?:[^"\\]|\\.)*"): ([A-Z]+)(?: — (\d+)/(\d+) checks passed(?:, (\d+) flaked)? \(([^)]*)\))?`)
-
-// Summarize reads back a result rendered by Format. It reports false for
-// anything else — a status line, an error, a tool result from elsewhere — so
-// a caller never has to guess whether the gate is what it is looking at.
-func Summarize(result string) (Summary, bool) {
-	m := summaryPattern.FindStringSubmatch(strings.SplitN(result, "\n", 2)[0])
-	if m == nil {
-		return Summary{}, false
-	}
-	suite, err := strconv.Unquote(m[1])
+// Value is the summary as it rides beside a gate result's text
+// (provider.Message.Value): the one encoding of it, kept on the stored
+// message so a reopened session and a child's transcript read the same
+// answer the live row did.
+func (s Summary) Value() json.RawMessage {
+	b, err := json.Marshal(s)
 	if err != nil {
+		return nil
+	}
+	return b
+}
+
+// SummaryOf reads a Summary back off the value a gate result carried. It
+// reports false for no value and for one that is not a gate's, so a caller
+// never has to guess whether the gate is what it is looking at.
+func SummaryOf(value json.RawMessage) (Summary, bool) {
+	if len(value) == 0 {
 		return Summary{}, false
 	}
-	s := Summary{
-		Suite:    suite,
-		Verdict:  Verdict(strings.ToLower(m[2])),
-		Duration: m[6],
-		Stale:    strings.Contains(result, "\nSTALE:"),
-	}
-	s.Passed, _ = strconv.Atoi(m[3])
-	s.Total, _ = strconv.Atoi(m[4])
-	s.Flaked, _ = strconv.Atoi(m[5])
-	for _, f := range flakedBeforePattern.FindAllStringSubmatch(result, -1) {
-		n, _ := strconv.Atoi(f[1])
-		s.FlakedBefore = max(s.FlakedBefore, n)
+	var s Summary
+	if err := json.Unmarshal(value, &s); err != nil || s.Verdict == "" {
+		return Summary{}, false
 	}
 	return s, true
 }

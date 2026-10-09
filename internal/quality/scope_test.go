@@ -94,9 +94,8 @@ func TestRunner_ScopedChecksRunFirstAndStopTheRun(t *testing.T) {
 			t.Errorf("result lacks %q:\n%s", want, out)
 		}
 	}
-	s, ok := Summarize(out)
-	if !ok || s.Verdict != VerdictFail || s.Total != 2 || s.Passed != 0 {
-		t.Errorf("Summarize = %+v, %v; want fail 0/2", s, ok)
+	if s := res.Summary(res.Fingerprint); s.Verdict != VerdictFail || s.Total != 2 || s.Passed != 0 {
+		t.Errorf("Summary = %+v; want fail 0/2", s)
 	}
 }
 

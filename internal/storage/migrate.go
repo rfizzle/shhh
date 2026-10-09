@@ -664,6 +664,13 @@ var migrations = []string{
 	// are rewritten on every save, and this is written only when the person
 	// says yes to one.
 	`ALTER TABLE chat_sessions ADD COLUMN handoff TEXT NOT NULL DEFAULT '';`,
+
+	// What a tool result carried beside its text (provider.Message.Value):
+	// the quality gate's reading of its own verdict, kept so a reopened
+	// session draws the gate's row from the value and not from a parse of
+	// the text. NULL is every result that carried none, and one stored
+	// before the column was.
+	`ALTER TABLE chat_messages ADD COLUMN value TEXT;`,
 }
 
 const (

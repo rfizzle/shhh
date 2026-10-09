@@ -851,8 +851,8 @@ func TestElidedRow_KeepsWhatTheBodySaid(t *testing.T) {
 }
 
 // A turn's verdict outlives the trim that takes the check's output: the
-// reading was reported when the turn closed, and re-parsing it out of the
-// placeholder would report no checks at all.
+// reading was reported when the turn closed, and the row holds it beside the
+// text the trim replaces with a placeholder.
 func TestElidedCheck_TheTurnKeepsItsVerdict(t *testing.T) {
 	gate := "Quality gate \"default\": FAIL — 3/5 checks passed (1.2s)\n" +
 		strings.Repeat("a failing check said something\n", 2000)
@@ -863,7 +863,8 @@ func TestElidedCheck_TheTurnKeepsItsVerdict(t *testing.T) {
 		{Role: provider.RoleTool, Content: gate, ToolCallID: "c1"},
 		{Role: provider.RoleUser, Content: "q2"},
 	}, mockStream, Wiring{})
-	m.appendEntry(entry{kind: entryTool, turn: 1, toolName: quality.ToolName, toolResult: gate})
+	m.appendEntry(entry{kind: entryTool, turn: 1, toolName: quality.ToolName, toolResult: gate,
+		gate: gateSummary("FAIL", 3, 5)})
 	m.appendEntry(entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
 		Checks: turnChecksRow(m.transcript, false),
 	}})

@@ -2,6 +2,7 @@ package subagent
 
 import (
 	"context"
+	"encoding/json"
 	"maps"
 	"path/filepath"
 	"slices"
@@ -570,7 +571,7 @@ func (c *child) beginToolEntry(id, tool, args string) {
 
 // settleToolEntry records a call's result on the row it opened and closes
 // that row, so a call that is over can no longer be written to.
-func (c *child) settleToolEntry(id, result string) {
+func (c *child) settleToolEntry(id, result string, value json.RawMessage) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	idx, ok := c.callRow[id]
@@ -579,6 +580,7 @@ func (c *child) settleToolEntry(id, result string) {
 	}
 	delete(c.callRow, id)
 	c.transcript[idx].Result = result
+	c.transcript[idx].Value = value
 	c.transcript[idx].Pending = false
 	c.toolResultTokens += agent.EstimateTokens(result)
 }

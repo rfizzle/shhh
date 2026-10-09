@@ -88,30 +88,32 @@ func TestGate_FlakesWithNothingToListIsALine(t *testing.T) {
 }
 
 // The close row's note column says how often a check that flaked had flaked
-// before, read off the result's own text the way a reopened session reads
-// it, and off a trimmed row's kept lines; a first flake says nothing more.
+// before, read off the value the result carried the way a reopened session
+// reads it, and off a trimmed row, which keeps it; a first flake says
+// nothing more.
 func TestResolved_TheCloseRowSaysHowOftenAFlakeHasFlakedBefore(t *testing.T) {
-	result := func(before int) string {
+	result := func(before int) *quality.Summary {
 		res := &quality.Result{Suite: "fast", Verdict: quality.VerdictPass, Duration: 2 * time.Second,
 			Checks: []quality.CheckResult{
 				{Name: "vet", Command: "go vet ./...", Duration: time.Second},
 				{Name: "test", Command: "make test", Flaked: true, FlakedBefore: before,
 					Duration: time.Second, RerunDuration: time.Second},
 			}}
-		return res.Format(res.Fingerprint)
+		sum := res.Summary(res.Fingerprint)
+		return &sum
 	}
 	tests := []struct {
 		name string
 		e    entry
 		want string
 	}{
-		{"three before", entry{kind: entryTool, toolName: quality.ToolName, toolResult: result(3)},
+		{"three before", entry{kind: entryTool, toolName: quality.ToolName, gate: result(3)},
 			"flaked 3 times before · /gate flakes"},
-		{"one before", entry{kind: entryTool, toolName: quality.ToolName, toolResult: result(1)},
+		{"one before", entry{kind: entryTool, toolName: quality.ToolName, gate: result(1)},
 			"flaked 1 time before · /gate flakes"},
-		{"a first flake", entry{kind: entryTool, toolName: quality.ToolName, toolResult: result(0)}, ""},
-		{"a trimmed row keeps the flaked line", entry{kind: entryTool, toolName: quality.ToolName,
-			elided: &elidedRow{verdict: gateVerdictLine(entry{kind: entryTool, toolName: quality.ToolName, toolResult: result(5)})}},
+		{"a first flake", entry{kind: entryTool, toolName: quality.ToolName, gate: result(0)}, ""},
+		{"a trimmed row keeps its reading", entry{kind: entryTool, toolName: quality.ToolName,
+			gate: result(5), elided: &elidedRow{}},
 			"flaked 5 times before · /gate flakes"},
 	}
 	for _, tc := range tests {

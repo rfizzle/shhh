@@ -290,8 +290,8 @@ func TestTurnClose_ARunFinishingIsNotATurnEnding(t *testing.T) {
 }
 
 func TestTurnChecksRow_ReadsTheQualityGateVerdict(t *testing.T) {
-	pass := "Quality gate \"default\": PASS — 4/4 checks passed (12.8s)\nTree: clean"
-	c := turnChecksRow([]entry{{kind: entryTool, toolName: quality.ToolName, toolResult: pass}}, false)
+	pass := gateSummary("PASS", 4, 4)
+	c := turnChecksRow([]entry{{kind: entryTool, toolName: quality.ToolName, gate: pass}}, false)
 	if c == nil || c.Failed {
 		t.Fatalf("a clean gate run is a passing verdict, got %+v", c)
 	}
@@ -299,8 +299,9 @@ func TestTurnChecksRow_ReadsTheQualityGateVerdict(t *testing.T) {
 		t.Fatalf("the row should name the suite and its tally, got %+v", c)
 	}
 
-	stale := pass + "\nSTALE: the tree has changed since this run"
-	c = turnChecksRow([]entry{{kind: entryTool, toolName: quality.ToolName, toolResult: stale}}, false)
+	stale := *pass
+	stale.Stale = true
+	c = turnChecksRow([]entry{{kind: entryTool, toolName: quality.ToolName, gate: &stale}}, false)
 	if c == nil || !c.Failed || !strings.Contains(c.Counts, "stale") {
 		t.Fatalf("a stale pass is not a pass, got %+v", c)
 	}
@@ -326,7 +327,7 @@ func TestTurnChecksRow_SeveralRunsCollapseToOneTally(t *testing.T) {
 		{kind: entryCommand, text: "go test ./internal/agent/..."},
 		{kind: entryCommand, text: "go test ./internal/ui/...", exitCode: 1},
 		{kind: entryTool, toolName: quality.ToolName,
-			toolResult: "Quality gate \"default\": FAIL — 1/2 checks passed (1s)"},
+			gate: gateSummary("FAIL", 1, 2)},
 	}, false)
 	if c == nil || !c.Failed {
 		t.Fatalf("one failure among three makes the verdict failing, got %+v", c)

@@ -111,7 +111,7 @@ func pictureModel(t *testing.T) Model {
 	args := `{"path":"shot.png"}`
 	result := "shot.png is an image (image/png), attached to this result for models that can see one; it has no text to return."
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: args, toolResult: result})
-	m.appendPicture("", m.callReceipt("read_file", args, result, provider.Attachment{
+	m.appendPicture("", m.callReceipt("read_file", args, result, nil, provider.Attachment{
 		Kind: provider.AttachmentImage, Name: "shot.png", MediaType: "image/png", Data: shot}))
 	m.invalidateRenderCache()
 	m.viewport.SetLines(m.renderHistoryLines())

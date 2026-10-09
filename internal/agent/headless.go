@@ -536,8 +536,8 @@ func (h *Headless) runTools(text string, calls []provider.ToolCall) {
 		h.notifyCall(tc)
 		start := time.Now()
 		result := h.resolveGated(tc)
-		h.Agent.ResolveApproval(result)
-		h.notifyResult(ToolResult{Call: tc, Result: result, Duration: time.Since(start)})
+		value := h.Agent.ResolveApproval(result)
+		h.notifyResult(ToolResult{Call: tc, Result: result, Value: value, Duration: time.Since(start)})
 	}
 }
 

@@ -1,7 +1,6 @@
 package chat
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -10,20 +9,25 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-// gateResult is a formatted quality-gate result the way the runner writes one,
-// so the reading under test is the gate's own reader of the text — the one a
-// row that exists only as text is read with.
-func gateResult(verdict string, passed, total int) string {
-	return fmt.Sprintf("Quality gate %q: %s — %d/%d checks passed (1.4s)\nTree: clean",
-		"default", verdict, passed, total)
+// gateSummary is the reading a gate result carries, the way a row that
+// exists only as the model's text still holds it: as the value that rode
+// beside the text.
+func gateSummary(verdict string, passed, total int) *quality.Summary {
+	return &quality.Summary{Suite: "default", Verdict: quality.Verdict(strings.ToLower(verdict)),
+		Passed: passed, Total: total, Duration: "1.4s"}
 }
 
-// appendGateText puts a gate row in the transcript that exists only as
-// text, the way a run the model asked for lands: what reads it is the gate's
-// reader of the text, not a verdict the session held.
-func appendGateText(m *Model, text string) {
+// heldSummary is a Result's reading of itself against its own tree.
+func heldSummary(res *quality.Result) *quality.Summary {
+	s := res.Summary(res.Fingerprint)
+	return &s
+}
+
+// appendGateRow puts a gate row in the transcript the way a run the model
+// asked for lands: the text the model read, and the value beside it.
+func appendGateRow(m *Model, sum *quality.Summary) {
 	m.appendEntry(entry{kind: entryTool, toolName: quality.ToolName,
-		toolArgs: `{"action":"run","suite":"default"}`, toolResult: text})
+		toolArgs: `{"action":"run","suite":"default"}`, toolResult: "the gate's text", gate: sum})
 }
 
 func failedTest() entry {
@@ -32,7 +36,7 @@ func failedTest() entry {
 }
 
 func passingGate() entry {
-	return entry{kind: entryTool, toolName: quality.ToolName, toolResult: gateResult("PASS", 5, 5)}
+	return entry{kind: entryTool, toolName: quality.ToolName, toolResult: "the gate's text", gate: gateSummary("PASS", 5, 5)}
 }
 
 // A turn that watched the tests fail, fixed the code and ran the repository's
@@ -148,8 +152,9 @@ func TestResolvedChecks_AFailureAfterTheGateStands(t *testing.T) {
 
 // A stale pass disowned the tree it ran over, so it answers nothing.
 func TestResolvedChecks_AStalePassSupersedesNothing(t *testing.T) {
-	stale := entry{kind: entryTool, toolName: quality.ToolName,
-		toolResult: gateResult("PASS", 5, 5) + "\nSTALE: the tree has changed since this run"}
+	held := gateSummary("PASS", 5, 5)
+	held.Stale = true
+	stale := entry{kind: entryTool, toolName: quality.ToolName, toolResult: "the gate's text", gate: held}
 	c := turnChecksRow([]entry{failedTest(), stale}, false)
 	if c == nil || !c.Failed {
 		t.Fatalf("a stale pass is not a pass, got %+v", c)
@@ -175,14 +180,10 @@ func TestResolvedChecks_AVerdictSurvivesTheTrim(t *testing.T) {
 	if settled == nil || settled.Failed || settled.Superseded == 0 {
 		t.Fatalf("the turn closed on the suite's pass, got %+v", settled)
 	}
-	// The trim as it leaves the row: the body replaced, and what the row read
-	// off that body kept beside it.
+	// The trim as it leaves the row: the body replaced, and the reading the
+	// row holds beside it untouched.
 	gate := &m.transcript[len(m.transcript)-1]
-	kept := gateVerdictLine(*gate)
-	if !strings.Contains(kept, "PASS") {
-		t.Fatalf("the verdict line is what the trim keeps, got %q", kept)
-	}
-	gate.elided = &elidedRow{verdict: kept}
+	gate.elided = &elidedRow{}
 	gate.toolResult = "[elided: quality gate output, evidence ev-1]"
 
 	if after := turnChecksRow(m.transcript, false); after == nil ||

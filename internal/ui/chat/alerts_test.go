@@ -35,7 +35,7 @@ func alertsModelAt(t *testing.T, width, height int) Model {
 		{kind: entryCommand, text: "go test ./internal/agent", exitCode: 2, turn: 3,
 			elided: &elidedRow{evidence: "ev-fedcba9876543210"}},
 		{kind: entryUser, text: "run the suite", turn: 4},
-		{kind: entryTool, toolName: quality.ToolName, toolResult: gateResult("PASS", 5, 5), turn: 4},
+		{kind: entryTool, toolName: quality.ToolName, gate: gateSummary("PASS", 5, 5), turn: 4},
 		{kind: entryCommand, text: "go test ./...", exitCode: 1, turn: 4},
 	}
 	m.turnCount = 4

@@ -191,8 +191,8 @@ func TestCloseGate_APassingRunLandsOneRowAheadOfTheClose(t *testing.T) {
 	}
 	// The row's text is the runner's own, so /gate result and this row can
 	// never come to disagree about what happened.
-	if sum, ok := quality.Summarize(lastGateRow(t, m).toolResult); !ok || sum.Verdict != quality.VerdictPass {
-		t.Fatalf("the row does not hold a formatted result: %q", lastGateRow(t, m).toolResult)
+	if sum, ok := gateVerdict(lastGateRow(t, m)); !ok || sum.Verdict != quality.VerdictPass {
+		t.Fatalf("the row does not hold the result's reading: %q", lastGateRow(t, m).toolResult)
 	}
 }
 
@@ -221,7 +221,7 @@ func TestCloseGate_AFailingVerdictBuysOneRoundAndThenCloses(t *testing.T) {
 	if last.Role != provider.RoleUser || !strings.Contains(last.Content, "FAIL") {
 		t.Fatalf("the verdict never reached the request: %+v", last)
 	}
-	if sum, ok := quality.Summarize(last.Content); !ok || sum.Verdict != quality.VerdictFail {
+	if !strings.HasPrefix(last.Content, "Quality gate ") {
 		t.Fatalf("the model was told something a gate call would not have said: %q", last.Content)
 	}
 
@@ -321,7 +321,7 @@ func TestCloseGate_CancellingARunLeavesCancelledAndNeverAPass(t *testing.T) {
 	if !c.Checks.Failed {
 		t.Errorf("cancelled reads as passing: %+v", c.Checks)
 	}
-	if sum, _ := quality.Summarize(lastGateRow(t, m).toolResult); sum.Verdict != quality.VerdictCancelled {
+	if sum, _ := gateVerdict(lastGateRow(t, m)); sum.Verdict != quality.VerdictCancelled {
 		t.Errorf("verdict = %q, want cancelled", sum.Verdict)
 	}
 }
@@ -495,7 +495,7 @@ func TestCloseGate_ARaceWithAnotherRunStillLeavesTheTurnAVerdict(t *testing.T) {
 	if c.Checks == nil || !c.Checks.Failed {
 		t.Fatalf("a turn that could not check itself closed saying nothing: %+v", c.Checks)
 	}
-	if sum, _ := quality.Summarize(lastGateRow(t, m).toolResult); sum.Verdict != quality.VerdictBlocked {
+	if sum, _ := gateVerdict(lastGateRow(t, m)); sum.Verdict != quality.VerdictBlocked {
 		t.Errorf("verdict = %q, want blocked", sum.Verdict)
 	}
 }
@@ -534,10 +534,10 @@ func TestGate_TheScreenReadsTheStruct(t *testing.T) {
 			m := gatedModel(t, nil, nil)
 			m.appendCloseGateRow(&tc.res, tc.current)
 			row := &m.transcript[len(m.transcript)-1]
-			if _, ok := quality.Summarize(row.toolResult); !ok {
+			if !strings.HasPrefix(row.toolResult, "Quality gate ") {
 				t.Fatalf("the row's text is not the model's formatted result: %q", row.toolResult)
 			}
-			row.toolResult = "a sentence the gate's text reader does not recognise"
+			row.toolResult = "a sentence no reader of the text would recognise"
 			got, ok := gateVerdict(*row)
 			if !ok || got != tc.res.Summary(tc.current) {
 				t.Fatalf("gateVerdict = %+v (ok %v), want the result's own %+v", got, ok, tc.res.Summary(tc.current))
@@ -598,7 +598,7 @@ func TestCloseGate_AStalePassIsRetried(t *testing.T) {
 				if last.Role != provider.RoleUser || !strings.Contains(last.Content, "STALE:") {
 					t.Fatalf("the stale verdict never reached the request: %+v", last)
 				}
-				if sum, ok := quality.Summarize(last.Content); !ok || sum.OK() {
+				if !strings.HasPrefix(last.Content, "Quality gate ") {
 					t.Fatalf("the model was told something other than the gate's own stale text: %q", last.Content)
 				}
 			}

@@ -70,6 +70,15 @@ type Message struct {
 	// answer the moment the session was reopened.
 	// See docs/interface/surfaces.md#the-progress-checkpoint.
 	Checkpoint bool
+	// Value is what a tool result carries beside its text, as the tool
+	// that wrote it encoded it (value.go): the quality gate's reading of
+	// its own verdict. Nothing on the wire reads it — the model is told the
+	// text and only the text — and what reads it is every surface that
+	// draws a row for the call, so a reopened session and a child's
+	// transcript read the row from the value rather than from a parse of
+	// the text. It is stored beside the message. Empty is every result that
+	// carries none, and a result stored before the column was.
+	Value json.RawMessage
 }
 
 // MachineKind is the closed set of machine messages a surface reads the kind

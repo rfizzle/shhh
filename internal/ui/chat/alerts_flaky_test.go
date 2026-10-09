@@ -119,7 +119,7 @@ func TestAlerts_AGatePassLeavesAFlakyCheckStanding(t *testing.T) {
 	m := frameModel(t, 130, 40)
 	m.wiring.Gate, m.alertMemo = ledgerOf(0, 0, flake("vet", 3, 2*day, time.Hour)), &alertMemo{}
 	m.appendEntry(entry{kind: entryCommand, text: "go build ./...", exitCode: 2, turn: 1})
-	appendGateText(&m, gateResult("PASS", 2, 2))
+	appendGateRow(&m, gateSummary("PASS", 2, 2))
 
 	alerts := m.inspectorAlerts()
 	live := alerts.Live()
@@ -154,7 +154,7 @@ func TestAlerts_TheLedgerIsReadAgainWhenAVerdictLands(t *testing.T) {
 		t.Fatalf("a row that is not a verdict read the ledger again: %d reads", reads)
 	}
 	seen = 3
-	appendGateText(&m, gateResult("PASS", 2, 2))
+	appendGateRow(&m, gateSummary("PASS", 2, 2))
 	live := m.inspectorAlerts().Live()
 	if reads != 2 {
 		t.Fatalf("a landed verdict should read the ledger again: %d reads", reads)

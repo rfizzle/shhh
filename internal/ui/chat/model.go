@@ -721,12 +721,12 @@ type entry struct {
 	// where the original went. Nil on every row that still holds its own
 	// output, which is all of them until a trim runs.
 	elided *elidedRow
-	// gate is the verdict of a gate row the session made itself, read off
-	// the result it held when it built the row (gate.go). It is what every
-	// reading of the row takes in preference to the text, which is the
-	// model's; nil on a gate row that exists only as text — a run the model
-	// asked for, a reopened session, a child's transcript — and on every
-	// row that is not the gate's.
+	// gate is the verdict of a gate row: read off the Result for the row
+	// the session made itself (gate.go), and off the value the result
+	// carried for every other — a run the model asked for, a reopened
+	// session, a child's transcript. It is what every reading of the row
+	// takes, and nil on a gate row stored before the value was kept and on
+	// every row that is not the gate's.
 	gate *quality.Summary
 	// compact is the account behind an entryCompactSummary block: what the
 	// receipt row says the compaction did, and what its fold counts

@@ -23,6 +23,7 @@
 package receipt
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/rfizzle/shhh/internal/diff"
@@ -60,6 +61,9 @@ type Call struct {
 	Args string
 	// Result is what came back, or nothing yet.
 	Result string
+	// Value is what the result carried beside its text
+	// (provider.Message.Value), for the describers that read the outcome.
+	Value json.RawMessage
 	// Exec is how a command ended. It is nil on every tool call.
 	Exec *tools.ExecResult
 	// Served reports whether Name is a tool of an MCP server this session

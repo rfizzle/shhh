@@ -8,6 +8,8 @@ package chat
 // See docs/capabilities/sessions-and-memory.md#a-new-conversation-is-a-new-session.
 
 import (
+	"encoding/json"
+
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/nudge"
@@ -381,10 +383,11 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 			for _, tc := range msg.ToolCalls {
 				var result string
 				var atts []provider.Attachment
+				var value json.RawMessage
 				if i+1 < len(msgs) {
 					for _, next := range msgs[i+1:] {
 						if next.Role == provider.RoleTool && next.ToolCallID == tc.ID {
-							result, atts = next.Content, next.Attachments
+							result, atts, value = next.Content, next.Attachments, next.Value
 							break
 						}
 						if next.Role != provider.RoleTool {
@@ -392,8 +395,9 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 						}
 					}
 				}
-				m.appendEntry(entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: result})
-				m.appendPicture("", m.callReceipt(tc.Name, tc.Arguments, result, atts...))
+				m.appendEntry(entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: result,
+					gate: gateOf(tc.Name, value)})
+				m.appendPicture("", m.callReceipt(tc.Name, tc.Arguments, result, value, atts...))
 			}
 		}
 	}

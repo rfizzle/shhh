@@ -2,6 +2,7 @@ package quality
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -285,16 +286,24 @@ func (r *Runner) Start(suite string) string {
 // Status reports the in-flight run or the latest result, re-fingerprinting
 // the tree so a result over a changed tree reports stale.
 func (r *Runner) Status() string {
+	text, _ := r.status()
+	return text
+}
+
+// status is Status with the value its text carries when it is a gate result:
+// nil for the sentences that are not one.
+func (r *Runner) status() (string, json.RawMessage) {
 	r.mu.Lock()
 	running, last := r.running, r.last
 	r.mu.Unlock()
 	if running != "" {
-		return fmt.Sprintf("A gate run (suite %q) is in progress; ask again shortly.", running)
+		return fmt.Sprintf("A gate run (suite %q) is in progress; ask again shortly.", running), nil
 	}
 	if last == nil {
-		return "No gate runs this session yet. Suites are defined in " + ConfigRelPath + "."
+		return "No gate runs this session yet. Suites are defined in " + ConfigRelPath + ".", nil
 	}
-	return last.Format(TakeFingerprint(r.Workspace))
+	fp := TakeFingerprint(r.Workspace)
+	return last.Format(fp), last.Summary(fp).Value()
 }
 
 // slotHeldKey marks a context whose caller holds a check slot already.

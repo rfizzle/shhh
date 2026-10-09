@@ -122,7 +122,8 @@ func convertChildEntry(te subagent.TranscriptEntry) entry {
 		// identical call says — a rule's yes with what it cost, or the
 		// person who answered the card the call was routed to.
 		return entry{kind: entryTool, toolName: te.Tool, toolArgs: te.Args, toolResult: result,
-			allowedBy: te.AllowedBy, allowElapsed: te.AllowElapsed, approvedBy: te.ApprovedBy}
+			allowedBy: te.AllowedBy, allowElapsed: te.AllowElapsed, approvedBy: te.ApprovedBy,
+			gate: gateOf(te.Tool, te.Value)}
 	default:
 		return entry{kind: entrySystem, text: te.Text, toolResult: te.Result}
 	}

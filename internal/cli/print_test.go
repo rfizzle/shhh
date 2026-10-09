@@ -1585,7 +1585,7 @@ func TestHeadlessCloseGate_HandsBackAFailureUntilTheBudgetIsSpent(t *testing.T) 
 	if !strings.Contains(first, "FAIL") {
 		t.Fatalf("first hand-back = %q, want the runner's own text", first)
 	}
-	if sum, ok := quality.Summarize(first); !ok || sum.Suite != "fast" {
+	if !strings.HasPrefix(first, `Quality gate "fast"`) {
 		t.Fatalf("the hand-back is not a formatted result: %q", first)
 	}
 	if second := g.close("done"); second != "" {

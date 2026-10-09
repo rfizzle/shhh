@@ -9,6 +9,7 @@ package subagent
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
@@ -360,6 +361,10 @@ type TranscriptEntry struct {
 	// expansion — the long form of a notice whose row is the short one.
 	Result  string
 	Pending bool // EntryTool: still executing or awaiting approval
+	// Value is what the tool's result carried beside its text
+	// (provider.Message.Value): the quality gate's verdict, which the
+	// parent's mirror of the row reads in place of the text.
+	Value json.RawMessage
 	// AllowedBy names what let a gated call run without the parent being
 	// asked — the mode machine's own word for the rule it matched, or the
 	// classifier — and rides on the act's own row. A feed states an act
