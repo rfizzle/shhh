@@ -1,0 +1,40 @@
+# program test: none — the handoff is kept by one process and read by the
+# next two, which no program test over one session model can be; the card,
+# the offer and the row are TestHandoff_IsWrittenOnYesOnly,
+# TestHandoff_TheQuitOffersOneAndNoQuits and
+# TestResume_TheHandoffIsTheFirstRow, and the goldens are handoff.w*.
+#
+# A session can leave a handoff for its next sitting
+# (docs/capabilities/sessions-and-memory.md#a-session-can-leave-a-handoff).
+# The first sitting writes a file and quits: the turn's work is not
+# committed and nothing was handed off, so the quit's confirm offers one in a
+# sentence. Its yes writes the handoff onto the card, and the card's yes
+# keeps it and quits. The second sitting's start screen names the handoff's
+# first line on its resume offer; the third opens the conversation from the
+# picker and draws the handoff as the sitting's first row.
+snap 01-start "Some things worth doing first"
+keys "cap the retry backoff" Enter
+# The write is gated: wait out the card's grace window, hand the keyboard
+# over, then answer.
+snap 02-write-card "retry.go"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+snap 03-close "capped at thirty seconds"
+keys C-c
+sleep 0.3
+keys C-c
+snap 04-offer "Write a handoff first?" "Changes are uncommitted." "[y/N]"
+keys y
+snap 05-card "[y] keep it" "Approve handoff" "summary   Retry backoff capped; the timer test still flakes" "open      the timer test flakes under load" "[e] edit first"
+keys y
+# The second sitting: the resume offer's detail is the handoff's first line.
+snap 06-start-offer "pick up" "Retry backoff capped; the timer test still flakes"
+keys C-c
+sleep 0.3
+keys C-c
+# The third: the picker, then the conversation opened on its handoff.
+snap 07-picker "shhh chats"
+keys Enter
+snap 08-resumed "resumed" "your handoff from the last sitting:" "Retry backoff capped; the timer test still flakes" "open: the timer test flakes under load"

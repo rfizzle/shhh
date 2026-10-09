@@ -1,0 +1,8 @@
+# The first sitting's one turn: a new file, so the turn closes with work
+# nobody has committed.
+[session]
+tool:write_file:{"path":"retry.go","content":"package retry\n\nconst maxWait = 30\n"}
+The backoff is capped at thirty seconds now.
+# The handoff the quit's offer asks for, from the queue named for it.
+[handoff]
+tool:session_handoff:{"summary":"Retry backoff capped; the timer test still flakes","done":["capped the backoff at 30s"],"open":["the timer test flakes under load"],"decisions":["no jitter: the cap is enough"]}

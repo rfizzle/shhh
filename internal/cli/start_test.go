@@ -127,6 +127,18 @@ func TestBuildStartInfo_CarriesTheMostRecentSavedSession(t *testing.T) {
 	if info.Recent.Turns != 1 {
 		t.Fatalf("turns = %d, want 1", info.Recent.Turns)
 	}
+	if info.Recent.Handoff != "" {
+		t.Fatalf("a slot with no handoff names none, got %q", info.Recent.Handoff)
+	}
+
+	// A handoff kept on it is named by its first line.
+	if err := db.SetChatHandoff("loop refactor", "Loop split in two\nopen: the retry path"); err != nil {
+		t.Fatalf("handoff: %v", err)
+	}
+	info = buildStartInfo(project.Survey(""), db, false, chat.Trust{}, config.Project{}, nil)
+	if info.Recent.Handoff != "Loop split in two" {
+		t.Fatalf("handoff = %q, want its first line", info.Recent.Handoff)
+	}
 }
 
 // The offer is the newest conversation nobody else is writing into. Putting

@@ -35,12 +35,16 @@ import (
 // (docs/interface/principles.md#closed-vocabularies).
 const resumeVerb = "resumed"
 
+// handoffRowLead heads the row a kept handoff is drawn as on a resume.
+const handoffRowLead = "your handoff from the last sitting:"
+
 // resumeMessagePrefix and resumeSummaryPrefix open the two injected messages.
 // They are agent's, because the strip that recognises the block lives there
 // (agent.StripResumeContext) and a headless run needs it too.
 const (
 	resumeMessagePrefix = agent.ResumeMessagePrefix
 	resumeSummaryPrefix = agent.ResumeSummaryPrefix
+	resumeHandoffPrefix = agent.ResumeHandoffPrefix
 )
 
 // ResumeNotice is what a reopened conversation starts with, ready to deliver:
@@ -67,6 +71,9 @@ type ResumeNotice struct {
 	// for the rail. The model is told nothing about it: the list is in the
 	// transcript it wrote.
 	Steps string
+	// Handoff is the handoff the person left on the slot, which the first
+	// message carries and the surface draws as a row of its own.
+	Handoff string
 }
 
 // ResumeContext is what slot's conversation should be told about dir as it
@@ -86,10 +93,12 @@ type ResumeNotice struct {
 // numbers and a run without the tool would be told of a list it cannot keep.
 func ResumeContext(db *storage.DB, slot, dir string, steps bool) ResumeNotice {
 	var saved storage.ChatResume
+	handoff := ""
 	if db != nil && slot != "" {
 		saved, _ = db.ChatResume(slot)
+		handoff, _ = db.ChatHandoff(slot)
 	}
-	n := resumeNotice(project.Survey(dir), saved)
+	n := withHandoff(resumeNotice(project.Survey(dir), saved), handoff)
 	if !steps {
 		return n
 	}
@@ -123,6 +132,24 @@ func resumeNotice(info project.Info, saved storage.ChatResume) ResumeNotice {
 		texts = append(texts, msg.Content)
 	}
 	n.Text = strings.Join(texts, "\n\n")
+	return n
+}
+
+// withHandoff puts the handoff the person left in front of the reading, as
+// the reopening's first message, labelled on its first line as theirs. It is
+// first because it is what they wanted the next sitting to start from, and
+// the label is the only place the model learns what it is: no prompt or tool
+// line names a handoff
+// (docs/capabilities/sessions-and-memory.md#a-session-can-leave-a-handoff).
+// It stays out of the reading's row: the handoff has a row of its own.
+func withHandoff(n ResumeNotice, handoff string) ResumeNotice {
+	handoff = strings.TrimSpace(handoff)
+	if handoff == "" {
+		return n
+	}
+	n.Handoff = handoff
+	n.Messages = append([]provider.Message{{
+		Role: provider.RoleUser, Content: resumeHandoffPrefix + "\n\n" + handoff}}, n.Messages...)
 	return n
 }
 
@@ -316,6 +343,10 @@ func (m *Model) resumeConversation(slot string, msgs []provider.Message) {
 		// belong to that conversation; Restore would otherwise skip and
 		// leave them standing in for the one just loaded.
 		m.changes.Reset()
+		// So does a handoff kept, written or waiting on its card: it is
+		// the conversation being replaced's, and a later save would put it
+		// on the slot just opened (handoff.go).
+		m.dropHandoff()
 		m.adoptSlot(slot)
 		m.loadTitle()
 	}
@@ -351,6 +382,15 @@ func (m *Model) injectResumeContext() {
 	// cut the conversation short of the turn the reader picked.
 	for i := range m.checkpoints {
 		m.checkpoints[i].index += len(n.Messages)
+	}
+	// The handoff is this sitting's first row, in the system tone and whole,
+	// so the person reads what they left before they type anything — it is
+	// their own note, and folding it under a line would hide the one row
+	// they wrote for this moment. It opens already expanded, so its body is
+	// wrapped to the pane the way every notice's body is
+	// (docs/capabilities/sessions-and-memory.md#a-session-can-leave-a-handoff).
+	if n.Handoff != "" {
+		m.appendEntry(entry{kind: entrySystem, text: handoffRowLead, toolResult: n.Handoff, expanded: true})
 	}
 	// The line is the account and the body is what was actually said, which
 	// is the shape every folded row in the transcript has: the reader sees

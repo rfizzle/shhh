@@ -132,6 +132,10 @@ func buildStartInfo(survey project.Info, db *storage.DB, gateEnabled bool, trust
 				// than swapping the answer silently.
 				Held: recent.Held != "",
 			}
+			// The handoff the person left on it is the offer's detail.
+			if handoff, err := db.ChatHandoff(recent.Name); err == nil {
+				info.Recent.Handoff = agent.HandoffFirstLine(handoff)
+			}
 		}
 	}
 	return info

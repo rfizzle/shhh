@@ -18,6 +18,14 @@ const (
 	// strip can recognise it; plan.CarriedStepsPrefix is this, for the code
 	// that builds one.
 	CarriedStepsPrefix = "Your working list, as your last steps call left it:"
+	// ResumeHandoffPrefix is the first line of the handoff the person left
+	// for this sitting, which is the reopening's first message where there
+	// is one. The line says whose words follow, because the model is told
+	// nothing else about them: no prompt or tool line names a handoff, and
+	// a note in front of the reading that did not say it was the person's
+	// would read as a turn they had just typed
+	// (docs/capabilities/sessions-and-memory.md#a-session-can-leave-a-handoff).
+	ResumeHandoffPrefix = "[handoff: the person wrote this when they last left the conversation, for this sitting to start from]"
 )
 
 // StripResumeContext drops the reading a reopening put at the head of a
@@ -46,10 +54,16 @@ func StripResumeContext(msgs []provider.Message) []provider.Message {
 	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
 		at = 1
 	}
-	if at >= len(msgs) || msgs[at].Role != provider.RoleUser || !opensAReading(msgs[at].Content) {
+	// The handoff is only ever the first half of a block, so it is only
+	// recognised in front of a survey.
+	survey := at
+	if survey < len(msgs) && msgs[survey].Role == provider.RoleUser && opensAHandoff(msgs[survey].Content) {
+		survey++
+	}
+	if survey >= len(msgs) || msgs[survey].Role != provider.RoleUser || !opensAReading(msgs[survey].Content) {
 		return msgs
 	}
-	end := at + 1
+	end := survey + 1
 	// The summary is only ever the second half of a block, so it is only
 	// recognised behind a survey. On its own it is a message that happens to
 	// open the way one does, which is somebody's turn and stays.
@@ -76,6 +90,13 @@ func opensAReading(content string) bool {
 	}
 	line, _, _ := strings.Cut(content, "\n")
 	return strings.HasSuffix(line, "]")
+}
+
+// opensAHandoff reports the handoff's shape: its label, whole, on the first
+// line.
+func opensAHandoff(content string) bool {
+	line, _, _ := strings.Cut(content, "\n")
+	return line == ResumeHandoffPrefix
 }
 
 // FoldedWithoutReading is the folded turns without the reading a reopening put

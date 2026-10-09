@@ -69,6 +69,10 @@ type StartRecent struct {
 	// there.
 	// See docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone.
 	Held bool
+	// Handoff is the first line of the handoff the person left on it, which
+	// is the offer's detail where there is one
+	// (docs/capabilities/sessions-and-memory.md#a-session-can-leave-a-handoff).
+	Handoff string
 }
 
 // StartProfile is the backlog profile in force, named and placed: which one,
@@ -810,6 +814,15 @@ func verifyPrompt(info StartInfo) string {
 // — why it is the one being offered. A session with no observability record
 // keeps the other clauses and drops the price.
 func recentDetail(r StartRecent, now time.Time) string {
+	if r.Handoff != "" {
+		// The person's own words about where they stopped say more about
+		// the offer than its size and price do, so the handoff's first line
+		// is the detail. Why this conversation is the one offered stays.
+		if r.Held {
+			return r.Handoff + " · elsewhere"
+		}
+		return r.Handoff
+	}
 	parts := []string{plural(r.Turns, "turn")}
 	if r.Title != "" {
 		parts = []string{r.Title, parts[0]}

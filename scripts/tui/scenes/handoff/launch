@@ -1,0 +1,4 @@
+# The first sitting writes a file, keeps a handoff on the quit's offer and
+# leaves; the second reads the start screen's resume offer and leaves; the
+# third resumes the conversation through the picker and reads the first row.
+$SHHH_BIN code; $SHHH_BIN code; $SHHH_BIN code --resume

@@ -59,6 +59,7 @@ answered from the queue of its own name rather than all of them from one:
     [title]       the session's title, and [account] its standing account,
                   where a scene wants words of its own there; without the
                   queue the endpoint answers each with a line of its own
+    [handoff]     the handoff /handoff asks for, answered the same way
     [suggestion]  the next step offered in the empty draft after a turn;
                   without the queue the endpoint answers with nothing, which
                   offers none
@@ -248,6 +249,9 @@ def route(body):
 FLOWS = {
     "session_title": ("title", ['tool:session_title:{"title":"A scripted session"}']),
     "session_account": ("account", ['tool:session_account:{"account":"Working through a scripted session."}']),
+    # The handoff /handoff asks for, which a scene about it words in a
+    # [handoff] queue of its own.
+    "session_handoff": ("handoff", ['tool:session_handoff:{"summary":"A scripted handoff","done":[],"open":[],"decisions":[]}']),
     # An empty reply is no offer: the session trims it to nothing.
     "suggestion": ("suggestion", [""]),
     # Nothing is no offers: the screen keeps its fixed rows.
