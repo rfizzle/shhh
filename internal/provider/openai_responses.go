@@ -81,6 +81,20 @@ func NewOpenAIResponsesWith(client *http.Client, apiKey, baseURL, model, name st
 
 func (o *OpenAIResponses) Name() string { return o.name }
 
+// OffersDecisions answers from the floor, as the chat dialect does: built by
+// its own constructor this is OpenAI's endpoint. A gateway profile built over
+// it answers from what the profile declares instead (internal/profile).
+func (o *OpenAIResponses) OffersDecisions(model string) bool { return DecisionsOnFloor(model) }
+
+// Decide sends one Decisions API request over this provider's client, so a
+// gateway profile's headers and rewrites apply to it as they do to a turn.
+func (o *OpenAIResponses) Decide(ctx context.Context, req DecisionRequest) (DecisionResult, error) {
+	if req.Model == "" {
+		req.Model = o.model
+	}
+	return PostDecisions(ctx, o.client, o.baseURL, o.apiKey, o.name, req)
+}
+
 // ListModels enumerates the endpoint's catalog. The models endpoint is the
 // same one the chat dialects use, so it goes through the shared client.
 func (o *OpenAIResponses) ListModels(ctx context.Context) ([]string, error) {
@@ -512,4 +526,5 @@ func init() {
 		BaseURL:    defaultResponsesBaseURL,
 		CheapModel: cheapResponsesModel,
 	})
+	RegisterDecisions("openai-responses", DecisionsOnFloor)
 }

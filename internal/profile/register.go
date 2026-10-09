@@ -56,6 +56,7 @@ func Register(profiles []Profile) {
 			BaseURL: p.BaseURL,
 		})
 		provider.RegisterModels(p.Name, p.ModelIDs())
+		provider.RegisterDecisions(p.Name, p.DeclaresDecisions)
 	}
 }
 
@@ -143,6 +144,36 @@ func (p declaredCatalog) StreamCompletion(ctx context.Context, messages []provid
 	return p.Provider.StreamCompletion(ctx, messages, opts)
 }
 
+// OffersDecisions and Decide hold the same catalog check over a decisions
+// request that StreamCompletion holds over a turn.
+func (p declaredCatalog) OffersDecisions(model string) bool {
+	return p.profile.permits(model) == nil && offersDecisions(p.Provider, model)
+}
+
+func (p declaredCatalog) Decide(ctx context.Context, req provider.DecisionRequest) (provider.DecisionResult, error) {
+	if err := p.profile.permits(req.Model); err != nil {
+		return provider.DecisionResult{}, err
+	}
+	return decide(ctx, p.Provider, req)
+}
+
+// offersDecisions and decide reach the Decider under one of this package's
+// wrappers. Each wrapper embeds the provider interface, which promotes only
+// its two methods, so without them a wrapper would hide the capability the
+// way noDiscovery hides the catalog — on purpose there, by accident here.
+func offersDecisions(p provider.Provider, model string) bool {
+	d, ok := p.(provider.Decider)
+	return ok && d.OffersDecisions(model)
+}
+
+func decide(ctx context.Context, p provider.Provider, req provider.DecisionRequest) (provider.DecisionResult, error) {
+	d, ok := p.(provider.Decider)
+	if !ok {
+		return provider.DecisionResult{}, fmt.Errorf("provider %q: model %q is not served the Decisions API here", p.Name(), req.Model)
+	}
+	return d.Decide(ctx, req)
+}
+
 // ListModels returns the allowlist without consulting the gateway. A strict
 // catalog is a promise that these are the only choices, so a discovered name
 // must not turn up in the picker after the request gate would refuse it.
@@ -179,6 +210,23 @@ func (r *router) StreamCompletion(ctx context.Context, messages []provider.Messa
 		return nil, err
 	}
 	return p.StreamCompletion(ctx, messages, opts)
+}
+
+// OffersDecisions asks the endpoint the model routes to, which is where a
+// decisions request for it would go.
+func (r *router) OffersDecisions(model string) bool {
+	p, err := r.providerFor(model)
+	return err == nil && offersDecisions(p, model)
+}
+
+// Decide sends the request to the endpoint that claims its model, as a turn
+// is sent.
+func (r *router) Decide(ctx context.Context, req provider.DecisionRequest) (provider.DecisionResult, error) {
+	p, err := r.providerFor(req.Model)
+	if err != nil {
+		return provider.DecisionResult{}, err
+	}
+	return decide(ctx, p, req)
 }
 
 // providerFor returns the built client for a model's endpoint, building it on
@@ -312,7 +360,7 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 	case APIOpenAIResponses:
 		inner := provider.NewOpenAIResponsesWith(httpClient, key, e.BaseURL, opts.Model, p.Name)
 		inner.SetStreamIdle(opts.StreamIdleSeconds)
-		return withDiscovery(e, &responsesProfile{OpenAIResponses: inner, endpoint: e, client: httpClient}), nil
+		return withDiscovery(e, &responsesProfile{OpenAIResponses: inner, endpoint: e, client: httpClient, decides: p.DeclaresDecisions}), nil
 	case APIAnthropicMessage:
 		inner := provider.NewAnthropicNamed(anthropic.NewClient(
 			option.WithAPIKey(key),
@@ -327,7 +375,7 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 		cfg.HTTPClient = httpClient
 		inner := provider.NewOpenAICompatNamed(openai.NewClientWithConfig(cfg), opts.Model, e.BaseURL, p.Name)
 		inner.SetStreamIdle(opts.StreamIdleSeconds)
-		return withDiscovery(e, &openAIProfile{OpenAICompat: inner, endpoint: e, client: httpClient}), nil
+		return withDiscovery(e, &openAIProfile{OpenAICompat: inner, endpoint: e, client: httpClient, key: key, decides: p.DeclaresDecisions}), nil
 	}
 }
 
@@ -351,6 +399,14 @@ func withDiscovery(e Endpoint, p provider.Provider) provider.Provider {
 // interface methods are promoted, so a ModelLister assertion fails.
 type noDiscovery struct{ provider.Provider }
 
+// OffersDecisions and Decide are passed through: hiding the catalog is all
+// this type is for.
+func (n noDiscovery) OffersDecisions(model string) bool { return offersDecisions(n.Provider, model) }
+
+func (n noDiscovery) Decide(ctx context.Context, req provider.DecisionRequest) (provider.DecisionResult, error) {
+	return decide(ctx, n.Provider, req)
+}
+
 // openAIProfile is a profile-backed openai-chat provider. It inherits
 // streaming and discovery from OpenAICompat, overriding discovery only when
 // the gateway publishes its catalog somewhere else.
@@ -358,6 +414,19 @@ type openAIProfile struct {
 	*provider.OpenAICompat
 	endpoint Endpoint
 	client   *http.Client
+	// key is the endpoint's resolved key, and decides the profile's
+	// declaration of which models this gateway serves the Decisions API
+	// for — the only answer a gateway route has.
+	key     string
+	decides func(model string) bool
+}
+
+func (o *openAIProfile) OffersDecisions(model string) bool { return o.decides(model) }
+
+// Decide sends a Decisions API request over the endpoint's own client, so
+// the profile's headers and rewrite rules apply to it as they do to a turn.
+func (o *openAIProfile) Decide(ctx context.Context, req provider.DecisionRequest) (provider.DecisionResult, error) {
+	return provider.PostDecisions(ctx, o.client, o.endpoint.BaseURL, o.key, o.Name(), req)
 }
 
 func (o *openAIProfile) ListModels(ctx context.Context) ([]string, error) {
@@ -373,7 +442,12 @@ type responsesProfile struct {
 	*provider.OpenAIResponses
 	endpoint Endpoint
 	client   *http.Client
+	// decides is the profile's declaration, in place of the native
+	// provider's floor: what OpenAI serves says nothing about a gateway.
+	decides func(model string) bool
 }
+
+func (r *responsesProfile) OffersDecisions(model string) bool { return r.decides(model) }
 
 func (r *responsesProfile) ListModels(ctx context.Context) ([]string, error) {
 	if r.endpoint.ModelsPath == "" {

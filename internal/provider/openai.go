@@ -23,6 +23,19 @@ type OpenAI struct {
 	// idleDeadline ends a turn whose stream stops writing (idle.go).
 	idleDeadline
 	classify func(error) error
+	// decisions is where a Decisions API request goes. The SDK client above
+	// has no method for the endpoint, so it is a plain client beside it,
+	// with the same key and base URL and none of the prompt-cache transport,
+	// which reads only a chat completion's body.
+	decisions decisionsEndpoint
+}
+
+// decisionsEndpoint is a plain HTTP client and the address and key a
+// Decisions API request is sent with.
+type decisionsEndpoint struct {
+	client  *http.Client
+	baseURL string
+	apiKey  string
 }
 
 const defaultOpenAIBaseURL = "https://api.openai.com/v1"
@@ -44,6 +57,7 @@ func NewOpenAI(opts ResolveOpts) (*OpenAI, error) {
 		model:        model,
 		idleDeadline: idleDeadlineOf(opts.StreamIdleSeconds),
 		classify:     newClassifier("openai", "SHHH_API_KEY or OPENAI_API_KEY", key),
+		decisions:    decisionsEndpoint{client: &http.Client{}, baseURL: baseURL, apiKey: key},
 	}, nil
 }
 
@@ -55,6 +69,18 @@ func NewOpenAIWithConfig(client *openai.Client, model string) *OpenAI {
 }
 
 func (o *OpenAI) Name() string { return "openai" }
+
+// OffersDecisions answers from the floor: this is OpenAI's own endpoint, so
+// the models OpenAI documents the API for are the ones it offers.
+func (o *OpenAI) OffersDecisions(model string) bool { return DecisionsOnFloor(model) }
+
+// Decide sends one Decisions API request.
+func (o *OpenAI) Decide(ctx context.Context, req DecisionRequest) (DecisionResult, error) {
+	if req.Model == "" {
+		req.Model = o.model
+	}
+	return PostDecisions(ctx, o.decisions.client, o.decisions.baseURL, o.decisions.apiKey, o.Name(), req)
+}
 
 // ListModels enumerates the account's models from GET /v1/models.
 func (o *OpenAI) ListModels(ctx context.Context) ([]string, error) {
@@ -243,4 +269,5 @@ func init() {
 		BaseURL:    defaultOpenAIBaseURL,
 		CheapModel: cheapOpenAIModel,
 	})
+	RegisterDecisions("openai", DecisionsOnFloor)
 }

@@ -160,6 +160,13 @@ type Model struct {
 	// whose ids the public table has never heard of. Left out, the table
 	// and then the family floor answer.
 	Reasoning Reasoning `toml:"reasoning"`
+	// Decisions declares that the gateway serves this model's Decisions
+	// API at {base_url}/decisions on the endpoint the model routes to. It
+	// is declared and never inferred: a gateway that serves a model's
+	// completions need not serve its decisions, and a request to an
+	// endpoint that has none is a classifier that fails on every call.
+	// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
+	Decisions bool `toml:"decisions"`
 }
 
 // Reasoning declares a model's thinking knob: its shape, the rungs above
@@ -351,6 +358,27 @@ func (p Profile) Route(model string) Endpoint {
 		}
 	}
 	return routes[0]
+}
+
+// DeclaresDecisions reports whether this profile declares model as one its
+// gateway serves the Decisions API for: a declared model with `decisions =
+// true`, on the endpoint the model routes to, where that endpoint speaks an
+// OpenAI dialect. The Messages dialect has no such endpoint, so a model
+// routed there offers nothing whatever its line says.
+func (p Profile) DeclaresDecisions(model string) bool {
+	if model == "" {
+		return false
+	}
+	route := p.Route(model)
+	if route.API == APIAnthropicMessage {
+		return false
+	}
+	for _, m := range route.Models {
+		if m.ID == model {
+			return m.Decisions
+		}
+	}
+	return false
 }
 
 // ModelIDs are every declared model id, the default endpoint's first and each
