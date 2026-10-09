@@ -404,7 +404,9 @@ way round: the other reading of a broken judge is a run doing whatever it
 likes with no one watching.
 
 The backstops in front of it do not move. The deny list, the containment
-requirement and the safety table are read before the classifier is asked; a
+requirement and the safety table are read before the classifier is asked —
+the first two through the same standing rules a session's screen asks
+([one assembly, two doors](approvals-and-safety.md#a-deny-list-is-answered-before-anything-can-allow)); a
 directory outside the working scope, or one only a person may put in it, is
 refused after a yes rather than before it, because a model judging one call is
 not who widens what a run may reach. `auto` is the only mode these surfaces

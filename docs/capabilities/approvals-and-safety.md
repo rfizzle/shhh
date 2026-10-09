@@ -161,6 +161,19 @@ list is reachable by any tool. A checkout can add to either through its own
 settings file, and only add — a repository may refuse one more command here
 and may never take away a refusal the person holds everywhere.
 
+The standing rules are one assembly, and every door a gated call comes
+through asks it. There are two doors. The session's screen puts what it
+cannot answer to a person on a card; a run with nobody in front of it — a
+scripted run, a served session — answers from its flags, its judge, or a
+refusal. Both ask the same rules first: the two deny lists, what a command
+destroys that no session may, the containment requirement, and what a call
+reaches behind the containment's deny mask. A rule added for one door is
+therefore answered at the other. What each door answers once the rules have had
+their say stays its own: grants, the mode and the card on the screen;
+`--yes`, `--allow`, the judge and the refusal where nobody can be asked on
+the other. Nothing the assembly holds can allow a call — it only refuses —
+so sharing it gives neither door a yes it did not already have.
+
 ### The allowlist reads quotes the way the shell does
 
 An allowlist entry, and the inspection list the two read-only modes run, is a
