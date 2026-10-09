@@ -21,7 +21,7 @@
 # while the turn is otherwise held.
 snap 01-start "Some things worth doing first"
 keys "start on the parser" Enter
-snap 02-working "thinking"
+snap 02-working "waiting"
 keys "fix the header too" Enter
 keys "then do the footer" C-n
 keys "/secret set DEMO_TOKEN=abc123" Enter

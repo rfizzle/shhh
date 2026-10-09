@@ -23,7 +23,7 @@ snap 01-idle "Some things worth doing first"
 keys "run the checks" Enter
 # The model has not said its first word yet: the rail names the phase, the
 # box is one row, and the pane below is entirely transcript.
-snap 02-thinking "thinking…" "[ctrl+c] ×2 stop the run"
+snap 02-waiting "waiting…" "[ctrl+c] ×2 stop the run"
 snap 03-card "[y] run it once"
 keys y
 # A command in flight, which is the state the empty box looked worst in: the
