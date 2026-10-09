@@ -321,6 +321,25 @@ func mcpFailReason(r mcp.Report) string {
 	return firstLine(r.Error)
 }
 
+// mcpBoundKey is the key that sets the bound a starting server has: the
+// session's own where it set it, else the one under the server's table.
+func mcpBoundKey(r mcp.Report) string {
+	if r.BoundBySession {
+		return "mcp.startup_timeout_seconds"
+	}
+	return "timeout_seconds"
+}
+
+// mcpJoinReason is mcpFailReason for the transcript, where a reader has
+// nowhere to click: a bound that ran out carries the bound and the key that
+// raises it, as the fix line on /mcp's row does.
+func mcpJoinReason(r mcp.Report) string {
+	if r.TimedOut && r.Bound > 0 {
+		return "no answer within " + components.FormatElapsed(r.Bound) + " — " + mcpBoundKey(r)
+	}
+	return mcpFailReason(r)
+}
+
 // mcpJoinNotes are the lines a session owes the reader at the turn boundary
 // that took connects which ended since the last one, in the shape of the
 // death note: a server that answered joins the model's tools from this turn,
@@ -334,7 +353,7 @@ func mcpJoinNotes(settled []mcp.Report) []string {
 			n := len(r.Server.RegisteredTools())
 			out = append(out, "mcp: "+r.Definition.Name+": up — "+countOf(n, "tool", "tools")+", from this turn")
 		case mcp.StatusFailed:
-			out = append(out, "mcp: "+r.Definition.Name+": did not start ("+mcpFailReason(r)+") — "+mcpConsequence(r))
+			out = append(out, "mcp: "+r.Definition.Name+": did not start ("+mcpJoinReason(r)+") — "+mcpConsequence(r))
 		}
 	}
 	return out
@@ -434,11 +453,7 @@ func mcpFix(r mcp.Report, root string) []string {
 	case mcp.StatusStarting:
 		// Nothing a person can do yet: the line says when it stops being a
 		// question, and which key the bound it is waiting out came from.
-		key := "timeout_seconds"
-		if r.BoundBySession {
-			key = "mcp.startup_timeout_seconds"
-		}
-		return []string{"nothing yet: it has until " + components.FormatElapsed(r.Bound) + " (" + key +
+		return []string{"nothing yet: it has until " + components.FormatElapsed(r.Bound) + " (" + mcpBoundKey(r) +
 			") to answer, and reads error if it does not"}
 	}
 	return nil
@@ -1173,6 +1188,11 @@ type mcpJoin struct {
 	// carries.
 	launchToolbox string
 
+	// sent is told the system prompt a join rewrote, so the session's record
+	// fingerprints the prompt as it is sent from here on and not as it was
+	// launched. nil is a session that keeps no record.
+	sent func(system string)
+
 	mu sync.Mutex
 	// block and toolbox are what the conversation says now.
 	block, toolbox string
@@ -1211,6 +1231,12 @@ func (j *mcpJoin) take(system string) (chat.MCPJoin, bool) {
 	out.System = resayMCP(system, j.block, block, j.toolbox, toolbox)
 	j.block, j.toolbox = block, toolbox
 	j.mu.Unlock()
+	// The conversation takes the rewritten prompt only where it had one to
+	// rewrite (joinMCP), and a record that hashed the other would not match
+	// any request.
+	if j.sent != nil && system != "" && out.System != system {
+		j.sent(out.System)
+	}
 	out.ServerTools = toolDefTokens(served)
 	out.Gated = map[string]chat.GatedPreviewFunc{}
 	for _, name := range j.ts.Gated() {

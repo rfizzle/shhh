@@ -304,7 +304,12 @@ tools reach the model at the next turn boundary
 ([a server may change what it offers](#a-server-may-change-what-it-offers)),
 and the transcript says so there in one line. A server a second from
 answering when the first message is sent costs one cache rewrite when it
-joins, which is cheaper than a first send that pauses. A run nobody watches —
+joins, which is cheaper than a first send that pauses. The line for one
+whose bound ran out carries the bound and the key that raises it — `mcp: tracker: did not start (no answer within 20s —
+timeout_seconds) — its tools are not in this session`, or
+`mcp.startup_timeout_seconds` where the session's own bound set it — and a
+server that answered and then stopped answering before that boundary took it
+gets a did-not-start line too, since it never joined. A run nobody watches —
 a scripted run, a served session — waits for its servers before its first
 round, because a first round without their tools is a worse answer nobody can
 see was worse.

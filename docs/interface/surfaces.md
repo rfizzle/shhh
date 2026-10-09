@@ -1814,7 +1814,11 @@ is the still one every surface uses for something in motion, in the
 spinner's colour, its word is quiet because nothing about it waits on the
 reader, and its note is the seconds since its connect began, ticking in the
 rail's one clock format. The row turns up or error the moment the connect
-ends, not at the turn boundary where the server's tools join. The heading
+ends, not at the turn boundary where the server's tools join; the
+transcript's line at that boundary for one that ran out its bound carries the
+bound and the key that raises it (`mcp: tracker: did not start (no answer
+within 20s — timeout_seconds) — its tools are not in this session`), and a
+server that answered and went before the boundary is that same line. The heading
 counts only what is up, and the fold takes the healthy rows first, so a
 server still starting keeps its row beside one that failed. The heading and
 the fold marker open the whole of it (`/mcp`, [the supporting

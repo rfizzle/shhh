@@ -244,6 +244,12 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	var joiner *mcpJoin
 	if session.mcpJoins {
 		joiner = newMCPJoin(session)
+		// A join rewrites the prompt the conversation sends, so the row's
+		// fingerprint follows it: a later turn's hash matches its request.
+		joiner.sent = func(text string) {
+			stamped = text
+			recorder.stamp(env.prompts.fingerprintOf(stamped), session.skills.Len(), projectFingerprintRoot(), settings())
+		}
 	}
 	newSession := func() chat.SessionStart {
 		text, projectTokens, _ := session.systemPrompt(cfg.Behavior.SystemPromptExtra)

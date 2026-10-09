@@ -28,7 +28,7 @@ keys Escape
 snap 04-docs-up "✓ docs" "▸ tracker" "2 of 3 up" "up · 1 tool"
 snap 05-tracker-error "error · timeout" "2 of 3 up"
 keys "now search them" Enter
-snap 06-joined "The docs server joined at this turn" "mcp: docs: up — 1 tool, from this turn" "mcp: tracker: did not start (timeout)"
+snap 06-joined "The docs server joined at this turn" "mcp: docs: up — 1 tool, from this turn" "mcp: tracker: did not start (no answer within 12s — timeout_seconds)"
 keys C-c
 snap 07-quit-armed "again quits"
 keys C-c

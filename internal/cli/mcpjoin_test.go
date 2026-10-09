@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -250,7 +251,7 @@ func TestMCPFailure_IsALineAtTheBoundary(t *testing.T) {
 		t.Fatal("the boundary took nothing")
 	}
 	want := []string{
-		"mcp: tracker: did not start (timeout) — its tools are not in this session",
+		"mcp: tracker: did not start (no answer within 0.0s — timeout_seconds) — its tools are not in this session",
 		"mcp: linear: did not start (connection refused) — its tools are not in this session",
 	}
 	if !slices.Equal(j.Notes, want) {
@@ -302,5 +303,64 @@ func TestSpawn_ReadsTheServersUpNow(t *testing.T) {
 	if _, err := earlyExec("wiki__page", json.RawMessage(`{}`)); err == nil ||
 		!strings.Contains(err.Error(), "joined the session after this agent started") {
 		t.Fatalf("the first child reached a server it was never handed: %v", err)
+	}
+}
+
+// The transcript's line for a bound that ran out carries the bound and the
+// key that raises it, as /mcp's fix line does: the definition's own key where
+// the definition set the bound, the session's where it did.
+func TestMCPFailure_ATimeoutLineNamesTheBoundAndTheKey(t *testing.T) {
+	own := mcp.Report{Definition: stdioServer("tracker", false), Status: mcp.StatusFailed, TimedOut: true,
+		Bound: 20 * time.Second}
+	session := own
+	session.BoundBySession = true
+	got := mcpJoinNotes([]mcp.Report{own, session})
+	want := []string{
+		"mcp: tracker: did not start (no answer within 20s — timeout_seconds) — its tools are not in this session",
+		"mcp: tracker: did not start (no answer within 20s — mcp.startup_timeout_seconds) — its tools are not in this session",
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("notes = %q", got)
+	}
+}
+
+// A join rewrites the system prompt the conversation sends, so the session
+// row's fingerprint is taken again over the prompt as sent: a turn after a
+// join carries a hash that matches its request, and one before it still
+// matches the launch prompt.
+func TestJoin_TheRecordsPromptHashFollowsTheJoin(t *testing.T) {
+	h := holdServers("docs")
+	cat := &mcp.Catalog{Servers: []mcp.Definition{stdioServer("docs", true)}}
+	s := &chatSession{toolDefs: []provider.Tool{{Name: "read_file"}}}
+	s.toolboxSaid = prompt.Toolbox(s.toolDefs, false)
+	t.Cleanup(s.useMCP(connectMCP(t.Context(), cat, mcp.Options{Dial: h.dial}, false), cat, false))
+	system := "base prompt\n\n" + s.toolboxSaid
+
+	db := fixtureStore(t)
+	rec := startObserveRecorder(db, "chat", "anthropic", "test-model", nil)
+	rec.stamp(system, 0, "/repo", storage.AgentSettings{})
+	join := newMCPJoin(*s)
+	join.sent = func(text string) { rec.stamp(text, 0, "/repo", storage.AgentSettings{}) }
+	hashOf := func() string {
+		t.Helper()
+		row, ok, err := db.AgentSession(rec.sessionID())
+		if err != nil || !ok {
+			t.Fatalf("session: %v (found=%v)", err, ok)
+		}
+		return row.PromptHash
+	}
+
+	// A boundary with nothing settled leaves the hash alone.
+	if _, moved := join.take(system); moved || hashOf() != fingerprint(system) {
+		t.Fatalf("an empty boundary moved the hash: %q", hashOf())
+	}
+	h.answer("docs", "", "search")
+	settledReport(t, s.mcpTools, 0)
+	j, moved := join.take(system)
+	if !moved || j.System == "" || j.System == system {
+		t.Fatalf("the join did not rewrite the prompt: %+v", j)
+	}
+	if got := hashOf(); got != fingerprint(j.System) || got == fingerprint(system) {
+		t.Fatalf("hash = %q; want the rewritten prompt's %q", got, fingerprint(j.System))
 	}
 }
