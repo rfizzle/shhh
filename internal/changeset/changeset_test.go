@@ -932,3 +932,15 @@ func TestRestore_AFreshSlotHasNothing(t *testing.T) {
 		t.Fatalf("an empty slot restored nothing, got %v", files)
 	}
 }
+
+// A file the person wrote in a turn stays the person's when the session
+// writes it again in the same turn.
+func TestAdd_APersonsWriteStaysTheirsAcrossALaterOne(t *testing.T) {
+	s := New(DefaultMaxBytes)
+	s.Add(1, Record{Path: "f.go", Before: "a\n", After: "b\n", BeforeExists: true, AfterExists: true, Origin: ByPerson})
+	s.Add(1, Record{Path: "f.go", Before: "b\n", After: "c\n", BeforeExists: true, AfterExists: true, Origin: Approved})
+	turn, _ := s.Turn(1)
+	if len(turn.Records) != 1 || turn.Records[0].Origin != ByPerson {
+		t.Fatalf("the merged record reads %+v", turn.Records)
+	}
+}

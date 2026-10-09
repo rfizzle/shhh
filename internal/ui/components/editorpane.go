@@ -189,6 +189,15 @@ func (p *EditorPane) Cursor() (line, col int) {
 // because whether it leaves is the write's to decide.
 func (p *EditorPane) Update(msg tea.KeyPressMsg) (done bool, result EditorResult) {
 	p.Notice = ""
+	// A paste arrives as one press carrying the whole run, and a run that
+	// happens to spell a key — `esc`, `delete`, `y` under the question — is
+	// still text. Under the question it is nothing: the typing has stopped.
+	if msg.Mod == 0 && len([]rune(msg.Text)) > 1 {
+		if !p.asking {
+			p.insert(bufferRunes(msg.Text))
+		}
+		return false, EditorTyping
+	}
 	if p.asking {
 		switch {
 		case keys.Match(msg, keys.Editor.Discard):
@@ -270,7 +279,7 @@ func (p *EditorPane) edit(msg tea.KeyPressMsg) {
 			last := len(p.lines) - 1
 			p.cur = editorPos{last, len(p.lines[last])}
 		})
-	case keys.Match(msg, km.InsertNewline):
+	case keys.Match(msg, km.InsertNewline), keys.Match(msg, keys.Draft.Newline):
 		p.insert([]rune{'\n'})
 	case keys.Match(msg, km.DeleteCharacterBackward):
 		if !p.deleteSelection() {
@@ -498,11 +507,15 @@ func (p *EditorPane) bodyRows() int {
 		return max(len(p.lines), 1)
 	}
 	rows := p.height - editorChromeRows
-	if p.folded(p.width) {
+	if narrowEditor(p.width) {
 		rows--
 	}
 	return max(rows, 1)
 }
+
+// narrowEditor reports a width below the rail's rung, where the header names
+// the file alone under a second line and the foot row states its short form.
+func narrowEditor(width int) bool { return width < InspectorMinContentWidth }
 
 // folded reports that the outline has no column of its own at this width:
 // below the rail's rung, or for a file with nothing to outline.
@@ -529,9 +542,9 @@ func (p *EditorPane) codeWidth(width int) int {
 // View draws the pane into the rectangle SetSize gave it.
 func (p *EditorPane) View(width int) string {
 	p.read()
-	folded := p.folded(width)
-	rows := []string{p.headerRow(width, folded)}
-	if folded {
+	folded, narrow := p.folded(width), narrowEditor(width)
+	rows := []string{p.headerRow(width, narrow)}
+	if narrow {
 		rows = append(rows, sty.dim.Render(Clip(p.whereLine(), width)))
 	}
 	rows = append(rows, titleRule(width))
@@ -548,7 +561,7 @@ func (p *EditorPane) View(width int) string {
 		}
 	}
 	rows = append(rows, code...)
-	rows = append(rows, screenRule(width), p.footRow(width, folded))
+	rows = append(rows, screenRule(width), p.footRow(width, narrow))
 	return strings.Join(rows, "\n")
 }
 
@@ -556,7 +569,8 @@ func (p *EditorPane) View(width int) string {
 // and `modified` in the accent while the buffer differs from the disk; the
 // keys at its right. Folded, the file is its name alone, because the line
 // under the header names its directory.
-func (p *EditorPane) headerRow(width int, folded bool) string {
+func (p *EditorPane) headerRow(width int, narrow bool) string {
+	folded := narrow
 	name := p.Path
 	if folded {
 		name = filepath.Base(p.Path)
@@ -873,7 +887,8 @@ func (p *EditorPane) GoTo(line int) {
 
 // footRow is the keys and where the cursor stands, or the question esc asked,
 // or what the last save said.
-func (p *EditorPane) footRow(width int, folded bool) string {
+func (p *EditorPane) footRow(width int, narrow bool) string {
+	folded := narrow
 	line, col := p.Cursor()
 	long, short := fmt.Sprintf("ln %d · col %d", line, col), fmt.Sprintf("%d:%d", line, col)
 	type form struct{ left, at string }

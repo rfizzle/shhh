@@ -213,6 +213,11 @@
     /plan          the approved plan as a checklist on the steps screen — each step, the paths it named, its
                    state and the calls that carried it out — with anything that has departed from it · save
                    [name] writes the last plan/response to .shhh/plans/ · drop forgets an approved plan
+    /edit <path>   open a file in a pane over the feed and edit it yourself: every key types, [ctrl+s] saves
+                   through the same write the agent's edits take, so the turn's close counts it as changed by
+                   you and /undo reaches it, and [esc] goes back to the prompt — asking first if the buffer
+                   differs from the disk. A file outside the working scope is refused; /add-dir brings its
+                   directory in
     /diff [path]   show what this session changed, full screen, or one file's — read from the session's own
                    changeset, so it works outside a git repository
     /review [turn] review what a turn changed: file list, hunks and the turn's verdict (bare reviews the last
@@ -429,6 +434,11 @@
     ␛[38;5;252m/plan␛[m          ␛[38;5;241mthe approved plan as a checklist on the steps screen — each step, the paths it named, its␛[m
                    ␛[38;5;241mstate and the calls that carried it out — with anything that has departed from it · save␛[m
                    ␛[38;5;241m[name] writes the last plan/response to .shhh/plans/ · drop forgets an approved plan␛[m
+    ␛[38;5;252m/edit <path>␛[m   ␛[38;5;241mopen a file in a pane over the feed and edit it yourself: every key types, [ctrl+s] saves␛[m
+                   ␛[38;5;241mthrough the same write the agent's edits take, so the turn's close counts it as changed by␛[m
+                   ␛[38;5;241myou and /undo reaches it, and [esc] goes back to the prompt — asking first if the buffer␛[m
+                   ␛[38;5;241mdiffers from the disk. A file outside the working scope is refused; /add-dir brings its␛[m
+                   ␛[38;5;241mdirectory in␛[m
     ␛[38;5;252m/diff [path]␛[m   ␛[38;5;241mshow what this session changed, full screen, or one file's — read from the session's own␛[m
                    ␛[38;5;241mchangeset, so it works outside a git repository␛[m
     ␛[38;5;252m/review [turn]␛[m ␛[38;5;241mreview what a turn changed: file list, hunks and the turn's verdict (bare reviews the last␛[m

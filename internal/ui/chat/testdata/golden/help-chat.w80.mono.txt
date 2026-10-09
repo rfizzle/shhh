@@ -288,6 +288,13 @@
                    carried it out — with anything that has departed from it ·
                    save [name] writes the last plan/response to .shhh/plans/ ·
                    drop forgets an approved plan
+    /edit <path>   open a file in a pane over the feed and edit it yourself:
+                   every key types, [ctrl+s] saves through the same write the
+                   agent's edits take, so the turn's close counts it as changed
+                   by you and /undo reaches it, and [esc] goes back to the
+                   prompt — asking first if the buffer differs from the disk. A
+                   file outside the working scope is refused; /add-dir brings
+                   its directory in
     /diff [path]   show what this session changed, full screen, or one file's —
                    read from the session's own changeset, so it works outside a
                    git repository
@@ -584,6 +591,13 @@
                    ␛[38;5;244mcarried it out — with anything that has departed from it ·␛[m
                    ␛[38;5;244msave [name] writes the last plan/response to .shhh/plans/ ·␛[m
                    ␛[38;5;244mdrop forgets an approved plan␛[m
+    ␛[38;5;254m/edit <path>␛[m   ␛[38;5;244mopen a file in a pane over the feed and edit it yourself:␛[m
+                   ␛[38;5;244mevery key types, [ctrl+s] saves through the same write the␛[m
+                   ␛[38;5;244magent's edits take, so the turn's close counts it as changed␛[m
+                   ␛[38;5;244mby you and /undo reaches it, and [esc] goes back to the␛[m
+                   ␛[38;5;244mprompt — asking first if the buffer differs from the disk. A␛[m
+                   ␛[38;5;244mfile outside the working scope is refused; /add-dir brings␛[m
+                   ␛[38;5;244mits directory in␛[m
     ␛[38;5;254m/diff [path]␛[m   ␛[38;5;244mshow what this session changed, full screen, or one file's —␛[m
                    ␛[38;5;244mread from the session's own changeset, so it works outside a␛[m
                    ␛[38;5;244mgit repository␛[m

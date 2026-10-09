@@ -673,6 +673,13 @@ func (s *Store) Add(turn int64, r Record) (evicted []int64) {
 		prev := t.Records[i]
 		s.bytes -= prev.size()
 		r.Before, r.BeforeExists, r.BeforeMode = prev.Before, prev.BeforeExists, prev.BeforeMode
+		// A file the person wrote in this turn stays the person's whoever
+		// writes it after: the net change is partly theirs, the close row
+		// says so, and the tree reading must not subtract it as the
+		// session's own.
+		if prev.Origin == ByPerson {
+			r.Origin = ByPerson
+		}
 		if r.AfterMode == 0 && r.AfterExists {
 			// The later edit did not read the mode, which for the tools that
 			// write files means it did not change one either — so the mode

@@ -156,6 +156,25 @@ func TestEditorPane_EveryLetterIsText(t *testing.T) {
 	}
 }
 
+// A paste is text whatever it spells, and the draft's newline chord is a
+// newline here too.
+func TestEditorPane_APasteIsTextAndCtrlJIsALine(t *testing.T) {
+	p := NewEditorPane("f.txt", "a\n")
+	for _, run := range []string{"esc", "delete", "ctrl+s"} {
+		if done, res := pressEditor(t, p, tea.KeyPressMsg{Code: []rune(run)[0], Text: run}); done || res != EditorTyping {
+			t.Errorf("a paste of %q acted as a key: done %v, %v", run, done, res)
+		}
+	}
+	pressEditor(t, p, tea.KeyPressMsg{Code: 'j', Mod: tea.ModCtrl})
+	if got := p.Value(); got != "escdeletectrl+s\na\n" {
+		t.Errorf("the buffer reads %q", got)
+	}
+	pressEditor(t, p, editorEsc)
+	if done, _ := pressEditor(t, p, tea.KeyPressMsg{Code: 'y', Text: "yes"}); done || !p.Asking() {
+		t.Error("a paste under the question answered it")
+	}
+}
+
 // A file is written back as it was read: tabs, a final newline and carriage
 // returns are the file's, not the pane's to tidy.
 func TestEditorPane_AFileComesBackAsItWasRead(t *testing.T) {

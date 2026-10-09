@@ -69,8 +69,8 @@ tree reading is concerned, so the boundary after it names the file to the
 model the way it names a change made in an editor beside the session, and the
 model's next overwrite of a file it read before the save is refused as stale.
 The save is held to the write's own rule as well: a file that moved on disk
-while the pane was open is refused rather than replaced, and the buffer is
-kept. A conversation has no such door, because it changes nothing.
+while the pane was open is refused rather than replaced, the buffer is kept,
+and only a second save, once the person has been told, writes over it. A conversation has no such door, because it changes nothing.
 
 ## A rewind can put the files back
 

@@ -163,8 +163,14 @@ func TestEdit_AFileThatMovedIsNotOverwritten(t *testing.T) {
 	if data, _ := os.ReadFile(path); string(data) != "somebody else\n" {
 		t.Errorf("the save overwrote a file that moved: %q", data)
 	}
-	if m.state != stateEditor || !strings.HasPrefix(lastNote(m), "could not save loop.go") {
+	if m.state != stateEditor || !strings.HasPrefix(lastNote(m), "not saved: loop.go changed on disk since it was opened") {
 		t.Errorf("state %d, note %q", m.state, lastNote(m))
+	}
+	// Having been told, the person can still keep their buffer: the second
+	// press writes over what is there now.
+	m = pressKeys(t, m, editSave)
+	if data, _ := os.ReadFile(path); string(data) != "x"+editLoop {
+		t.Errorf("the second save did not write the buffer: %q", data)
 	}
 }
 

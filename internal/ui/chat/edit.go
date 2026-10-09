@@ -18,6 +18,7 @@ package chat
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -169,6 +170,21 @@ func (m *Model) saveEditPane(s *editSession) (string, bool) {
 	record := changeRecording{store: m.changes, tracker: m.tracker, turn: turn, path: s.abs, origin: changeset.ByPerson}
 	before := record.before()
 	if _, err := s.seen.ExecuteMutating(tools.WriteFileName, args); err != nil {
+		var stale tools.StaleError
+		if errors.As(err, &stale) {
+			// The file moved since the pane opened it. The save is refused
+			// as the write tool refuses any stale overwrite, and the pane
+			// takes the file as it now is as read, so the person who has
+			// looked and still wants their buffer can write it with a
+			// second press rather than lose it.
+			if now, rerr := os.ReadFile(s.abs); rerr == nil {
+				s.seen.NoteOpened(s.abs, now)
+			}
+			note := "not saved: " + s.pane.Path + " changed on disk since it was opened — " +
+				keys.Bracket(keys.Editor.Save) + " again writes over it"
+			s.pane.Notice = note
+			return note, false
+		}
 		return m.editPaneFailed(s, err), false
 	}
 	m.noteEvictedTurns(record.after(before))

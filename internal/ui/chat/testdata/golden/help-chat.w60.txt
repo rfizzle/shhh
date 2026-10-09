@@ -429,6 +429,16 @@
                    departed from it · save [name] writes the
                    last plan/response to .shhh/plans/ · drop
                    forgets an approved plan
+    /edit <path>   open a file in a pane over the feed and
+                   edit it yourself: every key types,
+                   [ctrl+s] saves through the same write the
+                   agent's edits take, so the turn's close
+                   counts it as changed by you and /undo
+                   reaches it, and [esc] goes back to the
+                   prompt — asking first if the buffer
+                   differs from the disk. A file outside the
+                   working scope is refused; /add-dir brings
+                   its directory in
     /diff [path]   show what this session changed, full
                    screen, or one file's — read from the
                    session's own changeset, so it works
@@ -873,6 +883,16 @@
                    ␛[38;5;241mdeparted from it · save [name] writes the␛[m
                    ␛[38;5;241mlast plan/response to .shhh/plans/ · drop␛[m
                    ␛[38;5;241mforgets an approved plan␛[m
+    ␛[38;5;252m/edit <path>␛[m   ␛[38;5;241mopen a file in a pane over the feed and␛[m
+                   ␛[38;5;241medit it yourself: every key types,␛[m
+                   ␛[38;5;241m[ctrl+s] saves through the same write the␛[m
+                   ␛[38;5;241magent's edits take, so the turn's close␛[m
+                   ␛[38;5;241mcounts it as changed by you and /undo␛[m
+                   ␛[38;5;241mreaches it, and [esc] goes back to the␛[m
+                   ␛[38;5;241mprompt — asking first if the buffer␛[m
+                   ␛[38;5;241mdiffers from the disk. A file outside the␛[m
+                   ␛[38;5;241mworking scope is refused; /add-dir brings␛[m
+                   ␛[38;5;241mits directory in␛[m
     ␛[38;5;252m/diff [path]␛[m   ␛[38;5;241mshow what this session changed, full␛[m
                    ␛[38;5;241mscreen, or one file's — read from the␛[m
                    ␛[38;5;241msession's own changeset, so it works␛[m

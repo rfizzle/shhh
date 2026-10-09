@@ -3454,8 +3454,12 @@ under the `·` mark. The save is the write tool's own write, into the same
 changeset, as the person's — the turn's close counts it as `changed by you`
 ([a turn ends with what
 changed](../capabilities/coding-agent.md#a-turn-ends-with-what-changed)). A
-file that moved on disk since the pane opened it is refused, `could not save
-<path>: …`, and the buffer is kept.
+file that moved on disk since the pane opened it is refused the way the write
+tool refuses a stale overwrite — `not saved: <path> changed on disk since it
+was opened — [ctrl+s] again writes over it` — and the buffer is kept; the
+second press is the person deciding, having been told. A paste is text
+whatever it spells, and `shift+enter` and `ctrl+j` are a line as at the
+draft.
 
 `[esc]` over a buffer that matches the disk goes back to the prompt. Over a
 modified one it asks on the foot row — `leave without saving? [y] discard the
