@@ -419,6 +419,15 @@ func closeOfferRows(lead, stated string, keys []TurnKey, waiting bool, handover 
 	return rows
 }
 
+// byYouClause is the changed-files row's count of the person's own files,
+// and nothing where there are none.
+func byYouClause(n int) string {
+	if n == 0 {
+		return ""
+	}
+	return sty.dim.Render(fmt.Sprintf(" · %d changed by you", n))
+}
+
 // View renders the close block at the given width, one line per row.
 func (c TurnClose) View(width int) string {
 	lines := []string{c.total().view(width)}
@@ -428,10 +437,7 @@ func (c TurnClose) View(width int) string {
 		if ch.Mode != "" {
 			stats = sty.dim.Render(ch.Mode)
 		}
-		stated := sty.body.Render(plural(ch.Files, "file")+" changed ") + stats
-		if ch.ByYou > 0 {
-			stated += sty.dim.Render(fmt.Sprintf(" · %d changed by you", ch.ByYou))
-		}
+		stated := sty.body.Render(plural(ch.Files, "file")+" changed ") + stats + byYouClause(ch.ByYou)
 		lead := closeLead(sty.accent.Render("▎"), sty.accent.Render("✎"))
 		notes := []string{sty.dim.Render(ch.Note)}
 		if ch.Back != "" {

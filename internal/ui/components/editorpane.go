@@ -714,7 +714,6 @@ func (p *EditorPane) codeRows(width, rows int) []string {
 	p.follow(width, rows)
 	cw := p.codeWidth(width)
 	numW := p.gutterWidth() - 2
-	selStart, selEnd, selOK := p.selection()
 	comment := commentMark(p.Path)
 	var out []string
 	for i := p.top; i < len(p.lines) && len(out) < rows; i++ {
@@ -745,44 +744,12 @@ func (p *EditorPane) codeRows(width, rows int) []string {
 					num = sty.dimmer.Render(num)
 				}
 			}
-			var b strings.Builder
-			used := 0
-			run, runTone := "", toneText
-			flush := func() {
-				if run != "" {
-					b.WriteString(runTone.style(tone).Render(run))
-					run = ""
-				}
-			}
-			for j := s.start; j < s.end; j++ {
-				pos := editorPos{i, j}
-				t := toneText
-				if selOK && !pos.before(selStart) && pos.before(selEnd) {
-					t = toneSelected
-				}
-				if pos == p.cur {
-					t = toneCursor
-				}
-				text := string(line[j])
-				switch {
-				case line[j] == '\t':
-					text = strings.Repeat(" ", ws[j])
-				case ws[j] == 0:
-					text = ""
-				}
-				if t != runTone {
-					flush()
-				}
-				run += text
-				runTone = t
-				used += ws[j]
-			}
-			flush()
+			text, used := p.segmentText(i, s, ws, tone)
 			if atEnd && n == len(segs)-1 {
-				b.WriteString(editorCursor().Render(" "))
+				text += editorCursor().Render(" ")
 				used++
 			}
-			row := mark + num + " " + b.String()
+			row := mark + num + " " + text
 			if !p.folded(width) && used < cw {
 				row += strings.Repeat(" ", cw-used)
 			}
@@ -790,6 +757,47 @@ func (p *EditorPane) codeRows(width, rows int) []string {
 		}
 	}
 	return out
+}
+
+// segmentText draws one wrapped row of line i in its tone, with the
+// selection and the cursor over it, and says how many columns it took.
+func (p *EditorPane) segmentText(i int, s segment, ws []int, tone lipgloss.Style) (string, int) {
+	line := p.lines[i]
+	selStart, selEnd, selOK := p.selection()
+	var b strings.Builder
+	used := 0
+	run, runTone := "", toneText
+	flush := func() {
+		if run != "" {
+			b.WriteString(runTone.style(tone).Render(run))
+			run = ""
+		}
+	}
+	for j := s.start; j < s.end; j++ {
+		pos := editorPos{i, j}
+		t := toneText
+		if selOK && !pos.before(selStart) && pos.before(selEnd) {
+			t = toneSelected
+		}
+		if pos == p.cur {
+			t = toneCursor
+		}
+		text := string(line[j])
+		switch {
+		case line[j] == '\t':
+			text = strings.Repeat(" ", ws[j])
+		case ws[j] == 0:
+			text = ""
+		}
+		if t != runTone {
+			flush()
+		}
+		run += text
+		runTone = t
+		used += ws[j]
+	}
+	flush()
+	return b.String(), used
 }
 
 // cellTone is how one cell of code is drawn: in the line's own tone, inside
@@ -1038,7 +1046,7 @@ func funcLabel(rest string) (label, name string) {
 func leadingIdent(s string) string {
 	end := 0
 	for i, r := range s {
-		if !(unicode.IsLetter(r) || r == '_' || (i > 0 && unicode.IsDigit(r))) {
+		if !unicode.IsLetter(r) && r != '_' && (i == 0 || !unicode.IsDigit(r)) {
 			break
 		}
 		end = i + len(string(r))
