@@ -115,7 +115,7 @@ shhh history · 6 entries · 2 run                                              
 [↑↓/jk] move between entries
 [enter] run the command under the pointer again
 [c] copy the command to the clipboard
-[s] save the command as a snippet
+[ctrl+s] save the command as a snippet
 [x] delete the entry, after confirming it
 [/] filter by what was asked or by what came back
 [ctrl+u] clear the filter; clear it again to close it
@@ -246,7 +246,7 @@ $  a shell command
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move between entries␛[m
 ␛[38;5;103m[enter]␛[m␛[38;5;241m run the command under the pointer again␛[m
 ␛[38;5;103m[c]␛[m␛[38;5;241m copy the command to the clipboard␛[m
-␛[38;5;103m[s]␛[m␛[38;5;241m save the command as a snippet␛[m
+␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save the command as a snippet␛[m
 ␛[38;5;103m[x]␛[m␛[38;5;241m delete the entry, after confirming it␛[m
 ␛[38;5;103m[/]␛[m␛[38;5;241m filter by what was asked or by what came back␛[m
 ␛[38;5;103m[ctrl+u]␛[m␛[38;5;241m clear the filter; clear it again to close it␛[m

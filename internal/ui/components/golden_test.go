@@ -2355,7 +2355,7 @@ func TestGolden_PlanCard(t *testing.T) {
 					{Label: "Reject the plan", Desc: "nothing runs and the session stays in plan mode"},
 				},
 				HintKeys: []KeyOffer{{Key: "[↑↓/jk]", Label: "move"}, {Key: "[enter]", Label: "select"},
-					{Key: "[1–5]", Label: "jump"}, {Key: "[s]", Label: "save"},
+					{Key: "[1–5]", Label: "jump"}, keyOfferAs(keys.Plan.Save, "save"),
 					keyOfferAs(keys.Wait.NewSession, NewSessionCarryPlan()),
 					keyOfferAs(keys.Plan.Implement, "implement in a new session — accept edits mode"),
 					keyOfferAs(keys.Select.Cancel, "keep planning")},

@@ -403,7 +403,7 @@ func (m Model) savePlanFromCard() (tea.Model, tea.Cmd) {
 	} else if path, err := savePlan(m.workspace, text, ""); err != nil {
 		m.appendEntry(entry{kind: entrySystem, text: failed("plan", "could not save it: "+err.Error())})
 	} else {
-		m.appendEntry(entry{kind: entrySystem, text: "plan saved to " + path})
+		m.appendEntry(entry{kind: entrySystem, text: components.WriteReceipt("plan", path) + "."})
 	}
 	m.syncViewport()
 	m.viewport.SetLines(m.renderHistoryLines())

@@ -325,7 +325,7 @@ func TestHistoryScreen_CopyAndSaveResolveWithoutClosing(t *testing.T) {
 	for _, tc := range []struct {
 		key string
 		act historyAct
-	}{{"c", HistoryCopy}, {"s", HistorySave}} {
+	}{{"c", HistoryCopy}, {"ctrl+s", HistorySave}} {
 		h := historyScreen()
 		h.Update(key("down"))
 		done, result := h.Update(key(tc.key))
@@ -433,7 +433,7 @@ func TestHistoryScreen_KeyListIsComplete(t *testing.T) {
 	h := historyScreen()
 	h.Update(key("?"))
 	out := plainView(h, 130)
-	for _, want := range []string{"[↑↓/jk] move", "[enter] run the command", "[c] copy", "[s] save", "[x] delete", "[/] filter", "[ctrl+u]", "[esc]", "[q]"} {
+	for _, want := range []string{"[↑↓/jk] move", "[enter] run the command", "[c] copy", "[ctrl+s] save", "[x] delete", "[/] filter", "[ctrl+u]", "[esc]", "[q]"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("[?] does not list %q:\n%s", want, out)
 		}

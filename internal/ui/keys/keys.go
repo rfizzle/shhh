@@ -1561,7 +1561,7 @@ var Screen = ScreenKeys{
 
 	Copy:    bind("c", "copy it", "c"),
 	Rerun:   bind("enter", "re-run it", "enter"),
-	Snippet: bind("s", "save it as a snippet", "s"),
+	Snippet: Save("save it as a snippet"),
 	Delete:  bind("x", "delete it", "x"),
 	Rename:  bind("r", "rename it", "r"),
 	Fix:     bind("f", "show the fix", "f"),
@@ -1609,7 +1609,7 @@ var OneShot = OneShotKeys{
 	Alternatives: bind("a", "the other commands", "a"),
 	Explain:      bind("x", "explain", "x"),
 	Copy:         bind("c", "copy", "c"),
-	Save:         bind("s", "save", "s"),
+	Save:         Save("save"),
 	// The bar is the whole screen while it is up, so the letter every
 	// full-screen viewer in shhh leaves on is live here too. The hint prints
 	// the chord a reader reaches for first and answers to both.
@@ -1641,7 +1641,7 @@ type PlanKeys struct {
 
 var Plan = PlanKeys{
 	Jump:      bind("1–5", "jump to a row", "1", "2", "3", "4", "5"),
-	Save:      bind("s", "save the plan", "s", "S"),
+	Save:      Save("save the plan"),
 	Implement: bind("i", "implement in a new session", "i"),
 }
 

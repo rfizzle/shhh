@@ -34,6 +34,8 @@ func keyMsg(key string) tea.KeyPressMsg {
 		return tea.KeyPressMsg{Code: tea.KeyEnter}
 	case "esc":
 		return tea.KeyPressMsg{Code: tea.KeyEscape}
+	case "ctrl+s":
+		return tea.KeyPressMsg{Code: 's', Mod: tea.ModCtrl}
 	}
 	return tea.KeyPressMsg{Code: []rune(key)[0], Text: key}
 }
@@ -55,7 +57,7 @@ func TestActionBar_KeysAreDirect(t *testing.T) {
 		{"r", ActionRevise},
 		{"x", ActionExplain},
 		{"c", ActionCopy},
-		{"s", ActionSave},
+		{"ctrl+s", ActionSave},
 		{"esc", ActionCancel},
 		{"q", ActionCancel},
 	} {
@@ -156,7 +158,7 @@ func TestActionBar_ViewIsOneRowOfBracketedKeys(t *testing.T) {
 	view := NewActionBarModel().View(barWidth)
 	for _, want := range []string{
 		"[enter] run", "[e] edit", "[r] revise", "[x] explain",
-		"[c] copy", "[s] save", "[esc] quit",
+		"[c] copy", "[ctrl+s] save", "[esc] quit",
 	} {
 		if !strings.Contains(view, want) {
 			t.Errorf("bar is missing %q:\n%s", want, view)
@@ -169,13 +171,13 @@ func TestActionBar_ViewIsOneRowOfBracketedKeys(t *testing.T) {
 
 // A narrow terminal is the one that used to lose the end of the row: the
 // renderer drops what is past the last column, so the keys that went missing
-// were `[s] save` and the `[esc]` that says how to leave.
+// were `[ctrl+s] save` and the `[esc]` that says how to leave.
 func TestActionBar_NarrowRowBreaksBetweenKeysAndKeepsThemAll(t *testing.T) {
 	const width = 60
 	view := NewActionBarModel().SetDanger(true).SetDryRun(true).View(width)
 	for _, want := range []string{
 		"[enter] show what it would affect", "[y] run it", "[d] dry run",
-		"[e] edit", "[r] revise", "[x] explain", "[c] copy", "[s] save",
+		"[e] edit", "[r] revise", "[x] explain", "[c] copy", "[ctrl+s] save",
 		"[esc] quit",
 	} {
 		if !strings.Contains(view, want) {

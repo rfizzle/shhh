@@ -3907,7 +3907,7 @@ under the prompt rather than over the screen, is not the same as drawing at
 whatever width it likes: the terminal holds one cell per column and keeps
 nothing past the last, so a row that overran was never a row that wrapped —
 it was a row whose tail nobody was shown, and what went missing was the end
-of the sentence and the last keys on the row, `[s] save` and the `[esc]` that
+of the sentence and the last keys on the row, `[ctrl+s] save` and the `[esc]` that
 says how to leave.
 
 The count is owed in the other direction too. Inline means the frame shares

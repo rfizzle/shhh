@@ -229,7 +229,8 @@ func TestReference_KeymapIsCurrent(t *testing.T) {
 // as flow control. On a cooked hop where the chord never arrives the keymap
 // file moves the act, and the register takes the move.
 func TestKeys_EverySaveIsCtrlS(t *testing.T) {
-	for name, b := range map[string]Binding{"the settings write": Screen.Write, "the profile save": Profile.Save} {
+	for name, b := range map[string]Binding{"the settings write": Screen.Write, "the profile save": Profile.Save,
+		"the plan save": Plan.Save, "the one-shot save": OneShot.Save, "the history snippet save": Screen.Snippet} {
 		if got := Shown(b); got != SaveChord {
 			t.Errorf("%s is shown as %q, want ctrl+s", name, got)
 		}

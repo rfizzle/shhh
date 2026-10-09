@@ -326,7 +326,7 @@ func (m *historyModel) apply(command components.HistoryCommand) {
 		if err := m.db.SaveSnippet(name, entry.Command); err != nil {
 			m.screen.Notice = "save: " + err.Error()
 		} else {
-			m.screen.Notice = fmt.Sprintf("saved as snippet %q", name)
+			m.screen.Notice = components.WriteReceipt(fmt.Sprintf("snippet %q", name), "shhh.db")
 		}
 	case components.HistoryDelete:
 		if err := m.db.DeleteHistoryEntry(entry.ID); err != nil {

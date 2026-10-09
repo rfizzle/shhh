@@ -268,7 +268,7 @@
   · scope    g · switch the file  [shipped]
   · copy     c · copy it  [shipped]
   · rerun    enter · re-run it  [shipped]
-  · snippet  s · save it as a snippet  [shipped]
+  · snippet  ctrl+s · save it as a snippet  [shipped]
   · delete   x · delete it  [shipped]
   · rename   r · rename it  [shipped]
   · fix      f · show the fix  [shipped]
@@ -330,7 +330,7 @@
   PLAN
 
   · jump       1 2 3 4 5 · jump to a row  [shipped]
-  · save       s S · save the plan  [shipped]
+  · save       ctrl+s · save the plan  [shipped]
   · implement  i · implement in a new session  [shipped]
 
   QUERY
@@ -349,7 +349,7 @@
   · alternatives  a · the other commands  [shipped]
   · explain       x · explain  [shipped]
   · copy          c · copy  [shipped]
-  · save          s · save  [shipped]
+  · save          ctrl+s · save  [shipped]
   · quit          esc q · quit  [shipped]
 
   SETUP

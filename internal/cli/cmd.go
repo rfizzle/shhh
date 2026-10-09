@@ -29,6 +29,7 @@ import (
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui"
+	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"
 )
 
@@ -638,7 +639,7 @@ func (r *oneShotRun) perform(result ui.GenerateResult, db *storage.DB, requestID
 			if err := db.SaveSnippet(result.SaveName, result.Command); err != nil {
 				fmt.Fprintf(os.Stderr, "Error saving snippet: %v\n", err)
 			} else {
-				fmt.Fprintf(os.Stderr, "Saved snippet %q.\n", result.SaveName)
+				fmt.Fprintln(os.Stderr, components.WriteReceipt(fmt.Sprintf("snippet %q", result.SaveName), "shhh.db")+".")
 				if desc := snippetDescription(r.cmd.Context(), r.p, r.resolved.Model, resolveFlow(r.cfg, flowDescription, r.p.Name(), r.resolved.Model).model, result.Command, result.Explanation); desc != "" {
 					_ = db.UpdateSnippetDescription(result.SaveName, desc)
 					fmt.Fprintf(os.Stderr, "Description: %s\n", desc)

@@ -982,7 +982,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `screen.scope` | `g` | switch the file | yes |
 | `screen.copy` | `c` | copy it | yes |
 | `screen.rerun` | `enter` | re-run it | yes |
-| `screen.snippet` | `s` | save it as a snippet | yes |
+| `screen.snippet` | `ctrl+s` | save it as a snippet | yes |
 | `screen.delete` | `x` | delete it | yes |
 | `screen.rename` | `r` | rename it | yes |
 | `screen.fix` | `f` | show the fix | yes |
@@ -1029,7 +1029,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `sprint.take` | `enter` | write the sprint | yes |
 | `sprint.cancel` | `esc` | write nothing | yes |
 | `plan.jump` | `1`, `2`, `3`, `4`, `5` | jump to a row | yes |
-| `plan.save` | `s`, `S` | save the plan | yes |
+| `plan.save` | `ctrl+s` | save the plan | yes |
 | `plan.implement` | `i` | implement in a new session | yes |
 | `query.rub` | `backspace` | delete a character | yes |
 | `oneshot.run` | `enter` | run | yes |
@@ -1042,7 +1042,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `oneshot.alternatives` | `a` | the other commands | yes |
 | `oneshot.explain` | `x` | explain | yes |
 | `oneshot.copy` | `c` | copy | yes |
-| `oneshot.save` | `s` | save | yes |
+| `oneshot.save` | `ctrl+s` | save | yes |
 | `oneshot.quit` | `esc`, `q` | quit | yes |
 | `setup.wizard` | `enter` | setup wizard | yes |
 | `setup.paste` | `p` | paste a key | yes |

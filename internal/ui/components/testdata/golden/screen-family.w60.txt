@@ -60,7 +60,7 @@ shhh history · 6 entries · 2 run         [?] keys · [q] quit
 ↓ 2 more
 
 [↑↓/jk] move · [enter] re-run it · [c] copy it
-[s] save it as a snippet · [x] delete it · [/] filter
+[ctrl+s] save it as a snippet · [x] delete it · [/] filter
 [esc] back to the shell
 
 · rate · the same header over one card
@@ -288,7 +288,7 @@ linear                                                 error
 ␛[38;5;241m↓ 2 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy it␛[m
-␛[38;5;103m[s]␛[m␛[38;5;241m save it as a snippet␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m
+␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save it as a snippet␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · rate · the same header over one card

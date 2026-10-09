@@ -687,9 +687,9 @@ func TestResult_SavingCarriesTheSentenceAlreadyOnScreen(t *testing.T) {
 	asked := 0
 	m := drainStream(NewGenerateModel(makeEvents(bundled), noopCancel, nil, nil, refuseExplain(&asked), ""), 2)
 
-	m = press(t, m, "s")
+	m = press(t, m, "ctrl+s")
 	if m.Phase() != phaseSave {
-		t.Fatalf("[s] did not ask for a name: phase %v", m.Phase())
+		t.Fatalf("[ctrl+s] did not ask for a name: phase %v", m.Phase())
 	}
 	for _, r := range "listing" {
 		m = press(t, m, string(r))
@@ -859,7 +859,7 @@ func TestResult_TheFieldLabelsAreLowerCaseStatus(t *testing.T) {
 	}{
 		{"e", "edit: "},
 		{"r", "feedback: "},
-		{"s", "snippet name: "},
+		{"ctrl+s", "snippet name: "},
 	} {
 		view := press(t, m, c.key).View().Content
 		if !strings.Contains(view, sty.Label.Render(c.label)) {

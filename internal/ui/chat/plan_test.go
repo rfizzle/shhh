@@ -570,15 +570,15 @@ func TestPlanCard_SaveKeyWritesThePlanAndKeepsTheCard(t *testing.T) {
 	dir := t.TempDir()
 	m := plannedModel(t, structuredPlan).WithWorkspace(dir)
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 's', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if m.state != statePlanApprove {
 		t.Fatalf("saving is not a decision and must not answer one, got state %d", m.state)
 	}
 	saved := ""
 	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.HasPrefix(e.text, "plan saved to ") {
-			saved = strings.TrimPrefix(e.text, "plan saved to ")
+		if e.kind == entrySystem && strings.HasPrefix(e.text, "wrote plan to ") {
+			saved = strings.TrimSuffix(strings.TrimPrefix(e.text, "wrote plan to "), ".")
 		}
 	}
 	if saved == "" {

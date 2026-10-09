@@ -55,7 +55,7 @@
 │   [a]                  the other commands                                │
 │   [x]                  explain                                           │
 │   [c]                  copy                                              │
-│   [s]                  save                                              │
+│   [ctrl+s]             save                                              │
 │   [esc]                quit                                              │
 │ SETUP                                                                    │
 │   [enter]              setup wizard                                      │
@@ -120,7 +120,7 @@
 ␛[38;5;244m│␛[m   ␛[38;5;254m[a]␛[m                  ␛[38;5;244mthe other commands␛[m                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m[x]␛[m                  ␛[38;5;244mexplain␛[m                                           ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m[c]␛[m                  ␛[38;5;244mcopy␛[m                                              ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;254m[s]␛[m                  ␛[38;5;244msave␛[m                                              ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;254m[ctrl+s]␛[m             ␛[38;5;244msave␛[m                                              ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m[esc]␛[m                ␛[38;5;244mquit␛[m                                              ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mSETUP␛[m                                                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m[enter]␛[m              ␛[38;5;244msetup wizard␛[m                                      ␛[38;5;244m│␛[m
