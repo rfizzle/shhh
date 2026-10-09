@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -76,6 +77,43 @@ func openQualityGate(cfg config.Config, red *evidence.Reducer, sc *scope.Scope) 
 		}
 	}
 	return r
+}
+
+// scopeGateToWrites scopes the gate's scoped checks to the files a run wrote
+// rather than the dirty tree, so a turn that has already committed its work
+// still gets the fast first pass instead of the whole module. written is read
+// at each run; one that names nothing leaves the dirty tree as the scope,
+// which is the runner's own default and is read here because a source that
+// returns nothing reads to the runner as no files at all.
+//
+// A path a tool was given may be absolute, and the runner wants them from the
+// workspace; one outside it is not the workspace's to scope.
+func scopeGateToWrites(gate *quality.Runner, written func() []string) {
+	if gate == nil || written == nil {
+		return
+	}
+	ws := gate.Workspace
+	gate.Changed = func() []string {
+		var out []string
+		for _, p := range written() {
+			if filepath.IsAbs(p) {
+				rel, err := filepath.Rel(ws, p)
+				if err != nil {
+					continue
+				}
+				p = rel
+			}
+			p = filepath.ToSlash(filepath.Clean(p))
+			if p == ".." || strings.HasPrefix(p, "../") {
+				continue
+			}
+			out = append(out, p)
+		}
+		if len(out) == 0 {
+			return quality.DirtyChanged(ws)
+		}
+		return out
+	}
 }
 
 // recordGateVerdicts points a session's gate at its record, so every run the

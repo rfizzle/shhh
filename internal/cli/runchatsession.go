@@ -398,6 +398,7 @@ func (b *screenBuild) record() {
 	// built because the runner has no session to report to until one is
 	// open.
 	recordGateVerdicts(b.asm.ts.gate, recorder)
+	scopeGateToWrites(b.asm.ts.gate, b.changes.Paths)
 	recordSearches(session.web, recorder)
 }
 

@@ -480,6 +480,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 				return gate(provider.ToolCall{Name: name, Arguments: string(args)})
 			},
 			hook.Executor(repeats.WrapExecutor(exec))))))
+	scopeGateToWrites(qgate, own.paths)
 
 	// The unattended run's approver, opted in, is what a call the client
 	// allowed is run through — so the deny list, the containment refusal, the

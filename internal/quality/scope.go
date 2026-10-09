@@ -107,13 +107,20 @@ func (r *Runner) changed() []string {
 	if r.Changed != nil {
 		return r.Changed()
 	}
-	root, paths := DirtyPaths(r.Workspace)
+	return DirtyChanged(r.Workspace)
+}
+
+// DirtyChanged is the dirty tree's paths from the workspace: what a turn that
+// has not committed has changed, and the default a runner with no source of
+// its own reads.
+func DirtyChanged(workspace string) []string {
+	root, paths := DirtyPaths(workspace)
 	if root == "" {
 		return nil
 	}
 	// Porcelain names paths from the repository's top level; the workspace
 	// may sit below it.
-	rel, err := filepath.Rel(root, r.Workspace)
+	rel, err := filepath.Rel(root, workspace)
 	if err != nil || rel == "." {
 		return paths
 	}

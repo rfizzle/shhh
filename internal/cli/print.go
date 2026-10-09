@@ -719,6 +719,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 				return gate(provider.ToolCall{Name: name, Arguments: string(args)})
 			},
 			hook.Executor(repeats.WrapExecutor(exec))))))
+	scopeGateToWrites(qgate, own.paths)
 	// A run with nobody in front of it is one turn by construction, which is
 	// the turn its events are filed under (headlessObserver.pos). The
 	// conversation is stamped with the same one, so the round a call was made
