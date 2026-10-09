@@ -798,6 +798,52 @@ The word goes to the local record and its JSON export and nowhere else — not
 to the trace a collector receives, not to the session's page, not to the
 model.
 
+### What repeats is counted
+
+Every other reading of the record is an aggregate over a window: how many
+reads, how many asks, how many failures. None says whether the same thing
+happened in session after session, which is the cost a person keeps paying
+without seeing it — the same file read again at the start of every session,
+the same command put to them every afternoon, the same check failing before
+anything else is tried. `shhh observe patterns` names those, for the checkout
+it is run in, by arithmetic and with no model.
+
+**Three things are counted, each by the sessions it happened in.** A path the
+sessions read, searched or globbed in, with how many calls a session it took;
+a command a person was asked about, keyed on its first word and its first
+argument — so `go test ./...` and `go test -run X` are one habit — with how
+often the answer was yes; and a quality-gate suite whose first failing run in
+a session came before any pass. Each is listed where it happened in at least
+three distinct sessions of the window, or as many as `--min-sessions` says. A
+thing done forty times in one session is that session's shape; a thing done
+once in each of nine is a habit, and only the second is a pattern. The
+dashboard draws one line naming the top of each table and the way in.
+
+**The subject comes from the conversation, joined the way a session's page
+joins it.** The record holds that a read happened in round eight of turn
+three, never what it read; the path is read out of the conversation this
+machine saved, by the same session, turn, round and position
+([a round can be read back](#a-round-can-be-read-back)). A command is harder:
+the record's ask names no call. So an ask is put to a command only where the
+conversation holds that one call in its round, since a second call beside it
+— a read outside the working scope is asked about too — might have been the
+one the card was for, and a pairing by order would file one call's answer
+under another's line.
+
+**A pruned conversation is a count without a path, and is said so.** A
+conversation is kept for a shorter window than the record that explains it
+([the record is kept for a window](#the-record-is-kept-for-a-window)), and a
+sub-agent's is never kept. Reads whose conversation is gone, and asks that
+cannot be put to one command, are counted under the tables in a line of
+their own rather than left out: left out, a checkout that keeps its record
+longer than its conversations would read as one that repeats itself less.
+
+**Nothing is written.** The reading is a report for the person: no memory,
+no setting and no row is made from it, and the model is told none of it.
+The paths and commands it prints are content, read on this machine at the
+moment it runs, the way a session's page prints its targets; they never
+reach the record or its export.
+
 ### Startup and waits are timed
 
 A session that took twenty seconds to show its prompt left no row anywhere,

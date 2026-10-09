@@ -670,3 +670,232 @@ func (db *DB) AgentQuietStretches(since time.Time, limit int) ([]AgentQuietStret
 		 ORDER BY MAX(COALESCE(duration_ms, 0)) DESC, session_id DESC, turn LIMIT ?`,
 		AgentEventQuiet, observeCutoff(since), limit)
 }
+
+// The readings of what repeats across one checkout's sessions: the same file
+// read, the same command put to a person, the same suite failing first. Each
+// is counted by the distinct sessions it happened in rather than by the times
+// it happened, because a thing done forty times in one session is that
+// session's shape and a thing done once in each of nine is a habit
+// (docs/capabilities/sessions-and-memory.md#what-repeats-is-counted).
+//
+// The checkout is the session's project fingerprint, bound rather than
+// written into the text. The window is observeEventWindow on the events each
+// reading counts, the way every per-event aggregate above is scoped.
+
+// agentPatternSessions is the checkout's sessions, with the conversation
+// each one saved where one is still linked.
+const agentPatternSessions = `ps AS (SELECT id, chat_session_id FROM agent_sessions WHERE project = ?)`
+
+// agentPatternCalls is every tool call the checkout's saved conversations
+// hold, placed at the session, turn and round it was asked in: the join
+// AgentSessionCalls makes — the reference on the session's row against the
+// conversation's messages — taken in SQL, so a whole window is one statement
+// rather than one per session. A message whose calls are not JSON is read as
+// holding none rather than failing the reading.
+//
+// Calls at turn 0 are left out, as classifyRecordedCommands leaves them:
+// both sides wrote zero before they kept a position, so a pairing there is
+// by order across the whole session, and a compaction that dropped the early
+// calls would hand every later event its predecessor's target. An event at
+// turn 0 is therefore unjoined, and counted as such.
+const agentPatternCalls = `calls AS (
+		   SELECT ps.id AS session_id, m.turn, m.round, m.seq, CAST(j.key AS INTEGER) AS k,
+		          COALESCE(json_extract(j.value, '$.Name'), '') AS tool,
+		          json_extract(j.value, '$.Arguments') AS args
+		   FROM ps
+		   JOIN chat_messages m ON m.session_id = ps.chat_session_id,
+		        json_each(CASE WHEN json_valid(m.tool_calls) THEN m.tool_calls ELSE '[]' END) j
+		   WHERE m.turn > 0 AND j.type = 'object'
+		 )`
+
+// AgentUnjoined is how much of a reading had no conversation to name its
+// subject: the distinct sessions it happened in and the events it was. It is
+// counted and said, never dropped, because a reading that silently lost every
+// session whose conversation was pruned would read as a checkout that repeats
+// itself less the longer it keeps its record.
+type AgentUnjoined struct {
+	Sessions int
+	Events   int
+}
+
+// AgentFilePattern is one path the checkout's sessions read, searched or
+// globbed in: how many distinct sessions did, and how many calls that was
+// across them. A search or a glob that named no path is the tree, ".".
+type AgentFilePattern struct {
+	Path     string
+	Sessions int
+	Calls    int
+}
+
+// The read events are paired with the conversation's calls the way
+// observeCalls pairs them on a session's page: the same session, turn, round
+// and tool, the nth event with the nth call. The events are numbered before
+// the window is applied, so a round the cutoff falls inside is still paired
+// call for call rather than from its first event inside the window.
+const agentFilePatternsQuery = `WITH ` + agentPatternSessions + `, ` + agentPatternCalls + `,
+		 read_calls AS (
+		   SELECT session_id, turn, round, tool,
+		          CASE WHEN json_valid(args) THEN
+		            COALESCE(NULLIF(json_extract(args, '$.path'), ''), CASE WHEN tool = ? THEN NULL ELSE '.' END)
+		          END AS path,
+		          ROW_NUMBER() OVER (PARTITION BY session_id, turn, round, tool ORDER BY seq, k) AS n
+		   FROM calls WHERE tool IN (?, ?, ?)
+		 ),
+		 numbered AS (
+		   SELECT session_id, turn, round, tool, created_at,
+		          ROW_NUMBER() OVER (PARTITION BY session_id, turn, round, tool ORDER BY id) AS n
+		   FROM agent_events WHERE kind = ? AND tool IN (?, ?, ?) AND session_id IN (SELECT id FROM ps)
+		 ),
+		 reads AS (SELECT * FROM numbered WHERE ` + observeEventWindow + `),
+		 joined AS (
+		   SELECT r.session_id, c.n IS NOT NULL AS matched, c.path
+		   FROM reads r LEFT JOIN read_calls c
+		     ON c.session_id = r.session_id AND c.turn = r.turn AND c.round = r.round
+		    AND c.tool = r.tool AND c.n = r.n
+		 )`
+
+// AgentFilePatterns is every path read in at least minSessions of the
+// window's sessions in the checkout, most sessions first, and the reads no
+// conversation could name. A session whose conversation was pruned, or that
+// never kept one, is in the second answer and in none of the first: its
+// reads happened, and what they were of is no longer on this machine.
+func (db *DB) AgentFilePatterns(since time.Time, project string, minSessions int) ([]AgentFilePattern, AgentUnjoined, error) {
+	args := []any{project, tools.ReadFileName, tools.ReadFileName, tools.SearchName, tools.GlobName,
+		AgentEventTool, tools.ReadFileName, tools.SearchName, tools.GlobName, observeCutoff(since)}
+	files, err := queryRows(db, scanFields(func(f *AgentFilePattern) []any {
+		return []any{&f.Path, &f.Sessions, &f.Calls}
+	}), agentFilePatternsQuery+`
+		 SELECT path, COUNT(DISTINCT session_id), COUNT(*) FROM joined
+		 WHERE matched AND path IS NOT NULL
+		 GROUP BY path HAVING COUNT(DISTINCT session_id) >= ?
+		 ORDER BY COUNT(DISTINCT session_id) DESC, COUNT(*) DESC, path`, append(args, minSessions)...)
+	if err != nil {
+		return nil, AgentUnjoined{}, err
+	}
+	var u AgentUnjoined
+	err = db.sql.QueryRow(agentFilePatternsQuery+`
+		 SELECT COUNT(DISTINCT session_id), COUNT(*) FROM joined WHERE NOT matched`, args...).Scan(&u.Sessions, &u.Events)
+	return files, u, err
+}
+
+// AgentCommandPattern is one command a person was asked about in the
+// checkout's sessions, keyed on its first word and its first argument: how
+// many distinct sessions asked, how many times, and how many of those times
+// the answer was allow.
+type AgentCommandPattern struct {
+	Command  string
+	Sessions int
+	Asked    int
+	Allowed  int
+}
+
+// A round a person was asked in is one with an ask, or with the person's own
+// grant taken from the card's list, which is an allow that answered one; the
+// answer is the round's last decision. Decision rows name no call, so the
+// round is put to its command only where the conversation holds exactly one
+// call in it and that call is a command: any second call in the round may
+// have been the one asked about — a read outside the working scope is asked
+// too — and a pairing by order would hand one call's answer to another. A
+// round with no call in the conversation, or with a command among other
+// calls, is counted as unjoined; a round whose one call is not a command was
+// a question about something else and is not this reading's.
+//
+// The key is the line's first two words, split on whitespace. A command is
+// content and stays on this machine, the way a session page's targets do.
+const agentCommandPatternsQuery = `WITH ` + agentPatternSessions + `, ` + agentPatternCalls + `,
+		 asked AS (
+		   SELECT session_id, turn, round, MAX(id) AS last
+		   FROM agent_events
+		   WHERE kind = ? AND session_id IN (SELECT id FROM ps) AND ` + observeEventWindow + `
+		   GROUP BY session_id, turn, round
+		   HAVING SUM(outcome = 'ask' OR (outcome = 'allow' AND reason IN ('user-exact', 'user-turn'))) > 0
+		 ),
+		 rounds AS (
+		   SELECT session_id, turn, round, COUNT(*) AS calls, SUM(tool = ?) AS commands,
+		          MAX(CASE WHEN tool = ? THEN args END) AS args
+		   FROM calls GROUP BY session_id, turn, round
+		 ),
+		 put AS (
+		   SELECT a.session_id, a.last, r.calls, r.commands, r.args
+		   FROM asked a LEFT JOIN rounds r
+		     ON r.session_id = a.session_id AND r.turn = a.turn AND r.round = a.round
+		 ),
+		 lines AS (
+		   SELECT session_id, last,
+		          trim(replace(replace(replace(
+		            CASE WHEN json_valid(args) THEN json_extract(args, '$.command') END,
+		            char(9), ' '), char(10), ' '), char(13), ' ')) AS line
+		   FROM put WHERE calls = 1 AND commands = 1
+		 ),
+		 words AS (
+		   SELECT session_id, last,
+		          substr(line, 1, instr(line || ' ', ' ') - 1) AS first,
+		          ltrim(substr(line, instr(line || ' ', ' '))) AS rest
+		   FROM lines WHERE line != ''
+		 ),
+		 keyed AS (
+		   SELECT session_id, last, trim(first || ' ' || substr(rest, 1, instr(rest || ' ', ' ') - 1)) AS command
+		   FROM words
+		 )`
+
+// AgentCommandPatterns is every command asked about in at least minSessions
+// of the window's sessions in the checkout, most sessions first, and the asks
+// that could not be put to one command.
+func (db *DB) AgentCommandPatterns(since time.Time, project string, minSessions int) ([]AgentCommandPattern, AgentUnjoined, error) {
+	args := []any{project, AgentEventDecision, observeCutoff(since), tools.ExecCommandName, tools.ExecCommandName}
+	commands, err := queryRows(db, scanFields(func(c *AgentCommandPattern) []any {
+		return []any{&c.Command, &c.Sessions, &c.Asked, &c.Allowed}
+	}), agentCommandPatternsQuery+`
+		 SELECT k.command, COUNT(DISTINCT k.session_id), COUNT(*), COALESCE(SUM(e.outcome = 'allow'), 0)
+		 FROM keyed k JOIN agent_events e ON e.id = k.last
+		 GROUP BY k.command HAVING COUNT(DISTINCT k.session_id) >= ?
+		 ORDER BY COUNT(DISTINCT k.session_id) DESC, COUNT(*) DESC, k.command`, append(args, minSessions)...)
+	if err != nil {
+		return nil, AgentUnjoined{}, err
+	}
+	var u AgentUnjoined
+	err = db.sql.QueryRow(agentCommandPatternsQuery+`
+		 SELECT COUNT(DISTINCT session_id), COUNT(*) FROM put
+		 WHERE calls IS NULL OR (commands >= 1 AND calls > 1)`, args...).Scan(&u.Sessions, &u.Events)
+	return commands, u, err
+}
+
+// AgentSuitePattern is one quality-gate suite that failed before it passed
+// in some of the checkout's sessions: how many distinct sessions it failed
+// first in, and how many ran it at all.
+type AgentSuitePattern struct {
+	Suite    string
+	Sessions int
+	Ran      int
+}
+
+// A suite failed first in a session where the session's earliest failing run
+// of it came before its earliest pass, or where it never passed; a blocked or
+// cancelled run is neither. The verdicts are spelled here rather than
+// imported, as AgentGateVerdicts spells them.
+const agentSuitePatternsQuery = `WITH ` + agentPatternSessions + `,
+		 runs AS (
+		   SELECT session_id, tool AS suite,
+		          MIN(CASE WHEN reason = 'fail' THEN id END) AS first_fail,
+		          MIN(CASE WHEN reason = 'pass' THEN id END) AS first_pass
+		   FROM agent_events
+		   WHERE kind = ? AND outcome = 'gate' AND session_id IN (SELECT id FROM ps) AND ` + observeEventWindow + `
+		   GROUP BY session_id, tool
+		 ),
+		 judged AS (
+		   SELECT suite, first_fail IS NOT NULL AND (first_pass IS NULL OR first_fail < first_pass) AS failed_first
+		   FROM runs
+		 )
+		 SELECT suite, SUM(failed_first), COUNT(*) FROM judged
+		 GROUP BY suite HAVING SUM(failed_first) >= ?
+		 ORDER BY SUM(failed_first) DESC, COUNT(*) DESC, suite`
+
+// AgentSuitePatterns is every suite that failed first in at least
+// minSessions of the window's sessions in the checkout, most sessions first.
+// It reads the gate's own rows rather than the flake ledger: the ledger keeps
+// one count per check for the checkout, not which session a failure was in.
+func (db *DB) AgentSuitePatterns(since time.Time, project string, minSessions int) ([]AgentSuitePattern, error) {
+	return queryRows(db, scanFields(func(s *AgentSuitePattern) []any {
+		return []any{&s.Suite, &s.Sessions, &s.Ran}
+	}), agentSuitePatternsQuery, project, AgentEventSignal, observeCutoff(since), minSessions)
+}

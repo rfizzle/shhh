@@ -56,6 +56,9 @@ type observeData struct {
 	Outcomes []storage.AgentSessionOutcome
 	// Quiet is the window's longest quiet stretch, at most one.
 	Quiet []storage.AgentQuietStretch
+	// Patterns is what repeated across this checkout's sessions, at the
+	// default threshold; the dashboard names the top of each table.
+	Patterns observePatterns
 }
 
 // readObserveData runs every aggregate the dashboard draws. Each query is
@@ -86,6 +89,11 @@ func readObserveData(db *storage.DB, window string, since time.Time) (observeDat
 		{"flakes", func() (err error) { data.Flakes, err = flakesSince(db, projectFingerprintRoot(), since); return }},
 		{"outcomes", func() (err error) { data.Outcomes, err = db.AgentSessionOutcomes(since); return }},
 		{"quiet stretches", func() (err error) { data.Quiet, err = db.AgentQuietStretches(since, 1); return }},
+		{"patterns", func() (err error) {
+			data.Patterns, err = readObservePatterns(db, window, since,
+				fingerprint(projectFingerprintRoot()), observePatternsMinSessions)
+			return
+		}},
 	} {
 		if err := q.read(); err != nil {
 			return observeData{}, fmt.Errorf("query %s: %w", q.name, err)
@@ -133,6 +141,7 @@ func observeReport(data observeData) report.Report {
 		}
 	}
 	r.Notes = append(r.Notes, observeLongestQuiet(data.Quiet)...)
+	r.Notes = append(r.Notes, observePatternsLine(data.Patterns)...)
 	r.Notes = append(r.Notes, report.Note{State: report.Run,
 		Text: "`shhh observe session <id>` shows one session turn by turn"})
 	return r

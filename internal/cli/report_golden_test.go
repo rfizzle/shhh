@@ -97,6 +97,8 @@ func TestReportGoldens(t *testing.T) {
 		{"observe", observeReport(goldenObserve()).Render(80)},
 		{"observe.w110", observeReport(goldenObserve()).Render(110)},
 		{"observe.empty", observeReport(observeData{Window: "30d"}).Render(80)},
+		{"observe.patterns", renderObservePatterns(goldenObservePatterns()).Render(80)},
+		{"observe.patterns.empty", renderObservePatterns(observePatterns{Window: "30d", MinSessions: 3}).Render(80)},
 		{"observe.compare", observeCompareReport(goldenObserveCompare()).Render(80)},
 		{"observe.compare.small", observeCompareReport(goldenObserveCompareSmall()).Render(80)},
 		{"observe.compare.empty", observeCompareReport(goldenObserveCompareEmpty()).Render(80)},
@@ -365,6 +367,28 @@ func goldenObserve() observeData {
 			// its own, never folded into an abandonment.
 			{Outcome: "unknown", Count: 1},
 			{Outcome: "error", Count: 1},
+		},
+		Patterns: goldenObservePatterns(),
+	}
+}
+
+// goldenObservePatterns is what repeated across one checkout's sessions: a
+// file read in most of them, a command asked about and mostly allowed, a
+// suite that kept failing first, and what no conversation could name.
+func goldenObservePatterns() observePatterns {
+	return observePatterns{
+		Window: "30d", MinSessions: 3,
+		Files: []storage.AgentFilePattern{
+			{Path: "internal/ui/chat/approval.go", Sessions: 7, Calls: 16},
+			{Path: "go.mod", Sessions: 4, Calls: 4},
+		},
+		FilesUnjoined: storage.AgentUnjoined{Sessions: 2, Events: 9},
+		Commands: []storage.AgentCommandPattern{
+			{Command: "go test", Sessions: 5, Asked: 8, Allowed: 7},
+		},
+		CommandsUnjoined: storage.AgentUnjoined{Sessions: 1, Events: 1},
+		Suites: []storage.AgentSuitePattern{
+			{Suite: "default", Sessions: 3, Ran: 6},
 		},
 	}
 }

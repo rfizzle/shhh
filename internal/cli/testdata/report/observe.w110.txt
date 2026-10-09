@@ -67,4 +67,6 @@
   ✓ 12  code · claude-sonnet-5 · Aug 31 11:32 · 6 turns · ↑41.2k ↓9.8k · $0.51  [14m 00s]
   ▸ 13  chat · gpt-5.2 · Aug 31 11:59 · 1 turn · ↑900 ↓120  [active]
 
+  ▸ patterns · internal/ui/chat/approval.go read in 7 sessions · `go test` asked about in 5 · default failed
+    first in 3 · `shhh observe patterns` lists them
   ▸ `shhh observe session <id>` shows one session turn by turn

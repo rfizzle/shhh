@@ -1,0 +1,21 @@
+  shhh observe patterns — this checkout · last 30d · in 3 or more sessions
+
+  FILES READ
+
+  ✓ 7 sessions  internal/ui/chat/approval.go · 2.3 calls a session
+  ✓ 4 sessions  go.mod · 1 call a session
+
+  COMMANDS ASKED ABOUT
+
+  ✓ 5 sessions  go test · asked 8 times  [allowed 7 of 8]
+
+  SUITES THAT FAILED FIRST
+
+  ⚠ 3 sessions  default · failed before it passed  [of 6 sessions that ran it]
+
+  ⊘ 9 reads in 2 sessions had no conversation to name the file — pruned, or
+    never kept, so counted without a path
+  ⊘ 1 ask in 1 session could not be put to one command — no conversation for the
+    round, or it asked for more than one call
+  ▸ counted from the record and this machine's saved conversations; nothing was
+    written

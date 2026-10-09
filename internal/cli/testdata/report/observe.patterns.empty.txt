@@ -1,0 +1,6 @@
+  shhh observe patterns — this checkout · last 30d · in 3 or more sessions
+
+  ⊘ nothing repeated in 3 or more sessions · --min-sessions 2
+
+  ▸ counted from the record and this machine's saved conversations; nothing was
+    written
