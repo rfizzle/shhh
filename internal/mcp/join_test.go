@@ -227,3 +227,39 @@ func TestConnect_WaitsForEveryServerAndJoinsThem(t *testing.T) {
 		t.Fatal("Connect left a join for a boundary to take")
 	}
 }
+
+// A server that answered and then stopped answering before any boundary took
+// it is not joined: Refresh looks at joined servers only, so the boundary
+// that finds it dead hands it back as a failure, once, with its tools never
+// offered.
+func TestMCPFailure_AnEarlyDeathIsALine(t *testing.T) {
+	h := newHeldDial("docs", "tracker")
+	cat := &Catalog{Servers: []Definition{
+		{Name: "docs", Scope: ScopeUser, Transport: TransportStdio, Command: "docs-mcp"},
+		{Name: "tracker", Scope: ScopeUser, Transport: TransportStdio, Command: "tracker-mcp"},
+	}}
+	ts := Start(context.Background(), cat, Options{Dial: h.dial, Timeout: time.Minute})
+	defer ts.Close()
+	h.answer("docs", "search")
+	h.answer("tracker", "file")
+	statusOf(t, ts, 0)
+	statusOf(t, ts, 1)
+	ts.reports[0].Server.markDead("transport closed")
+
+	settled := ts.Join()
+	if len(settled) != 2 || settled[0].Status != StatusFailed || settled[0].Error != "transport closed" || settled[0].Server != nil {
+		t.Fatalf("the early death was not handed back as a failure: %+v", settled)
+	}
+	if settled[1].Status != StatusConnected {
+		t.Fatalf("the live server did not join: %+v", settled[1])
+	}
+	if ts.Has("docs__search") || !ts.Has("tracker__file") {
+		t.Fatalf("offered = %+v", ts.Offered())
+	}
+	if got := ts.Reports()[0]; got.Status != StatusFailed {
+		t.Fatalf("the row still reads %s", got.Status)
+	}
+	if ts.Join() != nil {
+		t.Fatal("the death was reported twice")
+	}
+}

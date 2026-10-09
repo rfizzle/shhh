@@ -316,6 +316,16 @@ func (ts *Toolset) Join() []Report {
 	joined := false
 	for _, i := range ts.settled {
 		r := ts.reports[i]
+		if why := r.Server.Dead(); r.Status == StatusConnected && why != "" {
+			// The server answered and stopped answering before any boundary
+			// took it. Refresh looks at joined servers only, so nothing else
+			// would ever say so: it is a server that did not start, and its
+			// tools are never offered
+			// (docs/capabilities/mcp.md#a-server-that-dies-is-noticed).
+			r.Server.Close()
+			r.Status, r.Error, r.Server = StatusFailed, why, nil
+			ts.reports[i] = r
+		}
 		if r.Status == StatusConnected {
 			ts.servers[r.Definition.Name] = r.Server
 			joined = true
