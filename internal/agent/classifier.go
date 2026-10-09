@@ -308,6 +308,11 @@ type ClassifierVerdict struct {
 	Decision Decision
 	Reason   string
 	Failed   bool
+	// Probability is the chance the decisions backend put on the call
+	// being allowed to run, as a fraction, and Probed whether it put one:
+	// the completion backend answers in words and sets neither.
+	Probability float64
+	Probed      bool
 	// Usage totals every attempt's reported tokens so the session can count
 	// classifier cost.
 	Usage   provider.Usage
@@ -478,6 +483,7 @@ func (c *Classifier) decide(ctx context.Context, model, input string, v Classifi
 			v.Reason = "the classifier returned an invalid decision"
 			continue
 		}
+		v.Probability, v.Probed = answer.Probability, true
 		v.Decision, v.Reason = probabilityVerdict(answer.Probability, c.cfg.threshold())
 		v.Failed = false
 		return v

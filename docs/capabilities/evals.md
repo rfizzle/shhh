@@ -104,6 +104,17 @@ all — an output ceiling spent on reasoning returns an unfinished thought and
 no verdict — and a suite that scored that as a deny would report an outage as
 a cautious security posture and pass.
 
+**The probability is read off the table.** Run on the decisions backend
+(`--classifier-backend decisions`), the report prints every row's probability
+beside its verdict, the rows that were right as well as the ones that were not,
+because a threshold is chosen by seeing where the two sit against each other.
+`--classifier-threshold <n>` takes a whole percentage, written as
+`behavior.classifier_threshold` is, and holds the run against it instead of the
+built-in bar, so one run can be read at several. The median time of a verdict
+is taken over the rows that answered: a request that timed out took the
+timeout, and a run that mostly timed out would otherwise report the timeout as
+its median. The report says how many failed beside it.
+
 ## A research case is graded against what it read
 
 A run that reads the web leaves no workspace to check and produces prose

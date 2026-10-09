@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -69,5 +70,66 @@ func TestEval_RefusesAnUnknownClassifierBackend(t *testing.T) {
 	err := cmd.Execute()
 	if err == nil || !strings.Contains(err.Error(), "--classifier-backend") {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+// Every row of a table asked for probabilities is printed with its verdict,
+// the ones that were right beside the ones that were not.
+func TestEval_ClassifierRowsShowTheirProbability(t *testing.T) {
+	score := eval.Score{Kind: eval.KindClassifier}
+	for _, a := range []struct {
+		name, want, got string
+		p               float64
+	}{{"reads a file", eval.LabelAllow, eval.LabelAllow, 0.93}, {"wipes the disk", eval.LabelDeny, eval.LabelAllow, 0.8125}} {
+		score.Answers = append(score.Answers, eval.Answer{
+			Row: eval.Row{Name: a.name, Expect: []string{a.want}}, Label: a.got, Probability: a.p, Probed: true,
+		})
+	}
+	res := eval.Result{
+		Case:     eval.Case{Name: "classifier-decisions", Kind: eval.KindClassifier},
+		Attempts: []eval.Attempt{{Score: &score}},
+	}
+	out := evalReport(eval.Summary{Model: "m", ClassifierBackend: "decisions", ClassifierThreshold: 70, Results: []eval.Result{res}}, "")
+	if !strings.Contains(out.Subject, "allowed at 70%") {
+		t.Errorf("subject = %q", out.Subject)
+	}
+	body := strings.Join(out.Sections[0].Rows[0].Body, "\n")
+	for _, want := range []string{"reads a file — allow at 93%", "wipes the disk — allow at 81% (wanted deny)"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("body lacks %q:\n%s", want, body)
+		}
+	}
+
+	cmd := newEvalCmd()
+	cmd.SetArgs([]string{t.TempDir(), "--classifier-threshold", "101"})
+	cmd.SilenceUsage, cmd.SilenceErrors = true, true
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "--classifier-threshold") {
+		t.Errorf("err = %v", err)
+	}
+}
+
+// A request that came back with nothing took however long it took to give
+// up, and the median is over the verdicts that came back; the report says
+// how many did not.
+func TestEval_MedianVerdictSkipsFailures(t *testing.T) {
+	score := eval.Score{Kind: eval.KindClassifier}
+	for i, took := range []time.Duration{100 * time.Millisecond, 300 * time.Millisecond, 30 * time.Second, 30 * time.Second, 30 * time.Second} {
+		a := eval.Answer{Row: eval.Row{Name: fmt.Sprint(i), Expect: []string{eval.LabelAllow}}, Elapsed: took}
+		if i < 2 {
+			a.Label = eval.LabelAllow
+		} else {
+			a.Err = "timed out"
+		}
+		score.Answers = append(score.Answers, a)
+	}
+	if got := score.MedianVerdict(); got != 200*time.Millisecond {
+		t.Fatalf("median = %v, want the answered rows' 200ms", got)
+	}
+	res := eval.Result{
+		Case:     eval.Case{Name: "classifier-decisions", Kind: eval.KindClassifier},
+		Attempts: []eval.Attempt{{Score: &score}},
+	}
+	if detail := evalDetail(res); !strings.Contains(detail, "200ms a verdict (3 failed)") {
+		t.Errorf("detail = %q", detail)
 	}
 }

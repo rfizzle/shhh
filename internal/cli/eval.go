@@ -47,6 +47,7 @@ func newEvalCmd() *cobra.Command {
 	var baselinePath, comparePath string
 	var refresh bool
 	var classifierBackend string
+	var classifierThreshold int
 
 	cmd := &cobra.Command{
 		Use:   "eval [suite]",
@@ -83,6 +84,11 @@ func newEvalCmd() *cobra.Command {
 			}
 			if backend == agent.BackendCompletion {
 				backend = ""
+			}
+			if cmd.Flags().Changed("classifier-threshold") {
+				if err := checkConfigValue("behavior.classifier_threshold", strconv.Itoa(classifierThreshold)); err != nil {
+					return fmt.Errorf("--classifier-threshold: %w", err)
+				}
 			}
 			cases, err := eval.Load(dir)
 			if err != nil {
@@ -181,6 +187,7 @@ func newEvalCmd() *cobra.Command {
 				Progress: evalProgress(cmd, len(cases), repeat),
 			}
 			opts.ClassifierBackend = backend
+			opts.ClassifierThreshold = classifierThreshold
 
 			sum, err := eval.Run(cmd.Context(), cases, opts)
 			if err != nil {
@@ -254,6 +261,7 @@ func newEvalCmd() *cobra.Command {
 	cmd.Flags().StringVar(&baselinePath, "baseline", "", "write this run's verdicts and medians to this file")
 	cmd.Flags().StringVar(&comparePath, "compare", "", "read this baseline instead of the suite's own and print the delta beneath the report")
 	cmd.Flags().BoolVar(&refresh, "refresh-baseline", false, "write this run over the suite's committed baseline, so what changed in it is reviewed like code")
+	cmd.Flags().IntVar(&classifierThreshold, "classifier-threshold", 0, "the percentage the decisions backend's probability must reach for a row to be allowed, as `n` the way behavior.classifier_threshold is written; unset takes the built-in bar")
 	cmd.Flags().StringVar(&classifierBackend, "classifier-backend", "", "ask the classifier cases on `completion` (the default) or `decisions`, the Decisions API on a model that offers it")
 	return cmd
 }
@@ -382,6 +390,9 @@ func evalReport(sum eval.Summary, unprovided string) report.Report {
 	if sum.ClassifierBackend != "" {
 		r.Subject = strings.TrimPrefix(r.Subject+" · classifier on "+sum.ClassifierBackend, " · ")
 	}
+	if sum.ClassifierThreshold > 0 {
+		r.Subject = strings.TrimPrefix(r.Subject+fmt.Sprintf(" · allowed at %d%%", sum.ClassifierThreshold), " · ")
+	}
 	if unprovided != "" {
 		r.Notes = append(r.Notes, report.Note{State: report.Warn,
 			Text: "no model could be resolved (" + unprovided + "), so every case that asks one was skipped; " +
@@ -463,6 +474,7 @@ func evalRow(res eval.Result) report.Row {
 			row.Consequence = c
 		}
 		row.Body = append(row.Body, tableBody(score)...)
+		row.Body = append(row.Body, tableProbabilities(score)...)
 	}
 	if score, ok := res.Research(); ok {
 		if c := researchConsequence(score); c != "" {
@@ -556,6 +568,26 @@ func tableConsequence(score eval.Score) string {
 	return line
 }
 
+// tableProbabilities is every row's probability beside its verdict, in the
+// order the table lists them, for a run that was asked for probabilities. It
+// is every row and not only the missed ones: the threshold is read off the
+// table, and a bar is chosen by seeing where the rows that were right sit
+// against the ones that were not.
+func tableProbabilities(score eval.Score) []string {
+	var out []string
+	for _, a := range score.Answers {
+		if !a.Probed {
+			continue
+		}
+		line := fmt.Sprintf("%s — %s at %d%%", a.Row.Name, a.Label, int(math.Floor(a.Probability*100+1e-9)))
+		if !a.Correct() {
+			line += " (wanted " + strings.Join(a.Row.Expect, " or ") + ")"
+		}
+		out = append(out, line)
+	}
+	return out
+}
+
 // maxTableMisses is how many missed rows a report names before counting the
 // rest. A table that missed everything is a finding on its own and does not
 // need forty lines to say so.
@@ -609,7 +641,11 @@ func evalDetail(res eval.Result) string {
 		// backend is weighed on its mistakes first and on these second, and
 		// the table's own wall clock is these times the rows.
 		if took := score.MedianVerdict(); took > 0 && res.Case.Kind == eval.KindClassifier {
-			parts = append(parts, verdictTime(float64(took.Milliseconds()))+" a verdict")
+			median := verdictTime(float64(took.Milliseconds())) + " a verdict"
+			if n := score.Unanswered(); n > 0 {
+				median += fmt.Sprintf(" (%d failed)", n)
+			}
+			parts = append(parts, median)
 			if cost, priced := res.Cost(); priced && score.Rows() > 0 {
 				parts = append(parts, verdictSpend(cost/float64(score.Rows()))+" a verdict")
 			}

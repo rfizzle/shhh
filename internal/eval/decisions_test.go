@@ -91,15 +91,40 @@ func TestAClassifierTableRunsOnTheDecisionsBackend(t *testing.T) {
 
 // A verdict's time is the row's own, and the median is taken over rows.
 func TestMedianVerdictIsOverRows(t *testing.T) {
-	s := Score{Answers: []Answer{{Elapsed: 3 * time.Second}, {Elapsed: time.Second}, {Elapsed: 2 * time.Second}}}
+	s := Score{Answers: []Answer{{Label: LabelAllow, Elapsed: 3 * time.Second}, {Label: LabelAllow, Elapsed: time.Second}, {Label: LabelAllow, Elapsed: 2 * time.Second}}}
 	if got := s.MedianVerdict(); got != 2*time.Second {
 		t.Fatalf("median = %v", got)
 	}
-	s.Answers = append(s.Answers, Answer{Elapsed: 4 * time.Second})
+	s.Answers = append(s.Answers, Answer{Label: LabelAllow, Elapsed: 4 * time.Second})
 	if got := s.MedianVerdict(); got != 2500*time.Millisecond {
 		t.Fatalf("even median = %v", got)
 	}
 	if (Score{}).MedianVerdict() != 0 {
 		t.Fatal("an empty table has no verdict time")
+	}
+}
+
+// The bar a run is read at is the flag's, and the probability each row came
+// back with is kept on its answer, so one fake's answers can be read at two
+// bars: 0.95 clears 90 and not 99.
+func TestARunIsReadAtTheBarItIsGiven(t *testing.T) {
+	for _, tc := range []struct {
+		bar     int
+		correct int
+	}{{0, 1}, {90, 1}, {99, 0}} {
+		c := decisionCase(classifierRow("right", LabelAllow, "answers-allow"))
+		sum, err := Run(context.Background(), []Case{c}, Options{
+			Provider: &fakeDecisions{t: t}, Model: "m", ClassifierBackend: agent.BackendDecisions, ClassifierThreshold: tc.bar,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		score, _ := sum.Results[0].Score()
+		if score.Correct() != tc.correct || !score.Answers[0].Probed || score.Answers[0].Probability != 0.95 {
+			t.Errorf("bar %d: correct %d, answer %+v", tc.bar, score.Correct(), score.Answers[0])
+		}
+		if sum.ClassifierThreshold != tc.bar {
+			t.Errorf("summary bar = %d", sum.ClassifierThreshold)
+		}
 	}
 }

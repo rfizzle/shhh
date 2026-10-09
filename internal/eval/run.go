@@ -73,6 +73,11 @@ type Options struct {
 	// every other bound here is: two runs on one backend have to be
 	// comparable by whoever ran them.
 	ClassifierBackend string
+	// ClassifierThreshold is the percentage the decisions backend's
+	// probability must reach for a row to be allowed, as the setting spells
+	// it. Zero takes the built-in bar. Like the backend it is a flag and not
+	// the reader's config, and it lets one run be read at several bars.
+	ClassifierThreshold int
 	// Commands runs a read-only case's inspection commands, contained the way
 	// a child's are. Nil leaves such a case unable to run, which it reports
 	// rather than running a model's command bare.
@@ -189,7 +194,7 @@ func Run(ctx context.Context, cases []Case, opts Options) (Summary, error) {
 		bin = self
 	}
 
-	sum := Summary{Model: opts.Model, ClassifierBackend: opts.ClassifierBackend}
+	sum := Summary{Model: opts.Model, ClassifierBackend: opts.ClassifierBackend, ClassifierThreshold: opts.ClassifierThreshold}
 	for _, c := range cases {
 		res := Result{Case: c}
 		if c.Skip == "" {
@@ -321,7 +326,7 @@ func tableAttempt(ctx context.Context, c Case, opts Options) Attempt {
 		if runCtx.Err() != nil {
 			break
 		}
-		ans := askRow(runCtx, opts.Provider, opts.Model, c.Kind, row, opts.Commands, opts.ClassifierBackend)
+		ans := askRow(runCtx, opts.Provider, opts.Model, c.Kind, row, opts.Commands, opts.ClassifierBackend, opts.ClassifierThreshold)
 		a.Score.Answers = append(a.Score.Answers, ans)
 		a.TokensIn += ans.Usage.PromptTokens
 		a.TokensOut += ans.Usage.CompletionTokens

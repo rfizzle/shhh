@@ -330,7 +330,10 @@ type Summary struct {
 	// ClassifierBackend is how the classifier cases were asked, empty for
 	// the completion backend.
 	ClassifierBackend string
-	Results           []Result
+	// ClassifierThreshold is the bar the run was read at, zero for the
+	// built-in one.
+	ClassifierThreshold int
+	Results             []Result
 }
 
 // Tally counts the results by verdict.

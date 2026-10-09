@@ -215,6 +215,11 @@ type Answer struct {
 	// Usage is what this row cost, summed into the attempt.
 	Usage   provider.Usage
 	Elapsed time.Duration
+	// Probability is the chance the decisions backend put on the call being
+	// allowed, as a fraction, and Probed whether it put one. A row on the
+	// completion backend, or one that came back with nothing, has neither.
+	Probability float64
+	Probed      bool
 }
 
 // Answered reports whether a label came back at all.
@@ -287,13 +292,18 @@ func (s Score) FalseAllow() int { return s.Missed(LabelDeny, LabelAllow) }
 // FalseDeny is how many allowable actions were refused.
 func (s Score) FalseDeny() int { return s.Missed(LabelAllow, LabelDeny) }
 
-// MedianVerdict is the middle of the rows' own times — how long one verdict
-// took, which is the latency a session waits on, and not the table's wall
-// clock, which is that times the rows. Zero where no row was asked.
+// MedianVerdict is the middle of the answered rows' own times — how long one
+// verdict took, which is the latency a session waits on, and not the table's
+// wall clock, which is that times the rows. A row that came back with nothing
+// is left out: a request that timed out took the timeout, and a run that
+// mostly timed out would report the timeout as its median verdict. How many
+// were left out is Unanswered. Zero where no row answered.
 func (s Score) MedianVerdict() time.Duration {
 	vals := make([]float64, 0, len(s.Answers))
 	for _, a := range s.Answers {
-		vals = append(vals, float64(a.Elapsed))
+		if a.Answered() {
+			vals = append(vals, float64(a.Elapsed))
+		}
 	}
 	if len(vals) == 0 {
 		return 0
@@ -330,10 +340,10 @@ func (s Score) Misses() []Answer {
 // score is only worth writing down if two people who run the suite can
 // compare theirs, and a run that quietly took one reader's overridden prompt
 // or ceiling would produce a number nobody else could reproduce.
-func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, row Row, run CommandRunner, backend string) Answer {
+func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, row Row, run CommandRunner, backend string, threshold int) Answer {
 	switch {
 	case kind == KindClassifier:
-		return askClassifier(ctx, p, model, row, backend)
+		return askClassifier(ctx, p, model, row, backend, threshold)
 	case kind == KindSummary:
 		return askSummary(ctx, p, model, row)
 	case kind == KindInherit:
@@ -348,12 +358,12 @@ func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, r
 	return Answer{Row: row, Err: "not a table case"}
 }
 
-func askClassifier(ctx context.Context, p provider.Provider, model string, row Row, backend string) Answer {
+func askClassifier(ctx context.Context, p provider.Provider, model string, row Row, backend string, threshold int) Answer {
 	cwd := row.CWD
 	if cwd == "" {
 		cwd = defaultRowCWD
 	}
-	v := agent.NewClassifier(p, agent.ClassifierConfig{Model: model, Backend: backend}).Judge(ctx, agent.ClassifierRequest{
+	v := agent.NewClassifier(p, agent.ClassifierConfig{Model: model, Backend: backend, Threshold: threshold}).Judge(ctx, agent.ClassifierRequest{
 		Tool:      row.Tool,
 		Arguments: row.Arguments,
 		CWD:       cwd,
@@ -365,6 +375,7 @@ func askClassifier(ctx context.Context, p provider.Provider, model string, row R
 		return a
 	}
 	a.Reason = v.Reason
+	a.Probability, a.Probed = v.Probability, v.Probed
 	switch v.Decision {
 	case agent.Allow:
 		a.Label = LabelAllow
