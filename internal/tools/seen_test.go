@@ -449,3 +449,28 @@ func TestForgetAllTakesBackOnlyTheOwnersOwnRecord(t *testing.T) {
 		t.Errorf("the other owner's record is not the one that was dropped: %v", err)
 	}
 }
+
+// A file a person opened is theirs to overwrite through their own record, and
+// only as it was opened; the process's record, which is the model's, is left
+// holding what the model read.
+func TestNoteOpenedIsTheOwnersRecordAlone(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "loop.go")
+	if err := os.WriteFile(path, []byte("one\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	readWholeFile(t, path)
+	person := NewRecorder()
+	person.NoteOpened(path, []byte("one\n"))
+	if _, err := person.ExecuteMutating(WriteFileName, writeArgs(t, path, "two\n")); err != nil {
+		t.Fatalf("the person's save was refused: %v", err)
+	}
+	if err := StaleSinceRead(path, []byte("two\n")); err == nil {
+		t.Error("the model's record took the person's save as read")
+	}
+	if err := os.WriteFile(path, []byte("three\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := person.ExecuteMutating(WriteFileName, writeArgs(t, path, "four\n")); err == nil {
+		t.Error("a save over a file that moved since it was opened went through")
+	}
+}

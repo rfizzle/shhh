@@ -197,6 +197,10 @@ const (
 	// edit surface, reached from inside a session (config.go). It is the one
 	// takeover here that can write a file, and it writes it on `[ctrl+s]` alone.
 	stateConfig
+	// stateEditor: a file is open in the editor pane over the feed, and the
+	// pane is typed into (edit.go). Every letter is the file's while it is
+	// up, and a save goes through the write tool's own path.
+	stateEditor
 	// stateQuestion: the model has asked something and the card is up
 	// (question.go). It is a decision and not a surface — the turn is
 	// blocked on the call, not parked under a screen — so it arrives the way

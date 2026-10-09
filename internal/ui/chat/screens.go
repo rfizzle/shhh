@@ -139,6 +139,18 @@ func chatScreens() []screenSpec {
 				hint:   (Model).renderConfigHint,
 				answer: (*Model).answerConfig,
 			}},
+		// The editor pane, the second surface that is typed into. Every
+		// letter is the file's while it is up, so it reads the keys ahead of
+		// the handover and the grace window the way the viewers do: a
+		// decision arriving mid-word must not take the next keystroke out
+		// of the file (edit.go).
+		{state: stateEditor, command: "/edit", surface: keys.OnEditor, place: placePane, held: true,
+			draw: (Model).editPaneLines,
+			row: mode{
+				aboveDecision: true,
+				hint:          (Model).renderEditPaneHint,
+				answer:        (*Model).answerEditPane,
+			}},
 		// The profile drafter is a flow rather than a reading and needs the
 		// room for the same reason the readings do: the draft it ends on is a
 		// whole file. The manager's own row opens it, not a command.

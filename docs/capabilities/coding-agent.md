@@ -59,6 +59,19 @@ has not been changed. Leaving it off the list was the older reading: it kept
 the list from claiming a file had changed by nothing, at the price of the one
 thing that had.
 
+A person's own change is on the row too. `/edit <path>` in `shhh code` opens
+a file in a pane over the feed ([the editor pane](../interface/surfaces.md#the-editor-pane)),
+and its save goes through the same write the agent's edits take, into the same
+record: the turn that is open, or with none open the turn the next instruction
+starts, counts it — `2 files changed +14 −3 · 1 changed by you` — and `/undo`
+puts it back like any other. It is not the session's own edit as far as the
+tree reading is concerned, so the boundary after it names the file to the
+model the way it names a change made in an editor beside the session, and the
+model's next overwrite of a file it read before the save is refused as stale.
+The save is held to the write's own rule as well: a file that moved on disk
+while the pane was open is refused rather than replaced, and the buffer is
+kept. A conversation has no such door, because it changes nothing.
+
 ## A rewind can put the files back
 
 Going back to before a turn used to mean the conversation and nothing else,

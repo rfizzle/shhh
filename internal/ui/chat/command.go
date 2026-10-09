@@ -895,6 +895,15 @@ default [level]   show or persist the level new sessions start on (provider.reas
 				help: `the session's whole boundary on one screen (also /security): the mode and grants, where it may write, what contains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools — each section naming the command that changes it. It reads and changes nothing`},
 			aliases: []string{"/security"}, bare: true,
 			open: bareOpen(Model.openSafety)},
+		// A file in a pane, typed into by the person. Not idleOnly: the save
+		// is checked against the file as it was opened, so a turn that
+		// wrote it meanwhile is refused rather than overwritten, and the
+		// running turn's close is the one that counts it (edit.go).
+		{name: "/edit",
+			slash: &slashCommand{args: "<path>", desc: "open a file in a pane and change it yourself",
+				enabled: func(m *Model) bool { return m.codingSurfaces() },
+				help:    `open a file in a pane over the feed and edit it yourself: every key types, [ctrl+s] saves through the same write the agent's edits take, so the turn's close counts it as changed by you and /undo reaches it, and [esc] goes back to the prompt — asking first if the buffer differs from the disk. A file outside the working scope is refused; /add-dir brings its directory in`},
+			open: Model.openEditPane},
 		// The ledger of what the session read. Like the occupancy surface
 		// it reads and changes nothing, so it is not idleOnly: mid-turn is
 		// exactly when somebody asks where a claim came from.

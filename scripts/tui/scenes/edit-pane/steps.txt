@@ -1,0 +1,31 @@
+# program test: TestProgram_AnEditInThePaneIsCountedOnTheClose
+#
+# A file in the editor pane, changed by the person and counted as theirs
+# (docs/interface/surfaces.md#the-editor-pane). The goldens are editor-pane
+# (the pane's states, and the close row) and edit-pane (the pane over the
+# feed and the row it leaves).
+#
+# /edit loop.go opens the file over the feed: at 130 the OUTLINE stands beside
+# the code with its two declarations; at 60 it folds and the header names the
+# file alone. A typed line marks the buffer modified. esc asks on the foot
+# row, and esc again keeps editing. ctrl+s writes through the write tool's
+# path and the foot row says what it wrote; esc goes back to the prompt, and
+# the next turn's close counts the save as changed by you.
+setup printf 'package agent\n\n// limit is how many rounds a turn may run.\nconst limit = 25\n\nfunc rounds() int {\n\treturn limit\n}\n' > loop.go
+snap 01-start "Some things worth doing first"
+keys "/edit loop.go" Enter
+wide 130 snap 02-open "OUTLINE 2 declarations" "/edit loop.go · 8 lines" "[ctrl+s] save · [esc] back to the prompt" "ln 1 · col 1"
+narrow 130 snap 02-open "1:1" "/edit loop.go" "[ctrl+s] save · [esc] back"
+keys "// mine" Enter
+snap 03-modified "· modified" "▎"
+keys Escape
+wide 130 snap 04-asking "leave without saving?" "[y] discard the change · [ctrl+s] save and leave · [esc] keep editing"
+narrow 130 snap 04-asking "leave unsaved?" "[y] discard · [esc] keep editing"
+keys Escape
+snap 05-editing "[ctrl+s] save · [esc] back" "· modified"
+keys C-s
+snap 06-saved "wrote 9 lines to loop.go"
+keys Escape
+snap 07-back "╭─ idle" "wrote 9 lines to loop.go"
+keys "read the limit back" Enter
+snap 08-close "1 changed by you" "The limit reads as you left it."

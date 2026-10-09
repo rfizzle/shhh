@@ -1276,7 +1276,12 @@ func TestNewSession_TakesEveryHeldScreenWithIt(t *testing.T) {
 		if !ok || c.open == nil {
 			t.Fatalf("state %d holds a screen and no command opens it", s)
 		}
-		next, _ := c.open(m, append([]string{name}, overlays()[s].commandArgs...))
+		args := overlays()[s].commandArgs
+		if s == stateEditor {
+			// The pane opens a file, so its command is given one.
+			args = []string{editFixture(t)}
+		}
+		next, _ := c.open(m, append([]string{name}, args...))
 		m = next.(Model)
 		if m.state != s || m.screens[s] == nil {
 			t.Fatalf("%s did not put its own screen up: state=%d, held=%v", name, m.state, m.screens[s])

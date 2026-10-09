@@ -67,6 +67,13 @@ func writtenPaths(store *changeset.Store) []string {
 	var paths []string
 	for _, t := range store.Turns() {
 		for _, r := range t.Records {
+			// The person's own save from the editor pane is in the record,
+			// and is not the session's to subtract: the model did not make
+			// it, and the boundary is where it is told
+			// (docs/capabilities/coding-agent.md#a-turn-ends-with-what-changed).
+			if r.Origin == changeset.ByPerson {
+				continue
+			}
 			paths = append(paths, r.Path)
 		}
 	}

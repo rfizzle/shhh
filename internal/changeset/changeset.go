@@ -48,6 +48,12 @@ const (
 	AutoApproved
 	// ChildPatch: a sub-agent's worktree patch was applied to the workspace.
 	ChildPatch
+	// ByPerson: the person wrote it, from the editor pane, through the same
+	// write the tool makes. It is the session's record of the file all the
+	// same — undo and review read it like any other — and it is the one
+	// origin the close row counts as the person's own
+	// (docs/capabilities/coding-agent.md#a-turn-ends-with-what-changed).
+	ByPerson
 )
 
 func (o Origin) String() string {
@@ -56,6 +62,8 @@ func (o Origin) String() string {
 		return "auto-approved"
 	case ChildPatch:
 		return "child patch"
+	case ByPerson:
+		return "by you"
 	default:
 		return "approved"
 	}

@@ -148,6 +148,11 @@ func (m Model) clickAt(x, y int) (tea.Model, tea.Cmd) {
 	if next, cmd, ok := m.clickRail(x, y); ok {
 		return next, cmd
 	}
+	// The editor pane's outline, the one row of a pane overlay a click
+	// reaches: it moves the pane's cursor and never the keyboard (edit.go).
+	if next, cmd, ok := m.clickEditPane(x, y); ok {
+		return next, cmd
+	}
 	if pt, ok := m.transcriptPoint(x, y); ok {
 		if !m.clickableTranscript() {
 			return m, nil

@@ -311,7 +311,14 @@ func (m Model) turnChangesFor(t changeset.Turn, committed bool) *components.Turn
 		offers = append(offers, commitOffer())
 		back = fmt.Sprintf("/undo %d takes it back", t.N)
 	}
+	byYou := 0
+	for _, r := range t.Records {
+		if r.Origin == changeset.ByPerson {
+			byYou++
+		}
+	}
 	return &components.TurnChanges{
+		ByYou:   byYou,
 		Files:   t.Files(),
 		Added:   t.Added,
 		Removed: t.Removed,

@@ -187,6 +187,21 @@ func (r *Recorder) noteAppended(path string, before, after []byte) {
 	r.noteShown(path, after, rec.whole)
 }
 
+// NoteOpened records a file as one owner has been shown whole: a person who
+// opened it in the editor pane, whose save is a write_file against a record of
+// their own. The save is then held to the rule every overwrite is — a file
+// that moved since it was opened is refused as stale, rather than the
+// person's buffer silently replacing what somebody else wrote meanwhile. It is
+// never asked of the model's record: the person's change is one the model
+// has not seen, and the boundary reading says so because that record still
+// holds what the model read.
+func (r *Recorder) NoteOpened(path string, content []byte) {
+	if r == nil {
+		return
+	}
+	r.noteShown(path, content, true)
+}
+
 // forget drops a file's record, for a path whose content is no longer
 // knowable — the one case being a write that failed partway.
 func (r *Recorder) forget(path string) {
