@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/spf13/cobra"
 )
 
 // Startup timing: the phases a session pays for before its first prompt is
@@ -49,6 +51,27 @@ func withStartup(ctx context.Context, s *observe.Startup) context.Context {
 func startupFrom(ctx context.Context) *observe.Startup {
 	s, _ := ctx.Value(startupKey{}).(*observe.Startup)
 	return s
+}
+
+// serveStartups hands a server's sessions their startup holders. The first
+// session takes the command's own holder, which holds the phases the process
+// paid before any session existed (configuration, store); every later one
+// gets a holder of its own, so its server and language-server rows reach its
+// record and not the first's.
+type serveStartups struct {
+	command *observe.Startup
+	once    sync.Once
+}
+
+// forSession is the command that assembles one served session: a copy of cmd
+// whose context carries that session's holder. The copy is shallow, which is
+// all the assembly reads of it — its context, flags and streams.
+func (h *serveStartups) forSession(cmd *cobra.Command) *cobra.Command {
+	holder := &observe.Startup{}
+	h.once.Do(func() { holder = h.command })
+	sub := *cmd
+	sub.SetContext(withStartup(cmd.Context(), holder))
+	return &sub
 }
 
 // notePhase files one phase that is not a server's.

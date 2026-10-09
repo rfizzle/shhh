@@ -20,6 +20,16 @@ import (
 // timing rows written to the session rows of kind the run left in the store.
 func runSurface(t *testing.T, kind, input string, args ...string) []storage.AgentTiming {
 	t.Helper()
+	var rows []storage.AgentTiming
+	for _, s := range runSurfaceSessions(t, kind, input, args...) {
+		rows = append(rows, s...)
+	}
+	return rows
+}
+
+// runSurfaceSessions is runSurface with each session's rows kept apart.
+func runSurfaceSessions(t *testing.T, kind, input string, args ...string) [][]storage.AgentTiming {
+	t.Helper()
 	home := t.TempDir()
 	// As buildSession does: a session installs its host reading for the
 	// whole process, and left standing it outlives the home it reads from.
@@ -84,7 +94,7 @@ func runSurface(t *testing.T, kind, input string, args ...string) []storage.Agen
 	if err != nil {
 		t.Fatalf("sessions: %v", err)
 	}
-	var rows []storage.AgentTiming
+	var rows [][]storage.AgentTiming
 	found := false
 	for _, s := range sessions {
 		if s.Kind != kind {
@@ -95,7 +105,7 @@ func runSurface(t *testing.T, kind, input string, args ...string) []storage.Agen
 		if err != nil {
 			t.Fatalf("timings: %v", err)
 		}
-		rows = append(rows, got...)
+		rows = append(rows, got)
 	}
 	if !found {
 		t.Fatalf("no %s session row among %+v", kind, sessions)
@@ -136,4 +146,41 @@ func TestStartup_ServeAndCmdWriteTheirPhases(t *testing.T) {
 			t.Errorf("phases %v, want %v", got, want)
 		}
 	})
+}
+
+// A server opens more than one session, and each one's record holds its own
+// server and language-server rows: the second session's connects are not
+// filed under the first's. The phases the process paid before any session
+// existed belong to the first alone.
+func TestServe_ALaterSessionsStartupRowsAreItsOwn(t *testing.T) {
+	start := func(id string) string {
+		return `{"jsonrpc":"2.0","id":` + id + `,"method":"session/start","params":{}}` + "\n"
+	}
+	var bySession []map[string]int
+	for _, rows := range runSurfaceSessions(t, "serve", start("1")+start("2"), "serve", "--stdio") {
+		got := map[string]int{}
+		for _, r := range rows {
+			if r.Kind == storage.AgentEventStartup {
+				got[r.Reason]++
+			}
+		}
+		bySession = append(bySession, got)
+	}
+	if len(bySession) != 2 {
+		t.Fatalf("startup rows on %d sessions, want 2: %v", len(bySession), bySession)
+	}
+	withConfig := 0
+	for i, got := range bySession {
+		if got[observe.PhaseConfig] == 1 {
+			withConfig++
+		}
+		for _, phase := range []string{observe.PhaseMCP, observe.PhaseLSP} {
+			if got[phase] != 1 {
+				t.Errorf("session %d: %d %s rows, want 1 (all: %v)", i, got[phase], phase, got)
+			}
+		}
+	}
+	if withConfig != 1 {
+		t.Errorf("%d sessions hold the configuration phase, want the first alone", withConfig)
+	}
 }

@@ -67,6 +67,8 @@ type serveOpts struct {
 	// (approvals.go).
 	autoMode bool
 	mode     string
+	// startups gives each session its own startup holder (startup.go).
+	startups *serveStartups
 }
 
 // newServeCmd is the protocol entry point: the coding agent's loop with a
@@ -124,6 +126,7 @@ func runServe(cmd *cobra.Command, opts serveOpts) error {
 	if db != nil {
 		defer db.Close()
 	}
+	opts.startups = &serveStartups{command: startupFrom(cmd.Context())}
 	srv := rpc.NewServer(func(ctx context.Context, p rpc.StartParams, seams rpc.Seams) (rpc.Loop, error) {
 		return openServeLoop(cmd, opts, db, p, seams, nil)
 	})
@@ -287,6 +290,12 @@ type serveLoop struct {
 // asked to resume.
 func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.StartParams, seams rpc.Seams, initial []provider.Message) (rpc.Loop, error) {
 	l := &serveLoop{}
+	// A fork opens its own session from the command, not from this copy,
+	// so it gets a holder of its own too.
+	served := cmd
+	if opts.startups != nil {
+		cmd = opts.startups.forSession(cmd)
+	}
 	// Anything opened before the assembly finishes has to be closed if it
 	// does not, which is what this defer is: on the way out with an error,
 	// nothing is left running with nobody holding it.
@@ -718,7 +727,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		}
 	}
 	l.fork = func(s rpc.Seams, msgs []provider.Message) (rpc.Loop, error) {
-		return openServeLoop(cmd, opts, db, rpc.StartParams{}, s, msgs)
+		return openServeLoop(served, opts, db, rpc.StartParams{}, s, msgs)
 	}
 	// The two seams that close are armed last, so the failure path above
 	// releases a half-built session without firing a stop for it.
