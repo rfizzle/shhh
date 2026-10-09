@@ -63,6 +63,7 @@ clone of it, or one that reaches past the tree onto the machine:
 | `[sandbox]` | it decides what a contained command may reach, which is the containment itself |
 | `[mcp.servers]` | a server is a program to start, and a checkout names its servers in `.shhh/mcp.json` instead |
 | `[prompts]` | it points at a file anywhere on the machine and replaces what a session is told |
+| `behavior.classifier_backend` | the decisions backend is not sent your classifier wording, so a checkout choosing it could drop refusals that wording adds |
 | `behavior.classifier_threshold` | a lower bar lets more calls run without asking, and a checkout may add a refusal but never take one away |
 
 Refusing them rather than leaning on trust alone is the second gate: the

@@ -439,8 +439,10 @@ a card where a person is there, a refusal where nobody is. The default sits
 well above even odds because the two mistakes do not cost the same: a false
 allow runs something nobody watched, and a false deny in front of a person
 is a question they answer. It is provisional until the eval's comparison of
-the two backends settles it. A checkout may not set it, because a lower bar
-removes refusals, and a checkout may add one and never take one away.
+the two backends settles it. A checkout may set neither key: a lower bar
+removes refusals, the backend leaves a replaced wording unsent and with it
+whatever refusals that wording added, and a checkout may add a refusal and
+never take one away.
 
 **Every way of not getting a probability fails closed.** A model that does
 not offer the API, a request that fails or runs out of time, an answer

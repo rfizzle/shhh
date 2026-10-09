@@ -118,6 +118,7 @@ var projectRefusals = []projectRefusal{
 	{"secrets.env", "it declares which of your environment variables a session may spend, which is about the machine rather than the tree"},
 	{"sandbox", "it decides what a contained command may reach, which is the containment itself"},
 	{"agents.require_sandbox", "it decides whether a writer's commands are contained, which is the containment itself"},
+	{"behavior.classifier_backend", "the decisions backend is not sent your classifier wording, so a checkout choosing it could drop refusals that wording adds"},
 	{"behavior.classifier_threshold", "a lower bar lets more calls run without asking, and a checkout may add a refusal but never take one away"},
 	{"mcp.servers", "a server is a program to start, and a checkout names its servers in " + project.StateDir + "/mcp.json instead"},
 	{"hooks.entries", "a hook is a command to run, and a checkout names its hooks in " + project.StateDir + "/hooks.json instead"},

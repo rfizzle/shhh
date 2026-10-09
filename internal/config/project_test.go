@@ -182,12 +182,12 @@ func TestLayerProject_ARefusedTableIsNamedOnceWithTheKeysUnderIt(t *testing.T) {
 // The key beside a refused one is not refused with it: the set is exact, and
 // `api_key_env` and `api_key` are two entries rather than a prefix.
 func TestRefusedInProject_MatchesAKeyOrTheTableAboveIt(t *testing.T) {
-	for _, key := range []string{"provider.api_key", "provider.api_key_env", "sandbox.profile", "prompts.steer", "mcp.servers.x.command", "behavior.classifier_threshold"} {
+	for _, key := range []string{"provider.api_key", "provider.api_key_env", "sandbox.profile", "prompts.steer", "mcp.servers.x.command", "behavior.classifier_threshold", "behavior.classifier_backend"} {
 		if RefusedInProject(key) == "" {
 			t.Errorf("%s is not refused in a checkout's file", key)
 		}
 	}
-	for _, key := range []string{"provider.model", "provider.base_url", "mcp.disabled", "behavior.default_mode", "web.search_provider", "behavior.classifier_backend"} {
+	for _, key := range []string{"provider.model", "provider.base_url", "mcp.disabled", "behavior.default_mode", "web.search_provider", "behavior.classifier_model"} {
 		if reason := RefusedInProject(key); reason != "" {
 			t.Errorf("%s is refused in a checkout's file: %s", key, reason)
 		}
