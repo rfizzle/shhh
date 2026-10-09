@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/scope"
 )
@@ -30,7 +31,7 @@ func TestHeadlessApprover_AnIrreplaceableTargetHoldsUnderYes(t *testing.T) {
 	}
 	var ran, codes []string
 	record := func(decision, reason string) { codes = append(codes, decision+"/"+reason) }
-	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, allowlist: []string{"rm"}, run: fakeRun(&ran), record: record, procSup: newTestProcessSupervisor(t), scope: sc})
+	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, allowlist: []string{"rm"}, run: fakeRun(&ran), record: record, procSup: newTestProcessSupervisor(t), rules: approval.Router{Scope: sc}})
 
 	for _, tc := range []struct {
 		name, want string
@@ -55,7 +56,7 @@ func TestHeadlessApprover_AnIrreplaceableTargetHoldsUnderYes(t *testing.T) {
 		}
 	}
 	// The deny list is the person's own answer and still names itself first.
-	denied := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, denylist: []string{"rm"}, run: fakeRun(&ran), scope: sc})
+	denied := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, rules: approval.Router{Denylist: []string{"rm"}, Scope: sc}, run: fakeRun(&ran)})
 	if got := denied(execCall("rm -rf ~")); got != agent.DenylistResult {
 		t.Fatalf("the deny list answered second: %q", got)
 	}

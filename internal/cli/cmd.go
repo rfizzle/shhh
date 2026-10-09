@@ -13,6 +13,7 @@ import (
 
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
@@ -547,7 +548,7 @@ func (r *oneShotRun) refused(result ui.GenerateResult) bool {
 	// themselves.
 	// See docs/capabilities/approvals-and-safety.md#some-targets-are-never-destroyed.
 	if runAction(result.Action) {
-		if what := ruleAction(nil, result.Command, true).Irreplaceable; what != "" {
+		if what := (approval.Router{}).Irreplaceable(approval.Call{Command: result.Command, InDir: true}); what != "" {
 			fmt.Fprintln(os.Stderr, "\n⊘ Refused — this command destroys "+what+
 				", which no command shhh proposes may destroy; it was not run. Type it yourself if you mean it.")
 			r.outcome = observe.TurnCancelled

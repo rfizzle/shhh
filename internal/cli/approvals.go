@@ -174,6 +174,14 @@ type autoJudge struct {
 	allowHosts, denyHosts []string
 }
 
+// newAutoJudge is auto mode's judge for an unattended run: the classifier,
+// the run's own conversation as it stands at each call, the directory it
+// runs in, and the person's two host lists from the configuration.
+func newAutoJudge(ctx context.Context, cfg config.Config, classifier *agent.Classifier, recent func() []provider.Message, cwd string) *autoJudge {
+	return &autoJudge{ctx: ctx, classifier: classifier, recent: recent, cwd: cwd,
+		allowHosts: cfg.Web.AllowHosts, denyHosts: cfg.Web.DenyHosts}
+}
+
 // decide answers one gated call: the verdict, the sentence a refusal is
 // stated with, and the code the record files it under — a refusal the
 // classifier reached and one it never got to are different facts about a run.

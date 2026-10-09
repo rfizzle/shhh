@@ -600,9 +600,6 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		initialPrompt += opts.schema.instruction()
 	}
 
-	allowlist := append([]string{}, cfg.Behavior.CommandAllowlist...)
-	allowlist = append(allowlist, opts.allow...)
-
 	// Headless approved commands run contained when a mechanism is available
 	// — there is no human watching, so containment matters most here.
 	// --sandbox goes further: a disposable container is created for
@@ -653,6 +650,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	}
 	defer tail.close()
 	run, containRefusal, hooks, hookCwd := tail.run, tail.refusal, tail.hooks, tail.hookCwd
+	// The standing rules, built from the configuration and the containment
+	// the tail resolved, the way the screen's are (printapprover.go).
+	rules := unattendedRules(cfg, sc, containRefusal)
 	saved, messages, recorder := tail.saved, tail.messages, tail.recorder
 
 	a := agent.New(messages, env.stream)
@@ -678,8 +678,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	var judge *autoJudge
 	classifier := buildClassifier(cfg, env, ledger)
 	if opts.autoMode {
-		judge = &autoJudge{ctx: cmd.Context(), classifier: classifier, recent: a.Messages, cwd: hookCwd,
-			allowHosts: cfg.Web.AllowHosts, denyHosts: cfg.Web.DenyHosts}
+		judge = newAutoJudge(cmd.Context(), cfg, classifier, a.Messages, hookCwd)
 	}
 
 	// Sub-agent orchestration: spawn_agent and agent_report short-circuit on
@@ -801,21 +800,19 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// command that ran and never a refusal (nudge.Turn.Ran).
 	nudges := &nudge.Turn{}
 	resolve := headlessApprover(cmd.Context(), headlessApproval{
-		opts:           opts,
-		allowlist:      allowlist,
-		denylist:       cfg.Behavior.CommandDenylist,
-		run:            nudges.Ran(run),
-		containRefusal: containRefusal,
-		red:            red,
-		record:         verdict.wrap(obs.decision),
-		recordTook:     verdict.wrapTook(obs.decisionTook),
-		webTools:       session.web,
-		procSup:        procSup,
-		mutationHook:   chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)),
-		scope:          sc,
-		mcpTools:       session.mcpTools,
-		structTools:    session.structural,
-		un:             unattended{sup: sup, judge: judge, at: obs.pos, conversation: conversationReads(session.conversation, cfg.Web.DenyHosts)},
+		opts:         opts,
+		allowlist:    headlessAllowlist(cfg, opts),
+		rules:        rules,
+		run:          nudges.Ran(run),
+		red:          red,
+		record:       verdict.wrap(obs.decision),
+		recordTook:   verdict.wrapTook(obs.decisionTook),
+		webTools:     session.web,
+		procSup:      procSup,
+		mutationHook: chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)),
+		mcpTools:     session.mcpTools,
+		structTools:  session.structural,
+		un:           unattended{sup: sup, judge: judge, at: obs.pos, conversation: conversationReads(session.conversation, rules.DenyHosts)},
 	})
 	// The gated tier is where an unattended run circles: the test command
 	// that fails the same way every round, the edit a policy refuses every

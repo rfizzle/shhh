@@ -6,11 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
-	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/spf13/cobra"
@@ -63,63 +61,31 @@ func headlessScopeCheck(sc *scope.Scope, yes bool, paths []string) (deny string,
 	if sc == nil || len(paths) == 0 {
 		return "", true
 	}
-	dirs := sc.Outside(paths...)
-	if len(dirs) == 0 {
+	// What each directory is comes from the standing rules, which the
+	// screen reads the same directories through before its card.
+	reached := approval.Router{Scope: sc}.Outside(paths...)
+	if len(reached) == 0 {
 		return "", true
 	}
-	for _, dir := range dirs {
-		switch class, reason := scope.Classify(dir); class {
+	for _, r := range reached {
+		switch dir := r.Dir; r.Class {
 		case scope.Refused:
-			return "error: " + dir + " is outside the working scope and cannot be granted (" + reason + ")", false
+			return "error: " + dir + " is outside the working scope and cannot be granted (" + r.Reason + ")", false
 		case scope.Sensitive:
-			return "error: " + dir + " is outside the working scope and is sensitive (" + reason +
+			return "error: " + dir + " is outside the working scope and is sensitive (" + r.Reason +
 				"); a headless run never adds one — pass --add-dir " + dir + " if that is what you want", false
 		}
 	}
 	if !yes {
-		return "error: " + dirs[0] + " is outside the working scope; headless runs stay inside it (pass --add-dir " +
-			dirs[0] + ", or --yes to let the run add ordinary directories itself)", false
+		return "error: " + reached[0].Dir + " is outside the working scope; headless runs stay inside it (pass --add-dir " +
+			reached[0].Dir + ", or --yes to let the run add ordinary directories itself)", false
 	}
-	for _, dir := range dirs {
-		if _, err := sc.Add(dir); err != nil && err != scope.ErrAlreadyInScope {
+	for _, r := range reached {
+		if _, err := sc.Add(r.Dir); err != nil && err != scope.ErrAlreadyInScope {
 			return "error: " + err.Error(), false
 		}
 	}
 	return "", true
-}
-
-// ruleAction is a command as the standing rules read it: the line, and what
-// it destroys that this run may not, read against the run's working scope.
-// inDir is whether the command runs in the scope's root — a foreground
-// command does, a process start names a directory of its own, and then its
-// relative paths prove nothing. A run with no scope reads from the
-// directory shhh runs in, with nothing outside a scope to refuse.
-// See docs/capabilities/approvals-and-safety.md#some-targets-are-never-destroyed.
-func ruleAction(sc *scope.Scope, command string, inDir bool) agent.Action {
-	where := radius.Where{Scope: sc, Root: sc.Root()}
-	if where.Root == "" {
-		where.Root, _ = os.Getwd()
-	}
-	if inDir {
-		where.Dir = where.Root
-	}
-	where.Home, _ = os.UserHomeDir()
-	return agent.Action{Kind: agent.ActionCommand, Command: command,
-		Irreplaceable: radius.Destroys(command, where).Refusal()}
-}
-
-// ruleRefused is the refusal a standing rule gives a command, with the code
-// the record files it under, or ok false where neither rule answers.
-func ruleRefused(denylist []string, a agent.Action) (result, code string, ok bool) {
-	reason, ok := agent.RuleRefusal(denylist, a)
-	if !ok {
-		return "", "", false
-	}
-	if agent.IsIrreplaceable(reason) {
-		// Filed with the safety table's refusals, as a session files it.
-		return agent.RuleRefusedResult(reason), observe.ReasonSafety, true
-	}
-	return agent.RuleRefusedResult(reason), observe.ReasonDenylist, true
 }
 
 // scopePromptBlock tells the model where the work is. A model that

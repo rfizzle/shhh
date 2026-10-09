@@ -18,6 +18,7 @@ import (
 	"net/http"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/nudge"
@@ -447,7 +448,7 @@ func TestHeadlessApprover_GitWriteIsAnsweredAtTheWriteTier(t *testing.T) {
 	if result := deny(tc); !strings.HasPrefix(result, "error:") || !strings.Contains(result, "--yes") {
 		t.Fatalf("the default must deny a git write with guidance, got %q", result)
 	}
-	denied := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, denylist: []string{"git commit"}, run: fakeRun(&[]string{}), structTools: st})
+	denied := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, rules: approval.Router{Denylist: []string{"git commit"}}, run: fakeRun(&[]string{}), structTools: st})
 	if result := denied(tc); result != agent.DenylistResult {
 		t.Fatalf("a deny-list entry for the act must refuse it under --yes too, got %q", result)
 	}
@@ -456,7 +457,7 @@ func TestHeadlessApprover_GitWriteIsAnsweredAtTheWriteTier(t *testing.T) {
 	// refusal is not what the model reads for it.
 	// See docs/capabilities/containment.md#a-git-write-is-not-a-command.
 	refusal := uncontainedRefusal(sandbox.Availability{Detail: "bwrap not found"})
-	required := headlessApprover(context.Background(), headlessApproval{run: fakeRun(&[]string{}), containRefusal: refusal, structTools: st})
+	required := headlessApprover(context.Background(), headlessApproval{run: fakeRun(&[]string{}), rules: approval.Router{Containment: refusal}, structTools: st})
 	if result := required(tc); result == refusal || !strings.Contains(result, "--yes") {
 		t.Fatalf("a required-containment run must answer a git write at the write tier, got %q", result)
 	}
@@ -806,7 +807,7 @@ func TestHeadlessApprover_DenylistHoldsUnderYesAndTheAllowlist(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			var ran []string
-			resolve := headlessApprover(context.Background(), headlessApproval{opts: c.opts, allowlist: c.allowlist, denylist: []string{"git push"}, run: fakeRun(&ran)})
+			resolve := headlessApprover(context.Background(), headlessApproval{opts: c.opts, allowlist: c.allowlist, rules: approval.Router{Denylist: []string{"git push"}}, run: fakeRun(&ran)})
 
 			if result := resolve(execCall("git push origin main")); result != agent.DenylistResult {
 				t.Fatalf("a denied command answered %q, want the deny-list refusal", result)
@@ -823,7 +824,7 @@ func TestHeadlessApprover_DenylistHoldsUnderYesAndTheAllowlist(t *testing.T) {
 
 func TestHeadlessApprover_DenylistHoldsForAProcessStart(t *testing.T) {
 	sup := newTestProcessSupervisor(t)
-	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, denylist: []string{"npm run"}, run: fakeRun(&[]string{}), procSup: sup})
+	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, rules: approval.Router{Denylist: []string{"npm run"}}, run: fakeRun(&[]string{}), procSup: sup})
 	if result := resolve(processStartCall("web", "npm run dev")); result != agent.DenylistResult {
 		t.Fatalf("a denied process start answered %q, want the deny-list refusal", result)
 	}
@@ -2172,7 +2173,7 @@ func raise(t *testing.T, sig os.Signal) {
 func TestHeadlessApprover_RequiredContainmentRefusesEvenWithYes(t *testing.T) {
 	const refusal = "error: this session requires containment and no mechanism is in force: bwrap not found"
 	var ran []string
-	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&ran), containRefusal: refusal})
+	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&ran), rules: approval.Router{Containment: refusal}})
 
 	if result := resolve(execCall("echo hi")); result != refusal {
 		t.Fatalf("the refusal is the result the model reads, got %q", result)
@@ -2188,7 +2189,7 @@ func TestHeadlessApprover_RequiredContainmentRefusesEvenWithYes(t *testing.T) {
 func TestHeadlessApprover_RequiredContainmentRefusesAProcessStart(t *testing.T) {
 	const refusal = "error: this session requires containment and no mechanism is in force: bwrap not found"
 	sup := newTestProcessSupervisor(t)
-	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&[]string{}), containRefusal: refusal, procSup: sup})
+	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, run: fakeRun(&[]string{}), rules: approval.Router{Containment: refusal}, procSup: sup})
 
 	if result := resolve(processStartCall("watch", "sleep 30")); result != refusal {
 		t.Fatalf("a start must be refused too, got %q", result)
@@ -2224,7 +2225,7 @@ func TestHeadlessApprover_ARefusalIsWrittenDownWithItsRule(t *testing.T) {
 	t.Cleanup(func() { logs.To("") })
 
 	at := func() observe.Pos { return observe.Pos{Turn: 1, Round: 4} }
-	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, denylist: []string{"rm -rf"}, run: fakeRun(&[]string{}), un: unattended{at: at}})
+	resolve := headlessApprover(context.Background(), headlessApproval{opts: printOpts{yes: true}, rules: approval.Router{Denylist: []string{"rm -rf"}}, run: fakeRun(&[]string{}), un: unattended{at: at}})
 	if result := resolve(execCall("rm -rf /tmp/x")); result != agent.DenylistResult {
 		t.Fatalf("the deny list must refuse the command, got %q", result)
 	}

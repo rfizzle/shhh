@@ -500,21 +500,20 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// around them a command ran, so the line naming the built-in tool that
 	// answers a shell read follows a command and never a refusal.
 	nudges := &nudge.Turn{}
+	rules := unattendedRules(cfg, sc, tail.refusal)
 	allowed := headlessApprover(cmd.Context(), headlessApproval{
-		opts:           printOpts{yes: true},
-		allowlist:      cfg.Behavior.CommandAllowlist,
-		denylist:       cfg.Behavior.CommandDenylist,
-		run:            nudges.Ran(run),
-		containRefusal: tail.refusal,
-		red:            red,
-		record:         answeredByClient(record),
-		webTools:       session.web,
-		procSup:        procSup,
-		mutationHook:   chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)),
-		scope:          sc,
-		mcpTools:       session.mcpTools,
-		structTools:    session.structural,
-		un:             unattended{sup: sup, at: l.obs.pos, seen: l.seen},
+		opts:         printOpts{yes: true},
+		allowlist:    headlessAllowlist(cfg, printOpts{}),
+		rules:        rules,
+		run:          nudges.Ran(run),
+		red:          red,
+		record:       answeredByClient(record),
+		webTools:     session.web,
+		procSup:      procSup,
+		mutationHook: chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)),
+		mcpTools:     session.mcpTools,
+		structTools:  session.structural,
+		un:           unattended{sup: sup, at: l.obs.pos, seen: l.seen},
 	})
 	// And the approver of a server told there is nobody to ask: the same
 	// standing refusals in front, the classifier where the client would have
@@ -522,21 +521,18 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	var judged func(provider.ToolCall) string
 	if opts.autoMode {
 		judged = headlessApprover(cmd.Context(), headlessApproval{
-			allowlist:      cfg.Behavior.CommandAllowlist,
-			denylist:       cfg.Behavior.CommandDenylist,
-			run:            nudges.Ran(run),
-			containRefusal: tail.refusal,
-			red:            red,
-			record:         record,
-			webTools:       session.web,
-			procSup:        procSup,
-			mutationHook:   chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)),
-			scope:          sc,
-			mcpTools:       session.mcpTools,
-			structTools:    session.structural,
+			allowlist:    headlessAllowlist(cfg, printOpts{}),
+			rules:        rules,
+			run:          nudges.Ran(run),
+			red:          red,
+			record:       record,
+			webTools:     session.web,
+			procSup:      procSup,
+			mutationHook: chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)),
+			mcpTools:     session.mcpTools,
+			structTools:  session.structural,
 			un: unattended{sup: sup, at: l.obs.pos, seen: l.seen,
-				judge: &autoJudge{ctx: cmd.Context(), classifier: classifier, recent: a.Messages, cwd: hookCwd,
-					allowHosts: cfg.Web.AllowHosts, denyHosts: cfg.Web.DenyHosts}},
+				judge: newAutoJudge(cmd.Context(), cfg, classifier, a.Messages, hookCwd)},
 		})
 	}
 	// A request a child routes up, put to the client the way the turn's own

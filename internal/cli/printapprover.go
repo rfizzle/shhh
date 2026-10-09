@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/approval"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -149,26 +151,28 @@ func headlessWrites(session chatSession, own *writtenByCalls, ignore []string) *
 }
 
 // headlessApproval is what the unattended approver answers a call with: the
-// run's flags and its two lists, the containment refusal, the runner, the
-// reducer and the record, the toolsets whose calls it runs, and what the run
-// has beyond its flags. It is one value because three surfaces build the
+// run's flags and its allowlist, the standing rules, the runner, the reducer
+// and the record, the toolsets whose calls it runs, and what the run has
+// beyond its flags. It is one value because three surfaces build the
 // approver — a scripted run, and a served session twice over — and a
 // signature with a parameter per toolset was one where two nils swapped in a
 // call still compiled. A zero field is a run that was not handed that thing.
 type headlessApproval struct {
-	opts                printOpts
-	allowlist, denylist []string
-	run                 func(context.Context, string) tools.ExecResult
-	containRefusal      string
-	red                 *evidence.Reducer
-	record              func(decision, reason string)
-	webTools            *web.Toolset
-	procSup             *process.Supervisor
-	mutationHook        chat.MutationHook
-	scope               *scope.Scope
-	mcpTools            *mcp.Toolset
-	structTools         *structural.Toolset
-	un                  unattended
+	opts      printOpts
+	allowlist []string
+	// rules is the standing rules — the deny lists, the containment's
+	// refusal, the working scope — in the one assembly the screen answers
+	// its calls from too (unattendedRules).
+	rules        approval.Router
+	run          func(context.Context, string) tools.ExecResult
+	red          *evidence.Reducer
+	record       func(decision, reason string)
+	webTools     *web.Toolset
+	procSup      *process.Supervisor
+	mutationHook chat.MutationHook
+	mcpTools     *mcp.Toolset
+	structTools  *structural.Toolset
+	un           unattended
 
 	// recordTook is record for a verdict the classifier reached, with how
 	// long it took; nil sends those through record untimed.
@@ -181,13 +185,16 @@ type headlessApproval struct {
 // reduction pipeline (red is nil-safe) like every other tool result. Each
 // verdict is reported to record (nil-safe) as a content-free decision event.
 //
-// denylist is read before anything that can approve, --yes included: a
-// headless run is the surface with nobody to ask, so a list the user wrote to
-// mean "never" has to mean it here most of all.
+// The standing rules are read before anything that can approve, --yes
+// included: a headless run is the surface with nobody to ask, so a list the
+// user wrote to mean "never" has to mean it here most of all. They are the
+// screen's rules, asked through the same assembly; what this approver adds
+// after them — the flags, the judge, a refusal where nobody can be asked — is
+// its own.
 //
-// containRefusal, when set, is the answer every command gets before policy is
-// consulted at all: a run told to require containment on a host with none has
-// nothing left to decide.
+// The containment's refusal, when the run has one, is the answer every
+// command gets before policy is consulted at all: a run told to require
+// containment on a host with none has nothing left to decide.
 //
 // un is what this run has beyond its flags: the supervisor a spawn is handed
 // to, and the judge a call the flags did not answer is put to (approvals.go).
@@ -458,8 +465,12 @@ func (r headlessApproval) admitCommand(tc provider.ToolCall, call agent.Classifi
 	// Refused before the approval it would otherwise be given: a run that
 	// requires containment has nothing to approve where none is in force,
 	// and the refusal is the result the model reads.
-	if r.containRefusal != "" {
-		return r.containRefusal
+	//
+	// It is read off the rules before the arguments are, so a command whose
+	// arguments did not parse is still told the one thing that would have
+	// stopped it anyway.
+	if r.rules.Containment != "" {
+		return r.rules.Containment
 	}
 	if callErr != nil {
 		return how.parseErr(callErr)
@@ -469,9 +480,9 @@ func (r headlessApproval) admitCommand(tc provider.ToolCall, call agent.Classifi
 	// out-rank would be a preference and not a rule. A destroying command
 	// pointed at something this run may not destroy is answered in the same
 	// place, through the function the session's policy asks.
-	if result, code, refused := ruleRefused(r.denylist, ruleAction(r.scope, command, how.inDir)); refused {
-		r.refuse(tc, command, code)
-		return result
+	if refusal, refused := r.rules.Rule(approval.Call{Command: command, InDir: how.inDir, Runs: true}); refused {
+		r.refuse(tc, command, refusal.Code)
+		return refusal.Result
 	}
 	if warnings := safety.Check(command); len(warnings) > 0 {
 		risks := make([]string, 0, len(warnings))
@@ -491,7 +502,7 @@ func (r headlessApproval) admitCommand(tc provider.ToolCall, call agent.Classifi
 	// allowlisted command shape is not a licence to write outside the
 	// directories this run was given, and a process start is a command as
 	// much as a foreground one.
-	if deny, ok := headlessScopeCheck(r.scope, r.opts.yes, radius.WritePaths(command)); !ok {
+	if deny, ok := headlessScopeCheck(r.rules.Scope, r.opts.yes, radius.WritePaths(command)); !ok {
 		r.refuse(tc, command, observe.ReasonOutOfScope)
 		return deny
 	}
@@ -505,9 +516,9 @@ func (r headlessApproval) admitCommand(tc provider.ToolCall, call agent.Classifi
 // refused `git commit` refused the act and not the spelling.
 func (r headlessApproval) approveGitWrite(tc provider.ToolCall, call agent.Classified) string {
 	line := call.Action.Command
-	if agent.DenylistMatches(r.denylist, line) {
-		r.refuse(tc, line, observe.ReasonDenylist)
-		return agent.DenylistResult
+	if refusal, refused := r.rules.Rule(approval.Call{Command: line, Write: true}); refused {
+		r.refuse(tc, line, refusal.Code)
+		return refusal.Result
 	}
 	// The line the call stands for travels with it, so the judge reads
 	// `git commit` rather than a tool name and a blob of arguments — the
@@ -534,7 +545,7 @@ func (r headlessApproval) approveWrite(tc provider.ToolCall, call agent.Classifi
 		return reason
 	}
 	if mutErr == nil {
-		if deny, ok := headlessScopeCheck(r.scope, r.opts.yes, []string{mut.Path}); !ok {
+		if deny, ok := headlessScopeCheck(r.rules.Scope, r.opts.yes, []string{mut.Path}); !ok {
 			// No command on the line, and the path is not put on one: a
 			// refusal for what a call reaches is a refusal about a path, and
 			// this file is shared and outlives every session that writes to
@@ -563,6 +574,29 @@ func headlessCommandFlags(opts printOpts, allowlist []string, command string) (b
 		return true, observe.ReasonAllowlist
 	}
 	return false, ""
+}
+
+// unattendedRules is the standing rules of a run with nobody in front of it:
+// the two deny lists from the configuration, and the run's containment — its
+// working scope and the refusal it gives every command where it was told to
+// contain them and cannot. It is the screen's assembly, built from the same
+// facts the screen's policy is built from, so a rule added for one door is
+// answered at the other. A scripted run and a served session both build their
+// approvers on it, and a surface added beside them starts here.
+// See docs/capabilities/approvals-and-safety.md#a-deny-list-is-answered-before-anything-can-allow.
+func unattendedRules(cfg config.Config, sc *scope.Scope, containment string) approval.Router {
+	return approval.Router{
+		Denylist:    cfg.Behavior.CommandDenylist,
+		DenyHosts:   cfg.Web.DenyHosts,
+		Scope:       sc,
+		Containment: containment,
+	}
+}
+
+// headlessAllowlist is the commands a run's flags pre-approve: the
+// configuration's allowlist, and what --allow added to it for this run.
+func headlessAllowlist(cfg config.Config, opts printOpts) []string {
+	return append(append([]string{}, cfg.Behavior.CommandAllowlist...), opts.allow...)
 }
 
 // onlyRegistered answers a call naming a tool this run never offered the way
