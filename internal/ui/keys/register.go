@@ -134,6 +134,9 @@ const (
 
 	// surfaceCount is how many rows the register has; it is not a surface.
 	surfaceCount
+
+	// NoSurface is the handle of a screen the register has no row for.
+	NoSurface SurfaceID = -1
 )
 
 // Surfaces is the register in the order a reader meets them, which is the

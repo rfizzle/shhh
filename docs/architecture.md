@@ -401,6 +401,14 @@ the bug that shape breeds is a key routed by a flag nobody it reaches knows
 about: a mode left on by the step that should have cleared it, answering keys
 on a screen that no longer draws it.
 
+A size also passes its screens in. The supporting screens (context, sources,
+steps, the backlog and the rest) are one table the size hands the register:
+each entry names its state, the command that opens it, the key surface that
+lists its keys, where it draws and what draws it. A second size with other
+screens passes another table instead of editing the chat register; the cards
+and viewers, which are stages of a turn and not screens a size offers, stay
+rows of the register itself.
+
 So each screen is an owner over pieces. A piece holds the flags of its own
 mode, draws its own rows and answers its own keys; the owner keeps the step,
 the chrome every supporting screen shares, and whatever the host sets. Where

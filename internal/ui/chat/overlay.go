@@ -352,9 +352,10 @@ func (o *mode) Update(m Model, key tea.KeyPressMsg) (Model, overlayAction) {
 }
 
 // buildOverlays is the register. One row per mode, and adding a mode is this
-// row plus the mode's own file.
-func buildOverlays() map[state]*mode {
-	return map[state]*mode{
+// row plus the mode's own file — except a pane screen, which is a row of the
+// table its size passes in (screens.go) and joins here as one entry of it.
+func buildOverlays(screens []screenSpec) map[state]*mode {
+	rows := map[state]*mode{
 		// The two decision cards. They float while the draft still holds the
 		// keyboard and fill the panel once the handover has given it to them, so
 		// their placement is read against the frame rather than on its own
@@ -658,85 +659,6 @@ func buildOverlays() map[state]*mode {
 			hint:    (Model).renderPasteReaderHint,
 			keys:    (Model).updatePasteReader,
 		},
-		stateReview: {
-			place:       placePane,
-			borrows:     true,
-			hidesRail:   true,
-			noSelection: true,
-			lines: func(m Model, width, height int) []string {
-				if m.review == nil {
-					return nil
-				}
-				m.review.SetSize(width, height)
-				return strings.Split(m.review.View(width), "\n")
-			},
-			hint:    (Model).renderReviewHint,
-			keys:    (Model).updateReview,
-			command: "/review",
-			// The CHANGES door is /diff's bare form: the session's whole
-			// changeset, read in review mode.
-			doorCommand: "/diff",
-			door:        &surfaceDoor{components.RailChanges, railDoor{Model.openSessionDiff, reviewShowing, Model.closeReview}},
-		},
-		// The screens the session holds while they take the pane. Each row is
-		// the screen's accessor and what is its own; paneScreen supplies the
-		// rest.
-		stateContext:  paneScreen(heldScreens.contextScreen, contextScreenRow()),
-		stateSources:  paneScreen(heldScreens.sources, sourcesScreenRow()),
-		stateSteps:    paneScreen(heldScreens.steps, stepsScreenRow()),
-		stateReadings: paneScreen(heldScreens.readings, readingsScreenRow()),
-		stateTurns:    paneScreen(heldScreens.turns, turnsScreenRow()),
-		stateAlerts:   paneScreen(heldScreens.alerts, alertsScreenRow()),
-		stateSpend:    paneScreen(heldScreens.spend, spendScreenRow()),
-		stateFlakes:   paneScreen(heldScreens.flakes, flakesScreenRow()),
-		stateTools: paneScreenDrawn((Model).toolsLines, mode{
-			hint:    (Model).renderToolsHint,
-			keys:    (Model).updateTools,
-			command: "/mcp",
-			door:    &surfaceDoor{components.RailTools, railDoor{Model.openTools, toolsShowing, Model.closeToolsScreen}},
-		}),
-		stateSafety: paneScreenDrawn((Model).safetyLines, mode{
-			hint:    (Model).renderSafetyHint,
-			keys:    (Model).updateSafety,
-			command: "/safety",
-		}),
-		stateNotes: paneScreen(heldScreens.notes, notesScreenRow()),
-		stateBacklog: paneScreenDrawn(func(m Model, width, height int) []string {
-			if m.screens.backlog() == nil {
-				return nil
-			}
-			return strings.Split(m.backlogPane(width, height), "\n")
-		}, mode{
-			hint:    (Model).renderTodoScreenHint,
-			keys:    (Model).updateTodoScreen,
-			command: "/todo",
-			door:    &surfaceDoor{components.RailTodo, railDoor{Model.openTodoDoor, backlogShowing, Model.closeTodoScreen}},
-		}),
-		// The one pane overlay that can write a file. It writes on `[w]`
-		// alone and asks before it walks away from anything staged, which is
-		// the screen's own rule rather than the register's (config.go).
-		stateConfig: paneScreenDrawn((Model).configScreenLines, mode{
-			hint:    (Model).renderConfigHint,
-			answer:  (*Model).answerConfig,
-			command: "/config",
-		}),
-		statePersona: {
-			place:     placePane,
-			borrows:   true,
-			hidesRail: true,
-			// The profile drafter is a flow rather than a reading and needs the
-			// room for the same reason the readings do: the draft it ends on is a
-			// whole file.
-			lines: func(m Model, width, height int) []string {
-				if m.personaScreen == nil {
-					return nil
-				}
-				return strings.Split(m.personaPane(width, height), "\n")
-			},
-			hint: (Model).renderPersonaHint,
-			keys: (Model).updatePersona,
-		},
-
 		// The two modes that own the keyboard without drawing a block of their
 		// own. The retry countdown is a row of the live tail; the model-list wait
 		// draws nothing while the provider is asked what it offers.
@@ -751,124 +673,10 @@ func buildOverlays() map[state]*mode {
 			answer:    (*Model).answerModelList,
 		},
 	}
-}
-
-// paneScreen is the row of a screen the session holds while it takes the
-// pane, drawn the plain way: it sizes the held screen to the pane on every
-// paint and draws nothing while none is held. row is what is the screen's
-// own — its hint, its keys, its command and its rail door — and screen is
-// the accessor it is held under.
-func paneScreen[T any, P interface {
-	*T
-	SetSize(width, height int)
-	View(width int) string
-}](screen func(heldScreens) P, row mode) *mode {
-	return paneScreenDrawn(func(m Model, width, height int) []string {
-		held := screen(m.screens)
-		if held == nil {
-			return nil
-		}
-		held.SetSize(width, height)
-		return strings.Split(held.View(width), "\n")
-	}, row)
-}
-
-// paneScreenDrawn is the row of a held screen that draws its own rows —
-// one that reads the session on every paint, or lays its pane out around
-// the screen — so the screen's file supplies lines, which answers nil while
-// none is held. The row borrows the turn, stands over the rail and keeps a
-// drag from selecting, as every held screen does.
-func paneScreenDrawn(lines func(m Model, width, height int) []string, row mode) *mode {
-	row.place = placePane
-	row.holds = true
-	row.borrows = true
-	row.hidesRail = true
-	row.noSelection = true
-	row.lines = lines
-	return &row
-}
-
-func contextScreenRow() mode {
-	return mode{
-		ownsQuit: true,
-		hint:     (Model).renderContextHint,
-		answer:   (*Model).answerContext,
-		command:  "/context",
-		door:     &surfaceDoor{components.RailContext, railDoor{Model.openContext, contextShowing, Model.closeContextScreen}},
+	for _, spec := range screens {
+		rows[spec.state] = spec.mode()
 	}
-}
-
-func sourcesScreenRow() mode {
-	return mode{
-		hint:    (Model).renderSourcesHint,
-		keys:    (Model).updateSources,
-		command: "/sources",
-	}
-}
-
-func stepsScreenRow() mode {
-	return mode{
-		hint:    (Model).renderStepsHint,
-		keys:    (Model).updateSteps,
-		command: "/steps",
-		door:    &surfaceDoor{components.RailSteps, railDoor{Model.openSteps, stepsShowing, Model.closeStepsScreen}},
-		// PLAN stands where STEPS would while an approved plan is being
-		// executed, and the screen is then the plan's (worksteps.go).
-		doorAlso: []string{components.RailPlan},
-	}
-}
-
-func readingsScreenRow() mode {
-	return mode{
-		hint:    (Model).renderReadingsHint,
-		keys:    (Model).updateReadings,
-		command: "/readings",
-		door:    &surfaceDoor{components.RailSummary, railDoor{Model.openReadings, readingsShowing, Model.closeReadingsScreen}},
-	}
-}
-
-func turnsScreenRow() mode {
-	return mode{
-		hint:    (Model).renderTurnsHint,
-		keys:    (Model).updateTurns,
-		command: "/turns",
-		door:    &surfaceDoor{components.RailTurn, railDoor{Model.openTurns, turnsShowing, Model.closeTurnsScreen}},
-	}
-}
-
-func alertsScreenRow() mode {
-	return mode{
-		hint:    (Model).renderAlertsHint,
-		keys:    (Model).updateAlerts,
-		command: "/alerts",
-		door:    &surfaceDoor{components.RailAlerts, railDoor{Model.openAlerts, alertsShowing, Model.closeAlertsScreen}},
-	}
-}
-
-func spendScreenRow() mode {
-	return mode{
-		hint:    (Model).renderStatsHint,
-		keys:    (Model).updateStats,
-		command: "/stats",
-		door:    &surfaceDoor{components.RailSpend, railDoor{Model.openStats, statsShowing, Model.closeStatsScreen}},
-	}
-}
-
-func flakesScreenRow() mode {
-	return mode{
-		hint:        (Model).renderFlakesHint,
-		keys:        (Model).updateFlakes,
-		command:     "/gate",
-		commandArgs: []string{"flakes"},
-	}
-}
-
-func notesScreenRow() mode {
-	return mode{
-		hint:    (Model).renderNotesHint,
-		keys:    (Model).updateNotes,
-		command: "/notes",
-	}
+	return rows
 }
 
 // The three overlays the session's state cannot name. Each rides over
@@ -939,7 +747,7 @@ var (
 // none of them is ever read except through here.
 func overlays() map[state]*mode {
 	overlayOnce.Do(func() {
-		overlayTable = buildOverlays()
+		overlayTable = buildOverlays(chatScreens())
 		registerDoors = map[string]railDoor{}
 		registerDoorNames = map[string]bool{}
 		// The agent manager is a row the state cannot name (coverOverlay),
