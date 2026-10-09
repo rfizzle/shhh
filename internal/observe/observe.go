@@ -71,6 +71,11 @@ type Observer struct {
 	ToolCall func(at Pos, tool string, duration time.Duration, outcome, class, purpose string)
 	// Decision reports one mode-policy verdict for a gated tool call.
 	Decision func(at Pos, decision, reason string)
+	// DecisionTimed is Decision for a verdict the classifier reached, with
+	// how long the judgement took. A surface calls one or the other for a
+	// row, never both — Decided picks — so the record can set one backend's
+	// verdicts against another's by time as well as by answer.
+	DecisionTimed func(at Pos, decision, reason string, took time.Duration)
 	// Turn reports a turn closing: how it ended, how many tool rounds it
 	// took and how long it ran. A turn that pauses at its round cap
 	// reports once as paused and, if granted more rounds, once more when
@@ -99,6 +104,17 @@ type Observer struct {
 	// Session names the saved conversation this session is writing, so
 	// metadata and transcript can be joined by someone who asks to.
 	Session func(name string)
+}
+
+// Decided reports one verdict: through DecisionTimed where the observer takes
+// one and the verdict has a duration, through Decision otherwise.
+func (o Observer) Decided(at Pos, decision, reason string, took time.Duration) {
+	switch {
+	case took > 0 && o.DecisionTimed != nil:
+		o.DecisionTimed(at, decision, reason, took)
+	case o.Decision != nil:
+		o.Decision(at, decision, reason)
+	}
 }
 
 // Decision codes for Observer.Decision.

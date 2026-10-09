@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
@@ -47,6 +48,17 @@ func (l *lastVerdict) wrap(next func(decision, reason string)) func(string, stri
 		l.code = decision
 		l.mu.Unlock()
 		next(decision, reason)
+	}
+}
+
+// wrapTook is wrap for the reporter that carries how long the classifier
+// took.
+func (l *lastVerdict) wrapTook(next func(decision, reason string, took time.Duration)) func(string, string, time.Duration) {
+	return func(decision, reason string, took time.Duration) {
+		l.mu.Lock()
+		l.code = decision
+		l.mu.Unlock()
+		next(decision, reason, took)
 	}
 }
 
@@ -157,6 +169,10 @@ type headlessApproval struct {
 	mcpTools            *mcp.Toolset
 	structTools         *structural.Toolset
 	un                  unattended
+
+	// recordTook is record for a verdict the classifier reached, with how
+	// long it took; nil sends those through record untimed.
+	recordTook func(decision, reason string, took time.Duration)
 }
 
 // headlessApprover resolves approval-gated tool calls without a prompt:
@@ -246,7 +262,16 @@ func headlessApprover(ctx context.Context, r headlessApproval) func(provider.Too
 // note reports a verdict to the record, which a run may not have been
 // handed.
 func (r headlessApproval) note(decision, reason string) {
-	if r.record != nil {
+	r.noteTook(decision, reason, 0)
+}
+
+// noteTook is note for a verdict the classifier reached, with how long it
+// took.
+func (r headlessApproval) noteTook(decision, reason string, took time.Duration) {
+	switch {
+	case took > 0 && r.recordTook != nil:
+		r.recordTook(decision, reason, took)
+	case r.record != nil:
 		r.record(decision, reason)
 	}
 }
@@ -258,7 +283,13 @@ func (r headlessApproval) note(decision, reason string) {
 // that reached one of them and not the other is a run whose record and
 // whose log disagree about what happened to it.
 func (r headlessApproval) refuse(tc provider.ToolCall, command, rule string) {
-	r.note(observe.DecisionDeny, rule)
+	r.refuseTook(tc, command, rule, 0)
+}
+
+// refuseTook is refuse for a refusal the classifier reached, with how long it
+// took.
+func (r headlessApproval) refuseTook(tc provider.ToolCall, command, rule string, took time.Duration) {
+	r.noteTook(observe.DecisionDeny, rule, took)
 	at := r.un.pos()
 	agent.LogRefusal(tc.Name, command, rule, at.Turn, at.Round)
 }
@@ -284,19 +315,22 @@ func (r headlessApproval) refuse(tc provider.ToolCall, command, rule string) {
 // It is one method and not a branch written out at each tier because
 // that order is the whole permission policy of an unattended run, and a
 // tier that spelled it out again is a tier that can come to disagree.
-func (r headlessApproval) answer(tc provider.ToolCall, action agent.Action, byFlag bool, flagReason, what, without string) (string, bool) {
+//
+// took is how long the classifier took where it was asked, and zero where a
+// flag answered, for the row the caller notes the allow under.
+func (r headlessApproval) answer(tc provider.ToolCall, action agent.Action, byFlag bool, flagReason, what, without string) (string, time.Duration, bool) {
 	if byFlag {
-		return flagReason, true
+		return flagReason, 0, true
 	}
-	decision, why, code := r.un.judge.decide(tc, action)
+	decision, why, code, took := r.un.judge.judge(tc, action)
 	if decision == agent.Allow {
-		return code, true
+		return code, took, true
 	}
-	r.refuse(tc, action.Command, code)
+	r.refuseTook(tc, action.Command, code, took)
 	if r.un.judge == nil {
-		return "error: " + what + " not approved: headless mode denies " + without, false
+		return "error: " + what + " not approved: headless mode denies " + without, 0, false
 	}
-	return agent.UnattendedRefusedResult(what, why), false
+	return agent.UnattendedRefusedResult(what, why), 0, false
 }
 
 // answers is which calls this run has an answer for: the tools it was
@@ -338,12 +372,12 @@ func (r headlessApproval) approveSpawn(tc provider.ToolCall, call agent.Classifi
 	if _, err := r.un.sup.CheckModel(json.RawMessage(tc.Arguments)); err != nil {
 		return "error: " + err.Error()
 	}
-	reason, ok := r.answer(tc, call.Action,
+	reason, took, ok := r.answer(tc, call.Action,
 		r.opts.yes, observe.ReasonHeadlessYes, "spawning an agent", "sub-agents by default (run with --yes)")
 	if !ok {
 		return reason
 	}
-	r.note(observe.DecisionAllow, reason)
+	r.noteTook(observe.DecisionAllow, reason, took)
 	return r.red.Process(tc.Name, agent.ExecuteWith(func(_ string, args json.RawMessage) (string, error) {
 		return r.un.sup.Spawn(args)
 	}, tc))
@@ -352,12 +386,12 @@ func (r headlessApproval) approveSpawn(tc provider.ToolCall, call agent.Classifi
 // approveServerCall answers a server call, an external action like a fetch:
 // --yes opts in, the default denies.
 func (r headlessApproval) approveServerCall(tc provider.ToolCall, call agent.Classified) string {
-	reason, ok := r.answer(tc, call.Action,
+	reason, took, ok := r.answer(tc, call.Action,
 		r.opts.yes, observe.ReasonHeadlessYes, tc.Name, "external actions by default (run with --yes)")
 	if !ok {
 		return reason
 	}
-	r.note(observe.DecisionAllow, reason)
+	r.noteTook(observe.DecisionAllow, reason, took)
 	return r.red.Process(tc.Name, agent.ExecuteWith(r.mcpTools.Execute, tc))
 }
 
@@ -375,6 +409,7 @@ func (r headlessApproval) approveFetch(tc provider.ToolCall, call agent.Classifi
 		fetchAction.Host = plan.Host
 	}
 	var reason string
+	var took time.Duration
 	if r.un.conversation != nil {
 		// The conversation's policy is the whole answer: it refuses a host
 		// on the deny list and allows every other read, so no flag and no
@@ -388,13 +423,13 @@ func (r headlessApproval) approveFetch(tc provider.ToolCall, call agent.Classifi
 		reason = observe.ReasonCode(why)
 	} else {
 		var ok bool
-		reason, ok = r.answer(tc, fetchAction,
+		reason, took, ok = r.answer(tc, fetchAction,
 			r.opts.yes, observe.ReasonHeadlessYes, "web fetch", "external actions by default (run with --yes)")
 		if !ok {
 			return reason
 		}
 	}
-	r.note(observe.DecisionAllow, reason)
+	r.noteTook(observe.DecisionAllow, reason, took)
 	fetch := func(name string, args json.RawMessage) (string, error) {
 		return r.webTools.Execute(web.Orchestrator, name, args)
 	}
@@ -447,7 +482,7 @@ func (r headlessApproval) admitCommand(tc provider.ToolCall, call agent.Classifi
 		return how.denied + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
 	}
 	byFlag, flagReason := headlessCommandFlags(r.opts, r.allowlist, command)
-	reason, ok := r.answer(tc, call.Action,
+	reason, took, ok := r.answer(tc, call.Action,
 		byFlag, flagReason, how.noun, "commands by default (run with --yes or --allow)")
 	if !ok {
 		return reason
@@ -460,7 +495,7 @@ func (r headlessApproval) admitCommand(tc provider.ToolCall, call agent.Classifi
 		r.refuse(tc, command, observe.ReasonOutOfScope)
 		return deny
 	}
-	r.note(observe.DecisionAllow, reason)
+	r.noteTook(observe.DecisionAllow, reason, took)
 	return how.exec(tc, command)
 }
 
@@ -477,12 +512,12 @@ func (r headlessApproval) approveGitWrite(tc provider.ToolCall, call agent.Class
 	// The line the call stands for travels with it, so the judge reads
 	// `git commit` rather than a tool name and a blob of arguments — the
 	// same reading the deny list just took.
-	reason, ok := r.answer(tc, call.Action,
+	reason, took, ok := r.answer(tc, call.Action,
 		r.opts.yes, observe.ReasonHeadlessYes, "git write", "writes by default (run with --yes)")
 	if !ok {
 		return reason
 	}
-	r.note(observe.DecisionAllow, reason)
+	r.noteTook(observe.DecisionAllow, reason, took)
 	return r.red.Process(tc.Name, agent.ExecuteWith(r.structTools.Execute, tc))
 }
 
@@ -493,7 +528,7 @@ func (r headlessApproval) approveWrite(tc provider.ToolCall, call agent.Classifi
 	if mutErr == nil {
 		edit.Path = mut.Path
 	}
-	reason, ok := r.answer(tc, edit, r.opts.yes, observe.ReasonHeadlessYes,
+	reason, took, ok := r.answer(tc, edit, r.opts.yes, observe.ReasonHeadlessYes,
 		"file modification", "edits by default (run with --yes)")
 	if !ok {
 		return reason
@@ -508,7 +543,7 @@ func (r headlessApproval) approveWrite(tc provider.ToolCall, call agent.Classifi
 			return deny
 		}
 	}
-	r.note(observe.DecisionAllow, reason)
+	r.noteTook(observe.DecisionAllow, reason, took)
 	result := agent.ExecuteWith(r.un.seen.ExecuteMutating, tc)
 	if r.mutationHook != nil {
 		result = r.mutationHook(tc.Name, json.RawMessage(tc.Arguments), result)

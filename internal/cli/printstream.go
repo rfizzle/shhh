@@ -10,6 +10,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/hook"
@@ -260,8 +261,14 @@ func (h headlessObserver) toolResult(r agent.ToolResult) {
 // run resolves every one of them from policy rather than from a person, so
 // this is the only place its approval rate can come from.
 func (h headlessObserver) decision(decision, reason string) {
+	h.decisionTook(decision, reason, 0)
+}
+
+// decisionTook is decision for a verdict the classifier reached, with how
+// long it took, which the record keeps and the stream does not carry.
+func (h headlessObserver) decisionTook(decision, reason string, took time.Duration) {
 	at := h.pos()
-	h.rec.decisionAt(at, decision, reason)
+	h.rec.decisionAt(at, decision, reason, took)
 	h.stream.decision(at, decision, reason)
 }
 

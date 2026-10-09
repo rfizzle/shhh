@@ -58,11 +58,11 @@ func (db *DB) StartChildAgentSession(parentID int64, kind, provider, model, name
 // what an unstamped row holds and what the reader takes for "none".
 func (db *DB) StampAgentSession(id int64, p AgentProvenance) error {
 	c := p.Settings
-	settings := []any{nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
+	settings := []any{nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
 	if c.ConfigHash != "" {
 		settings = []any{c.Mode, c.Reasoning, c.MaxRounds, c.SummaryModel, c.SummaryInterval, c.SummaryEnabled,
 			c.ClassifierModel, c.SandboxProfile, c.Item, c.Stage, c.ConfigHash, c.CheckInInterval,
-			c.AgentsRequireSandbox}
+			c.AgentsRequireSandbox, c.ClassifierBackend}
 	}
 	args := append([]any{p.Version, p.PromptHash, p.Skills, p.Project}, settings...)
 	_, err := db.sql.Exec(
@@ -70,7 +70,7 @@ func (db *DB) StampAgentSession(id int64, p AgentProvenance) error {
 		        mode = ?, reasoning = ?, max_rounds = ?,
 		        summary_model = ?, summary_interval = ?, summary_enabled = ?,
 		        classifier_model = ?, sandbox_profile = ?, item = ?, stage = ?, config_hash = ?,
-		        check_in_interval = ?, agents_require_sandbox = ?
+		        check_in_interval = ?, agents_require_sandbox = ?, classifier_backend = ?
 		 WHERE id = ?`,
 		append(args, id)...,
 	)

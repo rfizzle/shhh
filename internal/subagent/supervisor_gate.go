@@ -203,6 +203,11 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 			c.rec.Decision(c.pos(), d, code)
 		}
 	}
+	// recordTook is record for a verdict the classifier reached, with the
+	// time the judgement took.
+	recordTook := func(d, code string, took time.Duration) {
+		c.rec.Decided(c.pos(), d, code, took)
+	}
 	// The static policy denies for a command the user's deny list names,
 	// which is refused whatever this child's mode is; in either read-only
 	// mode, which refuses the call with the result that tells the model why
@@ -260,7 +265,7 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		}
 		classified = true
 		if decision == agent.Deny {
-			record(observe.DecisionDeny, observe.ReasonClassifier)
+			recordTook(observe.DecisionDeny, observe.ReasonClassifier, cost)
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem,
 				Text: "Refused (" + classifierAccount(cost) + "): " + title + " — " + denial})
 			return "error: auto mode denied this tool call: " + denial
@@ -272,7 +277,7 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		if classified {
 			code, rule = observe.ReasonClassifier, classifierRule
 		}
-		record(observe.DecisionAllow, code)
+		recordTook(observe.DecisionAllow, code, cost)
 		// The account rides the act, in the field the call's own row keeps
 		// for it. A refusal keeps its row because there is no act under it
 		// to carry the reason; an approval has one.
@@ -294,7 +299,7 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 			askCode = observe.ReasonSafety
 		}
 		if judged != "" {
-			record(observe.DecisionDeny, observe.ReasonClassifier)
+			recordTook(observe.DecisionDeny, observe.ReasonClassifier, cost)
 		} else {
 			record(observe.DecisionAsk, askCode)
 		}
@@ -419,7 +424,7 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, a
 		// The classifier said no and a person is there to answer instead;
 		// the child's transcript says whose no it was.
 		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Asking the user: the classifier would refuse — " + reason + "."})
-		return agent.Ask, 0, reason, true
+		return agent.Ask, v.Elapsed, reason, true
 	case !v.Failed && web.StandingOf(reason) != "":
 		// The classifier said yes and the host's standing put the call to
 		// the person instead; the child's transcript says which list did.

@@ -144,6 +144,9 @@ type AgentSettings struct {
 	// ClassifierModel is the model auto mode's classifier asks, empty on a
 	// surface that has none.
 	ClassifierModel string `json:"classifier_model,omitempty"`
+	// ClassifierBackend is how that classifier was asked — completion or
+	// decisions — empty on a surface that has none.
+	ClassifierBackend string `json:"classifier_backend,omitempty"`
 	// SandboxProfile is the containment profile in force, empty when
 	// nothing contains the session's commands.
 	SandboxProfile string `json:"sandbox_profile,omitempty"`

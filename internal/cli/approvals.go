@@ -181,13 +181,20 @@ type autoJudge struct {
 // A nil judge is a run that was not put in auto mode, and its answer is the
 // flat refusal such a run has always given.
 func (j *autoJudge) decide(tc provider.ToolCall, action agent.Action) (agent.Decision, string, string) {
+	decision, why, code, _ := j.judge(tc, action)
+	return decision, why, code
+}
+
+// judge is decide with how long the classifier took, zero where it was not
+// asked, for the row the verdict is recorded under.
+func (j *autoJudge) judge(tc provider.ToolCall, action agent.Action) (agent.Decision, string, string, time.Duration) {
 	if j == nil {
-		return agent.Deny, "", observe.ReasonHeadlessDefault
+		return agent.Deny, "", observe.ReasonHeadlessDefault, 0
 	}
 	if action.Kind == agent.ActionFetch {
 		policy := agent.ModePolicy{Mode: agent.ModeAuto, AllowHosts: j.allowHosts, DenyHosts: j.denyHosts}
 		if decision, why := policy.Decide(action); decision != agent.Ask {
-			return decision, why, observe.ReasonCode(why)
+			return decision, why, observe.ReasonCode(why), 0
 		}
 	}
 	var recent []provider.Message
@@ -205,7 +212,7 @@ func (j *autoJudge) decide(tc provider.ToolCall, action agent.Action) (agent.Dec
 	if host := observe.HostReason(web.StandingOf(reason)); host != "" && !v.Failed {
 		code = host
 	}
-	return decision, reason, code
+	return decision, reason, code, v.Elapsed
 }
 
 // unattended is what a run with nobody in front of it answers a gated call

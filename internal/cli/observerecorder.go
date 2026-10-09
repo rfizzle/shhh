@@ -377,6 +377,13 @@ func sessionSettings(cfg config.Config, run runSettings) storage.AgentSettings {
 	}
 	if run.classifier {
 		out.ClassifierModel = modelOr(cfg.Behavior.ClassifierModel, run.model)
+		// The backend beside the model, so a comparison can split on it. It
+		// is a word from the agent package's closed set or nothing: a word
+		// that set does not know is the file's text, and the file's text is
+		// what the allowlist keeps out.
+		if backend, err := agent.ParseClassifierBackend(cfg.Behavior.ClassifierBackend); err == nil {
+			out.ClassifierBackend = backend
+		}
 	}
 	return out
 }
@@ -475,14 +482,17 @@ func (r *observeRecorder) observer() observe.Observer {
 		return observe.Observer{}
 	}
 	return observe.Observer{
-		Usage:     r.usagePriced,
-		ToolCall:  r.toolCallAt,
-		Decision:  r.decisionAt,
-		Turn:      r.turn,
-		TurnTimed: r.turnTimed,
-		Signal:    r.signal,
-		Gate:      r.gate,
-		Session:   r.link,
+		Usage:    r.usagePriced,
+		ToolCall: r.toolCallAt,
+		Decision: func(at observe.Pos, decision, reason string) {
+			r.decisionAt(at, decision, reason, 0)
+		},
+		DecisionTimed: r.decisionAt,
+		Turn:          r.turn,
+		TurnTimed:     r.turnTimed,
+		Signal:        r.signal,
+		Gate:          r.gate,
+		Session:       r.link,
 	}
 }
 
@@ -544,14 +554,24 @@ func (r *observeRecorder) toolCallAt(at observe.Pos, tool string, duration time.
 	})
 }
 
-func (r *observeRecorder) decisionAt(at observe.Pos, decision, reason string) {
+// decisionAt records one verdict. took is how long the classifier took to
+// reach it, written as the row's duration so sessions on one classifier
+// backend can be set against sessions on the other; zero is a verdict
+// nothing timed — a policy's, a person's — and leaves the column empty.
+// See docs/capabilities/sessions-and-memory.md#what-a-session-ran-under.
+func (r *observeRecorder) decisionAt(at observe.Pos, decision, reason string, took time.Duration) {
 	if r == nil {
 		return
 	}
 	r.span.Decision(at, decision, reason)
-	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
+	e := storage.AgentEvent{
 		Kind: storage.AgentEventDecision, Outcome: decision, Reason: reason, Turn: at.Turn, Round: at.Round,
-	})
+	}
+	if took > 0 {
+		ms := took.Milliseconds()
+		e.DurationMs = &ms
+	}
+	_ = r.db.RecordAgentEvent(r.id, e)
 }
 
 // turn records a turn closing: the rounds it took ride in the event's

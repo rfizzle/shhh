@@ -63,7 +63,7 @@ const agentSessionColumns = `id, started_at, ended_at, kind, provider, model, tu
 		        check_in_interval, end_reason, verdict, steers, attempt,
 		        child_budget, child_admission_floor, child_tokens_inherited, child_tokens_setup,
 		        child_tokens_tools, child_tokens_analysis, child_tokens_handoff, child_tokens_fresh, name,
-		        agents_require_sandbox`
+		        agents_require_sandbox, classifier_backend`
 
 func scanAgentSession(rows rowScanner) (AgentSessionSummary, error) {
 	var (
@@ -73,7 +73,7 @@ func scanAgentSession(rows rowScanner) (AgentSessionSummary, error) {
 		// The settings columns are NULL on a row older than they are; the
 		// hash is the one that says whether the set was taken at all.
 		mode, reasoning, summaryModel, classifierModel, sandboxProfile, configHash sql.NullString
-		item, stage                                                                sql.NullString
+		item, stage, classifierBackend                                             sql.NullString
 		maxRounds, summaryInterval                                                 sql.NullInt64
 		summaryEnabled, requireSandbox                                             sql.NullBool
 		// The outcome column is NULL on a row older than it is and on a
@@ -98,7 +98,7 @@ func scanAgentSession(rows rowScanner) (AgentSessionSummary, error) {
 		&classifierModel, &sandboxProfile, &item, &stage, &configHash, &outcome, &rating,
 		&checkInInterval, &endReason, &verdict, &steers, &attempt,
 		&budget, &admissionFloor, &inherited, &setup, &tools, &analysis, &handoff,
-		&fresh, &name, &requireSandbox); err != nil {
+		&fresh, &name, &requireSandbox, &classifierBackend); err != nil {
 		return s, err
 	}
 	s.Outcome = outcome.String
@@ -115,6 +115,7 @@ func scanAgentSession(rows rowScanner) (AgentSessionSummary, error) {
 			ConfigHash:           configHash.String,
 			CheckInInterval:      int(checkInInterval.Int64),
 			AgentsRequireSandbox: requireSandbox.Bool,
+			ClassifierBackend:    classifierBackend.String,
 		}
 	}
 	if endReason.Valid && endReason.String != "" {

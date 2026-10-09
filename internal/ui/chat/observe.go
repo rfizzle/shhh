@@ -129,6 +129,12 @@ func (m *Model) recordDecision(decision, reason string) {
 	}
 }
 
+// recordVerdict is recordDecision for a verdict the classifier reached, with
+// the time it took to reach it.
+func (m *Model) recordVerdict(decision, reason string, took time.Duration) {
+	m.observer.Decided(m.pos(), decision, reason, took)
+}
+
 // recordTurn reports the turn that is closing. It runs from the one place
 // every turn ends (appendTurnClose), so no turn can end unrecorded.
 func (m *Model) recordTurn(outcome string) {

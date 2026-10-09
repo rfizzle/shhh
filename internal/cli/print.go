@@ -808,6 +808,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		containRefusal: containRefusal,
 		red:            red,
 		record:         verdict.wrap(obs.decision),
+		recordTook:     verdict.wrapTook(obs.decisionTook),
 		webTools:       session.web,
 		procSup:        procSup,
 		mutationHook:   chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)),

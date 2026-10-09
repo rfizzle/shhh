@@ -33,9 +33,10 @@ func TestSessionSettings_FieldByField(t *testing.T) {
 		SummaryModel: "small-model", SummaryInterval: 25, SummaryEnabled: true,
 		// Unset in the config, so the session model — the rule the
 		// classifier itself resolves by.
-		ClassifierModel: "session-model",
-		SandboxProfile:  "workspace-netless",
-		ConfigHash:      got.ConfigHash,
+		ClassifierModel:   "session-model",
+		ClassifierBackend: "completion",
+		SandboxProfile:    "workspace-netless",
+		ConfigHash:        got.ConfigHash,
 		// Unset, so on: a writer's commands are contained by default.
 		AgentsRequireSandbox: true,
 	}

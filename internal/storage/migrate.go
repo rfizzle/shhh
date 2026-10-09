@@ -651,6 +651,12 @@ var migrations = []string{
 		declined_at TEXT NOT NULL,
 		UNIQUE (root, kind, hash)
 	);`,
+
+	// How auto mode's classifier was asked, beside the model it asked, so a
+	// comparison can set sessions on one backend against sessions on the
+	// other (docs/capabilities/sessions-and-memory.md#what-a-session-ran-under).
+	// Nullable for the reason the other settings columns are.
+	`ALTER TABLE agent_sessions ADD COLUMN classifier_backend TEXT;`,
 }
 
 const (

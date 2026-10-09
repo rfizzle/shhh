@@ -94,7 +94,7 @@ var agentSplitColumns = []string{
 	"prompt_hash", "config_hash", "version", "model",
 	"mode", "reasoning", "max_rounds",
 	"summary_model", "summary_interval", "summary_enabled",
-	"classifier_model", "sandbox_profile",
+	"classifier_model", "classifier_backend", "sandbox_profile",
 	"item", "stage", "check_in_interval", "agents_require_sandbox",
 }
 

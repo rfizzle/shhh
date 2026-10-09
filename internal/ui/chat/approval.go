@@ -770,7 +770,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	act := m.approvalAction(req)
 	switch decision, reason := agent.ResolveAuto(act, v); decision {
 	case agent.Allow:
-		m.recordDecision(observe.DecisionAllow, observe.ReasonClassifier)
+		m.recordVerdict(observe.DecisionAllow, observe.ReasonClassifier, v.Elapsed)
 		req.autoRule, req.autoCost = classifierRule, v.Elapsed
 		if reason == agent.ScratchReason {
 			// A flagged command ran without a card, so the row says what
@@ -783,7 +783,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		}
 		return m.executeApprovedTool()
 	case agent.Deny:
-		m.recordDecision(observe.DecisionDeny, observe.ReasonClassifier)
+		m.recordVerdict(observe.DecisionDeny, observe.ReasonClassifier, v.Elapsed)
 		why := req.summary + " — " + reason
 		m.lastDenial = why
 		m.approval.request = nil
@@ -812,7 +812,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		// so the record can say how often the two disagreed. The card carries
 		// the sentence the reader is answering, and its safe answer last
 		// (docs/capabilities/approvals-and-safety.md#the-classifier-fails-closed).
-		m.recordDecision(observe.DecisionDeny, observe.ReasonClassifier)
+		m.recordVerdict(observe.DecisionDeny, observe.ReasonClassifier, v.Elapsed)
 		req.judged = why
 		m.armConfirm(req)
 		return m, nil
@@ -835,7 +835,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		return m, nil
 	}
 	if v.Failed {
-		m.recordDecision(observe.DecisionAsk, observe.ReasonClassifierFailed)
+		m.recordVerdict(observe.DecisionAsk, observe.ReasonClassifierFailed, v.Elapsed)
 		// The notice is about this call, so it goes where the call's row
 		// will: in the call's place in its round, just in front of the row
 		// the card's answer files there, rather than at the end of the feed
