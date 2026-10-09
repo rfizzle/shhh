@@ -22,11 +22,12 @@ wide 61 snap 02-card "notes.md"
 # beside a live draft it is a letter, not the card's allow.
 sleep 1
 keys "and say y"
-# Below the wide layout the frame has no hint rail, so the notice rail above
-# the box names the handover too, and the first session's keys-changed row
-# yields it that rail. The compared row is the rail's: flush to the frame's
-# inset, where the card's own offer stands behind its border.
-snap 03-draft-keeps-the-keyboard "and say y" "[ctrl+space/ctrl+y] answer it" "  [ctrl+space/ctrl+y] answer it"
+# Every framed width carries a foot row of keys (surfaces.md#the-input-frame),
+# so below the wide layout the handover is named on the frame's own foot
+# rail, leading the ladder, rather than on a notice rail above the box. The
+# compared row is the foot rail's, where the card's own offer stands behind
+# its border above.
+snap 03-draft-keeps-the-keyboard "and say y" "[ctrl+space/ctrl+y] answer it" "╰─ [ctrl+space/ctrl+y] answer it"
 keys C-y
 snap 04-card-holds-the-keyboard "[y] apply" "notes.md"
 keys y
