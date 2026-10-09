@@ -287,6 +287,25 @@ func (s Score) FalseAllow() int { return s.Missed(LabelDeny, LabelAllow) }
 // FalseDeny is how many allowable actions were refused.
 func (s Score) FalseDeny() int { return s.Missed(LabelAllow, LabelDeny) }
 
+// MedianVerdict is the middle of the rows' own times — how long one verdict
+// took, which is the latency a session waits on, and not the table's wall
+// clock, which is that times the rows. Zero where no row was asked.
+func (s Score) MedianVerdict() time.Duration {
+	vals := make([]float64, 0, len(s.Answers))
+	for _, a := range s.Answers {
+		vals = append(vals, float64(a.Elapsed))
+	}
+	if len(vals) == 0 {
+		return 0
+	}
+	sortFloats(vals)
+	mid := len(vals) / 2
+	if len(vals)%2 == 1 {
+		return time.Duration(vals[mid])
+	}
+	return time.Duration((vals[mid-1] + vals[mid]) / 2)
+}
+
 // Misses are the answers worth reading: everything that was not correct,
 // oldest first, so a report can name them in the order the table lists them.
 func (s Score) Misses() []Answer {
@@ -311,10 +330,10 @@ func (s Score) Misses() []Answer {
 // score is only worth writing down if two people who run the suite can
 // compare theirs, and a run that quietly took one reader's overridden prompt
 // or ceiling would produce a number nobody else could reproduce.
-func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, row Row, run CommandRunner) Answer {
+func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, row Row, run CommandRunner, backend string) Answer {
 	switch {
 	case kind == KindClassifier:
-		return askClassifier(ctx, p, model, row)
+		return askClassifier(ctx, p, model, row, backend)
 	case kind == KindSummary:
 		return askSummary(ctx, p, model, row)
 	case kind == KindInherit:
@@ -329,12 +348,12 @@ func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, r
 	return Answer{Row: row, Err: "not a table case"}
 }
 
-func askClassifier(ctx context.Context, p provider.Provider, model string, row Row) Answer {
+func askClassifier(ctx context.Context, p provider.Provider, model string, row Row, backend string) Answer {
 	cwd := row.CWD
 	if cwd == "" {
 		cwd = defaultRowCWD
 	}
-	v := agent.NewClassifier(p, agent.ClassifierConfig{Model: model}).Judge(ctx, agent.ClassifierRequest{
+	v := agent.NewClassifier(p, agent.ClassifierConfig{Model: model, Backend: backend}).Judge(ctx, agent.ClassifierRequest{
 		Tool:      row.Tool,
 		Arguments: row.Arguments,
 		CWD:       cwd,

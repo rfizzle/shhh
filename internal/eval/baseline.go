@@ -70,9 +70,14 @@ type Baseline struct {
 	// fine — that is most of what a comparison is for — but the report says
 	// so, because a reader looking for the effect of a prompt edit should not
 	// discover the model moved underneath it.
-	Model    string         `json:"model"`
-	Recorded time.Time      `json:"recorded"`
-	Cases    []CaseBaseline `json:"cases"`
+	Model string `json:"model"`
+	// ClassifierBackend is how the classifier cases were asked, and empty
+	// for the completion backend, which is what every baseline written
+	// before there was a second one measured. A comparison across the two
+	// is what the field exists for, and the report says when it is one.
+	ClassifierBackend string         `json:"classifier_backend,omitempty"`
+	Recorded          time.Time      `json:"recorded"`
+	Cases             []CaseBaseline `json:"cases"`
 }
 
 // CaseBaseline is one case's line in a baseline: its verdict, and the medians
@@ -125,6 +130,12 @@ type TableBaseline struct {
 	FalseDeny  int `json:"false_deny"`
 	Wrong      int `json:"wrong"`
 	Unanswered int `json:"unanswered"`
+	// VerdictMs is the median time one row's verdict took, and
+	// CostPerVerdict what one row cost on average, priced where the run
+	// was. They are what a second backend is weighed on beside its
+	// mistakes: the same false allows for less time or less money.
+	VerdictMs      float64 `json:"median_verdict_ms,omitempty"`
+	CostPerVerdict float64 `json:"cost_per_verdict,omitempty"`
 }
 
 // ResearchBaseline is a research case's three rates, kept apart for the
@@ -153,7 +164,7 @@ func parseVerdict(s string) (Verdict, error) {
 // Baseline is the summary as a file: the same numbers the report prints,
 // nothing derived from them, and nothing about the machine it ran on.
 func (s Summary) Baseline() Baseline {
-	b := Baseline{Version: BaselineVersion, Model: s.Model, Recorded: time.Now().UTC()}
+	b := Baseline{Version: BaselineVersion, Model: s.Model, ClassifierBackend: s.ClassifierBackend, Recorded: time.Now().UTC()}
 	for _, res := range s.Results {
 		c := CaseBaseline{
 			Name:     res.Case.Name,
@@ -195,6 +206,10 @@ func (s Summary) Baseline() Baseline {
 				FalseDeny:  score.FalseDeny(),
 				Wrong:      score.Wrong(),
 				Unanswered: score.Unanswered(),
+				VerdictMs:  float64(score.MedianVerdict().Milliseconds()),
+			}
+			if c.Priced && score.Rows() > 0 {
+				c.Table.CostPerVerdict = c.Cost / float64(score.Rows())
 			}
 		}
 		b.Cases = append(b.Cases, c)
@@ -259,7 +274,7 @@ func Narrow(b Baseline, names []string) Baseline {
 	for _, n := range names {
 		want[n] = true
 	}
-	out := Baseline{Version: b.Version, Model: b.Model, Recorded: b.Recorded}
+	out := Baseline{Version: b.Version, Model: b.Model, ClassifierBackend: b.ClassifierBackend, Recorded: b.Recorded}
 	for _, c := range b.Cases {
 		if want[c.Name] {
 			out.Cases = append(out.Cases, c)

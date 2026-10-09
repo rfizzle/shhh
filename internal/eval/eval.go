@@ -326,8 +326,11 @@ func (r Result) Cost() (total float64, priced bool) {
 
 // Summary is a whole run: what was measured, and how it came out.
 type Summary struct {
-	Model   string
-	Results []Result
+	Model string
+	// ClassifierBackend is how the classifier cases were asked, empty for
+	// the completion backend.
+	ClassifierBackend string
+	Results           []Result
 }
 
 // Tally counts the results by verdict.

@@ -66,6 +66,13 @@ type Options struct {
 	// so the harness makes the requests itself and needs somewhere to send
 	// them.
 	Provider provider.Provider
+	// ClassifierBackend is how a classifier case's rows are asked: empty or
+	// "completion" for the verdict in words, "decisions" for a probability
+	// from a model that offers the Decisions API, held against the built-in
+	// threshold. It is a flag rather than the reader's config for the reason
+	// every other bound here is: two runs on one backend have to be
+	// comparable by whoever ran them.
+	ClassifierBackend string
 	// Commands runs a read-only case's inspection commands, contained the way
 	// a child's are. Nil leaves such a case unable to run, which it reports
 	// rather than running a model's command bare.
@@ -182,7 +189,7 @@ func Run(ctx context.Context, cases []Case, opts Options) (Summary, error) {
 		bin = self
 	}
 
-	sum := Summary{Model: opts.Model}
+	sum := Summary{Model: opts.Model, ClassifierBackend: opts.ClassifierBackend}
 	for _, c := range cases {
 		res := Result{Case: c}
 		if c.Skip == "" {
@@ -314,7 +321,7 @@ func tableAttempt(ctx context.Context, c Case, opts Options) Attempt {
 		if runCtx.Err() != nil {
 			break
 		}
-		ans := askRow(runCtx, opts.Provider, opts.Model, c.Kind, row, opts.Commands)
+		ans := askRow(runCtx, opts.Provider, opts.Model, c.Kind, row, opts.Commands, opts.ClassifierBackend)
 		a.Score.Answers = append(a.Score.Answers, ans)
 		a.TokensIn += ans.Usage.PromptTokens
 		a.TokensOut += ans.Usage.CompletionTokens

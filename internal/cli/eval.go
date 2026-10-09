@@ -12,11 +12,14 @@ package cli
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/eval"
@@ -43,6 +46,7 @@ func newEvalCmd() *cobra.Command {
 	var only []string
 	var baselinePath, comparePath string
 	var refresh bool
+	var classifierBackend string
 
 	cmd := &cobra.Command{
 		Use:   "eval [suite]",
@@ -69,6 +73,16 @@ func newEvalCmd() *cobra.Command {
 			dir := DefaultSuiteDir
 			if len(args) == 1 {
 				dir = args[0]
+			}
+			// The completion backend is recorded as nothing, which is what
+			// every baseline written before there were two backends holds,
+			// so a run on it still reads as the same setup as those.
+			backend, err := agent.ParseClassifierBackend(classifierBackend)
+			if err != nil {
+				return fmt.Errorf("--classifier-backend: %w", err)
+			}
+			if backend == agent.BackendCompletion {
+				backend = ""
 			}
 			cases, err := eval.Load(dir)
 			if err != nil {
@@ -166,6 +180,7 @@ func newEvalCmd() *cobra.Command {
 				},
 				Progress: evalProgress(cmd, len(cases), repeat),
 			}
+			opts.ClassifierBackend = backend
 
 			sum, err := eval.Run(cmd.Context(), cases, opts)
 			if err != nil {
@@ -239,6 +254,7 @@ func newEvalCmd() *cobra.Command {
 	cmd.Flags().StringVar(&baselinePath, "baseline", "", "write this run's verdicts and medians to this file")
 	cmd.Flags().StringVar(&comparePath, "compare", "", "read this baseline instead of the suite's own and print the delta beneath the report")
 	cmd.Flags().BoolVar(&refresh, "refresh-baseline", false, "write this run over the suite's committed baseline, so what changed in it is reviewed like code")
+	cmd.Flags().StringVar(&classifierBackend, "classifier-backend", "", "ask the classifier cases on `completion` (the default) or `decisions`, the Decisions API on a model that offers it")
 	return cmd
 }
 
@@ -362,6 +378,9 @@ func evalReport(sum eval.Summary, unprovided string) report.Report {
 	r := report.Report{Title: "shhh eval"}
 	if sum.Model != "" {
 		r.Subject = sum.Model
+	}
+	if sum.ClassifierBackend != "" {
+		r.Subject = strings.TrimPrefix(r.Subject+" · classifier on "+sum.ClassifierBackend, " · ")
 	}
 	if unprovided != "" {
 		r.Notes = append(r.Notes, report.Note{State: report.Warn,
@@ -586,6 +605,15 @@ func evalDetail(res eval.Result) string {
 	var parts []string
 	if score, ok := res.Score(); ok {
 		parts = append(parts, fmt.Sprintf("%d of %d correct", score.Correct(), score.Rows()))
+		// What one verdict took and cost, beside what the table did: a
+		// backend is weighed on its mistakes first and on these second, and
+		// the table's own wall clock is these times the rows.
+		if took := score.MedianVerdict(); took > 0 && res.Case.Kind == eval.KindClassifier {
+			parts = append(parts, verdictTime(float64(took.Milliseconds()))+" a verdict")
+			if cost, priced := res.Cost(); priced && score.Rows() > 0 {
+				parts = append(parts, verdictSpend(cost/float64(score.Rows()))+" a verdict")
+			}
+		}
 	}
 	// Three rates and never their average. A write-up can carry every fact
 	// and cite a page it never opened, and one number would report that as a
@@ -609,6 +637,28 @@ func evalDetail(res eval.Result) string {
 		parts = append(parts, metricsSpend(cost, priced))
 	}
 	return strings.Join(parts, " · ")
+}
+
+// verdictTime is a verdict's median time, in the unit it is usually under a
+// second in.
+func verdictTime(ms float64) string {
+	if ms < 1000 {
+		return fmt.Sprintf("%.0fms", ms)
+	}
+	return fmt.Sprintf("%.1fs", ms/1000)
+}
+
+// verdictSpend is one verdict's cost to two significant figures. A verdict
+// costs a fraction of a cent on either backend, and the cent-rounded spelling
+// every other figure takes would print both sides as the same "<$0.01".
+func verdictSpend(c float64) string {
+	if c >= 0.01 {
+		return metricsSpend(c, true)
+	}
+	if c <= 0 {
+		return "$0"
+	}
+	return "$" + strconv.FormatFloat(c, 'f', 1-int(math.Floor(math.Log10(c))), 64)
 }
 
 // behaviourDetail is the operational evidence a workspace case records. The
@@ -691,6 +741,14 @@ func compareReport(cmp eval.Comparison, now time.Time) report.Report {
 		r.Notes = append(r.Notes, report.Note{State: report.Warn,
 			Text: fmt.Sprintf("the baseline was measured on %s and this run on %s, so every row carries that change too",
 				modelOrUnknown(cmp.Before.Model), modelOrUnknown(cmp.After.Model))})
+	}
+	// The same for the classifier's backend, which is the comparison the
+	// second backend exists to be run for — and so the one a reader must
+	// not mistake for a prompt edit.
+	if cmp.Before.ClassifierBackend != cmp.After.ClassifierBackend {
+		r.Notes = append(r.Notes, report.Note{State: report.Warn,
+			Text: fmt.Sprintf("the baseline asked the classifier on %s and this run on %s, so its rows carry that change too",
+				backendOrDefault(cmp.Before.ClassifierBackend), backendOrDefault(cmp.After.ClassifierBackend))})
 	}
 	if withheld > 0 {
 		r.Notes = append(r.Notes, report.Note{State: report.Skip,
@@ -804,6 +862,12 @@ func compareDetail(d eval.Delta) string {
 		parts = append(parts, countShift(before.FalseAllow, after.FalseAllow, "false allow")...)
 		parts = append(parts, countShift(before.FalseDeny, after.FalseDeny, "false deny")...)
 		parts = append(parts, countShift(before.Unanswered, after.Unanswered, "with no answer")...)
+		if before.VerdictMs != after.VerdictMs && before.VerdictMs > 0 && after.VerdictMs > 0 {
+			parts = append(parts, verdictTime(before.VerdictMs)+" → "+verdictTime(after.VerdictMs)+" a verdict")
+		}
+		if before.CostPerVerdict != after.CostPerVerdict && before.CostPerVerdict > 0 && after.CostPerVerdict > 0 {
+			parts = append(parts, verdictSpend(before.CostPerVerdict)+" → "+verdictSpend(after.CostPerVerdict)+" a verdict")
+		}
 	}
 	if before, after := d.Before.Research, d.After.Research; before != nil && after != nil {
 		parts = append(parts, countShift(before.Citations, after.Citations, "cited, not read")...)
@@ -842,6 +906,15 @@ func behaviourShifts(before, after eval.BehaviourBaseline) []string {
 		}
 	}
 	return parts
+}
+
+// backendOrDefault names a baseline's classifier backend, which is empty for
+// the completion backend.
+func backendOrDefault(b string) string {
+	if b == "" {
+		return agent.BackendCompletion
+	}
+	return b
 }
 
 // spendPair is what the case cost either side, or two empty strings where
