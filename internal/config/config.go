@@ -668,6 +668,17 @@ type BehaviorConfig struct {
 	// ClassifierRetries is how many extra attempts an invalid or failed
 	// classifier response gets before failing closed (default 1).
 	ClassifierRetries int `toml:"classifier_retries"`
+	// ClassifierBackend is how the classifier is asked: "completion", the
+	// default and what empty means, asks the model for a verdict in words;
+	// "decisions" asks a model that offers the Decisions API for the
+	// probability that the call may run. The word is the agent package's.
+	ClassifierBackend string `toml:"classifier_backend"`
+	// ClassifierThreshold is the percentage that probability must reach
+	// for a call to run unasked; zero keeps the built-in one. A whole
+	// percentage rather than a fraction because every other number in this
+	// file is whole, and a threshold finer than a point is not one anybody
+	// can choose between.
+	ClassifierThreshold int `toml:"classifier_threshold"`
 	// MemoryDisabled turns off durable memory: no memories are
 	// injected into the system prompt and the remember tool is not registered.
 	MemoryDisabled bool `toml:"memory_disabled"`

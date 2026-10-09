@@ -281,6 +281,10 @@ func checkConfigValue(key, value string) error {
 // the table's list would refuse.
 var configJudges = map[string]func(string) error{
 	"behavior.default_mode": func(v string) error { _, err := agent.ParseMode(v); return err },
+	"behavior.classifier_backend": func(v string) error {
+		_, err := agent.ParseClassifierBackend(v)
+		return err
+	},
 	"behavior.mode_cycle": func(v string) error {
 		for name := range strings.SplitSeq(v, ",") {
 			if name = strings.TrimSpace(name); name == "" {

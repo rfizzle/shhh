@@ -100,6 +100,8 @@ func buildClassifier(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *
 		MaxTokens: cfg.Behavior.ClassifierMaxTokens,
 		Retries:   cfg.Behavior.ClassifierRetries,
 		Prompt:    env.prompts.classifier,
+		Backend:   cfg.Behavior.ClassifierBackend,
+		Threshold: cfg.Behavior.ClassifierThreshold,
 	})
 }
 

@@ -1158,6 +1158,8 @@ own file could hold.
 | `classifier_timeout_seconds` | number | `30` | How long one classifier request may take. |
 | `classifier_max_tokens` | number | `8192` | The ceiling on a classifier response, the reasoning it does before answering included. |
 | `classifier_retries` | number | `1` | How many extra attempts an invalid or failed classifier response gets before it fails closed. |
+| `classifier_backend` | word: `completion`, `decisions` | `completion` | How the classifier is asked: for a verdict in words, or, on a model that offers the Decisions API, for the probability that a call may run. |
+| `classifier_threshold` | number | `80` | The percentage that probability must reach for the decisions backend to let a call run unasked; below it the classifier says no. |
 | `explainer_model` | text | (the classifier's model) | The model an approval card's explanation of a command is asked of. |
 | `description_model` | text | (provider.cheap_model) | The model that writes the one-line description a command saved from `shhh cmd` is listed under. |
 | `suggestions` | true/false | `on` | Offer a next step, drawn dim in the empty draft after a turn closes, that the right arrow takes into the draft, and let a cheap model write the start screen's read-only offers at session open; off asks for neither. |

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
@@ -77,7 +78,39 @@ func probeFlows(_ context.Context, cfg config.Config) doctorFinding {
 		ConfigProvider: cfg.Provider.Default,
 		ConfigModel:    cfg.Provider.Model,
 	})
-	return doctorFlows(resolveFlows(cfg, resolved.Provider, resolved.Model))
+	answers := resolveFlows(cfg, resolved.Provider, resolved.Model)
+	f := doctorFlows(answers)
+	replaced := promptSource("classifier", cfg.Prompts.Classifier, projectPrompts()).path != ""
+	for i, a := range answers {
+		if a.flow.name == flowClassifier.name {
+			f.Fix[i] += classifierBackendNote(cfg, resolved.Provider, a.model, replaced)
+		}
+	}
+	return f
+}
+
+// classifierBackendNote is what the classifier's line adds: the backend it
+// is asked on, and on the decisions backend whether the model it resolved to
+// offers the API — a model that does not is a classifier whose every verdict
+// fails closed — and that a replaced wording is not sent there, since it is
+// written for a reply that backend does not give. Which models offer it is
+// read from the providers' own declarations, the same answer the classifier
+// gets when it asks, without building a provider to ask it.
+// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
+func classifierBackendNote(cfg config.Config, provName, model string, replaced bool) string {
+	if !decisionsClassifier(cfg) {
+		return " · " + agent.BackendCompletion + " backend"
+	}
+	note := " · " + agent.BackendDecisions + " backend, "
+	if provider.DecisionsDeclared(provName, model) {
+		note += "offered by this model"
+	} else {
+		note += "not offered by this model, so every verdict fails closed"
+	}
+	if replaced {
+		note += " · prompts.classifier goes unused there"
+	}
+	return note
 }
 
 // doctorFlows is that reading. A second model on the bill is the question it

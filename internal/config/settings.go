@@ -314,6 +314,13 @@ var settings = []Setting{
 		Key: "behavior.classifier_retries", Kind: KindInt, Default: "1",
 		Desc: "How many extra attempts an invalid or failed classifier response gets before it fails closed.",
 	}, {
+		Key: "behavior.classifier_backend", Kind: KindEnum, Default: "completion",
+		Values: []string{"completion", "decisions"},
+		Desc:   "How the classifier is asked: for a verdict in words, or, on a model that offers the Decisions API, for the probability that a call may run.",
+	}, {
+		Key: "behavior.classifier_threshold", Kind: KindInt, Default: "80",
+		Desc: "The percentage that probability must reach for the decisions backend to let a call run unasked; below it the classifier says no.",
+	}, {
 		Key: "behavior.explainer_model", Kind: KindString, Default: "(the classifier's model)",
 		Desc: "The model an approval card's explanation of a command is asked of.",
 	}, {

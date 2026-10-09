@@ -164,6 +164,14 @@ type flowModel struct {
 // reports is what the call is sent with.
 func resolveFlow(cfg config.Config, f boundedFlow, provName, sessionModel string) flowModel {
 	for _, key := range f.keys {
+		if key == flowClassifier.keys[0] && f.name != flowClassifier.name && decisionsClassifier(cfg) {
+			// The explanation reads with the classifier's model so the two
+			// readings on a card come from one model — but a classifier on
+			// the decisions backend may be on a model that answers nothing
+			// else, and an explanation is prose. So that link is skipped
+			// and the rest of the cheap chain answers.
+			continue
+		}
 		if name, _ := config.Value(cfg, key); name != "" {
 			return flowModel{flow: f, model: name, step: stepFlowKey, key: key}
 		}
@@ -177,6 +185,13 @@ func resolveFlow(cfg config.Config, f boundedFlow, provName, sessionModel string
 		}
 	}
 	return flowModel{flow: f, model: sessionModel, step: stepSessionModel}
+}
+
+// decisionsClassifier reports whether the classifier is asked on the
+// decisions backend.
+func decisionsClassifier(cfg config.Config) bool {
+	backend, err := agent.ParseClassifierBackend(cfg.Behavior.ClassifierBackend)
+	return err == nil && backend == agent.BackendDecisions
 }
 
 // resolveFlows answers for every flow, for a surface that lists them.
