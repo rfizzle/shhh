@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // handoffAnswer is the writing every test's provider hands back.
@@ -244,5 +245,173 @@ func TestHandoff_NoOfferWhereNothingIsOwed(t *testing.T) {
 	m, _ = submit(t, m, "/exit")
 	if !m.quitting {
 		t.Fatal("a session that kept a handoff should quit straight away")
+	}
+}
+
+// A handoff reaches every copy of its conversation: a rewind's branch takes
+// the one the slot holds, and so does a save moved off a taken slot, whether
+// the handoff was kept this sitting or on the last one.
+func TestHandoff_FollowsABranchAndAMovedSlot(t *testing.T) {
+	// The branch.
+	m := newRewindModel(t)
+	db := rewindTestDB(t)
+	m.wiring.DB = db
+	m.bindStores()
+	m = completeExchange(t, m, "first question", "answer one")
+	m = completeExchange(t, m, "second question", "answer two")
+	root := m.sessionName
+	if err := db.SaveChat(root, m.Messages()); err != nil {
+		t.Fatal(err)
+	}
+	const carried = "Left last sitting\nopen: the flake"
+	if err := db.SetChatHandoff(root, carried); err != nil {
+		t.Fatal(err)
+	}
+	if m.handoff.kept != "" {
+		t.Fatal("setup: this sitting should have kept nothing")
+	}
+	m = sendText(t, m, "/rewind 1")
+	branches, err := db.ListChatBranches(root)
+	if err != nil || len(branches) != 2 {
+		t.Fatalf("setup: want root and a branch, got %d (%v)", len(branches), err)
+	}
+	if got, _ := db.ChatHandoff(branches[1].Name); got != carried {
+		t.Fatalf("the branch should hold the slot's handoff, got %q", got)
+	}
+
+	// The moved slot: another session takes the slot, and the autosave
+	// writes the conversation, with the slot's handoff, somewhere else.
+	path := t.TempDir() + "/test.db"
+	mdb, err := storage.OpenPath(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer mdb.Close()
+	other, err := storage.OpenPath(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer other.Close()
+	sys := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	mm := sendText(t, New(sys, mockStream, Wiring{DB: mdb}), "first question")
+	updated, _ := mm.Update(tokenMsg{text: "an answer"})
+	updated, save := updated.(Model).Update(doneMsg{})
+	save()
+	mm = updated.(Model)
+	taken := mm.sessionName
+	if err := mdb.SetChatHandoff(taken, carried); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := other.LoadChat(taken); err != nil {
+		t.Fatal(err)
+	}
+	theirs := append(handoffConversation(), provider.Message{Role: provider.RoleUser, Content: "and more"})
+	if err := other.SaveChat(taken, theirs); err != nil {
+		t.Fatal(err)
+	}
+	move, ok := mm.autosaveCmd()().(autosaveMovedMsg)
+	if !ok {
+		t.Fatalf("the autosave should have moved the conversation")
+	}
+	if got, _ := mdb.ChatHandoff(move.to); got != carried {
+		t.Fatalf("the moved slot should hold the handoff, got %q", got)
+	}
+
+	// And one kept this sitting rides the move without a read of the slot.
+	mm.handoff.kept = "kept now"
+	if err := other.SaveChat(taken, append(theirs, provider.Message{Role: provider.RoleUser, Content: "again"})); err != nil {
+		t.Fatal(err)
+	}
+	mv, ok := mm.autosaveCmd()().(autosaveMovedMsg)
+	if !ok {
+		t.Fatal("the autosave should have moved the conversation again")
+	}
+	if got, _ := mdb.ChatHandoff(mv.to); got != "kept now" {
+		t.Fatalf("the moved slot should hold what this sitting kept, got %q", got)
+	}
+}
+
+// A sitting that resumed on a handoff and then did new work is owed a fresh
+// one like any other, and the yes replaces the old.
+func TestHandoff_ANewCloseReopensTheOffer(t *testing.T) {
+	db := rewindTestDB(t)
+	saved := handoffConversation()
+	if err := db.SaveChat("yesterday", saved); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetChatHandoff("yesterday", "the old one\nopen: the flake"); err != nil {
+		t.Fatal(err)
+	}
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		DB: db, Workspace: t.TempDir(),
+		Handoff: agent.NewHandoffWriter(&handoffProvider{}, agent.HandoffConfig{Model: "fast"}),
+	}).WithResumedMessages("yesterday", saved)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
+	m = updated.(Model)
+
+	if m.handoffOwed() {
+		t.Fatal("a resume with no new work owes nothing")
+	}
+	m = uncommittedTurn(m)
+	if !m.handoffOwed() {
+		t.Fatal("new work after a resume should owe a handoff, the old one notwithstanding")
+	}
+	m, _ = submit(t, m, "/exit")
+	if m.state != stateQuitConfirm || !m.handoff.offered {
+		t.Fatalf("the quit should offer a fresh handoff (state %v)", m.state)
+	}
+	m, cmd := pressKey(t, m, keyPress('y'))
+	for _, msg := range drain(cmd) {
+		if d, ok := msg.(handoffDraftMsg); ok {
+			updated, _ := m.Update(d)
+			m = updated.(Model)
+		}
+	}
+	m, _ = pressKey(t, m, keyPress('y'))
+	got, _ := db.ChatHandoff("yesterday")
+	if got == "" || strings.Contains(got, "the old one") {
+		t.Fatalf("the yes should replace the old handoff, got %q", got)
+	}
+}
+
+// The quit chord pressed a second time over a card is offered the same
+// handoff an idle quit is, rather than leaving with the work unwritten.
+func TestHandoff_TheOfferReachesAQuitOverACard(t *testing.T) {
+	m, _ := handoffModel(t, &handoffProvider{})
+	m = uncommittedTurn(m)
+	m, _ = pressKey(t, m, ctrlC)
+	next, _ := m.openKeyList(keys.OnInput, nil)
+	m = next.(Model)
+	if m.state != stateKeyList || !m.armed.openOn(armQuit, quitChord()) {
+		t.Fatalf("setup: want the key list over an open window (state %v)", m.state)
+	}
+	m, _ = pressKey(t, m, ctrlC)
+	if m.quitting || m.state != stateQuitConfirm || !m.handoff.offered {
+		t.Fatalf("the second press over a card should offer the handoff (state %v, quitting %v)", m.state, m.quitting)
+	}
+}
+
+// An autosave that could not write the handoff says so, naming the slot,
+// instead of leaving a next sitting that opens on nothing.
+func TestHandoff_AFailedSaveIsSaid(t *testing.T) {
+	m, db := handoffModel(t, &handoffProvider{})
+	m.handoff.kept = "a handoff"
+	slot := m.sessionName
+	// The slot goes away between the conversation's write and the handoff's.
+	msg := m.saveCmd(func() string {
+		if err := db.DeleteChat(slot); err != nil {
+			t.Fatal(err)
+		}
+		return ""
+	})()
+	failed, ok := msg.(autosaveHandoffFailedMsg)
+	if !ok || failed.slot != slot {
+		t.Fatalf("the autosave should report the handoff, got %#v", msg)
+	}
+	next, _ := m.Update(failed)
+	m = next.(Model)
+	last := m.transcript[len(m.transcript)-1]
+	if last.kind != entrySystem || !strings.Contains(last.text, slot) || !strings.Contains(last.text, "handoff could not be written") {
+		t.Fatalf("a row should say the handoff was not written and name the slot, got %q", last.text)
 	}
 }

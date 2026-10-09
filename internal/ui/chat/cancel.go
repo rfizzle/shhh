@@ -210,6 +210,11 @@ func (m Model) surfaceKey(msg tea.KeyPressMsg, to func(tea.KeyPressMsg) (tea.Mod
 		return to(msg)
 	}
 	if m.pressed.openOn(armQuit, quitChord()) {
+		// Over a card the chord asks the same once as it does idle; the card
+		// that is already the handoff is its answer (handoff.go).
+		if m.state != stateHandoff && m.handoffOwed() {
+			return m.openHandoffOffer()
+		}
 		cmd := m.quitNow()
 		return m, cmd
 	}

@@ -737,6 +737,13 @@ func (m *Model) rewindConversation(n int, filesNote string) string {
 			branchNote = "could not keep the abandoned tail as a branch: " + err.Error()
 		} else {
 			branchNote = fmt.Sprintf("the abandoned tail (%s) is kept as branch %q — /branches to switch back", plural(dropped, "message"), branch)
+			// The branch is the conversation as it stood, so it opens on the
+			// handoff the conversation holds (handoff.go).
+			if h := m.slotHandoff(m.sessionName); h != "" {
+				if err := m.wiring.DB.SetChatHandoff(branch, h); err != nil {
+					branchNote += fmt.Sprintf(" (its handoff could not be copied: %v)", err)
+				}
+			}
 		}
 	}
 

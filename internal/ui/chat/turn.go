@@ -473,6 +473,10 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		m.noteSlotMove(msg)
 		return m, nil, true
 
+	case autosaveHandoffFailedMsg:
+		m.handoffNotSaved(msg.slot, msg.err)
+		return m, nil, true
+
 	case autosaveFailedMsg:
 		m.noteAutosaveFailed(msg)
 		return m, nil, true

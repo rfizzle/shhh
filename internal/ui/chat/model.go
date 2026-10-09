@@ -1531,11 +1531,22 @@ func (m Model) saveCmd(revise func() string) tea.Cmd {
 			summary = revise()
 		}
 		_ = db.SetChatResume(slot, storage.ChatResume{Summary: summary, Head: project.Head(dir), Root: project.Root(dir), Steps: steps})
+		// A move off a slot that holds a handoff this sitting did not keep
+		// carries that one: the last sitting's, which the slot was opened on.
+		if handoff == "" && slot != name {
+			handoff, _ = db.ChatHandoff(name)
+		}
+		var handoffErr error
 		if handoff != "" {
-			_ = db.SetChatHandoff(slot, handoff)
+			if handoffErr = db.SetChatHandoff(slot, handoff); handoffErr != nil {
+				logs.Logger().Warn("handoff not saved", "slot", slot, "error", handoffErr)
+			}
 		}
 		if slot != name {
-			return autosaveMovedMsg{from: name, to: slot}
+			return autosaveMovedMsg{from: name, to: slot, handoffErr: handoffErr}
+		}
+		if handoffErr != nil {
+			return autosaveHandoffFailedMsg{slot: slot, err: handoffErr}
 		}
 		return nil
 	}
@@ -1543,7 +1554,19 @@ func (m Model) saveCmd(revise func() string) tea.Cmd {
 
 // autosaveMovedMsg says an autosave found its slot taken and wrote the
 // conversation somewhere else.
-type autosaveMovedMsg struct{ from, to string }
+type autosaveMovedMsg struct {
+	from, to string
+	// handoffErr is the failure to write the conversation's handoff to the
+	// new slot, said beside the move.
+	handoffErr error
+}
+
+// autosaveHandoffFailedMsg says the conversation was saved and its handoff
+// was not.
+type autosaveHandoffFailedMsg struct {
+	slot string
+	err  error
+}
 
 // autosaveFailedMsg says the conversation is not on disk. The store already
 // waited out every lock it could (storage.go), so what reaches here is a
@@ -1575,6 +1598,9 @@ func (m *Model) noteAutosaveFailed(msg autosaveFailedMsg) {
 // conversation down, and this is the session catching up with where.
 // See docs/capabilities/sessions-and-memory.md#a-slot-belongs-to-one-session.
 func (m *Model) noteSlotMove(msg autosaveMovedMsg) {
+	if msg.handoffErr != nil {
+		defer m.handoffNotSaved(msg.to, msg.handoffErr)
+	}
 	if msg.from != m.sessionName {
 		// A second save was in flight when the first moved; both landed in
 		// the same slot and the session is already in it.

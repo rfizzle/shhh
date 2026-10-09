@@ -21,6 +21,7 @@ package chat
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -70,6 +71,31 @@ type handoffDraftMsg struct {
 // handoffWired reports a session that can write a handoff and keep it.
 func (m Model) handoffWired() bool {
 	return m.wiring.Handoff.Enabled() && m.wiring.DB != nil
+}
+
+// slotHandoff is the handoff the conversation on a slot holds: the one this
+// sitting kept, or failing that the one the slot carried in from the last
+// sitting. Every copy of the conversation takes it from here, so a branch or
+// a named copy never lacks the handoff its original has.
+func (m Model) slotHandoff(slot string) string {
+	if m.handoff.kept != "" {
+		return m.handoff.kept
+	}
+	if m.wiring.DB == nil {
+		return ""
+	}
+	held, _ := m.wiring.DB.ChatHandoff(slot)
+	return held
+}
+
+// handoffNotSaved says a handoff could not be written to a slot a save
+// reached. The save itself stands; only the handoff is missing, and it is
+// said where the reader is, as a failed save is (model.go).
+func (m *Model) handoffNotSaved(slot string, err error) {
+	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
+		"the handoff could not be written to %q: %v. The conversation is saved, but the next sitting may not open on it — %s writes it again",
+		slot, err, handoffCommandName)})
+	m.syncViewport()
 }
 
 // handoffCommand is /handoff [note]: the card when a draft waits on it and no
