@@ -39,4 +39,7 @@ sleep 0.5
 keys C-c
 snap 06-quit-armed "again quits"
 keys C-c
+# The quit offers a handoff over uncommitted work; n declines.
+snap 07a-handoff-offer "Write a handoff first?" "Changes are uncommitted.  [y/N]"
+keys n
 snap 07-exit "that is everything the screen was holding"

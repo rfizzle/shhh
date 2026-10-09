@@ -89,4 +89,7 @@ snap 15-reapplied "undo of turn" "turn 3 · rewound, then reapplied below"
 keys C-c
 snap 16-quit-armed "again quits"
 keys C-c
+# The quit offers a handoff over uncommitted work; n declines.
+snap 17a-handoff-offer "Write a handoff first?" "Changes are uncommitted.  [y/N]"
+keys n
 snap 17-exit "that is everything the screen was holding"

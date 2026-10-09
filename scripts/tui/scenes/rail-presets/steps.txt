@@ -28,4 +28,7 @@ snap 04-second-turn "f00 carries its real value now" "… 4 more" "pkg/f00.go"
 keys C-c
 snap 05-quit-armed "again quits"
 keys C-c
+# The quit offers a handoff over uncommitted work; n declines.
+snap 06a-handoff-offer "Write a handoff first?" "Changes are uncommitted.  [y/N]"
+keys n
 snap 06-exit "that is everything the screen was holding"

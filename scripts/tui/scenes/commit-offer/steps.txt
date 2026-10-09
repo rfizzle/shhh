@@ -91,4 +91,7 @@ snap 08-receipt "Committed loop.go, and nothing of yours" "committed 1 file as" 
 keys C-c
 snap 09-quit-armed "again quits"
 keys C-c
+# The quit offers a handoff over uncommitted work; n declines.
+snap 10a-handoff-offer "Write a handoff first?" "Changes are uncommitted.  [y/N]"
+keys n
 snap 10-exit "that is everything the screen was holding"

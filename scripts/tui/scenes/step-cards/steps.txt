@@ -175,4 +175,7 @@ snap 22g-prompt "╭─ ✓ done"
 keys C-c
 snap 23-quit-armed "again quits"
 keys C-c
+# The quit offers a handoff over uncommitted work; n declines.
+snap 24a-handoff-offer "Write a handoff first?" "Changes are uncommitted.  [y/N]"
+keys n
 snap 24-exit "that is everything the screen was holding"

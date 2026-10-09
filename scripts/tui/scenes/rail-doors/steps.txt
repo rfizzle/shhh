@@ -44,4 +44,7 @@ snap 11-back "… 2 more" "CONTEXT"
 keys C-c
 snap 12-quit-armed "again quits"
 keys C-c
+# The quit offers a handoff over uncommitted work; n declines.
+snap 13a-handoff-offer "Write a handoff first?" "Changes are uncommitted.  [y/N]"
+keys n
 snap 13-exit "that is everything the screen was holding"
