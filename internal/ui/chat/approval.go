@@ -489,14 +489,13 @@ func (m Model) admitApproval(tc provider.ToolCall) (tea.Model, tea.Cmd) {
 	// The row is the rule-denial row rather than a notice, because a denial
 	// is a moment that mattered and the reader's next act depends on knowing
 	// a rule and not a person refused it.
-	if m.deniedByRule(req) {
-		result, reason, why, code := m.ruleDenial(req)
-		m.recordDecision(observe.DecisionDeny, code)
+	if refusal, why, refused := m.ruleRefusal(req); refused {
+		m.recordDecision(observe.DecisionDeny, refusal.Code)
 		m.lastDenial = req.summary + " — " + why
 		// Surfaces on the notice rail until the next user turn.
 		m.denialNotice = req.summary
-		m.agent.ResolveApproval(m.refusedResult(req.call, result))
-		m.appendCallRow(req.call.ID, deniedEntry(req, decidedByAuto, reason, 0))
+		m.agent.ResolveApproval(m.refusedResult(req.call, refusal.Result))
+		m.appendCallRow(req.call.ID, deniedEntry(req, decidedByAuto, refusal.Reason, 0))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
@@ -630,7 +629,7 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	// (docs/capabilities/approvals-and-safety.md#severity-moves-the-default).
 	if m.policy.mode == agent.ModeAuto && m.classifier.judge != nil {
 		if act := m.approvalAction(req); act.SafetyFlagged && !act.ScopeSensitive {
-			req.scratch = m.scratchDelete(req)
+			req.scratch = m.rules().Scratch(ruleCall(req))
 		}
 	}
 	if act := m.approvalAction(req); m.policy.mode == agent.ModeAuto && m.classifier.judge != nil &&

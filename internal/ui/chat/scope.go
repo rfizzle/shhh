@@ -71,14 +71,18 @@ func (m Model) scopeReachFor(req *approvalRequest) scopeReach {
 	if len(paths) == 0 {
 		return scopeReach{}
 	}
-	dirs := m.wiring.Scope.Outside(paths...)
-	if len(dirs) == 0 {
+	// What each directory is comes from the standing rules, which an
+	// unattended run reads the same directories through; the strictest of
+	// them is what the card names and the policy asks about.
+	reached := m.rules().Outside(paths...)
+	if len(reached) == 0 {
 		return scopeReach{}
 	}
-	out := scopeReach{dirs: dirs}
-	for _, d := range dirs {
-		if class, reason := scope.Classify(d); class > out.class {
-			out.class, out.reason = class, reason
+	out := scopeReach{dirs: make([]string, len(reached))}
+	for i, r := range reached {
+		out.dirs[i] = r.Dir
+		if r.Class > out.class {
+			out.class, out.reason = r.Class, r.Reason
 		}
 	}
 	return out

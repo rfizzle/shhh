@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/radius"
+	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/web"
@@ -31,9 +33,11 @@ import (
 // modePolicy assembles the agent-level policy state the mode machine decides
 // with. The session's own command grants join the config allowlist, because
 // they are the same kind of thing — leading words that pre-approve a command
-// — and the only difference is that one of them can be revoked.
+// — and the only difference is that one of them can be revoked. The deny
+// lists are the standing rules' and come from them, so the policy the mode
+// reads and the rules the queue asks first are the same lists.
 func (m Model) modePolicy() agent.ModePolicy {
-	return agent.ModePolicy{
+	return m.rules().Policy(agent.ModePolicy{
 		Mode:             m.policy.mode,
 		AllowEdits:       m.policy.allEdits,
 		AllowCommands:    m.policy.allCommands,
@@ -42,12 +46,42 @@ func (m Model) modePolicy() agent.ModePolicy {
 		ExactCommands:    m.policy.exactCommands,
 		TurnGrants:       m.policy.turn,
 		CommandAllowlist: m.allowlist(),
-		CommandDenylist:  m.policy.denylist,
 		AllowHosts:       m.hostAllowlist(),
-		DenyHosts:        m.policy.denyHosts,
 		ReadOnlyExtra:    m.policy.readOnlyExtra,
 		ReadOnlyDisabled: m.policy.readOnlyDisabled,
 		Conversation:     m.wiring.Conversation,
+	})
+}
+
+// rules is this session's standing rules: the two deny lists, the working
+// scope and the directory commands run in, and the containment's refusal —
+// the same assembly an unattended run answers its calls from, built here from
+// what this screen was handed.
+// See docs/capabilities/approvals-and-safety.md#a-deny-list-is-answered-before-anything-can-allow.
+func (m Model) rules() approval.Router {
+	return approval.Router{
+		Denylist:    m.policy.denylist,
+		DenyHosts:   m.policy.denyHosts,
+		Scope:       m.wiring.Scope,
+		Workspace:   m.wiring.Workspace,
+		Containment: m.containment.Refusal,
+	}
+}
+
+// ruleCall is a request as the standing rules read it. A command typed for
+// execute_command runs in the session's directory; a process start names one
+// of its own; a call at the write tier carries its line for the deny list
+// alone.
+func ruleCall(req *approvalRequest) approval.Call {
+	if req == nil {
+		return approval.Call{}
+	}
+	return approval.Call{
+		Command: req.command,
+		Host:    req.host,
+		Write:   req.write,
+		InDir:   req.kind == approvalExec,
+		Runs:    req.kind == approvalExec || receipt.IsProcess(req.call.Name),
 	}
 }
 
@@ -73,109 +107,34 @@ func (m Model) hostAllowlist() []string {
 	return append(append(out, m.policy.allowHosts...), m.policy.hosts...)
 }
 
-// deniedByRule reports whether the deny list answers this request, which is
-// asked before a card is built rather than after: a command the user has
-// refused in advance is not a decision, so there is nothing to draw, nothing
-// to batch-approve and nothing to send to the classifier.
+// ruleRefusal is the standing rules' answer to a request, asked before a
+// card is built rather than after: a command the user has refused in
+// advance is not a decision, so there is nothing to draw, nothing to
+// batch-approve and nothing to send to the classifier. why is the sentence
+// `/permissions why` prints under it, which is this screen's own: the reader
+// is told the list and the key, and the model is told neither.
 //
-// Two lists answer here, because they are the same act: the command list is
-// asked of the actions that run a command — execute_command and a process
-// start — and the host list of the one action that leaves the machine. An
+// The command lists are asked of the actions that run a command or stand
+// for one, and the host list of the one action that leaves the machine. An
 // edit is a different question and neither list answers it.
 // See docs/capabilities/approvals-and-safety.md#a-deny-list-is-answered-before-anything-can-allow.
-func (m Model) deniedByRule(req *approvalRequest) bool {
+func (m Model) ruleRefusal(req *approvalRequest) (r approval.Refusal, why string, ok bool) {
 	if req == nil {
-		return false
+		return approval.Refusal{}, "", false
 	}
-	if req.host != "" && agent.HostMatches(m.policy.denyHosts, req.host) {
-		return true
+	r, ok = m.rules().Rule(ruleCall(req))
+	if !ok {
+		return r, "", false
 	}
-	_, refused := m.commandRule(req)
-	return refused
-}
-
-// commandRule is the rule that refuses a request's command line, asked
-// through the one function the policy asks: the deny list, then a destroying
-// command pointed at something this session may not destroy. The second is
-// answered here with the first for the first's reason — it is not a
-// decision, so there is no card, no batch approval and no classifier round.
-// See docs/capabilities/approvals-and-safety.md#some-targets-are-never-destroyed.
-func (m Model) commandRule(req *approvalRequest) (string, bool) {
-	if req == nil || req.command == "" || req.host != "" {
-		return "", false
+	switch {
+	case r.Reason == agent.DenyReasonHost:
+		why = denyHostWhy
+	case agent.IsIrreplaceable(r.Reason):
+		why = irreplaceableWhy
+	default:
+		why = denylistWhy
 	}
-	a := agent.Action{Command: req.command}
-	if !req.write {
-		a.Irreplaceable = m.irreplaceable(req)
-	}
-	return agent.RuleRefusal(m.policy.denylist, a)
-}
-
-// irreplaceable is what a request's command destroys that this session may
-// not, in the words the refusal names it with, or "".
-//
-// The command is read from the directory it runs in. A process start names a
-// directory of its own, which the request does not carry, so its relative
-// paths prove nothing and only its absolute ones are read.
-func (m Model) irreplaceable(req *approvalRequest) string {
-	if req == nil || req.command == "" || req.write || req.host != "" {
-		return ""
-	}
-	return radius.Destroys(req.command, m.destroyWhere(req)).Refusal()
-}
-
-// destroyWhere is where a request's command is read for what it destroys:
-// the working scope, its root, the directory a command runs in where the
-// request says, and the home directory.
-func (m Model) destroyWhere(req *approvalRequest) radius.Where {
-	where := radius.Where{Scope: m.wiring.Scope}
-	where.Root = m.wiring.Workspace
-	if m.wiring.Scope != nil {
-		where.Root = m.wiring.Scope.Root()
-	}
-	if where.Root == "" {
-		where.Root, _ = os.Getwd()
-	}
-	if req.kind == approvalExec {
-		where.Dir = where.Root
-		if m.wiring.Workspace != "" {
-			where.Dir = m.wiring.Workspace
-		}
-	}
-	where.Home, _ = os.UserHomeDir()
-	return where
-}
-
-// scratchDelete reports whether a request's command is a delete of untracked
-// scratch inside the workspace, read against the same place irreplaceable
-// reads it: every target resolved below the workspace root, none of it
-// tracked, nothing else on the line flagged. A process start names a
-// directory of its own the request does not carry, so its relative paths
-// prove nothing and it is scratch only where every target is absolute.
-// See docs/capabilities/approvals-and-safety.md#severity-moves-the-default.
-func (m Model) scratchDelete(req *approvalRequest) bool {
-	if req == nil || req.command == "" || req.write || req.host != "" {
-		return false
-	}
-	return radius.ScratchDelete(req.command, m.destroyWhere(req))
-}
-
-// ruleDenial is what a refusal by one of the rules tells the model, the
-// reason the denied row carries beside it, the sentence `/permissions why`
-// prints and the code the record files it under. A host and a command are
-// refused by the same act and answered in the same place; what the model is
-// told differs, because a refused host is refused whatever the URL and a
-// retry with another path is the loop the wording exists to stop.
-func (m Model) ruleDenial(req *approvalRequest) (result, reason, why, code string) {
-	if req != nil && req.host != "" && agent.HostMatches(m.policy.denyHosts, req.host) {
-		return agent.DeniedHostResult, agent.DenyReasonHost, denyHostWhy, observe.ReasonDenylist
-	}
-	if reason, ok := m.commandRule(req); ok && agent.IsIrreplaceable(reason) {
-		// Filed with the safety table's refusals: it is that table's
-		// destroying rows, read against where they point.
-		return agent.IrreplaceableResult(reason), reason, irreplaceableWhy, observe.ReasonSafety
-	}
-	return agent.DenylistResult, agent.DenyReasonDenylist, denylistWhy, observe.ReasonDenylist
+	return r, why, true
 }
 
 // irreplaceableWhy is the sentence `/permissions why` prints under a command
@@ -269,7 +228,7 @@ func (m Model) approvalAction(req *approvalRequest) agent.Action {
 	a.ScopeRefused = reach.class == scope.Refused
 	a.ScopeReason = reach.reason
 	if a.Kind == agent.ActionCommand {
-		a.Irreplaceable = m.irreplaceable(req)
+		a.Irreplaceable = m.rules().Irreplaceable(ruleCall(req))
 		a.Scratch = req.scratch
 	}
 	return a
@@ -323,6 +282,41 @@ func baseAction(req *approvalRequest) agent.Action {
 // allowed, the reason shown in the transcript.
 func (m Model) policyDecision(req *approvalRequest) (agent.Decision, string) {
 	return m.modePolicy().Decide(m.approvalAction(req))
+}
+
+// StandingAnswer is what this screen answers a gated call with before
+// anybody is asked, read through the same steps the queue takes: the
+// containment requirement, the standing rules, then the mode policy. A call
+// the screen cannot card at all is a refusal carrying the error the model
+// reads. decision is Ask where the screen would draw a card or ask its
+// classifier; result and code are what a refusal tells the model and files
+// under, and code is empty for the containment's, which the record does not
+// keep.
+//
+// It is how a reader outside the screen — the unattended surfaces' tests,
+// and a client the screen's decisions move behind — reads the screen's
+// answer without driving a terminal. It reads no hook, no batch answer and
+// no person, which come after it on the screen and have no counterpart
+// anywhere else.
+func (m Model) StandingAnswer(tc provider.ToolCall) (decision agent.Decision, result, code string) {
+	req, err := m.buildApprovalRequest(tc)
+	if err != nil {
+		return agent.Deny, "error: " + err.Error(), ""
+	}
+	if refusal := m.containmentRefusal(req); refusal != "" {
+		return agent.Deny, refusal, ""
+	}
+	if refusal, _, refused := m.ruleRefusal(req); refused {
+		return agent.Deny, refusal.Result, refusal.Code
+	}
+	d, reason := m.policyDecision(req)
+	switch d {
+	case agent.Deny:
+		return d, denialResult(reason, req.command, m.policy.readOnlyExtra), observe.ReasonCode(reason)
+	case agent.Allow:
+		return d, "", observe.ReasonCode(reason)
+	}
+	return agent.Ask, "", ""
 }
 
 // modeStatus describes the active mode and cycle for /permissions with no

@@ -1,7 +1,5 @@
 package chat
 
-import "github.com/rfizzle/shhh/internal/receipt"
-
 // Containment is the process-containment setup for assistant commands.
 // When Run is set, approved and waved-through execute_command calls run
 // through it (the sandbox-wrapped runner) instead of the plain runner; /run —
@@ -101,13 +99,7 @@ type Containment struct {
 // surfaces ask the same two names (unattendedHooks in internal/cli).
 // See docs/capabilities/containment.md#a-git-write-is-not-a-command.
 func (m Model) containmentRefusal(req *approvalRequest) string {
-	if m.containment.Refusal == "" || req == nil || req.command == "" {
-		return ""
-	}
-	if req.kind != approvalExec && !receipt.IsProcess(req.call.Name) {
-		return ""
-	}
-	return m.containment.Refusal
+	return m.rules().Contained(ruleCall(req))
 }
 
 // containmentStatus is the containment line `/status` prints: what is
