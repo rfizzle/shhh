@@ -205,3 +205,28 @@ func TestReputation_AnUnknownHostLeavesTheClassifiersAnswer(t *testing.T) {
 		t.Fatalf("an unknown host changed the classifier's answer (state %d)", m.state)
 	}
 }
+
+// The ask a host's standing forces is filed under the standing and carries
+// the time the classifier took to say the yes it overrode, like every other
+// row the classifier's verdict produced.
+func TestObserve_AHostStandingAskCarriesTheClassifiersTime(t *testing.T) {
+	useFixtureReputation(t, map[string][]string{"urlhaus": {"bad.test"}})
+	judge := &verdictProvider{decision: "allow", reason: "reads a page"}
+	ledger := meter.New(nil)
+	m := gatedModelWith(t, func(string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews(), Wiring{
+		Classifier: agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"}),
+	})
+	var untimed, timed [][2]string
+	m.wiring.Observer = observe.Observer{
+		Decision:      func(_ observe.Pos, d, r string) { untimed = append(untimed, [2]string{d, r}) },
+		DecisionTimed: func(_ observe.Pos, d, r string, _ time.Duration) { timed = append(timed, [2]string{d, r}) },
+	}
+	m.policy.mode = agent.ModeAuto
+	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{fetchCall("call_1", "https://bad.test/x")}})
+	m = updated.(Model)
+	m.Update(driveClassifierDone(t, cmd))
+	want := [2]string{observe.DecisionAsk, observe.ReasonHostListed}
+	if len(timed) != 1 || timed[0] != want || len(untimed) != 0 {
+		t.Fatalf("timed %v, untimed %v; want the standing ask timed", timed, untimed)
+	}
+}

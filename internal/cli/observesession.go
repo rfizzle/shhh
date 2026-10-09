@@ -223,6 +223,17 @@ func observeFirstWriteOf(f storage.AgentFirstWrite) string {
 	return "after " + countOf(f.Searches, "search call", "search calls")
 }
 
+// classifierLine is the classifier's model with the backend it was asked
+// through beside it, so two sessions on one model and different backends do
+// not read as the same setting. A session recorded before the backend was
+// has the model alone.
+func classifierLine(c *storage.AgentSettings) string {
+	if c.ClassifierModel == "" {
+		return ""
+	}
+	return joinDetail(c.ClassifierModel, c.ClassifierBackend)
+}
+
 // observeSettingsPairs is what the session ran under, beside the provenance
 // it already prints: one line per setting that was in force, and nothing at
 // all for a session recorded before settings were — the page must not fill
@@ -247,7 +258,7 @@ func observeSettingsPairs(c *storage.AgentSettings) []report.Pair {
 		{Key: "rounds", Value: rounds},
 		{Key: "check-in", Value: checkInEvery(c.CheckInInterval)},
 		{Key: "summary", Value: summary},
-		{Key: "classifier", Value: c.ClassifierModel},
+		{Key: "classifier", Value: classifierLine(c)},
 		{Key: "sandbox", Value: c.SandboxProfile},
 		{Key: "item", Value: c.Item},
 		{Key: "stage", Value: c.Stage},

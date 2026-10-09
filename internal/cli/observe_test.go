@@ -322,7 +322,7 @@ func TestObserveSessionTimeline(t *testing.T) {
 		"shhh observe session 1", "prompt:", fingerprint("the prompt"), "skills:", "2",
 		"project:", fingerprint("/repo"), "conversation:", "2026-01-01 10:00:00",
 		"mode:", "auto", "reasoning:", "high", "rounds:", "60",
-		"summary:", "test-model · every 10 rounds", "classifier:", "sandbox:", "workspace", "config:",
+		"summary:", "test-model · every 10 rounds", "classifier:", "test-model · completion", "sandbox:", "workspace", "config:",
 		"TURN 1", "search", "empty", "asked", "auto · safety",
 		"summary", "off-target", "cap-paused", "41 rounds",
 	} {

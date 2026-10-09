@@ -65,6 +65,9 @@ func (r *testRecorder) recorder() Recorder {
 			Decision: func(at observe.Pos, decision, reason string) {
 				r.add(recordedEvent{kind: "decision", outcome: decision, reason: reason, pos: at})
 			},
+			DecisionTimed: func(at observe.Pos, decision, reason string, took time.Duration) {
+				r.add(recordedEvent{kind: "decision", outcome: decision, reason: reason, pos: at, timed: took > 0})
+			},
 		},
 		End: func(e observe.ChildEnd) {
 			r.mu.Lock()

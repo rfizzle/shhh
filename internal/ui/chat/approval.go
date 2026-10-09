@@ -799,7 +799,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		// otherwise expect: the classifier said yes, and the lists said the
 		// host is theirs to answer for
 		// (docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged).
-		m.recordDecision(observe.DecisionAsk, code)
+		m.recordVerdict(observe.DecisionAsk, code, v.Elapsed)
 		standing := GatedField{Label: "standing", Value: why,
 			Detail: "the classifier would have allowed it; the lists put it to you", Open: true}
 		req.fields = append(req.fields, standing)

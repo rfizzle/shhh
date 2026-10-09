@@ -254,10 +254,12 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 	// judged is the classifier's sentence where it said no and a person is
 	// there to be asked instead, which the ask carries to the card.
 	var judged string
+	// failed is the classifier unavailable, which the ask is filed under.
+	var failed bool
 	if decision == agent.Ask && !addsSecret {
 		var denial string
 		var byClassifier bool
-		decision, cost, denial, byClassifier = s.classify(c, policy.Mode, tc, action)
+		decision, cost, denial, byClassifier, failed = s.classify(c, policy.Mode, tc, action)
 		if decision == agent.Ask && byClassifier {
 			judged = denial
 		} else if decision == agent.Ask {
@@ -298,9 +300,14 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		if addsSecret {
 			askCode = observe.ReasonSafety
 		}
-		if judged != "" {
+		switch {
+		case judged != "":
 			recordTook(observe.DecisionDeny, observe.ReasonClassifier, cost)
-		} else {
+		case failed:
+			recordTook(observe.DecisionAsk, observe.ReasonClassifierFailed, cost)
+		case standing != "" && !addsSecret:
+			recordTook(observe.DecisionAsk, askCode, cost)
+		default:
 			record(observe.DecisionAsk, askCode)
 		}
 		ask, askErr := s.buildAsk(c, tc.Name, rooted, action)
@@ -367,9 +374,9 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 // refused here, as it always was: the only answerer on the other end of the
 // route is a rule, and it would decline the call in somebody's name.
 // See docs/capabilities/subagents.md#a-child-answers-to-the-session.
-func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, action agent.Action) (decision agent.Decision, cost time.Duration, denial string, judged bool) {
+func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, action agent.Action) (decision agent.Decision, cost time.Duration, denial string, judged, failed bool) {
 	if mode != agent.ModeAuto || s.opts.Classifier == nil || action.SafetyFlagged {
-		return agent.Ask, 0, "", false
+		return agent.Ask, 0, "", false, false
 	}
 	// A reach outside the child's scope is the person's, whatever the
 	// directory: nothing the classifier says widens what the child may write,
@@ -377,7 +384,7 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, a
 	// anyway, and the child would read that failure as an approved call.
 	// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
 	if len(action.OutOfScope) > 0 {
-		return agent.Ask, 0, "", false
+		return agent.Ask, 0, "", false, false
 	}
 	req := agent.ClassifierRequest{
 		Tool:      tc.Name,
@@ -411,30 +418,31 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, a
 	verdict, reason := agent.ResolveAuto(action, v)
 	switch {
 	case verdict == agent.Allow:
-		return agent.Allow, v.Elapsed, "", false
+		return agent.Allow, v.Elapsed, "", false, false
 	case verdict == agent.Deny:
-		return agent.Deny, v.Elapsed, reason, false
+		return agent.Deny, v.Elapsed, reason, false, false
 	case agent.JudgedDenialAsks(action, v):
 		s.mu.Lock()
 		attended := s.attended
 		s.mu.Unlock()
 		if !attended {
-			return agent.Deny, v.Elapsed, reason, false
+			return agent.Deny, v.Elapsed, reason, false, false
 		}
 		// The classifier said no and a person is there to answer instead;
 		// the child's transcript says whose no it was.
 		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Asking the user: the classifier would refuse — " + reason + "."})
-		return agent.Ask, v.Elapsed, reason, true
+		return agent.Ask, v.Elapsed, reason, true, false
 	case !v.Failed && web.StandingOf(reason) != "":
 		// The classifier said yes and the host's standing put the call to
 		// the person instead; the child's transcript says which list did.
 		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Asking the user: " + reason + "."})
-		return agent.Ask, 0, reason, false
+		return agent.Ask, v.Elapsed, reason, false, false
 	case v.Failed:
 		// Fails closed: the user decides, and sees why they were asked.
 		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Classifier unavailable (" + v.Reason + "); asking the user instead."})
+		return agent.Ask, v.Elapsed, "", false, true
 	}
-	return agent.Ask, 0, "", false
+	return agent.Ask, 0, "", false, false
 }
 
 // classifierRule is what a child's transcript names as the rule when the

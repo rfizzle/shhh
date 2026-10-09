@@ -526,6 +526,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 			run:          nudges.Ran(run),
 			red:          red,
 			record:       record,
+			recordTook:   l.recordTook,
 			webTools:     session.web,
 			procSup:      procSup,
 			mutationHook: chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)),
@@ -740,6 +741,13 @@ func (l *serveLoop) putToClient(ask func(rpc.Call) bool, call rpc.Call) bool {
 	l.timing.person()
 	defer l.timing.working()
 	return ask(call)
+}
+
+// recordTook is record for a verdict the classifier reached: the same row,
+// carrying how long the judgement took, which the chat session and a `-p` run
+// record the same way.
+func (l *serveLoop) recordTook(decision, reason string, took time.Duration) {
+	l.verdict.Load().wrapTook(l.obs.decisionTook)(decision, reason, took)
 }
 
 // answeredByClient rewrites the one verdict the unattended approver spells
