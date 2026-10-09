@@ -423,6 +423,51 @@ to a card — the fallback is a refusal instead, and a classifier's no stands as
 the refusal it is: the same commitment with the one remaining answer taken
 away ([`headless.md`](headless.md#auto-mode-fails-closed)).
 
+## The classifier can answer as a probability
+
+The classifier is asked for a verdict in words by default: allow or deny,
+and a sentence saying why. A gateway that serves a model's Decisions API can
+ask it a different way, with `behavior.classifier_backend = "decisions"`:
+the same evidence and the same rules, put as one question — may this call
+run unasked? — that the model answers with a probability rather than a
+reply.
+
+**The threshold is the bar that probability has to reach.**
+`behavior.classifier_threshold` is a percentage: at or above it the call
+runs, below it the classifier has said no, and a no is what it always was —
+a card where a person is there, a refusal where nobody is. The default sits
+well above even odds because the two mistakes do not cost the same: a false
+allow runs something nobody watched, and a false deny in front of a person
+is a question they answer. It is provisional until the eval's comparison of
+the two backends settles it. A checkout may not set it, because a lower bar
+removes refusals, and a checkout may add one and never take one away.
+
+**Every way of not getting a probability fails closed.** A model that does
+not offer the API, a request that fails or runs out of time, an answer
+missing for the question, and a refusal to answer are each the classifier
+failing, and each ends where [any failure does](#the-classifier-fails-closed):
+a card in front of a person, a refusal with nobody there. A refusal is the
+model's answer to this evidence, so it is not asked again; a failed request
+gets the retries a completion would.
+
+What this gives up is the reason. The card's sentence becomes the
+probability and the threshold rather than the model's account of the call,
+which is a worse sentence for someone deciding whether to overturn a no —
+and whether that matters is what the comparison is for. A replaced wording
+is not sent to this backend, since it is written for a reply in words that
+the backend does not give, and the doctor says so. The explanation a card
+offers reads with the classifier's model on the other backend; on this one
+it takes the rest of the cheap chain instead, because a model that answers
+decisions may answer nothing else.
+
+The record keeps the backend beside the classifier's model on every
+session, and the time each verdict took on its row, so sessions on one can
+be set against sessions on the other
+([`sessions-and-memory.md`](sessions-and-memory.md#what-a-session-ran-under)),
+and `shhh eval --classifier-backend decisions` puts the classifier table to
+it so two baselines can be read against each other
+([`evals.md`](evals.md#a-false-allow-is-not-a-false-deny)).
+
 ## A write that adds a secret is always asked
 
 An edit or a write whose added lines hold a credential shape is put to the

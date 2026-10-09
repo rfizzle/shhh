@@ -436,6 +436,7 @@ const (
 // A refusal spends no retry. It is the model's answer to this evidence, and
 // asking again with the same evidence is asking for a different answer to
 // the same question.
+// See docs/capabilities/approvals-and-safety.md#the-classifier-can-answer-as-a-probability.
 func (c *Classifier) decide(ctx context.Context, model, input string, v ClassifierVerdict) ClassifierVerdict {
 	d, ok := c.provider.(provider.Decider)
 	if !ok || !d.OffersDecisions(model) {

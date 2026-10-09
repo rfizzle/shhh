@@ -318,6 +318,20 @@ round — the tools are what every model takes, while a schema sent to a model
 that cannot take one is a refused request, and one of those two mistakes is
 free.
 
+The narrowest answer of all is a probability, and one bounded call can ask
+for it: the permission classifier, through a model's Decisions API
+([`approvals-and-safety.md`](approvals-and-safety.md#the-classifier-can-answer-as-a-probability)).
+**Whether a model offers that API is declared and never inferred.** OpenAI's
+own providers offer it on the models OpenAI documents it for, and a gateway
+profile offers it on a model whose line says `decisions = true`, at the
+endpoint that model routes to — nowhere else. The same reasoning as the
+schema decides it, more strongly: a gateway that serves a model's
+completions need not serve its decisions, and guessing wrong here is not a
+looser answer but a classifier that fails on every call, quietly turning
+auto mode into a card for everything. A model nothing declares does not
+offer it. The API is a public beta, so its request shape is written in one
+place, against the guide it was read from.
+
 ## Model data is fetched, and a snapshot ships
 
 One public table carries what shhh needs to know about a model: what it

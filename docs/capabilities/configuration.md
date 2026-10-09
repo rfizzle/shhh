@@ -63,6 +63,7 @@ clone of it, or one that reaches past the tree onto the machine:
 | `[sandbox]` | it decides what a contained command may reach, which is the containment itself |
 | `[mcp.servers]` | a server is a program to start, and a checkout names its servers in `.shhh/mcp.json` instead |
 | `[prompts]` | it points at a file anywhere on the machine and replaces what a session is told |
+| `behavior.classifier_threshold` | a lower bar lets more calls run without asking, and a checkout may add a refusal but never take one away |
 
 Refusing them rather than leaning on trust alone is the second gate: the
 field's other harnesses let a project file set nearly anything, and trust is
@@ -593,6 +594,14 @@ surface quietly judging calls on a different model from the one you set.
 
 The wording is a prompt file like the others above: replace it and the
 classifier is asked your question instead of the built-in one.
+
+`behavior.classifier_backend` chooses how it is asked: `completion`, the
+default, for a verdict in words, or `decisions` for a probability held
+against `behavior.classifier_threshold`
+([`approvals-and-safety.md`](approvals-and-safety.md#the-classifier-can-answer-as-a-probability)).
+The second needs a model that offers the Decisions API: OpenAI's own
+`gpt-6-luna`, or a gateway profile's model declared with `decisions = true`
+on its `[[models]]` line. A replaced wording is not sent there.
 
 ## A failure is written down
 
