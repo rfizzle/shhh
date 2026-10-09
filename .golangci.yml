@@ -44,10 +44,6 @@ linters:
       - linters: [gocognit]
         path: ^internal/cli/eval\.go$
         text: 'func `newEvalCmd`'
-      # The chat session: setup, the program and teardown still in one body.
-      - linters: [gocognit]
-        path: ^internal/cli/runchatsession\.go$
-        text: 'func `runChatSession`'
       # The /todo subcommands: every verb carried out in one switch.
       - linters: [gocognit]
         path: ^internal/cli/todo\.go$
