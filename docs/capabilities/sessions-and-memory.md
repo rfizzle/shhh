@@ -119,6 +119,52 @@ done and what is open, and a summarizer run at quit would be a request nobody
 made and nobody waited for. A conversation that never compacted comes back
 with no summary and no placeholder saying there is none.
 
+### A session can leave a handoff
+
+The standing account says what a conversation was doing, in two sentences a
+model wrote while nobody watched. That is enough to pick a conversation out
+of a list and not enough to start work from: a person leaving mid-task knows
+what is done, what is open and what they decided, and tomorrow's sitting
+otherwise has to dig all three back out of a transcript it reads as somebody
+else's.
+
+So `/handoff` writes it down while they are still there. The session's reading
+model — the summary model's key, then the one cheap key, the provider's small
+model, the session's own, billed as a summary — writes it from what was asked
+and what was answered, never from a tool result, around the note typed after
+the command: one line for where the work stands, then what was done, what is
+open, what was decided, and, from the session's own records rather than the
+model's memory, the files touched and the backlog item in flight. It opens on
+a card, where `[e]` edits it in `$EDITOR`, the yes keeps it on the
+conversation's slot, `[n]` drops it and esc keeps nothing and leaves the draft
+for `/handoff` to open again. A later handoff replaces the one before it.
+
+It is not memory. A memory is a fact every later session in the checkout is
+told; a handoff is one conversation's note to its own next sitting, asked for
+by name and edited before it is kept
+([what shhh will not add](../product.md#what-shhh-will-not-add)).
+
+Leaving is when it is wanted, so a quit asks once: over a turn whose changes
+are not committed, in a session that has kept no handoff, the quit's confirm
+says so in one sentence and offers to write one first. Its no — the default,
+and the quit chord pressed again — quits. Its yes writes the handoff, and the
+card's yes keeps it and then quits.
+
+The next sitting opens on it. The start screen's resume offer names its first
+line where it would name the conversation's size
+([the start screen](../interface/surfaces.md#the-start-screen)), and a
+conversation opened again — `--resume`, `--continue`, `/load` or that offer —
+draws it whole as the first row of the sitting, in the session's own grey, so
+it is read before anything is typed. The model is given it as the first
+message of the reopening, ahead of the checkout's reading, opened by a line
+saying the person wrote it when they last left. That line is the only place
+the model learns what it is reading: no prompt or tool line names a handoff,
+because a session that never had one would be told about something it does
+not have, and without the label the note would read as a turn just typed. Like
+the reading, it is put in front of the conversation every time it is opened
+and never saved into it, so a conversation opened three times is handed it
+once.
+
 ### An unattended run comes back too
 
 A run started with `--print` is a conversation like any other. It can be told

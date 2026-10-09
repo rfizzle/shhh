@@ -2961,6 +2961,14 @@ Three suggestions follow, ordered by what the working tree suggests — a
 session to resume, then something read-only, then something needing a single
 approval — and each says what it will cost you in permission.
 
+The resume offer is `pick up <name>`. Its detail is what the conversation
+was — its title, its turns, what it cost, how long ago — except where the
+person left a handoff on it: then the detail is the handoff's first line,
+because their own words about where they stopped say more than its size
+does ([sessions-and-memory.md](../capabilities/sessions-and-memory.md#a-session-can-leave-a-handoff)).
+`elsewhere` stays after it where the offer stepped past a conversation
+another session holds.
+
 The read-only slot offers what the checkout itself says is next, in this
 order: a changed file nobody has accounted for, which keeps its slot where
 the tree is dirty; then, where the branch is ahead of its default branch with
