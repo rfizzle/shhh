@@ -395,15 +395,15 @@ is a decision about the product and not a refactor.
 The terminal session is the assembly and then everything the screen is
 given: what it runs commands through, what it may do without asking, the
 stores it writes, the readers that watch it, the children it may spawn, the
-surfaces it offers and which of its conveniences are on. Today that is ninety
-settings applied one after another to the screen's own state, each on its
-own condition, inside the one function that also opens the terminal, runs
-the program and prints the banner. Each setting is cheap and the whole is
-not: several read what an earlier one left behind, a handful do work rather
-than set a field, the one that has to come last is held there by a comment,
-and nobody can read the result as a whole — the test that asserts the
-assembly takes a page of yes-and-no answers back off the built screen,
-because what the settings wrote is state nobody else may see.
+surfaces it offers and which of its conveniences are on. That used to be
+ninety settings applied one after another to the screen's own state, each on
+its own condition, inside the one function that also opens the terminal,
+runs the program and prints the banner. Each setting was cheap and the whole
+was not: several read what an earlier one left behind, a handful did work
+rather than set a field, the one that had to come last was held there by a
+comment, and nobody could read the result as a whole — the test that
+asserted the assembly took a page of yes-and-no answers back off the built
+screen, because what the settings wrote was state nobody else may see.
 
 The screen's wiring is one value instead. It is built in named phases, in
 the order the dependencies between them require, and handed to the screen
@@ -510,36 +510,36 @@ dependencies', not the reader's:
 
 **What the constructor does with it.** Most of the ninety settings set a
 field and nothing else, and those settings disappear: the value's field is
-the field. Five do work, and that work moves into the constructor, in a
-fixed order, where today it is scattered along the chain and held in place
-by comments:
+the field. Five did work, and that work is the constructor's, in a fixed
+order, where it used to be scattered along the chain and held in place by
+comments:
 
 1. Claim the session's slot in the store, and bind the changeset, the
-   notebook and the sources ledger to it. Today the claim happens when the
-   store arrives, and each of the three binds itself again when it arrives
-   after, so the order of four settings decides how many times the
-   changeset is restored from disk.
+   notebook and the sources ledger to it. The claim used to happen when the
+   store arrived, and each of the three bound itself again when it arrived
+   after, so the order of four settings decided how many times the
+   changeset was restored from disk.
 2. Apply the loop's settings to the loop: the executor, the cap, the
    steering, the progress intervals, the scrub, the kept results, the
-   elisions' store, the tree check. Nine settings today each reach into the
-   loop on their own.
+   elisions' store, the tree check. Nine settings each used to reach into
+   the loop on their own.
 3. Push the mode, the live grants and the conversation policy into the
-   supervisor. Today this reads three fields that three earlier settings
-   set, and the setting that sets the mode is a no-op once the one that
-   marks a conversation has run — the chain happens to call them in the
-   order that works.
+   supervisor. This used to read three fields that three earlier settings
+   set, and the setting that set the mode was a no-op once the one that
+   marked a conversation had run — the chain happened to call them in the
+   order that worked.
 4. Load the backlog from disk and read the parallel sprint's checkpoint.
 5. Wrap the executor with the hooks, last. The gate the hooks wrap around
    the executor is the screen's own answer to which calls it gates, and it
    is captured when the wrap is built — so anything wired after it is a
-   call the hook never sees gated. In the chain that is a comment saying
+   call the hook never sees gated. In the chain that was a comment saying
    "last"; in the constructor it is the last line.
 
-**What the screen loses.** Fifty-six of the screen's fields are written by
-a setting and by nothing else; they move under the value, held as one field,
+**What the screen loses.** Forty-six of the screen's fields were written by
+a setting and by nothing else; they moved under the value, held as one field,
 and the screen's own state — the fields the update loop writes — stays
 where it is, seeded from the value at construction. The bound on the
-screen's size, pinned by a test, falls from 232 to about 180. The dozen
+screen's size, pinned by a test, fell from 232 to 187. The dozen
 sub-states that pair a writer with the state it writes keep their state and
 read their writer from the value, which would take it nearer 170; that is a
 second step and not this one.
