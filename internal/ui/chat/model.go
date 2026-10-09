@@ -352,7 +352,7 @@ type streamErrMsg struct {
 
 // retryTickMsg is defined with the rest of the retry path in resume.go.
 type streamStartedMsg struct {
-	events <-chan provider.StreamEvent
+	events eventStream
 	cancel context.CancelFunc
 }
 type toolCallsMsg struct {
@@ -797,10 +797,13 @@ type steeringItem struct {
 }
 
 type Model struct {
-	// agent owns the loop state (message list, stream requests, tool
-	// dispatch, approval queue, iteration guard); the Model is one front-end
-	// driving it.
+	// agent owns the loop state (message list, tool dispatch, approval
+	// queue, iteration guard); the Model is one front-end driving it.
 	agent *agent.Agent
+	// backend is what the screen reaches the stream through (backend.go):
+	// over agent today, and the thing a session in another process would
+	// stand behind.
+	backend Backend
 	// wiring is what the session was given (wiring.go). It is never
 	// written after construction.
 	wiring Wiring
@@ -913,7 +916,7 @@ type Model struct {
 	histSearch *historySearch
 
 	streaming string
-	events    <-chan provider.StreamEvent
+	events    eventStream
 	cancel    context.CancelFunc
 	// state is the current surface: the stage of the session's own turn, or
 	// a transient view borrowing the screen. turnBack parks the turn's stage

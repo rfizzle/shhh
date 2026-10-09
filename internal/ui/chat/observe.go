@@ -212,7 +212,7 @@ func (m *Model) noteHeard(reasoning, answering bool) {
 func (m Model) heardKeepalive() (tea.Model, tea.Cmd, bool) {
 	m.noteEvent(false)
 	m.noteHeard(false, false)
-	return m, waitForEvent(m.events), true
+	return m, m.waitForNext(), true
 }
 
 // noteTail marks a running command's output reaching the screen. The runner

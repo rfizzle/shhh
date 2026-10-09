@@ -86,6 +86,9 @@ func New(initialMessages []provider.Message, stream StreamFunc, w Wiring) Model 
 		alertMemo:   &alertMemo{},
 		nudges:      &nudge.Turn{},
 	}
+	// The stream is reached through the backend, which today is the loop
+	// above in this process (backend.go).
+	m.backend = inProcessBackend{agent: m.agent}
 	m.seed()
 	m.bindStores()
 	m.applyLoop()

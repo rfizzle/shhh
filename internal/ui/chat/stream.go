@@ -3,7 +3,8 @@ package chat
 // The stream: asking for a reply, reading it as it arrives, and closing it.
 //
 // A request is a command; the events come back on a channel and are drained
-// into the messages the turn route answers (turn.go). Cancelling is the same
+// into the messages the turn route answers (turn.go). Both go through the
+// backend (backend.go). Cancelling is the same
 // path with the context cut, which is why what a cancelled turn keeps is
 // decided here and not at the key that cancelled it.
 
@@ -93,17 +94,15 @@ func (m Model) toolNames() []string {
 
 // requestStreamFor starts a stream over an explicit message list (callers
 // pass a copy so in-flight requests are immune to later mutation) under an
-// explicit tool choice.
+// explicit tool choice. It asks the backend rather than the loop: the stream
+// is the first thing the screen reaches through it (backend.go).
 func (m Model) requestStreamFor(msgs []provider.Message, choice string) tea.Cmd {
-	a := m.agent
-	return func() tea.Msg {
-		events, cancel, err := a.StreamWithChoice(msgs, choice)
-		if err != nil {
-			return streamErrMsg{err: err}
-		}
-		return streamStartedMsg{events: events, cancel: cancel}
-	}
+	return m.backend.Request(msgs, choice)
 }
+
+// waitForNext reads the open stream's next batch through the backend that
+// opened it.
+func (m Model) waitForNext() tea.Cmd { return m.backend.Next(m.events) }
 
 // execToolsCmd dispatches an auto-run batch off the UI goroutine. What the
 // batch is running is not stamped anywhere for the frame to read: the calls

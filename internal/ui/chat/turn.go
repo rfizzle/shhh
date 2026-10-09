@@ -254,7 +254,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// the last one was writing is not this one's either (activity.go).
 		m.thinkIdx = 0
 		m.composed = 0
-		return m, waitForEvent(m.events), true
+		return m, m.waitForNext(), true
 
 	case keepaliveMsg:
 		return m.heardKeepalive()
@@ -285,7 +285,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		if msg.final != nil {
 			return answered(m.update(msg.final))
 		}
-		return m, waitForEvent(m.events), true
+		return m, m.waitForNext(), true
 
 	case toolDeltaMsg:
 		m.appendCompose(msg.delta)
@@ -303,7 +303,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		} else {
 			m.flushStream()
 		}
-		return m, waitForEvent(m.events), true
+		return m, m.waitForNext(), true
 
 	case doneMsg:
 		m.noteEvent(true)
