@@ -591,7 +591,8 @@ func TestCodeSessionWiresItsMechanisms(t *testing.T) {
 		{"durable memory", w.Memory.Manage != nil},
 		{"the permission classifier", w.Classifier != nil},
 		{"the titler", w.Titler != nil},
-		{"the changeset", w.Changeset != nil && w.Tracker != nil},
+		{"the changeset", w.Changeset != nil},
+		{"the change tracker", w.Tracker != nil},
 		{"the hooks", w.Hooks != nil},
 		{"the recoverable trim", w.Evidence.Keep != nil},
 		{"the working scope", w.Scope != nil},
@@ -612,8 +613,11 @@ func TestCodeSessionWiresItsMechanisms(t *testing.T) {
 // from passing on a build where every session is a coding one.
 func TestConversationIsTheAssemblyWithoutTheActing(t *testing.T) {
 	w := buildSession(t, "chat")
-	if w.Changeset != nil && w.Tracker != nil {
+	if w.Changeset != nil {
 		t.Error("a conversation was given the changeset a coding turn is reviewed and undone through")
+	}
+	if w.Tracker != nil {
+		t.Error("a conversation was given the tracker that records what a coding turn changed")
 	}
 	if w.Processes.Manage != nil {
 		t.Error("a conversation was given a process supervisor, and it runs no commands")

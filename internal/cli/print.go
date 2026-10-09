@@ -28,7 +28,6 @@ import (
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
-	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -657,20 +656,6 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 
 	a := agent.New(messages, env.stream)
 	saved.adopt(a)
-	a.SetSteering(steering(cfg, env.prompts))
-	a.SetProgressIntervals(cfg.Behavior.ProgressIntervalCalls,
-		time.Duration(cfg.Behavior.ProgressIntervalSeconds)*time.Second)
-	a.SetScrub(session.vault.ScrubMessage)
-	if session.skills.Len() > 0 {
-		a.KeepResults(skill.IsContent)
-	}
-	// And where a result it does elide goes. An unattended run recovers its
-	// window at every round boundary rather than ahead of a person's request,
-	// so it trims far more often than a session does — and there is nobody
-	// here to notice a finding gone and ask for it again. The id the
-	// placeholder names is one this run's own evidence tool reads.
-	// See docs/capabilities/evidence.md#a-trim-makes-the-same-promise.
-	a.StoreElided(red.Keep)
 	// Auto mode's judge, where --mode auto asked for one: the same
 	// classifier a session runs, with the one answer this surface cannot
 	// give taken away (approvals.go). It reads the run's own conversation as
@@ -728,12 +713,12 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// and the search the chain dispatches are counted in the same window.
 	repeats := agent.NewRepeatDetector()
 	var gate func(provider.ToolCall) bool
-	a.SetExecutor(agent.ToolExecutor(hooks.WrapExecutor(hookPos(a.Rounds),
-		func(name string, args json.RawMessage) bool {
-			return gate(provider.ToolCall{Name: name, Arguments: string(args)})
-		},
-		hook.Executor(repeats.WrapExecutor(exec)))))
-	a.SetMaxRounds(opts.rounds(cfg))
+	chat.ApplyLoop(a, headlessLoop(cfg, env, session, ts, opts.rounds(cfg),
+		agent.ToolExecutor(hooks.WrapExecutor(hookPos(a.Rounds),
+			func(name string, args json.RawMessage) bool {
+				return gate(provider.ToolCall{Name: name, Arguments: string(args)})
+			},
+			hook.Executor(repeats.WrapExecutor(exec))))))
 	// A run with nobody in front of it is one turn by construction, which is
 	// the turn its events are filed under (headlessObserver.pos). The
 	// conversation is stamped with the same one, so the round a call was made

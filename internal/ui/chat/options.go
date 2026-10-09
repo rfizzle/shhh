@@ -202,13 +202,14 @@ func (m *Model) bindStores() {
 	m.bindSources()
 }
 
-// applyLoop writes the loop's settings onto the loop: the executor, the
+// ApplyLoop writes the loop part of the wiring onto a loop: the executor, the
 // round cap, the steering, the progress clocks, the scrub, which results are
-// kept whole, where a trim's elisions go, the retry bound and the tree check.
-// Each is zero-safe, so a value that leaves one unset leaves the loop's own
-// default.
-func (m *Model) applyLoop() {
-	w, a := m.wiring, m.agent
+// kept whole and where a trim's elisions go. Each is zero-safe, so a value
+// that leaves one unset leaves the loop's own default. The screen's
+// constructor applies it, and so do the two headless tails, which build a
+// value holding only this part
+// (docs/architecture.md#the-screen-is-handed-its-wiring-as-one-value).
+func ApplyLoop(a *agent.Agent, w Wiring) {
 	a.SetExecutor(w.Executor)
 	a.SetMaxRounds(w.MaxToolRounds)
 	a.SetSteering(w.Steering)
@@ -223,6 +224,13 @@ func (m *Model) applyLoop() {
 		// fails silently — the model just stops following it.
 		a.KeepResults(skill.IsContent)
 	}
+}
+
+// applyLoop is that, and then what only the screen has: the retry bound and
+// the tree check.
+func (m *Model) applyLoop() {
+	w, a := m.wiring, m.agent
+	ApplyLoop(a, w)
 	m.backoff.SetLimit(w.RetryLimit)
 	if w.TreeCheck != nil {
 		cfg := *w.TreeCheck

@@ -38,11 +38,11 @@ import (
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/rpc"
 	"github.com/rfizzle/shhh/internal/scope"
-	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/spf13/cobra"
 )
 
@@ -425,19 +425,6 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 
 	a := agent.New(messages, env.stream)
 	l.saved.adopt(a)
-	a.SetSteering(steering(cfg, env.prompts))
-	a.SetProgressIntervals(cfg.Behavior.ProgressIntervalCalls,
-		time.Duration(cfg.Behavior.ProgressIntervalSeconds)*time.Second)
-	a.SetScrub(session.vault.ScrubMessage)
-	if session.skills.Len() > 0 {
-		a.KeepResults(skill.IsContent)
-	}
-	// A served turn runs the unattended loop, so it recovers its window at
-	// every round boundary and trims far more often than a session does; the
-	// id the placeholder names is one this session's evidence tool reads.
-	// See docs/capabilities/evidence.md#a-trim-makes-the-same-promise.
-	a.StoreElided(red.Keep)
-	a.SetMaxRounds(maxRoundsFor(cfg, opts.maxRounds, opts.maxRoundsSet))
 	l.agent = a
 
 	// The events a client reads are the run's own, written by the same
@@ -483,11 +470,16 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// a search the chain ran are one history rather than two.
 	repeats := agent.NewRepeatDetector()
 	l.repeats = repeats
-	a.SetExecutor(agent.ToolExecutor(hooks.WrapExecutor(l.hookPos,
-		func(name string, args json.RawMessage) bool {
-			return gate(provider.ToolCall{Name: name, Arguments: string(args)})
-		},
-		hook.Executor(repeats.WrapExecutor(exec)))))
+	// The loop's settings, written by the applier the screen's constructor
+	// uses; a served turn recovers its window at every round boundary, which
+	// is why the trim's archive is among them.
+	chat.ApplyLoop(a, headlessLoop(cfg, env, session, ts,
+		maxRoundsFor(cfg, opts.maxRounds, opts.maxRoundsSet),
+		agent.ToolExecutor(hooks.WrapExecutor(l.hookPos,
+			func(name string, args json.RawMessage) bool {
+				return gate(provider.ToolCall{Name: name, Arguments: string(args)})
+			},
+			hook.Executor(repeats.WrapExecutor(exec))))))
 
 	// The unattended run's approver, opted in, is what a call the client
 	// allowed is run through — so the deny list, the containment refusal, the

@@ -567,15 +567,15 @@ second step and not this one.
 
 **What the headless surfaces get.** A scripted run and a served session
 build the same first seven phases, in their own order (see
-[the tail](#the-unattended-surfaces-share-one-tail)), and each then writes
-the loop's settings onto its own loop by hand — the same nine the screen's
-constructor applies — and builds its approver from the same policy facts the
+[the tail](#the-unattended-surfaces-share-one-tail)), and each then applies
+the loop part of the value to its own loop through the function the screen's
+constructor applies it with (`chat.ApplyLoop`), and builds its approver from the same policy facts the
 screen's cards read. They build no readers past the classifier, no surfaces
 and no opening; they stop at the loop. The value gives them the loop part
 and the policy part as two things that exist, rather than three hand-written
 copies that agree on the day they are written. Applying the loop part to a
-loop is one function, which the screen's constructor and the two tails can
-share; the policy part is what the headless approver reads, and making the
+loop is one function, which the screen's constructor and the two tails share;
+the policy part is what the headless approver reads, and making the
 approver and the screen's policy one assembly is its own change, built on
 this one and not inside it. Neither surface takes the screen's order of
 phases, for the reason the tail section gives: that would change what they
