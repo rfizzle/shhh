@@ -3412,6 +3412,61 @@ register lists it under flow control so the keymap file moves the act
 ([the chords the keyboard spends
 anyway](reserved-keys.md#kept-on-purpose)).
 
+### The editor pane
+
+`/edit <path>` in `shhh code` opens a file in a pane over the feed, for the
+person who wants to change three lines themselves without leaving the screen.
+It is a takeover on the family's chrome, and the second surface that takes
+typing: every key is the file's while it is up
+([a surface typed into keeps the draft's
+rule](principles.md#a-surface-typed-into-keeps-the-drafts-rule)).
+
+The header is the command and the path with the line count, and `modified`
+in the accent once the buffer differs from the disk; its right end is
+`[ctrl+]] keys · [esc] back` — the key list on the draft's chord, since `?`
+is a character here. Under a rule, each line is a six-column gutter — the
+mutation rail's `▎` in the add colour on every line the person changed, the
+line's number, a space — and the text, drawn plain with comments dim, the
+cursor's line number bright and the cursor a block. Beside it, past ` │ `, a
+thirty-six-column OUTLINE lists the file's top-level declarations, or a
+document's headings, with `▸` on the one the cursor is in. The outline never
+holds the keyboard: a click on an entry moves the cursor there, and says so
+under the list. A file with nothing to outline gives the text the width.
+
+Below the rail's rung the outline folds. The header names the file alone,
+drops the count and its key-list chord, and gains a second line, `in runRound ·
+internal/agent/` — the declaration the cursor is in and the file's directory
+— and the text soft-wraps under a blank gutter that keeps the rail mark of
+the line it continues.
+
+The foot row, under a second rule, offers `[ctrl+s] save · [esc] back to the
+prompt` with where the cursor stands at its right, `ln 46 · col 16` wide and
+`46:16` narrow, the column counted on the screen with a tab to the next
+stop of four. The movement and line editing are the draft's own: the arrows,
+home and end, the word and page moves, and shift with the arrows for a
+selection that what is typed replaces. A file is written back as it was read
+— its tabs, its line endings and its final newline are not the pane's to
+tidy.
+
+`[ctrl+s]` saves and keeps the pane up, and the foot row reads `wrote 219
+lines to internal/agent/loop.go` until the next key, as the transcript does
+under the `·` mark. The save is the write tool's own write, into the same
+changeset, as the person's — the turn's close counts it as `changed by you`
+([a turn ends with what
+changed](../capabilities/coding-agent.md#a-turn-ends-with-what-changed)). A
+file that moved on disk since the pane opened it is refused, `could not save
+<path>: …`, and the buffer is kept.
+
+`[esc]` over a buffer that matches the disk goes back to the prompt. Over a
+modified one it asks on the foot row — `leave without saving? [y] discard the
+change · [ctrl+s] save and leave · [esc] keep editing`, `leave unsaved? [y]
+discard · [esc] keep editing` narrow — and the typing stops until it is
+answered. `ctrl+c` backs out the way esc does, asking first, and a second
+press inside its window quits as it does over any takeover. A path outside
+the working scope is refused with the scope's own sentence and the `/add-dir`
+that brings it in; a directory, a missing file, a file that is not text and
+one past a megabyte are refused by name.
+
 ### The backlog screen
 
 The backlog is a directory of files, and it was readable two ways, each

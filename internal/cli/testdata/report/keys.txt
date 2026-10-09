@@ -213,6 +213,14 @@
   · back         esc ctrl+c · back a step  [shipped]
   · save         ctrl+s · save the profile  [shipped]
 
+  EDITOR
+
+  · save        ctrl+s · save the buffer  [shipped]
+  · back        esc ctrl+c · back to the prompt  [shipped]
+  · discard     y · discard the change  [shipped]
+  · save_leave  ctrl+s · save and leave  [shipped]
+  · keep        esc ctrl+c · keep editing  [shipped]
+
   WAIT
 
   · fallback     m · finish this turn on the fallback model  [shipped]
@@ -350,4 +358,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  257 keys · 1 moved
+  262 keys · 1 moved

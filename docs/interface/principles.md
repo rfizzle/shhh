@@ -240,6 +240,27 @@ their own; a meter has nothing to open. Each of those does have a surface a
 command opens, and that is the point: a row that took the whole screen would
 be somewhere the same click could not leave.
 
+#### A surface typed into keeps the draft's rule
+
+The draft was the one surface that takes typing, and the rule above was
+written for it. The editor pane is the second: a file open over the feed,
+where every key is a character of the file. It holds the keyboard the way a
+takeover does — nothing beside it is listening — and keeps the draft's rule
+while it does, because what it is holding the keyboard for is text. Every
+keystroke a sentence produces is the file's, `?` and `y` included; the keys it
+answers are chords, enter, which is a line, and esc, which hands the keyboard
+back. So nothing it draws offers a bare letter: its key list is on the draft's
+chord, and its own row offers the save and the way out.
+
+A question it asks stops the typing until it is answered. Esc over a buffer
+that differs from the disk does not leave and does not throw the change away;
+the foot row asks, and while it asks a letter is a key again, because nothing
+is being typed — `[y]` discards, the save chord saves and leaves, and esc goes
+back to editing. The register holds both halves: a surface it marks as typed
+into answers no key a sentence produces and answers esc, and a keymap file
+that moved one of its acts onto a letter is refused the way a letter at the
+draft is.
+
 ## The grammar
 
 What follows from the invariants, as mechanics.

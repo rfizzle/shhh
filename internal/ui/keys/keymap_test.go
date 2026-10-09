@@ -160,6 +160,25 @@ func TestLoad_RefusesABareKeyAtTheDraft(t *testing.T) {
 	}
 }
 
+// The same rule on the editor pane, where every letter is the file's: a file
+// that put the save on `s` would take that letter out of every file a person
+// edits there.
+func TestLoad_RefusesABareKeyInTheEditor(t *testing.T) {
+	restoreRegister(t)
+	err := Load(keymapFile(t, "[editor]\nsave = \"s\"\n"))
+	if err == nil {
+		t.Fatal("a bare key in the editor pane should be refused")
+	}
+	for _, want := range []string{"\"s\"", "the editor pane", "chord"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal does not name %s: %v", want, err)
+		}
+	}
+	if !Is("ctrl+s", Editor.Save) {
+		t.Errorf("a refused file left the save at %v", Editor.Save.Keys())
+	}
+}
+
 // And the two the rule excepts are still a file's to spend. Esc is the input's
 // own already, so the file has to move it off the key it is on first — which
 // is the whole demonstration: the refusal above is about letters, and esc is

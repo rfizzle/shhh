@@ -391,6 +391,10 @@ func checkDestructive() error {
 // a sentence produces, so Typed is the whole of the test — the same question
 // a surface being typed into asks of its own movement keys.
 //
+// A surface typed into as a whole — the editor pane — keeps the same rule
+// for the same reason: every letter there is the file's
+// (docs/interface/principles.md#a-surface-typed-into-keeps-the-drafts-rule).
+//
 // It is the input's rule and not every surface's. A takeover holds the
 // keyboard exclusively, so its letters are live because nothing else is
 // listening, and a surface beside the draft answers nothing at all until the
@@ -398,15 +402,20 @@ func checkDestructive() error {
 // what holds them to that.
 func checkBareAtTheDraft() error {
 	for _, s := range append(Surfaces(), Programs()...) {
-		if s.Position != Home {
+		if s.Position != Home && !s.Typed {
 			continue
 		}
 		for _, b := range s.Bindings {
 			for _, k := range b.Keys() {
-				if Typed(k) {
-					return fmt.Errorf("%q is a letter while the draft can take text, so it cannot also be %q on %s; a key live at the input is a chord",
-						k, Words(b), s.Name)
+				if !Typed(k) {
+					continue
 				}
+				if s.Typed {
+					return fmt.Errorf("%q is a letter of the text typed into %s, so it cannot also be %q there; a key live where text is typed is a chord",
+						k, s.Name, Words(b))
+				}
+				return fmt.Errorf("%q is a letter while the draft can take text, so it cannot also be %q on %s; a key live at the input is a chord",
+					k, Words(b), s.Name)
 			}
 		}
 	}
@@ -458,6 +467,7 @@ func movable() []namedGroup {
 		{"rewind", reflect.ValueOf(&Rewind).Elem()},
 		{"agent", reflect.ValueOf(&Agent).Elem()},
 		{"profile", reflect.ValueOf(&Profile).Elem()},
+		{"editor", reflect.ValueOf(&Editor).Elem()},
 		{"wait", reflect.ValueOf(&Wait).Elem()},
 		{"diff", reflect.ValueOf(&Diff).Elem()},
 		{"output", reflect.ValueOf(&Output).Elem()},

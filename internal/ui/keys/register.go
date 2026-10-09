@@ -77,6 +77,13 @@ type Surface struct {
 	Reached string
 	// Bindings are its keys, in the order it offers them.
 	Bindings []Binding
+	// Typed reports a takeover that is typed into as a whole — the editor
+	// pane. It holds the keyboard the way any takeover does and keeps the
+	// draft's rule while it does: every keystroke a sentence produces is
+	// text there, so every key it answers is a chord but enter and esc, and
+	// esc hands the keyboard back
+	// (docs/interface/principles.md#a-surface-typed-into-keeps-the-drafts-rule).
+	Typed bool
 }
 
 // SurfaceID is one row of the register, by the handle the code that draws the
@@ -124,6 +131,8 @@ const (
 	OnAgentManager
 	OnProfileDrafter
 	OnProfileDraft
+	OnEditor
+	OnEditorLeave
 	OnDiff
 	OnOutput
 	OnPreview
@@ -617,6 +626,28 @@ func register() [surfaceCount]Surface {
 				Profile.Move, Profile.Refine, Profile.RefineAll, Profile.Edit, Profile.Clear,
 				Profile.Migrate, Profile.Note, Profile.Save, Profile.ScrollUp, Profile.ScrollDown, Screen.List, Profile.Back,
 			},
+		},
+		OnEditor: {
+			// A file open in a pane over the feed, typed into. Every letter
+			// is the file's, `?` included, so the key list is on the draft's
+			// chord here, and nothing the pane draws offers a bare letter.
+			Name:     "the editor pane",
+			Section:  "docs/interface/surfaces.md#the-editor-pane",
+			Position: Takeover,
+			Typed:    true,
+			Reached:  "/edit <path> in shhh code",
+			Bindings: Editor.All(),
+		},
+		OnEditorLeave: {
+			// The question esc asks over a buffer that differs from the disk.
+			// A row of its own because the typing stops while it is up: `y`
+			// is a key here because nothing is being typed, and ctrl+s means
+			// save and leave rather than save.
+			Name:     "the editor pane's leave question",
+			Section:  "docs/interface/surfaces.md#the-editor-pane",
+			Position: Takeover,
+			Reached:  Bracket(Editor.Back) + " in the editor pane with the buffer modified",
+			Bindings: Editor.Leaving(),
 		},
 		OnDiff: {
 			Name:     "the full-screen diff",

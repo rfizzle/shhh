@@ -944,6 +944,11 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `profile.scroll_down` | `shift+down` | scroll the profile | yes |
 | `profile.back` | `esc`, `ctrl+c` | back a step | yes |
 | `profile.save` | `ctrl+s` | save the profile | yes |
+| `editor.save` | `ctrl+s` | save the buffer | yes |
+| `editor.back` | `esc`, `ctrl+c` | back to the prompt | yes |
+| `editor.discard` | `y` | discard the change | yes |
+| `editor.save_leave` | `ctrl+s` | save and leave | yes |
+| `editor.keep` | `esc`, `ctrl+c` | keep editing | yes |
 | `wait.fallback` | `m` | finish this turn on the fallback model | yes |
 | `wait.stop` | `esc` | stop waiting | yes |
 | `wait.compact` | `enter` | compact now | yes |

@@ -215,6 +215,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 			OneShot.Alternatives, OneShot.Explain, OneShot.Copy, OneShot.Save,
 			OneShot.Quit}},
 		{"Setup", []Binding{Setup.Wizard, Setup.Paste, Setup.Local}},
+		{"Editor", append(Editor.All(), Editor.Leaving()...)},
 	}
 	for _, g := range declared {
 		for _, b := range g.bs {
@@ -440,6 +441,42 @@ func TestNoBareKeyIsLiveWhileTheDraftCanTakeText(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// TestKeys_ATypedSurfaceKeepsTheDraftsRule is the rule a surface typed into
+// as a whole keeps, asked of the register: it holds the keyboard as a
+// takeover, every key it answers is one no sentence produces, and esc is one
+// of them, because esc is what hands the keyboard back
+// (docs/interface/principles.md#a-surface-typed-into-keeps-the-drafts-rule).
+func TestKeys_ATypedSurfaceKeepsTheDraftsRule(t *testing.T) {
+	typed := 0
+	for _, s := range all() {
+		if !s.Typed {
+			continue
+		}
+		typed++
+		if s.Position != Takeover {
+			t.Errorf("%s is typed into and is not a takeover", s.Name)
+		}
+		back := false
+		for _, b := range s.Bindings {
+			for _, k := range b.Keys() {
+				if Typed(k) {
+					t.Errorf("%s: %q answers %q, which is a letter of the text typed there", s.Name, Shown(b), k)
+				}
+				back = back || k == "esc"
+			}
+		}
+		if !back {
+			t.Errorf("%s answers no esc, so nothing hands the keyboard back", s.Name)
+		}
+	}
+	if typed == 0 {
+		t.Error("the register has no surface typed into, and the editor pane is one")
+	}
+	if !OnEditor.Surface().Typed || OnEditorLeave.Surface().Typed {
+		t.Error("the pane is typed into, and its leave question is not")
 	}
 }
 

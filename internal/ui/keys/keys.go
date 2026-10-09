@@ -1333,6 +1333,37 @@ var Profile = ProfileKeys{
 	Save:       Save("save the profile"),
 }
 
+// EditorKeys are the editor pane's: the second surface that is typed into,
+// and the first that is not the draft. Every keystroke a sentence produces is
+// text there, so the pane's own keys are chords and esc; its movement and its
+// line editing are the draft's, the field's own keys, and are not offered.
+// Discard, SaveLeave and Keep are the question esc asks over a buffer that
+// differs from the disk, where the typing has stopped and a letter is a key
+// again.
+type EditorKeys struct {
+	Save      Binding
+	Back      Binding
+	Discard   Binding
+	SaveLeave Binding
+	Keep      Binding
+}
+
+// All is the pane's keys while it is being typed into.
+func (k EditorKeys) All() []Binding { return []Binding{k.Save, Draft.KeyList, k.Back} }
+
+// Leaving is the question's.
+func (k EditorKeys) Leaving() []Binding { return []Binding{k.Discard, k.SaveLeave, k.Keep} }
+
+var Editor = EditorKeys{
+	Save: Save("save the buffer"),
+	// ctrl+c beside esc, as on the profile drafter: the cancel chord backs
+	// out of a surface first, and a second press inside its window quits.
+	Back:      bind("esc", "back to the prompt", "esc", "ctrl+c"),
+	Discard:   bind("y", "discard the change", "y"),
+	SaveLeave: Save("save and leave"),
+	Keep:      bind("esc", "keep editing", "esc", "ctrl+c"),
+}
+
 // WaitKeys are the surfaces that open on their own and take the keyboard with
 // them: the retry countdown and the context-pressure card, and
 // the masked key prompt an auth failure opens.

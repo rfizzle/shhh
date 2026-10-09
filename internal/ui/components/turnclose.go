@@ -54,6 +54,11 @@ type TurnChanges struct {
 	Mode string
 	// Keys are the offers the row makes, in order.
 	Keys []TurnKey
+	// ByYou is how many of the files the person wrote from the editor pane
+	// rather than the turn's own edits; the row says so after its counts,
+	// and says nothing where it is none
+	// (docs/capabilities/coding-agent.md#a-turn-ends-with-what-changed).
+	ByYou int
 	// Note is the right-aligned reversibility note.
 	Note string
 	// Back is the command that takes the turn back, said after Note where
@@ -296,6 +301,9 @@ func (c TurnClose) Summary() string {
 		if ch.Mode != "" {
 			changed = plural(ch.Files, "file") + " changed · " + ch.Mode
 		}
+		if ch.ByYou > 0 {
+			changed += fmt.Sprintf(" · %d changed by you", ch.ByYou)
+		}
 		parts = append(parts, changed)
 	} else if c.WroteNothing {
 		parts = append(parts, wroteNothing)
@@ -421,6 +429,9 @@ func (c TurnClose) View(width int) string {
 			stats = sty.dim.Render(ch.Mode)
 		}
 		stated := sty.body.Render(plural(ch.Files, "file")+" changed ") + stats
+		if ch.ByYou > 0 {
+			stated += sty.dim.Render(fmt.Sprintf(" · %d changed by you", ch.ByYou))
+		}
 		lead := closeLead(sty.accent.Render("▎"), sty.accent.Render("✎"))
 		notes := []string{sty.dim.Render(ch.Note)}
 		if ch.Back != "" {
