@@ -146,7 +146,10 @@ reads as though the boundary had been checked.
 
 The test run therefore ends on one line per distinct skip reason with its
 count, and the gate carries those lines under the test check's row whatever
-its verdict: `skipped 9: no Seatbelt containment here`. A reason is the skip
+its verdict: `skipped 9: no Seatbelt containment here`. The check's own line carries the
+total as well, `· 9 skipped` after its outcome and before its evidence, and
+says nothing where nothing skipped, so a host that cannot run a mechanism's
+tests shows a number on the row. A reason is the skip
 message up to its first colon, so the error text after it does not split one
 reason into many. Reasons naming a missing containment mechanism come first,
 because those are the tests only the integration target can stand in for;

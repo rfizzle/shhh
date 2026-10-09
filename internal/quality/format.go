@@ -90,6 +90,9 @@ func formatCheck(c CheckResult) string {
 	if c.EvidenceID != "" {
 		evidence = " [full output: evidence " + c.EvidenceID + "]"
 	}
+	// The count rides between the parenthesis and the evidence, outside both,
+	// so no reader of the parenthesised outcome sees it.
+	evidence = skippedFigure(c.Skips) + evidence
 	switch {
 	case c.Err != "":
 		fmt.Fprintf(&b, "  ! %s — %s (did not run: %s)%s\n", c.Name, c.Command, c.Err, evidence)
@@ -117,6 +120,24 @@ func formatCheck(c CheckResult) string {
 		}
 	}
 	return b.String()
+}
+
+// skippedFigure is the check line's `· 51 skipped`: the sum of the counts on
+// the check's skip-reason lines, and nothing where none skipped. A host that
+// cannot run a mechanism's tests shows as a number on the row.
+// See docs/capabilities/testing.md#a-skipped-test-is-counted.
+func skippedFigure(skips []string) string {
+	n := 0
+	for _, s := range skips {
+		if m := skipLinePattern.FindStringSubmatch(s); m != nil {
+			c, _ := strconv.Atoi(m[1])
+			n += c
+		}
+	}
+	if n == 0 {
+		return ""
+	}
+	return fmt.Sprintf(" · %d skipped", n)
 }
 
 // timesBefore is the flaked line's count of the check's earlier flakes in

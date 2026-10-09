@@ -222,3 +222,17 @@ func TestResult_OKIsTheCloseRowsReading(t *testing.T) {
 		})
 	}
 }
+
+func TestFormat_ACheckLineCountsItsSkipsOnlyWhereThereAreSome(t *testing.T) {
+	plain := formatCheck(CheckResult{Name: "test", Command: "make test", Duration: time.Second, EvidenceID: "ev1"})
+	if want := "  ✓ test — make test (1s) [full output: evidence ev1]\n"; plain != want {
+		t.Errorf("without skips = %q, want %q", plain, want)
+	}
+	skipped := formatCheck(CheckResult{Name: "test", Command: "make test", Duration: time.Second, EvidenceID: "ev1",
+		Skips: []string{SkipLine(3, "no Seatbelt containment here"), SkipLine(2, "no git")}})
+	want := "  ✓ test — make test (1s) · 5 skipped [full output: evidence ev1]\n" +
+		"    skipped 3: no Seatbelt containment here\n    skipped 2: no git\n"
+	if skipped != want {
+		t.Errorf("with skips = %q, want %q", skipped, want)
+	}
+}
