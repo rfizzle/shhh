@@ -47,8 +47,7 @@ hold 2.5
 keys Enter
 snap 07-receipt "committed 1 file as"
 hold 3
-keys C-c
-sleep 0.3
+# ctrl+c backs out of the turn list and arms the quit in one press; the second press quits.
 keys C-c
 snap 08-quit-armed "again quits"
 keys C-c

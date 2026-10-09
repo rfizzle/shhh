@@ -27,7 +27,7 @@ snap 05-filled "Method · refined once" "Read the diff, then the files it touche
 keys Tab Down Enter
 snap 06-diff "critic.toml as it stands" "+## Purpose" "Replace its file"
 keys Up Enter
-snap 07-saved "Saved critic"
+snap 07-saved "wrote critic to"
 keys "/agents" Enter
 keys Down
 snap 08-current "[enter] open it" "[e] open its file"
