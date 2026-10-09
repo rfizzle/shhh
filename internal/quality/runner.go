@@ -90,11 +90,18 @@ type EvidenceFunc func(tool string, content []byte) (string, error)
 
 // CheckResult is one check's outcome within a run.
 type CheckResult struct {
-	Name       string
-	Command    string
-	ExitCode   int
-	TimedOut   bool
-	Err        string // spawn or containment failure: the check did not run to completion
+	Name     string
+	Command  string
+	ExitCode int
+	TimedOut bool
+	Err      string // spawn or containment failure: the check did not run to completion
+	// NotRun is why a check was left out of the run: a scoped check failed
+	// and ended the run first. It is not a pass, and it is not the check's
+	// failure either.
+	NotRun string
+	// Scope is the packages a scoped check was run over, as the result
+	// words them; empty for a check that is not scoped.
+	Scope      []string
 	Output     string // bounded excerpt (tail) of combined stdout/stderr
 	EvidenceID string
 	Duration   time.Duration
@@ -117,7 +124,9 @@ type CheckResult struct {
 }
 
 // OK reports whether the check ran and passed.
-func (c CheckResult) OK() bool { return c.Err == "" && !c.TimedOut && c.ExitCode == 0 }
+func (c CheckResult) OK() bool {
+	return c.NotRun == "" && c.Err == "" && !c.TimedOut && c.ExitCode == 0
+}
 
 // Result is one gate run's full outcome, fingerprinted against the tree it
 // ran over.
@@ -209,6 +218,10 @@ type Runner struct {
 	// Observe is.
 	// See docs/capabilities/testing.md#a-flake-is-counted-where-it-happened.
 	Flakes FlakeFunc
+	// Changed names the files a scoped check is scoped to, from the root of
+	// the repository; nil reads the dirty tree, which is what a turn that
+	// has not committed has changed.
+	Changed func() []string
 
 	mu sync.Mutex
 	// scrub rewrites a check's captured output before any of it is kept;
@@ -373,12 +386,17 @@ func (r *Runner) execute(ctx context.Context, suiteName string) *Result {
 	}
 
 	argvs := make([][]string, len(suite.Checks))
+	paths := make([]string, len(suite.Checks))
 	for i, check := range suite.Checks {
 		path, err := resolveExe(r.Workspace, check.Exe)
 		if err != nil {
 			return blocked(fmt.Sprintf("check %q: %v", check.Name, err))
 		}
-		argv := append([]string{path}, check.Args...)
+		paths[i] = path
+		// A scoped check is wrapped here over the whole module, which is
+		// what proves the wrap works before anything runs; it is wrapped
+		// again with its packages once they are known.
+		argv := append([]string{path}, wholeModuleScope().expand(check.Args)...)
 		if r.Wrap != nil {
 			if argv, err = r.Wrap(argv, suite.AllowWrite); err != nil {
 				return blocked(fmt.Sprintf("check %q: containment failed: %v", check.Name, err))
@@ -401,18 +419,65 @@ func (r *Runner) execute(ctx context.Context, suiteName string) *Result {
 
 	before := TakeFingerprint(r.Workspace)
 	res.Checks = make([]CheckResult, len(suite.Checks))
-	sem := make(chan struct{}, cfg.effectiveParallel())
-	var wg sync.WaitGroup
+	var first, rest []int
 	for i, check := range suite.Checks {
-		wg.Add(1)
-		go func(i int, check Check) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-			res.Checks[i] = r.runCheck(ctx, r.Workspace, suiteName, check, argvs[i], timeout)
-		}(i, check)
+		if check.scoped() {
+			first = append(first, i)
+		} else {
+			rest = append(rest, i)
+		}
 	}
-	wg.Wait()
+	sem := make(chan struct{}, cfg.effectiveParallel())
+	scopes := make([]scope, len(suite.Checks))
+	run := func(idx []int) {
+		var wg sync.WaitGroup
+		for _, i := range idx {
+			wg.Add(1)
+			go func(i int, check Check) {
+				defer wg.Done()
+				sem <- struct{}{}
+				defer func() { <-sem }()
+				res.Checks[i] = r.runCheck(ctx, r.Workspace, suiteName, check, argvs[i], timeout)
+				res.Checks[i].Scope = scopes[i].label
+			}(i, suite.Checks[i])
+		}
+		wg.Wait()
+	}
+	if len(first) > 0 {
+		// Scoped checks run alone and first: the point of them is a verdict
+		// in seconds, which a smaller run beside the whole suite would not
+		// give. The scope is read once, so every scoped check is about the
+		// same packages.
+		sc := r.changedScope(ctx, timeout)
+		var runnable []int
+		for _, i := range first {
+			scopes[i] = sc
+			argv := append([]string{paths[i]}, sc.expand(suite.Checks[i].Args)...)
+			if r.Wrap != nil {
+				var err error
+				if argv, err = r.Wrap(argv, suite.AllowWrite); err != nil {
+					res.Checks[i] = CheckResult{Name: suite.Checks[i].Name, Command: commandOf(suite.Checks[i]),
+						Err: "containment failed: " + err.Error(), Scope: sc.label}
+					continue
+				}
+			}
+			argvs[i] = argv
+			runnable = append(runnable, i)
+		}
+		run(runnable)
+		r.rerunFailed(ctx, suiteName, suite, argvs, timeout, before, res.Checks)
+		if failedAmong(first, res.Checks) {
+			reason := NotRunScoped
+			if ctx.Err() != nil {
+				reason = "the run was cancelled before it started"
+			}
+			for _, i := range rest {
+				res.Checks[i] = CheckResult{Name: suite.Checks[i].Name, Command: commandOf(suite.Checks[i]), NotRun: reason}
+			}
+			rest = nil
+		}
+	}
+	run(rest)
 	r.rerunFailed(ctx, suiteName, suite, argvs, timeout, before, res.Checks)
 
 	res.Fingerprint = TakeFingerprint(r.Workspace)
@@ -548,6 +613,22 @@ func (r *Runner) spawnCheck(ctx context.Context, dir, suite string, check Check,
 	cr.Skips = skips
 	cr.Output = Excerpt(rest, MaxInlineBytes)
 	return cr
+}
+
+// commandOf is a check's command line as the result words it: the argv as
+// written, placeholder and all, so the line does not change with the change.
+func commandOf(c Check) string {
+	return strings.Join(append([]string{c.Exe}, c.Args...), " ")
+}
+
+// failedAmong reports whether any of the checks at idx did not pass.
+func failedAmong(idx []int, checks []CheckResult) bool {
+	for _, i := range idx {
+		if !checks[i].OK() {
+			return true
+		}
+	}
+	return false
 }
 
 func anyErrored(checks []CheckResult) bool {

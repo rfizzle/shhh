@@ -93,20 +93,23 @@ func formatCheck(c CheckResult) string {
 	// The count rides between the parenthesis and the evidence, outside both,
 	// so no reader of the parenthesised outcome sees it.
 	evidence = skippedFigure(c.Skips) + evidence
+	name := c.Name + scopeWords(c.Scope)
 	switch {
+	case c.NotRun != "":
+		return fmt.Sprintf("  - %s — %s (not run: %s)\n", name, c.Command, c.NotRun)
 	case c.Err != "":
-		fmt.Fprintf(&b, "  ! %s — %s (did not run: %s)%s\n", c.Name, c.Command, c.Err, evidence)
+		fmt.Fprintf(&b, "  ! %s — %s (did not run: %s)%s\n", name, c.Command, c.Err, evidence)
 	case c.TimedOut:
-		fmt.Fprintf(&b, "  ✗ %s — %s (timed out after %s)%s\n", c.Name, c.Command, roundDuration(c.Duration), evidence)
+		fmt.Fprintf(&b, "  ✗ %s — %s (timed out after %s)%s\n", name, c.Command, roundDuration(c.Duration), evidence)
 	case c.ExitCode != 0:
-		fmt.Fprintf(&b, "  ✗ %s — %s (exit %d, %s)%s\n", c.Name, c.Command, c.ExitCode, roundDuration(c.Duration), evidence)
+		fmt.Fprintf(&b, "  ✗ %s — %s (exit %d, %s)%s\n", name, c.Command, c.ExitCode, roundDuration(c.Duration), evidence)
 	case c.Flaked:
 		// The evidence named is the first run's, the failure: the pass is
 		// the rerun, and what made the check flake is what a reader opens.
-		fmt.Fprintf(&b, "  ~ %s — %s (flaked: failed then passed, %s + %s%s)%s\n", c.Name, c.Command,
+		fmt.Fprintf(&b, "  ~ %s — %s (flaked: failed then passed, %s + %s%s)%s\n", name, c.Command,
 			roundDuration(c.Duration), roundDuration(c.RerunDuration), timesBefore(c.FlakedBefore), evidence)
 	default:
-		fmt.Fprintf(&b, "  ✓ %s — %s (%s)%s\n", c.Name, c.Command, roundDuration(c.Duration), evidence)
+		fmt.Fprintf(&b, "  ✓ %s — %s (%s)%s\n", name, c.Command, roundDuration(c.Duration), evidence)
 	}
 	for _, s := range c.Skips {
 		b.WriteString("    " + s + "\n")
@@ -120,6 +123,23 @@ func formatCheck(c CheckResult) string {
 		}
 	}
 	return b.String()
+}
+
+// maxScopeWords is how many packages a scoped check's line names before it
+// counts the rest.
+const maxScopeWords = 4
+
+// scopeWords is the packages a scoped check ran over, in the parenthesis
+// after its name: `(internal/quality, internal/cli)`. A check that is not
+// scoped has none.
+func scopeWords(scope []string) string {
+	switch {
+	case len(scope) == 0:
+		return ""
+	case len(scope) > maxScopeWords:
+		return fmt.Sprintf(" (%s, +%d more)", strings.Join(scope[:maxScopeWords], ", "), len(scope)-maxScopeWords)
+	}
+	return " (" + strings.Join(scope, ", ") + ")"
 }
 
 // skippedFigure is the check line's `· 51 skipped`: the sum of the counts on

@@ -42,6 +42,45 @@ type Check struct {
 	Name string   `json:"name"`
 	Exe  string   `json:"exe"`
 	Args []string `json:"args"`
+	// Scope, when "packages", has the runner fill PackagesPlaceholder in
+	// Args with the Go packages of the changed files, and run the check
+	// before the unscoped ones. Empty is a check over whatever its argv
+	// says, as it always was.
+	// See docs/capabilities/testing.md#how-do-quality-gates-stay-repeatable.
+	Scope string `json:"scope,omitempty"`
+}
+
+// ScopePackages is the one scope a check may declare: it runs first, over
+// the packages the changed files belong to.
+const ScopePackages = "packages"
+
+// PackagesPlaceholder is where a scoped check's argv takes its packages. An
+// argument that is exactly it becomes one argument per package; an argument
+// that holds it among other text takes the packages joined by a space, which
+// is the form a make variable reads.
+const PackagesPlaceholder = "{packages}"
+
+// scoped reports whether the check runs ahead of the suite over the changed
+// packages.
+func (c Check) scoped() bool { return c.Scope == ScopePackages }
+
+// validateScope refuses a scope that would run without the packages it names,
+// and a placeholder with no scope to fill it: either would hand the tool a
+// literal "{packages}" and report whatever it made of that as a verdict.
+func (c Check) validateScope() error {
+	has := false
+	for _, a := range c.Args {
+		has = has || strings.Contains(a, PackagesPlaceholder)
+	}
+	switch {
+	case c.Scope != "" && !c.scoped():
+		return fmt.Errorf("scope is %q; the only scope is %q", c.Scope, ScopePackages)
+	case c.scoped() && !has:
+		return fmt.Errorf("scope %q needs an argument holding %s", ScopePackages, PackagesPlaceholder)
+	case !c.scoped() && has:
+		return fmt.Errorf("%s is filled only for a check with scope %q", PackagesPlaceholder, ScopePackages)
+	}
+	return nil
 }
 
 // Suite is a named set of checks.
@@ -171,6 +210,9 @@ func (c Config) validate() error {
 			}
 			if check.Exe == "" {
 				return fmt.Errorf("suite %q: check %q has no exe", name, check.Name)
+			}
+			if err := check.validateScope(); err != nil {
+				return fmt.Errorf("suite %q: check %q: %w", name, check.Name, err)
 			}
 		}
 	}

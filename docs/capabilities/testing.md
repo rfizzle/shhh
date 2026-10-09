@@ -73,6 +73,23 @@ the same way. The closing check's row marks it stale, and a backlog run's
 verify stage counts it as a failure, reports it in the same words, and does
 not close the item on it, whichever surface is working the backlog.
 
+A check may be **scoped** to what the turn changed. A scoped check writes the
+placeholder `{packages}` in its arguments, and the gate fills it with the Go
+packages the changed files belong to, asked of `go list` through the same
+containment the checks run in. Where the changed files name no package, one is
+gone, or the list is too long to be a scope, it is the whole module, so a run
+with nothing changed runs what it always has. Two rules hold it to its place.
+A scoped check runs first, alone, before the unscoped checks, and a failure in
+it ends the run: the verdict is a fail, and every check behind it says it was
+not run because a scoped check failed first, so a red result arrives in the
+time the changed packages take and not the suite's. And the scoped run is an
+ordering and an early exit, never a verdict: a pass still requires every
+check, scoped and unscoped, so the whole suite runs after the scoped check
+passes, and the narrower run can only make the verdict arrive sooner, never
+make it kinder. The result names what each scoped check ran over beside its
+name, and the model is told the same in the gate tool's description. This
+repository's own suite scopes its tests this way, ahead of the whole run.
+
 A check that fails is run once more, on its own, before the verdict is
 reached: after the whole suite has finished, each check that exited with a
 failure is run again with nothing else of the suite beside it, so a test that

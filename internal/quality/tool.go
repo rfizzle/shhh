@@ -31,6 +31,7 @@ func ToolDefinition() provider.Tool {
 			"Suites are named in the project's trusted config (" + ConfigRelPath + "); you pick a suite by name and can never supply command text. " +
 			"Action \"run\" executes a suite (blocking; suite defaults to \"" + DefaultSuite + "\") and returns pass/fail/blocked/cancelled with each check's outcome. " +
 			"A check that failed and then passed on its rerun is reported as flaked and counts as passed. " +
+			"A scoped check runs first, over the packages you changed, and a failure in it ends the run: the checks after it are reported as not run. " +
 			"Action \"result\" re-reports the last run and whether it is stale (the tree changed since). " +
 			"Run the gate before declaring a task complete, and treat any verdict other than a non-stale pass as not done.",
 		Parameters: json.RawMessage(`{

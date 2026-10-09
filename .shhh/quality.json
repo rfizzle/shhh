@@ -44,6 +44,15 @@
       "allow_write": true,
       "checks": [
         {
+          "name": "changed tests",
+          "exe": "make",
+          "args": [
+            "test",
+            "PROJECT_PACKAGES={packages}"
+          ],
+          "scope": "packages"
+        },
+        {
           "name": "test",
           "exe": "make",
           "args": [
