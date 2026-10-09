@@ -63,6 +63,9 @@ second: true
 `)
 	release := writeQueryFile(t, dir, "release.yaml", `date: 2001-01-01
 at: 2001-12-14t21:59:43.10-05:00
+spaced: 2001-12-14 21:59:43.10 -5
+zoneless: 2001-12-14 21:59:43.10
+zulu: 2001-12-14T21:59:43Z
 quoted: "2001-01-01"
 `)
 	cargo := writeQueryFile(t, dir, "Cargo.toml", `[package]
@@ -98,7 +101,10 @@ name = "b"
 		{"a YAML alias is the value it names", map[string]any{"paths": []string{ci}, "expression": "select(.jobs) | .jobs.lint.timeout"}, "10"},
 		{"YAML documents are inputs in turn", map[string]any{"paths": []string{ci}, "expression": "keys | length"}, "2\n1"},
 		{"a YAML date keeps its own text", map[string]any{"paths": []string{release}, "expression": ".date"}, "2001-01-01"},
-		{"a YAML timestamp keeps its offset", map[string]any{"paths": []string{release}, "expression": ".at"}, "2001-12-14T21:59:43.1-05:00"},
+		{"a YAML timestamp keeps its own text and offset", map[string]any{"paths": []string{release}, "expression": ".at"}, "2001-12-14t21:59:43.10-05:00"},
+		{"a space-separated YAML timestamp keeps its text", map[string]any{"paths": []string{release}, "expression": ".spaced"}, "2001-12-14 21:59:43.10 -5"},
+		{"a zoneless YAML timestamp is not given a Z", map[string]any{"paths": []string{release}, "expression": ".zoneless"}, "2001-12-14 21:59:43.10"},
+		{"a YAML Z timestamp keeps its Z", map[string]any{"paths": []string{release}, "expression": ".zulu"}, "2001-12-14T21:59:43Z"},
 		{"a quoted YAML date is the same string", map[string]any{"paths": []string{release}, "expression": ".quoted == .date"}, "true"},
 		{"a TOML datetime keeps its offset", map[string]any{"paths": []string{cargo}, "expression": ".package.released"}, "1979-05-27T07:32:00Z"},
 		{"a TOML local date stays a date", map[string]any{"paths": []string{cargo}, "expression": ".package.born"}, "1979-05-27"},

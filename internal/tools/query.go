@@ -1073,18 +1073,18 @@ func decodeYAML(path string, r io.Reader, each func(any) error) error {
 	}
 }
 
-// keepYAMLDates marks every date-only timestamp as a string, so it comes back
-// as the file wrote it — 2001-01-01, the way a TOML local date does — rather
-// than as a time at midnight UTC, which would put a clock and a zone on a
-// value that had neither. An alias is not followed: the node it names is
-// visited where it is defined.
+// keepYAMLDates marks every timestamp as a string, so it comes back as the file
+// wrote it — 2001-01-01, 2001-12-14 21:59:43.10, 2001-12-14t21:59:43-05:00 —
+// rather than as a time, which would put a clock and a zone on a date that had
+// neither, a Z on a time with no zone, and a new spelling on one with an
+// offset. A TOML datetime is a typed value the format defines and is not
+// touched. An alias is not followed: the node it names is visited where it is
+// defined.
 func keepYAMLDates(n *yaml.Node) {
 	switch n.Kind {
 	case yaml.ScalarNode:
-		if len(n.Value) >= len("2006-1-2") && n.Value[4] == '-' && n.ShortTag() == "!!timestamp" {
-			if _, err := time.Parse("2006-1-2", n.Value); err == nil {
-				n.Tag = "!!str"
-			}
+		if n.ShortTag() == "!!timestamp" {
+			n.Tag = "!!str"
 		}
 	case yaml.AliasNode:
 	default:
