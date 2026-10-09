@@ -51,6 +51,27 @@ leave without saving? [y] discard the change · [ctrl+s] save and leave · [esc]
 ⏸ manual                                                                                                                      
 edit · [esc] keep editing
 
+· ctrl+c asked the same question · no quit window is open
+/edit loop.go · 9 lines · modified                                                                  [ctrl+]] keys · [esc] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+▎   1 // mine                                                                           │ OUTLINE 2 declarations
+    2 package agent                                                                     │  const limit
+    3                                                                                   │  func rounds
+    4 // limit is how many rounds a turn may run.                                       │ 
+    5 const limit = 25                                                                  │ a click moves the cursor there
+    6                                                                                   │ 
+    7 func rounds() int {                                                               │ 
+    8     return limit                                                                  │ 
+    9 }                                                                                 │ 
+                                                                                        │ 
+                                                                                        │ 
+                                                                                        │ 
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+leave without saving? [y] discard the change · [ctrl+s] save and leave · [esc] keep editing                       ln 2 · col 1
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+⏸ manual                                                                                                                      
+edit · [esc] keep editing
+
 ── ansi ────────────────────────────────────────────────────
 · opened over the feed
 ␛[1;38;5;254m/edit␛[m␛[38;5;254m loop.go␛[m␛[38;5;244m · 8 lines␛[m                                                                             ␛[38;5;244m[ctrl+]] keys · [esc] back␛[m
@@ -89,6 +110,27 @@ edit · [esc] keep editing
 ␛[38;5;254mleave without saving?␛[m ␛[38;5;254m[y]␛[m␛[38;5;244m discard the change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save and leave␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep editing␛[m                       ␛[38;5;244mln 2 · col 1␛[m
 
 · the panel it leaves · the way out, and no letter
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;254m⏸ manual␛[m                                                                                                                      
+␛[38;5;244medit · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep editing␛[m
+
+· ctrl+c asked the same question · no quit window is open
+␛[1;38;5;254m/edit␛[m␛[38;5;254m loop.go␛[m␛[38;5;244m · 9 lines␛[m␛[38;5;244m · ␛[m␛[38;5;254mmodified␛[m                                                                  ␛[38;5;244m[ctrl+]] keys · [esc] back␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;254m▎␛[m␛[38;5;244m   1␛[m ␛[38;5;244m// mine␛[m                                                                          ␛[38;5;244m │ ␛[m␛[1;38;5;254mOUTLINE␛[m ␛[38;5;244m2 declarations␛[m
+ ␛[38;5;254m   2␛[m ␛[7;38;5;254mp␛[m␛[38;5;254mackage agent␛[m                                                                    ␛[38;5;244m │ ␛[m ␛[38;5;244mconst limit␛[m
+ ␛[38;5;244m   3␛[m                                                                                  ␛[38;5;244m │ ␛[m ␛[38;5;244mfunc rounds␛[m
+ ␛[38;5;244m   4␛[m ␛[38;5;244m// limit is how many rounds a turn may run.␛[m                                      ␛[38;5;244m │ ␛[m
+ ␛[38;5;244m   5␛[m ␛[38;5;254mconst limit = 25␛[m                                                                 ␛[38;5;244m │ ␛[m␛[38;5;244ma click moves the cursor there␛[m
+ ␛[38;5;244m   6␛[m                                                                                  ␛[38;5;244m │ ␛[m
+ ␛[38;5;244m   7␛[m ␛[38;5;254mfunc rounds() int {␛[m                                                              ␛[38;5;244m │ ␛[m
+ ␛[38;5;244m   8␛[m ␛[38;5;254m    return limit␛[m                                                                 ␛[38;5;244m │ ␛[m
+ ␛[38;5;244m   9␛[m ␛[38;5;254m}␛[m                                                                                ␛[38;5;244m │ ␛[m
+                                                                                       ␛[38;5;244m │ ␛[m
+                                                                                       ␛[38;5;244m │ ␛[m
+                                                                                       ␛[38;5;244m │ ␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;254mleave without saving?␛[m ␛[38;5;254m[y]␛[m␛[38;5;244m discard the change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save and leave␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep editing␛[m                       ␛[38;5;244mln 2 · col 1␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m⏸ manual␛[m                                                                                                                      
 ␛[38;5;244medit · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep editing␛[m

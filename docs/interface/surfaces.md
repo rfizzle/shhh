@@ -3465,8 +3465,12 @@ draft.
 modified one it asks on the foot row — `leave without saving? [y] discard the
 change · [ctrl+s] save and leave · [esc] keep editing`, `leave unsaved? [y]
 discard · [esc] keep editing` narrow — and the typing stops until it is
-answered. `ctrl+c` backs out the way esc does, asking first, and a second
-press inside its window quits as it does over any takeover. A path outside
+answered. `ctrl+c` backs out the way esc does, asking first; over a modified
+buffer that is the whole of it. The press that asks opens no quit window, and
+a second `ctrl+c` while the question is up answers it as `keep editing`, so
+no run of presses leaves with the change unsaved: quit needs the buffer saved
+with `[ctrl+s]` or discarded with `[y]` first, after which `ctrl+c` twice
+quits as it does anywhere. A path outside
 the working scope is refused with the scope's own sentence and the `/add-dir`
 that brings it in; a directory, a missing file, a file that is not text and
 one past a megabyte are refused by name.

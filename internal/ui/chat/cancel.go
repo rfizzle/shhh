@@ -160,6 +160,9 @@ func quitChord() string { return keys.Shown(keys.Draft.Cancel) }
 // press of the same chord inside it carries the quit out. prior is the window
 // as it stood before this key, which updateKey consumed on the way in.
 func (m Model) quitPress(prior armedPress) (tea.Model, tea.Cmd) {
+	if m.editorUnsaved() {
+		return m, nil
+	}
 	if prior.openOn(armQuit, quitChord()) {
 		cmd := m.quitNow()
 		return m, cmd
@@ -168,13 +171,26 @@ func (m Model) quitPress(prior armedPress) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// editorUnsaved reports a typed buffer in the editor pane that is not on
+// disk. The chord that escalates to a quit never reaches it: over such a
+// buffer the first press is the pane's own cancel, which asks, and a press
+// that asks opens no window, because a quit needs the buffer saved or
+// discarded on purpose first (docs/interface/surfaces.md#the-editor-pane).
+// It reads the held screen rather than the state, so a key list or a card
+// drawn over the pane does not hide the buffer.
+func (m Model) editorUnsaved() bool {
+	s := m.screens.editPane()
+	return s != nil && s.pane.Modified()
+}
+
 // surfaceKey routes a key to the surface holding the keyboard, answering the
 // quit chord around it. The chord escalates here as it does everywhere:
 // cancel first, then quit. The first press does what the surface has always
 // let it do — back out of a picker, a preview or the key list, deny on an
 // approval card — and opens the quit window; a second press of the same
 // chord inside the window leaves the session. A single press never quits
-// over a card. It is answered once here rather than at the top of each
+// over a card. Over a modified editor buffer the cancel is the surface's and
+// nothing more: no window opens, so no run of presses quits. It is answered once here rather than at the top of each
 // surface's own key handler, where the copies drifted into cancelling
 // different halves of what was still running. Two branches of the ladder are
 // not routed through here: the quit confirm, because that surface is the
@@ -182,6 +198,9 @@ func (m Model) quitPress(prior armedPress) (tea.Model, tea.Cmd) {
 // it.
 func (m Model) surfaceKey(msg tea.KeyPressMsg, to func(tea.KeyPressMsg) (tea.Model, tea.Cmd)) (tea.Model, tea.Cmd) {
 	if !keys.Match(msg, keys.Draft.Cancel) {
+		return to(msg)
+	}
+	if m.editorUnsaved() {
 		return to(msg)
 	}
 	if m.pressed.openOn(armQuit, quitChord()) {

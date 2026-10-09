@@ -41,7 +41,10 @@ nowhere.
 The reason is what each chord is known for. `ctrl+c` is the chord everyone
 knows as cancel-and-exit, so it escalates the way it does in every terminal
 program: it stops a working run, clears a draft, backs out of or denies a surface,
-then quits on a second press of the same chord. `ctrl+d` is end of input in a shell and a
+then quits on a second press of the same chord. The one surface that holds work
+the chord could lose, the editor pane over a modified buffer, answers the first press
+with its leave question and opens no window, so
+[the pane](surfaces.md#the-editor-pane) never quits unsaved. `ctrl+d` is end of input in a shell and a
 tmux chord, so it goes back to the register as reserved
 ([reserved keys](reserved-keys.md)). The artboard closes the departure by
 drawing the offer as `[ctrl+c] ×2 quit`.
