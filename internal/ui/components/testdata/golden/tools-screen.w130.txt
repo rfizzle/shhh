@@ -10,6 +10,23 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
+· a server still starting · what it costs until it answers, and how long it has
+/mcp · 3 servers · 2 of 4 up                                                                                   [?] keys · [q] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ✓ built-in  up · 14 tools                              │ linear                                                         starting
+mcp servers                                              │ 
+  ✓ docs  up · 2 tools, 1 prompt                         │   state     starting · 1m 04s
+❯ ▸ linear  starting · 1m 04s                            │   reaches   npx -y mcp-remote@latest https://mcp.linear.app/sse
+  ▸ tracker  starting · 1m 04s                           │   costs     its tools are not in this session yet; they join at the
+web                                                      │             first turn after it answers
+  ✓ fetch  up · 1 tool                                   │ 
+  ⊘ search  off · no web search                          │   what would move it
+                                                         │     nothing yet: it has until 1m 30s (timeout_seconds) to answer, and
+                                                         │     reads error if it does not
+
+[↑↓/jk] move · [esc] back to the prompt                                 where this session's tools came from, as the rail reads it
+
 · the built-in toolset · every tool it registered
 /mcp · 3 servers · 2 of 4 up                                                                                   [?] keys · [q] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -97,6 +114,23 @@ web                                                      │
 [↑↓/jk] move · [esc] back to the prompt                                 where this session's tools came from, as the rail reads it
 
 ── ansi ────────────────────────────────────────────────────
+· a server still starting · what it costs until it answers, and how long it has
+␛[1;97m/mcp␛[m␛[38;5;241m · 3 servers␛[m␛[38;5;241m · 2 of 4 up␛[m                                                                                   ␛[38;5;241m[?] keys · [q] back␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[38;5;252m✓ built-in␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m14 tools␛[m                             ␛[38;5;241m │ ␛[m␛[1;97mlinear␛[m                                                         ␛[38;5;241mstarting␛[m
+␛[1;94mmcp servers␛[m                                             ␛[38;5;241m │ ␛[m
+  ␛[38;5;252m✓ docs␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m2 tools, 1 prompt␛[m                        ␛[38;5;241m │ ␛[m  ␛[38;5;243mstate     ␛[m␛[38;5;252mstarting · 1m 04s␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m▸ linear  starting · 1m 04s                           ␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mreaches   ␛[m␛[38;5;252mnpx -y mcp-remote@latest https://mcp.linear.app/sse␛[m
+  ␛[38;5;252m▸ tracker␛[m  ␛[38;5;241mstarting␛[m␛[38;5;241m · ␛[m␛[38;5;241m1m 04s␛[m                          ␛[38;5;241m │ ␛[m  ␛[38;5;243mcosts     ␛[m␛[38;5;252mits tools are not in this session yet; they join at the␛[m
+␛[1;94mweb␛[m                                                     ␛[38;5;241m │ ␛[m            ␛[38;5;252mfirst turn after it answers␛[m
+  ␛[38;5;252m✓ fetch␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 tool␛[m                                  ␛[38;5;241m │ ␛[m
+  ␛[38;5;252m⊘ search␛[m  ␛[38;5;241moff␛[m␛[38;5;241m · ␛[m␛[38;5;241mno web search␛[m                         ␛[38;5;241m │ ␛[m  ␛[38;5;243mwhat would move it␛[m
+                                                        ␛[38;5;241m │ ␛[m    ␛[38;5;241mnothing yet: it has until 1m 30s (timeout_seconds) to answer, and␛[m
+                                                        ␛[38;5;241m │ ␛[m    ␛[38;5;241mreads error if it does not␛[m
+
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                 ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m
+
 · the built-in toolset · every tool it registered
 ␛[1;97m/mcp␛[m␛[38;5;241m · 3 servers␛[m␛[38;5;241m · 2 of 4 up␛[m                                                                                   ␛[38;5;241m[?] keys · [q] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m

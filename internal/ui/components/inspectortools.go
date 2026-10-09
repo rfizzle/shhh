@@ -7,6 +7,7 @@ package components
 
 import (
 	"fmt"
+	"time"
 
 	"charm.land/lipgloss/v2"
 )
@@ -38,13 +39,18 @@ type InspectorToolSource struct {
 	Name  string
 	State ToolSourceState
 	// Note is what the state amounts to in the host's own words — a tool
-	// count for a source that answered, the reason for one that did not.
+	// count for a source that answered, the reason for one that did not, the
+	// seconds a starting one has been at it.
 	Note string
+	// Since is when a starting source's connect began. The host reads its
+	// own clock against it for the note at each paint, which is what keeps a
+	// row's clock from running past the moment the source answered.
+	Since time.Time
 }
 
 // ToolSourceState is a source's standing, and the block draws it as a glyph
 // and a word so a monochrome terminal reads the same as a colour one. It is
-// four states rather than the transport's own vocabulary because the reader's
+// five states rather than the transport's own vocabulary because the reader's
 // question is whether the tools are there, and the note beside it says why
 // when they are not.
 type ToolSourceState int
@@ -59,6 +65,10 @@ const (
 	ToolSourceOff
 	// ToolSourceFailed: it was tried and did not answer.
 	ToolSourceFailed
+	// ToolSourceStarting: it is being tried and has not answered yet. It is
+	// not up, so the heading does not count it and the fold keeps its row;
+	// it turns up or error the moment its connect ends.
+	ToolSourceStarting
 )
 
 // toolsBlock is the TOOLS block. It sits under AGENTS because the two answer
@@ -124,8 +134,10 @@ func ToolSourceWord(s ToolSourceState) string {
 
 // toolSourceTone is a source's glyph, its word and the weight the word
 // carries. The glyph is the distinction a monochrome terminal reads: the
-// same four marks every other surface uses for done, waiting on a person,
-// left out and failed.
+// same five marks every other surface uses for done, waiting on a person,
+// left out, failed and in motion. A starting source's mark is still — the
+// rail draws no spinner, and its ticking note is the motion — and its word
+// is quiet, because nothing about it is waiting on the reader.
 func toolSourceTone(s ToolSourceState) (string, string, lipgloss.Style) {
 	switch s {
 	case ToolSourceUp:
@@ -134,6 +146,8 @@ func toolSourceTone(s ToolSourceState) (string, string, lipgloss.Style) {
 		return sty.accent.Render("⚠"), "blocked", sty.body
 	case ToolSourceOff:
 		return sty.dim.Render("⊘"), "off", sty.dim
+	case ToolSourceStarting:
+		return sty.spinText.Render("▸"), "starting", sty.dim
 	}
 	return sty.err.Render("✗"), "error", sty.body
 }

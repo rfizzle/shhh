@@ -10,6 +10,28 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
+· a server still starting · what it costs until it answers, and how long it has
+/mcp · 3 servers · 2 of 4 up             [?] keys · [q] back
+────────────────────────────────────────────────────────────
+
+  ✓ built-in  up · 14 tools
+mcp servers
+  ✓ docs  up · 2 tools, 1 prompt
+❯ ▸ linear  starting · 1m 04s                               
+  ▸ tracker  starting · 1m 04s
+web
+↓ 2 more
+────────────────────────────────────────────────────────────
+linear                                              starting
+
+  state     starting · 1m 04s
+  reaches   npx -y mcp-remote@latest
+            https://mcp.linear.app/sse
+  costs     its tools are not in this session yet; they join
+… (+5 more rows)
+
+[esc] back to the prompt
+
 · the built-in toolset · every tool it registered
 /mcp · 3 servers · 2 of 4 up             [?] keys · [q] back
 ────────────────────────────────────────────────────────────
@@ -126,6 +148,28 @@ built-in                                                  up
 [esc] back to the prompt
 
 ── ansi ────────────────────────────────────────────────────
+· a server still starting · what it costs until it answers, and how long it has
+␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m             ␛[38;5;244m[?] keys · [q] back␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
+
+  ␛[38;5;254m✓ built-in␛[m  ␛[38;5;244mup␛[m␛[38;5;244m · ␛[m␛[38;5;244m14 tools␛[m
+␛[1;38;5;254mmcp servers␛[m
+  ␛[38;5;254m✓ docs␛[m  ␛[38;5;244mup␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 tools, 1 prompt␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m▸ linear  starting · 1m 04s                               ␛[m
+  ␛[38;5;254m▸ tracker␛[m  ␛[38;5;244mstarting␛[m␛[38;5;244m · ␛[m␛[38;5;244m1m 04s␛[m
+␛[1;38;5;254mweb␛[m
+␛[38;5;244m↓ 2 more␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
+␛[1;38;5;254mlinear␛[m                                              ␛[38;5;244mstarting␛[m
+
+  ␛[38;5;244mstate     ␛[m␛[38;5;254mstarting · 1m 04s␛[m
+  ␛[38;5;244mreaches   ␛[m␛[38;5;254mnpx -y mcp-remote@latest␛[m
+            ␛[38;5;254mhttps://mcp.linear.app/sse␛[m
+  ␛[38;5;244mcosts     ␛[m␛[38;5;254mits tools are not in this session yet; they join␛[m
+␛[38;5;244m… (+5 more rows)␛[m
+
+␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+
 · the built-in toolset · every tool it registered
 ␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m             ␛[38;5;244m[?] keys · [q] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m

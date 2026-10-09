@@ -1913,6 +1913,47 @@ func TestGolden_InspectorRail(t *testing.T) {
 				Up: 1,
 			},
 		}
+		// The session has just opened and every server is still connecting:
+		// each row's note is the seconds since its connect began, and the
+		// heading counts only what is up.
+		starting := InspectorRail{
+			Tools: &InspectorTools{
+				Sources: []InspectorToolSource{
+					{Name: "built-in", State: ToolSourceUp, Note: "18 tools"},
+					{Name: "docs", State: ToolSourceStarting, Note: "3.1s"},
+					{Name: "linear", State: ToolSourceStarting, Note: "3.1s"},
+					{Name: "tracker", State: ToolSourceStarting, Note: "3.1s"},
+				},
+				Up: 1,
+			},
+		}
+		// One answered and one ran out its bound: each row turned when its
+		// connect ended, beside one still starting.
+		turned := InspectorRail{
+			Tools: &InspectorTools{
+				Sources: []InspectorToolSource{
+					{Name: "built-in", State: ToolSourceUp, Note: "18 tools"},
+					{Name: "docs", State: ToolSourceUp, Note: "9 tools"},
+					{Name: "linear", State: ToolSourceStarting, Note: "14s"},
+					{Name: "tracker", State: ToolSourceFailed, Note: "timeout"},
+				},
+				Up: 2,
+			},
+		}
+		// Past four rows the healthy ones fold first: a starting row keeps
+		// its place beside the failure.
+		foldStarting := InspectorRail{
+			Tools: &InspectorTools{
+				Sources: []InspectorToolSource{
+					{Name: "built-in", State: ToolSourceUp, Note: "18 tools"},
+					{Name: "linear", State: ToolSourceStarting, Note: "41s"},
+					{Name: "tracker", State: ToolSourceFailed, Note: "timeout"},
+					{Name: "slack", State: ToolSourceStarting, Note: "41s"},
+				},
+				Up:   3,
+				More: 2,
+			},
+		}
 		// The recall budget left memories out of the prompt, and this is the
 		// only place that says so. The session has no external source, so the
 		// block is here for that row alone.
@@ -2204,6 +2245,9 @@ func TestGolden_InspectorRail(t *testing.T) {
 			{Label: "a reading the session has outrun", View: stale.View(width, 0)},
 			{Label: "where the tools came from, and which answered", View: sources.View(width, 0)},
 			{Label: "a server that broke keeps its name and cuts its note", View: broke.View(width, 0)},
+			{Label: "every server still starting, each with its seconds", View: starting.View(width, 0)},
+			{Label: "a starting server beside one that answered and one that timed out", View: turned.View(width, 0)},
+			{Label: "the fold keeps every starting row before any that is up", View: foldStarting.View(width, 0)},
 			{Label: "memories the recall budget could not carry", View: omitted.View(width, 0)},
 			{Label: "the session map · the keyboard is in writer-2", View: mapped.View(width, 0)},
 			{Label: "the map with the rail shorter than it (height 12)", View: mapped.View(width, 12)},

@@ -296,6 +296,8 @@ func toolsGlyph(st ToolSourceState) string {
 		return "⚠"
 	case ToolSourceOff:
 		return "⊘"
+	case ToolSourceStarting:
+		return "▸"
 	}
 	return "✗"
 }
@@ -304,7 +306,7 @@ func toolsGlyph(st ToolSourceState) string {
 // reading, where up and off are quiet and a failure is what the eye lands on.
 func toolsTone(st ToolSourceState) FieldTone {
 	switch st {
-	case ToolSourceUp, ToolSourceOff:
+	case ToolSourceUp, ToolSourceOff, ToolSourceStarting:
 		return ToneQuiet
 	case ToolSourceFailed:
 		return ToneRisk

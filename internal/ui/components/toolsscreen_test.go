@@ -161,8 +161,25 @@ func TestGolden_ToolsScreen(t *testing.T) {
 		all := toolsFixture()
 		return &ToolsScreen{Sources: []ToolsSource{all[0], all[9], all[10]}, maxLines: 20}
 	}
+	// /mcp a minute in, with two servers still connecting: the door opens on
+	// the first source that is not up, and its account says what it costs
+	// and when it stops being a question.
+	starting := func() *ToolsScreen {
+		all := toolsFixture()
+		linear := ToolsSource{Group: ToolsServers,
+			Source:      InspectorToolSource{Name: "linear", State: ToolSourceStarting, Note: "1m 04s"},
+			Detail:      "npx -y mcp-remote@latest https://mcp.linear.app/sse",
+			Consequence: "its tools are not in this session yet; they join at the first turn after it answers",
+			Fix:         []string{"nothing yet: it has until 1m 30s (timeout_seconds) to answer, and reads error if it does not"}}
+		tracker := linear
+		tracker.Source.Name, tracker.Detail = "tracker", "npx -y tracker-mcp"
+		s := &ToolsScreen{Sources: []ToolsSource{all[0], all[1], linear, tracker, all[9], all[10]}, maxLines: 20}
+		s.Focus = 2
+		return s
+	}
 	captureGolden(t, "tools-screen", "the tools screen", goldenWidths, func(width int) []golden.Panel {
 		return []golden.Panel{
+			{Label: "a server still starting · what it costs until it answers, and how long it has", View: starting().View(width)},
 			{Label: "the built-in toolset · every tool it registered", View: toolsScreen(0).View(width)},
 			{Label: "a project server · waiting on the checkout, [a] answers after asking", View: toolsScreen(2).View(width)},
 			{Label: "a server that did not start · what it costs, and /mcp's words for what would move it", View: toolsScreen(3).View(width)},

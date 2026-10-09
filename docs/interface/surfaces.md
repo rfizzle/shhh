@@ -1805,7 +1805,18 @@ call — so the sources say whether they are up in a glyph and a word, with the
 count of tools each brought or the one thing standing in the way. It is
 present only when something outside shhh was configured, because a session
 with nothing but its own tools has no way to have lost any, and it folds past
-a few rows: whether what was configured is up is the question. The heading and
+a few rows: whether what was configured is up is the question. A source is
+in one of five states — up, blocked on a person, off on purpose, error, and
+starting — and the fifth is a server the session opened without waiting for
+([a server that did not answer is a
+row](../capabilities/mcp.md#a-server-that-did-not-answer-is-a-row)): its mark
+is the still one every surface uses for something in motion, in the
+spinner's colour, its word is quiet because nothing about it waits on the
+reader, and its note is the seconds since its connect began, ticking in the
+rail's one clock format. The row turns up or error the moment the connect
+ends, not at the turn boundary where the server's tools join. The heading
+counts only what is up, and the fold takes the healthy rows first, so a
+server still starting keeps its row beside one that failed. The heading and
 the fold marker open the whole of it (`/mcp`, [the supporting
 screens](#the-supporting-screens)): every source, the tools each brought, and
 for one that is not up what would move it.
@@ -3271,8 +3282,9 @@ server's in the very words the listing `shhh mcp` prints
 ([a server that did not answer is a
 row](../capabilities/mcp.md#a-server-that-did-not-answer-is-a-row)), a
 missing search backend's in the doctor's — then every tool it registered.
-A language server says it starts on the first file it owns until one has
-been touched. A server the checkout declared carries the checkout's answer
+A server still starting says what it costs until it answers and how long it
+has before it reads error. A language server says it starts on the first
+file it owns until one has been touched. A server the checkout declared carries the checkout's answer
 as `[a]`: trust it where it is not trusted, withdraw it where it is, asked
 first in the doctor's confirm, recorded by the one writer `/trust` and `shhh
 mcp`'s own `[a]` use, and said under the row and in the transcript; like

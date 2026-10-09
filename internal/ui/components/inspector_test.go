@@ -905,6 +905,7 @@ func TestInspectorTools_EveryStateStatesItself(t *testing.T) {
 		{ToolSourceBlocked, "⚠ docs"},
 		{ToolSourceOff, "⊘ docs"},
 		{ToolSourceFailed, "✗ docs"},
+		{ToolSourceStarting, "▸ docs"},
 	}
 	for _, tc := range cases {
 		r := InspectorRail{Tools: &InspectorTools{
