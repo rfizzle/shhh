@@ -94,6 +94,13 @@ func TestReportGoldens(t *testing.T) {
 		{"metrics.empty", metricsReport(metricsData{Window: "last 7 days"}).Render(80)},
 		{"memory", goldenMemoryReport().Render(80)},
 		{"memory.empty", memoryReport(memory.NewStore(nil, "/repo"), nil, memoryWayOut, goldenNow).Render(80)},
+		{"memory.declined", declinedReport("/repo", []storage.DeclinedProposal{
+			{ID: 3, Root: "/repo", Kind: storage.ProposalMemory, Text: "prefers tabs over spaces",
+				DeclinedAt: goldenNow.Add(-2 * time.Hour)},
+			{ID: 1, Root: "/repo", Kind: storage.ProposalMemory, Text: "always run the whole suite before a commit",
+				DeclinedAt: goldenNow.Add(-50 * time.Hour)},
+		}, goldenNow).Render(80)},
+		{"memory.declined.empty", declinedReport("/repo", nil, goldenNow).Render(80)},
 		{"observe", observeReport(goldenObserve()).Render(80)},
 		{"observe.w110", observeReport(goldenObserve()).Render(110)},
 		{"observe.empty", observeReport(observeData{Window: "30d"}).Render(80)},

@@ -33,6 +33,7 @@ var releasedMigrations = []string{
 	"aefd0811c920e9a5", // 48: agent_events.tool_ms
 	"e60b89d96ddc2dea", // 49: agent_events.person_ms
 	"fc63a107a89a0285", // 50: agent_events.delivered
+	"01aea1e77eff5f44", // 51: proposals_declined
 }
 
 func migrationDigest(m string) string {

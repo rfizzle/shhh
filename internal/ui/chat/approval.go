@@ -569,6 +569,9 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	// through. A read-only mode falls through to the policy below, which
 	// refuses the write like any other.
 	if req.kind == approvalMemory && !m.policy.mode.ReadOnly() {
+		if m.memoryDeclinedBefore(req) {
+			return m.refuseDeclinedMemory(req)
+		}
 		m.recordDecision(observe.DecisionAsk, observe.ReasonMemory)
 		m.openMemoryAsk(req)
 		m.armConfirm(req)
@@ -1027,6 +1030,10 @@ func (m Model) declineApprovalWith(note string) (tea.Model, tea.Cmd) {
 		content = "error: the user declined to run this command"
 	case approvalMemory:
 		content = "error: the user declined to save this memory; do not re-propose it this session"
+		// Every way of saying no to a memory ends here — the card's own
+		// row, Esc, a queue answer — so this is the one place the no is
+		// written down for the sessions after this one.
+		m.recordMemoryDecline(req)
 	}
 	if note != "" {
 		content = "error: " + note

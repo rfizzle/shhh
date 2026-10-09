@@ -586,6 +586,21 @@ already confirmed — rewording a memory is not restating it — and both mark i
 as freshly stated, so the entry you have just fixed sorts to the top of the
 list rather than below the ones you left alone.
 
+A no is written down, which is what keeps a declined proposal from being
+raised again in the next session as well as this one. It is kept for the
+project, in the same local database as the memories and not in the checkout:
+it is your answer and not a fact about the code, and a file in the tree would
+travel with a clone to someone who never gave it. A proposal is recognised by
+its text with case, spacing and a closing full stop set aside, because those
+are the differences a model makes when it proposes the same sentence again; a
+sentence that says something else is a different proposal, and you are asked.
+The model is told up front that a text you declined before is refused, and
+when it proposes one anyway no card opens and it is told the no stands. Told
+in advance, it takes that as your answer and moves on, where a refusal it did
+not expect reads as an obstacle and gets the sentence reworded until it is
+past. A no is not forever: `shhh memory declined` lists what this project
+declined, and `shhh memory undecline <id>` takes one back.
+
 ### Recall reaches every surface
 
 The same memories are recalled wherever a conversation opens: the session on

@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -146,23 +147,111 @@ func TestRemember_SaveGlobalWithNote(t *testing.T) {
 	}
 }
 
+// declineStore is a store the declines of one test's sessions are written to,
+// standing in for the data directory's: two models opened on it are two
+// sessions in the same checkout.
+func declineStore(t *testing.T) *storage.DB {
+	t.Helper()
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "shhh.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	return db
+}
+
+// withDeclines wires a session's memory to the store's declines, the way the
+// session's assembly does.
+func withDeclines(m Model, db *storage.DB) Model {
+	m.memory.Declined = func(text string) bool {
+		return db.ProposalDeclined("/proj", storage.ProposalMemory, text)
+	}
+	m.memory.Decline = func(text string) error {
+		return db.DeclineProposal("/proj", storage.ProposalMemory, text)
+	}
+	return m
+}
+
+// Declining saves no memory and writes the no down, whichever way it is
+// said: the card's own row and Esc are the same answer.
 func TestRemember_Declined(t *testing.T) {
-	m, saves := memoryModel(t, agent.ModeManual)
-	updated, _ := m.Update(rememberCall())
-	m = handover(t, updated.(Model))
+	for _, key := range []tea.KeyPressMsg{
+		{Code: tea.KeyEscape},
+		{Code: '3', Text: "3"},
+	} {
+		db := declineStore(t)
+		m, saves := memoryModel(t, agent.ModeManual)
+		m = withDeclines(m, db)
+		updated, _ := m.Update(rememberCall())
+		m = handover(t, updated.(Model))
 
-	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
-	m = updated.(Model)
+		updated, _ = m.Update(key)
+		m = updated.(Model)
+		if m.memoryAsk != nil {
+			// The numbered row is focused by its digit and taken by enter.
+			updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+			m = updated.(Model)
+		}
 
+		if len(*saves) != 0 {
+			t.Fatalf("%s: declining must not save a memory", key)
+		}
+		if !db.ProposalDeclined("/proj", storage.ProposalMemory, "prefers table-driven tests") {
+			t.Fatalf("%s: the decline was not written down", key)
+		}
+		last := m.Messages()[len(m.Messages())-1]
+		if last.Role != provider.RoleTool || !strings.Contains(last.Content, "declined to save this memory") {
+			t.Fatalf("%s: expected a decline tool result, got %+v", key, last)
+		}
+		if m.state != stateStreaming {
+			t.Fatalf("%s: stream should resume after the decline, got state %d", key, m.state)
+		}
+	}
+}
+
+// A text declined in one session is refused in the next without a card, and
+// the model is told the no stands. The same sentence with a capital and a
+// full stop is the same proposal; a different sentence is still asked about.
+func TestRemember_ADeclinedTextIsNotAskedAgain(t *testing.T) {
+	db := declineStore(t)
+	first, _ := memoryModel(t, agent.ModeManual)
+	first = withDeclines(first, db)
+	updated, _ := first.Update(rememberCall())
+	press(t, handover(t, updated.(Model)), "esc")
+
+	next, saves := memoryModel(t, agent.ModeAuto)
+	next = withDeclines(next, db)
+	updated, _ = next.Update(toolCallsMsg{calls: []provider.ToolCall{{
+		ID:        "call_again",
+		Name:      memory.RememberToolName,
+		Arguments: `{"text":"Prefers  table-driven tests.","kind":"lesson"}`,
+	}}})
+	next = updated.(Model)
+
+	if next.memoryAsk != nil || next.approval.request != nil {
+		t.Fatal("a text declined before must not open a card")
+	}
 	if len(*saves) != 0 {
-		t.Fatal("declining must not persist anything")
+		t.Fatal("a text declined before must not be saved")
 	}
-	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "declined to save this memory") {
-		t.Fatalf("expected a decline tool result, got %+v", last)
+	if got, want := lastToolMessage(t, next).Content, "error: "+memory.DeclinedBefore; got != want {
+		t.Fatalf("the model should be told the no stands: got %q, want %q", got, want)
 	}
-	if m.state != stateStreaming {
-		t.Fatalf("stream should resume after the decline, got state %d", m.state)
+	if memory.DeclinedBefore != "the user declined this before; do not propose it" {
+		t.Fatalf("the sentence the model reads changed: %q", memory.DeclinedBefore)
+	}
+	if next.state != stateStreaming {
+		t.Fatalf("the stream should resume after the refusal, got state %d", next.state)
+	}
+
+	other, _ := memoryModel(t, agent.ModeManual)
+	other = withDeclines(other, db)
+	updated, _ = other.Update(toolCallsMsg{calls: []provider.ToolCall{{
+		ID: "call_other", Name: memory.RememberToolName,
+		Arguments: `{"text":"prefers short commit subjects","kind":"preference"}`,
+	}}})
+	if updated.(Model).memoryAsk == nil {
+		t.Fatal("a proposal nobody declined must still be asked about")
 	}
 }
 

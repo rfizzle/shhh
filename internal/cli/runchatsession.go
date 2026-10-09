@@ -500,6 +500,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			EntryText:    memoryText(mem),
 			Rewrite:      memoryRewriter(mem),
 			Omitted:      session.memoryOmitted,
+			Declined:     memoryDeclined(db, mem.Project()),
+			Decline:      memoryDecliner(db, mem.Project()),
 		})
 	}
 	// web_fetch and spawn_agent go through the approval queue as generic

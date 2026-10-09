@@ -14,12 +14,23 @@ import (
 // memory on its own, in any permission mode.
 const RememberToolName = "remember"
 
+// DeclinedBefore is the whole of what the model is told when it proposes a
+// text the person already declined: no card is opened, so this sentence is
+// the answer, and it says the no stands rather than that it was just given.
+const DeclinedBefore = "the user declined this before; do not propose it"
+
 // ToolDefinition is the remember tool the agent session registers when
 // durable memory is available.
+//
+// It says a text declined before is refused because that refusal arrives as
+// a result to a proposal the model believes is new: told up front, it reads
+// the result as the person's standing answer and moves on, rather than
+// rewording the sentence to get it past the check
+// (docs/capabilities/sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project).
 func ToolDefinition() provider.Tool {
 	return provider.Tool{
 		Name:        RememberToolName,
-		Description: "Propose one short memory to keep across sessions: a user preference, a project convention, a correction the user made, or a lesson learned. The user reviews every proposal and chooses to save it (to this project or globally) or to decline; a declined proposal returns an error result — accept it and do not re-propose. Keep entries short, general, and durable; never session-specific facts, file contents, or secrets.",
+		Description: "Propose one short memory to keep across sessions: a user preference, a project convention, a correction the user made, or a lesson learned. The user reviews every proposal and chooses to save it (to this project or globally) or to decline; a declined proposal returns an error result — accept it and do not re-propose, and a text the user declined before is refused without asking them again. Keep entries short, general, and durable; never session-specific facts, file contents, or secrets.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {

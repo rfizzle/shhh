@@ -1,0 +1,6 @@
+  shhh memory declined — 2 proposals · /repo
+
+  ⊘ d3  memory · 2h ago
+      prefers tabs over spaces
+  ⊘ d1  memory · sat
+      always run the whole suite before a commit

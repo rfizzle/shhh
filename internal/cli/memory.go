@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -168,6 +169,57 @@ func memoryRewriter(store *memory.Store) func(id int64, text string) (string, er
 	}
 }
 
+// memoryDeclined answers whether the person declined a proposed memory of
+// this text in this project before.
+func memoryDeclined(db *storage.DB, root string) func(text string) bool {
+	return func(text string) bool { return db.ProposalDeclined(root, storage.ProposalMemory, text) }
+}
+
+// memoryDecliner writes a declined memory proposal down for this project, in
+// the same row a decline from any other surface writes.
+func memoryDecliner(db *storage.DB, root string) func(text string) error {
+	return func(text string) error { return db.DeclineProposal(root, storage.ProposalMemory, text) }
+}
+
+// declinedReport is what this project declined, newest first: the kind and
+// when as the row, the text as declined under it — it is the thing the reader
+// is deciding whether to take back.
+func declinedReport(root string, declined []storage.DeclinedProposal, now time.Time) report.Report {
+	r := report.Report{
+		Title:   "shhh memory declined",
+		Subject: joinDetail(countOf(len(declined), "proposal", "proposals"), root),
+	}
+	if len(declined) == 0 {
+		return emptyInto(r, "nothing declined", "a proposal declined in a session is listed here")
+	}
+	var section report.Section
+	for _, p := range declined {
+		section.Rows = append(section.Rows, report.Row{
+			State:   report.Skip,
+			Name:    declinedID(p.ID),
+			Subject: p.Kind,
+			Detail:  historyAgo(p.DeclinedAt, now),
+			Body:    []string{p.Text},
+		})
+	}
+	r.Sections = append(r.Sections, section)
+	return r
+}
+
+// declinedID is how a declined proposal is named: `d3`, the id undecline
+// takes. Its own letter, so it is never mistaken for a memory's `m3` by a
+// reader about to type forget.
+func declinedID(id int64) string { return fmt.Sprintf("d%d", id) }
+
+// parseDeclinedID reads a `d3` or a bare `3`.
+func parseDeclinedID(s string) (int64, error) {
+	id, err := strconv.ParseInt(strings.TrimPrefix(strings.TrimSpace(s), "d"), 10, 64)
+	if err != nil || id < 1 {
+		return 0, fmt.Errorf("invalid declined id %q (use the [dN] id from shhh memory declined)", s)
+	}
+	return id, nil
+}
+
 // memoryListing renders the entries visible to this workspace. The way out of
 // an empty listing is the form of the command the reader is already using —
 // a shell user told to type a slash command has been told nothing.
@@ -327,7 +379,56 @@ func newMemoryCmd() *cobra.Command {
 		},
 	})
 
+	// A declined proposal is not raised again in this project, and these two
+	// are how a no is read back and taken back: a no that could not be undone
+	// would be one the person has to be sure of before giving, which is the
+	// opposite of what a card should ask
+	// (docs/capabilities/sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project).
+	cmd.AddCommand(&cobra.Command{
+		Use:   "declined",
+		Short: "List the proposals declined in this project",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return withDeclined(func(db *storage.DB, root string) error {
+				declined, err := db.DeclinedProposals(root)
+				if err != nil {
+					return err
+				}
+				return report.Fprint(cmd.OutOrStdout(), declinedReport(root, declined, time.Now()))
+			})
+		},
+	})
+
+	cmd.AddCommand(&cobra.Command{
+		Use:   "undecline <id>",
+		Short: "Take back a declined proposal (e.g. d3), so it can be proposed again",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return withDeclined(func(db *storage.DB, root string) error {
+				id, err := parseDeclinedID(args[0])
+				if err != nil {
+					return err
+				}
+				if err := db.UndeclineProposal(root, id); err != nil {
+					return err
+				}
+				return report.Fprintln(cmd.OutOrStdout(), report.Done("took back", declinedID(id)))
+			})
+		},
+	})
+
 	return cmd
+}
+
+// withDeclined opens storage for one CLI invocation and runs fn against it
+// and this workspace's project root, the key a decline is recorded under.
+func withDeclined(fn func(db *storage.DB, root string) error) error {
+	db, err := openStore()
+	if err != nil {
+		return fmt.Errorf("storage unavailable: %w", err)
+	}
+	defer db.Close()
+	return fn(db, openMemoryStore(db).Project())
 }
 
 // memoryWayOut is what an empty `shhh memory` points at: the form of the

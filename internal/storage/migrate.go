@@ -632,6 +632,25 @@ var migrations = []string{
 	`ALTER TABLE agent_events ADD COLUMN tool_ms INTEGER;`,
 	`ALTER TABLE agent_events ADD COLUMN person_ms INTEGER;`,
 	`ALTER TABLE agent_events ADD COLUMN delivered INTEGER;`,
+
+	// A proposal the person declined — a memory, and whatever else is offered
+	// on a card — keyed on the checkout, the kind and the hash of its
+	// normalised text, so it is not raised again in any later session
+	// (docs/capabilities/sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project).
+	// The row lives here rather than in the checkout because a no is one
+	// person's answer and not a fact about the code: a file in the checkout
+	// would travel with a clone to a colleague who never said it, and writing
+	// one would leave the tree dirty for an answer that changed nothing in it.
+	// The text is kept beside the hash so the list can say what was declined.
+	`CREATE TABLE IF NOT EXISTS proposals_declined (
+		id          INTEGER PRIMARY KEY,
+		root        TEXT NOT NULL,
+		kind        TEXT NOT NULL,
+		hash        TEXT NOT NULL,
+		text        TEXT NOT NULL DEFAULT '',
+		declined_at TEXT NOT NULL,
+		UNIQUE (root, kind, hash)
+	);`,
 }
 
 const (

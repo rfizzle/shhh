@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"bytes"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -128,5 +130,70 @@ func TestMemoryTextAndRewriter(t *testing.T) {
 
 	if _, err := rewrite(e.ID, "   "); err == nil {
 		t.Fatal("an empty rewrite should surface as an error")
+	}
+}
+
+// runMemory runs `shhh memory` with args against the store XDG_DATA_HOME
+// points at.
+func runMemory(t *testing.T, args ...string) (string, error) {
+	t.Helper()
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs(append([]string{"memory"}, args...))
+	err := cmd.Execute()
+	return out.String(), err
+}
+
+// A no given on a card in a session is listed by `shhh memory declined` and
+// taken back by `shhh memory undecline`, after which the session that asks
+// next is asked again.
+func TestMemory_DeclinedListsAndUndeclineTakesBack(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := memory.ProjectScope(cwd)
+	db, err := storage.Open()
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	declined, decline := memoryDeclined(db, root), memoryDecliner(db, root)
+	if err := decline("prefers tabs over spaces"); err != nil {
+		t.Fatalf("decline: %v", err)
+	}
+	if !declined("Prefers tabs over spaces.") {
+		t.Fatal("the session's decline was not remembered")
+	}
+	must(t, db.Close())
+
+	out, err := runMemory(t, "declined")
+	if err != nil || !strings.Contains(out, "⊘ d1  memory") || !strings.Contains(out, "prefers tabs over spaces") {
+		t.Fatalf("declined: %q %v", out, err)
+	}
+	if _, err := runMemory(t, "undecline", "banana"); err == nil || !strings.Contains(err.Error(), "invalid declined id") {
+		t.Fatalf("a mistyped id is refused, got %v", err)
+	}
+	out, err = runMemory(t, "undecline", "d1")
+	if err != nil || !strings.Contains(out, "✓ took back d1") {
+		t.Fatalf("undecline: %q %v", out, err)
+	}
+	if _, err := runMemory(t, "undecline", "d1"); err == nil || !strings.Contains(err.Error(), "not found") {
+		t.Fatalf("taking back a no that is not there is an error, got %v", err)
+	}
+	out, err = runMemory(t, "declined")
+	if err != nil || !strings.Contains(out, "nothing declined") {
+		t.Fatalf("declined after undecline: %q %v", out, err)
+	}
+
+	db, err = storage.Open()
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	defer db.Close()
+	if memoryDeclined(db, root)("prefers tabs over spaces") {
+		t.Fatal("a no taken back still refuses")
 	}
 }

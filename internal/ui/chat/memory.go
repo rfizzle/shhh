@@ -45,6 +45,46 @@ type Memory struct {
 	// nothing in a session changes it: recall runs once, before the first
 	// turn, and an entry edited now is carried by the next session.
 	Omitted int
+	// Declined reports whether the person declined a proposal of this text
+	// in this project before, in this session or an earlier one.
+	Declined func(text string) bool
+	// Decline writes the person's no to a proposed text down, so no later
+	// session asks it again.
+	Decline func(text string) error
+}
+
+// memoryDeclinedBefore reports whether the pending proposal is one the person
+// has already said no to. A proposal the product promised not to raise again
+// is answered before it reaches a card
+// (docs/capabilities/sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project).
+func (m Model) memoryDeclinedBefore(req *approvalRequest) bool {
+	return m.memory.Declined != nil && m.memory.Declined(req.memoryDraft.Text)
+}
+
+// refuseDeclinedMemory answers a proposal the person declined before without
+// asking them: the standing no is the answer, and the model is told it stands.
+// The decision is recorded under the memory reason rather than the person's,
+// because nobody answered anything just now — a rate of the person's own
+// refusals that counted these would count one no once per re-proposal.
+func (m Model) refuseDeclinedMemory(req *approvalRequest) (tea.Model, tea.Cmd) {
+	m.recordDecision(observe.DecisionDeny, observe.ReasonMemory)
+	m.approval.request = nil
+	m.approval.scope = scopeReach{}
+	m.agent.ResolveApproval(m.refusedResult(req.call, "error: "+memory.DeclinedBefore))
+	m.appendCallRow(req.call.ID, deniedEntry(req, decidedByYou, "", 0))
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	return m.advanceApprovalQueue()
+}
+
+// recordMemoryDecline writes a declined proposal down. A write that fails
+// leaves the proposal to be asked about again next session, which is the
+// answer that costs a question rather than one that drops a memory unseen,
+// so the failure does not stop the decline the person just made.
+func (m Model) recordMemoryDecline(req *approvalRequest) {
+	if m.memory.Decline != nil {
+		_ = m.memory.Decline(req.memoryDraft.Text)
+	}
 }
 
 // WithMemory enables the /memory command and the remember-tool confirm flow.
