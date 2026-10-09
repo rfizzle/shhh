@@ -333,6 +333,21 @@ end — the same messages, the same calls, the same results. The two are
 readings of one run rather than two accounts of it, so nothing has to read
 both.
 
+**The kinds are a closed set, and four are reserved.** The stream's kinds are
+`text`, `progress`, `tool-call`, `tool-result`, `decision`, `signal`, `usage`,
+`agent`, `source` and `close`, and the reserved `document/recommendation`,
+`document/ripple`, `document/gate` and `document/score`.
+
+The `document/*` family is for a session that one day reads a document and
+says something about it: a recommendation, the other places a change ripples
+to, a gate the document passes or fails, a score. Nothing writes them today
+and a run's stream is unchanged. They are named now so a later client renders
+one stream. Each line would carry a document object holding the document's
+path, the subject it is about, a verdict in the record's own words and, for a
+score, the number. They ride the session's event notification like every
+other kind and are never a second notification. A kind is added by editing
+this list and the set in `internal/observe` together.
+
 ## Everything the session has, unless somebody has to answer
 
 An unattended run registers what a session registers: the same tools under the

@@ -673,6 +673,10 @@ type jsonEvent struct {
 	// Source belongs to the source line alone: one row of the sources
 	// ledger, in the shape the transcript's sources field holds.
 	Source *jsonSource `json:"source,omitempty"`
+	// Document belongs to the document/* kinds, which are reserved and not
+	// yet written: nil on every line today.
+	// See docs/capabilities/headless.md#the-stream-is-the-record-as-it-happens.
+	Document *jsonDocument `json:"document,omitempty"`
 	// Exit and Final belong to the close line alone. Exit is a pointer so
 	// that the code the run is about to exit with is stated even when it is
 	// zero, which is the one value a reader most needs to see written down.
@@ -710,6 +714,16 @@ func (e jsonEvent) MarshalJSON() ([]byte, error) {
 		plain
 		Final json.RawMessage `json:"final"`
 	}{plain(e), e.answer})
+}
+
+// jsonDocument is the payload the reserved document/* kinds will carry: which
+// document, what the finding is about, and the finding in the record's own
+// words. Nothing builds one yet.
+type jsonDocument struct {
+	Path    string `json:"path"`
+	Subject string `json:"subject,omitempty"`
+	Verdict string `json:"verdict,omitempty"`
+	Score   *int   `json:"score,omitempty"`
 }
 
 // jsonAgent is one child of the session as a reader of the stream is told

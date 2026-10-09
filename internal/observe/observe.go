@@ -637,6 +637,29 @@ const (
 	EventClose = "close"
 )
 
+// Reserved event kinds for document-shaped events: a recommendation, a ripple,
+// a gate and a score, about a document the session has open. Nothing emits
+// them yet. They are named here so the vocabulary is decided with the rest of
+// the stream's rather than beside it, and they ride session/event like every
+// other kind.
+// See docs/capabilities/headless.md#the-stream-is-the-record-as-it-happens.
+const (
+	EventDocumentRecommendation = "document/recommendation"
+	EventDocumentRipple         = "document/ripple"
+	EventDocumentGate           = "document/gate"
+	EventDocumentScore          = "document/score"
+)
+
+// EventKinds is every kind the stream may carry, the reserved document kinds
+// included. A kind is added here and in the documented list together.
+func EventKinds() []string {
+	return []string{
+		EventText, EventProgress, EventToolCall, EventToolResult, EventDecision,
+		EventSignal, EventUsage, EventAgent, EventSource, EventClose,
+		EventDocumentRecommendation, EventDocumentRipple, EventDocumentGate, EventDocumentScore,
+	}
+}
+
 // ProgressCheckpoint is SignalProgress's only reason. It is a closed word
 // because the content-free record may say that a checkpoint happened without
 // carrying the model's public prose.
