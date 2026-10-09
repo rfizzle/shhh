@@ -1,9 +1,7 @@
 package chat
 
 import (
-	"bytes"
 	"image"
-	"image/png"
 	"strings"
 	"testing"
 	"time"
@@ -100,10 +98,11 @@ func TestNotice_TreeMovedIsAFooterMidStep(t *testing.T) {
 // and the picture its result carried filed after it through the receipt.
 func pictureModel(t *testing.T) Model {
 	t.Helper()
-	var shot bytes.Buffer
-	if err := png.Encode(&shot, image.NewNRGBA(image.Rect(0, 0, 32, 16))); err != nil {
-		t.Fatal(err)
-	}
+	// Padded to a fixed size: the footer prints the picture's bytes, and what
+	// image/png writes for the same pixels changes between Go releases (90
+	// bytes on go1.27, 93 on go1.26), which is a red CI for a golden captured
+	// on either.
+	shot := fixedPNG(t, image.NewNRGBA(image.Rect(0, 0, 32, 16)), 128)
 	m := focusModel(t)
 	m = m.WithMouse(true)
 	m.transcript = nil
@@ -113,7 +112,7 @@ func pictureModel(t *testing.T) Model {
 	result := "shot.png is an image (image/png), attached to this result for models that can see one; it has no text to return."
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: args, toolResult: result})
 	m.appendPicture("", m.callReceipt("read_file", args, result, provider.Attachment{
-		Kind: provider.AttachmentImage, Name: "shot.png", MediaType: "image/png", Data: shot.Bytes()}))
+		Kind: provider.AttachmentImage, Name: "shot.png", MediaType: "image/png", Data: shot}))
 	m.invalidateRenderCache()
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoTop()

@@ -17,7 +17,7 @@
 
   ⚙ read shot.png
     Reading the capture
-    ▣ shot.png · 32×16 · 90 B                   opens like an attachment
+    ▣ shot.png · 32×16 · 128 B                  opens like an attachment
 
 
 
@@ -28,7 +28,7 @@
 
   ⚙ read shot.png
     Reading the capture
-❯   ▣ shot.png · 32×16 · 90 B                   opens like an attachment  
+❯   ▣ shot.png · 32×16 · 128 B                  opens like an attachment  
 
 
 
@@ -40,7 +40,7 @@
 
   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244mshot.png␛[m
     ␛[38;5;254mReading the capture␛[m
-    ␛[38;5;244m▣␛[m ␛[38;5;244mshot.png␛[m␛[38;5;244m · 32×16 · 90 B␛[m                   ␛[38;5;244mopens like an attachment␛[m
+    ␛[38;5;244m▣␛[m ␛[38;5;244mshot.png␛[m␛[38;5;244m · 32×16 · 128 B␛[m                  ␛[38;5;244mopens like an attachment␛[m
 
 
 
@@ -51,6 +51,6 @@
 
   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m ␛[38;5;244mshot.png␛[m
     ␛[38;5;254mReading the capture␛[m
-␛[38;5;254m❯␛[m   ␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m▣␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mshot.png · 32×16 · 90 B                   opens like an attachment  ␛[m␛[m
+␛[38;5;254m❯␛[m   ␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m▣␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mshot.png · 32×16 · 128 B                  opens like an attachment  ␛[m␛[m
 
 
