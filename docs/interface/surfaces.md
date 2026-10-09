@@ -1001,7 +1001,9 @@ ago`. With nothing arrived the line says nothing arrived, whatever the model
 may be doing out of sight. A silent wait in its last thirty seconds before
 `provider.stream_idle_seconds` says the retry is coming in place of what
 arrived — `silent — retry in 12s` — because a retry is the one thing about
-that wait the reader can act on before it happens. As the slot narrows the
+that wait the reader can act on before it happens. Where the stall has no
+retry left (`provider_retries = 0`, or the bound used up) it says what is
+coming instead: `silent — fails in 12s`. As the slot narrows the
 turn's clock goes first and what arrived second; the word, the model's clock
 and `silent` or `quiet` (or the retry) stay, since whether the stream is alive
 is what the line is read for during a wait. The spinner and the word are in

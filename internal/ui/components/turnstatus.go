@@ -184,6 +184,9 @@ type ModelWait struct {
 	// and takes Heard's place in the floor: a retry coming is the one thing
 	// about a silent wait the reader can act on.
 	RetryIn string
+	// FailsIn is the same moment where no retry is left to come: the turn
+	// fails at the deadline, and the line says so in place of promising one.
+	FailsIn string
 }
 
 // clause is the wait's fields as the line draws them at a drop level, each
@@ -200,6 +203,8 @@ func (w ModelWait) clause(phase TurnPhase, drop int) string {
 	switch {
 	case w.RetryIn != "":
 		out += " — retry in " + w.RetryIn
+	case w.FailsIn != "":
+		out += " — fails in " + w.FailsIn
 	case w.Heard != "" && drop < turnDropHeard:
 		// A count reads on into its clause; a stretch word is named and
 		// then described.

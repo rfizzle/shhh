@@ -138,8 +138,10 @@ func (m Model) modelWait(phase components.TurnPhase) components.ModelWait {
 		w.Heard = "keepalives only, last " + sinceLast(now.Sub(r.last)) + " ago"
 	default:
 		w.Stretch = observe.StretchSilent
-		if in, ok := m.retryIn(now.Sub(r.asked)); ok {
+		if in, ok := m.retryIn(now.Sub(r.asked)); ok && m.backoff.Remaining() > 0 {
 			w.RetryIn = in
+		} else if ok {
+			w.FailsIn = in
 		} else {
 			w.Heard = "nothing arrived"
 		}
@@ -147,9 +149,10 @@ func (m Model) modelWait(phase components.TurnPhase) components.ModelWait {
 	return w
 }
 
-// retryIn is how long until a silent request's idle deadline gives it up
-// and asks again, where that is close enough to say: within retryWarning of
-// it, and never where the deadline is off.
+// retryIn is how long until a silent request's idle deadline gives it up,
+// where that is close enough to say: within retryWarning of it, and never
+// where the deadline is off. Whether the deadline asks again is the caller's
+// to say, from the bound the stall has left (agent.Backoff.Remaining).
 func (m Model) retryIn(waited time.Duration) (string, bool) {
 	idle := m.timing.idle
 	switch {

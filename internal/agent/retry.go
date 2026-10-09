@@ -186,6 +186,12 @@ func (b *Backoff) Next(err error) (RetryNotice, bool) {
 	}, true
 }
 
+// Remaining is how many retries this stall may still make: the bound less the
+// attempts used, and zero where the setting allows none. A surface that would
+// promise a retry asks here first, because a promised retry that is not coming
+// is a wait the reader sits out for nothing.
+func (b *Backoff) Remaining() int { return max(b.bound()-b.attempt, 0) }
+
 // Attempt is which attempt of the bound the driver is on, for a surface that
 // says so out loud.
 func (b *Backoff) Attempt() int { return b.attempt }
