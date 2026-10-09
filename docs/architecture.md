@@ -390,6 +390,188 @@ its containment, offers to install a missing tool, and writes its notes as
 rows on the screen; taking the shared order would change what it does, which
 is a decision about the product and not a refactor.
 
+## The screen is handed its wiring as one value
+
+The terminal session is the assembly and then everything the screen is
+given: what it runs commands through, what it may do without asking, the
+stores it writes, the readers that watch it, the children it may spawn, the
+surfaces it offers and which of its conveniences are on. Today that is ninety
+settings applied one after another to the screen's own state, each on its
+own condition, inside the one function that also opens the terminal, runs
+the program and prints the banner. Each setting is cheap and the whole is
+not: several read what an earlier one left behind, a handful do work rather
+than set a field, the one that has to come last is held there by a comment,
+and nobody can read the result as a whole — the test that asserts the
+assembly takes a page of yes-and-no answers back off the built screen,
+because what the settings wrote is state nobody else may see.
+
+The screen's wiring is one value instead. It is built in named phases, in
+the order the dependencies between them require, and handed to the screen
+whole: the screen is constructed from the conversation, the stream and that
+value, and from nothing else. The value is inert — it holds what the session
+was given, not what it has done — so it can be compared between two
+launches, logged beside a record, asserted by a test before any terminal is
+opened, and built by anything that can fill a struct. That last is the
+point. Two things each need to construct a session without this function: a
+screen that reaches its stream through a backend behind an import fence, and
+a second size of the product. Each of them builds the value and hands it
+over; neither has to know the order of ninety calls or which three of them
+read a field the others set.
+
+**What the value holds**, grouped by who reads it:
+
+- **Where it is.** The title, the directory relative paths resolve against,
+  the checkout as it was surveyed, the provider and the model the session
+  opened on, the defaults the config screen writes, and what the prompt's
+  project context and tool definitions cost the window.
+- **The policy.** The mode and the cycle, the command allow and deny lists,
+  the host rules, the command ceiling, the read-only set, the working scope,
+  the containment, the secrets and their scrub, the previews and checks the
+  gated calls are drawn with, the mutation seam, and the hooks.
+- **The loop's settings.** The executor, the repeat detector, the round cap,
+  the steering, the progress intervals, the retry limit, the idle limit, the
+  tree check, which results are kept whole, and where a trim's elisions go.
+- **The stores.** The local store and, when it did not open, why; the
+  changeset and the git tracker beside it; the notebook; the sources ledger;
+  the evidence store.
+- **The readers.** The classifier, the explainer, the summarizer, the titler,
+  the accountant, the suggester, the start offers, the pattern proposals,
+  and the backlog's reader and drafter.
+- **The children.** The supervisor and the personas.
+- **The surfaces.** The backlog, memory, skills, the servers, the tool
+  sources, the safety reading, the scaffold, the processes, the gate, the
+  config screen and the writer behind it, the model list and its lister, the
+  endpoint's context windows, the ledger and the price table, the session
+  list, the session boundary and the workspace reading.
+- **The conveniences.** Mouse reporting, notifications, the window title,
+  titles, suggestions, verbosity, the rail width and the paste thresholds.
+
+The prompt is not on that list, and that is deliberate: the prompt is the
+conversation's first message, and the conversation is not the value's. What
+the value holds of the prompt is the two ways it is built again — the
+boundary, and the checkout read afresh.
+
+**What it does not hold**, and why:
+
+- **The conversation, the stream, and the loop built from them.** The loop is
+  live state — every turn moves it — and a value that held it could not be
+  compared, logged or built ahead of time. The conversation and the stream
+  are the other side of the seam the backend will stand behind: a thin
+  screen has no provider in its process and no conversation until the
+  backend hands it one, and the value has to be the same value on both sides
+  of that line. So they arrive as the constructor's other two arguments, and
+  later as the backend, and the value never changes shape for it.
+- **What the terminal decides.** A resumed conversation and its held turn,
+  the first prompt and what was piped on stdin, the inbox another session
+  writes into, the update notice, the first-run and changed-keys notices.
+  None of these is known until the terminal is: the picker is a program of
+  its own, piped stdin needs the controlling terminal opened beside it, and
+  the socket is opened only once the session is certain to run. They are
+  the opening, applied to the built screen after the value, as they are
+  today; seven settings stay as settings because that is what they are.
+
+**The phases.** Each produces one part of the value, and the order is the
+dependencies', not the reader's:
+
+1. **The assembly**, as it is (see
+   [the assembly](#a-session-is-assembled-in-one-place)).
+2. **The policy.** The mode and its cycle; the containment and what the
+   model is told of it; the scope, the lists, the ceiling, the read-only set
+   and the secrets. First because what contains a command is what contains
+   a hook, and because the supervisor inherits the mode.
+3. **The hooks and the first seam**, after the containment, with what the
+   seam said joined to the prompt already built.
+4. **The record and the boundary.** The recorder and its stamp; the gate's
+   verdicts and the searches; the boundary that closes the record and builds
+   the prompt again; the servers' late join, which rewrites both.
+5. **The stores.** The changeset, persisted into the local store; the
+   notebook, the sources, the evidence. Before the children, because a
+   writer child starts from the parent's uncommitted work.
+6. **The readers**, from the provider and the ledger: the classifier before
+   anything else, because the supervisor is built on it; then the rest.
+7. **The children and the loop.** The supervisor, from the assembly, the
+   record, the classifier, the hooks and the changeset; then the executor
+   chain in its one order — the toolset's executor, wrapped by the
+   supervisor, then by the repeat detector, and last, inside the
+   constructor, by the hooks — and the rest of the loop's settings.
+8. **The surfaces.** The backlog, memory, skills, the servers, the tool
+   sources, the safety reading, the scaffold, the processes, the gate, the
+   config screen, the model picker; the previews and checks for the gated
+   calls — a fetch, a spawn, a git write, a server call — and the sink the
+   session's host grants reach the fetcher through; and the start screen,
+   or for a conversation the checkout alone.
+9. **The screen**, constructed from the conversation, the stream and the
+   value. This is the point a test reads the value at, and the point the
+   function ends at today for the same reason: everything after it needs a
+   terminal.
+10. **The opening**, after the terminal is known, applied to the screen.
+11. **The program**: alternate scroll off, the wheel filter, the loop, the
+    banner, and the stop seam.
+
+**What the constructor does with it.** Most of the ninety settings set a
+field and nothing else, and those settings disappear: the value's field is
+the field. Five do work, and that work moves into the constructor, in a
+fixed order, where today it is scattered along the chain and held in place
+by comments:
+
+1. Claim the session's slot in the store, and bind the changeset, the
+   notebook and the sources ledger to it. Today the claim happens when the
+   store arrives, and each of the three binds itself again when it arrives
+   after, so the order of four settings decides how many times the
+   changeset is restored from disk.
+2. Apply the loop's settings to the loop: the executor, the cap, the
+   steering, the progress intervals, the scrub, the kept results, the
+   elisions' store, the tree check. Nine settings today each reach into the
+   loop on their own.
+3. Push the mode, the live grants and the conversation policy into the
+   supervisor. Today this reads three fields that three earlier settings
+   set, and the setting that sets the mode is a no-op once the one that
+   marks a conversation has run — the chain happens to call them in the
+   order that works.
+4. Load the backlog from disk and read the parallel sprint's checkpoint.
+5. Wrap the executor with the hooks, last. The gate the hooks wrap around
+   the executor is the screen's own answer to which calls it gates, and it
+   is captured when the wrap is built — so anything wired after it is a
+   call the hook never sees gated. In the chain that is a comment saying
+   "last"; in the constructor it is the last line.
+
+**What the screen loses.** Fifty-six of the screen's fields are written by
+a setting and by nothing else; they move under the value, held as one field,
+and the screen's own state — the fields the update loop writes — stays
+where it is, seeded from the value at construction. The bound on the
+screen's size, pinned by a test, falls from 232 to about 180. The dozen
+sub-states that pair a writer with the state it writes keep their state and
+read their writer from the value, which would take it nearer 170; that is a
+second step and not this one.
+
+**What the headless surfaces get.** A scripted run and a served session
+build the same first seven phases, in their own order (see
+[the tail](#the-unattended-surfaces-share-one-tail)), and each then writes
+the loop's settings onto its own loop by hand — the same nine the screen's
+constructor applies — and builds its approver from the same policy facts the
+screen's cards read. They build no readers past the classifier, no surfaces
+and no opening; they stop at the loop. The value gives them the loop part
+and the policy part as two things that exist, rather than three hand-written
+copies that agree on the day they are written. Applying the loop part to a
+loop is one function, which the screen's constructor and the two tails can
+share; the policy part is what the headless approver reads, and making the
+approver and the screen's policy one assembly is its own change, built on
+this one and not inside it. Neither surface takes the screen's order of
+phases, for the reason the tail section gives: that would change what they
+do.
+
+**What this must not change.** Every golden and every driven capture stays
+byte-identical, because nothing here moves a decision — only where it is
+written down. The three places that make that a claim rather than a hope:
+the slot is claimed at the same point it is today, before the picker runs,
+because a claim made after it would be a row the picker might list; the
+executor is wrapped in the same order; and a value nobody filled in means
+what the config's defaults mean — mouse on, notifications on, the title on,
+the paste thresholds and the verbosity at their defaults — so a screen built
+from an empty value is the screen every test builds today.
+
+---
+
 ## A busy screen gives each of its modes one owner
 
 Two screens hold the keyboard through more than one mode: the profile
