@@ -18,7 +18,7 @@
 │   /compact      continue from a summary plus the most recent turns                                     │
 │ [tab] complete · [enter] run · [↑↓] move · [esc] dismiss                                               │
 ├─ ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ──────────────────────────────────────────────────────────────┤
-╰─ [enter] send · [ctrl+/] commands · [shift+tab] change mode · [ctrl+c] clear · [ctrl+]] keys ──────────╯
+╰─ [enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys · [ctrl+n] queue ─────────────────╯
 
 · mid-turn · the greyed rows say why
 ╭─ ⠋ waiting… ───────────────────────────────────────────────────────────────────────────────────────────╮
@@ -28,7 +28,7 @@
 │   ⊘ /compact    continue from a summary plus the most recent turns                           idle only │
 │ [tab] complete · [enter] run · [↑↓] move · [esc] dismiss                                               │
 ├─ ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ──────────────────────────────────────────────────────────────┤
-╰─ [ctrl+c] stop the run · [enter] add to this turn · [/] commands · [ctrl+]] keys ──────────────────────╯
+╰─ [ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn · [shift+tab] mode ──────────────────╯
 
 · mid-turn · the one command the prefix names
 ╭─ ⠋ waiting… ───────────────────────────────────────────────────────────────────────────────────────────╮
@@ -36,7 +36,7 @@
 │ ❯ ⊘ /compact  continue from a summary plus the most recent turns                             idle only │
 │ [tab] complete · [enter] run · [↑↓] move · [esc] dismiss                                               │
 ├─ ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ──────────────────────────────────────────────────────────────┤
-╰─ [ctrl+c] stop the run · [enter] add to this turn · [/] commands · [ctrl+]] keys ──────────────────────╯
+╰─ [ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn · [shift+tab] mode ──────────────────╯
 
 · a conversation's @ · a colleague among the files
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -46,7 +46,7 @@
 │   docs/security.md          modified 8m ago                                                            │
 │ [tab]/[enter] insert · [↑↓] move · [esc] dismiss                                                       │
 ├─ ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ──────────────────────────────────────────────────────────────┤
-╰─ [enter] send · [ctrl+/] commands · [shift+tab] change mode · [ctrl+c] clear · [ctrl+]] keys ──────────╯
+╰─ [enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys · [ctrl+n] queue ─────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · idle · every command on the list is runnable
@@ -57,7 +57,7 @@
 ␛[38;5;244m│␛[m   ␛[38;5;254m/compact␛[m      ␛[38;5;244mcontinue from a summary plus the most recent turns␛[m                                     ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[tab] complete · [enter] run · [↑↓] move · [esc] dismiss␛[m                                               ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[shift+tab]␛[38;5;244m change mode · ␛[38;5;254m[ctrl+c]␛[38;5;244m clear · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────╯␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys · ␛[38;5;254m[ctrl+n]␛[38;5;244m queue␛[m ␛[38;5;244m─────────────────╯␛[m
 
 · mid-turn · the greyed rows say why
 ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ waiting…␛[m ␛[38;5;244m───────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -67,7 +67,7 @@
 ␛[38;5;244m│␛[m ␛[38;5;244m  ⊘ /compact    continue from a summary plus the most recent turns                           idle only␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[tab] complete · [enter] run · [↑↓] move · [esc] dismiss␛[m                                               ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run · ␛[38;5;254m[enter]␛[38;5;244m add to this turn · ␛[38;5;254m[/]␛[38;5;244m commands · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────────────────╯␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+p]␛[38;5;244m hold · ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run · ␛[38;5;254m[enter]␛[38;5;244m add to this turn · ␛[38;5;254m[shift+tab]␛[38;5;244m mode␛[m ␛[38;5;244m──────────────────╯␛[m
 
 · mid-turn · the one command the prefix names
 ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ waiting…␛[m ␛[38;5;244m───────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -75,7 +75,7 @@
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254;48;5;237;1m⊘ /compact  continue from a summary plus the most recent turns                             idle only␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[tab] complete · [enter] run · [↑↓] move · [esc] dismiss␛[m                                               ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run · ␛[38;5;254m[enter]␛[38;5;244m add to this turn · ␛[38;5;254m[/]␛[38;5;244m commands · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────────────────╯␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+p]␛[38;5;244m hold · ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run · ␛[38;5;254m[enter]␛[38;5;244m add to this turn · ␛[38;5;254m[shift+tab]␛[38;5;244m mode␛[m ␛[38;5;244m──────────────────╯␛[m
 
 · a conversation's @ · a colleague among the files
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -85,4 +85,4 @@
 ␛[38;5;244m│␛[m   ␛[38;5;254mdocs/security.md␛[m          ␛[38;5;244mmodified 8m ago␛[m                                                            ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[tab]/[enter] insert · [↑↓] move · [esc] dismiss␛[m                                                       ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[shift+tab]␛[38;5;244m change mode · ␛[38;5;254m[ctrl+c]␛[38;5;244m clear · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────╯␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys · ␛[38;5;254m[ctrl+n]␛[38;5;244m queue␛[m ␛[38;5;244m─────────────────╯␛[m

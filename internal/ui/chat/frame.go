@@ -15,7 +15,6 @@ package chat
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -93,6 +92,23 @@ func (m Model) frameLayout() frameLayout {
 	return *m.framed.mode
 }
 
+// footRail reports whether the frame has the two rails of its own under the
+// draft: the vitals on one and the foot row of keys on the other. Every
+// framed width has them at the root session, so a row of keys is never
+// missing at sixty or eighty columns; an attached child's frame below the wide
+// layout keeps the single closing rail, which carries the child's vitals with
+// the way back on the top rail beside them
+// (docs/interface/surfaces.md#the-input-frame).
+func (m Model) footRail() bool {
+	switch m.frameLayout() {
+	case framePlain:
+		return false
+	case frameWide:
+		return true
+	}
+	return m.attachedTo == ""
+}
+
 // frameShowing reports whether the framed input is the current bottom panel.
 func (m Model) frameShowing() bool {
 	if m.agentList != nil {
@@ -160,7 +176,7 @@ func (m Model) frameExtraHeight() int {
 			extra++
 		}
 	}
-	if m.frameLayout() == frameWide {
+	if m.footRail() {
 		extra++
 	}
 	return extra
@@ -323,6 +339,9 @@ func (m Model) frameHints(room int) string {
 	// armed is an open two-press window, whose note is the one thing the
 	// rail says while it is open.
 	armed := false
+	// ladder is a rail written as the ladder, which places the key list in
+	// its own rung; every other rail ends on it (below).
+	ladder := false
 	switch {
 	case m.attachedTo == "" && m.questionAside():
 		// Only where the frame is the orchestrator's own: attached, enter
@@ -419,30 +438,31 @@ func (m Model) frameHints(room int) string {
 			armed = true
 			break
 		}
-		// Commands run mid-turn now, so the working rail says so;
-		// with children in flight the agent manager is the first thing to
-		// reach for. While the turn streams, the interrupt leads — and it
-		// is the cancel chord, the only key that stops a turn
-		// (docs/interface/principles.md#esc-is-always-the-safe-answer). The
-		// rail is the one place that says so, because esc doing nothing
-		// looks exactly like esc being unread.
-		steer := segAs(keys.Draft.Send, "add to this turn")
-		stop := m.ctrlCHint()
-		agents := segAs(keys.Draft.Agents, "agents").givesUp(1)
-		active, _ := m.activeAgents()
-		if m.turnState() == stateStreaming {
-			hints = []hintSeg{stop, steer}
-			if active > 0 {
-				hints = append(hints, agents)
-			}
-			hints = append(hints, slashHint().givesUp(2))
-			break
+		// The working ladder, floor first: hold and stop, the two keys a
+		// person reaches for with a turn running — and the cancel chord is
+		// the only key that stops one, which this rail is the one place to
+		// say, because esc doing nothing looks exactly like esc being unread
+		// (docs/interface/principles.md#esc-is-always-the-safe-answer). Then
+		// what is typed now joins the turn, the mode, the commands that run
+		// mid-turn, the key list and the queue, shed from the right as the
+		// width runs out (docs/interface/surfaces.md#the-input-frame).
+		// With children in flight the agent manager is the first thing to
+		// reach for after the steer.
+		hints = []hintSeg{
+			segAs(keys.Draft.Pause, "hold"),
+			m.ctrlCHint(),
+			segAs(keys.Draft.Send, "add to this turn").givesUp(1),
 		}
-		hints = []hintSeg{steer}
-		if active > 0 {
-			hints = append(hints, agents)
+		if active, _ := m.activeAgents(); active > 0 {
+			hints = append(hints, segAs(keys.Draft.Agents, "agents").givesUp(2))
 		}
-		hints = append(hints, slashHint().givesUp(2), stop)
+		hints = append(hints, m.modeHint(2)...)
+		hints = append(hints,
+			segAs(keys.Draft.Palette, "commands").givesUp(3),
+			m.keyListHint().givesUp(4),
+			segAs(keys.Draft.Queue, "queue").givesUp(5),
+		)
+		ladder = true
 	default:
 		// The quit window's hint takes the idle rail the same way the
 		// cancel window takes the working one.
@@ -451,43 +471,45 @@ func (m Model) frameHints(room int) string {
 			armed = true
 			break
 		}
-		// The whole run is written down and the rail sheds what will not
-		// fit, rather than a set chosen once against one width: bracketing
-		// the keys costs two columns each, and a run picked to spend exactly
-		// the columns a 110-column terminal has is a run that says nothing
-		// more on a terminal twice that wide.
+		// The idle ladder, floor first: how a message leaves and the key
+		// list, which every width keeps, then the mode, the commands, the
+		// queue and the two-press quit, shed from the right as the width
+		// runs out. The whole run is written down and the rail sheds what
+		// will not fit, rather than a set chosen once against one width:
+		// bracketing the keys costs two columns each, and a run picked to
+		// spend exactly the columns a 110-column terminal has is a run that
+		// says nothing more on a terminal twice that wide.
 		//
-		// What goes first is what the draft itself teaches: the newline is
-		// under the reader's hands the moment they type a long sentence, and
-		// the editor and the attach chord are both named in `?` and in
-		// /help. What never goes is the pair that says how a message leaves
-		// and what mode it leaves under, and beside them the two-press quit
-		// — a key a reader must be told about before they press it, since the
-		// first press is silent by design (cancel.go). The palette outlasts
-		// the rest because typing `/` opens the same list, so a reader who
-		// lost the chord still has a door; it is the one offer here that
-		// announces itself.
-		hints = []hintSeg{
-			segAs(keys.Draft.Send, "send"),
-			segAs(keys.Draft.Newline, "newline").givesUp(5),
-			segAs(keys.Draft.Editor, "editor").givesUp(4),
-			segAs(keys.Draft.Attach, "attach").givesUp(3),
-			segAs(keys.Draft.Palette, "commands").givesUp(1),
-			segAs(keys.Draft.Mode, "change mode"),
-			m.ctrlCHint().givesUp(2),
-		}
-		// A conversation has no mode to cycle, so the rail does not offer
-		// the key for one (conversation.go).
-		if m.wiring.Conversation {
-			hints = slices.DeleteFunc(hints, func(h hintSeg) bool { return h.label == "change mode" })
-		}
+		// The quit is last because it is the one offer a person who has
+		// found the rest can do without, and it stays named on every rail
+		// wide enough to hold it: a key whose first press is silent has to
+		// be told before it is pressed (cancel.go). The newline, the editor
+		// and the attach chord are not on the row — the draft teaches the
+		// first the moment a sentence runs long, a rarity does not earn the
+		// editor a slot, and the attach chord is offered above the prompt
+		// only while the clipboard holds something to attach
+		// (attachOffer); all three are in the key list.
+		hints = []hintSeg{segAs(keys.Draft.Send, "send")}
+		hints = append(hints, m.modeHint(1)...)
+		hints = append(hints,
+			segAs(keys.Draft.Palette, "commands").givesUp(2),
+			m.keyListHint(),
+			segAs(keys.Draft.Queue, "queue").givesUp(3),
+			m.ctrlCHint().givesUp(4),
+		)
 		// An offered next step leads the rail while it is drawn, because the
 		// arrow that takes it is the one key on this row nobody would press
 		// without being told, and it is live only while the words are there
-		// (suggest.go).
+		// (suggest.go). Below the wide layout the words are the short ones,
+		// so the lead leaves the floor its room.
 		if m.suggestionShown() {
-			hints = append([]hintSeg{segAs(keys.Draft.TakeSuggestion, "take the suggestion")}, hints...)
+			words := "take the suggestion"
+			if m.frameLayout() != frameWide {
+				words = "take it"
+			}
+			hints = append([]hintSeg{segAs(keys.Draft.TakeSuggestion, words)}, hints...)
 		}
+		ladder = true
 	}
 	// The key list takes the last slot while the draft holds the keyboard,
 	// spelled as the chord that opens it here: `?` is a character in a
@@ -495,10 +517,27 @@ func (m Model) frameHints(room int) string {
 	// the prompt. Attached, the chord is not answered — the keyboard is
 	// pointed at a child and the orchestrator's register is not what it is
 	// about — so the rail does not offer it.
-	if !armed && m.attachedTo == "" && len(hints) > 0 {
+	if !armed && !ladder && m.attachedTo == "" && len(hints) > 0 {
 		hints = append(hints, segAs(keys.Draft.KeyList, keys.Words(keys.Screen.List)).givesUp(1))
 	}
 	return joinSegs(fitSegs(hints, room))
+}
+
+// modeHint is the mode chord's rung at the place the ladder gives it, and
+// nothing for a conversation, which has no mode to cycle and so no key to
+// offer for one (conversation.go).
+func (m Model) modeHint(give int) []hintSeg {
+	if m.wiring.Conversation {
+		return nil
+	}
+	return []hintSeg{segAs(keys.Draft.Mode, "mode").givesUp(give)}
+}
+
+// keyListHint is the key list's rung, spelled as the chord that opens it
+// here: `?` is a character in a sentence, so the list the other surfaces open
+// on it is on a chord at the prompt.
+func (m Model) keyListHint() hintSeg {
+	return segAs(keys.Draft.KeyList, keys.Words(keys.Screen.List))
 }
 
 // ctrlCHint is the foot row's one offer for the one quit chord, whatever the
@@ -519,13 +558,6 @@ func (m Model) ctrlCHint() hintSeg {
 	}
 	return twoPress(keys.Draft.Cancel, "quit")
 }
-
-// slashHint is the command menu as an offer. The slash is not a binding —
-// it is the character a command starts with, answered by the draft rather
-// than by a key handler — but a reader learns one notation for "press this",
-// so it is written in the same brackets as every key beside it
-// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-func slashHint() hintSeg { return hintSeg{key: "/", label: "commands"} }
 
 // promptGutter is the input's leading glyph. The glyph is ▸ and only the
 // tone moves: dim while the draft is idle, spin while the agent works and
@@ -694,7 +726,7 @@ func (m Model) questionNotice() string {
 	if !m.questionAside() {
 		return ""
 	}
-	// Below the wide breakpoint the frame has no hint rail, so the count
+	// Where the frame has no foot rail the count
 	// also says what the next message will do with the sentence in the box.
 	// It is the move the armed window already makes above, for the same
 	// reason: the invariant that the surface says what a key will do cannot
@@ -702,7 +734,7 @@ func (m Model) questionNotice() string {
 	// says so already, and the count stays the count — which is also what
 	// keeps the three promises legible side by side at sixty columns, where
 	// they compete for one rail.
-	return questionNoticeFor(m.questionsWaiting(), m.frameLayout() != frameWide)
+	return questionNoticeFor(m.questionsWaiting(), !m.footRail())
 }
 
 // questionNoticeFor is the wording, counted, in the shape followUpNotice
@@ -729,15 +761,15 @@ func questionNoticeFor(n int, sayTheKey bool) string {
 	return label
 }
 
-// handoverNotice reports that the notice rail carries the handover below the
-// wide breakpoint: a card is waiting, the draft holds the keyboard, and the
+// handoverNotice reports that the notice rail carries the handover where the
+// frame has no foot rail: a card is waiting, the draft holds the keyboard, and the
 // frame has no hint rail to name the chord that hands it over. The chord is
 // the one offer the design gives that rail while a card waits
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard),
 // so it leads the rail and is never the clause the edge cuts. A question set
 // aside is not this state: its count already says how to get back to it.
 func (m Model) handoverNotice() bool {
-	return m.frameLayout() != frameWide && m.decisionUngated() && !m.questionAside()
+	return !m.footRail() && m.decisionUngated() && !m.questionAside()
 }
 
 // noticeLine assembles the notice rail: update notice, queued
@@ -749,12 +781,12 @@ func (m Model) noticeLine() string {
 		return ""
 	}
 	var parts []noticePart
-	// Below the wide breakpoint the frame has no hint rail, so an open
+	// Where the frame has no foot rail an open
 	// two-press window says what the next press does here — the invariant
 	// that the surface says what a key will do cannot depend on the
 	// terminal being wide (cancel.go).
 	handover := m.handoverNotice()
-	if m.frameLayout() != frameWide {
+	if !m.footRail() {
 		if note, ok := m.armedHint(); ok {
 			parts = append(parts, noticePart{text: note.render()})
 		}
@@ -1438,10 +1470,10 @@ func (m Model) promptFrameRects(area uv.Rectangle) promptRects {
 	var boxArea uv.Rectangle
 	layout.Vertical(layout.Len(shown), layout.Fill(1)).Split(area).Assign(&r.above, &boxArea)
 
-	// The wide layout gets a rail of its own for the vitals; the others hang
-	// them on the closing rail.
+	// The foot rail has a rail of its own for the vitals; an attached child's
+	// frame below the wide layout hangs them on the closing rail.
 	vitalsRows := 0
-	if m.frameLayout() == frameWide {
+	if m.footRail() {
 		vitalsRows = 1
 	}
 	r.box = m.frameBoxFor(boxArea)
@@ -1507,7 +1539,7 @@ func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle, cur *cursorSink
 	m.placeFrameCursor(cur, r, len(lines))
 
 	vitals := " " + m.frameVitals(mode, railLabelWidth("", width)) + " "
-	if mode == frameWide {
+	if m.footRail() {
 		drawRail(scr, r.vitals, accent, "├", "┤", vitals, "")
 		// A rail with nothing to say is rule the whole way across rather than
 		// rule with a two-cell notch in it: the spaces are the label's, so a

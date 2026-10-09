@@ -13,7 +13,8 @@
 · a bang draft · the gutter says it is a command
 ╭─ idle ───────────────────────────────────────────────────────────────────╮
 │ ▸ !go test ./internal/agent/...                                          │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────┤
+╰─ [enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys ────╯
 
 · the @ mention menu under the draft
 ╭─ idle ───────────────────────────────────────────────────────────────────╮
@@ -22,13 +23,15 @@
 │   internal/ui/chat/modelutil.go  modified 25m ago                        │
 │   go.mod                         modified just now                       │
 │ [tab]/[enter] insert · [↑↓] move · [esc] dismiss                         │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────┤
+╰─ [enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys ────╯
 
 · a paste folded into the sentence
 ≡ Paste#1 paste-1.txt 8 KB 214 lines                                        
 ╭─ idle ───────────────────────────────────────────────────────────────────╮
 │ ▸ why does ⟨Paste#1 · 214 lines⟩ never stop                              │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 · Paste#1 will cost ~2.0k tokens ───╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 · Paste#1 will cost ~2.0k tokens ───┤
+╰─ [enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys ────╯
 
 · both queues listed apart
 [f2] edit the queue                                                         
@@ -36,7 +39,8 @@ steering   and check the parser
 follow-up  then update the docs                                             
 ╭─ ⠋ waiting… ─────────────────────────────────────────────────────────────╮
 │ ▸                                                                        │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────┤
+╰─ [ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn ───────╯
 
 · the follow-up held after a cancel
 follow-ups held — [f2] edit the queue                                       
@@ -44,13 +48,15 @@ steering   and check the parser
 follow-up  then update the docs                                             
 ╭─ ⠋ waiting… ─────────────────────────────────────────────────────────────╮
 │ ▸                                                                        │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────┤
+╰─ [ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn ───────╯
 
 ── ansi ────────────────────────────────────────────────────
 · a bang draft · the gutter says it is a command
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m───────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m!go test ./internal/agent/...                                         ␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────╯␛[m
+␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────┤␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m────╯␛[m
 
 · the @ mention menu under the draft
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m───────────────────────────────────────────────────────────────────╮␛[m
@@ -59,13 +65,15 @@ follow-up  then update the docs
 ␛[38;5;244m│␛[m   ␛[38;5;254minternal/ui/chat/modelutil.go␛[m  ␛[38;5;244mmodified 25m ago␛[m                        ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254mgo.mod␛[m                         ␛[38;5;244mmodified just now␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[tab]/[enter] insert · [↑↓] move · [esc] dismiss␛[m                         ␛[38;5;244m│␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────╯␛[m
+␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────┤␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m────╯␛[m
 
 · a paste folded into the sentence
 ␛[38;5;254m≡ Paste#1 paste-1.txt␛[38;5;244m 8 KB 214 lines␛[m                                        
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m───────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254mwhy does ⟨Paste#1 · 214 lines⟩ never stop                             ␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51 · Paste#1 will cost ~2.0k tokens␛[m ␛[38;5;244m───╯␛[m
+␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51 · Paste#1 will cost ~2.0k tokens␛[m ␛[38;5;244m───┤␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m────╯␛[m
 
 · both queues listed apart
 ␛[38;5;254m[f2] edit the queue␛[m                                                         
@@ -73,7 +81,8 @@ follow-up  then update the docs
 ␛[38;5;254mfollow-up␛[m  ␛[38;5;254mthen update the docs␛[m                                             
 ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ waiting…␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m                                                                      ␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────╯␛[m
+␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────┤␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+p]␛[38;5;244m hold · ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run · ␛[38;5;254m[enter]␛[38;5;244m add to this turn␛[m ␛[38;5;244m───────╯␛[m
 
 · the follow-up held after a cancel
 ␛[38;5;254mfollow-ups held — [f2] edit the queue␛[m                                       
@@ -81,4 +90,5 @@ follow-up  then update the docs
 ␛[38;5;254mfollow-up␛[m  ␛[38;5;254mthen update the docs␛[m                                             
 ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ waiting…␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m                                                                      ␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────╯␛[m
+␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────┤␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+p]␛[38;5;244m hold · ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run · ␛[38;5;254m[enter]␛[38;5;244m add to this turn␛[m ␛[38;5;244m───────╯␛[m

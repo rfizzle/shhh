@@ -16,7 +16,8 @@
 │ ▸ this test log says the loop never stops — ⟨Paste#1 · 214 lines⟩ — and  │
 │   ⟨Image#1 · 1440×900⟩ is the screen it hangs on; fix the exit           │
 │   condition                                                              │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 · Paste#1 will cost ~6.0k tokens ───╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 · Paste#1 will cost ~6.0k tokens ───┤
+╰─ [enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys ────╯
 
 · opened · reading's rail says how far through it you are
 ──── PASTE#1 · lines 1–10 of 214 ───────────────────────────────────────────────
@@ -63,7 +64,8 @@
 │ ▸ this test log says the loop never stops — ⟨Paste#1 · 214 lines⟩ — and  │
 │   ⟨Image#1 · 1440×900⟩ is the screen it hangs on; fix the exit           │
 │   condition                                                              │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 · Paste#1 will cost ~6.0k tokens ───╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 · Paste#1 will cost ~6.0k tokens ───┤
+╰─ [enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys ────╯
 
 · recalled after a reopen · the saved log is staged the same way
 ≡ Paste#1 paste-1.txt 23 KB 214 lines · ▣ Image#1 clipboard.png 40 KB       
@@ -71,7 +73,8 @@
 │ ▸ this test log says the loop never stops — ⟨Paste#1 · 214 lines⟩ — and  │
 │   ⟨Image#1 · 1440×900⟩ is the screen it hangs on; fix the exit           │
 │   condition                                                              │
-╰─ ⏸ manual · ctx 38% ▰▰▰▱▱▱▱▱ · $0.51 · Paste#1 will cost ~6.0k tokens ───╯
+├─ ⏸ manual · ctx 38% ▰▰▰▱▱▱▱▱ · $0.51 · Paste#1 will cost ~6.0k tokens ───┤
+╰─ [enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys ────╯
 
 ── ansi ────────────────────────────────────────────────────
 · the fold in the draft · priced on the vitals, opened from the hints
@@ -80,7 +83,8 @@
 ␛[38;5;241m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252mthis test log says the loop never stops — ␛[94m⟨Paste#1 · 214 lines⟩␛[38;5;252m — and ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[94m⟨Image#1 · 1440×900⟩␛[38;5;252m is the screen it hangs on; fix the exit          ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;252mcondition                                                             ␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m╰─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51 · Paste#1 will cost ~6.0k tokens␛[m ␛[38;5;241m───╯␛[m
+␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51 · Paste#1 will cost ~6.0k tokens␛[m ␛[38;5;241m───┤␛[m
+␛[38;5;241m╰─␛[m ␛[38;5;103m[enter]␛[38;5;241m send · ␛[38;5;103m[shift+tab]␛[38;5;241m mode · ␛[38;5;103m[ctrl+/]␛[38;5;241m commands · ␛[38;5;103m[ctrl+]]␛[38;5;241m keys␛[m ␛[38;5;241m────╯␛[m
 
 · opened · reading's rail says how far through it you are
 ␛[38;5;241m────␛[m ␛[1;94mPASTE#1 · lines 1–10 of 214␛[m ␛[38;5;241m───────────────────────────────────────────────␛[m
@@ -127,7 +131,8 @@
 ␛[38;5;241m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252mthis test log says the loop never stops — ␛[94m⟨Paste#1 · 214 lines⟩␛[38;5;252m — and ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[94m⟨Image#1 · 1440×900⟩␛[38;5;252m is the screen it hangs on; fix the exit          ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;252mcondition                                                             ␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m╰─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51 · Paste#1 will cost ~6.0k tokens␛[m ␛[38;5;241m───╯␛[m
+␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51 · Paste#1 will cost ~6.0k tokens␛[m ␛[38;5;241m───┤␛[m
+␛[38;5;241m╰─␛[m ␛[38;5;103m[enter]␛[38;5;241m send · ␛[38;5;103m[shift+tab]␛[38;5;241m mode · ␛[38;5;103m[ctrl+/]␛[38;5;241m commands · ␛[38;5;103m[ctrl+]]␛[38;5;241m keys␛[m ␛[38;5;241m────╯␛[m
 
 · recalled after a reopen · the saved log is staged the same way
 ␛[38;5;252m≡ Paste#1 paste-1.txt␛[38;5;241m 23 KB 214 lines · ␛[38;5;252m▣ Image#1 clipboard.png␛[38;5;241m 40 KB␛[m       
@@ -135,4 +140,5 @@
 ␛[38;5;241m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252mthis test log says the loop never stops — ␛[94m⟨Paste#1 · 214 lines⟩␛[38;5;252m — and ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[94m⟨Image#1 · 1440×900⟩␛[38;5;252m is the screen it hangs on; fix the exit          ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;252mcondition                                                             ␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m╰─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 38%␛[m ␛[92m▰▰▰␛[38;5;241m▱▱▱▱▱␛[38;5;243m · $0.51 · Paste#1 will cost ~6.0k tokens␛[m ␛[38;5;241m───╯␛[m
+␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 38%␛[m ␛[92m▰▰▰␛[38;5;241m▱▱▱▱▱␛[38;5;243m · $0.51 · Paste#1 will cost ~6.0k tokens␛[m ␛[38;5;241m───┤␛[m
+␛[38;5;241m╰─␛[m ␛[38;5;103m[enter]␛[38;5;241m send · ␛[38;5;103m[shift+tab]␛[38;5;241m mode · ␛[38;5;103m[ctrl+/]␛[38;5;241m commands · ␛[38;5;103m[ctrl+]]␛[38;5;241m keys␛[m ␛[38;5;241m────╯␛[m

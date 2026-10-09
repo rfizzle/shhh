@@ -17,7 +17,8 @@
 │   /context      the window as a meter, itemised down to the tool         │
 │   /compact      continue from a summary plus the most recent turns       │
 │ [tab] complete · [enter] run · [↑↓] move · [esc] dismiss                 │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────┤
+╰─ [enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys ────╯
 
 · mid-turn · the greyed rows say why
 ╭─ ⠋ waiting… ─────────────────────────────────────────────────────────────╮
@@ -26,14 +27,16 @@
 │   /context      the window as a meter, itemised down to the tool         │
 │   ⊘ /compact    continue from a summary plus the most recent…  idle only │
 │ [tab] complete · [enter] run · [↑↓] move · [esc] dismiss                 │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────┤
+╰─ [ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn ───────╯
 
 · mid-turn · the one command the prefix names
 ╭─ ⠋ waiting… ─────────────────────────────────────────────────────────────╮
 │ ▸ /comp                                                                  │
 │ ❯ ⊘ /compact  continue from a summary plus the most recent t…  idle only │
 │ [tab] complete · [enter] run · [↑↓] move · [esc] dismiss                 │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────┤
+╰─ [ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn ───────╯
 
 · a conversation's @ · a colleague among the files
 ╭─ idle ───────────────────────────────────────────────────────────────────╮
@@ -42,7 +45,8 @@
 │   internal/auth/session.go  modified just now                            │
 │   docs/security.md          modified 8m ago                              │
 │ [tab]/[enter] insert · [↑↓] move · [esc] dismiss                         │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────┤
+╰─ [enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys ────╯
 
 ── ansi ────────────────────────────────────────────────────
 · idle · every command on the list is runnable
@@ -52,7 +56,8 @@
 ␛[38;5;244m│␛[m   ␛[38;5;254m/context␛[m      ␛[38;5;244mthe window as a meter, itemised down to the tool␛[m         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m/compact␛[m      ␛[38;5;244mcontinue from a summary plus the most recent turns␛[m       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[tab] complete · [enter] run · [↑↓] move · [esc] dismiss␛[m                 ␛[38;5;244m│␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────╯␛[m
+␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────┤␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m────╯␛[m
 
 · mid-turn · the greyed rows say why
 ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ waiting…␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────╮␛[m
@@ -61,14 +66,16 @@
 ␛[38;5;244m│␛[m   ␛[38;5;254m/context␛[m      ␛[38;5;244mthe window as a meter, itemised down to the tool␛[m         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m  ⊘ /compact    continue from a summary plus the most recent…  idle only␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[tab] complete · [enter] run · [↑↓] move · [esc] dismiss␛[m                 ␛[38;5;244m│␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────╯␛[m
+␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────┤␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+p]␛[38;5;244m hold · ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run · ␛[38;5;254m[enter]␛[38;5;244m add to this turn␛[m ␛[38;5;244m───────╯␛[m
 
 · mid-turn · the one command the prefix names
 ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ waiting…␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m/comp                                                                 ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254;48;5;237;1m⊘ /compact  continue from a summary plus the most recent t…  idle only␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[tab] complete · [enter] run · [↑↓] move · [esc] dismiss␛[m                 ␛[38;5;244m│␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────╯␛[m
+␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────┤␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+p]␛[38;5;244m hold · ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run · ␛[38;5;254m[enter]␛[38;5;244m add to this turn␛[m ␛[38;5;244m───────╯␛[m
 
 · a conversation's @ · a colleague among the files
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m───────────────────────────────────────────────────────────────────╮␛[m
@@ -77,4 +84,5 @@
 ␛[38;5;244m│␛[m   ␛[38;5;254minternal/auth/session.go␛[m  ␛[38;5;244mmodified just now␛[m                            ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254mdocs/security.md␛[m          ␛[38;5;244mmodified 8m ago␛[m                              ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[tab]/[enter] insert · [↑↓] move · [esc] dismiss␛[m                         ␛[38;5;244m│␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────╯␛[m
+␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────┤␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m────╯␛[m

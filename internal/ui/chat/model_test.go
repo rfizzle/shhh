@@ -113,7 +113,9 @@ func TestWindowResize_SetsReady(t *testing.T) {
 	if want := 100 - horizontalPadding*2 - components.ScrollGutterWidth; model.viewport.Width() != want {
 		t.Fatalf("viewport width should be %d, got %d", want, model.viewport.Width())
 	}
-	expectedVPHeight := 40 - minDraftRows - (headerHeight + dividerHeight + bottomChromeHeight)
+	// The vitals have a rail of their own at every framed width, so the row
+	// they used to share with the keys is one the transcript gives up.
+	expectedVPHeight := 40 - minDraftRows - (headerHeight + dividerHeight + bottomChromeHeight) - 1
 	if model.viewport.Height() != expectedVPHeight {
 		t.Fatalf("viewport height should be %d, got %d", expectedVPHeight, model.viewport.Height())
 	}
@@ -132,7 +134,7 @@ func TestWindowResize_Subsequent(t *testing.T) {
 	if want := 60 - horizontalPadding*2 - components.ScrollGutterWidth; model2.viewport.Width() != want {
 		t.Fatalf("viewport width should update to %d, got %d", want, model2.viewport.Width())
 	}
-	expectedH := 20 - minDraftRows - (headerHeight + dividerHeight + bottomChromeHeight)
+	expectedH := 20 - minDraftRows - (headerHeight + dividerHeight + bottomChromeHeight) - 1
 	if model2.viewport.Height() != expectedH {
 		t.Fatalf("viewport height should be %d, got %d", expectedH, model2.viewport.Height())
 	}

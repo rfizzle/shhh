@@ -16,7 +16,8 @@ steering   the header in this one is wrong too · Image#1
 follow-up  then run the whole suite                                         
 ╭─ ⠋ waiting… ─────────────────────────────────────────────────────────────╮
 │ ▸                                                                        │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────┤
+╰─ [ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn ───────╯
 
 · the keyboard in the queue · the steer selected
 ╭─ queued · 2 messages ────────────────────────────────────────────────────╮
@@ -34,7 +35,8 @@ follow-up  then run the whole suite
 ▣ Image#1 shot.png 40 B                                                     
 ╭─ ⠋ waiting… ─────────────────────────────────────────────────────────────╮
 │ ▸ the header in this one is wrong too                                    │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────┤
+╰─ [ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn ───────╯
 
 · the follow-up cancelled · its row, and the queue still open
   · queued then run the whole suite · cancelled
@@ -54,7 +56,8 @@ follow-up  then run the whole suite
 ␛[38;5;254mfollow-up␛[m  ␛[38;5;254mthen run the whole suite␛[m                                         
 ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ waiting…␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m                                                                      ␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────╯␛[m
+␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────┤␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+p]␛[38;5;244m hold · ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run · ␛[38;5;254m[enter]␛[38;5;244m add to this turn␛[m ␛[38;5;244m───────╯␛[m
 
 · the keyboard in the queue · the steer selected
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mqueued · 2 messages ␛[m␛[38;5;244m────────────────────────────────────────────────────╮␛[m
@@ -72,7 +75,8 @@ follow-up  then run the whole suite
 ␛[38;5;254m▣ Image#1 shot.png␛[38;5;244m 40 B␛[m                                                     
 ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ waiting…␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254mthe header in this one is wrong too                                   ␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────╯␛[m
+␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────┤␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+p]␛[38;5;244m hold · ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run · ␛[38;5;254m[enter]␛[38;5;244m add to this turn␛[m ␛[38;5;244m───────╯␛[m
 
 · the follow-up cancelled · its row, and the queue still open
   ␛[38;5;244m·␛[m ␛[38;5;244mqueued then run the whole suite · cancelled␛[m

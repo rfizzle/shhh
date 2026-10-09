@@ -14,35 +14,35 @@
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸ Run the full test suite, then commit the retry backoff if it passes.                                 │
 ├─ ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ──────────────────────────────────────────────────────────────┤
-╰─ [→] take the suggestion · [enter] send · [ctrl+/] commands · [shift+tab] change mode · [ctrl+]] keys ─╯
+╰─ [→] take the suggestion · [enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys ────────╯
 
 · taken · the draft's own text, cursor at its end
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸ Run the full test suite, then commit the retry backoff if it passes.                                 │
 ├─ ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ──────────────────────────────────────────────────────────────┤
-╰─ [enter] send · [ctrl+/] commands · [shift+tab] change mode · [ctrl+c] clear · [ctrl+]] keys ──────────╯
+╰─ [enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys · [ctrl+n] queue ─────────────────╯
 
 · none · the empty draft as it always was
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸                                                                                                      │
 ├─ ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ──────────────────────────────────────────────────────────────┤
-╰─ [enter] send · [ctrl+/] commands · [shift+tab] change mode · [ctrl+c] ×2 quit · [ctrl+]] keys ────────╯
+╰─ [enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys · [ctrl+n] queue ─────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · an offer up · dim in the empty draft, the arrow on the key bar
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;244mRun the full test suite, then commit the retry backoff if it passes.␛[m                                 ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m[→]␛[38;5;244m take the suggestion · ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[shift+tab]␛[38;5;244m change mode · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m─╯␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[→]␛[38;5;244m take the suggestion · ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m────────╯␛[m
 
 · taken · the draft's own text, cursor at its end
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254mRun the full test suite, then commit the retry backoff if it passes.                                ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[shift+tab]␛[38;5;244m change mode · ␛[38;5;254m[ctrl+c]␛[38;5;244m clear · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m──────────╯␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys · ␛[38;5;254m[ctrl+n]␛[38;5;244m queue␛[m ␛[38;5;244m─────────────────╯␛[m
 
 · none · the empty draft as it always was
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                                                                    ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mcontext 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[shift+tab]␛[38;5;244m change mode · ␛[38;5;254m[ctrl+c]␛[38;5;244m ×2 quit · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m────────╯␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+/]␛[38;5;244m commands · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys · ␛[38;5;254m[ctrl+n]␛[38;5;244m queue␛[m ␛[38;5;244m─────────────────╯␛[m

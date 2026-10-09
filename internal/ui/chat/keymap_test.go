@@ -400,33 +400,22 @@ func TestKeysNotice_RidesTheNoticeRailWhenDue(t *testing.T) {
 	}
 }
 
-// Below the wide breakpoint the frame has no hint rail, so a card waiting on
-// a draft that holds the keyboard names its handover on the notice rail, and
-// the keys-changed row yields that rail rather than cutting the chord off.
-func TestKeysNotice_YieldsTheRailToTheHandover(t *testing.T) {
-	for _, width := range []int{60, 80} {
+// Every framed width has a foot rail, so a card waiting on a draft that holds
+// the keyboard names its handover there and the notice rail keeps its own row:
+// the keys-changed row is not asked to yield to a chord the foot rail leads
+// with.
+func TestKeysNotice_TheHandoverLeadsTheFootRailAndTheNoticeKeepsItsRow(t *testing.T) {
+	for _, width := range []int{60, 80, 130} {
 		m := interruptedModel(t, "and say y").WithKeysNotice(KeysChangedNotice())
 		m.width, m.height = width, 40
 		m.syncInputWidth()
-		line := stripANSI(m.noticeLine())
-		if want := "[" + keys.Shown(keys.Draft.Answer) + "] " + keys.Words(keys.Draft.Answer); !strings.HasPrefix(line, want) {
-			t.Errorf("at %d columns the rail does not lead with the handover %q: %q", width, want, line)
+		answer := "[" + keys.Shown(keys.Draft.Answer) + "] " + keys.Words(keys.Draft.Answer)
+		if line := stripANSI(m.noticeLine()); !strings.Contains(line, "keys changed:") || strings.Contains(line, keys.Shown(keys.Draft.Answer)) {
+			t.Errorf("at %d columns the notice rail should keep the rebind row and leave the handover to the foot rail: %q", width, line)
 		}
-		if strings.Contains(line, "keys changed:") {
-			t.Errorf("at %d columns the rebind notice did not yield to the handover: %q", width, line)
+		if foot := footRow(stripANSI(m.renderPromptFrame())); !strings.HasPrefix(foot, answer) {
+			t.Errorf("at %d columns the foot rail does not lead with the handover %q: %q", width, answer, foot)
 		}
-		released := m
-		released.state = stateInput
-		if line := stripANSI(released.noticeLine()); !strings.Contains(line, "keys changed:") {
-			t.Errorf("at %d columns the rebind notice did not come back once the card was gone: %q", width, line)
-		}
-	}
-	// Wide, the handover is on the hint rail and the notice keeps its row.
-	m := interruptedModel(t, "and say y").WithKeysNotice(KeysChangedNotice())
-	m.width, m.height = 130, 40
-	m.syncInputWidth()
-	if line := stripANSI(m.noticeLine()); !strings.Contains(line, "keys changed:") || strings.Contains(line, keys.Shown(keys.Draft.Answer)) {
-		t.Errorf("at 130 columns the notice rail should keep the rebind row and leave the handover to the hint rail: %q", line)
 	}
 }
 

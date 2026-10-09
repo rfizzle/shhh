@@ -37,10 +37,10 @@
                                                             
                                                             
                                                             
-                                                            
   ╭─ ✓ done ─────────────────────────────────────────────╮  
   │ ▸                                                    │  
-  ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯  
+  ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤  
+  ╰─ [enter] send · [shift+tab] mode · [ctrl+]] keys ────╯  
 
 · working · the live tail sits under the pane
    shhh chat · ~/src/shhh · main · gpt-4o · think medium    
@@ -69,21 +69,20 @@
                                                             
                                                             
                                                             
-                                                            
   ╭─ ⠋ waiting… ─────────────────────────────────────────╮  
   │ ▸                                                    │  
-  ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯  
+  ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤  
+  ╰─ [ctrl+p] hold · [ctrl+c] stop the run ──────────────╯  
 
 · a fan-out · one row a child above the input
    shhh chat · ~/src/shhh · main · gpt-4o · think medium    
   ────────────────────────────────────────────────────────  
                                                             
                                                             
-                                                            
    ▎✗ wrote internal/agent/loop.go              exit 1      
       Thread the sentinel through the loop                  
-      --- FAIL: TestRoundLimit                  1 line  ┃   
-                                                        ┃   
+      --- FAIL: TestRoundLimit                  1 line      
+                                                            
                                                         ┃   
                                                         ┃   
     ◇ spawned 4 agents                     in parallel  ┃   
@@ -104,7 +103,8 @@
   ⚠ researcher-3 · Say where the loo…  waiting approval: r  
   ╭─ ✓ done ─────────────────────────────────────────────╮  
   │ ▸                                                    │  
-  ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯  
+  ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤  
+  ╰─ [enter] send · [shift+tab] mode · [ctrl+]] keys ────╯  
 
 · …and that child's request on the card · the rows go
    shhh chat · ~/src/shhh · main · gpt-4o · think medium    
@@ -164,11 +164,11 @@
                                                             
                                                             
                                                             
-                                                            
   ▸ on target · as of round 24                              
   ╭─ ⠋ waiting… ─────────────────────────────────────────╮  
   │ ▸                                                    │  
-  ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯  
+  ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤  
+  ╰─ [ctrl+p] hold · [ctrl+c] stop the run ──────────────╯  
 
 · working · a quiet reading lands · the rail's, not the feed's
    shhh chat · ~/src/shhh · main · gpt-4o · think medium    
@@ -196,11 +196,11 @@
                                                             
                                                             
                                                             
-                                                            
   ▸ on target · as of round 24                              
   ╭─ ⠋ waiting… ─────────────────────────────────────────╮  
   │ ▸                                                    │  
-  ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯  
+  ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤  
+  ╰─ [ctrl+p] hold · [ctrl+c] stop the run ──────────────╯  
 
 · working · an off-target reading lands · a row under the close
    shhh chat · ~/src/shhh · main · gpt-4o · think medium    
@@ -228,11 +228,11 @@
       round-limit pause.                                    
                                                             
                                                             
-                                                            
   ⚠ off target · as of round 24                             
   ╭─ ⠋ waiting… ─────────────────────────────────────────╮  
   │ ▸                                                    │  
-  ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯  
+  ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤  
+  ╰─ [ctrl+p] hold · [ctrl+c] stop the run ──────────────╯  
 
 · the paste reader · a hint wider than the terminal wraps onto a row the panel pays for
    shhh chat · ~/src/shhh · main · gpt-4o · think medium    
@@ -294,10 +294,10 @@
                                                             
                                                             
                                                             
-                                                            
   ␛[38;5;244m╭─␛[m ␛[38;5;254m✓ done␛[m ␛[38;5;244m─────────────────────────────────────────────╮␛[m  
   ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                  ␛[m ␛[38;5;244m│␛[m  
-  ␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────╯␛[m  
+  ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────┤␛[m  
+  ␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m────╯␛[m  
 
 · working · the live tail sits under the pane
   ␛[38;5;254;1m shhh chat␛[38;5;244;22m · ~/src/shhh · main · gpt-4o · think medium␛[m    
@@ -326,21 +326,20 @@
                                                             
                                                             
                                                             
-                                                            
   ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ waiting…␛[m ␛[38;5;244m─────────────────────────────────────────╮␛[m  
   ␛[38;5;244m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m                                                  ␛[m ␛[38;5;244m│␛[m  
-  ␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────╯␛[m  
+  ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────┤␛[m  
+  ␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+p]␛[38;5;244m hold · ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run␛[m ␛[38;5;244m──────────────╯␛[m  
 
 · a fan-out · one row a child above the input
   ␛[38;5;254;1m shhh chat␛[38;5;244;22m · ~/src/shhh · main · gpt-4o · think medium␛[m    
   ␛[38;5;244m────────────────────────────────────────────────────────␛[m  
                                                             
                                                             
-                                                            
    ␛[38;5;254m▎✗␛[m ␛[38;5;254mwrote␛[m ␛[38;5;244minternal/agent/loop.go␛[m              ␛[38;5;254mexit 1␛[m      
       ␛[38;5;254mThread the sentinel through the loop␛[m                  
-      ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                  ␛[38;5;244m1 line␛[m  ␛[38;5;244m┃␛[m   
-                                                        ␛[38;5;244m┃␛[m   
+      ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                  ␛[38;5;244m1 line␛[m      
+                                                            
                                                         ␛[38;5;244m┃␛[m   
                                                         ␛[38;5;244m┃␛[m   
     ␛[38;5;254m◇␛[m ␛[38;5;254mspawned␛[38;5;244m 4 agents␛[m                     ␛[38;5;244min parallel␛[m  ␛[38;5;244m┃␛[m   
@@ -361,7 +360,8 @@
   ␛[38;5;254m⚠␛[m researcher-3␛[38;5;244m · Say where the loo…␛[m  ␛[38;5;254mwaiting approval: r␛[m  
   ␛[38;5;244m╭─␛[m ␛[38;5;254m✓ done␛[m ␛[38;5;244m─────────────────────────────────────────────╮␛[m  
   ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                  ␛[m ␛[38;5;244m│␛[m  
-  ␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────╯␛[m  
+  ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────┤␛[m  
+  ␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m────╯␛[m  
 
 · …and that child's request on the card · the rows go
   ␛[38;5;254;1m shhh chat␛[38;5;244;22m · ~/src/shhh · main · gpt-4o · think medium␛[m    
@@ -421,11 +421,11 @@
                                                             
                                                             
                                                             
-                                                            
   ␛[38;5;244m▸␛[m ␛[38;5;244mon target · as of round 24␛[m                              
   ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ waiting…␛[m ␛[38;5;244m─────────────────────────────────────────╮␛[m  
   ␛[38;5;244m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m                                                  ␛[m ␛[38;5;244m│␛[m  
-  ␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────╯␛[m  
+  ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────┤␛[m  
+  ␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+p]␛[38;5;244m hold · ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run␛[m ␛[38;5;244m──────────────╯␛[m  
 
 · working · a quiet reading lands · the rail's, not the feed's
   ␛[38;5;254;1m shhh chat␛[38;5;244;22m · ~/src/shhh · main · gpt-4o · think medium␛[m    
@@ -453,11 +453,11 @@
                                                             
                                                             
                                                             
-                                                            
   ␛[38;5;244m▸␛[m ␛[38;5;244mon target · as of round 24␛[m                              
   ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ waiting…␛[m ␛[38;5;244m─────────────────────────────────────────╮␛[m  
   ␛[38;5;244m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m                                                  ␛[m ␛[38;5;244m│␛[m  
-  ␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────╯␛[m  
+  ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────┤␛[m  
+  ␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+p]␛[38;5;244m hold · ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run␛[m ␛[38;5;244m──────────────╯␛[m  
 
 · working · an off-target reading lands · a row under the close
   ␛[38;5;254;1m shhh chat␛[38;5;244;22m · ~/src/shhh · main · gpt-4o · think medium␛[m    
@@ -485,11 +485,11 @@
       ␛[38;5;244;3mround-limit pause.␛[m                                    
                                                             
                                                             
-                                                            
   ␛[38;5;254m⚠␛[m ␛[38;5;254moff target␛[38;5;244m · as of round 24␛[m                             
   ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ waiting…␛[m ␛[38;5;244m─────────────────────────────────────────╮␛[m  
   ␛[38;5;244m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m                                                  ␛[m ␛[38;5;244m│␛[m  
-  ␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────╯␛[m  
+  ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────┤␛[m  
+  ␛[38;5;244m╰─␛[m ␛[38;5;254m[ctrl+p]␛[38;5;244m hold · ␛[38;5;254m[ctrl+c]␛[38;5;244m stop the run␛[m ␛[38;5;244m──────────────╯␛[m  
 
 · the paste reader · a hint wider than the terminal wraps onto a row the panel pays for
   ␛[38;5;254;1m shhh chat␛[38;5;244;22m · ~/src/shhh · main · gpt-4o · think medium␛[m    

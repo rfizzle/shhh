@@ -16,7 +16,8 @@
 │ ▸ this test log says the loop never stops —          │
 │   ⟨Paste#1 · 214 lines⟩ — and ⟨Image#1 · 1440×900⟩   │
 │   is the screen it hangs on; fix the exit condition  │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤
+╰─ [enter] send · [shift+tab] mode · [ctrl+]] keys ────╯
 
 · opened · reading's rail says how far through it you are
 ──── PASTE#1 · lines 1–10 of 214 ───────────────────────────
@@ -65,7 +66,8 @@
 │ ▸ this test log says the loop never stops —          │
 │   ⟨Paste#1 · 214 lines⟩ — and ⟨Image#1 · 1440×900⟩   │
 │   is the screen it hangs on; fix the exit condition  │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤
+╰─ [enter] send · [shift+tab] mode · [ctrl+]] keys ────╯
 
 · recalled after a reopen · the saved log is staged the same way
 ≡ Paste#1 23 KB 214 lines · ▣ Image#1 40 KB             
@@ -73,7 +75,8 @@
 │ ▸ this test log says the loop never stops —          │
 │   ⟨Paste#1 · 214 lines⟩ — and ⟨Image#1 · 1440×900⟩   │
 │   is the screen it hangs on; fix the exit condition  │
-╰─ ⏸ manual · ctx 38% ▰▰▰▱▱▱▱▱ · $0.51 ────────────────╯
+├─ ⏸ manual · ctx 38% ▰▰▰▱▱▱▱▱ · $0.51 ────────────────┤
+╰─ [enter] send · [shift+tab] mode · [ctrl+]] keys ────╯
 
 ── ansi ────────────────────────────────────────────────────
 · the fold in the draft · priced on the vitals, opened from the hints
@@ -82,7 +85,8 @@
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254mthis test log says the loop never stops —         ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m⟨Paste#1 · 214 lines⟩ — and ⟨Image#1 · 1440×900⟩  ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254mis the screen it hangs on; fix the exit condition ␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────╯␛[m
+␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────┤␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m────╯␛[m
 
 · opened · reading's rail says how far through it you are
 ␛[38;5;244m────␛[m ␛[1;38;5;254mPASTE#1 · lines 1–10 of 214␛[m ␛[38;5;244m───────────────────────────␛[m
@@ -131,7 +135,8 @@
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254mthis test log says the loop never stops —         ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m⟨Paste#1 · 214 lines⟩ — and ⟨Image#1 · 1440×900⟩  ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254mis the screen it hangs on; fix the exit condition ␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────╯␛[m
+␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────┤␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m────╯␛[m
 
 · recalled after a reopen · the saved log is staged the same way
 ␛[38;5;254m≡ Paste#1␛[38;5;244m 23 KB 214 lines · ␛[38;5;254m▣ Image#1␛[38;5;244m 40 KB␛[m             
@@ -139,4 +144,5 @@
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254mthis test log says the loop never stops —         ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m⟨Paste#1 · 214 lines⟩ — and ⟨Image#1 · 1440×900⟩  ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254mis the screen it hangs on; fix the exit condition ␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 38%␛[m ␛[38;5;254m▰▰▰␛[38;5;244m▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────╯␛[m
+␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 38%␛[m ␛[38;5;254m▰▰▰␛[38;5;244m▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────┤␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m────╯␛[m

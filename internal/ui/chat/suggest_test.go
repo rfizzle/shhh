@@ -150,26 +150,26 @@ func TestSuggestion_TheArrowTakesItIntoTheDraft(t *testing.T) {
 	}
 }
 
-// Below the wide breakpoint the frame draws no key bar, so the notice rail
-// names the arrow while an offer is up and lets it go with the offer; wide,
-// the key bar already says it and the rail does not say it twice.
-func TestSuggestion_ANarrowFrameNamesTheArrowOnTheNoticeRail(t *testing.T) {
+// The arrow leads the foot row at every width and goes with the offer, in
+// the short words below the wide layout so the floor keeps its room; the
+// notice rail does not say it a second time.
+func TestSuggestion_TheArrowLeadsTheFootRowAtEveryWidth(t *testing.T) {
 	for _, tc := range []struct {
-		width  int
-		onRail bool
-	}{{60, true}, {80, true}, {130, false}} {
+		width int
+		lead  string
+	}{{60, "[→] take it · [enter] send"}, {80, "[→] take it · [enter] send"}, {130, "[→] take the suggestion · [enter] send"}} {
 		m, _, _ := offeredModel(t)
 		updated, _ := m.Update(tea.WindowSizeMsg{Width: tc.width, Height: 30})
 		m = updated.(Model)
-		if got := strings.Contains(m.noticeLine(), "take it"); got != tc.onRail {
-			t.Fatalf("at %d columns the rail names the arrow = %v, want %v:\n%s", tc.width, got, tc.onRail, m.noticeLine())
+		if strings.Contains(m.noticeLine(), "take ") {
+			t.Fatalf("at %d columns the notice rail says the arrow again:\n%s", tc.width, m.noticeLine())
 		}
-		if !strings.Contains(m.renderPromptFrame(), "take ") {
-			t.Fatalf("at %d columns something should name the arrow:\n%s", tc.width, m.renderPromptFrame())
+		if got := stripANSI(m.renderPromptFrame()); !strings.Contains(got, tc.lead) {
+			t.Fatalf("at %d columns the foot row should lead with %q:\n%s", tc.width, tc.lead, got)
 		}
 		m = press(t, m, "n")
-		if strings.Contains(m.noticeLine(), "take it") {
-			t.Fatalf("at %d columns the note should go with the offer:\n%s", tc.width, m.noticeLine())
+		if got := stripANSI(m.renderPromptFrame()); strings.Contains(got, "[→]") {
+			t.Fatalf("at %d columns the arrow should go with the offer:\n%s", tc.width, got)
 		}
 	}
 }

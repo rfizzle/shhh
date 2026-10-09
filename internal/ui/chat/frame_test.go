@@ -56,6 +56,19 @@ func frameTopRail(view string) string {
 	return ""
 }
 
+// footRow is the frame's foot row as the keys it carries: the last rail on
+// the screen with its corners and rule taken off.
+func footRow(view string) string {
+	lines := strings.Split(view, "\n")
+	for i := len(lines) - 1; i >= 0; i-- {
+		line := strings.TrimSpace(lines[i])
+		if strings.HasPrefix(line, "╰─") && strings.HasSuffix(line, "─╯") {
+			return strings.Trim(strings.TrimSuffix(strings.TrimPrefix(line, "╰─"), "─╯"), " ─")
+		}
+	}
+	return ""
+}
+
 // The rungs are stated in terminal columns and read in content columns, and
 // the arithmetic between the two is the thing that drifted: the table is
 // written as terminals so it can be read against the guideline, and each one
@@ -81,7 +94,7 @@ func TestFrame_WideTwoRails(t *testing.T) {
 	m := frameModel(t, 130, 40) // the wide rung is a 110-column terminal
 	view := stripANSI(m.View().Content)
 
-	for _, want := range []string{"╭─", "├─", "╰─", "⏸ manual", "context ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "[enter] send · [ctrl+v] attach · [ctrl+/] commands · [shift+tab] change mode · [ctrl+c] ×2 quit · [ctrl+]] keys", "idle"} {
+	for _, want := range []string{"╭─", "├─", "╰─", "⏸ manual", "context ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "[enter] send · [shift+tab] mode · [ctrl+/] commands · [ctrl+]] keys · [ctrl+n] queue · [ctrl+c] ×2 quit", "idle"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("wide frame missing %q:\n%s", want, view)
 		}
@@ -100,11 +113,13 @@ func TestFrame_WideTwoRails(t *testing.T) {
 // and a run measured once against one terminal is a run that says nothing
 // more on a wider one (docs/interface/principles.md#fold-never-hide).
 //
-// What never goes is the pair that says how a message leaves and under what
-// mode, and the two-press quit beside them — a key whose first press is
-// silent has to be named before it is pressed.
+// What never goes is the pair that says how a message leaves and the key
+// list; the two-press quit is the last rung and is named on every rail wide
+// enough to hold the whole ladder, which is a terminal of 130 columns and up
+// (the box is the terminal less its padding, and the rail's label slot is the
+// box less its corners).
 func TestFrame_IdleHintsFitEveryRailTheyAreDrawnOn(t *testing.T) {
-	for _, terminal := range []int{frameWideWidth + horizontalPadding*2, 130, 160, 200} {
+	for _, terminal := range []int{60, 80, frameWideWidth + horizontalPadding*2, 130, 160, 200} {
 		m := frameModel(t, terminal, 40)
 		var rail string
 		for _, line := range strings.Split(stripANSI(m.View().Content), "\n") {
@@ -121,13 +136,17 @@ func TestFrame_IdleHintsFitEveryRailTheyAreDrawnOn(t *testing.T) {
 		if strings.Contains(rail, "…") {
 			t.Fatalf("at %d columns an offer was clipped rather than shed:\n%s", terminal, rail)
 		}
-		for _, want := range []string{
+		want := []string{
 			keys.Bracket(keys.Draft.Send) + " send",
-			keys.Bracket(keys.Draft.Mode) + " change mode",
-			keys.Bracket(keys.Draft.Cancel) + " ×2 quit",
-		} {
-			if !strings.Contains(rail, want) {
-				t.Fatalf("at %d columns the rail dropped %q:\n%s", terminal, want, rail)
+			keys.Bracket(keys.Draft.Mode) + " mode",
+			keys.Bracket(keys.Draft.KeyList) + " keys",
+		}
+		if terminal >= 130 {
+			want = append(want, keys.Bracket(keys.Draft.Cancel)+" ×2 quit")
+		}
+		for _, w := range want {
+			if !strings.Contains(rail, w) {
+				t.Fatalf("at %d columns the rail dropped %q:\n%s", terminal, w, rail)
 			}
 		}
 	}
@@ -140,36 +159,37 @@ func TestFrame_TheWidestIdleRailOffersEverythingItHas(t *testing.T) {
 	rail := stripANSI(m.frameHints(200))
 	for _, want := range []string{
 		keys.Bracket(keys.Draft.Send) + " send",
-		keys.Bracket(keys.Draft.Newline) + " newline",
-		keys.Bracket(keys.Draft.Editor) + " editor",
-		keys.Bracket(keys.Draft.Attach) + " attach",
+		keys.Bracket(keys.Draft.Mode) + " mode",
 		keys.Bracket(keys.Draft.Palette) + " commands",
-		keys.Bracket(keys.Draft.Mode) + " change mode",
+		keys.Bracket(keys.Draft.KeyList) + " keys",
+		keys.Bracket(keys.Draft.Queue) + " queue",
 		keys.Bracket(keys.Draft.Cancel) + " ×2 quit",
 	} {
 		if !strings.Contains(rail, want) {
 			t.Fatalf("the widest rail should offer %q, got %q", want, rail)
 		}
 	}
+	// What the row does not carry is in the key list, not on the row: the
+	// editor is a rarity, and the attach chord is offered above the prompt
+	// only while the clipboard has something to attach.
+	for _, gone := range []string{"editor", "attach", "newline"} {
+		if strings.Contains(rail, gone) {
+			t.Fatalf("the widest rail should not carry %q, got %q", gone, rail)
+		}
+	}
 }
 
-func TestFrame_CompactSingleRail(t *testing.T) {
+func TestFrame_CompactHasItsFootRail(t *testing.T) {
 	m := frameModel(t, 100, 40) // between the 70- and 110-column rungs
 	view := stripANSI(m.View().Content)
 
-	if strings.Contains(view, "├─") {
-		t.Fatalf("compact frame must not have a dedicated vitals rail:\n%s", view)
-	}
-	for _, want := range []string{"╭─", "╰─", "⏸ manual", "ctx "} {
+	for _, want := range []string{"╭─", "├─", "╰─", "⏸ manual", "ctx ", "[enter] send"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("compact frame missing %q:\n%s", want, view)
 		}
 	}
 	if rail := frameTopRail(view); strings.Contains(rail, "shhh") {
 		t.Fatalf("the root top rail should carry no title:\n%s", rail)
-	}
-	if strings.Contains(view, "enter send") {
-		t.Fatalf("compact frame should drop the hints rail:\n%s", view)
 	}
 }
 
@@ -257,13 +277,19 @@ func TestFrame_RungsAreTerminalColumns(t *testing.T) {
 	if frameModel(t, 129, 40).twoPane() {
 		t.Fatal("a 129-column terminal is one pane")
 	}
-	// The vitals take a rail of their own inside the box, or fold into its
-	// bottom border.
-	if got := view(110); !strings.Contains(got, "├─") {
-		t.Fatalf("a 110-column terminal gives the vitals their own rail:\n%s", got)
+	// The vitals take a rail of their own inside the box at every width the
+	// box is drawn at, with the foot row of keys under it; what the rung
+	// changes is the word the pressure is labelled with.
+	for _, terminal := range []int{110, 109, 70, 69, 60, 12} {
+		if got := view(terminal); !strings.Contains(got, "├─") {
+			t.Fatalf("a %d-column terminal gives the vitals their own rail:\n%s", terminal, got)
+		}
 	}
-	if got := view(109); strings.Contains(got, "├─") {
-		t.Fatalf("a 109-column terminal folds the vitals into the border:\n%s", got)
+	if got := view(110); !strings.Contains(got, "context ") {
+		t.Fatalf("a 110-column terminal spells the pressure out:\n%s", got)
+	}
+	if got := view(109); strings.Contains(got, "context ") {
+		t.Fatalf("a 109-column terminal abbreviates the pressure:\n%s", got)
 	}
 	// And the box itself, under which the prompt glyph stands in for it.
 	if got := view(12); !strings.Contains(got, "╭─") {
@@ -288,8 +314,8 @@ func TestFrame_GutterAndHintsSwapWhileWorking(t *testing.T) {
 	if !strings.Contains(view, "│ ▸ ") || !strings.Contains(view, "waiting…") {
 		t.Fatalf("working frame missing the steering gutter and the turn status:\n%s", view)
 	}
-	if !strings.Contains(view, "[ctrl+c] stop the run · [enter] add to this turn · [/] commands") {
-		t.Fatalf("working frame missing the interrupt and steering hints:\n%s", view)
+	if !strings.Contains(view, "[ctrl+p] hold · [ctrl+c] stop the run · [enter] add to this turn") {
+		t.Fatalf("working frame missing the hold, interrupt and steering hints:\n%s", view)
 	}
 	if strings.Contains(view, "[enter] send") {
 		t.Fatalf("working frame should swap out the idle hints:\n%s", view)
@@ -458,12 +484,12 @@ func TestFrame_TakeoverKeepsPlainStack(t *testing.T) {
 	// with the frame's own corners, so what tells the two apart on the
 	// screen is the account riding the frame's rail.
 	ungated := stripANSI(m.View().Content)
-	if !strings.Contains(ungated, "╰─ ⏸ manual") {
+	if !strings.Contains(ungated, "├─ ⏸ manual") {
 		t.Fatalf("an ungated decision leaves the draft its frame:\n%s", ungated)
 	}
 	m = handover(t, m)
 	view := stripANSI(m.View().Content)
-	if strings.Contains(view, "╰─ ⏸ manual") {
+	if strings.Contains(view, "├─ ⏸ manual") {
 		t.Fatalf("takeover surfaces must replace the frame:\n%s", view)
 	}
 	if !strings.Contains(view, "⏸ manual") {
@@ -476,14 +502,14 @@ func TestFrame_TakeoverKeepsPlainStack(t *testing.T) {
 
 func TestFrame_WideViewportAccounting(t *testing.T) {
 	m := frameModel(t, 130, 40)
-	// The wide layout adds one dedicated vitals rail beyond the standard
-	// chrome rows.
+	// Every framed width adds one dedicated vitals rail beyond the standard
+	// chrome rows: the foot row of keys is never missing at sixty or eighty.
 	if want := 40 - minDraftRows - (headerHeight + dividerHeight + bottomChromeHeight) - 1; m.viewport.Height() != want {
 		t.Fatalf("wide viewport height = %d, want %d", m.viewport.Height(), want)
 	}
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
-	if want := 40 - minDraftRows - (headerHeight + dividerHeight + bottomChromeHeight); m.viewport.Height() != want {
+	if want := 40 - minDraftRows - (headerHeight + dividerHeight + bottomChromeHeight) - 1; m.viewport.Height() != want {
 		t.Fatalf("compact viewport height = %d, want %d", m.viewport.Height(), want)
 	}
 }

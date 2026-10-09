@@ -23,7 +23,8 @@
 ▸ on target · as of round 7 · session · +2 −1           
 ╭─ idle ───────────────────────────────────────────────╮
 │ ▸                                                    │
-╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────┤
+╰─ [enter] send · [shift+tab] mode · [ctrl+]] keys ────╯
 
 · a quiet reading lands · its verdict is this row's and the feed's is nothing
 · unclear · as of round 2 · 1 file this turn
@@ -45,7 +46,8 @@
 ␛[38;5;244m▸␛[m ␛[38;5;244mon target · as of round 7 · session · ␛[38;5;254m+2␛[m ␛[38;5;254m−1␛[m           
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m───────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                  ␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────╯␛[m
+␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────┤␛[m
+␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+]]␛[38;5;244m keys␛[m ␛[38;5;244m────╯␛[m
 
 · a quiet reading lands · its verdict is this row's and the feed's is nothing
 ␛[38;5;244m·␛[m ␛[38;5;244munclear␛[m␛[38;5;244m · as of round 2␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 file this turn␛[m
