@@ -615,7 +615,7 @@ func register() [surfaceCount]Surface {
 			Reached:  "the drafter's last step",
 			Bindings: []Binding{
 				Profile.Move, Profile.Refine, Profile.RefineAll, Profile.Edit, Profile.Clear,
-				Profile.Migrate, Profile.Note, Profile.ScrollUp, Profile.ScrollDown, Screen.List, Profile.Back,
+				Profile.Migrate, Profile.Note, Profile.Save, Profile.ScrollUp, Profile.ScrollDown, Screen.List, Profile.Back,
 			},
 		},
 		OnDiff: {

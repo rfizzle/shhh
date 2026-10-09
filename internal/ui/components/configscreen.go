@@ -14,7 +14,7 @@ package components
 // Two rules shape it (docs/interface/surfaces.md#the-supporting-screens). A
 // value is a row, and changing one opens the picker *under* that row rather
 // than over the screen, so the setting being changed stays visible above the
-// options. And nothing reaches the file until `[w]`: every edit is staged,
+// options. And nothing reaches the file until `[ctrl+s]`: every edit is staged,
 // the header counts what is standing against the file, and the way out
 // discards the lot — which is why both directions go through the same
 // one-line question.
@@ -25,7 +25,6 @@ package components
 // `⏵⏵ auto` without knowing what a permission mode is.
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 
@@ -52,7 +51,7 @@ type ConfigRow struct {
 	// them and the markers do not count them. A row whose Group differs from
 	// the row before it opens a new rail.
 	Group string
-	// Key is the config key `[w]` would write and `[r]` would clear. The screen
+	// Key is the config key `[ctrl+s]` would write and `[r]` would clear. The screen
 	// only carries it back to the host.
 	Key string
 	// Label is the setting's name, in the left column.
@@ -129,11 +128,12 @@ type ConfigChange struct {
 	Take  ConfigTake
 }
 
-// ConfigResult is what a key answered with: how the screen closed — `[w]`
-// confirmed, or nothing was written, and Canceled and Write are never both
-// true because the way out writes nothing — and the edit a key made with the
-// screen still up. nil is a key that changed no setting.
+// ConfigResult is what a key answered with: how the screen closed — left or
+// discarded — and the edit a key made with the screen still up. nil is
+// a key that changed no setting.
 type ConfigResult struct {
+	// Write is the save chord with something staged. The screen stays up: the
+	// host writes, says what it wrote in Notice, and hands the rows back.
 	Write    bool
 	Canceled bool
 	Change   *ConfigChange
@@ -146,7 +146,7 @@ type ConfigResult struct {
 // ConfigScreen is `shhh config`: a takeover surface, full width, no inspector
 // rail, owning the keyboard for as long as it is up.
 type ConfigScreen struct {
-	// Path is the file `[w]` writes, stated in the header.
+	// Path is the file `[ctrl+s]` writes, stated in the header.
 	Path string
 	// Behind is that file read against the settings the table has now and
 	// found wanting — keys added since it was written, a key that moved, a
@@ -169,15 +169,15 @@ type ConfigScreen struct {
 	// Rows are the settings in the order they are shown.
 	Rows []ConfigRow
 	// Changed is how many edits are standing against the file. The header counts
-	// them and `[w]` is not offered while it is zero — a key that cannot act is
+	// them and the write is not offered while it is zero — a key that cannot act is
 	// not offered (invariant 5).
 	Changed int
 	// maxLines bounds the screen height; everything pinned comes off the list's
 	// budget before its window is drawn. 0 is unbounded, which is what a test or
 	// a host that sizes itself gets.
 	maxLines int
-	// Notice is the line a key left behind — what `[w]` wrote, what `[r]` reset.
-	// The host clears it on the next keystroke.
+	// Notice is the line a key left behind — what the write wrote, what `[r]`
+	// reset. It is the screen's foot row, and the next keystroke clears it.
 	Notice string
 	// InSession is a host inside a chat rather than at a command line
 	// (`/config`). The screen is the same screen; what differs is the two
@@ -192,9 +192,9 @@ type ConfigScreen struct {
 	editRow int
 	edit    *lineEdit
 	secret  *SecretPrompt
-	// confirm is the question standing in front of the two keys this screen
-	// cannot take back: the write, which reaches the file, and the way out,
-	// which drops what has been typed.
+	// confirm is the question standing in front of the one key this screen
+	// cannot take back: the way out, which drops what has been typed. The
+	// write is not asked about; it answers with a receipt instead.
 	confirm *Confirm
 	// pending is what answering that question yes does. It is armed with the
 	// question and goes down with it, so a decline cannot hand it to whatever
@@ -221,6 +221,9 @@ func MaskSecret(s string) string {
 // while it is up (invariant 5) — and the settings list answers otherwise.
 func (c *ConfigScreen) Update(msg tea.KeyPressMsg) (done bool, result ConfigResult) {
 	c.sync()
+	// A notice is what the last key left behind, so the next key clears it;
+	// the host sets its own after the key it answered.
+	c.Notice = ""
 	switch {
 	case c.confirm != nil:
 		return c.updateConfirm(msg)
@@ -244,8 +247,10 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, ConfigResult) {
 		return false, ConfigResult{}
 	case keys.Is(pressed, keys.Select.Cancel):
 		return c.leave()
+	case keys.Is(pressed, keys.Screen.Write):
+		return c.write()
 	}
-	// With the query line open the query line is the surface, so w, r and q are
+	// With the query line open the query line is the surface, so r and q are
 	// letters rather than keys — the same reading every picker in the product
 	// makes.
 	if c.list.Filtering {
@@ -270,13 +275,20 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, ConfigResult) {
 		if c.Scoped {
 			return false, ConfigResult{Scope: true}
 		}
-	case keys.Is(pressed, keys.Screen.Write):
-		if c.Changed > 0 {
-			c.ask(fmt.Sprintf("Write %s to %s?", plural(c.Changed, "change"), c.Path),
-				ConfigResult{Write: true})
-		}
 	}
 	return false, ConfigResult{}
+}
+
+// write is the save chord. It writes at once: the screen's one question is
+// the discard, because that is the act that cannot be taken back, and a
+// write is what the person came to do. The host answers with a receipt. With
+// nothing staged the key says so and writes nothing.
+func (c *ConfigScreen) write() (bool, ConfigResult) {
+	if c.Changed == 0 {
+		c.Notice = "nothing staged to write"
+		return false, ConfigResult{}
+	}
+	return false, ConfigResult{Write: true}
 }
 
 // leave is the way out, and what it costs. Staged edits are typed work, and
@@ -621,7 +633,7 @@ func (c *ConfigScreen) scopeOffer() KeyOffer {
 
 // footer is the keys the screen offers and the field that annotates them.
 func (c *ConfigScreen) footer(width int) keyFooter {
-	f := keyFooter{offers: c.offers(), register: c.keyList(), showing: c.keys, field: c.footField()}
+	f := keyFooter{offers: c.offers(), register: c.keyList(), showing: c.keys, field: c.footField(), keepField: c.Changed > 0}
 	if c.confirm != nil {
 		f.taken = c.confirm.View(width)
 	}
@@ -685,7 +697,7 @@ func (c *ConfigScreen) offers() []KeyOffer {
 		// the ask in the same breath: a row that promised only "discard" would
 		// be describing the old key, and one that promised only "leave" would be
 		// hiding what leaving costs.
-		return append(offers, keyOffer(keys.Screen.Write),
+		return append(offers, keyOfferAs(keys.Screen.Write, "write "+plural(c.Changed, "change")),
 			wayOut("discard, after asking"))
 	}
 	return append(offers, wayOut("leave"))
@@ -947,3 +959,20 @@ func indentBy(row string, n, width int) string {
 	}
 	return Clip(strings.Repeat(" ", n)+row, width)
 }
+
+// WriteReceipt is the sentence every write answers with, on the screen that
+// did it and in the transcript: what was written, to which file, and, when
+// there is more to name than the file, what changed. It is one function so
+// the settings screen, the model picker's default and the profile drafter say
+// it in one shape: `wrote 2 changes to .shhh/config.toml · provider.model,
+// behavior.command_timeout_seconds`.
+func WriteReceipt(what, file string, changed ...string) string {
+	receipt := "wrote " + what + " to " + file
+	if len(changed) > 0 {
+		receipt += " · " + strings.Join(changed, ", ")
+	}
+	return receipt
+}
+
+// Changes counts settings in the receipt's words: `1 change`, `2 changes`.
+func Changes(n int) string { return plural(n, "change") }

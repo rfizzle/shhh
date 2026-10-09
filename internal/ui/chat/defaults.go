@@ -7,7 +7,11 @@ package chat
 // itself — the CLI installs a writer, and a session without one says so
 // rather than pretending the setting stuck.
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/rfizzle/shhh/internal/ui/components"
+)
 
 // modelUsage is the one-line usage shown by /model and /help.
 const modelUsage = "usage: /model <name> · /model default [name] · /model agents [name|inherit]"
@@ -53,6 +57,9 @@ type Defaults struct {
 	// CLI so the line and a headless run's stderr say it the same way. Empty
 	// is a session that was told nothing, and /status then says nothing.
 	Delegation string
+	// File is the file a default is written to, as the receipt names it
+	// (`~/.config/shhh/config.toml`). Empty reads as "your config file".
+	File string
 }
 
 // WithDefaults installs the persisted-defaults surface.
@@ -92,12 +99,20 @@ func (m *Model) setModelDefault(which string, rest []string) string {
 	if err := m.writeConfig(key, name); err != nil {
 		return failed("model", "could not save the default: "+err.Error())
 	}
+	file := m.defaults.File
+	if file == "" {
+		file = "your config file"
+	}
+	// The receipt is the same line the settings screen answers with, so a
+	// default written from a picker is as visibly written as one staged on
+	// the screen.
+	receipt := components.WriteReceipt(components.Changes(1), file, key) + "\n"
 	if which == "agents" {
 		m.defaults.AgentModel = name
 		if name == "inherit" {
-			return "sub-agents now follow the session model. Agents already running keep the model they started on"
+			return receipt + "sub-agents now follow the session model. Agents already running keep the model they started on"
 		}
-		return fmt.Sprintf("sub-agents now run on %s. Agents already running keep the model they started on", name)
+		return receipt + fmt.Sprintf("sub-agents now run on %s. Agents already running keep the model they started on", name)
 	}
 	m.defaults.Model = name
 	note := fmt.Sprintf("default model set to %s for new sessions; this session stays on %s (/model %s switches it now)", name, m.modelName, name)
@@ -109,7 +124,7 @@ func (m *Model) setModelDefault(which string, rest []string) string {
 	if m.defaults.Outranked != "" {
 		note += fmt.Sprintf("\nit will not take effect while %s — that outranks your provider.model", m.defaults.Outranked)
 	}
-	return note
+	return receipt + note
 }
 
 // defaultFallback explains what an unset default falls back to.

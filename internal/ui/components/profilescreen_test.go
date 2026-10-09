@@ -326,3 +326,21 @@ func TestProfileScreen_TheSelectedSectionIsKeptInView(t *testing.T) {
 		t.Fatalf("the last section should be in view once selected:\n%s", view)
 	}
 }
+
+// ctrl+s saves the draft through the card's first row from wherever the
+// keyboard is, and the card offers it by name.
+func TestProfileScreen_CtrlSSavesThroughTheFirstRow(t *testing.T) {
+	p := draftScreen()
+	done, res := p.Update(key("ctrl+s"))
+	if !done || res.Action != ProfileSave || res.Index != 0 {
+		t.Fatalf("ctrl+s on the sections: done=%v res=%#v, want the first save row", done, res)
+	}
+	p = draftScreen()
+	p.Update(key("tab"))
+	if view := ansi.Strip(p.View(110)); !strings.Contains(view, "[ctrl+s] save · .shhh/agents") {
+		t.Fatalf("the card does not offer the chord:\n%s", view)
+	}
+	if done, res := p.Update(key("ctrl+s")); !done || res.Action != ProfileSave || res.Index != 0 {
+		t.Fatalf("ctrl+s on the card: done=%v res=%#v", done, res)
+	}
+}

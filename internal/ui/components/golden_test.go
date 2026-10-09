@@ -2958,18 +2958,24 @@ func TestGolden_ConfigScreen(t *testing.T) {
 				typed(c, "sk-live-9f2b")
 				return c.View(width)
 			}()},
-			{Label: "staged · the header counts it and [w] is offered", View: screen(func(c *ConfigScreen) {
+			{Label: "staged · the header counts it and [ctrl+s] is offered", View: screen(func(c *ConfigScreen) {
 				c.Focus, c.Changed = 5, 2
 				c.Rows[5].Value = "claude-sonnet-4.6"
 				c.Rows[5].Source, c.Rows[5].SourceTone = "unwritten", ToneOpen
 				c.Rows[1].Value = "40"
 				c.Rows[1].Source, c.Rows[1].SourceTone = "unwritten", ToneOpen
 			}).View(width)},
-			{Label: "the write-back · the inline confirm, defaulting to no", View: func() string {
-				c := screen(func(c *ConfigScreen) { c.Changed = 2 })
-				c.Update(key("w"))
-				return c.View(width)
-			}()},
+			{Label: "after a write · the receipt on the foot row, nothing left staged", View: screen(func(c *ConfigScreen) {
+				c.Notice = WriteReceipt(Changes(2), ".shhh/config.toml", "provider.model", "behavior.command_timeout_seconds")
+			}).View(width)},
+			{Label: "after a failed write · why, and the changes still staged", View: screen(func(c *ConfigScreen) {
+				c.Focus, c.Changed = 5, 2
+				c.Rows[5].Value = "claude-sonnet-4.6"
+				c.Rows[5].Source, c.Rows[5].SourceTone = "unwritten", ToneOpen
+				c.Rows[1].Value = "40"
+				c.Rows[1].Source, c.Rows[1].SourceTone = "unwritten", ToneOpen
+				c.Notice = "could not write .shhh/config.toml: permission denied"
+			}).View(width)},
 			{Label: "the way out · the same question over the same count", View: func() string {
 				c := screen(func(c *ConfigScreen) { c.Changed = 2 })
 				c.Update(key("esc"))

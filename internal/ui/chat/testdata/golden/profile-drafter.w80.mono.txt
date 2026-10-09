@@ -101,7 +101,7 @@
 │   1. Save to this project  /repo/.shhh/agents                                │
 │   2. Save globally         /home/x/.config/shhh/agents                       │
 │   3. Discard                                                                 │
-│ [tab] the card                                                               │
+│ [tab] the card · [ctrl+s] save · /repo/.shhh/agents                          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · one selected further down · its keys on the row under the sections
@@ -143,7 +143,7 @@
 │   1. Save to this project  /repo/.shhh/agents                                │
 │   2. Save globally         /home/x/.config/shhh/agents                       │
 │   3. Discard                                                                 │
-│ [tab] the card                                                               │
+│ [tab] the card · [ctrl+s] save · /repo/.shhh/agents                          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · a section refining · the note under it, the other seven sent as fixed context
@@ -185,7 +185,7 @@
 │   1. Save to this project  /repo/.shhh/agents                                │
 │   2. Save globally         /home/x/.config/shhh/agents                       │
 │   3. Discard                                                                 │
-│ [tab] the card                                                               │
+│ [tab] the card · [ctrl+s] save · /repo/.shhh/agents                          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · the wait, on that section · the other sections stand
@@ -263,7 +263,7 @@
 │   1. Save to this project  /repo/.shhh/agents                                │
 │   2. Save globally         /home/x/.config/shhh/agents                       │
 │   3. Discard                                                                 │
-│ [tab] the card                                                               │
+│ [tab] the card · [ctrl+s] save · /repo/.shhh/agents                          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · a section written in the editor · marked as the person's own
@@ -305,7 +305,7 @@
 │   1. Save to this project  /repo/.shhh/agents                                │
 │   2. Save globally         /home/x/.config/shhh/agents                       │
 │   3. Discard                                                                 │
-│ [tab] the card                                                               │
+│ [tab] the card · [ctrl+s] save · /repo/.shhh/agents                          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · a save the loader refused · the draft stays, the refusal over it
@@ -339,13 +339,15 @@
 
   Tools
     read + write + execute · it can change things, in its own copy of the tree
+
   ⋮ 2 more sections · [shift+↓] scroll the profile
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │ ❯ 1. Save to this project  /repo/.shhh/agents                                │
 │   2. Save globally         /home/x/.config/shhh/agents                       │
 │   3. Discard                                                                 │
-│ [enter] confirm · [tab] the sections · [esc] take none                       │
+│ [enter] confirm · [tab] the sections · [ctrl+s] save · /repo/.shhh/agents    │
+│ [esc] take none                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · [?] on the draft · the drafter's keys and the glyph legend
@@ -370,13 +372,15 @@
 
   Restrictions · edited by you
     Never change an expected value to make a case pass. Never delete a test.
+
   ⋮ 5 more sections · [shift+↓] scroll the profile
 
 ╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │ ❯ 1. Save to this project  /repo/.shhh/agents                                │
 │   2. Save globally         /home/x/.config/shhh/agents                       │
 │   3. Discard                                                                 │
-│ [enter] confirm · [tab] the sections · [esc] take none                       │
+│ [enter] confirm · [tab] the sections · [ctrl+s] save · /repo/.shhh/agents    │
+│ [esc] take none                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 [↑↓] move
@@ -386,6 +390,7 @@
 [e] edit it yourself
 [x] clear it
 [tab] the sections or the card
+[ctrl+s] save the profile
 [shift+↑] scroll the profile up
 [shift+↓] scroll the profile
 [esc] back a step
@@ -499,7 +504,7 @@ $  a shell command
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                                                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m                                                               ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · one selected further down · its keys on the row under the sections
@@ -541,7 +546,7 @@ $  a shell command
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                                                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m                                                               ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a section refining · the note under it, the other seven sent as fixed context
@@ -583,7 +588,7 @@ $  a shell command
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                                                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m                                                               ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the wait, on that section · the other sections stand
@@ -661,7 +666,7 @@ $  a shell command
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                                                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m                                                               ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a section written in the editor · marked as the person's own
@@ -703,7 +708,7 @@ $  a shell command
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                                                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m                                                               ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a save the loader refused · the draft stays, the refusal over it
@@ -737,13 +742,15 @@ $  a shell command
 
   ␛[38;5;254mTools␛[m
     ␛[38;5;254mread + write + execute␛[m␛[38;5;244m · it can change things, in its own copy of the tree␛[m
+
   ␛[38;5;244m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Save to this project  /repo/.shhh/agents                               ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                                                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m    ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                                              ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · [?] on the draft · the drafter's keys and the glyph legend
@@ -768,13 +775,15 @@ $  a shell command
 
   ␛[38;5;254mRestrictions␛[m ␛[38;5;254m· edited by you␛[m
     ␛[38;5;244mNever change an expected value to make a case pass. Never delete a test.␛[m
+
   ␛[38;5;244m⋮ 5 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m──────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Save to this project  /repo/.shhh/agents                               ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                                                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m    ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                                              ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m
@@ -784,6 +793,7 @@ $  a shell command
 ␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m
 ␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m
 ␛[38;5;254m[tab]␛[m␛[38;5;244m the sections or the card␛[m
+␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save the profile␛[m
 ␛[38;5;254m[shift+↑]␛[m␛[38;5;244m scroll the profile up␛[m
 ␛[38;5;254m[shift+↓]␛[m␛[38;5;244m scroll the profile␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back a step␛[m

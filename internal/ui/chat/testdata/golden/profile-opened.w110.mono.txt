@@ -49,7 +49,7 @@ critic · /repo/.shhh/agents/critic.toml · project                      [?] key
 │   1. Replace its file  /repo/.shhh/agents/critic.toml                                                      │
 │   2. See what changes  the file as it stands against the file as it would be written                       │
 │   3. Discard           the file stays as it is                                                             │
-│ [tab] the card                                                                                             │
+│ [tab] the card · [ctrl+s] save · /repo/.shhh/agents/critic.toml                                            │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · m · the migration's wait, on the surface and stoppable
@@ -101,7 +101,7 @@ critic · /repo/.shhh/agents/critic.toml · project                      [?] key
 │   1. Replace its file  /repo/.shhh/agents/critic.toml                                                      │
 │   2. See what changes  the file as it stands against the file as it would be written                       │
 │   3. Discard           the file stays as it is                                                             │
-│ [tab] the card                                                                                             │
+│ [tab] the card · [ctrl+s] save · /repo/.shhh/agents/critic.toml                                            │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · See what changes · the file as it stands against the file as it would be written, over the card
@@ -139,7 +139,7 @@ critic · /repo/.shhh/agents/critic.toml · project                      [?] key
 │ ❯ 1. Replace its file  /repo/.shhh/agents/critic.toml                                                      │
 │   2. See what changes  the file as it stands against the file as it would be written                       │
 │   3. Discard           the file stays as it is                                                             │
-│ [enter] confirm · [tab] the sections · [esc] take none                                                     │
+│ [enter] confirm · [tab] the sections · [ctrl+s] save · /repo/.shhh/agents/critic.toml · [esc] take none    │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a file changed since it was opened · the save refused in a sentence, the draft kept
@@ -180,7 +180,7 @@ critic · /repo/.shhh/agents/critic.toml · project                      [?] key
 │ ❯ 1. Replace its file  /repo/.shhh/agents/critic.toml                                                      │
 │   2. See what changes  the file as it stands against the file as it would be written                       │
 │   3. Discard           the file stays as it is                                                             │
-│ [enter] confirm · [tab] the sections · [esc] take none                                                     │
+│ [enter] confirm · [tab] the sections · [ctrl+s] save · /repo/.shhh/agents/critic.toml · [esc] take none    │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -223,7 +223,7 @@ critic · /repo/.shhh/agents/critic.toml · project                      [?] key
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mReplace its file␛[m  ␛[38;5;244m/repo/.shhh/agents/critic.toml␛[m                                                      ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSee what changes␛[m  ␛[38;5;244mthe file as it stands against the file as it would be written␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m           ␛[38;5;244mthe file stays as it is␛[m                                                             ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m                                                                                             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents/critic.toml␛[m                                            ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · m · the migration's wait, on the surface and stoppable
@@ -275,7 +275,7 @@ critic · /repo/.shhh/agents/critic.toml · project                      [?] key
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mReplace its file␛[m  ␛[38;5;244m/repo/.shhh/agents/critic.toml␛[m                                                      ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSee what changes␛[m  ␛[38;5;244mthe file as it stands against the file as it would be written␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m           ␛[38;5;244mthe file stays as it is␛[m                                                             ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m                                                                                             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents/critic.toml␛[m                                            ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · See what changes · the file as it stands against the file as it would be written, over the card
@@ -313,7 +313,7 @@ critic · /repo/.shhh/agents/critic.toml · project                      [?] key
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Replace its file  /repo/.shhh/agents/critic.toml                                                     ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSee what changes␛[m  ␛[38;5;244mthe file as it stands against the file as it would be written␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m           ␛[38;5;244mthe file stays as it is␛[m                                                             ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                                     ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents/critic.toml␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m    ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a file changed since it was opened · the save refused in a sentence, the draft kept
@@ -354,5 +354,5 @@ critic · /repo/.shhh/agents/critic.toml · project                      [?] key
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Replace its file  /repo/.shhh/agents/critic.toml                                                     ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSee what changes␛[m  ␛[38;5;244mthe file as it stands against the file as it would be written␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m           ␛[38;5;244mthe file stays as it is␛[m                                                             ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                                     ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents/critic.toml␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m    ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

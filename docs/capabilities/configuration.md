@@ -79,7 +79,7 @@ says the value is in force from the next session; in an untrusted one it
 says the file is not read here and that `shhh trust` loads it.
 
 A write lands in the file of where it is run. `config set`, `config init`
-and the config screen's `[w]` — `shhh config` and `/config` alike — write
+and the config screen's `[ctrl+s]` — `shhh config` and `/config` alike — write
 the checkout's file when run in one, because standing in a repository and
 setting something up is the common case, and the person's own file is the
 one they name: `--global` writes theirs from anywhere. Run outside a
@@ -261,13 +261,22 @@ diagnostics being read-only.
 
 ## A write changes one line
 
-A write from any surface — `config set`, the editor's `[w]`, a slash command
+A write from any surface — `config set`, the config screen's `[ctrl+s]`, a slash command
 that saves its answer, `shhh mcp add` — changes the key it was asked to
 change and leaves every other byte of the file as the person wrote it: the
 order of the sections, the blank lines, and above all the comments. The file
 is theirs. A three-line file with a comment saying why is a record of a
 decision, and a write that hands back eighty lines with the comment gone has
 destroyed the record to save one value.
+
+On the config screen the write is `[ctrl+s]`, the chord every write is, and it
+writes at once: the screen does not ask, it says what it did. The receipt
+names the file and the keys (`wrote 2 changes to .shhh/config.toml ·
+provider.model, behavior.command_timeout_seconds`), on the screen's foot row
+and in the transcript, and a write that fails names the path and the reason
+and leaves the changes staged
+([the settings screen](../interface/surfaces.md#the-settings-screen)). A
+written setting reaches the model only as the next session's configuration.
 
 A key set to its zero value is taken out of the file rather than written as
 zero. Unset means the default, and for a few keys zero and unset are not the
@@ -934,6 +943,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `profile.scroll_up` | `shift+up` | scroll the profile up | yes |
 | `profile.scroll_down` | `shift+down` | scroll the profile | yes |
 | `profile.back` | `esc`, `ctrl+c` | back a step | yes |
+| `profile.save` | `ctrl+s` | save the profile | yes |
 | `wait.fallback` | `m` | finish this turn on the fallback model | yes |
 | `wait.stop` | `esc` | stop waiting | yes |
 | `wait.compact` | `enter` | compact now | yes |
@@ -962,7 +972,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `screen.list` | `?` | keys | yes |
 | `screen.quit` | `q`, `esc`, `ctrl+c` | quit | yes |
 | `screen.reset` | `r` | reset to default | yes |
-| `screen.write` | `w` | write the file | yes |
+| `screen.write` | `ctrl+s` | write the file | yes |
 | `screen.keep` | `esc` | keep the current value | yes |
 | `screen.scope` | `g` | switch the file | yes |
 | `screen.copy` | `c` | copy it | yes |

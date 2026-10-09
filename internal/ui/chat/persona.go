@@ -1300,7 +1300,7 @@ func (m Model) savePersona(index int) (tea.Model, tea.Cmd) {
 	}
 	name := f.draft.Name
 	return m.closePersona(fmt.Sprintf(
-		"Saved %s to %s. It is spawnable now as role %q; edit the file any time.", name, path, name))
+		"%s. It is spawnable now as role %q; edit the file any time.", components.WriteReceipt(name, path), name))
 }
 
 // openPersonaProfile opens a role's file on the drafter's draft step, the
@@ -1423,7 +1423,7 @@ func (m Model) saveOpenedPersona(row personaSave) (tea.Model, tea.Cmd) {
 	}
 	name := f.draft.Name
 	return m.closePersona(fmt.Sprintf(
-		"Saved %s to %s. The next %s this session spawns is the file as it now reads.", name, path, name))
+		"%s. The next %s this session spawns is the file as it now reads.", components.WriteReceipt(name, path), name))
 }
 
 // personaPane renders the surface into the transcript pane it takes over.

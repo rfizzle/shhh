@@ -24,6 +24,8 @@ type fakeConfigHost struct {
 	staged map[string]string
 	wrote  map[string]string
 	writes int
+	// failWith is a write that cannot land: the reason it gives.
+	failWith string
 }
 
 func newFakeConfigHost() *fakeConfigHost {
@@ -47,7 +49,6 @@ func (h *fakeConfigHost) session() ConfigSession {
 }
 
 func (h *fakeConfigHost) answer(done bool, result components.ConfigResult) string {
-	h.screen.Notice = ""
 	if c := result.Change; c != nil {
 		h.staged[c.Key] = c.Value
 		for i := range h.screen.Rows {
@@ -57,15 +58,20 @@ func (h *fakeConfigHost) answer(done bool, result components.ConfigResult) strin
 		}
 		h.screen.Changed = len(h.staged)
 	}
-	if !done {
-		return ""
-	}
 	if result.Write {
+		if h.failWith != "" {
+			h.screen.Notice = "could not write " + h.screen.Path + ": " + h.failWith
+			return h.screen.Notice
+		}
 		h.writes++
+		var changed []string
 		for k, v := range h.staged {
 			h.wrote[k] = v
+			changed = append(changed, k)
 		}
-		return "Wrote " + h.screen.Path + "."
+		receipt := components.WriteReceipt(components.Changes(len(changed)), h.screen.Path, changed...)
+		h.staged, h.screen.Changed, h.screen.Notice = map[string]string{}, 0, receipt
+		return receipt + "\nThis session keeps the settings it started on; the next one starts on these."
 	}
 	return ""
 }
@@ -121,7 +127,7 @@ func TestConfig_HelpListsItWhereTheSessionHasIt(t *testing.T) {
 	if !strings.Contains(help, "/config") {
 		t.Error("/help never names /config")
 	}
-	if !strings.Contains(help, "reaches your config file until [w]") {
+	if !strings.Contains(help, "reaches your config file until [ctrl+s]") {
 		t.Errorf("/help does not say when an edit reaches the file:\n%s", help)
 	}
 	bare := readyModel(t)
@@ -165,7 +171,7 @@ func TestConfig_IsOneRegisterRow(t *testing.T) {
 	}
 }
 
-// Nothing reaches the host until the write, and the write asks first.
+// Nothing reaches the host until the write, and the write does not ask.
 func TestConfig_NothingIsWrittenUntilTheWriteKey(t *testing.T) {
 	h := newFakeConfigHost()
 	m := sendText(t, configModelWith(t, h), "/config")
@@ -178,22 +184,15 @@ func TestConfig_NothingIsWrittenUntilTheWriteKey(t *testing.T) {
 		t.Fatalf("a staged edit reached the file: %v", h.wrote)
 	}
 
-	m = pressKeys(t, m, tea.KeyPressMsg{Code: 'w', Text: "w"})
+	m = pressKeys(t, m, tea.KeyPressMsg{Code: 's', Mod: tea.ModCtrl})
 	if m.state != stateConfig {
-		t.Fatal("the write key closed the screen without asking")
-	}
-	if len(h.wrote) != 0 {
-		t.Fatalf("the write happened before the question was answered: %v", h.wrote)
-	}
-	m = pressKeys(t, m, tea.KeyPressMsg{Code: 'y', Text: "y"})
-	if m.state == stateConfig {
-		t.Fatal("the screen is still up after the write")
+		t.Fatal("the write closed the screen: it stays up to show its receipt")
 	}
 	if h.writes != 1 || h.wrote["behavior.check_in_rounds"] != "3" {
 		t.Fatalf("%d writes, file holds %v", h.writes, h.wrote)
 	}
 	last := m.transcript[len(m.transcript)-1].text
-	if !strings.Contains(last, "Wrote ~/.config/shhh/config.toml") {
+	if !strings.Contains(last, "wrote 1 change to ~/.config/shhh/config.toml · behavior.check_in_rounds") {
 		t.Errorf("the transcript row does not say what was written: %q", last)
 	}
 	// The write is about the next session, and a row that said only "wrote"

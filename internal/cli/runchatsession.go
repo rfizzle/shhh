@@ -346,6 +346,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			Started:    env.modelName,
 			StartedBy:  startedBy + setInProject(startedBy, proj),
 			Delegation: delegationWords(cfg.AgentDelegation()),
+			File:       writeFileName(),
 		}).
 		WithApprovalMode(mode, cycle).
 		WithSteering(steering(cfg, env.prompts)).

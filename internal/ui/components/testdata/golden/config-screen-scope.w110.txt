@@ -80,7 +80,7 @@ shhh config · the checkout's file · .shhh/config.toml                         
 [ctrl+u] clear the filter, or the field being typed into
 [backspace] delete a character from either
 [r] reset this setting to its default
-[w] write every staged change to the checkout's .shhh/config.toml
+[ctrl+s] write every staged change to the checkout's .shhh/config.toml
 [g] switch the write between the checkout's file and yours
 [esc] leave the picker, or leave the screen writing nothing
 [q] leave the screen writing nothing
@@ -173,7 +173,7 @@ $  a shell command
 ␛[38;5;103m[ctrl+u]␛[m␛[38;5;241m clear the filter, or the field being typed into␛[m
 ␛[38;5;103m[backspace]␛[m␛[38;5;241m delete a character from either␛[m
 ␛[38;5;103m[r]␛[m␛[38;5;241m reset this setting to its default␛[m
-␛[38;5;103m[w]␛[m␛[38;5;241m write every staged change to the checkout's .shhh/config.toml␛[m
+␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write every staged change to the checkout's .shhh/config.toml␛[m
 ␛[38;5;103m[g]␛[m␛[38;5;241m switch the write between the checkout's file and yours␛[m
 ␛[92m[esc]␛[m␛[38;5;241m leave the picker, or leave the screen writing nothing␛[m
 ␛[38;5;103m[q]␛[m␛[38;5;241m leave the screen writing nothing␛[m

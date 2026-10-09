@@ -3121,7 +3121,7 @@ keeping the settings it started on, and they are an exception by being asked
 for by name. A flow no session sends — the one-shot's description, and the
 compaction an unattended run makes — offers only the files. `shhh config`
 has no session, so its flows rows stage like every other row, and `[g]` and
-`[w]` reach either file.
+`[ctrl+s]` reach either file.
 
 Neither row repeats the other. The header carries the register's key and the
 letter; the foot carries what the screen can do and, last, the way out. A
@@ -3365,9 +3365,10 @@ Doctor has one key that changes the machine, and it is the shape of the
 exception rather than a hole in the rule. A pending migration is not a repair
 and not a judgement about what you meant: the machine is shaped an older way,
 the move is mechanical, and the alternative to offering it here is a fallback
-that never ends. So the row that found it offers to make it, and puts the same
-confirm in front of it that the settings screen puts in front of a write
-(docs/capabilities/configuration.md#a-migration-is-a-doctor-check).
+that never ends. So the row that found it offers to make it, and puts a confirm
+in front of it, where the settings screen puts none in front of a write
+(docs/capabilities/configuration.md#a-migration-is-a-doctor-check): a setting
+is the person's own typing, and a migration is the machine's.
 
 The rule under a screen's header and the run of a card's top edge are the
 same material: the one rule the drawing kit has, in the chrome tone. That is
@@ -3375,6 +3376,41 @@ what makes a card and a screen read as one product instead of as two widgets
 in the same binary. A diagonal texture was tried in that run and taken out
 again — it collapsed to the flat rule under a two-grey palette, which is the
 proof that it carried nothing, and it was a material no artboard draws.
+
+### The settings screen
+
+Staging and writing are two acts, and the write is one chord. Edits stage as
+they are made, the header counts them (`2 changes unwritten`), and `[ctrl+s]`
+writes every staged change to the file in the header at once. It is the
+chord every write of a file, a setting, a profile or a buffer is spelled as
+([a key is inert until its surface holds the
+keyboard](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)),
+and it asks nothing: the one question this screen asks is the discard, because
+that is the act that cannot be taken back. While anything is staged the key row
+offers `[ctrl+s] write 2 changes` and, beside it or under it when it does not
+fit, says `nothing is written until [ctrl+s]`, at every width. With nothing
+staged the key says `nothing staged to write` on the foot row and writes
+nothing.
+
+A write answers with a receipt, so it is never silent. The foot row, under the
+keys, reads `wrote 2 changes to .shhh/config.toml · provider.model,
+behavior.command_timeout_seconds` until the next key, and in a session the
+transcript gets the same line under the `·` mark, with what the checkout had
+to say about the keys just written and the sentence that the running session
+keeps the settings it started on. The screen stays up and nothing is left
+staged. A write that cannot land says `could not write <path>: <reason>` the
+same two ways and keeps every change staged, so the key can be pressed again
+once the reason is gone. The model picker's `[d]`, which writes `provider.model`
+at once behind `[ctrl+u]`, answers with the same line, and the profile
+drafter's `[ctrl+s]` writes its draft through the card's first row and says
+`wrote <role> to <path>`.
+
+`ctrl+s` is flow control on a cooked terminal. In raw mode, which every shhh
+surface runs in, it reaches shhh on every local terminal; on a cooked hop (an
+ssh session or a multiplexer that keeps XON/XOFF) it never arrives, and the
+register lists it under flow control so the keymap file moves the act
+([the chords the keyboard spends
+anyway](reserved-keys.md#kept-on-purpose)).
 
 ### The backlog screen
 

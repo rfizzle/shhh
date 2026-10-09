@@ -195,7 +195,7 @@ const (
 	stateNotes
 	// stateConfig: the settings screen is up — `shhh config`'s own staged
 	// edit surface, reached from inside a session (config.go). It is the one
-	// takeover here that can write a file, and it writes it on `[w]` alone.
+	// takeover here that can write a file, and it writes it on `[ctrl+s]` alone.
 	stateConfig
 	// stateQuestion: the model has asked something and the card is up
 	// (question.go). It is a decision and not a surface — the turn is

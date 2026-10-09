@@ -223,3 +223,35 @@ func TestReference_KeymapIsCurrent(t *testing.T) {
 		t.Errorf("%s no longer matches the register — run: make docs", keymapDoc)
 	}
 }
+
+// Every act that writes a file, a setting or a profile is spelled ctrl+s, by
+// the one declaration that spells it, and it earns the chord the list reserves
+// as flow control. On a cooked hop where the chord never arrives the keymap
+// file moves the act, and the register takes the move.
+func TestKeys_EverySaveIsCtrlS(t *testing.T) {
+	for name, b := range map[string]Binding{"the settings write": Screen.Write, "the profile save": Profile.Save} {
+		if got := Shown(b); got != SaveChord {
+			t.Errorf("%s is shown as %q, want ctrl+s", name, got)
+		}
+		if !Is("ctrl+s", b) || len(b.Keys()) != 1 {
+			t.Errorf("%s answers %v, want ctrl+s alone", name, b.Keys())
+		}
+		if _, ok := Kept("ctrl+s", Words(b)); !ok {
+			t.Errorf("%s does not earn the reserved chord", name)
+		}
+	}
+	if Is("w", Screen.Write) {
+		t.Error("w is no longer a write")
+	}
+	if err := checkReserved(); err != nil {
+		t.Fatalf("the shipped register spends a reserved chord it has not earned: %v", err)
+	}
+
+	restoreRegister(t)
+	if err := Load(keymapFile(t, "[screen]\nwrite = \"ctrl+w\"\n")); err != nil {
+		t.Fatalf("the keymap file moves the save off a cooked hop: %v", err)
+	}
+	if Is("ctrl+s", Screen.Write) || !Is("ctrl+w", Screen.Write) {
+		t.Errorf("the moved write answers %v", Screen.Write.Keys())
+	}
+}

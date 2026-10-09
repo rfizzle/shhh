@@ -481,3 +481,26 @@ func TestProgram_TheSearchReachesInsideTheFolds(t *testing.T) {
 	frame := finalFrame(t, tm)
 	frameHas(t, frame, "errors.go", "match inside")
 }
+
+// The settings write through the whole program: a staged change, ctrl+s, and
+// the receipt on the screen's foot row with the screen still up, then one
+// row under the mark once the screen is left (scripts/tui/scenes/settings-write).
+func TestProgram_ACtrlSWriteLeavesAReceipt(t *testing.T) {
+	h := newFakeConfigHost()
+	m, _ := scriptedSession(programTurn{text: "nothing to do"})
+	m = m.WithConfigScreen(func([]string) (ConfigSession, error) { return h.session(), nil })
+	tm := runProgram(t, m)
+
+	send(tm, "/config")
+	waitForText(t, tm, "Check in every")
+	tm.Send(programEnter)
+	tm.Send(tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl})
+	tm.Type("3")
+	tm.Send(programEnter)
+	waitForText(t, tm, "[ctrl+s] write 1 change")
+	tm.Send(tea.KeyPressMsg{Code: 's', Mod: tea.ModCtrl})
+	waitForText(t, tm, "wrote 1 change to ~/.config/shhh/config.toml · behavior.check_in_rounds")
+	if h.writes != 1 {
+		t.Fatalf("%d writes, want 1", h.writes)
+	}
+}

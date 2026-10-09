@@ -1,0 +1,30 @@
+# program test: TestProgram_ACtrlSWriteLeavesAReceipt
+#
+# Every write is ctrl+s, and it says what it wrote
+# (docs/interface/surfaces.md#the-settings-screen). The golden is
+# config-screen: the screen with changes staged, after a write, and after a
+# write that failed.
+#
+# /config at 110 columns. One change is staged on the round limit, so the key
+# row offers `[ctrl+s] write 1 change` and the annotation `nothing is written
+# until [ctrl+s]` stands beside it. Pressing the chord writes at once, with no
+# question: the screen stays up, the header no longer counts anything
+# unwritten, and the foot row names the file and the key. Pressing it again
+# with nothing staged says so and writes nothing. The old `w` is only a
+# letter now. Nothing in the scene writes the real config file: the workspace
+# is a fresh repository, so the write lands in its own .shhh/config.toml.
+snap 01-start "Some things worth doing first"
+keys "/config" Enter
+snap 02-open "/config" "FLOWS"
+keys "/"
+keys "round limit"
+keys Enter
+keys C-u
+keys "40" Enter
+snap 03-staged "1 change unwritten" "[ctrl+s] write 1 change" "nothing is written until [ctrl+s]"
+keys C-s
+snap 04-receipt "wrote 1 change to .shhh/config.toml" "behavior.max_tool_rounds"
+keys C-s
+snap 05-nothing-left "nothing staged to write"
+keys Escape
+snap 06-back "wrote 1 change to .shhh/config.toml"

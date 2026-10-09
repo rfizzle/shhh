@@ -246,7 +246,7 @@ func TestConfigScreen_TheScopeKeyMovesTheWrite(t *testing.T) {
 		t.Fatalf("the write moved back to the checkout over a key it may not decide: yours %v, notice %q",
 			screen.Yours, screen.Notice)
 	}
-	if note := session.Answer(true, components.ConfigResult{Write: true}); !strings.Contains(note, "Wrote") {
+	if note := session.Answer(false, components.ConfigResult{Write: true}); !strings.Contains(note, "wrote 1 change to") {
 		t.Fatalf("the write did not land: %s", note)
 	}
 	if got, err := os.ReadFile(userPath); err != nil || !strings.Contains(string(got), "sk-test") {

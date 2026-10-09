@@ -49,7 +49,7 @@
 │   1. Save to this project  /repo/.shhh/agents                                │
 │   2. Save globally         /home/x/.config/shhh/agents                       │
 │   3. Discard                                                                 │
-│ [tab] the card                                                               │
+│ [tab] the card · [ctrl+s] save · /repo/.shhh/agents                          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · a note open under Commands · only its two fields are taken from the answer
@@ -91,7 +91,7 @@
 │   1. Save to this project  /repo/.shhh/agents                                │
 │   2. Save globally         /home/x/.config/shhh/agents                       │
 │   3. Discard                                                                 │
-│ [tab] the card                                                               │
+│ [tab] the card · [ctrl+s] save · /repo/.shhh/agents                          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · written in the editor · marked as the person's own
@@ -133,7 +133,7 @@
 │   1. Save to this project  /repo/.shhh/agents                                │
 │   2. Save globally         /home/x/.config/shhh/agents                       │
 │   3. Discard                                                                 │
-│ [tab] the card                                                               │
+│ [tab] the card · [ctrl+s] save · /repo/.shhh/agents                          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · an allow line refused on the card · in the loader's words
@@ -175,7 +175,7 @@
 │   1. Save to this project  /repo/.shhh/agents                                │
 │   2. Save globally         /home/x/.config/shhh/agents                       │
 │   3. Discard                                                                 │
-│ [tab] the card                                                               │
+│ [tab] the card · [ctrl+s] save · /repo/.shhh/agents                          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · cleared · the session's own command lists apply, and esc takes it back
@@ -217,7 +217,7 @@
 │   1. Save to this project  /repo/.shhh/agents                                │
 │   2. Save globally         /home/x/.config/shhh/agents                       │
 │   3. Discard                                                                 │
-│ [tab] the card                                                               │
+│ [tab] the card · [ctrl+s] save · /repo/.shhh/agents                          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -260,7 +260,7 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                                                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m                                                               ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a note open under Commands · only its two fields are taken from the answer
@@ -302,7 +302,7 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                                                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m                                                               ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · written in the editor · marked as the person's own
@@ -344,7 +344,7 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                                                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m                                                               ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · an allow line refused on the card · in the loader's words
@@ -386,7 +386,7 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                                                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m                                                               ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · cleared · the session's own command lists apply, and esc takes it back
@@ -428,5 +428,5 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mSave to this project␛[m  ␛[38;5;244m/repo/.shhh/agents␛[m                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mDiscard␛[m                                                                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m                                                               ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save · /repo/.shhh/agents␛[m                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m

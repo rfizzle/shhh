@@ -416,11 +416,21 @@ func (p *ProfileScreen) syncCard() {
 		p.decide.HintKeys = []KeyOffer{
 			keyOfferAs(keys.Select.Take, "confirm"),
 			keyOfferAs(keys.Profile.Note, "the sections"),
+			keyOfferAs(keys.Profile.Save, p.saveWords()),
 			p.decide.cancelOffer(),
 		}
 		return
 	}
-	p.decide.HintKeys = []KeyOffer{keyOfferAs(keys.Profile.Note, "the card")}
+	p.decide.HintKeys = []KeyOffer{keyOfferAs(keys.Profile.Note, "the card"), keyOfferAs(keys.Profile.Save, p.saveWords())}
+}
+
+// saveWords is what the save chord does here, in the row it writes: the
+// first one the card offers.
+func (p *ProfileScreen) saveWords() string {
+	if len(p.saves) > 0 && p.saves[0].Desc != "" {
+		return "save · " + p.saves[0].Desc
+	}
+	return "save"
 }
 
 // Update routes one keystroke to the step that is up.
@@ -458,6 +468,12 @@ func (p *ProfileScreen) updateDraft(msg tea.KeyPressMsg) (bool, profileResult) {
 	}
 	if p.sections.refining {
 		return p.sections.updateRefine(msg)
+	}
+	// The save chord writes through the card's first row from wherever the
+	// keyboard is, so the write is one chord here as on every surface; the
+	// card's other rows are still the way to a destination or a diff.
+	if keys.Is(msg.String(), keys.Profile.Save) && len(p.saves) > 0 && p.Picker == nil {
+		return true, profileResult{Action: ProfileSave, Index: 0}
 	}
 	if p.Picker != nil {
 		// The selector holds the keyboard whole, the scroll keys included:
@@ -529,7 +545,7 @@ func (p *ProfileScreen) keyList() []KeyOffer {
 		// Live only on a profile opened in the older shape.
 		list = append(list, keyOffer(keys.Profile.Migrate))
 	}
-	return append(list, keyOffer(keys.Profile.Note),
+	return append(list, keyOffer(keys.Profile.Note), keyOffer(keys.Profile.Save),
 		keyOffer(keys.Profile.ScrollUp), keyOffer(keys.Profile.ScrollDown),
 		keyOffer(keys.Profile.Back))
 }

@@ -52,6 +52,26 @@ func bind(shown, words string, presses ...string) Binding {
 	return key.NewBinding(key.WithKeys(presses...), key.WithHelp(shown, words))
 }
 
+// SaveChord is the one chord every write of a file, a setting, a profile or a
+// buffer is spelled as, and the name every hint prints for it.
+//
+// It is the one chord because it is the one a person already knows for the
+// act, and it is the register's to spend although the list reserves it as
+// flow control (reserved.go): in raw mode, which every shhh surface runs in,
+// a local terminal hands it over; on a cooked hop — an ssh session or a
+// multiplexer that keeps XON/XOFF — it never arrives, and the save is the
+// keymap file's to move there. The settings screen and the profile drafter
+// declare their save through Save, and the editor pane does the same, so the
+// spelling cannot drift between the surfaces.
+const SaveChord = "ctrl+s"
+
+// Save declares an act that writes something to disk on SaveChord. Each act
+// keeps its own words, which are what name it in a keymap file, and shares
+// the chord and the spelling of its hint.
+func Save(words string) Binding {
+	return bind(SaveChord, words, SaveChord)
+}
+
 // Match reports whether a keystroke is one of the given bindings. It is the
 // register's own so a caller needs one import rather than two, and so the
 // name does not collide with the `key` locals this tree is full of.
@@ -1275,6 +1295,10 @@ type ProfileKeys struct {
 	ScrollUp   Binding
 	ScrollDown Binding
 	Back       Binding
+	// Save writes the draft through the card's first row (to this project,
+	// or over the file an opened profile came from) without moving the
+	// keyboard onto the card: the chord every write is.
+	Save Binding
 }
 
 var Profile = ProfileKeys{
@@ -1306,6 +1330,7 @@ var Profile = ProfileKeys{
 	ScrollUp:   bind("shift+↑", "scroll the profile up", "shift+up"),
 	ScrollDown: bind("shift+↓", "scroll the profile", "shift+down"),
 	Back:       bind("esc", "back a step", "esc", "ctrl+c"),
+	Save:       Save("save the profile"),
 }
 
 // WaitKeys are the surfaces that open on their own and take the keyboard with
@@ -1499,7 +1524,7 @@ var Screen = ScreenKeys{
 	Quit:   bind("q", "quit", "q", "esc", "ctrl+c"),
 
 	Reset: bind("r", "reset to default", "r"),
-	Write: bind("w", "write the file", "w"),
+	Write: Save("write the file"),
 	Keep:  bind("esc", "keep the current value", "esc"),
 	Scope: bind("g", "switch the file", "g"),
 

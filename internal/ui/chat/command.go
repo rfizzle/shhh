@@ -879,12 +879,12 @@ default [level]   show or persist the level new sessions start on (provider.reas
 		// session flips often enough to have a word for. Not idleOnly: the
 		// settings a person wants to change mid-session are the ones the
 		// running turn just made them think about, and nothing the screen
-		// stages reaches the file until [w] — which writes the user's own
+		// stages reaches the file until [ctrl+s] — which writes the user's own
 		// config file and not the tree the turn is working in.
 		{name: "/config",
 			slash: &slashCommand{desc: "every setting, where its value came from, and what changing it costs",
 				enabled: func(m *Model) bool { return m.openConfig != nil },
-				help:    `every setting, staged: what each one is set to, where that value came from, and what [enter] offers instead of typing it. Nothing reaches your config file until [w], and the way out asks before discarding what is staged. The running session keeps the settings it started on`},
+				help:    `every setting, staged: what each one is set to, where that value came from, and what [enter] offers instead of typing it. Nothing reaches your config file until [ctrl+s], and the way out asks before discarding what is staged. The running session keeps the settings it started on`},
 			bare: true,
 			open: bareOpen(Model.openConfigScreen)},
 		// The session's whole boundary. It reads and changes nothing, so it

@@ -283,8 +283,8 @@ func TestConfigSession_HostsTheSameScreenAndReportsTheWrite(t *testing.T) {
 		t.Fatal("a staged edit reached the file")
 	}
 
-	note := session.Answer(true, components.ConfigResult{Write: true})
-	if !strings.Contains(note, "Wrote") {
+	note := session.Answer(false, components.ConfigResult{Write: true})
+	if !strings.Contains(note, "wrote 1 change to") {
 		t.Fatalf("the write left no row: %q", note)
 	}
 	got, err := os.ReadFile(path)

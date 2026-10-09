@@ -130,7 +130,7 @@ shhh config · ~/.config/shhh/config.toml                                       
 
 [enter] use it · [esc] keep the current key
 
-· staged · the header counts it and [w] is offered
+· staged · the header counts it and [ctrl+s] is offered
 shhh config · ~/.config/shhh/config.toml · 2 changes unwritten                             [?] keys · [q] quit
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -148,14 +148,14 @@ shhh config · ~/.config/shhh/config.toml · 2 changes unwritten                
     sub-agent model    inherit                                                                         default
 
   WORKSPACE
-    sandbox            ⛨ workspace-write                                              unavailable on this host
-  ↓ 4 more
+  ↓ 5 more
 
-[↑↓/jk] move · [enter] change · [/] filter · [r] reset to default · [w] write the file
+[↑↓/jk] move · [enter] change · [/] filter · [r] reset to default · [ctrl+s] write 2 changes
 [esc] discard, after asking
+nothing is written until [ctrl+s]
 
-· the write-back · the inline confirm, defaulting to no
-shhh config · ~/.config/shhh/config.toml · 2 changes unwritten                             [?] keys · [q] quit
+· after a write · the receipt on the foot row, nothing left staged
+shhh config · ~/.config/shhh/config.toml                                                   [?] keys · [q] quit
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   SESSION
@@ -173,10 +173,34 @@ shhh config · ~/.config/shhh/config.toml · 2 changes unwritten                
 
   WORKSPACE
     sandbox            ⛨ workspace-write                                              unavailable on this host
-    network            private hosts reachable — intranet and localhost fetches are allowed               user
-  ↓ 3 more
+  ↓ 4 more
 
-Write 2 changes to ~/.config/shhh/config.toml?  [y/N]
+[↑↓/jk] move · [enter] change · [/] filter · [r] reset to default · [esc] leave                    14 settings
+wrote 2 changes to .shhh/config.toml · provider.model, behavior.command_timeout_seconds
+
+· after a failed write · why, and the changes still staged
+shhh config · ~/.config/shhh/config.toml · 2 changes unwritten                             [?] keys · [q] quit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  SESSION
+    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                    user
+    round limit        40                                                                            unwritten
+    context budget     8000 tokens                                                                     default
+    safety warnings    on                                                                              default
+
+  MODEL
+    provider           openai                                                                             user
+  ❯ model              claude-sonnet-4.6                                                             unwritten
+    api key            ···4f9c                                                                            user
+    base url           (the provider's own)                                                            default
+    sub-agent model    inherit                                                                         default
+
+  ↓ 5 more
+
+[↑↓/jk] move · [enter] change · [/] filter · [r] reset to default · [ctrl+s] write 2 changes
+[esc] discard, after asking
+nothing is written until [ctrl+s]
+could not write .shhh/config.toml: permission denied
 
 · the way out · the same question over the same count
 shhh config · ~/.config/shhh/config.toml · 2 changes unwritten                             [?] keys · [q] quit
@@ -233,7 +257,7 @@ shhh config · ~/.config/shhh/config.toml                                       
 [ctrl+u] clear the filter, or the field being typed into
 [backspace] delete a character from either
 [r] reset this setting to its default
-[w] write every staged change to ~/.config/shhh/config.toml
+[ctrl+s] write every staged change to ~/.config/shhh/config.toml
 [esc] leave the picker, or leave the screen writing nothing
 [q] leave the screen writing nothing
 
@@ -423,7 +447,7 @@ $  a shell command
 
 ␛[38;5;254m[enter]␛[m␛[38;5;244m use it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep the current key␛[m
 
-· staged · the header counts it and [w] is offered
+· staged · the header counts it and [ctrl+s] is offered
 ␛[1;38;5;254mshhh config␛[m␛[38;5;244m · ~/.config/shhh/config.toml␛[m␛[38;5;254m · 2 changes unwritten␛[m                             ␛[38;5;244m[?] keys · [q] quit␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
@@ -441,14 +465,14 @@ $  a shell command
     ␛[38;5;254msub-agent model␛[m    ␛[38;5;254minherit␛[m                                                                         ␛[38;5;254mdefault␛[m
 
   ␛[1;38;5;254mWORKSPACE␛[m
-    ␛[38;5;254msandbox␛[m            ␛[38;5;254m⛨ workspace-write␛[m                                              ␛[38;5;254munavailable on this host␛[m
-  ␛[38;5;244m↓ 4 more␛[m
+  ␛[38;5;244m↓ 5 more␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m reset to default␛[m␛[38;5;244m · ␛[m␛[38;5;254m[w]␛[m␛[38;5;244m write the file␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m reset to default␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write 2 changes␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m discard, after asking␛[m
+␛[38;5;244mnothing is written until [ctrl+s]␛[m
 
-· the write-back · the inline confirm, defaulting to no
-␛[1;38;5;254mshhh config␛[m␛[38;5;244m · ~/.config/shhh/config.toml␛[m␛[38;5;254m · 2 changes unwritten␛[m                             ␛[38;5;244m[?] keys · [q] quit␛[m
+· after a write · the receipt on the foot row, nothing left staged
+␛[1;38;5;254mshhh config␛[m␛[38;5;244m · ~/.config/shhh/config.toml␛[m                                                   ␛[38;5;244m[?] keys · [q] quit␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
@@ -466,10 +490,34 @@ $  a shell command
 
   ␛[1;38;5;254mWORKSPACE␛[m
     ␛[38;5;254msandbox␛[m            ␛[38;5;254m⛨ workspace-write␛[m                                              ␛[38;5;254munavailable on this host␛[m
-    ␛[38;5;254mnetwork␛[m            ␛[38;5;254mprivate hosts reachable␛[m ␛[38;5;244m— intranet and localhost fetches are allowed␛[m               ␛[38;5;254muser␛[m
-  ␛[38;5;244m↓ 3 more␛[m
+  ␛[38;5;244m↓ 4 more␛[m
 
-␛[38;5;254m␛[38;5;254mWrite 2 changes to ~/.config/shhh/config.toml?␛[m␛[m  ␛[38;5;244m[␛[m␛[38;5;244my␛[m␛[38;5;244m/␛[m␛[1;38;5;254mN␛[m␛[38;5;244m]␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m reset to default␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m                    ␛[38;5;244m14 settings␛[m
+␛[38;5;244mwrote 2 changes to .shhh/config.toml · provider.model, behavior.command_timeout_seconds␛[m
+
+· after a failed write · why, and the changes still staged
+␛[1;38;5;254mshhh config␛[m␛[38;5;244m · ~/.config/shhh/config.toml␛[m␛[38;5;254m · 2 changes unwritten␛[m                             ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[1;38;5;254mSESSION␛[m
+    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                    ␛[38;5;254muser␛[m
+    ␛[38;5;254mround limit␛[m        ␛[38;5;254m40␛[m                                                                            ␛[38;5;254munwritten␛[m
+    ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                     ␛[38;5;254mdefault␛[m
+    ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                              ␛[38;5;254mdefault␛[m
+
+  ␛[1;38;5;254mMODEL␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                             ␛[38;5;254muser␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mmodel              claude-sonnet-4.6                                                             unwritten␛[m
+    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                            ␛[38;5;254muser␛[m
+    ␛[38;5;254mbase url␛[m           ␛[38;5;254m(the provider's own)␛[m                                                            ␛[38;5;254mdefault␛[m
+    ␛[38;5;254msub-agent model␛[m    ␛[38;5;254minherit␛[m                                                                         ␛[38;5;254mdefault␛[m
+
+  ␛[38;5;244m↓ 5 more␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m reset to default␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write 2 changes␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m discard, after asking␛[m
+␛[38;5;244mnothing is written until [ctrl+s]␛[m
+␛[38;5;244mcould not write .shhh/config.toml: permission denied␛[m
 
 · the way out · the same question over the same count
 ␛[1;38;5;254mshhh config␛[m␛[38;5;244m · ~/.config/shhh/config.toml␛[m␛[38;5;254m · 2 changes unwritten␛[m                             ␛[38;5;244m[?] keys · [q] quit␛[m
@@ -526,7 +574,7 @@ $  a shell command
 ␛[38;5;254m[ctrl+u]␛[m␛[38;5;244m clear the filter, or the field being typed into␛[m
 ␛[38;5;254m[backspace]␛[m␛[38;5;244m delete a character from either␛[m
 ␛[38;5;254m[r]␛[m␛[38;5;244m reset this setting to its default␛[m
-␛[38;5;254m[w]␛[m␛[38;5;244m write every staged change to ~/.config/shhh/config.toml␛[m
+␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write every staged change to ~/.config/shhh/config.toml␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m leave the picker, or leave the screen writing nothing␛[m
 ␛[38;5;254m[q]␛[m␛[38;5;244m leave the screen writing nothing␛[m
 

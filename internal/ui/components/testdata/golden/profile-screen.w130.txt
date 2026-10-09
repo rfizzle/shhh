@@ -114,7 +114,7 @@
 │   1. Save to this project  .shhh/agents                                                                                        │
 │   2. Save globally         ~/.config/shhh/agents                                                                               │
 │   3. Discard                                                                                                                   │
-│ [tab] the card                                                                                                                 │
+│ [tab] the card · [ctrl+s] save · .shhh/agents                                                                                  │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · one selected further down · a section the person edited, and its keys
@@ -158,7 +158,7 @@
 │   1. Save to this project  .shhh/agents                                                                                        │
 │   2. Save globally         ~/.config/shhh/agents                                                                               │
 │   3. Discard                                                                                                                   │
-│ [tab] the card                                                                                                                 │
+│ [tab] the card · [ctrl+s] save · .shhh/agents                                                                                  │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a section refining · the note under it, the rest sent as fixed context
@@ -204,7 +204,7 @@
 │   1. Save to this project  .shhh/agents                                                                                        │
 │   2. Save globally         ~/.config/shhh/agents                                                                               │
 │   3. Discard                                                                                                                   │
-│ [tab] the card                                                                                                                 │
+│ [tab] the card · [ctrl+s] save · .shhh/agents                                                                                  │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the wait, on that section · the other sections stand
@@ -270,7 +270,7 @@
 │ ❯ 1. Save to this project  .shhh/agents                                                                                        │
 │   2. Save globally         ~/.config/shhh/agents                                                                               │
 │   3. Discard                                                                                                                   │
-│ [enter] confirm · [tab] the sections · [esc] take none                                                                         │
+│ [enter] confirm · [tab] the sections · [ctrl+s] save · .shhh/agents · [esc] take none                                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the file already exists · the draft asks again, saying so
@@ -313,7 +313,7 @@
 │ ❯ 1. Save to this project  .shhh/agents                                                                                        │
 │   2. Save globally         ~/.config/shhh/agents                                                                               │
 │   3. Discard                                                                                                                   │
-│ [enter] confirm · [tab] the sections · [esc] take none                                                                         │
+│ [enter] confirm · [tab] the sections · [ctrl+s] save · .shhh/agents · [esc] take none                                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -421,7 +421,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m.shhh/agents␛[m                                                                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m~/.config/shhh/agents␛[m                                                                               ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m                                                                                                                 ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · .shhh/agents␛[m                                                                                  ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · one selected further down · a section the person edited, and its keys
@@ -465,7 +465,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m.shhh/agents␛[m                                                                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m~/.config/shhh/agents␛[m                                                                               ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m                                                                                                                 ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · .shhh/agents␛[m                                                                                  ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a section refining · the note under it, the rest sent as fixed context
@@ -511,7 +511,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m.shhh/agents␛[m                                                                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m~/.config/shhh/agents␛[m                                                                               ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m                                                                                                                 ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · .shhh/agents␛[m                                                                                  ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the wait, on that section · the other sections stand
@@ -577,7 +577,7 @@
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. Save to this project  .shhh/agents                                                                                       ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m~/.config/shhh/agents␛[m                                                                               ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the sections␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                                                         ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the sections␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · .shhh/agents␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the file already exists · the draft asks again, saying so
@@ -620,5 +620,5 @@
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. Save to this project  .shhh/agents                                                                                       ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m~/.config/shhh/agents␛[m                                                                               ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the sections␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                                                         ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the sections␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · .shhh/agents␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

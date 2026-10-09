@@ -130,7 +130,7 @@ func chatScreens() []screenSpec {
 				keys: (Model).updateTodoScreen,
 				door: &surfaceDoor{components.RailTodo, railDoor{Model.openTodoDoor, backlogShowing, Model.closeTodoScreen}},
 			}},
-		// The one pane screen that can write a file. It writes on `[w]`
+		// The one pane screen that can write a file. It writes on `[ctrl+s]`
 		// alone and asks before it walks away from anything staged, which is
 		// the screen's own rule rather than the register's (config.go).
 		{state: stateConfig, command: "/config", surface: keys.NoSurface, place: placePane, held: true,

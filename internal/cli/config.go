@@ -329,8 +329,8 @@ func wordFromTheTable(s config.Setting) func(string) error {
 //
 // Two copies of the config are held. base is what was loaded and is what a
 // row is compared against to say where its value came from; cfg is what the
-// staged edits have made of it. Nothing is written until [w] — which is the
-// rule the old wizard broke by saving on every keystroke — and what [w]
+// staged edits have made of it. Nothing is written until [ctrl+s] — which is the
+// rule the old wizard broke by saving on every keystroke — and what [ctrl+s]
 // writes is the staged keys alone, each as the value it was staged with, so
 // the file keeps every line the screen did not touch.
 type configModel struct {
@@ -339,7 +339,7 @@ type configModel struct {
 	// proj is what the checkout's own file set, which decides a row's source
 	// field and what a write to the user's file has to say for itself.
 	proj config.Project
-	// path is the file [w] writes, and toProject says it is the checkout's
+	// path is the file [ctrl+s] writes, and toProject says it is the checkout's
 	// rather than the person's — standIn's answer, which is writesCheckout's.
 	// dir is the directory the checkout was found from, which a key the
 	// checkout may not decide is refused against before it is staged.
@@ -456,38 +456,86 @@ func (m *configModel) switchScope() {
 	m.writeTo(!m.toProject)
 }
 
-// answer stages the edit a key made and, on the write the screen closes with,
-// puts the staged keys in the file.
+// answer stages the edit a key made and puts the staged keys in the file on
+// the write; the screen closes only when a key closed it.
 func (m *configModel) answer(done bool, result components.ConfigResult) tea.Cmd {
-	m.screen.Notice = ""
+	m.handle(result)
+	if !done {
+		return nil
+	}
+	return tea.Quit
+}
+
+// handle is one key's result carried out: the edit it staged, the file it
+// switched to, the write it asked for. It returns the receipt of a write and
+// the checkout's word about it, both empty when nothing was written.
+func (m *configModel) handle(result components.ConfigResult) (receipt, note string) {
 	if result.Change != nil {
 		m.apply(*result.Change)
 	}
 	if result.Scope {
 		m.switchScope()
 	}
-	if !done {
-		return nil
-	}
 	if result.Write {
-		if m.toProject {
-			// The checkout's own file overrides nothing of itself, so what
-			// is left to say is whether it is read at all.
-			if _, err := writeConfigEdits(config.Project{}, m.path, m.edits()...); err != nil {
-				m.err = err
-			} else {
-				m.saved, m.note = true, projectTrustNote()
-			}
-			return tea.Quit
-		}
-		note, err := writeConfigEdits(m.proj, m.path, m.edits()...)
-		if err != nil {
-			m.err = err
-		} else {
-			m.saved, m.note = true, note
-		}
+		return m.write()
 	}
-	return tea.Quit
+	return "", ""
+}
+
+// write puts the staged keys in the file and answers on the screen's foot
+// row with what it wrote, or with why it could not. The screen stays up
+// either way: a write that landed leaves nothing standing against the file,
+// and one that failed leaves every edit staged to be tried again.
+func (m *configModel) write() (receipt, note string) {
+	edits := m.edits()
+	if len(edits) == 0 {
+		m.screen.Notice = "nothing staged to write"
+		return "", ""
+	}
+	var err error
+	if m.toProject {
+		// The checkout's own file overrides nothing of itself, so what is
+		// left to say is whether it is read at all.
+		if _, err = writeConfigEdits(config.Project{}, m.path, edits...); err == nil {
+			note = projectTrustNote()
+		}
+	} else {
+		note, err = writeConfigEdits(m.proj, m.path, edits...)
+	}
+	if err != nil {
+		m.err = err
+		m.screen.Notice = "could not write " + m.screen.Path + ": " + err.Error()
+		return "", ""
+	}
+	m.err, m.saved, m.note = nil, true, note
+	changed := make([]string, len(edits))
+	for i, e := range edits {
+		changed[i] = e.Key
+	}
+	m.landed(edits)
+	receipt = components.WriteReceipt(components.Changes(len(edits)), m.screen.Path, changed...)
+	m.screen.Notice = receipt
+	return receipt, note
+}
+
+// landed is what the file now holds becoming what the screen compares
+// against: the written keys are no longer edits standing against it, and a
+// row's source says the file it was just written to.
+func (m *configModel) landed(edits []config.Edit) {
+	for _, e := range edits {
+		if m.toProject {
+			_ = config.Set(&m.base, e.Key, e.Value)
+			if !m.proj.Sets(e.Key) {
+				m.proj.Keys = append(slices.Clone(m.proj.Keys), e.Key)
+			}
+		} else if !m.proj.Sets(e.Key) {
+			_ = config.Set(&m.base, e.Key, e.Value)
+		}
+		delete(m.staged, e.Key)
+		loaded, _ := config.Value(m.base, e.Key)
+		_ = config.Set(&m.cfg, e.Key, loaded)
+	}
+	m.refresh()
 }
 
 // configSessionOpener is `/config` inside a session
@@ -522,21 +570,22 @@ func configSessionOpener(env *sessionEnv) chat.ConfigOpener {
 
 // answered is answer for the host that is still there after the screen
 // closes: the same staging and the same write, reported as the row a session
-// puts in its transcript rather than as tea.Quit. Nothing to report — a
-// screen that closed having written nothing — is the empty string.
+// puts in its transcript. A write leaves one, the receipt the screen's foot
+// row carries with what the checkout had to say about it and what a running
+// session does not do; a write that could not land says why the same way; a
+// key that wrote nothing leaves the empty string.
 func (m *configModel) answered(done bool, result components.ConfigResult) string {
-	m.answer(done, result)
+	receipt, note := m.handle(result)
 	switch {
-	case m.err != nil:
-		return "✗ config  could not write " + m.screen.Path + ": " + m.err.Error()
-	case m.saved:
-		note := "Wrote " + m.screen.Path + "."
-		if m.note != "" {
-			note += "\n" + m.note
-		}
-		return note
+	case !result.Write:
+		return ""
+	case receipt == "":
+		return m.screen.Notice
 	}
-	return ""
+	if note != "" {
+		receipt += "\n" + note
+	}
+	return receipt + "\nThis session keeps the settings it started on; the next one starts on these."
 }
 
 // apply stages one edit and rebuilds the rows, so the screen redraws from the
@@ -555,7 +604,7 @@ func (m *configModel) apply(change components.ConfigChange) {
 		return
 	}
 	if m.toProject {
-		// Refused as it is staged rather than at [w], so the screen never
+		// Refused as it is staged rather than at [ctrl+s], so the screen never
 		// holds an edit its write would then stop on — and the way to the
 		// person's own file is the screen's key, not the command's flag.
 		if reason := config.RefusedInProject(change.Key); reason != "" {
@@ -579,7 +628,7 @@ func (m *configModel) apply(change components.ConfigChange) {
 // takeFlow sends a flow's model where its picker's key said
 // (docs/interface/surfaces.md#the-supporting-screens). This session holds it
 // and writes it nowhere; my settings and this checkout write that one key at
-// once — the destination is the question [w] would ask, already answered —
+// once — the destination is the question [ctrl+s] would ask, already answered —
 // and the session takes it too, the way the model picker's own key switches
 // the session as it writes the default. Nothing else that is staged moves.
 func (m *configModel) takeFlow(change components.ConfigChange) {
@@ -659,7 +708,7 @@ func joinNotice(done, note string) string {
 //
 // Inside a session a row answered by a model the session holds says
 // `session`, and its picker offers the three destinations; `shhh config` has
-// no session, so its rows stage like any other and [g] and [w] are the way
+// no session, so its rows stage like any other and [g] and [ctrl+s] are the way
 // to either file.
 func (m *configModel) flowRows() []components.ConfigRow {
 	f, env := m.flows, m.flows.env
@@ -717,7 +766,7 @@ func configLoaded(base config.Config, key string) string {
 	return v
 }
 
-// edits is what [w] writes: every key whose staged value differs from the
+// edits is what [ctrl+s] writes: every key whose staged value differs from the
 // loaded one, in the screen's order. A key edited and then put back is not
 // among them, so its line in the file is not rewritten either.
 func (m configModel) edits() []config.Edit {
@@ -1362,3 +1411,6 @@ func configWriter(proj config.Project) func(key, value string) error {
 		return err
 	}
 }
+
+// writeFileName is the user's settings file as a receipt names it.
+func writeFileName() string { return shortPath(config.WritePath()) }

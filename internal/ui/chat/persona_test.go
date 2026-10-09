@@ -1201,7 +1201,7 @@ func TestPersona_AMigratedSectionIsRevisedLikeADraftsSection(t *testing.T) {
 		t.Fatal("the diff wrote the file")
 	}
 	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
-	if len(*saved) != 1 || (*saved)[0].Sections.Purpose == "" || !strings.Contains(lastNote(m), "Saved critic") {
+	if len(*saved) != 1 || (*saved)[0].Sections.Purpose == "" || !strings.Contains(lastNote(m), "wrote critic to") {
 		t.Fatalf("replace should save the migrated draft, saved %+v, note %q", *saved, lastNote(m))
 	}
 }

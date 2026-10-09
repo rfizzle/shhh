@@ -37,7 +37,6 @@ critic               [?] keys · [esc] close, nothing written
 
   Tools
     read · it reads and reports · read_file, search
-
   ⋮ 2 more sections · [shift+↓] scroll the profile
 
   [↑↓] section · [enter] refine it with a note
@@ -50,6 +49,7 @@ critic               [?] keys · [esc] close, nothing written
 │   2. See what changes  the file as it stands against th… │
 │   3. Discard           the file stays as it is           │
 │ [tab] the card                                           │
+│ [ctrl+s] save · /repo/.shhh/agents/critic.toml           │
 ╰──────────────────────────────────────────────────────────╯
 
 · m · the migration's wait, on the surface and stoppable
@@ -90,7 +90,6 @@ critic               [?] keys · [esc] close, nothing written
 
   Commands
     none stated · the session's own command lists apply
-
   ⋮ 1 more section · [shift+↓] scroll the profile
 
   [↑↓] section · [enter] refine it with a note
@@ -102,6 +101,7 @@ critic               [?] keys · [esc] close, nothing written
 │   2. See what changes  the file as it stands against th… │
 │   3. Discard           the file stays as it is           │
 │ [tab] the card                                           │
+│ [ctrl+s] save · /repo/.shhh/agents/critic.toml           │
 ╰──────────────────────────────────────────────────────────╯
 
 · See what changes · the file as it stands against the file as it would be written, over the card
@@ -139,7 +139,9 @@ critic               [?] keys · [esc] close, nothing written
 │ ❯ 1. Replace its file  /repo/.shhh/agents/critic.toml    │
 │   2. See what changes  the file as it stands against th… │
 │   3. Discard           the file stays as it is           │
-│ [enter] confirm · [tab] the sections · [esc] take none   │
+│ [enter] confirm · [tab] the sections                     │
+│ [ctrl+s] save · /repo/.shhh/agents/critic.toml           │
+│ [esc] take none                                          │
 ╰──────────────────────────────────────────────────────────╯
 
 · a file changed since it was opened · the save refused in a sentence, the draft kept
@@ -181,7 +183,9 @@ critic               [?] keys · [esc] close, nothing written
 │ ❯ 1. Replace its file  /repo/.shhh/agents/critic.toml    │
 │   2. See what changes  the file as it stands against th… │
 │   3. Discard           the file stays as it is           │
-│ [enter] confirm · [tab] the sections · [esc] take none   │
+│ [enter] confirm · [tab] the sections                     │
+│ [ctrl+s] save · /repo/.shhh/agents/critic.toml           │
+│ [esc] take none                                          │
 ╰──────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -212,7 +216,6 @@ critic               [?] keys · [esc] close, nothing written
 
   ␛[38;5;252mTools␛[m
     ␛[92mread␛[m␛[38;5;241m · it reads and reports · read_file, search␛[m
-
   ␛[38;5;241m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
   ␛[38;5;103m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m refine it with a note␛[m
@@ -225,6 +228,7 @@ critic               [?] keys · [esc] close, nothing written
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSee what changes␛[m  ␛[38;5;241mthe file as it stands against th…␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m           ␛[38;5;241mthe file stays as it is␛[m           ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m                                           ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · /repo/.shhh/agents/critic.toml␛[m           ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · m · the migration's wait, on the surface and stoppable
@@ -265,7 +269,6 @@ critic               [?] keys · [esc] close, nothing written
 
   ␛[38;5;252mCommands␛[m
     ␛[38;5;241mnone stated␛[m␛[38;5;241m · the session's own command lists apply␛[m
-
   ␛[38;5;241m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
   ␛[38;5;103m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m refine it with a note␛[m
@@ -277,6 +280,7 @@ critic               [?] keys · [esc] close, nothing written
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSee what changes␛[m  ␛[38;5;241mthe file as it stands against th…␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m           ␛[38;5;241mthe file stays as it is␛[m           ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m                                           ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · /repo/.shhh/agents/critic.toml␛[m           ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · See what changes · the file as it stands against the file as it would be written, over the card
@@ -314,7 +318,9 @@ critic               [?] keys · [esc] close, nothing written
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. Replace its file  /repo/.shhh/agents/critic.toml   ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSee what changes␛[m  ␛[38;5;241mthe file as it stands against th…␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m           ␛[38;5;241mthe file stays as it is␛[m           ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the sections␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m   ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the sections␛[m                     ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · /repo/.shhh/agents/critic.toml␛[m           ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · a file changed since it was opened · the save refused in a sentence, the draft kept
@@ -356,5 +362,7 @@ critic               [?] keys · [esc] close, nothing written
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. Replace its file  /repo/.shhh/agents/critic.toml   ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSee what changes␛[m  ␛[38;5;241mthe file as it stands against th…␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m           ␛[38;5;241mthe file stays as it is␛[m           ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the sections␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m   ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the sections␛[m                     ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · /repo/.shhh/agents/critic.toml␛[m           ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m

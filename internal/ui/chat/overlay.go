@@ -338,10 +338,9 @@ func (o *mode) Bound(m Model) int {
 
 func (o *mode) Update(m Model, key tea.KeyPressMsg) (Model, overlayAction) {
 	if o.answer != nil {
-		done, act := o.answer(&m, key)
-		if !done {
-			return m, overlayAction{}
-		}
+		// An answer that did not finish the mode can still leave a row, the
+		// way a settings write does while its screen stays up.
+		_, act := o.answer(&m, key)
 		return m, act
 	}
 	next, cmd := o.keys(m, key)

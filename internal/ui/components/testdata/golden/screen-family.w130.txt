@@ -43,10 +43,10 @@ shhh metrics · last 30 days · 251 requests · 4 models                        
     explanation        claude-sonnet-4.6 — behavior.explainer_model                                                       flow key
     reading            gpt-5.2-mini — provider.cheap_model                                                               cheap key
     backlog            claude-haiku-4.5                                                                       provider small model
-    compaction         gpt-5.2                                                                                       session model
-  ↓ 14 more
+  ↓ 15 more
 
-[↑↓/jk] move · [enter] change · [/] filter · [r] reset to default · [w] write the file · [esc] discard, after asking
+[↑↓/jk] move · [enter] change · [/] filter · [r] reset to default · [ctrl+s] write 2 changes · [esc] discard, after asking
+nothing is written until [ctrl+s]
 
 · history · the subject, and a foot key row that states the way out
 shhh history · 6 entries · 2 run                                                                               [?] keys · [q] quit
@@ -270,10 +270,10 @@ definitions not loaded                                   │   costs     its too
     ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;241m— behavior.explainer_model␛[m                                                       ␛[38;5;252mflow key␛[m
     ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;241m— provider.cheap_model␛[m                                                               ␛[38;5;252mcheap key␛[m
     ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                                                                       ␛[38;5;252mprovider small model␛[m
-    ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                                                                       ␛[38;5;252msession model␛[m
-  ␛[38;5;241m↓ 14 more␛[m
+  ␛[38;5;241m↓ 15 more␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[38;5;103m[w]␛[m␛[38;5;241m write the file␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m discard, after asking␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write 2 changes␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m discard, after asking␛[m
+␛[38;5;241mnothing is written until [ctrl+s]␛[m
 
 · history · the subject, and a foot key row that states the way out
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m                                                                               ␛[38;5;241m[?] keys · [q] quit␛[m

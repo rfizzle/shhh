@@ -226,6 +226,10 @@ type keyFooter struct {
 	// field is the annotation, dim and right-aligned on the first row, where
 	// there is room for it. It is what drops: the offers wrap instead.
 	field string
+	// keepField draws the annotation on a row of its own when it does not fit
+	// beside the offers, for the one whose words the reader must have read
+	// before acting (the settings screen's "nothing is written until").
+	keepField bool
 	// lead is the row the keys annotate rather than the other way round — a
 	// diagnostic's counts, where the thing to read is what the run found and
 	// the key beside it is the annotation. Where both fit they share a row.
@@ -284,6 +288,8 @@ func (f keyFooter) rows(width int) []string {
 	painted := sty.dim.Render(f.field)
 	if pad := width - lipgloss.Width(rows[0]) - lipgloss.Width(painted); pad >= 2 {
 		rows[0] += strings.Repeat(" ", pad) + painted
+	} else if f.keepField {
+		rows = append(rows, painted)
 	}
 	return rows
 }

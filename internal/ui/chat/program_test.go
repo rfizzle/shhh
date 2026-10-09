@@ -525,7 +525,7 @@ func TestProgram_AnOlderProfileIsMigratedFromTheManager(t *testing.T) {
 	waitForText(t, tm, "Method · refined once")
 	tm.Send(tea.KeyPressMsg{Code: tea.KeyTab})
 	tm.Send(programEnter)
-	waitForText(t, tm, "Saved critic")
+	waitForText(t, tm, "wrote critic to")
 	tm.Type("/agents")
 	tm.Send(programEnter)
 	waitForText(t, tm, "says little")

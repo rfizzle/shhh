@@ -20,7 +20,7 @@ package chat
 //
 // What the session adds is where the screen draws: it is a pane overlay like
 // the context reading, so the turn underneath it keeps running, and nothing
-// it stages touches the file until `[w]`.
+// it stages touches the file until `[ctrl+s]`.
 
 import (
 	"strings"
@@ -92,23 +92,17 @@ func (m *Model) answerConfig(msg tea.KeyPressMsg) (bool, overlayAction) {
 	done, result := screen.Screen.Update(msg)
 	note := screen.Answer(done, result)
 	if !done {
-		return false, overlayAction{}
+		// A write leaves its receipt in the transcript and the screen up,
+		// carrying the same line on its foot row.
+		return false, overlayAction{note: note}
 	}
 	return true, m.closeConfigScreen(note)
 }
 
 // closeConfigScreen hands the screen back to the turn, which may have moved
-// on while the surface was up, and leaves what the write had to say.
-//
-// A write that landed says so and says what it did not do: the running
-// session goes on with the settings it started with, and a row that reported
-// only the file would be letting the reader believe this turn had changed
-// under them.
+// on while the surface was up, and leaves what the answer had to say.
 func (m *Model) closeConfigScreen(note string) overlayAction {
 	m.screens = m.screens.without(stateConfig)
-	if note != "" {
-		note += "\nThis session keeps the settings it started on; the next one starts on these."
-	}
 	return overlayAction{close: true, note: note}
 }
 

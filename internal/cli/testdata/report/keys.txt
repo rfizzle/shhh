@@ -211,6 +211,7 @@
   · scroll_up    shift+up · scroll the profile up  [shipped]
   · scroll_down  shift+down · scroll the profile  [shipped]
   · back         esc ctrl+c · back a step  [shipped]
+  · save         ctrl+s · save the profile  [shipped]
 
   WAIT
 
@@ -254,7 +255,7 @@
   · list     ? · keys  [shipped]
   · quit     q esc ctrl+c · quit  [shipped]
   · reset    r · reset to default  [shipped]
-  · write    w · write the file  [shipped]
+  · write    ctrl+s · write the file  [shipped]
   · keep     esc · keep the current value  [shipped]
   · scope    g · switch the file  [shipped]
   · copy     c · copy it  [shipped]
@@ -349,4 +350,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  256 keys · 1 moved
+  257 keys · 1 moved

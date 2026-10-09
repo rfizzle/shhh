@@ -124,7 +124,7 @@
 │   1. Save to this project  .shhh/agents                  │
 │   2. Save globally         ~/.config/shhh/agents         │
 │   3. Discard                                             │
-│ [tab] the card                                           │
+│ [tab] the card · [ctrl+s] save · .shhh/agents            │
 ╰──────────────────────────────────────────────────────────╯
 
 · one selected further down · a section the person edited, and its keys
@@ -172,7 +172,7 @@
 │   1. Save to this project  .shhh/agents                  │
 │   2. Save globally         ~/.config/shhh/agents         │
 │   3. Discard                                             │
-│ [tab] the card                                           │
+│ [tab] the card · [ctrl+s] save · .shhh/agents            │
 ╰──────────────────────────────────────────────────────────╯
 
 · a section refining · the note under it, the rest sent as fixed context
@@ -217,7 +217,7 @@
 │   1. Save to this project  .shhh/agents                  │
 │   2. Save globally         ~/.config/shhh/agents         │
 │   3. Discard                                             │
-│ [tab] the card                                           │
+│ [tab] the card · [ctrl+s] save · .shhh/agents            │
 ╰──────────────────────────────────────────────────────────╯
 
 · the wait, on that section · the other sections stand
@@ -283,13 +283,15 @@
     The package it was pointed at and its _test.go files.
     Leaves the package's exported API, every other package
     and the goldens alone.
+
   ⋮ 6 more sections · [shift+↓] scroll the profile
 
 ╭─ Keep test-writer? ──────────────────────────────────────╮
 │ ❯ 1. Save to this project  .shhh/agents                  │
 │   2. Save globally         ~/.config/shhh/agents         │
 │   3. Discard                                             │
-│ [enter] confirm · [tab] the sections · [esc] take none   │
+│ [enter] confirm · [tab] the sections                     │
+│ [ctrl+s] save · .shhh/agents · [esc] take none           │
 ╰──────────────────────────────────────────────────────────╯
 
 · the file already exists · the draft asks again, saying so
@@ -328,16 +330,14 @@
   Tools
     read + write + execute
     it can change things, in its own copy of the tree
-
-  Commands
-    none stated · the session's own command lists apply
-  ⋮ 1 more section · [shift+↓] scroll the profile
+  ⋮ 2 more sections · [shift+↓] scroll the profile
 
 ╭─ Keep test-writer? ──────────────────────────────────────╮
 │ ❯ 1. Save to this project  .shhh/agents                  │
 │   2. Save globally         ~/.config/shhh/agents         │
 │   3. Discard                                             │
-│ [enter] confirm · [tab] the sections · [esc] take none   │
+│ [enter] confirm · [tab] the sections                     │
+│ [ctrl+s] save · .shhh/agents · [esc] take none           │
 ╰──────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -455,7 +455,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m.shhh/agents␛[m                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m~/.config/shhh/agents␛[m         ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                             ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m                                           ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · .shhh/agents␛[m            ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · one selected further down · a section the person edited, and its keys
@@ -503,7 +503,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m.shhh/agents␛[m                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m~/.config/shhh/agents␛[m         ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                             ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m                                           ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · .shhh/agents␛[m            ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · a section refining · the note under it, the rest sent as fixed context
@@ -548,7 +548,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m.shhh/agents␛[m                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m~/.config/shhh/agents␛[m         ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                             ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m                                           ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · .shhh/agents␛[m            ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the wait, on that section · the other sections stand
@@ -614,13 +614,15 @@
     ␛[38;5;243mThe package it was pointed at and its _test.go files.␛[m
     ␛[38;5;243mLeaves the package's exported API, every other package␛[m
     ␛[38;5;243mand the goldens alone.␛[m
+
   ␛[38;5;241m⋮ 6 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. Save to this project  .shhh/agents                 ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m~/.config/shhh/agents␛[m         ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                             ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the sections␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m   ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the sections␛[m                     ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · .shhh/agents␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m           ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the file already exists · the draft asks again, saying so
@@ -659,14 +661,12 @@
   ␛[38;5;252mTools␛[m
     ␛[91mread + write + execute␛[m
     ␛[38;5;241mit can change things, in its own copy of the tree␛[m
-
-  ␛[38;5;252mCommands␛[m
-    ␛[38;5;241mnone stated␛[m␛[38;5;241m · the session's own command lists apply␛[m
-  ␛[38;5;241m⋮ 1 more section · [shift+↓] scroll the profile␛[m
+  ␛[38;5;241m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
 ␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. Save to this project  .shhh/agents                 ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m~/.config/shhh/agents␛[m         ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                             ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the sections␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m   ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the sections␛[m                     ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · .shhh/agents␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m           ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m

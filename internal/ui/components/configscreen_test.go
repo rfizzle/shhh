@@ -151,21 +151,17 @@ func TestConfigScreen_MaskSecretIsTheLastFour(t *testing.T) {
 	}
 }
 
-// Nothing is written until [w], and [w] is not offered while there is
-// nothing to write — a key that cannot act is not offered (invariant 5).
+// Nothing is written until [ctrl+s], and the write is not offered while there
+// is nothing to write — a key that cannot act is not offered (invariant 5).
 func TestConfigScreen_WriteIsOfferedOnlyWhenSomethingIsStaged(t *testing.T) {
 	c := configFixture()
-	if strings.Contains(c.View(110), "[w]") {
+	if strings.Contains(c.View(110), "[ctrl+s]") {
 		t.Fatalf("a clean screen offers no write:\n%s", c.View(110))
-	}
-	done, _ := c.Update(key("w"))
-	if done {
-		t.Fatal("w does nothing while nothing is staged")
 	}
 
 	c.Changed = 2
-	view := c.View(110)
-	if !strings.Contains(view, "[w]") {
+	view := ansi.Strip(c.View(110))
+	if !strings.Contains(view, "[ctrl+s] write 2 changes") {
 		t.Fatalf("a staged change offers the write:\n%s", view)
 	}
 	if !strings.Contains(view, "2 changes unwritten") {
@@ -195,25 +191,49 @@ func TestConfigScreen_TheScopeKeyIsOfferedOnlyInACheckout(t *testing.T) {
 	}
 }
 
-// [w] asks before it writes, in the shared inline confirm, and the confirm
-// defaults to no.
-func TestConfigScreen_WriteConfirms(t *testing.T) {
+// ctrl+s writes at once: no question stands in front of it, the screen stays
+// up for the host's receipt, and the old bare letter is only a letter. With
+// nothing staged the key says so on the foot row and writes nothing.
+func TestSettings_CtrlSWritesAtOnce(t *testing.T) {
 	c := configFixture()
 	c.Changed = 1
-	c.Update(key("w"))
-	view := ansi.Strip(c.View(110))
-	if !strings.Contains(view, "[y/N]") || !strings.Contains(view, "~/.config/shhh/config.toml") {
-		t.Fatalf("the write-back asks in the inline confirm:\n%s", view)
+	done, result := c.Update(key("ctrl+s"))
+	if done || !result.Write || result.Canceled {
+		t.Fatalf("ctrl+s asks the host to write and keeps the screen: done=%v result=%#v", done, result)
 	}
-	done, result := c.Update(key("n"))
-	if done {
-		t.Fatalf("declining the confirm keeps the screen up: %#v", result)
+	if strings.Contains(ansi.Strip(c.View(110)), "[y/N]") {
+		t.Fatalf("a write is not asked about:\n%s", c.View(110))
+	}
+	if _, result := c.Update(key("w")); result.Write {
+		t.Fatal("w no longer writes")
 	}
 
-	c.Update(key("w"))
-	done, result = c.Update(key("y"))
-	if !done || !result.Write {
-		t.Fatalf("y writes: done=%v result=%#v", done, result)
+	empty := configFixture()
+	done, result = empty.Update(key("ctrl+s"))
+	if done || result != (ConfigResult{}) {
+		t.Fatalf("nothing staged writes nothing: done=%v result=%#v", done, result)
+	}
+	if !strings.Contains(ansi.Strip(empty.View(110)), "nothing staged to write") {
+		t.Fatalf("the foot row says why nothing happened:\n%s", empty.View(110))
+	}
+	empty.Update(key("down"))
+	if strings.Contains(ansi.Strip(empty.View(110)), "nothing staged to write") {
+		t.Fatal("the next key clears the notice")
+	}
+}
+
+// The hint and the annotation are drawn at every width the golden widths
+// cover: the annotation does not drop when it will not fit beside the keys.
+func TestSettings_TheHintAndAnnotationAreDrawnAtEveryWidth(t *testing.T) {
+	for _, width := range []int{60, 80, 110, 130} {
+		c := configFixture()
+		c.Changed = 3
+		view := ansi.Strip(c.View(width))
+		for _, want := range []string{"[ctrl+s] write 3 changes", "nothing is written until [ctrl+s]"} {
+			if !strings.Contains(view, want) {
+				t.Errorf("width %d lacks %q:\n%s", width, want, view)
+			}
+		}
 	}
 }
 
