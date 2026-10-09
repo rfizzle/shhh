@@ -21,6 +21,17 @@ import (
 // surface it was declined on.
 const ProposalMemory = "memory"
 
+// ProposalAllowlist and ProposalSkill are the kinds a proposal made from
+// what repeats is declined under when it would have written an allowlist
+// line or a skill rather than a memory. They are kinds of their own because
+// a no to one is not a no to the others: refusing to have `go test` run
+// without asking says nothing about whether the person wants a skill that
+// runs it.
+const (
+	ProposalAllowlist = "allowlist"
+	ProposalSkill     = "skill"
+)
+
 // DeclinedProposal is one recorded no: the text as it was first declined,
 // kept so the list can say what was refused rather than a hash.
 type DeclinedProposal struct {

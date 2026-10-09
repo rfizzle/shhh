@@ -129,6 +129,11 @@
   · pan_left     shift+left · pan a wide body back  [shipped]
   · pan_right    shift+right · pan a wide body  [shipped]
 
+  PROPOSAL
+
+  · later  n · not now — offered again next time  [shipped]
+  · never  N · never — not offered again  [shipped]
+
   CONFIRM
 
   · yes    y Y · yes  [shipped]
@@ -358,4 +363,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  262 keys · 1 moved
+  264 keys · 1 moved

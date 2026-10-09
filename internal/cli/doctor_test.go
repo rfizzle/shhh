@@ -1185,7 +1185,7 @@ func TestProbeSearch_ReadsTheConfiguredBackend(t *testing.T) {
 // cheap key moves every unkeyed flow onto it, and a flow key moves one.
 func TestDoctorFlows_NamesEachFlowAndTheLinkThatAnswered(t *testing.T) {
 	f := doctorFlows(resolveFlows(config.Config{}, "my-gateway", "big-model"))
-	if f.Subject != "big-model" || f.Detail != "12 session model" {
+	if f.Subject != "big-model" || f.Detail != "13 session model" {
 		t.Fatalf("a profile route: subject %q, detail %q", f.Subject, f.Detail)
 	}
 	if len(f.Fix) != len(boundedFlows) || f.Fix[0] != "classifier — big-model · session model" {
@@ -1196,7 +1196,7 @@ func TestDoctorFlows_NamesEachFlowAndTheLinkThatAnswered(t *testing.T) {
 	cfg.Provider.CheapModel = "cheap"
 	cfg.Todo.Model = "backlogger"
 	f = doctorFlows(resolveFlows(cfg, "my-gateway", "big-model"))
-	if f.Subject != "2 models" || f.Detail != "1 flow key · 11 cheap key" {
+	if f.Subject != "2 models" || f.Detail != "1 flow key · 12 cheap key" {
 		t.Fatalf("keyed: subject %q, detail %q", f.Subject, f.Detail)
 	}
 	joined := strings.Join(f.Fix, "\n")
@@ -1206,6 +1206,7 @@ func TestDoctorFlows_NamesEachFlowAndTheLinkThatAnswered(t *testing.T) {
 		"account — cheap · cheap key provider.cheap_model",
 		"suggestion — cheap · cheap key provider.cheap_model",
 		"start offers — cheap · cheap key provider.cheap_model",
+		"patterns — cheap · cheap key provider.cheap_model",
 		"compaction — cheap · cheap key provider.cheap_model · when its window holds the conversation",
 	} {
 		if !strings.Contains(joined, want) {

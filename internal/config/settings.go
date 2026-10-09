@@ -329,6 +329,9 @@ var settings = []Setting{
 		Key: "behavior.start_offers_model", Kind: KindString, Default: "(provider.cheap_model)",
 		Desc: "The model the start screen's read-only offers are written by, read once at session open.",
 	}, {
+		Key: "behavior.patterns_model", Kind: KindString, Default: "(provider.cheap_model)",
+		Desc: "The model that words a memory or a skill proposed from what repeats across sessions, asked when you open one in /patterns.",
+	}, {
 		Key: "behavior.memory_disabled", Kind: KindBool, Default: "off",
 		Desc: "Turn durable memory off: nothing is injected and the remember tool is not registered.",
 	}, {

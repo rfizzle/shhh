@@ -134,6 +134,10 @@ var (
 	// once per session open rather than per turn, and reads the instruction
 	// block, so it is the one a person may want on a stronger model.
 	flowStartOffers = boundedFlow{name: "start offers", keys: []string{"behavior.start_offers_model"}, source: meter.SourceStartOffers}
+	// The wording of a proposal made from what repeats has a key of its own
+	// too: its words are what a memory keeps for every later session, so it
+	// is another a person may want on a stronger model than the cheap one.
+	flowPatterns = boundedFlow{name: "patterns", keys: []string{"behavior.patterns_model"}, source: meter.SourcePatterns}
 )
 
 // boundedFlows is every flow on the chain, in the order a listing reads them.
@@ -141,8 +145,8 @@ var (
 // reported wherever the question is asked.
 var boundedFlows = []boundedFlow{
 	flowClassifier, flowExplanation, flowDescription, flowReading,
-	flowTitle, flowAccount, flowSuggestion, flowStartOffers, flowCompaction,
-	flowBacklog, flowDrafter, flowToolchain,
+	flowTitle, flowAccount, flowSuggestion, flowStartOffers, flowPatterns,
+	flowCompaction, flowBacklog, flowDrafter, flowToolchain,
 }
 
 // flowModel is one flow's answer: the model, the link that gave it, and the
@@ -317,6 +321,17 @@ func newSuggester(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *age
 func newStartOfferer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.StartOfferer {
 	return agent.NewStartOfferer(ledger.For(env.prov, flowStartOffers.source), agent.StartOffersConfig{
 		ModelAt: env.flowModelAt(cfg, flowStartOffers),
+		Timeout: time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
+	})
+}
+
+// newPatternWriter returns the writer of a proposal's words, asked when the
+// person opens a memory or a skill in /patterns
+// (docs/capabilities/sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project).
+// It is asked on its own flow and billed under its own source.
+func newPatternWriter(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.PatternWriter {
+	return agent.NewPatternWriter(ledger.For(env.prov, flowPatterns.source), agent.PatternsConfig{
+		ModelAt: env.flowModelAt(cfg, flowPatterns),
 		Timeout: time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
 	})
 }

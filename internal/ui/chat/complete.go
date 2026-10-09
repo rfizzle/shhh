@@ -133,7 +133,7 @@ var slashOrder = []string{
 	"/step", "/steps", "/status", "/sessions", "/trust", "/ui", "/config",
 	"/add-dir", "/sandbox", "/safety", "/sources", "/evidence", "/gate",
 	"/ps", scaffoldCommandName, setupCommandName, toolchainCommandName,
-	"/skills", "/mcp", "/skill", "/secret", "/notes", "/memory", "/agents",
+	"/skills", "/mcp", "/skill", "/secret", "/notes", "/memory", patternsCommandName, "/agents",
 	"/attach", "/detach", "/todo", "/plan", "/edit", "/diff", "/review", "/undo",
 	"/compact", "/rewind", "/branches", "/save", "/load", "/chats", "/exit",
 }

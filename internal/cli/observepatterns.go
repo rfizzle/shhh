@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -187,4 +189,155 @@ func observePatternsLine(p observePatterns) []report.Note {
 	}
 	return []report.Note{{State: report.Run, Text: "patterns · " + strings.Join(parts, " · ") +
 		" · `shhh observe patterns` lists them"}}
+}
+
+// patternTranscriptSessions bounds how many of the window's newest sessions
+// the transcript readings below open. Each is one read of a conversation, and
+// a habit that only shows past the newest few hundred sessions is not the one
+// a proposal is for.
+const patternTranscriptSessions = 300
+
+// patternTranscripts is what the saved conversations of a checkout's sessions
+// hold for the readings a count cannot answer: each session's commands in the
+// order it ran them, and the calls that read each path, as the conversation
+// wrote them. A session whose conversation is gone has neither, which is the
+// rule the tables keep: a pattern with no transcript to join is a count and
+// not a path.
+type patternTranscripts struct {
+	// Commands is each session's command lines, in order, newest session
+	// first.
+	Commands [][]string
+	// Reads is the read, search and glob calls by the path they named, each
+	// as the tool and its arguments.
+	Reads map[string][]string
+}
+
+// readPatternTranscripts reads the conversations of the window's sessions in
+// one checkout.
+func readPatternTranscripts(db *storage.DB, since time.Time, project string) (patternTranscripts, error) {
+	t := patternTranscripts{Reads: map[string][]string{}}
+	if project == "" {
+		return t, nil
+	}
+	sessions, err := db.AgentSessions(since, patternTranscriptSessions)
+	if err != nil {
+		return t, fmt.Errorf("list sessions: %w", err)
+	}
+	for _, s := range sessions {
+		if s.Project != project || s.ChatSessionID == nil || s.ParentID != nil {
+			continue
+		}
+		calls, err := db.AgentSessionCalls(s.ID)
+		if err != nil {
+			return t, fmt.Errorf("read session %d: %w", s.ID, err)
+		}
+		var commands []string
+		for _, c := range calls {
+			var args struct {
+				Command string `json:"command"`
+				Path    string `json:"path"`
+			}
+			_ = json.Unmarshal([]byte(c.Args), &args) // a call that is not JSON names nothing
+			switch c.Tool {
+			case "execute_command":
+				if line := strings.TrimSpace(args.Command); line != "" {
+					commands = append(commands, line)
+				}
+			case "read_file", "search", "glob":
+				path := args.Path
+				if path == "" && c.Tool != "read_file" {
+					path = "."
+				}
+				if path != "" {
+					t.Reads[path] = append(t.Reads[path], c.Tool+" "+c.Args)
+				}
+			}
+		}
+		if len(commands) > 0 {
+			t.Commands = append(t.Commands, commands)
+		}
+	}
+	return t, nil
+}
+
+// commandKey is a command as the command table keys it: its first two words.
+func commandKey(line string) string {
+	f := strings.Fields(line)
+	return strings.Join(f[:min(len(f), 2)], " ")
+}
+
+// commandSequence is three commands run in the same order in at least the
+// threshold's sessions: their keys, the lines the first session to run them
+// wrote, and how many sessions did.
+type commandSequence struct {
+	Keys     []string
+	Lines    []string
+	Sessions int
+}
+
+// maxCommandSequences bounds how many sequences a reading proposes: a skill
+// is a file in the checkout, and the habits worth one are few.
+const maxCommandSequences = 3
+
+// commandSequences is the runs of three commands, by their keys, that the
+// sessions ran in the same order in at least minSessions sessions. A command
+// run twice running counts once, so a retried test is not a step of its own;
+// a run that shares two neighbouring commands with one already kept is the
+// same habit seen one step along and is dropped, the most repeated kept.
+func commandSequences(sessions [][]string, minSessions int) []commandSequence {
+	type seen struct {
+		lines    []string
+		sessions int
+	}
+	counts := map[string]*seen{}
+	var order []string
+	for _, lines := range sessions {
+		var keys, kept []string
+		for _, l := range lines {
+			k := commandKey(l)
+			if len(keys) > 0 && keys[len(keys)-1] == k {
+				continue
+			}
+			keys, kept = append(keys, k), append(kept, l)
+		}
+		once := map[string]bool{}
+		for i := 0; i+3 <= len(keys); i++ {
+			id := strings.Join(keys[i:i+3], "\x00")
+			if once[id] {
+				continue
+			}
+			once[id] = true
+			if counts[id] == nil {
+				counts[id] = &seen{lines: kept[i : i+3]}
+				order = append(order, id)
+			}
+			counts[id].sessions++
+		}
+	}
+	var out []commandSequence
+	for _, id := range order {
+		if c := counts[id]; c.sessions >= minSessions {
+			out = append(out, commandSequence{Keys: strings.Split(id, "\x00"), Lines: c.lines, Sessions: c.sessions})
+		}
+	}
+	slices.SortStableFunc(out, func(a, b commandSequence) int {
+		if a.Sessions != b.Sessions {
+			return b.Sessions - a.Sessions
+		}
+		return strings.Compare(strings.Join(a.Keys, " "), strings.Join(b.Keys, " "))
+	})
+	pairs := map[string]bool{}
+	var kept []commandSequence
+	for _, s := range out {
+		p1, p2 := s.Keys[0]+"\x00"+s.Keys[1], s.Keys[1]+"\x00"+s.Keys[2]
+		if pairs[p1] || pairs[p2] {
+			continue
+		}
+		pairs[p1], pairs[p2] = true, true
+		kept = append(kept, s)
+		if len(kept) == maxCommandSequences {
+			break
+		}
+	}
+	return kept
 }

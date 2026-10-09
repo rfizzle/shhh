@@ -466,6 +466,17 @@ func buildOverlays(screens []screenSpec) map[state]*mode {
 			answer:  (*Model).answerScaffold,
 			keyList: staticKeyList(keys.OnScaffold),
 		},
+		stateProposal: {
+			place:     placePanel,
+			borrows:   true,
+			hidesRail: true,
+			lines:     panelRows((Model).proposalLines),
+			// The scaffold card's headroom, for the scaffold card's reason: a
+			// decision whose keys the panel bound cut off is not one.
+			bound:   (Model).planPanelBound,
+			answer:  (*Model).answerProposal,
+			keyList: proposalKeyList,
+		},
 		stateSetup: {
 			place:     placePanel,
 			borrows:   true,

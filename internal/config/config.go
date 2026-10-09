@@ -656,6 +656,10 @@ type BehaviorConfig struct {
 	// StartOffersModel is the model the start screen's offers are read
 	// with at session open. Empty falls back as SuggestionModel does.
 	StartOffersModel string `toml:"start_offers_model"`
+	// PatternsModel is the model a proposal made from what repeats across
+	// sessions is worded by, asked when the person opens one. Empty falls
+	// back as SuggestionModel does.
+	PatternsModel string `toml:"patterns_model"`
 	// ClassifierTimeoutSeconds bounds each classifier request (default 30).
 	ClassifierTimeoutSeconds int `toml:"classifier_timeout_seconds"`
 	// ClassifierMaxTokens caps the classifier's response, the reasoning it

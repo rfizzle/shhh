@@ -46,7 +46,7 @@ import (
 // session boundary resets it with the rest in one call. This is the same
 // guard overlay_test.go puts on the placement table: a table nobody reads is
 // a table that drifts.
-const modelFields = 231
+const modelFields = 232
 
 func TestModelHasAStatedBound(t *testing.T) {
 	got := reflect.TypeOf(Model{}).NumField()
@@ -1237,6 +1237,7 @@ func heldScreensModel(t *testing.T) Model {
 	m = m.WithGate(Gate{Manage: func([]string) string { return "" }, Flakes: func() ([]storage.Flake, error) {
 		return []storage.Flake{{Suite: "default", Check: "test", Command: "make test", Seen: 2}}, nil
 	}})
+	m = m.WithPatterns(new(proposalRecorder).patterns(t))
 	landReading(&m, agent.SummaryVerdict{Text: "Reading the loop.", State: agent.SummaryOnTarget, Round: 3})
 	m.workSteps = stepsCalled(t, `{"steps":[{"title":"Locate the round accounting."},{"title":"Patch the limit"}]}`)
 	m.transcript = append(m.transcript,

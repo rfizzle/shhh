@@ -119,6 +119,7 @@ const (
 	OnScaffold
 	OnToolchain
 	OnToolchainDraft
+	OnProposal
 	OnConfirm
 	OnHeldLine
 	OnSelector
@@ -498,6 +499,17 @@ func register() [surfaceCount]Surface {
 			Position: Takeover,
 			Reached:  "/toolchain, or the start screen's draft offer",
 			Bindings: []Binding{Decision.Accept, Decision.Revise, Decision.Refuse, Select.Cancel, Screen.List},
+		},
+		OnProposal: {
+			// The scaffold card's shape for a write the record proposed: an
+			// allowlist line or a skill, opened from /patterns. Its no comes
+			// in two — for now and for good — because a proposal comes back
+			// until it is answered for good (ProposalKeys).
+			Name:     "the proposal card",
+			Section:  "docs/interface/surfaces.md#the-approval-card",
+			Position: Takeover,
+			Reached:  "enter on a row of /patterns",
+			Bindings: []Binding{Decision.Accept, Proposal.Later, Proposal.Never, Select.Cancel, Screen.List},
 		},
 		OnConfirm: {
 			Name:     "the inline confirm and the undo confirm",

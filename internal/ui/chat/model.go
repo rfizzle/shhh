@@ -282,6 +282,14 @@ const (
 	// like the readings screen: full width, the rail hidden, esc returns,
 	// and it changes nothing (gate.go).
 	stateFlakes
+	// stateProposals: the patterns screen is up — what this checkout's
+	// sessions kept doing, each offered as a memory, an allowlist line or a
+	// skill. A takeover like the flakes screen; enter opens a proposal's
+	// card (patterns.go).
+	stateProposals
+	// stateProposal: one proposal's card, opened from that screen. A
+	// takeover like the scaffold card, because the reader asked for it.
+	stateProposal
 )
 
 // minPanelHeight is the fewest rows the bottom panel takes: what a surface
@@ -1451,6 +1459,9 @@ type Model struct {
 	startSpent    bool
 	// startOffers is the start screen's reading at open (startoffers.go).
 	startOffers startOffersState
+	// patterns is /patterns: the proposals made from what repeats, the
+	// reading out for one, and its card (patterns.go).
+	patterns patternsState
 	// scaffold is the project-scaffolding offer and the write behind it
 	// (scaffold.go).
 	scaffold Scaffold

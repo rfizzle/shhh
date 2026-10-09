@@ -699,6 +699,15 @@ terminal   what this terminal answered when shhh asked what it can do: inline im
 				idleOnly: "it writes a file into the checkout",
 				help:     `scaffold this project's .shhh/ context file — the card lists what it would write, and nothing is written until you say so. The start screen offers it in a checkout that has no .shhh`},
 			exact: true, run: bareRun(Model.scaffoldCommand)},
+		// What repeats, proposed: the list writes nothing, and each card asks
+		// before its one write (patterns.go).
+		{name: patternsCommandName,
+			slash: &slashCommand{desc: "what this checkout's sessions kept doing, each offered as a memory, an allowlist line or a skill",
+				enabled:  func(m *Model) bool { return m.patternsEnabled() },
+				idleOnly: "its cards write into the checkout and the memory",
+				help:     `what this checkout's sessions kept doing — the same file read, the same command asked about and allowed, the same commands in the same order, the same suite failing first — each offered as the one thing that would stop it: a memory, a line in the checkout's allowlist, or a skill. [enter] opens a proposal's card, which shows what it would write; nothing is written until you say yes, [n] leaves it for next time and [N] says never`},
+			bare: true,
+			open: bareOpen(Model.openPatterns)},
 		{name: "/memory",
 			slash: &slashCommand{args: "[list|add|edit|forget]", desc: "durable memories",
 				enabled: func(m *Model) bool { return m.memory.Manage != nil },

@@ -414,6 +414,11 @@ type ApprovalCard struct {
 	// refusal costs more than the register's word admits — a scaffold offer
 	// declined is not offered again. Empty is the register's `deny`.
 	Decline string
+	// Never is the words for the second no a proposal card offers — the one
+	// written down so the proposal is not made again — and offering it puts
+	// the proposal's pair in the run where the plain no was: [n] under
+	// Decline, then [N] under these words. Empty is every other card.
+	Never string
 	// AllowAlways offers [a], and AlwaysHint is the imperative it is offered
 	// under — `allow "go test" without asking`. The scope is in the words
 	// because a key whose reach is not stated is a key pressed on a guess.
@@ -1231,6 +1236,11 @@ func (c *ApprovalCard) KeyRun() []cardKey {
 	// diff the card exists to show.
 	if c.Noted {
 		run = append(run, offer(keys.Decision.AllowNoted, c.answerVerb()+" with a note"))
+	}
+	if c.Never != "" {
+		// A proposal's no comes in two, and the run says which is which
+		// (keys.ProposalKeys).
+		return append(run, offer(keys.Proposal.Later, c.Decline), offer(keys.Proposal.Never, c.Never))
 	}
 	run = append(run, offer(keys.Decision.Deny, c.Decline))
 	if c.Noted {

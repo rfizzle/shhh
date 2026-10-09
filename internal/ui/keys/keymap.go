@@ -460,6 +460,7 @@ func movable() []namedGroup {
 		{"context", reflect.ValueOf(&Context).Elem()},
 		{"row", reflect.ValueOf(&Row).Elem()},
 		{"decision", reflect.ValueOf(&Decision).Elem()},
+		{"proposal", reflect.ValueOf(&Proposal).Elem()},
 		{"confirm", reflect.ValueOf(&Confirm).Elem()},
 		{"select", reflect.ValueOf(&Select).Elem()},
 		{"review", reflect.ValueOf(&Review).Elem()},

@@ -601,6 +601,27 @@ not expect reads as an obstacle and gets the sentence reworded until it is
 past. A no is not forever: `shhh memory declined` lists what this project
 declined, and `shhh memory undecline <id>` takes one back.
 
+A proposal can come from the record as well as from the model, and it is
+answered the same way. `/patterns` reads what this checkout's sessions kept
+doing ([what repeats is counted](#what-repeats-is-counted)) and offers each
+pattern as the one thing that would stop it: a file read in session after
+session as a memory saying what the file is for, a suite that failed before
+it passed as a lesson, a command you were asked about and allowed every time
+as a line in the checkout's allowlist, and the same commands run in the same
+order as a skill. Which of those a pattern becomes is decided by the code,
+never by a model; a cheap model is asked only for a memory's or a skill's
+words, from the pattern's facts and the conversation lines that made it and
+nothing more, and when it cannot answer the code's own words are offered. A
+memory is answered on the memory card, the one the model's proposals are
+answered on; an allowlist line or a skill on a card showing the exact line or
+file it would write. Every card has two ways of saying no: not now leaves
+the proposal for the next time you look, and never writes the no down, under
+the kind of thing proposed and the pattern itself rather than its wording, so
+a reading that words it differently next week does not bring it back. A
+checkout you have not trusted is offered no allowlist line and no skill,
+since a session there reads neither its settings file nor its skills. The
+start screen offers the list when it has something in it.
+
 ### Recall reaches every surface
 
 The same memories are recalled wherever a conversation opens: the session on
@@ -855,6 +876,9 @@ longer than its conversations would read as one that repeats itself less.
 
 **Nothing is written.** The reading is a report for the person: no memory,
 no setting and no row is made from it, and the model is told none of it.
+What a session's `/patterns` proposes from the same counts is written only
+on your yes, card by card
+([memory](#memory-is-what-shhh-knows-about-your-project)).
 The paths and commands it prints are content, read on this machine at the
 moment it runs, the way a session's page prints its targets; they never
 reach the record or its export.

@@ -128,23 +128,32 @@ func (m Model) buildMemoryApproval(tc provider.ToolCall) (*approvalRequest, erro
 // save to project or global scope — with an optional note amending the entry
 // — or don't save.
 func (m *Model) openMemoryAsk(req *approvalRequest) {
+	ns := m.memorySelect(req.memoryDraft.Scope == memory.GlobalScope)
+	// Esc is the third row said as a key, and it says so: nothing is written
+	// and the proposal is declined
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	ns.Select.CancelLabel = "don't remember it"
+	m.memoryAsk = ns
+}
+
+// memorySelect is the memory card's three rows — save to the project, save
+// everywhere, don't save — with the note a save can carry. It is one builder
+// because a memory is answered on one card whoever proposed it: the model
+// through remember, or the record through /patterns (patterns.go).
+func (m Model) memorySelect(global bool) *components.NoteSelect {
 	ns := components.NewNoteSelect("Remember this?", []components.SelectOption{
 		{Label: "Save (project)", Desc: m.memory.ProjectScope},
 		{Label: "Save (global)", Desc: "applies in every workspace"},
 		{Label: "Don't save"},
 	})
-	if req.memoryDraft.Scope == memory.GlobalScope {
+	if global {
 		ns.Select.Focus = 1
 	}
-	// Esc is the third row said as a key, and it says so: nothing is written
-	// and the proposal is declined
-	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-	ns.Select.CancelLabel = "don't remember it"
 	ns.Select.MaxLines = m.maxConfirmPanelHeight() - 1
 	// The proposal is a decision like every other card that stops a turn, and
 	// it has no severity to colour its frame with (components.CardTone).
 	ns.Select.Tone = components.CardDecision
-	m.memoryAsk = ns
+	return ns
 }
 
 // updateMemoryAsk routes confirm-prompt keys while the memory prompt shows.

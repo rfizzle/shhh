@@ -278,6 +278,16 @@ and leaves the changes staged
 ([the settings screen](../interface/surfaces.md#the-settings-screen)). A
 written setting reaches the model only as the next session's configuration.
 
+The allowlist line `/patterns` proposes is one of these writers. Where you
+were asked about the same command and allowed it every time in session after
+session, the record offers to add it to `behavior.command_allowlist` in the
+checkout's own `.shhh/config.toml`, and the card shows the change to that
+file before anything is written — the one line the list is on, with the new
+entry in it — so what you agree to is the line the file will hold
+([`sessions-and-memory.md`](sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project)).
+It adds to the list that file already holds, never to a list another layer
+set, and an entry already there is not offered.
+
 A key set to its zero value is taken out of the file rather than written as
 zero. Unset means the default, and for a few keys zero and unset are not the
 same fact — a negative round limit is a limit removed, and a written zero
@@ -881,6 +891,8 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `decision.scroll_down` | `shift+down` | scroll the card | yes |
 | `decision.pan_left` | `shift+left` | pan a wide body back | yes |
 | `decision.pan_right` | `shift+right` | pan a wide body | yes |
+| `proposal.later` | `n` | not now — offered again next time | yes |
+| `proposal.never` | `N` | never — not offered again | yes |
 | `confirm.yes` | `y`, `Y` | yes | yes |
 | `confirm.no` | `n`, `N`, `enter`, `esc`, `ctrl+c` | no — the default | yes |
 | `confirm.force` | `f`, `F` | force | yes |
@@ -1151,6 +1163,7 @@ own file could hold.
 | `suggestions` | true/false | `on` | Offer a next step, drawn dim in the empty draft after a turn closes, that the right arrow takes into the draft, and let a cheap model write the start screen's read-only offers at session open; off asks for neither. |
 | `suggestion_model` | text | (provider.cheap_model) | The model the next step offered in an empty draft is asked of. |
 | `start_offers_model` | text | (provider.cheap_model) | The model the start screen's read-only offers are written by, read once at session open. |
+| `patterns_model` | text | (provider.cheap_model) | The model that words a memory or a skill proposed from what repeats across sessions, asked when you open one in /patterns. |
 | `memory_disabled` | true/false | `off` | Turn durable memory off: nothing is injected and the remember tool is not registered. |
 | `memory_max_entries` | number | `20` | How many memories are injected into one session's system prompt. |
 | `memory_max_tokens` | number | `1200` | The token budget for the injected memory block. |

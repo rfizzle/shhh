@@ -36,23 +36,7 @@ type Edit struct {
 // not parse is refused untouched: editing text the parser cannot read would
 // land the key somewhere nobody meant.
 func Write(path string, edits ...Edit) error {
-	return rewrite(path, func(doc *document) error {
-		for _, e := range edits {
-			key, literal, err := literalFor(e.Key, e.Value)
-			if err != nil {
-				return err
-			}
-			if literal == "" {
-				err = doc.removeKey(key)
-			} else {
-				err = doc.setKey(key, literal)
-			}
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
+	return rewrite(path, func(doc *document) error { return applyEdits(doc, edits) })
 }
 
 // WriteServer writes one `[mcp.servers.<name>]` table, replacing the
@@ -84,19 +68,91 @@ func RemoveServer(path, name string) error {
 // written: the edit is textual, and a text the parser cannot read must never
 // replace one it could.
 func rewrite(path string, change func(*document) error) error {
+	path, _, after, err := edited(path, change)
+	if err != nil {
+		return err
+	}
+	return replaceFile(path, after)
+}
+
+// Preview is what Write would leave in the file at path, without writing
+// it: the text as it stands and the text after the edits, so a card can show
+// the one line a write changes before the person says yes
+// (docs/capabilities/configuration.md#a-write-changes-one-line). It refuses
+// what Write refuses, in the same words.
+func Preview(path string, edits ...Edit) (before, after string, err error) {
+	_, before, after, err = edited(path, func(doc *document) error { return applyEdits(doc, edits) })
+	return before, after, err
+}
+
+// ListAdd is the edit that adds entry to the list key holds in the file at
+// path — that file's own list, not the settings in force, so a value another
+// layer set is not copied into this one. An entry already there is not added
+// twice, and one holding a comma is refused: the list is written the way
+// `config set` takes one, and a comma would split the entry in two.
+func ListAdd(path, key, entry string) (Edit, error) {
+	entry = strings.TrimSpace(entry)
+	if entry == "" || strings.Contains(entry, ",") {
+		return Edit{}, fmt.Errorf("config key %s: %q cannot be one entry of a list", key, entry)
+	}
+	if s, ok := Lookup(key); !ok || s.Kind != KindList {
+		return Edit{}, fmt.Errorf("config key %s is not a list", key)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return Edit{}, err
+	}
+	var file Config
+	if _, err := toml.Decode(string(raw), &file); err != nil {
+		return Edit{}, fmt.Errorf("config %s: the file does not parse: %w", path, err)
+	}
+	v, ok := fieldAt(reflect.ValueOf(file), strings.Split(key, "."))
+	if !ok {
+		return Edit{}, fmt.Errorf("unknown config key: %s", key)
+	}
+	list, _ := v.Interface().([]string)
+	if !slices.Contains(list, entry) {
+		list = append(slices.Clone(list), entry)
+	}
+	return Edit{Key: key, Value: strings.Join(list, ", ")}, nil
+}
+
+// applyEdits is Write's change: each key set, or taken out.
+func applyEdits(doc *document, edits []Edit) error {
+	for _, e := range edits {
+		key, literal, err := literalFor(e.Key, e.Value)
+		if err != nil {
+			return err
+		}
+		if literal == "" {
+			err = doc.removeKey(key)
+		} else {
+			err = doc.setKey(key, literal)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// edited reads the file, hands its parsed text to change, and answers with
+// the path a write goes to, the text as read and the text after the change.
+// Nothing is written here.
+func edited(path string, change func(*document) error) (string, string, string, error) {
 	// A config file is often a symlink into a dotfiles checkout. The rename
-	// below would replace the link with a plain file and leave the real one
+	// would replace the link with a plain file and leave the real one
 	// holding the old value, so the write goes to what the link names.
 	if resolved, err := filepath.EvalSymlinks(path); err == nil {
 		path = resolved
 	}
 	raw, err := os.ReadFile(path)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return err
+		return path, "", "", err
 	}
 	text := string(raw)
 	if _, err := toml.Decode(text, &Config{}); err != nil {
-		return fmt.Errorf("config %s: not written, the file does not parse: %w", path, err)
+		return path, text, "", fmt.Errorf("config %s: not written, the file does not parse: %w", path, err)
 	}
 	// The decoder accepts a byte-order mark and the span parser does not;
 	// it is set aside and put back, so an editor that writes one does not
@@ -107,15 +163,15 @@ func rewrite(path string, change func(*document) error) error {
 	}
 	doc, err := parseDocument(text)
 	if err != nil {
-		return fmt.Errorf("config %s: %w", path, err)
+		return path, bom + text, "", fmt.Errorf("config %s: %w", path, err)
 	}
 	if err := change(doc); err != nil {
-		return fmt.Errorf("config %s: %w", path, err)
+		return path, bom + text, "", fmt.Errorf("config %s: %w", path, err)
 	}
 	if _, err := toml.Decode(doc.text, &Config{}); err != nil {
-		return fmt.Errorf("config %s: not written, the edit did not produce a readable file: %w", path, err)
+		return path, bom + text, "", fmt.Errorf("config %s: not written, the edit did not produce a readable file: %w", path, err)
 	}
-	return replaceFile(path, bom+doc.text)
+	return path, bom + text, bom + doc.text, nil
 }
 
 // replaceFile writes text over path atomically. A new file is 0600 because

@@ -56,4 +56,6 @@ func (m *Model) stopSideJobs() {
 	// And the start screen's reading, which a session leaving before it
 	// lands has no screen left to draw it on.
 	m.stopStartOffers()
+	// And a proposal's wording, which has no list left to open a card on.
+	m.stopPatterns()
 }

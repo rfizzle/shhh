@@ -12,8 +12,8 @@ import (
 // row is a takeover and says the command that opens the screen.
 func TestScreens_ChatTableMatchesTheRegister(t *testing.T) {
 	table := chatScreens()
-	if len(table) != 16 {
-		t.Errorf("the chat table has %d screens, want 16", len(table))
+	if len(table) != 17 {
+		t.Errorf("the chat table has %d screens, want 17", len(table))
 	}
 	seen := map[state]bool{}
 	for _, spec := range table {

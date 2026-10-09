@@ -373,6 +373,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithEndpointWindows(endpointWindowsFor(env.prov))
 	model = model.WithNotebook(session.notebook).WithSources(session.sources).
 		WithCommitSecretIgnore(cfg.Commit.SecretIgnore)
+	patterns, hasPatterns := newPatternsHost(db, cwd, mem, newPatternWriter(cfg, env, ledger))
 	if session.conversation {
 		// No start screen, but the header still names the checkout the
 		// conversation was opened in, from the survey the prompt was built on.
@@ -395,8 +396,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			WithTreeCheck(withSibling(treeCheck(cfg), session.sibling)).
 			// First contact: the empty session's start screen, surveyed
 			// once here rather than assembled per frame.
-			WithStartScreen(buildStartInfo(env.survey, db, gate != nil, chatTrust(db), proj,
-				projectWordings(cfg.Prompts, projectPrompts()))).
+			WithStartScreen(withPatternsCount(buildStartInfo(env.survey, db, gate != nil, chatTrust(db), proj,
+				projectWordings(cfg.Prompts, projectPrompts())), patterns, hasPatterns)).
 			// And the reading that writes the offers the table cannot,
 			// asked once the screen has drawn and on the next step's
 			// switch.
@@ -404,6 +405,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			// The one thing the screen offers that writes: scaffolding the
 			// checkout's own context file, behind a card.
 			WithScaffold(buildScaffold(db, cwd))
+		if hasPatterns {
+			// What the record says this checkout kept doing, each as a
+			// proposal answered on a card (patterns.go).
+			model = model.WithPatterns(patterns.chat())
+		}
 	}
 	if red != nil {
 		model = model.WithEvidence(chat.Evidence{

@@ -131,6 +131,10 @@ type StartInfo struct {
 	// nothing else (readOnlyOffers).
 	Ready  StartReady
 	Branch StartBranch
+	// Patterns is how many proposals /patterns would list for this
+	// checkout, read once at session start; zero offers none. It feeds the
+	// read-only slot and nothing else.
+	Patterns int
 	// Now fixes the clock the "4m ago" clause is measured against; the zero
 	// value means time.Now, which is what the product uses and the tests do
 	// not.
@@ -699,6 +703,14 @@ func readOnlyOffers(info StartInfo, draft string, room int, written []agent.Star
 	}
 	if o, ok := assessOffer(info); ok {
 		queued = append(queued, o)
+	}
+	// What the record says this checkout's sessions kept doing is a fact
+	// about it like the ones above, and the last of them: it is upkeep of the
+	// settings rather than the work in hand. The row only lists; every
+	// proposal behind it asks on a card of its own (patterns.go).
+	if n := info.Patterns; n > 0 {
+		queued = append(queued, readOnlyOffer{"look at what repeats — " + plural(n, "pattern"),
+			"reads only, then asks", patternsCommandName, "", false})
 	}
 	var drafting []readOnlyOffer
 	if draft != "" {

@@ -103,6 +103,15 @@ func chatScreens() []screenSpec {
 			draw: sizedPane(heldScreens.spend), row: spendScreenRow()},
 		{state: stateFlakes, command: "/gate", commandArgs: []string{"flakes"}, surface: keys.NoSurface, place: placePane, held: true,
 			draw: sizedPane(heldScreens.flakes), row: flakesScreenRow()},
+		// What repeats, each as a proposal. The screen writes nothing; enter
+		// opens the proposal's card, which is where a yes is given
+		// (patterns.go).
+		{state: stateProposals, command: patternsCommandName, surface: keys.NoSurface, place: placePane, held: true,
+			draw: sizedPane(heldScreens.patterns),
+			row: mode{
+				hint: (Model).renderPatternsHint,
+				keys: (Model).updatePatterns,
+			}},
 		{state: stateTools, command: "/mcp", surface: keys.NoSurface, place: placePane, held: true,
 			draw: (Model).toolsLines,
 			row: mode{
