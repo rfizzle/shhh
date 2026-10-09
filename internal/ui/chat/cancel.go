@@ -164,6 +164,12 @@ func (m Model) quitPress(prior armedPress) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	if prior.openOn(armQuit, quitChord()) {
+		// A session leaving work uncommitted and nothing written about it
+		// asks once, in a sentence; a third press is that question's no and
+		// quits (handoff.go).
+		if m.handoffOwed() {
+			return m.openHandoffOffer()
+		}
 		cmd := m.quitNow()
 		return m, cmd
 	}
@@ -282,11 +288,17 @@ func (m Model) updateQuitConfirm(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	act := m.quitAskYes
-	m.quitAsk, m.quitAskYes = nil, nil
+	offered := m.handoff.offered
+	m.quitAsk, m.quitAskYes, m.handoff.offered = nil, nil, false
 	m.leaveSurface()
 	m.syncViewport()
 	if yes && act != nil {
 		return m, act(&m)
+	}
+	// The offer of a handoff is asked on the way out, so declining it is
+	// the quit that was asked for (handoff.go).
+	if offered {
+		return m, m.quitNow()
 	}
 	return m, nil
 }

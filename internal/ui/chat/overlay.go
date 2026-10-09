@@ -501,6 +501,18 @@ func buildOverlays(screens []screenSpec) map[state]*mode {
 			keyList: staticKeyList(keys.OnToolchainDraft),
 			command: toolchainCommandName,
 		},
+		stateHandoff: {
+			place:     placePanel,
+			borrows:   true,
+			hidesRail: true,
+			lines:     panelRows((Model).handoffLines),
+			// The scaffold card's headroom, for the scaffold card's reason: a
+			// decision whose keys the panel bound cut off is not one.
+			bound:   (Model).planPanelBound,
+			answer:  (*Model).answerHandoff,
+			keyList: staticKeyList(keys.OnHandoff),
+			command: handoffCommandName,
+		},
 		stateTodoPause: {
 			place:     placePanel,
 			borrows:   true,

@@ -119,6 +119,7 @@ const (
 	OnScaffold
 	OnToolchain
 	OnToolchainDraft
+	OnHandoff
 	OnProposal
 	OnConfirm
 	OnHeldLine
@@ -498,6 +499,16 @@ func register() [surfaceCount]Surface {
 			Section:  "docs/interface/surfaces.md#the-approval-card",
 			Position: Takeover,
 			Reached:  "/toolchain, or the start screen's draft offer",
+			Bindings: []Binding{Decision.Accept, Decision.Revise, Decision.Refuse, Select.Cancel, Screen.List},
+		},
+		OnHandoff: {
+			// The toolchain draft card's keys for a note rather than a file:
+			// written by the session, opened in $EDITOR on [e], and kept on
+			// the conversation's slot only on the yes.
+			Name:     "the handoff card",
+			Section:  "docs/interface/surfaces.md#the-approval-card",
+			Position: Takeover,
+			Reached:  "/handoff, or the yes on the quit's offer of one",
 			Bindings: []Binding{Decision.Accept, Decision.Revise, Decision.Refuse, Select.Cancel, Screen.List},
 		},
 		OnProposal: {

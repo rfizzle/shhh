@@ -309,6 +309,17 @@ func newAccountant(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *ag
 	})
 }
 
+// newHandoffWriter returns the writer of the handoff `/handoff` asks for. It
+// is asked on the reading's flow, because a handoff is a reading of the
+// session the person asked for by name, and billed as a summary beside it
+// (docs/capabilities/sessions-and-memory.md#a-session-can-leave-a-handoff).
+func newHandoffWriter(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.HandoffWriter {
+	return agent.NewHandoffWriter(ledger.For(env.prov, flowReading.source), agent.HandoffConfig{
+		ModelAt: env.flowModelAt(cfg, flowReading),
+		Timeout: time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
+	})
+}
+
 // newSuggester returns the writer of the next step an idle session offers in
 // its empty draft. Only the interactive session builds one: an unattended
 // run, a served session and a child have no draft to offer it in, so none of

@@ -512,6 +512,7 @@ func (b *screenBuild) wiring() chat.Wiring {
 		Titles:          cfg.TitlesEnabled(),
 		Accountant:      newAccountant(cfg, env, ledger),
 		AccountEvery:    cfg.AccountInterval(),
+		Handoff:         newHandoffWriter(cfg, env, ledger),
 		// The next step offered in the empty draft is this surface's alone:
 		// a -p run, a served session and a child have no draft to offer it
 		// in, and none of them is built here.

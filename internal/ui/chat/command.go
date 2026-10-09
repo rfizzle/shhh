@@ -460,6 +460,9 @@ func buildCommands() []*command {
 				if m.working() {
 					return m.openQuitConfirm()
 				}
+				if m.handoffOwed() {
+					return m.openHandoffOffer()
+				}
 				return m, m.quitNow()
 			})},
 		{name: "/run",
@@ -512,6 +515,17 @@ func buildCommands() []*command {
 				idleOnly: "it rewrites the conversation into a summary",
 				help:     `continue from a summary plus the most recent turns`},
 			exact: true, run: bareRun(Model.startCompact)},
+		// What the next sitting of this conversation opens on, written by
+		// the session around the person's note and kept only on the card's
+		// yes (handoff.go).
+		{name: handoffCommandName,
+			slash: &slashCommand{args: "[note]", desc: "write what the next sitting needs, and keep it on this conversation",
+				enabled:  func(m *Model) bool { return m.handoffWired() },
+				idleOnly: "it reads the conversation the running turn is still writing",
+				help:     `write a handoff for the next sitting of this conversation — what was done, what is open, what was decided, the files touched and the item in flight — around [note] if you give one. It opens on a card: [e] edits it, the yes keeps it on the conversation, esc keeps nothing. The start screen's resume offer names its first line, and a resume opens on it`},
+			open: func(m Model, parts []string) (tea.Model, tea.Cmd) {
+				return m.handoffCommand(strings.Join(parts[1:], " "))
+			}},
 		// Bare /rewind opens the checkpoint picker; the numbered form is
 		// the answer.
 		{name: "/rewind",
@@ -1280,6 +1294,15 @@ func slashSave(m *Model, parts []string) string {
 	_ = m.wiring.DB.SetChatResume(name, storage.ChatResume{
 		Summary: m.compactSummary, Head: project.Head(m.wiring.Workspace), Root: project.Root(m.wiring.Workspace),
 		Steps: m.workSteps.Encode()})
+	// And the handoff the conversation holds, kept this sitting or opened
+	// on, so the copy's next sitting opens on it too (handoff.go).
+	handoff := m.handoff.kept
+	if handoff == "" {
+		handoff, _ = m.wiring.DB.ChatHandoff(m.sessionName)
+	}
+	if handoff != "" {
+		_ = m.wiring.DB.SetChatHandoff(name, handoff)
+	}
 	// Future rewind branches hang off the named session.
 	m.adoptSlot(name)
 	return fmt.Sprintf("chat saved as %q", name)

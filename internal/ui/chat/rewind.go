@@ -896,6 +896,9 @@ func (m *Model) switchToBranch(target string) string {
 		return failed("branches", err.Error())
 	}
 	m.loadConversationFolded(nil, msgs)
+	// A handoff this sitting kept is the branch being left's, and the next
+	// save would otherwise carry it onto this one (handoff.go).
+	m.dropHandoff()
 	m.adoptSlot(target)
 	// The title stays: a branch is the same conversation, and the next
 	// autosave stamps it on the branch's row so the listing shows both

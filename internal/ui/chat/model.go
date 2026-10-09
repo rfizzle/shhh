@@ -283,6 +283,11 @@ const (
 	// stateProposal: one proposal's card, opened from that screen. A
 	// takeover like the scaffold card, because the reader asked for it.
 	stateProposal
+	// stateHandoff: the card a /handoff puts its draft on — kept on the
+	// slot on yes, opened in $EDITOR on [e], kept nowhere on esc
+	// (handoff.go). A takeover like the toolchain draft card, because the
+	// reader asked for it.
+	stateHandoff
 )
 
 // minPanelHeight is the fewest rows the bottom panel takes: what a surface
@@ -1348,6 +1353,9 @@ type Model struct {
 	// patterns is /patterns: the proposals made from what repeats, the
 	// reading out for one, and its card (patterns.go).
 	patterns patternsState
+	// handoff is /handoff: the writing in flight, the draft on its card, and
+	// the handoff this sitting kept (handoff.go).
+	handoff handoffState
 	// scaffold is the project-scaffolding offer and the write behind it
 	// (scaffold.go).
 	scaffold Scaffold
@@ -1478,6 +1486,10 @@ func (m Model) saveCmd(revise func() string) tea.Cmd {
 	// and what the slot says about it are one fact, and two autosaves
 	// overlapping could otherwise land their halves in either order.
 	hold := m.holdMarker()
+	// And the handoff this sitting kept, so a save that lands in a slot
+	// other than the one it was kept on — the first save of a conversation,
+	// or one moved off a taken slot — carries it there (handoff.go).
+	handoff := m.handoff.kept
 	// The slot's name is what joins this session's metrics to its
 	// transcript, so the recorder learns it here, where the slot is decided.
 	if m.wiring.Observer.Session != nil {
@@ -1519,6 +1531,9 @@ func (m Model) saveCmd(revise func() string) tea.Cmd {
 			summary = revise()
 		}
 		_ = db.SetChatResume(slot, storage.ChatResume{Summary: summary, Head: project.Head(dir), Root: project.Root(dir), Steps: steps})
+		if handoff != "" {
+			_ = db.SetChatHandoff(slot, handoff)
+		}
 		if slot != name {
 			return autosaveMovedMsg{from: name, to: slot}
 		}

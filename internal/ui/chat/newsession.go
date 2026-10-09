@@ -62,6 +62,7 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	m.dropTodoPlan()
 	m.dropPersona()
 	m.dropToolchainDraft()
+	m.dropHandoff()
 	// An offered next step was read from the conversation being left, and is
 	// filed against its record before that record closes (suggest.go).
 	m.resetSuggestion()

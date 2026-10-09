@@ -657,6 +657,13 @@ var migrations = []string{
 	// other (docs/capabilities/sessions-and-memory.md#what-a-session-ran-under).
 	// Nullable for the reason the other settings columns are.
 	`ALTER TABLE agent_sessions ADD COLUMN classifier_backend TEXT;`,
+
+	// The handoff a person left on a conversation for its next sitting
+	// (docs/capabilities/sessions-and-memory.md#a-session-can-leave-a-handoff).
+	// A column of its own rather than a field of the resume columns: those
+	// are rewritten on every save, and this is written only when the person
+	// says yes to one.
+	`ALTER TABLE chat_sessions ADD COLUMN handoff TEXT NOT NULL DEFAULT '';`,
 }
 
 const (

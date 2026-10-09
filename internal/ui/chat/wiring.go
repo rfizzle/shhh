@@ -227,6 +227,8 @@ type Wiring struct {
 	// or zero turns, asks nothing.
 	Accountant   *agent.Accountant
 	AccountEvery int
+	// Handoff writes what /handoff puts on its card; nil offers no handoff.
+	Handoff *agent.HandoffWriter
 	// Suggester writes the offered next step, and Suggestions says the
 	// session starts with offers on.
 	Suggester   *agent.Suggester

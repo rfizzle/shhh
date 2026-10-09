@@ -37,6 +37,7 @@ func TestOverlayPlacements(t *testing.T) {
 		stateScaffold:       placePanel,
 		stateSetup:          placePanel,
 		stateToolchainDraft: placePanel,
+		stateHandoff:        placePanel,
 		stateProposal:       placePanel,
 		stateTodoPause:      placePanel,
 		stateUndoConfirm:    placePanel,
@@ -295,8 +296,8 @@ func TestOverlayPaneScreensKeepTheirRows(t *testing.T) {
 		{stateEditor, "/edit", ""},
 	}
 	overlays()
-	if len(overlayTable) != 48 {
-		t.Errorf("the register has %d rows, want 48", len(overlayTable))
+	if len(overlayTable) != 49 {
+		t.Errorf("the register has %d rows, want 49", len(overlayTable))
 	}
 	for _, w := range want {
 		o := overlayFor(w.s)

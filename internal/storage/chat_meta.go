@@ -145,3 +145,29 @@ func (db *DB) ChatResume(name string) (ChatResume, error) {
 	}
 	return r, err
 }
+
+// SetChatHandoff keeps the handoff a person accepted on their conversation's
+// slot, replacing the one before it. It is written on the card's yes and
+// nowhere else, so a slot holds a handoff only because somebody said to
+// keep it (docs/capabilities/sessions-and-memory.md#a-session-can-leave-a-handoff).
+func (db *DB) SetChatHandoff(name, handoff string) error {
+	res, err := db.sql.Exec(`UPDATE chat_sessions SET handoff = ? WHERE name = ?`, handoff, name)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ChatNotFoundError{Name: name}
+	}
+	return nil
+}
+
+// ChatHandoff reads the handoff a slot holds; empty when none was kept or the
+// slot is unknown.
+func (db *DB) ChatHandoff(name string) (string, error) {
+	var handoff string
+	err := db.sql.QueryRow(`SELECT handoff FROM chat_sessions WHERE name = ?`, name).Scan(&handoff)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return handoff, err
+}
