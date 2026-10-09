@@ -115,7 +115,7 @@ func TestConnect_TheReportsDurationIsRecorded(t *testing.T) {
 	if len(rows) != 1 || rows[0].DurationMs == nil {
 		t.Fatalf("rows = %+v", rows)
 	}
-	if want := ts.Reports[0].Took.Milliseconds(); *rows[0].DurationMs != want {
+	if want := ts.Reports()[0].Took.Milliseconds(); *rows[0].DurationMs != want {
 		t.Fatalf("recorded %dms, the report measured %dms", *rows[0].DurationMs, want)
 	}
 }
@@ -132,7 +132,7 @@ func TestStartup_NoServerOutputReachesTheRecord(t *testing.T) {
 		missingServer("leaky", "/nonexistent/"+secret+"/mcp-server"),
 	}}, mcp.Options{Timeout: 5 * time.Second, Observe: serverStartup(s)})
 	defer ts.Close()
-	if r := ts.Reports[0]; r.Status != mcp.StatusFailed || !strings.Contains(r.Error, secret) {
+	if r := ts.Reports()[0]; r.Status != mcp.StatusFailed || !strings.Contains(r.Error, secret) {
 		t.Fatalf("the seeded server's error does not carry the secret, so this proves nothing: %s %q", r.Status, r.Error)
 	}
 

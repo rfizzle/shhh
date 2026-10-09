@@ -179,6 +179,13 @@ type chatSession struct {
 	mcp        bool
 	mcpTools   *mcp.Toolset
 	mcpCatalog *mcp.Catalog
+	// mcpJoins says the servers were started without waiting, so their tools
+	// join the request at a turn boundary rather than being registered here
+	// (requestTools).
+	mcpJoins bool
+	// toolboxSaid is the toolbox as the assembly said it, which a server
+	// joining says again over the new set (mcpJoin).
+	toolboxSaid string
 }
 
 // openSecrets resolves the session's vault and hands its values to every
@@ -294,13 +301,14 @@ func registerChat(cmd *cobra.Command, a *assembly, session *chatSession) error {
 	// it, because both of them state whether anybody else is here.
 	session.sibling = readSibling(db)
 
-	// MCP servers: every definition the catalog holds is connected at
-	// once, and the tools of the ones that answered join the toolset. A
-	// server that did not answer is a line before the session starts and
-	// a row in /mcp, never a reason not to start
+	// MCP servers: every definition the catalog holds starts connecting at
+	// once, and the session opens without waiting for any of them. Each is a
+	// row in the rail that says starting until its connect ends, and the
+	// tools of one that answered join at the next turn boundary; one that
+	// did not is a line there and a row in /mcp, never a reason not to start
 	// (docs/capabilities/mcp.md#a-server-that-did-not-answer-is-a-row).
 	if session.mcp {
-		a.closers = append(a.closers, session.attachMCP(cmd.Context(), db, session.conversation))
+		a.closers = append(a.closers, session.attachMCP(cmd.Context(), db, session.conversation, false))
 	}
 
 	// Durable memory: recalled entries join the system prompt under a hard

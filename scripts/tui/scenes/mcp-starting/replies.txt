@@ -1,0 +1,4 @@
+# Two plain replies: the scene is about the servers coming up, not about what
+# the model did with them.
+The servers are still starting, so this turn has only the built-in tools.
+The docs server joined at this turn; the tracker did not start.

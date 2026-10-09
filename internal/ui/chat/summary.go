@@ -674,7 +674,7 @@ func (m *Model) statusCommand() (string, tea.Cmd) {
 // with the same state word the block draws, and nothing at all when the
 // session has no external source to have lost.
 func (m Model) toolSourceStatus() string {
-	if len(m.mcp.Sources) == 0 {
+	if len(m.mcpSources()) == 0 {
 		return ""
 	}
 	var sb strings.Builder
@@ -683,7 +683,7 @@ func (m Model) toolSourceStatus() string {
 		fmt.Fprintf(&sb, "built-in — %s · %s\n",
 			components.ToolSourceWord(components.ToolSourceUp), plural(n, "tool"))
 	}
-	for _, s := range m.mcp.Sources {
+	for _, s := range m.mcpSources() {
 		line := s.Name + " — " + components.ToolSourceWord(s.State)
 		if s.Note != "" {
 			line += " · " + s.Note

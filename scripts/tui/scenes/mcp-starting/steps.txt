@@ -1,0 +1,35 @@
+# program test: TestProgram_AServerStartingTurnsUpAndJoinsAtTheNextLine
+#
+# The session opens without waiting on its MCP servers, and the rail's TOOLS
+# block says what each one is doing while it comes up
+# (docs/interface/surfaces.md#the-inspector-rail): a starting row is a still
+# mark with its seconds, it turns up or error the moment its connect ends, and
+# the server's tools join at the next line, which the transcript says
+# (docs/capabilities/mcp.md#a-server-may-change-what-it-offers). The launch
+# line configures docs, a stub that answers six seconds in, and tracker, which
+# never answers and is given twelve. The rail is not drawn below 130 columns,
+# which is why the scene is driven there.
+#
+# What the capture is for: at 02 the first turn has run and the rail reads
+# 1 of 3 up with both servers starting and their seconds; at 03 bare /mcp
+# opens on docs, still starting, with what it costs and how long it has; at
+# 04 docs has answered and its row reads up with its one tool while tracker
+# still starts; at 05 tracker's bound has run out and its row reads error ·
+# timeout, with no line sent since 04; at 06 the next line has the two
+# transcript lines — docs up from this turn, tracker did not start — ahead of
+# the message that started the turn.
+setup printf '%s\n' 'import json, sys, time' 'time.sleep(float(sys.argv[1]))' 'for line in sys.stdin:' '    m = json.loads(line)' '    if "id" not in m:' '        continue' '    r = {}' '    if m.get("method") == "initialize":' '        r = {"protocolVersion": m["params"]["protocolVersion"], "capabilities": {"tools": {}}, "serverInfo": {"name": "docs", "version": "1"}}' '    elif m.get("method") == "tools/list":' '        r = {"tools": [{"name": "search", "description": "Search the docs.", "inputSchema": {"type": "object"}}]}' '    sys.stdout.write(json.dumps({"jsonrpc": "2.0", "id": m["id"], "result": r}) + chr(10))' '    sys.stdout.flush()' > stub.py
+snap 01-start "Some things worth doing first"
+keys "what is in the docs" Enter
+snap 02-starting "The servers are still starting" "TOOLS" "1 of 3 up" "▸ docs" "▸ tracker" "starting · "
+keys "/mcp" Enter
+snap 03-mcp-starting "nothing yet: it has until" "/mcp · 2 servers" "its tools are not in this session yet"
+keys Escape
+snap 04-docs-up "✓ docs" "▸ tracker" "2 of 3 up" "up · 1 tool"
+snap 05-tracker-error "error · timeout" "2 of 3 up"
+keys "now search them" Enter
+snap 06-joined "The docs server joined at this turn" "mcp: docs: up — 1 tool, from this turn" "mcp: tracker: did not start (timeout)"
+keys C-c
+snap 07-quit-armed "again quits"
+keys C-c
+snap 08-exit "that is everything the screen was holding"

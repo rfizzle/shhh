@@ -303,7 +303,7 @@ func TestConnectBuildsTheToolsetAndReports(t *testing.T) {
 		"echo": StatusConnected, "off": StatusDisabled, "proj": StatusExcluded,
 		"keyed": StatusExcluded, "acts": StatusExcluded,
 	}
-	for _, r := range ts.Reports {
+	for _, r := range ts.Reports() {
 		if r.Status != want[r.Definition.Name] {
 			t.Errorf("%s: status %s, want %s (%s)", r.Definition.Name, r.Status, want[r.Definition.Name], r.Error)
 		}
@@ -389,15 +389,15 @@ func TestATrustedCheckoutsServerConnects(t *testing.T) {
 	def.Scope = ScopeProject
 	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{Project: ProjectTrust{Granted: true}})
 	defer ts.Close()
-	if len(ts.Reports) != 1 || ts.Reports[0].Status != StatusConnected {
-		t.Fatalf("reports = %+v", ts.Reports)
+	if len(ts.Reports()) != 1 || ts.Reports()[0].Status != StatusConnected {
+		t.Fatalf("reports = %+v", ts.Reports())
 	}
 }
 
 func TestConnectReportsAServerThatWillNotStart(t *testing.T) {
 	c := &Catalog{Servers: []Definition{{Name: "bad", Scope: ScopeUser, Transport: TransportStdio, Command: "/nonexistent/mcp-server"}}}
 	ts := Connect(context.Background(), c, Options{Timeout: 5 * time.Second})
-	r := ts.Reports[0]
+	r := ts.Reports()[0]
 	if r.Status != StatusFailed || r.TimedOut || !strings.Contains(r.Error, "server bad") {
 		t.Errorf("report = %+v", r)
 	}
@@ -914,7 +914,7 @@ func TestConnect_AFailedServerStillReportsWhatWasWithheld(t *testing.T) {
 		Command: filepath.Join(t.TempDir(), "no-such-server")}
 	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{EnvMask: secret.MaskedEnvName})
 	defer ts.Close()
-	r := ts.Reports[0]
+	r := ts.Reports()[0]
 	if r.Status != StatusFailed {
 		t.Fatalf("status = %s", r.Status)
 	}
@@ -953,7 +953,7 @@ func TestOnlyTheNamedToolsOfAServerAreRegistered(t *testing.T) {
 	}
 	// The server still holds its whole catalog: `shhh mcp show` is where a
 	// person reads a large server to decide what to name.
-	s := ts.Reports[0].Server
+	s := ts.Reports()[0].Server
 	if len(s.Tools) != 3 || len(s.RegisteredTools()) != 1 {
 		t.Errorf("server holds %d tools, %d registered", len(s.Tools), len(s.RegisteredTools()))
 	}
@@ -1101,7 +1101,7 @@ func TestAConfigNameIsRefusedRatherThanRenamed(t *testing.T) {
 func TestAServerKilledAfterConnectIsNoticedOnceAndAnswersFast(t *testing.T) {
 	ts := Connect(context.Background(), &Catalog{Servers: []Definition{testDefinition(t)}}, Options{})
 	defer ts.Close()
-	s := ts.Reports[0].Server
+	s := ts.Reports()[0].Server
 	if s == nil || s.cmd == nil || s.cmd.Process == nil {
 		t.Fatal("the server did not start")
 	}
@@ -1169,8 +1169,8 @@ func TestAHungCallEndsAtTheConfiguredTimeout(t *testing.T) {
 	def.CallTimeout = 200 * time.Millisecond
 	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{})
 	defer ts.Close()
-	if len(ts.Reports) != 1 || ts.Reports[0].Status != StatusConnected {
-		t.Fatalf("connect = %+v", ts.Reports[0])
+	if len(ts.Reports()) != 1 || ts.Reports()[0].Status != StatusConnected {
+		t.Fatalf("connect = %+v", ts.Reports()[0])
 	}
 
 	started := time.Now()
@@ -1184,7 +1184,7 @@ func TestAHungCallEndsAtTheConfiguredTimeout(t *testing.T) {
 	}
 	// A call the session gave up on says nothing about whether the server
 	// is still there, so the next one is tried the ordinary way.
-	if s := ts.Reports[0].Server; s.Dead() != "" {
+	if s := ts.Reports()[0].Server; s.Dead() != "" {
 		t.Errorf("a timed-out call marked the server dead: %s", s.Dead())
 	}
 }
@@ -1240,7 +1240,7 @@ func TestAbandonCallsReachesACallInFlight(t *testing.T) {
 	// Read the server directly and not through Refresh: a death makes
 	// Refresh report movement, so a test that guards on its answer can
 	// never fail for the regression it is named after.
-	if why := ts.Reports[0].Server.Dead(); why != "" {
+	if why := ts.Reports()[0].Server.Dead(); why != "" {
 		t.Errorf("an abandoned call marked the server dead: %s", why)
 	}
 }
@@ -1287,7 +1287,7 @@ func TestConnectGivesUpOnAServerThatNeverAnswers(t *testing.T) {
 	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{})
 	defer ts.Close()
 	took := time.Since(started)
-	r := ts.Reports[0]
+	r := ts.Reports()[0]
 	if r.Status != StatusFailed || !r.TimedOut || !strings.Contains(r.Error, "no answer within 150ms") {
 		t.Fatalf("report = %s / %q", r.Status, r.Error)
 	}
@@ -1410,8 +1410,8 @@ func TestAPageAServerReadIsFiledInTheLedger(t *testing.T) {
 	def.Env[serverEnv] = pageServer
 	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{})
 	defer ts.Close()
-	if len(ts.Reports) != 1 || ts.Reports[0].Status != StatusConnected {
-		t.Fatalf("connect = %+v", ts.Reports[0])
+	if len(ts.Reports()) != 1 || ts.Reports()[0].Status != StatusConnected {
+		t.Fatalf("connect = %+v", ts.Reports()[0])
 	}
 	ledger := web.NewLedger(nil)
 	ts.UseLedger(ledger)
@@ -1452,8 +1452,8 @@ func TestAResourceReadAtAWebAddressIsFiledInTheLedger(t *testing.T) {
 	def.Env[serverEnv] = pageServer
 	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{})
 	defer ts.Close()
-	if len(ts.Reports) != 1 || ts.Reports[0].Status != StatusConnected {
-		t.Fatalf("connect = %+v", ts.Reports[0])
+	if len(ts.Reports()) != 1 || ts.Reports()[0].Status != StatusConnected {
+		t.Fatalf("connect = %+v", ts.Reports()[0])
 	}
 	ledger := web.NewLedger(nil)
 	ts.UseLedger(ledger)

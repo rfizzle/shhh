@@ -17,20 +17,20 @@ import (
 // would fix it — so the block, the screen and /mcp's listing say one thing.
 func TestMCPScreenSourcesAreTheRailsReadingInTheListingsWords(t *testing.T) {
 	withProjectTrust(t, project.Trust{Root: "/repo"})
-	ts := &mcp.Toolset{Reports: []mcp.Report{
+	ts := mcp.FromReports([]mcp.Report{
 		{Definition: mcp.Definition{Name: "docs", Scope: mcp.ScopeUser, Transport: mcp.TransportStdio, Command: "docs-mcp"},
 			Status: mcp.StatusConnected, Server: &mcp.Server{Tools: []mcp.Tool{{Name: "docs__search", Remote: "search"}}}},
 		{Definition: mcp.Definition{Name: "tracker", Scope: mcp.ScopeProject, Transport: mcp.TransportStdio, Command: "npx", Source: "/repo/.mcp.json"},
 			Status: mcp.StatusUntrusted},
 		{Definition: mcp.Definition{Name: "linear", Scope: mcp.ScopeUser, Transport: mcp.TransportStdio, Command: "linear-mcp"},
 			Status: mcp.StatusFailed, Error: "server linear: connect: exec: \"linear-mcp\": executable file not found in $PATH"},
-	}}
+	})
 	got := mcpScreenSources(ts, &mcp.Catalog{Diagnostics: []string{"/repo/.mcp.json: server Bad Name: bad"}}, "/repo", true)
 	rail := mcpToolSources(ts)
 	if len(got) != 4 {
 		t.Fatalf("sources = %+v", got)
 	}
-	for i, rep := range ts.Reports {
+	for i, rep := range ts.Reports() {
 		row, _ := mcpServerRow(rep, "/repo")
 		s := got[i]
 		if s.Group != components.ToolsServers || s.Source != rail[i] {
@@ -51,7 +51,7 @@ func TestMCPScreenSourcesAreTheRailsReadingInTheListingsWords(t *testing.T) {
 	if got[0].Offer != components.ToolsOfferNone || got[2].Offer != components.ToolsOfferNone {
 		t.Error("a user server offers the checkout's answer")
 	}
-	if got[1].Offer != components.ToolsOfferTrust || got[1].Ask != mcpTrustPrompt(project.Trust{Root: "/repo"}, ts.Reports[1].Definition) {
+	if got[1].Offer != components.ToolsOfferTrust || got[1].Ask != mcpTrustPrompt(project.Trust{Root: "/repo"}, ts.Reports()[1].Definition) {
 		t.Errorf("the untrusted project server offers %d asking %q", got[1].Offer, got[1].Ask)
 	}
 	if d := got[3]; d.Group != components.ToolsUnloaded || !strings.Contains(d.Source.Note, "Bad Name") {

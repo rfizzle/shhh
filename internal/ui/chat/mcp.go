@@ -17,6 +17,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/rfizzle/shhh/internal/mcp"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -31,9 +32,9 @@ type MCP struct {
 	// Manage backs the /mcp slash command.
 	Manage func(args []string) string
 	// Prompts are the commands the servers publish. It is a call rather
-	// than a value — unlike Sources, which nothing in a session moves —
-	// because a server may say its prompt list changed and Refresh takes
-	// that at the next boundary
+	// than a value because a server may say its prompt list changed, or
+	// join after the session opened, and Refresh and Join take either at
+	// the next boundary
 	// (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
 	Prompts func() []mcp.Prompt
 	// Render asks a server to fill one of its prompts in. It reaches the
@@ -58,13 +59,43 @@ type MCP struct {
 	// (docs/capabilities/mcp.md#a-call-that-hangs-can-be-given-up).
 	Abandon func()
 	// Sources is one entry per server the session was told to reach, as the
-	// connect left it, in the rail's own vocabulary — a second enum in
+	// rail last read it, in the rail's own vocabulary — a second enum in
 	// between would only be this one restated, and a mapping to get it wrong
-	// in. It is a value rather than a call because nothing in a session
-	// changes it: the servers are dialled once before the first turn, and
+	// in. It is a value for a settled server, which only a boundary moves:
 	// trusting one takes effect in the next session
 	// (docs/capabilities/mcp.md#a-checkout-cannot-start-a-process).
 	Sources []components.InspectorToolSource
+	// Live is the servers as their connects stand this moment, read for a
+	// row Sources still holds as starting: a connect ends on its own
+	// goroutine, and its row says up or error from the next frame rather
+	// than from the next boundary
+	// (docs/capabilities/mcp.md#a-server-that-did-not-answer-is-a-row).
+	Live func() []components.InspectorToolSource
+	// Join takes the connects that ended since the last turn boundary,
+	// handed the system prompt the conversation carries now, and says what
+	// moved; false is nothing. It is called only between turns, so the
+	// model's tools never change inside a round
+	// (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
+	Join func(system string) (MCPJoin, bool)
+}
+
+// MCPJoin is what a boundary's join moved.
+type MCPJoin struct {
+	// Notes are the transcript's lines: one per server that came up or did
+	// not start.
+	Notes []string
+	// Sources are the rows as they stand after the join.
+	Sources []components.InspectorToolSource
+	// System is the system prompt with the servers' block and the toolbox
+	// said again over the new set; empty leaves the prompt as it was, which
+	// is a join where nothing came up.
+	System string
+	// ServerTools are every server tool the request now carries, which
+	// replace the servers' share of what the session counts as its tools.
+	ServerTools []ToolTokens
+	// Gated are the approval cards of the server tools that ask, which a
+	// tool that joined has to carry before its first call can be made.
+	Gated map[string]GatedPreviewFunc
 }
 
 // WithMCP enables /mcp and tells the transcript which rows are server
@@ -90,7 +121,8 @@ const toolRailRows = 4
 // nothing but its own tools has no way to have lost any, and the block would
 // be a row saying the obvious.
 func (m Model) inspectorTools() *components.InspectorTools {
-	if len(m.mcp.Sources) == 0 && m.memory.Omitted == 0 {
+	sources := m.mcpSources()
+	if len(sources) == 0 && m.memory.Omitted == 0 {
 		return nil
 	}
 	t := &components.InspectorTools{MemoryOmitted: m.memory.Omitted}
@@ -103,11 +135,12 @@ func (m Model) inspectorTools() *components.InspectorTools {
 	// The block exists so a source that did not answer leaves a trace, which
 	// decides what the fold is allowed to take: a source that is up is the one
 	// the reader can afford not to see, so the healthy rows go first and every
-	// other kind keeps its row for as long as there is one.
-	keep := make([]bool, len(m.mcp.Sources))
+	// other kind — a server still starting as much as one that failed — keeps
+	// its row for as long as there is one.
+	keep := make([]bool, len(sources))
 	room := max(toolRailRows-len(t.Sources), 0)
 	for _, healthy := range []bool{false, true} {
-		for i, s := range m.mcp.Sources {
+		for i, s := range sources {
 			if room == 0 {
 				break
 			}
@@ -117,7 +150,7 @@ func (m Model) inspectorTools() *components.InspectorTools {
 			keep[i], room = true, room-1
 		}
 	}
-	for i, s := range m.mcp.Sources {
+	for i, s := range sources {
 		// The heading counts what answered over every source, so a server the
 		// fold took still counts towards it.
 		if s.State == components.ToolSourceUp {
@@ -348,7 +381,13 @@ func (m Model) applyMCPPrompt(msg mcpPromptMsg) (tea.Model, tea.Cmd) {
 // a transcript line would land between a call and its result; here it is a
 // row that greys and a line saying what the session lost
 // (docs/capabilities/mcp.md#a-server-that-dies-is-noticed).
+//
+// And it is where a server that answered after the session opened joins,
+// when no turn is in flight: its row turned when its connect ended, and
+// here its tools, the block naming it and the toolbox reach the model, from
+// the turn this line starts (joinMCP).
 func (m *Model) refreshMCP() {
+	m.joinMCP()
 	if m.mcp.Refresh == nil || !m.mcp.Refresh() || m.mcp.Restate == nil {
 		return
 	}
@@ -357,6 +396,109 @@ func (m *Model) refreshMCP() {
 	for _, note := range notes {
 		m.appendEntry(entry{kind: entrySystem, text: note})
 	}
+}
+
+// joinMCP takes the connects that ended since the last boundary, between
+// turns only: a line typed while a turn runs is steering, and a tool list
+// that moved under it would change the model's tools inside the turn it is
+// steering. What it takes moves together — the system prompt, the tools the
+// session counts, the approval cards a server's tools ask on, the rows — and
+// the transcript says what joined, at the line, before the message that
+// starts the turn (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
+func (m *Model) joinMCP() {
+	if m.mcp.Join == nil || m.turnInFlight() {
+		return
+	}
+	system := ""
+	msgs := m.agent.Messages()
+	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+		system = msgs[0].Content
+	}
+	j, ok := m.mcp.Join(system)
+	if !ok {
+		return
+	}
+	if j.System != "" && system != "" && j.System != system {
+		next := append([]provider.Message(nil), msgs...)
+		next[0].Content = j.System
+		m.agent.SetMessages(next)
+	}
+	if j.ServerTools != nil {
+		defs := make([]ToolTokens, 0, len(m.toolDefs)+len(j.ServerTools))
+		for _, d := range m.toolDefs {
+			if m.mcp.Has == nil || !m.mcp.Has(d.Name) {
+				defs = append(defs, d)
+			}
+		}
+		*m = m.WithToolDefinitions(append(defs, j.ServerTools...))
+	}
+	if len(j.Gated) > 0 {
+		// A copy, not the map the session was built with: the model is a
+		// value, and an earlier copy of it must not gain a card it never had.
+		gated := make(map[string]GatedPreviewFunc, len(m.gatedTools)+len(j.Gated))
+		for name, f := range m.gatedTools {
+			gated[name] = f
+		}
+		for name, f := range j.Gated {
+			gated[name] = f
+		}
+		m.gatedTools = gated
+	}
+	if j.Sources != nil {
+		m.mcp.Sources = j.Sources
+	}
+	for _, note := range j.Notes {
+		m.appendEntry(entry{kind: entrySystem, text: note})
+	}
+}
+
+// mcpSources is the servers as the rail draws them this frame: the rows
+// Sources holds, with each one Sources still holds as starting read again
+// from the connects as they stand, so a row turns the moment its connect
+// ends rather than at the next boundary — and a row still starting carries
+// its seconds, counted on the session's clock.
+func (m Model) mcpSources() []components.InspectorToolSource {
+	srcs := m.mcp.Sources
+	starting := false
+	for _, s := range srcs {
+		starting = starting || s.State == components.ToolSourceStarting
+	}
+	if !starting {
+		return srcs
+	}
+	var live []components.InspectorToolSource
+	if m.mcp.Live != nil {
+		live = m.mcp.Live()
+	}
+	out := make([]components.InspectorToolSource, len(srcs))
+	for i, s := range srcs {
+		if s.State == components.ToolSourceStarting && len(live) == len(srcs) {
+			s = live[i]
+		}
+		out[i] = startingNote(s)
+	}
+	return out
+}
+
+// mcpStarting reports whether a server is still connecting, which keeps the
+// tick up: a starting row's note is its seconds, read off the clock at each
+// paint, and the tick is what repaints it.
+func (m Model) mcpStarting() bool {
+	for _, s := range m.mcpSources() {
+		if s.State == components.ToolSourceStarting {
+			return true
+		}
+	}
+	return false
+}
+
+// startingNote is a starting source with its note: the seconds since its
+// connect began, in the rail's one clock format.
+func startingNote(s components.InspectorToolSource) components.InspectorToolSource {
+	if s.State == components.ToolSourceStarting && !s.Since.IsZero() {
+		s.Note = components.FormatElapsed(max(clock().Sub(s.Since), 0))
+	}
+	return s
 }
 
 // abandonMCPCalls gives up every server call in flight, which is what the

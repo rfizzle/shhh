@@ -123,7 +123,10 @@ func assembleSession(cmd *cobra.Command, session *chatSession, opts assemblyOpts
 	// registered on a condition — a language server was found, a binary is on
 	// PATH, a key is configured — so this is the last point where the whole
 	// toolset is known, and it has to be said after the last one joins.
-	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs, session.proactive))
+	// A server that joins later is a registration too, and says this again
+	// over the new set (mcpJoin), so what was said here is kept.
+	session.toolboxSaid = prompt.Toolbox(session.toolDefs, session.proactive)
+	session.promptExtra = prompt.CombineExtra(session.promptExtra, session.toolboxSaid)
 
 	// The spend ledger is opened before the session's provider, because the
 	// provider is handed out through it: every request shhh makes is billed
@@ -172,8 +175,12 @@ func unattendedRegistration(ownStore, sayDelegation bool) func(*cobra.Command, *
 		// servers marked read-only, here as on the screen: which servers a
 		// surface may reach is the surface's, not the screen's.
 		// See docs/capabilities/mcp.md#what-a-conversation-may-reach.
+		// Nobody watches a rail here, so the connects are waited for: a
+		// first round without the servers' tools is a worse answer nobody
+		// can see was worse
+		// (docs/capabilities/mcp.md#a-server-that-did-not-answer-is-a-row).
 		if session.mcp {
-			a.closers = append(a.closers, session.attachMCP(cmd.Context(), a.db, session.conversation))
+			a.closers = append(a.closers, session.attachMCP(cmd.Context(), a.db, session.conversation, true))
 		}
 		// What the run read, kept the way a session keeps it and stated to
 		// whoever reads the run, because a write-up nobody watched is judged

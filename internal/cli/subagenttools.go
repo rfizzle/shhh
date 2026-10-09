@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/lsp"
-	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/pricing"
@@ -202,11 +202,27 @@ func withSessionTools(session chatSession, red *evidence.Reducer, signature, cro
 	// them the way it gets the skills catalog. Every other server's tools
 	// need a card, and a child has no card of its own
 	// (docs/capabilities/mcp.md#what-a-conversation-may-reach).
-	if session.mcpTools != nil {
-		if ro := session.mcpTools.ReadOnlyDefinitions(); len(ro) > 0 {
+	//
+	// The servers are the ones that have joined when the child is spawned,
+	// read with their block in one look, and the child keeps that set: a
+	// server that joins later is the parent's from its next turn, and a
+	// child that learned one of its names from its task cannot reach it
+	// (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
+	if ts := session.mcpTools; ts != nil {
+		if ro, block := ts.ReadOnlyView(); len(ro) > 0 {
 			defs = append(defs, ro...)
-			base = session.mcpTools.WrapReadOnlyExecutor(signature, base)
-			sysPrompt = prompt.CombineExtra(sysPrompt, mcp.ReadOnlyPromptBlock(session.mcpTools))
+			held := make(map[string]bool, len(ro))
+			for _, d := range ro {
+				held[d.Name] = true
+			}
+			chain := ts.WrapReadOnlyExecutor(signature, base)
+			base = func(name string, args json.RawMessage) (string, error) {
+				if !held[name] && ts.Has(name) {
+					return "", fmt.Errorf("%s is not available to this agent: its server joined the session after this agent started", name)
+				}
+				return chain(name, args)
+			}
+			sysPrompt = prompt.CombineExtra(sysPrompt, block)
 		}
 	}
 	// Secrets are read at spawn rather than at session start, so a child

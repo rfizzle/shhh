@@ -60,7 +60,10 @@ func (m Model) toolsReading() []components.ToolsSource {
 		})
 	}
 	if m.toolSources.Read != nil {
-		out = append(out, m.toolSources.Read()...)
+		for _, src := range m.toolSources.Read() {
+			src.Source = startingNote(src.Source)
+			out = append(out, src)
+		}
 	}
 	sort.SliceStable(out, func(a, b int) bool { return out[a].Group < out[b].Group })
 	return out
@@ -84,7 +87,10 @@ func railSources(reading []components.ToolsSource) []components.InspectorToolSou
 // screen closes onto says what the screen said. A session with no servers
 // keeps the block it had: a reading with none has nothing to tell it.
 func (m *Model) restateServers(reading []components.ToolsSource) {
-	if len(m.mcp.Sources) == 0 {
+	if len(m.mcp.Sources) == 0 || m.mcpStarting() {
+		// A row still starting is read live and carries a clock; a
+		// reading's copy of its note would be a clock stopped at the
+		// moment the screen opened.
 		return
 	}
 	if servers := railSources(reading); len(servers) == len(m.mcp.Sources) {

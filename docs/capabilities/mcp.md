@@ -216,13 +216,26 @@ what the result was an answer to.
 
 What the swap reaches is everything read at the moment it is used: the
 commands the person can type, the listings, and where a uri is looked up.
-What it does not reach is anything the model was *told* — the tools it was
-offered and the block naming the resources both went into the request when
-the session opened, and neither can be taken back mid-session. So a prompt a
-server adds is typable on the next line, and a resource it adds is the
-model's from the next session. That is the same rule trust follows: a
-session works with what it started with, and the next one starts with the
-rest.
+What it does not reach is anything the model was *told* about a server that
+was already there — the tools it was offered and the block naming the
+resources went into the request when the server joined, and neither is
+taken back mid-session. So a prompt a server adds is typable on the next
+line, and a resource it adds is the model's from the next session.
+
+A server that answers after the session opened is the one thing that does
+move what the model was told, and it moves it once, at a turn boundary:
+from the turn after the server answers, its tools are in the request, the
+block naming the servers names it, and the toolbox says what it brought —
+together, because a block naming a server whose tools are not in the request,
+or a toolbox written before the last registration, is the model told about a
+tool it cannot reach. Never inside a round, and never from a list a join is
+halfway through: the request reads the servers' tools as they stood at the
+boundary. While every server is still starting the block is absent, because
+a server the model is told about and cannot reach is a tool it will try to
+call. A server's tools joining rewrites the prompt's prefix, so each one that
+joins after the first request costs one cache rewrite; the transcript says it
+joined, at the line that starts the turn. A child spawned before the join
+keeps the servers it was handed, and the next child is handed the new one.
 
 ## A large server is taken in part
 
@@ -280,12 +293,27 @@ verbs, and a URI learned from its task text must not be the way around it.
 
 ## A server that did not answer is a row
 
-Every server is connected when the session starts, all of them at once,
-each under a timeout. One that did not answer — did not start, listed no
-tools, asked for a login, timed out — is reported before the session opens
-and again inside it, on the screen `/mcp` opens beside every other place the
-session's tools came from, with what it costs and what would fix it, and the
-session starts without it. A failed server that stopped the
+Every server starts connecting when the session starts, all of them at once,
+each under its own timeout. The session somebody is watching does not wait
+for any of them — not even the first message waits: a server with a cold
+`npx` cache can take a minute and a half, and a session that opened only when
+its slowest server had answered made every prompt pay for somebody else's
+uptime. Its rail says what each one is doing instead: starting, with the
+seconds it has been at it, then up or error the moment its connect ends. Its
+tools reach the model at the next turn boundary
+([a server may change what it offers](#a-server-may-change-what-it-offers)),
+and the transcript says so there in one line. A server a second from
+answering when the first message is sent costs one cache rewrite when it
+joins, which is cheaper than a first send that pauses. A run nobody watches —
+a scripted run, a served session — waits for its servers before its first
+round, because a first round without their tools is a worse answer nobody can
+see was worse.
+
+One that did not answer — did not start, listed no tools, asked for a login,
+timed out — is a line at the next turn boundary (or, in a run that waited,
+before it starts), and a row on the screen `/mcp` opens beside every other
+place the session's tools came from, with what it costs and what would fix
+it, and the session goes on without it. A failed server that stopped the
 session would make the model's tools hostage to somebody else's uptime; a
 failed server that was silently left out would be a tool the model was
 told about and cannot reach.
@@ -300,8 +328,10 @@ became, and its resources by uri.
 
 ## A slow connect is said when it is paid
 
-A server that connects is not a row, but one that took more than five seconds
-to is a line before the session opens, with its time and the two keys that
+A server that connects is not a row, but in a run that waits for its servers
+one that took more than five seconds to is a line before the run starts — the
+session somebody watches waits for none, and its rail shows the seconds as
+they pass — with its time and the two keys that
 bound it, `mcp.startup_timeout_seconds` and `timeout_seconds` under the
 server's own table: a server that costs ninety seconds before every prompt is
 found on the next launch, not in a table weeks later. The line is a function

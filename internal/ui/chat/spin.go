@@ -67,6 +67,12 @@ func (m Model) spinnerWanted() bool {
 	if m.childrenRunning() {
 		return true
 	}
+	// A server still connecting: its TOOLS row draws no spinner, but its
+	// seconds are read off the clock at each paint, and the paint after its
+	// connect ends is the one that turns it.
+	if m.mcpStarting() {
+		return true
+	}
 	// A counter still climbing to the figure a round reported. It is the one
 	// entry here that outlives the turn it belongs to: the last usage of a
 	// round can land as the turn stops for an approval, and the chain has to

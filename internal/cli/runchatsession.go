@@ -239,9 +239,16 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// banner does, read from one place so the two cannot come to name
 	// different ones.
 	resume := "shhh " + session.kind + " --continue"
+	// What the conversation says about servers that joined after the launch,
+	// which a new session's prompt says from its start (mcpJoin).
+	var joiner *mcpJoin
+	if session.mcpJoins {
+		joiner = newMCPJoin(session)
+	}
 	newSession := func() chat.SessionStart {
 		text, projectTokens, _ := session.systemPrompt(cfg.Behavior.SystemPromptExtra)
 		text = session.boundaryPrompt(text, scopeSaid, sc)
+		text = joiner.fresh(text)
 		if recorder.restart() {
 			stamped = text
 			recorder.stamp(env.prompts.fingerprintOf(text), session.skills.Len(), projectFingerprintRoot(), settings())
@@ -625,7 +632,19 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 				return mcpGatedPreview(mcpTools, name, args)
 			}
 		}
+		// The servers were started without waiting, so each one's tools, the
+		// block naming it and the toolbox reach the model at the first turn
+		// boundary after it answers, and its row turns before that, when its
+		// connect ends (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
+		var live func() []components.InspectorToolSource
+		var join func(string) (chat.MCPJoin, bool)
+		if session.mcpJoins {
+			live = func() []components.InspectorToolSource { return mcpToolSources(mcpTools) }
+			join = joiner.take
+		}
 		model = model.WithMCP(chat.MCP{
+			Live:     live,
+			Join:     join,
 			Has:      mcpTools.Has,
 			ReadOnly: mcpTools.ReadOnly,
 			Manage:   mcpManager(mcpTools, session.mcpCatalog),

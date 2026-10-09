@@ -52,8 +52,12 @@ func mcpScreenSources(ts *mcp.Toolset, cat *mcp.Catalog, root string, canTrust b
 	var out []components.ToolsSource
 	if ts != nil {
 		trust := projectTrust()
-		for i, src := range mcpToolSources(ts) {
-			rep := ts.Reports[i]
+		// One read of the reports for the rows and their accounts, so a
+		// connect that ends while the screen is built cannot leave a row
+		// saying up beside an account saying starting.
+		reps := ts.Reports()
+		for i, src := range mcpSourcesOf(reps) {
+			rep := reps[i]
 			row, _ := mcpServerRow(rep, root)
 			s := components.ToolsSource{
 				Group: components.ToolsServers, Source: src, Detail: row.Subject,

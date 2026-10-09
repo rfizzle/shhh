@@ -33,6 +33,11 @@ const (
 	// StatusExcluded: the session's kind does not admit it — a conversation
 	// takes only servers marked read-only.
 	StatusExcluded Status = "excluded"
+	// StatusStarting: its connect is still running. A session that does not
+	// wait for its servers opens with every admitted one in this state, and
+	// each turns connected or failed the moment its own connect ends
+	// (docs/capabilities/mcp.md#a-server-that-did-not-answer-is-a-row).
+	StatusStarting Status = "starting"
 )
 
 // Report is one definition's outcome, for listings.
@@ -55,6 +60,13 @@ type Report struct {
 	// because the reader who needs it most is looking at one that would not
 	// start (docs/capabilities/mcp.md#a-server-sees-the-masked-environment).
 	Withheld []string
+	// Began is when the connect started, which is what a row still starting
+	// counts its seconds from; Bound is how long it has to answer, and
+	// BoundBySession says the session's own startup timeout set it rather
+	// than the definition, which decides which key a reader is pointed at.
+	Began          time.Time
+	Bound          time.Duration
+	BoundBySession bool
 }
 
 // ProjectTrust is the person's answer about the checkout a project server
@@ -107,6 +119,10 @@ type Options struct {
 	// session's record (docs/capabilities/sessions-and-memory.md#startup-and-waits-are-timed).
 	// nil observes nothing.
 	Observe func(Report)
+	// Dial reaches one server; nil is Dial. It is the seam a test holds a
+	// connect open on, so a server that has not answered yet is a state a
+	// test stands in rather than a race it has to win.
+	Dial func(ctx context.Context, def Definition, mask func(name string) bool) (*Server, error)
 }
 
 // Toolset is the session's connected servers and what they offer,
@@ -115,15 +131,34 @@ type Options struct {
 // Everything derived from a server's catalog is rebuilt together under one
 // lock, because a list-changed notification can arrive at any moment and a
 // table half rebuilt would answer Has for a tool Execute can no longer find.
+//
+// The reports are under the same lock, because a connect started in the
+// background writes its report from its own goroutine while the rail and
+// the listings read them: Reports hands a reader a copy.
 type Toolset struct {
-	Reports []Report
+	mu sync.Mutex
+	// reports is one per definition, in catalog order. A starting one is
+	// rewritten the moment its connect ends, so every surface that reads it
+	// says up or error at once; what the model was told waits for Join.
+	reports []Report
+	// settled are the reports whose connect ended and that no boundary has
+	// taken yet, by index. Join drains them: a server's tools reach the
+	// tables below only there, so a request is never built from a list a
+	// connect is halfway through joining.
+	settled []int
+	// connects is the connects still running, for Wait.
+	connects sync.WaitGroup
+	// closed says the session has ended: a connect that lands after it
+	// closes its own server rather than leaving a process nobody owns.
+	closed bool
 
-	mu        sync.Mutex
 	servers   map[string]*Server
 	tools     map[string]toolRef
 	prompts   map[string]promptRef
 	resources map[string]*Server
 	defs      []provider.Tool
+	// offered is defs as the last Join left it (Offered).
+	offered []provider.Tool
 	// inflight counts the calls dispatched and not yet returned. A refresh
 	// waits for it to reach zero, which is what makes the swap a round
 	// boundary rather than something that happens under a round's own calls
@@ -165,49 +200,183 @@ type promptRef struct {
 	prompt Prompt
 }
 
-// Connect tries every definition in the catalog at once and returns the
-// toolset with a report per definition. Nothing here is an error: a server
+// Connect tries every definition in the catalog at once, waits for every
+// connect to end, and returns the toolset with a report per definition and
+// every server that answered joined. Nothing here is an error: a server
 // that did not connect is a report the listing shows and a tool the
 // session does not have, the same way a language server that was not found
-// is. Every server connects concurrently because the slow case — a cold
-// `npx` cache — is per server and a session should not pay it in series.
+// is. It is Start for a surface nobody watches, where a first round without
+// the tools is a worse answer nobody can see was worse.
 func Connect(ctx context.Context, c *Catalog, opts Options) *Toolset {
+	ts := Start(ctx, c, opts)
+	ts.Wait()
+	ts.Join()
+	return ts
+}
+
+// Start begins a connect for every definition the session admits and
+// returns at once, with each of them starting. Every server connects
+// concurrently because the slow case — a cold `npx` cache — is per server
+// and a session should not pay it in series; and none of them is waited
+// on, because a session that opened only when its slowest server answered
+// made every prompt wait on somebody else's uptime. A connect that ends
+// turns its report then and there, and its tools wait in the queue Join
+// takes at a turn boundary
+// (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
+func Start(ctx context.Context, c *Catalog, opts Options) *Toolset {
 	ts := &Toolset{servers: map[string]*Server{}}
+	ts.index()
 	if c == nil {
-		ts.index()
 		return ts
 	}
-	ts.Reports = make([]Report, len(c.Servers))
-	var wg sync.WaitGroup
+	ts.reports = make([]Report, len(c.Servers))
+	var starting []int
+	began := time.Now()
 	for i, def := range c.Servers {
-		ts.Reports[i] = Report{Definition: def}
+		ts.reports[i] = Report{Definition: def}
 		if status, missing := admit(def, opts); status != "" {
-			ts.Reports[i].Status = status
-			ts.Reports[i].Missing = missing
-			opts.observe(ts.Reports[i])
+			ts.reports[i].Status = status
+			ts.reports[i].Missing = missing
+			opts.observe(ts.reports[i])
 			continue
 		}
-		wg.Add(1)
-		go func(i int, def Definition) {
-			defer wg.Done()
-			ts.Reports[i] = connectOne(ctx, def, opts)
-		}(i, def)
+		bound, bySession := startupBound(def, opts)
+		ts.reports[i] = Report{Definition: def, Status: StatusStarting,
+			Began: began, Bound: bound, BoundBySession: bySession}
+		starting = append(starting, i)
 	}
-	wg.Wait()
-	for _, r := range ts.Reports {
+	// Every report is written before the first connect is let go, so a
+	// connect that ends at once never races the loop that set them up.
+	ts.connects.Add(len(starting))
+	for _, i := range starting {
+		go func(i int, def Definition) {
+			defer ts.connects.Done()
+			ts.settle(i, connectOne(ctx, def, opts))
+		}(i, c.Servers[i])
+	}
+	return ts
+}
+
+// startupBound is how long a definition has to answer, and whether the
+// session's own timeout is what set it.
+func startupBound(def Definition, opts Options) (time.Duration, bool) {
+	if opts.Timeout > 0 {
+		return opts.Timeout, true
+	}
+	return def.StartupTimeout(), false
+}
+
+// settle turns a starting report into what its connect came to and queues
+// it for the next boundary. The row reads the new state from this moment;
+// the tools do not, until Join.
+func (ts *Toolset) settle(i int, r Report) {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	was := ts.reports[i]
+	r.Began, r.Bound, r.BoundBySession = was.Began, was.Bound, was.BoundBySession
+	ts.reports[i] = r
+	if ts.closed {
+		// The session ended while this one was still connecting: nobody
+		// will join it, so it is closed where it landed.
+		r.Server.Close()
+		return
+	}
+	ts.settled = append(ts.settled, i)
+}
+
+// Wait blocks until every connect Start began has ended. It is what a
+// surface that cannot show a row starting does before its first round.
+func (ts *Toolset) Wait() {
+	if ts == nil {
+		return
+	}
+	ts.connects.Wait()
+}
+
+// Join takes every connect that ended since the last boundary: a server
+// that answered has its tools indexed — the provider's list, the prompt
+// block, the commands and the resources all move together here — and one
+// that did not is handed back so the session can say so. It returns the
+// reports it took, in catalog order, and nothing while a call is in flight,
+// for Refresh's reason: a table rebuilt under a round's own calls would
+// change what a result answers. The caller decides the boundary, which is a
+// turn's and never a round's
+// (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
+func (ts *Toolset) Join() []Report {
+	if ts == nil {
+		return nil
+	}
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	if ts.inflight > 0 || len(ts.settled) == 0 {
+		return nil
+	}
+	sort.Ints(ts.settled)
+	out := make([]Report, 0, len(ts.settled))
+	joined := false
+	for _, i := range ts.settled {
+		r := ts.reports[i]
 		if r.Status == StatusConnected {
+			ts.servers[r.Definition.Name] = r.Server
+			joined = true
+		}
+		out = append(out, r)
+	}
+	ts.settled = nil
+	if joined {
+		ts.index()
+		ts.offered = append([]provider.Tool(nil), ts.defs...)
+	}
+	return out
+}
+
+// Offered is the tool list as the last join left it: what a request carries
+// in a session whose servers join at a boundary. It is not Definitions,
+// which a list-changed Refresh rebuilds at any round boundary — a server's
+// re-listing moves what is read when it is used, never what the model was
+// offered (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
+func (ts *Toolset) Offered() []provider.Tool {
+	if ts == nil {
+		return nil
+	}
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	return append([]provider.Tool(nil), ts.offered...)
+}
+
+// FromReports is a toolset over reports that have already settled, every
+// connected server among them joined: a reading of connects made somewhere
+// else, which is what a test of a listing holds.
+func FromReports(reports []Report) *Toolset {
+	ts := &Toolset{servers: map[string]*Server{}, reports: append([]Report(nil), reports...)}
+	for _, r := range reports {
+		if r.Status == StatusConnected && r.Server != nil {
 			ts.servers[r.Definition.Name] = r.Server
 		}
 	}
 	ts.index()
+	ts.offered = append([]provider.Tool(nil), ts.defs...)
 	return ts
+}
+
+// Reports is one report per definition, in catalog order, as the connects
+// stand now. It is a copy: a connect still running rewrites its own report
+// when it ends, and a reader holding the toolset's slice would be reading
+// it while that happened.
+func (ts *Toolset) Reports() []Report {
+	if ts == nil {
+		return nil
+	}
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	return append([]Report(nil), ts.reports...)
 }
 
 // index rebuilds every table the session reads from the servers' catalogs.
 // It is one function and not four because the tables have to agree: a
 // prompt row pointing at a server whose tool table was not rebuilt is a
 // command that answers with a tool the model was never offered. Callers
-// hold ts.mu, except Connect, where nothing else can see the toolset yet.
+// hold ts.mu, except Start, where nothing else can see the toolset yet.
 func (ts *Toolset) index() {
 	ts.tools = map[string]toolRef{}
 	ts.prompts = map[string]promptRef{}
@@ -270,9 +439,9 @@ func (ts *Toolset) sorted() []*Server {
 // (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
 //
 // What it does not change is anything the model was already told: the tool
-// list and the prompt block naming the resources both went into the request
-// when the session opened, and a tool or a uri the model was never told
-// about is one it will not ask for. What moves here is what is read at the
+// list and the prompt block naming the resources are said for a server once,
+// when it joins, and a tool or a uri the model was never told about is one
+// it will not ask for. What moves here is what is read at the
 // moment it is used — the commands the person can type, the listings, and
 // the table a uri is resolved against.
 func (ts *Toolset) Refresh() bool {
@@ -377,6 +546,10 @@ func connectOne(ctx context.Context, def Definition, opts Options) Report {
 	if opts.Timeout > 0 {
 		timeout = opts.Timeout
 	}
+	dial := opts.Dial
+	if dial == nil {
+		dial = Dial
+	}
 	started := time.Now()
 	// The dial runs on a context that outlives this call — the session's,
 	// shorn of its cancellation would be wrong too, since a session that
@@ -388,7 +561,7 @@ func connectOne(ctx context.Context, def Definition, opts Options) Report {
 	}
 	done := make(chan dialed, 1)
 	go func() {
-		s, err := Dial(ctx, expanded, opts.EnvMask)
+		s, err := dial(ctx, expanded, opts.EnvMask)
 		done <- dialed{s, err}
 	}()
 	var (
@@ -544,27 +717,45 @@ func (ts *Toolset) Gated() []string {
 // read-only servers and nothing else
 // (docs/capabilities/mcp.md#what-a-conversation-may-reach).
 func (ts *Toolset) ReadOnlyDefinitions() []provider.Tool {
+	defs, _ := ts.ReadOnlyView()
+	return defs
+}
+
+// ReadOnlyView is the read-only servers' tools and the prompt block naming
+// those servers, read in one hold of the lock: a server that joined between
+// two reads would be named to a child without its tools, or handed over
+// unnamed. A child reads the servers that have joined when it is spawned and
+// keeps that set (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
+func (ts *Toolset) ReadOnlyView() ([]provider.Tool, string) {
 	if ts == nil {
-		return nil
+		return nil, ""
 	}
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
 	var out []provider.Tool
-	for _, d := range ts.Definitions() {
+	for _, d := range ts.defs {
 		if d.Name == ResourceToolName {
 			if ts.hasReadOnlyResource() {
 				out = append(out, d)
 			}
 			continue
 		}
-		if ts.ReadOnly(d.Name) {
+		if ref, ok := ts.tools[d.Name]; ok && ref.server.Definition.ReadOnly {
 			out = append(out, d)
 		}
 	}
-	return out
+	var servers []*Server
+	for _, s := range ts.sorted() {
+		if s.Definition.ReadOnly {
+			servers = append(servers, s)
+		}
+	}
+	return out, promptBlock(servers)
 }
 
+// hasReadOnlyResource reports whether a read-only server published a
+// resource. Callers hold ts.mu.
 func (ts *Toolset) hasReadOnlyResource() bool {
-	ts.mu.Lock()
-	defer ts.mu.Unlock()
 	for _, s := range ts.resources {
 		if s.Definition.ReadOnly {
 			return true
@@ -967,14 +1158,20 @@ func CompactArgs(raw json.RawMessage) string {
 	return strings.Join(parts, " ")
 }
 
-// Close ends every session.
+// Close ends every session: the servers that joined, the ones that answered
+// and were waiting for a boundary, and — through settle — any that answer
+// after this.
 func (ts *Toolset) Close() {
 	if ts == nil {
 		return
 	}
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
+	ts.closed = true
 	for _, s := range ts.servers {
 		s.Close()
+	}
+	for _, r := range ts.reports {
+		r.Server.Close()
 	}
 }

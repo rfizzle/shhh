@@ -328,6 +328,11 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		opts.Effort = currentEffort
 		active := p
 		sessionMu.Unlock()
+		// The servers' tools are read from the toolset on each request rather
+		// than captured when the session opened: a server that answered after
+		// the start joins at a turn boundary, and the request after that
+		// carries it (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
+		opts.Tools = session.requestTools(opts.Tools)
 		// The last door before the provider: the agent scrubs the
 		// conversation it keeps, and this scrubs the request it sends, so
 		// a message that reached the stream some other way is caught here.

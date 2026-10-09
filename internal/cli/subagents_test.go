@@ -1504,7 +1504,7 @@ func TestAProfilesToolSectionNamesTheSharedToolsItHolds(t *testing.T) {
 	t.Cleanup(ts.Close)
 	reads := ts.ReadOnlyDefinitions()
 	if len(reads) == 0 {
-		t.Fatalf("the fake server offered no read: %+v", ts.Reports)
+		t.Fatalf("the fake server offered no read: %+v", ts.Reports())
 	}
 	session := chatSession{notebook: notebook.New(nil), mcpTools: ts}
 

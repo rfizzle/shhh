@@ -89,7 +89,7 @@ func TestMCPToolSourcesReadEachStatus(t *testing.T) {
 		{mcp.Report{Definition: def, Status: mcp.StatusExcluded}, components.ToolSourceOff, "not read-only"},
 	}
 	for _, c := range cases {
-		got := mcpToolSources(&mcp.Toolset{Reports: []mcp.Report{c.report}})
+		got := mcpToolSources(mcp.FromReports([]mcp.Report{c.report}))
 		if len(got) != 1 || got[0].Name != "gh" {
 			t.Fatalf("%s: sources = %+v", c.report.Status, got)
 		}
@@ -106,10 +106,10 @@ func TestMCPListingSaysWhatEachServerBecame(t *testing.T) {
 	if got := mcpListing(nil, nil, ""); !strings.Contains(got, "⊘ no MCP servers defined") {
 		t.Errorf("empty listing = %q", got)
 	}
-	ts := &mcp.Toolset{Reports: []mcp.Report{
+	ts := mcp.FromReports([]mcp.Report{
 		{Definition: mcp.Definition{Name: "keyed", Scope: mcp.ScopeUser, Transport: mcp.TransportHTTP, URL: "https://x/mcp"}, Status: mcp.StatusMissingEnv, Missing: []string{"X_TOKEN"}},
 		{Definition: mcp.Definition{Name: "proj", Scope: mcp.ScopeProject, Transport: mcp.TransportStdio, Command: "npx"}, Status: mcp.StatusUntrusted},
-	}}
+	})
 	got := mcpListing(ts, &mcp.Catalog{Diagnostics: []string{"/repo/.mcp.json: server Bad Name: bad"}}, "/repo")
 	for _, want := range []string{"⚠ keyed", "unset: X_TOKEN", "export X_TOKEN=...", "⚠ proj", "shhh trust", "Bad Name", "0 servers connected"} {
 		if !strings.Contains(got, want) {
@@ -152,11 +152,11 @@ func TestMCPAddRefusesACredentialValue(t *testing.T) {
 }
 
 func TestMCPStartupNotesNameOnlyWhatDidNotConnect(t *testing.T) {
-	ts := &mcp.Toolset{Reports: []mcp.Report{
+	ts := mcp.FromReports([]mcp.Report{
 		{Definition: mcp.Definition{Name: "off"}, Status: mcp.StatusDisabled},
 		{Definition: mcp.Definition{Name: "chatless"}, Status: mcp.StatusExcluded},
 		{Definition: mcp.Definition{Name: "dead"}, Status: mcp.StatusFailed, Error: "x"},
-	}}
+	})
 	notes := mcpStartupNotes(ts, &mcp.Catalog{Diagnostics: []string{"d1"}})
 	if len(notes) != 2 || !strings.Contains(notes[0], "d1") || !strings.Contains(notes[1], "dead: failed") {
 		t.Errorf("notes = %v", notes)
@@ -180,7 +180,7 @@ func TestMCPListingAndShowNamePromptsAndResources(t *testing.T) {
 		Definition: mcp.Definition{Name: "docs", Scope: mcp.ScopeUser, Transport: mcp.TransportStdio, Command: "docs-mcp"},
 		Status:     mcp.StatusConnected, Server: server,
 	}
-	listing := mcpListing(&mcp.Toolset{Reports: []mcp.Report{rep}}, nil, "")
+	listing := mcpListing(mcp.FromReports([]mcp.Report{rep}), nil, "")
 	for _, want := range []string{"1 tool, 2 prompts, 1 resource", "PROMPTS", "/docs:review", "ref= [depth=]", "RESOURCES", "docs://guide"} {
 		if !strings.Contains(listing, want) {
 			t.Errorf("the listing lacks %q:\n%s", want, listing)
@@ -246,7 +246,7 @@ func TestMCPRowAndShowSayWhatIsNotRegistered(t *testing.T) {
 	if got := mcpFinding(rep, "", nil).Outcome; got != "1 tool, 2 not registered" {
 		t.Errorf("the `shhh mcp` row says %q", got)
 	}
-	listing := mcpListing(&mcp.Toolset{Reports: []mcp.Report{rep}}, nil, "")
+	listing := mcpListing(mcp.FromReports([]mcp.Report{rep}), nil, "")
 	if !strings.Contains(listing, "1 tool, 2 not registered") {
 		t.Errorf("the listing does not count what was left out:\n%s", listing)
 	}
@@ -267,7 +267,7 @@ func TestMCPRowAndShowSayWhatIsNotRegistered(t *testing.T) {
 	// A definition that named nothing registers everything and says nothing
 	// about it: the count is the whole catalog.
 	rep.Definition.Tools, rep.Server.Definition.Tools = nil, nil
-	if listing := mcpListing(&mcp.Toolset{Reports: []mcp.Report{rep}}, nil, ""); !strings.Contains(listing, "3 tools") ||
+	if listing := mcpListing(mcp.FromReports([]mcp.Report{rep}), nil, ""); !strings.Contains(listing, "3 tools") ||
 		strings.Contains(listing, "not registered") {
 		t.Errorf("a server with no selection reads as partly registered:\n%s", listing)
 	}
@@ -342,10 +342,10 @@ func TestMCPTurnBoundaryIsSilentWhenNothingMoved(t *testing.T) {
 
 func TestMCPStartupNotes_ASlowConnectIsSaid(t *testing.T) {
 	def := mcp.Definition{Name: "docs", Timeout: 20 * time.Second}
-	ts := &mcp.Toolset{Reports: []mcp.Report{
+	ts := mcp.FromReports([]mcp.Report{
 		{Definition: def, Status: mcp.StatusConnected, Took: 7200 * time.Millisecond},
 		{Definition: mcp.Definition{Name: "quick"}, Status: mcp.StatusConnected, Took: 5 * time.Second},
-	}}
+	})
 	notes := mcpStartupNotes(ts, nil)
 	if len(notes) != 1 {
 		t.Fatalf("notes = %v, want one line for the slow server only", notes)

@@ -273,7 +273,9 @@ The order is load-bearing, and it is the builder's rather than any caller's:
 4. **The scope sentence and the toolbox, after the last registration.** Every
    optional tool joins on a condition, so this is the first point at which
    the whole set is known, and a toolbox written earlier describes a toolset
-   the model does not have.
+   the model does not have. An MCP server the session did not wait for
+   registers later, at a turn boundary, and the toolbox is written again
+   over the new set there.
 5. **The ledger before the provider**, because the provider is handed out
    through it (see [spend](#spend-is-counted-at-the-provider)).
 6. **The environment**, which builds the prompt from everything above, and

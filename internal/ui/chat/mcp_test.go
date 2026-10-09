@@ -2,10 +2,12 @@ package chat
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/mcp"
@@ -94,6 +96,142 @@ func TestInspectorTools_FoldKeepsWhatDidNotAnswer(t *testing.T) {
 	// not a leaderboard.
 	if !slices.IsSorted(names[1:]) {
 		t.Fatalf("rows left the catalog's order: %v", names)
+	}
+
+	// A server still starting is not up either: it keeps its row beside the
+	// failure, the healthy rows fold first, and the heading does not count it.
+	m = toolSourceModel(t,
+		components.InspectorToolSource{Name: "alpha", State: components.ToolSourceUp, Note: "2 tools"},
+		components.InspectorToolSource{Name: "beta", State: components.ToolSourceUp, Note: "3 tools"},
+		components.InspectorToolSource{Name: "eta", State: components.ToolSourceStarting},
+		components.InspectorToolSource{Name: "zeta", State: components.ToolSourceFailed, Note: "timeout"},
+		components.InspectorToolSource{Name: "theta", State: components.ToolSourceStarting},
+	)
+	tools := m.inspectorTools()
+	names = names[:0]
+	for _, s := range tools.Sources {
+		names = append(names, s.Name)
+	}
+	if !slices.Equal(names, []string{"built-in", "eta", "zeta", "theta"}) || tools.More != 2 {
+		t.Fatalf("rows = %v, %d more; want every row that is not up kept", names, tools.More)
+	}
+	if tools.Up != 3 {
+		t.Fatalf("heading counts %d up, want built-in, alpha and beta", tools.Up)
+	}
+}
+
+// A starting row's note is the seconds since its connect began, on the
+// session's own clock, and its row turns the moment the connect ends — read
+// from the connects as they stand, with no boundary in between.
+func TestInspectorTools_ARowTurnsWhenTheConnectEnds(t *testing.T) {
+	now := clock()
+	restore := clock
+	clock = func() time.Time { return now }
+	t.Cleanup(func() { clock = restore })
+
+	live := []components.InspectorToolSource{
+		{Name: "docs", State: components.ToolSourceStarting, Since: now.Add(-3100 * time.Millisecond)},
+		{Name: "tracker", State: components.ToolSourceStarting, Since: now.Add(-3100 * time.Millisecond)},
+	}
+	m := frameModel(t, 130, 40).
+		WithToolDefinitions([]ToolTokens{{Name: "read_file"}}).
+		WithMCP(MCP{
+			Has:     func(string) bool { return false },
+			Sources: append([]components.InspectorToolSource(nil), live...),
+			Live:    func() []components.InspectorToolSource { return live },
+		})
+	tools := m.inspectorTools()
+	if got := tools.Sources[1]; got.State != components.ToolSourceStarting || got.Note != "3.1s" {
+		t.Fatalf("a starting row = %+v, want its seconds", got)
+	}
+	if tools.Up != 1 || !m.mcpStarting() {
+		t.Fatalf("heading counts %d up with servers starting", tools.Up)
+	}
+
+	// docs answers and tracker runs out its bound. Nothing calls a boundary.
+	live = []components.InspectorToolSource{
+		{Name: "docs", State: components.ToolSourceUp, Note: "9 tools"},
+		{Name: "tracker", State: components.ToolSourceFailed, Note: "timeout"},
+	}
+	now = now.Add(20 * time.Second)
+	tools = m.inspectorTools()
+	if got := tools.Sources[1]; got.State != components.ToolSourceUp || got.Note != "9 tools" {
+		t.Fatalf("the answered row = %+v, want up at once", got)
+	}
+	if got := tools.Sources[2]; got.State != components.ToolSourceFailed || got.Note != "timeout" {
+		t.Fatalf("the timed-out row = %+v, want error at once", got)
+	}
+	if tools.Up != 2 || m.mcpStarting() {
+		t.Fatalf("heading counts %d up; starting = %v", tools.Up, m.mcpStarting())
+	}
+	if status := m.toolSourceStatus(); strings.Contains(status, "starting") {
+		t.Fatalf("/status still says starting:\n%s", status)
+	}
+}
+
+// A join is taken at a line submitted between turns, never at one that
+// steers a turn in flight. What it moved lands together: the system prompt,
+// the tools the session counts, the approval card a joined tool asks on, the
+// rows, and the transcript's lines, ahead of the message the line sends.
+func TestJoin_TakesTheServerAtTheBoundaryNotMidRound(t *testing.T) {
+	joined := map[string]bool{}
+	calls := 0
+	var handed string
+	m := frameModel(t, 130, 40).
+		WithToolDefinitions([]ToolTokens{{Name: "read_file"}}).
+		WithMCP(MCP{
+			Has: func(name string) bool { return joined[name] },
+			Sources: []components.InspectorToolSource{
+				{Name: "docs", State: components.ToolSourceStarting},
+			},
+			Join: func(system string) (MCPJoin, bool) {
+				calls++
+				handed = system
+				joined["docs__write"] = true
+				return MCPJoin{
+					Notes:       []string{"mcp: docs: up — 1 tool, from this turn"},
+					Sources:     []components.InspectorToolSource{{Name: "docs", State: components.ToolSourceUp, Note: "1 tool"}},
+					System:      system + "\n\n# MCP servers",
+					ServerTools: []ToolTokens{{Name: "docs__write", Tokens: 7}},
+					Gated: map[string]GatedPreviewFunc{"docs__write": func(json.RawMessage) (GatedPreview, error) {
+						return GatedPreview{Action: "call"}, nil
+					}},
+				}, true
+			},
+		})
+	m.agent.SetMessages([]provider.Message{{Role: provider.RoleSystem, Content: "you are shhh"}})
+
+	// A turn in flight: the line steers, and nothing joins.
+	m.setTurnState(stateStreaming)
+	m.refreshMCP()
+	if calls != 0 {
+		t.Fatalf("a line steering a turn took %d joins", calls)
+	}
+
+	m.setTurnState(stateInput)
+	m.refreshMCP()
+	if calls != 1 || handed != "you are shhh" {
+		t.Fatalf("joins = %d, handed %q", calls, handed)
+	}
+	if got := m.agent.Messages()[0].Content; got != "you are shhh\n\n# MCP servers" {
+		t.Fatalf("system prompt = %q", got)
+	}
+	var names []string
+	for _, d := range m.toolDefs {
+		names = append(names, d.Name)
+	}
+	if !slices.Equal(names, []string{"read_file", "docs__write"}) {
+		t.Fatalf("tools the session counts = %v", names)
+	}
+	if !m.answers("docs__write") {
+		t.Fatal("a joined tool that asks has no card to ask on")
+	}
+	if got := m.mcp.Sources; len(got) != 1 || got[0].State != components.ToolSourceUp {
+		t.Fatalf("rows = %+v", got)
+	}
+	if n := len(m.transcript); n != 1 || m.transcript[0].kind != entrySystem ||
+		m.transcript[0].text != "mcp: docs: up — 1 tool, from this turn" {
+		t.Fatalf("transcript = %+v", m.transcript)
 	}
 }
 

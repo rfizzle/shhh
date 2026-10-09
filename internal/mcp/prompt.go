@@ -28,13 +28,8 @@ func PromptBlock(ts *Toolset) string {
 // ReadOnlyPromptBlock is the block over the read-only servers alone — what
 // a child agent, which was handed only those, is told.
 func ReadOnlyPromptBlock(ts *Toolset) string {
-	var servers []*Server
-	for _, s := range ts.Servers() {
-		if s.Definition.ReadOnly {
-			servers = append(servers, s)
-		}
-	}
-	return promptBlock(servers)
+	_, block := ts.ReadOnlyView()
+	return block
 }
 
 // MaxInstructionsBytes caps what one server's instructions may add to the

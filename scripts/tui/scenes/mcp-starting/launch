@@ -1,0 +1,6 @@
+# Two MCP servers in the person's own config, neither answering at once: docs
+# is a stub stdio server (stub.py, written by the scene's setup) that answers
+# its handshake six seconds after it starts, and tracker is a process that
+# never speaks, under a twelve-second bound. The session opens on both
+# starting (docs/capabilities/mcp.md#a-server-that-did-not-answer-is-a-row).
+printf '\n[mcp.servers.docs]\ncommand = "python3"\nargs = ["%s/stub.py", "6"]\n\n[mcp.servers.tracker]\ncommand = "sleep"\nargs = ["600"]\ntimeout_seconds = 12\n' "$PWD" >> $XDG_CONFIG_HOME/shhh/config.toml && $SHHH_BIN code

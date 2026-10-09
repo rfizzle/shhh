@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/charmbracelet/x/term"
@@ -111,10 +112,12 @@ func mcpOptions(cfg config.Config, readOnlyOnly bool) mcp.Options {
 	return opts
 }
 
-// openMCP connects a session's servers. Nil when nothing is defined or the
-// section is disabled, so the session registers nothing and the prompt
-// says nothing — a toolset with no tools is not a thing to describe.
-func openMCP(ctx context.Context, cfg config.Config, readOnlyOnly bool) (*mcp.Toolset, *mcp.Catalog) {
+// openMCP connects a session's servers: waiting for every connect where
+// wait is set, and starting them in the background where it is not. Nil
+// when nothing is defined or the section is disabled, so the session
+// registers nothing and the prompt says nothing — a toolset with no tools
+// is not a thing to describe.
+func openMCP(ctx context.Context, cfg config.Config, readOnlyOnly, wait bool) (*mcp.Toolset, *mcp.Catalog) {
 	if cfg.MCP.Disabled {
 		return nil, nil
 	}
@@ -123,18 +126,26 @@ func openMCP(ctx context.Context, cfg config.Config, readOnlyOnly bool) (*mcp.To
 		return nil, nil
 	}
 	mcp.SetVersion(version)
-	opts := mcpOptions(cfg, readOnlyOnly)
-	// Each server's connect is a startup phase of its own: one slow server
-	// is the usual cause of a slow start, and a sum would hide which.
+	return connectMCP(ctx, cat, mcpOptions(cfg, readOnlyOnly), wait), cat
+}
+
+// connectMCP is openMCP over a catalog already read. Each server's connect
+// is a startup phase of its own: one slow server is the usual cause of a
+// slow start, and a sum would hide which.
+func connectMCP(ctx context.Context, cat *mcp.Catalog, opts mcp.Options, wait bool) *mcp.Toolset {
 	opts.Observe = serverStartup(startupFrom(ctx))
-	return mcp.Connect(ctx, cat, opts), cat
+	if wait {
+		return mcp.Connect(ctx, cat, opts)
+	}
+	return mcp.Start(ctx, cat, opts)
 }
 
 // mcpStartupNotes are the lines a session prints before it starts: every
 // server that did not connect, and why, so a missing tool is never a
 // silent one, and a server that connected but took long enough to be felt
 // (mcpSlowConnectNote). Nothing for a server that connected promptly — the prompt block and
-// /mcp carry those.
+// /mcp carry those — and nothing for one still starting, whose outcome is
+// a line at the turn boundary after it ends (mcpJoinNotes).
 func mcpStartupNotes(ts *mcp.Toolset, cat *mcp.Catalog) []string {
 	var out []string
 	if cat != nil {
@@ -145,12 +156,12 @@ func mcpStartupNotes(ts *mcp.Toolset, cat *mcp.Catalog) []string {
 	if ts == nil {
 		return out
 	}
-	for _, r := range ts.Reports {
+	for _, r := range ts.Reports() {
 		if note := mcpSlowConnectNote(r); note != "" {
 			out = append(out, note)
 		}
 		switch r.Status {
-		case mcp.StatusConnected, mcp.StatusDisabled, mcp.StatusExcluded:
+		case mcp.StatusConnected, mcp.StatusDisabled, mcp.StatusExcluded, mcp.StatusStarting:
 			continue
 		}
 		out = append(out, "mcp: "+r.Definition.Name+": "+mcpOutcome(r)+" — "+mcpConsequence(r))
@@ -192,6 +203,8 @@ func mcpOutcome(r mcp.Report) string {
 		return "unset: " + strings.Join(r.Missing, ", ")
 	case mcp.StatusExcluded:
 		return "not read-only"
+	case mcp.StatusStarting:
+		return components.ToolSourceWord(components.ToolSourceStarting)
 	}
 	return string(r.Status)
 }
@@ -222,29 +235,41 @@ func mcpOffering(s *mcp.Server) string {
 }
 
 // mcpToolSources is the session's servers as the chat surface names them:
-// the four states the rail draws a glyph for, each with the detail the
+// the five states the rail draws a glyph for, each with the detail the
 // listing's outcome column already carries. A failure is the one report whose
-// outcome word is the state itself, so its detail is why it failed.
+// outcome word is the state itself, so its detail is why it failed. It is
+// one read of the reports, so a connect that ends while the rows are built
+// cannot leave two of them disagreeing about the moment they describe.
 func mcpToolSources(ts *mcp.Toolset) []components.InspectorToolSource {
 	if ts == nil {
 		return nil
 	}
-	out := make([]components.InspectorToolSource, 0, len(ts.Reports))
-	for _, r := range ts.Reports {
+	return mcpSourcesOf(ts.Reports())
+}
+
+// mcpSourcesOf is mcpToolSources over reports already read.
+func mcpSourcesOf(reps []mcp.Report) []components.InspectorToolSource {
+	out := make([]components.InspectorToolSource, 0, len(reps))
+	for _, r := range reps {
 		src := components.InspectorToolSource{Name: r.Definition.Name, Note: mcpOutcome(r)}
 		switch r.Status {
 		case mcp.StatusConnected:
 			src.State = components.ToolSourceUp
 			// A server that answered the handshake and then died is drawn
 			// as the failure it now is. The report is left alone: it is what
-			// the connect found, read without a lock by every listing, and
-			// the server itself is the one thing that knows it has gone
+			// the connect found, and the server itself is the one thing that
+			// knows it has gone
 			// (docs/capabilities/mcp.md#a-server-that-dies-is-noticed).
 			if why := r.Server.Dead(); why != "" {
 				src.State, src.Note = components.ToolSourceFailed, mcpDeadNote
 			}
+		case mcp.StatusStarting:
+			// The note is the seconds since the connect began, which only
+			// the surface drawing it can count: it reads its own clock at
+			// each paint.
+			src.State, src.Note, src.Since = components.ToolSourceStarting, "", r.Began
 		case mcp.StatusFailed:
-			src.State, src.Note = components.ToolSourceFailed, firstLine(r.Error)
+			src.State, src.Note = components.ToolSourceFailed, mcpFailReason(r)
 		case mcp.StatusDisabled:
 			src.State, src.Note = components.ToolSourceOff, ""
 		case mcp.StatusExcluded:
@@ -267,19 +292,52 @@ func safetyServers(ts *mcp.Toolset) func() []chat.SafetyServer {
 		return nil
 	}
 	return func() []chat.SafetyServer {
-		sources := mcpToolSources(ts)
+		reps := ts.Reports()
+		sources := mcpSourcesOf(reps)
 		out := make([]chat.SafetyServer, 0, len(sources))
 		for i, src := range sources {
 			status := src.Note
-			if src.State == components.ToolSourceFailed && status != mcpDeadNote {
+			switch {
+			case src.State == components.ToolSourceStarting:
+				status = components.ToolSourceWord(src.State)
+			case src.State == components.ToolSourceFailed && status != mcpDeadNote:
 				status = "failed: " + status
 			}
 			out = append(out, chat.SafetyServer{
-				Name: src.Name, ReadOnly: ts.Reports[i].Definition.ReadOnly, Status: status,
+				Name: src.Name, ReadOnly: reps[i].Definition.ReadOnly, Status: status,
 			})
 		}
 		return out
 	}
+}
+
+// mcpFailReason is why a connect failed, in the few words a row has: the
+// bound running out is the one reason worth a word of its own, since what
+// fixes it is a number and not the server.
+func mcpFailReason(r mcp.Report) string {
+	if r.TimedOut {
+		return "timeout"
+	}
+	return firstLine(r.Error)
+}
+
+// mcpJoinNotes are the lines a session owes the reader at the turn boundary
+// that took connects which ended since the last one, in the shape of the
+// death note: a server that answered joins the model's tools from this turn,
+// and one that did not start says so here, since nothing printed it before
+// the screen opened (docs/capabilities/mcp.md#a-server-that-did-not-answer-is-a-row).
+func mcpJoinNotes(settled []mcp.Report) []string {
+	out := make([]string, 0, len(settled))
+	for _, r := range settled {
+		switch r.Status {
+		case mcp.StatusConnected:
+			n := len(r.Server.RegisteredTools())
+			out = append(out, "mcp: "+r.Definition.Name+": up — "+countOf(n, "tool", "tools")+", from this turn")
+		case mcp.StatusFailed:
+			out = append(out, "mcp: "+r.Definition.Name+": did not start ("+mcpFailReason(r)+") — "+mcpConsequence(r))
+		}
+	}
+	return out
 }
 
 // mcpDeadNote is the rail's word for a server that stopped answering. It is
@@ -341,6 +399,8 @@ func mcpConsequence(r mcp.Report) string {
 		return "its tools are not in this session until the variable is set"
 	case mcp.StatusExcluded:
 		return "a conversation connects only servers marked read-only"
+	case mcp.StatusStarting:
+		return "its tools are not in this session yet; they join at the first turn after it answers"
 	}
 	return ""
 }
@@ -371,6 +431,15 @@ func mcpFix(r mcp.Report, root string) []string {
 			return []string{"read-only is your word, not the checkout's: define the server under another name in your own config with read_only = true"}
 		}
 		return []string{"[mcp.servers." + d.Name + "]", "read_only = true   # only if nothing it does needs an answer"}
+	case mcp.StatusStarting:
+		// Nothing a person can do yet: the line says when it stops being a
+		// question, and which key the bound it is waiting out came from.
+		key := "timeout_seconds"
+		if r.BoundBySession {
+			key = "mcp.startup_timeout_seconds"
+		}
+		return []string{"nothing yet: it has until " + components.FormatElapsed(r.Bound) + " (" + key +
+			") to answer, and reads error if it does not"}
 	}
 	return nil
 }
@@ -405,7 +474,8 @@ func mcpListingReport(ts *mcp.Toolset, cat *mcp.Catalog, root string) report.Rep
 			r.Notes = append(r.Notes, report.Note{State: report.Fail, Text: d})
 		}
 	}
-	if ts == nil || len(ts.Reports) == 0 {
+	reps := ts.Reports()
+	if len(reps) == 0 {
 		// The way out is a command rather than a path, so a narrow terminal
 		// cannot clip away the thing the reader came here to be told; the
 		// files it writes to go on the lines under it.
@@ -427,7 +497,7 @@ func mcpListingReport(ts *mcp.Toolset, cat *mcp.Catalog, root string) report.Rep
 	prompts := report.Section{Header: "PROMPTS"}
 	resources := report.Section{Header: "RESOURCES"}
 	connected := 0
-	for _, rep := range ts.Reports {
+	for _, rep := range reps {
 		row, up := mcpServerRow(rep, root)
 		servers.Rows = append(servers.Rows, row)
 		if rep.Status != mcp.StatusConnected {
@@ -460,7 +530,7 @@ func mcpListingReport(ts *mcp.Toolset, cat *mcp.Catalog, root string) report.Rep
 			})
 		}
 	}
-	r.Subject = countOf(len(ts.Reports), "server", "servers")
+	r.Subject = countOf(len(reps), "server", "servers")
 	r.Sections = []report.Section{servers}
 	for _, section := range []report.Section{tools, prompts, resources} {
 		if len(section.Rows) > 0 {
@@ -522,6 +592,8 @@ func mcpState(s mcp.Status) components.DoctorState {
 		return components.DoctorFailed
 	case mcp.StatusDisabled, mcp.StatusExcluded:
 		return components.DoctorSkipped
+	case mcp.StatusStarting:
+		return components.DoctorRunning
 	}
 	return components.DoctorWarned
 }
@@ -560,7 +632,7 @@ func mcpProbes(ctx context.Context, cat *mcp.Catalog, db *storage.DB, cfg config
 		go func() {
 			ts := mcp.Connect(ctx, &mcp.Catalog{Servers: []mcp.Definition{def}}, mcpOptions(cfg, false))
 			ts.Close()
-			ch <- ts.Reports[0]
+			ch <- ts.Reports()[0]
 		}()
 		return ch
 	}
@@ -735,7 +807,7 @@ func newMCPCmd() *cobra.Command {
 			mcp.SetVersion(version)
 			ts := mcp.Connect(cmd.Context(), &mcp.Catalog{Servers: []mcp.Definition{d}}, mcpOptions(cfg, false))
 			defer ts.Close()
-			fmt.Fprintln(cmd.OutOrStdout(), mcpShow(ts.Reports[0], mcpRoot()))
+			fmt.Fprintln(cmd.OutOrStdout(), mcpShow(ts.Reports()[0], mcpRoot()))
 			return nil
 		},
 	})
@@ -1021,26 +1093,161 @@ func mcpGatedPreview(ts *mcp.Toolset, name string, args json.RawMessage) (chat.G
 	}}, nil
 }
 
-// attachMCP connects the session's servers and puts their tools on the
-// toolset and their block in the prompt; it returns what ends them. It is
+// attachMCP connects the session's servers and returns what ends them. It is
 // one function for the interactive and the headless session because the
-// two differ in exactly one word — whether only read-only servers join —
-// and a second copy of the rest would drift.
+// two differ in two words — whether only read-only servers join, and
+// whether the session waits for them — and a second copy of the rest would
+// drift.
+//
+// A surface somebody watches does not wait: it opens with every server
+// starting, its rail says so, and each server's tools join at the first turn
+// boundary after it answers. A surface nobody watches — a scripted run, a
+// served session — waits, and its servers' tools and block are in the prompt
+// from the first round, because a first round without them is a worse
+// answer nobody can see was worse
+// (docs/capabilities/mcp.md#a-server-that-did-not-answer-is-a-row).
 //
 // The store is taken and not used by the connect any more: whether a
 // project server may start is the checkout's answer, read once for the
 // process (trust.go), rather than a row this call goes and looks up.
-func (s *chatSession) attachMCP(ctx context.Context, _ *storage.DB, readOnlyOnly bool) func() {
-	s.mcpTools, s.mcpCatalog = openMCP(ctx, ConfigFrom(ctx), readOnlyOnly)
-	if s.mcpTools == nil {
+func (s *chatSession) attachMCP(ctx context.Context, _ *storage.DB, readOnlyOnly, wait bool) func() {
+	ts, cat := openMCP(ctx, ConfigFrom(ctx), readOnlyOnly, wait)
+	return s.useMCP(ts, cat, wait)
+}
+
+// useMCP puts a toolset connectMCP returned on the session: what did not
+// start at all is said on stderr, and where the session waited, the tools of
+// every server that answered join the toolset and their block the prompt.
+// Where it did not wait nothing is said to the model yet: the request reads
+// the servers' tools from the toolset (requestTools), and the block is said
+// as each one joins (mcpJoin).
+func (s *chatSession) useMCP(ts *mcp.Toolset, cat *mcp.Catalog, wait bool) func() {
+	s.mcpTools, s.mcpCatalog = ts, cat
+	if ts == nil {
 		return func() {}
 	}
-	for _, note := range mcpStartupNotes(s.mcpTools, s.mcpCatalog) {
+	for _, note := range mcpStartupNotes(ts, cat) {
 		_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn, Subject: note})
 	}
-	if s.mcpTools.Len() > 0 {
-		s.toolDefs = append(append([]provider.Tool{}, s.toolDefs...), s.mcpTools.Definitions()...)
-		s.promptExtra = prompt.CombineExtra(s.promptExtra, mcp.PromptBlock(s.mcpTools))
+	if !wait {
+		s.mcpJoins = true
+		return ts.Close
 	}
-	return s.mcpTools.Close
+	if ts.Len() > 0 {
+		s.toolDefs = append(append([]provider.Tool{}, s.toolDefs...), ts.Definitions()...)
+		s.promptExtra = prompt.CombineExtra(s.promptExtra, mcp.PromptBlock(ts))
+	}
+	return ts.Close
+}
+
+// requestTools is the tool list one request carries: the session's own, and
+// where its servers join at a boundary, the servers' tools as the last join
+// left them. Only Join moves that list, and a turn boundary calls it, so a
+// request reads either the list before a server joined or the list after it
+// — never one halfway through, and never one a server's re-listing moved
+// inside a turn.
+func (s chatSession) requestTools(registered []provider.Tool) []provider.Tool {
+	if !s.mcpJoins {
+		return registered
+	}
+	served := s.mcpTools.Offered()
+	if len(served) == 0 {
+		return registered
+	}
+	return append(append(make([]provider.Tool, 0, len(registered)+len(served)), registered...), served...)
+}
+
+// mcpJoin is the interactive session's half of a server joining at a turn
+// boundary: what the conversation's system prompt says about the servers
+// and the toolbox now, so that a join says them again over the new set and a
+// new session's prompt says them from its start. The toolbox is rebuilt with
+// the block because it is written after the last registration, and a server
+// is a registration (docs/architecture.md#a-session-is-assembled-in-one-place).
+type mcpJoin struct {
+	ts *mcp.Toolset
+	// registered is the session's own tools, which the toolbox is built over
+	// beside the servers'; proactive is the spawn line's lean.
+	registered []provider.Tool
+	proactive  bool
+	// launchToolbox is the toolbox a prompt built from the standing extra
+	// carries.
+	launchToolbox string
+
+	mu sync.Mutex
+	// block and toolbox are what the conversation says now.
+	block, toolbox string
+}
+
+func newMCPJoin(session chatSession) *mcpJoin {
+	return &mcpJoin{
+		ts: session.mcpTools, registered: session.toolDefs, proactive: session.proactive,
+		launchToolbox: session.toolboxSaid, toolbox: session.toolboxSaid,
+	}
+}
+
+// take is the boundary: the connects that ended since the last one join, and
+// the session is handed what moved — the lines for the transcript, the rows
+// as they stand, and, where a server answered, the system prompt with the
+// servers' block and the toolbox said again, the servers' tools as the
+// request now carries them, and the approval card of each that asks.
+// Nothing moved is false.
+func (j *mcpJoin) take(system string) (chat.MCPJoin, bool) {
+	settled := j.ts.Join()
+	if len(settled) == 0 {
+		return chat.MCPJoin{}, false
+	}
+	out := chat.MCPJoin{Notes: mcpJoinNotes(settled), Sources: mcpToolSources(j.ts)}
+	joined := false
+	for _, r := range settled {
+		joined = joined || r.Status == mcp.StatusConnected
+	}
+	if !joined {
+		return out, true
+	}
+	served := j.ts.Offered()
+	all := append(append([]provider.Tool{}, j.registered...), served...)
+	block, toolbox := mcp.PromptBlock(j.ts), prompt.Toolbox(all, j.proactive)
+	j.mu.Lock()
+	out.System = resayMCP(system, j.block, block, j.toolbox, toolbox)
+	j.block, j.toolbox = block, toolbox
+	j.mu.Unlock()
+	out.ServerTools = toolDefTokens(served)
+	out.Gated = map[string]chat.GatedPreviewFunc{}
+	for _, name := range j.ts.Gated() {
+		name := name
+		out.Gated[name] = func(args json.RawMessage) (chat.GatedPreview, error) {
+			return mcpGatedPreview(j.ts, name, args)
+		}
+	}
+	return out, true
+}
+
+// fresh brings a prompt built from the standing extra — a new session's, at
+// a session boundary — up to the servers that have joined since the launch.
+func (j *mcpJoin) fresh(text string) string {
+	if j == nil {
+		return text
+	}
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	return resayMCP(text, "", j.block, j.launchToolbox, j.toolbox)
+}
+
+// resayMCP replaces the servers' block and the toolbox a prompt said with
+// what they say now. A block said for the first time goes ahead of the
+// toolbox, where the standing extra would have put it; a prompt with no
+// toolbox to stand before — one resumed from a session that carried another
+// — has it at its end, which is late but said.
+func resayMCP(text, saidBlock, block, saidToolbox, toolbox string) string {
+	text = resayOrAppend(text, saidToolbox, toolbox, "")
+	return resayOrAppend(text, saidBlock, block, toolbox)
+}
+
+// resayOrAppend is resayBlock for a block that may have been empty at launch
+// with nothing to stand before: it goes at the end rather than nowhere.
+func resayOrAppend(text, said, now, next string) string {
+	if said == "" && now != "" && (next == "" || !strings.Contains(text, next)) {
+		return strings.TrimRight(text, "\n") + "\n\n" + now
+	}
+	return resayBlock(text, said, now, next)
 }
