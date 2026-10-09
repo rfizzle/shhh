@@ -321,10 +321,13 @@ var settings = []Setting{
 		Desc: "The model that writes the one-line description a command saved from `shhh cmd` is listed under.",
 	}, {
 		Key: "behavior.suggestions", Kind: KindBool, Default: "on",
-		Desc: "Offer a next step, drawn dim in the empty draft after a turn closes, that the right arrow takes into the draft; off asks for none.",
+		Desc: "Offer a next step, drawn dim in the empty draft after a turn closes, that the right arrow takes into the draft, and let a cheap model write the start screen's read-only offers at session open; off asks for neither.",
 	}, {
 		Key: "behavior.suggestion_model", Kind: KindString, Default: "(provider.cheap_model)",
 		Desc: "The model the next step offered in an empty draft is asked of.",
+	}, {
+		Key: "behavior.start_offers_model", Kind: KindString, Default: "(provider.cheap_model)",
+		Desc: "The model the start screen's read-only offers are written by, read once at session open.",
 	}, {
 		Key: "behavior.memory_disabled", Kind: KindBool, Default: "off",
 		Desc: "Turn durable memory off: nothing is injected and the remember tool is not registered.",

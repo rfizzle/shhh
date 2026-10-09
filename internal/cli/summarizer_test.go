@@ -60,6 +60,8 @@ func TestResolveFlow_WalksTheChainInOrder(t *testing.T) {
 		{"compaction takes the cheap key, under its window rule", func(c *config.Config) { c.Provider.CheapModel = "cheap" }, "anthropic", "cheap", stepCheapKey, "provider.cheap_model", flowCompaction},
 		{"the suggestion comes off the cheap chain", func(c *config.Config) { c.Provider.CheapModel = "cheap" }, "anthropic", "cheap", stepCheapKey, "provider.cheap_model", flowSuggestion},
 		{"the suggestion's own key outranks the cheap key", func(c *config.Config) { c.Provider.CheapModel = "cheap"; c.Behavior.SuggestionModel = "tiny" }, "anthropic", "tiny", stepFlowKey, "behavior.suggestion_model", flowSuggestion},
+		{"the start offers come off the cheap chain", func(c *config.Config) { c.Provider.CheapModel = "cheap" }, "anthropic", "cheap", stepCheapKey, "provider.cheap_model", flowStartOffers},
+		{"the start offers' own key outranks the cheap key", func(c *config.Config) { c.Provider.CheapModel = "cheap"; c.Behavior.StartOffersModel = "reader" }, "anthropic", "reader", stepFlowKey, "behavior.start_offers_model", flowStartOffers},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

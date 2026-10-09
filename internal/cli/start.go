@@ -268,3 +268,38 @@ func startGate(workspace string) chat.StartGate {
 	}
 	return g
 }
+
+// startOffersEvidence is what the start screen's reading reads beyond what the
+// screen already holds: the names of the files the tree has changed, the
+// last ten commit subjects and the backlog's ready items, each as "id:
+// title". It is a function rather than a value because it runs git and reads
+// the backlog, and that is paid on the reading's own goroutine after the
+// screen has drawn, never before
+// (docs/capabilities/chat.md#the-start-screen-is-read-for-this-checkout).
+// Names and subjects only: no file's contents reach the reading from here.
+func startOffersEvidence(survey project.Info) func(context.Context) agent.StartOffersRequest {
+	dir := survey.Dir
+	return func(ctx context.Context) agent.StartOffersRequest {
+		var req agent.StartOffersRequest
+		if survey.Repo {
+			if out, err := hostgit.Output(ctx, dir, "status", "--porcelain"); err == nil {
+				for _, line := range strings.Split(out, "\n") {
+					if len(line) > 3 {
+						req.Dirty = append(req.Dirty, strings.TrimSpace(line[3:]))
+					}
+				}
+			}
+			if out, err := hostgit.Output(ctx, dir, "log", "-10", "--format=%s"); err == nil {
+				for _, line := range strings.Split(out, "\n") {
+					if line = strings.TrimSpace(line); line != "" {
+						req.Commits = append(req.Commits, line)
+					}
+				}
+			}
+		}
+		for _, it := range todo.Load(todoProfile(), todo.Root(dir)).Ready() {
+			req.Ready = append(req.Ready, it.Slug+": "+it.Title)
+		}
+		return req
+	}
+}

@@ -175,6 +175,11 @@ A scene that wants words of its own there writes a `[title]` or an
 tool:session_title:{"title":"The retry backoff doubling"}
 ```
 
+The start screen's reading at session open is answered with nothing unless
+the scene writes a `[start_offers]` queue, whose reply is the offers' JSON on
+one line; a `wait:<seconds>` part ahead of it (`+` continues the reply) holds
+it back so a snap can read the fixed rows first, as `start-offers` does.
+
 The request is known by the tool it offers and never by where it falls in
 the run, so a title request that stopped carrying its tool takes the next
 reply of whatever queue it lands in, and the scene fails rather than the

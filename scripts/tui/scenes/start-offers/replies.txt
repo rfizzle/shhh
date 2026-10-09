@@ -1,2 +1,10 @@
 # No turn is taken: the screen is read as it opens.
+[session]
 on_target: Nothing is sent.
+
+# The start screen's reading, held back four seconds so the first snap reads
+# the fixed rows; its two offers name the branch and the ready item, so each
+# takes the row of the thing it names.
+[start_offers]
+wait:4
++{"offers":[{"title":"say what cache-work still lacks for its lifetime","prompt":"Read the commits on cache-work and say what the lifetime still lacks."},{"title":"check the cache-ttl test against the cache package","prompt":"Read cache-ttl and the cache package and say whether TestTTL exists."}]}

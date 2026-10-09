@@ -21,7 +21,9 @@ package chat
 //     turn that broke, was cancelled or stopped at a card is not asked for
 //     one, nor is a session looking at a child.
 //   - behavior.suggestions turns it off and /ui suggest flips it for the
-//     session; off asks for nothing.
+//     session; off asks for nothing. The same switch holds the start
+//     screen's reading (startoffers.go): one switch for the two offered
+//     things.
 
 import (
 	"context"
@@ -311,7 +313,7 @@ func (m Model) suggestStatus() string {
 func (m *Model) suggestCommand(parts []string) string {
 	if len(parts) == 2 {
 		return "next-step suggestions: " + m.suggestStatus() +
-			"\nusage: /ui suggest <on|off> — on, a cheap model offers a next step in the empty draft after each turn, and → takes it"
+			"\nusage: /ui suggest <on|off> — on, a cheap model offers a next step in the empty draft after each turn, and → takes it; it also writes the start screen's read-only offers when a session opens"
 	}
 	if len(parts) != 3 {
 		return "usage: /ui suggest <on|off>"

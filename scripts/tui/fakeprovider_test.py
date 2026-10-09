@@ -67,6 +67,17 @@ class Flows(unittest.TestCase):
         body = {"messages": [{"role": "user", "content": 'UNTRUSTED EVIDENCE:\n{"last_instruction":"go"}'}]}
         self.assertEqual(fp.answer(body)[2], ["Run the tests again."])
 
+    def test_a_start_offers_request_keeps_the_fixed_rows_unless_scripted(self):
+        self.use({"": [["The turn's own reply."]]})
+        body = {"messages": [{"role": "user", "content": 'UNTRUSTED EVIDENCE:\n{"checkout_facts":"go"}'}]}
+        queue, _, parts, note = fp.answer(body)
+        self.assertEqual((queue, parts), ("start_offers", [""]))
+        self.assertIn("harness", note)
+        # A file with no queues keeps its first reply for the turn.
+        self.assertEqual(fp.answer(request("read_file", "write_file"))[2], ["The turn's own reply."])
+        self.use({"session": [["Hello."]], "start_offers": [["wait:1", '{"offers":[]}']]})
+        self.assertEqual(fp.answer(body)[2], ["wait:1", '{"offers":[]}'])
+
     def test_a_turn_that_quotes_the_field_is_not_the_suggestion(self):
         self.use({"session": [["Hello."]]})
         body = {"messages": [{"role": "user", "content": 'what does "last_instruction" mean?'}],

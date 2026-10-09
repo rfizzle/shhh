@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/project"
 )
 
@@ -56,4 +57,34 @@ func TestProgram_TheStartScreenSaysTheInstructionFileNamesAFileThatIsGone(t *tes
 	if !strings.Contains(frame, "Some things worth doing first") || strings.Contains(frame, "assess AGENTS.md") {
 		t.Fatalf("the assessment outranked the work the checkout states:\n%s", frame)
 	}
+}
+
+// TestProgram_AReadingWritesTheStartScreensReadOnlyRows is the start-offers
+// scene's last reading: the start screen draws its fixed rows, the reading
+// asked once the screen has a size lands with two offers naming the branch
+// and the ready item, and each takes the row of the thing it names — the
+// facts, the notes and the approval row untouched. Choosing the first sends
+// its line, priced as the slot is.
+func TestProgram_AReadingWritesTheStartScreensReadOnlyRows(t *testing.T) {
+	info := startFixture()
+	info.Recent = StartRecent{}
+	info.Project.Dirty = 0
+	info.Project.Branch = "cache-work"
+	info.Branch = StartBranch{Ahead: 2}
+	info.Ready = StartReady{Present: true, Slug: "cache-ttl", Title: "Give the cache a lifetime", Noun: "story"}
+	written := &suggestProvider{line: `{"offers":[{"title":"say what cache-work still lacks for its lifetime","prompt":"Read the commits on cache-work and say what the lifetime still lacks."},{"title":"check the cache-ttl test against the cache package","prompt":"Read cache-ttl and the cache package and say whether TestTTL exists."}]}`}
+	m, _ := scriptedSession(programTurn{text: "The lifetime still lacks an eviction pass."})
+	m = m.WithStartScreen(info).WithSuggester(nil, true).
+		WithStartOffers(agent.NewStartOfferer(written, agent.StartOffersConfig{Model: "fast"}), nil)
+	tm := runProgramAt(t, m, 110, 40)
+
+	waitForAll(t, tm, "say what cache-work still lacks for its lifetime",
+		"check the cache-ttl test against the cache package", "go 1.24 · clean tree · 41 packages",
+		"run the default quality gate and triage what fails")
+	programPress(t, tm, "enter")
+	waitForText(t, tm, "an eviction pass")
+
+	frame := finalFrame(t, tm)
+	frameHas(t, frame, "Read the commits on cache-work")
+	frameHas(t, frame, "Change nothing")
 }

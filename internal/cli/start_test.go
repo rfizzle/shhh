@@ -1,9 +1,12 @@
 package cli
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/agent"
@@ -314,6 +317,36 @@ func TestStartBranch_CountsWhatIsAheadOfTheDefaultAndWhetherItWentUp(t *testing.
 	run("config", "branch.work.merge", "refs/heads/work")
 	if got := startBranch(dir, "work"); got.Ahead != 2 || !got.Pushed {
 		t.Fatalf("branch = %+v, want 2 ahead and pushed", got)
+	}
+}
+
+// The start screen's reading is handed names and subjects only: the changed
+// files' names and the last ten commit subjects, never a file's contents.
+func TestStartOffersEvidence_NamesAndSubjectsOnly(t *testing.T) {
+	dir := t.TempDir()
+	run := func(args ...string) {
+		t.Helper()
+		full := append([]string{"-C", dir, "-c", "user.email=t@t", "-c", "user.name=t"}, args...)
+		if out, err := exec.Command("git", full...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v: %s", args, err, out)
+		}
+	}
+	run("init", "-q", "-b", "main")
+	for i := range 12 {
+		run("commit", "-q", "--allow-empty", "-m", "subject "+strconv.Itoa(i))
+	}
+	if err := os.WriteFile(filepath.Join(dir, "cache.go"), []byte("package cache // the secret body\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	req := startOffersEvidence(project.Info{Dir: dir, Repo: true})(context.Background())
+	if len(req.Dirty) != 1 || req.Dirty[0] != "cache.go" {
+		t.Fatalf("dirty = %q, want the one name", req.Dirty)
+	}
+	if len(req.Commits) != 10 || req.Commits[0] != "subject 11" {
+		t.Fatalf("commits = %q, want the last ten, newest first", req.Commits)
+	}
+	if strings.Contains(strings.Join(append(req.Dirty, req.Commits...), " "), "secret body") {
+		t.Fatal("a file's contents reached the reading")
 	}
 }
 

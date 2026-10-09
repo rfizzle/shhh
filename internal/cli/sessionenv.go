@@ -140,6 +140,7 @@ func (s chatSession) systemPrompt(configExtra string) (text string, projectToken
 	// survey too, for the screen: the count is this block's, so the screen
 	// cannot state a cut the prompt did not make.
 	survey.Instruction = project.CheckInstructions(instructions, survey.Root, dropped)
+	survey.Instruction.Block = block
 	extra := prompt.CombineExtra(configExtra, block, project.PromptBlock(survey), trustPromptBlock(projectTrust(), s.conversation), s.promptExtra)
 	return s.buildPrompt(info, extra), agent.EstimateTokens(block), survey
 }

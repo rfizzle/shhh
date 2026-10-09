@@ -130,6 +130,10 @@ var (
 	// asked at every turn's close, so it is the flow a person is likeliest
 	// to want on the smallest model there is.
 	flowSuggestion = boundedFlow{name: "suggestion", keys: []string{"behavior.suggestion_model"}, source: meter.SourceSuggestion}
+	// The start screen's reading has a key of its own beside it: it is asked
+	// once per session open rather than per turn, and reads the instruction
+	// block, so it is the one a person may want on a stronger model.
+	flowStartOffers = boundedFlow{name: "start offers", keys: []string{"behavior.start_offers_model"}, source: meter.SourceStartOffers}
 )
 
 // boundedFlows is every flow on the chain, in the order a listing reads them.
@@ -137,8 +141,8 @@ var (
 // reported wherever the question is asked.
 var boundedFlows = []boundedFlow{
 	flowClassifier, flowExplanation, flowDescription, flowReading,
-	flowTitle, flowAccount, flowSuggestion, flowCompaction, flowBacklog,
-	flowDrafter, flowToolchain,
+	flowTitle, flowAccount, flowSuggestion, flowStartOffers, flowCompaction,
+	flowBacklog, flowDrafter, flowToolchain,
 }
 
 // flowModel is one flow's answer: the model, the link that gave it, and the
@@ -300,5 +304,19 @@ func newSuggester(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *age
 		ModelAt: env.flowModelAt(cfg, flowSuggestion),
 		Timeout: time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
 		Prompt:  env.prompts.suggestion,
+	})
+}
+
+// newStartOfferer returns the writer of the start screen's read-only offers,
+// read once at session open
+// (docs/capabilities/chat.md#the-start-screen-is-read-for-this-checkout).
+// Only the interactive coding session builds one, since only it has the
+// screen. It is asked on its own flow and billed under its own source;
+// whether it is asked at all is the next step's switch, which the screen
+// reads.
+func newStartOfferer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.StartOfferer {
+	return agent.NewStartOfferer(ledger.For(env.prov, flowStartOffers.source), agent.StartOffersConfig{
+		ModelAt: env.flowModelAt(cfg, flowStartOffers),
+		Timeout: time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
 	})
 }

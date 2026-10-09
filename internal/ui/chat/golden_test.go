@@ -5538,6 +5538,38 @@ func TestGolden_StartOffers(t *testing.T) {
 	})
 }
 
+// TestGolden_StartReading captures the start screen once its reading has
+// landed: two written offers in the read-only rows at the slot's price, the
+// facts, the notes and the approval row as they were
+// (docs/capabilities/chat.md#the-start-screen-is-read-for-this-checkout).
+func TestGolden_StartReading(t *testing.T) {
+	captureGolden(t, "start-reading", "the start screen with two offers the reading wrote", goldenWidths, func(width int) []golden.Panel {
+		build := func(info StartInfo, written []agent.StartOffer) string {
+			info.Recent = StartRecent{}
+			info.Project.Dirty = 0
+			m := frameModel(t, width, 40).WithStartScreen(info).WithSuggester(nil, true)
+			m.startOffers.written = written
+			return m.renderHistory()
+		}
+		tours := []agent.StartOffer{
+			{Title: "trace how a request reaches the cache", Prompt: "Trace how a request reaches the cache."},
+			{Title: "list what the gate does not check", Prompt: "Read the gate and say what it leaves unchecked."},
+		}
+		named := startFixture()
+		named.Project.Branch = "cache-work"
+		named.Branch = StartBranch{Ahead: 2}
+		named.Ready = StartReady{Present: true, Slug: "cache-ttl", Title: "Give the cache a lifetime", Noun: "story"}
+		facts := []agent.StartOffer{
+			{Title: "say what cache-work still lacks for its lifetime", Prompt: "Read the commits on cache-work and say what the lifetime still lacks."},
+			{Title: "check the cache-ttl test against the cache package", Prompt: "Read cache-ttl and the cache package and say whether TestTTL exists."},
+		}
+		return []golden.Panel{
+			{Label: "a clean checkout · the two tours written over", View: build(startFixture(), tours)},
+			{Label: "a branch and a ready item · each written over by the offer that names it", View: build(named, facts)},
+		}
+	})
+}
+
 func TestGolden_StartInstruction(t *testing.T) {
 	captureGolden(t, "start-instruction", "the start screen saying what the instruction file lost, and offering to assess it", goldenWidths, func(width int) []golden.Panel {
 		build := func(ready StartReady, check project.InstructionCheck) string {

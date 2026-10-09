@@ -321,6 +321,38 @@ session; off means no request is made, not an answer drawn nowhere. An
 unattended run, a served session and a child never ask, because none of
 them has a draft to put an offer in.
 
+## The start screen is read for this checkout
+
+The start screen's read-only rows are a table: what the checkout states —
+a changed tree, a branch not pushed, a ready backlog item, an instruction
+file due an assessment — and, where it states nothing, a tour. A table
+cannot name a repository's own work in its own words, so once the screen has
+drawn, a cheap model takes one reading of what the checkout says about
+itself: the instruction block exactly as the system prompt got it, the
+screen's fact line and gate, the names of the files the tree has changed,
+the last ten commit subjects and the ids and titles of the backlog's ready
+items. No other file's contents are read for it. It writes at most two
+offers, each a short title and a prompt that reads and reports.
+
+The offers are placed, not appended: three rows stay three rows. A written
+offer takes a tour's row, or the row of a stated fact when it names the same
+thing — the item's id, the branch, the instruction file — and a fact it does
+not name keeps its row. The resume row and the row that costs an approval
+never move, and the price on a written row is the slot's, `reads only, no
+writes`: the writer does not set what its row costs, and the line the row
+sends says to change nothing.
+
+It follows the next step's rules. It is asked in the background, so the
+screen never waits for it, and it lands only where nothing has moved: a
+reading that comes back after a key, a chosen row or a turn is dropped, and
+the record says so. A failed or slow reading changes nothing, and the screen
+never says one is out — the fixed rows are the screen, not a placeholder.
+Nothing of it is saved with the conversation or shown to the model; a chosen
+row is the person's sent line and nothing else. It costs one request per
+session open, on its own key (`behavior.start_offers_model`) off the cheap
+chain and on the bill under its own name, and `behavior.suggestions` and
+`/ui suggest` are its switch as well: one switch for the two offered things.
+
 ## A conversation runs without a screen
 
 `shhh chat --print "…"` is this session with the screen taken away: the same

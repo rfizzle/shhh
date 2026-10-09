@@ -53,4 +53,7 @@ func (m *Model) stopSideJobs() {
 		m.titles.cancel()
 		m.titles.cancel = nil
 	}
+	// And the start screen's reading, which a session leaving before it
+	// lands has no screen left to draw it on.
+	m.stopStartOffers()
 }

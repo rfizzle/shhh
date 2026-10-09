@@ -460,6 +460,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 	case suggestDoneMsg:
 		m.finishSuggest(msg)
 		return m, nil, true
+	case startOffersDoneMsg:
+		m.finishStartOffers(msg)
+		return m, nil, true
 
 	case autosaveMovedMsg:
 		m.noteSlotMove(msg)

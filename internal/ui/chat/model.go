@@ -1436,6 +1436,8 @@ type Model struct {
 	personaScreen *components.ProfileScreen
 	startFocus    int
 	startSpent    bool
+	// startOffers is the start screen's reading at open (startoffers.go).
+	startOffers startOffersState
 	// scaffold is the project-scaffolding offer and the write behind it
 	// (scaffold.go).
 	scaffold Scaffold
@@ -1901,6 +1903,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// And the next step it offers in the empty draft (suggest.go), once the
 	// turn has handed the screen back to the input.
 	if read := mm.suggestCloseCmd(m); read != nil {
+		cmd = tea.Batch(cmd, read)
+	}
+	// And the start screen's reading (startoffers.go), once the session has
+	// a size to draw the screen at.
+	if read := mm.startOffersCmd(); read != nil {
 		cmd = tea.Batch(cmd, read)
 	}
 	// And the repository's own checks over what the turn wrote (gate.go).

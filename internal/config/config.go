@@ -646,12 +646,16 @@ type BehaviorConfig struct {
 	// one-shot's where the provider names none.
 	DescriptionModel string `toml:"description_model"`
 	// Suggestions turns the next step offered in an empty draft at a turn's
-	// close on or off; unset is on (SuggestionsEnabled).
+	// close on or off, and the start screen's reading with it: one switch
+	// for the two offered things. Unset is on (SuggestionsEnabled).
 	Suggestions *bool `toml:"suggestions"`
 	// SuggestionModel is the model that offer is asked of. Empty means
 	// provider.cheap_model, then the provider's own small model, then the
 	// session's.
 	SuggestionModel string `toml:"suggestion_model"`
+	// StartOffersModel is the model the start screen's offers are read
+	// with at session open. Empty falls back as SuggestionModel does.
+	StartOffersModel string `toml:"start_offers_model"`
 	// ClassifierTimeoutSeconds bounds each classifier request (default 30).
 	ClassifierTimeoutSeconds int `toml:"classifier_timeout_seconds"`
 	// ClassifierMaxTokens caps the classifier's response, the reasoning it

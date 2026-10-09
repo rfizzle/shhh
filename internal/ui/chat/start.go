@@ -17,10 +17,13 @@ package chat
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
+	"unicode"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -287,7 +290,7 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 	if m.toolchainDraftOffered() {
 		draft = toolchainDraftTitle(m.toolchain().Exists)
 	}
-	suggestions, actions := startSuggestions(*info, m.scaffoldOffered(), m.setupOffered(), draft)
+	suggestions, actions := startSuggestions(*info, m.scaffoldOffered(), m.setupOffered(), draft, m.writtenStartOffers())
 	notes := startNotes(*info)
 	// What the checkout declared and the contained PATH lacks, after
 	// everything the checkout told the session about itself: it is the one
@@ -566,7 +569,7 @@ func assessOffer(info StartInfo) (readOnlyOffer, bool) {
 	}
 	title := "assess " + c.File + " against what this session does with it"
 	return readOnlyOffer{title, "reads only, then reports",
-		title + ", without changing anything, and report: " + strings.Join(project.RubricItems(), "; ")}, true
+		title + ", without changing anything, and report: " + strings.Join(project.RubricItems(), "; "), c.File, false}, true
 }
 
 // startSuggestions is the three offers, paired with the input line each one
@@ -590,7 +593,10 @@ func assessOffer(info StartInfo) (readOnlyOffer, bool) {
 // has the first row — a checkout's own checks being runnable in a sandbox is
 // worth more than a tour of it
 // (docs/capabilities/containment.md#a-declaration-can-be-drafted-for-you).
-func startSuggestions(info StartInfo, scaffold, setup bool, draft string) ([]components.StartSuggestion, []string) {
+//
+// written is the start screen's reading where one landed, which only the
+// read-only slot takes (readOnlyOffers).
+func startSuggestions(info StartInfo, scaffold, setup bool, draft string, written []agent.StartOffer) ([]components.StartSuggestion, []string) {
 	var out []components.StartSuggestion
 	var actions []string
 	add := func(glyph, title, detail, action string) {
@@ -605,7 +611,7 @@ func startSuggestions(info StartInfo, scaffold, setup bool, draft string) ([]com
 	// The read-only slot: one row where a session is to be resumed, two
 	// where not. A draft offer takes the last of them, as it always has.
 	room := 2 - len(out)
-	for _, o := range readOnlyOffers(info, draft, room) {
+	for _, o := range readOnlyOffers(info, draft, room, written) {
 		add("⚙", o.title, o.detail, o.action)
 	}
 
@@ -626,8 +632,15 @@ func startSuggestions(info StartInfo, scaffold, setup bool, draft string) ([]com
 	return out, actions
 }
 
-// readOnlyOffer is one row for the read-only slot.
-type readOnlyOffer struct{ title, detail, action string }
+// readOnlyOffer is one row for the read-only slot. names is what a
+// deterministic offer is about — the ready item's id, the branch, the
+// instruction file — so a written offer about the same thing can take its
+// row; tour marks the fixed fallbacks a written offer takes first.
+type readOnlyOffer struct {
+	title, detail, action string
+	names                 string
+	tour                  bool
+}
 
 // readOnlyOffers is the read-only slot's rows: room of them, one where a
 // session to resume has the first row and two where not. This is the one
@@ -644,13 +657,16 @@ type readOnlyOffer struct{ title, detail, action string }
 // checks being runnable in a sandbox is worth more than a tour, and less than
 // what the checkout says is next — except in the one row a resume leaves a
 // dirty tree, which it has always taken. The tours are last.
-func readOnlyOffers(info StartInfo, draft string, room int) []readOnlyOffer {
+//
+// written is the start screen's reading, where one landed, and it is placed
+// last (withWritten): over the rows this ranking chose, never adding one.
+func readOnlyOffers(info StartInfo, draft string, room int, written []agent.StartOffer) []readOnlyOffer {
 	const reads = "reads only, no writes"
 	dirty := info.Project.Repo && info.Project.Dirty > 0
 	var changed, queued []readOnlyOffer
 	if dirty {
 		changed = append(changed, readOnlyOffer{"explain what changed in the working tree", reads,
-			"explain what changed in the working tree"})
+			"explain what changed in the working tree", "", false})
 	}
 	branch := func() {
 		b := info.Branch
@@ -663,7 +679,8 @@ func readOnlyOffers(info StartInfo, draft string, room int) []readOnlyOffer {
 		}
 		queued = append(queued, readOnlyOffer{"review what this branch changes before it goes up",
 			plural(b.Ahead, "commit") + " ahead · " + state,
-			"review what this branch changes before it goes up: read its commits and diff against the default branch and say what you would flag"})
+			"review what this branch changes before it goes up: read its commits and diff against the default branch and say what you would flag",
+			info.Project.Branch, false})
 	}
 	if !info.Branch.Pushed {
 		branch()
@@ -674,7 +691,8 @@ func readOnlyOffers(info StartInfo, draft string, room int) []readOnlyOffer {
 			noun = "item"
 		}
 		queued = append(queued, readOnlyOffer{"read " + r.Slug + " and say what it would take", r.Title + " · " + reads,
-			"read the " + noun + " " + r.Slug + " (" + r.Title + ") in the backlog and say what it would take to do, without changing anything"})
+			"read the " + noun + " " + r.Slug + " (" + r.Title + ") in the backlog and say what it would take to do, without changing anything",
+			r.Slug, false})
 	}
 	if info.Branch.Pushed {
 		branch()
@@ -684,12 +702,12 @@ func readOnlyOffers(info StartInfo, draft string, room int) []readOnlyOffer {
 	}
 	var drafting []readOnlyOffer
 	if draft != "" {
-		drafting = append(drafting, readOnlyOffer{draft, "reads only, then asks", toolchainCommandName})
+		drafting = append(drafting, readOnlyOffer{draft, "reads only, then asks", toolchainCommandName, "", false})
 	}
 	walk := readOnlyOffer{"walk me through what this project does", reads,
-		"walk me through what this project does, starting from its entry point"}
+		"walk me through what this project does, starting from its entry point", "", true}
 	commits := readOnlyOffer{"summarise the last ten commits", reads,
-		"summarise the last ten commits and what they were working towards"}
+		"summarise the last ten commits and what they were working towards", "", true}
 
 	var rows []readOnlyOffer
 	switch {
@@ -706,7 +724,60 @@ func readOnlyOffers(info StartInfo, draft string, room int) []readOnlyOffer {
 			rows = []readOnlyOffer{walk, drafting[0], commits}
 		}
 	}
-	return rows[:room]
+	return withWritten(rows[:room], written)
+}
+
+// withWritten places the reading's offers over the read-only rows
+// (docs/capabilities/chat.md#the-start-screen-is-read-for-this-checkout). A
+// written offer that names what a deterministic row is about takes that row;
+// any other takes a tour's; one with no row left to take is not drawn — the
+// screen chooses its three rows, it does not grow. Every deterministic row
+// that names nothing a written offer names stays, and the price is the
+// slot's, whatever the writer wrote: the line a written row sends says it
+// changes nothing, so what the row costs is what the line asks for.
+func withWritten(rows []readOnlyOffer, written []agent.StartOffer) []readOnlyOffer {
+	if len(written) == 0 {
+		return rows
+	}
+	rows = slices.Clone(rows)
+	taken := make([]bool, len(rows))
+	for _, w := range written {
+		row := readOnlyOffer{title: w.Title, detail: "reads only, no writes",
+			action: w.Prompt + " Change nothing; read and report what you find."}
+		i := slices.IndexFunc(rows, func(r readOnlyOffer) bool { return writtenNames(w, r.names) })
+		if i < 0 || taken[i] {
+			i = -1
+			for j, r := range rows {
+				if r.tour && !taken[j] {
+					i = j
+					break
+				}
+			}
+		}
+		if i < 0 {
+			continue
+		}
+		rows[i], taken[i] = row, true
+	}
+	return rows
+}
+
+// writtenNames reports whether a written offer is about the thing a
+// deterministic row names: the name as a whole word of its title or prompt,
+// so a branch called main is not named by "maintain".
+func writtenNames(w agent.StartOffer, names string) bool {
+	if names == "" {
+		return false
+	}
+	words := strings.FieldsFunc(w.Title+" "+w.Prompt, func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r) && !strings.ContainsRune("._-/", r)
+	})
+	for _, word := range words {
+		if strings.EqualFold(strings.TrimRight(word, "."), names) {
+			return true
+		}
+	}
+	return false
 }
 
 // verifyPrompt is the offer that costs an approval: the configured gate where

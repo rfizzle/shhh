@@ -417,6 +417,11 @@ type InstructionCheck struct {
 	// and Gone the distinct paths the project's files name that are not
 	// there (GonePaths).
 	Dropped, Gone int
+	// Block is the instruction block exactly as the system prompt was given
+	// it, cut and all, the user's own file included. It rides here so the
+	// start screen's reading reads what the model read and not a second
+	// reading of the files.
+	Block string
 }
 
 // CheckInstructions reads what InstructionBlockCut cannot know about the

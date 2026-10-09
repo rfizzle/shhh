@@ -1,5 +1,6 @@
 # program test: TestProgram_TheStartScreenOffersTheBranchAndTheReadyItem,
-#   TestProgram_TheStartScreenSaysTheInstructionFileNamesAFileThatIsGone
+#   TestProgram_TheStartScreenSaysTheInstructionFileNamesAFileThatIsGone,
+#   TestProgram_AReadingWritesTheStartScreensReadOnlyRows
 #
 # The start screen's read-only slot offers what the checkout says is next
 # (docs/interface/surfaces.md#the-start-screen). The workspace is a clean
@@ -14,6 +15,14 @@
 # not there: the line naming what was read into the system prompt says the
 # file names one file that is gone. The assessment that count earns ranks
 # after the branch and the item, so it takes no row here.
+#
+# Then the start screen's reading lands
+# (docs/capabilities/chat.md#the-start-screen-is-read-for-this-checkout): the
+# scripted model holds it four seconds so the first snap reads the fixed rows,
+# and its two offers name the branch and the ready item, so each takes the
+# row of the thing it names. The second capture is read for the two written
+# rows at the slot's price, with the facts, the notes and the approval row as
+# the first capture had them.
 #
 # The identity is repository-local because the pane runs under a home of its
 # own, so there is no global one for the commits to find.
@@ -33,3 +42,4 @@ setup printf 'package cache\n\nconst ttl = 60\n' > cache.go
 setup git add cache.go
 setup git commit -q -m 'name the lifetime'
 snap 01-start "Some things worth doing first" "review what this branch changes before it goes up" "2 commits ahead · not pushed" "read cache-ttl and say what it would take" "Give the cache a lifetime" "AGENTS.md — in the system prompt · names 1 file that is gone"
+snap 02-written "check the cache-ttl test against the cache package" "say what cache-work still lacks for its lifetime" "lacks for its lifetime — reads only, no writes" "AGENTS.md — in the system prompt · names 1 file that is gone" "clean tree" "one approval, then it reports back"

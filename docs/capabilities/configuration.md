@@ -1135,8 +1135,9 @@ own file could hold.
 | `classifier_retries` | number | `1` | How many extra attempts an invalid or failed classifier response gets before it fails closed. |
 | `explainer_model` | text | (the classifier's model) | The model an approval card's explanation of a command is asked of. |
 | `description_model` | text | (provider.cheap_model) | The model that writes the one-line description a command saved from `shhh cmd` is listed under. |
-| `suggestions` | true/false | `on` | Offer a next step, drawn dim in the empty draft after a turn closes, that the right arrow takes into the draft; off asks for none. |
+| `suggestions` | true/false | `on` | Offer a next step, drawn dim in the empty draft after a turn closes, that the right arrow takes into the draft, and let a cheap model write the start screen's read-only offers at session open; off asks for neither. |
 | `suggestion_model` | text | (provider.cheap_model) | The model the next step offered in an empty draft is asked of. |
+| `start_offers_model` | text | (provider.cheap_model) | The model the start screen's read-only offers are written by, read once at session open. |
 | `memory_disabled` | true/false | `off` | Turn durable memory off: nothing is injected and the remember tool is not registered. |
 | `memory_max_entries` | number | `20` | How many memories are injected into one session's system prompt. |
 | `memory_max_tokens` | number | `1200` | The token budget for the injected memory block. |

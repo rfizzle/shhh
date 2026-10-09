@@ -54,8 +54,12 @@ const (
 	// is the one background reading a person can turn off for its cost
 	// alone, and they can only judge that cost if the bill names it.
 	SourceSuggestion Source = "suggestion"
-	SourceSubagent   Source = "sub-agent"
-	SourceOneShot    Source = "one-shot"
+	// SourceStartOffers is the start screen's reading at session open: the
+	// one request a session makes before anyone has asked it anything, so
+	// the bill names it apart from the next step offered after a turn.
+	SourceStartOffers Source = "start-offers"
+	SourceSubagent    Source = "sub-agent"
+	SourceOneShot     Source = "one-shot"
 	// SourceUnattributed is where a gated request with no source lands. It
 	// exists so that a feature wired through the gate without declaring
 	// itself is visible in the total and named in the breakdown, rather than

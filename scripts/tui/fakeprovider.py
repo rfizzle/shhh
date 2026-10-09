@@ -62,6 +62,9 @@ answered from the queue of its own name rather than all of them from one:
     [suggestion]  the next step offered in the empty draft after a turn;
                   without the queue the endpoint answers with nothing, which
                   offers none
+    [start_offers] the start screen's reading at session open, whose answer
+                  is the offers' JSON on one line; without the queue the
+                  endpoint answers with nothing, which keeps the fixed rows
     [integrator]  the integration writer the supervisor starts itself when
                   two writers' changes conflict: no spawn_agent call names
                   it, so it is known by the conflict its first turn opens on
@@ -84,7 +87,11 @@ The next step offered in an empty draft is asked at every turn's close too,
 and it asks for prose rather than a call, so it offers no tool to be known
 by: it is known by its evidence, whose first field no other request carries.
 Unscripted it is answered with nothing, which the session reads as no offer —
-so a scene about another surface draws the empty draft it always drew.
+so a scene about another surface draws the empty draft it always drew. The
+start screen's reading at session open is the same kind of request, known by
+the field its own evidence carries, and is answered with nothing the same way
+unless the scene wrote a [start_offers] queue: every session opens with one,
+and a scene about another surface keeps the rows it always drew.
 
 A page is served for a scene that fetches one. Anything under /site/ is
 answered with a small page whose text is its own path, so a fetch reaches
@@ -243,22 +250,31 @@ FLOWS = {
     "session_account": ("account", ['tool:session_account:{"account":"Working through a scripted session."}']),
     # An empty reply is no offer: the session trims it to nothing.
     "suggestion": ("suggestion", [""]),
+    # Nothing is no offers: the screen keeps its fixed rows.
+    "start_offers": ("start_offers", [""]),
 }
 
 # The field the next-step request's evidence opens with, quoted as the JSON
 # carries it.
 SUGGESTION_EVIDENCE = '"last_instruction"'
+# And the field the start screen's reading opens with.
+START_OFFERS_EVIDENCE = '"checkout_facts"'
 
 
-def suggesting(body):
-    """Whether a request is the next-step offer: no tool, and evidence that
-    names the field only that request's evidence carries."""
+def evidenced(body, field):
+    """Whether a request is a toolless reading whose evidence names the field
+    only that reading's evidence carries."""
     if body.get("tools"):
         return False
     msgs = body.get("messages") or []
     last = msgs[-1] if msgs and isinstance(msgs[-1], dict) else {}
     content = last.get("content")
-    return isinstance(content, str) and content.startswith("UNTRUSTED EVIDENCE:") and SUGGESTION_EVIDENCE in content
+    return isinstance(content, str) and content.startswith("UNTRUSTED EVIDENCE:") and field in content
+
+
+def suggesting(body):
+    """Whether a request is the next-step offer."""
+    return evidenced(body, SUGGESTION_EVIDENCE)
 
 
 def flow(body):
@@ -271,6 +287,8 @@ def flow(body):
     """
     if suggesting(body):
         return "suggestion"
+    if evidenced(body, START_OFFERS_EVIDENCE):
+        return "start_offers"
     tools = body.get("tools") or []
     if len(tools) != 1 or not isinstance(tools[0], dict):
         return ""

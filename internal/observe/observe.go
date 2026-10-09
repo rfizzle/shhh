@@ -403,12 +403,19 @@ const (
 	// the take rate's numerator and denominator in one code — and a rate is
 	// the only thing that says whether the offer is worth its request.
 	SignalSuggestion = "suggestion"
+	// SignalStartOffer: the start screen's reading landed too late to be
+	// drawn. Reason: StartOfferDropped — the person had typed, chosen a row
+	// or started a turn while it was out, so the rows they were looking at
+	// stayed. A reading that failed is not filed: it changed nothing.
+	SignalStartOffer = "start-offer"
 )
 
 // Reasons for SignalSuggestion: how an offered next step left the draft.
 const (
 	SuggestionTaken   = "taken"
 	SuggestionIgnored = "ignored"
+	// StartOfferDropped is SignalStartOffer's reason.
+	StartOfferDropped = "dropped"
 )
 
 // Search backends for SignalSearch. They are spelled out here rather than

@@ -2913,6 +2913,14 @@ session to resume leaves; the screen chooses which three and never grows to
 four. Every one of them reads and reports: the line each runs is a prompt, and
 nothing reaches the model until it is taken and sent like a typed line.
 
+Once the screen has drawn, a cheap model's reading of the checkout may write
+up to two of those rows in the repository's own words
+([chat.md](../capabilities/chat.md#the-start-screen-is-read-for-this-checkout)).
+A written offer takes a tour's row, or the row of a fact it names; the facts
+it does not name, the resume and the approval row stay where they were, and
+the row's detail is the slot's `reads only, no writes`. It lands only on a
+screen nobody has touched, and the facts above the rows are not redrawn.
+
 The line naming what was read into the system prompt also says what that
 reading lost, and only then. Where the instruction files were cut to fit their
 budget it adds `cut to fit · N lines dropped`, the count of the very cut the
