@@ -88,6 +88,27 @@ Loading a skill is itself a read. The instructions enter the conversation
 without approval, the way a file the model opened would, and anything they
 tell the model to *do* meets the same gates as an instruction the user typed.
 
+## A skill can be proposed from what you kept doing
+
+A skill is usually written by hand, by someone who noticed they kept giving
+the same instructions. The session's record can notice it too: where the same
+three commands were run in the same order in session after session in this
+checkout, `/patterns` offers them as a skill
+([`sessions-and-memory.md`](sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project)).
+The steps are the commands as they were run, which the code reads out of the
+saved conversations; a cheap model is asked only for the skill's name and the
+line saying when to use it, and when it cannot answer the commands name it.
+
+Nothing is written until you have read the file. The card shows the
+`SKILL.md` it would put under `.shhh/skills/<name>/` — frontmatter and the
+steps, whole — and writes it on your yes, never over a skill already there.
+Not now leaves the proposal for the next time you look; never writes your no
+down so the same sequence is not offered again. A checkout you have not
+trusted is offered no skill at all: its skills are not read
+([where skills live](#where-skills-live)), so one written there would be a
+file no session loads. A proposed skill grants nothing either — the commands
+in it meet the same gates as any other, as every skill's do.
+
 ## Related
 
 - [`coding-agent.md`](coding-agent.md) — what the session is told it has
