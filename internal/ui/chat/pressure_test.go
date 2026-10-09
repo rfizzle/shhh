@@ -22,7 +22,7 @@ func pressureModel(t *testing.T, width int) Model {
 		{Role: provider.RoleSystem, Content: strings.Repeat("system prompt. ", 40)},
 		{Role: provider.RoleUser, Content: big},
 		{Role: provider.RoleAssistant, Content: big},
-	}, mockStream)
+	}, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 40})
 	m = updated.(Model)
 	if m.contextSeverity() != 2 {
@@ -190,7 +190,7 @@ func TestPressure_EnterCompactsAndNKeepsTheSessionSaved(t *testing.T) {
 // the next one holding its record, and the row under the boundary says so.
 func TestPressure_NewSessionCarriesTheApprovedPlan(t *testing.T) {
 	m := planRecordModel(t, mockStream)
-	m = m.WithNewSession(func() SessionStart { return SessionStart{Prompt: "sys"} })
+	m.wiring.NewSession = func() SessionStart { return SessionStart{Prompt: "sys"} }
 	updated, _ := m.Update(doneMsg{})
 	m = handover(t, updated.(Model))
 	updated, _ = m.Update(tea.KeyPressMsg{Code: '1', Text: "1"})
@@ -238,7 +238,7 @@ func TestPressure_NewSessionCarriesTheApprovedPlan(t *testing.T) {
 // opens bare.
 func TestPressure_ACarriedPlanIsNotCarriedAgain(t *testing.T) {
 	m := planRecordModel(t, mockStream)
-	m = m.WithNewSession(func() SessionStart { return SessionStart{Prompt: "sys"} })
+	m.wiring.NewSession = func() SessionStart { return SessionStart{Prompt: "sys"} }
 	updated, _ := m.Update(doneMsg{})
 	m = handover(t, updated.(Model))
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
@@ -288,7 +288,7 @@ func TestCompact_KeepsTheMostRecentTurnsVerbatim(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: "second answer"},
 		{Role: provider.RoleUser, Content: "third"},
 		{Role: provider.RoleAssistant, Content: "third answer"},
-	}, stream)
+	}, stream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
 
@@ -331,7 +331,7 @@ func TestCompact_KeepsNothingWhenThereIsNoOlderConversation(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "only"},
 		{Role: provider.RoleAssistant, Content: "answer"},
-	}, summaryStream("the summary"))
+	}, summaryStream("the summary"), Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
 
@@ -349,7 +349,7 @@ func TestCompact_KeepsNothingWhenTheTailIsTooBig(t *testing.T) {
 		{Role: provider.RoleUser, Content: "first"},
 		{Role: provider.RoleAssistant, Content: "answer"},
 		{Role: provider.RoleUser, Content: big},
-	}, summaryStream("the summary"))
+	}, summaryStream("the summary"), Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
 
@@ -366,7 +366,7 @@ func TestCompact_CarriesThePlanChecklistAcross(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "do it"},
 		{Role: provider.RoleAssistant, Content: "done"},
-	}, summaryStream("the summary"))
+	}, summaryStream("the summary"), Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
 

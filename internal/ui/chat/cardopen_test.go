@@ -277,7 +277,8 @@ func TestCard_EscFromACallReturnsToTheStrip(t *testing.T) {
 // A click on a strip glyph moves the strip's cursor to that call, and a
 // click on a group's line folds the group, without taking the keyboard.
 func TestCard_AClickOnTheStripAndAGroupLine(t *testing.T) {
-	m := largeStepModel(t, 110).WithMouse(true)
+	m := largeStepModel(t, 110)
+	m.pointer.mouseOn = true
 	m.viewport.GotoTop()
 	m.atBottom = false
 	line := lineOf(t, m, "in order ")
@@ -301,7 +302,8 @@ func TestCard_AClickOnTheStripAndAGroupLine(t *testing.T) {
 // click on another line, which enter then acts on, and a card closed and
 // opened again, which comes back with no cursor on its strip.
 func TestCard_TheStripLetsGoOfAClickElsewhere(t *testing.T) {
-	m := largeStepModel(t, 110).WithMouse(true)
+	m := largeStepModel(t, 110)
+	m.pointer.mouseOn = true
 	m.viewport.GotoTop()
 	m.atBottom = false
 	m, _ = pressKey(t, m, readingChord())
@@ -321,7 +323,8 @@ func TestCard_TheStripLetsGoOfAClickElsewhere(t *testing.T) {
 
 	// Outside reading mode: a glyph clicked, the card folded and opened by
 	// its header, and the strip comes back bare.
-	m2 := largeStepModel(t, 110).WithMouse(true)
+	m2 := largeStepModel(t, 110)
+	m2.pointer.mouseOn = true
 	m2.viewport.GotoTop()
 	m2.atBottom = false
 	x, y := at(t, m2, lineOf(t, m2, "in order "), components.CardBodyIndent+len("in order ")+3)

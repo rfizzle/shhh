@@ -25,7 +25,7 @@ func TestProgram_SetupPutsTheDeclaredLinesOnOneCard(t *testing.T) {
 		return tools.ExecResult{Outcome: tools.ExecSucceeded}
 	}
 	m, _ := scriptedSession(programTurn{text: "nobody asked the model"})
-	m = m.WithContainment(Containment{Status: "contained", Mechanism: "bwrap", Profile: "workspace", Network: true, Toolchain: tc})
+	m.containment = Containment{Status: "contained", Mechanism: "bwrap", Profile: "workspace", Network: true, Toolchain: tc}
 	tm := runProgramAt(t, m, 110, 40)
 
 	send(tm, setupCommandName)
@@ -66,7 +66,7 @@ func TestProgram_ToolchainDraftLandsOnACardAndWritesOnlyOnYes(t *testing.T) {
 		},
 	}
 	m, _ := scriptedSession(programTurn{text: "nobody asked the model"})
-	m = m.WithContainment(Containment{Status: "contained", Mechanism: "bwrap", Profile: "workspace", Network: true, Toolchain: tc})
+	m.containment = Containment{Status: "contained", Mechanism: "bwrap", Profile: "workspace", Network: true, Toolchain: tc}
 	tm := runProgramAt(t, m, 110, 40)
 
 	send(tm, toolchainCommandName)

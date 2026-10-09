@@ -239,7 +239,7 @@ const draftSentence = "half a thought"
 // whole round trip through the runtime, with nothing driving Update by hand.
 func TestProgram_ATypedLineFetchesAReplyOntoTheFrame(t *testing.T) {
 	p := &programProvider{turns: []programTurn{{text: "the scripted answer"}}}
-	tm := runProgram(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p)))
+	tm := runProgram(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{}))
 
 	tm.Type("say something")
 	tm.Send(programEnter)
@@ -269,11 +269,12 @@ func heldCommandProgram(t *testing.T, ran *[]string) *program {
 		}},
 		{text: "and that is done"},
 	}}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p)).
-		WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{
+		Runner: legacyRunner(func(_ context.Context, cmd string) (string, int) {
 			*ran = append(*ran, cmd)
 			return "hi", 0
-		}))
+		}),
+	})
 	tm := runProgram(t, m)
 
 	tm.Type("run it")
@@ -397,8 +398,8 @@ func TestProgram_TheDraftIsRevisedOneSectionAtATime(t *testing.T) {
 		Sections: &persona.Sections{Purpose: "NEW purpose.", Method: "Run go vet after each file."}}
 	var mu sync.Mutex
 	var asked []persona.Request
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(&programProvider{turns: []programTurn{{text: "unused"}}})).
-		WithPersonas(Personas{
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(&programProvider{turns: []programTurn{{text: "unused"}}}), Wiring{
+		Personas: Personas{
 			Kind:    persona.KindCode,
 			Enabled: true,
 			Draft: func(_ context.Context, req persona.Request) persona.Outcome {
@@ -414,7 +415,8 @@ func TestProgram_TheDraftIsRevisedOneSectionAtATime(t *testing.T) {
 				t.Error("nothing is written before the card's save row is taken")
 				return "", nil
 			},
-		})
+		},
+	})
 	tm := runProgramAt(t, m, 120, 50)
 
 	tm.Type("/agents new a test writer")
@@ -483,8 +485,8 @@ func TestProgram_AnOlderProfileIsMigratedFromTheManager(t *testing.T) {
 		_, err := config.LoadAgentFile(path)
 		return err
 	}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(&programProvider{turns: []programTurn{{text: "unused"}}})).
-		WithPersonas(Personas{
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(&programProvider{turns: []programTurn{{text: "unused"}}}), Wiring{
+		Personas: Personas{
 			Kind:    persona.KindCode,
 			Enabled: true,
 			Roles:   roles,
@@ -506,7 +508,8 @@ func TestProgram_AnOlderProfileIsMigratedFromTheManager(t *testing.T) {
 				}
 				return path, reload(path)
 			},
-		})
+		},
+	})
 	tm := runProgramAt(t, m, 130, 60)
 
 	tm.Type("/agents")

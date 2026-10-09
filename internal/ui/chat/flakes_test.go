@@ -19,7 +19,8 @@ func TestGate_FlakesOpensTheLedgerAsAScreen(t *testing.T) {
 	clock = func() time.Time { return now }
 	t.Cleanup(func() { clock = was })
 
-	m := frameModel(t, 130, 30).WithGate(Gate{
+	m := frameModel(t, 130, 30)
+	m.wiring.Gate, m.alertMemo = Gate{
 		Manage: func([]string) string { return "the manager answered" },
 		Flakes: func() ([]storage.Flake, error) {
 			return []storage.Flake{
@@ -29,7 +30,7 @@ func TestGate_FlakesOpensTheLedgerAsAScreen(t *testing.T) {
 					FirstAt: now.Add(-48 * time.Hour), LastAt: now.Add(-48 * time.Hour)},
 			}, nil
 		},
-	})
+	}, &alertMemo{}
 	next, _ := m.runCommand("/gate flakes", "/gate")
 	opened := next.(Model)
 	if opened.state != stateFlakes || opened.screens.flakes() == nil {
@@ -69,10 +70,11 @@ func TestGate_FlakesWithNothingToListIsALine(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			m := frameModel(t, 110, 30).WithGate(Gate{
+			m := frameModel(t, 110, 30)
+			m.wiring.Gate, m.alertMemo = Gate{
 				Manage: func([]string) string { return "the manager answered" },
 				Flakes: tc.flakes,
-			})
+			}, &alertMemo{}
 			next, _ := m.runCommand(tc.line, "/gate")
 			got := next.(Model)
 			if got.state == stateFlakes {

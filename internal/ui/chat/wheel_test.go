@@ -12,7 +12,7 @@ func wheelUp() tea.MouseWheelMsg   { return tea.MouseWheelMsg{Button: tea.MouseW
 // A fling followed by a keystroke leaves the queue as exactly two things: the
 // summed scroll, and the key riding behind it.
 func TestWheelFloodCoalescesBeforeKey(t *testing.T) {
-	m := New(nil, nil).WithMouse(true)
+	m := New(nil, nil, Wiring{})
 	f := NewWheelFilter()
 
 	for i := 0; i < 30; i++ {
@@ -36,7 +36,7 @@ func TestWheelFloodCoalescesBeforeKey(t *testing.T) {
 // A direction change flushes the old run first, and the probe lands the new
 // one, so the two deltas arrive in gesture order.
 func TestWheelDirectionChangeFlushesInOrder(t *testing.T) {
-	m := New(nil, nil).WithMouse(true)
+	m := New(nil, nil, Wiring{})
 	f := NewWheelFilter()
 
 	for i := 0; i < 10; i++ {
@@ -60,7 +60,7 @@ func TestWheelDirectionChangeFlushesInOrder(t *testing.T) {
 // With reporting off the filter steps aside: every message, wheel included,
 // passes through unchanged.
 func TestWheelFilterMouseOffIsNoOp(t *testing.T) {
-	m := New(nil, nil).WithMouse(false)
+	m := New(nil, nil, Wiring{MouseOff: true})
 	f := NewWheelFilter()
 
 	if out, ok := f.Filter(m, wheelDown()).(tea.MouseWheelMsg); !ok || out.Button != tea.MouseWheelDown {
@@ -75,7 +75,7 @@ func TestWheelFilterMouseOffIsNoOp(t *testing.T) {
 // A stale probe — one scheduled for a run that already flushed — must not
 // flush the run that came after it.
 func TestWheelStaleProbeFlushesNothing(t *testing.T) {
-	m := New(nil, nil).WithMouse(true)
+	m := New(nil, nil, Wiring{})
 	f := NewWheelFilter()
 	f.SetSend(func(tea.Msg) {})
 
@@ -95,7 +95,7 @@ func TestWheelStaleProbeFlushesNothing(t *testing.T) {
 
 // The summed delta scrolls the same surface switch a single notch does.
 func TestCoalescedWheelScrollsTranscript(t *testing.T) {
-	updated, _ := New(nil, mockStream).WithMouse(true).Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	updated, _ := New(nil, mockStream, Wiring{}).Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m := updated.(Model)
 	for i := 0; i < 60; i++ {
 		m.appendEntry(entry{kind: entrySystem, text: "line"})
@@ -121,7 +121,7 @@ func TestCoalescedWheelScrollsTranscript(t *testing.T) {
 // answers those itself, and one wrapped inside another message would reach
 // only the model. The run stays accumulated for the probe.
 func TestWheelNonInputPassesThroughUnwrapped(t *testing.T) {
-	m := New(nil, nil).WithMouse(true)
+	m := New(nil, nil, Wiring{})
 	f := NewWheelFilter()
 
 	f.Filter(m, wheelDown())

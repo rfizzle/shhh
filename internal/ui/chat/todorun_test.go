@@ -66,7 +66,8 @@ func runModelAt(t *testing.T, root string) (Model, string) {
 	m := frameModel(t, 130, 40)
 	m.changes = changeset.New(1 << 20)
 	m.policy.mode = agent.ModeManual
-	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
+	m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }}
+	m.loadTodos()
 	return m, root
 }
 
@@ -355,7 +356,7 @@ func TestTodoVerifyCmd_RunsSnapshotAndReportsFailure(t *testing.T) {
 func TestTodoVerifyCmd_SpoolsTheOutputAndQuotesBothEnds(t *testing.T) {
 	m, _ := runModel(t)
 	kept := map[string]string{}
-	m.evidence.Keep = func(tool, content string) (string, bool) {
+	m.wiring.Evidence.Keep = func(tool, content string) (string, bool) {
 		id := fmt.Sprintf("ev-%016x", len(kept))
 		kept[id] = content
 		return id, true
@@ -492,7 +493,8 @@ func TestTodoCommitCmd_StagesByNameAndRefusesForeignIndex(t *testing.T) {
 
 	m := frameModel(t, 130, 40)
 	m.changes = changeset.New(1 << 20)
-	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
+	m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }}
+	m.loadTodos()
 	// stray.go was already modified when the item started, so it is not the
 	// run's work and must not ride along in its commit.
 	m.todo.runner.state = &run.State{Slug: "x", Turn: 1, Message: "Change a\n\nBecause.",
@@ -599,7 +601,8 @@ func TestTodoRun_ReviewerChildAnswersTheStage(t *testing.T) {
 	m, _ := runModel(t)
 	sup := subagent.New(context.Background(), subagent.Options{Root: m.todo.wiring.Root, NewEnv: reportingEnv("Looked.\nverdict: clean")})
 	t.Cleanup(sup.Close)
-	m = m.WithSubagents(sup)
+	m.wiring.Subagents = sup
+	m.adoptChildren()
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: M", 1))
@@ -637,7 +640,8 @@ func TestTodoRun_ReviewerVerdictIsOnTheLane(t *testing.T) {
 	report := "1. a.go:3 the flag is never read\n\nverdict: findings"
 	sup := subagent.New(context.Background(), subagent.Options{Root: m.todo.wiring.Root, NewEnv: reportingEnv(report)})
 	t.Cleanup(sup.Close)
-	m = m.WithSubagents(sup)
+	m.wiring.Subagents = sup
+	m.adoptChildren()
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: M", 1))
@@ -710,7 +714,8 @@ func reviewReadyModel(t *testing.T, env subagent.EnvFactory) (Model, *subagent.S
 	m, root := runModel(t)
 	sup := subagent.New(context.Background(), subagent.Options{Root: root, NewEnv: env})
 	t.Cleanup(sup.Close)
-	m = m.WithSubagents(sup)
+	m.wiring.Subagents = sup
+	m.adoptChildren()
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: M", 1))
@@ -861,7 +866,8 @@ func TestTodoRun_ContinuesFromCheckpointAndDisplacementPauses(t *testing.T) {
 	m2 := frameModel(t, 130, 40)
 	m2.changes = changeset.New(1 << 20)
 	m2.policy.mode = agent.ModeManual
-	m2 = m2.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
+	m2.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }}
+	m2.loadTodos()
 	m2.input.SetValue("/todo run do-it")
 	updated, _ = m2.submitInput()
 	m2 = updated.(Model)
@@ -880,7 +886,8 @@ func TestTodoRun_ContinuesFromCheckpointAndDisplacementPauses(t *testing.T) {
 	run.Discard(root, "do-it")
 	m3 := frameModel(t, 130, 40)
 	m3.changes = changeset.New(1 << 20)
-	m3 = m3.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
+	m3.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }}
+	m3.loadTodos()
 	m3.input.SetValue("/todo run do-it")
 	updated, _ = m3.submitInput()
 	if note := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.Contains(note, "no checkpoint") {
@@ -909,7 +916,8 @@ func TestTodoRun_ContinuedRunKeepsEarlierPaths(t *testing.T) {
 	}
 	m2 := frameModel(t, 130, 40)
 	m2.changes = changeset.New(1 << 20)
-	m2 = m2.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
+	m2.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }}
+	m2.loadTodos()
 	m2.input.SetValue("/todo run do-it")
 	updated, _ = m2.submitInput()
 	m2 = updated.(Model)
@@ -984,7 +992,8 @@ func largeRunModel(t *testing.T, env subagent.EnvFactory) (Model, *subagent.Supe
 	git("commit", "-q", "-m", "seed")
 	sup := subagent.New(context.Background(), subagent.Options{Root: root, NewEnv: env})
 	t.Cleanup(sup.Close)
-	m = m.WithSubagents(sup)
+	m.wiring.Subagents = sup
+	m.adoptChildren()
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: L", 1))
@@ -1354,7 +1363,8 @@ func TestTodoCommitCmd_EachGitExitDrawsItsOwnSentence(t *testing.T) {
 	root := t.TempDir()
 	m := frameModel(t, 130, 40)
 	m.changes = changeset.New(1 << 20)
-	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
+	m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }}
+	m.loadTodos()
 	m.todo.runner.state = &run.State{Slug: "x", Turn: 1, Message: "Change a\n\nBecause."}
 	m.changes.Add(1, changeset.Record{Path: filepath.Join(root, "a.go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true})
 
@@ -1768,7 +1778,7 @@ func TestTodoRun_ADroppedStageTurnPausesAtTheCheckpoint(t *testing.T) {
 func TestTodoRun_TheSessionsWordingsReachTheRun(t *testing.T) {
 	m, root := runModel(t)
 	m.todo.wiring.Wordings = run.Wordings{"research": "READ IT MY WAY"}
-	m = m.WithTodos(m.todo.wiring)
+	m.loadTodos()
 	updated, _ := m.startTodoRun("do-it", false)
 	m = updated.(Model)
 	if m.todo.runner.state == nil {
@@ -1787,11 +1797,12 @@ func TestTodoRun_TheSessionsWordingsReachTheRun(t *testing.T) {
 	m2 := frameModel(t, 130, 40)
 	m2.changes = changeset.New(1 << 20)
 	m2.policy.mode = agent.ModeManual
-	m2 = m2.WithTodos(Todos{
+	m2.todo.wiring = Todos{
 		Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
 		Detail:   func(*todo.Store, todo.Item) string { return "" },
 		Wordings: run.Wordings{"research": "READ IT ANOTHER WAY"},
-	})
+	}
+	m2.loadTodos()
 	updated, _ = m2.startTodoRun("do-it", false)
 	m2 = updated.(Model)
 	if m2.todo.runner.state == nil || m2.todo.runner.state.Stage != run.StageResearch {
@@ -1837,11 +1848,15 @@ func conversationModel(t *testing.T, pipeline run.Pipeline) (Model, string) {
 	if err := os.WriteFile(filepath.Join(dir, "do-it.md"), []byte("---\ntitle: Do it\n---\n## Tests\n- true\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	m := frameModel(t, 130, 40).WithConversation().WithNotebook(notebook.New(nil))
+	m := frameModelWith(t, 130, 40, Wiring{
+		Conversation: true,
+		Notebook:     notebook.New(nil),
+	})
 	m.policy.mode = agent.ModeManual
-	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Pipeline: pipeline,
+	m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Pipeline: pipeline,
 		Manage: func([]string) string { return "" },
-		Detail: func(*todo.Store, todo.Item) string { return "" }})
+		Detail: func(*todo.Store, todo.Item) string { return "" }}
+	m.loadTodos()
 	return m, root
 }
 
@@ -1871,7 +1886,7 @@ func TestTodoRun_AReadingRunsInAConversation(t *testing.T) {
 	if m.todo.runner.state != nil {
 		t.Fatalf("the run should be over: %+v", m.todo.runner.state)
 	}
-	notes := m.notebook.List()
+	notes := m.wiring.Notebook.List()
 	if len(notes) != 1 || notes[0].Title != "do-it" || notes[0].Author != run.NoteAuthor ||
 		!strings.Contains(notes[0].Body, "read the paper") {
 		t.Fatalf("the write-up should be in the notebook: %+v", notes)
@@ -1915,12 +1930,12 @@ func TestTodoRun_APersonaStepFallsBackToTheRole(t *testing.T) {
 	if got := m.todoReviewRole(st); got != string(subagent.RoleReviewer) {
 		t.Errorf("with no supervisor the step falls back to the role, got %q", got)
 	}
-	m.subagents = subagent.New(context.Background(), subagent.Options{
+	m.wiring.Subagents = subagent.New(context.Background(), subagent.Options{
 		Root: t.TempDir(), Profiles: subagent.Profiles{"editor": {Name: "editor"}}})
 	if got := m.todoReviewRole(st); got != "editor" {
 		t.Errorf("a session with the persona spawns it, got %q", got)
 	}
-	m.subagents = subagent.New(context.Background(), subagent.Options{
+	m.wiring.Subagents = subagent.New(context.Background(), subagent.Options{
 		Root: t.TempDir(), Profiles: subagent.Profiles{}})
 	if got := m.todoReviewRole(st); got != string(subagent.RoleReviewer) {
 		t.Errorf("a session without it falls back to the role, got %q", got)
@@ -1972,8 +1987,8 @@ func TestTodoSprint_CrossesTheBoundaryInAConversation(t *testing.T) {
 	if m.todo.runner.state != nil {
 		t.Fatalf("the sprint should be over: %+v", m.todo.runner.state)
 	}
-	if len(m.notebook.List()) != 2 {
-		t.Fatalf("each reading leaves its write-up in the notebook: %+v", m.notebook.List())
+	if len(m.wiring.Notebook.List()) != 2 {
+		t.Fatalf("each reading leaves its write-up in the notebook: %+v", m.wiring.Notebook.List())
 	}
 }
 
@@ -1992,7 +2007,7 @@ func TestTodoRun_ALongWriteUpIsCutRatherThanRefused(t *testing.T) {
 	long := strings.Repeat("Summary: a paragraph of what the reading found.\n", 200)
 	m = answer(t, m, "REPORT:\n## Report\n"+long)
 
-	notes := m.notebook.List()
+	notes := m.wiring.Notebook.List()
 	if len(notes) != 1 {
 		t.Fatalf("the write-up should be in the notebook: %+v", notes)
 	}

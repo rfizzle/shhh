@@ -52,12 +52,13 @@ func TestProgram_AJudgedNoIsACardTheReaderAnswers(t *testing.T) {
 		commandTurn(nil, "npm run deploy -- --tag latest"),
 		programTurn{text: "Leaving the release alone."},
 	)
-	m = m.WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
+	m.wiring.Runner = legacyRunner(func(_ context.Context, cmd string) (string, int) {
 		ran = append(ran, cmd)
 		return "", 0
-	})).WithClassifier(agent.NewClassifier(&judgeProvider{verdicts: [][2]string{
+	})
+	m.classifier.judge = agent.NewClassifier(&judgeProvider{verdicts: [][2]string{
 		{"deny", "the task asked for a release check and this publishes one"},
-	}}, agent.ClassifierConfig{Model: "judge"}))
+	}}, agent.ClassifierConfig{Model: "judge"})
 	tm := runProgram(t, m)
 
 	programPress(t, tm, "shift+tab", "shift+tab")
@@ -95,8 +96,9 @@ func TestProgram_ASilentRunIsAskedForItsStatus(t *testing.T) {
 		programTurn{text: status + "\n", calls: reads("stream.go")},
 		programTurn{text: "The suite is green and the run is quiet again."},
 	)
-	m = m.WithWorkspace(dir).WithToolExecutor(subagent.RootedExecutor(dir, tools.Execute)).
-		WithProgressIntervals(2, time.Hour)
+	m.wiring.Workspace = dir
+	m.agent.SetExecutor(subagent.RootedExecutor(dir, tools.Execute))
+	m.agent.SetProgressIntervals(2, time.Hour)
 	tm := runProgramAt(t, m, 110, 40)
 
 	send(tm, "trace the checkpoint")

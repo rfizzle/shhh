@@ -34,8 +34,10 @@ const checkpointNote = "The objective is the round accounting: where the tool-ro
 // a test to reach: two silent calls, and a wall clock nothing waits on.
 func progressModel(t *testing.T, stream StreamFunc) Model {
 	t.Helper()
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, stream).
-		WithProgressIntervals(2, time.Hour)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, stream, Wiring{
+		ProgressCalls:   2,
+		ProgressElapsed: time.Hour,
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
 	m = updated.(Model)
 	updated, _ = m.sendUserMessage("trace the checkpoint")

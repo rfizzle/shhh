@@ -407,7 +407,7 @@ func TestReopen_ASentPictureStillOpens(t *testing.T) {
 func trayProgram(t *testing.T) (*program, string) {
 	t.Helper()
 	p := &programProvider{turns: []programTurn{{text: "Looked at both."}}}
-	tm := runProgram(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p)))
+	tm := runProgram(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{}))
 	tm.Send(attachedFileMsg{attachment: trayPNG(t, "first.png")})
 	tm.Send(attachedFileMsg{attachment: trayPNG(t, "second.png")})
 	waitForText(t, tm, "Image#2")

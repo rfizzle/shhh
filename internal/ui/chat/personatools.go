@@ -83,7 +83,7 @@ func (m Model) pickPersonaSection(index int) (tea.Model, tea.Cmd) {
 // the session registered grouped by tier, then what every child always has.
 // A chat profile is offered no tier that writes and no tool that needs one.
 func (m Model) personaPicker(d persona.Draft) (*personaPick, *components.MultiSelect) {
-	chat := m.personas.Kind == persona.KindChat
+	chat := m.wiring.Personas.Kind == persona.KindChat
 	def := d.Definition()
 	pick := &personaPick{}
 	var opts []components.SelectOption

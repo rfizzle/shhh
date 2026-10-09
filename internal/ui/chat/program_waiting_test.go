@@ -43,7 +43,7 @@ func (p *heldProvider) StreamCompletion(ctx context.Context, _ []provider.Messag
 // reasoning's count once it has (docs/interface/surfaces.md#the-input-frame).
 func TestProgram_ARequestThatHearsNothingSaysSo(t *testing.T) {
 	p := &heldProvider{reason: make(chan struct{})}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p))
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{})
 	tm := runProgramAt(t, m, 110, 40)
 
 	tm.Type("why does the test flake")

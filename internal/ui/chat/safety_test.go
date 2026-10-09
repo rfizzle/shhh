@@ -44,28 +44,30 @@ func safetyModel(t *testing.T) Model {
 	if len(errs) > 0 {
 		t.Fatal(errs)
 	}
-	return New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, nil).
-		WithScope(sc).
-		WithApprovalMode(agent.ModeManual, nil).
-		WithCommandAllowlist([]string{"go test"}).
-		WithCommandDenylist([]string{"rm -rf"}).
-		WithHostRules([]string{"docs.rs"}, []string{"pastebin.com"}).
-		WithGatedTools(fetchPreviews()).
-		WithToolDefinitions([]ToolTokens{
+	return New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, nil, Wiring{
+		Scope:            sc,
+		Mode:             agent.ModeManual,
+		CommandAllowlist: []string{"go test"},
+		CommandDenylist:  []string{"rm -rf"},
+		AllowHosts:       []string{"docs.rs"},
+		DenyHosts:        []string{"pastebin.com"},
+		GatedTools:       fetchPreviews(),
+		ToolDefinitions: []ToolTokens{
 			{Name: "read_file"}, {Name: "execute_command"}, {Name: "edit_file"},
 			{Name: "web_fetch"}, {Name: "docs__search"},
-		}).
-		WithContainment(Containment{
+		},
+		Containment: Containment{
 			Status: "contained: sandbox-exec (workspace profile)", Mechanism: "sandbox-exec",
 			Profile: "workspace", Now: func() string { return "Command containment:\n  masked:    ~/.ssh" },
-		}).
-		WithMCP(MCP{Has: func(name string) bool { return strings.HasPrefix(name, "docs__") }}).
-		WithSafety(Safety{
+		},
+		MCP: MCP{Has: func(name string) bool { return strings.HasPrefix(name, "docs__") }},
+		Safety: Safety{
 			Trust:   Trust{Granted: true},
 			Servers: func() []SafetyServer { return []SafetyServer{{Name: "docs", ReadOnly: true, Status: "1 tool"}} },
 			Secrets: func() []string { return []string{"DEPLOY_TOKEN"} },
 			EnvMask: true,
-		})
+		},
+	})
 }
 
 // Every section is read from the function its owning command already uses,
@@ -101,11 +103,12 @@ func TestSafety_EverySectionIsItsOwnersReading(t *testing.T) {
 
 // An absent capability is stated as absent, never left off the page.
 func TestSafety_AnAbsentCapabilityIsStated(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, nil).
-		WithContainment(Containment{
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, nil, Wiring{
+		Containment: Containment{
 			Status: "unconfined — no mechanism", Detail: "sandbox-exec not found",
-		}).
-		WithSafety(Safety{Trust: Trust{Withheld: []string{"skills", "quality suites"}}})
+		},
+		Safety: Safety{Trust: Trust{Withheld: []string{"skills", "quality suites"}}},
+	})
 	for title, want := range map[string]string{
 		"containment":                    "unconfined",
 		"what the checkout was let load": "This checkout is not trusted, so its skills and quality suites",
@@ -126,10 +129,11 @@ func TestSafety_AnAbsentCapabilityIsStated(t *testing.T) {
 // A conversation says it has no mode and no fetch cards rather than showing
 // one it does not run under.
 func TestSafety_AConversationHasNoMode(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, nil).
-		WithConversation().
-		WithGatedTools(fetchPreviews()).
-		WithToolDefinitions([]ToolTokens{{Name: "read_file"}, {Name: "web_fetch"}})
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, nil, Wiring{
+		Conversation:    true,
+		GatedTools:      fetchPreviews(),
+		ToolDefinitions: []ToolTokens{{Name: "read_file"}, {Name: "web_fetch"}},
+	})
 	text := safetyText(m)
 	for _, want := range []string{
 		conversationModeNote, "No card is drawn",
@@ -197,7 +201,9 @@ func TestSafety_TheRepositoryStoreIsSensitiveWhereThereIsOne(t *testing.T) {
 	if class, _ := scope.Classify(store); class != scope.Sensitive {
 		t.Fatalf("the working scope does not classify %s sensitive", store)
 	}
-	where := strings.Join(sectionNamed(t, safetyModel(t).WithScope(sc), "where it may write").Lines, "\n")
+	m := safetyModel(t)
+	m.wiring.Scope = sc
+	where := strings.Join(sectionNamed(t, m, "where it may write").Lines, "\n")
 	if !strings.Contains(where, store+" — "+words) {
 		t.Errorf("the sensitive list does not name %s:\n%s", store, where)
 	}
@@ -213,8 +219,9 @@ func TestProgram_TheSafetyReadingReadsTheLiveSession(t *testing.T) {
 		t.Fatal(errs)
 	}
 	extra := filepath.Join(t.TempDir(), "shared-assets")
-	m = m.WithScope(sc).WithApprovalMode(agent.ModeManual, nil).
-		WithContainment(Containment{Status: "unconfined — none here", Detail: "none here"})
+	m.wiring.Scope = sc
+	m.policy.mode = agent.ModeManual
+	m.containment = Containment{Status: "unconfined — none here", Detail: "none here"}
 	tm := runProgramAt(t, m, 130, 140)
 
 	send(tm, "/safety")
@@ -239,8 +246,7 @@ func TestProgram_TheSafetyReadingReadsTheLiveSession(t *testing.T) {
 // The same route in a conversation: the screen opens, and says the session
 // has one mode rather than drawing a mode picker's word.
 func TestProgram_AConversationsSafetyReadingHasNoMode(t *testing.T) {
-	m, _ := scriptedSession(programTurn{text: "nothing"})
-	m = m.WithConversation()
+	m, _ := scriptedSessionWith(Wiring{Conversation: true}, programTurn{text: "nothing"})
 	tm := runProgramAt(t, m, 130, 140)
 
 	send(tm, "/safety")

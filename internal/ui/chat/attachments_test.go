@@ -447,10 +447,10 @@ func TestClipboard_StagesTextTooBigForTheDraft(t *testing.T) {
 // shape. Anything else would make a surface that borrowed the screen stage an
 // attachment the reader was never offering.
 func TestPasteMsg_ASurfaceWithTheKeyboardStillGetsTheText(t *testing.T) {
-	m := readyModel(t).
-		WithModelSwitcher(func(string) {}).
-		WithPricing(nil, "m1").
-		WithModelOptions([]string{"m1", "m2"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(string) {}
+	m.wiring.Prices, m.modelName = nil, "m1"
+	m.picker.models.options = []string{"m1", "m2"}
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)

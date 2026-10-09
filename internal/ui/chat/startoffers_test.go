@@ -36,17 +36,18 @@ func startReadingGather(context.Context) agent.StartOffersRequest {
 func startReadingModel(t *testing.T, info StartInfo, p provider.Provider, on bool) (Model, *[]string) {
 	t.Helper()
 	var signals []string
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, multiTokenStream("hi there")).
-		WithObserver(observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, multiTokenStream("hi there"), Wiring{
+		Observer: observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
 			if code == observe.SignalStartOffer {
 				signals = append(signals, reason)
 			}
-		}})
+		}},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
-	m = updated.(Model).
-		WithStartScreen(info).
-		WithSuggester(nil, on).
-		WithStartOffers(agent.NewStartOfferer(p, agent.StartOffersConfig{Model: "fast"}), startReadingGather)
+	m = updated.(Model)
+	m.start = new(info)
+	m.suggest.writer, m.suggest.on = nil, on
+	m.startOffers.writer, m.startOffers.gather = agent.NewStartOfferer(p, agent.StartOffersConfig{Model: "fast"}), startReadingGather
 	return m, &signals
 }
 

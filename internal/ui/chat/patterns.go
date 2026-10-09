@@ -121,13 +121,6 @@ type patternWordedMsg struct {
 	worded bool
 }
 
-// WithPatterns enables /patterns.
-func (m Model) WithPatterns(p Patterns) Model {
-	m.patterns.cfg = p
-	m.patterns.wording = -1
-	return m
-}
-
 // patternsEnabled reports a session that can read its record for proposals.
 func (m Model) patternsEnabled() bool { return m.patterns.cfg.Read != nil }
 
@@ -268,7 +261,7 @@ func (m Model) finishPatternWording(msg patternWordedMsg) (tea.Model, tea.Cmd) {
 func (m Model) openProposalCard(p Proposal) (tea.Model, tea.Cmd) {
 	card := &proposalCard{p: p}
 	if p.Kind == storage.ProposalMemory {
-		if m.memory.Save == nil {
+		if m.wiring.Memory.Save == nil {
 			return m.closeWithNotice("durable memory is off in this session, so a memory cannot be kept")
 		}
 		card.ask = m.memorySelect(false)
@@ -396,7 +389,7 @@ func (m *Model) answerProposalMemory(c *proposalCard, msg tea.KeyPressMsg) (bool
 	case res.Index != 0 && res.Index != 1:
 		return true, overlayAction{close: true, note: m.neverProposal(c.p)}
 	}
-	scope := m.memory.ProjectScope
+	scope := m.wiring.Memory.ProjectScope
 	if res.Index == 1 {
 		scope = memory.GlobalScope
 	}
@@ -404,7 +397,7 @@ func (m *Model) answerProposalMemory(c *proposalCard, msg tea.KeyPressMsg) (bool
 	if res.Note != "" {
 		text += " (" + res.Note + ")"
 	}
-	saved, err := m.memory.Save(scope, c.p.MemoryKind, text)
+	saved, err := m.wiring.Memory.Save(scope, c.p.MemoryKind, text)
 	if err != nil {
 		return true, overlayAction{close: true, note: failed("patterns", "the memory was not kept: "+err.Error())}
 	}

@@ -622,7 +622,7 @@ func (m Model) todoDraftExisting() []string {
 	// backlog is: what a note says is the session's working state, and the
 	// reading needs to know it exists rather than what is in it.
 	// See docs/capabilities/chat.md#what-they-share.
-	for _, n := range m.notebook.List() {
+	for _, n := range m.wiring.Notebook.List() {
 		out = append(out, "note "+n.Title)
 	}
 	return out

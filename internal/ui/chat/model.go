@@ -17,24 +17,17 @@ import (
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/logs"
-	"github.com/rfizzle/shhh/internal/meter"
-	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/nudge"
-	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/plan"
-	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
-	"github.com/rfizzle/shhh/internal/scope"
-	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
-	"github.com/rfizzle/shhh/internal/web"
 )
 
 // sessionNameLayout is how a session that was never named is called in the
@@ -802,31 +795,15 @@ type Model struct {
 	// agent owns the loop state (message list, stream requests, tool
 	// dispatch, approval queue, iteration guard); the Model is one front-end
 	// driving it.
-	agent            *agent.Agent
-	db               *storage.DB
-	persistenceError string
-	copyFn           func(string) clipboard.Result
-	runFn            RunFunc
-	switchFn         func(string)
-	// newSession is the half of a session boundary that lives outside this
-	// model: the record closed and reopened, and the system prompt built
-	// again. Nil in a host that has neither, which is every front-end but
-	// the two commands — the conversation still starts over, on the prompt
-	// it already had.
-	newSession NewSession
-	// sessions backs /sessions: the sessions running on this machine, as the
-	// row `shhh sessions` prints. The reading is the store's and the report
-	// the CLI's, so the host hands both over as one call; nil where there is
-	// no store to read.
-	sessions func() string
+	agent *agent.Agent
+	// wiring is what the session was given (wiring.go). It is never
+	// written after construction.
+	wiring Wiring
+	copyFn func(string) clipboard.Result
 	// inbound is what other sessions on the machine send this one: where
 	// the lines arrive, what the settings say to do with them, and the ones
 	// held for a person to pass on or drop (inbound.go).
 	inbound inboundState
-	// workspaceBlock is the checkout read again, as the prompt section that
-	// states it. Nil in a host that cannot survey one, which leaves a
-	// rebuilt conversation on the reading it already carried.
-	workspaceBlock func() string
 
 	viewport viewport
 	input    textarea.Model
@@ -954,7 +931,6 @@ type Model struct {
 	// density ladder (/ui verbosity, read through density); tailRunFn is the tail-capable command runner, and
 	// runningCommand/runStart/runTail drive the live row while a command runs.
 	verbosity      verbosity
-	tailRunFn      TailFunc
 	runningCommand string
 	runStart       time.Time
 	runTail        *commandTail
@@ -962,30 +938,9 @@ type Model struct {
 	// What the session has stopped asking about, and the mode that frames it
 	// (policy.go).
 	policy policyState
-	// hostGrants takes the hosts this session may reach whenever they
-	// change; the fetcher is what it reaches (policy.go, WithHostGrants).
-	hostGrants func([]string)
-	// fetchWaiting answers how long a host's refusal is still being sat out,
-	// and abandonFetchWaits gives those waits up with the turn. Both are the
-	// fetcher's, installed once (activity.go, WithFetchWaits); nil is a
-	// session with no web tools, whose fetch rows simply read as running.
-	fetchWaiting      func(host string) (time.Duration, bool)
-	abandonFetchWaits func()
-	// scope is the session's working scope: the directory it was
-	// opened in plus whatever has been added to it since. It is a pointer
-	// because the runner closures that wrap contained commands read it off
-	// the UI goroutine, and because a grant made on a card has to be the same
-	// grant the sandbox sees on the next command.
-	scope *scope.Scope
 	// Auto mode's LLM permission classifier and the check in flight
 	// (sidejobs.go).
 	classifier classifierState
-	// The command card's explanation (run.go): the same cheap model, asked
-	// what the command in front of the reader does. nil is a session that
-	// makes no such offer, which is what the card checks before drawing the
-	// key. It is not the classifier's field because the two are configured
-	// apart and either can be absent while the other is there.
-	explainer *agent.Explainer
 	// The session summary and its writer (summary.go): a cheap model's
 	// periodic read of what the session is doing, drawn as the rail's
 	// SUMMARY block.
@@ -1073,75 +1028,36 @@ type Model struct {
 	// rail cell a surface was opened from, the lit pointer, and the notices
 	// a copy or a fold leaves (pointerstate.go).
 	pointer pointerState
-	// writeConfig persists one config key to the user's file. The CLI
-	// installs it; a session without one cannot make a setting stick and
-	// says so rather than pretending it did.
-	writeConfig ConfigWriter
 	// containment wraps assistant commands in OS-level process containment
 	// when a mechanism is available.
 	containment Containment
-	// evidence reduces bulky tool results and keeps the originals
-	// retrievable.
-	evidence Evidence
-	// mutationHook post-processes applied file-modification results before
-	// reduction — e.g. appending language-server diagnostics.
-	mutationHook MutationHook
-	// repeats is the session's repeat detector, which the CLI also wraps the
-	// tool executor with. The two tiers share one so that a call this model
-	// dispatches itself — an approved command, an applied edit — and one the
-	// executor ran are the same history (approval.go).
-	repeats *agent.RepeatDetector
 	// nudges is which built-in tools this turn's shell reads have already
 	// been pointed at, so an assistant command a reader answers carries the
 	// line naming it once per turn and not at every call (turn.go).
 	nudges *nudge.Turn
-	// gate backs the /gate quality-gate command.
-	gate Gate
 	// closeGate is the run a turn makes as it closes: whether this session
 	// honours the workspace's on_close suite, and where the current turn's
 	// run has got to (gate.go).
 	closeGate closeGateRun
-	// processes backs /ps and process-start approval gating.
-	processes Processes
 	// todo is the project's backlog on this session: what the host wired,
 	// the store as last read, the run in progress, and the cards and the
 	// readings that work on it (todostate.go).
-	todo todoState
-	// memory backs /memory and the remember-tool confirm flow;
-	// memoryAsk is the open memory prompt while a proposal awaits the user.
-	memory    Memory
+	todo      todoState
 	memoryAsk *components.NoteSelect
 	// question is the card the model's own question is being asked on, and
 	// nil whenever none is outstanding (question.go). It rides beside
 	// approval.request rather than inside it because the request is what the
 	// call is and the card is what the reader is looking at.
 	question *questionCard
-	// asks says the session registered the question tool, which is what a
-	// card is ever drawn for.
-	asks bool
 	// questionsAsked is how many questions this turn has put on the screen,
 	// against the budget one turn has (question.go). It is the turn's and
 	// resets when a turn opens rather than when one closes, so a question
 	// still outstanding when the next turn begins is charged to the turn that
 	// asked it and never to the turn that inherits it (notes.go).
 	questionsAsked int
-	// secrets backs /secret and the scrub on the agent.
-	secrets Secrets
-	// skills is the session's skill catalog, behind /skills, /skill and
-	// the /<skill-name> shortcut; nil when none loaded. skillsList renders
-	// the catalog for /skills — the same text `shhh skills` prints.
-	skills     *skill.Catalog
-	skillsList func(*skill.Catalog) string
 	// mcp is the session's MCP servers: which tools are theirs, which run
 	// as reads, and the /mcp listing.
 	mcp MCP
-	// toolSources is what the tools screen reads that the chat cannot read
-	// itself: the sources outside the built-in toolset, and the checkout's
-	// trust answer (tools.go).
-	toolSources ToolSources
-	// hooks are the person's own commands at the session's seams; nil is a
-	// session with none, which every seam is safe under (hooks.go).
-	hooks *hook.Runner
 	// compacting marks an in-flight /compact request: the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting bool
@@ -1164,18 +1080,16 @@ type Model struct {
 	// time the summary lands, and a record left standing would be the next
 	// compaction's figures. Nil whenever no compaction is running, which is
 	// nearly always.
-	compactRun *compactStart
-	// observer receives the session's content-free events; turnCount and
-	// toolDefTokens feed it and /stats.
-	observer      observe.Observer
+	compactRun    *compactStart
 	turnCount     int64
 	toolDefTokens int64
+	// toolDefs are the tool definitions the context surface itemises the
+	// tool category into, and toolDefTokens their total. They start as the
+	// wiring's and change when a server joins (mcp.go).
+	toolDefs []ToolTokens
 	// timing is what the session times for the record: where the turn's
 	// time goes, and the first frame drawn (observe.go).
-	timing timing
-	// subagents supervises spawned child agents; childAsks queues
-	// their approval requests routed into this session's approval surface.
-	subagents *subagent.Supervisor
+	timing    timing
 	childAsks []*subagent.Ask
 	// childBlast is each queued request's resolved blast-radius block, taken
 	// when the request arrives. It is stashed for the reason approval.blast is:
@@ -1213,7 +1127,6 @@ type Model struct {
 	// the selector family's (rewind.go).
 	checkpoints []checkpoint
 	sessionName string
-	gitSnapshot func() GitSnapshot
 	// Rich diff rendering: fullDiff is the viewer showing full
 	// screen, diffReturn where esc goes back to.
 	fullDiff   *components.DiffView
@@ -1286,19 +1199,11 @@ type Model struct {
 	pressed    armedPress
 	quitAsk    *components.Confirm
 	quitAskYes func(*Model) tea.Cmd
-	// workspace is the directory the session's relative paths belong to. It
-	// is stated once, for the reason sessionDir is (terminal.go), and it is
-	// also what lets a surface be exercised against a scratch directory
-	// without moving the process — a test that chdirs records the target as
-	// one of its package's cache inputs and makes the package uncacheable.
-	// Empty means the process's own working directory.
-	workspace string
 	// Per-turn changeset store: changes records every applied edit
 	// with the content on both sides, keyed by turn, and is what /diff
-	// renders; tracker answers whether git knew about a file when it was
-	// edited, and is nil outside a repository.
+	// renders. The tracker beside it, which answers whether git knew about a
+	// file when it was edited, is the wiring's, and nil outside a repository.
 	changes *changeset.Store
-	tracker *changeset.Tracker
 	// The open completion menu — slash commands, their arguments, and the @
 	// file mention (complete.go).
 	complete completionState
@@ -1341,8 +1246,8 @@ type Model struct {
 	// pasteLines and pasteColumns are the shape past which a paste is staged
 	// as one of them rather than typed into the draft
 	// (appearance.paste_lines / appearance.paste_columns). They hold the
-	// defaults rather than zero, so a session built without
-	// WithPasteThresholds still stages a log.
+	// defaults rather than zero, so a session wired without thresholds
+	// still stages a log.
 	pasteLines   int
 	pasteColumns int
 	// railCols is the inspector rail's column count when the session was
@@ -1350,7 +1255,6 @@ type Model struct {
 	// width ladder's to decide. Both go through railWidth, which holds a
 	// given number to the same limits it holds the ladder to (layout.go).
 	railCols int
-	title    string
 	// The terminal's own window: whether the tab is named after this session
 	// (appearance.window_title), the directory that name carries, and the
 	// brief red the tab wears after a turn breaks with the sequence that
@@ -1371,10 +1275,6 @@ type Model struct {
 	// classifier, the summary and every sub-agent, is the ledger's.
 	TotalTokensIn  int64
 	TotalTokensOut int64
-	// ledger is the session-wide spend, filled by the provider gate rather
-	// than by this model, so a feature added later counts without this file
-	// changing.
-	ledger *meter.Ledger
 	// Current-turn accounting for the inspector rail's THIS TURN and SPEND
 	// blocks: when the turn started, when it finished (zero while it
 	// runs), and what it has spent.
@@ -1411,35 +1311,20 @@ type Model struct {
 	// occupancy breakdown names separately.
 	vitals        vitals
 	projectTokens int64
-	prices        *pricing.Table
-	// endpointWindows answers what the endpoint serving the session's model
-	// says its context length is, for the runtimes that report one. Nil for
-	// every provider whose models the public table already describes.
-	endpointWindows func(string) (int64, bool)
-	modelName       string
-	updateNotice    string
-	keysNotice      string
-	// Reasoning effort (reasoning.go): the level this session is on,
-	// the hook that carries a change to the next request, and the persisted
-	// default with whatever outranks it — the model's three, for the setting
-	// that sits beside it on the rail.
-	effort          provider.Effort
-	effortFn        func(provider.Effort)
-	effortDefault   string
-	effortOutranked string
+	modelName     string
+	updateNotice  string
+	keysNotice    string
+	// Reasoning effort (reasoning.go): the level this session is on and the
+	// persisted default. The hook that carries a change to the next request,
+	// and whatever outranks the default, are the wiring's.
+	effort        provider.Effort
+	effortDefault string
 	// First contact: what the session already knew about the
 	// checkout when it opened, which suggestion the pointer is on, and
 	// whether the screen has been spent — a session that has said something
 	// to the model is not new again just because /clear emptied it.
 	start *StartInfo
-	// checkout is the survey a session with no start screen is headed by —
-	// a conversation's directory and branch, which the header states the way
-	// a coding session's start survey lets it (WithCheckout).
-	checkout *project.Info
 
-	// conversation marks `shhh chat`; notebook is its shared notebook.
-	conversation bool
-	notebook     *notebook.Store
 	// notesSeen is the highest note number the reader has had on the notes
 	// screen: what a turn closes by calling unread is what a delegate wrote
 	// past it (notes.go).
@@ -1449,10 +1334,7 @@ type Model struct {
 	// screen is opened. That is the reading rather than a gap: "unread" is a
 	// promise that the reader has had these notes in front of them, and the
 	// only surface that can make it is the one this session drew.
-	notesSeen int64
-	// personas is the profile-drafting flow's wiring; persona the one in
-	// progress, personaScreen the surface it runs on.
-	personas      Personas
+	notesSeen     int64
 	persona       *personaFlow
 	personaScreen *components.ProfileScreen
 	startFocus    int
@@ -1465,14 +1347,12 @@ type Model struct {
 	// scaffold is the project-scaffolding offer and the write behind it
 	// (scaffold.go).
 	scaffold Scaffold
-	// Recovery from a provider failure: the provider the session
-	// resolved to, the two hooks a failure row's keys need, and the masked
-	// key prompt [k] opens. A hook left nil is a key the row does not offer,
-	// which is why they are checked rather than assumed.
-	providerName     string
-	switchProviderFn func(string) error
-	replaceKeyFn     func(string) error
-	keyAsk           *components.SecretPrompt
+	// Recovery from a provider failure: the provider the session resolved
+	// to, and the masked key prompt [k] opens. The two hooks a failure row's
+	// keys need are the wiring's; a hook left nil is a key the row does not
+	// offer, which is why they are checked rather than assumed.
+	providerName string
+	keyAsk       *components.SecretPrompt
 	// retry is the bounded wait between a failed request and the next one
 	//; retrySeq fences its timer, so a cancelled or superseded wait
 	// is never advanced by a tick that outlived it.
@@ -1508,22 +1388,6 @@ type Model struct {
 	// it draws is what the session held when the reader asked, and the
 	// pointer, filters and tab the reader moved to are what the surface is.
 	screens heldScreens
-	// The tool definitions the context surface itemises the tool category
-	// into. They are the host's because which tools a session has depends
-	// on what the machine turned out to have (prompt.Toolbox).
-	toolDefs []ToolTokens
-	// The ledger the session's fetches record themselves in, which the
-	// sources screen draws.
-	sourceLedger *web.Ledger
-	// The readings only the command package can make, which the safety
-	// screen draws (safety.go).
-	safety Safety
-	// What a session may open the config screen with. It comes from the
-	// CLI — the chat package owns no config semantics, the way it owns none
-	// for the writer beside it (defaults.go) — and a session without an
-	// opener says /config cannot be reached rather than drawing a screen
-	// that cannot write.
-	openConfig ConfigOpener
 	// contextOpen is which of the surface's folds the reader had open when
 	// they last left it, by label. It outlives the screen because the screen
 	// is rebuilt from the accounting on every opening.
@@ -1592,15 +1456,15 @@ func (m Model) autosaveCmd() tea.Cmd { return m.saveCmd(nil) }
 // before the resume columns are, so the account it writes rides this save.
 // Nil is the ordinary autosave.
 func (m Model) saveCmd(revise func() string) tea.Cmd {
-	if m.db == nil || len(m.agent.Messages()) <= 1 {
+	if m.wiring.DB == nil || len(m.agent.Messages()) <= 1 {
 		return nil
 	}
-	db, name, title := m.db, m.sessionName, m.titles.title
+	db, name, title := m.wiring.DB, m.sessionName, m.titles.title
 	// What the next opening of this conversation starts from: the summary its
 	// last compaction wrote, and the commit the checkout is on now (reopen.go).
 	// The commit is asked for in the command rather than here, because this
 	// runs on the way to a frame and that one does not.
-	summary, dir := m.compactSummary, m.workspace
+	summary, dir := m.compactSummary, m.wiring.Workspace
 	// And the session's working list, so a conversation opened again shows
 	// the steps it was on (worksteps.go).
 	steps := m.workSteps.Encode()
@@ -1612,8 +1476,8 @@ func (m Model) saveCmd(revise func() string) tea.Cmd {
 	hold := m.holdMarker()
 	// The slot's name is what joins this session's metrics to its
 	// transcript, so the recorder learns it here, where the slot is decided.
-	if m.observer.Session != nil {
-		m.observer.Session(name)
+	if m.wiring.Observer.Session != nil {
+		m.wiring.Observer.Session(name)
 	}
 	// The reading this opening put in front of the conversation is left out
 	// of what the slot keeps: it is rebuilt from the checkout every time the
@@ -1700,8 +1564,8 @@ func (m *Model) noteSlotMove(msg autosaveMovedMsg) {
 	m.adoptSlot(msg.to)
 	// The slot is what joins this session's metrics to its transcript, and
 	// the one it was reported under now holds somebody else's conversation.
-	if m.observer.Session != nil {
-		m.observer.Session(msg.to)
+	if m.wiring.Observer.Session != nil {
+		m.wiring.Observer.Session(msg.to)
 	}
 	// A title read for the slot that was lost must not be written to it
 	// either: finishTitle stamps the slot the reading was taken for, which
@@ -1721,8 +1585,8 @@ func (m Model) quitCmd() tea.Cmd {
 	if save := m.saveCmd(m.closingAccount()); save != nil {
 		return tea.Sequence(save, tea.Quit)
 	}
-	if m.db != nil {
-		_ = m.db.ReleaseChatSlot(m.sessionName)
+	if m.wiring.DB != nil {
+		_ = m.wiring.DB.ReleaseChatSlot(m.sessionName)
 	}
 	return tea.Quit
 }
@@ -1754,9 +1618,11 @@ func (m Model) ExitBanner(resume string) components.ExitBanner {
 		Turns: m.conversationTurns(),
 		Spend: m.totalsLabel(m.sessionSpend()),
 	}
-	if m.db == nil {
+	if m.wiring.DB == nil {
 		b.Unsaved = true
-		b.PersistenceError = m.persistenceError
+		if err := m.wiring.PersistenceError; err != nil {
+			b.PersistenceError = err.Error()
+		}
 		return b
 	}
 	b.Session, b.Title, b.Resume = m.sessionName, m.titles.title, resume
@@ -1846,8 +1712,8 @@ func (m Model) Init() tea.Cmd {
 	if m.initialPrompt != "" {
 		cmds = append(cmds, func() tea.Msg { return initialPromptMsg{} })
 	}
-	if m.subagents != nil {
-		cmds = append(cmds, listenSubagents(m.subagents.Events()))
+	if m.wiring.Subagents != nil {
+		cmds = append(cmds, listenSubagents(m.wiring.Subagents.Events()))
 	}
 	if m.todo.runner.following {
 		cmds = append(cmds, todoLanesTick())
@@ -1970,8 +1836,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// redirect is read at the next round rather than behind the slowest
 	// child. Every path that queues or drains steering is a transition
 	// read here, which is why no one of them says so itself.
-	if mm.subagents != nil && len(mm.steering) != len(m.steering) {
-		mm.subagents.SessionSteering(len(mm.steering))
+	if mm.wiring.Subagents != nil && len(mm.steering) != len(m.steering) {
+		mm.wiring.Subagents.SessionSteering(len(mm.steering))
 	}
 	// And a line another session sent that is waiting on its card
 	// (inbound.go): whatever was in front of it — a decision, a surface, a
@@ -2211,7 +2077,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 // loadChatByName replaces the working conversation with a saved chat. Both
 // /load <name> and the /load picker come through here.
 func (m *Model) loadChatByName(name string) string {
-	msgs, err := m.db.LoadChat(name)
+	msgs, err := m.wiring.DB.LoadChat(name)
 	if err != nil {
 		return failed("load", err.Error())
 	}

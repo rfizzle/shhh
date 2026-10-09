@@ -140,7 +140,7 @@ func (m Model) paint(cur *cursorSink) string {
 // /model to find out. Attached to a child behind a takeover surface, the
 // breadcrumb stays where it has always been, right after the title.
 func (m Model) headerRow(width int) string {
-	title := m.title
+	title := m.wiring.Title
 	if title == "" {
 		title = defaultTitle
 	}
@@ -200,8 +200,8 @@ func (m Model) headerCheckout() (project.Info, bool) {
 	switch {
 	case m.start != nil:
 		return m.start.Project, true
-	case m.checkout != nil:
-		return *m.checkout, true
+	case m.wiring.Checkout != nil:
+		return *m.wiring.Checkout, true
 	}
 	return project.Info{}, false
 }

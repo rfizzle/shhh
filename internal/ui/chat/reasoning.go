@@ -39,29 +39,11 @@ import (
 var reasoningUsage = "usage: /reasoning <off|low|medium|high|xhigh|max> · /reasoning default [level] (" +
 	keys.Bracket(keys.Draft.Reasoning) + " cycles)"
 
-// WithReasoning installs the session's reasoning level and the hook that
-// makes a change reach the next request. fn may be nil — the level is then
-// display-only, which is what a session with no switchable provider has.
-func (m Model) WithReasoning(effort provider.Effort, fn func(provider.Effort)) Model {
-	m.effort = effort
-	m.effortFn = fn
-	return m
-}
-
-// WithReasoningDefault records the persisted level and whatever outranks it,
-// so `/reasoning default` can report both (the same rule, applied to the
-// second setting that has the same problem).
-func (m Model) WithReasoningDefault(level, outranked string) Model {
-	m.effortDefault = level
-	m.effortOutranked = outranked
-	return m
-}
-
 // cycleReasoning is ctrl+t: the next level, applied and stated. The statement
 // is a notice rather than a transcript entry — it is a setting, not something
 // that happened in the conversation, and the cockpit is already showing it.
 func (m Model) cycleReasoning() (Model, string) {
-	if m.effortFn == nil {
+	if m.wiring.SwitchEffort == nil {
 		return m, "This session cannot change the reasoning level."
 	}
 	// The walk covers the rungs this model has: a level Fit would only
@@ -74,8 +56,8 @@ func (m Model) cycleReasoning() (Model, string) {
 // applyEffort sets the level and pushes it at the session.
 func (m *Model) applyEffort(e provider.Effort) {
 	m.effort = e
-	if m.effortFn != nil {
-		m.effortFn(e)
+	if m.wiring.SwitchEffort != nil {
+		m.wiring.SwitchEffort(e)
 	}
 }
 
@@ -106,7 +88,7 @@ func (m *Model) reasoningCommand(parts []string) string {
 	if err != nil {
 		return failed("reasoning", err.Error())
 	}
-	if m.effortFn == nil {
+	if m.wiring.SwitchEffort == nil {
 		return "this session cannot change the reasoning level"
 	}
 	if e == m.effort {
@@ -125,8 +107,8 @@ func (m *Model) setReasoningDefault(rest []string) string {
 			current = "not set (new sessions start on " + provider.DefaultEffort.String() + ")"
 		}
 		note := "Default reasoning: " + current
-		if m.effortOutranked != "" {
-			note += fmt.Sprintf("\nOverruled: %s, which outranks the config file.", m.effortOutranked)
+		if m.wiring.EffortOutranked != "" {
+			note += fmt.Sprintf("\nOverruled: %s, which outranks the config file.", m.wiring.EffortOutranked)
 		}
 		return note + "\n" + reasoningUsage
 	}
@@ -137,10 +119,10 @@ func (m *Model) setReasoningDefault(rest []string) string {
 	if err != nil {
 		return failed("reasoning", err.Error())
 	}
-	if m.writeConfig == nil {
+	if m.wiring.ConfigWriter == nil {
 		return "This session cannot write the config file, so the default was not saved."
 	}
-	if err := m.writeConfig("provider.reasoning", e.String()); err != nil {
+	if err := m.wiring.ConfigWriter("provider.reasoning", e.String()); err != nil {
 		return failed("reasoning", "could not save the default: "+err.Error())
 	}
 	m.effortDefault = e.String()
@@ -150,8 +132,8 @@ func (m *Model) setReasoningDefault(rest []string) string {
 	} else {
 		note += fmt.Sprintf("; this session stays on %s (/reasoning %s changes it now).", m.effort, e)
 	}
-	if m.effortOutranked != "" {
-		note += fmt.Sprintf("\nIt will not take effect while %s — that outranks the config file.", m.effortOutranked)
+	if m.wiring.EffortOutranked != "" {
+		note += fmt.Sprintf("\nIt will not take effect while %s — that outranks the config file.", m.wiring.EffortOutranked)
 	}
 	return note
 }

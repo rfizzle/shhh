@@ -22,7 +22,7 @@ import (
 func copyModel(t *testing.T, caught *[]string) Model {
 	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.copyFn = func(text string) clipboard.Result {
@@ -146,7 +146,7 @@ func TestCopyRow_CaptionStandsUntilTheNextKey(t *testing.T) {
 // The failure lands in the transcript, where /copy's already goes.
 func TestCopyRow_FailureIsATranscriptRow(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.copyFn = func(string) clipboard.Result {
@@ -184,7 +184,7 @@ func TestReadingHint_CopyOfferFollowsTheRow(t *testing.T) {
 // PATH to do it.
 func TestCopyRow_TheTerminalTakesItWithNoToolOnPath(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.copyFn = func(string) clipboard.Result {

@@ -15,8 +15,10 @@ func vitalsModel(t *testing.T) Model {
 	table := pricing.NewTable(map[string]pricing.ModelPricing{
 		"gpt-4o": {InputCostPerToken: 0.00001, OutputCostPerToken: 0.00002, MaxInputTokens: 200000},
 	})
-	return New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithPricing(table, "gpt-4o")
+	return New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Prices:    table,
+		ModelName: "gpt-4o",
+	})
 }
 
 func TestVitals_RingEvictsOldestKeepingTotals(t *testing.T) {
@@ -87,7 +89,7 @@ func TestVitals_TurnAccumulatesEveryRound(t *testing.T) {
 }
 
 func TestVitals_UnpricedModelReportsNoCost(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	m.vitals.startTurn()
 	m.accumulateUsage(&provider.Usage{PromptTokens: 1000, CompletionTokens: 100})
 	if m.vitals.priced || m.vitals.totalCost != 0 {
@@ -104,9 +106,10 @@ func TestContextAccounting_CategoriesSumToReportedContext(t *testing.T) {
 		{Role: provider.RoleUser, Content: strings.Repeat("u", 2000)},
 		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
 		{Role: provider.RoleTool, Content: strings.Repeat("t", 8000), ToolCallID: "c1"},
-	}, mockStream).
-		WithToolTokenEstimate(500).
-		WithProjectContextTokens(300)
+	}, mockStream, Wiring{
+		ToolDefinitions:      []ToolTokens{{Name: "read_file", Tokens: 500}},
+		ProjectContextTokens: 300,
+	})
 
 	est := m.contextAccounting()
 	if est.Reported {
@@ -265,7 +268,8 @@ func TestVitals_SessionTotalHoldsAcrossTheTurnBoundary(t *testing.T) {
 func TestVitals_RailCountsChangeResolutionWithTheTurn(t *testing.T) {
 	// Unpriced, because the token pair stands on the rail only where no
 	// price is known (docs/interface/surfaces.md#the-input-frame).
-	m := statusModel(t).WithPricing(nil, "gpt-4o")
+	m := statusModel(t)
+	m.wiring.Prices, m.modelName = nil, "gpt-4o"
 	// A session whose only spend is this turn's, so the rail's figure is one
 	// the assertion can name.
 	m.vitals.reset()

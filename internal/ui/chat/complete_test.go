@@ -11,8 +11,14 @@ import (
 
 func readyModel(t *testing.T) Model {
 	t.Helper()
+	return readyModelWith(t, Wiring{})
+}
+
+// readyModelWith is readyModel built from w.
+func readyModelWith(t *testing.T, w Wiring) Model {
+	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, w)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	return updated.(Model)
 }
@@ -49,7 +55,7 @@ func TestCompletion_OpensOnSlashPrefix(t *testing.T) {
 // draft is not using unspent, so the menu showed two commands fewer than
 // there was room for.
 func TestCompletion_MenuBudgetFollowsTheBox(t *testing.T) {
-	base := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	base := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	updated, _ := base.Update(tea.WindowSizeMsg{Width: 100, Height: 18})
 	m := typeChars(t, updated.(Model), "/")
 	if !m.completionActive() {

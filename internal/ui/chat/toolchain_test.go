@@ -38,9 +38,10 @@ func toolchainFixture(ran *[]string) Toolchain {
 // bubblewrap in a checkout that declared a toolchain.
 func toolchainModel(t *testing.T, tc Toolchain) Model {
 	t.Helper()
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithStartScreen(startFixture()).
-		WithContainment(Containment{Status: "contained: bwrap (workspace profile)", Mechanism: "bwrap", Profile: "workspace", Network: true, Toolchain: tc})
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Start:       new(startFixture()),
+		Containment: Containment{Status: "contained: bwrap (workspace profile)", Mechanism: "bwrap", Profile: "workspace", Network: true, Toolchain: tc},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
 	return updated.(Model)
 }

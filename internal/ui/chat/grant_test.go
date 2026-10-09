@@ -181,8 +181,8 @@ func TestGrantList_ListedWithItsEndAndRevokedWithTheRest(t *testing.T) {
 func TestGrantList_ATurnGrantReachesAChildAndIsTakenBack(t *testing.T) {
 	executor := func(name string, args json.RawMessage) (string, error) { return "page text", nil }
 	var pushed []string
-	m := gatedModel(t, executor, fetchPreviews()).
-		WithHostGrants(func(hosts []string) { pushed = hosts })
+	m := gatedModel(t, executor, fetchPreviews())
+	m.wiring.HostGrants = func(hosts []string) { pushed = hosts }
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		fetchCall("call_1", "https://docs.python.org/3/library/json.html"),
@@ -282,13 +282,14 @@ func TestGrantList_EachGrantHasItsOwnReasonCode(t *testing.T) {
 		t.Run(tc.row, func(t *testing.T) {
 			var ran []string
 			var reasons []string
-			m := grantCardModel(t, &ran, "go build ./one").WithObserver(observe.Observer{
+			m := grantCardModel(t, &ran, "go build ./one")
+			m.wiring.Observer = observe.Observer{
 				Decision: func(_ observe.Pos, decision, reason string) {
 					if decision == observe.DecisionAllow {
 						reasons = append(reasons, reason)
 					}
 				},
-			})
+			}
 			grantVia(t, m, tc.row)
 			if len(reasons) != 1 || reasons[0] != tc.want {
 				t.Fatalf("the record says %v; want one %q", reasons, tc.want)
@@ -364,7 +365,8 @@ func TestGrantList_ARedundantGrantIsNotRecordedTwice(t *testing.T) {
 // nothing pressed at a card reaches past it.
 func TestGrantList_NoLengthOutranksTheDenyList(t *testing.T) {
 	var ran []string
-	m := grantCardModel(t, &ran, "go build ./one").WithCommandDenylist([]string{"go build"})
+	m := grantCardModel(t, &ran, "go build ./one")
+	m.policy.denylist = []string{"go build"}
 	m, _ = grantVia(t, m, "this turn only")
 	if !m.policy.turn.Any() {
 		t.Fatal("the row should have recorded the grant it printed")

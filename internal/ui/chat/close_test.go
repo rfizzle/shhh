@@ -24,7 +24,13 @@ import (
 // turnModel is a model sitting at the input, able to apply an approved write.
 func turnModel(t *testing.T) Model {
 	t.Helper()
-	m := gatedModel(t, nil, nil)
+	return turnModelWith(t, Wiring{})
+}
+
+// turnModelWith is turnModel built from w.
+func turnModelWith(t *testing.T, w Wiring) Model {
+	t.Helper()
+	m := gatedModelWith(t, nil, nil, w)
 	m.state = stateInput
 	return m
 }
@@ -100,7 +106,7 @@ func TestTurnClose_ACommandThatWroteNothingSaysSo(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			m := sendText(t, readyModel(t).WithMCP(remote), "tidy the build")
+			m := sendText(t, readyModelWith(t, Wiring{MCP: remote}), "tidy the build")
 			m.appendEntry(tc.row)
 			m = finishTurn(t, m)
 
@@ -456,40 +462,41 @@ func TestTurnClose_IsAnOrdinaryTranscriptEntry(t *testing.T) {
 // they typed /notes.
 func TestTurnClose_TheCloseNamesWhatTheChildrenWroteDown(t *testing.T) {
 	m := turnModel(t)
-	m = m.WithNotebook(notebook.New(nil))
+	m.wiring.Notebook = notebook.New(nil)
+	m.bindNotebook()
 	m.turnCount = 4
-	m.notebook.SetTurn(4)
+	m.wiring.Notebook.SetTurn(4)
 
 	if got := m.turnNotesClause(); got != "" {
 		t.Fatalf("a turn nobody wrote in reports %q", got)
 	}
 	// The session's own notes are not a fan-out's findings: the rows that
 	// wrote them are already in front of the person.
-	_, _, _ = m.notebook.Write(notebook.Orchestrator, "Mine", "what I worked out")
+	_, _, _ = m.wiring.Notebook.Write(notebook.Orchestrator, "Mine", "what I worked out")
 	if got := m.turnNotesClause(); got != "" {
 		t.Fatalf("the orchestrator's own note was counted as a child's: %q", got)
 	}
 
-	_, _, _ = m.notebook.Write("reviewer-1", "The gate reads the deny list", "policy.Decide")
-	_, _, _ = m.notebook.Write("reviewer-1", "And the write tier", "mode.go")
+	_, _, _ = m.wiring.Notebook.Write("reviewer-1", "The gate reads the deny list", "policy.Decide")
+	_, _, _ = m.wiring.Notebook.Write("reviewer-1", "And the write tier", "mode.go")
 	if got := m.turnNotesClause(); got != "2 notes from reviewer-1" {
 		t.Fatalf("the close said %q", got)
 	}
-	_, _, _ = m.notebook.Write("researcher-1", "Where the goldens live", "testdata/golden")
+	_, _, _ = m.wiring.Notebook.Write("researcher-1", "Where the goldens live", "testdata/golden")
 	if got := m.turnNotesClause(); got != "3 notes from reviewer-1, researcher-1" {
 		t.Fatalf("the close said %q", got)
 	}
 
 	// A later turn reports its own fan-out, not the one before it.
 	m.turnCount = 5
-	m.notebook.SetTurn(5)
+	m.wiring.Notebook.SetTurn(5)
 	if got := m.turnNotesClause(); got != "" {
 		t.Fatalf("turn 5 claimed turn 4's notes: %q", got)
 	}
 	// And what is still waiting on the notes screen rides beside the count,
 	// because the notebook has not been opened in this session: turn 4's
 	// three are unread as well as this one (notes.go).
-	_, _, _ = m.notebook.Write("writer-1", "The patch is in loop.go", "one hunk")
+	_, _, _ = m.wiring.Notebook.Write("writer-1", "The patch is in loop.go", "one hunk")
 	if got := m.turnNotesClause(); got != "1 note from writer-1 · 4 unread" {
 		t.Fatalf("the close said %q", got)
 	}
@@ -514,8 +521,8 @@ func TestTurnClose_TheCloseNamesWhatTheChildrenWroteDown(t *testing.T) {
 // The turn a note carries is the turn the surface was on when it was
 // written, and the notebook is told at the same moment the counter moves.
 func TestTurnClose_TheNotebookIsToldWhichTurnIsOpen(t *testing.T) {
-	m := sendText(t, readyModel(t).WithNotebook(notebook.New(nil)), "have a look")
-	n, _, err := m.notebook.Write("researcher-1", "Found it", "in loop.go")
+	m := sendText(t, readyModelWith(t, Wiring{Notebook: notebook.New(nil)}), "have a look")
+	n, _, err := m.wiring.Notebook.Write("researcher-1", "Found it", "in loop.go")
 	if err != nil {
 		t.Fatal(err)
 	}

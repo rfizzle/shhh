@@ -79,7 +79,7 @@ func TestExtractCodeBlocks_UnclosedFence(t *testing.T) {
 // it. The size matters: /copy answers in the transcript, which is rendered.
 func copyCommandModel(t *testing.T, msgs []provider.Message, copied *string) Model {
 	t.Helper()
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.copyFn = func(s string) clipboard.Result {
@@ -143,7 +143,7 @@ func TestSlashCopy_TheTerminalTakesItWithNoToolOnPath(t *testing.T) {
 		{Role: provider.RoleUser, Content: "how do I list files?"},
 		{Role: provider.RoleAssistant, Content: "ls -la"},
 	}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.copyFn = func(string) clipboard.Result {
@@ -173,7 +173,7 @@ func TestSlashCopy_NoClipboardInThisSession(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleAssistant, Content: "ls -la"},
 	}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.copyFn = nil

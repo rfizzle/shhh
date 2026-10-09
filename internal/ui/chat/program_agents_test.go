@@ -66,11 +66,13 @@ func agentSession(t *testing.T, root string, nb *notebook.Store, kids children, 
 	t.Cleanup(sup.Close)
 	m := readingSession(root, turns...)
 	if nb != nil {
-		m = m.WithNotebook(nb)
+		m.wiring.Notebook = nb
+		m.bindNotebook()
 	}
-	m = m.WithToolExecutor(sup.WrapExecutor("", subagent.RootedExecutor(root, tools.Execute))).
-		WithGatedTools(map[string]GatedPreviewFunc{subagent.SpawnToolName: spawnPreview}).
-		WithSubagents(sup)
+	m.agent.SetExecutor(sup.WrapExecutor("", subagent.RootedExecutor(root, tools.Execute)))
+	m.gatedTools = map[string]GatedPreviewFunc{subagent.SpawnToolName: spawnPreview}
+	m.wiring.Subagents = sup
+	m.adoptChildren()
 	return m, sup
 }
 
@@ -123,17 +125,17 @@ func TestProgram_ANamedColleagueIsAHintAndItsSpawnIsCarded(t *testing.T) {
 	sup.AddProfile(subagent.Profile{Name: "security-reviewer", Description: "reads a change for what it exposes"})
 	// The card is the one every spawn gets; only the roles it is judged
 	// against are the supervisor's, which is where the colleague lives.
-	m = m.WithGatedTools(map[string]GatedPreviewFunc{subagent.SpawnToolName: func(raw json.RawMessage) (GatedPreview, error) {
+	m.gatedTools = map[string]GatedPreviewFunc{subagent.SpawnToolName: func(raw json.RawMessage) (GatedPreview, error) {
 		plan, err := subagent.SpawnPlan(sup.Profiles(), raw)
 		if err != nil {
 			return GatedPreview{}, err
 		}
 		return GatedPreview{Action: "spawn", Summary: "start a " + string(plan.Role), Title: "spawn " + plan.Name,
 			Spawn: &components.SpawnRow{Role: string(plan.Role), Name: plan.Name, About: plan.About, Task: plan.Task}}, nil
-	}})
-	m = m.WithPersonas(Personas{Kind: persona.KindChat, Roles: func() []SpawnableRole {
+	}}
+	m.wiring.Personas = Personas{Kind: persona.KindChat, Roles: func() []SpawnableRole {
 		return []SpawnableRole{{Name: "security-reviewer", Description: "reads a change for what it exposes"}}
-	}})
+	}}
 	tm := runProgramAt(t, m, 120, 44)
 
 	tm.Type("ask @sec")
@@ -508,7 +510,7 @@ func TestProgram_ASpawnCheckDoesNotStallTheScreen(t *testing.T) {
 			listing := make(chan struct{})
 			listed := make(chan struct{}, 2)
 			var asked atomic.Int32
-			m = m.WithGatedChecks(map[string]GatedCheckFunc{subagent.SpawnToolName: func(json.RawMessage) error {
+			m.approval.checks = map[string]GatedCheckFunc{subagent.SpawnToolName: func(json.RawMessage) error {
 				asked.Add(1)
 				listed <- struct{}{}
 				<-listing
@@ -516,7 +518,7 @@ func TestProgram_ASpawnCheckDoesNotStallTheScreen(t *testing.T) {
 					return fmt.Errorf("model %q is not one this session can run", "m-typo")
 				}
 				return nil
-			}})
+			}}
 			tm := runProgramAt(t, m, 120, 44)
 
 			send(tm, "survey the round accounting")

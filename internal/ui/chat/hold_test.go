@@ -255,7 +255,8 @@ func TestHold_ARequestTheTurnOutranGoesWithIt(t *testing.T) {
 // reader, which is what the hold was for, and the row's offers are the way
 // back that says what it managed.
 func TestHold_TheCeilingAnswersAHoldAskedOnTheWayToIt(t *testing.T) {
-	m := turnModel(t).WithMaxToolRounds(1)
+	m := turnModel(t)
+	m.agent.SetMaxRounds(1)
 	m = sendText(t, m, "fix the round accounting")
 	m, _ = pressKey(t, m, ctrlP)
 	m = applyWrite(t, m, filepath.Join(t.TempDir(), "loop.go"), "package agent\n", "y")
@@ -310,7 +311,9 @@ func TestHold_AParkedChildNamesTheReleaseOnce(t *testing.T) {
 		return ok && st.Held
 	})
 	release := keys.Bracket(keys.Draft.Pause)
-	m := frameModel(t, 144, screenHeight).WithSubagents(sup)
+	m := frameModel(t, 144, screenHeight)
+	m.wiring.Subagents = sup
+	m.adoptChildren()
 	m.hold = &turnHold{turn: m.turnCount}
 
 	if view := stripANSI(m.View().Content); !strings.Contains(view, release) {

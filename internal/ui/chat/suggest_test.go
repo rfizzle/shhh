@@ -43,13 +43,15 @@ func suggestingModel(t *testing.T, p provider.Provider, on bool) (Model, *[]stri
 	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	var signals []string
-	m := New(msgs, multiTokenStream("hi there")).
-		WithSuggester(agent.NewSuggester(p, agent.SuggestConfig{Model: "fast"}), on).
-		WithObserver(observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+	m := New(msgs, multiTokenStream("hi there"), Wiring{
+		Suggester:   agent.NewSuggester(p, agent.SuggestConfig{Model: "fast"}),
+		Suggestions: on,
+		Observer: observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
 			if code == observe.SignalSuggestion {
 				signals = append(signals, reason)
 			}
-		}})
+		}},
+	})
 	// Wide enough for the frame's key bar, which is where the arrow is
 	// offered.
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 30})

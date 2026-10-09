@@ -39,25 +39,16 @@ const (
 	searchGroup = "searches"
 )
 
-// WithSources attaches the session's sources ledger. The model owns the
-// session slot's name, so it is the one that binds the ledger to it — here,
-// and again wherever the name changes.
-func (m Model) WithSources(l *web.Ledger) Model {
-	m.sourceLedger = l
-	m.bindSources()
-	return m
-}
-
 // bindSources points the ledger at the current session slot and tells it
 // which turn is open. A bind that fails leaves the rows in memory, which is
 // the session's working state either way; only the resume would have lost
 // them.
 func (m *Model) bindSources() {
-	if m.sourceLedger == nil {
+	if m.wiring.Sources == nil {
 		return
 	}
-	_ = m.sourceLedger.Bind(m.sessionName)
-	m.sourceLedger.SetTurn(m.turnCount)
+	_ = m.wiring.Sources.Bind(m.sessionName)
+	m.wiring.Sources.SetTurn(m.turnCount)
 }
 
 // openSources puts the screen up. It is built once per opening, like the
@@ -65,7 +56,7 @@ func (m *Model) bindSources() {
 // reader asked, and a screen that grew a row under them mid-read would be
 // answering a question they had stopped asking.
 func (m Model) openSources() (tea.Model, tea.Cmd) {
-	if m.sourceLedger == nil {
+	if m.wiring.Sources == nil {
 		return m.systemNotice("this session has no web tools, so nothing has been read")
 	}
 	screen := m.sourcesScreenData()
@@ -156,7 +147,7 @@ func (m Model) sourceRow(id string) *components.SourcesRow {
 // row means — that a status of zero is a fetch that never got an answer,
 // that a search's count is not an HTTP status — is a reading of the session.
 func (m Model) sourcesScreenData() components.SourcesScreen {
-	rows := m.sourceLedger.List()
+	rows := m.wiring.Sources.List()
 	out := make([]components.SourcesRow, 0, len(rows))
 	for _, s := range rows {
 		out = append(out, m.sourcesRow(s))
@@ -224,10 +215,10 @@ func (m Model) evidenceHead(id string) []string {
 // readEvidence asks the store for the opening of an entry; false is a
 // session with no store, or an entry it no longer holds.
 func (m Model) readEvidence(id string, limit int) (string, bool) {
-	if m.evidence.Read == nil || id == "" {
+	if m.wiring.Evidence.Read == nil || id == "" {
 		return "", false
 	}
-	return m.evidence.Read(id, limit)
+	return m.wiring.Evidence.Read(id, limit)
 }
 
 // sourcesSubject is what the header says the screen is over: the pages, the

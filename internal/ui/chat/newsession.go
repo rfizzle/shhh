@@ -93,8 +93,8 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	// system prompt is built again from the checkout as it stands rather than
 	// as it stood when the process started.
 	var start SessionStart
-	if m.newSession != nil {
-		start = m.newSession()
+	if m.wiring.NewSession != nil {
+		start = m.wiring.NewSession()
 	}
 	m.setSystemPrompt(start.Prompt)
 	if start.Prompt != "" {
@@ -113,7 +113,7 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	m.vitals.reset()
 	// The session's spend starts over with its accounting, or the rail would
 	// keep quoting a bill for a conversation that no longer exists.
-	m.ledger.Reset()
+	m.wiring.Ledger.Reset()
 	m.TotalTokensIn, m.TotalTokensOut = 0, 0
 	// And the counters are put back to their zero value rather than aimed at
 	// it: a climb is measured movement, and there is nothing here for a
@@ -176,8 +176,8 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	// The new row is linked to the new slot now rather than at the first
 	// save, so the two halves of the boundary — a record closed and a
 	// conversation started — are one act in the store as well.
-	if m.observer.Session != nil {
-		m.observer.Session(m.sessionName)
+	if m.wiring.Observer.Session != nil {
+		m.wiring.Observer.Session(m.sessionName)
 	}
 
 	notes = []entry{{kind: entrySystem, notice: newSessionRow(left, start.Resume)}}

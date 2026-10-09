@@ -122,7 +122,8 @@ func TestMention_ImageIsStaged(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "shot.png"), png, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	m := mentionModel(t).WithWorkspace(dir)
+	m := mentionModel(t)
+	m.wiring.Workspace = dir
 	m.recentFiles = func() []project.RecentFile {
 		return []project.RecentFile{{Path: "shot.png", Mod: time.Now()}}
 	}
@@ -190,7 +191,7 @@ func TestMention_WalkRunsOncePerDraft(t *testing.T) {
 func colleagueModel(t *testing.T, kind persona.Kind) Model {
 	t.Helper()
 	m := mentionModel(t)
-	m.personas = Personas{Kind: kind, Roles: func() []SpawnableRole {
+	m.wiring.Personas = Personas{Kind: kind, Roles: func() []SpawnableRole {
 		return []SpawnableRole{
 			{Name: "researcher", Description: "reads the web and the checkout"},
 			{Name: "security-reviewer", Description: "reads a change for what it exposes"},

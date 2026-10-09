@@ -15,7 +15,7 @@ import (
 // calls — the step blocks an afternoon leaves behind — sized in entries.
 func gutterTestModel(t testing.TB, rows int) Model {
 	t.Helper()
-	updated, _ := New(nil, mockStream).Update(tea.WindowSizeMsg{Width: 130, Height: 40})
+	updated, _ := New(nil, mockStream, Wiring{}).Update(tea.WindowSizeMsg{Width: 130, Height: 40})
 	m := updated.(Model)
 	for i := 0; i < rows/4; i++ {
 		// A one-line announcement and the calls under it are a step block;

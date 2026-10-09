@@ -128,8 +128,8 @@ func (m Model) cancelTurnNow() (tea.Model, tea.Cmd) {
 func (m *Model) quitNow() tea.Cmd {
 	m.quitting = true
 	m.cancelSubagents()
-	if m.abandonFetchWaits != nil {
-		m.abandonFetchWaits()
+	if m.wiring.AbandonFetchWaits != nil {
+		m.wiring.AbandonFetchWaits()
 	}
 	m.abandonMCPCalls()
 	if m.cancel != nil {
@@ -244,7 +244,7 @@ func (m Model) openEndConfirm(prompt string, yes func(*Model) tea.Cmd) (tea.Mode
 	kept := "nothing is saved"
 	// The saved/not-saved split is autosaveCmd's condition, so the confirm
 	// cannot promise a save the act will not take.
-	if m.db != nil && len(m.agent.Messages()) > 1 {
+	if m.wiring.DB != nil && len(m.agent.Messages()) > 1 {
 		kept = "the conversation is autosaved to " + m.sessionName
 	}
 	m.quitAsk = &components.Confirm{Prompt: prompt + lost + "; " + kept + ".", KeyList: true}

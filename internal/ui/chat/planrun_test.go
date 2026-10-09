@@ -452,7 +452,7 @@ func TestPlanScreen_OpensWhileTheTurnRuns(t *testing.T) {
 func TestPlanRun_TheFirstDepartureRaisesOneRow(t *testing.T) {
 	m := runningPlanModel(t, 100)
 	var got []string
-	m.observer = observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+	m.wiring.Observer = observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
 		got = append(got, code+"/"+reason)
 	}}
 

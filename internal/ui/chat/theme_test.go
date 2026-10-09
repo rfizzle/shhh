@@ -182,7 +182,7 @@ func TestUICommand_ThemeSwapsTheTableAndSaysSo(t *testing.T) {
 	components.SetMono(false)
 	m := readyModel(t)
 	var written map[string]string
-	m.writeConfig = func(key, value string) error {
+	m.wiring.ConfigWriter = func(key, value string) error {
 		if written == nil {
 			written = map[string]string{}
 		}
@@ -219,7 +219,7 @@ func TestUICommand_GroundIsOfferedAndSessionOnly(t *testing.T) {
 	themeRestore(t)
 	components.SetMono(false)
 	m := readyModel(t)
-	m.writeConfig = func(key, value string) error {
+	m.wiring.ConfigWriter = func(key, value string) error {
 		t.Errorf("the screen ground is a session switch and must not be written to the config file (%s=%s)", key, value)
 		return nil
 	}

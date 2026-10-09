@@ -94,7 +94,8 @@ func TestTurnsScreen_AResumedTurnIsItsFilesAndNoFigures(t *testing.T) {
 // the figures that row kept — the rounds, the wall time and the cost — and
 // never as a turn whose figures were not kept.
 func TestTurns_APausedTurnKeepsItsFigures(t *testing.T) {
-	m := turnModel(t).WithMaxToolRounds(1)
+	m := turnModel(t)
+	m.agent.SetMaxRounds(1)
 	m = sendText(t, m, "fix the round accounting")
 	m.accumulateUsage(&provider.Usage{PromptTokens: 1200, CompletionTokens: 80})
 	spend := m.totalsLabel(m.turnSpend())

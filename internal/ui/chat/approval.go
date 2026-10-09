@@ -210,34 +210,12 @@ type approvedToolDoneMsg struct {
 // waits are bounded).
 type MutationHook func(name string, args json.RawMessage, result string) string
 
-// WithMutationHook installs the post-mutation result hook.
-func (m Model) WithMutationHook(hook MutationHook) Model {
-	m.mutationHook = hook
-	return m
-}
-
-// WithGatedTools registers tools that must be approved by the user before
-// they run through the tool executor; each entry builds the confirm-prompt
-// preview for its tool. Gated tools never run via the auto-run path.
-func (m Model) WithGatedTools(previews map[string]GatedPreviewFunc) Model {
-	m.gatedTools = previews
-	return m
-}
-
 // GatedCheckFunc is a gated tool's refusal ahead of its card: it answers for
 // a call's arguments with an error where no answer the person gives could make
 // the call good. It may wait on the network, so the queue runs it off the
 // screen's goroutine and builds the card from what comes back
 // (docs/capabilities/subagents.md#the-model-is-offered-the-models-it-can-name).
 type GatedCheckFunc func(args json.RawMessage) error
-
-// WithGatedChecks registers the refusals that stand in front of a gated
-// tool's preview. The preview stays a pure reading of the arguments; the
-// check is what may be slow.
-func (m Model) WithGatedChecks(checks map[string]GatedCheckFunc) Model {
-	m.approval.checks = checks
-	return m
-}
 
 // answers reports whether this session has an answer for a call to name: the
 // runner where it has one, the editor's diff card for the two file tools
@@ -249,7 +227,7 @@ func (m Model) WithGatedChecks(checks map[string]GatedCheckFunc) Model {
 // See docs/capabilities/approvals-and-safety.md#one-classifier-names-a-calls-tier.
 func (m Model) answers(name string) bool {
 	switch {
-	case name == tools.ExecCommandName && m.runFn != nil,
+	case name == tools.ExecCommandName && m.wiring.Runner != nil,
 		tools.IsMutating(name),
 		// remember is always gated: agent-proposed memories persist only
 		// after explicit user confirmation.
@@ -259,8 +237,8 @@ func (m Model) answers(name string) bool {
 		// (question.go). Only where the session handed the model the tool:
 		// a call to a tool this run does not have is answered as one and
 		// never put on a card.
-		name == ask.ToolName && m.asks,
-		m.processes.Manage != nil && name == process.ToolName:
+		name == ask.ToolName && m.wiring.Ask,
+		m.wiring.Processes.Manage != nil && name == process.ToolName:
 		return true
 	}
 	_, ok := m.gatedTools[name]
@@ -273,7 +251,7 @@ func (m Model) answers(name string) bool {
 // it where the session manages processes.
 func (m Model) holds() agent.Answers {
 	h := agent.Answers{Has: m.answers}
-	if m.processes.Manage != nil {
+	if m.wiring.Processes.Manage != nil {
 		h.Command = process.CommandOf
 	}
 	return h
@@ -323,7 +301,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 
 	// A process start is approved like a command: the card shows the
 	// command text, and mode policy treats it as one (allowlist, safety).
-	if m.processes.Manage != nil && tc.Name == process.ToolName {
+	if m.wiring.Processes.Manage != nil && tc.Name == process.ToolName {
 		if callErr != nil {
 			return nil, callErr
 		}
@@ -527,7 +505,7 @@ func (m Model) admitApproval(tc provider.ToolCall) (tea.Model, tea.Cmd) {
 	// They run off the UI goroutine like the classifier and for the same
 	// reason: a hook is a command, and a card that froze while one ran would
 	// be the session stopping for something nobody is watching.
-	if m.hooks.Has(hook.PreTool, req.call.Name) {
+	if m.wiring.Hooks.Has(hook.PreTool, req.call.Name) {
 		return m.startPreToolHook(req)
 	}
 	return m.armApprovalDecision(req)
@@ -672,7 +650,7 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 func (m Model) startPreToolHook(req *approvalRequest) (tea.Model, tea.Cmd) {
 	m.setTurnState(stateRunningCmd)
 	m.syncViewport()
-	hooks := m.hooks
+	hooks := m.wiring.Hooks
 	runID := m.agent.RunID()
 	at := m.hookPos()
 	call := hook.Call{ID: req.call.ID, Name: req.call.Name, Arguments: req.call.Arguments}
@@ -858,7 +836,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 // reader typed: the row that says so is on their screen and not in the
 // conversation, and the model reads only the result (repeat.go).
 func (m *Model) refusedResult(tc provider.ToolCall, content string) string {
-	out := m.repeats.Notice(tc.Name, json.RawMessage(tc.Arguments), content)
+	out := m.wiring.Repeats.Notice(tc.Name, json.RawMessage(tc.Arguments), content)
 	if agent.IsRepeatNotice(out) {
 		m.signal(observe.SignalRepeat, tc.Name)
 	}
@@ -1106,9 +1084,9 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	// call runs on another one and a cancel pressed meanwhile appends to the
 	// conversation it would be reading
 	// (docs/capabilities/subagents.md#what-they-share).
-	if call.Name == subagent.SpawnToolName && m.subagents != nil {
+	if call.Name == subagent.SpawnToolName && m.wiring.Subagents != nil {
 		turns := append([]provider.Message(nil), a.Messages()...)
-		m.subagents.SetConversation(func() []provider.Message { return turns })
+		m.wiring.Subagents.SetConversation(func() []provider.Message { return turns })
 	}
 	// Built-in mutating tools run through their own dispatcher; the session
 	// executor (the auto-run read-only path) never learns them. A registered
@@ -1117,14 +1095,14 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	// dispatch reduces here.
 	_, registered := m.gatedTools[call.Name]
 	mutating := !registered && tools.IsMutating(call.Name)
-	reduce := m.evidence.Reduce
-	mutated := m.mutationHook
+	reduce := m.wiring.Evidence.Reduce
+	mutated := m.wiring.MutationHook
 	// A registered gated tool goes back through the session executor, which
 	// the detector already wraps, so only the direct mutating dispatch is
 	// noted here — the same reason the reduction is applied only here.
 	// It is applied last, where the executor's wrapper sits: outside the
 	// reduction, so the notice leads the result the model is really handed.
-	repeats := m.repeats
+	repeats := m.wiring.Repeats
 	if !mutating {
 		repeats = nil
 	}
@@ -1184,7 +1162,7 @@ func (m Model) changeRecorder() changeRecording {
 	}
 	return changeRecording{
 		store:   m.changes,
-		tracker: m.tracker,
+		tracker: m.wiring.Tracker,
 		turn:    m.turnCount,
 		path:    req.path,
 		origin:  origin,

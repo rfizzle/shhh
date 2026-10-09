@@ -161,7 +161,8 @@ func TestPalette_SessionsAndFilesAreSearchedToo(t *testing.T) {
 	store.Add(4, changeset.Record{
 		Path: "internal/ui/chat/palette.go", After: "package chat\n", AfterExists: true,
 	})
-	m = m.WithChangeset(store, nil)
+	m.changes, m.wiring.Tracker = store, nil
+	m.bindSlot()
 
 	m = openPaletteWith(t, m, "palette")
 	labels := paletteLabels(m)
@@ -460,7 +461,10 @@ func TestPalette_SavedChatsAreASessionGroup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	m := openPaletteWith(t, paletteModel(t).WithDB(db), "loop-ref")
+	p := paletteModel(t)
+	p.wiring.DB = db
+	p.bindStores()
+	m := openPaletteWith(t, p, "loop-ref")
 
 	joined := strings.Join(paletteLabels(m), "\n")
 	if !strings.Contains(joined, "SESSIONS") || !strings.Contains(joined, "loop-refactor") {

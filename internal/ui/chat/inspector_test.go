@@ -27,8 +27,10 @@ func inspectorModel(t *testing.T, width, height int) Model {
 	table := pricing.NewTable(map[string]pricing.ModelPricing{
 		"gpt-4o": {InputCostPerToken: 0.00001, OutputCostPerToken: 0.00001, MaxInputTokens: 200000},
 	})
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithPricing(table, "gpt-4o")
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Prices:    table,
+		ModelName: "gpt-4o",
+	})
 	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
 	m.turnStarted = time.Now().Add(-64 * time.Second)
 	m.turnEnded = time.Now()
@@ -252,7 +254,7 @@ func TestInspectorData_BlocksFromTheSession(t *testing.T) {
 }
 
 func TestInspectorData_OmitsBlocksWithNothingToSay(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 144, Height: 40})
 	fresh := updated.(Model)
 	rail := fresh.inspectorData()
@@ -384,7 +386,7 @@ func TestUICommand_RailBelowTheRungSaysWhyNothingMoved(t *testing.T) {
 func TestInspector_AgentsMapsEverySession(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).WithSubagents(sup)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Subagents: sup})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 144, Height: 40})
 	m = updated.(Model)
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
@@ -419,7 +421,7 @@ func TestInspector_AgentsMapsEverySession(t *testing.T) {
 func TestInspector_RailStaysMarkedWhileAttached(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).WithSubagents(sup)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Subagents: sup})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 144, Height: 40})
 	m = updated.(Model)
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
@@ -897,7 +899,7 @@ func alertMemoModel(t *testing.T) Model {
 		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
 		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
 		{Role: provider.RoleUser, Content: "q2"},
-	}, mockStream)
+	}, mockStream, Wiring{})
 	m.turnCount = 1
 	m.appendEntry(entry{kind: entryCommand, text: "go test ./internal/agent/...", exitCode: 1})
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolResult: big})

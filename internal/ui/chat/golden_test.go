@@ -615,7 +615,8 @@ func TestGolden_ModeWord(t *testing.T) {
 	captureGolden(t, "mode-word", "the mode segment in every mode", goldenWidths, func(width int) []golden.Panel {
 		var panels []golden.Panel
 		for _, mode := range agent.DefaultCycle() {
-			m := goldenModel(t, width).WithApprovalMode(mode, nil)
+			m := goldenModel(t, width)
+			m.policy.mode = mode
 			m.invalidateRenderCache()
 			panels = append(panels, golden.Panel{Label: "mode · " + mode.String(), View: promptSurface(m)})
 		}
@@ -634,7 +635,8 @@ func TestGolden_ModeWord(t *testing.T) {
 func TestGolden_ModePicker(t *testing.T) {
 	captureGolden(t, "mode-picker", "the permission-mode picker", goldenWidths, func(width int) []golden.Panel {
 		open := func(mode agent.Mode) string {
-			m := frameModel(t, width, 40).WithApprovalMode(mode, nil)
+			m := frameModel(t, width, 40)
+			m.policy.mode = mode
 			opened, _ := m.openModePick()
 			return strings.Join(opened.(Model).pickerLines(), "\n")
 		}
@@ -653,10 +655,10 @@ func TestGolden_ModePicker(t *testing.T) {
 func TestGolden_ModelPicker(t *testing.T) {
 	captureGolden(t, "model-picker", "the /model picker's title", goldenWidths, func(width int) []golden.Panel {
 		open := func(current, by string) string {
-			m := frameModel(t, width, 40).
-				WithModelSwitcher(func(string) {}).
-				WithModelOptions([]string{"o3", "gpt-5"}).
-				WithDefaults(Defaults{Started: "o3", StartedBy: by})
+			m := frameModel(t, width, 40)
+			m.wiring.SwitchModel = func(string) {}
+			m.picker.models.options = []string{"o3", "gpt-5"}
+			m.defaults = Defaults{Started: "o3", StartedBy: by}
 			m.modelName = current
 			opened, _ := m.openModelPick()
 			return strings.Join(opened.(Model).pickerLines(), "\n")
@@ -744,7 +746,8 @@ func TestGolden_PromptFrameHeight(t *testing.T) {
 func TestGolden_QuestionWaiting(t *testing.T) {
 	captureGolden(t, "question-waiting", "a question waiting behind the draft", goldenWidths, func(width int) []golden.Panel {
 		build := func(steering int) string {
-			m := frameModel(t, width, 40).WithAsk()
+			m := frameModel(t, width, 40)
+			m.wiring.Ask = true
 			m.state = stateStreaming
 			updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{{
 				ID: "call_q", Name: ask.ToolName, Arguments: `{"question":"Which store should the cache use?","shape":"choose","options":[
@@ -959,11 +962,14 @@ func TestGolden_HelpChat(t *testing.T) {
 			Manage: func([]string) string { return "" },
 			Detail: func(*todo.Store, todo.Item) string { return "" }}
 		build := func(m Model) string {
-			m = m.WithTodos(backlog).WithNotebook(notebook.New(nil))
+			m.todo.wiring = backlog
+			m.loadTodos()
+			m.wiring.Notebook = notebook.New(nil)
+			m.bindNotebook()
 			return m.systemRow(entry{kind: entrySystem, help: helpSheet{m.helpSheet()[0]}}, width)
 		}
 		return []golden.Panel{
-			{Label: "a conversation", View: build(frameModel(t, width, 40).WithConversation())},
+			{Label: "a conversation", View: build(frameModelWith(t, width, 40, Wiring{Conversation: true}))},
 			{Label: "a coding session", View: build(frameModel(t, width, 40))},
 		}
 	})
@@ -1327,11 +1333,11 @@ func TestGolden_PromptFrameWidthsCoverEveryLayout(t *testing.T) {
 func TestGolden_HeaderRow(t *testing.T) {
 	captureGolden(t, "header-row", "the header's constants", goldenWidths, func(width int) []golden.Panel {
 		header := func(info *StartInfo, effort provider.Effort) string {
-			m := frameModel(t, width, 40).
-				WithPricing(nil, "claude-sonnet-4-5").
-				WithReasoning(effort, func(provider.Effort) {})
+			m := frameModel(t, width, 40)
+			m.wiring.Prices, m.modelName = nil, "claude-sonnet-4-5"
+			m.effort, m.wiring.SwitchEffort = effort, func(provider.Effort) {}
 			if info != nil {
-				m = m.WithStartScreen(*info)
+				m.start = new(*info)
 			}
 			return m.headerRow(width - 2*horizontalPadding)
 		}
@@ -1342,11 +1348,13 @@ func TestGolden_HeaderRow(t *testing.T) {
 			{Label: "a coding session · directory, branch, model, level", View: header(&coding, provider.EffortMedium)},
 			{Label: "outside a repository, asking for no reasoning", View: header(&outside, provider.EffortOff)},
 			{Label: "a host with no survey of the checkout", View: header(nil, provider.EffortHigh)},
-			{Label: "a conversation · directory, branch, model, level", View: frameModel(t, width, 40).
-				WithPricing(nil, "claude-sonnet-4-5").
-				WithReasoning(provider.EffortHigh, func(provider.Effort) {}).
-				WithConversation().
-				WithCheckout(coding.Project).
+			{Label: "a conversation · directory, branch, model, level", View: frameModelWith(t, width, 40, Wiring{
+				ModelName:    "claude-sonnet-4-5",
+				Effort:       provider.EffortHigh,
+				SwitchEffort: func(provider.Effort) {},
+				Conversation: true,
+				Checkout:     new(coding.Project),
+			}).
 				headerRow(width - 2*horizontalPadding)},
 		}
 	})
@@ -1362,18 +1370,21 @@ func TestGolden_StartScreen(t *testing.T) {
 		build := func(mut func(*StartInfo)) string {
 			info := startFixture()
 			mut(&info)
-			m := frameModel(t, width, 40).WithStartScreen(info)
+			m := frameModel(t, width, 40)
+			m.start = new(info)
 			return m.renderHistory()
 		}
 		typed := func() string {
-			m := frameModel(t, width, 40).WithStartScreen(startFixture())
+			m := frameModel(t, width, 40)
+			m.start = new(startFixture())
 			m.input.SetValue("why is the round limit off by one")
 			return m.renderHistory()
 		}
 		return []golden.Panel{
 			{Label: "first contact · a dirty checkout with a session to pick up", View: build(func(i *StartInfo) {})},
 			{Label: "the pointer on the offer that costs an approval", View: func() string {
-				m := frameModel(t, width, 40).WithStartScreen(startFixture())
+				m := frameModel(t, width, 40)
+				m.start = new(startFixture())
 				m.startFocus = 2
 				return m.renderHistory()
 			}()},
@@ -1393,10 +1404,10 @@ func TestGolden_StartScreen(t *testing.T) {
 				// where "nothing read" is actionable.
 				info := startFixture()
 				info.Project.ContextFiles = nil
-				m := frameModel(t, width, 40).
-					WithStartScreen(info).
-					WithScaffold(Scaffold{Offer: true, Paths: scaffoldFixturePaths(),
-						Write: func() (string, error) { return project.ContextFile, nil }})
+				m := frameModel(t, width, 40)
+				m.start = new(info)
+				m.scaffold = Scaffold{Offer: true, Paths: scaffoldFixturePaths(),
+					Write: func() (string, error) { return project.ContextFile, nil }}
 				return m.renderHistory()
 			}()},
 			{Label: "somebody else is in this checkout too", View: build(func(i *StartInfo) {
@@ -1418,11 +1429,15 @@ func TestGolden_StartScreen(t *testing.T) {
 			})},
 			{Label: "typing dismissed the list · the facts stay", View: typed()},
 			{Label: "the machine's first session · three keys above the key row", View: func() string {
-				m := frameModel(t, width, 40).WithStartScreen(startFixture()).WithFirstRun()
+				m := frameModel(t, width, 40)
+				m.start = new(startFixture())
+				m = m.WithFirstRun()
 				return m.renderHistory()
 			}()},
 			{Label: "typing on the first session · the three keys stay", View: func() string {
-				m := frameModel(t, width, 40).WithStartScreen(startFixture()).WithFirstRun()
+				m := frameModel(t, width, 40)
+				m.start = new(startFixture())
+				m = m.WithFirstRun()
 				m.input.SetValue("why is the round limit off by one")
 				return m.renderHistory()
 			}()},
@@ -1444,7 +1459,8 @@ func TestGolden_StartProfile(t *testing.T) {
 		build := func(profile StartProfile) string {
 			info := startFixture()
 			info.Profile = profile
-			m := frameModel(t, width, 40).WithStartScreen(info)
+			m := frameModel(t, width, 40)
+			m.start = new(info)
 			return m.renderHistory()
 		}
 		return []golden.Panel{
@@ -1467,10 +1483,11 @@ func TestGolden_StartProfile(t *testing.T) {
 // it is not a decision, and rendering the card alone would not show that.
 func TestGolden_ScaffoldCard(t *testing.T) {
 	captureGolden(t, "scaffold-card", "the scaffolding card in the panel", goldenWidths, func(width int) []golden.Panel {
-		m := frameModel(t, width, 40).WithScaffold(Scaffold{
+		m := frameModel(t, width, 40)
+		m.scaffold = Scaffold{
 			Offer: true, Paths: scaffoldFixturePaths(),
 			Write: func() (string, error) { return project.ContextFile, nil },
-		})
+		}
 		next, _ := m.scaffoldCommand()
 		return []golden.Panel{
 			{Label: "nothing written yet", View: next.(Model).panelView()},
@@ -1492,7 +1509,10 @@ func TestGolden_ToolchainSetup(t *testing.T) {
 				c.Status, c.Profile = "unconfined — bwrap not found", ""
 				c.Toolchain.Hosts = nil
 			}
-			return frameModel(t, width, 40).WithStartScreen(startFixture()).WithContainment(c)
+			return frameModelWith(t, width, 40, Wiring{
+				Start:       new(startFixture()),
+				Containment: c,
+			})
 		}
 		card := func(mechanism string) string {
 			next, _ := build(mechanism).setupCommand()
@@ -1549,8 +1569,8 @@ func TestGolden_ProviderFailures(t *testing.T) {
 			m := frameModel(t, width, 40)
 			m.modelName = "gpt-4o"
 			m.providerName = "openai"
-			m.replaceKeyFn = func(string) error { return nil }
-			m.switchProviderFn = func(string) error { return nil }
+			m.wiring.ReplaceKey = func(string) error { return nil }
+			m.wiring.SwitchProvider = func(string) error { return nil }
 			m.turnOutcome = outcome
 			m.transcript = []entry{
 				{kind: entryUser, text: "rename the round-limit sentinel"},
@@ -1703,7 +1723,7 @@ func TestGolden_ProfileOpenedFromAFile(t *testing.T) {
 		m, _, _ := openedModel(t)
 		m.width, m.height = width, 40
 		m.syncInputWidth()
-		m.personas.SaveOpened = func(s *persona.Source, _ persona.Draft) (string, error) {
+		m.wiring.Personas.SaveOpened = func(s *persona.Source, _ persona.Draft) (string, error) {
 			return s.Path, errors.New(s.Path + " changed on disk since it was opened; nothing was written")
 		}
 		pane := func(m Model) string { return m.personaPane(width, 40) }
@@ -1784,7 +1804,7 @@ func TestGolden_ProfileDrafter(t *testing.T) {
 		// The loader's own sentence for this draft's budget, with the path
 		// the project row names, so the fixture does not carry a scratch
 		// directory.
-		m.personas.Save = func(persona.Scope, persona.Draft, bool) (string, error) {
+		m.wiring.Personas.Save = func(persona.Scope, persona.Draft, bool) (string, error) {
 			return "", errors.New("agent profile /repo/.shhh/agents/test-writer.toml: max_tokens: must be at least 300000")
 		}
 		m = key(key(m, tea.KeyPressMsg{Code: tea.KeyTab}), enter)
@@ -2025,8 +2045,9 @@ func TestGolden_DecisionNote(t *testing.T) {
 // a tree of its own so the blast radius is read somewhere this test owns.
 func amendGoldenModel(t *testing.T, width int, command string) Model {
 	t.Helper()
-	m := gatedModel(t, nil, nil).WithWorkspace(t.TempDir()).
-		WithRunner(legacyRunner(func(context.Context, string) (string, int) { return "", 0 }))
+	m := gatedModel(t, nil, nil)
+	m.wiring.Workspace = t.TempDir()
+	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) { return "", 0 })
 	m.width, m.height = width, 40
 	m.syncInputWidth()
 	m = execApproval(t, m, command)
@@ -2078,12 +2099,13 @@ func TestGolden_CommandCardGitStore(t *testing.T) {
 	captureGolden(t, "command-card-git-store", "the approval card's sandbox row", goldenWidths,
 		func(width int) []golden.Panel {
 			card := func(gitStore string) string {
-				m := gatedModel(t, nil, nil).WithWorkspace(t.TempDir()).
-					WithRunner(legacyRunner(func(context.Context, string) (string, int) { return "", 0 })).
-					WithContainment(Containment{
-						Status: "contained: bwrap (workspace profile)", Mechanism: "bwrap", Profile: "workspace",
-						GitStore: gitStore,
-					})
+				m := gatedModel(t, nil, nil)
+				m.wiring.Workspace = t.TempDir()
+				m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) { return "", 0 })
+				m.containment = Containment{
+					Status: "contained: bwrap (workspace profile)", Mechanism: "bwrap", Profile: "workspace",
+					GitStore: gitStore,
+				}
 				m.width, m.height = width, 40
 				m.syncInputWidth()
 				m = execApproval(t, m, "go test ./...")
@@ -2591,7 +2613,7 @@ func TestGolden_KeyEntry(t *testing.T) {
 	captureGolden(t, "key-entry", "masked key entry in the panel", goldenWidths, func(width int) []golden.Panel {
 		m := frameModel(t, width, 40)
 		m.providerName = "openai"
-		m.replaceKeyFn = func(string) error { return nil }
+		m.wiring.ReplaceKey = func(string) error { return nil }
 		next, _ := m.openKeyEntry(&provider.Failure{
 			Class: provider.ClassAuth, KeyEnv: "SHHH_API_KEY or OPENAI_API_KEY", KeyTail: "4f9c",
 		})
@@ -2615,7 +2637,9 @@ func TestGolden_KillConfirm(t *testing.T) {
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
 
 	captureGolden(t, "kill-confirm", "the kill confirm under the agent manager", goldenWidths, func(width int) []golden.Panel {
-		m := frameModel(t, width, 40).WithSubagents(sup)
+		m := frameModel(t, width, 40)
+		m.wiring.Subagents = sup
+		m.adoptChildren()
 		view := func(name string) string {
 			return (&components.Confirm{Prompt: m.killPrompt(name)}).View(m.contentWidth())
 		}
@@ -2709,7 +2733,7 @@ func TestGolden_CompletionMenu(t *testing.T) {
 					{Path: "docs/security.md", Mod: goldenNow.Add(-8*time.Minute - 30*time.Second)},
 				}
 			}
-			m.personas = Personas{Kind: persona.KindChat, Roles: func() []SpawnableRole {
+			m.wiring.Personas = Personas{Kind: persona.KindChat, Roles: func() []SpawnableRole {
 				return []SpawnableRole{{Name: "security-reviewer", Description: "reads a change for what it exposes"}}
 			}}
 			m.input.SetValue("@se")
@@ -2853,9 +2877,9 @@ func TestGolden_Screen(t *testing.T) {
 			// The session's constants are the header's: the checkout the
 			// survey found and the level the session is asking for
 			// (docs/interface/surfaces.md#the-input-frame).
-			m := frameModel(t, width, screenHeight).
-				WithStartScreen(startFixture()).
-				WithReasoning(provider.EffortMedium, func(provider.Effort) {})
+			m := frameModel(t, width, screenHeight)
+			m.start = new(startFixture())
+			m.effort, m.wiring.SwitchEffort = provider.EffortMedium, func(provider.Effort) {}
 			m.transcript = goldenTranscript()
 			// The transcript is the session's first turn, and a real turn
 			// stamps every row it leaves with its number: without it the
@@ -2876,7 +2900,8 @@ func TestGolden_Screen(t *testing.T) {
 		// where the round that spawned the children put it.
 		fanout := func(carded bool) string {
 			return build(func(m *Model) {
-				*m = m.WithSubagents(sup)
+				m.wiring.Subagents = sup
+				m.adoptChildren()
 				last := len(m.transcript) - 1
 				m.transcript = append(m.transcript[:last],
 					entry{kind: entryFanout, fanout: &fanoutBatch{batch: batch}}, m.transcript[last])
@@ -3053,7 +3078,8 @@ func TestGolden_ScreenAttached(t *testing.T) {
 				for range 2 {
 					m.agent.BeginToolRound("", nil, nil)
 				}
-				m = m.WithSubagents(sup)
+				m.wiring.Subagents = sup
+				m.adoptChildren()
 				m.attach(name)
 				return m
 			}
@@ -3087,7 +3113,8 @@ func TestGolden_ScreenAttached(t *testing.T) {
 					View: func() string {
 						m := frameModel(t, width, screenHeight)
 						m.transcript = goldenTranscript()
-						m = m.WithSubagents(held)
+						m.wiring.Subagents = held
+						m.adoptChildren()
 						m.hold = &turnHold{turn: m.turnCount}
 						m.attach("researcher-1")
 						return draw(m)
@@ -3113,7 +3140,9 @@ func TestGolden_AgentRows(t *testing.T) {
 	waitFor(t, func() bool { running, _ := sup.ActiveCounts(); return running == 3 })
 	spawnUnder(t, sup, "researcher-1", subagent.RoleReviewer, "reviewer-1")
 	captureGolden(t, "agent-rows", "the working children above the input", frameWidths, func(width int) []golden.Panel {
-		m := goldenModel(t, width).WithSubagents(sup)
+		m := goldenModel(t, width)
+		m.wiring.Subagents = sup
+		m.adoptChildren()
 		m.invalidateRenderCache()
 		return []golden.Panel{
 			{Label: "four children working · a row each, and the frame's count",
@@ -3312,7 +3341,7 @@ func TestGolden_StaleEditRow(t *testing.T) {
 	captureBoundedGolden(t, "stale-edit-row", "the refused stale edit", []int{80}, func(width int) []golden.Panel {
 		build := func(open bool) string {
 			m := frameModel(t, width, 40)
-			m = m.WithWorkspace("/work/shhh")
+			m.wiring.Workspace = "/work/shhh"
 			stale := m.skippedCallEntry(
 				provider.ToolCall{Name: "write_file", Arguments: `{"path":"/work/shhh/internal/agent/loop.go"}`},
 				fmt.Errorf("invalid arguments: %w",
@@ -3480,7 +3509,8 @@ func TestGolden_ClassifierAsk(t *testing.T) {
 	t.Cleanup(sup.Close)
 	captureGolden(t, "classifier-ask", "a classifier's no put to the person", goldenWidths, func(width int) []golden.Panel {
 		var ran []string
-		own := classifierModel(t, &ran, &verdictProvider{decision: "deny", reason: why}).WithWorkspace(dir)
+		own := classifierModel(t, &ran, &verdictProvider{decision: "deny", reason: why})
+		own.wiring.Workspace = dir
 		own.width, own.height = width, 40
 		own.syncInputWidth()
 		updated, cmd := own.Update(toolCallsMsg{calls: []provider.ToolCall{
@@ -3491,7 +3521,9 @@ func TestGolden_ClassifierAsk(t *testing.T) {
 		own = handover(t, updated.(Model))
 		own.syncViewport()
 
-		child := frameModel(t, width, 40).WithSubagents(sup)
+		child := frameModel(t, width, 40)
+		child.wiring.Subagents = sup
+		child.adoptChildren()
 		ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run npm run deploy -- --tag latest")
 		ask.Command = "npm run deploy -- --tag latest"
 		ask.Root, ask.Worktree = dir, true
@@ -3525,8 +3557,8 @@ func TestGolden_ClassifierStanding(t *testing.T) {
 	}
 	captureGolden(t, "classifier-standing", "a classifier's yes the host lists put to the person", goldenWidths, func(width int) []golden.Panel {
 		judge := &verdictProvider{decision: "allow", reason: "reads a page"}
-		m := gatedModel(t, func(string, json.RawMessage) (string, error) { return "", nil }, previews).
-			WithClassifier(agent.NewClassifier(meter.New(nil).For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"}))
+		m := gatedModel(t, func(string, json.RawMessage) (string, error) { return "", nil }, previews)
+		m.classifier.judge = agent.NewClassifier(meter.New(nil).For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"})
 		m.policy.mode = agent.ModeAuto
 		m.width, m.height = width, 40
 		m.syncInputWidth()
@@ -3632,7 +3664,8 @@ func TestGolden_ChildAutoApproved(t *testing.T) {
 	captureGolden(t, "child-auto-approved", "a child's acts, mirrored by the parent",
 		[]int{110}, func(width int) []golden.Panel {
 			m := frameModel(t, width, 40)
-			m = m.WithSubagents(sup)
+			m.wiring.Subagents = sup
+			m.adoptChildren()
 			m.attach("researcher-1")
 			m.invalidateRenderCache()
 			return []golden.Panel{{Label: "an edit the mode allowed and a command the classifier did", View: m.renderAttachedHistory()}}
@@ -3807,12 +3840,15 @@ func TestGolden_SearchCounts(t *testing.T) {
 func TestGolden_FetchWait(t *testing.T) {
 	captureGolden(t, "fetch-wait", "a fetch waiting out a host's refusal", []int{80}, func(width int) []golden.Panel {
 		waiting := func(left time.Duration) Model {
-			return frameModel(t, width, 40).WithFetchWaits(func(host string) (time.Duration, bool) {
-				if host != "docs.rs" {
-					return 0, false
-				}
-				return left, true
-			}, func() {})
+			return frameModelWith(t, width, 40, Wiring{
+				FetchWaiting: func(host string) (time.Duration, bool) {
+					if host != "docs.rs" {
+						return 0, false
+					}
+					return left, true
+				},
+				AbandonFetchWaits: func() {},
+			})
 		}
 		mirrored := func(left time.Duration) string {
 			m := waiting(left)
@@ -4123,7 +4159,7 @@ func TestGolden_FailureCard(t *testing.T) {
 			m := frameModel(t, width, 40)
 			m.modelName = "claude-opus-5-5"
 			m.providerName = "anthropic"
-			m.switchProviderFn = func(string) error { return nil }
+			m.wiring.SwitchProvider = func(string) error { return nil }
 			m.turnOutcome = components.TurnFailed
 			m.turnCount = 1
 			m.appendEntry(entry{kind: entryUser, text: "write the copy story"})
@@ -4192,7 +4228,7 @@ func TestGolden_RecoverySelection(t *testing.T) {
 			m := frameModel(t, width, 40)
 			m.modelName = "gpt-4o"
 			m.providerName = "openai"
-			m.switchProviderFn = func(string) error { return nil }
+			m.wiring.SwitchProvider = func(string) error { return nil }
 			m.turnOutcome = components.TurnFailed
 			m.appendEntry(entry{kind: entryUser, text: "rename the round-limit sentinel"})
 			at := m.appendEntry(last)
@@ -4331,8 +4367,9 @@ func TestGolden_ItemDraft(t *testing.T) {
 		root := todoTestRoot(t)
 		m := frameModel(t, width, 40)
 		m.sessionName = "2026-09-04 09:00:00"
-		m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
-			Detail: func(*todo.Store, todo.Item) string { return "" }})
+		m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
+			Detail: func(*todo.Store, todo.Item) string { return "" }}
+		m.loadTodos()
 		proposals, ok := todo.ParseProposals(todo.BuiltinCode(), draftFixture)
 		if !ok {
 			t.Fatal("the fixture should parse as a proposal")
@@ -4382,8 +4419,9 @@ func TestGolden_TodoSprint(t *testing.T) {
 			}
 		}
 		m := frameModel(t, width, 40)
-		m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
-			Detail: func(*todo.Store, todo.Item) string { return "" }})
+		m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
+			Detail: func(*todo.Store, todo.Item) string { return "" }}
+		m.loadTodos()
 		// The card is opened from a reading, because that is the only way a
 		// card comes up: the answer below is a planning turn's, read by the
 		// same parser the session reads one with.
@@ -4460,7 +4498,7 @@ func TestGolden_MultiEditCard(t *testing.T) {
 		// A terminal tall enough that the card's own bound does not clip the
 		// third hunk: the sheet is about three changes arriving as one diff,
 		// and a capture that hides one of them shows nothing.
-		m := New(msgs, mockStream).WithWorkspace(dir)
+		m := New(msgs, mockStream, Wiring{Workspace: dir})
 		updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 64})
 		m = updated.(Model)
 		m.state = stateStreaming
@@ -4690,11 +4728,11 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 					// pass above leaves it standing — a flake is a pass — and
 					// it stands ahead of the vet failure rather than over it.
 					now := clock()
-					m = m.WithGate(Gate{Manage: func([]string) string { return "" },
+					m.wiring.Gate, m.alertMemo = Gate{Manage: func([]string) string { return "" },
 						Flakes: func() ([]storage.Flake, error) {
 							return []storage.Flake{{Suite: "default", Check: "vet", Command: "go vet ./...",
 								Seen: 3, FirstExit: 1, FirstAt: now.Add(-50 * time.Hour), LastAt: now.Add(-time.Hour)}}, nil
-						}})
+						}}, &alertMemo{}
 				}
 				m.invalidateRenderCache()
 				m.syncViewport()
@@ -4915,8 +4953,9 @@ func TestGolden_TodoGroom(t *testing.T) {
 		}
 		r.Head, r.Read = "1a2b3c4d5e6f", time.Date(2026, 9, 4, 0, 0, 0, 0, time.UTC)
 		m := frameModel(t, width, 40)
-		m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
-			Detail: func(*todo.Store, todo.Item) string { return "" }})
+		m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
+			Detail: func(*todo.Store, todo.Item) string { return "" }}
+		m.loadTodos()
 		m.todo.groomer.item = it
 		card, _ := m.openTodoGroomCard(r)
 		return []golden.Panel{
@@ -4951,10 +4990,11 @@ func TestGolden_ChatTodo(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		m := frameModel(t, width, 40).WithConversation()
-		m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root,
+		m := frameModelWith(t, width, 40, Wiring{Conversation: true})
+		m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root,
 			Manage: func([]string) string { return "" },
-			Detail: func(*todo.Store, todo.Item) string { return "" }})
+			Detail: func(*todo.Store, todo.Item) string { return "" }}
+		m.loadTodos()
 		return []golden.Panel{
 			{Label: "the completion offers /todo in a conversation",
 				View: strings.Join(typeChars(t, m, "/todo").completionMenuLines(), "\n")},
@@ -4986,7 +5026,9 @@ func TestGolden_NotebookRows(t *testing.T) {
 			return m.renderHistory()
 		}
 		empty := func() string {
-			m := frameModel(t, width, 40).WithNotebook(notebook.New(nil))
+			m := frameModel(t, width, 40)
+			m.wiring.Notebook = notebook.New(nil)
+			m.bindNotebook()
 			next, _ := m.notesCommand(nil)
 			shown := next.(Model)
 			return shown.renderHistory()
@@ -5038,16 +5080,18 @@ func TestGolden_NotesScreen(t *testing.T) {
 // delegates and one delegate's own delegate have written in, over two turns.
 func goldenNotesModel(t *testing.T, width int) Model {
 	t.Helper()
-	m := frameModel(t, width, 40).WithNotebook(notebook.New(nil))
-	m.notebook.SetTurn(3)
-	_, _, _ = m.notebook.Write(notebook.Orchestrator, "The freeze is the target",
+	m := frameModel(t, width, 40)
+	m.wiring.Notebook = notebook.New(nil)
+	m.bindNotebook()
+	m.wiring.Notebook.SetTurn(3)
+	_, _, _ = m.wiring.Notebook.Write(notebook.Orchestrator, "The freeze is the target",
 		"From here the work is making what exists better, not wider.")
-	m.notebook.SetTurn(4)
-	_, _, _ = m.notebook.Write("reviewer-1", "The deny list is read before the tier",
+	m.wiring.Notebook.SetTurn(4)
+	_, _, _ = m.wiring.Notebook.Write("reviewer-1", "The deny list is read before the tier",
 		"policy.Decide matches on the command, so an entry refuses the verb in every mode.")
-	_, _, _ = m.notebook.Write("researcher-1", "Where the goldens live",
+	_, _, _ = m.wiring.Notebook.Write("researcher-1", "Where the goldens live",
 		"internal/ui/chat/testdata/golden, one file per width and one per palette.")
-	_, _, _ = m.notebook.Write("researcher-1/reviewer-1a", "The reviewer's own delegate",
+	_, _, _ = m.wiring.Notebook.Write("researcher-1/reviewer-1a", "The reviewer's own delegate",
 		"A grandchild signs with its spawner's name in front, so its note files under researcher-1.")
 	return m
 }
@@ -5063,7 +5107,10 @@ func TestGolden_ChildAskVerdicts(t *testing.T) {
 
 	captureGolden(t, "child-ask-verdicts", "a child's request answered and its ending said", goldenWidths, func(width int) []golden.Panel {
 		m := frameModel(t, width, 40)
-		m = m.WithSubagents(sup).WithChangeset(changeset.New(64), nil)
+		m.wiring.Subagents = sup
+		m.adoptChildren()
+		m.changes, m.wiring.Tracker = changeset.New(64), nil
+		m.bindSlot()
 		answer := func(ask *subagent.Ask, key rune) {
 			t.Helper()
 			updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
@@ -5116,9 +5163,13 @@ func TestGolden_ChildRequestRouted(t *testing.T) {
 	captureGolden(t, "child-request-routed", "a child's request routed to the person", goldenWidths, func(width int) []golden.Panel {
 		routed := func(ask *subagent.Ask, draft string) Model {
 			m := frameModel(t, width, 40)
-			m = m.WithSubagents(sup).WithChangeset(changeset.New(64), nil).WithContainment(Containment{
+			m.wiring.Subagents = sup
+			m.adoptChildren()
+			m.changes, m.wiring.Tracker = changeset.New(64), nil
+			m.bindSlot()
+			m.containment = Containment{
 				Status: "bwrap · workspace", Mechanism: "bwrap", Profile: "workspace",
-			})
+			}
 			m.input.SetValue(draft)
 			updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
 			return updated.(Model)
@@ -5208,7 +5259,8 @@ func TestGolden_ChildRequestRouted(t *testing.T) {
 func TestGolden_QuestionCard(t *testing.T) {
 	captureGolden(t, "question-card", "the model's question in the panel", questionWidths, func(width int) []golden.Panel {
 		buildWithDraft := func(args, draft string, mut func(Model) Model) string {
-			m := frameModel(t, width, 40).WithAsk()
+			m := frameModel(t, width, 40)
+			m.wiring.Ask = true
 			m.state = stateStreaming
 			m.input.SetValue(draft)
 			updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{{
@@ -5234,7 +5286,8 @@ func TestGolden_QuestionCard(t *testing.T) {
 		// cockpit is the same call drawn into the whole terminal rather than
 		// into the panel alone, with a turn behind it for the rail to report.
 		cockpit := func(args string) string {
-			m := frameModel(t, width, screenHeight).WithAsk()
+			m := frameModel(t, width, screenHeight)
+			m.wiring.Ask = true
 			m.transcript = goldenTranscript()
 			m.state = stateStreaming
 			updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{{
@@ -5318,7 +5371,8 @@ func TestGolden_QuestionCard(t *testing.T) {
 func TestGolden_QuestionTabs(t *testing.T) {
 	captureGolden(t, "question-tabs", "several questions on one card", goldenWidths, func(width int) []golden.Panel {
 		build := func(args string, steps ...tea.KeyPressMsg) string {
-			m := frameModel(t, width, 40).WithAsk()
+			m := frameModel(t, width, 40)
+			m.wiring.Ask = true
 			m.state = stateStreaming
 			updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{{
 				ID: "call_q", Name: ask.ToolName, Arguments: args,
@@ -5539,7 +5593,8 @@ func TestGolden_StartOffers(t *testing.T) {
 			info.Recent = StartRecent{}
 			info.Project.Dirty = 0
 			info.Ready, info.Branch = ready, branch
-			m := frameModel(t, width, 40).WithStartScreen(info)
+			m := frameModel(t, width, 40)
+			m.start = new(info)
 			return m.renderHistory()
 		}
 		item := StartReady{Present: true, Slug: "cache-ttl", Title: "Give the cache a lifetime", Noun: "story"}
@@ -5560,7 +5615,9 @@ func TestGolden_StartReading(t *testing.T) {
 		build := func(info StartInfo, written []agent.StartOffer) string {
 			info.Recent = StartRecent{}
 			info.Project.Dirty = 0
-			m := frameModel(t, width, 40).WithStartScreen(info).WithSuggester(nil, true)
+			m := frameModel(t, width, 40)
+			m.start = new(info)
+			m.suggest.writer, m.suggest.on = nil, true
 			m.startOffers.written = written
 			return m.renderHistory()
 		}
@@ -5592,7 +5649,8 @@ func TestGolden_StartInstruction(t *testing.T) {
 			info.Ready = ready
 			check.File, check.Modified = "AGENTS.md", startNow
 			info.Project.Instruction = check
-			m := frameModel(t, width, 40).WithStartScreen(info)
+			m := frameModel(t, width, 40)
+			m.start = new(info)
 			return m.renderHistory()
 		}
 		item := StartReady{Present: true, Slug: "cache-ttl", Title: "Give the cache a lifetime", Noun: "story"}

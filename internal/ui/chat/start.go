@@ -146,14 +146,6 @@ type StartInfo struct {
 	FirstRun bool
 }
 
-// WithStartScreen supplies the first-contact facts. Without it the empty
-// session keeps the plain welcome line, which is what every non-chat host
-// (the attached child view, tests that build a bare model) gets.
-func (m Model) WithStartScreen(info StartInfo) Model {
-	m.start = &info
-	return m
-}
-
 // WithFirstRun marks the session as the machine's first, which the start
 // screen answers with its block of three keys. It is a mark on the facts
 // already supplied rather than a fact of its own, so a host with no start

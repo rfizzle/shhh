@@ -34,14 +34,6 @@ import (
 // that card opens with the row open, which is why everything that names the
 // key names the [ctrl+u] that closes the row first.
 
-// WithModelOptions sets the models offered by the bare /model picker,
-// normally the provider's curated catalog (provider.KnownModels). The
-// session's current model is merged in when missing.
-func (m Model) WithModelOptions(names []string) Model {
-	m.picker.models.options = names
-	return m
-}
-
 // openPicker shows a select card in the bottom panel; apply consumes the
 // chosen index — always an index into the list the picker opened over, never
 // into whatever a filter left of it — and returns the transcript note.
@@ -295,19 +287,10 @@ func (m Model) modelPickChoices() []string {
 // than fall back to the usage text: either the catalog already offers a
 // choice, or the provider can enumerate its endpoint for one.
 func (m Model) canPickModel() bool {
-	if m.switchFn == nil {
+	if m.wiring.SwitchModel == nil {
 		return false
 	}
 	return len(m.modelPickChoices()) > 1 || (m.picker.models.lister != nil && !m.picker.models.listed)
-}
-
-// WithModelLister wires live model discovery for providers that can
-// enumerate their endpoint (provider.ModelLister). Bare /model queries it
-// once per session — lazily, so a slow or unreachable endpoint costs nothing
-// until the user asks — and the result replaces the curated catalog.
-func (m Model) WithModelLister(fn func(context.Context) ([]string, error)) Model {
-	m.picker.models.lister = fn
-	return m
 }
 
 // startModelPick is the bare-/model entry point: it queries the provider for
@@ -385,8 +368,8 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 			focus = i
 		}
 		desc := ""
-		if m.prices != nil {
-			if in, out, ok := m.prices.Cost(name, 1_000_000, 1_000_000); ok {
+		if m.wiring.Prices != nil {
+			if in, out, ok := m.wiring.Prices.Cost(name, 1_000_000, 1_000_000); ok {
 				desc = fmt.Sprintf("$%.2f in / $%.2f out per Mtok", in, out)
 			}
 		}
@@ -399,7 +382,7 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 	// card opens as a search, so [d] is a letter until [ctrl+u] closes the
 	// query row — which is what the key row offers while it is open.
 	alt := pickerAlt{Key: keys.Shown(keys.Select.Alt), Label: "and make it default", Enter: "this session"}
-	if m.writeConfig == nil {
+	if m.wiring.ConfigWriter == nil {
 		alt = pickerAlt{}
 	}
 	// What esc leaves is the model the session is already on, which is the
@@ -416,7 +399,7 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 		name := choices[idx]
 		switched := name != m.modelName
 		if switched {
-			m.switchFn(name)
+			m.wiring.SwitchModel(name)
 			m.modelName = name
 		}
 		if !makeDefault {
@@ -446,7 +429,7 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 //
 // A conversation has no picker to open: it answers with the one mode it has.
 func (m Model) openModePick() (tea.Model, tea.Cmd) {
-	if m.conversation {
+	if m.wiring.Conversation {
 		m.noteOneMode()
 		return m, nil
 	}
@@ -566,7 +549,7 @@ const runPreviewMax = 160
 // It reports false when there is nothing to pick (no runner, no blocks, or a
 // single block), leaving the caller on the direct startRun path.
 func (m Model) openRunPick() (tea.Model, tea.Cmd, bool) {
-	if m.runFn == nil {
+	if m.wiring.Runner == nil {
 		return m, nil, false
 	}
 	blocks := extractCodeBlockInfo(m.lastAssistantText())

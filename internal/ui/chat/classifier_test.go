@@ -53,10 +53,10 @@ func classifierModel(t *testing.T, ran *[]string, p provider.Provider) Model {
 	// through the gate, so what it spends is billed without the model
 	// counting anything itself.
 	ledger := meter.New(nil)
-	m := execModel(t, ran).
-		WithLedger(ledger).
-		WithClassifier(agent.NewClassifier(ledger.For(p, meter.SourceClassifier),
-			agent.ClassifierConfig{Model: "judge"}))
+	m := execModel(t, ran)
+	m.wiring.Ledger = ledger
+	m.classifier.judge = agent.NewClassifier(ledger.For(p, meter.SourceClassifier),
+		agent.ClassifierConfig{Model: "judge"})
 	m.policy.mode = agent.ModeAuto
 	return m
 }
@@ -309,7 +309,8 @@ func assertNoFrameDenial(t *testing.T, m Model, when string) {
 func TestClassifierFlow_ADenyListRefusalIsNotAJudgement(t *testing.T) {
 	var ran []string
 	p := &verdictProvider{decision: "allow", reason: "looks fine"}
-	m := classifierModel(t, &ran, p).WithCommandDenylist([]string{"rm"})
+	m := classifierModel(t, &ran, p)
+	m.policy.denylist = []string{"rm"}
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_x", Name: tools.ExecCommandName, Arguments: `{"command":"rm -rf build"}`},
@@ -342,14 +343,14 @@ func TestClassifierFlow_ADenyListRefusalIsNotAJudgement(t *testing.T) {
 func classifierDownRound(t *testing.T, width int) Model {
 	t.Helper()
 	ledger := meter.New(nil)
-	m := batchModel(t).
-		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
-			t.Fatalf("nothing may run on a verdict that never came, but %q did", cmd)
-			return "", 0
-		})).
-		WithLedger(ledger).
-		WithClassifier(agent.NewClassifier(ledger.For(&verdictProvider{err: errors.New("api down")}, meter.SourceClassifier),
-			agent.ClassifierConfig{Model: "judge"}))
+	m := batchModel(t)
+	m.wiring.Runner = legacyRunner(func(ctx context.Context, cmd string) (string, int) {
+		t.Fatalf("nothing may run on a verdict that never came, but %q did", cmd)
+		return "", 0
+	})
+	m.wiring.Ledger = ledger
+	m.classifier.judge = agent.NewClassifier(ledger.For(&verdictProvider{err: errors.New("api down")}, meter.SourceClassifier),
+		agent.ClassifierConfig{Model: "judge"})
 	m.policy.mode = agent.ModeAuto
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 48})
 	m = updated.(Model)

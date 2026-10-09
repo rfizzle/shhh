@@ -24,29 +24,12 @@ import (
 // subagentEventMsg carries one supervisor notification into the Update loop.
 type subagentEventMsg struct{ ev subagent.Event }
 
-// WithSubagents wires the sub-agent supervisor; the model listens for
-// its events and keeps its parent-mode ceiling current.
-func (m Model) WithSubagents(sup *subagent.Supervisor) Model {
-	m.subagents = sup
-	m.childViews = map[string]*childView{}
-	sup.SetParentMode(m.policy.mode)
-	sup.SetParentGrants(m.liveGrants())
-	// This session is the surface with a person behind its cards, so a
-	// child's classifier no comes here rather than being refused
-	// (docs/capabilities/subagents.md#a-child-answers-to-the-session).
-	sup.SetAttended()
-	if m.conversation {
-		sup.SetConversationPolicy()
-	}
-	return m
-}
-
 // syncGrants pushes the session's [a] grants outward, to everything that
 // decides on their strength. The supervisor takes them because a category
 // the user waved through for the session is waved through for children too,
 // instead of being re-asked once per agent. The fetcher takes the hosts
 // because it is the only place a redirect off a granted host is visible
-// (policy.go, WithHostGrants).
+// (policy.go, the wiring's HostGrants).
 //
 // What it pushes is every grant standing right now, the ones that end with
 // the turn included: a child running under a turn grant is doing the thing
@@ -56,11 +39,11 @@ func (m Model) WithSubagents(sup *subagent.Supervisor) Model {
 // called again at the turn's close (close.go).
 func (m *Model) syncGrants() {
 	g := m.liveGrants()
-	if m.subagents != nil {
-		m.subagents.SetParentGrants(g)
+	if m.wiring.Subagents != nil {
+		m.wiring.Subagents.SetParentGrants(g)
 	}
-	if m.hostGrants != nil {
-		m.hostGrants(concatGrants(m.hostAllowlist(), m.policy.turn.Hosts))
+	if m.wiring.HostGrants != nil {
+		m.wiring.HostGrants(concatGrants(m.hostAllowlist(), m.policy.turn.Hosts))
 	}
 }
 
@@ -71,8 +54,8 @@ func (m *Model) applyMode(mode agent.Mode) {
 		m.signal(observe.SignalMode, mode.String())
 	}
 	m.policy.mode = mode
-	if m.subagents != nil {
-		m.subagents.SetParentMode(mode)
+	if m.wiring.Subagents != nil {
+		m.wiring.Subagents.SetParentMode(mode)
 	}
 }
 
@@ -96,7 +79,7 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 		// take; it never reaches a card.
 		if next, cmd, ok := m.todoLaneAsk(ev.Ask); ok {
 			nm := next.(Model)
-			return nm, tea.Batch(cmd, listenSubagents(nm.subagents.Events()))
+			return nm, tea.Batch(cmd, listenSubagents(nm.wiring.Subagents.Events()))
 		}
 		m.childAsks = append(m.childAsks, ev.Ask)
 		// The block is read here, once, and not in the card: a routed card is
@@ -151,12 +134,12 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 		// A reviewer the backlog runner spawned answers its review stage.
 		if next, cmd, ok := m.todoReviewDone(ev.Status); ok {
 			nm := next.(Model)
-			return nm, tea.Batch(cmd, listenSubagents(nm.subagents.Events()))
+			return nm, tea.Batch(cmd, listenSubagents(nm.wiring.Subagents.Events()))
 		}
 		// A writer building one of its lanes answers the fan-out stage.
 		if next, cmd, ok := m.todoWriterDone(ev.Status); ok {
 			nm := next.(Model)
-			return nm, tea.Batch(cmd, listenSubagents(nm.subagents.Events()))
+			return nm, tea.Batch(cmd, listenSubagents(nm.wiring.Subagents.Events()))
 		}
 	case subagent.EventPatch:
 		m.recordChildPatch(ev.Patch)
@@ -168,7 +151,7 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 	if m.atBottom {
 		m.viewport.GotoBottom()
 	}
-	return m, listenSubagents(m.subagents.Events())
+	return m, listenSubagents(m.wiring.Subagents.Events())
 }
 
 // reopenFrozenLane lets go of the render cache when a child whose lane was
@@ -225,7 +208,7 @@ func (m *Model) recordChildPatch(p *subagent.PatchApplied) {
 			AfterMode:    f.AfterMode,
 			Agent:        p.Agent,
 			Origin:       changeset.ChildPatch,
-			Track:        m.tracker.Track(f.Path),
+			Track:        m.wiring.Tracker.Track(f.Path),
 		})...)
 	}
 	m.noteEvictedTurns(evicted)
@@ -552,10 +535,10 @@ func (m Model) childAskPanelLines(ask *subagent.Ask) []string {
 // blocked approval waits unblock, children finish as cancelled with
 // well-formed conversations, and queued asks are dropped as declined.
 func (m *Model) cancelSubagents() {
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return
 	}
-	m.subagents.CancelAll()
+	m.wiring.Subagents.CancelAll()
 	for _, ask := range m.childAsks {
 		ask.Respond(false)
 	}
@@ -568,11 +551,11 @@ func (m *Model) cancelSubagents() {
 // the manager's two keys differ in how many names they hand over and in
 // nothing else.
 func (m *Model) killChildren(names []string) {
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return
 	}
 	for _, name := range names {
-		if err := m.subagents.Kill(name); err != nil {
+		if err := m.wiring.Subagents.Kill(name); err != nil {
 			m.noteChild(name, err.Error())
 			continue
 		}
@@ -588,8 +571,8 @@ func (m *Model) killChildren(names []string) {
 // (docs/capabilities/subagents.md#what-nesting-does-to-the-rest-of-it).
 func (m Model) killPrompt(name string) string {
 	var under []string
-	if m.subagents != nil {
-		under = m.subagents.Under(name)
+	if m.wiring.Subagents != nil {
+		under = m.wiring.Subagents.Under(name)
 	}
 	if len(under) == 0 {
 		return "Kill " + name + "? " + m.keptClause("Its patch is kept. ", name) +
@@ -613,11 +596,11 @@ func (m Model) killPrompt(name string) string {
 // 80-column pane cut off, so what the cut takes now is the part every kill
 // says alike (docs/interface/surfaces.md#the-inline-confirm).
 func (m Model) keptClause(clause string, names ...string) string {
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return ""
 	}
 	for _, name := range names {
-		if m.subagents.PatchToKeep(name) {
+		if m.wiring.Subagents.PatchToKeep(name) {
 			return clause
 		}
 	}
@@ -643,7 +626,7 @@ func (m Model) armKillAll() (tea.Model, tea.Cmd) {
 	}
 	all := append([]string(nil), roots...)
 	for _, name := range roots {
-		all = append(all, m.subagents.Under(name)...)
+		all = append(all, m.wiring.Subagents.Under(name)...)
 	}
 	m.killConfirm = &components.Confirm{Prompt: "Kill all " + plural(len(all), "agent") +
 		"? " + m.keptClause("Their patches are kept. ", all...) +
@@ -664,7 +647,7 @@ func (m Model) liveRootNames() []string {
 	}
 	var roots []string
 	for _, name := range names {
-		if parent, _ := m.subagents.Parent(name); !live[parent] {
+		if parent, _ := m.wiring.Subagents.Parent(name); !live[parent] {
 			roots = append(roots, name)
 		}
 	}
@@ -675,11 +658,11 @@ func (m Model) liveRootNames() []string {
 // not finished or broken on their own. The order is the supervisor's, which
 // is spawn order.
 func (m Model) liveChildNames() []string {
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return nil
 	}
 	var names []string
-	for _, st := range m.subagents.Snapshot() {
+	for _, st := range m.wiring.Subagents.Snapshot() {
 		switch st.State {
 		case subagent.StateDone, subagent.StateFailed:
 		default:
@@ -711,7 +694,7 @@ func (m Model) nestAgents(all []subagent.Status) ([]subagent.Status, map[string]
 	var roots []subagent.Status
 	under := map[string][]subagent.Status{}
 	for _, st := range all {
-		parent, _ := m.subagents.Parent(st.Name)
+		parent, _ := m.wiring.Subagents.Parent(st.Name)
 		if parent == "" || !present[parent] {
 			roots = append(roots, st)
 			continue
@@ -772,11 +755,11 @@ const maxAgentRows = 6
 // activeAgentStatuses are the children still working (queued, running, or
 // blocked); finished ones live on as transcript entries instead.
 func (m Model) activeAgentStatuses() []subagent.Status {
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return nil
 	}
 	var out []subagent.Status
-	for _, st := range m.subagents.Snapshot() {
+	for _, st := range m.wiring.Subagents.Snapshot() {
 		switch st.State {
 		case subagent.StateQueued, subagent.StateRunning, subagent.StateBlocked:
 			out = append(out, st)

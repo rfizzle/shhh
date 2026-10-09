@@ -20,13 +20,6 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// WithToolTokenEstimate sets the estimated token cost of the registered tool
-// definitions, shown in /context's occupancy breakdown.
-func (m Model) WithToolTokenEstimate(n int64) Model {
-	m.toolDefTokens = n
-	return m
-}
-
 // formatCost is the shared dollar format: four decimals below a cent, two
 // above, so a cheap session is not reported as $0.00.
 func formatCost(v float64) string {
@@ -42,8 +35,8 @@ func formatCost(v float64) string {
 // without this function changing. A session with no ledger has only the
 // agent's own accounting to report.
 func (m Model) sessionSpend() meter.Totals {
-	if m.ledger != nil {
-		return m.ledger.Total()
+	if m.wiring.Ledger != nil {
+		return m.wiring.Ledger.Total()
 	}
 	return m.mainSpend()
 }
@@ -194,7 +187,7 @@ func (m Model) spendScreenData() components.SpendScreen {
 // up without one.
 func (m Model) billParts() []components.SpendPart {
 	var parts []components.SpendPart
-	if m.ledger == nil {
+	if m.wiring.Ledger == nil {
 		for _, p := range []struct {
 			src meter.Source
 			t   meter.Totals
@@ -205,7 +198,7 @@ func (m Model) billParts() []components.SpendPart {
 		}
 		return parts
 	}
-	for _, e := range m.ledger.BySource() {
+	for _, e := range m.wiring.Ledger.BySource() {
 		if t := entryTotals(e); spent(t) {
 			parts = append(parts, spendPart(spendWord(e.Origin.Source), t))
 		}
@@ -228,11 +221,11 @@ type childShare struct {
 // own roll-up, the ones childSpend sums.
 func (m Model) childShares() []childShare {
 	var out []childShare
-	if m.ledger == nil {
-		if m.subagents == nil {
+	if m.wiring.Ledger == nil {
+		if m.wiring.Subagents == nil {
 			return nil
 		}
-		for _, st := range m.subagents.Snapshot() {
+		for _, st := range m.wiring.Subagents.Snapshot() {
 			if !spent(st.Spend) {
 				continue
 			}
@@ -245,7 +238,7 @@ func (m Model) childShares() []childShare {
 		return out
 	}
 	at := map[string]int{}
-	for _, e := range m.ledger.Entries() {
+	for _, e := range m.wiring.Ledger.Entries() {
 		t := entryTotals(e)
 		if e.Origin.Source != meter.SourceSubagent || !spent(t) {
 			continue

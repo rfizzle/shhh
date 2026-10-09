@@ -282,13 +282,6 @@ type summaryDoneMsg struct {
 	verdict agent.SummaryVerdict
 }
 
-// WithSummarizer enables the session summary. A nil summarizer, or a
-// disabled one, leaves the block undrawn and no requests made.
-func (m Model) WithSummarizer(s *agent.Summarizer) Model {
-	m.summary.writer = s
-	return m
-}
-
 // summaryEnabled reports whether readings are taken at all.
 func (m Model) summaryEnabled() bool { return m.summary.writer.Enabled() }
 
@@ -440,7 +433,7 @@ func (m Model) summaryRequest() agent.SummaryRequest {
 		// detector that is already wrapped around both of its tiers. The
 		// rows above are what it searched for; this is what all of it has
 		// come to, which is the part a reading otherwise has to infer.
-		Sweeps: m.repeats.Sweeps(),
+		Sweeps: m.wiring.Repeats.Sweeps(),
 		// What the machinery has said to the model this turn, so a reading
 		// after a steer judges the work since it rather than revising the
 		// verdict that caused it.

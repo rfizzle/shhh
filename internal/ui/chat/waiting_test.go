@@ -20,7 +20,7 @@ func waitingModel(t *testing.T) (m *Model, step func(time.Duration), update func
 	was := clock
 	clock = func() time.Time { return now }
 	t.Cleanup(func() { clock = was })
-	model := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	model := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	next, _ := model.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
 	model = next.(Model)
 	next, _ = model.sendUserMessage("run the chat tests")
@@ -68,16 +68,16 @@ func TestWaitingState_QuietIsNotSilent(t *testing.T) {
 	}
 
 	// A setting of its own moves the deadline, and a negative one removes it.
-	*m = m.WithStreamIdle(300)
+	m.timing.idle = 300 * time.Second
 	if got := statusLine(t, *m); !strings.Contains(got, "silent — nothing arrived") {
 		t.Errorf("under a five-minute deadline the request reads %q, want no retry yet", got)
 	}
-	*m = m.WithStreamIdle(-1)
+	m.timing.idle = -time.Second
 	step(time.Hour)
 	if got := statusLine(t, *m); strings.Contains(got, "retry") {
 		t.Errorf("with no deadline the request reads %q, want no retry", got)
 	}
-	*m = m.WithStreamIdle(0)
+	m.timing.idle = 0
 
 	// A second request, which hears events that draw nothing.
 	m.setTurnState(stateStreaming)
@@ -149,7 +149,7 @@ func TestWaitingState_NeverClaimsThinkingWithNothingArrived(t *testing.T) {
 func TestWaitingState_AKeepaliveIsHeardAndDrawsNothing(t *testing.T) {
 	m, step, update := waitingModel(t)
 	retries := 2
-	*m = m.WithRetryLimit(&retries)
+	m.backoff.SetLimit(&retries)
 	m.backoff.Next(&provider.Failure{Class: provider.ClassNetwork})
 	before := m.backoff.Attempt()
 

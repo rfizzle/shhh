@@ -21,11 +21,13 @@ func contextModel(t *testing.T, width int) Model {
 		}},
 		{Role: provider.RoleTool, ToolCallID: "a", Content: strings.Repeat("hit. ", 200)},
 		{Role: provider.RoleTool, ToolCallID: "b", Content: strings.Repeat("line. ", 40)},
-	}, mockStream).WithToolDefinitions([]ToolTokens{
-		{Name: "execute_command", Tokens: 4100},
-		{Name: "edit_file", Tokens: 3200},
-		{Name: "search", Tokens: 2600},
-		{Name: "read_file", Tokens: 1400},
+	}, mockStream, Wiring{
+		ToolDefinitions: []ToolTokens{
+			{Name: "execute_command", Tokens: 4100},
+			{Name: "edit_file", Tokens: 3200},
+			{Name: "search", Tokens: 2600},
+			{Name: "read_file", Tokens: 1400},
+		},
 	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 40})
 	return updated.(Model)
@@ -133,7 +135,7 @@ func TestContext_ItemisesTheConversationByTurn(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: strings.Repeat("long answer. ", 200)},
 		{Role: provider.RoleUser, Content: "thanks"},
 		{Role: provider.RoleAssistant, Content: "any time"},
-	}, mockStream)
+	}, mockStream, Wiring{})
 	group, ok := m.messageTurnGroup(m.contextAccounting().Messages)
 	if !ok {
 		t.Fatal("a conversation with two turns has no message group")

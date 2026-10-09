@@ -221,9 +221,9 @@ func (m *Model) writePlanRecord(doc plan.Plan) plan.Record {
 		// handle: the session it seeded would be told it was carrying one.
 		return plan.Record{}
 	}
-	if m.db != nil {
+	if m.wiring.DB != nil {
 		if data, err := plan.MarshalRecord(rec); err == nil {
-			if handle, err := m.db.SavePlanRecord(m.sessionName, data); err == nil {
+			if handle, err := m.wiring.DB.SavePlanRecord(m.sessionName, data); err == nil {
 				rec.Handle = handle
 			}
 		}
@@ -400,7 +400,7 @@ func (m Model) savePlanFromCard() (tea.Model, tea.Cmd) {
 	}
 	if strings.TrimSpace(text) == "" {
 		m.appendEntry(entry{kind: entrySystem, text: "no plan to save yet"})
-	} else if path, err := savePlan(m.workspace, text, ""); err != nil {
+	} else if path, err := savePlan(m.wiring.Workspace, text, ""); err != nil {
 		m.appendEntry(entry{kind: entrySystem, text: failed("plan", "could not save it: "+err.Error())})
 	} else {
 		m.appendEntry(entry{kind: entrySystem, text: components.WriteReceipt("plan", path) + "."})
@@ -535,13 +535,13 @@ func (m Model) planReversibility(writes []string) (components.PlanFact, string) 
 		return components.PlanFact{Text: "nothing to put back", Tone: components.ToneSafe},
 			"no step names a file it would change"
 	}
-	if !m.tracker.Repo() {
+	if !m.wiring.Tracker.Repo() {
 		return components.PlanFact{Text: "not reversible", Tone: components.ToneRisk},
 			"this is not a git work tree"
 	}
 	tracked := 0
 	for _, path := range writes {
-		if m.tracker.Track(path) == changeset.TrackTracked {
+		if m.wiring.Tracker.Track(path) == changeset.TrackTracked {
 			tracked++
 		}
 	}

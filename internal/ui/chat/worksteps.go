@@ -68,10 +68,10 @@ func (m Model) inspectorSteps() *components.InspectorSteps {
 // storedChatSteps is the checklist a slot holds, and none where the slot has
 // none or the store cannot be read.
 func storedChatSteps(m *Model, slot string) plan.Checklist {
-	if m.db == nil || slot == "" {
+	if m.wiring.DB == nil || slot == "" {
 		return plan.Checklist{}
 	}
-	saved, err := m.db.ChatResume(slot)
+	saved, err := m.wiring.DB.ChatResume(slot)
 	if err != nil {
 		return plan.Checklist{}
 	}

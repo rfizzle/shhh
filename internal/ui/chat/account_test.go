@@ -39,8 +39,11 @@ func accountedModel(t *testing.T, p provider.Provider, every int) (Model, *stora
 	t.Helper()
 	db := rewindTestDB(t)
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, multiTokenStream("hi there")).WithDB(db).
-		WithAccountant(agent.NewAccountant(p, agent.AccountConfig{Model: "fast"}), every)
+	m := New(msgs, multiTokenStream("hi there"), Wiring{
+		DB:           db,
+		Accountant:   agent.NewAccountant(p, agent.AccountConfig{Model: "fast"}),
+		AccountEvery: every,
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	return updated.(Model), db
 }

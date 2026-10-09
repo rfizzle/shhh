@@ -540,13 +540,6 @@ func (m Model) retryTick(msg retryTickMsg) (tea.Model, tea.Cmd) {
 	return m.resumeAfterWait()
 }
 
-// WithRetryLimit bounds this session's stalls at the attempts a setting
-// names; nil is a file that named none and keeps the built-in bound.
-func (m Model) WithRetryLimit(n *int) Model {
-	m.backoff.SetLimit(n)
-	return m
-}
-
 // clearRetryChain forgets the attempts so far. A request the provider
 // actually answered ends the stall, whatever happens next — so does starting,
 // retrying or continuing a turn, each of which is a decision the user made
@@ -608,10 +601,10 @@ func (m Model) updateRetryWait(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // left behind, so waiting it out on the new one would be waiting for nothing.
 func (m Model) finishOnFallback(name string) (tea.Model, tea.Cmd) {
 	from := m.modelName
-	if m.switchFn == nil {
+	if m.wiring.SwitchModel == nil {
 		return m.systemNotice("this session cannot switch models")
 	}
-	m.switchFn(name)
+	m.wiring.SwitchModel(name)
 	m.modelName = name
 	// The switch is on the record in both places a cost is read from: the
 	// transcript, and the per-model spend /stats reports, so a turn
@@ -635,7 +628,7 @@ func (m Model) finishOnFallback(name string) (tea.Model, tea.Cmd) {
 // Closest rather than cheapest: the point is to finish the turn, and the
 // least capable model in the catalog is the one least likely to.
 func (m Model) cheaperModel() string {
-	if m.switchFn == nil || m.prices == nil || m.modelName == "" {
+	if m.wiring.SwitchModel == nil || m.wiring.Prices == nil || m.modelName == "" {
 		return ""
 	}
 	current, ok := m.modelRate(m.modelName)
@@ -665,7 +658,7 @@ func (m Model) cheaperModel() string {
 // the only comparison that ranks two models by what they cost to finish a
 // turn on rather than by half of it.
 func (m Model) modelRate(name string) (float64, bool) {
-	in, out, ok := m.prices.Cost(name, 1_000_000, 1_000_000)
+	in, out, ok := m.wiring.Prices.Cost(name, 1_000_000, 1_000_000)
 	if !ok {
 		return 0, false
 	}

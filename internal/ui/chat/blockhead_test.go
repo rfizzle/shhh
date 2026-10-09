@@ -88,7 +88,8 @@ func TestClick_ASentMessagesHeadingIsNotATarget(t *testing.T) {
 // about the row the reader pointed at.
 func TestClick_InReadingModeTheCursorMovesFirst(t *testing.T) {
 	var caught []string
-	m := readingOn(t, oneBlock, threeBlocks, 3, &caught).WithMouse(true)
+	m := readingOn(t, oneBlock, threeBlocks, 3, &caught)
+	m.pointer.mouseOn = true
 	head := headingLine(t, contentLines(m), "Build it first:", "sh")
 	m = clickLine(t, m, head, "sh")
 	if m.state != stateFocus || m.focusIdx != 1 {
@@ -188,7 +189,7 @@ func blockSession(t *testing.T) (*program, func() []string) {
 		caught []string
 	)
 	p := &programProvider{turns: []programTurn{{text: threeBlocks}}}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p)).WithMouse(true)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{})
 	m.copyFn = func(text string) clipboard.Result {
 		mu.Lock()
 		defer mu.Unlock()

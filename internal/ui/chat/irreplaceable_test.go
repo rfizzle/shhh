@@ -29,7 +29,9 @@ func irreplaceableHome(t *testing.T, m Model) Model {
 	if len(errs) > 0 {
 		t.Fatal(errs)
 	}
-	return m.WithScope(sc).WithWorkspace(ws)
+	m.wiring.Scope = sc
+	m.wiring.Workspace = ws
+	return m
 }
 
 // In auto mode, with every command granted, a delete of the home directory

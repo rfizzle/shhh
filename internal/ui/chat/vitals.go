@@ -249,13 +249,13 @@ func (m Model) liveSessionTokens() (in, out int64) {
 // usageCost prices one request against the session's model, reporting
 // whether the table knew it.
 func (m Model) usageCost(u provider.Usage) (float64, bool) {
-	if m.prices == nil || m.modelName == "" {
+	if m.wiring.Prices == nil || m.modelName == "" {
 		return 0, false
 	}
 	// Priced the way the ledger prices it, in the three parts the input is
 	// actually billed in; the two must not disagree about one request.
 	cached, created := int64(u.CachedTokens), int64(u.CacheCreationTokens)
-	in, out, found := m.prices.CostTokens(m.modelName, pricing.Tokens{
+	in, out, found := m.wiring.Prices.CostTokens(m.modelName, pricing.Tokens{
 		Input:   int64(u.PromptTokens) - cached - created,
 		Cached:  cached,
 		Created: created,
@@ -473,12 +473,4 @@ func (b contextBreakdown) scaledTo(target int64) contextBreakdown {
 	}
 	*dst[largest] += target - out.total()
 	return out
-}
-
-// WithProjectContextTokens sets the estimated token cost of the project
-// context (AGENTS.md and friends) injected into the system prompt, so the
-// occupancy breakdown can name it separately.
-func (m Model) WithProjectContextTokens(n int64) Model {
-	m.projectTokens = n
-	return m
 }

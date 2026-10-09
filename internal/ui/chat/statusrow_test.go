@@ -85,7 +85,8 @@ func TestStatusRow_NothingToSay(t *testing.T) {
 // A conversation has no changeset, so the session clause is absent rather
 // than a zero it would have to invent.
 func TestStatusRow_ConversationHasNoChanges(t *testing.T) {
-	m := statusRowModel(t, 80).WithConversation()
+	m := statusRowModel(t, 80)
+	m.wiring.Conversation, m.start, m.policy.mode = true, nil, agent.ModeManual
 	row := stripANSI(m.statusRow())
 	if !strings.Contains(row, "on target") {
 		t.Fatalf("the reading still stands in a conversation: %q", row)

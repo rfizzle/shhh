@@ -21,8 +21,8 @@ func failureModel(t *testing.T) Model {
 	t.Helper()
 	m := frameModel(t, 110, 40)
 	m.providerName = "openai"
-	m.replaceKeyFn = func(string) error { return nil }
-	m.switchProviderFn = func(string) error { return nil }
+	m.wiring.ReplaceKey = func(string) error { return nil }
+	m.wiring.SwitchProvider = func(string) error { return nil }
 	return m
 }
 
@@ -213,7 +213,7 @@ func TestFailureKey_ProviderPickOpensTheSelector(t *testing.T) {
 func TestKeyEntry_AppliesTheKeyAndNeverShowsIt(t *testing.T) {
 	var applied string
 	m := failureModel(t)
-	m.replaceKeyFn = func(key string) error {
+	m.wiring.ReplaceKey = func(key string) error {
 		applied = key
 		return nil
 	}
@@ -250,7 +250,7 @@ func TestKeyEntry_AppliesTheKeyAndNeverShowsIt(t *testing.T) {
 func TestKeyEntry_EscKeepsTheOldKey(t *testing.T) {
 	applied := false
 	m := failureModel(t)
-	m.replaceKeyFn = func(string) error {
+	m.wiring.ReplaceKey = func(string) error {
 		applied = true
 		return nil
 	}

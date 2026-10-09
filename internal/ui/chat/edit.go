@@ -88,7 +88,7 @@ func (m Model) openEditPane(parts []string) (tea.Model, tea.Cmd) {
 // where the session may write, and the way to widen that is the grant every
 // other write asks for.
 func (m Model) editRefusal(named, abs string) string {
-	if dirs := m.scope.Outside(abs); len(dirs) > 0 {
+	if dirs := m.wiring.Scope.Outside(abs); len(dirs) > 0 {
 		if class, reason := scope.Classify(dirs[0]); class == scope.Refused {
 			return "cannot edit " + named + ": " + reason
 		}
@@ -109,8 +109,8 @@ func (m Model) editRefusal(named, abs string) string {
 // editPaneName is the file as the header names it: relative to the workspace
 // where it is inside it, as it was typed otherwise.
 func (m Model) editPaneName(named, abs string) string {
-	if m.workspace != "" {
-		if rel, err := filepath.Rel(m.workspace, abs); err == nil && !strings.HasPrefix(rel, "..") {
+	if m.wiring.Workspace != "" {
+		if rel, err := filepath.Rel(m.wiring.Workspace, abs); err == nil && !strings.HasPrefix(rel, "..") {
 			return filepath.ToSlash(rel)
 		}
 	}
@@ -167,7 +167,7 @@ func (m *Model) saveEditPane(s *editSession) (string, bool) {
 	if !m.turnOpen {
 		turn++
 	}
-	record := changeRecording{store: m.changes, tracker: m.tracker, turn: turn, path: s.abs, origin: changeset.ByPerson}
+	record := changeRecording{store: m.changes, tracker: m.wiring.Tracker, turn: turn, path: s.abs, origin: changeset.ByPerson}
 	before := record.before()
 	if _, err := s.seen.ExecuteMutating(tools.WriteFileName, args); err != nil {
 		var stale tools.StaleError

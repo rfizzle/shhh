@@ -59,13 +59,6 @@ func (m Model) toggleMouse() (tea.Model, tea.Cmd) {
 	return m.systemNotice(note)
 }
 
-// WithMouse sets whether the session starts with terminal mouse reporting on
-// (appearance.mouse). On is the default.
-func (m Model) WithMouse(on bool) Model {
-	m.pointer.mouseOn = on
-	return m
-}
-
 // updateMouse routes a mouse event: the wheel reads, and the primary button
 // selects text (select.go) or clicks a target (click.go).
 //
@@ -592,10 +585,10 @@ func (m *Model) setMouse(on bool) string {
 		m.refreshTranscript()
 	}
 	note := mouseNote(on)
-	if m.writeConfig == nil {
+	if m.wiring.ConfigWriter == nil {
 		return note + "\nThis session cannot write the config file, so it is for this session only."
 	}
-	if err := m.writeConfig("appearance.mouse", strconv.FormatBool(on)); err != nil {
+	if err := m.wiring.ConfigWriter("appearance.mouse", strconv.FormatBool(on)); err != nil {
 		return note + "\nIt could not be saved: " + err.Error()
 	}
 	return note + " Saved — new sessions start this way."

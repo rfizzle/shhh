@@ -46,7 +46,7 @@ func (m Model) bangDraft() bool {
 // conversation the agent is mid-thought in, so it is refused rather than
 // queued, in the same words the registry gives /run.
 func (m Model) runBang(cmd string, local bool) (tea.Model, tea.Cmd) {
-	if m.runFn == nil {
+	if m.wiring.Runner == nil {
 		return m.surfaceNotice("command execution is not available in this session")
 	}
 	if m.working() || m.decisionUngated() {

@@ -27,25 +27,16 @@ import (
 // question no better than one sentence does.
 const notesEmpty = "The notebook is empty. Agents write to it with write_note; /notes drop <n> removes one."
 
-// WithNotebook attaches the session's shared notebook. The model owns the
-// session slot's name, so it is the one that binds the notebook to it —
-// here, and again wherever the name changes.
-func (m Model) WithNotebook(nb *notebook.Store) Model {
-	m.notebook = nb
-	m.bindNotebook()
-	return m
-}
-
 // bindNotebook points the notebook at the current session slot and tells it
 // which turn is open. A bind that fails leaves the notebook in memory, which
 // is the session's working state either way; only the resume would have lost
 // it.
 func (m *Model) bindNotebook() {
-	if m.notebook == nil {
+	if m.wiring.Notebook == nil {
 		return
 	}
-	_ = m.notebook.Bind(m.sessionName)
-	m.notebook.SetTurn(m.turnCount)
+	_ = m.wiring.Notebook.Bind(m.sessionName)
+	m.wiring.Notebook.SetTurn(m.turnCount)
 }
 
 // nextTurn moves the session on to its next turn number and tells the three
@@ -67,8 +58,8 @@ func (m *Model) nextTurn() {
 	// them, and a question still outstanding when the next instruction
 	// arrives was asked by the turn before it (question.go).
 	m.questionsAsked = 0
-	m.notebook.SetTurn(m.turnCount)
-	m.sourceLedger.SetTurn(m.turnCount)
+	m.wiring.Notebook.SetTurn(m.turnCount)
+	m.wiring.Sources.SetTurn(m.turnCount)
 	m.agent.SetTurn(m.turnCount)
 }
 
@@ -79,10 +70,10 @@ func (m *Model) nextTurn() {
 // correct — and dropping a note is only ever the person's, so this is the
 // only route to it (docs/capabilities/subagents.md#what-they-share).
 func (m Model) notesCommand(args []string) (tea.Model, tea.Cmd) {
-	if m.notebook == nil {
+	if m.wiring.Notebook == nil {
 		return m.surfaceNotice("this session has no notebook")
 	}
-	empty := m.notebook.Len() == 0
+	empty := m.wiring.Notebook.Len() == 0
 	switch {
 	case len(args) == 0:
 		if empty {
@@ -115,7 +106,7 @@ func (m Model) dropNoteByName(args []string) string {
 	if err != nil {
 		return "usage: /notes drop <n>"
 	}
-	if err := m.notebook.Delete(id); err != nil {
+	if err := m.wiring.Notebook.Delete(id); err != nil {
 		return failed("notes", err.Error())
 	}
 	return fmt.Sprintf("dropped note n%d", id)
@@ -134,7 +125,7 @@ func (m Model) openNotes(clear bool) (tea.Model, tea.Cmd) {
 		screen.AskClear()
 	}
 	m.screens = m.screens.with(stateNotes, &screen)
-	m.notesSeen = notebook.Newest(m.notebook.List())
+	m.notesSeen = notebook.Newest(m.wiring.Notebook.List())
 	m.enterSurface(stateNotes)
 	return m, nil
 }
@@ -173,7 +164,7 @@ func (m Model) dropNotes(ids []string) (tea.Model, tea.Cmd) {
 		if err != nil {
 			continue
 		}
-		if err := m.notebook.Delete(n); err == nil {
+		if err := m.wiring.Notebook.Delete(n); err == nil {
 			dropped = append(dropped, id)
 		}
 	}
@@ -189,7 +180,7 @@ func (m Model) dropNotes(ids []string) (tea.Model, tea.Cmd) {
 	default:
 		screen.Notice = fmt.Sprintf("dropped %d notes", len(dropped))
 	}
-	m.notesSeen = notebook.Newest(m.notebook.List())
+	m.notesSeen = notebook.Newest(m.wiring.Notebook.List())
 	return m, nil
 }
 
@@ -197,7 +188,7 @@ func (m Model) dropNotes(ids []string) (tea.Model, tea.Cmd) {
 // reading the notebook is given it. A note is a paragraph, so what the
 // viewer adds over the preview is the whole of a body the pane had to wrap.
 func (m Model) openNote(id string) (tea.Model, tea.Cmd) {
-	for _, n := range m.notebook.List() {
+	for _, n := range m.wiring.Notebook.List() {
 		if noteID(n.ID) != id {
 			continue
 		}
@@ -239,7 +230,7 @@ func (m Model) renderNotesHint() string {
 // turn a note belongs to and when it was written are readings of the
 // session.
 func (m Model) notesScreenData() components.NotesScreen {
-	notes := m.notebook.List()
+	notes := m.wiring.Notebook.List()
 	rows := make([]components.NotesRow, 0, len(notes))
 	for _, n := range notes {
 		rows = append(rows, notesRow(n))
@@ -292,7 +283,7 @@ func notesSubject(notes []notebook.Note) string {
 // back from the fan-out, and what the session wrote for itself is already in
 // front of the person as the rows that wrote it.
 func (m Model) turnNotesClause() string {
-	all := m.notebook.List()
+	all := m.wiring.Notebook.List()
 	notes := notebook.WrittenIn(all, m.turnCount, notebook.Orchestrator)
 	if len(notes) == 0 {
 		return ""

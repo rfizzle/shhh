@@ -90,17 +90,6 @@ type Todos struct {
 	Parallel func(args []string) (string, error)
 }
 
-// WithTodos enables /todo and the TODO block.
-func (m Model) WithTodos(t Todos) Model {
-	m.todo.wiring = t
-	m.reloadTodos()
-	// A session opened beside a parallel sprint follows it from its first
-	// frame, the way the session that started it does: Init starts the
-	// re-read this marks as armed.
-	m.todo.runner.following = m.lanesLive()
-	return m
-}
-
 // todosEnabled reports whether this session has a backlog wired.
 //
 // It asks nothing about the coding surfaces. A backlog is not a coding
@@ -297,11 +286,11 @@ func (m *Model) namedTodoRoot() string {
 	// A host that never said where the session stands has not said the
 	// backlog is somewhere else either, and answering from the process's
 	// own directory would name a root nobody chose.
-	if m.todo.rootSaid || m.todo.wiring.Root == "" || m.workspace == "" {
+	if m.todo.rootSaid || m.todo.wiring.Root == "" || m.wiring.Workspace == "" {
 		return ""
 	}
 	m.todo.rootSaid = true
-	if root, found := project.RootFound(m.workspace); found && root == m.todo.wiring.Root {
+	if root, found := project.RootFound(m.wiring.Workspace); found && root == m.todo.wiring.Root {
 		return ""
 	}
 	return "this directory is part of no project, so the backlog is the one at " +

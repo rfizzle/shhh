@@ -15,7 +15,7 @@ import (
 // and the cancel were fields on the Model before they were gathered here,
 // and nothing keys a memo on their identity.
 //
-// It has no clear and no update. The judge is wired once (WithClassifier),
+// It has no clear and no update. The judge is wired once (the wiring's Classifier),
 // and the cancel is set when a check starts (approval.go) and dropped by
 // whatever ends it: the verdict landing (turn.go), the cancel chord skipping
 // the check (keyroute.go), a session boundary (newsession.go) or the quit

@@ -32,7 +32,7 @@ func wheel(dir int) tea.MouseMsg {
 func proseModel(t *testing.T) Model {
 	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 20})
 	m = updated.(Model)
 	for i := 0; i < 12; i++ {
@@ -49,7 +49,7 @@ func proseModel(t *testing.T) Model {
 func diffFullModel(t *testing.T) Model {
 	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 20})
 	m = updated.(Model)
 
@@ -67,9 +67,7 @@ func diffFullModel(t *testing.T) Model {
 }
 
 func TestWheel_ScrollsTheTranscriptAndLeavesTheDraftAlone(t *testing.T) {
-	// Reporting is off by default, so the wheel has to be asked for before
-	// there is a wheel event to route at all.
-	m := typeChars(t, proseModel(t).WithMouse(true), "half a sentence")
+	m := typeChars(t, proseModel(t), "half a sentence")
 	before := m.viewport.YOffset()
 
 	updated, _ := m.Update(wheel(-1))
@@ -95,7 +93,8 @@ func TestWheel_ScrollsTheTranscriptAndLeavesTheDraftAlone(t *testing.T) {
 // The wheel is the one gesture that reaches a full-screen viewer, since the
 // transcript behind it is not what the reader is looking at.
 func TestWheel_ReachesTheFullScreenDiff(t *testing.T) {
-	m := diffFullModel(t).WithMouse(true)
+	m := diffFullModel(t)
+	m.pointer.mouseOn = true
 	before := m.fullDiff.Offset
 
 	updated, _ := m.Update(wheel(1))
@@ -311,7 +310,7 @@ func TestReadingMode_ProseRowsTakeTheCursor(t *testing.T) {
 // selection.
 func TestReadingMode_OpensOnATranscriptWithNothingSelectable(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 20})
 	m = updated.(Model)
 	for i := 0; i < 24; i++ {
@@ -550,10 +549,11 @@ func TestStartScreen_NavLineSurvivesTyping(t *testing.T) {
 // immediately. ctrl+x flips it off for native terminal selection.
 func TestMouse_OnByDefaultAndToggledByChord(t *testing.T) {
 	var wrote [][2]string
-	m := readyModel(t).WithConfigWriter(func(k, v string) error {
+	m := readyModel(t)
+	m.wiring.ConfigWriter = func(k, v string) error {
 		wrote = append(wrote, [2]string{k, v})
 		return nil
-	})
+	}
 	if !m.pointer.mouseOn {
 		t.Fatal("a session starts with reporting on")
 	}

@@ -22,7 +22,7 @@ import (
 func longOutputModel(t *testing.T, n int) Model {
 	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	var out strings.Builder
@@ -161,7 +161,7 @@ func TestOutputDepths_ShortOutputSkipsFullScreen(t *testing.T) {
 // output.
 func TestOutputDepths_ReadRowsOpenTheSameWay(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	var out strings.Builder
@@ -210,7 +210,9 @@ func TestApprovalCard_ScrollResetsWhenTheCardChanges(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "run it"},
 	}
-	m := New(msgs, mockStream).WithRunner(legacyRunner(func(_ context.Context, _ string) (string, int) { return "", 0 }))
+	m := New(msgs, mockStream, Wiring{
+		Runner: legacyRunner(func(_ context.Context, _ string) (string, int) { return "", 0 }),
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -229,10 +231,12 @@ func TestApprovalCard_FullViewForCommands(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "run it"},
 	}
-	m := New(msgs, mockStream).WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
-		ran = append(ran, cmd)
-		return "", 0
-	}))
+	m := New(msgs, mockStream, Wiring{
+		Runner: legacyRunner(func(_ context.Context, cmd string) (string, int) {
+			ran = append(ran, cmd)
+			return "", 0
+		}),
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming

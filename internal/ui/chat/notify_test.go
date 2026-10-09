@@ -27,7 +27,7 @@ import (
 // a turn in flight and the window reported away.
 func notifyModel(t *testing.T) Model {
 	t.Helper()
-	m := New(nil, mockStream)
+	m := New(nil, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.caps = caps.Terminal{Asked: true, Notifications: true}
@@ -179,7 +179,7 @@ func TestNotify_AChildAskArrivesWhileTheParentIsStillWorking(t *testing.T) {
 }
 
 func TestNotify_FocusMessagesAreWhatDecidesWhetherAnyoneIsLooking(t *testing.T) {
-	m := New(nil, mockStream)
+	m := New(nil, mockStream, Wiring{})
 	if m.away {
 		t.Fatal("a session nobody has told about focus must not assume the reader is gone")
 	}
@@ -194,7 +194,7 @@ func TestNotify_FocusMessagesAreWhatDecidesWhetherAnyoneIsLooking(t *testing.T) 
 }
 
 func TestNotify_TheViewAsksForFocusReporting(t *testing.T) {
-	m := New(nil, mockStream)
+	m := New(nil, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	if !updated.(Model).View().ReportFocus {
 		t.Fatal("without focus reporting nothing can ever say the window is away")
@@ -204,7 +204,7 @@ func TestNotify_TheViewAsksForFocusReporting(t *testing.T) {
 func TestNotifyCommand_SaysWhatItIsAndSavesIt(t *testing.T) {
 	m := notifyModel(t)
 	var wroteKey, wroteValue string
-	m.writeConfig = func(key, value string) error {
+	m.wiring.ConfigWriter = func(key, value string) error {
 		wroteKey, wroteValue = key, value
 		return nil
 	}

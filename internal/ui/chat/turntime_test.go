@@ -29,13 +29,14 @@ func TestTurnTime_ASplitSumsToTheTurn(t *testing.T) {
 		split    agent.TurnSplit
 	}
 	var got []closed
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithObserver(observe.Observer{
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Observer: observe.Observer{
 			TurnTimed: func(_, _ int64, d time.Duration, outcome string, s agent.TurnSplit) {
 				got = append(got, closed{d, outcome, s})
 			},
 			Turn: func(int64, int64, time.Duration, string) { t.Fatal("a timed turn was reported untimed") },
-		})
+		},
+	})
 	next, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = next.(Model)
 	next, _ = m.sendUserMessage("look at main.go")
@@ -104,11 +105,12 @@ func TestQuietStretch_APrintingCommandIsNotWaiting(t *testing.T) {
 		t.Cleanup(func() { clock = was })
 
 		var got []agent.TurnSplit
-		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-			WithObserver(observe.Observer{
+		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+			Observer: observe.Observer{
 				TurnTimed: func(_, _ int64, _ time.Duration, _ string, s agent.TurnSplit) { got = append(got, s) },
 				Turn:      func(int64, int64, time.Duration, string) { t.Fatal("a timed turn was reported untimed") },
-			})
+			},
+		})
 		next, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 		m = next.(Model)
 		next, _ = m.sendUserMessage("build it")

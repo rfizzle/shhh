@@ -273,7 +273,7 @@ func (m Model) skippedCallEntry(call provider.ToolCall, err error) entry {
 // file is somewhere else is the fact worth seeing, and a relative path to it
 // would hide that behind a run of "..".
 func (m Model) rowPath(p string) string {
-	root := m.workspace
+	root := m.wiring.Workspace
 	if root == "" || p == "" {
 		return p
 	}

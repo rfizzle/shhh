@@ -729,7 +729,7 @@ func (m Model) finishCommand(msg cmdDoneMsg) (tea.Model, tea.Cmd) {
 		if amendedFrom != "" {
 			ranArgs = execArguments(msg.command)
 		}
-		toolResult := m.repeats.Notice(tools.ExecCommandName,
+		toolResult := m.wiring.Repeats.Notice(tools.ExecCommandName,
 			json.RawMessage(ranArgs), formatted)
 		if agent.IsRepeatNotice(toolResult) {
 			m.signal(observe.SignalRepeat, tools.ExecCommandName)
@@ -763,7 +763,7 @@ func (m Model) finishCommand(msg cmdDoneMsg) (tea.Model, tea.Cmd) {
 	// A local run's output stays out of the conversation: that is the
 	// whole difference `!!` buys, and the row's outcome says so (bang.go).
 	if !msg.local {
-		m.agent.AppendMachine(commandContextMessage(msg.command, out, msg.exitCode, m.evidence.Keep))
+		m.agent.AppendMachine(commandContextMessage(msg.command, out, msg.exitCode, m.wiring.Evidence.Keep))
 	}
 	// A message typed while the /run command executed is sent now, with
 	// the command context already in the conversation.

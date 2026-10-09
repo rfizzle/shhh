@@ -15,7 +15,7 @@ import (
 // start survey found.
 func headedBy(t *testing.T, m Model, ws string) Model {
 	t.Helper()
-	m = m.WithStartScreen(StartInfo{Project: project.Info{Dir: ws, Display: "~/ws", Repo: true, Branch: "master"}})
+	m.start = &StartInfo{Project: project.Info{Dir: ws, Display: "~/ws", Repo: true, Branch: "master"}}
 	if got := stripANSI(m.headerRow(200)); !strings.Contains(got, "~/ws · master") {
 		t.Fatalf("the header should open on the surveyed branch, got %q", got)
 	}
@@ -55,7 +55,7 @@ func TestHeader_TheBranchFollowsAGitSwitch(t *testing.T) {
 // the tree reading, and the header follows it there.
 func TestHeader_TheBranchFollowsTheTreeReading(t *testing.T) {
 	ws := treeRepo(t)
-	m := headedBy(t, gatedModel(t, nil, nil).WithTreeCheck(&agent.TreeCheck{Dir: ws}), ws)
+	m := headedBy(t, gatedModelWith(t, nil, nil, Wiring{TreeCheck: &agent.TreeCheck{Dir: ws}}), ws)
 	m.injectTreeNotice(true) // the baseline
 
 	gitIn(t, ws, "switch", "-q", "-c", "feature/y")

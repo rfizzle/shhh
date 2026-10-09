@@ -98,16 +98,6 @@ type MCPJoin struct {
 	Gated map[string]GatedPreviewFunc
 }
 
-// WithMCP enables /mcp and tells the transcript which rows are server
-// calls.
-func (m Model) WithMCP(servers MCP) Model {
-	m.mcp = servers
-	if m.mcp.ReadOnly == nil {
-		m.mcp.ReadOnly = func(string) bool { return false }
-	}
-	return m
-}
-
 // toolRailRows is how many source rows the TOOLS block draws before it folds
 // the rest into a count. Four, the same bound the backlog's block uses: the
 // block answers "is what I configured up", and past four rows that is a
@@ -122,10 +112,10 @@ const toolRailRows = 4
 // be a row saying the obvious.
 func (m Model) inspectorTools() *components.InspectorTools {
 	sources := m.mcpSources()
-	if len(sources) == 0 && m.memory.Omitted == 0 {
+	if len(sources) == 0 && m.wiring.Memory.Omitted == 0 {
 		return nil
 	}
-	t := &components.InspectorTools{MemoryOmitted: m.memory.Omitted}
+	t := &components.InspectorTools{MemoryOmitted: m.wiring.Memory.Omitted}
 	if n := m.builtinToolCount(); n > 0 {
 		t.Up++
 		t.Sources = append(t.Sources, components.InspectorToolSource{
@@ -430,7 +420,7 @@ func (m *Model) joinMCP() {
 				defs = append(defs, d)
 			}
 		}
-		*m = m.WithToolDefinitions(append(defs, j.ServerTools...))
+		m.setToolDefinitions(append(defs, j.ServerTools...))
 	}
 	if len(j.Gated) > 0 {
 		// A copy, not the map the session was built with: the model is a

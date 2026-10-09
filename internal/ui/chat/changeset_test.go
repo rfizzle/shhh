@@ -207,7 +207,8 @@ func TestChangeset_NotesWhetherGitKnewTheFile(t *testing.T) {
 	}
 	showFile(t, tracked)
 
-	m := gatedModel(t, nil, nil).WithChangeset(nil, changeset.NewTracker(dir))
+	m := gatedModel(t, nil, nil)
+	m.wiring.Tracker = changeset.NewTracker(dir)
 	m.turnCount = 1
 	m = applyWrite(t, m, tracked, "package main\n\nfunc main() {}\n", "y")
 	m = applyWrite(t, m, filepath.Join(dir, "scratch.txt"), "notes\n", "y")
@@ -237,7 +238,8 @@ func TestChangeset_WithoutGitTheAnswerIsUnknown(t *testing.T) {
 
 func TestChangeset_EvictionIsAnnouncedInTheTranscript(t *testing.T) {
 	m := gatedModel(t, nil, nil)
-	m = m.WithChangeset(changeset.New(64), nil)
+	m.changes, m.wiring.Tracker = changeset.New(64), nil
+	m.bindSlot()
 	m.changes.Add(1, changeset.Record{Path: "old.go", After: strings.Repeat("x\n", 100), AfterExists: true})
 	m.turnCount = 2
 	m = applyWrite(t, m, filepath.Join(t.TempDir(), "new.go"), strings.Repeat("y\n", 100), "y")

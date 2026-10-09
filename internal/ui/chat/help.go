@@ -137,7 +137,7 @@ func helpKeyList(rows []helpKeyRow) helpSection {
 // (docs/capabilities/chat.md#a-conversation-has-one-mode).
 func (m Model) helpKeySection() helpSection {
 	rows := helpKeyRows()
-	if m.conversation {
+	if m.wiring.Conversation {
 		rows = slices.DeleteFunc(slices.Clone(rows), func(r helpKeyRow) bool {
 			return len(r.binds) == 1 && keys.Shown(r.binds[0]) == keys.Shown(keys.Draft.Mode)
 		})

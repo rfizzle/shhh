@@ -85,12 +85,6 @@ type SpawnableRole struct {
 	Older bool
 }
 
-// WithPersonas wires the drafting flow.
-func (m Model) WithPersonas(p Personas) Model {
-	m.personas = p
-	return m
-}
-
 // personaFlow is one drafting in progress. The surface holds what is on
 // screen; this holds what the drafter is being told.
 type personaFlow struct {
@@ -209,7 +203,7 @@ func (m Model) personaDrafting() bool {
 // points worded for this session, for a person who has the wish but not the
 // sentence yet.
 func (m Model) startPersona(brief string) (tea.Model, tea.Cmd) {
-	if !m.personas.Enabled {
+	if !m.wiring.Personas.Enabled {
 		return m.systemNotice("no model is configured to draft a profile. The reference in docs/agents/README.md says how to write one by hand")
 	}
 	if m.persona != nil && m.persona.drafting {
@@ -232,13 +226,13 @@ func (m Model) startPersona(brief string) (tea.Model, tea.Cmd) {
 // exactly the person who wants to know which ones already exist.
 func (m Model) personaSubject() string {
 	kind := "a coding agent"
-	if m.personas.Kind == persona.KindChat {
+	if m.wiring.Personas.Kind == persona.KindChat {
 		kind = "a chat colleague"
 	}
-	if m.personas.Existing == nil {
+	if m.wiring.Personas.Existing == nil {
 		return kind
 	}
-	existing := m.personas.Existing()
+	existing := m.wiring.Personas.Existing()
 	if len(existing) == 0 {
 		return kind + " · none yet"
 	}
@@ -250,10 +244,10 @@ func (m Model) personaSubject() string {
 func (m Model) askPersonaBrief(text string) {
 	ask := "What should this agent do? Say the job however you like — what it changes, what it checks, what it must leave alone."
 	lead := "or start from one of these"
-	if m.personas.Kind == persona.KindChat {
+	if m.wiring.Personas.Kind == persona.KindChat {
 		ask = "What should this colleague be for? Say it however you like — a standpoint, a job, a voice."
 	}
-	m.personaScreen.AskBrief(ask, lead, persona.Suggestions(m.personas.Kind))
+	m.personaScreen.AskBrief(ask, lead, persona.Suggestions(m.wiring.Personas.Kind))
 	m.personaScreen.SetText(text)
 }
 
@@ -263,10 +257,10 @@ func (m Model) draftPersona(brief string) (tea.Model, tea.Cmd) {
 	f := m.persona
 	f.brief = brief
 	return m.runDrafter(persona.Request{
-		Kind:     m.personas.Kind,
+		Kind:     m.wiring.Personas.Kind,
 		Brief:    brief,
 		Exchange: drafterExchange(f.exchange),
-		Models:   m.personas.Models,
+		Models:   m.wiring.Personas.Models,
 	}, "drafting")
 }
 
@@ -292,13 +286,13 @@ func (m Model) refinePersonaSection(index int, note string) (tea.Model, tea.Cmd)
 		current.Sections = &sections
 	}
 	return m.runDrafter(persona.Request{
-		Kind:     m.personas.Kind,
+		Kind:     m.wiring.Personas.Kind,
 		Brief:    f.brief,
 		Exchange: drafterExchange(f.exchange),
 		Current:  &current,
 		Section:  name,
 		Feedback: note,
-		Models:   m.personas.Models,
+		Models:   m.wiring.Personas.Models,
 	}, "redrafting "+name)
 }
 
@@ -327,13 +321,13 @@ func (m Model) refinePersonaAll(note string, include bool) (tea.Model, tea.Cmd) 
 		current.Sections = &sections
 	}
 	return m.runDrafter(persona.Request{
-		Kind:     m.personas.Kind,
+		Kind:     m.wiring.Personas.Kind,
 		Brief:    f.brief,
 		Exchange: drafterExchange(f.exchange),
 		Current:  &current,
 		Keep:     keep,
 		Feedback: note,
-		Models:   m.personas.Models,
+		Models:   m.wiring.Personas.Models,
 	}, "redrafting every section")
 }
 
@@ -385,10 +379,10 @@ func (m Model) runDrafter(req persona.Request, doing string) (tea.Model, tea.Cmd
 	f.started = clock()
 	f.runID++
 	runID := f.runID
-	if m.personas.Existing != nil {
-		req.Existing = m.personas.Existing()
+	if m.wiring.Personas.Existing != nil {
+		req.Existing = m.wiring.Personas.Existing()
 	}
-	draft := m.personas.Draft
+	draft := m.wiring.Personas.Draft
 	ctx, cancel := context.WithCancel(context.Background())
 	f.cancel = cancel
 	if f.migrating {
@@ -981,15 +975,15 @@ func (m Model) personaSaves() []personaSave {
 			{option: components.SelectOption{Label: "See what changes", Desc: "the file as it stands against the file as it would be written"}, diff: true},
 		}
 	}
-	project := m.personas.ProjectDir
+	project := m.wiring.Personas.ProjectDir
 	if project == "" {
 		project = ".shhh/agents"
 	}
-	global := m.personas.GlobalDir
+	global := m.wiring.Personas.GlobalDir
 	if global == "" {
 		global = "the config directory's agents/"
 	}
-	if m.personas.Kind == persona.KindChat {
+	if m.wiring.Personas.Kind == persona.KindChat {
 		return []personaSave{{
 			option: components.SelectOption{Label: "Save", Desc: global},
 			scope:  persona.ScopeGlobal,
@@ -1278,7 +1272,7 @@ func (m Model) savePersona(index int) (tea.Model, tea.Cmd) {
 	if f.source != nil {
 		return m.saveOpenedPersona(saves[index])
 	}
-	path, err := m.personas.Save(saves[index].scope, *f.draft, f.overwrite)
+	path, err := m.wiring.Personas.Save(saves[index].scope, *f.draft, f.overwrite)
 	if err != nil {
 		if path != "" && !f.overwrite {
 			// The file exists. The card comes back with the choice made
@@ -1318,13 +1312,13 @@ func (m Model) openPersonaProfile(name string, migrate bool) (tea.Model, tea.Cmd
 	if role.Path == "" {
 		return m, nil
 	}
-	if m.personas.Open == nil {
+	if m.wiring.Personas.Open == nil {
 		return m.openRoleEditor(name)
 	}
 	if m.persona != nil && m.persona.drafting {
 		return m.surfaceNotice("still drafting — the card opens when it is done")
 	}
-	src, err := m.personas.Open(role.Path)
+	src, err := m.wiring.Personas.Open(role.Path)
 	if err != nil {
 		return m.surfaceNotice("could not open " + role.Path + " — " + err.Error())
 	}
@@ -1365,9 +1359,9 @@ func (m Model) migratePersona() (tea.Model, tea.Cmd) {
 	}
 	f.migrating = true
 	return m.runDrafter(persona.Request{
-		Kind:   m.personas.Kind,
+		Kind:   m.wiring.Personas.Kind,
 		Source: &def,
-		Models: m.personas.Models,
+		Models: m.wiring.Personas.Models,
 	}, "moving "+def.Name+" into sections")
 }
 
@@ -1411,10 +1405,10 @@ func (m Model) saveOpenedPersona(row personaSave) (tea.Model, tea.Cmd) {
 		m.syncViewport()
 		return m, nil
 	}
-	if m.personas.SaveOpened == nil {
+	if m.wiring.Personas.SaveOpened == nil {
 		return m.closePersona("Profile discarded.")
 	}
-	path, err := m.personas.SaveOpened(f.source, *f.draft)
+	path, err := m.wiring.Personas.SaveOpened(f.source, *f.draft)
 	if err != nil {
 		m.openPersonaCard()
 		m.personaScreen.Warn("Not saved — " + err.Error() + ". The draft is still here.")

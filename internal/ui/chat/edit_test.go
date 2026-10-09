@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/scope"
@@ -27,9 +28,10 @@ func editFixture(t *testing.T) string {
 func editSessionAt(t *testing.T, width int) (Model, string) {
 	t.Helper()
 	path := editFixture(t)
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithWorkspace(filepath.Dir(path)).
-		WithChangeset(changeset.New(changeset.DefaultMaxBytes), nil)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Workspace: filepath.Dir(path),
+		Changeset: changeset.New(changeset.DefaultMaxBytes),
+	})
 	next, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 40})
 	return next.(Model), path
 }
@@ -255,12 +257,16 @@ func TestEdit_RefusesWhatItCannotOpen(t *testing.T) {
 	if len(errs) > 0 {
 		t.Fatal(errs)
 	}
-	scoped := sendText(t, m.WithScope(sc), "/edit "+path)
+	scopedModel := m
+	scopedModel.wiring.Scope = sc
+	scoped := sendText(t, scopedModel, "/edit "+path)
 	if scoped.state == stateEditor || !strings.Contains(lastNote(scoped), "outside the working scope — /add-dir") {
 		t.Errorf("outside the scope: state %d, note %q", scoped.state, lastNote(scoped))
 	}
 
-	chat := sendText(t, m.WithConversation(), "/edit loop.go")
+	conversation := m
+	conversation.wiring.Conversation, conversation.start, conversation.policy.mode = true, nil, agent.ModeManual
+	chat := sendText(t, conversation, "/edit loop.go")
 	if chat.state == stateEditor || !strings.Contains(lastNote(chat), "/edit is not part of this session") {
 		t.Errorf("in a conversation: state %d, note %q", chat.state, lastNote(chat))
 	}
@@ -294,8 +300,9 @@ func TestGolden_EditPane(t *testing.T) {
 func TestProgram_AnEditInThePaneIsCountedOnTheClose(t *testing.T) {
 	path := editFixture(t)
 	root := filepath.Dir(path)
-	m := readingSession(root, programTurn{text: "The limit reads as you left it."}).
-		WithChangeset(changeset.New(changeset.DefaultMaxBytes), nil)
+	m := readingSession(root, programTurn{text: "The limit reads as you left it."})
+	m.changes, m.wiring.Tracker = changeset.New(changeset.DefaultMaxBytes), nil
+	m.bindSlot()
 	tm := runProgramAt(t, m, 130, 40)
 
 	send(tm, "/edit loop.go")

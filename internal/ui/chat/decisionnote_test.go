@@ -52,11 +52,12 @@ func TestDenyNoted_TheSentenceIsWhatTheModelIsToldAndWhatTheRowKeeps(t *testing.
 	const why = "not that file — the generated one is written by make"
 
 	var decisions [][2]string
-	m := notedCardModel(t).WithObserver(observe.Observer{
+	m := notedCardModel(t)
+	m.wiring.Observer = observe.Observer{
 		Decision: func(_ observe.Pos, decision, reason string) {
 			decisions = append(decisions, [2]string{decision, reason})
 		},
-	})
+	}
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'N', Text: "N"})
 	m = updated.(Model)
 	if m.approval.note == nil || m.approval.note.allow {

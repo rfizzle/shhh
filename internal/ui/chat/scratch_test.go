@@ -59,7 +59,8 @@ func scratchWorkspace(t *testing.T, m Model) (Model, string) {
 	if len(errs) > 0 {
 		t.Fatal(errs)
 	}
-	return m.WithScope(sc).WithWorkspace(ws), ws
+	m.wiring.Scope, m.wiring.Workspace = sc, ws
+	return m, ws
 }
 
 // In auto mode a recursive delete of untracked scratch inside the workspace

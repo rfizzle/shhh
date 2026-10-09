@@ -20,10 +20,10 @@ import (
 
 func TestModelPick_BareModelOpensPicker(t *testing.T) {
 	var switched string
-	m := readyModel(t).
-		WithModelSwitcher(func(name string) { switched = name }).
-		WithPricing(nil, "m1").
-		WithModelOptions([]string{"m1", "m2", "m3"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(name string) { switched = name }
+	m.wiring.Prices, m.modelName = nil, "m1"
+	m.picker.models.options = []string{"m1", "m2", "m3"}
 
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -57,10 +57,10 @@ func TestModelPick_BareModelOpensPicker(t *testing.T) {
 // model the session is already on — the one thing the word `cancel` cannot
 // say (docs/interface/principles.md#esc-is-always-the-safe-answer).
 func TestModelPick_EscSaysWhichModelItKeeps(t *testing.T) {
-	m := readyModel(t).
-		WithModelSwitcher(func(string) {}).
-		WithPricing(nil, "m1").
-		WithModelOptions([]string{"m1", "m2", "m3"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(string) {}
+	m.wiring.Prices, m.modelName = nil, "m1"
+	m.picker.models.options = []string{"m1", "m2", "m3"}
 
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -91,7 +91,8 @@ func TestModeAndProviderPick_EscSaysWhatItKeeps(t *testing.T) {
 		t.Fatalf("the mode picker should offer `[esc] keep manual`:\n%s", view)
 	}
 
-	m = readyModel(t).WithProvider("anthropic", nil, func(string) error { return nil })
+	m = readyModel(t)
+	m.providerName, m.wiring.ReplaceKey, m.wiring.SwitchProvider = "anthropic", nil, func(string) error { return nil }
 	opened, _ = m.openProviderPick()
 	prov := opened.(Model)
 	if prov.picker.card == nil {
@@ -104,10 +105,10 @@ func TestModeAndProviderPick_EscSaysWhatItKeeps(t *testing.T) {
 
 func TestModelPick_EscCancels(t *testing.T) {
 	var switched string
-	m := readyModel(t).
-		WithModelSwitcher(func(name string) { switched = name }).
-		WithPricing(nil, "m1").
-		WithModelOptions([]string{"m1", "m2"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(name string) { switched = name }
+	m.wiring.Prices, m.modelName = nil, "m1"
+	m.picker.models.options = []string{"m1", "m2"}
 
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -124,10 +125,10 @@ func TestModelPick_EscCancels(t *testing.T) {
 }
 
 func TestModelPick_CurrentModelMergedIntoCatalog(t *testing.T) {
-	m := readyModel(t).
-		WithModelSwitcher(func(string) {}).
-		WithPricing(nil, "custom-model").
-		WithModelOptions([]string{"m1", "m2"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(string) {}
+	m.wiring.Prices, m.modelName = nil, "custom-model"
+	m.picker.models.options = []string{"m1", "m2"}
 
 	choices := m.modelPickChoices()
 	if len(choices) != 3 || choices[0] != "custom-model" {
@@ -136,9 +137,9 @@ func TestModelPick_CurrentModelMergedIntoCatalog(t *testing.T) {
 }
 
 func TestModelPick_FallsBackWithoutCatalog(t *testing.T) {
-	m := readyModel(t).
-		WithModelSwitcher(func(string) {}).
-		WithPricing(nil, "m1")
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(string) {}
+	m.wiring.Prices, m.modelName = nil, "m1"
 
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -216,10 +217,11 @@ func TestPick_LongCatalogScrollsWithTheFocus(t *testing.T) {
 		names = append(names, fmt.Sprintf("model-%02d", i))
 	}
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream).
-		WithModelSwitcher(func(string) {}).
-		WithPricing(nil, "model-01").
-		WithModelOptions(names)
+	m := New(msgs, mockStream, Wiring{
+		SwitchModel:  func(string) {},
+		ModelName:    "model-01",
+		ModelOptions: names,
+	})
 	// A short terminal, so the panel cannot hold twenty rows however it tries.
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 90, Height: 24})
 	m = updated.(Model)
@@ -294,7 +296,7 @@ func chatPickModel(t *testing.T, names ...string) Model {
 			t.Fatal(err)
 		}
 	}
-	return readyModel(t).WithDB(db)
+	return readyModelWith(t, Wiring{DB: db})
 }
 
 func TestChatPick_BareLoadOpensPickerAndLoads(t *testing.T) {
@@ -388,7 +390,9 @@ func TestChatPick_NoDBKeepsTextMessage(t *testing.T) {
 // branchPickModel is a session with one rewind branch hanging off it.
 func branchPickModel(t *testing.T) Model {
 	t.Helper()
-	m := newRewindModel(t).WithDB(rewindTestDB(t))
+	m := newRewindModel(t)
+	m.wiring.DB = rewindTestDB(t)
+	m.bindStores()
 	m = completeExchange(t, m, "first question", "answer one")
 	m = completeExchange(t, m, "second question", "answer two")
 	return sendText(t, m, "/rewind 1")
@@ -430,7 +434,7 @@ func TestBranchPick_BareBranchesOpensPickerAndSwitches(t *testing.T) {
 		t.Fatalf("switching to the tail branch should restore all 5 messages, got %d", got)
 	}
 	// The pre-switch working conversation was saved, not lost.
-	kept, err := m.db.LoadChat(root)
+	kept, err := m.wiring.DB.LoadChat(root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -472,7 +476,7 @@ func TestBranchPick_EscDoesNotSwitch(t *testing.T) {
 }
 
 func TestBranchPick_NoBranchFamilyKeepsTextMessage(t *testing.T) {
-	m := sendText(t, newRewindModel(t).WithDB(rewindTestDB(t)), "/branches")
+	m := sendText(t, newRewindModelWith(t, Wiring{DB: rewindTestDB(t)}), "/branches")
 	if m.picker.card != nil {
 		t.Fatal("a session with no branches should not open a picker")
 	}
@@ -534,7 +538,9 @@ func TestGolden_BranchPicker(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		m := frameModel(t, width, 40).WithDB(db)
+		m := frameModel(t, width, 40)
+		m.wiring.DB = db
+		m.bindStores()
 		m.sessionName = cut
 
 		// A branch is named for the moment it was cut, and the family's turn
@@ -639,8 +645,8 @@ func TestRunPick_SelectingEntersConfirm(t *testing.T) {
 }
 
 func TestRunPick_SelectedBlockKeepsSafetyWarnings(t *testing.T) {
-	m := runCapableModel("Safe:\n```bash\necho hi\n```\nNot:\n```bash\nrm -rf ./build\n```").
-		WithWorkspace(t.TempDir())
+	m := runCapableModel("Safe:\n```bash\necho hi\n```\nNot:\n```bash\nrm -rf ./build\n```")
+	m.wiring.Workspace = t.TempDir()
 	m = sendText(t, m, "/run")
 	m = focusPick(t, m, 1)
 
@@ -695,7 +701,7 @@ func TestRunPick_NoRunnerKeepsTextMessage(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleAssistant, Content: twoBlockResponse},
 	}
-	updated, _ := New(msgs, mockStream).Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	updated, _ := New(msgs, mockStream, Wiring{}).Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m := updated.(Model)
 
 	m = sendText(t, m, "/run")
@@ -738,10 +744,11 @@ func TestRunPickPreview_CapsLongBlocks(t *testing.T) {
 // curated catalog — the openai-compatible case the picker could not serve.
 func listerModel(t *testing.T, fn func(context.Context) ([]string, error)) Model {
 	t.Helper()
-	return readyModel(t).
-		WithModelSwitcher(func(string) {}).
-		WithPricing(nil, "llama3").
-		WithModelLister(fn)
+	return readyModelWith(t, Wiring{
+		SwitchModel: func(string) {},
+		ModelName:   "llama3",
+		ModelLister: fn,
+	})
 }
 
 // runBatch executes a command, flattening one level of tea.Batch, and returns
@@ -856,13 +863,13 @@ func TestModelList_ErrorFallsBackToUsageText(t *testing.T) {
 }
 
 func TestModelList_ErrorKeepsCuratedCatalog(t *testing.T) {
-	m := readyModel(t).
-		WithModelSwitcher(func(string) {}).
-		WithPricing(nil, "gpt-4o").
-		WithModelOptions([]string{"gpt-4o", "o3"}).
-		WithModelLister(func(context.Context) ([]string, error) {
-			return nil, errors.New("timeout")
-		})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(string) {}
+	m.wiring.Prices, m.modelName = nil, "gpt-4o"
+	m.picker.models.options = []string{"gpt-4o", "o3"}
+	m.picker.models.lister = func(context.Context) ([]string, error) {
+		return nil, errors.New("timeout")
+	}
 
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -919,12 +926,12 @@ func TestModelList_EscCancelsTheQuery(t *testing.T) {
 }
 
 func TestModelList_WithoutASwitcherStaysOnText(t *testing.T) {
-	m := readyModel(t).
-		WithPricing(nil, "llama3").
-		WithModelLister(func(context.Context) ([]string, error) {
-			t.Fatal("a session that cannot switch models should not query")
-			return nil, nil
-		})
+	m := readyModel(t)
+	m.wiring.Prices, m.modelName = nil, "llama3"
+	m.picker.models.lister = func(context.Context) ([]string, error) {
+		t.Fatal("a session that cannot switch models should not query")
+		return nil, nil
+	}
 
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -968,10 +975,10 @@ func runes(t *testing.T, m Model, text string) Model {
 // spent.
 func TestModelPick_FilterNarrowsAndStillSwitchesTheRightModel(t *testing.T) {
 	var switched string
-	m := readyModel(t).
-		WithModelSwitcher(func(name string) { switched = name }).
-		WithPricing(nil, "gpt-5.2").
-		WithModelOptions([]string{"gpt-5.2", "claude-opus-4.6", "claude-sonnet-4.6", "gemini-3-pro"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(name string) { switched = name }
+	m.wiring.Prices, m.modelName = nil, "gpt-5.2"
+	m.picker.models.options = []string{"gpt-5.2", "claude-opus-4.6", "claude-sonnet-4.6", "gemini-3-pro"}
 
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -1002,10 +1009,10 @@ func TestModelPick_FilterNarrowsAndStillSwitchesTheRightModel(t *testing.T) {
 // carries a 5 must not be switched to halfway through being typed.
 func TestModelPick_DigitsAreTextWhileTheQueryLineIsOpen(t *testing.T) {
 	var switched string
-	m := readyModel(t).
-		WithModelSwitcher(func(name string) { switched = name }).
-		WithPricing(nil, "gpt-5.2").
-		WithModelOptions([]string{"gpt-5.2", "gpt-5.1", "o4-mini"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(name string) { switched = name }
+	m.wiring.Prices, m.modelName = nil, "gpt-5.2"
+	m.picker.models.options = []string{"gpt-5.2", "gpt-5.1", "o4-mini"}
 
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -1027,10 +1034,10 @@ func TestModelPick_DigitsAreTextWhileTheQueryLineIsOpen(t *testing.T) {
 // anything at all.
 func TestModelPick_ClearAndEscape(t *testing.T) {
 	var switched string
-	m := readyModel(t).
-		WithModelSwitcher(func(name string) { switched = name }).
-		WithPricing(nil, "gpt-5.2").
-		WithModelOptions([]string{"gpt-5.2", "claude-opus-4.6", "gemini-3-pro"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(name string) { switched = name }
+	m.wiring.Prices, m.modelName = nil, "gpt-5.2"
+	m.picker.models.options = []string{"gpt-5.2", "claude-opus-4.6", "gemini-3-pro"}
 
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -1068,10 +1075,10 @@ func TestModelPick_ClearAndEscape(t *testing.T) {
 // that does exist, and enter on it does nothing.
 func TestModelPick_NoMatchNamesTheClosestModel(t *testing.T) {
 	var switched string
-	m := readyModel(t).
-		WithModelSwitcher(func(name string) { switched = name }).
-		WithPricing(nil, "gpt-5.2").
-		WithModelOptions([]string{"gpt-5.2", "claude-sonnet-4.6", "gemini-3-pro"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(name string) { switched = name }
+	m.wiring.Prices, m.modelName = nil, "gpt-5.2"
+	m.picker.models.options = []string{"gpt-5.2", "claude-sonnet-4.6", "gemini-3-pro"}
 
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -1122,14 +1129,14 @@ func TestClosestOption(t *testing.T) {
 func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 	var switched string
 	var wrote [][2]string
-	m := readyModel(t).
-		WithModelSwitcher(func(name string) { switched = name }).
-		WithConfigWriter(func(k, v string) error {
-			wrote = append(wrote, [2]string{k, v})
-			return nil
-		}).
-		WithPricing(nil, "m1").
-		WithModelOptions([]string{"m1", "m2"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(name string) { switched = name }
+	m.wiring.ConfigWriter = func(k, v string) error {
+		wrote = append(wrote, [2]string{k, v})
+		return nil
+	}
+	m.wiring.Prices, m.modelName = nil, "m1"
+	m.picker.models.options = []string{"m1", "m2"}
 
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -1174,10 +1181,10 @@ func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 // A key that cannot be honoured is not offered: a session with nowhere to
 // write has no default to set.
 func TestModelPick_NoWriterNoDefaultOffer(t *testing.T) {
-	m := readyModel(t).
-		WithModelSwitcher(func(string) {}).
-		WithPricing(nil, "m1").
-		WithModelOptions([]string{"m1", "m2"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(string) {}
+	m.wiring.Prices, m.modelName = nil, "m1"
+	m.picker.models.options = []string{"m1", "m2"}
 
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -1195,9 +1202,10 @@ func TestModelPick_NoWriterNoDefaultOffer(t *testing.T) {
 // Writing a default that something else overrules is the one way this can
 // succeed and still not work, so the note has to say so.
 func TestModelDefault_NamesWhatOutranksIt(t *testing.T) {
-	m := New(nil, mockStream).
-		WithConfigWriter(func(string, string) error { return nil }).
-		WithDefaults(Defaults{Outranked: "SHHH_MODEL is set to gpt-4o"})
+	m := New(nil, mockStream, Wiring{
+		ConfigWriter: func(string, string) error { return nil },
+		Defaults:     Defaults{Outranked: "SHHH_MODEL is set to gpt-4o"},
+	})
 	m.modelName = "gpt-4o"
 
 	_, out := m.handleSlashCommand("/model default o3")
@@ -1216,13 +1224,14 @@ func TestModelDefault_NamesWhatOutranksIt(t *testing.T) {
 // once the session has been switched here — that model was nobody's key.
 // See docs/capabilities/configuration.md#each-surface-can-have-a-model-of-its-own.
 func TestModel_NamesTheKeyThatChoseIt(t *testing.T) {
-	m := New(nil, mockStream).
-		WithConfigWriter(func(string, string) error { return nil }).
-		WithModelSwitcher(func(string) {}).
-		WithDefaults(Defaults{
+	m := New(nil, mockStream, Wiring{
+		ConfigWriter: func(string, string) error { return nil },
+		SwitchModel:  func(string) {},
+		Defaults: Defaults{
 			Outranked: "provider.code_model is set to o3",
 			Started:   "o3", StartedBy: "provider.code_model",
-		})
+		},
+	})
 	m.modelName = "o3"
 
 	_, out := m.handleSlashCommand("/model")
@@ -1246,10 +1255,10 @@ func TestModel_NamesTheKeyThatChoseIt(t *testing.T) {
 // key — so the two cannot tell the story two ways.
 // See docs/capabilities/configuration.md#each-surface-can-have-a-model-of-its-own.
 func TestModelPick_TitleNamesTheKeyThatChoseIt(t *testing.T) {
-	m := readyModel(t).
-		WithModelSwitcher(func(string) {}).
-		WithModelOptions([]string{"o3", "gpt-5"}).
-		WithDefaults(Defaults{Started: "o3", StartedBy: "provider.code_model in .shhh/config.toml"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(string) {}
+	m.picker.models.options = []string{"o3", "gpt-5"}
+	m.defaults = Defaults{Started: "o3", StartedBy: "provider.code_model in .shhh/config.toml"}
 	m.modelName = "o3"
 
 	if _, out := m.handleSlashCommand("/model"); !strings.Contains(out, "current model: o3 (chosen by provider.code_model in .shhh/config.toml)") {
@@ -1272,11 +1281,11 @@ func TestModelPick_TitleNamesTheKeyThatChoseIt(t *testing.T) {
 // names what the reader is after rather than being spent opening the row it
 // would have gone into.
 func TestModelPick_OpensReadyToType(t *testing.T) {
-	m := readyModel(t).
-		WithModelSwitcher(func(string) {}).
-		WithConfigWriter(func(string, string) error { return nil }).
-		WithPricing(nil, "gpt-5.2").
-		WithModelOptions([]string{"gpt-5.2", "claude-opus-4.6", "claude-sonnet-4.6"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(string) {}
+	m.wiring.ConfigWriter = func(string, string) error { return nil }
+	m.wiring.Prices, m.modelName = nil, "gpt-5.2"
+	m.picker.models.options = []string{"gpt-5.2", "claude-opus-4.6", "claude-sonnet-4.6"}
 
 	m = sendText(t, m, "/model")
 	if !m.picker.card.Filtering {

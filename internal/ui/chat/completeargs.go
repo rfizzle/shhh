@@ -223,8 +223,8 @@ func modelArgs(m *Model) []argOption {
 		desc := ""
 		if name == m.modelName {
 			desc = "current"
-		} else if m.prices != nil {
-			if in, outCost, ok := m.prices.Cost(name, 1_000_000, 1_000_000); ok {
+		} else if m.wiring.Prices != nil {
+			if in, outCost, ok := m.wiring.Prices.Cost(name, 1_000_000, 1_000_000); ok {
 				desc = fmt.Sprintf("$%.2f in / $%.2f out per Mtok", in, outCost)
 			}
 		}
@@ -239,7 +239,7 @@ func modelArgs(m *Model) []argOption {
 func scopeDropArgs(m *Model) []argOption {
 	// Dirs rather than scopeDirs: a grant of the checkout for writers is
 	// dropped by the same command.
-	dirs := m.scope.Dirs()
+	dirs := m.wiring.Scope.Dirs()
 	out := make([]argOption, 0, len(dirs))
 	for _, d := range dirs {
 		out = append(out, argOption{value: d, desc: "stop the session writing here"})
@@ -350,7 +350,7 @@ func modeArgs(m *Model) []argOption {
 	if len(cycle) == 0 {
 		cycle = agent.DefaultCycle()
 	}
-	if m.conversation {
+	if m.wiring.Conversation {
 		cycle = nil
 	}
 	out := make([]argOption, 0, len(cycle)+1)
@@ -371,11 +371,11 @@ func modeArgs(m *Model) []argOption {
 // agentArgs offers this session's sub-agents for /attach, blocked ones
 // first — those are the agents waiting on the user.
 func agentArgs(m *Model) []argOption {
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return nil
 	}
 	var blocked, rest []argOption
-	for _, st := range m.subagents.Snapshot() {
+	for _, st := range m.wiring.Subagents.Snapshot() {
 		opt := argOption{value: st.Name, desc: st.Detail}
 		if st.State == subagent.StateBlocked {
 			blocked = append(blocked, opt)
@@ -448,10 +448,10 @@ func checkpointArgs(m *Model) []argOption {
 
 // branchArgs offers this session's branch family.
 func branchArgs(m *Model) []argOption {
-	if m.db == nil {
+	if m.wiring.DB == nil {
 		return nil
 	}
-	branches, err := m.db.ListChatBranches(m.sessionName)
+	branches, err := m.wiring.DB.ListChatBranches(m.sessionName)
 	if err != nil {
 		return nil
 	}
@@ -468,10 +468,10 @@ func branchArgs(m *Model) []argOption {
 
 // chatArgs offers the saved chats, most recently updated first.
 func chatArgs(m *Model) []argOption {
-	if m.db == nil {
+	if m.wiring.DB == nil {
 		return nil
 	}
-	entries, err := m.db.ListChats()
+	entries, err := m.wiring.DB.ListChats()
 	if err != nil {
 		return nil
 	}

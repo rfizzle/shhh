@@ -10,7 +10,7 @@ import (
 
 func resizeTestModel(t testing.TB, rows int) Model {
 	t.Helper()
-	updated, _ := New(nil, mockStream).Update(tea.WindowSizeMsg{Width: 100, Height: 40})
+	updated, _ := New(nil, mockStream, Wiring{}).Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m := updated.(Model)
 	for i := 0; i < rows; i++ {
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("row %d: a sentence long enough to wrap somewhere once the pane narrows under it", i)})

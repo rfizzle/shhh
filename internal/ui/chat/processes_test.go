@@ -14,7 +14,8 @@ import (
 func processModel(t *testing.T, executor ToolExecutor) Model {
 	t.Helper()
 	m := gatedModel(t, executor, nil)
-	return m.WithProcesses(Processes{Manage: func(args []string) string { return "process list" }})
+	m.wiring.Processes = Processes{Manage: func(args []string) string { return "process list" }}
+	return m
 }
 
 func startCall(id, name, command string) provider.ToolCall {
@@ -95,7 +96,8 @@ func TestProcessTool_StartApprovalFlow(t *testing.T) {
 
 func TestProcessTool_StartHonorsCommandAllowlist(t *testing.T) {
 	executor := func(name string, args json.RawMessage) (string, error) { return "ok", nil }
-	m := processModel(t, executor).WithCommandAllowlist([]string{"npm run dev"})
+	m := processModel(t, executor)
+	m.policy.allowlist = []string{"npm run dev"}
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{startCall("call_p", "web", "npm run dev")}})
 	m = updated.(Model)

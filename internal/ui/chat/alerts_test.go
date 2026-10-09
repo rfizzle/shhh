@@ -171,12 +171,14 @@ func TestAlertsScreen_NothingBrokenOpensOnASentence(t *testing.T) {
 // alertsKeptOutput is a store holding the reduced run's output and nothing
 // else: the trimmed run's entry has been purged since.
 func alertsKeptOutput(m Model) Model {
-	return m.WithEvidence(Evidence{Read: func(id string, limit int) (string, bool) {
+	m.wiring.Evidence = Evidence{Read: func(id string, limit int) (string, bool) {
 		if id != "ev-0123456789abcdef" {
 			return "", false
 		}
 		return "--- FAIL: TestLoop (0.00s)\n    loop_test.go:42: the loop ran 151 rounds\nFAIL\nexit status 1\n", true
-	}})
+	}}
+	m.agent.StoreElided(m.wiring.Evidence.Keep)
+	return m
 }
 
 // alertsPress sends one key through the whole session, the way a reader's

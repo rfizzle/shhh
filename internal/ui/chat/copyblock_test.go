@@ -46,7 +46,7 @@ func replyModel(t *testing.T, reply string, caught *[]string) Model {
 		{Role: provider.RoleUser, Content: "how?"},
 		{Role: provider.RoleAssistant, Content: reply},
 	}
-	updated, _ := New(msgs, mockStream).Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	updated, _ := New(msgs, mockStream, Wiring{}).Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m := updated.(Model)
 	m.copyFn = func(text string) clipboard.Result {
 		*caught = append(*caught, text)
@@ -387,7 +387,7 @@ func TestProgram_ABlockIsCopiedFromTheCardAndFromReadingMode(t *testing.T) {
 		caught []string
 	)
 	p := &programProvider{turns: []programTurn{{text: oneBlock}, {text: threeBlocks}}}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p))
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{})
 	m.copyFn = func(text string) clipboard.Result {
 		mu.Lock()
 		defer mu.Unlock()

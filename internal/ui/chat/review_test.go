@@ -169,7 +169,8 @@ func TestReview_SaysWhyThereIsNothingToShow(t *testing.T) {
 	big := strings.Repeat("x\n", 200)
 	store.Add(1, changeset.Record{Path: "a.go", After: big, AfterExists: true})
 	store.Add(2, changeset.Record{Path: "b.go", After: big, AfterExists: true})
-	m = m.WithChangeset(store, nil)
+	m.changes, m.wiring.Tracker = store, nil
+	m.bindSlot()
 	updated, _ = m.openReview(1)
 	m = updated.(Model)
 	if got := m.transcript[len(m.transcript)-1].text; !strings.Contains(got, "dropped") {

@@ -15,17 +15,19 @@ import (
 
 func TestProgram_AConversationFetchesWithoutACard(t *testing.T) {
 	var fetched int
-	m, _ := scriptedSession(
+	m, _ := scriptedSessionWith(Wiring{
+		Conversation: true,
+		GatedTools:   fetchPreviews(),
+		Executor: func(string, json.RawMessage) (string, error) {
+			fetched++
+			return "The cache now expires after an hour.", nil
+		},
+	},
 		programTurn{text: "Reading the release notes.\n", calls: []provider.ToolCall{
 			fetchCall("f-1", "https://docs.example.test/notes"),
 		}},
 		programTurn{text: "The notes say the cache now expires after an hour."},
 	)
-	m = m.WithConversation().WithGatedTools(fetchPreviews()).
-		WithToolExecutor(func(string, json.RawMessage) (string, error) {
-			fetched++
-			return "The cache now expires after an hour.", nil
-		})
 	tm := runProgramAt(t, m, 110, 40)
 
 	waitForText(t, tm, "read-only")

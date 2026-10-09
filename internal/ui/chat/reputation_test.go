@@ -40,9 +40,10 @@ func useFixtureReputation(t *testing.T, lists map[string][]string) {
 }
 
 func recordingDecisions(m Model, into *[][2]string) Model {
-	return m.WithObserver(observe.Observer{Decision: func(_ observe.Pos, decision, reason string) {
+	m.wiring.Observer = observe.Observer{Decision: func(_ observe.Pos, decision, reason string) {
 		*into = append(*into, [2]string{decision, reason})
-	}})
+	}}
+	return m
 }
 
 // In auto mode a host the lists know is let through without the classifier
@@ -54,8 +55,9 @@ func TestReputation_AutoModeLetsAKnownHostThrough(t *testing.T) {
 	var fetched int
 	executor := func(string, json.RawMessage) (string, error) { fetched++; return "page text", nil }
 	var decisions [][2]string
-	m := recordingDecisions(gatedModel(t, executor, fetchPreviews()).
-		WithClassifier(agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"})),
+	m := recordingDecisions(gatedModelWith(t, executor, fetchPreviews(), Wiring{
+		Classifier: agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"}),
+	}),
 		&decisions)
 	m.policy.mode = agent.ModeAuto
 
@@ -114,8 +116,9 @@ func TestReputation_AWarnedHostIsCardedWhereTheClassifierAllowed(t *testing.T) {
 			judge := &verdictProvider{decision: "allow", reason: "reads a page"}
 			ledger := meter.New(nil)
 			var decisions [][2]string
-			m := recordingDecisions(gatedModel(t, func(string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews()).
-				WithClassifier(agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"})),
+			m := recordingDecisions(gatedModelWith(t, func(string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews(), Wiring{
+				Classifier: agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"}),
+			}),
 				&decisions)
 			m.policy.mode = agent.ModeAuto
 
@@ -191,8 +194,8 @@ func TestReputation_AnUnknownHostLeavesTheClassifiersAnswer(t *testing.T) {
 	useFixtureReputation(t, nil)
 	judge := &verdictProvider{decision: "allow", reason: "reads a page"}
 	ledger := meter.New(nil)
-	m := gatedModel(t, func(string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews()).
-		WithClassifier(agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"}))
+	m := gatedModel(t, func(string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews())
+	m.classifier.judge = agent.NewClassifier(ledger.For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"})
 	m.policy.mode = agent.ModeAuto
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{fetchCall("call_1", "https://nowhere.test/x")}})
 	m = updated.(Model)

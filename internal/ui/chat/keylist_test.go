@@ -110,10 +110,11 @@ func TestKeyList_EveryCardThatAnswersQuestionMarkOffersIt(t *testing.T) {
 			return openedQuestion(t, agent.ModeManual, `{"question":"Should the migration be reversible?","shape":"confirm"}`)
 		}},
 		{"the scaffold card", func(t *testing.T) Model {
-			m := frameModel(t, 120, 40).WithScaffold(Scaffold{
+			m := frameModel(t, 120, 40)
+			m.scaffold = Scaffold{
 				Offer: true, Paths: scaffoldFixturePaths(),
 				Write: func() (string, error) { return project.ContextFile, nil },
-			})
+			}
 			next, _ := m.scaffoldCommand()
 			return next.(Model)
 		}},

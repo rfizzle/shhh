@@ -212,16 +212,6 @@ func (s *questionSheet) strip() components.TabStrip {
 	return components.TabStrip{Tabs: tabs, At: s.at, Tail: long, ShortTail: short}
 }
 
-// WithAsk says this session registered the question tool, which is the only
-// condition under which the card is ever drawn: a session with nobody to ask
-// never handed the model the tool, and a call to a tool the session does not
-// have is answered as one rather than put on a card
-// (docs/capabilities/coding-agent.md#nobody-to-ask).
-func (m Model) WithAsk() Model {
-	m.asks = true
-	return m
-}
-
 // armQuestion is the question's place in the approval queue: a decision put
 // to the person in every mode, because every gate below it exists to decide
 // which *acts* stop to ask and a question is not an act.
@@ -1207,7 +1197,7 @@ func (m Model) resolveQuestion(req *approvalRequest, qs []ask.Question, as []ask
 	// that asked several it rides the first answer: it is about the asking
 	// rather than about one of the questions, and the first entry is the one
 	// the model reads first.
-	if notice := m.repeats.AskedBefore(json.RawMessage(req.call.Arguments)); notice != "" && len(as) > 0 && as[0].Notice == "" {
+	if notice := m.wiring.Repeats.AskedBefore(json.RawMessage(req.call.Arguments)); notice != "" && len(as) > 0 && as[0].Notice == "" {
 		as[0].Notice = notice
 		m.signal(observe.SignalRepeat, req.call.Name)
 	}

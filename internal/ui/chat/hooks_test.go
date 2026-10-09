@@ -58,12 +58,12 @@ func drivePreToolHook(t *testing.T, m Model, cmd tea.Cmd) Model {
 func TestHook_PreToolDenyDrawsTheRuleDenialRow(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
-	m.hooks = hookRunner(t, map[string]hook.Entry{
+	m.wiring.Hooks = hookRunner(t, map[string]hook.Entry{
 		"guard": {Event: hook.PreTool, Command: "guard"},
 	}, "vendor is off limits\n", 2, nil)
 	// Nothing about the session may reach the decision: the blanket grant is
 	// on and the command is on the allowlist.
-	m = m.WithCommandAllowlist([]string{"go build"})
+	m.policy.allowlist = []string{"go build"}
 	m.policy.allCommands = true
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
@@ -102,9 +102,10 @@ func TestHook_PreToolDenyDrawsTheRuleDenialRow(t *testing.T) {
 // failure.
 func TestHook_AFailureOnAGatedCallAsks(t *testing.T) {
 	var ran []string
-	m := execModel(t, &ran).WithCommandAllowlist([]string{"go build"})
+	m := execModel(t, &ran)
+	m.policy.allowlist = []string{"go build"}
 	m.policy.allCommands = true
-	m.hooks = hookRunner(t, map[string]hook.Entry{
+	m.wiring.Hooks = hookRunner(t, map[string]hook.Entry{
 		"guard": {Event: hook.PreTool, Command: "guard"},
 	}, "boom\n", 1, nil)
 
@@ -130,7 +131,7 @@ func TestHook_UpdatedInputRebuildsThePreview(t *testing.T) {
 	m := gatedModel(t, nil, map[string]GatedPreviewFunc{
 		"write_file": writeFilePreview("line one\n"),
 	})
-	m.hooks = hookRunner(t, map[string]hook.Entry{
+	m.wiring.Hooks = hookRunner(t, map[string]hook.Entry{
 		"rewrite": {Event: hook.PreTool, Matcher: "write_file", Command: "rewrite"},
 	}, `{"updated_input":{"path":"other.go","content":"rewritten\n"}}`, 0, nil)
 
@@ -160,7 +161,7 @@ func TestHook_CannotTurnAReadIntoAWrite(t *testing.T) {
 		return "one line", nil
 	}
 	m := readyModel(t)
-	m.hooks = hookRunner(t, map[string]hook.Entry{
+	m.wiring.Hooks = hookRunner(t, map[string]hook.Entry{
 		"climb": {Event: hook.PreTool, Command: "climb"},
 	}, `{"decision":"allow","tool":"write_file","name":"write_file","updated_input":{"path":"b.go"}}`, 0, nil)
 
@@ -184,7 +185,7 @@ func TestHook_CannotTurnAReadIntoAWrite(t *testing.T) {
 func TestHook_AFailureOnAReadKeepsTheRead(t *testing.T) {
 	next := func(string, json.RawMessage) (string, error) { return "one line", nil }
 	m := readyModel(t)
-	m.hooks = hookRunner(t, map[string]hook.Entry{
+	m.wiring.Hooks = hookRunner(t, map[string]hook.Entry{
 		"guard": {Event: hook.PreTool, Command: "guard"},
 	}, "boom\n", 1, nil)
 
@@ -209,7 +210,7 @@ func TestHook_TheChainSkipsWhatTheQueueWillAsk(t *testing.T) {
 	m := gatedModel(t, nil, map[string]GatedPreviewFunc{
 		"write_file": writeFilePreview(""),
 	})
-	m.hooks = hookRunner(t, map[string]hook.Entry{
+	m.wiring.Hooks = hookRunner(t, map[string]hook.Entry{
 		"before": {Event: hook.PreTool, Command: "before"},
 		"after":  {Event: hook.PostTool, Command: "after"},
 	}, "", 0, &seen)
@@ -226,7 +227,7 @@ func TestHook_TheChainSkipsWhatTheQueueWillAsk(t *testing.T) {
 func TestHook_TurnCloseFiresOnceAsTheTurnEnds(t *testing.T) {
 	var seen []hook.Payload
 	m := readyModel(t)
-	m.hooks = hookRunner(t, map[string]hook.Entry{
+	m.wiring.Hooks = hookRunner(t, map[string]hook.Entry{
 		"done": {Event: hook.TurnClose, Command: "done"},
 	}, `{"note":"checked"}`, 0, &seen)
 	m.turnOpen, m.turnCount = true, 4
@@ -262,7 +263,7 @@ func compactingModel(requests *int) Model {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "question"},
 		{Role: provider.RoleAssistant, Content: "answer"},
-	}, stream)
+	}, stream, Wiring{})
 }
 
 // A compaction somebody asked for meets the seam in front of it before its
@@ -273,7 +274,7 @@ func TestHook_PreCompactRefusesACompactionSomebodyAskedFor(t *testing.T) {
 	var seen []hook.Payload
 	requests := 0
 	m := compactingModel(&requests)
-	m.hooks = hookRunner(t, map[string]hook.Entry{
+	m.wiring.Hooks = hookRunner(t, map[string]hook.Entry{
 		"hold": {Event: hook.PreCompact, Command: "hold"},
 	}, "the release notes are still in this conversation\n", hook.DenyExit, &seen)
 
@@ -318,7 +319,7 @@ func TestHook_PreCompactOnlyRemarksOnTheRoundTailsCompaction(t *testing.T) {
 	var seen []hook.Payload
 	requests := 0
 	m := compactingModel(&requests)
-	m.hooks = hookRunner(t, map[string]hook.Entry{
+	m.wiring.Hooks = hookRunner(t, map[string]hook.Entry{
 		"hold": {Event: hook.PreCompact, Command: "hold"},
 	}, "not now\n", hook.DenyExit, &seen)
 	m.compactResume = true
@@ -356,7 +357,7 @@ func TestHook_PostCompactHearsTheRebuild(t *testing.T) {
 	var seen []hook.Payload
 	requests := 0
 	m := compactingModel(&requests)
-	m.hooks = hookRunner(t, map[string]hook.Entry{
+	m.wiring.Hooks = hookRunner(t, map[string]hook.Entry{
 		"after": {Event: hook.PostCompact, Command: "after"},
 	}, `{"note":"archived the summary"}`, 0, &seen)
 	m.compacting, m.compactRun, m.streaming = true, &compactStart{pct: 83}, "the summary"
@@ -394,7 +395,7 @@ func TestHook_StatusNamesTheHooks(t *testing.T) {
 	if got := m.hooksStatus(); got != "" {
 		t.Fatalf("a session with no hooks has nothing to say: %q", got)
 	}
-	m.hooks = hookRunner(t, map[string]hook.Entry{
+	m.wiring.Hooks = hookRunner(t, map[string]hook.Entry{
 		"fmt": {Event: hook.PostTool, Matcher: "edit_file", Command: "gofmt -l ."},
 	}, "", 0, nil)
 	got := m.hooksStatus()

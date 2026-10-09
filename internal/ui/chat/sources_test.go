@@ -27,14 +27,15 @@ func sourcesModel(t *testing.T, width int) Model {
 	ledger.Record("web-researcher", web.Source{Kind: web.KindFetch,
 		Requested: "https://example.com/gone", FinalURL: "https://example.com/gone", Status: 404})
 
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithSources(ledger).
-		WithEvidence(Evidence{Read: func(id string, limit int) (string, bool) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Sources: ledger,
+		Evidence: Evidence{Read: func(id string, limit int) (string, bool) {
 			if id != "ev-1" {
 				return "", false
 			}
 			return "Tokio is an asynchronous runtime.\nIt provides the building blocks.", true
-		}})
+		}},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
 	return updated.(Model)
 }
@@ -123,7 +124,7 @@ func TestSources_EscLeavesTheScreen(t *testing.T) {
 // A session with no web tools has no ledger, and says so rather than putting
 // up an empty screen.
 func TestSources_ASessionWithNoWebToolsSaysSo(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
 	m = sendText(t, updated.(Model), "/sources")
 	if m.state == stateSources {

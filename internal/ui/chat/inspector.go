@@ -419,7 +419,7 @@ func (m Model) scanAlerts() components.InspectorAlerts {
 // a standing episode for each check that has flaked often enough and
 // recently enough to be news (flakyAlerts).
 func (m Model) flakyEpisodes() []alertEpisode {
-	count, days := m.gate.FlakeAlertCount, m.gate.FlakeAlertDays
+	count, days := m.wiring.Gate.FlakeAlertCount, m.wiring.Gate.FlakeAlertDays
 	if count <= 0 {
 		count = config.DefaultFlakeAlertCount
 	}
@@ -434,11 +434,11 @@ func (m Model) flakyEpisodes() []alertEpisode {
 // no flaky alerts: the rail is not where a store's failure is reported, and
 // `/gate flakes` says it in words.
 func (m Model) flakeLedger() []storage.Flake {
-	if m.gate.Flakes == nil {
+	if m.wiring.Gate.Flakes == nil {
 		return nil
 	}
 	read := func() []storage.Flake {
-		flakes, err := m.gate.Flakes()
+		flakes, err := m.wiring.Gate.Flakes()
 		if err != nil {
 			return nil
 		}
@@ -695,10 +695,10 @@ func bareWord(s string) bool {
 // so moving one row on the keyboard moves one row on screen wherever nothing
 // has floated.
 func (m Model) inspectorAgents() []components.InspectorAgent {
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return nil
 	}
-	snapshot := m.subagents.Snapshot()
+	snapshot := m.wiring.Subagents.Snapshot()
 	if len(snapshot) == 0 {
 		return nil
 	}
@@ -917,7 +917,7 @@ func (m Model) railTurnSpend() meter.Totals {
 // roll-up as a row above it, so the total is the two added, or the rows would
 // not add up to it.
 func (m Model) billTotal() meter.Totals {
-	if m.ledger == nil {
+	if m.wiring.Ledger == nil {
 		return m.sessionSpend().Plus(m.childSpend())
 	}
 	return m.sessionSpend()
@@ -943,7 +943,7 @@ type spendShare struct {
 // spent nothing. A session with no ledger has only the agent's own
 // accounting and the children's roll-up, on the session's model.
 func (m Model) spendShares() []spendShare {
-	if m.ledger == nil {
+	if m.wiring.Ledger == nil {
 		share := spendShare{model: m.modelName, own: m.mainSpend(), children: m.childSpend()}
 		if spent(share.own) {
 			share.sources = []meter.Source{meter.SourceAgent}
@@ -954,9 +954,9 @@ func (m Model) spendShares() []spendShare {
 		}
 		return []spendShare{share}
 	}
-	entries := m.ledger.Entries()
+	entries := m.wiring.Ledger.Entries()
 	var shares []spendShare
-	for _, model := range m.ledger.ByModel() {
+	for _, model := range m.wiring.Ledger.ByModel() {
 		if !spent(meter.Totals{In: model.In, Out: model.Out}) {
 			continue
 		}
@@ -1022,12 +1022,12 @@ func shareLabel(t meter.Totals) string {
 // which are priced the same way — each child keeps a ledger of its own — and
 // so is a roll-up rather than a token pair.
 func (m Model) childSpend() meter.Totals {
-	if m.ledger != nil {
-		return m.ledger.SourceTotal(meter.SourceSubagent)
+	if m.wiring.Ledger != nil {
+		return m.wiring.Ledger.SourceTotal(meter.SourceSubagent)
 	}
 	var t meter.Totals
-	if m.subagents != nil {
-		for _, st := range m.subagents.Snapshot() {
+	if m.wiring.Subagents != nil {
+		for _, st := range m.wiring.Subagents.Snapshot() {
 			t = t.Plus(st.Spend)
 		}
 	}
@@ -1047,13 +1047,6 @@ func (m Model) totalsLabel(t meter.Totals) string {
 		return formatCost(t.Cost)
 	}
 	return m.freshRateLabel(t.In, t.Out)
-}
-
-// WithRailWidth fixes the inspector rail's column count for this session.
-// Zero — an unset key, or `/ui rail auto` — leaves it to the width ladder.
-func (m Model) WithRailWidth(cols int) Model {
-	m.railCols = cols
-	return m
 }
 
 // inspectorStatus is the /stats-adjacent line describing the split, used by

@@ -357,10 +357,10 @@ func (m Model) paletteCommandEntries() []paletteEntry {
 // Loading one replaces the conversation, so while the agent works they carry
 // /load's own reason.
 func (m Model) paletteSessionEntries() []paletteEntry {
-	if m.db == nil {
+	if m.wiring.DB == nil {
 		return nil
 	}
-	entries, err := m.db.ListChats()
+	entries, err := m.wiring.DB.ListChats()
 	if err != nil {
 		return nil
 	}

@@ -52,12 +52,12 @@ func TestSettings_AFailedWriteKeepsTheChanges(t *testing.T) {
 // The picker's [d] writes provider.model at once and says so in the
 // settings screen's own sentence.
 func TestModelPicker_ASetDefaultHasAReceipt(t *testing.T) {
-	m := readyModel(t).
-		WithModelSwitcher(func(string) {}).
-		WithConfigWriter(func(string, string) error { return nil }).
-		WithDefaults(Defaults{File: "~/.config/shhh/config.toml"}).
-		WithPricing(nil, "m1").
-		WithModelOptions([]string{"m1", "m2"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(string) {}
+	m.wiring.ConfigWriter = func(string, string) error { return nil }
+	m.defaults = Defaults{File: "~/.config/shhh/config.toml"}
+	m.wiring.Prices, m.modelName = nil, "m1"
+	m.picker.models.options = []string{"m1", "m2"}
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	updated, _ = updated.(Model).Update(ctrlU)

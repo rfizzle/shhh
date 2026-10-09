@@ -557,8 +557,8 @@ func buildSession(t *testing.T, args ...string) chat.Wiring {
 
 	var got chat.Wiring
 	var built bool
-	assembled = func(m chat.Model) error {
-		got, built = m.Wiring(), true
+	assembled = func(w chat.Wiring) error {
+		got, built = w, true
 		return nil
 	}
 	t.Cleanup(func() { assembled = nil })
@@ -587,17 +587,17 @@ func TestCodeSessionWiresItsMechanisms(t *testing.T) {
 		name string
 		got  bool
 	}{
-		{"sub-agents", w.Subagents},
-		{"durable memory", w.Memory},
-		{"the permission classifier", w.Classifier},
-		{"the titler", w.Titler},
-		{"the changeset", w.Changeset},
-		{"the hooks", w.Hooks},
-		{"the recoverable trim", w.RecoverableTrim},
-		{"the working scope", w.Scope},
-		{"the process supervisor", w.Processes},
-		{"the notebook", w.Notebook},
-		{"the backlog", w.Todos},
+		{"sub-agents", w.Subagents != nil},
+		{"durable memory", w.Memory.Manage != nil},
+		{"the permission classifier", w.Classifier != nil},
+		{"the titler", w.Titler != nil},
+		{"the changeset", w.Changeset != nil && w.Tracker != nil},
+		{"the hooks", w.Hooks != nil},
+		{"the recoverable trim", w.Evidence.Keep != nil},
+		{"the working scope", w.Scope != nil},
+		{"the process supervisor", w.Processes.Manage != nil},
+		{"the notebook", w.Notebook != nil},
+		{"the backlog", w.Todos.Manage != nil},
 		{"the question tool", w.Ask},
 	} {
 		if !c.got {
@@ -612,10 +612,10 @@ func TestCodeSessionWiresItsMechanisms(t *testing.T) {
 // from passing on a build where every session is a coding one.
 func TestConversationIsTheAssemblyWithoutTheActing(t *testing.T) {
 	w := buildSession(t, "chat")
-	if w.Changeset {
+	if w.Changeset != nil && w.Tracker != nil {
 		t.Error("a conversation was given the changeset a coding turn is reviewed and undone through")
 	}
-	if w.Processes {
+	if w.Processes.Manage != nil {
 		t.Error("a conversation was given a process supervisor, and it runs no commands")
 	}
 	if w.Ask {
@@ -625,11 +625,11 @@ func TestConversationIsTheAssemblyWithoutTheActing(t *testing.T) {
 		name string
 		got  bool
 	}{
-		{"sub-agents", w.Subagents},
-		{"durable memory", w.Memory},
-		{"the titler", w.Titler},
-		{"the recoverable trim", w.RecoverableTrim},
-		{"the backlog", w.Todos},
+		{"sub-agents", w.Subagents != nil},
+		{"durable memory", w.Memory.Manage != nil},
+		{"the titler", w.Titler != nil},
+		{"the recoverable trim", w.Evidence.Keep != nil},
+		{"the backlog", w.Todos.Manage != nil},
 	} {
 		if !c.got {
 			t.Errorf("a conversation was assembled without %s", c.name)

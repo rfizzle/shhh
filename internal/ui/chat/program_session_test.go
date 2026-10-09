@@ -34,9 +34,10 @@ func TestProgram_TheGatesPassSettlesTheFailureBeforeIt(t *testing.T) {
 	)
 	pass := &quality.Result{Suite: "default", Verdict: quality.VerdictPass, Trusted: true,
 		Checks: []quality.CheckResult{{Name: "test"}, {Name: "vet"}}}
-	m = m.WithRunner(legacyRunner(func(context.Context, string) (string, int) {
+	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) {
 		return "--- FAIL: TestLoopRounds\n    loop_test.go:214: want 3 rounds, got 4", 1
-	})).WithToolExecutor(func(name string, _ json.RawMessage) (string, error) {
+	})
+	m.agent.SetExecutor(func(name string, _ json.RawMessage) (string, error) {
 		if name != quality.ToolName {
 			t.Errorf("an unexpected auto-run call: %s", name)
 		}
@@ -77,12 +78,14 @@ func TestProgram_ACallRefusedBeforeItsCardIsItsOwnRow(t *testing.T) {
 // next turn's boundary, naming the file.
 func TestProgram_TheTreeMovingUnderASessionIsANotice(t *testing.T) {
 	ws := treeRepo(t)
-	tm := runProgram(t, readingSession(ws,
+	tm := runProgram(t, readingSessionWith(ws, Wiring{
+		Changeset: changeset.New(changeset.DefaultMaxBytes),
+		TreeCheck: &agent.TreeCheck{Dir: ws},
+	},
 		programTurn{text: "The build is clean."},
 		programTurn{calls: reads("a.txt")},
 		programTurn{text: "Nothing I did touched it, so somebody else has it open."},
-	).WithChangeset(changeset.New(changeset.DefaultMaxBytes), nil).
-		WithTreeCheck(&agent.TreeCheck{Dir: ws}))
+	))
 
 	send(tm, "build it")
 	waitForText(t, tm, "The build is clean")
@@ -99,12 +102,12 @@ func TestProgram_TheTreeMovingUnderASessionIsANotice(t *testing.T) {
 // check-in interval draws the check-in row in the transcript.
 func TestProgram_ALongTurnDrawsTheCheckIn(t *testing.T) {
 	dir := fixtureDir(t, map[string]string{"one.go": "package fixture\n", "two.go": "package fixture\n", "three.go": "package fixture\n"})
-	tm := runProgram(t, readingSession(dir,
+	tm := runProgram(t, readingSessionWith(dir, Wiring{Steering: agent.Steering{CheckInInterval: 2}},
 		programTurn{calls: reads("one.go")},
 		programTurn{calls: reads("two.go")},
 		programTurn{calls: reads("three.go")},
 		programTurn{text: "The constant has one home now."},
-	).WithSteering(agent.Steering{CheckInInterval: 2}))
+	))
 
 	send(tm, "hold the round limit in one place")
 	waitForText(t, tm, "one home now")

@@ -18,7 +18,7 @@ import (
 func streamingCancelModel(t *testing.T) Model {
 	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, multiTokenStream("partial", " content"))
+	m := New(msgs, multiTokenStream("partial", " content"), Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.input.SetValue("go")
@@ -48,7 +48,7 @@ var (
 func idleCancelModel(t *testing.T) Model {
 	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	return updated.(Model)
 }
@@ -359,7 +359,7 @@ func TestQuit_StopsACommandTheSessionWasRunning(t *testing.T) {
 	}
 
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.quitNow()

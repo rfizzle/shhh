@@ -52,7 +52,7 @@ type childView struct {
 // entries returns the transcript the surface currently renders: the attached
 // child's mirrored entries, or the orchestrator's own.
 func (m *Model) entries() *[]entry {
-	if m.attachedTo != "" && m.subagents != nil {
+	if m.attachedTo != "" && m.wiring.Subagents != nil {
 		return &m.syncChildView(m.attachedTo).entries
 	}
 	return &m.transcript
@@ -67,7 +67,7 @@ func (m *Model) syncChildView(name string) *childView {
 		cv = &childView{scroll: viewState{atBottom: true}}
 		m.childViews[name] = cv
 	}
-	for i, te := range m.subagents.Transcript(name) {
+	for i, te := range m.wiring.Subagents.Transcript(name) {
 		e := convertChildEntry(te)
 		if i < len(cv.entries) {
 			e.expanded = cv.entries[i].expanded
@@ -131,7 +131,7 @@ func convertChildEntry(te subagent.TranscriptEntry) entry {
 // renderAttachedHistory renders the focused child's transcript plus its
 // in-flight assistant text.
 func (m *Model) renderAttachedHistory() string {
-	return m.renderChildHistory(m.attachedTo, m.subagents.StreamingText(m.attachedTo))
+	return m.renderChildHistory(m.attachedTo, m.wiring.Subagents.StreamingText(m.attachedTo))
 }
 
 // renderChildHistory is that render, told the message the child is writing
@@ -172,7 +172,7 @@ func (m Model) breadcrumbParts() []string {
 	var parts []string
 	for n := m.attachedTo; n != ""; {
 		parts = append([]string{n}, parts...)
-		p, ok := m.subagents.Parent(n)
+		p, ok := m.wiring.Subagents.Parent(n)
 		if !ok {
 			break
 		}
@@ -260,10 +260,10 @@ func (m *Model) attach(name string) {
 // (docs/interface/surfaces.md#the-inspector-rail).
 func (m Model) sessionMap() []string {
 	names := []string{""}
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return names
 	}
-	snapshot := m.subagents.Snapshot()
+	snapshot := m.wiring.Subagents.Snapshot()
 	present := make(map[string]bool, len(snapshot))
 	for _, st := range snapshot {
 		present[st.Name] = true
@@ -271,7 +271,7 @@ func (m Model) sessionMap() []string {
 	var roots []string
 	under := map[string][]string{}
 	for _, st := range snapshot {
-		parent, _ := m.subagents.Parent(st.Name)
+		parent, _ := m.wiring.Subagents.Parent(st.Name)
 		if parent == "" || !present[parent] {
 			roots = append(roots, st.Name)
 			continue
@@ -338,7 +338,7 @@ func (m *Model) detachOne() {
 	if m.attachedTo == "" {
 		return
 	}
-	parent, _ := m.subagents.Parent(m.attachedTo)
+	parent, _ := m.wiring.Subagents.Parent(m.attachedTo)
 	m.attach(parent)
 }
 
@@ -346,7 +346,7 @@ func (m *Model) detachOne() {
 // it survives attach/detach); it falls back to the parent transcript when
 // the agent is unknown.
 func (m *Model) noteChild(name, text string) {
-	if err := m.subagents.Note(name, subagent.TranscriptEntry{Kind: subagent.EntrySystem, Text: text}); err != nil {
+	if err := m.wiring.Subagents.Note(name, subagent.TranscriptEntry{Kind: subagent.EntrySystem, Text: text}); err != nil {
 		m.appendEntry(entry{kind: entrySystem, text: text})
 	}
 }
@@ -388,7 +388,7 @@ func (m Model) openAgentList() (tea.Model, tea.Cmd) {
 	// can draft: the list is where a person goes to find out what this
 	// session has, and "nothing yet, and here is how to make one" is an
 	// answer. It is only unavailable when there is neither.
-	if m.subagents == nil && !m.personas.Enabled {
+	if m.wiring.Subagents == nil && !m.wiring.Personas.Enabled {
 		m.appendEntry(entry{kind: entrySystem, text: "sub-agents are unavailable in this session"})
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
@@ -456,8 +456,8 @@ func (m Model) buildAgentRows() ([]components.AgentRow, []string) {
 	names := []string{""}
 	var nested []subagent.Status
 	var depth map[string]int
-	if m.subagents != nil {
-		nested, depth = m.nestAgents(m.subagents.Snapshot())
+	if m.wiring.Subagents != nil {
+		nested, depth = m.nestAgents(m.wiring.Subagents.Snapshot())
 	}
 	for _, st := range nested {
 		// The row draws the child's progress through the fan-out lane's
@@ -516,7 +516,7 @@ func (m Model) buildAgentRows() ([]components.AgentRow, []string) {
 	// Then the answer "none of these" gets somewhere to go. It is offered
 	// only where drafting is wired, because a row that opened a surface
 	// saying no model can draft would be an offer that is not one.
-	if m.personas.Enabled {
+	if m.wiring.Personas.Enabled {
 		rows = append(rows, components.AgentRow{
 			State:  components.AgentOffer,
 			Name:   "draft a new profile",
@@ -531,10 +531,10 @@ func (m Model) buildAgentRows() ([]components.AgentRow, []string) {
 // session wired no list — a surface built without one draws the agents and
 // stops there.
 func (m Model) spawnableRoles() []SpawnableRole {
-	if m.personas.Roles == nil {
+	if m.wiring.Personas.Roles == nil {
 		return nil
 	}
-	return m.personas.Roles()
+	return m.wiring.Personas.Roles()
 }
 
 // openRoleEditor hands a role's own file to the reader's editor, which is
@@ -584,8 +584,8 @@ func (m Model) roleEditorFinished(msg roleEditorDoneMsg) (tea.Model, tea.Cmd) {
 	if msg.err != nil {
 		return m.surfaceNotice("the editor exited with an error, so " + msg.name + " is as it was — " + msg.err.Error())
 	}
-	if m.personas.Reload != nil {
-		if err := m.personas.Reload(msg.path); err != nil {
+	if m.wiring.Personas.Reload != nil {
+		if err := m.wiring.Personas.Reload(msg.path); err != nil {
 			return m.surfaceNotice("the edit did not load, so this session spawns " + msg.name + " as it was — " + err.Error())
 		}
 	}
@@ -659,8 +659,8 @@ func (m Model) freshRateLabel(in, out int64) string {
 	if in == 0 && out == 0 {
 		return ""
 	}
-	if m.prices != nil && m.modelName != "" {
-		if inCost, outCost, found := m.prices.Cost(m.modelName, in, out); found {
+	if m.wiring.Prices != nil && m.modelName != "" {
+		if inCost, outCost, found := m.wiring.Prices.Cost(m.modelName, in, out); found {
 			return formatCost(inCost + outCost)
 		}
 	}
@@ -678,7 +678,7 @@ func (m Model) agentListLines() []string {
 	rows, _ := m.buildAgentRows()
 	m.agentList.Rows = rows
 	m.agentList.MaxLines = m.maxConfirmPanelHeight()
-	m.agentList.Spawned, m.agentList.SpawnLimit = m.subagents.Spawned()
+	m.agentList.Spawned, m.agentList.SpawnLimit = m.wiring.Subagents.Spawned()
 	_, m.agentList.KeyList = m.agentListKeyList()
 	if m.agentList.Focus >= len(rows) {
 		m.agentList.Focus = max(len(rows)-1, 0)
@@ -783,7 +783,7 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
-		if err := m.subagents.CancelTurn(name); err != nil {
+		if err := m.wiring.Subagents.CancelTurn(name); err != nil {
 			m.noteChild(name, err.Error())
 		} else {
 			m.purgeChildAsks(name)
@@ -807,7 +807,7 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if name == "" {
 			return m, nil // the session's own turn is steered by typing at it
 		}
-		if err := m.subagents.Steer(name, res.Text, subagent.SteerFromLane); err != nil {
+		if err := m.wiring.Subagents.Steer(name, res.Text, subagent.SteerFromLane); err != nil {
 			m.noteChild(name, "cannot steer: "+err.Error())
 		}
 		m.syncViewport()
@@ -816,7 +816,7 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if name == "" {
 			return m, nil // the orchestrator's turn is re-run by asking again
 		}
-		if err := m.subagents.Retry(name); err != nil {
+		if err := m.wiring.Subagents.Retry(name); err != nil {
 			m.noteChild(name, err.Error())
 		} else {
 			// A review of the attempt the retry replaced is a decision about
@@ -852,10 +852,10 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // a second one over the same work
 // (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
 func (m Model) reviewKeptPatch(name string) (tea.Model, tea.Cmd) {
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return m, nil
 	}
-	ask, err := m.subagents.ReviewKept(name)
+	ask, err := m.wiring.Subagents.ReviewKept(name)
 	if err != nil {
 		m.noteChild(name, err.Error())
 		return m, nil
@@ -994,7 +994,7 @@ func (m Model) attachedSubmit() (tea.Model, tea.Cmd) {
 	if parts := strings.Fields(text); strings.HasPrefix(parts[0], "/") && !strings.Contains(parts[0][1:], "/") {
 		return m.attachedCommand(parts)
 	}
-	if err := m.subagents.Steer(m.attachedTo, text, subagent.SteerFromLane); err != nil {
+	if err := m.wiring.Subagents.Steer(m.attachedTo, text, subagent.SteerFromLane); err != nil {
 		m.noteChild(m.attachedTo, "cannot steer: "+err.Error())
 	}
 	m.viewport.SetLines(m.renderHistoryLines())
@@ -1041,7 +1041,7 @@ func (m Model) attachedCommand(parts []string) (tea.Model, tea.Cmd) {
 
 // attachedDiff notes the child's cumulative workspace diff (writers only).
 func (m *Model) attachedDiff(name string) {
-	patch, err := m.subagents.WorktreeDiff(name)
+	patch, err := m.wiring.Subagents.WorktreeDiff(name)
 	if err != nil {
 		m.noteChild(name, err.Error())
 		return
@@ -1052,7 +1052,7 @@ func (m *Model) attachedDiff(name string) {
 	}
 	hunks, files := worktree.PatchHunks(patch)
 	adds, dels := diff.Stats(hunks)
-	_ = m.subagents.Note(name, subagent.TranscriptEntry{
+	_ = m.wiring.Subagents.Note(name, subagent.TranscriptEntry{
 		Kind:   subagent.EntryTool,
 		Tool:   "diff",
 		Args:   fmt.Sprintf(`{"agent":%q}`, name),
@@ -1073,12 +1073,12 @@ func (m *Model) attachedModeCommand(parts []string) {
 		m.noteChild(name, failed("mode", err.Error()))
 		return
 	}
-	ceiling := m.subagents.ParentMode()
+	ceiling := m.wiring.Subagents.ParentMode()
 	if agent.ClampMode(mode, ceiling) != mode {
 		m.noteChild(name, fmt.Sprintf("mode %s is disabled: it exceeds the orchestrator's ceiling (%s)", mode, ceiling))
 		return
 	}
-	eff, setErr := m.subagents.SetAgentMode(name, mode)
+	eff, setErr := m.wiring.Subagents.SetAgentMode(name, mode)
 	if setErr != nil {
 		m.noteChild(name, failed("mode", setErr.Error()))
 		return
@@ -1091,11 +1091,11 @@ func (m *Model) attachedModeCommand(parts []string) {
 // as disabled.
 func (m Model) cycleAttachedMode() (tea.Model, tea.Cmd) {
 	name := m.attachedTo
-	cur, ok := m.subagents.AgentMode(name)
+	cur, ok := m.wiring.Subagents.AgentMode(name)
 	if !ok {
 		return m, nil
 	}
-	ceiling := m.subagents.ParentMode()
+	ceiling := m.wiring.Subagents.ParentMode()
 	cycle := m.policy.cycle
 	if len(cycle) == 0 {
 		cycle = agent.DefaultCycle()
@@ -1121,7 +1121,7 @@ func (m Model) cycleAttachedMode() (tea.Model, tea.Cmd) {
 		m.noteChild(name, fmt.Sprintf("disabled (exceeds the orchestrator's ceiling %s): %s", ceiling, strings.Join(disabled, " · ")))
 	}
 	if next != cur {
-		if _, err := m.subagents.SetAgentMode(name, next); err == nil {
+		if _, err := m.wiring.Subagents.SetAgentMode(name, next); err == nil {
 			m.noteChild(name, fmt.Sprintf("mode set to %s — %s", next, next.Describe()))
 		}
 	}
@@ -1136,10 +1136,10 @@ func (m Model) cycleAttachedMode() (tea.Model, tea.Cmd) {
 // has one, otherwise clear the draft.
 func (m Model) attachedCancel() (tea.Model, tea.Cmd) {
 	name := m.attachedTo
-	if st, ok := m.subagents.Get(name); ok {
+	if st, ok := m.wiring.Subagents.Get(name); ok {
 		switch st.State {
 		case subagent.StateRunning, subagent.StateBlocked:
-			if err := m.subagents.CancelTurn(name); err != nil {
+			if err := m.wiring.Subagents.CancelTurn(name); err != nil {
 				m.noteChild(name, err.Error())
 			} else {
 				m.purgeChildAsks(name)
@@ -1158,11 +1158,11 @@ func (m Model) attachedCancel() (tea.Model, tea.Cmd) {
 
 // childStatsReport is /stats scoped to the attached child.
 func (m Model) childStatsReport(name string) string {
-	st, ok := m.subagents.Get(name)
+	st, ok := m.wiring.Subagents.Get(name)
 	if !ok {
 		return "no agent named " + name
 	}
-	mode, _ := m.subagents.AgentMode(name)
+	mode, _ := m.wiring.Subagents.AgentMode(name)
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "%s (%s) — %s\n", st.Name, st.Role, st.Detail)
 	fmt.Fprintf(&sb, "  task:       %s\n", firstLine(st.Task))
@@ -1172,14 +1172,14 @@ func (m Model) childStatsReport(name string) string {
 	if len(st.Paths) > 0 {
 		fmt.Fprintf(&sb, "  paths:      %s\n", strings.Join(st.Paths, " · "))
 	}
-	fmt.Fprintf(&sb, "  mode:       %s (ceiling: %s)\n", mode, m.subagents.ParentMode())
+	fmt.Fprintf(&sb, "  mode:       %s (ceiling: %s)\n", mode, m.wiring.Subagents.ParentMode())
 	fmt.Fprintf(&sb, "  tool calls: %d\n", st.ToolCalls)
 	spend := fmt.Sprintf("  spend:      ↑%s ↓%s tokens", formatTokenCount(st.Spend.In), formatTokenCount(st.Spend.Out))
 	if label := m.childSpendLabel(st); strings.HasPrefix(label, "$") {
 		spend += "  " + label
 	}
 	sb.WriteString(spend)
-	if q := m.subagents.QueuedSteering(name); q > 0 {
+	if q := m.wiring.Subagents.QueuedSteering(name); q > 0 {
 		fmt.Fprintf(&sb, "\n  %s", queuedForTurn(q))
 	}
 	return sb.String()
@@ -1188,11 +1188,11 @@ func (m Model) childStatsReport(name string) string {
 // childModeStatus is /permissions with no argument, scoped to the attached
 // child.
 func (m Model) childModeStatus(name string) string {
-	mode, ok := m.subagents.AgentMode(name)
+	mode, ok := m.wiring.Subagents.AgentMode(name)
 	if !ok {
 		return "no agent named " + name
 	}
-	ceiling := m.subagents.ParentMode()
+	ceiling := m.wiring.Subagents.ParentMode()
 	cycle := m.policy.cycle
 	if len(cycle) == 0 {
 		cycle = agent.DefaultCycle()
@@ -1236,11 +1236,11 @@ func attachedDetail(st subagent.Status) string {
 // renderChildStatusBar is the status bar scoped to the attached child.
 func (m Model) renderChildStatusBar(width int) string {
 	name := m.attachedTo
-	st, ok := m.subagents.Get(name)
+	st, ok := m.wiring.Subagents.Get(name)
 	if !ok {
 		return sty.StatusBar.Render(name)
 	}
-	mode, _ := m.subagents.AgentMode(name)
+	mode, _ := m.wiring.Subagents.AgentMode(name)
 	parts := []string{childModeSegment(mode), sty.StatusBar.Render(attachedDetail(st))}
 	if st.State == subagent.StateBlocked {
 		parts[1] = sty.CtxAlert.Render(st.Detail)
@@ -1248,7 +1248,7 @@ func (m Model) renderChildStatusBar(width int) string {
 	if spend := m.childSpendLabel(st); spend != "" {
 		parts = append(parts, sty.StatusBar.Render(spend))
 	}
-	if q := m.subagents.QueuedSteering(name); q > 0 {
+	if q := m.wiring.Subagents.QueuedSteering(name); q > 0 {
 		parts = append(parts, sty.StatusBar.Render(queuedForTurn(q)))
 	}
 	left := strings.Join(parts, "  ")

@@ -42,16 +42,6 @@ type Gate struct {
 	FlakeAlertCount, FlakeAlertDays int
 }
 
-// WithGate enables the /gate command. The rail's alert memo starts over,
-// because what it read of the flake ledger was read through the gate it had.
-func (m Model) WithGate(g Gate) Model {
-	m.gate = g
-	if m.alertMemo != nil {
-		m.alertMemo = &alertMemo{}
-	}
-	return m
-}
-
 // closeGateRun is where the closing turn's gate run has got to.
 type closeGateRun struct {
 	// on is this session's own answer to whether it honours the workspace's
@@ -123,10 +113,10 @@ func (m Model) closeGateSuite() (string, int) {
 // reads it when it starts, because what a run does is the run's to decide
 // and not something it inherits from a toggle the reader left set.
 func (m Model) workspaceCloseSuite() (string, int) {
-	if m.gate.Run == nil {
+	if m.wiring.Gate.Run == nil {
 		return "", 0
 	}
-	cfg, err := quality.LoadConfig(m.workspace)
+	cfg, err := quality.LoadConfig(m.wiring.Workspace)
 	if err != nil || cfg.OnClose == "" {
 		return "", 0
 	}
@@ -179,7 +169,7 @@ func (m *Model) closeGateCmd() tea.Cmd {
 	if m.closeGate.turn != m.turnCount {
 		m.closeGate.turn, m.closeGate.fed, m.closeGate.settled = m.turnCount, 0, false
 	}
-	run, turn := m.gate.Run, m.turnCount
+	run, turn := m.wiring.Gate.Run, m.turnCount
 	ctx, cancel := context.WithCancel(context.Background())
 	m.closeGate.running, m.closeGate.cancel = true, cancel
 	return func() tea.Msg {
@@ -208,14 +198,14 @@ func (m Model) finishCloseGate(msg closeGateMsg) (tea.Model, tea.Cmd) {
 		if !hasGateRow(m.turnEntries()) {
 			res := &quality.Result{
 				Suite: msg.suite, Verdict: quality.VerdictBlocked, Reason: msg.err.Error(),
-				Fingerprint: quality.TakeFingerprint(m.workspace),
+				Fingerprint: quality.TakeFingerprint(m.wiring.Workspace),
 			}
 			m.appendCloseGateRow(res, res.Fingerprint)
 		}
 		return m.settleCloseGate()
 	}
 	_, retries := m.closeGateSuite()
-	current := quality.TakeFingerprint(m.workspace)
+	current := quality.TakeFingerprint(m.wiring.Workspace)
 	m.appendCloseGateRow(msg.res, current)
 	// A backlog run's verify stage is about to ask the same question of the
 	// same tree. It is told the answer here rather than paying for it again
@@ -341,7 +331,7 @@ func (m *Model) cancelCloseGate() {
 		Suite:       suite,
 		Verdict:     quality.VerdictCancelled,
 		Reason:      "the run was cancelled before completing",
-		Fingerprint: quality.TakeFingerprint(m.workspace),
+		Fingerprint: quality.TakeFingerprint(m.wiring.Workspace),
 	}
 	m.appendCloseGateRow(res, res.Fingerprint)
 }
@@ -393,7 +383,7 @@ func (m *Model) gateToggle(args []string) (bool, string) {
 // a screen, and every other form — `flakes` included, in a session with no
 // ledger to read — is the transcript row slashGate answers.
 func gateOpen(m Model, parts []string) (tea.Model, tea.Cmd) {
-	if len(parts) == 2 && parts[1] == "flakes" && m.gate.Flakes != nil {
+	if len(parts) == 2 && parts[1] == "flakes" && m.wiring.Gate.Flakes != nil {
 		return m.openFlakes()
 	}
 	return m.answerCommand(strings.Join(parts, " "), parts[0], parts)
@@ -407,7 +397,7 @@ func gateOpen(m Model, parts []string) (tea.Model, tea.Cmd) {
 // with nothing on it.
 // See docs/capabilities/testing.md#a-flake-is-counted-where-it-happened.
 func (m Model) openFlakes() (tea.Model, tea.Cmd) {
-	flakes, err := m.gate.Flakes()
+	flakes, err := m.wiring.Gate.Flakes()
 	switch {
 	case err != nil:
 		return m.surfaceNotice(failed("gate flakes", "the flake ledger could not be read: "+err.Error()))

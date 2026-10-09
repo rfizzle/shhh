@@ -19,7 +19,7 @@ import (
 // is the model's to read, and a screen of someone else's instructions in
 // the user's own column is not what they said.
 func (m Model) activateSkill(name, task string) (tea.Model, tea.Cmd) {
-	s, ok := m.skills.Find(name)
+	s, ok := m.wiring.Skills.Find(name)
 	if !ok {
 		return m.surfaceNotice("no skill named " + name + ". /skills lists this session's skills")
 	}
@@ -42,11 +42,11 @@ func (m Model) activateSkill(name, task string) (tea.Model, tea.Cmd) {
 
 // skillArgs completes /skill's first argument with the catalog.
 func skillArgs(m *Model) []argOption {
-	if m.skills == nil {
+	if m.wiring.Skills == nil {
 		return nil
 	}
-	out := make([]argOption, 0, m.skills.Len())
-	for _, s := range m.skills.Skills {
+	out := make([]argOption, 0, m.wiring.Skills.Len())
+	for _, s := range m.wiring.Skills.Skills {
 		desc := []rune(s.Description)
 		if len(desc) > 60 {
 			desc = append(desc[:57], []rune("...")...)

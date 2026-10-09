@@ -24,14 +24,14 @@ import (
 // See docs/capabilities/todo.md#a-large-item-is-built-in-lanes.
 func (m Model) startTodoFanOut() (tea.Model, tea.Cmd) {
 	st, it := m.todo.runner.state, m.todo.runner.item
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return m.todoRunStep(st.NoLanes(it, "no agent supervisor; building in this session"))
 	}
 	// The split turn left the session read-only, and a child's mode is
 	// clamped to its parent's: writers spawned now would be writers that
 	// cannot write. The fan-out is the working stage.
 	m.applyMode(agent.ModeAuto)
-	m.subagents.BeginBatch()
+	m.wiring.Subagents.BeginBatch()
 	var spawned []string
 	for _, lane := range st.Lanes {
 		if lane.Done || lane.Agent == "" {
@@ -43,9 +43,9 @@ func (m Model) startTodoFanOut() (tea.Model, tea.Cmd) {
 			"task":  st.LaneTask(it, lane),
 			"paths": lane.Paths,
 		})
-		if _, err := m.subagents.Spawn(args); err != nil {
+		if _, err := m.wiring.Subagents.Spawn(args); err != nil {
 			for _, name := range spawned {
-				_ = m.subagents.Kill(name)
+				_ = m.wiring.Subagents.Kill(name)
 			}
 			for i := range st.Lanes {
 				st.Lanes[i].Agent = ""
@@ -105,7 +105,7 @@ func (m Model) todoWriterDone(status subagent.Status) (tea.Model, tea.Cmd, bool)
 	if _, ok := st.LaneByAgent(status.Name); !ok {
 		return m, nil, false
 	}
-	report, state, ok := m.subagents.FinalReport(status.Name)
+	report, state, ok := m.wiring.Subagents.FinalReport(status.Name)
 	if !ok || state != subagent.StateDone {
 		report = status.Detail
 	}

@@ -140,9 +140,9 @@ func TestSprintPlan_CardIsTheReadingsSetInItsOwnOrder(t *testing.T) {
 func TestSprintPlan_TurnAnswersWithTheSetAndTheRecordSaysSo(t *testing.T) {
 	var signals []string
 	m, root := sprintModel(t, "")
-	m = m.WithObserver(observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+	m.wiring.Observer = observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
 		signals = append(signals, code+":"+reason)
-	}})
+	}}
 	m.policy.mode = agent.ModeManual
 	for _, slug := range []string{"a-high", "b-second", "c-third", "d-fourth"} {
 		if err := todo.SaveReading(root, todo.Reading{Slug: slug}); err != nil {

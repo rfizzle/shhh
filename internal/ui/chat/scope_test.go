@@ -24,7 +24,9 @@ func scopedModel(t *testing.T, root string, mode agent.Mode) Model {
 	}
 	m := gatedModel(t, func(string, json.RawMessage) (string, error) { return "ok", nil },
 		map[string]GatedPreviewFunc{"write_file": writeFilePreview("old\n")})
-	return m.WithScope(sc).WithApprovalMode(mode, nil)
+	m.wiring.Scope = sc
+	m.policy.mode = mode
+	return m
 }
 
 func TestEditOutsideTheScopeAsksEvenInAcceptEdits(t *testing.T) {
@@ -81,7 +83,7 @@ func TestApprovingAnOutOfScopeEditAddsTheDirectory(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 
-	if !m.scope.Contains(filepath.Join(outside, "other.toml")) {
+	if !m.wiring.Scope.Contains(filepath.Join(outside, "other.toml")) {
 		t.Fatal("approving should have put the directory in the working scope")
 	}
 	if !strings.Contains(transcriptText(m), "added to the working scope") {
@@ -100,8 +102,8 @@ func TestDecliningAnOutOfScopeEditGrantsNothing(t *testing.T) {
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	m = updated.(Model)
-	if len(m.scope.Dirs()) != 0 {
-		t.Fatalf("a refused decision must widen nothing, scope holds %v", m.scope.Dirs())
+	if len(m.wiring.Scope.Dirs()) != 0 {
+		t.Fatalf("a refused decision must widen nothing, scope holds %v", m.wiring.Scope.Dirs())
 	}
 }
 
@@ -136,7 +138,7 @@ func TestScopeCommandAddsListsAndDrops(t *testing.T) {
 	if out := m.scopeCommand([]string{"/add-dir", outside}); !strings.Contains(out, "Added") {
 		t.Fatalf("/add-dir <path> should add it, got:\n%s", out)
 	}
-	if !m.scope.Contains(filepath.Join(outside, "x")) {
+	if !m.wiring.Scope.Contains(filepath.Join(outside, "x")) {
 		t.Fatal("the directory should be in scope after /add-dir")
 	}
 	if out := m.scopeCommand([]string{"/add-dir", outside}); !strings.Contains(out, "already") {
@@ -148,7 +150,7 @@ func TestScopeCommandAddsListsAndDrops(t *testing.T) {
 	if out := m.scopeCommand([]string{"/add-dir", "drop", outside}); !strings.Contains(out, "dropped") {
 		t.Fatalf("/add-dir drop should take it back, got:\n%s", out)
 	}
-	if m.scope.Contains(filepath.Join(outside, "x")) {
+	if m.wiring.Scope.Contains(filepath.Join(outside, "x")) {
 		t.Fatal("a dropped directory must leave the scope")
 	}
 }
@@ -163,8 +165,8 @@ func TestScopeCommandGrantsTheCheckoutToWriters(t *testing.T) {
 	if !strings.Contains(out, "Granted") || !strings.Contains(out, "to writers") || strings.Contains(out, "Added") {
 		t.Fatalf("/add-dir <root> should say it grants the checkout to writers, got:\n%s", out)
 	}
-	if len(m.scope.Dirs()) != 1 {
-		t.Fatalf("the grant was not recorded: %v", m.scope.Dirs())
+	if len(m.wiring.Scope.Dirs()) != 1 {
+		t.Fatalf("the grant was not recorded: %v", m.wiring.Scope.Dirs())
 	}
 	if out := m.scopeCommand([]string{"/add-dir"}); !strings.Contains(out, "for writers") {
 		t.Fatalf("bare /add-dir should mark the checkout's grant as a writer's, got:\n%s", out)
@@ -203,7 +205,7 @@ func TestScopeCommandAddsShhhDirectories(t *testing.T) {
 		if !strings.Contains(out, "Added") || !strings.Contains(out, "sensitive") {
 			t.Fatalf("/add-dir should explicitly grant shhh directory %q, got:\n%s", dir, out)
 		}
-		if !m.scope.Contains(filepath.Join(dir, "child")) {
+		if !m.wiring.Scope.Contains(filepath.Join(dir, "child")) {
 			t.Fatalf("%q should be in the working scope after /add-dir", dir)
 		}
 	}
@@ -292,12 +294,12 @@ func machineMessagesNaming(m Model, dir string) []provider.Message {
 // See docs/capabilities/containment.md#scope-is-the-set-of-directories-the-work-may-reach.
 func TestAddDirMidSessionIsAnnouncedToTheModelOnce(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
-	m := scopedModel(t, root, agent.ModeManual).
-		WithNewSession(func() SessionStart { return SessionStart{Prompt: "sys"} })
+	m := scopedModel(t, root, agent.ModeManual)
+	m.wiring.NewSession = func() SessionStart { return SessionStart{Prompt: "sys"} }
 	m.state = stateInput
 
 	m.scopeCommand([]string{"/add-dir", outside})
-	dir := m.scope.Dirs()[0]
+	dir := m.wiring.Scope.Dirs()[0]
 	said := machineMessagesNaming(m, dir)
 	if len(said) != 1 || said[0].Role != provider.RoleUser || !strings.Contains(said[0].Content, "/add-dir") {
 		t.Fatalf("/add-dir should put one announcement naming %s into the conversation, got %+v", dir, said)
@@ -322,7 +324,7 @@ func TestAddDirWhileWorkingIsQueuedAsMachineSteering(t *testing.T) {
 	m.state = stateStreaming
 
 	m.scopeCommand([]string{"/add-dir", outside})
-	if len(m.steering) != 1 || !m.steering[0].machine || !strings.Contains(m.steering[0].text, m.scope.Dirs()[0]) {
+	if len(m.steering) != 1 || !m.steering[0].machine || !strings.Contains(m.steering[0].text, m.wiring.Scope.Dirs()[0]) {
 		t.Fatalf("the grant should be queued as one machine steering item, got %+v", m.steering)
 	}
 }
@@ -338,8 +340,8 @@ func TestScopeGrantsTheModelAlreadyKnowsAreNotAnnounced(t *testing.T) {
 	m = handover(t, updated.(Model))
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
-	if len(m.scope.Dirs()) != 2 {
-		t.Fatalf("both grants should have been recorded, got %v", m.scope.Dirs())
+	if len(m.wiring.Scope.Dirs()) != 2 {
+		t.Fatalf("both grants should have been recorded, got %v", m.wiring.Scope.Dirs())
 	}
 	for _, msg := range m.Messages() {
 		if msg.Machine && strings.Contains(msg.Content, "working scope") {

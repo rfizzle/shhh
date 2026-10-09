@@ -266,7 +266,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		// Cycle the permission mode; attached, it cycles the
 		// child's mode clamped to the orchestrator's ceiling. A
 		// conversation has none to cycle, and says so.
-		if m.conversation {
+		if m.wiring.Conversation {
 			m.noteOneMode()
 			return m, nil, true
 		}
@@ -278,7 +278,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	case keys.Is(pressed, keys.Draft.Agents):
 		// Agent manager; without a supervisor the key keeps its
 		// textarea meaning (character back).
-		if m.subagents != nil {
+		if m.wiring.Subagents != nil {
 			return answered(m.openAgentList())
 		}
 	case keys.Is(pressed, keys.Draft.NextAgent):

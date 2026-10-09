@@ -29,12 +29,13 @@ func draftModel(t *testing.T, root string, p *scriptedProvider, signals *[]strin
 	if p != nil {
 		dr = todo.NewDrafter(p, todo.ExtractConfig{Model: "m"}, todo.BuiltinCode())
 	}
-	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "usage" },
-		Detail: func(*todo.Store, todo.Item) string { return "" }, Drafter: dr})
+	m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "usage" },
+		Detail: func(*todo.Store, todo.Item) string { return "" }, Drafter: dr}
+	m.loadTodos()
 	if signals != nil {
-		m = m.WithObserver(observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+		m.wiring.Observer = observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
 			*signals = append(*signals, code+":"+reason)
-		}})
+		}}
 	}
 	return m
 }
@@ -384,7 +385,8 @@ func TestTodo_TheRecordSaysHowTheBacklogGrew(t *testing.T) {
 		signals = append(signals, code+":"+reason)
 	}}
 
-	m := extractModel(t, root, &scriptedProvider{args: proposalsFixture}).WithObserver(record)
+	m := extractModel(t, root, &scriptedProvider{args: proposalsFixture})
+	m.wiring.Observer = record
 	pressKeys(t, runExtract(t, m), keyEnter)
 	if len(signals) != 1 || signals[0] != observe.SignalTodo+":"+observe.TodoAdd {
 		t.Fatalf("accepting proposals = %v", signals)
@@ -392,7 +394,8 @@ func TestTodo_TheRecordSaysHowTheBacklogGrew(t *testing.T) {
 
 	// The editor coming back off an item file is the third.
 	signals = nil
-	m = draftModel(t, root, nil, nil).WithObserver(record)
+	m = draftModel(t, root, nil, nil)
+	m.wiring.Observer = record
 	it, ok := m.todo.store.Find("a-high")
 	if !ok {
 		t.Fatal("the fixture should hold a-high")

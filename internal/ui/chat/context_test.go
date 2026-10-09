@@ -23,7 +23,7 @@ import (
 
 func TestContextWindow_DefaultAndTable(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	if got := m.contextWindow(); got != DefaultContextWindow {
 		t.Fatalf("without pricing, want DefaultContextWindow (%d), got %d", DefaultContextWindow, got)
 	}
@@ -31,12 +31,12 @@ func TestContextWindow_DefaultAndTable(t *testing.T) {
 	table := pricing.NewTable(map[string]pricing.ModelPricing{
 		"gpt-4o": {MaxInputTokens: 128000},
 	})
-	m = m.WithPricing(table, "gpt-4o")
+	m.wiring.Prices, m.modelName = table, "gpt-4o"
 	if got := m.contextWindow(); got != 128000 {
 		t.Fatalf("with table, want 128000, got %d", got)
 	}
 
-	m = m.WithPricing(table, "mystery-model")
+	m.wiring.Prices, m.modelName = table, "mystery-model"
 	if got := m.contextWindow(); got != DefaultContextWindow {
 		t.Fatalf("unknown model should fall back to default, got %d", got)
 	}
@@ -44,7 +44,7 @@ func TestContextWindow_DefaultAndTable(t *testing.T) {
 
 func TestContextSeverity_Thresholds(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream) // default window 32768: warn 19660, trim 26214
+	m := New(msgs, mockStream, Wiring{}) // default window 32768: warn 19660, trim 26214
 
 	m.contextTokens = 1000
 	if got := m.contextSeverity(); got != 0 {
@@ -78,7 +78,7 @@ func TestTrimContext_ElidesOldestToolResults(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: "answer 1"},
 		{Role: provider.RoleUser, Content: "q2"},
 		{Role: provider.RoleTool, Content: "recent result", ToolCallID: "c2"},
-	}, mockStream)
+	}, mockStream, Wiring{})
 	m.contextTokens = 30000 // over the default trim threshold (26214)
 
 	n := m.trimContext()
@@ -105,7 +105,7 @@ func TestTrimContext_NoopUnderThreshold(t *testing.T) {
 		{Role: provider.RoleUser, Content: "q1"},
 		{Role: provider.RoleTool, Content: "small result", ToolCallID: "c1"},
 		{Role: provider.RoleUser, Content: "q2"},
-	}, mockStream)
+	}, mockStream, Wiring{})
 	m.contextTokens = 1000
 
 	if n := m.trimContext(); n != 0 {
@@ -135,7 +135,7 @@ func trimFixture(t *testing.T) Model {
 	msgs = append(msgs,
 		provider.Message{Role: provider.RoleAssistant, Content: "answer 1"},
 		provider.Message{Role: provider.RoleUser, Content: "q2"})
-	return New(msgs, mockStream)
+	return New(msgs, mockStream, Wiring{})
 }
 
 // TestTrimContext_TrimsOnceAcrossTwoRequests is the behaviour the low-water
@@ -180,11 +180,11 @@ func TestTrimContext_TrimsOnceAcrossTwoRequests(t *testing.T) {
 func TestTrimContext_SignalCarriesTheEstimateEitherSide(t *testing.T) {
 	m := trimFixture(t)
 	var reasons []string
-	m = m.WithObserver(observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+	m.wiring.Observer = observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
 		if code == observe.SignalTrim {
 			reasons = append(reasons, reason)
 		}
-	}})
+	}}
 
 	n := m.trimContext()
 	if len(reasons) != 1 {
@@ -242,7 +242,7 @@ func TestTrimContext_TheRoundThatJustLandedCounts(t *testing.T) {
 		{Role: provider.RoleTool, Content: strings.Repeat("x", 48000), ToolCallID: "c1"},
 		{Role: provider.RoleAssistant, Content: "answer 1"},
 		{Role: provider.RoleUser, Content: "q2"},
-	}, mockStream)
+	}, mockStream, Wiring{})
 
 	// The provider counts that request at 15k of the default 32768-token
 	// window, comfortably under the 26214 that trims.
@@ -283,7 +283,7 @@ func TestSendUserMessage_TrimsAndNotes(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "q1"},
 		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
-	}, mockStream)
+	}, mockStream, Wiring{})
 	m.contextTokens = 30000
 
 	m = sendText(t, m, "next question")
@@ -362,7 +362,7 @@ func TestCompact_RestartsFromSummary(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "question"},
 		{Role: provider.RoleAssistant, Content: "answer"},
-	}, stream)
+	}, stream, Wiring{})
 	m.contextTokens = 5000
 
 	m = driveCompact(t, m)
@@ -421,7 +421,7 @@ func TestCompact_ForbidsAToolCall(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: "answer"},
 	}
 
-	turn := New(conversation, stream)
+	turn := New(conversation, stream, Wiring{})
 	turn.input.SetValue("ordinary turn")
 	_, cmd := turn.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	batch, ok := cmd().(tea.BatchMsg)
@@ -432,7 +432,7 @@ func TestCompact_ForbidsAToolCall(t *testing.T) {
 		c()
 	}
 
-	_ = driveCompact(t, New(conversation, stream))
+	_ = driveCompact(t, New(conversation, stream, Wiring{}))
 
 	if len(choices) != 2 {
 		t.Fatalf("expected a turn request and a compaction request, got %v", choices)
@@ -446,7 +446,7 @@ func TestCompact_ForbidsAToolCall(t *testing.T) {
 }
 
 func TestCompact_NothingToCompact(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	m.input.SetValue("/compact")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
@@ -471,7 +471,7 @@ func TestCompact_EmptySummaryKeepsConversation(t *testing.T) {
 	m := New([]provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "question"},
-	}, stream)
+	}, stream, Wiring{})
 
 	m = driveCompact(t, m)
 
@@ -488,7 +488,7 @@ func TestCompact_CancelKeepsConversation(t *testing.T) {
 	m := New([]provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "question"},
-	}, mockStream)
+	}, mockStream, Wiring{})
 	m.input.SetValue("/compact")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
@@ -518,7 +518,7 @@ func TestCompact_ToolCallsAbort(t *testing.T) {
 	m := New([]provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "question"},
-	}, mockStream)
+	}, mockStream, Wiring{})
 	m.input.SetValue("/compact")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
@@ -558,7 +558,7 @@ func TestContextWindow_FallsBackToTheModelFamily(t *testing.T) {
 		{"some-local-llama-build", DefaultContextWindow},
 		{"", DefaultContextWindow},
 	} {
-		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).WithPricing(nil, tc.model)
+		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{ModelName: tc.model})
 		if got := m.contextWindow(); got != tc.want {
 			t.Errorf("%q: context window = %d, want %d", tc.model, got, tc.want)
 		}
@@ -573,15 +573,16 @@ func TestContextWindow_EndpointOutranksTheTable(t *testing.T) {
 		w, ok := windows[model]
 		return w, ok
 	}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithPricing(nil, "qwen3:8b").
-		WithEndpointWindows(lookup)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		ModelName:       "qwen3:8b",
+		EndpointWindows: lookup,
+	})
 	if got := m.contextWindow(); got != 262_144 {
 		t.Errorf("endpoint window = %d, want 262144", got)
 	}
 
 	// A model the endpoint has not described falls through to the family.
-	m = m.WithPricing(nil, "claude-opus-5")
+	m.wiring.Prices, m.modelName = nil, "claude-opus-5"
 	if got := m.contextWindow(); got != 1_000_000 {
 		t.Errorf("unanswered model = %d, want the family floor 1000000", got)
 	}
@@ -599,11 +600,13 @@ func TestTrimContext_WiredStoreMakesElisionRecoverable(t *testing.T) {
 		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
 		{Role: provider.RoleTool, Content: strings.Repeat("x", 40000), ToolCallID: "c1"},
 		{Role: provider.RoleUser, Content: "q2"},
-	}, mockStream).WithEvidence(Evidence{
-		Keep: func(tool, content string) (string, bool) {
-			id := "ev-00000000000000" + fmt.Sprintf("%02d", len(kept))
-			kept[id] = content
-			return id, true
+	}, mockStream, Wiring{
+		Evidence: Evidence{
+			Keep: func(tool, content string) (string, bool) {
+				id := "ev-00000000000000" + fmt.Sprintf("%02d", len(kept))
+				kept[id] = content
+				return id, true
+			},
 		},
 	})
 	m.contextTokens = 30000
@@ -646,8 +649,10 @@ func TestCompact_RereadsTheWorkspace(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys\n\n" + opened},
 		{Role: provider.RoleUser, Content: "question"},
 		{Role: provider.RoleAssistant, Content: "answer"},
-	}, stream).WithWorkspaceBlock(func() string {
-		return project.PromptBlock(project.Info{Dir: "/work", Repo: true, Branch: "side"})
+	}, stream, Wiring{
+		WorkspaceBlock: func() string {
+			return project.PromptBlock(project.Info{Dir: "/work", Repo: true, Branch: "side"})
+		},
 	})
 
 	m = driveCompact(t, m)
@@ -680,7 +685,7 @@ func TestCompact_WithoutAWorkspaceReadingKeepsThePrompt(t *testing.T) {
 	m := New([]provider.Message{
 		{Role: provider.RoleSystem, Content: "sys\n\n" + opened},
 		{Role: provider.RoleUser, Content: "question"},
-	}, stream)
+	}, stream, Wiring{})
 
 	m = driveCompact(t, m)
 
@@ -702,9 +707,12 @@ func TestChatLoad_RereadsTheWorkspace(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	m := readyModel(t).WithDB(db).WithWorkspaceBlock(func() string {
+	m := readyModel(t)
+	m.wiring.DB = db
+	m.bindStores()
+	m.wiring.WorkspaceBlock = func() string {
 		return project.PromptBlock(project.Info{Dir: "/work", Repo: true, Branch: "side"})
-	})
+	}
 
 	m.loadChatByName("alpha")
 
@@ -733,7 +741,7 @@ func TestTrimContext_ElidesTheTranscriptCopy(t *testing.T) {
 		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
 		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
 		{Role: provider.RoleUser, Content: "q2"},
-	}, mockStream)
+	}, mockStream, Wiring{})
 	m.appendEntry(entry{kind: entryUser, text: "q1"})
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"big.txt"}`, toolResult: big})
 	m.contextTokens = 30000
@@ -771,15 +779,17 @@ func TestElidedRow_OffersTheEvidencePage(t *testing.T) {
 		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
 		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
 		{Role: provider.RoleUser, Content: "q2"},
-	}, mockStream).WithEvidence(Evidence{
-		Keep: func(_, content string) (string, bool) {
-			id := fmt.Sprintf("ev-000000000000000%d", len(kept))
-			kept[id] = content
-			return id, true
-		},
-		Read: func(id string, _ int) (string, bool) {
-			content, ok := kept[id]
-			return content, ok
+	}, mockStream, Wiring{
+		Evidence: Evidence{
+			Keep: func(_, content string) (string, bool) {
+				id := fmt.Sprintf("ev-000000000000000%d", len(kept))
+				kept[id] = content
+				return id, true
+			},
+			Read: func(id string, _ int) (string, bool) {
+				content, ok := kept[id]
+				return content, ok
+			},
 		},
 	})
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolResult: big})
@@ -823,7 +833,7 @@ func TestElidedRow_KeepsWhatTheBodySaid(t *testing.T) {
 		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
 		{Role: provider.RoleTool, Content: boom, ToolCallID: "c1"},
 		{Role: provider.RoleUser, Content: "q2"},
-	}, mockStream)
+	}, mockStream, Wiring{})
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolResult: boom})
 	m.contextTokens = 30000
 	before := m.activityRowDetail(m.transcript[0], false, m.contentWidth())
@@ -852,7 +862,7 @@ func TestElidedCheck_TheTurnKeepsItsVerdict(t *testing.T) {
 		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: quality.ToolName}}},
 		{Role: provider.RoleTool, Content: gate, ToolCallID: "c1"},
 		{Role: provider.RoleUser, Content: "q2"},
-	}, mockStream)
+	}, mockStream, Wiring{})
 	m.appendEntry(entry{kind: entryTool, turn: 1, toolName: quality.ToolName, toolResult: gate})
 	m.appendEntry(entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
 		Checks: turnChecksRow(m.transcript, false),
@@ -882,7 +892,7 @@ func TestElidedRow_StillReportsAsAnErrorToTheDigest(t *testing.T) {
 		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
 		{Role: provider.RoleTool, Content: boom, ToolCallID: "c1"},
 		{Role: provider.RoleUser, Content: "q2"},
-	}, mockStream)
+	}, mockStream, Wiring{})
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolResult: boom})
 	m.contextTokens = 30000
 	if n := m.trimContext(); n != 1 {
@@ -904,7 +914,7 @@ func filledMidTurn(t *testing.T, stream agent.StreamFunc) Model {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "question"},
 		{Role: provider.RoleAssistant, Content: "answer"},
-	}, stream)
+	}, stream, Wiring{})
 	// The report is the session's own occupancy, over the default window's
 	// trim threshold (26214 of 32768).
 	m.contextTokens = 30000
@@ -1051,9 +1061,9 @@ func TestRoundTail_AsksForOneSummaryPerCrossing(t *testing.T) {
 	var choices []string
 	m := filledMidTurn(t, midTurnStream(&choices))
 	// A window the rebuilt conversation cannot get under.
-	m = m.WithPricing(pricing.NewTable(map[string]pricing.ModelPricing{
+	m.wiring.Prices, m.modelName = pricing.NewTable(map[string]pricing.ModelPricing{
 		"tiny": {MaxInputTokens: 10},
-	}), "tiny")
+	}), "tiny"
 
 	updated, cmd := m.resumeToolLoop()
 	m = updated.(Model)
@@ -1096,7 +1106,7 @@ func receiptModel(t *testing.T) Model {
 		{Role: provider.RoleUser, Content: "move it"},
 		{Role: provider.RoleAssistant, Content: "third answer"},
 	}, summaryStream("The limit lived in two places and disagreed. "+
-		"The loop owns it now and nothing else declares one."))
+		"The loop owns it now and nothing else declares one."), Wiring{})
 	m.transcript = []entry{
 		{kind: entryUser, text: "where is the round limit counted"},
 		{kind: entryAssistant, text: "Locate the round accounting"},
@@ -1246,7 +1256,7 @@ func TestCompactReceipt_TheFloorSaysWhatIsLeftAndCarriesNoSummary(t *testing.T) 
 		{Role: provider.RoleAssistant, Content: "second answer"},
 		{Role: provider.RoleUser, Content: "and now this"},
 		{Role: provider.RoleAssistant, Content: "third answer"},
-	}, summaryStream("a summary nobody needed"))
+	}, summaryStream("a summary nobody needed"), Wiring{})
 	// The conversation the first compaction left: its summary, and the one
 	// turn since. Every turn still in the window is a turn this compaction
 	// keeps, so there is nothing left for it to fold.
@@ -1298,7 +1308,7 @@ func TestCompact_AMessageNobodyTypedIsNotATurnTheFoldCountsBack(t *testing.T) {
 		{Role: provider.RoleUser, Content: "I ran `go test` myself.", Machine: true},
 		{Role: provider.RoleUser, Content: "third"},
 		{Role: provider.RoleAssistant, Content: "third answer"},
-	}, summaryStream("the summary"))
+	}, summaryStream("the summary"), Wiring{})
 	m.transcript = []entry{
 		{kind: entryUser, text: "first"},
 		{kind: entryAssistant, text: "first answer"},
@@ -1352,7 +1362,7 @@ func TestCompact_AMessageNobodyTypedIsNotATurnTheFoldCountsBack(t *testing.T) {
 // drop has to tell the render caches itself: the rebuild a compaction goes on
 // to do would mask a drop that did not, and nothing here performs one.
 func TestDropCompactingNotice_TheNextRenderHasNoRowForIt(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	m.width, m.height = 110, 40
 	read := func(path string) entry {
 		return entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"` + path + `"}`, toolResult: "x"}
@@ -1415,8 +1425,10 @@ func TestProgram_TheContextMeterHoldsWhenAReportUndercounts(t *testing.T) {
 		usage: &provider.Usage{PromptTokens: 10, CompletionTokens: 3},
 	}}}
 	sys := strings.Repeat("s", 64000)
-	tm := runProgram(t, New([]provider.Message{{Role: provider.RoleSystem, Content: sys}}, streamOf(p)).
-		WithPricing(pricing.NewTable(nil), "example-model"))
+	tm := runProgram(t, New([]provider.Message{{Role: provider.RoleSystem, Content: sys}}, streamOf(p), Wiring{
+		Prices:    pricing.NewTable(nil),
+		ModelName: "example-model",
+	}))
 
 	tm.Type("say something")
 	tm.Send(programEnter)
@@ -1438,8 +1450,10 @@ func TestProgram_TheContextMeterHoldsWhenAReportUndercounts(t *testing.T) {
 // a plausible report before it as the anchor, and a plausible report is
 // anchored as it always was.
 func TestAccumulateUsage_AnUndercountingReportIsNotTheAnchor(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: strings.Repeat("s", 40000)}}, mockStream).
-		WithPricing(pricing.NewTable(nil), "example-model")
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: strings.Repeat("s", 40000)}}, mockStream, Wiring{
+		Prices:    pricing.NewTable(nil),
+		ModelName: "example-model",
+	})
 	est := m.contextEstimate().total()
 
 	m.accumulateUsage(&provider.Usage{PromptTokens: 10})

@@ -89,7 +89,7 @@ func (m *Model) appendTurnClose() {
 	// What keeps this from stopping the session is the ceiling, which is why
 	// a hook's is short and cannot be turned off
 	// (docs/capabilities/hooks.md#a-hook-that-runs-too-long-has-failed).
-	m.hookNotes(m.hooks.TurnClose(context.Background(), m.hookPos(), m.lastAssistantText()))
+	m.hookNotes(m.wiring.Hooks.TurnClose(context.Background(), m.hookPos(), m.lastAssistantText()))
 }
 
 // turnCloseData assembles the close block from what the session already
@@ -113,7 +113,7 @@ func (m Model) turnCloseData() *components.TurnClose {
 		WroteNothing: changes == nil && commit == nil && m.ranUnvouched(es),
 		Commit:       commit,
 		Notes:        m.turnNotesClause(),
-		Checks:       turnChecksRow(es, m.gate.Manage != nil),
+		Checks:       turnChecksRow(es, m.wiring.Gate.Manage != nil),
 	}
 }
 

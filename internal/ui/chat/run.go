@@ -27,7 +27,7 @@ import (
 // switching to the confirmation state. Bare /run takes the first block: the
 // several-blocks case is routed to the picker before it gets here.
 func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
-	if m.runFn == nil {
+	if m.wiring.Runner == nil {
 		return "command execution is not available in this session", false
 	}
 	blocks := extractCodeBlocks(m.lastAssistantText())
@@ -198,7 +198,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // it would barely shrink, and the cap in the formatter still has a middle to
 // put where the evidence tool can page it back.
 func (m Model) execToolResult(result tools.ExecResult) string {
-	return tools.FormatExecResultKeeping(result, m.evidence.Keep)
+	return tools.FormatExecResultKeeping(result, m.wiring.Evidence.Keep)
 }
 
 func (m Model) executeRun() (tea.Model, tea.Cmd) {
@@ -231,8 +231,8 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	}
 	m.runCancel = cancel
 	runID := m.agent.RunID()
-	runFn := m.runFn
-	tailFn := m.tailRunFn
+	runFn := m.wiring.Runner
+	tailFn := m.wiring.TailRunner
 	// Assistant commands run contained when a mechanism is available;
 	// /run — the user's own command — stays on the plain runner.
 	if m.approval.request != nil && m.containment.Run != nil {
@@ -244,7 +244,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	// output, and the hooks behind it are told what the command produced
 	// (hooks.go). A `/run` the reader typed is not the assistant's call and
 	// fires neither.
-	hooks := m.hooks
+	hooks := m.wiring.Hooks
 	hookLead, hookAt := "", m.hookPos()
 	hookCall := hook.Call{Name: tools.ExecCommandName, Arguments: command}
 	if assistant && m.approval.request != nil {
@@ -361,7 +361,7 @@ func (m Model) dryRunKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	// chooses it: a form derived from an assistant's command is still the
 	// assistant's command, and running it outside the containment the
 	// decision is being made about would be reporting on a different machine.
-	run := m.runFn
+	run := m.wiring.Runner
 	if m.containment.Run != nil {
 		run = m.containment.Run
 	}
@@ -498,7 +498,7 @@ func dryRunView(msg dryRunDoneMsg, out string, row components.ActivityRow) *comp
 // is already on its way, and taking the row away mid-wait would read as the
 // offer having been withdrawn.
 func (m Model) explainOffer(req *approvalRequest) []components.KeyOffer {
-	if req == nil || req.kind != approvalExec || !m.explainer.Enabled() {
+	if req == nil || req.kind != approvalExec || !m.wiring.Explainer.Enabled() {
 		return nil
 	}
 	label := "explain — what this command does"
@@ -518,11 +518,11 @@ func (m Model) explainKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		return m, nil, false
 	}
 	req := m.approval.request
-	if req == nil || req.kind != approvalExec || req.explaining || !m.explainer.Enabled() {
+	if req == nil || req.kind != approvalExec || req.explaining || !m.wiring.Explainer.Enabled() {
 		return m, nil, false
 	}
 	req.explaining = true
-	explainer := m.explainer
+	explainer := m.wiring.Explainer
 	command, call, runID := req.command, req.call.ID, m.agent.RunID()
 	return m, func() tea.Msg {
 		// The explainer bounds its own request, the way the classifier and

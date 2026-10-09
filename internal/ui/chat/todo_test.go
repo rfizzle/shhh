@@ -40,7 +40,9 @@ func todoModel(t *testing.T, root string) Model {
 	t.Helper()
 	m := frameModel(t, 130, 40)
 	manage := func(args []string) string { return "managed " + strings.Join(args, " ") }
-	return m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: manage, Detail: func(_ *todo.Store, it todo.Item) string { return "detail " + it.Slug }})
+	m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: manage, Detail: func(_ *todo.Store, it todo.Item) string { return "detail " + it.Slug }}
+	m.loadTodos()
+	return m
 }
 
 func TestInspectorTodo_RowsInWorkingOrderAndCounts(t *testing.T) {
@@ -277,10 +279,11 @@ func TestTodoScreen_BodyGoesThroughTheProseRenderer(t *testing.T) {
 func TestTodoCommand_SubcommandReloadsTheStore(t *testing.T) {
 	root := todoTestRoot(t)
 	m := frameModel(t, 130, 40)
-	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func(args []string) string {
+	m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func(args []string) string {
 		_ = todo.SetStatus(filepath.Join(todo.Dir(root), "d-ready.md"), todo.StatusBlocked)
 		return "changed"
-	}, Detail: func(*todo.Store, todo.Item) string { return "" }})
+	}, Detail: func(*todo.Store, todo.Item) string { return "" }}
+	m.loadTodos()
 	m.input.SetValue("/todo block d-ready")
 	updated, _ := m.submitInput()
 	next := updated.(Model)
@@ -423,7 +426,8 @@ func TestTodoRow_DrawsTheProfilesGradeGlyph(t *testing.T) {
 func TestTodoCommand_NamesTheRootWhenItIsNotThisProjects(t *testing.T) {
 	elsewhere := todoTestRoot(t)
 	bare := t.TempDir()
-	m := todoModel(t, elsewhere).WithWorkspace(bare)
+	m := todoModel(t, elsewhere)
+	m.wiring.Workspace = bare
 
 	m.input.SetValue("/todo show a-high")
 	updated, _ := m.submitInput()
@@ -453,7 +457,8 @@ func TestTodoCommand_NamesTheRootWhenItIsNotThisProjects(t *testing.T) {
 // header already names the directory.
 func TestTodoCommand_SaysNothingWhenTheBacklogIsThisProjects(t *testing.T) {
 	root := todoTestRoot(t)
-	m := todoModel(t, root).WithWorkspace(root)
+	m := todoModel(t, root)
+	m.wiring.Workspace = root
 	m.input.SetValue("/todo show a-high")
 	updated, _ := m.submitInput()
 	for _, e := range updated.(Model).transcript {

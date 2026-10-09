@@ -36,8 +36,13 @@ var (
 // scriptedSession is a session over the scripted provider, with the system
 // prompt every fixture here starts from.
 func scriptedSession(turns ...programTurn) (Model, *programProvider) {
+	return scriptedSessionWith(Wiring{}, turns...)
+}
+
+// scriptedSessionWith is scriptedSession built from w.
+func scriptedSessionWith(w Wiring, turns ...programTurn) (Model, *programProvider) {
 	p := &programProvider{turns: turns}
-	return New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p)), p
+	return New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), w), p
 }
 
 // quietHold is a hold released once the keyboard has been quiet for the
@@ -188,10 +193,10 @@ func TestProgram_ACardAnswersToItsOwnKeys(t *testing.T) {
 				programTurn{hold: hold, calls: []provider.ToolCall{call("c1", tools.ExecCommandName, `{"command":"`+tc.command+`"}`)}},
 				programTurn{text: tc.reply},
 			)
-			m = m.WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
+			m.wiring.Runner = legacyRunner(func(_ context.Context, cmd string) (string, int) {
 				ran = append(ran, cmd)
 				return tc.output, 0
-			}))
+			})
 			tm := runProgram(t, m)
 
 			send(tm, tc.ask)
@@ -310,8 +315,15 @@ func reads(names ...string) []provider.ToolCall {
 // child's is rooted at its workspace — the one thing a session started in
 // dir gets for free.
 func readingSession(dir string, turns ...programTurn) Model {
-	m, _ := scriptedSession(turns...)
-	return m.WithWorkspace(dir).WithToolExecutor(subagent.RootedExecutor(dir, tools.Execute))
+	return readingSessionWith(dir, Wiring{}, turns...)
+}
+
+// readingSessionWith is readingSession built from the rest of w.
+func readingSessionWith(dir string, w Wiring, turns ...programTurn) Model {
+	w.Workspace = dir
+	w.Executor = subagent.RootedExecutor(dir, tools.Execute)
+	m, _ := scriptedSessionWith(w, turns...)
+	return m
 }
 
 var twelve = []string{"one.go", "two.go", "three.go", "four.go", "five.go", "six.go", "seven.go", "eight.go", "nine.go", "ten.go", "eleven.go", "twelve.go"}
@@ -351,7 +363,7 @@ func TestProgram_AClickOnAStripGlyphMovesTheCursor(t *testing.T) {
 	tm := runProgramAt(t, readingSession(dir,
 		programTurn{calls: reads(twelve...)},
 		programTurn{text: "The round limit is counted in the loop and nowhere else."},
-	).WithMouse(true), 130, 40)
+	), 130, 40)
 
 	send(tm, "how is the round limit counted")
 	waitForAll(t, tm, "nowhere else", "read 12 files")
@@ -404,7 +416,7 @@ func TestProgram_AClickOnTheHeaderOpensThenCloses(t *testing.T) {
 	tm := runProgramAt(t, readingSession(dir,
 		programTurn{text: "Locate the round accounting\n", calls: reads("loop.go", "round.go")},
 		programTurn{text: "The limit is a checkpoint, not a wall."},
-	).WithMouse(true), 110, 40)
+	), 110, 40)
 
 	send(tm, "how is the round limit counted")
 	waitForAll(t, tm, "not a wall", "Locate the round accounting")
@@ -440,7 +452,7 @@ func TestProgram_AClickOnACallRowOpensItsView(t *testing.T) {
 	tm := runProgramAt(t, readingSession(dir,
 		programTurn{text: "Locate the round accounting\n", calls: calls},
 		programTurn{text: "The limit is a checkpoint, not a wall."},
-	).WithMouse(true), 110, 40)
+	), 110, 40)
 
 	send(tm, "how is the round limit counted")
 	waitForAll(t, tm, "not a wall", "Locate the round accounting")
@@ -488,7 +500,7 @@ func TestProgram_TheSearchReachesInsideTheFolds(t *testing.T) {
 func TestProgram_ACtrlSWriteLeavesAReceipt(t *testing.T) {
 	h := newFakeConfigHost()
 	m, _ := scriptedSession(programTurn{text: "nothing to do"})
-	m = m.WithConfigScreen(func([]string) (ConfigSession, error) { return h.session(), nil })
+	m.wiring.ConfigScreen = func([]string) (ConfigSession, error) { return h.session(), nil }
 	tm := runProgram(t, m)
 
 	send(tm, "/config")

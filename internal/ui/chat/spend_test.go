@@ -20,9 +20,11 @@ func spendModel(t *testing.T) (Model, *meter.Ledger) {
 		"cheap":  {InputCostPerToken: 0.0000001, OutputCostPerToken: 0.0000002},
 	})
 	ledger := meter.New(table)
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithPricing(table, "gpt-4o").
-		WithLedger(ledger)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Prices:    table,
+		ModelName: "gpt-4o",
+		Ledger:    ledger,
+	})
 	return m, ledger
 }
 
@@ -157,9 +159,9 @@ func TestSpend_ObserverReportsThePricedSessionTotal(t *testing.T) {
 	var gotCost float64
 	var gotPriced bool
 	m, ledger := spendModel(t)
-	m = m.WithObserver(observe.Observer{Usage: func(_, in, out int64, cost float64, priced bool) {
+	m.wiring.Observer = observe.Observer{Usage: func(_, in, out int64, cost float64, priced bool) {
 		gotIn, gotOut, gotCost, gotPriced = in, out, cost, priced
-	}})
+	}}
 	m.vitals.startTurn()
 
 	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "writer-1"}, "cheap", provider.Usage{PromptTokens: 2000, CompletionTokens: 200})
@@ -206,10 +208,10 @@ func TestSpend_SummaryIsAttributedToTheSummary(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Reading the loop."})
 	m = applyReading(t, m)
 
-	if got := m.ledger.SourceTotal(meter.SourceSummary); got.In != 800 || got.Out != 30 {
+	if got := m.wiring.Ledger.SourceTotal(meter.SourceSummary); got.In != 800 || got.Out != 30 {
 		t.Fatalf("the reading is billed to the summary, got %+v", got)
 	}
-	if got := m.ledger.SourceTotal(meter.SourceAgent); got.In != 0 {
+	if got := m.wiring.Ledger.SourceTotal(meter.SourceAgent); got.In != 0 {
 		t.Fatalf("and not to the agent, got %+v", got)
 	}
 }

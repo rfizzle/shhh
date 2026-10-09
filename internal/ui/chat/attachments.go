@@ -195,20 +195,6 @@ func (m Model) stageAtCursor(atts []provider.Attachment) (tea.Model, tea.Cmd) {
 	return staged.surfaceNotice(note)
 }
 
-// WithPasteThresholds sets the shape past which a paste is staged rather than
-// typed (appearance.paste_lines / appearance.paste_columns). Zero on either
-// keeps that half at its default; what any other value means is
-// attachment.PasteOverflows'.
-func (m Model) WithPasteThresholds(lines, columns int) Model {
-	if lines != 0 {
-		m.pasteLines = lines
-	}
-	if columns != 0 {
-		m.pasteColumns = columns
-	}
-	return m
-}
-
 // pasteOverflows is the session's own reading of attachment.PasteOverflows:
 // this session's thresholds, against text whose line endings are already
 // settled. Both doors onto the staging area ask it, so neither can drift into

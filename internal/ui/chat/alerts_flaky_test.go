@@ -94,7 +94,8 @@ func TestAlerts_AFlakyCheckStands(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := frameModel(t, 130, 40).WithGate(tt.gate)
+			m := frameModel(t, 130, 40)
+			m.wiring.Gate, m.alertMemo = tt.gate, &alertMemo{}
 			for _, e := range tt.transcript {
 				m.appendEntry(e)
 			}
@@ -115,7 +116,8 @@ func TestAlerts_AFlakyCheckStands(t *testing.T) {
 // flaky check standing: the pass is the gate's, and every flake was one.
 func TestAlerts_AGatePassLeavesAFlakyCheckStanding(t *testing.T) {
 	holdFlakyClock(t)
-	m := frameModel(t, 130, 40).WithGate(ledgerOf(0, 0, flake("vet", 3, 2*day, time.Hour)))
+	m := frameModel(t, 130, 40)
+	m.wiring.Gate, m.alertMemo = ledgerOf(0, 0, flake("vet", 3, 2*day, time.Hour)), &alertMemo{}
 	m.appendEntry(entry{kind: entryCommand, text: "go build ./...", exitCode: 2, turn: 1})
 	appendGateText(&m, gateResult("PASS", 2, 2))
 
@@ -135,13 +137,14 @@ func TestAlerts_TheLedgerIsReadAgainWhenAVerdictLands(t *testing.T) {
 	holdFlakyClock(t)
 	reads := 0
 	seen := 2
-	m := frameModel(t, 130, 40).WithGate(Gate{
+	m := frameModel(t, 130, 40)
+	m.wiring.Gate, m.alertMemo = Gate{
 		Manage: func([]string) string { return "" },
 		Flakes: func() ([]storage.Flake, error) {
 			reads++
 			return []storage.Flake{flake("vet", seen, 2*day, time.Hour)}, nil
 		},
-	})
+	}, &alertMemo{}
 	if live := m.inspectorAlerts().Live(); len(live) != 0 {
 		t.Fatalf("two flakes stand nothing, got %+v", live)
 	}
@@ -165,7 +168,7 @@ func TestAlerts_TheLedgerIsReadAgainWhenAVerdictLands(t *testing.T) {
 // flaking is news before this session has run anything.
 func TestAlerts_AnEmptySessionStillStandsAFlakyCheck(t *testing.T) {
 	holdFlakyClock(t)
-	m := New(nil, mockStream).WithGate(ledgerOf(0, 0, flake("vet", 4, 2*day, time.Hour)))
+	m := New(nil, mockStream, Wiring{Gate: ledgerOf(0, 0, flake("vet", 4, 2*day, time.Hour))})
 	if live := m.inspectorAlerts().Live(); len(live) != 1 || !live[0].Flaky {
 		t.Fatalf("an empty session should stand the flaky check, got %+v", live)
 	}
@@ -176,7 +179,8 @@ func TestAlerts_AnEmptySessionStillStandsAFlakyCheck(t *testing.T) {
 // the check flaked and how often.
 func TestSummaryAlerts_LeavesAFlakyCheckOut(t *testing.T) {
 	holdFlakyClock(t)
-	m := frameModel(t, 130, 40).WithGate(ledgerOf(0, 0, flake("vet", 3, 2*day, time.Hour)))
+	m := frameModel(t, 130, 40)
+	m.wiring.Gate, m.alertMemo = ledgerOf(0, 0, flake("vet", 3, 2*day, time.Hour)), &alertMemo{}
 	if got := m.summaryAlerts(); got != nil {
 		t.Fatalf("a flaky check alone is nothing for the reading, got %q", got)
 	}
@@ -191,7 +195,8 @@ func TestSummaryAlerts_LeavesAFlakyCheckOut(t *testing.T) {
 // and `flaky`, with the ledger's account and no runs.
 func TestAlertsScreen_ListsAFlakyCheck(t *testing.T) {
 	holdFlakyClock(t)
-	m := frameModel(t, 130, 40).WithGate(ledgerOf(0, 0, flake("vet", 3, 2*day, time.Hour)))
+	m := frameModel(t, 130, 40)
+	m.wiring.Gate, m.alertMemo = ledgerOf(0, 0, flake("vet", 3, 2*day, time.Hour)), &alertMemo{}
 	screen := m.alertsScreenData()
 	if len(screen.Alerts) != 1 || !screen.Alerts[0].Alert.Flaky || len(screen.Alerts[0].Runs) != 0 {
 		t.Fatalf("the screen should list the flaky check alone, got %+v", screen.Alerts)

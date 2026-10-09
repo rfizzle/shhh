@@ -43,7 +43,7 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 		return m.systemNotice("answer the open decision first; a sprint starts from an idle session")
 	}
 	noCommit := opt.noCommit || m.todo.wiring.NoCommit
-	steps := run.Options{NoCommit: noCommit, Pipeline: m.todo.wiring.Pipeline, Notebook: m.notebook != nil}.Steps()
+	steps := run.Options{NoCommit: noCommit, Pipeline: m.todo.wiring.Pipeline, Notebook: m.wiring.Notebook != nil}.Steps()
 	if !steps.Runs() {
 		return m.systemNotice(fmt.Sprintf("the %s profile has no run, so there is no set to work: its items are worked by hand", m.todo.wiring.Profile.Name))
 	}

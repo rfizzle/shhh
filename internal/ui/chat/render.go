@@ -647,7 +647,7 @@ func separatorBefore(prev, cur entry) string {
 // model and the reasoning level are the header's (headerRow).
 func (m Model) renderStatusBar(width int) string {
 	// Attached, the status bar scopes to the focused child.
-	if m.attachedTo != "" && m.subagents != nil {
+	if m.attachedTo != "" && m.wiring.Subagents != nil {
 		return m.renderChildStatusBar(width)
 	}
 	return m.cockpitData(true).View(width)
@@ -682,7 +682,7 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 		c.Mode, c.ModeKind = "deciding", components.CockpitChecking
 	} else {
 		c.Mode = modeWord(m.policy.mode)
-		if m.conversation {
+		if m.wiring.Conversation {
 			c.Mode = conversationModeWord
 		}
 		switch m.policy.mode {
@@ -723,7 +723,7 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 		// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
 		c.Tokens = ""
 	}
-	if _, warned := m.ledger.Warning(); warned {
+	if _, warned := m.wiring.Ledger.Warning(); warned {
 		c.Extra = append(c.Extra, "spend warning")
 	}
 	// What the fold in the draft is about to cost. It is here with the
@@ -746,8 +746,8 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 		c.Extra = append(c.Extra, p)
 	}
 	// Working sub-agents, a child blocked on an approval among them.
-	if m.subagents != nil {
-		c.Agents, _ = m.subagents.ActiveCounts()
+	if m.wiring.Subagents != nil {
+		c.Agents, _ = m.wiring.Subagents.ActiveCounts()
 	}
 	return c
 }
@@ -807,7 +807,7 @@ func (m *Model) renderHistoryRawLines() []string {
 	}
 	// Attached view: the focused child's session, rendered fresh from
 	// the supervisor's live transcript (the parent's cache is untouched).
-	if m.attachedTo != "" && m.subagents != nil {
+	if m.attachedTo != "" && m.wiring.Subagents != nil {
 		return strings.Split(m.renderAttachedHistory(), "\n")
 	}
 	if len(m.transcript) == 0 && m.turnState() != stateStreaming {

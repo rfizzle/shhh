@@ -167,7 +167,7 @@ func TestPointer_ReadingModeOpensOnThePointedRowAndLeavingDropsIt(t *testing.T) 
 }
 
 func TestPointer_NothingToPointAtIsNothing(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 20})
 	m = updated.(Model)
 	m.appendEntry(entry{kind: entryUser, text: "a question with no row under it"})

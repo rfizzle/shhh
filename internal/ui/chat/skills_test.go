@@ -33,8 +33,10 @@ func skillCatalog(t *testing.T) *skill.Catalog {
 
 func skillModel(t *testing.T) Model {
 	t.Helper()
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithSkills(skillCatalog(t), func(c *skill.Catalog) string { return strings.Join(c.Names(), " ") })
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Skills:     skillCatalog(t),
+		SkillsList: func(c *skill.Catalog) string { return strings.Join(c.Names(), " ") },
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	return updated.(Model)
 }
@@ -102,7 +104,7 @@ func TestSkillCommand_UnknownAndListing(t *testing.T) {
 		t.Fatal("/skills prints the listing it was given")
 	}
 
-	bare := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	bare := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	updated, _ := bare.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	bare = sendText(t, updated.(Model), "/skills")
 	if !transcriptContains(bare, "no skills loaded") {

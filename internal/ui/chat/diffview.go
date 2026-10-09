@@ -19,23 +19,6 @@ import (
 // screen from focus mode.
 const maxDiffExpandedLines = 20
 
-// WithChangeset wires the per-turn changeset store and the git tracker that
-// answers whether a file was tracked when it was edited. Every
-// session has a store already; this replaces it — with a different bound, or
-// with the tracker a workspace inside a repository deserves.
-func (m Model) WithChangeset(store *changeset.Store, tracker *changeset.Tracker) Model {
-	if store != nil {
-		m.changes = store
-		// The slot was claimed before this store arrived, so the store is
-		// pointed at it here as well as every time the slot moves
-		// (options.go). Without this the session would write its records
-		// under no name and lose them at the end of the sitting.
-		m.bindSlot()
-	}
-	m.tracker = tracker
-	return m
-}
-
 // systemNotice appends a system line and scrolls to it. A notice with no
 // words in it is not one, and appending it would put a blank row in the
 // transcript: a command that handed the session to a card rather than to a

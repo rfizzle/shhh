@@ -20,12 +20,12 @@ func containedModel(t *testing.T, bare, contained *[]string, status string) Mode
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "run it"},
 	}
-	m := New(msgs, mockStream).
-		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
+	m := New(msgs, mockStream, Wiring{
+		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 			*bare = append(*bare, cmd)
 			return "bare", 0
-		})).
-		WithContainment(Containment{
+		}),
+		Containment: Containment{
 			Run: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 				*contained = append(*contained, cmd)
 				return "contained", 0
@@ -35,7 +35,8 @@ func containedModel(t *testing.T, bare, contained *[]string, status string) Mode
 			Profile:   "workspace",
 			Network:   true,
 			Report:    "Command containment:\n  mechanism: bwrap",
-		})
+		},
+	})
 	// Tall enough that the card's body is not bounded: what these tests read
 	// is the rows the card states, and a panel short enough to fold two of
 	// them would be testing the fold instead.
@@ -91,16 +92,17 @@ func TestConfirmPromptShowsUnconfinedState(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "run it"},
 	}
-	m := New(msgs, mockStream).
-		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
+	m := New(msgs, mockStream, Wiring{
+		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 			bare = append(bare, cmd)
 			return "bare", 0
-		})).
-		WithContainment(Containment{
+		}),
+		Containment: Containment{
 			Status:  "unconfined — bubblewrap (bwrap) not found on PATH",
 			Detail:  "bubblewrap (bwrap) not found on PATH",
 			Network: true,
-		})
+		},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -188,8 +190,8 @@ func TestWavedThroughCommandRunsContained(t *testing.T) {
 	// command without a prompt, and it must still run contained.
 	var bare, contained []string
 	m := containedModel(t, &bare, &contained, "contained: bwrap")
-	m = m.WithCommandAllowlist([]string{"echo"})
-	m = m.WithApprovalMode(agent.ModeAuto, nil)
+	m.policy.allowlist = []string{"echo"}
+	m.policy.mode = agent.ModeAuto
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
 	}})
@@ -238,7 +240,7 @@ func TestSandboxSlashCommandShowsReport(t *testing.T) {
 		t.Fatalf("/sandbox doctor should print the doctor report, got %q", out)
 	}
 
-	empty := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	empty := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	handled, out = empty.handleSlashCommand("/sandbox")
 	if !handled || !strings.Contains(out, "not configured") {
 		t.Fatalf("/sandbox without containment should say so, got %q", out)
@@ -253,14 +255,15 @@ func TestSandboxSlashCommandShowsReport(t *testing.T) {
 
 func TestSandboxSlashCommandDispatchesToManager(t *testing.T) {
 	var got [][]string
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithContainment(Containment{
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Containment: Containment{
 			Report: "proc report",
 			Manage: func(args []string) string {
 				got = append(got, args)
 				return "managed: " + strings.Join(args, " ")
 			},
-		})
+		},
+	})
 
 	for input, wantArgs := range map[string]string{
 		"/sandbox":             "doctor",
@@ -291,17 +294,18 @@ func TestRequiredContainmentRefusesWithoutACard(t *testing.T) {
 	m := New([]provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "run it"},
-	}, mockStream).
-		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
+	}, mockStream, Wiring{
+		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 			bare = append(bare, cmd)
 			return "bare", 0
-		})).
-		WithContainment(Containment{
+		}),
+		Containment: Containment{
 			Status:  "unconfined — bubblewrap (bwrap) not found on PATH",
 			Detail:  "bubblewrap (bwrap) not found on PATH",
 			Network: true,
 			Refusal: refusal,
-		})
+		},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -345,7 +349,7 @@ func TestRequiredContainmentSaysSoOnTheCardAndInStatus(t *testing.T) {
 	m := containedModel(t, &bare, &contained, "contained: bwrap (workspace profile)")
 	c := m.containment
 	c.Required = true
-	m = m.WithContainment(c)
+	m.containment = c
 	m = runExecApproval(t, m)
 
 	if view := m.View().Content; !strings.Contains(view, "required · bwrap") {
@@ -367,7 +371,7 @@ func TestContainmentStatusSaysTheGitStoreIsReadOnly(t *testing.T) {
 	}
 	c := m.containment
 	c.GitStore = "read-only git hooks and config"
-	m = m.WithContainment(c)
+	m.containment = c
 	if text, _ := m.statusCommand(); !strings.Contains(text, "bwrap · workspace · read-only git hooks and config") {
 		t.Fatalf("/status should say the repository's hooks and config are read-only:\n%s", text)
 	}
@@ -386,7 +390,7 @@ func TestContainmentStatusWithoutTheKnob(t *testing.T) {
 		t.Fatalf("/status should name the mechanism and the profile:\n%s", text)
 	}
 
-	empty := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	empty := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	if text, _ := empty.statusCommand(); strings.Contains(text, "containment") {
 		t.Fatalf("a session with no containment wiring says nothing:\n%s", text)
 	}
@@ -396,17 +400,18 @@ func TestContainmentStatusWithoutTheKnob(t *testing.T) {
 // and a session that refuses those still runs this one.
 func TestRequiredContainmentNeverRefusesTheUsersOwnCommand(t *testing.T) {
 	var bare []string
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 			bare = append(bare, cmd)
 			return "bare", 0
-		})).
-		WithContainment(Containment{
+		}),
+		Containment: Containment{
 			Status:  "unconfined — bubblewrap (bwrap) not found on PATH",
 			Detail:  "bubblewrap (bwrap) not found on PATH",
 			Network: true,
 			Refusal: "error: this session requires containment and no mechanism is in force",
-		})
+		},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
 	m = updated.(Model)
 	m.state = stateConfirmRun
@@ -473,11 +478,11 @@ func TestACommandWhoseEndingNobodyReadSaysSo(t *testing.T) {
 // /status names the delegation policy the CLI worded, and a session told
 // none says nothing about it.
 func TestStatusNamesTheDelegationPolicy(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	if text, _ := m.statusCommand(); strings.Contains(text, "Delegation") {
 		t.Fatalf("a session told no policy states one:\n%s", text)
 	}
-	m = m.WithDefaults(Defaults{Delegation: "off — no sub-agents are offered (agents.delegation)"})
+	m.defaults = Defaults{Delegation: "off — no sub-agents are offered (agents.delegation)"}
 	if text, _ := m.statusCommand(); !strings.Contains(text, "Delegation\noff — no sub-agents are offered") {
 		t.Fatalf("/status should name the policy:\n%s", text)
 	}
@@ -488,11 +493,12 @@ func TestStatusNamesTheDelegationPolicy(t *testing.T) {
 // commands unconfined still refuses a writer's by default.
 func TestContainmentStatusNamesTheWriterRule(t *testing.T) {
 	const writers = "a writer's commands: refused — no containment mechanism is in force: bwrap not found"
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithContainment(Containment{
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Containment: Containment{
 			Status: "unconfined — bwrap not found", Detail: "bwrap not found", Network: true,
 			Writers: writers,
-		})
+		},
+	})
 	text, _ := m.statusCommand()
 	if !strings.Contains(text, "Containment\nunconfined — bwrap not found; the command runs as you\n"+writers) {
 		t.Fatalf("/status should name the writer rule under the session's:\n%s", text)

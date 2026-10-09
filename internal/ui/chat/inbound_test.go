@@ -20,10 +20,11 @@ import (
 func idleInbound(t *testing.T, policy string, signals *[]string) Model {
 	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream).WithInbound(Inbound{Policy: policy})
-	m = m.WithObserver(observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
-		*signals = append(*signals, code+":"+reason)
-	}})
+	m := New(msgs, mockStream, Wiring{
+		Observer: observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+			*signals = append(*signals, code+":"+reason)
+		}},
+	}).WithInbound(Inbound{Policy: policy})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.lastKeypress = time.Time{}
@@ -96,7 +97,7 @@ func TestInbound_ALineWithNoSessionBehindItNamesTheCommandLine(t *testing.T) {
 func TestInbound_AMidTurnLineWaitsForTheBoundary(t *testing.T) {
 	executor := func(string, json.RawMessage) (string, error) { return "result", nil }
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}, {Role: provider.RoleUser, Content: "go"}}
-	m := New(msgs, mockStream).WithToolExecutor(executor).WithInbound(Inbound{Policy: InboundAccept})
+	m := New(msgs, mockStream, Wiring{Executor: executor}).WithInbound(Inbound{Policy: InboundAccept})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -125,7 +126,7 @@ func TestInbound_AMidTurnLineWaitsForTheBoundary(t *testing.T) {
 func TestInbound_ACardWaitingIsUntouched(t *testing.T) {
 	m := gatedModel(t, func(string, json.RawMessage) (string, error) { return "ok", nil }, nil)
 	m = m.WithInbound(Inbound{Policy: InboundAccept})
-	m = m.WithRunner(legacyRunner(func(context.Context, string) (string, int) { return "ran", 0 }))
+	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) { return "ran", 0 })
 	m = pendingExec(t, m, "make deploy")
 	if m.state != stateConfirmRun {
 		t.Fatalf("setup: expected a card, state %d", m.state)
@@ -250,12 +251,12 @@ func TestInbound_TheDefaultHoldsUnderAutoAndAcceptsOtherwise(t *testing.T) {
 		{agent.ModeAcceptEdits, InboundAccept},
 		{agent.ModePlan, InboundAccept},
 	} {
-		m := New(nil, mockStream).WithApprovalMode(c.mode, nil)
+		m := New(nil, mockStream, Wiring{Mode: c.mode})
 		if got := m.inboundPolicy(); got != c.want {
 			t.Errorf("%s: default %q, want %q", c.mode, got, c.want)
 		}
 	}
-	m := New(nil, mockStream).WithApprovalMode(agent.ModeAuto, nil).WithInbound(Inbound{Policy: "accept"})
+	m := New(nil, mockStream, Wiring{Mode: agent.ModeAuto}).WithInbound(Inbound{Policy: "accept"})
 	if got := m.inboundPolicy(); got != InboundAccept {
 		t.Errorf("a stated policy wins over the mode, got %q", got)
 	}

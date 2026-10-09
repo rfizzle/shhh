@@ -458,8 +458,7 @@ func spawnedFanout(t *testing.T, env subagent.EnvFactory, settled bool) Model {
 	t.Helper()
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: env})
 	t.Cleanup(sup.Close)
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithSubagents(sup).WithMouse(true)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Subagents: sup})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
 	m.appendEntry(entry{kind: entryAssistant, text: fanoutTitle})
@@ -682,7 +681,10 @@ func TestChildSpendLabel_ReportsTheBillNotTheFreshRate(t *testing.T) {
 		},
 		"expensive-1": {InputCostPerToken: 0.00003, OutputCostPerToken: 0.00006},
 	})
-	m := New(nil, mockStream).WithPricing(table, "expensive-1")
+	m := New(nil, mockStream, Wiring{
+		Prices:    table,
+		ModelName: "expensive-1",
+	})
 
 	spend := meter.New(table)
 	usage := provider.Usage{PromptTokens: 1_000_000, CachedTokens: 900_000, CompletionTokens: 1_000}
@@ -715,7 +717,10 @@ func TestChildSpendLabel_UnpricedFallsBackToTheChildsModel(t *testing.T) {
 		"cheap-1":     {InputCostPerToken: 0.0000015, OutputCostPerToken: 0.000009},
 		"expensive-1": {InputCostPerToken: 0.00003, OutputCostPerToken: 0.00006},
 	})
-	m := New(nil, mockStream).WithPricing(table, "expensive-1")
+	m := New(nil, mockStream, Wiring{
+		Prices:    table,
+		ModelName: "expensive-1",
+	})
 	st := subagent.Status{Name: "researcher-1", Model: "cheap-1",
 		Spend: meter.Totals{In: 1_000_000, Out: 1_000}}
 

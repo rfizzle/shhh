@@ -42,7 +42,8 @@ func personaModel(t *testing.T, kind persona.Kind, outcomes ...persona.Outcome) 
 			return "/saved/" + d.Name + ".toml", nil
 		},
 	}
-	return m.WithPersonas(p), &reqs, &saves
+	m.wiring.Personas = p
+	return m, &reqs, &saves
 }
 
 func submitLine(t *testing.T, m Model, line string) Model {
@@ -396,7 +397,7 @@ func TestPersona_TheManagerOpensOnASessionWithNoAgents(t *testing.T) {
 // editor and leaves the list.
 func TestPersona_TheManagerListsTheRolesThisSessionCanSpawn(t *testing.T) {
 	m, _, _ := personaModel(t, persona.KindCode, persona.Outcome{Draft: &persona.Draft{Name: "x"}})
-	m.personas.Roles = func() []SpawnableRole {
+	m.wiring.Personas.Roles = func() []SpawnableRole {
 		return []SpawnableRole{
 			{Name: "critic", Description: "reads a diff", Scope: "project", Path: "/repo/.shhh/agents/critic.toml"},
 			{Name: "researcher", Description: "read-only tools", Scope: "built-in"},
@@ -430,7 +431,7 @@ func TestPersona_TheManagerListsTheRolesThisSessionCanSpawn(t *testing.T) {
 func TestPersona_AnEditedRoleIsTheRunningSessions(t *testing.T) {
 	m, _, _ := personaModel(t, persona.KindCode, persona.Outcome{Draft: &persona.Draft{Name: "x"}})
 	var reloaded []string
-	m.personas.Reload = func(path string) error {
+	m.wiring.Personas.Reload = func(path string) error {
 		reloaded = append(reloaded, path)
 		return nil
 	}
@@ -448,14 +449,14 @@ func TestPersona_AnEditedRoleIsTheRunningSessions(t *testing.T) {
 		t.Fatalf("an edit is no longer the next session's, got %q", said)
 	}
 
-	m.personas.Reload = func(string) error { return fmt.Errorf("agent profile critic.toml: unknown key colour") }
+	m.wiring.Personas.Reload = func(string) error { return fmt.Errorf("agent profile critic.toml: unknown key colour") }
 	next, _ = m.roleEditorFinished(roleEditorDoneMsg{name: "critic", path: "/repo/.shhh/agents/critic.toml"})
 	if said := lastNote(next.(Model)); !strings.Contains(said, "as it was") || !strings.Contains(said, "unknown key colour") {
 		t.Fatalf("a refused file should say the role is as it was and why, got %q", said)
 	}
 
 	reloaded = nil
-	m.personas.Reload = func(path string) error { reloaded = append(reloaded, path); return nil }
+	m.wiring.Personas.Reload = func(path string) error { reloaded = append(reloaded, path); return nil }
 	next, _ = m.roleEditorFinished(roleEditorDoneMsg{name: "critic", err: fmt.Errorf("exit status 1")})
 	if said := lastNote(next.(Model)); !strings.Contains(said, "exit status 1") {
 		t.Fatalf("an editor that failed should say so, got %q", said)
@@ -472,7 +473,8 @@ func TestPersona_AgentManagerOffersTheDrafter(t *testing.T) {
 		Name: "reviewer", Description: "reads diffs", Prompt: "Review."}})
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
-	m = m.WithSubagents(sup)
+	m.wiring.Subagents = sup
+	m.adoptChildren()
 	m = submitLine(t, m, "/agents")
 	if m.agentList == nil {
 		t.Fatal("/agents should open the manager")
@@ -503,7 +505,7 @@ func TestPersona_ARefusedSaveKeepsTheDraftOnTheCard(t *testing.T) {
 	draft := &persona.Draft{Name: "tiny", Description: "reads one file", MaxTokens: 8000, Prompt: "Read."}
 	m, reqs, _ := personaModel(t, persona.KindChat, persona.Outcome{Draft: draft})
 	dir := t.TempDir()
-	m.personas.Save = func(_ persona.Scope, d persona.Draft, overwrite bool) (string, error) {
+	m.wiring.Personas.Save = func(_ persona.Scope, d persona.Draft, overwrite bool) (string, error) {
 		return persona.Write(dir, d, persona.KindChat, overwrite)
 	}
 	m = submitLine(t, m, "/agents new something small")
@@ -1057,14 +1059,14 @@ func openedModel(t *testing.T, outcomes ...persona.Outcome) (Model, *[]persona.R
 	whole := criticMigrated(src)
 	whole.SetSection(config.SectionMethod, "Read the diff, then the files it touches.")
 	current.Def.Name, current.Def.Prompt = "reviewer", whole.Prompt
-	m.personas.Roles = func() []SpawnableRole {
+	m.wiring.Personas.Roles = func() []SpawnableRole {
 		return []SpawnableRole{
 			{Name: "critic", Description: "reads a diff and argues", Scope: "project", Path: src.Path, Older: true},
 			{Name: "researcher", Description: "read-only tools plus web", Scope: "built-in"},
 			{Name: "reviewer", Description: "reads a change for what it breaks", Scope: "project", Path: current.Path},
 		}
 	}
-	m.personas.Open = func(path string) (*persona.Source, error) {
+	m.wiring.Personas.Open = func(path string) (*persona.Source, error) {
 		if path == current.Path {
 			c := current
 			return &c, nil
@@ -1073,7 +1075,7 @@ func openedModel(t *testing.T, outcomes ...persona.Outcome) (Model, *[]persona.R
 		return &s, nil
 	}
 	var saved []persona.Draft
-	m.personas.SaveOpened = func(s *persona.Source, d persona.Draft) (string, error) {
+	m.wiring.Personas.SaveOpened = func(s *persona.Source, d persona.Draft) (string, error) {
 		saved = append(saved, d)
 		return s.Path, nil
 	}
@@ -1209,7 +1211,7 @@ func TestPersona_AMigratedSectionIsRevisedLikeADraftsSection(t *testing.T) {
 // A refused save keeps the draft on the card with the sentence over it.
 func TestPersona_ARefusedSaveOfAnOpenedProfileKeepsTheDraft(t *testing.T) {
 	m, _, _ := openedModel(t)
-	m.personas.SaveOpened = func(s *persona.Source, _ persona.Draft) (string, error) {
+	m.wiring.Personas.SaveOpened = func(s *persona.Source, _ persona.Draft) (string, error) {
 		return s.Path, fmt.Errorf("%s changed on disk since it was opened; nothing was written", s.Path)
 	}
 	m = pressOn(t, managerOn(t, m, "critic"), tea.KeyPressMsg{Code: 'm', Text: "m"})

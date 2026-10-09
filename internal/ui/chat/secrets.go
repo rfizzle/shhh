@@ -25,26 +25,15 @@ type Secrets struct {
 	Scrub func(provider.Message) provider.Message
 }
 
-// WithSecrets enables /secret and installs the scrub on the agent, so the
-// conversation this model saves, shows and replays never holds a value.
-// See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
-func (m Model) WithSecrets(s Secrets) Model {
-	m.secrets = s
-	if s.Scrub != nil {
-		m.agent.SetScrub(s.Scrub)
-	}
-	return m
-}
-
 // secretCommand is /secret. A change to the set is told to the model as a
 // user message — queued as steering while the agent works, appended to
 // the conversation when it is idle — because a secret the model cannot
 // name is one it cannot use, and it has no other way to learn the name.
 func (m Model) secretCommand(args []string) (tea.Model, tea.Cmd) {
-	if m.secrets.Manage == nil {
+	if m.wiring.Secrets.Manage == nil {
 		return m.surfaceNotice("secrets are unavailable in this session")
 	}
-	note, announce := m.secrets.Manage(args)
+	note, announce := m.wiring.Secrets.Manage(args)
 	m.announce(announce)
 	return m.surfaceNotice(note)
 }

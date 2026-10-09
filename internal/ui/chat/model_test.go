@@ -46,7 +46,7 @@ import (
 // session boundary resets it with the rest in one call. This is the same
 // guard overlay_test.go puts on the placement table: a table nobody reads is
 // a table that drifts.
-const modelFields = 232
+const modelFields = 187
 
 func TestModelHasAStatedBound(t *testing.T) {
 	got := reflect.TypeOf(Model{}).NumField()
@@ -85,7 +85,7 @@ func multiTokenStream(tokens ...string) StreamFunc {
 
 func TestNew_InitialState(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 
 	if m.state != stateInput {
 		t.Fatalf("expected stateInput, got %d", m.state)
@@ -97,7 +97,7 @@ func TestNew_InitialState(t *testing.T) {
 
 func TestWindowResize_SetsReady(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	model := updated.(Model)
@@ -121,7 +121,7 @@ func TestWindowResize_SetsReady(t *testing.T) {
 
 func TestWindowResize_Subsequent(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	model := updated.(Model)
@@ -140,7 +140,7 @@ func TestWindowResize_Subsequent(t *testing.T) {
 
 func TestViewBeforeReady(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 
 	view := m.View().Content
 	if !strings.Contains(view, "Initializing") {
@@ -150,7 +150,7 @@ func TestViewBeforeReady(t *testing.T) {
 
 func TestWordWrap(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 
 	input := "one two three four five six seven eight nine ten"
 	wrapped := m.wordWrap(input, 20)
@@ -167,7 +167,7 @@ func TestWordWrap(t *testing.T) {
 
 func TestWordWrap_PreservesNewlines(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 
 	input := "line one\nline two\nline three"
 	wrapped := m.wordWrap(input, 80)
@@ -185,7 +185,7 @@ func TestWordWrap_PreservesNewlines(t *testing.T) {
 // and only the detail after it is re-flowed.
 func TestMarginProse_AWrappedNoticeKeepsTheGapAfterItsHead(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	for _, tc := range []struct{ text, head string }{
 		{"✓ writer-1  approved ▸ apply patch (+40 −40, 2 files)", "✓ writer-1  approved"},
 		{failed("fetch", "the host refused the connection after three attempts"), "✗ fetch  the"},
@@ -216,7 +216,7 @@ func TestMarginProse_AWrappedNoticeKeepsTheGapAfterItsHead(t *testing.T) {
 
 func TestEmptyHistory_ShowsWelcome(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	m.width = 80
 
 	content := m.renderHistory()
@@ -228,7 +228,7 @@ func TestEmptyHistory_ShowsWelcome(t *testing.T) {
 func TestMultiTurn_MessageAccumulation(t *testing.T) {
 	stream := multiTokenStream("world")
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, stream)
+	m := New(msgs, stream, Wiring{})
 
 	// Initialize with window size
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -299,7 +299,7 @@ func TestMultiTurn_SecondExchange(t *testing.T) {
 	}
 
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, stream)
+	m := New(msgs, stream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -361,7 +361,7 @@ func TestMultiTurn_SecondExchange(t *testing.T) {
 func TestStreaming_TokenByToken(t *testing.T) {
 	stream := multiTokenStream("one", " two", " three")
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, stream)
+	m := New(msgs, stream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -404,7 +404,7 @@ func TestStreaming_TokenByToken(t *testing.T) {
 func TestStreaming_CancelPreservesPartial(t *testing.T) {
 	stream := multiTokenStream("partial", " content")
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, stream)
+	m := New(msgs, stream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -440,7 +440,7 @@ func TestStreaming_CancelPreservesPartial(t *testing.T) {
 
 func TestStreamError_ReturnsToInput(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -463,7 +463,7 @@ func TestStreamError_ReturnsToInput(t *testing.T) {
 
 func TestExit_CtrlD(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -489,7 +489,7 @@ func TestExit_SlashCommands(t *testing.T) {
 	for _, command := range []string{"/quit", "/exit", "/q"} {
 		t.Run(command, func(t *testing.T) {
 			msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-			m := New(msgs, mockStream)
+			m := New(msgs, mockStream, Wiring{})
 
 			updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 			m = updated.(Model)
@@ -510,7 +510,7 @@ func TestExit_SlashCommands(t *testing.T) {
 
 func TestExit_CtrlC_DuringStreaming_DoesNotQuit(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -542,7 +542,7 @@ func TestExit_CtrlC_DuringStreaming_DoesNotQuit(t *testing.T) {
 
 func TestExit_CtrlC_DuringInput_Quits(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -577,7 +577,7 @@ func TestExit_SlashQuit_DuringStreaming_CancelsAndQuits(t *testing.T) {
 		return ch, wrappedCancel, nil
 	}
 
-	m := New(msgs, stream)
+	m := New(msgs, stream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
@@ -628,7 +628,7 @@ func TestRequestStream_SendsFullConversation(t *testing.T) {
 		{Role: provider.RoleUser, Content: "first"},
 		{Role: provider.RoleAssistant, Content: "reply"},
 	}
-	m := New(msgs, stream)
+	m := New(msgs, stream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -703,7 +703,7 @@ func TestToolCallLoop_SingleToolCall(t *testing.T) {
 	}
 
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, stream).WithToolExecutor(executor)
+	m := New(msgs, stream, Wiring{Executor: executor})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -766,7 +766,7 @@ func TestToolCallLoop_MultipleToolCalls(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "check stuff"},
 	}
-	m := New(msgs, mockStream).WithToolExecutor(executor)
+	m := New(msgs, mockStream, Wiring{Executor: executor})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -804,7 +804,7 @@ func TestToolCallLoop_TextBeforeToolCall(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "hi"},
 	}
-	m := New(msgs, mockStream).WithToolExecutor(executor)
+	m := New(msgs, mockStream, Wiring{Executor: executor})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -834,7 +834,7 @@ func TestToolCallLoop_ExecutorError(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "hi"},
 	}
-	m := New(msgs, mockStream).WithToolExecutor(executor)
+	m := New(msgs, mockStream, Wiring{Executor: executor})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -856,7 +856,7 @@ func TestToolCallLoop_NoExecutor(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "hi"},
 	}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
@@ -899,7 +899,7 @@ func TestWaitForEvent_ToolCalls(t *testing.T) {
 
 func TestResize_RewrapsHistory(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
 	m = updated.(Model)
@@ -961,7 +961,7 @@ func TestWaitForEvent_BatchesBufferedTokens(t *testing.T) {
 
 func TestWaitForEvent_BatchDeliveredThroughUpdate(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -979,7 +979,7 @@ func TestWaitForEvent_BatchDeliveredThroughUpdate(t *testing.T) {
 
 func TestSlashCommand_NoDB_StillHandled(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 
 	for _, cmd := range []string{"/save x", "/load x", "/chats"} {
 		handled, result := m.handleSlashCommand(cmd)
@@ -1000,7 +1000,7 @@ func TestCancelDuringToolRun_IgnoresStaleResults(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "hi"},
 	}
-	m := New(msgs, mockStream).WithToolExecutor(executor)
+	m := New(msgs, mockStream, Wiring{Executor: executor})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -1042,7 +1042,7 @@ func TestCancelDuringToolRun_IgnoresStaleResults(t *testing.T) {
 // command that would answer that it is unavailable.
 func TestSlashHelp_ListsWhatThisSessionCanDo(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 
 	handled, result := m.handleSlashCommand("/help")
 	if !handled {
@@ -1064,7 +1064,7 @@ func TestSlashHelp_ListsWhatThisSessionCanDo(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	saved := New(msgs, mockStream).WithDB(db)
+	saved := New(msgs, mockStream, Wiring{DB: db})
 	_, stored := saved.handleSlashCommand("/help")
 	for _, want := range []string{"\n  /save", "\n  /load", "\n  /chats"} {
 		if !strings.Contains(stored, want) {
@@ -1079,7 +1079,7 @@ func TestSlashClear_ResetsConversation(t *testing.T) {
 		{Role: provider.RoleUser, Content: "hi"},
 		{Role: provider.RoleAssistant, Content: "hello"},
 	}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	m.appendEntry(entry{kind: entryUser, text: "hi"})
 	m.appendEntry(entry{kind: entryAssistant, text: "hello"})
 	m.contextTokens = 500
@@ -1116,13 +1116,14 @@ func TestNewSession_LeavesTheOldConversationWholeAndStartsAnother(t *testing.T) 
 
 	var linked []string
 	hostCalls := 0
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithDB(db).
-		WithObserver(observe.Observer{Session: func(name string) { linked = append(linked, name) }}).
-		WithNewSession(func() SessionStart {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		DB:       db,
+		Observer: observe.Observer{Session: func(name string) { linked = append(linked, name) }},
+		NewSession: func() SessionStart {
 			hostCalls++
 			return SessionStart{Prompt: "rebuilt", Resume: "shhh code --continue", ProjectTokens: 120}
-		})
+		},
+	})
 	m = sendText(t, m, "first session")
 	updated, _ := m.Update(tokenMsg{text: "one"})
 	m = updated.(Model)
@@ -1194,7 +1195,7 @@ func TestNewSession_KeepsTheSlotItIsStillSavingInto(t *testing.T) {
 	}
 	defer db.Close()
 
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).WithDB(db)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db})
 	m = sendText(t, m, "first session")
 	updated, _ := m.Update(tokenMsg{text: "one"})
 	m = updated.(Model)
@@ -1226,18 +1227,20 @@ func TestNewSession_KeepsTheSlotItIsStillSavingInto(t *testing.T) {
 func heldScreensModel(t *testing.T) Model {
 	t.Helper()
 	h := newFakeConfigHost()
-	m := todoModel(t, todoTestRoot(t)).
-		WithNotebook(notebook.New(nil)).
-		WithSources(web.NewLedger(nil)).
-		WithConfigScreen(func([]string) (ConfigSession, error) { return h.session(), nil }).
-		WithSummarizer(agent.NewSummarizer(&readingProvider{text: "Reading."}, agent.SummaryConfig{
-			Model: "fast", IntervalRounds: 10, MinGap: -1,
-		}))
-	_, _, _ = m.notebook.Write(notebook.Orchestrator, "The freeze is the target", "better, not wider")
-	m = m.WithGate(Gate{Manage: func([]string) string { return "" }, Flakes: func() ([]storage.Flake, error) {
+	m := todoModel(t, todoTestRoot(t))
+	m.wiring.Notebook = notebook.New(nil)
+	m.bindNotebook()
+	m.wiring.Sources = web.NewLedger(nil)
+	m.bindSources()
+	m.wiring.ConfigScreen = func([]string) (ConfigSession, error) { return h.session(), nil }
+	m.summary.writer = agent.NewSummarizer(&readingProvider{text: "Reading."}, agent.SummaryConfig{
+		Model: "fast", IntervalRounds: 10, MinGap: -1,
+	})
+	_, _, _ = m.wiring.Notebook.Write(notebook.Orchestrator, "The freeze is the target", "better, not wider")
+	m.wiring.Gate, m.alertMemo = Gate{Manage: func([]string) string { return "" }, Flakes: func() ([]storage.Flake, error) {
 		return []storage.Flake{{Suite: "default", Check: "test", Command: "make test", Seen: 2}}, nil
-	}})
-	m = m.WithPatterns(new(proposalRecorder).patterns(t))
+	}}, &alertMemo{}
+	m.patterns.cfg, m.patterns.wording = new(proposalRecorder).patterns(t), -1
 	landReading(&m, agent.SummaryVerdict{Text: "Reading the loop.", State: agent.SummaryOnTarget, Round: 3})
 	m.workSteps = stepsCalled(t, `{"steps":[{"title":"Locate the round accounting."},{"title":"Patch the limit"}]}`)
 	m.transcript = append(m.transcript,
@@ -1410,7 +1413,7 @@ func TestNewSession_ConfirmedMidTurnCancelsAndCrosses(t *testing.T) {
 
 func TestSlashUnknown_Handled(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 
 	handled, result := m.handleSlashCommand("/bogus")
 	if !handled {
@@ -1435,7 +1438,7 @@ func TestSlashUnknown_Handled(t *testing.T) {
 
 func TestStatusBar_ShowsModelAndContext(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream).WithPricing(nil, "gpt-4o")
+	m := New(msgs, mockStream, Wiring{ModelName: "gpt-4o"})
 	m.accumulateUsage(&provider.Usage{PromptTokens: 1500, CompletionTokens: 300})
 
 	bar := m.renderStatusBar(120)
@@ -1452,7 +1455,7 @@ func TestStatusBar_ShowsModelAndContext(t *testing.T) {
 	}
 
 	// The header names the model even before any usage arrives.
-	empty := New(msgs, mockStream).WithPricing(nil, "gpt-4o")
+	empty := New(msgs, mockStream, Wiring{ModelName: "gpt-4o"})
 	if !strings.Contains(empty.headerRow(80), "gpt-4o") {
 		t.Error("the header should name the model before the first response")
 	}
@@ -1468,7 +1471,7 @@ func sendText(t *testing.T, m Model, text string) Model {
 func TestInputHistory_RecallWithArrows(t *testing.T) {
 	stream := multiTokenStream("ok")
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, stream)
+	m := New(msgs, stream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
@@ -1507,7 +1510,7 @@ func TestInputHistory_RecallWithArrows(t *testing.T) {
 func TestInputHistory_UpIgnoredWhenDraftPresent(t *testing.T) {
 	stream := multiTokenStream("ok")
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, stream)
+	m := New(msgs, stream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
@@ -1525,7 +1528,7 @@ func TestInputHistory_UpIgnoredWhenDraftPresent(t *testing.T) {
 
 func TestEsc_ClearsInput(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
@@ -1539,7 +1542,7 @@ func TestEsc_ClearsInput(t *testing.T) {
 
 func TestCtrlC_ClearsNonEmptyInputBeforeQuitting(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
@@ -1573,9 +1576,11 @@ func runCapableModel(response string) Model {
 		{Role: provider.RoleUser, Content: "how?"},
 		{Role: provider.RoleAssistant, Content: response},
 	}
-	m := New(msgs, mockStream).WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
-		return "ran: " + cmd, 0
-	}))
+	m := New(msgs, mockStream, Wiring{
+		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
+			return "ran: " + cmd, 0
+		}),
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	return updated.(Model)
 }
@@ -1697,7 +1702,8 @@ func TestRun_ConfirmShowsSafetyWarning(t *testing.T) {
 	// card measures what a command writes, so a fixture naming the machine's
 	// root would walk the real filesystem — twenty thousand entries, and a
 	// different set of them every run.
-	m := runCapableModel("```bash\nrm -rf ./build\n```").WithWorkspace(t.TempDir())
+	m := runCapableModel("```bash\nrm -rf ./build\n```")
+	m.wiring.Workspace = t.TempDir()
 	m = sendText(t, m, "/run")
 	if m.state != stateConfirmRun {
 		t.Fatalf("expected confirm state, got %d", m.state)
@@ -1732,7 +1738,7 @@ func TestRun_NoRunner(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleAssistant, Content: "```bash\nls\n```"},
 	}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
@@ -1750,9 +1756,11 @@ func TestExecTool_ApprovalFlow(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "create a file"},
 	}
-	m := New(msgs, mockStream).WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
-		return "done: " + cmd, 0
-	}))
+	m := New(msgs, mockStream, Wiring{
+		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
+			return "done: " + cmd, 0
+		}),
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -1811,11 +1819,13 @@ func TestExecTool_Declined(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "wipe it"},
 	}
-	m := New(msgs, mockStream).WithWorkspace(t.TempDir()).
-		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
+	m := New(msgs, mockStream, Wiring{
+		Workspace: t.TempDir(),
+		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 			t.Fatal("runner must not be called on decline")
 			return "", 0
-		}))
+		}),
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -1846,8 +1856,10 @@ func TestExecTool_MixedWithReadOnly(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "check then fix"},
 	}
-	m := New(msgs, mockStream).WithToolExecutor(executor).
-		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 }))
+	m := New(msgs, mockStream, Wiring{
+		Executor: executor,
+		Runner:   legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 }),
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -1887,7 +1899,9 @@ func TestExecTool_InvalidArgsSkipped(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "go"},
 	}
-	m := New(msgs, mockStream).WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "", 0 }))
+	m := New(msgs, mockStream, Wiring{
+		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "", 0 }),
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -1914,7 +1928,7 @@ func TestAutosave_AfterExchange(t *testing.T) {
 	defer db.Close()
 
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, multiTokenStream("hi there")).WithDB(db)
+	m := New(msgs, multiTokenStream("hi there"), Wiring{DB: db})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
@@ -1959,8 +1973,8 @@ func TestAutosave_EachSessionKeepsItsOwnSlot(t *testing.T) {
 		save()
 		return updated.(Model)
 	}
-	first := run(New(sys, mockStream).WithDB(db), "first session", "one")
-	second := run(New(sys, mockStream).WithDB(db), "second session", "two")
+	first := run(New(sys, mockStream, Wiring{DB: db}), "first session", "one")
+	second := run(New(sys, mockStream, Wiring{DB: db}), "second session", "two")
 
 	if first.sessionName == second.sessionName {
 		t.Fatalf("two sessions were given the same slot %q", first.sessionName)
@@ -1982,7 +1996,7 @@ func TestAutosave_EachSessionKeepsItsOwnSlot(t *testing.T) {
 	}
 
 	// A resumed session keeps growing in the slot it came from, not a copy.
-	resumed := New(sys, mockStream).WithDB(db).WithResumedMessages(first.sessionName, first.Messages())
+	resumed := New(sys, mockStream, Wiring{DB: db}).WithResumedMessages(first.sessionName, first.Messages())
 	if resumed.sessionName != first.sessionName {
 		t.Fatalf("resume should keep the slot %q, got %q", first.sessionName, resumed.sessionName)
 	}
@@ -2013,7 +2027,7 @@ func TestAutosave_RefusedSlotMovesTheSessionRatherThanClobbering(t *testing.T) {
 	defer other.Close()
 
 	sys := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := sendText(t, New(sys, mockStream).WithDB(db), "first question")
+	m := sendText(t, New(sys, mockStream, Wiring{DB: db}), "first question")
 	updated, _ := m.Update(tokenMsg{text: "an answer"})
 	updated, save := updated.(Model).Update(doneMsg{})
 	if save == nil {
@@ -2091,7 +2105,7 @@ func TestAutosave_AFailedSaveSaysSo(t *testing.T) {
 	}
 
 	sys := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := sendText(t, New(sys, mockStream).WithDB(db), "a question")
+	m := sendText(t, New(sys, mockStream, Wiring{DB: db}), "a question")
 	slot := m.sessionName
 
 	// The store going away under the session is the shape every write
@@ -2126,7 +2140,7 @@ func TestAutosave_AFailedSaveSaysSo(t *testing.T) {
 
 func TestAutosave_NilWithoutDBOrContent(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	if m.autosaveCmd() != nil {
 		t.Fatal("no DB → no autosave cmd")
 	}
@@ -2136,7 +2150,8 @@ func TestAutosave_NilWithoutDBOrContent(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	m = m.WithDB(db)
+	m.wiring.DB = db
+	m.bindStores()
 	if m.autosaveCmd() != nil {
 		t.Fatal("system-prompt-only conversation should not autosave")
 	}
@@ -2148,8 +2163,7 @@ func TestWithResumedMessages_RebuildsTranscript(t *testing.T) {
 		{Role: provider.RoleUser, Content: "old question"},
 		{Role: provider.RoleAssistant, Content: "old answer"},
 	}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithResumedMessages("", saved)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{}).WithResumedMessages("", saved)
 
 	// The three saved messages, plus the reading of the checkout that goes in
 	// front of every restored transcript.
@@ -2180,7 +2194,7 @@ func TestSlashLoad_NoArg_ListsChats(t *testing.T) {
 	}
 
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream).WithDB(db)
+	m := New(msgs, mockStream, Wiring{DB: db})
 
 	handled, result := m.handleSlashCommand("/load")
 	if !handled {
@@ -2193,7 +2207,7 @@ func TestSlashLoad_NoArg_ListsChats(t *testing.T) {
 
 func TestSlashModel_ShowsCurrentModel(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream).WithPricing(nil, "gpt-4o")
+	m := New(msgs, mockStream, Wiring{ModelName: "gpt-4o"})
 
 	handled, result := m.handleSlashCommand("/model")
 	if !handled {
@@ -2207,9 +2221,10 @@ func TestSlashModel_ShowsCurrentModel(t *testing.T) {
 func TestSlashModel_Switches(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	var switched string
-	m := New(msgs, mockStream).
-		WithPricing(nil, "gpt-4o").
-		WithModelSwitcher(func(name string) { switched = name })
+	m := New(msgs, mockStream, Wiring{
+		ModelName:   "gpt-4o",
+		SwitchModel: func(name string) { switched = name },
+	})
 
 	handled, result := m.handleSlashCommand("/model claude-opus-5")
 	if !handled || !strings.Contains(result, "switched model to claude-opus-5") {
@@ -2230,7 +2245,7 @@ func TestSlashModel_EdgeCases(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 
 	// No switcher configured.
-	m := New(msgs, mockStream).WithPricing(nil, "gpt-4o")
+	m := New(msgs, mockStream, Wiring{ModelName: "gpt-4o"})
 	if handled, result := m.handleSlashCommand("/model gpt-5"); !handled || !strings.Contains(result, "not available") {
 		t.Fatalf("expected 'not available' without a switcher, got %q", result)
 	}
@@ -2239,7 +2254,7 @@ func TestSlashModel_EdgeCases(t *testing.T) {
 	}
 
 	calls := 0
-	m = m.WithModelSwitcher(func(string) { calls++ })
+	m.wiring.SwitchModel = func(string) { calls++ }
 
 	// Same model is a no-op.
 	if _, result := m.handleSlashCommand("/model gpt-4o"); !strings.Contains(result, "already using") {
@@ -2260,14 +2275,16 @@ func TestSlashModel_EdgeCases(t *testing.T) {
 
 func TestMaxToolRounds_Default(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	if got := m.effectiveMaxToolRounds(); got != DefaultMaxToolRounds {
 		t.Fatalf("default cap should be %d, got %d", DefaultMaxToolRounds, got)
 	}
-	if got := m.WithMaxToolRounds(0).effectiveMaxToolRounds(); got != DefaultMaxToolRounds {
+	m.agent.SetMaxRounds(0)
+	if got := m.effectiveMaxToolRounds(); got != DefaultMaxToolRounds {
 		t.Fatalf("zero should keep the default cap, got %d", got)
 	}
-	if got := m.WithMaxToolRounds(5).effectiveMaxToolRounds(); got != 5 {
+	m.agent.SetMaxRounds(5)
+	if got := m.effectiveMaxToolRounds(); got != 5 {
 		t.Fatalf("configured cap should win, got %d", got)
 	}
 }
@@ -2280,7 +2297,10 @@ func TestToolLoop_StopsAtRoundCap(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "go"},
 	}
-	m := New(msgs, mockStream).WithToolExecutor(executor).WithMaxToolRounds(2)
+	m := New(msgs, mockStream, Wiring{
+		Executor:      executor,
+		MaxToolRounds: 2,
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -2336,9 +2356,10 @@ func TestToolLoop_RoundCapAfterApprovedCommand(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "list files"},
 	}
-	m := New(msgs, mockStream).
-		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 })).
-		WithMaxToolRounds(1)
+	m := New(msgs, mockStream, Wiring{
+		Runner:        legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 }),
+		MaxToolRounds: 1,
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -2382,7 +2403,7 @@ func TestToolLoop_RoundCapAfterApprovedCommand(t *testing.T) {
 // reader about to send the next one is asking (guidelines/layout-drop-order).
 func TestStatusBar_StatesTheRoundCounterRunningAndAtRest(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	if strings.Contains(m.renderStatusBar(80), "round") {
 		t.Fatal("a session that has run no round has no counter to state")
 	}
@@ -2401,7 +2422,7 @@ func TestStatusBar_StatesTheRoundCounterRunningAndAtRest(t *testing.T) {
 func steeringModel(t *testing.T, stream StreamFunc) Model {
 	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, stream)
+	m := New(msgs, stream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	return sendText(t, m, "do the task")
@@ -2449,7 +2470,7 @@ func TestSteering_InjectedBeforeNextStreamRequest(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "go"},
 	}
-	m := New(msgs, mockStream).WithToolExecutor(executor)
+	m := New(msgs, mockStream, Wiring{Executor: executor})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -2490,7 +2511,10 @@ func TestSteering_LiftsRoundCap(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "go"},
 	}
-	m := New(msgs, mockStream).WithToolExecutor(executor).WithMaxToolRounds(1)
+	m := New(msgs, mockStream, Wiring{
+		Executor:      executor,
+		MaxToolRounds: 1,
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -2605,7 +2629,7 @@ func TestExitBanner_NamesTheSlotTheAutosaveWrote(t *testing.T) {
 		{Role: provider.RoleUser, Content: "two"},
 		{Role: provider.RoleAssistant, Content: "ok"},
 	}
-	m := New(msgs, mockStream).WithDB(db)
+	m := New(msgs, mockStream, Wiring{DB: db})
 
 	b := m.ExitBanner("shhh code --continue")
 	if b.Session != m.sessionName {
@@ -2630,7 +2654,7 @@ func TestExitBanner_NoStoreIsUnsaved(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "one"},
 	}
-	m := New(msgs, mockStream).WithPersistenceError(errors.New("migrate: database is locked"))
+	m := New(msgs, mockStream, Wiring{PersistenceError: errors.New("migrate: database is locked")})
 
 	b := m.ExitBanner("shhh chat --continue")
 	if !b.Unsaved {
@@ -2666,7 +2690,11 @@ func TestExitBanner_PricesCacheReadsAtTheCacheRate(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "one"},
 		{Role: provider.RoleAssistant, Content: "ok"},
-	}, mockStream).WithPricing(table, "gpt-4o").WithLedger(ledger)
+	}, mockStream, Wiring{
+		Prices:    table,
+		ModelName: "gpt-4o",
+		Ledger:    ledger,
+	})
 
 	// A round of the shape this defect was reported on: a million tokens of
 	// input, nine tenths of it a cache read, and a child that spent as well.
@@ -2699,7 +2727,7 @@ func TestExitBanner_PricesCacheReadsAtTheCacheRate(t *testing.T) {
 
 // A session that never said anything renders nothing at all.
 func TestExitBanner_NothingSaidHasNoTurns(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	if b := m.ExitBanner("shhh chat --continue"); b.Turns != 0 || b.View(80) != "" {
 		t.Fatalf("an empty session should render no banner, got %q", b.View(80))
 	}

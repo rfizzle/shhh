@@ -12,7 +12,7 @@ import (
 // draft is not (it stays a plain editor), so this is about what happens after
 // enter, not before it.
 func TestUserEntry_RendersMarkdown(t *testing.T) {
-	m := New([]provider.Message{}, mockStream)
+	m := New([]provider.Message{}, mockStream, Wiring{})
 	const src = "use the `--flag` and **mean** it"
 	row := m.renderEntry(entry{kind: entryUser, text: src}, 60)
 
@@ -32,7 +32,7 @@ func TestUserEntry_RendersMarkdown(t *testing.T) {
 // A fenced block in a sent message keeps its lines, rather than being reflowed
 // into the prose around it.
 func TestUserEntry_KeepsAFencedBlock(t *testing.T) {
-	m := New([]provider.Message{}, mockStream)
+	m := New([]provider.Message{}, mockStream, Wiring{})
 	row := ansi.Strip(m.renderEntry(entry{kind: entryUser, text: "look:\n\n```go\nx := 1\ny := 2\n```"}, 60))
 	if strings.Contains(row, "```") {
 		t.Errorf("fence markers survived:\n%s", row)

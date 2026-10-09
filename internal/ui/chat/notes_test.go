@@ -16,11 +16,13 @@ import (
 // orchestrator have both written in.
 func notesModel(t *testing.T, width int) Model {
 	t.Helper()
-	m := frameModel(t, width, 30).WithNotebook(notebook.New(nil))
-	m.notebook.SetTurn(4)
-	_, _, _ = m.notebook.Write("researcher-1", "Where the goldens live", "testdata/golden")
-	_, _, _ = m.notebook.Write(notebook.Orchestrator, "The freeze is the target", "better, not wider")
-	_, _, _ = m.notebook.Write("researcher-1", "And the widths", "80, 110, 130")
+	m := frameModel(t, width, 30)
+	m.wiring.Notebook = notebook.New(nil)
+	m.bindNotebook()
+	m.wiring.Notebook.SetTurn(4)
+	_, _, _ = m.wiring.Notebook.Write("researcher-1", "Where the goldens live", "testdata/golden")
+	_, _, _ = m.wiring.Notebook.Write(notebook.Orchestrator, "The freeze is the target", "better, not wider")
+	_, _, _ = m.wiring.Notebook.Write("researcher-1", "And the widths", "80, 110, 130")
 	return m
 }
 
@@ -64,10 +66,12 @@ func TestNotes_TheScreenGroupsByTheAgentThatWroteEachNote(t *testing.T) {
 // preview still names the agent in full, because the group says whose task
 // it was and not who did the work.
 func TestNotes_AGrandchildsNotesSitUnderTheChildThatSpawnedIt(t *testing.T) {
-	m := frameModel(t, 110, 30).WithNotebook(notebook.New(nil))
-	m.notebook.SetTurn(4)
-	_, _, _ = m.notebook.Write("researcher-1", "Where the goldens live", "testdata/golden")
-	_, _, _ = m.notebook.Write("researcher-1/reviewer-1a", "And the widths", "80, 110, 130")
+	m := frameModel(t, 110, 30)
+	m.wiring.Notebook = notebook.New(nil)
+	m.bindNotebook()
+	m.wiring.Notebook.SetTurn(4)
+	_, _, _ = m.wiring.Notebook.Write("researcher-1", "Where the goldens live", "testdata/golden")
+	_, _, _ = m.wiring.Notebook.Write("researcher-1/reviewer-1a", "And the widths", "80, 110, 130")
 	m = sendText(t, m, "/notes")
 	if m.screens.notes() == nil {
 		t.Fatalf("/notes left the session in state %v", m.state)
@@ -97,7 +101,9 @@ func TestNotes_AGrandchildsNotesSitUnderTheChildThatSpawnedIt(t *testing.T) {
 // An empty notebook is a sentence rather than an empty screen: there is
 // nothing to point at.
 func TestNotes_AnEmptyNotebookPrintsTheNotice(t *testing.T) {
-	m := frameModel(t, 100, 30).WithNotebook(notebook.New(nil))
+	m := frameModel(t, 100, 30)
+	m.wiring.Notebook = notebook.New(nil)
+	m.bindNotebook()
 	m = sendText(t, m, "/notes")
 	if m.state == stateNotes {
 		t.Fatal("an empty notebook opened the screen anyway")
@@ -114,8 +120,8 @@ func TestNotes_DropAsksAndKeepsTheScreen(t *testing.T) {
 	m.screens.notes().Focus = 0
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
 	m = updated.(Model)
-	if m.notebook.Len() != 3 {
-		t.Fatalf("[d] dropped a note before it was confirmed: %d left", m.notebook.Len())
+	if m.wiring.Notebook.Len() != 3 {
+		t.Fatalf("[d] dropped a note before it was confirmed: %d left", m.wiring.Notebook.Len())
 	}
 	if !strings.Contains(strings.Join(m.notesLines(), "\n"), `Drop "Where the goldens live"?`) {
 		t.Errorf("the confirm did not name the note:\n%s", strings.Join(m.notesLines(), "\n"))
@@ -125,8 +131,8 @@ func TestNotes_DropAsksAndKeepsTheScreen(t *testing.T) {
 	if m.state != stateNotes {
 		t.Fatalf("the drop left the screen: state %v", m.state)
 	}
-	if m.notebook.Len() != 2 {
-		t.Fatalf("the confirmed drop left %d notes", m.notebook.Len())
+	if m.wiring.Notebook.Len() != 2 {
+		t.Fatalf("the confirmed drop left %d notes", m.wiring.Notebook.Len())
 	}
 	if !strings.Contains(strings.Join(m.notesLines(), "\n"), "dropped note n1") {
 		t.Error("the screen did not say what went")
@@ -143,8 +149,8 @@ func TestNotes_DecliningTheDropTakesNothing(t *testing.T) {
 	if m.state != stateNotes {
 		t.Fatalf("declining the drop left the screen: state %v", m.state)
 	}
-	if m.notebook.Len() != 3 {
-		t.Fatalf("declining the drop took %d notes", 3-m.notebook.Len())
+	if m.wiring.Notebook.Len() != 3 {
+		t.Fatalf("declining the drop took %d notes", 3-m.wiring.Notebook.Len())
 	}
 }
 
@@ -155,8 +161,8 @@ func TestNotes_ClearAsksBeforeItEmptiesTheNotebook(t *testing.T) {
 	if m.state != stateNotes {
 		t.Fatalf("/notes clear left the session in state %v", m.state)
 	}
-	if m.notebook.Len() != 3 {
-		t.Fatalf("clear emptied the notebook before it asked: %d left", m.notebook.Len())
+	if m.wiring.Notebook.Len() != 3 {
+		t.Fatalf("clear emptied the notebook before it asked: %d left", m.wiring.Notebook.Len())
 	}
 	if !strings.Contains(strings.Join(m.notesLines(), "\n"), "Drop 3 notes?") {
 		t.Errorf("the question did not count what it would take:\n%s",
@@ -164,8 +170,8 @@ func TestNotes_ClearAsksBeforeItEmptiesTheNotebook(t *testing.T) {
 	}
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
-	if m.notebook.Len() != 0 {
-		t.Fatalf("the confirmed clear left %d notes", m.notebook.Len())
+	if m.wiring.Notebook.Len() != 0 {
+		t.Fatalf("the confirmed clear left %d notes", m.wiring.Notebook.Len())
 	}
 	if !strings.Contains(strings.Join(m.notesLines(), "\n"), "dropped 3 notes") {
 		t.Error("the screen did not say what went")
@@ -198,8 +204,8 @@ func TestNotes_DropByNumberStillWorksFromThePrompt(t *testing.T) {
 	if got := m.dropNoteByName([]string{"n2"}); got != "dropped note n2" {
 		t.Fatalf("drop said %q", got)
 	}
-	if m.notebook.Len() != 2 {
-		t.Fatalf("drop left %d notes", m.notebook.Len())
+	if m.wiring.Notebook.Len() != 2 {
+		t.Fatalf("drop left %d notes", m.wiring.Notebook.Len())
 	}
 	if got := m.dropNoteByName([]string{"n2"}); !strings.HasPrefix(got, "✗ notes  ") {
 		t.Fatalf("dropping a note twice said %q", got)
@@ -226,8 +232,8 @@ func TestNotes_TheCloseCountsWhatHasNotBeenRead(t *testing.T) {
 	// A later turn's fan-out writes one note, and the two from turn 4 are
 	// still waiting on the screen.
 	m.turnCount = 5
-	m.notebook.SetTurn(5)
-	_, _, _ = m.notebook.Write("writer-1", "The patch is in loop.go", "one hunk")
+	m.wiring.Notebook.SetTurn(5)
+	_, _, _ = m.wiring.Notebook.Write("writer-1", "The patch is in loop.go", "one hunk")
 	if got := m.turnNotesClause(); got != "1 note from writer-1 · 3 unread" {
 		t.Fatalf("the close said %q", got)
 	}
@@ -237,8 +243,8 @@ func TestNotes_TheCloseCountsWhatHasNotBeenRead(t *testing.T) {
 	opened, _ := m.openNotes(false)
 	m = opened.(Model)
 	m.turnCount = 6
-	m.notebook.SetTurn(6)
-	_, _, _ = m.notebook.Write("writer-1", "And the test", "loop_test.go")
+	m.wiring.Notebook.SetTurn(6)
+	_, _, _ = m.wiring.Notebook.Write("writer-1", "And the test", "loop_test.go")
 	if got := m.turnNotesClause(); got != "1 note from writer-1" {
 		t.Fatalf("the close said %q after the notebook had been read", got)
 	}
@@ -250,8 +256,11 @@ func TestNotesIsOfferedInBothSessions(t *testing.T) {
 		what string
 		m    Model
 	}{
-		{"a coding session", turnModel(t).WithNotebook(notebook.New(nil))},
-		{"a conversation", turnModel(t).WithConversation().WithNotebook(notebook.New(nil))},
+		{"a coding session", turnModelWith(t, Wiring{Notebook: notebook.New(nil)})},
+		{"a conversation", turnModelWith(t, Wiring{
+			Conversation: true,
+			Notebook:     notebook.New(nil),
+		})},
 	} {
 		if tc.m.unavailableCommand("/notes") {
 			t.Errorf("%s does not offer /notes", tc.what)
@@ -270,10 +279,11 @@ func TestNotesIsOfferedInBothSessions(t *testing.T) {
 // before the catch-up would file a fan-out under a turn that has closed.
 func TestBindSlotSyncsTheNotebooksTurn(t *testing.T) {
 	m := turnModel(t)
-	m = m.WithNotebook(notebook.New(nil))
+	m.wiring.Notebook = notebook.New(nil)
+	m.bindNotebook()
 	m.turnCount = 7
 	m.bindSlot()
-	n, _, err := m.notebook.Write("researcher-1", "Found it", "in loop.go")
+	n, _, err := m.wiring.Notebook.Write("researcher-1", "Found it", "in loop.go")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -314,26 +324,28 @@ func TestResumeBringsBackACodingSessionsNotebook(t *testing.T) {
 	_, _ = b.SaveNote("chat-earlier", notebook.Note{
 		Author: "researcher-1", Title: "Where the goldens live", Body: "testdata/golden", Turn: 3})
 
-	m := turnModel(t).WithNotebook(notebook.New(b))
-	if m.conversation {
+	m := turnModel(t)
+	m.wiring.Notebook = notebook.New(b)
+	m.bindNotebook()
+	if m.wiring.Conversation {
 		t.Fatal("this is the coding session's case")
 	}
-	if m.notebook.Len() != 0 {
-		t.Fatalf("a fresh session started with %d notes", m.notebook.Len())
+	if m.wiring.Notebook.Len() != 0 {
+		t.Fatalf("a fresh session started with %d notes", m.wiring.Notebook.Len())
 	}
 
 	m.sessionName = "chat-earlier"
 	m.turnCount = 9
 	m.bindSlot()
 
-	notes := m.notebook.List()
+	notes := m.wiring.Notebook.List()
 	if len(notes) != 1 || notes[0].Title != "Where the goldens live" {
 		t.Fatalf("the resumed slot's notebook came back as %+v", notes)
 	}
 	if notes[0].Turn != 3 {
 		t.Errorf("a resumed note lost its turn: %d", notes[0].Turn)
 	}
-	n, _, err := m.notebook.Write("reviewer-1", "And the widths", "80, 110, 130")
+	n, _, err := m.wiring.Notebook.Write("reviewer-1", "And the widths", "80, 110, 130")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -356,11 +368,13 @@ func TestNotes_AResumedNotebookIsUnreadUntilTheScreenIsOpened(t *testing.T) {
 	_, _ = b.SaveNote("chat-earlier", notebook.Note{
 		Author: "researcher-1", Title: "And the widths", Body: "80, 110, 130", Turn: 3})
 
-	m := frameModel(t, 100, 30).WithNotebook(notebook.New(b))
+	m := frameModel(t, 100, 30)
+	m.wiring.Notebook = notebook.New(b)
+	m.bindNotebook()
 	m.sessionName = "chat-earlier"
 	m.turnCount = 9
 	m.bindSlot()
-	_, _, _ = m.notebook.Write("writer-1", "The patch is in loop.go", "one hunk")
+	_, _, _ = m.wiring.Notebook.Write("writer-1", "The patch is in loop.go", "one hunk")
 	if got := m.turnNotesClause(); got != "1 note from writer-1 · 3 unread" {
 		t.Fatalf("the close said %q on a slot nobody has opened the screen on", got)
 	}
@@ -368,8 +382,8 @@ func TestNotes_AResumedNotebookIsUnreadUntilTheScreenIsOpened(t *testing.T) {
 	opened, _ := m.openNotes(false)
 	m = opened.(Model)
 	m.turnCount = 10
-	m.notebook.SetTurn(10)
-	_, _, _ = m.notebook.Write("writer-1", "And the test", "loop_test.go")
+	m.wiring.Notebook.SetTurn(10)
+	_, _, _ = m.wiring.Notebook.Write("writer-1", "And the test", "loop_test.go")
 	if got := m.turnNotesClause(); got != "1 note from writer-1" {
 		t.Fatalf("the close said %q after the resumed notebook had been read", got)
 	}
@@ -391,10 +405,13 @@ func TestARunsWriteUpIsReadInEitherSession(t *testing.T) {
 		what string
 		m    Model
 	}{
-		{"a coding session", turnModel(t).WithNotebook(notebook.New(nil))},
-		{"a conversation", turnModel(t).WithConversation().WithNotebook(notebook.New(nil))},
+		{"a coding session", turnModelWith(t, Wiring{Notebook: notebook.New(nil)})},
+		{"a conversation", turnModelWith(t, Wiring{
+			Conversation: true,
+			Notebook:     notebook.New(nil),
+		})},
 	} {
-		steps := run.Options{Pipeline: research, Notebook: tc.m.notebook != nil}.Steps()
+		steps := run.Options{Pipeline: research, Notebook: tc.m.wiring.Notebook != nil}.Steps()
 		if ending, _ := steps.Ending(); ending != run.FinishNote {
 			t.Errorf("%s turned the write-up into %v", tc.what, ending)
 		}

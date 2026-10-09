@@ -70,15 +70,6 @@ type suggestDoneMsg struct {
 	verdict agent.SuggestVerdict
 }
 
-// WithSuggester wires the writer of the offered next step and whether the
-// session starts with offers on. A nil writer offers nothing and asks
-// nothing, which is every surface but the interactive session.
-func (m Model) WithSuggester(s *agent.Suggester, on bool) Model {
-	m.suggest.writer = s
-	m.suggest.on = on
-	return m
-}
-
 // suggestEnabled reports whether readings are taken at all.
 func (m Model) suggestEnabled() bool {
 	return m.suggest.on && m.suggest.writer.Enabled()

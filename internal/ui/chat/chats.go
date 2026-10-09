@@ -121,10 +121,10 @@ func (m Model) chatPickOptions(entries []storage.ChatListEntry) ([]components.Se
 // housekeeping keys act on the focused row. It reports false when there is
 // nothing to pick, leaving the caller on the text path.
 func (m Model) openChatPick() (tea.Model, tea.Cmd, bool) {
-	if m.db == nil {
+	if m.wiring.DB == nil {
 		return m, nil, false
 	}
-	entries, err := m.db.ListChats()
+	entries, err := m.wiring.DB.ListChats()
 	if err != nil || len(entries) == 0 {
 		return m, nil, false
 	}
@@ -167,10 +167,10 @@ func (m Model) openChatPick() (tea.Model, tea.Cmd, bool) {
 // are one list in the order the catalog is already in: a reader who typed a
 // name expects it where it always was, and the rest below it.
 func (m Model) withChatMatches(matches []components.SelectOption, index []int) ([]components.SelectOption, []int) {
-	if !m.chats.active || m.db == nil || m.picker.card == nil {
+	if !m.chats.active || m.wiring.DB == nil || m.picker.card == nil {
 		return matches, index
 	}
-	found, err := m.db.SearchChats(m.picker.card.Query)
+	found, err := m.wiring.DB.SearchChats(m.picker.card.Query)
 	if err != nil || len(found) == 0 {
 		return matches, index
 	}
@@ -341,8 +341,8 @@ func (m Model) updateChatOps(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 // saved chat is only rows in the store.
 func (m Model) deleteChatPrompt(name string) string {
 	branches := 0
-	if m.db != nil {
-		branches, _ = m.db.CountChatBranches(name)
+	if m.wiring.DB != nil {
+		branches, _ = m.wiring.DB.CountChatBranches(name)
 	}
 	with := ""
 	switch {
@@ -396,7 +396,7 @@ func (m Model) updateChatRename(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) 
 // deleteChat removes a saved chat and rebuilds the rows. The note goes to the
 // transcript, which stays visible above the picker.
 func (m *Model) deleteChat(name string) {
-	if err := m.db.DeleteChat(name); err != nil {
+	if err := m.wiring.DB.DeleteChat(name); err != nil {
 		m.appendEntry(entry{kind: entrySystem, text: "could not delete: " + err.Error()})
 	} else {
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("deleted chat %q", name)})
@@ -408,7 +408,7 @@ func (m *Model) deleteChat(name string) {
 // collision is refused by the store and reported by name, so the reader
 // knows which name to pick differently.
 func (m *Model) renameChat(oldName, newName string) {
-	err := m.db.RenameChat(oldName, newName)
+	err := m.wiring.DB.RenameChat(oldName, newName)
 	var exists storage.ChatExistsError
 	switch {
 	case errors.As(err, &exists):
@@ -427,7 +427,7 @@ func (m *Model) renameChat(oldName, newName string) {
 func (m *Model) refreshChatPick() {
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
-	entries, err := m.db.ListChats()
+	entries, err := m.wiring.DB.ListChats()
 	if err != nil || len(entries) == 0 {
 		m.closePicker()
 		if err == nil {

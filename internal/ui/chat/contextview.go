@@ -44,16 +44,13 @@ type ToolTokens struct {
 	Tokens int64
 }
 
-// WithToolDefinitions records the registered tool definitions and their
-// estimated cost. The total is the occupancy breakdown's tool category, and
-// the rows are what the context surface itemises it into.
-func (m Model) WithToolDefinitions(defs []ToolTokens) Model {
+// setToolDefinitions records the tool definitions and their estimated total.
+func (m *Model) setToolDefinitions(defs []ToolTokens) {
 	m.toolDefs = defs
 	m.toolDefTokens = 0
 	for _, d := range defs {
 		m.toolDefTokens += d.Tokens
 	}
-	return m
 }
 
 // openContext puts the surface up. It is built once per opening rather than

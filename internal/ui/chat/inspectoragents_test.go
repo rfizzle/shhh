@@ -144,7 +144,7 @@ func oneToolEnv() subagent.EnvFactory {
 func TestInspectorAgents_AWorkingChildSaysItsToolCountOnce(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: oneToolEnv()})
 	t.Cleanup(sup.Close)
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).WithSubagents(sup)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Subagents: sup})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 144, Height: 40})
 	m = updated.(Model)
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")

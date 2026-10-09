@@ -102,7 +102,7 @@ type radiusIn struct {
 // The containment it is handed distinguishes the agent's commands, which run
 // contained, from /run, which is the user's own and never is.
 func (m Model) commandRadius(command string, contain cardContainment) blastRadius {
-	return m.commandRadiusIn(radiusIn{m.workspace, m.tracker}, command, m.approval.scope, contain)
+	return m.commandRadiusIn(radiusIn{m.wiring.Workspace, m.wiring.Tracker}, command, m.approval.scope, contain)
 }
 
 // commandRadiusIn is commandRadius over a tree and a scope reading it is
@@ -298,9 +298,9 @@ func (m Model) editRadius(req *approvalRequest) blastRadius {
 	switch {
 	case m.changes == nil:
 		b.reversibility = "undo none — this session records no changeset"
-	case m.tracker.Track(req.path) == changeset.TrackTracked:
+	case m.wiring.Tracker.Track(req.path) == changeset.TrackTracked:
 		b.reversibility = "undo yes — recorded, and git has this file"
-	case m.tracker.Repo():
+	case m.wiring.Tracker.Repo():
 		b.reversibility = "undo yes — recorded; git does not have this file yet"
 	default:
 		b.reversibility = "undo yes — recorded, and it needs no git to restore"
@@ -428,10 +428,10 @@ func editReason(path string) string {
 // force" means here.
 // See docs/capabilities/containment.md#a-started-process-is-contained-too.
 func (m Model) processContainment() string {
-	if m.processes.Contained == nil {
+	if m.wiring.Processes.Contained == nil {
 		return ""
 	}
-	return m.processes.Contained()
+	return m.wiring.Processes.Contained()
 }
 
 // scopeField is the `scope` row: which directory the action reaches that the
@@ -539,7 +539,7 @@ func (m Model) childCommandRadius(ask *subagent.Ask) blastRadius {
 // this shells out to git and a card is rebuilt every frame.
 func (m Model) childTracker(ask *subagent.Ask) *changeset.Tracker {
 	if !ask.Worktree {
-		return m.tracker
+		return m.wiring.Tracker
 	}
 	return changeset.NewTracker(ask.Root)
 }

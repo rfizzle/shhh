@@ -28,7 +28,8 @@ var firstGrantOffer = fmt.Sprintf("[+%d]", roundGrantBlock)
 // pausedModel is a turn that wrote one file and then used up its only round.
 func pausedModel(t *testing.T) (Model, string) {
 	t.Helper()
-	m := turnModel(t).WithMaxToolRounds(1)
+	m := turnModel(t)
+	m.agent.SetMaxRounds(1)
 	m = sendText(t, m, "fix the round accounting")
 	path := filepath.Join(t.TempDir(), "loop.go")
 	m = applyWrite(t, m, path, "package agent\n", "y")
@@ -245,7 +246,8 @@ func TestRoundLimit_ReviewActsOnThePausedTurn(t *testing.T) {
 }
 
 func TestRoundLimit_ATurnThatChangedNothingOffersOnlyTheGrant(t *testing.T) {
-	m := turnModel(t).WithMaxToolRounds(1)
+	m := turnModel(t)
+	m.agent.SetMaxRounds(1)
 	m = sendText(t, m, "look around")
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_r", Name: "read_file", Arguments: `{"path":"nope.go"}`},
@@ -307,7 +309,8 @@ func TestRoundLimit_StalenessIsAboutTheLastEdit(t *testing.T) {
 }
 
 func TestRoundLimit_ThePauseDefersTheContextCard(t *testing.T) {
-	m := pressureModel(t, 110).WithMaxToolRounds(1)
+	m := pressureModel(t, 110)
+	m.agent.SetMaxRounds(1)
 	m = sendText(t, m, "keep going")
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_r", Name: "read_file", Arguments: `{"path":"nope.go"}`},
@@ -462,7 +465,8 @@ func TestRoundLimit_LetItRunClearsTheCeilingForTheTurn(t *testing.T) {
 // A session started with `--max-rounds 0` never reaches the checkpoint at
 // all, which is the whole point of it: there is nobody there to press a key.
 func TestRoundLimit_AnUncappedSessionNeverStops(t *testing.T) {
-	m := turnModel(t).WithMaxToolRounds(agent.UnlimitedToolRounds)
+	m := turnModel(t)
+	m.agent.SetMaxRounds(agent.UnlimitedToolRounds)
 	m = sendText(t, m, "fix the round accounting")
 	m = applyWrite(t, m, filepath.Join(t.TempDir(), "loop.go"), "package agent\n", "y")
 	if m.roundPause != nil {

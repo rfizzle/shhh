@@ -127,7 +127,7 @@ func TestHelp_ListsExactlyTheCommandsThisSessionHas(t *testing.T) {
 		build func(t *testing.T) Model
 	}{
 		{"a coding session", func(t *testing.T) Model { return frameModel(t, 80, 40) }},
-		{"a conversation", func(t *testing.T) Model { return frameModel(t, 80, 40).WithConversation() }},
+		{"a conversation", func(t *testing.T) Model { return frameModelWith(t, 80, 40, Wiring{Conversation: true}) }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			m := tc.build(t)
@@ -180,10 +180,13 @@ func TestHelp_EveryCommandHasAParagraph(t *testing.T) {
 // have, and the backlog is on both.
 func TestHelp_AConversationOffersTheBacklogAndNotTheChangeset(t *testing.T) {
 	root := todoTestRoot(t)
-	m := frameModel(t, 80, 40).WithConversation().WithTodos(Todos{
-		Profile: todo.BuiltinCode(), Root: root,
-		Manage: func([]string) string { return "" },
-		Detail: func(*todo.Store, todo.Item) string { return "" }})
+	m := frameModelWith(t, 80, 40, Wiring{
+		Conversation: true,
+		Todos: Todos{
+			Profile: todo.BuiltinCode(), Root: root,
+			Manage: func([]string) string { return "" },
+			Detail: func(*todo.Store, todo.Item) string { return "" }},
+	})
 	help := helpText(&m)
 	if !strings.Contains(help, "\n  /todo ") && !strings.Contains(help, "\n  /todo  ") {
 		t.Errorf("a conversation with a backlog should have a /todo row:\n%s", help)

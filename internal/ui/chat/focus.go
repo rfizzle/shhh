@@ -490,7 +490,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// The manager's chord answers here as it does at the draft: with a
 		// supervisor it opens the list, which leaves this mode first
 		// (openAgentList); without one it keeps its line-editor meaning.
-		if m.subagents != nil {
+		if m.wiring.Subagents != nil {
 			return m.openAgentList()
 		}
 		return m.returnToInput(msg)

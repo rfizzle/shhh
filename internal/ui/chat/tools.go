@@ -39,12 +39,6 @@ type ToolSources struct {
 	Trust func(args []string) string
 }
 
-// WithToolSources wires the tools screen's readings.
-func (m Model) WithToolSources(t ToolSources) Model {
-	m.toolSources = t
-	return m
-}
-
 // toolsReading is every source, in the screen's order: the built-in toolset
 // as the rail's row states it, then what the host read.
 func (m Model) toolsReading() []components.ToolsSource {
@@ -59,8 +53,8 @@ func (m Model) toolsReading() []components.ToolsSource {
 			Tools:  names,
 		})
 	}
-	if m.toolSources.Read != nil {
-		for _, src := range m.toolSources.Read() {
+	if m.wiring.ToolSources.Read != nil {
+		for _, src := range m.wiring.ToolSources.Read() {
 			src.Source = startingNote(src.Source)
 			out = append(out, src)
 		}
@@ -155,14 +149,14 @@ func (m Model) updateTools(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if done {
 		return m.closeToolsScreen()
 	}
-	if result.Offer == components.ToolsOfferNone || m.toolSources.Trust == nil {
+	if result.Offer == components.ToolsOfferNone || m.wiring.ToolSources.Trust == nil {
 		return m, nil
 	}
 	var args []string
 	if result.Offer == components.ToolsOfferDistrust {
 		args = []string{"off"}
 	}
-	said := m.toolSources.Trust(args)
+	said := m.wiring.ToolSources.Trust(args)
 	screen.Said = said
 	m.appendEntry(entry{kind: entrySystem, text: said})
 	return m, nil

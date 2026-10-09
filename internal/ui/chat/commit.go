@@ -147,13 +147,6 @@ type commitDoneMsg struct {
 	err     error
 }
 
-// WithCommitSecretIgnore supplies commit.secret_ignore: the fixtures a
-// commit made from this session may carry a credential shape in.
-func (m Model) WithCommitSecretIgnore(globs []string) Model {
-	m.policy.secretIgnore = globs
-	return m
-}
-
 // commitWords are what the handover does on a selected changed-files row.
 const commitWords = "commit"
 
@@ -190,7 +183,7 @@ func (m Model) openCommitCard(row int, turn int64) (tea.Model, tea.Cmd) {
 	if !ok || t.Files() == 0 {
 		return m.systemNotice(fmt.Sprintf("turn %d changed no files; there is nothing to commit", turn))
 	}
-	root := m.workspace
+	root := m.wiring.Workspace
 	// A path the reader has edited since the turn wrote it is left out
 	// rather than carried, because `git add` stages what is on disk and what
 	// is on disk is no longer only the turn's work. That is the same reading
@@ -554,7 +547,7 @@ const commitHistoryDepth = 20
 // to read answers no: a lead invented for the first commit in a tree is a
 // convention nobody chose.
 func (m Model) leadsSubjectsWithAScope() bool {
-	out, code := run.Git(m.workspace, "log", fmt.Sprintf("-%d", commitHistoryDepth), "--format=%s")
+	out, code := run.Git(m.wiring.Workspace, "log", fmt.Sprintf("-%d", commitHistoryDepth), "--format=%s")
 	if code != 0 {
 		return false
 	}
@@ -696,7 +689,7 @@ func (m Model) makeCommit() (tea.Model, tea.Cmd) {
 	}
 	st.failure, st.running = "", true
 	m.commit = &st
-	root, turn := m.workspace, st.turn
+	root, turn := m.wiring.Workspace, st.turn
 	staging, message, hooks := st.staging, st.message, st.hooks
 	secrets := run.Secrets{Ignore: m.policy.secretIgnore, Allow: st.override}
 	carried := 0

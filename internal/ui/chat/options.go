@@ -1,31 +1,37 @@
 package chat
 
-// Building a session: the constructor and the wiring the caller hands it.
+// Building a session: the constructor, and the value the caller hands it.
 //
 // Every dependency the surface cannot resolve for itself — the database, the
 // ledger, the classifier, the tool executor, the switch that changes model —
-// arrives through one of these rather than through a package-level default.
-// It is what lets a test drive the whole surface with none of them and lets
-// the CLI wire a real one without the surface importing it back
+// arrives in the wiring rather than through a package-level default. It is
+// what lets a test drive the whole surface with none of them and lets the CLI
+// wire a real one without the surface importing it back
 // (docs/architecture.md#one-agent-several-front-ends).
+//
+// What the terminal decides — a resumed conversation and its held turn, the
+// first prompt, the inbox, the notices — is not known until the terminal is,
+// so it stays a handful of With methods applied to the built screen.
+// See docs/architecture.md#the-screen-is-handed-its-wiring-as-one-value.
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
-	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/nudge"
-	"github.com/rfizzle/shhh/internal/pricing"
-	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
-	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-func New(initialMessages []provider.Message, stream StreamFunc) Model {
+// New builds the screen from the conversation, the stream that answers it,
+// and everything else it is given. The work the wiring needs done happens
+// here in one fixed order, each step after the ones whose results it reads.
+func New(initialMessages []provider.Message, stream StreamFunc, w Wiring) Model {
 	ta := components.NewTextArea()
 	// No placeholder sentence and no per-line prompt: the command-center
 	// frame's gutter glyph and bottom-rail hints carry that.
@@ -51,109 +57,200 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	// One frame set, one cadence, one colour, shared with the one-shot UI.
 	s := components.NewSpinnerModel()
 
-	return Model{
+	m := Model{
 		agent:     agent.New(initialMessages, stream),
+		wiring:    w,
 		input:     ta,
 		spinner:   s,
 		state:     stateInput,
 		verbosity: verbosityNormal,
 		atBottom:  true,
 		copyFn:    clipboard.Copy,
-		// On unless the config says otherwise (WithMouse).
-		pointer: pointerState{mouseOn: true},
-		// On unless the config says otherwise (WithNotify): unlike mouse
-		// reporting, a notification takes nothing away, and it cannot fire
-		// while anyone is looking at the screen.
-		notifyOn: true,
-		// On unless the config says otherwise (WithWindowTitle), for the same
-		// reason: naming the tab takes nothing away, and the reader with
-		// eight of them cannot ask for it once they are lost among the
-		// others (terminal.go).
-		windowTitleOn: true,
+		// On unless the config says otherwise: unlike mouse reporting, a
+		// notification takes nothing away, and it cannot fire while anyone is
+		// looking at the screen.
+		notifyOn: !w.NotifyOff,
+		// On unless the config says otherwise, for the same reason: naming
+		// the tab takes nothing away, and the reader with eight of them cannot
+		// ask for it once they are lost among the others (terminal.go).
+		windowTitleOn: !w.WindowTitleOff,
+		pointer:       pointerState{mouseOn: !w.MouseOff},
 		windowDir:     sessionDir(),
 		pasteLines:    attachment.DefaultPasteLines,
 		pasteColumns:  attachment.DefaultPasteColumns,
-		// Every session records what it changes; WithChangeset swaps in a
-		// store with a different bound or a git tracker.
+		// Every session records what it changes; the wiring may swap in a
+		// store with a different bound, or one persisted into the local store.
 		changes:     changeset.New(changeset.DefaultMaxBytes),
 		sessionName: newSessionName(),
 		searchMemo:  &searchMemo{},
 		alertMemo:   &alertMemo{},
 		nudges:      &nudge.Turn{},
 	}
-}
-
-func (m Model) WithToolExecutor(executor ToolExecutor) Model {
-	m.agent.SetExecutor(executor)
+	m.seed()
+	m.bindStores()
+	m.applyLoop()
+	m.adoptChildren()
+	m.loadTodos()
+	// Last, because the tool seams ask the screen which calls it gates, and
+	// everything above is part of that answer: the wrap captures the screen
+	// as it stands when it is built (hooks.go).
+	if w.Hooks != nil && w.Executor != nil {
+		m.agent.SetExecutor(m.hookExecutor(w.Executor))
+	}
 	return m
 }
 
-// WithRepeats gives the session the repeat detector the tool executor is
-// wrapped with, so the calls this model dispatches itself rather than through
-// the executor — a command the reader approved, an edit applied through the
-// mutating tools — are counted in the same window as the rest.
-//
-// It is handed the detector rather than wrapping a function because the two
-// tiers meet nowhere else: one is an executor, the other is a decision
-// followed by a dispatch, and only the model knows which of its commands is
-// the agent's own rather than a `/run` the reader typed.
-func (m Model) WithRepeats(d *agent.RepeatDetector) Model {
-	m.repeats = d
-	return m
+// seed copies into the screen's own state what the update loop goes on to
+// write: the wiring keeps what the session was given, and these move from
+// there.
+func (m *Model) seed() {
+	w := m.wiring
+	// A word the ladder does not have starts the session on normal rather
+	// than refusing it: the settings writer has already judged the word, so
+	// one that reaches here is a file edited by hand, and a session that will
+	// not start over a density is a worse answer than the default.
+	if v, err := parseVerbosity(strings.TrimSpace(w.Verbosity)); err == nil {
+		m.verbosity = v
+	}
+	if w.PasteLines != 0 {
+		m.pasteLines = w.PasteLines
+	}
+	if w.PasteColumns != 0 {
+		m.pasteColumns = w.PasteColumns
+	}
+	m.railCols = w.RailWidth
+	m.seedPolicy()
+	if w.Changeset != nil {
+		m.changes = w.Changeset
+	}
+	m.containment = w.Containment
+	m.defaults = w.Defaults
+	m.providerName = w.ProviderName
+	m.modelName = w.ModelName
+	m.effort, m.effortDefault = w.Effort, w.EffortDefault
+	m.projectTokens = w.ProjectContextTokens
+	m.setToolDefinitions(w.ToolDefinitions)
+	m.gatedTools = w.GatedTools
+	m.approval.checks = w.GatedChecks
+	m.classifier.judge = w.Classifier
+	m.summary.writer = w.Summarizer
+	m.titles.writer, m.titles.on = w.Titler, w.Titles
+	m.account.writer, m.account.every = w.Accountant, w.AccountEvery
+	m.suggest.writer, m.suggest.on = w.Suggester, w.Suggestions
+	m.startOffers.writer, m.startOffers.gather = w.StartOfferer, w.StartOffersGather
+	m.patterns.cfg, m.patterns.wording = w.Patterns, -1
+	m.picker.models.options, m.picker.models.lister = w.ModelOptions, w.ModelLister
+	m.timing.idle, m.timing.firstPaint = w.StreamIdle, w.FirstPaint
+	m.scaffold = w.Scaffold
+	m.mcp = w.MCP
+	if m.mcp.ReadOnly == nil {
+		m.mcp.ReadOnly = func(string) bool { return false }
+	}
+	m.todo.wiring = w.Todos
 }
 
-// WithRunner enables /run with the given command executor.
-func (m Model) WithRunner(run RunFunc) Model {
-	m.runFn = run
-	return m
+// seedPolicy is the session's policy as it starts. A conversation has no
+// start screen — the empty session is a prompt, not a survey of the checkout
+// (docs/capabilities/chat.md#it-starts-where-you-are-not-with-what-you-have)
+// — and no modes: the toolset is the bound, so the one policy it runs in is
+// fixed here, manual underneath, because what still reaches a decision — a
+// spawn, a memory — is a question for the person, and a fetch is answered by
+// the conversation's own rule ahead of the mode.
+// See docs/capabilities/chat.md#a-conversation-has-one-mode.
+func (m *Model) seedPolicy() {
+	w := m.wiring
+	p := &m.policy
+	p.allowlist, p.denylist = w.CommandAllowlist, w.CommandDenylist
+	p.allowHosts, p.denyHosts = w.AllowHosts, w.DenyHosts
+	p.timeout = w.CommandTimeout
+	p.readOnlyExtra, p.readOnlyDisabled = w.ReadOnlyCommands, w.ReadOnlyOff
+	p.secretIgnore = w.CommitSecretIgnore
+	if len(w.Cycle) > 0 {
+		p.cycle = w.Cycle
+	}
+	if w.Conversation {
+		p.mode = agent.ModeManual
+		return
+	}
+	p.mode = w.Mode
+	if w.Start != nil {
+		// A copy, so the screen's facts are its own: a first run is marked on
+		// them later without writing through the caller's value.
+		info := *w.Start
+		m.start = &info
+	}
 }
 
-// WithModelSwitcher enables /model <name>; fn must make subsequent stream
-// requests use the given model.
-func (m Model) WithModelSwitcher(fn func(string)) Model {
-	m.switchFn = fn
-	return m
+// bindStores claims the session's slot and binds what is kept per slot to
+// it. The name the screen was built with is a timestamp two processes
+// started in the same second would both mint, so a session with a store asks
+// it for a slot of its own before anything is written; the changeset, the
+// notebook and the sources ledger are then pointed at that slot, the
+// changeset's written records becoming this sitting's before anything draws.
+// A session with neither a store nor a changeset of its own keeps the name it
+// was built with, and binds only the two records it was handed.
+func (m *Model) bindStores() {
+	w := m.wiring
+	if w.DB != nil || w.Changeset != nil {
+		m.adoptSlot(m.claimSlot(m.sessionName))
+		return
+	}
+	m.bindNotebook()
+	m.bindSources()
 }
 
-// WithNewSession wires the boundary. Without it /new still starts the
-// conversation over, and the record goes on describing both halves as one
-// session — which is why every host that has a record wires this.
-func (m Model) WithNewSession(fn NewSession) Model {
-	m.newSession = fn
-	return m
+// applyLoop writes the loop's settings onto the loop: the executor, the
+// round cap, the steering, the progress clocks, the scrub, which results are
+// kept whole, where a trim's elisions go, the retry bound and the tree check.
+// Each is zero-safe, so a value that leaves one unset leaves the loop's own
+// default.
+func (m *Model) applyLoop() {
+	w, a := m.wiring, m.agent
+	a.SetExecutor(w.Executor)
+	a.SetMaxRounds(w.MaxToolRounds)
+	a.SetSteering(w.Steering)
+	a.SetProgressIntervals(w.ProgressCalls, w.ProgressElapsed)
+	if w.Secrets.Scrub != nil {
+		a.SetScrub(w.Secrets.Scrub)
+	}
+	a.StoreElided(w.Evidence.Keep)
+	if w.Skills != nil {
+		// Activated skill content is exempted from context trimming: the
+		// instructions are guidance for every later turn, and a trimmed skill
+		// fails silently — the model just stops following it.
+		a.KeepResults(skill.IsContent)
+	}
+	m.backoff.SetLimit(w.RetryLimit)
+	if w.TreeCheck != nil {
+		cfg := *w.TreeCheck
+		if cfg.Own == nil {
+			store := m.changes
+			cfg.Own = func() []string { return writtenPaths(store) }
+		}
+		if cfg.Instructions == nil {
+			cfg.Instructions = instructionFiles(cfg.Dir)
+		}
+		a.SetTreeCheck(cfg)
+	}
 }
 
-// WithSessions wires /sessions. Without it the command says where the list
-// can be read instead of printing an empty one.
-// See docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone.
-func (m Model) WithSessions(fn func() string) Model {
-	m.sessions = fn
-	return m
-}
-
-// WithWorkspaceBlock wires the checkout reading a rebuilt conversation is
-// given: fn answers with the workspace section of the system prompt as the
-// tree stands when it is called. A compaction and a load replace the block
-// the conversation was carrying with it (context.go).
-func (m Model) WithWorkspaceBlock(fn func() string) Model {
-	m.workspaceBlock = fn
-	return m
-}
-
-// WithTitle overrides the header title (default "shhh chat"), so `shhh code`
-// can reuse the TUI under its own name.
-func (m Model) WithTitle(title string) Model {
-	m.title = title
-	return m
-}
-
-// WithWorkspace states the directory the session's relative paths are
-// resolved against — where a saved plan lands, what a command's blast radius
-// is measured from, where an attached file is read. A session that is not
-// told stays on the process's working directory.
-func (m Model) WithWorkspace(root string) Model {
-	m.workspace = root
-	return m
+// adoptChildren hands the supervisor the parent's mode, its live grants and
+// the conversation's policy, after all three are settled. This session is the
+// surface with a person behind its cards, so a child's classifier no comes
+// here rather than being refused
+// (docs/capabilities/subagents.md#a-child-answers-to-the-session).
+func (m *Model) adoptChildren() {
+	sup := m.wiring.Subagents
+	if sup == nil {
+		return
+	}
+	m.childViews = map[string]*childView{}
+	sup.SetParentMode(m.policy.mode)
+	sup.SetParentGrants(m.liveGrants())
+	sup.SetAttended()
+	if m.wiring.Conversation {
+		sup.SetConversationPolicy()
+	}
 }
 
 // inWorkspace resolves a path the session was handed against the directory it
@@ -161,30 +258,10 @@ func (m Model) WithWorkspace(root string) Model {
 // no workspace leaves a relative one as it was — which is the process's
 // directory, the same place it would have read before it was told.
 func (m Model) inWorkspace(path string) string {
-	if m.workspace == "" || path == "" || filepath.IsAbs(path) {
+	if m.wiring.Workspace == "" || path == "" || filepath.IsAbs(path) {
 		return path
 	}
-	return filepath.Join(m.workspace, path)
-}
-
-// WithDB wires the store, which is also where the session's slot comes from:
-// the name it was built with is a timestamp two processes started in the same
-// second would both mint, so the store is asked to turn it into a slot of
-// this session's own before anything is written to it.
-func (m Model) WithDB(db *storage.DB) Model {
-	m.db = db
-	m.adoptSlot(m.claimSlot(m.sessionName))
-	return m
-}
-
-// WithPersistenceError preserves the reason the host could not open the
-// store. The exit banner needs it because the alternate screen clears the
-// startup warning before the session ends.
-func (m Model) WithPersistenceError(err error) Model {
-	if err != nil {
-		m.persistenceError = err.Error()
-	}
-	return m
+	return filepath.Join(m.wiring.Workspace, path)
 }
 
 // claimSlot asks the store for a slot under name and answers with the one it
@@ -192,10 +269,10 @@ func (m Model) WithPersistenceError(err error) Model {
 // timestamp is still what the person sees, and the save it protects is one
 // this session would otherwise not have made at all.
 func (m Model) claimSlot(name string) string {
-	if m.db == nil {
+	if m.wiring.DB == nil {
 		return name
 	}
-	claimed, err := m.db.ClaimChatSlot(name)
+	claimed, err := m.wiring.DB.ClaimChatSlot(name)
 	if err != nil {
 		return name
 	}
@@ -207,8 +284,8 @@ func (m Model) claimSlot(name string) string {
 // resumed an older conversation claimed a slot on the way in and never used
 // it, and a listing full of those is a listing of nothing.
 func (m *Model) adoptSlot(name string) {
-	if m.db != nil && m.sessionName != name {
-		_ = m.db.ReleaseChatSlot(m.sessionName)
+	if m.wiring.DB != nil && m.sessionName != name {
+		_ = m.wiring.DB.ReleaseChatSlot(m.sessionName)
 	}
 	m.sessionName = name
 	m.bindSlot()
@@ -266,74 +343,8 @@ func (m Model) WithInitialPrompt(prompt string) Model {
 	return m
 }
 
-func (m Model) WithPricing(prices *pricing.Table, modelName string) Model {
-	m.prices = prices
-	m.modelName = modelName
-	return m
-}
-
-// WithEndpointWindows wires the endpoint's own answer for a model's context
-// length (provider.ModelWindower), which outranks the pricing table: a local
-// runtime reports the window it loaded the weights with, under an id the
-// public table has never seen. A nil lookup, or one that does not know the
-// model, leaves the session on the table and the family floor.
-func (m Model) WithEndpointWindows(fn func(string) (int64, bool)) Model {
-	m.endpointWindows = fn
-	return m
-}
-
-// WithLedger wires the session's spend ledger — what every request made
-// through the provider gate cost, attributed to whatever made it. The session
-// totals the rail and /stats report come from here rather than from the
-// turn's own accounting, because the turn is only one of the things spending.
-// A nil ledger leaves those surfaces on the main agent's own figures.
-// See docs/architecture.md#spend-is-counted-at-the-provider.
-func (m Model) WithLedger(l *meter.Ledger) Model {
-	m.ledger = l
-	return m
-}
-
-// WithProvider names the provider the session resolved to and wires the two
-// things a provider failure can offer to do about it: replacing the
-// key for this session, and switching to another registered provider. Either
-// hook may be nil — the failure row then does not offer that key rather than
-// offering one that does nothing.
-func (m Model) WithProvider(name string, replaceKey func(string) error, switchProvider func(string) error) Model {
-	m.providerName = name
-	m.replaceKeyFn = replaceKey
-	m.switchProviderFn = switchProvider
-	return m
-}
-
 func (m Model) WithUpdateNotice(notice string) Model {
 	m.updateNotice = notice
-	return m
-}
-
-// WithClassifier enables auto mode's LLM permission classifier:
-// gated calls the static policy would ask about are judged by it instead;
-// its failures fall back to asking the user.
-func (m Model) WithClassifier(c *agent.Classifier) Model {
-	m.classifier.judge = c
-	return m
-}
-
-// WithExplainer enables the command card's explanation key: a cheap model
-// says what the command in front of the reader does, and the decision is
-// still waiting behind the answer (run.go). Without one the card offers
-// nothing and the key does nothing.
-func (m Model) WithExplainer(e *agent.Explainer) Model {
-	m.explainer = e
-	return m
-}
-
-// WithMaxToolRounds overrides the per-turn tool-round cap; zero keeps
-// DefaultMaxToolRounds and a negative n is agent.UnlimitedToolRounds, which
-// starts the session with no checkpoint at all — what `shhh code
-// --max-rounds 0` asks for, and the way to leave a session running unattended.
-// The rail has a reading for it, so the TUI no longer has to refuse it.
-func (m Model) WithMaxToolRounds(n int) Model {
-	m.agent.SetMaxRounds(n)
 	return m
 }
 
@@ -381,11 +392,11 @@ func (m Model) WithHeldTurn(rounds, granted int) Model {
 	return m
 }
 
-// WithCheckout hands a session with no start screen the survey its header
-// names the directory and branch from. A conversation draws no start screen
-// but is still opened in a checkout, and a header naming only the model
-// leaves the reader to ask where they are.
-func (m Model) WithCheckout(info project.Info) Model {
-	m.checkout = &info
-	return m
+// loadTodos reads the backlog the screen was wired with from disk. A session
+// opened beside a parallel sprint follows it from its first frame, the way
+// the session that started it does: Init starts the re-read this marks as
+// armed.
+func (m *Model) loadTodos() {
+	m.reloadTodos()
+	m.todo.runner.following = m.lanesLive()
 }

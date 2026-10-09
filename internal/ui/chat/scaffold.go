@@ -43,12 +43,6 @@ type Scaffold struct {
 	Decline func() error
 }
 
-// WithScaffold enables the scaffolding offer and the /init command.
-func (m Model) WithScaffold(s Scaffold) Model {
-	m.scaffold = s
-	return m
-}
-
 // scaffoldOffered reports whether the start screen should spend its third
 // row on the offer: a wired session, a checkout that could take it, and no
 // refusal already on record.

@@ -170,10 +170,10 @@ func (m Model) frameExtraHeight() int {
 // top rail's phase and the steering gutter glyph key off it.
 func (m Model) frameWorking() bool {
 	if m.attachedTo != "" {
-		if m.subagents == nil {
+		if m.wiring.Subagents == nil {
 			return false
 		}
-		st, ok := m.subagents.Get(m.attachedTo)
+		st, ok := m.wiring.Subagents.Get(m.attachedTo)
 		// A held child is still `running` as far as its lifecycle goes — it
 		// keeps its slot and its worktree — but it holds no stream, which is
 		// the only thing this answer is used for: whether the frame states a
@@ -219,7 +219,7 @@ func (m Model) frameIdentity(nearest bool) string {
 	if m.attachedTo == "" {
 		return ""
 	}
-	title := m.title
+	title := m.wiring.Title
 	if title == "" {
 		title = defaultTitle
 	}
@@ -374,10 +374,10 @@ func (m Model) frameHints(room int) string {
 		}
 		// A child that has answered is still listening, and what is typed
 		// here is its next question rather than text with nowhere to go.
-		if m.subagents == nil {
+		if m.wiring.Subagents == nil {
 			break
 		}
-		if st, ok := m.subagents.Get(m.attachedTo); ok && st.TakesFollowUp {
+		if st, ok := m.wiring.Subagents.Get(m.attachedTo); ok && st.TakesFollowUp {
 			hints = append([]hintSeg{segAs(keys.Draft.Send, "ask a follow-up")}, hints...)
 		}
 		// Attached, the screen is one child's and a routed card is narrowed
@@ -478,7 +478,7 @@ func (m Model) frameHints(room int) string {
 		}
 		// A conversation has no mode to cycle, so the rail does not offer
 		// the key for one (conversation.go).
-		if m.conversation {
+		if m.wiring.Conversation {
 			hints = slices.DeleteFunc(hints, func(h hintSeg) bool { return h.label == "change mode" })
 		}
 		// An offered next step leads the rail while it is drawn, because the
@@ -1043,7 +1043,7 @@ func queuedForTurn(n int) string {
 // child.
 func (m Model) frameVitals(layout frameLayout, width int) string {
 	var segs []components.RailSegment
-	if m.attachedTo != "" && m.subagents != nil {
+	if m.attachedTo != "" && m.wiring.Subagents != nil {
 		segs = m.childRailSegments()
 	} else {
 		segs = m.cockpitData(false).RailSegments()
@@ -1076,11 +1076,11 @@ func (m Model) frameVitals(layout frameLayout, width int) string {
 // (docs/interface/surfaces.md#the-input-frame).
 func (m Model) childRailSegments() []components.RailSegment {
 	name := m.attachedTo
-	st, ok := m.subagents.Get(name)
+	st, ok := m.wiring.Subagents.Get(name)
 	if !ok {
 		return []components.RailSegment{{Text: sty.StatusBar.Render(name), Drop: components.RailKeep}}
 	}
-	mode, _ := m.subagents.AgentMode(name)
+	mode, _ := m.wiring.Subagents.AgentMode(name)
 	segs := []components.RailSegment{{Text: childModeSegment(mode), Drop: components.RailKeep}}
 	// A child waiting on an answer and a child that stopped are the two
 	// states the reader has to act on, so both are alert-styled and both are
@@ -1117,7 +1117,7 @@ func (m Model) childRailSegments() []components.RailSegment {
 	// child's next round boundary, and the rail is the only surface that says
 	// so before `/stats` is asked
 	// (docs/capabilities/subagents.md#they-are-visible-while-they-run).
-	if q := m.subagents.QueuedSteering(name); q > 0 {
+	if q := m.wiring.Subagents.QueuedSteering(name); q > 0 {
 		segs = append(segs, components.RailSegment{
 			Text: sty.StatusBar.Render(queuedForTurn(q)),
 			Drop: components.RailNormal,
@@ -1195,10 +1195,10 @@ func (m Model) attachedReading() childReading {
 // (turnstatus.go).
 func (m Model) readChild(name string) childReading {
 	r := childReading{phase: components.PhaseThinking}
-	if m.subagents == nil || name == "" {
+	if m.wiring.Subagents == nil || name == "" {
 		return r
 	}
-	entries := m.subagents.Transcript(name)
+	entries := m.wiring.Subagents.Transcript(name)
 	open := 0
 	for i := len(entries) - 1; i >= 0; i-- {
 		e := entries[i]
@@ -1207,7 +1207,7 @@ func (m Model) readChild(name string) childReading {
 		}
 		open++
 	}
-	streaming := m.subagents.StreamingText(name)
+	streaming := m.wiring.Subagents.StreamingText(name)
 	switch {
 	case open > 0:
 		r.phase = components.PhaseActing

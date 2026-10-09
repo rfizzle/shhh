@@ -22,9 +22,9 @@ func scaffoldFixturePaths() []string {
 // scaffold, with the write and the refusal recorded rather than performed.
 func scaffoldModel(t *testing.T, wrote *string, declined *bool) Model {
 	t.Helper()
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithStartScreen(startFixture()).
-		WithScaffold(Scaffold{
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Start: new(startFixture()),
+		Scaffold: Scaffold{
 			Offer: true,
 			Paths: scaffoldFixturePaths(),
 			Write: func() (string, error) {
@@ -32,7 +32,8 @@ func scaffoldModel(t *testing.T, wrote *string, declined *bool) Model {
 				return project.ContextFile, nil
 			},
 			Decline: func() error { *declined = true; return nil },
-		})
+		},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
 	return updated.(Model)
 }
@@ -197,7 +198,7 @@ func TestScaffold_EscLeavesTheOfferStanding(t *testing.T) {
 // A conversation has no checkout to scaffold, and the command table answers
 // for that before the surface ever does.
 func TestScaffold_CommandIsNotPartOfAConversation(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).WithConversation()
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Conversation: true})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
 	m = updated.(Model)
 	if !m.unavailableCommand(scaffoldCommandName) {
@@ -214,7 +215,7 @@ func TestScaffold_CommandIsNotPartOfAConversation(t *testing.T) {
 }
 
 func TestScaffold_UnwiredSessionSaysSoRatherThanOpeningACard(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
 	next, _ := updated.(Model).scaffoldCommand()
 	m = next.(Model)

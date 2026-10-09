@@ -14,11 +14,11 @@ import (
 func TestProgram_AlertsOpensEveryAlertAndItsRuns(t *testing.T) {
 	codes := []int{2, 2, 0}
 	m, _ := scriptedSession(programTurn{text: "nobody asked the model"})
-	m = m.WithRunner(legacyRunner(func(context.Context, string) (string, int) {
+	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) {
 		code := codes[0]
 		codes = codes[1:]
 		return "checking", code
-	}))
+	})
 	tm := runProgramAt(t, m, 130, 40)
 	// The card going is the approval, not the run: the command is still
 	// running on the frame that drops the card, and a second ! sent then is

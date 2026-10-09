@@ -71,7 +71,7 @@ func (m Model) todoRunDone() (tea.Model, tea.Cmd) {
 // which is the whole reason it spent a turn producing one.
 func (m Model) fileTodoRun(st *run.State) (string, error) {
 	st.Sources = m.runSources(st.Report)
-	if ending, ok := st.Pipeline.Ending(); ok && ending == run.FinishNote && m.notebook != nil {
+	if ending, ok := st.Pipeline.Ending(); ok && ending == run.FinishNote && m.wiring.Notebook != nil {
 		return run.FileNote(m.todo.wiring.Root, st, m.todo.runner.item, m.writeRunNote)
 	}
 	return run.File(m.todo.wiring.Root, st, m.todo.runner.item)
@@ -86,7 +86,7 @@ func (m Model) fileTodoRun(st *run.State) (string, error) {
 // either way, and the second list is where that shows up.
 // See docs/capabilities/chat.md#what-was-read.
 func (m Model) runSources(report string) []run.Source {
-	rows := m.sourceLedger.List()
+	rows := m.wiring.Sources.List()
 	if len(rows) == 0 {
 		return nil
 	}
@@ -108,7 +108,7 @@ func (m Model) runSources(report string) []run.Source {
 // writeRunNote puts a run's write-up in the session's notebook and answers
 // with the number /notes lists it under.
 func (m Model) writeRunNote(author, title, body string) (string, error) {
-	n, _, err := m.notebook.Write(author, title, runNoteBody(body))
+	n, _, err := m.wiring.Notebook.Write(author, title, runNoteBody(body))
 	if err != nil {
 		return "", err
 	}

@@ -63,18 +63,6 @@ func (v verbosity) String() string {
 // principles table.
 func (m Model) density(rung verbosity) bool { return m.verbosity >= rung }
 
-// WithVerbosity sets the rung the session starts on (appearance.verbosity).
-// A word the ladder does not have starts the session on normal rather than
-// refusing it: the settings writer has already judged the word, so one that
-// reaches here is a file edited by hand, and a session that will not start
-// over a density is a worse answer than the default.
-func (m Model) WithVerbosity(word string) Model {
-	if v, err := parseVerbosity(strings.TrimSpace(word)); err == nil {
-		m.verbosity = v
-	}
-	return m
-}
-
 func parseVerbosity(s string) (verbosity, error) {
 	switch s {
 	case "low":
@@ -98,13 +86,6 @@ type RunFunc func(ctx context.Context, command string) tools.ExecResult
 // completed output line, so the row can show a live tail. onLine may be
 // called from other goroutines.
 type TailFunc func(ctx context.Context, command string, onLine func(string)) tools.ExecResult
-
-// WithTailRunner sets the tail-capable runner used for assistant commands and
-// /run; without one, commands run with no live tail.
-func (m Model) WithTailRunner(fn TailFunc) Model {
-	m.tailRunFn = fn
-	return m
-}
 
 // commandTail is the running command's last output line, shared between the
 // runner goroutine and the render loop.
@@ -632,16 +613,6 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 	return row
 }
 
-// WithFetchWaits installs the fetcher's two answers about a paced fetch: how
-// much of a host's refusal is still being sat out, and how to give those
-// waits up. Without them a fetch row reads as running for as long as the
-// wait lasts, which is the one thing a wait must not look like.
-// See docs/capabilities/evidence.md#a-site-is-read-at-the-pace-it-answers.
-func (m Model) WithFetchWaits(waiting func(host string) (time.Duration, bool), abandon func()) Model {
-	m.fetchWaiting, m.abandonFetchWaits = waiting, abandon
-	return m
-}
-
 // fetchWaitFields are the outcome and counts of an in-flight fetch whose
 // host is being waited out: `waiting 8s · docs.rs asked`, dim, where a
 // running row would otherwise say only that it is running. Two fields rather
@@ -652,14 +623,14 @@ func (m Model) WithFetchWaits(waiting func(host string) (time.Duration, bool), a
 // the running spinner is already asking for, and it reads the remaining wait
 // off the fetcher each time.
 func (m Model) fetchWaitFields(toolName, toolArgs string) (outcome, counts string, ok bool) {
-	if !receipt.IsFetch(toolName) || m.fetchWaiting == nil {
+	if !receipt.IsFetch(toolName) || m.wiring.FetchWaiting == nil {
 		return "", "", false
 	}
 	host := web.FetchHost(json.RawMessage(toolArgs))
 	if host == "" {
 		return "", "", false
 	}
-	left, waiting := m.fetchWaiting(host)
+	left, waiting := m.wiring.FetchWaiting(host)
 	if !waiting {
 		return "", "", false
 	}
@@ -738,10 +709,10 @@ func (m *Model) uiCommand(parts []string) string {
 		m.verbosity = v
 		m.invalidateRenderCache()
 		note := fmt.Sprintf("verbosity set to %s", v)
-		if m.writeConfig == nil {
+		if m.wiring.ConfigWriter == nil {
 			return note + "\nthis session cannot write the config file, so it is for this session only"
 		}
-		if err := m.writeConfig("appearance.verbosity", v.String()); err != nil {
+		if err := m.wiring.ConfigWriter("appearance.verbosity", v.String()); err != nil {
 			return note + "\n" + failed("ui", "could not save it: "+err.Error())
 		}
 		return note + " · saved — new sessions start this way"
@@ -894,10 +865,10 @@ func (m *Model) themeCommand(parts []string) string {
 	if components.Mono() {
 		note += " · monochrome is on, so it takes effect when that goes off"
 	}
-	if m.writeConfig == nil {
+	if m.wiring.ConfigWriter == nil {
 		return note + "\nthis session cannot write the config file, so it is for this session only"
 	}
-	if err := m.writeConfig("appearance.theme", parts[2]); err != nil {
+	if err := m.wiring.ConfigWriter("appearance.theme", parts[2]); err != nil {
 		return note + "\n" + failed("theme", "could not save it: "+err.Error())
 	}
 	return note + " · saved — new sessions start this way"

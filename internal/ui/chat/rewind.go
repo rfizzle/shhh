@@ -79,20 +79,13 @@ type checkpoint struct {
 	at time.Time
 }
 
-// WithGitSnapshots wires the git-state capture recorded on each rewind
-// checkpoint; nil (the default) records no git state.
-func (m Model) WithGitSnapshots(fn func() GitSnapshot) Model {
-	m.gitSnapshot = fn
-	return m
-}
-
 // recordCheckpoint marks the start of a user turn. Call it before the user
 // message joins the conversation, so the checkpoint index points at it.
 func (m *Model) recordCheckpoint(text string) {
 	cp := checkpoint{index: len(m.agent.Messages()), preview: firstLine(text),
 		turn: m.turnCount, at: clock()}
-	if m.gitSnapshot != nil {
-		cp.git = m.gitSnapshot()
+	if m.wiring.GitSnapshots != nil {
+		cp.git = m.wiring.GitSnapshots()
 		cp.hasGit = true
 	}
 	m.checkpoints = append(m.checkpoints, cp)
@@ -738,9 +731,9 @@ func (m *Model) rewindConversation(n int, filesNote string) string {
 	keptRows, rows, split := m.rewoundSplit(len(m.checkpoints) - n)
 
 	branchNote := "chat persistence is unavailable, so the abandoned tail was discarded"
-	if m.db != nil {
+	if m.wiring.DB != nil {
 		branch := branchName(m.sessionName, n)
-		if err := m.db.SaveChatBranch(m.sessionName, branch, agent.StripResumeContext(full)); err != nil {
+		if err := m.wiring.DB.SaveChatBranch(m.sessionName, branch, agent.StripResumeContext(full)); err != nil {
 			branchNote = "could not keep the abandoned tail as a branch: " + err.Error()
 		} else {
 			branchNote = fmt.Sprintf("the abandoned tail (%s) is kept as branch %q — /branches to switch back", plural(dropped, "message"), branch)
@@ -804,13 +797,13 @@ func branchName(session string, turn int) string {
 // gitDivergence describes how the workspace's git state has moved since the
 // checkpoint; empty when there is nothing meaningful to say.
 func (m Model) gitDivergence(cp checkpoint) string {
-	if m.gitSnapshot == nil {
+	if m.wiring.GitSnapshots == nil {
 		return ""
 	}
 	if !cp.hasGit {
 		return "git: no snapshot was recorded for this checkpoint, so divergence is unknown"
 	}
-	now := m.gitSnapshot()
+	now := m.wiring.GitSnapshots()
 	switch {
 	case !cp.git.Repo || !now.Repo:
 		return ""
@@ -847,10 +840,10 @@ func shortHead(h string) string {
 // both ask it, so what counts as a family, and what is said when there is
 // not one, is defined once.
 func (m Model) branchFamily() ([]storage.ChatBranch, string) {
-	if m.db == nil {
+	if m.wiring.DB == nil {
 		return nil, "chat persistence is unavailable"
 	}
-	branches, err := m.db.ListChatBranches(m.sessionName)
+	branches, err := m.wiring.DB.ListChatBranches(m.sessionName)
 	if err != nil {
 		return nil, failed("branches", err.Error())
 	}
@@ -894,11 +887,11 @@ func (m *Model) switchToBranch(target string) string {
 		return fmt.Sprintf("Already on %q.", target)
 	}
 	if len(m.agent.Messages()) > 1 {
-		if err := m.db.SaveChat(m.sessionName, agent.StripResumeContext(m.agent.Messages())); err != nil {
+		if err := m.wiring.DB.SaveChat(m.sessionName, agent.StripResumeContext(m.agent.Messages())); err != nil {
 			return failed("branches", "could not save the current branch before switching: "+err.Error())
 		}
 	}
-	msgs, err := m.db.LoadChat(target)
+	msgs, err := m.wiring.DB.LoadChat(target)
 	if err != nil {
 		return failed("branches", err.Error())
 	}
@@ -914,7 +907,7 @@ func (m *Model) switchToBranch(target string) string {
 	// reading of the checkout is taken either, unlike opening a conversation
 	// by name — this is a move inside one sitting, on the tree that sitting
 	// already surveyed, so there is nothing new to say about it.
-	m.compactSummary = storedChatSummary(m.db, target)
+	m.compactSummary = storedChatSummary(m.wiring.DB, target)
 	// So is the working list: each branch keeps the one it was last saved
 	// with, and the one just left is on its own slot (worksteps.go).
 	m.workSteps = storedChatSteps(m, target)

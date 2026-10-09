@@ -67,12 +67,13 @@ func server(name string, state components.ToolSourceState, note string, project 
 // reading the way the session's assembly reads both from one set of reports.
 func withTools(m Model, h *toolsHost) Model {
 	m.toolDefs = []ToolTokens{{Name: "read_file"}, {Name: "edit_file"}, {Name: "docs__search"}}
-	m = m.WithMCP(MCP{
+	m.mcp = MCP{
 		Has:     func(name string) bool { return strings.Contains(name, "__") },
 		Manage:  func(args []string) string { return "manage " + strings.Join(args, " ") },
 		Sources: railSources(h.read()),
-	})
-	return m.WithToolSources(ToolSources{Read: h.read, Trust: h.trust})
+	}
+	m.wiring.ToolSources = ToolSources{Read: h.read, Trust: h.trust}
+	return m
 }
 
 func toolsFixture() *toolsHost {
@@ -255,10 +256,10 @@ func TestToolsScreen_TrustIsAskedAndGoesThroughTheTrustSeam(t *testing.T) {
 func TestToolsScreen_ASessionWithNothingConfiguredOpensOnItsOwnTools(t *testing.T) {
 	m := inspectorModel(t, 160, 50)
 	m.toolDefs = []ToolTokens{{Name: "read_file"}, {Name: "web_fetch"}}
-	m = m.WithToolSources(ToolSources{Read: func() []components.ToolsSource {
+	m.wiring.ToolSources = ToolSources{Read: func() []components.ToolsSource {
 		return []components.ToolsSource{{Group: components.ToolsWeb, Tools: []string{"web_fetch"},
 			Source: components.InspectorToolSource{Name: "fetch", State: components.ToolSourceUp, Note: "1 tool"}}}
-	}})
+	}}
 	if m.inspectorTools() != nil {
 		t.Fatal("the rail's block is up in a session with nothing outside shhh configured")
 	}

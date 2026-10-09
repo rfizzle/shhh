@@ -23,7 +23,7 @@ var pickerTools = []ToolTokens{
 func openPicker(t *testing.T, kind persona.Kind) Model {
 	t.Helper()
 	m, _, _ := sectionedModel(t, kind)
-	m = m.WithToolDefinitions(pickerTools)
+	m.setToolDefinitions(pickerTools)
 	for range 5 {
 		m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyDown})
 	}

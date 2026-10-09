@@ -19,13 +19,13 @@ func TestWaitingState_RetryClauseKnowsTheBound(t *testing.T) {
 	}
 
 	none := 0
-	*m = m.WithRetryLimit(&none)
+	m.backoff.SetLimit(&none)
 	if got := statusLine(t, *m); !strings.Contains(got, "silent — fails in 12s") || strings.Contains(got, "retry") {
 		t.Errorf("with provider_retries = 0 the line reads %q, want it to fail at the deadline", got)
 	}
 
 	one := 1
-	*m = m.WithRetryLimit(&one)
+	m.backoff.SetLimit(&one)
 	if got := statusLine(t, *m); !strings.Contains(got, "retry in 12s") {
 		t.Errorf("with one retry left the line reads %q, want a retry", got)
 	}

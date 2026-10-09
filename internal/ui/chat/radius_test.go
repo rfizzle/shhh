@@ -23,10 +23,11 @@ func radiusModel(t *testing.T, dir string, c Containment) Model {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "do it"},
 	}
-	m := New(msgs, mockStream).
-		WithWorkspace(dir).
-		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ran", 0 })).
-		WithContainment(c)
+	m := New(msgs, mockStream, Wiring{
+		Workspace:   dir,
+		Runner:      legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ran", 0 }),
+		Containment: c,
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -218,7 +219,7 @@ func TestBlastRadius_UndoTracksGit(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "kept.txt"), []byte("x\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	m.tracker = changeset.NewTracker(dir)
+	m.wiring.Tracker = changeset.NewTracker(dir)
 	if view := confirmFor(t, m, "rm kept.txt"); !strings.Contains(view, "undo      none") {
 		t.Fatalf("outside a repository undo is none, with the reason:\n%s", view)
 	}
@@ -234,7 +235,7 @@ func TestBlastRadius_UndoTracksGit(t *testing.T) {
 			t.Skipf("git setup failed: %v (%s)", err, out)
 		}
 	}
-	m.tracker = changeset.NewTracker(dir)
+	m.wiring.Tracker = changeset.NewTracker(dir)
 	view := confirmFor(t, m, "rm kept.txt")
 	if !strings.Contains(view, "undo      git") {
 		t.Fatalf("a tracked path is restorable by git, and the card says so:\n%s", view)
@@ -253,7 +254,7 @@ func TestBlastRadius_EditStatesReversibilityOnTheStatsLine(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "edit it"},
 	}
-	m := New(msgs, mockStream).WithWorkspace(dir)
+	m := New(msgs, mockStream, Wiring{Workspace: dir})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -285,17 +286,18 @@ func TestBlastRadius_GenericToolCarriesItsOwnFields(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "look it up"},
 	}
-	m := New(msgs, mockStream).
-		WithWorkspace(dir).
-		WithToolExecutor(func(name string, args json.RawMessage) (string, error) { return "ok", nil }).
-		WithGatedTools(map[string]GatedPreviewFunc{
+	m := New(msgs, mockStream, Wiring{
+		Workspace: dir,
+		Executor:  func(name string, args json.RawMessage) (string, error) { return "ok", nil },
+		GatedTools: map[string]GatedPreviewFunc{
 			"web_fetch": func(json.RawMessage) (GatedPreview, error) {
 				return GatedPreview{Summary: "GET https://pkg.go.dev/context", Fields: []GatedField{
 					{Label: "domain", Value: "pkg.go.dev", Detail: "the request leaves this machine", Open: true},
 					{Label: "sends", Value: "the URL and a user-agent", Detail: "no file contents, no credentials"},
 				}}, nil
 			},
-		})
+		},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -351,10 +353,11 @@ func TestBlastRadius_ProcessStartRowReadsTheSupervisor(t *testing.T) {
 		Network:   true,
 	})
 	withSupervisor := func(mechanism string) Model {
-		return base.WithProcesses(Processes{
+		base.wiring.Processes = Processes{
 			Manage:    func([]string) string { return "process list" },
 			Contained: func() string { return mechanism },
-		})
+		}
+		return base
 	}
 
 	view := confirmForStart(t, withSupervisor("bwrap"), "web", "npm run dev")

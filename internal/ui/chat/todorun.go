@@ -70,7 +70,7 @@ func (m Model) todoRunCan(repo bool) run.Can {
 		// in the session can change a file, so a step that would has no
 		// record to make and nothing for a later step to read back.
 		Changeset:  m.changes != nil && m.codingSurfaces(),
-		Supervisor: m.subagents != nil,
+		Supervisor: m.wiring.Subagents != nil,
 		// A conversation registered no command tool at all, and no key
 		// reaches one, so a step whose verdict is an exit status has no way
 		// to get one here. Whether the project names any command to run is
@@ -181,7 +181,7 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 		Pipeline: m.todo.wiring.Pipeline,
 		// A write-up is read in the session's shared notebook, so a finish
 		// that spends a turn on one asks whether there is a notebook first.
-		Notebook: m.notebook != nil}
+		Notebook: m.wiring.Notebook != nil}
 	// A profile may state no run at all, and the item is still an item: what
 	// it needs is a person doing it, so the offer is the one verb that files
 	// it rather than a run that would describe the work instead of doing it.
@@ -593,11 +593,11 @@ func lastTodoRunRow(es []entry) int {
 
 // killTodoAgents ends every child the run has in flight.
 func (m *Model) killTodoAgents(st *run.State) {
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return
 	}
 	for _, name := range st.LiveAgents() {
-		_ = m.subagents.Kill(name)
+		_ = m.wiring.Subagents.Kill(name)
 	}
 }
 

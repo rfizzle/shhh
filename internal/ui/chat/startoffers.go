@@ -53,15 +53,6 @@ type startOffersDoneMsg struct {
 	verdict agent.StartOffersVerdict
 }
 
-// WithStartOffers wires the start screen's reading: the writer, and what reads
-// the rest of the evidence off the UI goroutine. A nil writer asks nothing,
-// which is every surface but the interactive coding session.
-func (m Model) WithStartOffers(w *agent.StartOfferer, gather func(context.Context) agent.StartOffersRequest) Model {
-	m.startOffers.writer = w
-	m.startOffers.gather = gather
-	return m
-}
-
 // startOffersCmd asks for the reading once, the first time the session has a
 // size to draw its start screen at and the list is live. It is derived from
 // the model after each message, as the close readings are.

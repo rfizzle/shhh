@@ -42,8 +42,11 @@ func titledModel(t *testing.T, p provider.Provider) (Model, *storage.DB) {
 	t.Helper()
 	db := rewindTestDB(t)
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, multiTokenStream("hi there")).WithDB(db).
-		WithTitler(agent.NewTitler(p, agent.TitleConfig{Model: "fast"}), true)
+	m := New(msgs, multiTokenStream("hi there"), Wiring{
+		DB:     db,
+		Titler: agent.NewTitler(p, agent.TitleConfig{Model: "fast"}),
+		Titles: true,
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	return updated.(Model), db
 }
@@ -254,7 +257,8 @@ func TestTitle_UICommandTogglesAndReports(t *testing.T) {
 		t.Fatalf("an unknown value is an error, got %q", out)
 	}
 
-	unconfigured := m.WithTitler(agent.NewTitler(p, agent.TitleConfig{}), false)
+	unconfigured := m
+	unconfigured.titles.writer, unconfigured.titles.on = agent.NewTitler(p, agent.TitleConfig{}), false
 	if out := unconfigured.uiCommand([]string{"/ui", "title"}); !strings.Contains(out, "turned off in the config (summary.title)") {
 		t.Fatalf("off in the config should say where, got %q", out)
 	}

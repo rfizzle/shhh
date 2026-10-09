@@ -41,7 +41,7 @@ func (m Model) todoVerifyCmd(named string) tea.Cmd {
 	root := m.todo.wiring.Root
 	slug := m.todo.runner.item.Slug
 	tests := m.todo.runner.state.Tests
-	gate := m.gate.Run
+	gate := m.wiring.Gate.Run
 	// A run whose implement stage closed on a passing gate carries that
 	// verdict here rather than paying for the suite twice over a tree that
 	// did not move between the two (run.State.Checks).
@@ -54,7 +54,7 @@ func (m Model) todoVerifyCmd(named string) tea.Cmd {
 		// either.
 		tests, gate, checked = []string{named}, nil, false
 	}
-	keep := m.evidence.Keep
+	keep := m.wiring.Evidence.Keep
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), verifyTimeout)
 		defer cancel()

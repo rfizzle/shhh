@@ -157,9 +157,3 @@ func (m Model) containmentWords(mechanism string) string {
 	}
 	return words
 }
-
-// WithContainment wires the containment setup into the session.
-func (m Model) WithContainment(c Containment) Model {
-	m.containment = c
-	return m
-}

@@ -101,7 +101,7 @@ func keyPopupHint() []components.KeyOffer {
 // the register here and not per keystroke: what is bound does not move while
 // a session runs.
 func (m Model) openKeyPopup() (tea.Model, tea.Cmd) {
-	p := &keyPopup{all: keyPopupRows(m.conversation, m.routedGrantWaiting())}
+	p := &keyPopup{all: keyPopupRows(m.wiring.Conversation, m.routedGrantWaiting())}
 	p.card = components.Select{
 		// The chord is the title, as it is on the palette: the card is the
 		// answer to a key, and naming it is how a reader who came in through

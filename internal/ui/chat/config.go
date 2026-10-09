@@ -58,20 +58,12 @@ type ConfigSession struct {
 // models there are.
 type ConfigOpener func(models []string) (ConfigSession, error)
 
-// WithConfigScreen installs what `/config` opens. A session without one still
-// runs; it says the settings cannot be reached from here rather than drawing
-// a screen with nothing behind it.
-func (m Model) WithConfigScreen(open ConfigOpener) Model {
-	m.openConfig = open
-	return m
-}
-
 // openConfigScreen puts the surface up.
 func (m Model) openConfigScreen() (tea.Model, tea.Cmd) {
-	if m.openConfig == nil {
+	if m.wiring.ConfigScreen == nil {
 		return m.systemNotice("this session cannot reach the config file. `shhh config` opens the same screen")
 	}
-	session, err := m.openConfig(m.modelPickChoices())
+	session, err := m.wiring.ConfigScreen(m.modelPickChoices())
 	if err != nil {
 		return m.systemNotice(failed("config", "could not read the config: "+err.Error()))
 	}

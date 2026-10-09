@@ -256,7 +256,7 @@ func (m Model) failureKeys(f *provider.Failure) []components.KeyOffer {
 	}
 	switch f.Class {
 	case provider.ClassAuth:
-		if m.replaceKeyFn != nil {
+		if m.wiring.ReplaceKey != nil {
 			add(keys.Row.Key, "enter a new key")
 		}
 		if m.canSwitchProvider() {
@@ -291,7 +291,7 @@ func (m Model) failureKeys(f *provider.Failure) []components.KeyOffer {
 // canSwitchProvider reports whether [p] can do anything: a switcher wired in,
 // and more than one provider registered to switch to.
 func (m Model) canSwitchProvider() bool {
-	return m.switchProviderFn != nil && len(m.providerChoices()) > 1
+	return m.wiring.SwitchProvider != nil && len(m.providerChoices()) > 1
 }
 
 // providerChoices is the registered providers, sorted — the built-ins plus
@@ -416,7 +416,7 @@ func (m Model) openProviderPick() (tea.Model, tea.Cmd) {
 		if name == m.providerName {
 			return "Already on " + name + "."
 		}
-		if err := m.switchProviderFn(name); err != nil {
+		if err := m.wiring.SwitchProvider(name); err != nil {
 			return "Could not switch to " + name + ": " + err.Error()
 		}
 		m.providerName = name
@@ -449,7 +449,7 @@ func providerDesc(name string) string {
 // failure's own key hint is what the prompt names, so the reader is told
 // which variable the replacement stands in for.
 func (m Model) openKeyEntry(f *provider.Failure) (tea.Model, tea.Cmd) {
-	if m.replaceKeyFn == nil {
+	if m.wiring.ReplaceKey == nil {
 		return m.systemNotice("this session cannot replace its key")
 	}
 	m.keyAsk = &components.SecretPrompt{
@@ -483,7 +483,7 @@ func (m *Model) closeKeyEntry(secret string) overlayAction {
 	if strings.TrimSpace(secret) == "" {
 		return overlayAction{close: true, note: "key unchanged"}
 	}
-	if err := m.replaceKeyFn(secret); err != nil {
+	if err := m.wiring.ReplaceKey(secret); err != nil {
 		return overlayAction{close: true, note: "that key was not accepted: " + err.Error()}
 	}
 	return overlayAction{close: true, note: "key ···" + lastFour(secret) +

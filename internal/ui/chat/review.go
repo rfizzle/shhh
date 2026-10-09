@@ -155,7 +155,7 @@ func (m Model) turnChecks(n int64, es []entry) *components.TurnChecks {
 			return e.close.Checks
 		}
 	}
-	return turnChecksRow(es, m.gate.Manage != nil)
+	return turnChecksRow(es, m.wiring.Gate.Manage != nil)
 }
 
 // entriesForTurn is the transcript slice belonging to turn n: everything

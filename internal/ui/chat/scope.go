@@ -26,13 +26,6 @@ import (
 	"github.com/rfizzle/shhh/internal/scope"
 )
 
-// WithScope wires the session's working scope. A session without one treats
-// every path as in scope, which is what sessions did before this existed.
-func (m Model) WithScope(sc *scope.Scope) Model {
-	m.scope = sc
-	return m
-}
-
 // scopeReach is what one pending decision reaches outside the working scope.
 // A decision that stays inside it resolves to the zero value, and every
 // surface reads that as "nothing to say".
@@ -65,7 +58,7 @@ func (r scopeReach) first() string {
 // cannot read is not one this check can put a directory name to, and the card
 // already says that in the `touches` row.
 func (m Model) scopeReachFor(req *approvalRequest) scopeReach {
-	if m.scope == nil || req == nil {
+	if m.wiring.Scope == nil || req == nil {
 		return scopeReach{}
 	}
 	var paths []string
@@ -78,7 +71,7 @@ func (m Model) scopeReachFor(req *approvalRequest) scopeReach {
 	if len(paths) == 0 {
 		return scopeReach{}
 	}
-	dirs := m.scope.Outside(paths...)
+	dirs := m.wiring.Scope.Outside(paths...)
 	if len(dirs) == 0 {
 		return scopeReach{}
 	}
@@ -102,7 +95,7 @@ func (m *Model) grantScope(reach scopeReach) string {
 	}
 	var added []string
 	for _, dir := range reach.dirs {
-		if _, err := m.scope.Add(dir); err == nil {
+		if _, err := m.wiring.Scope.Add(dir); err == nil {
 			added = append(added, displayDir(dir))
 		}
 	}
@@ -117,7 +110,7 @@ func (m *Model) grantScope(reach scopeReach) string {
 // decision. Bare, it lists the scope; with a path, it adds one; `drop` takes
 // one back.
 func (m *Model) scopeCommand(parts []string) string {
-	if m.scope == nil {
+	if m.wiring.Scope == nil {
 		return "this session has no working scope"
 	}
 	if len(parts) < 2 {
@@ -127,11 +120,11 @@ func (m *Model) scopeCommand(parts []string) string {
 		if len(parts) != 3 {
 			return "usage: /add-dir drop <path>"
 		}
-		dir, ok := m.scope.Drop(parts[2])
+		dir, ok := m.wiring.Scope.Drop(parts[2])
 		if !ok {
 			return "not in the working scope: " + parts[2] + ". /add-dir lists what is"
 		}
-		if !m.scope.InRoot(dir) {
+		if !m.wiring.Scope.InRoot(dir) {
 			m.announce(scopeDroppedAnnouncement(dir))
 		}
 		return "dropped " + dir + " from the working scope. Contained commands can no longer write there"
@@ -139,7 +132,7 @@ func (m *Model) scopeCommand(parts []string) string {
 	if len(parts) > 2 {
 		return "usage: /add-dir [<path>|drop <path>]  — one directory at a time; a path with spaces needs no quotes here"
 	}
-	dir, err := m.scope.Add(parts[1])
+	dir, err := m.wiring.Scope.Add(parts[1])
 	switch {
 	case err == scope.ErrAlreadyInScope:
 		return dir + " is already in the working scope"
@@ -148,7 +141,7 @@ func (m *Model) scopeCommand(parts []string) string {
 	}
 	class, reason := scope.Classify(dir)
 	note := "Added " + dir + " to the working scope: edits there no longer ask about leaving it, and contained commands can write there."
-	if m.scope.InRoot(dir) {
+	if m.wiring.Scope.InRoot(dir) {
 		// The session always had its own checkout; what the grant changes
 		// is a writer's scope, which is its copy plus what was added.
 		// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
@@ -157,7 +150,7 @@ func (m *Model) scopeCommand(parts []string) string {
 	if class == scope.Sensitive {
 		note += "\nThis is a sensitive directory — " + reason + ". Nothing else would have granted it; /add-dir drop " + dir + " takes it back."
 	}
-	if !m.scope.InRoot(dir) {
+	if !m.wiring.Scope.InRoot(dir) {
 		m.announce(scopeAddedAnnouncement(dir))
 	}
 	return note
@@ -187,18 +180,18 @@ func scopeDroppedAnnouncement(dir string) string {
 // scopeStatus is bare /add-dir: what the session may reach, and the two
 // commands that change it.
 func (m Model) scopeStatus() string {
-	if m.scope == nil {
+	if m.wiring.Scope == nil {
 		return "this session has no working scope"
 	}
 	var sb strings.Builder
 	sb.WriteString("Working scope:\n")
-	fmt.Fprintf(&sb, "  session    %s\n", m.scope.Root())
-	dirs := m.scope.Dirs()
+	fmt.Fprintf(&sb, "  session    %s\n", m.wiring.Scope.Root())
+	dirs := m.wiring.Scope.Dirs()
 	for _, d := range dirs {
 		class, reason := scope.Classify(d)
 		line := "  added      " + d
 		switch {
-		case m.scope.InRoot(d):
+		case m.wiring.Scope.InRoot(d):
 			line += " — for writers; the session already had it"
 		case class == scope.Sensitive:
 			line += " — sensitive: " + reason

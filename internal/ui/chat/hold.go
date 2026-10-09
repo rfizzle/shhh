@@ -90,8 +90,8 @@ func (m Model) toggleHold() (tea.Model, tea.Cmd) {
 		// parks: each one reaches its own boundary in its own time, and a
 		// fan-out whose parent is between rounds may have four writers
 		// halfway through theirs.
-		if m.subagents != nil {
-			m.subagents.Hold()
+		if m.wiring.Subagents != nil {
+			m.wiring.Subagents.Hold()
 		}
 		return m, nil
 	}
@@ -159,8 +159,8 @@ func (m *Model) dropHold() {
 // fan-out: the hold was asked of the session, not of a child, and letting
 // them out one at a time is a list nobody could be expected to keep.
 func (m *Model) releaseChildren() {
-	if m.subagents != nil {
-		m.subagents.Release()
+	if m.wiring.Subagents != nil {
+		m.wiring.Subagents.Release()
 	}
 }
 

@@ -45,7 +45,7 @@ func TestReopen_ACompactedSessionKeepsItsFoldedTurns(t *testing.T) {
 	if len(loaded) != compacted {
 		t.Fatalf("the model is handed %d messages, not the compacted list's %d", len(loaded), compacted)
 	}
-	m := New(loaded[:1], multiTokenStream("ok")).WithDB(db).WithResumedMessages("tray", loaded)
+	m := New(loaded[:1], multiTokenStream("ok"), Wiring{DB: db}).WithResumedMessages("tray", loaded)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
 

@@ -62,8 +62,9 @@ func groomModel(t *testing.T, items map[string]string) (Model, string) {
 	m := frameModel(t, 130, 40)
 	m.changes = changeset.New(1 << 20)
 	m.policy.mode = agent.ModeManual
-	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
-		Detail: func(*todo.Store, todo.Item) string { return "" }})
+	m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
+		Detail: func(*todo.Store, todo.Item) string { return "" }}
+	m.loadTodos()
 	return m, root
 }
 
@@ -122,9 +123,9 @@ func TestTodoGroom_TheCardIsTheProposedLinesAndTheStamp(t *testing.T) {
 func TestTodoGroom_AcceptingWritesTheNamedLinesAndTheStamp(t *testing.T) {
 	var signals []string
 	m, root := groomModel(t, map[string]string{"cache-ttl.md": groomItem})
-	m = m.WithObserver(observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+	m.wiring.Observer = observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
 		signals = append(signals, code+":"+reason)
-	}})
+	}}
 	m = groom(t, m, "/todo groom cache-ttl", groomAnswer)
 	m = press(t, m, "enter")
 

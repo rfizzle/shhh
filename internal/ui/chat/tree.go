@@ -11,30 +11,10 @@ package chat
 import (
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 )
-
-// WithTreeCheck turns the reading on; nil leaves it off. Own is filled from
-// the session's changeset when the caller left it unset, so wire the
-// changeset first, and Instructions from the same walk the prompt made.
-func (m Model) WithTreeCheck(c *agent.TreeCheck) Model {
-	if c == nil {
-		return m
-	}
-	cfg := *c
-	if cfg.Own == nil {
-		store := m.changes
-		cfg.Own = func() []string { return writtenPaths(store) }
-	}
-	if cfg.Instructions == nil {
-		cfg.Instructions = instructionFiles(cfg.Dir)
-	}
-	m.agent.SetTreeCheck(cfg)
-	return m
-}
 
 // instructionFiles is the project's own instruction files, found the way the
 // prompt found them — the same walk from the session's directory up to the

@@ -61,7 +61,7 @@ func TestProgram_AStalledRequestIsWaitedOutAndAnswered(t *testing.T) {
 		answer: "The loop stops at the round cap, and nowhere else.",
 	}
 	retries := 3
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p)).WithRetryLimit(&retries)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{RetryLimit: &retries})
 	tm := runProgramAt(t, m, 110, 40)
 
 	tm.Type("why does the loop stop")
@@ -99,7 +99,7 @@ func TestProgram_TheLastFailureIsRetriedFromAHalfTypedLine(t *testing.T) {
 		},
 		answer: "The loop stops at the round cap, and nowhere else.",
 	}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p))
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{})
 	tm := runProgramAt(t, m, 110, 40)
 
 	tm.Type("why does the loop stop")

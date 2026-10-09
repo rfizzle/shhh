@@ -16,9 +16,10 @@ func markerReduce(tool, result string) string {
 
 func TestEvidence_ExecResultReducedConsistently(t *testing.T) {
 	var ran []string
-	m := execModel(t, &ran).
-		WithCommandAllowlist([]string{"echo"}).
-		WithEvidence(Evidence{Reduce: markerReduce})
+	m := execModel(t, &ran)
+	m.policy.allowlist = []string{"echo"}
+	m.wiring.Evidence = Evidence{Reduce: markerReduce}
+	m.agent.StoreElided(m.wiring.Evidence.Keep)
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
@@ -48,9 +49,10 @@ func TestEvidence_UserRunNotReduced(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleAssistant, Content: "```\necho hi\n```"},
 	}
-	m := New(msgs, mockStream).
-		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 })).
-		WithEvidence(Evidence{Reduce: markerReduce})
+	m := New(msgs, mockStream, Wiring{
+		Runner:   legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 }),
+		Evidence: Evidence{Reduce: markerReduce},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
@@ -65,12 +67,14 @@ func TestEvidence_UserRunNotReduced(t *testing.T) {
 
 func TestEvidence_SlashCommand(t *testing.T) {
 	var got []string
-	m := gatedModel(t, nil, nil).WithEvidence(Evidence{
+	m := gatedModel(t, nil, nil)
+	m.wiring.Evidence = Evidence{
 		Manage: func(args []string) string {
 			got = append(got, strings.Join(args, " "))
 			return "status here"
 		},
-	})
+	}
+	m.agent.StoreElided(m.wiring.Evidence.Keep)
 	handled, result := m.handleSlashCommand("/evidence")
 	if !handled || result != "status here" {
 		t.Fatalf("/evidence = %v %q", handled, result)
@@ -90,7 +94,9 @@ func TestEvidence_SlashCommandUnavailable(t *testing.T) {
 }
 
 func TestEvidence_HelpMentionsCommand(t *testing.T) {
-	m := gatedModel(t, nil, nil).WithEvidence(Evidence{Manage: func([]string) string { return "" }})
+	m := gatedModel(t, nil, nil)
+	m.wiring.Evidence = Evidence{Manage: func([]string) string { return "" }}
+	m.agent.StoreElided(m.wiring.Evidence.Keep)
 	if !strings.Contains(helpText(&m), "/evidence") {
 		t.Fatal("/help must list /evidence")
 	}

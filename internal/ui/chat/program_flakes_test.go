@@ -16,7 +16,8 @@ import (
 // check puts its count and its command in the preview.
 func TestProgram_GateFlakesListsTheCheckoutsLedger(t *testing.T) {
 	now := time.Now()
-	m := frameModel(t, 130, 40).WithGate(Gate{
+	m := frameModel(t, 130, 40)
+	m.wiring.Gate, m.alertMemo = Gate{
 		Manage: func([]string) string { return "" },
 		Flakes: func() ([]storage.Flake, error) {
 			return []storage.Flake{
@@ -26,7 +27,7 @@ func TestProgram_GateFlakesListsTheCheckoutsLedger(t *testing.T) {
 					FirstAt: now.Add(-72 * time.Hour), LastAt: now.Add(-48 * time.Hour)},
 			}, nil
 		},
-	})
+	}, &alertMemo{}
 	tm := runProgramAt(t, m, 130, 40)
 
 	send(tm, "/gate flakes")
@@ -44,13 +45,14 @@ func TestProgram_GateFlakesListsTheCheckoutsLedger(t *testing.T) {
 // anything.
 func TestProgram_AFlakyCheckStandsOnTheRail(t *testing.T) {
 	now := time.Now()
-	m := frameModel(t, 130, 40).WithGate(Gate{
+	m := frameModel(t, 130, 40)
+	m.wiring.Gate, m.alertMemo = Gate{
 		Manage: func([]string) string { return "" },
 		Flakes: func() ([]storage.Flake, error) {
 			return []storage.Flake{{Suite: "default", Check: "vet", Command: "./checks/vet.sh", Seen: 3,
 				FirstExit: 1, FirstAt: now.Add(-48 * time.Hour), LastAt: now.Add(-time.Hour)}}, nil
 		},
-	})
+	}, &alertMemo{}
 	tm := runProgramAt(t, m, 130, 40)
 
 	waitForText(t, tm, "flaked 3× this week")

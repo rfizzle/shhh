@@ -23,7 +23,7 @@ func planModel(t *testing.T, stream StreamFunc) Model {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "plan the change"},
 	}
-	m := New(msgs, stream)
+	m := New(msgs, stream, Wiring{})
 	// Tall enough that the panel's 60% bound is not what decides how many
 	// steps show: these tests read what a step row says, and a card the
 	// terminal squeezes counts the steps it folded rather than stating them.
@@ -262,7 +262,7 @@ func TestPlan_NavigationAndEnterSelect(t *testing.T) {
 func TestPlan_RequestStreamInjectsInstructions(t *testing.T) {
 	var captured []provider.Message
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, recordingStream(&captured))
+	m := New(msgs, recordingStream(&captured), Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.policy.mode = agent.ModePlan
@@ -285,9 +285,11 @@ func TestPlan_RequestStreamInjectsInstructions(t *testing.T) {
 func TestMode_ReadOnlyRequestCarriesItsOwnInstructions(t *testing.T) {
 	var captured []provider.Message
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, recordingStream(&captured)).
-		WithToolDefinitions([]ToolTokens{{Name: "read_file"}, {Name: "search"}, {Name: "execute_command"}}).
-		WithReadOnlyCommands([]string{"tokei"}, false)
+	m := New(msgs, recordingStream(&captured), Wiring{
+		ToolDefinitions:  []ToolTokens{{Name: "read_file"}, {Name: "search"}, {Name: "execute_command"}},
+		ReadOnlyCommands: []string{"tokei"},
+		ReadOnlyOff:      false,
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.policy.mode = agent.ModeReadOnly
@@ -337,7 +339,8 @@ func TestPlan_InspectionCommandRunsWithoutPrompt(t *testing.T) {
 
 func TestPlan_SlashPlanSave(t *testing.T) {
 	dir := t.TempDir()
-	m := runCapableModel("1. edit a.go\n2. run tests").WithWorkspace(dir)
+	m := runCapableModel("1. edit a.go\n2. run tests")
+	m.wiring.Workspace = dir
 
 	handled, result := m.handleSlashCommand("/plan save my plan")
 	if !handled || !strings.Contains(result, "plan saved to") {
@@ -368,7 +371,7 @@ func TestPlan_SlashPlanSave(t *testing.T) {
 
 func TestPlan_SlashPlanSaveWithoutPlan(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream).WithWorkspace(t.TempDir())
+	m := New(msgs, mockStream, Wiring{Workspace: t.TempDir()})
 	_, result := m.handleSlashCommand("/plan save x")
 	if !strings.Contains(result, "no plan to save yet") {
 		t.Fatalf("saving with no assistant response should refuse, got %q", result)
@@ -480,7 +483,7 @@ func TestPlanCard_SummaryReadsTheSameGitCheckAsApprovals(t *testing.T) {
 	both := tracked + "2. And a new one\n   files: fresh.go\n   action: create\n"
 
 	m := planModel(t, mockStream)
-	m.tracker = changeset.NewTracker(dir)
+	m.wiring.Tracker = changeset.NewTracker(dir)
 
 	m.streaming = tracked
 	updated, _ := m.Update(doneMsg{})
@@ -508,7 +511,7 @@ func TestPlanCard_OutsideARepositoryNothingIsClaimed(t *testing.T) {
 	// tracker at all: the card must say "not reversible" because it looked
 	// and there was no repository, not because nothing was wired.
 	m := plannedModel(t, structuredPlan)
-	m.tracker = changeset.NewTracker(t.TempDir())
+	m.wiring.Tracker = changeset.NewTracker(t.TempDir())
 	if view := m.View().Content; !strings.Contains(view, "not reversible") {
 		t.Errorf("outside a work tree the card says so rather than claiming undo:\n%s", view)
 	}
@@ -568,7 +571,8 @@ func TestPlanCard_UnstructuredPlanStillRenders(t *testing.T) {
 
 func TestPlanCard_SaveKeyWritesThePlanAndKeepsTheCard(t *testing.T) {
 	dir := t.TempDir()
-	m := plannedModel(t, structuredPlan).WithWorkspace(dir)
+	m := plannedModel(t, structuredPlan)
+	m.wiring.Workspace = dir
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 's', Mod: tea.ModCtrl})
 	m = updated.(Model)
@@ -679,7 +683,9 @@ func planRecordModel(t *testing.T, stream StreamFunc) Model {
 // nothing a tool printed, because a record made of tool output is the
 // transcript again.
 func TestPlan_ApprovalWritesTheRecord(t *testing.T) {
-	m := planRecordModel(t, mockStream).WithDB(rewindTestDB(t))
+	m := planRecordModel(t, mockStream)
+	m.wiring.DB = rewindTestDB(t)
+	m.bindStores()
 	updated, _ := m.Update(doneMsg{})
 	m = handover(t, updated.(Model))
 
@@ -705,7 +711,7 @@ func TestPlan_ApprovalWritesTheRecord(t *testing.T) {
 	if rec.Handle == "" {
 		t.Fatal("a session with a store should have filed the record and kept its handle")
 	}
-	data, err := m.db.LoadPlanRecord(rec.Handle)
+	data, err := m.wiring.DB.LoadPlanRecord(rec.Handle)
 	if err != nil {
 		t.Fatalf("the handle should read back: %v", err)
 	}
@@ -720,7 +726,7 @@ func TestPlan_ApprovalWritesTheRecord(t *testing.T) {
 // nothing else — which is the whole reason for crossing it.
 func TestPlan_CarryToNewSessionSeedsAFreshContext(t *testing.T) {
 	m := planRecordModel(t, mockStream)
-	m = m.WithNewSession(func() SessionStart { return SessionStart{Prompt: "sys"} })
+	m.wiring.NewSession = func() SessionStart { return SessionStart{Prompt: "sys"} }
 	updated, _ := m.Update(doneMsg{})
 	m = handover(t, updated.(Model))
 	if m.state != statePlanApprove {
@@ -806,8 +812,10 @@ func TestPlan_ImplementInNewSessionStartsTheExecutionTurn(t *testing.T) {
 		close(ch)
 		return ch, func() {}, nil
 	}
-	m := planRecordModel(t, stream).WithDB(rewindTestDB(t))
-	m = m.WithNewSession(func() SessionStart { return SessionStart{Prompt: "sys"} })
+	m := planRecordModel(t, stream)
+	m.wiring.DB = rewindTestDB(t)
+	m.bindStores()
+	m.wiring.NewSession = func() SessionStart { return SessionStart{Prompt: "sys"} }
 	updated, _ := m.Update(doneMsg{})
 	m = handover(t, updated.(Model))
 	if m.state != statePlanApprove {
@@ -874,7 +882,7 @@ func TestPlan_ImplementInNewSessionStartsTheExecutionTurn(t *testing.T) {
 	if strings.Contains(requests[0][0].Content, "# Plan mode") {
 		t.Fatal("the execution request must not carry the planning instructions")
 	}
-	saved, err := m.db.LoadChat(outgoing)
+	saved, err := m.wiring.DB.LoadChat(outgoing)
 	if err != nil {
 		t.Fatalf("the outgoing conversation should be saved: %v", err)
 	}

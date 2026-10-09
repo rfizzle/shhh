@@ -77,13 +77,13 @@ func (m Model) windowFor(model string) int64 {
 	if model == "" {
 		return DefaultContextWindow
 	}
-	if m.endpointWindows != nil {
-		if w, ok := m.endpointWindows(model); ok {
+	if m.wiring.EndpointWindows != nil {
+		if w, ok := m.wiring.EndpointWindows(model); ok {
 			return w
 		}
 	}
-	if m.prices != nil {
-		if w, ok := m.prices.ContextWindow(model); ok {
+	if m.wiring.Prices != nil {
+		if w, ok := m.wiring.Prices.ContextWindow(model); ok {
 			return w
 		}
 	}
@@ -386,8 +386,8 @@ func (m Model) startCompact() (tea.Model, tea.Cmd) {
 	// The seam in front of a compaction, before the summary is paid for. It
 	// runs off the goroutine drawing the screen, the way the seam in front of
 	// a gated call does, and the request follows its answer (finishPreCompact).
-	if m.hooks.Has(hook.PreCompact, "") {
-		hooks, at, run := m.hooks, m.hookPos(), m.compactRun
+	if m.wiring.Hooks.Has(hook.PreCompact, "") {
+		hooks, at, run := m.wiring.Hooks, m.hookPos(), m.compactRun
 		c := hook.Compaction{Trigger: m.compactTrigger(), BeforePct: run.pct}
 		return m, func() tea.Msg {
 			return preCompactMsg{run: run, verdict: hooks.PreCompact(context.Background(), at, c)}
@@ -443,10 +443,10 @@ func (m Model) finishPreCompact(msg preCompactMsg) (tea.Model, tea.Cmd) {
 // been rebuilt: off the goroutine drawing the screen, with what it says
 // arriving as notes. Nil where nothing would fire.
 func (m Model) postCompactCmd(trigger string, before int) tea.Cmd {
-	if !m.hooks.Has(hook.PostCompact, "") {
+	if !m.wiring.Hooks.Has(hook.PostCompact, "") {
 		return nil
 	}
-	hooks, at := m.hooks, m.hookPos()
+	hooks, at := m.wiring.Hooks, m.hookPos()
 	c := hook.Compaction{Trigger: trigger, BeforePct: before, AfterPct: m.contextPercent()}
 	return func() tea.Msg {
 		return hookNotesMsg{verdict: hooks.PostCompact(context.Background(), at, c)}
@@ -628,14 +628,14 @@ func (m Model) resumeAfterCompact(cmd tea.Cmd) (tea.Model, tea.Cmd) {
 // A host that cannot survey the checkout leaves the prompt alone, which is
 // what every front-end without one did before there was anything to ask.
 func (m *Model) regenerateWorkspace() {
-	if m.workspaceBlock == nil {
+	if m.wiring.WorkspaceBlock == nil {
 		return
 	}
 	msgs := m.agent.Messages()
 	if len(msgs) == 0 || msgs[0].Role != provider.RoleSystem {
 		return
 	}
-	rebuilt := project.ReplaceBlock(msgs[0].Content, m.workspaceBlock())
+	rebuilt := project.ReplaceBlock(msgs[0].Content, m.wiring.WorkspaceBlock())
 	if rebuilt == msgs[0].Content {
 		return
 	}

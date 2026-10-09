@@ -22,14 +22,6 @@ const modelUsage = "usage: /model <name> · /model default [name] · /model agen
 // and a second copy of the same function would be a second thing to install.
 type ConfigWriter func(key, value string) error
 
-// WithConfigWriter installs the writer that makes a setting stick. A session
-// without one still applies what it is told; it just says the change is for
-// this session only rather than pretending it was saved.
-func (m Model) WithConfigWriter(w ConfigWriter) Model {
-	m.writeConfig = w
-	return m
-}
-
 // Defaults describes the session's persisted model defaults.
 type Defaults struct {
 	// Model is the configured default session model (provider.model).
@@ -62,12 +54,6 @@ type Defaults struct {
 	File string
 }
 
-// WithDefaults installs the persisted-defaults surface.
-func (m Model) WithDefaults(d Defaults) Model {
-	m.defaults = d
-	return m
-}
-
 // setModelDefault handles `/model default [name]` and `/model agents [name]`.
 // With no name it reports the current setting; with one it persists it.
 func (m *Model) setModelDefault(which string, rest []string) string {
@@ -92,11 +78,11 @@ func (m *Model) setModelDefault(which string, rest []string) string {
 	if len(rest) > 1 {
 		return "model names cannot contain spaces. " + modelUsage
 	}
-	if m.writeConfig == nil {
+	if m.wiring.ConfigWriter == nil {
 		return "this session cannot write the config file, so the default was not saved"
 	}
 	name := rest[0]
-	if err := m.writeConfig(key, name); err != nil {
+	if err := m.wiring.ConfigWriter(key, name); err != nil {
 		return failed("model", "could not save the default: "+err.Error())
 	}
 	file := m.defaults.File

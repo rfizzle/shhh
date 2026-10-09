@@ -30,7 +30,7 @@ func TestProgram_NoticesSpeakInTheReadmesVoice(t *testing.T) {
 		Class: provider.ClassAuth, Status: 401, Provider: "openai",
 		Message: "Incorrect API key provided",
 	}}
-	tm := runProgramAt(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p)), 110, 40)
+	tm := runProgramAt(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{}), 110, 40)
 
 	tm.Type("/copy")
 	tm.Send(programEnter)

@@ -16,9 +16,7 @@ import (
 func inboundProgram(t *testing.T, mode agent.Mode, p *programProvider) (*program, chan<- InboundLine) {
 	t.Helper()
 	lines := make(chan InboundLine, 1)
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p)).
-		WithApprovalMode(mode, nil).
-		WithInbound(Inbound{Lines: lines})
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{Mode: mode}).WithInbound(Inbound{Lines: lines})
 	return runProgramAt(t, m, 110, 40), lines
 }
 

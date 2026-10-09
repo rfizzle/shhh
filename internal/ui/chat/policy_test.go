@@ -53,10 +53,11 @@ func TestAllowlistMatches(t *testing.T) {
 func execModel(t *testing.T, ran *[]string) Model {
 	t.Helper()
 	m := gatedModel(t, nil, nil)
-	return m.WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
+	m.wiring.Runner = legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 		*ran = append(*ran, cmd)
 		return "ok", 0
-	}))
+	})
+	return m
 }
 
 // driveCmdDone extracts the cmdDoneMsg produced by an exec approval cmd.
@@ -73,7 +74,8 @@ func driveCmdDone(t *testing.T, cmd tea.Cmd) cmdDoneMsg {
 
 func TestPolicy_AllowlistAutoApprovesCommand(t *testing.T) {
 	var ran []string
-	m := execModel(t, &ran).WithCommandAllowlist([]string{"echo"})
+	m := execModel(t, &ran)
+	m.policy.allowlist = []string{"echo"}
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
@@ -102,7 +104,8 @@ func TestPolicy_AllowlistAutoApprovesCommand(t *testing.T) {
 
 func TestPolicy_ChainedCommandNotAutoApproved(t *testing.T) {
 	var ran []string
-	m := execModel(t, &ran).WithCommandAllowlist([]string{"echo"})
+	m := execModel(t, &ran)
+	m.policy.allowlist = []string{"echo"}
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi && cat secrets.txt"}`},
@@ -119,7 +122,8 @@ func TestPolicy_ChainedCommandNotAutoApproved(t *testing.T) {
 
 func TestPolicy_FlaggedCommandAlwaysPrompts(t *testing.T) {
 	var ran []string
-	m := execModel(t, &ran).WithCommandAllowlist([]string{"git"})
+	m := execModel(t, &ran)
+	m.policy.allowlist = []string{"git"}
 	m.policy.allCommands = true
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
@@ -380,7 +384,8 @@ func TestMode_AcceptEditsAutoAppliesEditsButPromptsCommands(t *testing.T) {
 
 func TestMode_AutoAllowsEditsAndAllowlistedCommands(t *testing.T) {
 	var ran []string
-	m := execModel(t, &ran).WithCommandAllowlist([]string{"echo"})
+	m := execModel(t, &ran)
+	m.policy.allowlist = []string{"echo"}
 	m.policy.mode = agent.ModeAuto
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
@@ -409,7 +414,8 @@ func TestMode_AutoAllowsEditsAndAllowlistedCommands(t *testing.T) {
 
 func TestMode_AutoFlaggedCommandStillPrompts(t *testing.T) {
 	var ran []string
-	m := execModel(t, &ran).WithCommandAllowlist([]string{"git"})
+	m := execModel(t, &ran)
+	m.policy.allowlist = []string{"git"}
 	m.policy.mode = agent.ModeAuto
 	m.policy.allCommands = true
 
@@ -424,7 +430,8 @@ func TestMode_AutoFlaggedCommandStillPrompts(t *testing.T) {
 
 func TestMode_PlanRefusesGatedCalls(t *testing.T) {
 	var ran []string
-	m := execModel(t, &ran).WithCommandAllowlist([]string{"echo"})
+	m := execModel(t, &ran)
+	m.policy.allowlist = []string{"echo"}
 	m.policy.mode = agent.ModePlan
 	m.policy.allEdits = true
 	m.policy.allCommands = true
@@ -568,7 +575,7 @@ func TestMode_GitToolIsReadOnlyInEveryMode(t *testing.T) {
 
 func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
@@ -586,7 +593,8 @@ func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
 	}
 
 	// A configured cycle is honored, wrapping around.
-	m = m.WithApprovalMode(agent.ModeManual, []agent.Mode{agent.ModeManual, agent.ModePlan})
+	m.policy.mode = agent.ModeManual
+	m.policy.cycle = []agent.Mode{agent.ModeManual, agent.ModePlan}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	m = updated.(Model)
 	if m.policy.mode != agent.ModePlan {
@@ -620,7 +628,8 @@ func TestMode_TheSegmentNamesTheMode(t *testing.T) {
 		{agent.ModePlan, "⏸ plan", "read-only"},
 	} {
 		t.Run(tc.mode.String(), func(t *testing.T) {
-			m := gatedModel(t, nil, nil).WithApprovalMode(tc.mode, nil)
+			m := gatedModel(t, nil, nil)
+			m.policy.mode = tc.mode
 			bar := m.renderStatusBar(80)
 			if !strings.Contains(bar, tc.want) {
 				t.Fatalf("the rail should state %q, got %q", tc.want, bar)
@@ -676,7 +685,7 @@ func TestPolicy_StatusBarAndHelpReflectPolicy(t *testing.T) {
 	}
 
 	m.policy.allEdits = true
-	m = m.WithCommandAllowlist([]string{"git status"})
+	m.policy.allowlist = []string{"git status"}
 	if !strings.Contains(m.renderStatusBar(80), "granted: edits, allowlist") {
 		t.Fatalf("status bar should show the active policy, got %q", m.renderStatusBar(80))
 	}
@@ -712,7 +721,8 @@ func TestReadOnlyCommandRunsWithoutPrompt(t *testing.T) {
 
 func TestReadOnlyAutoDisabledPrompts(t *testing.T) {
 	var ran []string
-	m := execModel(t, &ran).WithReadOnlyCommands(nil, true)
+	m := execModel(t, &ran)
+	m.policy.readOnlyExtra, m.policy.readOnlyDisabled = nil, true
 	m.policy.mode = agent.ModeManual
 	m.state = stateStreaming
 
@@ -726,12 +736,13 @@ func TestReadOnlyAutoDisabledPrompts(t *testing.T) {
 
 func TestModelDefaults(t *testing.T) {
 	var wrote [][2]string
-	m := New(nil, mockStream).
-		WithConfigWriter(func(key, value string) error {
+	m := New(nil, mockStream, Wiring{
+		ConfigWriter: func(key, value string) error {
 			wrote = append(wrote, [2]string{key, value})
 			return nil
-		}).
-		WithDefaults(Defaults{Model: "gpt-4o"})
+		},
+		Defaults: Defaults{Model: "gpt-4o"},
+	})
 	m.modelName = "gpt-4o"
 
 	if _, out := m.handleSlashCommand("/model default"); !strings.Contains(out, "gpt-4o") {
@@ -751,7 +762,7 @@ func TestModelDefaults(t *testing.T) {
 		t.Fatalf("persisted %v, want %v", wrote, want)
 	}
 	// A session with no writer says so instead of pretending it stuck.
-	plain := New(nil, mockStream)
+	plain := New(nil, mockStream, Wiring{})
 	if _, out := plain.handleSlashCommand("/model default o3"); !strings.Contains(out, "cannot write") {
 		t.Fatalf("expected a not-persisted notice, got %q", out)
 	}
@@ -865,7 +876,8 @@ func TestGrant_RevokeOneCategoryLeavesTheOther(t *testing.T) {
 }
 
 func TestGrant_ConfigsAllowlistIsNotTheSessionsToRevoke(t *testing.T) {
-	m := readyModel(t).WithCommandAllowlist([]string{"make"})
+	m := readyModel(t)
+	m.policy.allowlist = []string{"make"}
 	m.policy.commands = []string{"go build"}
 
 	m.revokeCommand(nil)
@@ -880,9 +892,9 @@ func TestGrant_ConfigsAllowlistIsNotTheSessionsToRevoke(t *testing.T) {
 func TestDenylist_RefusesInEveryModeBeforeACardIsDrawn(t *testing.T) {
 	for _, mode := range []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto, agent.ModePlan} {
 		var ran []string
-		m := execModel(t, &ran).
-			WithCommandAllowlist([]string{"git push"}).
-			WithCommandDenylist([]string{"git push"})
+		m := execModel(t, &ran)
+		m.policy.allowlist = []string{"git push"}
+		m.policy.denylist = []string{"git push"}
 		m.policy.mode = mode
 		m.policy.allCommands = true
 
@@ -931,7 +943,8 @@ func TestDenylist_RefusesInEveryModeBeforeACardIsDrawn(t *testing.T) {
 // deny list is one of two lists that could have answered.
 func TestDenylist_WhyNamesTheListThatAnswered(t *testing.T) {
 	var ran []string
-	m := execModel(t, &ran).WithCommandDenylist([]string{"terraform apply"})
+	m := execModel(t, &ran)
+	m.policy.denylist = []string{"terraform apply"}
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_t", Name: "execute_command", Arguments: `{"command":"terraform apply -auto-approve"}`},
 	}})
@@ -982,7 +995,7 @@ func TestPolicy_AlwaysAllowOneHostViaKey(t *testing.T) {
 	executor := func(name string, args json.RawMessage) (string, error) { return "page text", nil }
 	m := gatedModel(t, executor, fetchPreviews())
 	var pushed []string
-	m = m.WithHostGrants(func(hosts []string) { pushed = hosts })
+	m.wiring.HostGrants = func(hosts []string) { pushed = hosts }
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		fetchCall("call_1", "https://docs.python.org/3/library/json.html"),
@@ -1054,7 +1067,8 @@ func declineCard(t *testing.T, m Model) Model {
 func TestPolicy_HostRulesAnswerBeforeTheCard(t *testing.T) {
 	executor := func(name string, args json.RawMessage) (string, error) { return "page text", nil }
 
-	allowed := gatedModel(t, executor, fetchPreviews()).WithHostRules([]string{"pkg.go.dev"}, nil)
+	allowed := gatedModel(t, executor, fetchPreviews())
+	allowed.policy.allowHosts, allowed.policy.denyHosts = []string{"pkg.go.dev"}, nil
 	updated, _ := allowed.Update(toolCallsMsg{calls: []provider.ToolCall{
 		fetchCall("call_a", "https://pkg.go.dev/context"),
 	}})
@@ -1062,8 +1076,8 @@ func TestPolicy_HostRulesAnswerBeforeTheCard(t *testing.T) {
 		t.Fatal("a host on web.allow_hosts was put to the user anyway")
 	}
 
-	denied := gatedModel(t, executor, fetchPreviews()).
-		WithHostRules([]string{"paste.example.test"}, []string{"paste.example.test"})
+	denied := gatedModel(t, executor, fetchPreviews())
+	denied.policy.allowHosts, denied.policy.denyHosts = []string{"paste.example.test"}, []string{"paste.example.test"}
 	denied.policy.mode = agent.ModeAuto
 	denied.policy.hosts = []string{"paste.example.test"}
 	updated, _ = denied.Update(toolCallsMsg{calls: []provider.ToolCall{
@@ -1090,7 +1104,7 @@ func TestPolicy_HostRulesAnswerBeforeTheCard(t *testing.T) {
 // a grant nobody can take back does not have.
 func TestPolicy_HostGrantsAreListedCountedAndRevoked(t *testing.T) {
 	m := gatedModel(t, nil, fetchPreviews())
-	m = m.WithHostRules([]string{"crates.io"}, nil)
+	m.policy.allowHosts, m.policy.denyHosts = []string{"crates.io"}, nil
 	if got := m.grantHost("docs.python.org", grantOffer{length: forThisSession}); got != "docs.python.org" {
 		t.Fatalf("grantHost returned %q", got)
 	}

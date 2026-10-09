@@ -195,10 +195,10 @@ func (m Model) notifyStatus() string {
 func (m *Model) setNotify(on bool) string {
 	m.notifyOn = on
 	note := notifyNote(on)
-	if m.writeConfig == nil {
+	if m.wiring.ConfigWriter == nil {
 		return note + "\nThis session cannot write the config file, so it is for this session only."
 	}
-	if err := m.writeConfig("appearance.notify", strconv.FormatBool(on)); err != nil {
+	if err := m.wiring.ConfigWriter("appearance.notify", strconv.FormatBool(on)); err != nil {
 		return note + "\nIt could not be saved: " + err.Error()
 	}
 	return note + " Saved — new sessions start this way."
@@ -234,12 +234,4 @@ func (m *Model) notifyCommand(parts []string) string {
 		return "desktop notifications are already " + m.notifyStatus()
 	}
 	return m.setNotify(on)
-}
-
-// WithNotify sets whether the session may raise desktop notifications
-// (appearance.notify). Hosts that do not call it get them, which is the
-// default the config resolves to.
-func (m Model) WithNotify(on bool) Model {
-	m.notifyOn = on
-	return m
 }

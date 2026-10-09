@@ -27,7 +27,8 @@ func TestProgram_TheSessionsOwnStepsReachTheRail(t *testing.T) {
 			steps("s2", `{"steps":[{"title":"Read the loop","done":true},{"title":"Raise the ceiling","done":true},{"title":"Test again"}]}`)}, reads("round.go")...)},
 		programTurn{text: "Changed round.go and round_test.go."},
 	)
-	m = m.WithWorkspace(dir).WithToolExecutor(plan.WrapStepsExecutor(subagent.RootedExecutor(dir, tools.Execute)))
+	m.wiring.Workspace = dir
+	m.agent.SetExecutor(plan.WrapStepsExecutor(subagent.RootedExecutor(dir, tools.Execute)))
 	tm := runProgramAt(t, m, 130, 40)
 
 	send(tm, "raise the round ceiling")
@@ -47,7 +48,8 @@ func TestProgram_BarePlanOpensTheApprovedPlansChecklist(t *testing.T) {
 		programTurn{text: "Locate the round accounting\n", calls: reads("loop.go")},
 		programTurn{text: "The counter is read at the top of the loop."},
 	)
-	m = m.WithWorkspace(dir).WithToolExecutor(subagent.RootedExecutor(dir, tools.Execute))
+	m.wiring.Workspace = dir
+	m.agent.SetExecutor(subagent.RootedExecutor(dir, tools.Execute))
 	tm := runProgramAt(t, m, 130, 40)
 
 	for range 4 {

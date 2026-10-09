@@ -19,8 +19,8 @@ func TestProgram_TheStartScreenOffersTheBranchAndTheReadyItem(t *testing.T) {
 	info.Project.Dirty = 0
 	info.Branch = StartBranch{Ahead: 2}
 	info.Ready = StartReady{Present: true, Slug: "cache-ttl", Title: "Give the cache a lifetime", Noun: "story"}
-	m, _ := scriptedSession(programTurn{text: "It would take a lifetime field and an eviction pass."})
-	tm := runProgramAt(t, m.WithStartScreen(info), 110, 40)
+	m, _ := scriptedSessionWith(Wiring{Start: &info}, programTurn{text: "It would take a lifetime field and an eviction pass."})
+	tm := runProgramAt(t, m, 110, 40)
 
 	waitForAll(t, tm, "Some things worth doing first",
 		"review what this branch changes before it goes up", "2 commits ahead · not pushed",
@@ -47,8 +47,8 @@ func TestProgram_TheStartScreenSaysTheInstructionFileNamesAFileThatIsGone(t *tes
 	info.Branch = StartBranch{Ahead: 2}
 	info.Ready = StartReady{Present: true, Slug: "cache-ttl", Title: "Give the cache a lifetime", Noun: "story"}
 	info.Project.Instruction = project.InstructionCheck{File: "AGENTS.md", Modified: startNow, Gone: 1}
-	m, _ := scriptedSession(programTurn{text: "Nothing is sent."})
-	tm := runProgramAt(t, m.WithStartScreen(info), 110, 40)
+	m, _ := scriptedSessionWith(Wiring{Start: &info}, programTurn{text: "Nothing is sent."})
+	tm := runProgramAt(t, m, 110, 40)
 
 	waitForAll(t, tm, "Some things worth doing first",
 		"AGENTS.md — in the system prompt · names 1 file that is gone",
@@ -74,8 +74,9 @@ func TestProgram_AReadingWritesTheStartScreensReadOnlyRows(t *testing.T) {
 	info.Ready = StartReady{Present: true, Slug: "cache-ttl", Title: "Give the cache a lifetime", Noun: "story"}
 	written := &suggestProvider{line: `{"offers":[{"title":"say what cache-work still lacks for its lifetime","prompt":"Read the commits on cache-work and say what the lifetime still lacks."},{"title":"check the cache-ttl test against the cache package","prompt":"Read cache-ttl and the cache package and say whether TestTTL exists."}]}`}
 	m, _ := scriptedSession(programTurn{text: "The lifetime still lacks an eviction pass."})
-	m = m.WithStartScreen(info).WithSuggester(nil, true).
-		WithStartOffers(agent.NewStartOfferer(written, agent.StartOffersConfig{Model: "fast"}), nil)
+	m.start = new(info)
+	m.suggest.writer, m.suggest.on = nil, true
+	m.startOffers.writer, m.startOffers.gather = agent.NewStartOfferer(written, agent.StartOffersConfig{Model: "fast"}), nil
 	tm := runProgramAt(t, m, 110, 40)
 
 	waitForAll(t, tm, "say what cache-work still lacks for its lifetime",

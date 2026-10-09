@@ -55,17 +55,9 @@ type accountDoneMsg struct {
 	verdict     agent.AccountVerdict
 }
 
-// WithAccountant wires the writer of the standing account and how many turns
-// pass between two readings. A nil writer, or every at zero, asks nothing.
-func (m Model) WithAccountant(a *agent.Accountant, every int) Model {
-	m.account.writer = a
-	m.account.every = every
-	return m
-}
-
 // accountEnabled reports whether readings are taken at all.
 func (m Model) accountEnabled() bool {
-	return m.account.every > 0 && m.account.writer.Enabled() && m.db != nil
+	return m.account.every > 0 && m.account.writer.Enabled() && m.wiring.DB != nil
 }
 
 // noteAccountTurn counts a closed turn toward the next reading. It is called
@@ -122,10 +114,10 @@ func (m *Model) finishAccount(msg accountDoneMsg) tea.Cmd {
 		return nil
 	}
 	m.compactSummary = msg.verdict.Account
-	if m.db == nil {
+	if m.wiring.DB == nil {
 		return nil
 	}
-	db, slot, dir := m.db, m.sessionName, m.workspace
+	db, slot, dir := m.wiring.DB, m.sessionName, m.wiring.Workspace
 	r := storage.ChatResume{Summary: m.compactSummary, Steps: m.workSteps.Encode()}
 	return func() tea.Msg {
 		// The resume columns are one write (storage.SetChatResume), so the

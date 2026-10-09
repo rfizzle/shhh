@@ -30,8 +30,14 @@ func completeExchange(t *testing.T, m Model, userText, reply string) Model {
 
 func newRewindModel(t *testing.T) Model {
 	t.Helper()
+	return newRewindModelWith(t, Wiring{})
+}
+
+// newRewindModelWith is newRewindModel built from w.
+func newRewindModelWith(t *testing.T, w Wiring) Model {
+	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, multiTokenStream("ok"))
+	m := New(msgs, multiTokenStream("ok"), w)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	return updated.(Model)
 }
@@ -66,9 +72,10 @@ func TestCheckpoints_RecordedPerUserTurn(t *testing.T) {
 }
 
 func TestCheckpoints_GitSnapshotRecorded(t *testing.T) {
-	m := newRewindModel(t).WithGitSnapshots(func() GitSnapshot {
+	m := newRewindModel(t)
+	m.wiring.GitSnapshots = func() GitSnapshot {
 		return GitSnapshot{Repo: true, Head: "abc123def456789", StatusHash: "h", DirtyPaths: 2}
-	})
+	}
 	m = completeExchange(t, m, "hello", "hi")
 
 	cp := m.checkpoints[0]
@@ -120,7 +127,9 @@ func TestCheckpoints_RebuiltSkipTheMessagesTheSessionWrote(t *testing.T) {
 
 func TestRewindNumbered_TruncatesAndBranches(t *testing.T) {
 	db := rewindTestDB(t)
-	m := newRewindModel(t).WithDB(db)
+	m := newRewindModel(t)
+	m.wiring.DB = db
+	m.bindStores()
 	m = completeExchange(t, m, "first question", "answer one")
 	m = completeExchange(t, m, "second question", "answer two")
 	root := m.sessionName
@@ -244,7 +253,9 @@ func TestRewind_BarePicker_EscKeepsConversation(t *testing.T) {
 
 func TestRewind_BarePicker_SelectRewinds(t *testing.T) {
 	db := rewindTestDB(t)
-	m := newRewindModel(t).WithDB(db)
+	m := newRewindModel(t)
+	m.wiring.DB = db
+	m.bindStores()
 	m = completeExchange(t, m, "first", "one")
 	m = completeExchange(t, m, "second", "two")
 	root := m.sessionName
@@ -282,11 +293,12 @@ func TestRewind_NoCheckpoints(t *testing.T) {
 func TestRewind_GitDivergenceReported(t *testing.T) {
 	heads := []string{"aaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbb"}
 	call := 0
-	m := newRewindModel(t).WithGitSnapshots(func() GitSnapshot {
+	m := newRewindModel(t)
+	m.wiring.GitSnapshots = func() GitSnapshot {
 		h := heads[min(call, len(heads)-1)]
 		call++
 		return GitSnapshot{Repo: true, Head: h, StatusHash: "s", DirtyPaths: 0}
-	})
+	}
 	m = completeExchange(t, m, "change stuff", "done")
 
 	note := m.rewindToTurn(0)
@@ -297,7 +309,9 @@ func TestRewind_GitDivergenceReported(t *testing.T) {
 
 func TestBranches_ListAndSwitch(t *testing.T) {
 	db := rewindTestDB(t)
-	m := newRewindModel(t).WithDB(db)
+	m := newRewindModel(t)
+	m.wiring.DB = db
+	m.bindStores()
 	m = completeExchange(t, m, "first question", "answer one")
 	m = completeExchange(t, m, "second question", "answer two")
 	root := m.sessionName
@@ -365,7 +379,9 @@ func TestBranches_NoDB(t *testing.T) {
 
 func TestBranches_NoneYet(t *testing.T) {
 	db := rewindTestDB(t)
-	m := newRewindModel(t).WithDB(db)
+	m := newRewindModel(t)
+	m.wiring.DB = db
+	m.bindStores()
 	if _, result := m.handleSlashCommand("/branches"); !strings.Contains(result, "no branches yet") {
 		t.Fatalf("expected no-branches notice, got %q", result)
 	}
@@ -379,8 +395,7 @@ func TestLoadConversation_RebuildsCheckpoints(t *testing.T) {
 		{Role: provider.RoleUser, Content: "follow-up"},
 		{Role: provider.RoleAssistant, Content: "more"},
 	}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithResumedMessages("", saved)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{}).WithResumedMessages("", saved)
 
 	if len(m.checkpoints) != 2 {
 		t.Fatalf("resumed sessions should have rewind checkpoints, got %d", len(m.checkpoints))
@@ -418,7 +433,11 @@ func rewindChangeModel(t *testing.T, db *storage.DB, store *changeset.Store, nam
 	store.Persist(db)
 	m := newRewindModel(t)
 	m.sessionName = name
-	return m.WithDB(db).WithChangeset(store, nil)
+	m.wiring.DB = db
+	m.bindStores()
+	m.changes, m.wiring.Tracker = store, nil
+	m.bindSlot()
+	return m
 }
 
 // recordEdit writes content and records the edit against the turn in flight,
@@ -678,7 +697,8 @@ func TestRewind_ATreePastTheBoundIsNotReadAsUnchanged(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ws := treeRepo(t)
 			tc.fill(t, ws)
-			m := newRewindModel(t).WithGitSnapshots(unhashableSnapshots(ws))
+			m := newRewindModel(t)
+			m.wiring.GitSnapshots = unhashableSnapshots(ws)
 			m = completeExchange(t, m, "change stuff", "done")
 
 			if !m.checkpoints[0].git.Unhashed {
@@ -707,7 +727,8 @@ func TestRewind_WithinTheBoundTheReadingIsUnchanged(t *testing.T) {
 	if err := os.WriteFile(dirty, []byte("first\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	m := newRewindModel(t).WithGitSnapshots(unhashableSnapshots(ws))
+	m := newRewindModel(t)
+	m.wiring.GitSnapshots = unhashableSnapshots(ws)
 	m = completeExchange(t, m, "change stuff", "done")
 
 	if m.checkpoints[0].git.Unhashed {
@@ -729,10 +750,10 @@ func TestRewind_WithinTheBoundTheReadingIsUnchanged(t *testing.T) {
 // so a tree the fingerprint could not read is still offered one.
 func TestRewind_ATreePastTheBoundStillOffersTheRestore(t *testing.T) {
 	db := rewindTestDB(t)
-	m := rewindChangeModel(t, db, changeset.New(0), "past the bound").
-		WithGitSnapshots(func() GitSnapshot {
-			return GitSnapshot{Repo: true, Head: "abc123def4567", StatusHash: "s", DirtyPaths: 900, Unhashed: true}
-		})
+	m := rewindChangeModel(t, db, changeset.New(0), "past the bound")
+	m.wiring.GitSnapshots = func() GitSnapshot {
+		return GitSnapshot{Repo: true, Head: "abc123def4567", StatusHash: "s", DirtyPaths: 900, Unhashed: true}
+	}
 	dir := t.TempDir()
 	kept := filepath.Join(dir, "kept.go")
 	if err := os.WriteFile(kept, []byte("one\n"), 0o644); err != nil {

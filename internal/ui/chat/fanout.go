@@ -33,8 +33,8 @@ type fanoutBatch struct{ batch int }
 // from here rather than guessed at in the supervisor.
 func (m *Model) beginSpawnBatch() {
 	m.spawnRow = 0
-	if m.subagents != nil {
-		m.subagents.BeginBatch()
+	if m.wiring.Subagents != nil {
+		m.wiring.Subagents.BeginBatch()
 	}
 }
 
@@ -47,12 +47,12 @@ func (m *Model) beginSpawnBatch() {
 // mode, the changeset and an approved plan's checklist all address entries
 // by, so a fan-out must not shift them.
 func (m *Model) appendSpawnEntry(e entry) {
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		m.appendEntry(e)
 		return
 	}
-	batch := m.subagents.Batch()
-	if m.subagents.BatchSize(batch) < 2 {
+	batch := m.wiring.Subagents.Batch()
+	if m.wiring.Subagents.BatchSize(batch) < 2 {
 		// Where the row landed, not where the feed ended: a spawn is a gated
 		// call, so its row goes back among the round's own rows (queue.go).
 		m.spawnRow = m.appendEntry(e) + 1
@@ -69,11 +69,11 @@ func (m *Model) appendSpawnEntry(e entry) {
 
 // fanoutStatuses is the batch's children, in spawn order.
 func (m Model) fanoutStatuses(b *fanoutBatch) []subagent.Status {
-	if b == nil || m.subagents == nil {
+	if b == nil || m.wiring.Subagents == nil {
 		return nil
 	}
 	var out []subagent.Status
-	for _, st := range m.subagents.Snapshot() {
+	for _, st := range m.wiring.Subagents.Snapshot() {
 		if st.Batch == b.batch {
 			out = append(out, st)
 		}
@@ -248,10 +248,10 @@ func (m Model) childProgress(st subagent.Status) components.AgentProgress {
 // is. A role the supervisor no longer knows is taken as not writing: the word
 // it decides is `writing` or `running`, and neither is a claim worth guarding.
 func (m Model) childWrites(st subagent.Status) bool {
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return false
 	}
-	p, err := m.subagents.Profiles().Parse(string(st.Role))
+	p, err := m.wiring.Subagents.Profiles().Parse(string(st.Role))
 	return err == nil && p.Writes
 }
 
@@ -292,7 +292,7 @@ func childNote(st subagent.Status) string {
 // be whatever the child had said so far, which is not a report and is not
 // what the first line under the lane is the first line of.
 func (m Model) childReport(st subagent.Status) string {
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return ""
 	}
 	switch st.State {
@@ -300,7 +300,7 @@ func (m Model) childReport(st subagent.Status) string {
 	default:
 		return ""
 	}
-	report, _, ok := m.subagents.FinalReport(st.Name)
+	report, _, ok := m.wiring.Subagents.FinalReport(st.Name)
 	if !ok {
 		return ""
 	}
@@ -390,7 +390,7 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 			State:      p.State,
 			Name:       st.Name,
 			Depth:      depth[st.Name],
-			Under:      len(m.subagents.Under(st.Name)),
+			Under:      len(m.wiring.Subagents.Under(st.Name)),
 			Task:       firstLine(st.Task),
 			Step:       p.Step,
 			Steps:      p.Steps,
@@ -428,7 +428,7 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 		if report := m.childReport(st); report != "" {
 			// What the child answered before each follow-up, folded above
 			// the answer that replaced it and headed with its turn.
-			for _, r := range m.subagents.EarlierReports(st.Name) {
+			for _, r := range m.wiring.Subagents.EarlierReports(st.Name) {
 				lane.Earlier = append(lane.Earlier, components.LaneReport{
 					Turn: r.Turn, Lines: strings.Split(strings.TrimSpace(r.Text), "\n")})
 			}
@@ -461,7 +461,7 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 	// reading mode's cursor alike, because the manager has a chord and no
 	// letter — the chord answers in both places (focus.go).
 	block.Keys = []components.TurnKey{{Key: keys.Bracket(keys.Draft.Agents), Label: "agents"}}
-	block.Spawned, block.SpawnLimit = m.subagents.Spawned()
+	block.Spawned, block.SpawnLimit = m.wiring.Subagents.Spawned()
 	return block
 }
 
@@ -644,8 +644,8 @@ func (m Model) childSpendLabel(st subagent.Status) string {
 	if st.Spend.Priced {
 		return formatCost(st.Spend.Cost)
 	}
-	if m.prices != nil && st.Model != "" {
-		if in, out, found := m.prices.Cost(st.Model, st.Spend.In, st.Spend.Out); found {
+	if m.wiring.Prices != nil && st.Model != "" {
+		if in, out, found := m.wiring.Prices.Cost(st.Model, st.Spend.In, st.Spend.Out); found {
 			return formatCost(in + out)
 		}
 	}

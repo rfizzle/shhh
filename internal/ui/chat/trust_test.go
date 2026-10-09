@@ -30,7 +30,8 @@ func TestStartScreenNamesWhatWasWithheld(t *testing.T) {
 	// A checkout that was trusted, or that declares nothing, says nothing
 	// here: a row that reads the same on every session is a row nobody
 	// reads by the third one.
-	if got := m.WithStartScreen(startFixture()).renderStartScreen(110); strings.Contains(got, "trust ") {
+	m.start = new(startFixture())
+	if got := m.renderStartScreen(110); strings.Contains(got, "trust ") {
 		t.Errorf("a trusted checkout drew a trust row:\n%s", got)
 	}
 }

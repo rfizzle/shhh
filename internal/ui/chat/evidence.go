@@ -24,21 +24,11 @@ type Evidence struct {
 	Keep func(tool, content string) (string, bool)
 }
 
-// WithEvidence enables tool-output reduction, the /evidence command, and the
-// recovery of what a window trim elides.
-func (m Model) WithEvidence(e Evidence) Model {
-	m.evidence = e
-	if m.agent != nil {
-		m.agent.StoreElided(e.Keep)
-	}
-	return m
-}
-
 // reduceResult applies the reduction pipeline to a tool result, or returns it
 // unchanged when no pipeline is wired.
 func (m Model) reduceResult(tool, result string) string {
-	if m.evidence.Reduce == nil {
+	if m.wiring.Evidence.Reduce == nil {
 		return result
 	}
-	return m.evidence.Reduce(tool, result)
+	return m.wiring.Evidence.Reduce(tool, result)
 }

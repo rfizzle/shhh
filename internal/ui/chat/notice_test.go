@@ -104,7 +104,7 @@ func pictureModel(t *testing.T) Model {
 	// on either.
 	shot := fixedPNG(t, image.NewNRGBA(image.Rect(0, 0, 32, 16)), 128)
 	m := focusModel(t)
-	m = m.WithMouse(true)
+	m.pointer.mouseOn = true
 	m.transcript = nil
 	m.appendEntry(entry{kind: entryUser, text: "look at the screenshot"})
 	m.appendEntry(entry{kind: entryAssistant, text: "Reading the capture"})

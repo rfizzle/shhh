@@ -29,10 +29,12 @@ func resumeModel(t *testing.T) Model {
 		"gpt-4.1":     {InputCostPerToken: 0.000002, OutputCostPerToken: 0.000008},
 	})
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream).
-		WithPricing(table, "gpt-4o").
-		WithModelOptions([]string{"gpt-4o", "gpt-4.1", "gpt-4o-mini"}).
-		WithModelSwitcher(func(string) {})
+	m := New(msgs, mockStream, Wiring{
+		Prices:       table,
+		ModelName:    "gpt-4o",
+		ModelOptions: []string{"gpt-4o", "gpt-4.1", "gpt-4o-mini"},
+		SwitchModel:  func(string) {},
+	})
 	m.providerName = "openai"
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
 	return updated.(Model)
@@ -371,7 +373,7 @@ func TestRetryWait_FallbackFinishesOnACheaperModel(t *testing.T) {
 	// cost attribution stays honest. The gate is what records a request
 	// against the model it went to.
 	ledger := meter.New(nil)
-	after = after.WithLedger(ledger)
+	after.wiring.Ledger = ledger
 	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", provider.Usage{PromptTokens: 400, CompletionTokens: 20})
 	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4.1", provider.Usage{PromptTokens: 100, CompletionTokens: 50})
 	var models []string
@@ -476,11 +478,12 @@ func indexOfKind(t *testing.T, m Model, kind entryKind) int {
 func TestRetryWait_IsOnTheRecord(t *testing.T) {
 	type signal struct{ code, reason string }
 	var signals []signal
-	m := resumeModel(t).WithObserver(observe.Observer{
+	m := resumeModel(t)
+	m.wiring.Observer = observe.Observer{
 		Signal: func(_ observe.Pos, code, reason string) {
 			signals = append(signals, signal{code, reason})
 		},
-	})
+	}
 	updated, _ := streamed(m, "").Update(streamErrMsg{err: rateLimit(time.Second)})
 	if updated.(Model).turnState() != stateRetryWait {
 		t.Fatal("a rate limit should put the turn on a wait")

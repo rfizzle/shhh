@@ -39,7 +39,7 @@ const searchHits = "internal/agent/loop.go:88: \t\treturn ErrRoundLimit\n" +
 func activityModel(t *testing.T) Model {
 	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	return updated.(Model)
 }
@@ -223,10 +223,11 @@ func TestActivityRow_ReportLinkIsTheOutcome(t *testing.T) {
 // marked read-only draws as a read; any other server's call is ⇄ with the
 // rail, because shhh cannot see what the far end did.
 func TestActivityKinds_ServerCallsDrawByTheUsersWord(t *testing.T) {
-	m := activityModel(t).WithMCP(MCP{
+	m := activityModel(t)
+	m.mcp = MCP{
 		Has:      func(name string) bool { return strings.HasPrefix(name, "docs__") || strings.HasPrefix(name, "gh__") },
 		ReadOnly: func(name string) bool { return strings.HasPrefix(name, "docs__") },
-	})
+	}
 	if got := m.toolKind("docs__search"); got != components.ActivityTool {
 		t.Fatalf("read-only server call kind = %d, want a read", got)
 	}
@@ -294,8 +295,8 @@ func TestActivityRow_FailedAutoExpandsBounded(t *testing.T) {
 // stop being distinguishable from the ones they were not
 // (docs/interface/principles.md#two-denials-are-not-one-denial).
 func TestActivityRow_ACardYouAnsweredNamesYou(t *testing.T) {
-	m := gatedModel(t, nil, nil).
-		WithRunner(legacyRunner(func(context.Context, string) (string, int) { return "ok", 0 }))
+	m := gatedModel(t, nil, nil)
+	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) { return "ok", 0 })
 	m, _ = runOnce(t, m, "go test ./internal/agent/...")
 
 	answered := lastCommandRow(t, m, 110)
@@ -427,7 +428,7 @@ func TestSlashUI_VerbositySetting(t *testing.T) {
 func TestSlashUI_VerbosityIsSaved(t *testing.T) {
 	m := activityModel(t)
 	written := map[string]string{}
-	m.writeConfig = func(key, value string) error {
+	m.wiring.ConfigWriter = func(key, value string) error {
 		written[key] = value
 		return nil
 	}
@@ -439,7 +440,7 @@ func TestSlashUI_VerbosityIsSaved(t *testing.T) {
 		t.Fatalf("the reply should say the rung will last, got %q", result)
 	}
 
-	m.writeConfig = nil
+	m.wiring.ConfigWriter = nil
 	if _, result = m.handleSlashCommand("/ui verbosity high"); !strings.Contains(result, "this session only") {
 		t.Fatalf("a session that cannot write says the rung is its own, got %q", result)
 	}
@@ -455,8 +456,8 @@ func TestWithVerbosity_StartsOnTheConfiguredRung(t *testing.T) {
 		"": verbosityNormal, "low": verbosityLow, "normal": verbosityNormal,
 		"high": verbosityHigh, " high ": verbosityHigh, "loud": verbosityNormal,
 	} {
-		if got := activityModel(t).WithVerbosity(word).verbosity; got != want {
-			t.Errorf("WithVerbosity(%q) = %v, want %v", word, got, want)
+		if got := New(nil, mockStream, Wiring{Verbosity: word}).verbosity; got != want {
+			t.Errorf("verbosity %q starts the session on %v, want %v", word, got, want)
 		}
 	}
 }
@@ -500,16 +501,17 @@ func TestRunningCommandRow_LiveTail(t *testing.T) {
 
 func TestExecuteRun_FeedsTailRunner(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream).
-		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
+	m := New(msgs, mockStream, Wiring{
+		Runner: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 			t.Fatal("the tail runner should take precedence")
 			return "", 0
-		})).
-		WithTailRunner(legacyTailRunner(func(ctx context.Context, cmd string, onLine func(string)) (string, int) {
+		}),
+		TailRunner: legacyTailRunner(func(ctx context.Context, cmd string, onLine func(string)) (string, int) {
 			onLine("first line")
 			onLine("second line")
 			return "first line\nsecond line", 0
-		}))
+		}),
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.pendingRun = "echo hi"
@@ -543,7 +545,10 @@ func TestStatusBar_CockpitSegments(t *testing.T) {
 	table := pricing.NewTable(map[string]pricing.ModelPricing{
 		"gpt-4o": {InputCostPerToken: 0.00001, OutputCostPerToken: 0.00001},
 	})
-	m := New(msgs, mockStream).WithPricing(table, "gpt-4o")
+	m := New(msgs, mockStream, Wiring{
+		Prices:    table,
+		ModelName: "gpt-4o",
+	})
 	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
 	m.state = stateStreaming
 	m.agent.BeginToolRound("", nil, func(provider.ToolCall) bool { return false })
@@ -568,8 +573,7 @@ func TestStatusBar_CockpitSegments(t *testing.T) {
 // Where no price is known the token pair stands in for the spend, and it is
 // the only time it does. While a turn is spending them they print every digit.
 func TestStatusBar_TokensStandInWhereNoPriceIsKnown(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithPricing(nil, "scripted-model")
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{ModelName: "scripted-model"})
 	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
 	m.state = stateStreaming
 
@@ -594,9 +598,11 @@ func TestStatusBar_CockpitSpendUsesTheBilledSessionTotal(t *testing.T) {
 		},
 	})
 	ledger := meter.New(table)
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithPricing(table, "gpt-4o").
-		WithLedger(ledger)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Prices:    table,
+		ModelName: "gpt-4o",
+		Ledger:    ledger,
+	})
 	usage := provider.Usage{PromptTokens: 1_000_000, CachedTokens: 900_000, CompletionTokens: 1_000}
 	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", usage)
 	m.accumulateUsage(&usage)
@@ -807,12 +813,12 @@ func TestActivityRow_AWaitedFetchCountsDownOnItsRow(t *testing.T) {
 		t.Fatalf("a fetch nobody is waiting on should read as running:\n%s", view)
 	}
 
-	m = m.WithFetchWaits(func(host string) (time.Duration, bool) {
+	m.wiring.FetchWaiting, m.wiring.AbandonFetchWaits = func(host string) (time.Duration, bool) {
 		if host != "docs.rs" {
 			return 0, false
 		}
 		return 7500 * time.Millisecond, true
-	}, func() {})
+	}, func() {}
 	view = stripANSI(m.renderEntry(pending, 80))
 	if !strings.Contains(view, "waiting 8s · docs.rs asked") {
 		t.Fatalf("the row does not say what it is waiting for:\n%s", view)
@@ -833,7 +839,7 @@ func TestActivityRow_AWaitedFetchCountsDownOnItsRow(t *testing.T) {
 // wait is drawn as the live row under the transcript.
 func TestFetchWaitRow_TheSessionsOwnFetchShowsItsWait(t *testing.T) {
 	m := activityModel(t)
-	m = m.WithFetchWaits(func(string) (time.Duration, bool) { return 3 * time.Second, true }, func() {})
+	m.wiring.FetchWaiting, m.wiring.AbandonFetchWaits = func(string) (time.Duration, bool) { return 3 * time.Second, true }, func() {}
 	if _, ok := m.fetchWaitRow(80); ok {
 		t.Fatal("a session with no call in flight drew a waiting row")
 	}
@@ -853,7 +859,7 @@ func TestFetchWaitRow_TheSessionsOwnFetchShowsItsWait(t *testing.T) {
 func TestCancel_TheTurnsCancelAbandonsAFetchWait(t *testing.T) {
 	m := activityModel(t)
 	var abandoned int
-	m = m.WithFetchWaits(func(string) (time.Duration, bool) { return 0, false }, func() { abandoned++ })
+	m.wiring.FetchWaiting, m.wiring.AbandonFetchWaits = func(string) (time.Duration, bool) { return 0, false }, func() { abandoned++ }
 	m.cancelStreaming()
 	if abandoned != 1 {
 		t.Fatalf("the cancel abandoned %d waits, want one", abandoned)
@@ -890,7 +896,7 @@ func TestSteerToolNeedsNoApproval(t *testing.T) {
 // look alike; the message is bounded to its first line, marked when there was
 // more, because the row is one line and the instruction need not be.
 func TestSteerRowNamesTheAgentAndWhatItWasTold(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 30})
 	m = updated.(Model)
 

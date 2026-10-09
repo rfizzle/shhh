@@ -46,8 +46,7 @@ func startFixture() StartInfo {
 // startModel is a sized model on its first contact with the fixture project.
 func startModel(t *testing.T, info StartInfo) Model {
 	t.Helper()
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithStartScreen(info)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Start: new(info)})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
 	return updated.(Model)
 }
@@ -308,7 +307,9 @@ func TestStartScreen_EnterOnTheResumeOfferLoadsThatSession(t *testing.T) {
 	info := startFixture()
 	info.Recent.Name = "loop refactor"
 
-	m := startModel(t, info).WithDB(db)
+	m := startModel(t, info)
+	m.wiring.DB = db
+	m.bindStores()
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
@@ -356,7 +357,7 @@ func TestStartScreen_HistoryKeepsTheArrowsOnceThereIsHistory(t *testing.T) {
 }
 
 func TestStartScreen_AbsentSurveyKeepsThePlainWelcome(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	m.width = 80
 	if !strings.Contains(ansi.Strip(m.renderHistory()), "ask for anything") {
 		t.Fatal("a model with no survey should keep the welcome line")
@@ -465,7 +466,7 @@ func TestStartScreen_TheFirstSessionSaysThreeThings(t *testing.T) {
 			t.Fatalf("a later session says %q:\n%s", line, later)
 		}
 	}
-	if bare := New(nil, mockStream).WithFirstRun(); bare.start != nil {
+	if bare := New(nil, mockStream, Wiring{}).WithFirstRun(); bare.start != nil {
 		t.Fatal("marking a model with no start screen gave it one")
 	}
 	// The mark is a copy: the model it came from is not a first session.
@@ -505,8 +506,7 @@ func TestStartScreen_TheFaceIsSizedByThePaneNotTheWindow(t *testing.T) {
 		t.Fatalf("a tall window should wear the wordmark:\n%s", tall)
 	}
 
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithStartScreen(startFixture())
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{Start: new(startFixture())})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 18})
 	short := startText(updated.(Model))
 	if strings.Contains(short, "▄▀▀▀") {
@@ -581,7 +581,8 @@ func TestStartScreen_ThePointerChordsChooseAndOpenAnOffer(t *testing.T) {
 // An offer is a click target: it names one line of input and enter already
 // runs it. The rest of the screen is not.
 func TestStartScreen_AClickOnAnOfferRunsItAndTheChromeIsInert(t *testing.T) {
-	m := startModel(t, startFixture()).WithMouse(true)
+	m := startModel(t, startFixture())
+	m.pointer.mouseOn = true
 	m.copyFn = (&clip{}).fn()
 	m.viewport.SetLines(m.renderHistoryLines())
 

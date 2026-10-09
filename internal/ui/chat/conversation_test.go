@@ -22,10 +22,12 @@ func TestConversation_AFetchRunsWithoutACard(t *testing.T) {
 		return "page text", nil
 	}
 	var decisions [][2]string
-	m := gatedModel(t, executor, fetchPreviews()).WithConversation().
-		WithObserver(observe.Observer{Decision: func(_ observe.Pos, decision, reason string) {
+	m := gatedModelWith(t, executor, fetchPreviews(), Wiring{
+		Conversation: true,
+		Observer: observe.Observer{Decision: func(_ observe.Pos, decision, reason string) {
 			decisions = append(decisions, [2]string{decision, reason})
-		}})
+		}},
+	})
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		fetchCall("call_1", "https://docs.python.org/3/library/json.html"),
@@ -52,8 +54,10 @@ func TestConversation_AFetchRunsWithoutACard(t *testing.T) {
 func TestConversation_TheHostDenyListStillRefuses(t *testing.T) {
 	var fetched int
 	executor := func(string, json.RawMessage) (string, error) { fetched++; return "page text", nil }
-	m := gatedModel(t, executor, fetchPreviews()).WithConversation().
-		WithHostRules(nil, []string{"paste.example.test"})
+	m := gatedModelWith(t, executor, fetchPreviews(), Wiring{
+		Conversation: true,
+		DenyHosts:    []string{"paste.example.test"},
+	})
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		fetchCall("call_d", "https://paste.example.test/x"),
 	}})
@@ -71,8 +75,11 @@ func TestConversation_TheHostDenyListStillRefuses(t *testing.T) {
 // picker opens, the frame says read-only, and the rail offers no key for a
 // mode.
 func TestConversation_HasOneMode(t *testing.T) {
-	m := gatedModel(t, nil, nil).WithConversation().
-		WithApprovalMode(agent.ModeAuto, []agent.Mode{agent.ModeAuto, agent.ModePlan})
+	m := gatedModelWith(t, nil, nil, Wiring{
+		Conversation: true,
+		Mode:         agent.ModeAuto,
+		Cycle:        []agent.Mode{agent.ModeAuto, agent.ModePlan},
+	})
 	m.state = stateInput
 	if m.policy.mode != agent.ModeManual {
 		t.Fatalf("a configured mode reached a conversation: %v", m.policy.mode)
@@ -117,7 +124,7 @@ func TestConversation_TheRailOffersNoModeKey(t *testing.T) {
 	if got := coding.frameHints(200); !strings.Contains(got, "mode") {
 		t.Fatalf("the control is wrong: a coding session's rail offers no mode key: %q", got)
 	}
-	chat := gatedModel(t, nil, nil).WithConversation()
+	chat := gatedModelWith(t, nil, nil, Wiring{Conversation: true})
 	chat.state = stateInput
 	if got := chat.frameHints(200); strings.Contains(got, "mode") {
 		t.Errorf("the rail offers a key for a mode in a conversation: %q", got)
@@ -133,7 +140,7 @@ func TestConversation_TheKeyListOffersNoModeKey(t *testing.T) {
 	if !strings.Contains(coding.helpKeys(), row) {
 		t.Fatal("the control is wrong: a coding session's key list has no mode row")
 	}
-	chat := gatedModel(t, nil, nil).WithConversation()
+	chat := gatedModelWith(t, nil, nil, Wiring{Conversation: true})
 	chat.state = stateInput
 	if got := helpText(&chat); strings.Contains(got, row) {
 		t.Errorf("/help's key section offers the mode chord in a conversation:\n%s", got)
@@ -166,7 +173,7 @@ func TestConversation_TheKeyListOffersNoModeKey(t *testing.T) {
 func TestGolden_ScreenChat(t *testing.T) {
 	captureGolden(t, "screen-chat", "a conversation's frame", goldenWidths, func(width int) []golden.Panel {
 		base := func() Model {
-			m := frameModel(t, width, 24).WithConversation()
+			m := frameModelWith(t, width, 24, Wiring{Conversation: true})
 			m.state = stateInput
 			return m
 		}
@@ -174,9 +181,11 @@ func TestGolden_ScreenChat(t *testing.T) {
 		updated, _ := chord.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 		chord = updated.(Model)
 
-		fetch := base().WithToolExecutor(func(string, json.RawMessage) (string, error) {
+		fetch := base()
+		fetch.agent.SetExecutor(func(string, json.RawMessage) (string, error) {
 			return "The cache now expires after an hour.", nil
-		}).WithGatedTools(fetchPreviews())
+		})
+		fetch.gatedTools = fetchPreviews()
 		fetch.state = stateStreaming
 		updated, cmd := fetch.Update(toolCallsMsg{calls: []provider.ToolCall{
 			fetchCall("call_1", "https://docs.python.org/3/library/json.html"),

@@ -23,10 +23,12 @@ func TestProgram_TheSprintTabSaysTheSpendAgainstItsCeiling(t *testing.T) {
 		".shhh/todo/.run/sprint.json": `{"session":"s","turns":9,"cost":4.1,"cap_cents":2000}`,
 	})
 	m, _ := scriptedSession(programTurn{text: "nothing to do"})
-	m = m.WithWorkspace(root).WithTodos(Todos{
+	m.wiring.Workspace = root
+	m.todo.wiring = Todos{
 		Profile: todo.BuiltinCode(), Root: root,
 		Manage: func([]string) string { return "" },
-	})
+	}
+	m.loadTodos()
 	tm := runProgramAt(t, m, 110, 40)
 
 	send(tm, "/todo")
@@ -53,10 +55,12 @@ func TestProgram_TheSprintTabListsTheLanesAtWork(t *testing.T) {
 			`{"slug":"cache-ttl","stage":"implement"},{"slug":"cache-evict","stage":"verify"},{"slug":"cache-report","stage":"research"}]}`,
 	})
 	m, _ := scriptedSession(programTurn{text: "nothing to do"})
-	m = m.WithWorkspace(root).WithTodos(Todos{
+	m.wiring.Workspace = root
+	m.todo.wiring = Todos{
 		Profile: todo.BuiltinCode(), Root: root,
 		Manage: func([]string) string { return "" },
-	})
+	}
+	m.loadTodos()
 	tm := runProgramAt(t, m, 130, 40)
 
 	send(tm, "/todo")

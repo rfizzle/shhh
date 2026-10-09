@@ -40,14 +40,6 @@ func (m *Model) considerVerdict(v agent.SummaryVerdict) {
 	}
 }
 
-// WithSteering installs the interruption machinery's tuning: the thresholds
-// and the wordings the config file overrode, or a zero value for the
-// built-in set.
-func (m Model) WithSteering(s agent.Steering) Model {
-	m.agent.SetSteering(s)
-	return m
-}
-
 // recordIntervened files what became of a turn the machinery interrupted:
 // one row per interrupted turn, at the turn's close, in the vocabulary
 // internal/observe holds.

@@ -153,7 +153,8 @@ func TestSpendScreen_EachTurnAtItsClosesCost(t *testing.T) {
 // turn had cost when it stopped, and counted in the total once — its
 // requests were billed as they came back, so the row adds nothing to it.
 func TestStats_APausedTurnIsOnTheBill(t *testing.T) {
-	m := turnModel(t).WithMaxToolRounds(1)
+	m := turnModel(t)
+	m.agent.SetMaxRounds(1)
 	m = sendText(t, m, "fix the round accounting")
 	m.accumulateUsage(&provider.Usage{PromptTokens: 1200, CompletionTokens: 80})
 	spend := m.totalsLabel(m.turnSpend())
@@ -193,7 +194,7 @@ func TestStats_APausedTurnIsOnTheBill(t *testing.T) {
 // Nothing the pricing table knew means no dollar figure anywhere on the
 // screen: a share is its tokens rather than a cost of nothing.
 func TestSpendScreen_UnpricedSaysTokensNotDollars(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	m.vitals.startTurn()
 	m.accumulateUsage(&provider.Usage{PromptTokens: 1000, CompletionTokens: 100})
 	s := m.spendScreenData()
@@ -266,7 +267,7 @@ func TestSpendScreen_EnterOpensTheTurnOnTheTurnsScreen(t *testing.T) {
 // A session that has spent nothing still opens the screen: the block is gone
 // then, so the command is the only door, and nothing spent is its answer.
 func TestSpendScreen_NothingSpentOpensOnASentence(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	next, _ := m.openStats()
 	m = next.(Model)
 	if m.state != stateSpend {

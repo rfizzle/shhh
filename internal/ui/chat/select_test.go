@@ -70,7 +70,7 @@ func (c *clip) fn() func(string) clipboard.Result {
 func selectModel(t *testing.T, c *clip, entries ...entry) Model {
 	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream).WithMouse(true)
+	m := New(msgs, mockStream, Wiring{})
 	m.copyFn = c.fn()
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	m = updated.(Model)
@@ -332,7 +332,7 @@ func TestSelection_WrappedProseCopiesAsOneSentenceAtEveryWidth(t *testing.T) {
 	for _, width := range []int{72, 78, 80, 96, 130} {
 		c := &clip{}
 		msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-		m := New(msgs, mockStream).WithMouse(true)
+		m := New(msgs, mockStream, Wiring{})
 		m.copyFn = c.fn()
 		updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
 		m = updated.(Model)
@@ -931,7 +931,7 @@ func TestSelection_ConfinedToTheNormalTranscript(t *testing.T) {
 		name  string
 		build func(t *testing.T) Model
 	}{
-		{"full-screen diff", func(t *testing.T) Model { return diffFullModel(t).WithMouse(true) }},
+		{"full-screen diff", func(t *testing.T) Model { return diffFullModel(t) }},
 		{"focus mode", func(t *testing.T) Model {
 			c := &clip{}
 			entries := make([]entry, 0, 40)
@@ -1211,7 +1211,7 @@ func TestSelection_WorksInBothLayouts(t *testing.T) {
 // keeps its own mouse behaviour.
 func TestSelection_ReviewModeKeepsItsOwnMouse(t *testing.T) {
 	m, _ := reviewModel(t)
-	m = sendText(t, m.WithMouse(true), "/review")
+	m = sendText(t, m, "/review")
 	if m.state != stateReview || m.review == nil {
 		t.Fatalf("the fixture should be in review mode, got state %v", m.state)
 	}

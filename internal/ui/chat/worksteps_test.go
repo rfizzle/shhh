@@ -92,7 +92,7 @@ func TestWorkSteps_NeverTouchesTheApprovedPlan(t *testing.T) {
 // A conversation keeps no list.
 func TestWorkSteps_AConversationKeepsNone(t *testing.T) {
 	m := progressModel(t, mockStream)
-	m.conversation = true
+	m.wiring.Conversation = true
 	m.noteStepsCall(stepsCall(`{"steps":[{"title":"Read"},{"title":"Answer"}]}`))
 	if _, total, _ := m.workSteps.Tally(); total != 0 {
 		t.Fatal("a conversation kept a working list")
@@ -103,7 +103,9 @@ func TestWorkSteps_AConversationKeepsNone(t *testing.T) {
 // session drops it with the rest.
 func TestWorkSteps_SavedResumedAndDroppedAtTheBoundary(t *testing.T) {
 	db := rewindTestDB(t)
-	m := progressModel(t, mockStream).WithDB(db)
+	m := progressModel(t, mockStream)
+	m.wiring.DB = db
+	m.bindStores()
 	m.noteStepsCall(stepsCall(`{"steps":[{"title":"Read","done":true},{"title":"Patch"},{"title":"Test"}]}`))
 	if msg := m.autosaveCmd()(); msg != nil {
 		t.Fatalf("autosave: %#v", msg)
@@ -114,8 +116,7 @@ func TestWorkSteps_SavedResumedAndDroppedAtTheBoundary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	back := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithDB(db).WithResumedMessages(slot, saved)
+	back := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db}).WithResumedMessages(slot, saved)
 	if s := stepsOnRail(back); s == nil || *s != (components.InspectorSteps{Done: 1, Total: 3, Current: "Patch"}) {
 		t.Fatalf("resumed list = %+v, want 1 of 3 on the patch", s)
 	}
@@ -199,7 +200,7 @@ func TestStepsScreen_NoListSaysWhy(t *testing.T) {
 		want string
 	}{
 		{"no list", func(*Model) {}, "declared no working steps"},
-		{"a conversation", func(m *Model) { m.conversation = true }, "not part of this session"},
+		{"a conversation", func(m *Model) { m.wiring.Conversation = true }, "not part of this session"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			m := stepsModel(t)

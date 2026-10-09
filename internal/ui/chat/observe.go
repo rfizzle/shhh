@@ -17,13 +17,6 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-// WithObserver wires session observability; the zero Observer
-// disables it.
-func (m Model) WithObserver(o observe.Observer) Model {
-	m.observer = o
-	return m
-}
-
 // timing is what the session times for the record beyond the observer's
 // events: the running turn's split by what it waited on, and who is told
 // the first frame has been drawn. They are one value because both are the
@@ -59,22 +52,6 @@ type requestHeard struct {
 	answering   bool
 }
 
-// WithStreamIdle is the stream's idle deadline in whole seconds as the
-// settings file spells it, so a silent wait can say when the retry is coming.
-func (m Model) WithStreamIdle(seconds int) Model {
-	m.timing.idle = time.Duration(seconds) * time.Second
-	return m
-}
-
-// WithFirstPaint is told when the first frame with the prompt in it has
-// been drawn. It is called from every such frame and has to answer only the
-// first, which is the caller's to arrange: View is a value receiver, and the
-// model has nowhere of its own to remember that it already said so.
-func (m Model) WithFirstPaint(f func()) Model {
-	m.timing.firstPaint = f
-	return m
-}
-
 // pos is where the session is now.
 func (m Model) pos() observe.Pos {
 	return observe.Pos{Turn: m.turnCount, Round: int64(m.agent.Rounds())}
@@ -85,25 +62,25 @@ func (m Model) pos() observe.Pos {
 // provider gate fills. Without a ledger there is only the agent's own
 // accounting to report, which is what a session assembled without one has.
 func (m *Model) notifyUsage() {
-	if m.observer.Usage == nil {
+	if m.wiring.Observer.Usage == nil {
 		return
 	}
-	if m.ledger == nil {
+	if m.wiring.Ledger == nil {
 		cost, priced := m.usageTotalCost(m.TotalTokensIn, m.TotalTokensOut)
-		m.observer.Usage(m.turnCount, m.TotalTokensIn, m.TotalTokensOut, cost, priced)
+		m.wiring.Observer.Usage(m.turnCount, m.TotalTokensIn, m.TotalTokensOut, cost, priced)
 		return
 	}
-	t := m.ledger.Total()
-	m.observer.Usage(m.turnCount, t.In, t.Out, t.Cost, t.Priced)
+	t := m.wiring.Ledger.Total()
+	m.wiring.Observer.Usage(m.turnCount, t.In, t.Out, t.Cost, t.Priced)
 }
 
 // usageTotalCost prices a token pair against the session's current model, for
 // the ledgerless case.
 func (m Model) usageTotalCost(in, out int64) (float64, bool) {
-	if m.prices == nil || m.modelName == "" {
+	if m.wiring.Prices == nil || m.modelName == "" {
 		return 0, false
 	}
-	inCost, outCost, found := m.prices.Cost(m.modelName, in, out)
+	inCost, outCost, found := m.wiring.Prices.Cost(m.modelName, in, out)
 	if !found {
 		return 0, false
 	}
@@ -118,27 +95,27 @@ func (m *Model) recordToolResult(call provider.ToolCall, duration time.Duration,
 }
 
 func (m *Model) recordToolEvent(tool string, duration time.Duration, outcome, class, purpose string) {
-	if m.observer.ToolCall != nil {
-		m.observer.ToolCall(m.pos(), tool, duration, outcome, class, purpose)
+	if m.wiring.Observer.ToolCall != nil {
+		m.wiring.Observer.ToolCall(m.pos(), tool, duration, outcome, class, purpose)
 	}
 }
 
 func (m *Model) recordDecision(decision, reason string) {
-	if m.observer.Decision != nil {
-		m.observer.Decision(m.pos(), decision, reason)
+	if m.wiring.Observer.Decision != nil {
+		m.wiring.Observer.Decision(m.pos(), decision, reason)
 	}
 }
 
 // recordVerdict is recordDecision for a verdict the classifier reached, with
 // the time it took to reach it.
 func (m *Model) recordVerdict(decision, reason string, took time.Duration) {
-	m.observer.Decided(m.pos(), decision, reason, took)
+	m.wiring.Observer.Decided(m.pos(), decision, reason, took)
 }
 
 // recordTurn reports the turn that is closing. It runs from the one place
 // every turn ends (appendTurnClose), so no turn can end unrecorded.
 func (m *Model) recordTurn(outcome string) {
-	if m.observer.Turn == nil {
+	if m.wiring.Observer.Turn == nil {
 		return
 	}
 	var elapsed time.Duration
@@ -153,7 +130,7 @@ func (m *Model) recordTurn(outcome string) {
 	// The split goes with the turn where the clock timed this turn: it was
 	// begun at the same stamp the elapsed is measured from and is read at the
 	// same end, so its four parts are the elapsed and not an estimate of it.
-	if m.observer.TurnTimed != nil && !end.IsZero() && m.timing.turn.Started().Equal(m.turnStarted) {
+	if m.wiring.Observer.TurnTimed != nil && !end.IsZero() && m.timing.turn.Started().Equal(m.turnStarted) {
 		split := m.timing.turn.Split(end)
 		if outcome == observe.TurnCapPaused {
 			// The pause is a card in front of the person, and the turn's
@@ -162,10 +139,10 @@ func (m *Model) recordTurn(outcome string) {
 			// it spent.
 			m.timing.turn.Ask(end)
 		}
-		m.observer.TurnTimed(m.turnCount, int64(m.agent.Rounds()), elapsed, outcome, split)
+		m.wiring.Observer.TurnTimed(m.turnCount, int64(m.agent.Rounds()), elapsed, outcome, split)
 		return
 	}
-	m.observer.Turn(m.turnCount, int64(m.agent.Rounds()), elapsed, outcome)
+	m.wiring.Observer.Turn(m.turnCount, int64(m.agent.Rounds()), elapsed, outcome)
 }
 
 // noteWait moves the turn's clock to what the turn waits on in the state it
@@ -277,7 +254,7 @@ func (m Model) turnOutcomeCode() string {
 }
 
 func (m *Model) signal(code, reason string) {
-	if m.observer.Signal != nil {
-		m.observer.Signal(m.pos(), code, reason)
+	if m.wiring.Observer.Signal != nil {
+		m.wiring.Observer.Signal(m.pos(), code, reason)
 	}
 }

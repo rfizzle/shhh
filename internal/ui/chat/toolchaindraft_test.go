@@ -51,8 +51,10 @@ func (r *draftRecorder) toolchain(answer ToolchainDraft) Toolchain {
 // wired.
 func declarationModel(t testing.TB, width int, tc Toolchain, info StartInfo) Model {
 	t.Helper()
-	return frameModel(t, width, 40).WithStartScreen(info).
-		WithContainment(Containment{Status: "contained: bwrap (workspace profile)", Mechanism: "bwrap", Profile: "workspace", Network: true, Toolchain: tc})
+	return frameModelWith(t, width, 40, Wiring{
+		Start:       new(info),
+		Containment: Containment{Status: "contained: bwrap (workspace profile)", Mechanism: "bwrap", Profile: "workspace", Network: true, Toolchain: tc},
+	})
 }
 
 // runDraftCmd runs what /toolchain started until the drafting's answer comes

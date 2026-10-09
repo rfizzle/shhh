@@ -279,8 +279,8 @@ func (m *Model) cancelStreaming() {
 	m.cancelSubagents()
 	// And the one part of a fetch that is not a request: a wait a host asked
 	// for is time nobody is now spending it for (activity.go).
-	if m.abandonFetchWaits != nil {
-		m.abandonFetchWaits()
+	if m.wiring.AbandonFetchWaits != nil {
+		m.wiring.AbandonFetchWaits()
 	}
 	// And a server call, for the same reason and one step further out: the
 	// executor was handed no context, so without this the cancel leaves a

@@ -187,7 +187,7 @@ func TestScreens_TheFirstFrameIsPainted(t *testing.T) {
 	components.SetMono(false)
 
 	view := func() (string, color.Color) {
-		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 		v := m.View()
 		return v.Content, v.BackgroundColor
 	}

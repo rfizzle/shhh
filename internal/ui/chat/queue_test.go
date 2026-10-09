@@ -490,7 +490,8 @@ func TestQueueList_AllowsTheCheckedAndDeniesTheRest(t *testing.T) {
 // scope again at the head. A decision does not outrank a rule.
 func TestQueueList_ARuleStillRefusesARowItAllowed(t *testing.T) {
 	var ran []string
-	m := execModel(t, &ran).WithCommandDenylist([]string{"echo two"})
+	m := execModel(t, &ran)
+	m.policy.denylist = []string{"echo two"}
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		execCall("c1", "echo one"),
@@ -624,7 +625,7 @@ func driveApprovedTool(t *testing.T, cmd tea.Cmd) approvedToolDoneMsg {
 // the model's own sentence as the body opening the row shows.
 func TestSkippedCallEntryTellsStalenessFromBadArguments(t *testing.T) {
 	root := t.TempDir()
-	m := New(nil, mockStream).WithWorkspace(root)
+	m := New(nil, mockStream, Wiring{Workspace: root})
 
 	stale := m.skippedCallEntry(
 		provider.ToolCall{Name: "write_file", Arguments: `{"path":"internal/agent/loop.go"}`},
@@ -676,7 +677,7 @@ func TestSkippedCallEntryTellsStalenessFromBadArguments(t *testing.T) {
 // own — different from the row being about the tool — and it is what tells
 // the reader the call broke before it had a subject rather than at one.
 func TestSkippedCallEntrySaysWhenNothingWasNamed(t *testing.T) {
-	m := New(nil, mockStream)
+	m := New(nil, mockStream, Wiring{})
 	for _, tc := range []struct{ name, args string }{
 		{"no arguments at all", ""},
 		{"arguments that are not json", `{"path":`},
@@ -709,7 +710,7 @@ func TestSkippedCallEntrySaysWhenNothingWasNamed(t *testing.T) {
 // A file outside the workspace keeps its absolute path: that it is somewhere
 // else is the fact worth seeing.
 func TestSkippedCallEntryKeepsAPathOutsideTheWorkspace(t *testing.T) {
-	m := New(nil, mockStream).WithWorkspace(filepath.Join(t.TempDir(), "checkout"))
+	m := New(nil, mockStream, Wiring{Workspace: filepath.Join(t.TempDir(), "checkout")})
 	outside := filepath.Join(t.TempDir(), "elsewhere", "notes.md")
 	e := m.skippedCallEntry(provider.ToolCall{Name: "write_file"}, tools.StaleError{Path: outside})
 	if !strings.Contains(e.text, outside) {

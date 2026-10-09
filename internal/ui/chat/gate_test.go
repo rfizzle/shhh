@@ -18,12 +18,13 @@ import (
 
 func TestGate_SlashCommand(t *testing.T) {
 	var got []string
-	m := gatedModel(t, nil, nil).WithGate(Gate{
+	m := gatedModel(t, nil, nil)
+	m.wiring.Gate, m.alertMemo = Gate{
 		Manage: func(args []string) string {
 			got = append(got, strings.Join(args, " "))
 			return "gate says"
 		},
-	})
+	}, &alertMemo{}
 	handled, result := m.handleSlashCommand("/gate result")
 	if !handled || result != "gate says" {
 		t.Fatalf("/gate result = %v %q", handled, result)
@@ -43,7 +44,8 @@ func TestGate_SlashCommandUnavailable(t *testing.T) {
 }
 
 func TestGate_HelpMentionsCommand(t *testing.T) {
-	m := gatedModel(t, nil, nil).WithGate(Gate{Manage: func([]string) string { return "" }})
+	m := gatedModel(t, nil, nil)
+	m.wiring.Gate, m.alertMemo = Gate{Manage: func([]string) string { return "" }}, &alertMemo{}
 	if !strings.Contains(helpText(&m), "/gate") {
 		t.Fatal("/help must list /gate")
 	}
@@ -95,7 +97,9 @@ func closeGateModel(t *testing.T, verdicts ...quality.Verdict) (Model, *int) {
 	t.Helper()
 	ws := gateWorkspace(t, onCloseConfig)
 	gate, runs := scriptedGate(t, ws, verdicts...)
-	m := turnModel(t).WithWorkspace(ws).WithGate(gate)
+	m := turnModel(t)
+	m.wiring.Workspace = ws
+	m.wiring.Gate, m.alertMemo = gate, &alertMemo{}
 	m.closeGate.on = true
 	return m, runs
 }
@@ -284,7 +288,9 @@ func TestCloseGate_AMissingOrBrokenConfigIsACleanNoOp(t *testing.T) {
 			ws = gateWorkspace(t, body)
 		}
 		gate, runs := scriptedGate(t, ws, quality.VerdictFail)
-		m := turnModel(t).WithWorkspace(ws).WithGate(gate)
+		m := turnModel(t)
+		m.wiring.Workspace = ws
+		m.wiring.Gate, m.alertMemo = gate, &alertMemo{}
 		m.closeGate.on = true
 		m = startEditedTurn(t, m)
 		updated, _ := m.Update(doneMsg{})
@@ -352,7 +358,9 @@ func TestCloseGate_ToggleAnswersOnAndOff(t *testing.T) {
 func TestCloseGate_ToggleSaysSoWhenTheWorkspaceNamesNoSuite(t *testing.T) {
 	ws := gateWorkspace(t, `{"suites": {"fast": {"checks": [{"name": "c", "exe": "sh", "args": ["-c", "true"]}]}}}`)
 	gate, _ := scriptedGate(t, ws, quality.VerdictPass)
-	m := turnModel(t).WithWorkspace(ws).WithGate(gate)
+	m := turnModel(t)
+	m.wiring.Workspace = ws
+	m.wiring.Gate, m.alertMemo = gate, &alertMemo{}
 	_, note := m.handleSlashCommand("/gate on")
 	if !strings.Contains(note, quality.ConfigRelPath) {
 		t.Fatalf("/gate on with no suite named = %q", note)
@@ -378,7 +386,8 @@ func TestCloseGate_UsageAndCompletionOfferTheToggle(t *testing.T) {
 			t.Errorf("/gate completion does not offer %q", want)
 		}
 	}
-	m := gatedModel(t, nil, nil).WithGate(Gate{Manage: func([]string) string { return "" }})
+	m := gatedModel(t, nil, nil)
+	m.wiring.Gate, m.alertMemo = Gate{Manage: func([]string) string { return "" }}, &alertMemo{}
 	if !strings.Contains(helpText(&m), "on|off") {
 		t.Error("/help does not name the toggle")
 	}
@@ -471,12 +480,14 @@ func TestCloseGate_SteeringJoinsTheRoundAFailingVerdictBuys(t *testing.T) {
 
 func TestCloseGate_ARaceWithAnotherRunStillLeavesTheTurnAVerdict(t *testing.T) {
 	ws := gateWorkspace(t, onCloseConfig)
-	m := turnModel(t).WithWorkspace(ws).WithGate(Gate{
+	m := turnModel(t)
+	m.wiring.Workspace = ws
+	m.wiring.Gate, m.alertMemo = Gate{
 		Manage: func([]string) string { return "" },
 		Run: func(context.Context, string) (*quality.Result, error) {
 			return nil, errors.New(`a gate run (suite "default") is already in progress`)
 		},
-	})
+	}, &alertMemo{}
 	m.closeGate.on = true
 	m = closeTurnWithGate(t, startEditedTurn(t, m))
 
@@ -571,7 +582,9 @@ func TestCloseGate_AStalePassIsRetried(t *testing.T) {
 					}, nil
 				},
 			}
-			m := turnModel(t).WithWorkspace(ws).WithGate(gate)
+			m := turnModel(t)
+			m.wiring.Workspace = ws
+			m.wiring.Gate, m.alertMemo = gate, &alertMemo{}
 			m.closeGate.on = true
 			m = startEditedTurn(t, m)
 

@@ -26,8 +26,8 @@ func TestProgram_TheStartScreenOffersWhatRepeatsAndNeverIsWrittenDown(t *testing
 	info.Project.Dirty = 0
 	info.Patterns = 3
 	var r proposalRecorder
-	m, _ := scriptedSession(programTurn{text: "Nothing is sent."})
-	tm := runProgramAt(t, m.WithStartScreen(info).WithPatterns(r.patterns(t)), 110, 40)
+	m, _ := scriptedSessionWith(Wiring{Start: &info, Patterns: r.patterns(t)}, programTurn{text: "Nothing is sent."})
+	tm := runProgramAt(t, m, 110, 40)
 
 	waitForAll(t, tm, "Some things worth doing first", "look at what repeats — 3 patterns", "reads only, then asks")
 	programPress(t, tm, "enter")
@@ -51,7 +51,8 @@ func TestGolden_PatternsStart(t *testing.T) {
 		info.Recent = StartRecent{}
 		info.Project.Dirty = 0
 		info.Patterns = 3
-		m := frameModel(t, width, 40).WithStartScreen(info)
+		m := frameModel(t, width, 40)
+		m.start = new(info)
 		return []golden.Panel{{Label: "a clean checkout with three proposals", View: m.renderHistory()}}
 	})
 }
@@ -135,16 +136,19 @@ func (r *proposalRecorder) patterns(t *testing.T) Patterns {
 // decision it records collected in decisions.
 func patternsModel(t *testing.T, width int, r *proposalRecorder, decisions *[]string) Model {
 	t.Helper()
-	m := frameModel(t, width, 40).WithPatterns(r.patterns(t)).WithMemory(Memory{
+	m := frameModel(t, width, 40)
+	m.patterns.cfg, m.patterns.wording = r.patterns(t), -1
+	m.wiring.Memory = Memory{
 		ProjectScope: "/work/app",
 		Save: func(scope, kind, text string) (string, error) {
 			r.saved = append(r.saved, scope+"|"+kind+"|"+text)
 			return "remembered m7 · " + kind + "\n" + text, nil
 		},
-	})
-	return m.WithObserver(observe.Observer{Decision: func(_ observe.Pos, decision, reason string) {
+	}
+	m.wiring.Observer = observe.Observer{Decision: func(_ observe.Pos, decision, reason string) {
 		*decisions = append(*decisions, decision+"/"+reason)
-	}})
+	}}
+	return m
 }
 
 // openProposal opens /patterns and takes the row at i, running a reading

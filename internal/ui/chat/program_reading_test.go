@@ -209,7 +209,8 @@ func TestProgram_ThePaletteAndTheModelPickerOpenFromTheDraft(t *testing.T) {
 	// The palette lists recent files; this one has none, so what it lists
 	// does not depend on the directory the suite runs in.
 	m.recentFiles = func() []project.RecentFile { return nil }
-	m = m.WithModelOptions([]string{"scripted-large", "scripted-mini"}).WithModelSwitcher(func(string) {})
+	m.picker.models.options = []string{"scripted-large", "scripted-mini"}
+	m.wiring.SwitchModel = func(string) {}
 	tm := runProgram(t, m)
 
 	programPress(t, tm, "ctrl+/")

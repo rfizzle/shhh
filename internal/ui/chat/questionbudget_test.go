@@ -129,7 +129,8 @@ func TestQuestionBudget_TheNextTurnOpeningStartsItOver(t *testing.T) {
 // and the sentence rides in the answer rather than in front of it, because
 // the answer is what this result is read for.
 func TestQuestionBudget_TheSameQuestionTwiceIsToldSo(t *testing.T) {
-	m := questionModel(t, agent.ModeManual).WithRepeats(agent.NewRepeatDetector())
+	m := questionModel(t, agent.ModeManual)
+	m.wiring.Repeats = agent.NewRepeatDetector()
 	same := `{"question":"Should the migration be reversible?","shape":"confirm"}`
 
 	m = askAndAnswer(t, m, same, tea.KeyPressMsg{Code: tea.KeyEnter})

@@ -19,7 +19,6 @@ import (
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
-	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -58,7 +57,7 @@ type Memory struct {
 // is answered before it reaches a card
 // (docs/capabilities/sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project).
 func (m Model) memoryDeclinedBefore(req *approvalRequest) bool {
-	return m.memory.Declined != nil && m.memory.Declined(req.memoryDraft.Text)
+	return m.wiring.Memory.Declined != nil && m.wiring.Memory.Declined(req.memoryDraft.Text)
 }
 
 // refuseDeclinedMemory answers a proposal the person declined before without
@@ -82,32 +81,14 @@ func (m Model) refuseDeclinedMemory(req *approvalRequest) (tea.Model, tea.Cmd) {
 // answer that costs a question rather than one that drops a memory unseen,
 // so the failure does not stop the decline the person just made.
 func (m Model) recordMemoryDecline(req *approvalRequest) {
-	if m.memory.Decline != nil {
-		_ = m.memory.Decline(req.memoryDraft.Text)
+	if m.wiring.Memory.Decline != nil {
+		_ = m.wiring.Memory.Decline(req.memoryDraft.Text)
 	}
-}
-
-// WithMemory enables the /memory command and the remember-tool confirm flow.
-// WithSkills hands the model the session's skill catalog and the listing
-// /skills prints. Activated skill content is exempted from context
-// trimming: the instructions are guidance for every later turn, and a
-// trimmed skill fails silently — the model just stops following it.
-// See docs/capabilities/skills.md#a-skill-is-read-in-three-tiers.
-func (m Model) WithSkills(c *skill.Catalog, list func(*skill.Catalog) string) Model {
-	m.skills = c
-	m.skillsList = list
-	m.agent.KeepResults(skill.IsContent)
-	return m
-}
-
-func (m Model) WithMemory(mem Memory) Model {
-	m.memory = mem
-	return m
 }
 
 // buildMemoryApproval turns a remember tool call into its approval request.
 func (m Model) buildMemoryApproval(tc provider.ToolCall) (*approvalRequest, error) {
-	if m.memory.Save == nil {
+	if m.wiring.Memory.Save == nil {
 		return nil, fmt.Errorf("tool %s cannot be approved in this session", tc.Name)
 	}
 	draft, err := memory.ParseRemember(json.RawMessage(tc.Arguments))
@@ -142,7 +123,7 @@ func (m *Model) openMemoryAsk(req *approvalRequest) {
 // through remember, or the record through /patterns (patterns.go).
 func (m Model) memorySelect(global bool) *components.NoteSelect {
 	ns := components.NewNoteSelect("Remember this?", []components.SelectOption{
-		{Label: "Save (project)", Desc: m.memory.ProjectScope},
+		{Label: "Save (project)", Desc: m.wiring.Memory.ProjectScope},
 		{Label: "Save (global)", Desc: "applies in every workspace"},
 		{Label: "Don't save"},
 	})
@@ -168,7 +149,7 @@ func (m Model) updateMemoryAsk(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if res.Canceled || (res.Index != 0 && res.Index != 1) {
 		return m.declineApproval()
 	}
-	scope := m.memory.ProjectScope
+	scope := m.wiring.Memory.ProjectScope
 	if res.Index == 1 {
 		scope = memory.GlobalScope
 	}
@@ -178,7 +159,7 @@ func (m Model) updateMemoryAsk(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		text += " (" + res.Note + ")"
 	}
 	m.recordDecision(observe.DecisionAllow, observe.ReasonUser)
-	resultText, err := m.memory.Save(scope, req.memoryDraft.Kind, text)
+	resultText, err := m.wiring.Memory.Save(scope, req.memoryDraft.Kind, text)
 	if err != nil {
 		resultText = "error: cannot save memory: " + err.Error()
 	}
@@ -230,7 +211,7 @@ type memoryEditorDoneMsg struct {
 // The same refusals as the draft's editor apply — it takes the terminal, and
 // a turn or a decision in flight would be lost behind it (editor.go).
 func (m Model) openMemoryEditor(arg string) (tea.Model, tea.Cmd) {
-	if m.memory.EntryText == nil || m.memory.Rewrite == nil {
+	if m.wiring.Memory.EntryText == nil || m.wiring.Memory.Rewrite == nil {
 		return m.systemNotice("durable memory is unavailable in this session")
 	}
 	if reason, refused := m.editorRefusal(); refused {
@@ -240,7 +221,7 @@ func (m Model) openMemoryEditor(arg string) (tea.Model, tea.Cmd) {
 	if err != nil {
 		return m.systemNotice(failed("memory", err.Error()))
 	}
-	text, err := m.memory.EntryText(id)
+	text, err := m.wiring.Memory.EntryText(id)
 	if err != nil {
 		return m.systemNotice(failed("memory", err.Error()))
 	}
@@ -275,7 +256,7 @@ func (m Model) memoryEditorFinished(msg memoryEditorDoneMsg) (tea.Model, tea.Cmd
 		// a command that is.
 		return m.systemNotice(fmt.Sprintf("the editor came back empty, so the memory is as it was; /memory forget m%d drops one", msg.id))
 	}
-	note, err := m.memory.Rewrite(msg.id, text)
+	note, err := m.wiring.Memory.Rewrite(msg.id, text)
 	if err != nil {
 		return m.systemNotice(failed("memory", err.Error()))
 	}

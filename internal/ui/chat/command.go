@@ -168,7 +168,7 @@ func (m Model) answerCommand(text, name string, parts []string) (tea.Model, tea.
 	// the other harnesses spell it, but only where no real command has the
 	// name: the registry wins a collision, so a skill called "help" is
 	// reached through /skill help.
-	if _, ok := m.skills.Find(name[1:]); ok {
+	if _, ok := m.wiring.Skills.Find(name[1:]); ok {
 		if _, taken := lookupCommand(&m, name); !taken {
 			return m.activateSkill(name[1:], strings.Join(parts[1:], " "))
 		}
@@ -183,7 +183,7 @@ func (m Model) answerCommand(text, name string, parts []string) (tea.Model, tea.
 // — the attached child's, or the orchestrator's — so an answer never lands
 // where the user cannot see it.
 func (m Model) surfaceNotice(text string) (tea.Model, tea.Cmd) {
-	if m.attachedTo != "" && m.subagents != nil {
+	if m.attachedTo != "" && m.wiring.Subagents != nil {
 		m.noteChild(m.attachedTo, text)
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
@@ -196,16 +196,16 @@ func (m Model) surfaceNotice(text string) (tea.Model, tea.Cmd) {
 // activeAgents is how many children are working and how many of those are
 // blocked on the user, or zeroes without a supervisor.
 func (m Model) activeAgents() (active, blocked int) {
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return 0, 0
 	}
-	return m.subagents.ActiveCounts()
+	return m.wiring.Subagents.ActiveCounts()
 }
 
 // attachCommand is /attach: bare, it opens the agent list to pick from;
 // named, it jumps straight into that agent's session.
 func (m Model) attachCommand(parts []string) (tea.Model, tea.Cmd) {
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return m.systemNotice("sub-agents are unavailable in this session")
 	}
 	if len(parts) < 2 {
@@ -216,7 +216,7 @@ func (m Model) attachCommand(parts []string) (tea.Model, tea.Cmd) {
 		m.attach("")
 		return m, nil
 	}
-	if _, ok := m.subagents.Get(name); !ok {
+	if _, ok := m.wiring.Subagents.Get(name); !ok {
 		return m.surfaceNotice("no agent named " + name + ". /agents lists this session's agents")
 	}
 	if name == m.attachedTo {
@@ -366,13 +366,13 @@ func buildCommands() []*command {
 			run: always(Model.runPaste)},
 		{name: "/attach",
 			slash: &slashCommand{args: "[name]", desc: "attach to an agent's session and steer it",
-				enabled:  func(m *Model) bool { return m.subagents != nil },
+				enabled:  func(m *Model) bool { return m.wiring.Subagents != nil },
 				argSpecs: []argSpec{{dynamic: agentArgs, fuzzy: true}},
 				help:     `attach to an agent's session and steer it (bare /attach lists)`},
 			run: always(Model.attachCommand)},
 		{name: "/secret",
 			slash: &slashCommand{args: "[list|set|forget]", desc: "values commands can use and the model never sees",
-				enabled: func(m *Model) bool { return m.secrets.Manage != nil },
+				enabled: func(m *Model) bool { return m.wiring.Secrets.Manage != nil },
 				argSpecs: staticArgs(
 					argOption{"list", "name the session's secrets"},
 					argOption{"set", "declare one: NAME from the environment, or NAME=value"},
@@ -387,7 +387,7 @@ func buildCommands() []*command {
 			})},
 		{name: "/skill",
 			slash: &slashCommand{args: "<name> [task]", desc: "activate a skill now, with your task after it",
-				enabled:  func(m *Model) bool { return m.skills.Len() > 0 },
+				enabled:  func(m *Model) bool { return m.wiring.Skills.Len() > 0 },
 				argSpecs: []argSpec{{dynamic: skillArgs}},
 				help:     `activate a skill now: /skill <name> [task] sends its instructions to the model with your task, as the model would load them itself. /<name> does the same for a skill whose name is not a command`},
 			// Explicit activation. Not idleOnly: while the agent works the
@@ -420,7 +420,7 @@ func buildCommands() []*command {
 			answer: slashPlan},
 		{name: "/detach",
 			slash: &slashCommand{desc: "back to the orchestrator (also esc)",
-				enabled: func(m *Model) bool { return m.subagents != nil && m.attachedTo != "" },
+				enabled: func(m *Model) bool { return m.wiring.Subagents != nil && m.attachedTo != "" },
 				help:    `back to your own session (also esc while attached)`},
 			run: always(func(m Model, _ []string) (tea.Model, tea.Cmd) {
 				if m.attachedTo == "" {
@@ -464,7 +464,7 @@ func buildCommands() []*command {
 			})},
 		{name: "/run",
 			slash: &slashCommand{args: "[n]", desc: "run a code block from the last response",
-				enabled:  func(m *Model) bool { return m.runFn != nil },
+				enabled:  func(m *Model) bool { return m.wiring.Runner != nil },
 				idleOnly: "it runs a command in this session",
 				help:     `run a code block from the last response (with confirmation)`},
 			// Bare /run with several code blocks opens the picker; one
@@ -590,14 +590,14 @@ revoke [commands|edits|hosts|agents]   take the grants back`},
 		// saved they go on to the listing their answer gives.
 		{name: "/load",
 			slash: &slashCommand{args: "[name]", desc: "load a saved chat (bare /load picks)",
-				enabled:  func(m *Model) bool { return m.db != nil },
+				enabled:  func(m *Model) bool { return m.wiring.DB != nil },
 				argSpecs: []argSpec{{dynamic: chatArgs, fuzzy: true}},
 				idleOnly: "it replaces the conversation",
 				help:     `load a saved chat (bare /load opens a picker)`},
 			exact: true, run: picks(Model.openChatPick), answer: slashLoad},
 		{name: "/chats",
 			slash: &slashCommand{desc: "saved chats — enter loads, x deletes, r renames",
-				enabled:  func(m *Model) bool { return m.db != nil },
+				enabled:  func(m *Model) bool { return m.wiring.DB != nil },
 				idleOnly: "it opens the picker that replaces the conversation",
 				help:     `saved chats — opens the same picker; enter loads, [x] deletes (asks first), [r] renames`},
 			exact: true, run: picks(Model.openChatPick), answer: slashChats},
@@ -710,7 +710,7 @@ terminal   what this terminal answered when shhh asked what it can do: inline im
 			open: bareOpen(Model.openPatterns)},
 		{name: "/memory",
 			slash: &slashCommand{args: "[list|add|edit|forget]", desc: "durable memories",
-				enabled: func(m *Model) bool { return m.memory.Manage != nil },
+				enabled: func(m *Model) bool { return m.wiring.Memory.Manage != nil },
 				argSpecs: staticArgs(
 					argOption{"list", "show stored memories"},
 					argOption{"add", "remember something"},
@@ -736,7 +736,7 @@ terminal   what this terminal answered when shhh asked what it can do: inline im
 		// branch family gets the answer.
 		{name: "/branches",
 			slash: &slashCommand{args: "[n|name]", desc: "switch this session's branches (bare /branches picks)",
-				enabled:  func(m *Model) bool { return m.db != nil },
+				enabled:  func(m *Model) bool { return m.wiring.DB != nil },
 				argSpecs: []argSpec{{dynamic: branchArgs, fuzzy: true}},
 				idleOnly: "it switches the conversation to another branch",
 				help:     `switch this session's branches: [n] by number, [name] by name, bare opens a picker`},
@@ -755,7 +755,7 @@ default [level]   show or persist the level new sessions start on (provider.reas
 			aliases: []string{"/think"}, answer: slashReasoning},
 		{name: "/add-dir",
 			slash: &slashCommand{args: "[<path>|drop <path>]", desc: "the directories this session may work in",
-				enabled: func(m *Model) bool { return m.scope != nil },
+				enabled: func(m *Model) bool { return m.wiring.Scope != nil },
 				argSpecs: []argSpec{
 					{options: []argOption{{"drop", "take a directory back out of the scope"}}},
 					{after: []string{"drop"}, dynamic: scopeDropArgs},
@@ -777,13 +777,13 @@ default [level]   show or persist the level new sessions start on (provider.reas
 			answer: slashSandbox},
 		{name: "/evidence",
 			slash: &slashCommand{args: "[purge]", desc: "tool-output evidence store",
-				enabled:  func(m *Model) bool { return m.evidence.Manage != nil },
+				enabled:  func(m *Model) bool { return m.wiring.Evidence.Manage != nil },
 				argSpecs: staticArgs(argOption{"purge", "delete stored tool output"}),
 				help:     `tool-output evidence store: reduction stats and size (purge to clear)`},
 			answer: slashEvidence},
 		{name: "/gate",
 			slash: &slashCommand{args: "[run|result|flakes|on|off]", desc: "run the project's quality gate",
-				enabled: func(m *Model) bool { return m.gate.Manage != nil },
+				enabled: func(m *Model) bool { return m.wiring.Gate.Manage != nil },
 				argSpecs: staticArgs(
 					argOption{"run", "run the gate suites"},
 					argOption{"result", "show the last result"},
@@ -796,7 +796,7 @@ default [level]   show or persist the level new sessions start on (provider.reas
 			answer: slashGate},
 		{name: "/ps",
 			slash: &slashCommand{desc: "list session-owned long-running processes",
-				enabled: func(m *Model) bool { return m.processes.Manage != nil },
+				enabled: func(m *Model) bool { return m.wiring.Processes.Manage != nil },
 				help:    `list the long-running processes this session owns (process tool)`},
 			answer: slashProcesses},
 		// Where the session's tools came from, as the rail's TOOLS block
@@ -820,7 +820,7 @@ default [level]   show or persist the level new sessions start on (provider.reas
 			answer: slashSkills},
 		{name: "/save",
 			slash: &slashCommand{args: "[name]", desc: "save this chat",
-				enabled: func(m *Model) bool { return m.db != nil },
+				enabled: func(m *Model) bool { return m.wiring.DB != nil },
 				help:    `save this chat`},
 			answer: slashSave},
 		{name: "/sessions",
@@ -892,7 +892,7 @@ default [level]   show or persist the level new sessions start on (provider.reas
 		// config file and not the tree the turn is working in.
 		{name: "/config",
 			slash: &slashCommand{desc: "every setting, where its value came from, and what changing it costs",
-				enabled: func(m *Model) bool { return m.openConfig != nil },
+				enabled: func(m *Model) bool { return m.wiring.ConfigScreen != nil },
 				help:    `every setting, staged: what each one is set to, where that value came from, and what [enter] offers instead of typing it. Nothing reaches your config file until [ctrl+s], and the way out asks before discarding what is staged. The running session keeps the settings it started on`},
 			bare: true,
 			open: bareOpen(Model.openConfigScreen)},
@@ -918,7 +918,7 @@ default [level]   show or persist the level new sessions start on (provider.reas
 		// exactly when somebody asks where a claim came from.
 		{name: "/sources",
 			slash: &slashCommand{desc: "what this session read: every fetch and search, by host",
-				enabled: func(m *Model) bool { return m.sourceLedger != nil },
+				enabled: func(m *Model) bool { return m.wiring.Sources != nil },
 				help:    `what this session read: every fetch and every search, its own and its children's, grouped by host — with the whole page under [enter] where the fetch kept one`},
 			bare: true,
 			open: bareOpen(Model.openSources)},
@@ -942,7 +942,7 @@ default [level]   show or persist the level new sessions start on (provider.reas
 			open: bareOpen(Model.toolchainCommand)},
 		{name: "/notes",
 			slash: &slashCommand{args: "[drop <n>|clear]", desc: "the session's shared notebook, as a screen: what the agents wrote for each other",
-				enabled: func(m *Model) bool { return m.notebook != nil },
+				enabled: func(m *Model) bool { return m.wiring.Notebook != nil },
 				argSpecs: staticArgs(
 					argOption{"drop", "remove one note by number"},
 					argOption{"clear", "empty the notebook, after confirming it"},
@@ -955,7 +955,7 @@ default [level]   show or persist the level new sessions start on (provider.reas
 				// The manager opens on a session that can spawn agents or draft
 				// a profile for one. Drafting alone is enough: the list is where
 				// the offer to draft lives (attach.go).
-				enabled:  func(m *Model) bool { return m.subagents != nil || m.personas.Enabled },
+				enabled:  func(m *Model) bool { return m.wiring.Subagents != nil || m.wiring.Personas.Enabled },
 				argSpecs: staticArgs(argOption{"new", "draft an agent profile with the model's help"}),
 				help: `agent manager: attach, answer, steer, retry, cancel and kill sub-agents from the row each is on (also ` + keys.Bracket(keys.Draft.Agents) + `)
 new [brief]   draft an agent profile from a sentence with the model's help: answer its questions if it has any, then keep, refine or discard the draft on a card. Bare offers starting points`},
@@ -1032,7 +1032,7 @@ func slashModel(m *Model, parts []string) string {
 	if parts[1] == "default" || parts[1] == "agents" {
 		return m.setModelDefault(parts[1], parts[2:])
 	}
-	if m.switchFn == nil {
+	if m.wiring.SwitchModel == nil {
 		return "model switching is not available in this session"
 	}
 	if len(parts) > 2 {
@@ -1042,7 +1042,7 @@ func slashModel(m *Model, parts []string) string {
 	if name == m.modelName {
 		return fmt.Sprintf("already using %s", name)
 	}
-	m.switchFn(name)
+	m.wiring.SwitchModel(name)
 	m.modelName = name
 	return fmt.Sprintf("switched model to %s. (/model default %s makes it the default for new sessions.)", name, name)
 }
@@ -1080,7 +1080,7 @@ func slashPermissions(m *Model, parts []string) string {
 	if err != nil {
 		return failed("permissions", err.Error())
 	}
-	if m.conversation {
+	if m.wiring.Conversation {
 		return conversationModeNote
 	}
 	m.applyMode(mode)
@@ -1123,34 +1123,34 @@ func slashSandbox(m *Model, parts []string) string {
 }
 
 func slashEvidence(m *Model, parts []string) string {
-	if m.evidence.Manage == nil {
+	if m.wiring.Evidence.Manage == nil {
 		return "the evidence store is unavailable in this session"
 	}
-	return m.evidence.Manage(parts[1:])
+	return m.wiring.Evidence.Manage(parts[1:])
 }
 
 func slashGate(m *Model, parts []string) string {
-	if m.gate.Manage == nil {
+	if m.wiring.Gate.Manage == nil {
 		return "the quality gate is unavailable in this session"
 	}
 	if handled, note := m.gateToggle(parts[1:]); handled {
 		return note
 	}
-	return m.gate.Manage(parts[1:])
+	return m.wiring.Gate.Manage(parts[1:])
 }
 
 func slashProcesses(m *Model, parts []string) string {
-	if m.processes.Manage == nil {
+	if m.wiring.Processes.Manage == nil {
 		return "the process supervisor is unavailable in this session"
 	}
-	return m.processes.Manage(parts[1:])
+	return m.wiring.Processes.Manage(parts[1:])
 }
 
 func slashMemory(m *Model, parts []string) string {
-	if m.memory.Manage == nil {
+	if m.wiring.Memory.Manage == nil {
 		return "durable memory is unavailable in this session"
 	}
-	return m.memory.Manage(parts[1:])
+	return m.wiring.Memory.Manage(parts[1:])
 }
 
 func slashMCP(m *Model, parts []string) string {
@@ -1161,17 +1161,17 @@ func slashMCP(m *Model, parts []string) string {
 }
 
 func slashSessions(m *Model, _ []string) string {
-	if m.sessions == nil {
+	if m.wiring.Sessions == nil {
 		return "the sessions on this machine are not readable from here; `shhh sessions` lists them"
 	}
-	return m.sessions()
+	return m.wiring.Sessions()
 }
 
 func slashSkills(m *Model, _ []string) string {
-	if m.skills == nil {
+	if m.wiring.Skills == nil {
 		return "no skills loaded in this session. A skill is a directory holding a SKILL.md under .shhh/skills, .agents/skills or .claude/skills, in the project or your home directory"
 	}
-	return m.skillsList(m.skills)
+	return m.wiring.SkillsList(m.wiring.Skills)
 }
 
 func slashPlan(m *Model, parts []string) string {
@@ -1187,7 +1187,7 @@ func slashPlan(m *Model, parts []string) string {
 		if strings.TrimSpace(planText) == "" {
 			return "no plan to save yet — there is no assistant response"
 		}
-		path, err := savePlan(m.workspace, planText, strings.Join(parts[2:], "-"))
+		path, err := savePlan(m.wiring.Workspace, planText, strings.Join(parts[2:], "-"))
 		if err != nil {
 			return failed("plan", "could not save it: "+err.Error())
 		}
@@ -1258,27 +1258,27 @@ func (m Model) copyCommand(parts []string) (tea.Model, tea.Cmd) {
 }
 
 func slashSave(m *Model, parts []string) string {
-	if m.db == nil {
+	if m.wiring.DB == nil {
 		return "chat persistence is unavailable"
 	}
 	name := "unnamed"
 	if len(parts) > 1 {
 		name = strings.Join(parts[1:], " ")
 	}
-	if err := m.db.SaveChat(name, agent.StripResumeContext(m.agent.Messages())); err != nil {
+	if err := m.wiring.DB.SaveChat(name, agent.StripResumeContext(m.agent.Messages())); err != nil {
 		return failed("save", err.Error())
 	}
 	// The generated title goes with the conversation into its named
 	// slot; the name is what the listing leads with from now on.
 	if m.titles.title != "" {
-		_ = m.db.SetChatTitle(name, m.titles.title)
+		_ = m.wiring.DB.SetChatTitle(name, m.titles.title)
 	}
 	// So does what the conversation is opened again on, for the same
 	// reason: a copy under a name of the person's choosing is the
 	// conversation, and one that came back unable to say which commit it
 	// was written on would be the one copy that could not (reopen.go).
-	_ = m.db.SetChatResume(name, storage.ChatResume{
-		Summary: m.compactSummary, Head: project.Head(m.workspace), Root: project.Root(m.workspace),
+	_ = m.wiring.DB.SetChatResume(name, storage.ChatResume{
+		Summary: m.compactSummary, Head: project.Head(m.wiring.Workspace), Root: project.Root(m.wiring.Workspace),
 		Steps: m.workSteps.Encode()})
 	// Future rewind branches hang off the named session.
 	m.adoptSlot(name)
@@ -1286,7 +1286,7 @@ func slashSave(m *Model, parts []string) string {
 }
 
 func slashLoad(m *Model, parts []string) string {
-	if m.db == nil {
+	if m.wiring.DB == nil {
 		return "chat persistence is unavailable"
 	}
 	if len(parts) < 2 {
@@ -1299,10 +1299,10 @@ func slashLoad(m *Model, parts []string) string {
 }
 
 func slashChats(m *Model, _ []string) string {
-	if m.db == nil {
+	if m.wiring.DB == nil {
 		return "chat persistence is unavailable"
 	}
-	entries, err := m.db.ListChats()
+	entries, err := m.wiring.DB.ListChats()
 	if err != nil {
 		return failed("chats", err.Error())
 	}

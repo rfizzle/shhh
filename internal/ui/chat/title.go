@@ -59,17 +59,9 @@ type titleDoneMsg struct {
 	verdict agent.TitleVerdict
 }
 
-// WithTitler wires the session titler and whether the session starts with
-// titles on. A nil titler leaves every row untitled and no requests made.
-func (m Model) WithTitler(t *agent.Titler, on bool) Model {
-	m.titles.writer = t
-	m.titles.on = on
-	return m
-}
-
 // titleEnabled reports whether readings are taken at all.
 func (m Model) titleEnabled() bool {
-	return m.titles.on && m.titles.writer.Enabled() && m.db != nil
+	return m.titles.on && m.titles.writer.Enabled() && m.wiring.DB != nil
 }
 
 // isAutosaveSlot reports whether a session name is one the session was given
@@ -155,10 +147,10 @@ func (m *Model) finishTitle(msg titleDoneMsg) tea.Cmd {
 	// The reading is this conversation's whether it is still in the slot
 	// it was read for or /save has since moved it to a named one.
 	m.titles.title = msg.verdict.Title
-	if m.db == nil {
+	if m.wiring.DB == nil {
 		return nil
 	}
-	db, title := m.db, msg.verdict.Title
+	db, title := m.wiring.DB, msg.verdict.Title
 	slots := []string{msg.name}
 	if m.sessionName != msg.name {
 		slots = append(slots, m.sessionName)
@@ -186,10 +178,10 @@ func (m *Model) resetTitle() {
 // loadTitle reads the stored title of the slot the session just moved to.
 func (m *Model) loadTitle() {
 	m.resetTitle()
-	if m.db == nil {
+	if m.wiring.DB == nil {
 		return
 	}
-	m.titles.title, _ = m.db.ChatTitle(m.sessionName)
+	m.titles.title, _ = m.wiring.DB.ChatTitle(m.sessionName)
 }
 
 // titleStatus is the /ui readout's word for the titler: on and with what,

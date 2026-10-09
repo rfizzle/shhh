@@ -280,7 +280,7 @@ func TestSwitchToBranch_TakesTheBranchesOwnSummary(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).WithDB(db)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db})
 	m.compactSummary = "a summary of somewhere else entirely"
 	if note := m.switchToBranch("root (branch 1)"); !strings.Contains(note, "switched to branch") {
 		t.Fatalf("switch failed: %q", note)
@@ -315,9 +315,7 @@ func TestResumeConversation_InjectsAheadOfTheTranscriptAndDrawsOneRow(t *testing
 		t.Fatal(err)
 	}
 
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithDB(db).
-		WithResumedMessages("yesterday", saved)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db}).WithResumedMessages("yesterday", saved)
 
 	msgs := m.Messages()
 	if len(msgs) != 5 {
@@ -364,9 +362,7 @@ func TestResumeConversation_SecondOpeningReplacesTheFirstsReading(t *testing.T) 
 	if err := db.SaveChat("yesterday", saved); err != nil {
 		t.Fatal(err)
 	}
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithDB(db).
-		WithResumedMessages("yesterday", saved)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db}).WithResumedMessages("yesterday", saved)
 
 	// What the session would save is the conversation without the reading.
 	stored := agent.StripResumeContext(m.Messages())
@@ -374,9 +370,7 @@ func TestResumeConversation_SecondOpeningReplacesTheFirstsReading(t *testing.T) 
 		t.Fatalf("the slot keeps the conversation and not the reading, got %d messages", len(stored))
 	}
 
-	again := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithDB(db).
-		WithResumedMessages("yesterday", m.Messages())
+	again := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{DB: db}).WithResumedMessages("yesterday", m.Messages())
 	blocks := 0
 	for _, msg := range again.Messages() {
 		if strings.HasPrefix(msg.Content, resumeMessagePrefix) {

@@ -48,7 +48,7 @@ func TestChatPick_DeleteArmsConfirmAndEnterIsNo(t *testing.T) {
 	if m.chats.confirm != nil {
 		t.Fatal("enter should answer the confirm")
 	}
-	if _, err := m.db.LoadChat("alpha"); err != nil {
+	if _, err := m.wiring.DB.LoadChat("alpha"); err != nil {
 		t.Fatalf("enter is No: alpha must still exist, got %v", err)
 	}
 	if m.state != statePick {
@@ -61,7 +61,7 @@ func TestChatPick_DeleteConfirmedRemovesTheChatAndKeepsThePicker(t *testing.T) {
 	m = press(t, m, "x")
 	m = press(t, m, "y")
 
-	if _, err := m.db.LoadChat("alpha"); err == nil {
+	if _, err := m.wiring.DB.LoadChat("alpha"); err == nil {
 		t.Fatal("y should delete alpha")
 	}
 	if m.state != statePick || m.picker.card == nil {
@@ -78,7 +78,7 @@ func TestChatPick_DeleteConfirmedRemovesTheChatAndKeepsThePicker(t *testing.T) {
 func TestChatPick_DeleteNamesTheBranches(t *testing.T) {
 	m := chatPickModel(t, "alpha")
 	tail := []provider.Message{{Role: provider.RoleUser, Content: "q"}}
-	if err := m.db.SaveChatBranch("alpha", "alpha@turn2", tail); err != nil {
+	if err := m.wiring.DB.SaveChatBranch("alpha", "alpha@turn2", tail); err != nil {
 		t.Fatal(err)
 	}
 	m = sendText(t, m, "/chats")
@@ -90,7 +90,7 @@ func TestChatPick_DeleteNamesTheBranches(t *testing.T) {
 		t.Fatalf("the confirm should count the branches, got %q", m.chats.confirm.Prompt)
 	}
 	m = press(t, m, "esc")
-	if err := m.db.SaveChatBranch("alpha", "alpha@turn3", tail); err != nil {
+	if err := m.wiring.DB.SaveChatBranch("alpha", "alpha@turn3", tail); err != nil {
 		t.Fatal(err)
 	}
 	m = press(t, m, "x")
@@ -157,10 +157,10 @@ func TestChatPick_RenameCommitsOnEnter(t *testing.T) {
 	if m.chats.rename != nil {
 		t.Fatal("enter should close the row")
 	}
-	if _, err := m.db.LoadChat("alpha2"); err != nil {
+	if _, err := m.wiring.DB.LoadChat("alpha2"); err != nil {
 		t.Fatalf("enter should rename alpha to alpha2: %v", err)
 	}
-	if _, err := m.db.LoadChat("alpha"); err == nil {
+	if _, err := m.wiring.DB.LoadChat("alpha"); err == nil {
 		t.Fatal("the old name should be gone")
 	}
 	if m.state != statePick || pickIndex(t, m, "alpha2") < 0 {
@@ -177,7 +177,7 @@ func TestChatPick_RenameEscKeepsTheName(t *testing.T) {
 	if m.chats.rename != nil {
 		t.Fatal("esc should close the row")
 	}
-	if _, err := m.db.LoadChat("alpha"); err != nil {
+	if _, err := m.wiring.DB.LoadChat("alpha"); err != nil {
 		t.Fatalf("esc must keep the old name: %v", err)
 	}
 	if m.state != statePick {
@@ -197,7 +197,7 @@ func TestChatPick_RenameCollisionIsRefusedByName(t *testing.T) {
 	if !strings.Contains(lastNote(m), `a chat named "beta" already exists`) {
 		t.Fatalf("a collision should be reported by name, got %q", lastNote(m))
 	}
-	if _, err := m.db.LoadChat("alpha"); err != nil {
+	if _, err := m.wiring.DB.LoadChat("alpha"); err != nil {
 		t.Fatalf("a refused rename keeps alpha: %v", err)
 	}
 }
@@ -224,7 +224,7 @@ func TestChatPick_OwnSlotCannotBeDeletedOrRenamed(t *testing.T) {
 	if m.chats.rename != nil {
 		t.Fatal("r on the session's own slot must not open the rename row")
 	}
-	if _, err := m.db.LoadChat("beta"); err != nil {
+	if _, err := m.wiring.DB.LoadChat("beta"); err != nil {
 		t.Fatalf("the slot must be untouched: %v", err)
 	}
 }
@@ -243,7 +243,7 @@ func TestChatPick_KeysAreTextWhileFiltering(t *testing.T) {
 
 func TestChatPick_TitleLeadsTheDescription(t *testing.T) {
 	m := chatPickModel(t, "alpha", "beta")
-	if err := m.db.SetChatTitle("alpha", "Greeting the tests"); err != nil {
+	if err := m.wiring.DB.SetChatTitle("alpha", "Greeting the tests"); err != nil {
 		t.Fatal(err)
 	}
 	m = sendText(t, m, "/chats")
@@ -261,7 +261,7 @@ func TestChatPick_TitleLeadsTheDescription(t *testing.T) {
 // (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
 func TestChatPick_TheAccountFollowsTheReadings(t *testing.T) {
 	m := chatPickModel(t, "alpha", "beta")
-	if err := m.db.SetChatResume("alpha", storage.ChatResume{Summary: "Fixing the retry backoff."}); err != nil {
+	if err := m.wiring.DB.SetChatResume("alpha", storage.ChatResume{Summary: "Fixing the retry backoff."}); err != nil {
 		t.Fatal(err)
 	}
 	m = sendText(t, m, "/chats")
@@ -292,7 +292,9 @@ func TestGolden_ChatPicker(t *testing.T) {
 		if err := db.SetChatTitle("2026-08-30 09:12:04", "Flaky retry test"); err != nil {
 			t.Fatal(err)
 		}
-		m := frameModel(t, width, 40).WithDB(db)
+		m := frameModel(t, width, 40)
+		m.wiring.DB = db
+		m.bindStores()
 		m.sessionName = "2026-08-31 14:02:11"
 		// The listing is ordered by write time, which a test cannot hold
 		// still; the rows are pinned so the capture is the same every run.
@@ -417,7 +419,9 @@ func TestChatLoad_TheLoadedConversationsReadingsComeBackUnknown(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	m := readyModel(t).WithDB(db)
+	m := readyModel(t)
+	m.wiring.DB = db
+	m.bindStores()
 	m.sessionName = "2026-01-01 00:00:00"
 	m.loadChatByName("alpha")
 
@@ -489,7 +493,7 @@ func searchablePicker(t *testing.T) Model {
 	if err := db.SetChatTitle("2026-09-04 11:02", "Release chore"); err != nil {
 		t.Fatal(err)
 	}
-	return sendText(t, readyModel(t).WithDB(db), "/chats")
+	return sendText(t, readyModelWith(t, Wiring{DB: db}), "/chats")
 }
 
 func TestChatPick_FindsAChatByAWordSaidInIt(t *testing.T) {

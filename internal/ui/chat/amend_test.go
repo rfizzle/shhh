@@ -25,12 +25,12 @@ import (
 // workspace of its own so the blast radius is read in a tree this test owns.
 func amendModel(t *testing.T, command string, ran *[]string) Model {
 	t.Helper()
-	m := gatedModel(t, nil, nil).
-		WithWorkspace(t.TempDir()).
-		WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
-			*ran = append(*ran, cmd)
-			return "ok", 0
-		}))
+	m := gatedModel(t, nil, nil)
+	m.wiring.Workspace = t.TempDir()
+	m.wiring.Runner = legacyRunner(func(_ context.Context, cmd string) (string, int) {
+		*ran = append(*ran, cmd)
+		return "ok", 0
+	})
 	return execApproval(t, m, command)
 }
 
@@ -60,11 +60,12 @@ func openAmend(t *testing.T, m Model, line string) Model {
 func TestAmend_TheReadersLineRunsAndEverythingSaysSo(t *testing.T) {
 	var ran []string
 	var decisions [][2]string
-	m := amendModel(t, "npm test", &ran).WithObserver(observe.Observer{
+	m := amendModel(t, "npm test", &ran)
+	m.wiring.Observer = observe.Observer{
 		Decision: func(_ observe.Pos, decision, reason string) {
 			decisions = append(decisions, [2]string{decision, reason})
 		},
-	})
+	}
 	if !offersAmend(m.approvalCard()) {
 		t.Fatal("a command card offers to be amended")
 	}
@@ -161,7 +162,8 @@ func TestAmend_TheBlockIsReadAgainstTheLineThatRuns(t *testing.T) {
 // that really ran unrecorded, so running it twice would go unnoticed.
 func TestAmend_TheRepeatDetectorIsFiledUnderTheLineThatRan(t *testing.T) {
 	var ran []string
-	m := amendModel(t, "npm test", &ran).WithRepeats(agent.NewRepeatDetector())
+	m := amendModel(t, "npm test", &ran)
+	m.wiring.Repeats = agent.NewRepeatDetector()
 	m = openAmend(t, m, "npm test -- --runInBand")
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
@@ -193,11 +195,13 @@ func TestAmend_ALineThatLeavesTheScopeIsPutBackToTheReader(t *testing.T) {
 		t.Fatalf("scope.New(%q): %v", root, problems)
 	}
 	var ran []string
-	m := gatedModel(t, nil, nil).WithWorkspace(root).WithScope(sc).
-		WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
-			ran = append(ran, cmd)
-			return "ok", 0
-		}))
+	m := gatedModel(t, nil, nil)
+	m.wiring.Workspace = root
+	m.wiring.Scope = sc
+	m.wiring.Runner = legacyRunner(func(_ context.Context, cmd string) (string, int) {
+		ran = append(ran, cmd)
+		return "ok", 0
+	})
 	m = execApproval(t, m, "echo hi > "+filepath.Join(root, "one.txt"))
 	if m.approval.scope.any() {
 		t.Fatalf("the fixture wants a line inside the scope, got %v", m.approval.scope.dirs)
@@ -276,11 +280,12 @@ func TestAmend_AHeavierLineDrawsTheHeavierCard(t *testing.T) {
 // line that will run.
 func TestAmend_TheBatchMarkIsTakenAgainstTheLineTheReaderWrote(t *testing.T) {
 	var ran []string
-	m := gatedModel(t, nil, nil).WithWorkspace(t.TempDir()).
-		WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
-			ran = append(ran, cmd)
-			return "ok", 0
-		}))
+	m := gatedModel(t, nil, nil)
+	m.wiring.Workspace = t.TempDir()
+	m.wiring.Runner = legacyRunner(func(_ context.Context, cmd string) (string, int) {
+		ran = append(ran, cmd)
+		return "ok", 0
+	})
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_a", Name: tools.ExecCommandName, Arguments: `{"command":"echo one"}`},
 		{ID: "call_b", Name: tools.ExecCommandName, Arguments: `{"command":"echo two"}`},

@@ -27,7 +27,8 @@ func TestProgram_AServerStartingTurnsUpAndJoinsAtTheNextLine(t *testing.T) {
 		programTurn{text: "the first answer"},
 		programTurn{text: "the second answer"},
 	)
-	m = m.WithToolDefinitions([]ToolTokens{{Name: "read_file"}}).WithMCP(MCP{
+	m.setToolDefinitions([]ToolTokens{{Name: "read_file"}})
+	m.mcp = MCP{
 		Has:     func(name string) bool { return joined.Load() && name == "docs__search" },
 		Sources: rows(),
 		Live:    rows,
@@ -42,7 +43,7 @@ func TestProgram_AServerStartingTurnsUpAndJoinsAtTheNextLine(t *testing.T) {
 				ServerTools: []ToolTokens{{Name: "docs__search"}},
 			}, true
 		},
-	})
+	}
 	tm := runProgramAt(t, m, 130, 40)
 
 	send(tm, "what is in the docs")

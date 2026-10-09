@@ -25,7 +25,10 @@ func railDoorModel(t *testing.T) Model {
 	t.Helper()
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv(), MaxConcurrent: 5})
 	t.Cleanup(sup.Close)
-	m := inspectorModel(t, 160, 60).WithSubagents(sup).WithMouse(true)
+	m := inspectorModel(t, 160, 60)
+	m.wiring.Subagents = sup
+	m.adoptChildren()
+	m.pointer.mouseOn = true
 	for i := range 10 {
 		m.changes.Add(1, changeset.Record{
 			Path: fmt.Sprintf("pkg/f%02d.go", i), AfterExists: true, After: "package pkg\n",
@@ -148,8 +151,8 @@ func railPlanModel(t *testing.T) Model {
 func railSummaryModel(t *testing.T) Model {
 	t.Helper()
 	m := railDoorModel(t)
-	m = m.WithSummarizer(agent.NewSummarizer(&readingProvider{text: "Reading."},
-		agent.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1}))
+	m.summary.writer = agent.NewSummarizer(&readingProvider{text: "Reading."},
+		agent.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1})
 	landReading(&m, agent.SummaryVerdict{Text: "Reading the loop.", State: agent.SummaryOnTarget, Round: 3})
 	return m
 }
@@ -180,7 +183,8 @@ func railAlertsModel(t *testing.T) Model {
 // block draws, so the block carries its own `… N more`.
 func railTodoModel(t *testing.T) Model {
 	t.Helper()
-	m := todoModel(t, todoTestRoot(t)).WithMouse(true)
+	m := todoModel(t, todoTestRoot(t))
+	m.pointer.mouseOn = true
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 150, Height: 40})
 	return updated.(Model)
 }

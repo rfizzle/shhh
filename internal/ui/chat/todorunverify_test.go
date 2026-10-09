@@ -37,7 +37,7 @@ func TestVerify_AStalePassIsNotAPass(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			m, root := runModel(t)
 			res := tc.res
-			m.gate.Run = func(context.Context, string) (*quality.Result, error) { return &res, nil }
+			m.wiring.Gate.Run = func(context.Context, string) (*quality.Result, error) { return &res, nil }
 			m.todo.runner.state = &run.State{Slug: "do-it", Tests: []string{"true"}}
 			m.todo.runner.item = todo.Item{Slug: "do-it"}
 			msg := m.todoVerifyCmd("")().(todoVerifyMsg)

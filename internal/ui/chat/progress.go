@@ -11,7 +11,6 @@ package chat
 
 import (
 	"strings"
-	"time"
 
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -143,10 +142,4 @@ func (m Model) checkpointLines(text string, width int) []string {
 	}
 	inner := max(width-components.GridDetailIndent, 1)
 	return strings.Split(strings.TrimRight(m.wordWrap(text, inner), "\n"), "\n")
-}
-
-// WithProgressIntervals sets the two public-status clocks for this session.
-func (m Model) WithProgressIntervals(calls int, elapsed time.Duration) Model {
-	m.agent.SetProgressIntervals(calls, elapsed)
-	return m
 }

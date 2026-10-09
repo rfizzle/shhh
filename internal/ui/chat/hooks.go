@@ -18,22 +18,6 @@ import (
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
-// WithHooks installs the session's hook runner and puts the tool seams on the
-// executor. Nil is a session with no hooks, which every seam below is safe
-// under.
-//
-// It takes the executor rather than reading one back because it must run
-// after everything that decides which calls are gated — the wrap asks that
-// question of the model it was built from, and a wrap built before the gated
-// tools were registered would answer it wrongly for every one of them.
-func (m Model) WithHooks(r *hook.Runner, exec ToolExecutor) Model {
-	m.hooks = r
-	if r != nil && exec != nil {
-		m.agent.SetExecutor(m.hookExecutor(exec))
-	}
-	return m
-}
-
 // hookExecutor puts the tool seams inside the read-only dispatcher, through
 // the one wrap both surfaces use (internal/hook).
 //
@@ -47,7 +31,7 @@ func (m Model) WithHooks(r *hook.Runner, exec ToolExecutor) Model {
 // one report it.
 func (m Model) hookExecutor(next ToolExecutor) ToolExecutor {
 	a, gated := m.agent, m.requiresApproval
-	return ToolExecutor(m.hooks.WrapExecutor(
+	return ToolExecutor(m.wiring.Hooks.WrapExecutor(
 		func() hook.Pos { return hook.Pos{Round: int64(a.Rounds())} },
 		func(name string, args json.RawMessage) bool {
 			return gated(provider.ToolCall{Name: name, Arguments: string(args)})
@@ -89,7 +73,7 @@ func hookWhy(name string) string {
 // withheld list because it is the same question — what else is in this
 // session — asked of the person's own configuration.
 func (m Model) hooksStatus() string {
-	set := m.hooks.Set()
+	set := m.wiring.Hooks.Set()
 	if set.Len() == 0 {
 		return ""
 	}

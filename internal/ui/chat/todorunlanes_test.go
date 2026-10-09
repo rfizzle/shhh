@@ -133,7 +133,7 @@ func TestTodoSprint_ASessionOpenedBesideLanesFollowsThem(t *testing.T) {
 		{Slug: "c-three", Stage: run.StageResearch},
 	}
 	must(t, sp.Save(root))
-	m = m.WithTodos(m.todo.wiring)
+	m.loadTodos()
 
 	if !m.todo.runner.following || m.Init() == nil {
 		t.Fatal("a session opened beside a running parallel sprint arms the re-read")

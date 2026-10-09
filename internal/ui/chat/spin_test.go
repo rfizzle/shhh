@@ -53,7 +53,7 @@ func carriesTick(cmd tea.Cmd) bool {
 // it starts stays in flight for the length of a test.
 func spinModel(t *testing.T) Model {
 	t.Helper()
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, blockingStream(t))
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, blockingStream(t), Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
 	return updated.(Model)
 }
@@ -100,8 +100,7 @@ func TestSpin_StartsWhenTheUserStartsATurn(t *testing.T) {
 // moved was discarded, and the chain went with it.
 func TestSpin_SurvivesEveryHandoff(t *testing.T) {
 	executor := func(name string, args json.RawMessage) (string, error) { return "result", nil }
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, blockingStream(t)).
-		WithToolExecutor(executor)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, blockingStream(t), Wiring{Executor: executor})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
 	m = updated.(Model)
 

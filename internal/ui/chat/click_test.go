@@ -89,7 +89,8 @@ func clickAnswer(t *testing.T, m Model, x, y int) Model {
 // lines of output behind it, and a command row after it.
 func clickModel(t *testing.T) Model {
 	t.Helper()
-	m := focusModel(t).WithMouse(true)
+	m := focusModel(t)
+	m.pointer.mouseOn = true
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoTop()
 	m.atBottom = false
@@ -202,7 +203,7 @@ func TestClick_ReadingModeMovesTheCursor(t *testing.T) {
 // and opens nothing.
 func TestClick_TheChangedFilesLineOpensItsTurnsReview(t *testing.T) {
 	m, _ := undoModel(t)
-	m = m.WithMouse(true)
+	m.pointer.mouseOn = true
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	m.input.SetValue("half a sentence")
@@ -283,7 +284,8 @@ func clickCardModel(t *testing.T, draft string, executor ToolExecutor) Model {
 	t.Helper()
 	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
 		"write_file": writeFilePreview("line one\n"),
-	}).WithMouse(true)
+	})
+	m.pointer.mouseOn = true
 	m.width, m.height = 130, 40
 	m.syncInputWidth()
 	m.input.SetValue(draft)
@@ -386,7 +388,8 @@ func TestClick_OffTheRunAnswersNothing(t *testing.T) {
 // A routed child approval is the same card component, so the
 // pointer reaches it through the same door and lands in the same handler.
 func TestClick_RoutedChildApproval(t *testing.T) {
-	m := frameModel(t, 130, 40).WithMouse(true)
+	m := frameModel(t, 130, 40)
+	m.pointer.mouseOn = true
 	ask := subagent.NewAsk("researcher-1", subagent.AskCommand, "run make")
 	m.childAsks = []*subagent.Ask{ask}
 	// Nothing in the draft, so the card holds the keyboard on arrival.
@@ -447,7 +450,7 @@ func deepClickModel(t *testing.T) Model {
 	}
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"main.go"}`,
 		toolResult: strings.TrimRight(long.String(), "\n")})
-	m = m.WithMouse(true)
+	m.pointer.mouseOn = true
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoTop()
 	m.atBottom = false
@@ -499,7 +502,7 @@ func diffClickModel(t *testing.T) Model {
 		Verb:  "edit",
 		Hunks: diff.Compute("old line\n", "new line\n"),
 	}})
-	m = m.WithMouse(true)
+	m.pointer.mouseOn = true
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoTop()
 	m.atBottom = false
@@ -540,7 +543,7 @@ func TestClick_TheDiffBodyOpensFullScreen(t *testing.T) {
 func TestClick_ThinkingIsReadNotPressed(t *testing.T) {
 	m := focusModel(t)
 	m.appendEntry(entry{kind: entryThink, text: "the cap is a checkpoint, not a wall"})
-	m = m.WithMouse(true)
+	m.pointer.mouseOn = true
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoTop()
 	m.atBottom = false
@@ -560,7 +563,10 @@ func railClickModel(t *testing.T) Model {
 	t.Helper()
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
-	m := inspectorModel(t, 144, 40).WithSubagents(sup).WithMouse(true)
+	m := inspectorModel(t, 144, 40)
+	m.wiring.Subagents = sup
+	m.adoptChildren()
+	m.pointer.mouseOn = true
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
 	spawnChild(t, sup, subagent.RoleReviewer, "reviewer-1")
 	m.viewport.SetLines(m.renderHistoryLines())

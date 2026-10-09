@@ -50,7 +50,7 @@ func programRepo(t *testing.T, after map[string]string) string {
 // changesSession is a session over root with its changeset tracked the way a
 // coding session's is.
 func changesSession(root string, turns ...programTurn) Model {
-	return readingSession(root, turns...).WithChangeset(nil, changeset.NewTracker(root))
+	return readingSessionWith(root, Wiring{Tracker: changeset.NewTracker(root)}, turns...)
 }
 
 // editTurn is a turn that edits one file under root. The path is absolute:
@@ -156,7 +156,7 @@ func twoEditTurns(root string, after ...programTurn) Model {
 		editTurn(root, "loop.go", "const limit = 50", "const limit = 100"),
 		{text: "Raised again."},
 	}
-	return changesSession(root, append(turns, after...)...).WithMouse(true)
+	return changesSession(root, append(turns, after...)...)
 }
 
 // runTwoTurns drives both turns to their closes.

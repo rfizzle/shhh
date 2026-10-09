@@ -29,16 +29,17 @@ func TestObserver_ModelReachesEveryHook(t *testing.T) {
 	m := New([]provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "hello"},
-	}, mockStream).
-		WithDB(db).
-		WithObserver(observe.Observer{
+	}, mockStream, Wiring{
+		DB: db,
+		Observer: observe.Observer{
 			Usage:    func(int64, int64, int64, float64, bool) { reached = append(reached, "usage") },
 			ToolCall: func(observe.Pos, string, time.Duration, string, string, string) { reached = append(reached, "tool") },
 			Decision: func(observe.Pos, string, string) { reached = append(reached, "decision") },
 			Turn:     func(int64, int64, time.Duration, string) { reached = append(reached, "turn") },
 			Signal:   func(observe.Pos, string, string) { reached = append(reached, "signal") },
 			Session:  func(string) { reached = append(reached, "session") },
-		})
+		},
+	})
 	m.notifyUsage()
 	m.recordToolResult(provider.ToolCall{Name: "read_file"}, time.Millisecond, "data")
 	m.recordDecision(observe.DecisionAllow, "user")
@@ -62,10 +63,11 @@ func TestObserver_ModelReachesEveryHook(t *testing.T) {
 
 func TestObserver_UsageReportsTurnsAndTotals(t *testing.T) {
 	var gotTurns, gotIn, gotOut int64
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithObserver(observe.Observer{Usage: func(turns, tokensIn, tokensOut int64, _ float64, _ bool) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Observer: observe.Observer{Usage: func(turns, tokensIn, tokensOut int64, _ float64, _ bool) {
 			gotTurns, gotIn, gotOut = turns, tokensIn, tokensOut
-		}})
+		}},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	model := updated.(Model)
 
@@ -80,10 +82,11 @@ func TestObserver_UsageReportsTurnsAndTotals(t *testing.T) {
 
 func TestObserver_ToolEventsRecorded(t *testing.T) {
 	var events []string
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithObserver(observe.Observer{ToolCall: func(_ observe.Pos, tool string, duration time.Duration, outcome, class, purpose string) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Observer: observe.Observer{ToolCall: func(_ observe.Pos, tool string, duration time.Duration, outcome, class, purpose string) {
 			events = append(events, tool+":"+outcome+":"+purpose)
-		}})
+		}},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	model := updated.(Model)
 	model.state = stateStreaming
@@ -116,10 +119,11 @@ func TestObserver_ToolEventsRecorded(t *testing.T) {
 // (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
 func TestObserver_TheRecordedRoundIsTheRoundTheConversationCarries(t *testing.T) {
 	var at observe.Pos
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithObserver(observe.Observer{ToolCall: func(p observe.Pos, _ string, _ time.Duration, _, _, _ string) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Observer: observe.Observer{ToolCall: func(p observe.Pos, _ string, _ time.Duration, _, _, _ string) {
 			at = p
-		}})
+		}},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	model := updated.(Model)
 	updated, _ = model.sendUserMessage("where is the steering tuned?")
@@ -159,12 +163,13 @@ func TestObserver_TheRecordedRoundIsTheRoundTheConversationCarries(t *testing.T)
 // broke on one would be missing exactly where it is wanted.
 func TestObserver_ASteerMovesTheTurnOnBothSidesOfTheJoin(t *testing.T) {
 	var at observe.Pos
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithObserver(observe.Observer{Signal: func(p observe.Pos, code, _ string) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Observer: observe.Observer{Signal: func(p observe.Pos, code, _ string) {
 			if code == observe.SignalSteer {
 				at = p
 			}
-		}})
+		}},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	model := updated.(Model)
 	updated, _ = model.sendUserMessage("do the task")
@@ -197,10 +202,11 @@ func TestObserver_ASteerMovesTheTurnOnBothSidesOfTheJoin(t *testing.T) {
 
 func TestObserver_TurnRecordedOnClose(t *testing.T) {
 	var turns []string
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithObserver(observe.Observer{Turn: func(turn, rounds int64, _ time.Duration, outcome string) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Observer: observe.Observer{Turn: func(turn, rounds int64, _ time.Duration, outcome string) {
 			turns = append(turns, fmt.Sprintf("%d:%d:%s", turn, rounds, outcome))
-		}})
+		}},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	model := updated.(Model)
 	updated, _ = model.sendUserMessage("hello")
@@ -222,10 +228,11 @@ func TestObserver_TurnRecordedOnClose(t *testing.T) {
 
 func TestObserver_SignalsFromResultsAndSummary(t *testing.T) {
 	var signals []string
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithObserver(observe.Observer{Signal: func(at observe.Pos, code, reason string) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Observer: observe.Observer{Signal: func(at observe.Pos, code, reason string) {
 			signals = append(signals, fmt.Sprintf("%d/%s:%s", at.Turn, code, reason))
-		}})
+		}},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	model := updated.(Model)
 	updated, _ = model.sendUserMessage("hello")

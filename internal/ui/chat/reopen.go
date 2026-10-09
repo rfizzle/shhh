@@ -303,8 +303,8 @@ func (m *Model) resumeConversation(slot string, msgs []provider.Message) {
 	// transcript draws both. A slot that kept none, or a session with no
 	// store, has none to draw.
 	var folded []provider.Message
-	if slot != "" && m.db != nil {
-		folded, _ = m.db.LoadChatFolded(slot)
+	if slot != "" && m.wiring.DB != nil {
+		folded, _ = m.wiring.DB.LoadChatFolded(slot)
 		folded = agent.FoldedWithoutReading(folded)
 	}
 	m.loadConversationFolded(folded, agent.StripResumeContext(msgs))
@@ -329,7 +329,7 @@ func (m *Model) resumeConversation(slot string, msgs []provider.Message) {
 // standing facts, and because the transcript that follows is what they
 // correct; the row goes at the end, where the reader is looking.
 func (m *Model) injectResumeContext() {
-	n := ResumeContext(m.db, m.sessionName, m.workspace, m.codingSurfaces())
+	n := ResumeContext(m.wiring.DB, m.sessionName, m.wiring.Workspace, m.codingSurfaces())
 	msgs := m.agent.Messages()
 	at := 0
 	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {

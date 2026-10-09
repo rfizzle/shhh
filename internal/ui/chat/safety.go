@@ -58,12 +58,6 @@ type SafetyServer struct {
 	Status string
 }
 
-// WithSafety hands the reading what only the command package can read.
-func (m Model) WithSafety(s Safety) Model {
-	m.safety = s
-	return m
-}
-
 // openSafety puts the screen up. It is built once per opening from the live
 // session — the scope, the grants and the mode as they stand now — so
 // reopening it after one of them moved is how the reader sees the move.
@@ -116,7 +110,7 @@ func (m Model) renderSafetyHint() string {
 // safetySubject is the header's field: the mode the session runs under and
 // what contains its commands, the two facts the rest of the page qualifies.
 func (m Model) safetySubject() string {
-	if m.conversation {
+	if m.wiring.Conversation {
 		return "conversation · " + conversationModeWord
 	}
 	contained := m.containment.Mechanism
@@ -151,7 +145,7 @@ func (m Model) safetyPolicy() components.SafetySection {
 	// saying that is the whole of this section there, and a mode drawn over
 	// it would be one the session does not run under
 	// (docs/capabilities/chat.md#a-conversation-has-one-mode).
-	if m.conversation {
+	if m.wiring.Conversation {
 		sec.Lines = []string{conversationModeNote, "No card is drawn, so nothing is granted."}
 		return sec
 	}
@@ -170,12 +164,12 @@ func (m Model) safetyPolicy() components.SafetySection {
 // sensitive: the ones nothing but a person's own /add-dir will grant.
 func (m Model) safetyScope() components.SafetySection {
 	sec := components.SafetySection{Title: "where it may write", ChangedBy: "/add-dir"}
-	if m.conversation {
+	if m.wiring.Conversation {
 		sec.Lines, sec.Absent = []string{"a conversation writes nothing, so it has no working scope"}, true
 		return sec
 	}
 	sec.Lines = lines(m.scopeStatus())
-	if m.scope == nil {
+	if m.wiring.Scope == nil {
 		sec.Absent = true
 		return sec
 	}
@@ -200,7 +194,7 @@ func (m Model) safetyScope() components.SafetySection {
 	// contained command write them is a person's to make. It is named only
 	// where there is a store, found the way the mask finds it.
 	// See docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only.
-	if store, ok := sandbox.GitStoreFor(m.scope.Root()); ok {
+	if store, ok := sandbox.GitStoreFor(m.wiring.Scope.Root()); ok {
 		sec.Lines = append(sec.Lines, "  "+short(store)+" — the repository's store and hooks")
 	}
 	return sec
@@ -211,7 +205,7 @@ func (m Model) safetyScope() components.SafetySection {
 // now rather than as the session started.
 func (m Model) safetyContainment() components.SafetySection {
 	sec := components.SafetySection{Title: "containment", ChangedBy: "/sandbox"}
-	if m.conversation {
+	if m.wiring.Conversation {
 		sec.Lines, sec.Absent = []string{"a conversation runs no commands, so there is nothing to contain"}, true
 		return sec
 	}
@@ -244,7 +238,7 @@ func (m Model) safetyWeb() components.SafetySection {
 		sec.Lines, sec.Absent = []string{"this session has no web tools, so it reaches no host"}, true
 		return sec
 	}
-	if m.conversation {
+	if m.wiring.Conversation {
 		sec.Lines = append(sec.Lines, "a conversation fetches without a card, so no host is granted here")
 	}
 	allowed := m.hostAllowlist()
@@ -261,7 +255,7 @@ func (m Model) safetyWeb() components.SafetySection {
 	for _, h := range m.policy.denyHosts {
 		sec.Lines = append(sec.Lines, "  refused    "+h+" from web.deny_hosts — before anything can allow it")
 	}
-	if len(allowed)+len(m.policy.turn.Hosts) == 0 && !m.conversation {
+	if len(allowed)+len(m.policy.turn.Hosts) == 0 && !m.wiring.Conversation {
 		sec.Lines = append(sec.Lines, "no host is fetched without asking — every fetch draws a card")
 	}
 	return sec
@@ -272,7 +266,7 @@ func (m Model) safetyWeb() components.SafetySection {
 // it, with the answer itself on the line above.
 func (m Model) safetyTrust() components.SafetySection {
 	sec := components.SafetySection{Title: "what the checkout was let load", ChangedBy: "/trust"}
-	t := m.safety.Trust
+	t := m.wiring.Safety.Trust
 	if m.start != nil {
 		t = m.trust()
 	}
@@ -293,8 +287,8 @@ func (m Model) safetyTrust() components.SafetySection {
 func (m Model) safetyServers() components.SafetySection {
 	sec := components.SafetySection{Title: "mcp", ChangedBy: "/mcp"}
 	var servers []SafetyServer
-	if m.safety.Servers != nil {
-		servers = m.safety.Servers()
+	if m.wiring.Safety.Servers != nil {
+		servers = m.wiring.Safety.Servers()
 	}
 	if len(servers) == 0 {
 		sec.Lines, sec.Absent = []string{"no MCP servers in this session"}, true
@@ -320,8 +314,8 @@ func (m Model) safetyServers() components.SafetySection {
 func (m Model) safetySecrets() components.SafetySection {
 	sec := components.SafetySection{Title: "secrets", ChangedBy: "/secret"}
 	var names []string
-	if m.safety.Secrets != nil {
-		names = m.safety.Secrets()
+	if m.wiring.Safety.Secrets != nil {
+		names = m.wiring.Safety.Secrets()
 	}
 	if len(names) == 0 {
 		sec.Lines = []string{"no secrets declared"}
@@ -329,7 +323,7 @@ func (m Model) safetySecrets() components.SafetySection {
 	for _, n := range names {
 		sec.Lines = append(sec.Lines, "  $"+n+" — in every command, masked everywhere else")
 	}
-	if m.safety.EnvMask {
+	if m.wiring.Safety.EnvMask {
 		sec.Lines = append(sec.Lines, "secrets.env_mask is on — an inherited *_KEY, *_SECRET or *_TOKEN never reaches a command")
 	} else {
 		sec.Lines = append(sec.Lines, "secrets.env_mask is off — inherited variables reach commands as they are")
@@ -354,7 +348,7 @@ func (m Model) safetyTools() components.SafetySection {
 			exec = append(exec, name)
 		// A conversation answers its own fetches without a card, so the one
 		// tool that asks everywhere else is a read here.
-		case m.conversation && receipt.IsFetch(name):
+		case m.wiring.Conversation && receipt.IsFetch(name):
 			read = append(read, name)
 		case m.requiresApproval(provider.ToolCall{Name: name}):
 			asks = append(asks, name)

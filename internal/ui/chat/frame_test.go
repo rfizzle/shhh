@@ -22,11 +22,21 @@ import (
 // cockpit segment has something to show.
 func frameModel(t testing.TB, width, height int) Model {
 	t.Helper()
+	return frameModelWith(t, width, height, Wiring{})
+}
+
+// frameModelWith is frameModel built from w, priced as frameModel is unless
+// w names a price table or a model of its own.
+func frameModelWith(t testing.TB, width, height int, w Wiring) Model {
+	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	table := pricing.NewTable(map[string]pricing.ModelPricing{
-		"gpt-4o": {InputCostPerToken: 0.00001, OutputCostPerToken: 0.00001},
-	})
-	m := New(msgs, mockStream).WithPricing(table, "gpt-4o")
+	if w.Prices == nil && w.ModelName == "" {
+		w.Prices = pricing.NewTable(map[string]pricing.ModelPricing{
+			"gpt-4o": {InputCostPerToken: 0.00001, OutputCostPerToken: 0.00001},
+		})
+		w.ModelName = "gpt-4o"
+	}
+	m := New(msgs, mockStream, w)
 	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: height})
 	return updated.(Model)
@@ -187,8 +197,10 @@ func TestFrame_NarrowMinimalRail(t *testing.T) {
 // the narrow rail keeps it, where beside a price it would be the second
 // reading of one bill and go (docs/interface/surfaces.md#the-input-frame).
 func TestFrame_NarrowRailKeepsTheUnpricedAccount(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithPricing(pricing.NewTable(nil), "unpriced-model")
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{
+		Prices:    pricing.NewTable(nil),
+		ModelName: "unpriced-model",
+	})
 	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 60, Height: 30})
 	m = updated.(Model)
@@ -342,7 +354,8 @@ func TestFrame_TheStatusIsTheOnlySpinner(t *testing.T) {
 			m.setTurnState(stateStreaming)
 		}, []string{"▸ 2 Add a RoundsExhausted sentinel ✎ errors.go"}},
 		{"a fan-out with running children", func(m *Model) {
-			*m = m.WithSubagents(sup)
+			m.wiring.Subagents = sup
+			m.adoptChildren()
 			m.transcript = append(m.transcript, entry{kind: entryFanout, fanout: &fanoutBatch{batch: batch}})
 			m.setTurnState(stateStreaming)
 		}, []string{"◇ researcher-1 Say where the round counter is read. running"}},
@@ -636,7 +649,7 @@ func TestFrame_IdentityDropsBeforeTheAccount(t *testing.T) {
 		t.Fatalf("both labels should stand at 140: left %q right %q", left, right)
 	}
 
-	m.title = strings.Repeat("survey", 12)
+	m.wiring.Title = strings.Repeat("survey", 12)
 	var dropped bool
 	for width := 140; width >= 40; width-- {
 		left, right = m.topRailLabels(frameWide, width)
@@ -662,7 +675,9 @@ func attachedModel(t *testing.T, width int) Model {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(),
 		NewEnv: billedEnv(provider.Usage{PromptTokens: 4200, CompletionTokens: 900})})
 	t.Cleanup(sup.Close)
-	m := frameModel(t, width, 40).WithSubagents(sup)
+	m := frameModel(t, width, 40)
+	m.wiring.Subagents = sup
+	m.adoptChildren()
 	spawnBlockedChild(t, sup)
 	waitFor(t, func() bool {
 		st, ok := sup.Get("researcher-1")
@@ -737,7 +752,9 @@ func TestChildRail_NeverDropsPressureSpendOrMode(t *testing.T) {
 func TestChildRail_NeverDropsAStoppedChildsState(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
-	m := frameModel(t, 140, 40).WithSubagents(sup)
+	m := frameModel(t, 140, 40)
+	m.wiring.Subagents = sup
+	m.adoptChildren()
 	spawnBlockedChild(t, sup)
 	killChild(t, sup, "researcher-1")
 	m.attach("researcher-1")
@@ -776,7 +793,7 @@ func TestFrame_AttachedRailNamesThePhaseRatherThanWorking(t *testing.T) {
 	// row in the transcript under it is where the child's command is read,
 	// the way the session's own line leaves its command to the feed
 	// (turnstatus.go).
-	noteChild(t, m.subagents, "researcher-1", subagent.TranscriptEntry{
+	noteChild(t, m.wiring.Subagents, "researcher-1", subagent.TranscriptEntry{
 		Kind: subagent.EntryTool, Tool: "execute_command",
 		Args: `{"command":"go test ./internal/agent/..."}`, Pending: true})
 	rail = stripANSI(m.frameActivity(120))
@@ -787,7 +804,7 @@ func TestFrame_AttachedRailNamesThePhaseRatherThanWorking(t *testing.T) {
 		t.Fatalf("the rail repeated the child's command: %q", rail)
 	}
 	// A second call in flight changes none of that.
-	noteChild(t, m.subagents, "researcher-1", subagent.TranscriptEntry{
+	noteChild(t, m.wiring.Subagents, "researcher-1", subagent.TranscriptEntry{
 		Kind: subagent.EntryTool, Tool: "read_file", Args: `{"path":"round.go"}`, Pending: true})
 	rail = stripANSI(m.frameActivity(120))
 	if strings.Contains(rail, "round.go") || strings.Contains(rail, "go test") {
@@ -1310,10 +1327,11 @@ func pickerModel(t testing.TB) Model {
 		names[i] = fmt.Sprintf("model-%02d", i+1)
 	}
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream).
-		WithModelSwitcher(func(string) {}).
-		WithPricing(nil, "model-01").
-		WithModelOptions(names)
+	m := New(msgs, mockStream, Wiring{
+		SwitchModel:  func(string) {},
+		ModelName:    "model-01",
+		ModelOptions: names,
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
 	m = updated.(Model)
 	m.input.SetValue("/model")
@@ -1341,7 +1359,10 @@ func BenchmarkStreamingFrame(b *testing.B) {
 	table := pricing.NewTable(map[string]pricing.ModelPricing{
 		"gpt-4o": {InputCostPerToken: 0.00001, OutputCostPerToken: 0.00001},
 	})
-	m := New(msgs, mockStream).WithPricing(table, "gpt-4o")
+	m := New(msgs, mockStream, Wiring{
+		Prices:    table,
+		ModelName: "gpt-4o",
+	})
 	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
 	for i := range 60 {
 		m.appendEntry(entry{kind: entryUser, text: "ask number " + strings.Repeat("x", i%17)})
@@ -1364,10 +1385,10 @@ func BenchmarkStreamingFrame(b *testing.B) {
 // directory — keeping the model to the last, because a reader checking which
 // model is answering looks up (docs/interface/surfaces.md#the-input-frame).
 func TestHeader_ShedsTheConstantsFromTheRightAndKeepsTheModel(t *testing.T) {
-	m := frameModel(t, 130, 40).
-		WithStartScreen(startFixture()).
-		WithPricing(nil, "claude-opus-5").
-		WithReasoning(provider.EffortMedium, func(provider.Effort) {})
+	m := frameModel(t, 130, 40)
+	m.start = new(startFixture())
+	m.wiring.Prices, m.modelName = nil, "claude-opus-5"
+	m.effort, m.wiring.SwitchEffort = provider.EffortMedium, func(provider.Effort) {}
 
 	full := stripANSI(m.headerRow(200))
 	if want := " shhh chat · ~/src/shhh · main · claude-opus-5 · think medium"; full != want {
@@ -1397,7 +1418,8 @@ func TestHeader_ShedsTheConstantsFromTheRightAndKeepsTheModel(t *testing.T) {
 // The model and the reasoning level are constants of the session and leave
 // the vitals rail; what stays there is what moves.
 func TestVitals_CarryNoSessionConstants(t *testing.T) {
-	m := frameModel(t, 130, 40).WithReasoning(provider.EffortHigh, func(provider.Effort) {})
+	m := frameModel(t, 130, 40)
+	m.effort, m.wiring.SwitchEffort = provider.EffortHigh, func(provider.Effort) {}
 	rail := stripANSI(m.frameVitals(frameWide, 200))
 	for _, gone := range []string{"gpt-4o", "think"} {
 		if strings.Contains(rail, gone) {

@@ -88,10 +88,10 @@ func (m Model) spinnerWanted() bool {
 // moving to animate, and a spinner over it would be the screen claiming
 // progress that has been deliberately stopped (hold.go).
 func (m Model) childrenRunning() bool {
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return false
 	}
-	for _, st := range m.subagents.Snapshot() {
+	for _, st := range m.wiring.Subagents.Snapshot() {
 		if st.State == subagent.StateRunning && !st.Held {
 			return true
 		}

@@ -28,7 +28,7 @@ func windowModel(t *testing.T) Model {
 	t.Helper()
 	m := readyModel(t)
 	m.caps = caps.Terminal{Asked: true}
-	m.title = "shhh code"
+	m.wiring.Title = "shhh code"
 	m.windowDir = "Projects/shhh"
 	return m
 }

@@ -234,7 +234,7 @@ func TestGolden_Queue(t *testing.T) {
 func TestProgram_AQueuedLineIsCancelledOrPulledBackBeforeItIsSent(t *testing.T) {
 	hold := make(chan struct{})
 	p := &programProvider{turns: []programTurn{{text: "the scripted answer", hold: hold}}}
-	tm := runProgram(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p)))
+	tm := runProgram(t, New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p), Wiring{}))
 
 	tm.Type("start the work")
 	tm.Send(programEnter)
@@ -276,9 +276,11 @@ func TestQueue_EveryLineTheSessionQueuedIsARowOfItsKind(t *testing.T) {
 		queue func(t *testing.T) Model
 	}{
 		{queuedSession, func(t *testing.T) Model {
-			m := frameModel(t, 100, 40).WithSecrets(Secrets{Manage: func([]string) (string, string) {
+			m := frameModel(t, 100, 40)
+			m.wiring.Secrets = Secrets{Manage: func([]string) (string, string) {
 				return "stored KEY", "A secret named KEY is now available."
-			}})
+			}}
+			m.agent.SetScrub(m.wiring.Secrets.Scrub)
 			m.setTurnState(stateStreaming)
 			next, _ := m.secretCommand([]string{"set", "KEY=val"})
 			return next.(Model)

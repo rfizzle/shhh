@@ -67,11 +67,24 @@ func allowedOnRow(t *testing.T, m Model, target string) string {
 
 func gatedModel(t *testing.T, executor ToolExecutor, gated map[string]GatedPreviewFunc) Model {
 	t.Helper()
+	return gatedModelWith(t, executor, gated, Wiring{})
+}
+
+// gatedModelWith is gatedModel built from w, whose own executor and gated
+// tools win over the two named.
+func gatedModelWith(t *testing.T, executor ToolExecutor, gated map[string]GatedPreviewFunc, w Wiring) Model {
+	t.Helper()
 	msgs := []provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "change it"},
 	}
-	m := New(msgs, mockStream).WithToolExecutor(executor).WithGatedTools(gated)
+	if w.Executor == nil {
+		w.Executor = executor
+	}
+	if w.GatedTools == nil {
+		w.GatedTools = gated
+	}
+	m := New(msgs, mockStream, w)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -213,7 +226,7 @@ func TestGatedTool_QueueMixedWithExec(t *testing.T) {
 	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
 		"write_file": writeFilePreview(""),
 	})
-	m = m.WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ran", 0 }))
+	m.wiring.Runner = legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ran", 0 })
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
@@ -536,12 +549,12 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 
 func TestMutatingTool_HookAppendsDiagnosticsToResult(t *testing.T) {
 	m := gatedModel(t, nil, nil)
-	m = m.WithMutationHook(func(name string, args json.RawMessage, result string) string {
+	m.wiring.MutationHook = func(name string, args json.RawMessage, result string) string {
 		if name != "write_file" {
 			t.Errorf("hook should see the mutating tool name, got %q", name)
 		}
 		return result + "\n\nDiagnostics (fake) for hello.go:\nhello.go:1:1 error: boom"
-	})
+	}
 	path := filepath.Join(t.TempDir(), "hello.go")
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
@@ -873,9 +886,9 @@ func runOnce(t *testing.T, m Model, command string) (Model, string) {
 // It is dispatched by the model rather than by the tool executor, so the
 // detector reaches it only because the session hands the model its own.
 func TestApproval_ARepeatedCommandSaysSo(t *testing.T) {
-	m := gatedModel(t, nil, nil).
-		WithRunner(legacyRunner(func(context.Context, string) (string, int) { return "FAIL\tinternal/calc", 1 })).
-		WithRepeats(agent.NewRepeatDetector())
+	m := gatedModel(t, nil, nil)
+	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) { return "FAIL\tinternal/calc", 1 })
+	m.wiring.Repeats = agent.NewRepeatDetector()
 
 	m, first := runOnce(t, m, "go test ./internal/calc")
 	if agent.IsRepeatNotice(first) {
@@ -895,9 +908,9 @@ func TestApproval_ARepeatedCommandSaysSo(t *testing.T) {
 // at the keyboard that they have run this before is telling them what they
 // just did.
 func TestApproval_FailedCommandIsAnErrorResultForEveryConsumer(t *testing.T) {
-	m := gatedModel(t, nil, nil).
-		WithRunner(legacyRunner(func(context.Context, string) (string, int) { return "compiler: undefined symbol", 1 })).
-		WithRepeats(agent.NewRepeatDetector())
+	m := gatedModel(t, nil, nil)
+	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) { return "compiler: undefined symbol", 1 })
+	m.wiring.Repeats = agent.NewRepeatDetector()
 
 	_, result := runOnce(t, m, "go test ./internal/chat")
 	if !strings.HasPrefix(result, "error:") {
@@ -913,9 +926,10 @@ func TestApproval_FailedCommandIsAnErrorResultForEveryConsumer(t *testing.T) {
 
 func TestApproval_ALocalRunIsNeverARepeat(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream).
-		WithRunner(legacyRunner(func(context.Context, string) (string, int) { return "ok", 0 })).
-		WithRepeats(agent.NewRepeatDetector())
+	m := New(msgs, mockStream, Wiring{
+		Runner:  legacyRunner(func(context.Context, string) (string, int) { return "ok", 0 }),
+		Repeats: agent.NewRepeatDetector(),
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
@@ -946,8 +960,8 @@ func TestApproval_ARepeatedDeclineSaysSo(t *testing.T) {
 		return m, msgs[len(msgs)-1].Content
 	}
 
-	m := gatedModel(t, nil, map[string]GatedPreviewFunc{"write_file": writeFilePreview("")}).
-		WithRepeats(agent.NewRepeatDetector())
+	m := gatedModel(t, nil, map[string]GatedPreviewFunc{"write_file": writeFilePreview("")})
+	m.wiring.Repeats = agent.NewRepeatDetector()
 	m, first := decline(t, m)
 	if agent.IsRepeatNotice(first) {
 		t.Fatalf("the first decline is not a repeat: %q", first)
@@ -1347,8 +1361,10 @@ func armGitWrite(t *testing.T, width, height int, c gitWriteCard) string {
 	m := New([]provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "commit that change"},
-	}, mockStream).WithGatedTools(map[string]GatedPreviewFunc{
-		structural.GitWriteToolName: func(json.RawMessage) (GatedPreview, error) { return c.preview, nil },
+	}, mockStream, Wiring{
+		GatedTools: map[string]GatedPreviewFunc{
+			structural.GitWriteToolName: func(json.RawMessage) (GatedPreview, error) { return c.preview, nil },
+		},
 	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: height})
 	m = updated.(Model)
@@ -1399,9 +1415,12 @@ func TestGitWrite_RequiredContainmentPutsItToTheCard(t *testing.T) {
 		m := New([]provider.Message{
 			{Role: provider.RoleSystem, Content: "sys"},
 			{Role: provider.RoleUser, Content: "commit that change"},
-		}, mockStream).WithGatedTools(map[string]GatedPreviewFunc{
-			structural.GitWriteToolName: func(json.RawMessage) (GatedPreview, error) { return c.preview, nil },
-		}).WithContainment(contain)
+		}, mockStream, Wiring{
+			GatedTools: map[string]GatedPreviewFunc{
+				structural.GitWriteToolName: func(json.RawMessage) (GatedPreview, error) { return c.preview, nil },
+			},
+			Containment: contain,
+		})
 		updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 48})
 		m = updated.(Model)
 		m.state = stateStreaming
@@ -1494,7 +1513,8 @@ func TestApproval_AWriteWithASecretSkipsTheClassifier(t *testing.T) {
 		var ran []string
 		judge := &verdictProvider{decision: "allow", reason: "a fixture"}
 		decisions := &[][2]string{}
-		m := recordingDecisions(classifierModel(t, &ran, judge), decisions).WithScope(sc)
+		m := recordingDecisions(classifierModel(t, &ran, judge), decisions)
+		m.wiring.Scope = sc
 		path := filepath.Join(outside, "dev.env")
 		updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 			{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":%q}`, path, content)},

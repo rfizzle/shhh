@@ -30,10 +30,10 @@ func commandTurn(hold chan struct{}, command string) programTurn {
 func TestProgram_ABangLineRunsOnItsConfirm(t *testing.T) {
 	var ran []string
 	m, p := scriptedSession(programTurn{text: "nobody asked the model"})
-	m = m.WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
+	m.wiring.Runner = legacyRunner(func(_ context.Context, cmd string) (string, int) {
 		ran = append(ran, cmd)
 		return "hi", 0
-	}))
+	})
 	tm := runProgram(t, m)
 
 	send(tm, "!echo hi")
@@ -63,13 +63,14 @@ func TestProgram_ABrokenCommandsRowSaysHowItEnded(t *testing.T) {
 		commandTurn(nil, "sleep 5"),
 		programTurn{text: "The timed-out command is recorded."},
 	)
-	m = m.WithCommandTimeout(50 * time.Millisecond).WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
+	m.policy.timeout = 50 * time.Millisecond
+	m.wiring.Runner = legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 		if cmd == "sleep 5" {
 			<-ctx.Done()
 			return "", -9
 		}
 		return "lint: broken rule", 1
-	}))
+	})
 	tm := runProgram(t, m)
 
 	send(tm, "run the checks")
@@ -96,11 +97,11 @@ func TestProgram_TheCancelChordStopsARunningCommand(t *testing.T) {
 		commandTurn(hold, "for i in 1 2 3; do echo round $i counted; sleep 1; done"),
 		programTurn{text: "The limit is counted in one place."},
 	)
-	m = m.WithRunner(legacyRunner(func(ctx context.Context, _ string) (string, int) {
+	m.wiring.Runner = legacyRunner(func(ctx context.Context, _ string) (string, int) {
 		close(started)
 		<-ctx.Done()
 		return "", -2
-	}))
+	})
 	tm := runProgram(t, m)
 
 	send(tm, "how is the round limit counted")
@@ -127,14 +128,15 @@ func TestProgram_ARunningCommandTailsIntoItsRow(t *testing.T) {
 	)
 	// The tailed runner is what an assistant command runs through; the plain
 	// one beside it is what makes execute_command a tool this session has.
-	m = m.WithRunner(legacyRunner(func(context.Context, string) (string, int) {
+	m.wiring.Runner = legacyRunner(func(context.Context, string) (string, int) {
 		t.Error("the command ran without its tail")
 		return "", 0
-	})).WithTailRunner(legacyTailRunner(func(_ context.Context, _ string, onLine func(string)) (string, int) {
+	})
+	m.wiring.TailRunner = legacyTailRunner(func(_ context.Context, _ string, onLine func(string)) (string, int) {
 		onLine("ok  github.com/rfizzle/shhh/internal/agent/loop.go  0.412s")
 		<-next
 		return "ok  github.com/rfizzle/shhh/internal/agent/loop.go  0.412s", 0
-	}))
+	})
 	tm := runProgram(t, m)
 
 	send(tm, "run the checks")
@@ -159,13 +161,13 @@ func TestProgram_AHoldParksTheTurnAndTheChordEndsIt(t *testing.T) {
 		commandTurn(hold, "sleep 8"),
 		programTurn{text: "The rail says what each key does."},
 	)
-	m = m.WithRunner(legacyRunner(func(ctx context.Context, _ string) (string, int) {
+	m.wiring.Runner = legacyRunner(func(ctx context.Context, _ string) (string, int) {
 		select {
 		case <-finish:
 		case <-ctx.Done():
 		}
 		return "", 0
-	}))
+	})
 	tm := runProgram(t, m)
 
 	send(tm, "watch the suite while it runs")
@@ -195,10 +197,10 @@ func TestProgram_TheGrantKeyOffersGrantsAndLeavingGrantsNothing(t *testing.T) {
 		commandTurn(nil, "npm test --watch"),
 		programTurn{text: "That settles it."},
 	)
-	m = m.WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
+	m.wiring.Runner = legacyRunner(func(_ context.Context, cmd string) (string, int) {
 		ran = append(ran, cmd)
 		return "", 0
-	}))
+	})
 	tm := runProgram(t, m)
 
 	send(tm, "go on then")
@@ -226,10 +228,10 @@ func TestProgram_AMenuGreysWhatTheTurnCannotOffer(t *testing.T) {
 		commandTurn(hold, "sleep 15"),
 		programTurn{text: "The menu is what the reader has while the turn runs."},
 	)
-	m = m.WithRunner(legacyRunner(func(ctx context.Context, _ string) (string, int) {
+	m.wiring.Runner = legacyRunner(func(ctx context.Context, _ string) (string, int) {
 		<-ctx.Done()
 		return "", -2
-	}))
+	})
 	// The palette lists recent files; this one has none, so what it lists
 	// does not depend on the directory the suite runs in.
 	m.recentFiles = func() []project.RecentFile { return nil }
@@ -317,7 +319,8 @@ func TestProgram_AQuestionCardIsAnsweredTabByTab(t *testing.T) {
 		programTurn{calls: []provider.ToolCall{call("q1", ask.ToolName, `{"questions":[{"question":"Which store should the cache use?","shape":"choose","options":[{"label":"SQLite","detail":"in the checkout already","recommended":true},{"label":"Postgres","detail":"one more service to run"}]},{"question":"Should the migration be reversible?","shape":"confirm"}]}`)}},
 		programTurn{text: "Thank you, that settles both."},
 	)
-	tm := runProgram(t, m.WithAsk())
+	m.wiring.Ask = true
+	tm := runProgram(t, m)
 
 	send(tm, "go on then")
 	waitForText(t, tm, "Which store should the cache use?")
@@ -342,7 +345,8 @@ func TestProgram_AYesOrNoQuestionTakesItsLetter(t *testing.T) {
 		programTurn{hold: hold, calls: []provider.ToolCall{call("q1", ask.ToolName, `{"question":"Should the migration be reversible?","shape":"confirm"}`)}},
 		programTurn{text: "Reversible it is."},
 	)
-	tm := runProgram(t, m.WithAsk())
+	m.wiring.Ask = true
+	tm := runProgram(t, m)
 
 	send(tm, "fix the round limit")
 	release()
@@ -363,7 +367,8 @@ func TestProgram_AFreeAnswerIsTypedBesideTheRail(t *testing.T) {
 		programTurn{hold: hold, calls: []provider.ToolCall{call("q1", ask.ToolName, `{"question":"What should the flag be called?","shape":"text"}`)}},
 		programTurn{text: "max-rounds it is."},
 	)
-	tm := runProgramAt(t, m.WithAsk(), 130, 40)
+	m.wiring.Ask = true
+	tm := runProgramAt(t, m, 130, 40)
 
 	send(tm, "fix the round limit")
 	release()

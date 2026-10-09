@@ -108,9 +108,9 @@ func TestIntervene_AnOnTargetReadingDeliversNothing(t *testing.T) {
 func TestIntervene_AReadingAnIntervalOldStillLandsAndSteersNothing(t *testing.T) {
 	m := verdictModel(t, "off_target")
 	var signals []string
-	m = m.WithObserver(observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+	m.wiring.Observer = observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
 		signals = append(signals, code+":"+reason)
-	}})
+	}}
 
 	msg := driveSummaryDone(t, m.forceSummaryCmd())
 	// The rounds the session took while the reading was out.
@@ -232,7 +232,7 @@ func TestIntervene_TheNextReadingIsToldAndComesSooner(t *testing.T) {
 // reads.
 func TestIntervene_ConfiguredWordingReachesTheConversation(t *testing.T) {
 	m := verdictModel(t, "off_target")
-	m = m.WithSteering(agent.Steering{Steer: "off track: " + agent.PlaceholderTarget})
+	m.agent.SetSteering(agent.Steering{Steer: "off track: " + agent.PlaceholderTarget})
 	m.summaryTarget = "build the exporter"
 	m.considerVerdict(agent.SummaryVerdict{State: agent.SummaryOffTarget, Round: 4})
 	m.injectInterventions()
@@ -433,7 +433,7 @@ func TestWithdrawSteer_TheNoticeIsAReadingModeStop(t *testing.T) {
 
 // signalsOf collects the record's signals for a model under test.
 func signalsOf(m *Model, into *[]string) {
-	m.observer = observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+	m.wiring.Observer = observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
 		*into = append(*into, code+"/"+reason)
 	}}
 }

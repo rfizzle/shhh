@@ -167,14 +167,16 @@ func TestArgCompletion_SavedChatNames(t *testing.T) {
 		}
 	}
 
-	m := readyModel(t).WithDB(db)
+	m := readyModel(t)
+	m.wiring.DB = db
+	m.bindStores()
 	m = typeChars(t, m, "/load al")
 	if got := completionNames(m); len(got) != 1 || got[0] != "alpha-notes" {
 		t.Fatalf("expected the prefix-matching chat, got %v", got)
 	}
 
 	// Long dynamic lists also match as a subsequence.
-	m = typeChars(t, readyModel(t).WithDB(db), "/load btn")
+	m = typeChars(t, readyModelWith(t, Wiring{DB: db}), "/load btn")
 	if got := completionNames(m); len(got) != 1 || got[0] != "beta-notes" {
 		t.Fatalf("expected the fuzzy match, got %v", got)
 	}
@@ -190,7 +192,9 @@ func TestArgCompletion_BranchNames(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	m := readyModel(t).WithDB(db)
+	m := readyModel(t)
+	m.wiring.DB = db
+	m.bindStores()
 	m.sessionName = "main"
 	m = typeChars(t, m, "/branches ma")
 	if got := completionNames(m); len(got) != 1 || got[0] != "main" {
@@ -202,7 +206,8 @@ func TestArgCompletion_BranchNames(t *testing.T) {
 }
 
 func TestArgCompletion_ModelCatalogFuzzy(t *testing.T) {
-	m := readyModel(t).WithModelOptions([]string{"claude-opus-5", "claude-sonnet-5"})
+	m := readyModel(t)
+	m.picker.models.options = []string{"claude-opus-5", "claude-sonnet-5"}
 	m.modelName = "claude-opus-5"
 	m = typeChars(t, m, "/model son")
 
@@ -270,10 +275,10 @@ func TestArgCompletion_MenuInView(t *testing.T) {
 // menu only claims enter once it is a choice: a typed prefix or an arrowed-to
 // row.
 func TestArgCompletion_EnterOnAnUnfilteredMenuRunsTheLine(t *testing.T) {
-	m := readyModel(t).
-		WithModelSwitcher(func(string) {}).
-		WithPricing(nil, "m1").
-		WithModelOptions([]string{"m1", "m2", "m3"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(string) {}
+	m.wiring.Prices, m.modelName = nil, "m1"
+	m.picker.models.options = []string{"m1", "m2", "m3"}
 	m = typeChars(t, m, "/mo")
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
@@ -297,10 +302,10 @@ func TestArgCompletion_EnterOnAnUnfilteredMenuRunsTheLine(t *testing.T) {
 
 func TestArgCompletion_ArrowMakesTheMenuTheChoiceAgain(t *testing.T) {
 	var switched string
-	m := readyModel(t).
-		WithModelSwitcher(func(name string) { switched = name }).
-		WithPricing(nil, "m1").
-		WithModelOptions([]string{"m1", "m2", "m3"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(name string) { switched = name }
+	m.wiring.Prices, m.modelName = nil, "m1"
+	m.picker.models.options = []string{"m1", "m2", "m3"}
 	m = typeChars(t, m, "/model ")
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
@@ -329,10 +334,10 @@ func TestArgCompletion_TypedPrefixStillRunsTheRow(t *testing.T) {
 // Backspacing out of a typed prefix hands enter back to the line: the menu is
 // showing the whole catalog again, so it is a list again.
 func TestArgCompletion_BackspaceToAnEmptyTokenGivesEnterBack(t *testing.T) {
-	m := readyModel(t).
-		WithModelSwitcher(func(string) {}).
-		WithPricing(nil, "m1").
-		WithModelOptions([]string{"m1", "m2", "m3"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(string) {}
+	m.wiring.Prices, m.modelName = nil, "m1"
+	m.picker.models.options = []string{"m1", "m2", "m3"}
 	m = typeChars(t, m, "/model m")
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyBackspace})
@@ -348,10 +353,10 @@ func TestArgCompletion_BackspaceToAnEmptyTokenGivesEnterBack(t *testing.T) {
 // The hint says which line enter runs, so the reader is never guessing which
 // of the two readings the menu is offering.
 func TestArgCompletion_HintNamesTheLineEnterRuns(t *testing.T) {
-	m := readyModel(t).
-		WithModelSwitcher(func(string) {}).
-		WithPricing(nil, "m1").
-		WithModelOptions([]string{"m1", "m2", "m3"})
+	m := readyModel(t)
+	m.wiring.SwitchModel = func(string) {}
+	m.wiring.Prices, m.modelName = nil, "m1"
+	m.picker.models.options = []string{"m1", "m2", "m3"}
 	m = typeChars(t, m, "/model ")
 
 	menu := strings.Join(m.completionMenuLines(), "\n")
@@ -370,7 +375,7 @@ func TestArgCompletion_RailOffersWhatThisTerminalAllows(t *testing.T) {
 		t.Errorf("a narrow terminal offers the word and the floor, got %q", got)
 	}
 
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 200, Height: 40})
 	wide := typeChars(t, updated.(Model), "/ui rail ")
 	if got := strings.Join(completionNames(wide), " "); got != "auto 63 46" {

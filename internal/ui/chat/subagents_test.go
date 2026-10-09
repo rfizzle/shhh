@@ -73,7 +73,7 @@ func billedEnv(u provider.Usage) subagent.EnvFactory {
 func newSubagentModel(t *testing.T, sup *subagent.Supervisor) Model {
 	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream).WithSubagents(sup)
+	m := New(msgs, mockStream, Wiring{Subagents: sup})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	return updated.(Model)
 }
@@ -627,7 +627,8 @@ func routedModel(t *testing.T, ask *subagent.Ask) Model {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
 	m := newSubagentModel(t, sup)
-	m = m.WithChangeset(changeset.New(64), nil)
+	m.changes, m.wiring.Tracker = changeset.New(64), nil
+	m.bindSlot()
 	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
 	return handover(t, updated.(Model))
 }
@@ -711,9 +712,10 @@ func TestChildAskCommandCardStatesContainmentAndRadius(t *testing.T) {
 
 	sup := subagent.New(context.Background(), subagent.Options{Root: dir, NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
-	m := newSubagentModel(t, sup).WithContainment(Containment{
+	m := newSubagentModel(t, sup)
+	m.containment = Containment{
 		Status: "bwrap · workspace", Mechanism: "bwrap", Profile: "workspace",
-	})
+	}
 	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
 	m = handover(t, updated.(Model))
 
@@ -847,8 +849,10 @@ func TestChildAskCommandAsksTheTreeItRunsIn(t *testing.T) {
 
 	sup := subagent.New(context.Background(), subagent.Options{Root: session, NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
-	m := newSubagentModel(t, sup).WithWorkspace(session)
-	m = m.WithChangeset(changeset.New(64), changeset.NewTracker(session))
+	m := newSubagentModel(t, sup)
+	m.wiring.Workspace = session
+	m.changes, m.wiring.Tracker = changeset.New(64), changeset.NewTracker(session)
+	m.bindSlot()
 	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
 	m = handover(t, updated.(Model))
 
@@ -1085,7 +1089,9 @@ func TestAgents_TheCompactRowSaysTheLanesWord(t *testing.T) {
 	for _, name := range []string{"writer-1", "reader-3"} {
 		waitFor(t, func() bool { st, ok := sup.Get(name); return ok && st.State == subagent.StateRunning })
 	}
-	m := goldenModel(t, 110).WithSubagents(sup)
+	m := goldenModel(t, 110)
+	m.wiring.Subagents = sup
+	m.adoptChildren()
 	rows := strings.Split(ansi.Strip(m.renderAgentRows(110)), "\n")
 	for _, tc := range []struct {
 		name, row, word string

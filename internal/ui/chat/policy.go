@@ -30,79 +30,6 @@ import (
 // Commands flagged by safety.Check always prompt, in every mode except plan
 // (which refuses them like everything else).
 
-// WithCommandAllowlist sets the config-provided command allowlist: commands
-// whose leading words match an entry run without an approval prompt, unless
-// safety-flagged.
-func (m Model) WithCommandAllowlist(list []string) Model {
-	m.policy.allowlist = list
-	return m
-}
-
-// WithCommandDenylist sets the config-provided command deny list
-// (behavior.command_denylist): commands whose leading words match an entry
-// are refused before a card is drawn, in every mode.
-func (m Model) WithCommandDenylist(list []string) Model {
-	m.policy.denylist = list
-	return m
-}
-
-// WithHostRules sets the config-provided host lists (web.allow_hosts,
-// web.deny_hosts): a fetch to an allowed host runs without a card, and a
-// fetch to a denied one is refused before a card is drawn, in every mode.
-func (m Model) WithHostRules(allow, deny []string) Model {
-	m.policy.allowHosts = allow
-	m.policy.denyHosts = deny
-	return m
-}
-
-// WithHostGrants installs the sink the session's reachable hosts are pushed
-// to whenever they change. The fetcher is what takes them, and it is what
-// answers a redirect: a hop that starts on a granted host and ends on an
-// ungranted one is a decision nobody made, and the fetcher is the only place
-// that hop is visible.
-// See docs/capabilities/approvals-and-safety.md#a-host-is-granted-once.
-func (m Model) WithHostGrants(sink func([]string)) Model {
-	m.hostGrants = sink
-	return m
-}
-
-// WithCommandTimeout bounds how long one assistant-run command may take.
-// Zero or less removes the ceiling.
-//
-// A command the reader typed is never bounded by it, here or anywhere: they
-// are in front of the session and chose to run the thing, so the key that
-// cancels it is the ceiling.
-// See docs/capabilities/containment.md#a-command-that-will-not-finish-is-not-waited-on-forever.
-func (m Model) WithCommandTimeout(d time.Duration) Model {
-	m.policy.timeout = d
-	return m
-}
-
-// WithReadOnlyCommands configures the read-only inspection allowlist: extra
-// entries beyond the built-in list, and whether the built-in list auto-runs
-// at all (behavior.read_only_commands / behavior.read_only_auto).
-func (m Model) WithReadOnlyCommands(extra []string, disabled bool) Model {
-	m.policy.readOnlyExtra = extra
-	m.policy.readOnlyDisabled = disabled
-	return m
-}
-
-// WithApprovalMode sets the session's starting permission mode and the
-// Shift+Tab cycle order; an empty cycle keeps the default order.
-//
-// A conversation keeps the one it was given (conversation.go): the setting
-// is for the sessions that have modes to choose between.
-func (m Model) WithApprovalMode(mode agent.Mode, cycle []agent.Mode) Model {
-	if m.conversation {
-		return m
-	}
-	m.policy.mode = mode
-	if len(cycle) > 0 {
-		m.policy.cycle = cycle
-	}
-	return m
-}
-
 // modePolicy assembles the agent-level policy state the mode machine decides
 // with. The session's own command grants join the config allowlist, because
 // they are the same kind of thing — leading words that pre-approve a command
@@ -122,7 +49,7 @@ func (m Model) modePolicy() agent.ModePolicy {
 		DenyHosts:        m.policy.denyHosts,
 		ReadOnlyExtra:    m.policy.readOnlyExtra,
 		ReadOnlyDisabled: m.policy.readOnlyDisabled,
-		Conversation:     m.conversation,
+		Conversation:     m.wiring.Conversation,
 	}
 }
 
@@ -203,18 +130,18 @@ func (m Model) irreplaceable(req *approvalRequest) string {
 // the working scope, its root, the directory a command runs in where the
 // request says, and the home directory.
 func (m Model) destroyWhere(req *approvalRequest) radius.Where {
-	where := radius.Where{Scope: m.scope}
-	where.Root = m.workspace
-	if m.scope != nil {
-		where.Root = m.scope.Root()
+	where := radius.Where{Scope: m.wiring.Scope}
+	where.Root = m.wiring.Workspace
+	if m.wiring.Scope != nil {
+		where.Root = m.wiring.Scope.Root()
 	}
 	if where.Root == "" {
 		where.Root, _ = os.Getwd()
 	}
 	if req.kind == approvalExec {
 		where.Dir = where.Root
-		if m.workspace != "" {
-			where.Dir = m.workspace
+		if m.wiring.Workspace != "" {
+			where.Dir = m.wiring.Workspace
 		}
 	}
 	where.Home, _ = os.UserHomeDir()
@@ -713,7 +640,7 @@ func (m Model) policyDecision(req *approvalRequest) (agent.Decision, string) {
 // modeStatus describes the active mode and cycle for /permissions with no
 // argument.
 func (m Model) modeStatus() string {
-	if m.conversation {
+	if m.wiring.Conversation {
 		return conversationModeNote
 	}
 	cycle := m.policy.cycle
@@ -828,13 +755,13 @@ func (m Model) policySection() helpSection {
 	}
 	if n := len(m.scopeDirs()); n > 0 {
 		row("scope", fmt.Sprintf("the session directory and %d added %s (/add-dir)", n, plural2(n, "directory", "directories")))
-	} else if m.scope != nil {
+	} else if m.wiring.Scope != nil {
 		row("scope", "the session directory; anything outside it asks (/add-dir)")
 	}
 	if n := len(m.writerDirs()); n > 0 {
 		row("", fmt.Sprintf("%d %s inside it granted for writers (/add-dir)", n, plural2(n, "directory", "directories")))
 	}
-	if m.subagents != nil {
+	if m.wiring.Subagents != nil {
 		row("", "sub-agents inherit this mode, these grants, and the classifier")
 	}
 	row("", "safety-flagged commands, and anything outside the working scope, always ask")
@@ -851,18 +778,18 @@ const policyHeadWidth = 11
 // checkout widens only a writer's scope and is writerDirs instead.
 // See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
 func (m Model) scopeDirs() []string {
-	if m.scope == nil {
+	if m.wiring.Scope == nil {
 		return nil
 	}
-	return m.scope.Beyond()
+	return m.wiring.Scope.Beyond()
 }
 
 // writerDirs are the granted directories inside the session's own checkout:
 // recorded for writers, and nothing the session did not already have.
 func (m Model) writerDirs() []string {
 	var out []string
-	for _, d := range m.scope.Dirs() {
-		if m.scope.InRoot(d) {
+	for _, d := range m.wiring.Scope.Dirs() {
+		if m.wiring.Scope.InRoot(d) {
 			out = append(out, d)
 		}
 	}

@@ -60,10 +60,11 @@ func summaryModel(t *testing.T, p provider.Provider) Model {
 	// Wired the way the session wires it: the summarizer reaches its
 	// provider through the gate, so a reading is billed as it streams.
 	ledger := meter.New(nil)
-	m := gatedModel(t, nil, nil).WithLedger(ledger)
-	m = m.WithSummarizer(agent.NewSummarizer(ledger.For(p, meter.SourceSummary), agent.SummaryConfig{
+	m := gatedModel(t, nil, nil)
+	m.wiring.Ledger = ledger
+	m.summary.writer = agent.NewSummarizer(ledger.For(p, meter.SourceSummary), agent.SummaryConfig{
 		Model: "fast", IntervalRounds: 10, MinGap: -1,
-	}))
+	})
 	m.summaryTarget = "make the round limit a checkpoint"
 	return m
 }
@@ -137,9 +138,9 @@ func TestSummaryDue_ThenOnTheInterval(t *testing.T) {
 // seconds.
 func TestSummaryDue_WallClockFloorHoldsTheInterval(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Reading the loop."})
-	m = m.WithSummarizer(agent.NewSummarizer(&readingProvider{text: "x"}, agent.SummaryConfig{
+	m.summary.writer = agent.NewSummarizer(&readingProvider{text: "x"}, agent.SummaryConfig{
 		Model: "fast", IntervalRounds: 1, MinGap: time.Hour,
-	}))
+	})
 	m.summary.last = &agent.SummaryVerdict{Text: "standing"}
 	m.summary.schedule.Read(1)
 	for i := 0; i < 5; i++ {
@@ -178,8 +179,8 @@ func TestSummary_FailedReadingKeepsWhatStood(t *testing.T) {
 		t.Fatal("expected a standing reading")
 	}
 
-	m = m.WithSummarizer(agent.NewSummarizer(&readingProvider{err: errors.New("overloaded")},
-		agent.SummaryConfig{Model: "fast", MinGap: -1}))
+	m.summary.writer = agent.NewSummarizer(&readingProvider{err: errors.New("overloaded")},
+		agent.SummaryConfig{Model: "fast", MinGap: -1})
 	m = applyReading(t, m)
 	if m.summary.last == nil || m.summary.last.Text != stood {
 		t.Fatalf("a failed reading keeps the last one, got %+v", m.summary.last)
@@ -386,8 +387,9 @@ func TestSummary_StaleOnlyOnceTheSessionHasOutrunIt(t *testing.T) {
 // A disabled summarizer makes no requests and draws no block.
 func TestSummary_DisabledIsSilent(t *testing.T) {
 	p := &readingProvider{text: "Reading the loop."}
-	m := gatedModel(t, nil, nil).WithSummarizer(agent.NewSummarizer(p,
-		agent.SummaryConfig{Model: "fast", Disabled: true}))
+	m := gatedModel(t, nil, nil)
+	m.summary.writer = agent.NewSummarizer(p,
+		agent.SummaryConfig{Model: "fast", Disabled: true})
 	for i := 0; i < 30; i++ {
 		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
 	}
@@ -540,8 +542,9 @@ func TestStatusCommand_AnswersAndRefreshes(t *testing.T) {
 }
 
 func TestStatusCommand_SaysWhenItIsOff(t *testing.T) {
-	m := gatedModel(t, nil, nil).WithSummarizer(agent.NewSummarizer(&readingProvider{},
-		agent.SummaryConfig{Model: "fast", Disabled: true}))
+	m := gatedModel(t, nil, nil)
+	m.summary.writer = agent.NewSummarizer(&readingProvider{},
+		agent.SummaryConfig{Model: "fast", Disabled: true})
 	note, cmd := m.statusCommand()
 	if cmd != nil {
 		t.Fatal("a disabled summary takes no reading")
@@ -602,9 +605,9 @@ func TestSummaryRow_AQuietReadingLandsNoRow(t *testing.T) {
 		t.Run(state, func(t *testing.T) {
 			m := summaryModel(t, &readingProvider{text: "Reading the loop.", state: state})
 			var signals []string
-			m = m.WithObserver(observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+			m.wiring.Observer = observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
 				signals = append(signals, code+":"+reason)
-			}})
+			}}
 			m.setTurnState(stateStreaming)
 			m = advanceRounds(m, 4)
 			before := len(m.transcript)

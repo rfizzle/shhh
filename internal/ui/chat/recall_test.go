@@ -15,9 +15,7 @@ import (
 // /load and a branch switch all reduce to.
 func resumedModel(t *testing.T, msgs []provider.Message) Model {
 	t.Helper()
-	m := New(msgs[:1], multiTokenStream("ok")).
-		WithStartScreen(StartInfo{}).
-		WithResumedMessages("", msgs)
+	m := New(msgs[:1], multiTokenStream("ok"), Wiring{Start: &StartInfo{}}).WithResumedMessages("", msgs)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	return updated.(Model)
 }
@@ -151,7 +149,7 @@ func TestResumedSession_CollapsesRepeatedPrompts(t *testing.T) {
 // A turn in flight keeps the input live, so it keeps recall.
 func TestRecall_WorksWhileTheTurnRuns(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, multiTokenStream("ok"))
+	m := New(msgs, multiTokenStream("ok"), Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
 

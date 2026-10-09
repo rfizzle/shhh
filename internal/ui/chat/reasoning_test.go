@@ -19,7 +19,7 @@ func reasoningModel(t *testing.T) (Model, *provider.Effort) {
 	t.Helper()
 	m := activityModel(t)
 	applied := new(provider.Effort)
-	m = m.WithReasoning(provider.EffortOff, func(e provider.Effort) { *applied = e })
+	m.effort, m.wiring.SwitchEffort = provider.EffortOff, func(e provider.Effort) { *applied = e }
 	return m, applied
 }
 
@@ -83,10 +83,10 @@ func TestReasoning_CommandSetsAndReports(t *testing.T) {
 func TestReasoning_DefaultWritesTheConfigKey(t *testing.T) {
 	m, _ := reasoningModel(t)
 	var wroteKey, wroteValue string
-	m = m.WithConfigWriter(func(key, value string) error {
+	m.wiring.ConfigWriter = func(key, value string) error {
 		wroteKey, wroteValue = key, value
 		return nil
-	})
+	}
 
 	_, out := m.handleSlashCommand("/reasoning default medium")
 	if wroteKey != "provider.reasoning" || wroteValue != "medium" {
@@ -105,8 +105,8 @@ func TestReasoning_DefaultWritesTheConfigKey(t *testing.T) {
 // ignored, which is the one outcome the reply must not hide.
 func TestReasoning_DefaultSaysWhenItIsOverruled(t *testing.T) {
 	m, _ := reasoningModel(t)
-	m = m.WithConfigWriter(func(string, string) error { return nil }).
-		WithReasoningDefault("", "SHHH_REASONING is set to low")
+	m.wiring.ConfigWriter = func(string, string) error { return nil }
+	m.effortDefault, m.wiring.EffortOutranked = "", "SHHH_REASONING is set to low"
 
 	_, out := m.handleSlashCommand("/reasoning default high")
 	if !strings.Contains(out, "SHHH_REASONING") {
@@ -118,7 +118,7 @@ func TestReasoning_DefaultSaysWhenItIsOverruled(t *testing.T) {
 // and the vitals rail does not (docs/interface/surfaces.md#the-input-frame).
 func TestReasoning_HeaderStatesTheLevelBesideTheModel(t *testing.T) {
 	m, _ := reasoningModel(t)
-	m = m.WithPricing(nil, "claude-opus-5")
+	m.wiring.Prices, m.modelName = nil, "claude-opus-5"
 
 	if header := stripANSI(m.headerRow(200)); strings.Contains(header, "think") {
 		t.Errorf("a session asking for no reasoning has nothing to state, got %q", header)

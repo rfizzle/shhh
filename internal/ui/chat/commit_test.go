@@ -58,8 +58,9 @@ func commitRepo(t *testing.T) (Model, string, string) {
 	// The reader's own morning, changed by hand and never staged.
 	mine := write("README.md", "# project\n\nmine\n")
 
-	m := gatedModel(t, nil, nil).WithWorkspace(root).
-		WithChangeset(nil, changeset.NewTracker(root))
+	m := gatedModel(t, nil, nil)
+	m.wiring.Workspace = root
+	m.wiring.Tracker = changeset.NewTracker(root)
 	m.state = stateInput
 	m = sendText(t, m, "cap rounds at the limit instead of erroring")
 	m = applyWrite(t, m, filepath.Join(root, "round.go"), "package agent\n\nfunc Round() {}\n", "y")
@@ -356,7 +357,7 @@ func TestCommit_TheReceiptLandsOnTheCloseRowAndWithdrawsUndo(t *testing.T) {
 func secretTurn(t *testing.T, ignore []string) (Model, string) {
 	t.Helper()
 	m, root, _ := commitRepo(t)
-	m = m.WithCommitSecretIgnore(ignore)
+	m.policy.secretIgnore = ignore
 	m.state = stateInput
 	m = sendText(t, m, "add the dev settings")
 	body := strings.Repeat("# setting\n", 11) + "GITHUB_TOKEN=ghp_016C4C7C4C7C4C7C4C7C4C7C4C7C4C7C4C7C\n"
@@ -372,9 +373,9 @@ func secretTurn(t *testing.T, ignore []string) (Model, string) {
 func TestCommitCard_ASecretIsNamedRefusedAndOverriddenOnlyByThePerson(t *testing.T) {
 	m, root := secretTurn(t, nil)
 	var decisions [][2]string
-	m = m.WithObserver(observe.Observer{Decision: func(_ observe.Pos, decision, reason string) {
+	m.wiring.Observer = observe.Observer{Decision: func(_ observe.Pos, decision, reason string) {
 		decisions = append(decisions, [2]string{decision, reason})
-	}})
+	}}
 	m = focusLastClose(t, m)
 	row := m.focusIdx
 	m, _ = handOverRow(t, m)
@@ -637,12 +638,12 @@ func TestChecksRow_NamesTheRerunOnlyForASuite(t *testing.T) {
 func TestChecksRow_OffersNoKeyToRunTheSuiteAgain(t *testing.T) {
 	m, _ := closeGateModel(t, quality.VerdictPass)
 	asked := ""
-	gate := m.gate
+	gate := m.wiring.Gate
 	gate.Manage = func(args []string) string {
 		asked = strings.Join(args, " ")
 		return "the suite is running"
 	}
-	m = m.WithGate(gate)
+	m.wiring.Gate, m.alertMemo = gate, &alertMemo{}
 	m = closeTurnWithGate(t, startEditedTurn(t, m))
 	c := lastClose(t, m)
 	if c.Checks == nil || c.Checks.Again != "/gate run fast" {

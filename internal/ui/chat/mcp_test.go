@@ -20,15 +20,16 @@ import (
 func toolSourceModel(t *testing.T, sources ...components.InspectorToolSource) Model {
 	t.Helper()
 	mcpNames := map[string]bool{"docs__search": true, "docs__lookup": true}
-	return frameModel(t, 130, 40).
-		WithToolDefinitions([]ToolTokens{
+	return frameModelWith(t, 130, 40, Wiring{
+		ToolDefinitions: []ToolTokens{
 			{Name: "read_file"}, {Name: "edit_file"}, {Name: "search"},
 			{Name: "docs__search"}, {Name: "docs__lookup"},
-		}).
-		WithMCP(MCP{
+		},
+		MCP: MCP{
 			Has:     func(name string) bool { return mcpNames[name] },
 			Sources: sources,
-		})
+		},
+	})
 }
 
 // The built-in toolset is a source like any other, and its count is the tools
@@ -133,13 +134,13 @@ func TestInspectorTools_ARowTurnsWhenTheConnectEnds(t *testing.T) {
 		{Name: "docs", State: components.ToolSourceStarting, Since: now.Add(-3100 * time.Millisecond)},
 		{Name: "tracker", State: components.ToolSourceStarting, Since: now.Add(-3100 * time.Millisecond)},
 	}
-	m := frameModel(t, 130, 40).
-		WithToolDefinitions([]ToolTokens{{Name: "read_file"}}).
-		WithMCP(MCP{
-			Has:     func(string) bool { return false },
-			Sources: append([]components.InspectorToolSource(nil), live...),
-			Live:    func() []components.InspectorToolSource { return live },
-		})
+	m := frameModel(t, 130, 40)
+	m.setToolDefinitions([]ToolTokens{{Name: "read_file"}})
+	m.mcp = MCP{
+		Has:     func(string) bool { return false },
+		Sources: append([]components.InspectorToolSource(nil), live...),
+		Live:    func() []components.InspectorToolSource { return live },
+	}
 	tools := m.inspectorTools()
 	if got := tools.Sources[1]; got.State != components.ToolSourceStarting || got.Note != "3.1s" {
 		t.Fatalf("a starting row = %+v, want its seconds", got)
@@ -177,28 +178,28 @@ func TestJoin_TakesTheServerAtTheBoundaryNotMidRound(t *testing.T) {
 	joined := map[string]bool{}
 	calls := 0
 	var handed string
-	m := frameModel(t, 130, 40).
-		WithToolDefinitions([]ToolTokens{{Name: "read_file"}}).
-		WithMCP(MCP{
-			Has: func(name string) bool { return joined[name] },
-			Sources: []components.InspectorToolSource{
-				{Name: "docs", State: components.ToolSourceStarting},
-			},
-			Join: func(system string) (MCPJoin, bool) {
-				calls++
-				handed = system
-				joined["docs__write"] = true
-				return MCPJoin{
-					Notes:       []string{"mcp: docs: up — 1 tool, from this turn"},
-					Sources:     []components.InspectorToolSource{{Name: "docs", State: components.ToolSourceUp, Note: "1 tool"}},
-					System:      system + "\n\n# MCP servers",
-					ServerTools: []ToolTokens{{Name: "docs__write", Tokens: 7}},
-					Gated: map[string]GatedPreviewFunc{"docs__write": func(json.RawMessage) (GatedPreview, error) {
-						return GatedPreview{Action: "call"}, nil
-					}},
-				}, true
-			},
-		})
+	m := frameModel(t, 130, 40)
+	m.setToolDefinitions([]ToolTokens{{Name: "read_file"}})
+	m.mcp = MCP{
+		Has: func(name string) bool { return joined[name] },
+		Sources: []components.InspectorToolSource{
+			{Name: "docs", State: components.ToolSourceStarting},
+		},
+		Join: func(system string) (MCPJoin, bool) {
+			calls++
+			handed = system
+			joined["docs__write"] = true
+			return MCPJoin{
+				Notes:       []string{"mcp: docs: up — 1 tool, from this turn"},
+				Sources:     []components.InspectorToolSource{{Name: "docs", State: components.ToolSourceUp, Note: "1 tool"}},
+				System:      system + "\n\n# MCP servers",
+				ServerTools: []ToolTokens{{Name: "docs__write", Tokens: 7}},
+				Gated: map[string]GatedPreviewFunc{"docs__write": func(json.RawMessage) (GatedPreview, error) {
+					return GatedPreview{Action: "call"}, nil
+				}},
+			}, true
+		},
+	}
 	m.agent.SetMessages([]provider.Message{{Role: provider.RoleSystem, Content: "you are shhh"}})
 
 	// A turn in flight: the line steers, and nothing joins.
@@ -238,11 +239,11 @@ func TestJoin_TakesTheServerAtTheBoundaryNotMidRound(t *testing.T) {
 // Without the half of the wiring that says which names are a server's, the
 // built-in count would silently be every server's tools as well.
 func TestInspectorTools_NoBuiltInRowWithoutTheServerNames(t *testing.T) {
-	m := frameModel(t, 130, 40).
-		WithToolDefinitions([]ToolTokens{{Name: "read_file"}, {Name: "docs__search"}}).
-		WithMCP(MCP{Sources: []components.InspectorToolSource{
-			{Name: "docs", State: components.ToolSourceUp, Note: "1 tool"},
-		}})
+	m := frameModel(t, 130, 40)
+	m.setToolDefinitions([]ToolTokens{{Name: "read_file"}, {Name: "docs__search"}})
+	m.mcp = MCP{Sources: []components.InspectorToolSource{
+		{Name: "docs", State: components.ToolSourceUp, Note: "1 tool"},
+	}}
 	tools := m.inspectorTools()
 	if len(tools.Sources) != 1 || tools.Sources[0].Name != "docs" {
 		t.Fatalf("no count to vouch for is no row: %+v", tools.Sources)
@@ -300,9 +301,9 @@ func promptModel(t *testing.T) Model {
 		}},
 	}
 	names := map[string]bool{"docs__search": true, "mcp_resource": true}
-	return frameModel(t, 130, 40).
-		WithToolDefinitions([]ToolTokens{{Name: "read_file"}, {Name: "docs__search"}, {Name: "mcp_resource"}}).
-		WithMCP(MCP{
+	return frameModelWith(t, 130, 40, Wiring{
+		ToolDefinitions: []ToolTokens{{Name: "read_file"}, {Name: "docs__search"}, {Name: "mcp_resource"}},
+		MCP: MCP{
 			Has:      func(name string) bool { return names[name] },
 			ReadOnly: func(name string) bool { return name == "mcp_resource" },
 			Prompts:  func() []mcp.Prompt { return prompts },
@@ -312,7 +313,8 @@ func promptModel(t *testing.T) Model {
 				}
 				return "Review " + args["ref"] + ".", nil
 			},
-		})
+		},
+	})
 }
 
 // A server's prompts are commands of the session: the menu offers them, and
@@ -470,19 +472,19 @@ func TestResourceToolAutoRunsAndDrawsAsARead(t *testing.T) {
 func TestRefreshMCP_ARestateGreysTheRailAndSaysWhatWasLost(t *testing.T) {
 	moved := true
 	restated := 0
-	m := frameModel(t, 130, 40).
-		WithToolDefinitions([]ToolTokens{{Name: "read_file"}, {Name: "docs__search"}}).
-		WithMCP(MCP{
-			Has:     func(name string) bool { return name == "docs__search" },
-			Sources: []components.InspectorToolSource{{Name: "docs", State: components.ToolSourceUp, Note: "1 tool"}},
-			Refresh: func() bool { return moved },
-			Restate: func() ([]components.InspectorToolSource, []string) {
-				restated++
-				return []components.InspectorToolSource{
-					{Name: "docs", State: components.ToolSourceFailed, Note: "stopped answering"},
-				}, []string{"mcp: docs: stopped answering — its tools are not in this session any more"}
-			},
-		})
+	m := frameModel(t, 130, 40)
+	m.setToolDefinitions([]ToolTokens{{Name: "read_file"}, {Name: "docs__search"}})
+	m.mcp = MCP{
+		Has:     func(name string) bool { return name == "docs__search" },
+		Sources: []components.InspectorToolSource{{Name: "docs", State: components.ToolSourceUp, Note: "1 tool"}},
+		Refresh: func() bool { return moved },
+		Restate: func() ([]components.InspectorToolSource, []string) {
+			restated++
+			return []components.InspectorToolSource{
+				{Name: "docs", State: components.ToolSourceFailed, Note: "stopped answering"},
+			}, []string{"mcp: docs: stopped answering — its tools are not in this session any more"}
+		},
+	}
 
 	m.refreshMCP()
 	if restated != 1 {
@@ -522,7 +524,8 @@ func TestAbandonMCPCalls_RunsOnTheCancelAndTheQuit(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			abandoned := 0
-			m := frameModel(t, 130, 40).WithMCP(MCP{Abandon: func() { abandoned++ }})
+			m := frameModel(t, 130, 40)
+			m.mcp = MCP{Abandon: func() { abandoned++ }}
 			c.act(&m)
 			if abandoned != 1 {
 				t.Fatalf("%s abandoned %d times", c.name, abandoned)

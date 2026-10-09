@@ -14,9 +14,3 @@ type Processes struct {
 	// nothing rather than guessing.
 	Contained func() string
 }
-
-// WithProcesses enables the /ps command and process-start approval gating.
-func (m Model) WithProcesses(p Processes) Model {
-	m.processes = p
-	return m
-}

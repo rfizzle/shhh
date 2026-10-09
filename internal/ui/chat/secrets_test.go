@@ -9,9 +9,11 @@ import (
 
 func TestSecret_MidTurnAnnouncementIsMachineSteering(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream).WithSecrets(Secrets{
-		Manage: func(args []string) (string, string) {
-			return "stored FOO", "Secret FOO is now available for use in commands."
+	m := New(msgs, mockStream, Wiring{
+		Secrets: Secrets{
+			Manage: func(args []string) (string, string) {
+				return "stored FOO", "Secret FOO is now available for use in commands."
+			},
 		},
 	})
 	m.state = stateStreaming
@@ -100,7 +102,7 @@ func TestSecret_MidTurnAnnouncementIsMachineSteering(t *testing.T) {
 }
 
 func TestSecret_RestoreSteeringExcludesMachineAnnouncements(t *testing.T) {
-	m := New(nil, mockStream)
+	m := New(nil, mockStream, Wiring{})
 	m.steering = []steeringItem{
 		{text: "Secret TOKEN is now available.", machine: true},
 		{text: "run the linter", machine: false},
@@ -123,9 +125,12 @@ func TestSecret_RestoreSteeringExcludesMachineAnnouncements(t *testing.T) {
 func TestSecret_MidTurnAnnouncementRendersAsSystemRowAfterSaveAndLoad(t *testing.T) {
 	db := rewindTestDB(t)
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream).WithDB(db).WithSecrets(Secrets{
-		Manage: func(args []string) (string, string) {
-			return "stored KEY", "Secret KEY is now available."
+	m := New(msgs, mockStream, Wiring{
+		DB: db,
+		Secrets: Secrets{
+			Manage: func(args []string) (string, string) {
+				return "stored KEY", "Secret KEY is now available."
+			},
 		},
 	})
 	m.state = stateStreaming
@@ -150,9 +155,7 @@ func TestSecret_MidTurnAnnouncementRendersAsSystemRowAfterSaveAndLoad(t *testing
 		t.Fatalf("LoadChat failed: %v", err)
 	}
 
-	reloaded := New(loaded[:1], mockStream).
-		WithDB(db).
-		WithResumedMessages(slot, loaded)
+	reloaded := New(loaded[:1], mockStream, Wiring{DB: db}).WithResumedMessages(slot, loaded)
 
 	var foundAnnouncement bool
 	for _, e := range reloaded.transcript {

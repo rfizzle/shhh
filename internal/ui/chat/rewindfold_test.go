@@ -21,7 +21,9 @@ import (
 // straight back without a card.
 func threeTurnModel(t *testing.T) Model {
 	t.Helper()
-	m := newRewindModel(t).WithDB(rewindTestDB(t))
+	m := newRewindModel(t)
+	m.wiring.DB = rewindTestDB(t)
+	m.bindStores()
 	m = completeExchange(t, m, "first question", "answer one")
 	m = completeExchange(t, m, "second question", "answer two")
 	return completeExchange(t, m, "third question", "answer three")

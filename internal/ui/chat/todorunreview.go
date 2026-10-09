@@ -33,7 +33,7 @@ func (m Model) startTodoReview() (tea.Model, tea.Cmd) {
 	if st.Pipeline.Writes() && len(m.todoRunPaths()) == 0 {
 		return m.todoRunStep(st.Block("the run changed no files under the repository, so there is nothing to review"))
 	}
-	if m.subagents == nil {
+	if m.wiring.Subagents == nil {
 		return m.todoRunStep(st.SelfReview(it))
 	}
 	args, _ := json.Marshal(map[string]any{
@@ -41,7 +41,7 @@ func (m Model) startTodoReview() (tea.Model, tea.Cmd) {
 		"name": st.Reviewer,
 		"task": st.ReviewTask(it, run.BoundDiff(m.todoRunDiff(), run.ReviewDiffLines, run.ReviewFileFloor)),
 	})
-	if _, err := m.subagents.Spawn(args); err != nil {
+	if _, err := m.wiring.Subagents.Spawn(args); err != nil {
 		model, _ := m.systemNotice("no reviewer agent could be spawned — " + err.Error())
 		return model.(Model).todoRunStep(st.SelfReview(it))
 	}
@@ -60,10 +60,10 @@ func (m Model) startTodoReview() (tea.Model, tea.Cmd) {
 // See docs/capabilities/chat.md#colleagues-not-workers.
 func (m Model) todoReviewRole(st *run.State) string {
 	ps, ok := st.Pipeline.At(st.Stage)
-	if !ok || ps.Persona == "" || m.subagents == nil {
+	if !ok || ps.Persona == "" || m.wiring.Subagents == nil {
 		return string(subagent.RoleReviewer)
 	}
-	if _, has := m.subagents.Profiles()[subagent.Role(ps.Persona)]; !has {
+	if _, has := m.wiring.Subagents.Profiles()[subagent.Role(ps.Persona)]; !has {
 		return string(subagent.RoleReviewer)
 	}
 	return ps.Persona
@@ -160,7 +160,7 @@ func (m Model) todoReviewDone(status subagent.Status) (tea.Model, tea.Cmd, bool)
 	if st == nil || st.Over() || st.Reviewer == "" || status.Name != st.Reviewer {
 		return m, nil, false
 	}
-	report, state, ok := m.subagents.FinalReport(st.Reviewer)
+	report, state, ok := m.wiring.Subagents.FinalReport(st.Reviewer)
 	if !ok || state != subagent.StateDone {
 		// A reader that did not finish is a reader the run did not get,
 		// which is what SelfReview is for. Blocking on it stops a finished,

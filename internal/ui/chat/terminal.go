@@ -95,7 +95,7 @@ func (m Model) windowTitle() string {
 	if !m.windowTitleOn || !m.windowChrome() {
 		return ""
 	}
-	name := m.title
+	name := m.wiring.Title
 	if name == "" {
 		name = defaultTitle
 	}
@@ -337,10 +337,10 @@ func (m *Model) windowCommand(parts []string) string {
 func (m *Model) setWindowTitleOn(on bool) string {
 	m.windowTitleOn = on
 	note := windowNote(on)
-	if m.writeConfig == nil {
+	if m.wiring.ConfigWriter == nil {
 		return note + "\nThis session cannot write the config file, so it is for this session only."
 	}
-	if err := m.writeConfig("appearance.window_title", strconv.FormatBool(on)); err != nil {
+	if err := m.wiring.ConfigWriter("appearance.window_title", strconv.FormatBool(on)); err != nil {
 		return note + "\nIt could not be saved: " + err.Error()
 	}
 	return note + " Saved — new sessions start this way."
@@ -354,12 +354,4 @@ func windowNote(on bool) string {
 		return "window title on — the terminal's tab says which shhh this is: the command, the directory it is running in, and ⏸ while a decision is waiting"
 	}
 	return "window title off — the tab keeps whatever your terminal puts there"
-}
-
-// WithWindowTitle sets whether the session names the terminal's tab
-// (appearance.window_title). Hosts that do not call it name it, which is the
-// default the config resolves to.
-func (m Model) WithWindowTitle(on bool) Model {
-	m.windowTitleOn = on
-	return m
 }

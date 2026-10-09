@@ -49,10 +49,11 @@ func gitIn(t *testing.T, ws string, args ...string) {
 func TestTree_ANoticeReachesTheConversationAndTheTranscript(t *testing.T) {
 	ws := treeRepo(t)
 	var signals []string
-	m := gatedModel(t, nil, nil).
-		WithChangeset(changeset.New(changeset.DefaultMaxBytes), nil).
-		WithTreeCheck(&agent.TreeCheck{Dir: ws})
-	m = m.WithObserver(observe.Observer{Signal: func(_ observe.Pos, code, reason string) { signals = append(signals, code+":"+reason) }})
+	m := gatedModelWith(t, nil, nil, Wiring{
+		Changeset: changeset.New(changeset.DefaultMaxBytes),
+		TreeCheck: &agent.TreeCheck{Dir: ws},
+	})
+	m.wiring.Observer = observe.Observer{Signal: func(_ observe.Pos, code, reason string) { signals = append(signals, code+":"+reason) }}
 	m = advanceRounds(m, 2)
 	before := m.agent.Rounds()
 
@@ -79,9 +80,10 @@ func TestTree_ANoticeReachesTheConversationAndTheTranscript(t *testing.T) {
 func TestTree_TheChangesetIsTheSubtrahend(t *testing.T) {
 	ws := treeRepo(t)
 	store := changeset.New(changeset.DefaultMaxBytes)
-	m := gatedModel(t, nil, nil).
-		WithChangeset(store, nil).
-		WithTreeCheck(&agent.TreeCheck{Dir: ws})
+	m := gatedModelWith(t, nil, nil, Wiring{
+		Changeset: store,
+		TreeCheck: &agent.TreeCheck{Dir: ws},
+	})
 
 	mine := filepath.Join(ws, "mine.txt")
 	if err := os.WriteFile(mine, []byte("x\n"), 0o644); err != nil {
@@ -108,9 +110,10 @@ func TestTree_TheInstructionFilesAreFoundWithoutBeingNamed(t *testing.T) {
 	gitIn(t, ws, "add", "AGENTS.md")
 	gitIn(t, ws, "commit", "-q", "-m", "instructions")
 
-	m := gatedModel(t, nil, nil).
-		WithChangeset(changeset.New(changeset.DefaultMaxBytes), nil).
-		WithTreeCheck(&agent.TreeCheck{Dir: ws})
+	m := gatedModelWith(t, nil, nil, Wiring{
+		Changeset: changeset.New(changeset.DefaultMaxBytes),
+		TreeCheck: &agent.TreeCheck{Dir: ws},
+	})
 
 	if err := os.WriteFile(agents, []byte("the new rule\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -123,7 +126,7 @@ func TestTree_TheInstructionFilesAreFoundWithoutBeingNamed(t *testing.T) {
 }
 
 func TestTree_NilLeavesTheReadingOff(t *testing.T) {
-	m := gatedModel(t, nil, nil).WithTreeCheck(nil)
+	m := gatedModelWith(t, nil, nil, Wiring{})
 	if m.agent.TreeChecking() {
 		t.Fatal("nil is off")
 	}

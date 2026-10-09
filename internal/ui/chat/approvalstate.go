@@ -23,7 +23,7 @@ type approvalState struct {
 	// prompt is showing, with everything needed to preview and execute it.
 	request *approvalRequest
 	// checks are the refusals that stand in front of a gated tool's
-	// preview, run off the screen's goroutine (WithGatedChecks). Session
+	// preview, run off the screen's goroutine (the wiring's GatedChecks). Session
 	// wiring, so clear leaves it.
 	checks map[string]GatedCheckFunc
 	// blast is the card's blast-radius block for the decision showing now,

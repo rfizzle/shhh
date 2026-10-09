@@ -82,10 +82,10 @@ func (m *Model) mentionMatches(token string) []completionItem {
 // coding session offers none — its roles are workers the orchestrator
 // assigns, not colleagues a person addresses.
 func (m *Model) mentionColleagues() []SpawnableRole {
-	if m.personas.Kind != persona.KindChat || m.personas.Roles == nil {
+	if m.wiring.Personas.Kind != persona.KindChat || m.wiring.Personas.Roles == nil {
 		return nil
 	}
-	return m.personas.Roles()
+	return m.wiring.Personas.Roles()
 }
 
 // insertMention writes the focused file row into the draft — the path,

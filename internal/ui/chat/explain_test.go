@@ -71,8 +71,9 @@ func explainerModel(t *testing.T, p provider.Provider, cfg agent.ExplainConfig) 
 	var bare, contained []string
 	ledger := meter.New(nil)
 	m := containedModel(t, &bare, &contained, "contained: bwrap")
-	return m.WithLedger(ledger).
-		WithExplainer(agent.NewExplainer(ledger.For(p, meter.SourceExplanation), cfg))
+	m.wiring.Ledger = ledger
+	m.wiring.Explainer = agent.NewExplainer(ledger.For(p, meter.SourceExplanation), cfg)
+	return m
 }
 
 // offersExplain reports whether the card is advertising the explain key.
@@ -171,11 +172,11 @@ func TestApprovalCard_ExplainIsBilledUnderItsOwnSource(t *testing.T) {
 	// The spend is a line in /cost of its own, so a keystroke that costs
 	// money is attributable rather than folded into the classifier's total
 	// (docs/architecture.md#spend-is-counted-at-the-provider).
-	got := m.ledger.SourceTotal(meter.SourceExplanation)
+	got := m.wiring.Ledger.SourceTotal(meter.SourceExplanation)
 	if got.In != 210 || got.Out != 88 {
 		t.Fatalf("the explanation should be billed under its own source, got ↑%d ↓%d", got.In, got.Out)
 	}
-	if other := m.ledger.SourceTotal(meter.SourceClassifier); other.Requests != 0 {
+	if other := m.wiring.Ledger.SourceTotal(meter.SourceClassifier); other.Requests != 0 {
 		t.Fatalf("an explanation is not the classifier's spend, got %d requests", other.Requests)
 	}
 	// And it is background spend, not the agent's own turns.
@@ -290,8 +291,8 @@ func TestApprovalCard_ExplainIsNotOfferedOnAnEdit(t *testing.T) {
 	p := &paragraphProvider{text: "unused"}
 	ledger := meter.New(nil)
 	m := handover(t, interruptedModel(t, ""))
-	m = m.WithLedger(ledger).
-		WithExplainer(agent.NewExplainer(ledger.For(p, meter.SourceExplanation), agent.ExplainConfig{Model: "small", Prompt: explainWording}))
+	m.wiring.Ledger = ledger
+	m.wiring.Explainer = agent.NewExplainer(ledger.For(p, meter.SourceExplanation), agent.ExplainConfig{Model: "small", Prompt: explainWording})
 	if m.approval.request == nil || m.approval.request.kind != approvalDiff {
 		t.Fatalf("the fixture should be sitting on an edit card, got %v", m.approval.request)
 	}

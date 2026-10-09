@@ -29,19 +29,20 @@ func memoryModel(t *testing.T, mode agent.Mode) (Model, *[]savedMemory) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "do the thing"},
 	}
-	m := New(msgs, mockStream).
-		WithToolExecutor(func(name string, args json.RawMessage) (string, error) {
+	m := New(msgs, mockStream, Wiring{
+		Executor: func(name string, args json.RawMessage) (string, error) {
 			t.Fatalf("the remember tool must never reach the executor, got %s", name)
 			return "", nil
-		}).
-		WithMemory(Memory{
+		},
+		Memory: Memory{
 			Manage: func(args []string) string { return "managed:" + strings.Join(args, ",") },
 			Save: func(scope, kind, text string) (string, error) {
 				saves = append(saves, savedMemory{scope, kind, text})
 				return "saved memory [m1] (" + memory.ScopeLabel(scope) + " " + kind + "): " + text, nil
 			},
 			ProjectScope: "/proj",
-		})
+		},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.policy.mode = mode
@@ -163,10 +164,10 @@ func declineStore(t *testing.T) *storage.DB {
 // withDeclines wires a session's memory to the store's declines, the way the
 // session's assembly does.
 func withDeclines(m Model, db *storage.DB) Model {
-	m.memory.Declined = func(text string) bool {
+	m.wiring.Memory.Declined = func(text string) bool {
 		return db.ProposalDeclined("/proj", storage.ProposalMemory, text)
 	}
-	m.memory.Decline = func(text string) error {
+	m.wiring.Memory.Decline = func(text string) error {
 		return db.DeclineProposal("/proj", storage.ProposalMemory, text)
 	}
 	return m
@@ -305,7 +306,7 @@ func TestMemorySlashCommand(t *testing.T) {
 		t.Fatalf("expected /memory to route to Manage, got handled=%v out=%q", handled, out)
 	}
 
-	bare := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	bare := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream, Wiring{})
 	handled, out = bare.handleSlashCommand("/memory")
 	if !handled || !strings.Contains(out, "unavailable") {
 		t.Fatalf("without wiring, /memory should report unavailable, got %q", out)
@@ -317,8 +318,8 @@ func TestMemorySlashCommand(t *testing.T) {
 func editableMemoryModel(t *testing.T) (Model, *string) {
 	t.Helper()
 	stored := "a note far too long to be recalled"
-	m := New([]provider.Message{{Role: provider.RoleUser, Content: "hi"}}, mockStream).
-		WithMemory(Memory{
+	m := New([]provider.Message{{Role: provider.RoleUser, Content: "hi"}}, mockStream, Wiring{
+		Memory: Memory{
 			Manage:       func(args []string) string { return "managed:" + strings.Join(args, ",") },
 			ProjectScope: "/proj",
 			EntryText: func(id int64) (string, error) {
@@ -331,7 +332,8 @@ func editableMemoryModel(t *testing.T) (Model, *string) {
 				stored = text
 				return "✓ rewrote m1 · project convention", nil
 			},
-		})
+		},
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	return updated.(Model), &stored
 }
@@ -365,7 +367,7 @@ func TestMemoryEdit_RefusesWhatItCannotOpen(t *testing.T) {
 	}
 
 	// A session with no memory store cannot reach the store through this.
-	bare, _ := New([]provider.Message{{Role: provider.RoleUser, Content: "hi"}}, mockStream).
+	bare, _ := New([]provider.Message{{Role: provider.RoleUser, Content: "hi"}}, mockStream, Wiring{}).
 		Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	next, _ = bare.(Model).runCommand("/memory edit m1", "/memory")
 	if got := lastSystemText(next.(Model)); !strings.Contains(got, "unavailable in this session") {
@@ -430,7 +432,7 @@ func TestInspectorTools_CountsOmittedMemories(t *testing.T) {
 		t.Fatal("a session with no external source and nothing omitted draws no block")
 	}
 
-	m.memory.Omitted = 2
+	m.wiring.Memory.Omitted = 2
 	tools := m.inspectorTools()
 	if tools == nil || tools.MemoryOmitted != 2 {
 		t.Fatalf("the omitted count should reach the rail, got %+v", tools)

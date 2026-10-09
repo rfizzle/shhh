@@ -33,12 +33,13 @@ func questionModel(t *testing.T, mode agent.Mode) Model {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "do the thing"},
 	}
-	m := New(msgs, mockStream).
-		WithToolExecutor(func(name string, _ json.RawMessage) (string, error) {
+	m := New(msgs, mockStream, Wiring{
+		Executor: func(name string, _ json.RawMessage) (string, error) {
 			t.Fatalf("a question must never reach the executor, got %s", name)
 			return "", nil
-		}).
-		WithAsk()
+		},
+		Ask: true,
+	})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
 	m.policy.mode = mode
@@ -139,10 +140,11 @@ func TestQuestion_EveryModeAndEveryGrantStillDrawsTheCard(t *testing.T) {
 				// no standing on which of two designs a person prefers, and
 				// the executor above is what would catch it deciding.
 				ledger := meter.New(nil)
-				m = m.WithLedger(ledger).WithClassifier(agent.NewClassifier(
+				m.wiring.Ledger = ledger
+				m.classifier.judge = agent.NewClassifier(
 					ledger.For(&verdictProvider{decision: "allow", reason: "the work that was asked for"},
 						meter.SourceClassifier),
-					agent.ClassifierConfig{Model: "judge"}))
+					agent.ClassifierConfig{Model: "judge"})
 			}
 			updated, _ := m.Update(askCall(chooseArgs))
 			next := updated.(Model)
@@ -1194,7 +1196,8 @@ func TestQuestion_ASentenceOverAnAnsweredCardIsTheWordsBesideThePicks(t *testing
 // something about (docs/interface/surfaces.md#the-question-card).
 func askedAt(t *testing.T, width int, args string) Model {
 	t.Helper()
-	m := frameModel(t, width, 40).WithAsk()
+	m := frameModel(t, width, 40)
+	m.wiring.Ask = true
 	m.state = stateStreaming
 	updated, _ := m.Update(askCall(args))
 	next := updated.(Model)
@@ -1345,7 +1348,8 @@ func TestQuestion_TheKeysAreUnchangedWhileTheCockpitStands(t *testing.T) {
 // it is holding and where the cursor is standing in it — the same evidence the
 // undressed draft states under a card that took the panel.
 func TestQuestion_TheFrameUnderTheCardSaysWhatItIsHolding(t *testing.T) {
-	m := frameModel(t, 144, 40).WithAsk()
+	m := frameModel(t, 144, 40)
+	m.wiring.Ask = true
 	m.state = stateStreaming
 	m.input.SetValue("and keep the migration reversible")
 	m.syncInputHeight()

@@ -50,7 +50,9 @@ func extractModel(t *testing.T, root string, p *scriptedProvider) Model {
 	if p != nil {
 		ex = todo.NewExtractor(p, todo.ExtractConfig{Model: "m"}, todo.BuiltinCode())
 	}
-	return m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "usage" }, Detail: func(*todo.Store, todo.Item) string { return "" }, Extractor: ex})
+	m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "usage" }, Detail: func(*todo.Store, todo.Item) string { return "" }, Extractor: ex}
+	m.loadTodos()
+	return m
 }
 
 // runExtract submits a bare /todo add and delivers the reading.
@@ -195,7 +197,8 @@ func TestTodoAdd_ClearDropsAReadingInFlight(t *testing.T) {
 func TestWriteProposals_DuplicateTitlesAndHostileFields(t *testing.T) {
 	root := t.TempDir()
 	m := frameModel(t, 130, 40)
-	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
+	m.todo.wiring = Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }}
+	m.loadTodos()
 	m.todo.store = nil
 	ps, ok := todo.ParseProposals(todo.BuiltinCode(), `{"items": [
 		{"title": "Fix it", "acceptance_criteria": ["a"]},

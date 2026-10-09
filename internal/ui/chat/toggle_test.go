@@ -33,7 +33,7 @@ func TestParseToggle(t *testing.T) {
 // A word that names neither side leaves the command to say so in its own
 // words, naming the setting the reader was trying to set.
 func TestToggleCommandsRefuseAnUnknownWord(t *testing.T) {
-	m := New(nil, mockStream)
+	m := New(nil, mockStream, Wiring{})
 	for _, tc := range []struct {
 		line string
 		want string
