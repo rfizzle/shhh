@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/meter"
@@ -342,4 +343,9 @@ type Wiring struct {
 	// zero on either keeps that half at its default.
 	PasteLines   int
 	PasteColumns int
+	// ClipboardRead is the reader the attach offer asks what the clipboard
+	// holds (attachoffer.go): the host passes the one the attach chord reads
+	// through, and a screen built without it offers nothing, so a test never
+	// reaches the system clipboard.
+	ClipboardRead func() (attachment.Clipboard, error)
 }

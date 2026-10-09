@@ -86,6 +86,8 @@ func (m Model) handleClipboard(msg clipboardMsg) (tea.Model, tea.Cmd) {
 		return m.surfaceNotice("nothing attached — " + msg.err.Error())
 	}
 	if len(msg.clip.Attachments) > 0 {
+		// What the offer named is taken, so the rail stops naming it.
+		m.clipOffer = ""
 		before := len(m.attachments)
 		if msg.atCursor {
 			return noteFrom(m.stageAtCursor(msg.clip.Attachments))(before, "from the clipboard")

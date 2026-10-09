@@ -525,6 +525,10 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 	case clipboardMsg:
 		return answered(m.handleClipboard(msg))
 
+	case clipboardOfferMsg:
+		m.clipOffer = msg.name
+		return answered(m, nil)
+
 	case editorDoneMsg:
 		return answered(m.editorFinished(msg))
 

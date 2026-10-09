@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/x/term"
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
@@ -484,6 +485,7 @@ func (b *screenBuild) wiring() chat.Wiring {
 		Verbosity:            cfg.Appearance.Verbosity,
 		PasteLines:           cfg.Appearance.PasteLines,
 		PasteColumns:         cfg.Appearance.PasteColumns,
+		ClipboardRead:        attachment.Read,
 		RailWidth:            components.RailWidthOrAuto(cfg.Appearance.RailWidth),
 		NotifyOff:            !cfg.NotifyEnabled(),
 		WindowTitleOff:       !cfg.WindowTitleEnabled(),

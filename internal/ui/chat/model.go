@@ -1023,6 +1023,10 @@ type Model struct {
 	// answer to the only question asked of them — may shhh assume nobody is
 	// looking? — and the answer to both is no.
 	away bool
+	// clipOffer is the name of what the clipboard held at the last read the
+	// attach offer asked for, empty when it held nothing attachable
+	// (attachoffer.go).
+	clipOffer string
 	// pointer is what the mouse and the pane's pointer are doing: mouse
 	// reporting, the press, the drag selection and its edge scroll, the
 	// rail cell a surface was opened from, the lit pointer, and the notices
@@ -1788,6 +1792,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	// And its standing account (account.go), once enough turns have closed.
 	if read := mm.accountCloseCmd(); read != nil {
+		cmd = tea.Batch(cmd, read)
+	}
+	// And the clipboard's offer on the top rail (attachoffer.go), read when the
+	// frame goes idle and when the window comes back: both are transitions.
+	if read := mm.attachOfferCmd(m); read != nil {
 		cmd = tea.Batch(cmd, read)
 	}
 	// And the next step it offers in the empty draft (suggest.go), once the

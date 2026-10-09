@@ -1315,6 +1315,26 @@ func (m Model) topRailLabels(mode frameLayout, width int) (left, right string) {
 	return left, identityLabel
 }
 
+// attachOffer is the top rail's far side while the clipboard holds something
+// to attach: the chord and the name of what it would take, muted, above the
+// prompt where the eye already is and never a slot on the foot row. It is the
+// rail's to give up — the name goes first and the label whole after it when
+// the room is short, so the corner never cuts it in half. Only the root
+// session's idle frame offers it; the clipboard was read when the frame went
+// idle and when the window came back (clipboardOfferCmd), not now.
+func (m Model) attachOffer(room int) string {
+	if m.clipOffer == "" || m.attachedTo != "" || m.turnInFlight() || m.decisionRides() {
+		return ""
+	}
+	chord := keys.Bracket(keys.Draft.Attach) + " attach"
+	for _, text := range []string{chord + " " + m.clipOffer, chord} {
+		if label := " " + text + " "; lipgloss.Width(label) <= room {
+			return sty.Hint.Dim.Render(label)
+		}
+	}
+	return ""
+}
+
 // draftView is the draft box's own render. It is the one place the field is
 // drawn, because the palette's colours reach a field only where it is drawn
 // (components.StyleTextArea) — a swap while a session is open otherwise
@@ -1516,6 +1536,9 @@ func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle, cur *cursorSink
 	lines, menu := m.frameDraftLines()
 	box := r.box
 	topLeft, topRight := m.topRailLabels(mode, width)
+	if topRight == "" {
+		topRight = m.attachOffer(railLabelWidth(topLeft, width))
+	}
 	drawRail(scr, r.top, accent, "╭", "╮", topLeft, topRight)
 
 	for i := range r.drafts.Dy() {
