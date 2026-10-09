@@ -77,3 +77,21 @@ func TestReference_LeavesTheProseAround(t *testing.T) {
 		t.Error("the old region survived the regeneration")
 	}
 }
+
+// The table of refused keys is the list the loader refuses by, so a key
+// added there reaches the document or fails here.
+func TestDocs_RefusedKeysTableIsCurrent(t *testing.T) {
+	stale, err := WriteRefused(referenceDoc, updatingDocs())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stale && !updatingDocs() {
+		t.Errorf("%s no longer matches projectRefusals — run: make docs", referenceDoc)
+	}
+	table := RefusedTable()
+	for _, r := range projectRefusals {
+		if !strings.Contains(table, r.Key) || !strings.Contains(table, r.Reason) {
+			t.Errorf("the table lacks %s", r.Key)
+		}
+	}
+}

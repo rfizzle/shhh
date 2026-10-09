@@ -53,18 +53,26 @@ A short set of keys is refused in the checkout's file, whatever the answer
 to trust was. Each is a key whose value in a checkout is a value in every
 clone of it, or one that reaches past the tree onto the machine:
 
+<!-- BEGIN generated refused keys — written by `make docs` from projectRefusals in internal/config/project.go; edit the list, not this. -->
+
 | Key | Why not |
 |---|---|
 | `provider.api_key`, `web.search_api_key` | a credential in a checkout is a credential in every clone of it |
-| `provider.api_key_env`, `web.search_api_key_env` | it would let the checkout choose which of your variables is sent as a key |
-| `web.allow_hosts` | it would let the checkout decide where a session's reads leave for; a checkout may add to `web.deny_hosts`, and only add |
+| `provider.api_key_env` | it would let the checkout choose which of your variables is sent as the key |
+| `web.allow_hosts` | it would let the checkout decide which hosts a session reaches without being asked; a checkout may add to web.deny_hosts and only add |
 | `web.search_url` | it would let the checkout decide which machine every search in the session is sent to |
+| `web.search_api_key_env` | it would let the checkout choose which of your variables is sent as the search key |
 | `secrets.env` | it declares which of your environment variables a session may spend, which is about the machine rather than the tree |
 | `[sandbox]` | it decides what a contained command may reach, which is the containment itself |
-| `[mcp.servers]` | a server is a program to start, and a checkout names its servers in `.shhh/mcp.json` instead |
-| `[prompts]` | it points at a file anywhere on the machine and replaces what a session is told |
+| `agents.require_sandbox` | it decides whether a writer's commands are contained, which is the containment itself |
 | `behavior.classifier_backend` | the decisions backend is not sent your classifier wording, so a checkout choosing it could drop refusals that wording adds |
 | `behavior.classifier_threshold` | a lower bar lets more calls run without asking, and a checkout may add a refusal but never take one away |
+| `[mcp.servers]` | a server is a program to start, and a checkout names its servers in .shhh/mcp.json instead |
+| `[hooks.entries]` | a hook is a command to run, and a checkout names its hooks in .shhh/hooks.json instead |
+| `[prompts]` | it points at a file anywhere on the machine and replaces what a session is told |
+| `todo.root` | it names a directory on the machine, and a session standing in this checkout reads this checkout's backlog whatever it says |
+
+<!-- END generated refused keys -->
 
 Refusing them rather than leaning on trust alone is the second gate: the
 field's other harnesses let a project file set nearly anything, and trust is

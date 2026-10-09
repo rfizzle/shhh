@@ -22,6 +22,9 @@ import (
 const (
 	referenceBegin = "<!-- BEGIN generated settings reference — written by `make docs` from the settings table; edit the table, not this. -->"
 	referenceEnd   = "<!-- END generated settings reference -->"
+
+	refusedBegin = "<!-- BEGIN generated refused keys — written by `make docs` from projectRefusals in internal/config/project.go; edit the list, not this. -->"
+	refusedEnd   = "<!-- END generated refused keys -->"
 )
 
 // Reference is the settings reference: one table per section of the file, in
@@ -122,6 +125,77 @@ func WriteReference(path string, write bool) (stale bool, err error) {
 		return false, err
 	}
 	out, changed, err := ReferenceIn(string(raw))
+	if err != nil {
+		return false, fmt.Errorf("%s: %w", path, err)
+	}
+	if !changed {
+		return false, nil
+	}
+	if !write {
+		return true, nil
+	}
+	mode := os.FileMode(0o644)
+	if info, statErr := os.Stat(path); statErr == nil {
+		mode = info.Mode().Perm()
+	}
+	return true, os.WriteFile(path, []byte(out), mode)
+}
+
+// RefusedTable is the table of keys a checkout may not set, written from the
+// list the loader refuses by. Keys that share a reason share a row, in the
+// order the list first gives them. A key that is itself a setting is written
+// as the key; one that only heads a table, or a file the checkout keeps
+// instead, is written as the table.
+func RefusedTable() string {
+	var b strings.Builder
+	b.WriteString(refusedBegin + "\n\n")
+	b.WriteString("| Key | Why not |\n|---|---|\n")
+	var reasons []string
+	keys := map[string][]string{}
+	for _, r := range projectRefusals {
+		if _, ok := keys[r.Reason]; !ok {
+			reasons = append(reasons, r.Reason)
+		}
+		shown := "`" + r.Key + "`"
+		if !isSetting(r.Key) {
+			shown = "`[" + r.Key + "]`"
+		}
+		keys[r.Reason] = append(keys[r.Reason], shown)
+	}
+	for _, reason := range reasons {
+		fmt.Fprintf(&b, "| %s | %s |\n", cell(strings.Join(keys[reason], ", ")), cell(reason))
+	}
+	b.WriteString("\n" + refusedEnd)
+	return b.String()
+}
+
+func isSetting(key string) bool {
+	for _, s := range settings {
+		if s.Key == key {
+			return true
+		}
+	}
+	return false
+}
+
+// RefusedIn is the document with the generated refused-keys region replaced.
+func RefusedIn(doc string) (string, bool, error) {
+	i := strings.Index(doc, refusedBegin)
+	j := strings.Index(doc, refusedEnd)
+	if i < 0 || j < i {
+		return "", false, fmt.Errorf("the refused keys markers are not in the document")
+	}
+	out := doc[:i] + RefusedTable() + doc[j+len(refusedEnd):]
+	return out, out != doc, nil
+}
+
+// WriteRefused is WriteReference for the refused-keys table.
+func WriteRefused(path string, write bool) (stale bool, err error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return false, err
+	}
+	out, changed, err := RefusedIn(string(raw))
 	if err != nil {
 		return false, fmt.Errorf("%s: %w", path, err)
 	}
