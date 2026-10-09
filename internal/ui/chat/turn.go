@@ -256,6 +256,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		m.composed = 0
 		return m, waitForEvent(m.events), true
 
+	case keepaliveMsg:
+		return m.heardKeepalive()
+
 	case tokenMsg:
 		// The provider is answering: whatever stall preceded this is over, and
 		// the next one starts its own bounded count.

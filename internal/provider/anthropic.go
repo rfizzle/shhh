@@ -173,7 +173,13 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 		defer close(ch)
 		defer watch.stop()
 
-		stream := a.client.Messages.NewStreaming(ctx, params)
+		// The SDK reads a ping without returning it, so the body is watched on
+		// its way in. The loop's own goroutine is the one reading, which
+		// makes the send below the same send every other event is.
+		stream := a.client.Messages.NewStreaming(ctx, params, sniffPings(func() {
+			watch.alive()
+			ch <- StreamEvent{Keepalive: true}
+		}))
 		accumulated := anthropic.Message{}
 		// The argument fragments as they arrived, per content-block index.
 		// The SDK's own accumulation cannot answer the one question a

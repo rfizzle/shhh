@@ -791,6 +791,10 @@ again. That is the whole point of naming it that: a gateway that went quiet
 for thirty seconds is very often answering the next request, and the
 alternative to a retry here is a person noticing.
 
+A gateway's keepalive — an SSE comment or a ping event — holds the deadline off
+and also reaches the session as an event of its own, with no text, so a screen
+can tell a quiet stream from a silent one.
+
 Two minutes is the default, and `provider.stream_idle_seconds` moves it. A
 negative removes the deadline entirely, for a machine that would rather wait
 indefinitely than lose a turn.

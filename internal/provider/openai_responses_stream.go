@@ -131,7 +131,12 @@ func streamResponses(body io.ReadCloser, classify func(error) error, watch *idle
 			// blank separators and the keep-alive comments this reader has no
 			// use for: what it watches for is silence on the wire (idle.go).
 			watch.alive()
-			payload, ok := sseData(scanner.Text())
+			line := scanner.Text()
+			if strings.HasPrefix(line, ":") {
+				ch <- StreamEvent{Keepalive: true}
+				continue
+			}
+			payload, ok := sseData(line)
 			if !ok {
 				continue
 			}

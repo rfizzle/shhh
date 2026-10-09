@@ -167,6 +167,13 @@ type StreamEvent struct {
 	// only the calls that are whole (partial.go).
 	// See docs/capabilities/providers.md#tool-arguments-arrive-as-fragments.
 	ToolCallDelta *ToolCallDelta
+	// Keepalive marks a comment or ping a gateway sent to hold the connection
+	// open. It carries nothing else: no text, no fragment, nothing stored or
+	// drawn. It exists so a surface can tell a live stream that is quiet from
+	// one that has said nothing at all; every other reader counts it as an
+	// event and ignores it.
+	// See docs/capabilities/providers.md#a-stream-that-stops-writing-is-a-failure.
+	Keepalive bool
 	// Stop is why the model stopped writing, on the terminal event and
 	// nowhere else. The empty value is a stream that ended without saying —
 	// a gateway that dropped the field, an event the parser never reached —

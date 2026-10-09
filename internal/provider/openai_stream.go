@@ -171,6 +171,11 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 			}
 
 			if len(resp.Choices) == 0 {
+				// A frame with no choices and no usage is a ping: the gateway
+				// is writing and has nothing to say.
+				if resp.Usage == nil {
+					ch <- StreamEvent{Keepalive: true}
+				}
 				continue
 			}
 

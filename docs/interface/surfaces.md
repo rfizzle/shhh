@@ -988,8 +988,10 @@ counts from the request rather than the turn. Then the stretch's word, the
 one the session's record files it under: `silent` when nothing has arrived,
 `quiet` when the stream is delivering something that draws nothing, with what
 that is and how long since the last of it — `quiet — keepalives only, last 3s
-ago`. A quiet stream is alive; a silent one may not be, and the two are told
-apart on the screen as they are in the record
+ago`. A gateway's pings and comments are what a keepalive is: each reaches the
+screen as an event of its own that draws nothing, so a stream that only pings
+reads `quiet` and not `silent`. A quiet stream is alive; a silent one may not
+be, and the two are told apart on the screen as they are in the record
 ([startup and waits are timed](../capabilities/sessions-and-memory.md#startup-and-waits-are-timed)).
 
 `thinking…` is the one word that claims the model is thinking, so it is drawn

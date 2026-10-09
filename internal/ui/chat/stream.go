@@ -135,19 +135,29 @@ func waitForEvent(events <-chan provider.StreamEvent) tea.Cmd {
 		var text, think strings.Builder
 		text.WriteString(ev.Token)
 		think.WriteString(ev.Thinking)
+		pinged := ev.Keepalive
+		// batch is the message for what has been drained: a batch of pings
+		// alone is a keepalive, and one with anything else in it is a batch.
+		batch := func(final tea.Msg) tea.Msg {
+			if pinged && final == nil && text.Len() == 0 && think.Len() == 0 {
+				return keepaliveMsg{}
+			}
+			return tokenMsg{text: text.String(), think: think.String(), final: final}
+		}
 		for {
 			select {
 			case ev, ok := <-events:
 				if !ok {
-					return tokenMsg{text: text.String(), think: think.String(), final: doneMsg{}}
+					return batch(doneMsg{})
 				}
 				if final := terminalMsg(ev); final != nil {
-					return tokenMsg{text: text.String(), think: think.String(), final: final}
+					return batch(final)
 				}
 				text.WriteString(ev.Token)
 				think.WriteString(ev.Thinking)
+				pinged = pinged || ev.Keepalive
 			default:
-				return tokenMsg{text: text.String(), think: think.String()}
+				return batch(nil)
 			}
 		}
 	}

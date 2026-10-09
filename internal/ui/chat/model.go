@@ -306,6 +306,11 @@ type resizeSettledMsg struct{ seq int }
 
 const horizontalPadding = 2
 
+// keepaliveMsg is a batch of a gateway's pings and nothing else, with no
+// terminal event beside it: something arrived that draws nothing, and the
+// stall the turn may be in is not over.
+type keepaliveMsg struct{}
+
 type tokenMsg struct {
 	text string
 	// think is reasoning text from the same batch. It rides the token message

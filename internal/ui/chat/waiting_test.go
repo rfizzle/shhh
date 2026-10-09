@@ -82,7 +82,7 @@ func TestWaitingState_QuietIsNotSilent(t *testing.T) {
 	// A second request, which hears events that draw nothing.
 	m.setTurnState(stateStreaming)
 	step(45 * time.Second)
-	update(tokenMsg{})
+	update(keepaliveMsg{})
 	step(3 * time.Second)
 	got := statusLine(t, *m)
 	if want := "waiting… · model 48s · quiet — keepalives only, last 3s ago · turn "; !strings.HasPrefix(got, want) {
@@ -140,5 +140,36 @@ func TestWaitingState_NeverClaimsThinkingWithNothingArrived(t *testing.T) {
 	update(toolDeltaMsg{delta: provider.ToolCallDelta{ID: "c1", Arguments: `{"command":"go`}})
 	if got := statusLine(t, *m); !strings.HasPrefix(got, "streaming…") {
 		t.Errorf("with a call being written the line reads %q, want streaming…", got)
+	}
+}
+
+// A gateway's ping is heard and nothing more: the frame calls the stream
+// quiet and not silent, the record's quiet stretch counts it as delivered,
+// and it draws nothing, stores nothing and leaves the stall's bound alone.
+func TestWaitingState_AKeepaliveIsHeardAndDrawsNothing(t *testing.T) {
+	m, step, update := waitingModel(t)
+	retries := 2
+	*m = m.WithRetryLimit(&retries)
+	m.backoff.Next(&provider.Failure{Class: provider.ClassNetwork})
+	before := m.backoff.Attempt()
+
+	step(5 * time.Second)
+	update(keepaliveMsg{})
+	step(2 * time.Second)
+
+	if got := statusLine(t, *m); !strings.Contains(got, "quiet — keepalives only, last 2s ago") {
+		t.Errorf("a pinged request reads %q, want quiet", got)
+	}
+	if r := m.timing.request; r.events != 1 || r.answering || r.reasoning != 0 {
+		t.Errorf("the screen heard %+v, want one event that is neither reasoning nor answer", r)
+	}
+	if got := m.timing.turn.Split(clock()).Quiet.Delivered; got != 1 {
+		t.Errorf("the quiet stretch counts %d delivered events, want 1", got)
+	}
+	if m.streaming != "" || m.thinkIdx != 0 || m.streamDirty {
+		t.Error("a keepalive stored or marked something to draw")
+	}
+	if m.backoff.Attempt() != before {
+		t.Errorf("a ping ended the stall: attempt %d, was %d", m.backoff.Attempt(), before)
 	}
 }

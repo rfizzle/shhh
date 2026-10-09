@@ -9,6 +9,8 @@ package chat
 import (
 	"time"
 
+	tea "charm.land/bubbletea/v2"
+
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -218,6 +220,16 @@ func (m *Model) noteHeard(reasoning, answering bool) {
 		r.reasoning++
 	}
 	r.answering = r.answering || answering
+}
+
+// heardKeepalive takes a batch of a gateway's pings. A ping holds the
+// connection open and says nothing: it is heard, and counts in the stretch it
+// arrived in, but it draws nothing, stores nothing and does not end the stall
+// the turn may be in.
+func (m Model) heardKeepalive() (tea.Model, tea.Cmd, bool) {
+	m.noteEvent(false)
+	m.noteHeard(false, false)
+	return m, waitForEvent(m.events), true
 }
 
 // noteTail marks a running command's output reaching the screen. The runner
