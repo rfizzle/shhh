@@ -317,6 +317,7 @@ func (m Model) proposalApprovalCard() *components.ApprovalCard {
 		Return:   "leave — nothing written, and it is offered again",
 		MaxLines: m.planPanelBound(),
 		KeyList:  true,
+		Footnote: "enter opened this card and writes nothing — only [y] does",
 	}
 }
 
@@ -342,7 +343,8 @@ func proposalKeyList(m Model) (keys.SurfaceID, bool) {
 }
 
 // answerProposal routes the card's keys. Only a yes writes, and only a never
-// records the no; not now and esc leave the proposal to be made again.
+// records the no; not now and esc leave the proposal to be made again. Enter
+// is none of them: it is the key that opened the card (keys.ProposalKeys).
 func (m *Model) answerProposal(msg tea.KeyPressMsg) (bool, overlayAction) {
 	c := m.patterns.card
 	if c == nil {
@@ -358,7 +360,7 @@ func (m *Model) answerProposal(msg tea.KeyPressMsg) (bool, overlayAction) {
 	case keys.Match(msg, keys.Proposal.Never):
 		m.patterns.card = nil
 		return true, overlayAction{close: true, note: m.neverProposal(c.p)}
-	case keys.Match(msg, keys.Decision.Accept):
+	case keys.Match(msg, keys.Proposal.Write):
 		m.patterns.card = nil
 		path, err := m.patterns.cfg.Write(c.p)
 		if err != nil {

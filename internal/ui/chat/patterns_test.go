@@ -233,6 +233,42 @@ func TestPatterns_EachAnswerWritesOnlyWhatItSays(t *testing.T) {
 	}
 }
 
+// The enter that opened a card cannot also answer it: a double tap on a row
+// of /patterns leaves the allowlist and skill cards up with nothing written,
+// and the card says which key does write. The memory card keeps its rows.
+func TestPatterns_ADoubleTappedEnterWritesNothing(t *testing.T) {
+	for _, row := range []int{1, 2} {
+		var r proposalRecorder
+		var decisions []string
+		m := openProposal(t, patternsModel(t, 110, &r, &decisions), row)
+		m = press(t, m, "enter")
+		if m.state != stateProposal {
+			t.Fatalf("row %d: the second enter answered the card", row)
+		}
+		if len(r.written)+len(r.declined)+len(decisions) != 0 {
+			t.Fatalf("row %d: enter wrote something: %+v %v", row, r, decisions)
+		}
+		view := ansi.Strip(m.panelView())
+		for _, want := range []string{"[y] write it", "enter opened this card and writes nothing"} {
+			if !strings.Contains(view, want) {
+				t.Errorf("row %d: the card lacks %q:\n%s", row, want, view)
+			}
+		}
+		m = press(t, m, "y")
+		if m.state == stateProposal || len(r.written) != 1 {
+			t.Fatalf("row %d: y must write: state %d, written %v", row, m.state, r.written)
+		}
+	}
+
+	var r proposalRecorder
+	var decisions []string
+	m := openProposal(t, patternsModel(t, 110, &r, &decisions), 0)
+	press(t, m, "enter")
+	if len(r.saved) != 1 {
+		t.Fatalf("the memory card's own enter must keep working: %v", r.saved)
+	}
+}
+
 // A memory is worded by the reading and saved as worded, with the person's
 // scope; Don't save is the never, under the memory kind and the pattern's
 // key rather than the words; a failed reading leaves the code's words.

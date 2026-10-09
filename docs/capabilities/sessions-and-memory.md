@@ -614,7 +614,8 @@ words, from the pattern's facts and the conversation lines that made it and
 nothing more, and when it cannot answer the code's own words are offered. A
 memory is answered on the memory card, the one the model's proposals are
 answered on; an allowlist line or a skill on a card showing the exact line or
-file it would write. Every card has two ways of saying no: not now leaves
+file it would write, and the write takes `y` and nothing else: enter is the
+key that opened the card, so a second tap of it writes nothing. Every card has two ways of saying no: not now leaves
 the proposal for the next time you look, and never writes the no down, under
 the kind of thing proposed and the pattern itself rather than its wording, so
 a reading that words it differently next week does not bring it back. A

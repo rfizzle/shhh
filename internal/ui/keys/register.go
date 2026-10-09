@@ -509,7 +509,7 @@ func register() [surfaceCount]Surface {
 			Section:  "docs/interface/surfaces.md#the-approval-card",
 			Position: Takeover,
 			Reached:  "enter on a row of /patterns",
-			Bindings: []Binding{Decision.Accept, Proposal.Later, Proposal.Never, Select.Cancel, Screen.List},
+			Bindings: []Binding{Proposal.Write, Proposal.Later, Proposal.Never, Select.Cancel, Screen.List},
 		},
 		OnConfirm: {
 			Name:     "the inline confirm and the undo confirm",

@@ -14,7 +14,8 @@
 # sequence is read from the conversations once the list opens. The second row
 # is the allowlist line, and its card shows the line the checkout's settings
 # would gain with `[y] write it · [n] not now · [N] never`, read against the
-# patterns golden's card. [N] writes the no and nothing else.
+# patterns golden's card, with the line saying enter, which opened it, writes
+# nothing. [N] writes the no and nothing else.
 #
 # The identity is repository-local because the pane runs under a home of its
 # own, so there is no global one for the commit to find.
@@ -29,6 +30,6 @@ snap 02-chosen "❯ ⚙ look at what repeats"
 keys Enter
 snap 03-list "/patterns · 4 proposals" "allowlist" "go test" "go vet → go build → go test" "main.go"
 keys Down Enter
-snap 04-card "[N] never" "Approve allowlist line" "command_allowlist = [\"go test\"]" "[y] write it · [n] not now"
+snap 04-card "[N] never" "Approve allowlist line" "command_allowlist = [\"go test\"]" "[y] write it · [n] not now" "enter opened this card and writes nothing"
 keys N
 snap 05-never "will not be proposed again"

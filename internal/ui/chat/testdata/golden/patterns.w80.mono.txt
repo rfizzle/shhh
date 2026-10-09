@@ -38,6 +38,7 @@ keeps a convention memory every session here is told
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] write it · [n] not now · [N] never · [?] keys                        │
 │ [esc] leave — nothing written, and it is offered again                   │
+│ enter opened this card and writes nothing — only [y] does                │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -69,4 +70,5 @@ keeps a convention memory every session here is told
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mwrite it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mnot now␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m ␛[38;5;254mnever␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] leave — nothing written, and it is offered again␛[m                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244menter opened this card and writes nothing — only [y] does␛[m                ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m

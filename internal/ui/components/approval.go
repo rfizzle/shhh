@@ -1222,7 +1222,12 @@ func (c *ApprovalCard) KeyRun() []cardKey {
 		}
 		return cardKey{shown: keys.Shown(b), Key: keys.Shown(b), label: label}
 	}
-	run := []cardKey{offer(keys.Decision.Allow, c.Answer)}
+	allow := keys.Decision.Allow
+	if c.Never != "" {
+		// A proposal's yes is the letter alone (keys.ProposalKeys).
+		allow = keys.Proposal.Write
+	}
+	run := []cardKey{offer(allow, c.Answer)}
 	// The shifted pair sits beside the answer it carries rather than at the
 	// end of the run: they are the same two answers with a sentence, and the
 	// pairing is what the run has to make legible.

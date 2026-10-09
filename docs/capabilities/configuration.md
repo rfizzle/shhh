@@ -901,6 +901,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `decision.scroll_down` | `shift+down` | scroll the card | yes |
 | `decision.pan_left` | `shift+left` | pan a wide body back | yes |
 | `decision.pan_right` | `shift+right` | pan a wide body | yes |
+| `proposal.write` | `y`, `Y` | write it | yes |
 | `proposal.later` | `n` | not now — offered again next time | yes |
 | `proposal.never` | `N` | never — not offered again | yes |
 | `confirm.yes` | `y`, `Y` | yes | yes |

@@ -131,6 +131,7 @@
 
   PROPOSAL
 
+  · write  y Y · write it  [shipped]
   · later  n · not now — offered again next time  [shipped]
   · never  N · never — not offered again  [shipped]
 
@@ -363,4 +364,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  264 keys · 1 moved
+  265 keys · 1 moved
