@@ -35,6 +35,27 @@ assembles it, because a second assembly is a second set of answers to every
 question about containment, trust and refusals, and the two would agree only
 on the day the second was written.
 
+The screen is moving behind that line, one capability at a time. It still
+holds the loop in its own process and reaches most of it directly; what
+changes is that each capability in turn is reached through a backend shaped
+like the protocol — requests go out, one channel of events comes back, in
+the stream's own words — whose first implementation is the loop in this
+process, wrapped exactly. The stream is the first through it, and a test on
+what the screen may import fails when a later edit reaches around a
+capability that has moved. One at a time, because a screen moved whole is
+every surface rewritten on the day it lands with nothing to hold it
+against, where a capability moved alone is a step whose result can be held
+byte for byte against what it replaced. The protocol's shape rather than the
+loop's, because a seam that mirrored the loop would carry the in-process
+shape onto the wire, and the screen would be speaking a second protocol the
+day a served session stood behind it. The threading does not change with
+it: the screen advances the loop on its own goroutine, and goes on doing so
+until there is a backend that speaks the protocol, because a goroutine added
+in a move meant to change nothing is a race added to it. What the screen
+draws that the stream has no word for — reasoning as it is written, a call's
+arguments as they arrive, a gateway's keepalive — is left as a gap for that
+backend to close rather than spelled a second way on this side.
+
 What a call did — the kind of act, its verb, what it was about and how it
 came out — is one vocabulary, read from the call and its result once, below
 every front-end, so that each draws the same account of a call and none keeps

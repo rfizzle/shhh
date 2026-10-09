@@ -550,9 +550,17 @@ way an unattended run is — the same tools registered on the same conditions,
 the same containment around a command, the same hooks at the same seams, the
 same record written — because a second way to build a session is a second set
 of answers to every question about what one may do. shhh's own screen has not
-moved behind it either, and is not going to as part of this: what the surface
-buys is that something else *can*, and the first thing worth pointing at it is
-an adapter to a protocol somebody else's editor already speaks.
+moved behind it yet, and is moving one capability at a time: each is reached
+through a seam shaped like this protocol — requests out, the events above
+coming back — whose first implementation is the session in the screen's own
+process, and the stream is the first through it. One at a time so that each
+step can be held against what it replaced and changes nothing a person sees;
+the protocol's shape so that the day a served session stands on the far side
+of the seam, the screen is already speaking this protocol rather than a
+second one ([`architecture.md`](../architecture.md#one-agent-several-front-ends)).
+Until then what the surface buys is that something else *can*, and the first
+thing worth pointing at it is an adapter to a protocol somebody else's editor
+already speaks.
 
 A server has one working directory, which is the checkout it was started in.
 Sessions on it are several conversations over that one tree, and each is
