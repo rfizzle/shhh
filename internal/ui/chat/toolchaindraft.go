@@ -208,15 +208,17 @@ func (m Model) toolchainDraftCard() *components.ApprovalCard {
 		// The edit variant, because the body is a file's diff: a new file
 		// is all additions, and a review is the change against the file as
 		// it stands.
-		Variant:  components.ApprovalEdit,
-		Title:    "Approve toolchain declaration",
-		ActGlyph: "✎",
-		Act:      act,
-		Hunks:    diff.Compute(string(d.Previous), string(d.Content)),
-		Syntax:   diffSyntax(project.ToolchainFile),
-		Answer:   "write it",
-		Decline:  "nothing written",
-		Return:   "leave — nothing written, and the draft waits",
+		Variant:    components.ApprovalEdit,
+		Title:      "Approve toolchain declaration",
+		ActGlyph:   "✎",
+		Act:        act,
+		Hunks:      diff.Compute(string(d.Previous), string(d.Content)),
+		Syntax:     diffSyntax(project.ToolchainFile),
+		Answer:     "write it",
+		LetterOnly: true,
+		Footnote:   "enter opened this card and writes nothing — only [y] does",
+		Decline:    "nothing written",
+		Return:     "leave — nothing written, and the draft waits",
 		ExtraHints: []components.KeyOffer{
 			{Key: keys.Bracket(keys.Decision.Revise), Label: "edit first"},
 		},
@@ -273,7 +275,7 @@ func (m *Model) answerToolchainDraft(msg tea.KeyPressMsg) (bool, overlayAction) 
 		return true, overlayAction{close: true, note: "nothing written; " + toolchainCommandName + " drafts it again"}
 	case keys.Match(msg, keys.Decision.Revise):
 		return true, m.editToolchainDraft()
-	case keys.Match(msg, keys.Decision.Accept):
+	case keys.Match(msg, keys.Proposal.Write):
 		if f == nil || f.draft == nil {
 			return true, overlayAction{close: true}
 		}

@@ -45,6 +45,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] install them · [n] no — nothing installed · [?] keys                 │
 │ [esc] leave — nothing installed                                          │
+│ enter opened this card and installs nothing — only [y] does              │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 · the card · nothing contains it
@@ -59,6 +60,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] install them · [n] no — nothing installed · [?] keys                 │
 │ [esc] leave — nothing installed                                          │
+│ enter opened this card and installs nothing — only [y] does              │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -97,6 +99,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ␛[94m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252minstall them␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mno — nothing installed␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                 ␛[94m│␛[m
 ␛[94m│␛[m ␛[92m[esc] leave — nothing installed␛[m                                          ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241menter opened this card and installs nothing — only [y] does␛[m              ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the card · nothing contains it
@@ -111,4 +114,5 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ␛[91m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[91m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252minstall them␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mno — nothing installed␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                 ␛[91m│␛[m
 ␛[91m│␛[m ␛[92m[esc] leave — nothing installed␛[m                                          ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;241menter opened this card and installs nothing — only [y] does␛[m              ␛[91m│␛[m
 ␛[91m╰──────────────────────────────────────────────────────────────────────────╯␛[m

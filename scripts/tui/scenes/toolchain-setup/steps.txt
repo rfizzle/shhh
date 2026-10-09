@@ -12,6 +12,6 @@ setup mkdir -p .shhh
 setup printf 'install = ["go install example.com/scene/cmd/shhh-scene-lint@v1.0.0"]\nhosts = ["proxy.golang.org"]\ncheck = ["shhh-scene-lint"]\n' > .shhh/toolchain.toml
 snap 01-start "install the tools this checkout declares" "shhh-scene-lint" "installs them"
 keys "/setup" Enter
-snap 02-card "install them" "Approve toolchain install" "go install example.com/scene" "lands in"
+snap 02-card "install them" "Approve toolchain install" "go install example.com/scene" "lands in" "installs nothing"
 keys Escape
 snap 03-left "offers it again" "nothing installed"

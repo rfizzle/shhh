@@ -324,3 +324,17 @@ func TestToolchainDraft_TypingTheCommandStartsIt(t *testing.T) {
 	}
 	_ = provider.RoleSystem
 }
+
+// Enter is what opened the card, so a second tap of it writes nothing: only
+// [y] does, and the card says so on its foot.
+func TestToolchainDraft_ADoubleTappedEnterWritesNothing(t *testing.T) {
+	var r draftRecorder
+	m := declarationCard(t, 110, r.toolchain(draftedDeclaration()), startFixture())
+	if !strings.Contains(ansi.Strip(strings.Join(m.toolchainDraftLines(), "\n")), "enter opened this card and writes nothing — only [y] does") {
+		t.Fatal("the card does not say enter writes nothing")
+	}
+	m = press(t, m, "enter")
+	if m.state != stateToolchainDraft || len(r.written) != 0 {
+		t.Fatalf("enter answered the card (state %v, %d writes)", m.state, len(r.written))
+	}
+}

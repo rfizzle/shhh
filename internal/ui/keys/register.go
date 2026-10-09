@@ -479,7 +479,7 @@ func register() [surfaceCount]Surface {
 			Section:  "docs/interface/surfaces.md#the-approval-card",
 			Position: Takeover,
 			Reached:  "/init, or the start screen's scaffold offer",
-			Bindings: []Binding{Decision.Accept, Decision.Refuse, Select.Cancel, Screen.List},
+			Bindings: []Binding{Proposal.Write, Decision.Refuse, Select.Cancel, Screen.List},
 		},
 		OnToolchain: {
 			// The scaffold card's twin: asked for rather than handed, so it
@@ -489,7 +489,7 @@ func register() [surfaceCount]Surface {
 			Section:  "docs/interface/surfaces.md#the-approval-card",
 			Position: Takeover,
 			Reached:  "/setup, or the start screen's install offer",
-			Bindings: []Binding{Decision.Accept, Decision.Refuse, Select.Cancel, Screen.List},
+			Bindings: []Binding{Proposal.Write, Decision.Refuse, Select.Cancel, Screen.List},
 		},
 		OnToolchainDraft: {
 			// The scaffold card's shape again, for a file drafted rather
@@ -499,7 +499,7 @@ func register() [surfaceCount]Surface {
 			Section:  "docs/interface/surfaces.md#the-approval-card",
 			Position: Takeover,
 			Reached:  "/toolchain, or the start screen's draft offer",
-			Bindings: []Binding{Decision.Accept, Decision.Revise, Decision.Refuse, Select.Cancel, Screen.List},
+			Bindings: []Binding{Proposal.Write, Decision.Revise, Decision.Refuse, Select.Cancel, Screen.List},
 		},
 		OnHandoff: {
 			// The toolchain draft card's keys for a note rather than a file:

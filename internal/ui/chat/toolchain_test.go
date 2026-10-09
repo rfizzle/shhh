@@ -339,3 +339,23 @@ func TestToolchain_TrustOrAWrittenDeclarationIsReadAgain(t *testing.T) {
 		t.Fatal("a second reading was started for the same move")
 	}
 }
+
+// Enter is what opened the card, so a second tap of it installs nothing: only
+// [y] runs the lines, and the card says so on its foot.
+func TestToolchain_ADoubleTappedEnterInstallsNothing(t *testing.T) {
+	var ran []string
+	m := toolchainModel(t, toolchainFixture(&ran))
+	m = submitLine(t, m, setupCommandName)
+	if !strings.Contains(ansi.Strip(strings.Join(m.setupLines(), "\n")), "enter opened this card and installs nothing — only [y] does") {
+		t.Fatal("the card does not say enter installs nothing")
+	}
+	m = press(t, m, "enter")
+	if m.state != stateSetup || len(ran) != 0 {
+		t.Fatalf("enter answered the card (state %v, ran %v)", m.state, ran)
+	}
+	m, cmd := pressFor(t, m, "y")
+	m = runSetupCmd(t, m, cmd)
+	if len(ran) != 2 {
+		t.Fatalf("y ran %v, want both lines", ran)
+	}
+}

@@ -46,6 +46,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 │ +5 −0 · 1 hunk                                                                                                             │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] write it · [n] nothing written · [e] edit first · [?] keys · [esc] leave — nothing written, and the draft waits        │
+│ enter opened this card and writes nothing — only [y] does                                                                  │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the card · an untrusted checkout
@@ -65,6 +66,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 │ +5 −0 · 1 hunk                                                                                                             │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] write it · [n] nothing written · [e] edit first · [?] keys · [esc] leave — nothing written, and the draft waits        │
+│ enter opened this card and writes nothing — only [y] does                                                                  │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the card · a review
@@ -85,6 +87,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 │ +4 −0 · 1 hunk                                                                                                             │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] write it · [n] nothing written · [e] edit first · [?] keys · [esc] leave — nothing written, and the draft waits        │
+│ enter opened this card and writes nothing — only [y] does                                                                  │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -124,6 +127,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ␛[94m│␛[m ␛[38;5;241m+5 −0 · 1 hunk␛[m                                                                                                             ␛[94m│␛[m
 ␛[94m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mwrite it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnothing written␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit first␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave — nothing written, and the draft waits␛[m        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241menter opened this card and writes nothing — only [y] does␛[m                                                                  ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the card · an untrusted checkout
@@ -143,6 +147,7 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ␛[94m│␛[m ␛[38;5;241m+5 −0 · 1 hunk␛[m                                                                                                             ␛[94m│␛[m
 ␛[94m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mwrite it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnothing written␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit first␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave — nothing written, and the draft waits␛[m        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241menter opened this card and writes nothing — only [y] does␛[m                                                                  ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the card · a review
@@ -163,4 +168,5 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ␛[94m│␛[m ␛[38;5;241m+4 −0 · 1 hunk␛[m                                                                                                             ␛[94m│␛[m
 ␛[94m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mwrite it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnothing written␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit first␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave — nothing written, and the draft waits␛[m        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241menter opened this card and writes nothing — only [y] does␛[m                                                                  ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

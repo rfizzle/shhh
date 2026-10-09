@@ -17,6 +17,11 @@ package keys
 // that widens what runs without asking, on a card its reader had not read.
 // Every other summoned card takes enter as a yes because what it writes is
 // the thing the reader asked for by name; here the reader asked to look.
+//
+// The scaffold, toolchain and toolchain-draft cards are opened the same way,
+// by enter on a row or a typed command, and take the same Write: what they
+// write or install is the reader's to answer on the card, not on the key that
+// opened it.
 type ProposalKeys struct {
 	Write Binding
 	Later Binding

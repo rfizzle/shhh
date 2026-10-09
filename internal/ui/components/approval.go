@@ -495,6 +495,11 @@ type ApprovalCard struct {
 	// key with a stated reason teaches; a missing key without one reads as a
 	// bug.
 	Footnote string
+	// LetterOnly draws the yes as [y] alone, without enter. It is for a card
+	// opened with enter, where a second enter from the same double tap would
+	// write or install on a card its reader had not read; the host answers
+	// the same key (keys.Proposal.Write). A card with a Never has it already.
+	LetterOnly bool
 	// FullLabel is what [d] opens, where "full diff" is not it — the command
 	// card's full view. Empty keeps the register's own words.
 	FullLabel string
@@ -1223,8 +1228,8 @@ func (c *ApprovalCard) KeyRun() []cardKey {
 		return cardKey{shown: keys.Shown(b), Key: keys.Shown(b), label: label}
 	}
 	allow := keys.Decision.Allow
-	if c.Never != "" {
-		// A proposal's yes is the letter alone (keys.ProposalKeys).
+	if c.Never != "" || c.LetterOnly {
+		// A summoned write's yes is the letter alone (keys.ProposalKeys).
 		allow = keys.Proposal.Write
 	}
 	run := []cardKey{offer(allow, c.Answer)}

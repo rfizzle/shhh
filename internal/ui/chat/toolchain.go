@@ -182,6 +182,8 @@ func (m Model) setupCard() *components.ApprovalCard {
 		Act:         act,
 		Summary:     "the lines run one at a time and stop at the first that fails",
 		Answer:      "install them",
+		LetterOnly:  true,
+		Footnote:    "enter opened this card and installs nothing — only [y] does",
 		Decline:     "no — nothing installed",
 		Return:      "leave — nothing installed",
 		Uncontained: mechanism == "",
@@ -234,7 +236,7 @@ func (m *Model) answerSetup(msg tea.KeyPressMsg) (bool, overlayAction) {
 	switch {
 	case keys.Match(msg, keys.Select.Cancel), keys.Match(msg, keys.Decision.Refuse):
 		return true, overlayAction{close: true, note: "nothing installed; " + setupCommandName + " offers it again"}
-	case keys.Match(msg, keys.Decision.Accept):
+	case keys.Match(msg, keys.Proposal.Write):
 		tc := m.toolchain()
 		m.containment.Toolchain.installing = true
 		return true, overlayAction{

@@ -292,3 +292,24 @@ func TestScaffold_ChoosingTheOfferOpensTheCard(t *testing.T) {
 		t.Fatal("choosing the offer wrote a file without asking")
 	}
 }
+
+// Enter is what opened the card, so a second tap of it answers nothing: only
+// [y] writes, and the card says so on its foot.
+func TestScaffold_ADoubleTappedEnterWritesNothing(t *testing.T) {
+	var wrote string
+	var declined bool
+	m := scaffoldModel(t, &wrote, &declined)
+	next, _ := m.scaffoldCommand()
+	m = next.(Model)
+	if !strings.Contains(ansi.Strip(strings.Join(m.scaffoldLines(), "\n")), "enter opened this card and writes nothing — only [y] does") {
+		t.Fatal("the card does not say enter writes nothing")
+	}
+	m = press(t, m, "enter")
+	if wrote != "" || declined || m.state != stateScaffold {
+		t.Fatalf("enter answered the card (wrote %q, declined %v, state %v)", wrote, declined, m.state)
+	}
+	m = press(t, m, "y")
+	if wrote != project.ContextFile {
+		t.Fatalf("y wrote %q, want %q", wrote, project.ContextFile)
+	}
+}

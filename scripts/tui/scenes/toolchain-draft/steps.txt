@@ -10,6 +10,6 @@ setup printf 'module example.com/scene\n\ngo 1.24\n' > go.mod
 setup printf 'lint:\n\tstaticcheck ./...\n' > Makefile
 snap 01-start "draft this checkout's toolchain declaration" "reads only, then asks"
 keys "/toolchain" Enter
-snap 02-card "Approve toolchain declaration" "provides staticcheck" "edit first"
+snap 02-card "Approve toolchain declaration" "provides staticcheck" "edit first" "writes nothing"
 keys y
 snap 03-written "wrote .shhh/toolchain.toml"

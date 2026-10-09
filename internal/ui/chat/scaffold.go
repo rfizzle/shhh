@@ -76,7 +76,11 @@ func (m Model) scaffoldCard() *components.ApprovalCard {
 		Act:      "write this project's context file",
 		Summary:  "it is read into the system prompt of every session opened here",
 		Answer:   "write them",
-		MaxLines: m.planPanelBound(),
+		// Enter opened this card from /init or the offer's row; a second
+		// tap of it writes nothing (keys.ProposalKeys).
+		LetterOnly: true,
+		Footnote:   "enter opened this card and writes nothing — only [y] does",
+		MaxLines:   m.planPanelBound(),
 	}
 	for _, path := range m.scaffold.Paths {
 		// A directory is created and a file is written, and the row says
@@ -111,15 +115,15 @@ func (m Model) scaffoldCard() *components.ApprovalCard {
 // card's own Update: that maps esc and ctrl+c onto the decline, which is
 // right for a card nobody asked for and wrong here, where esc is the way
 // back out of a screen the reader opened (keys.Decision.Refuse), and why its
-// yes is Accept rather than Allow: a summoned card offers no note, so the
-// shifted letter is still a spelling of yes here (keys.Decision.Accept).
+// yes is Proposal.Write rather than Allow: a summoned card offers no note, and
+// enter opened it, so the letter is the yes and enter is not (keys.ProposalKeys).
 func (m *Model) answerScaffold(msg tea.KeyPressMsg) (bool, overlayAction) {
 	switch {
 	case keys.Match(msg, keys.Select.Cancel):
 		return true, overlayAction{close: true}
 	case keys.Match(msg, keys.Decision.Refuse):
 		return true, overlayAction{close: true, note: m.declineScaffold()}
-	case keys.Match(msg, keys.Decision.Accept):
+	case keys.Match(msg, keys.Proposal.Write):
 		return true, overlayAction{close: true, note: m.writeScaffold()}
 	}
 	return false, overlayAction{}
