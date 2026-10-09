@@ -406,3 +406,81 @@ func TestFrameIsNotHeldPastThePaint(t *testing.T) {
 		t.Fatal("the frame outlived the paint it was built for")
 	}
 }
+
+// span is a rectangle from its corners; uv.Rect takes a size.
+func span(x0, y0, x1, y1 int) uv.Rectangle {
+	return uv.Rectangle{Min: uv.Position{X: x0, Y: y0}, Max: uv.Position{X: x1, Y: y1}}
+}
+
+// referenceColumns is the split as it was written before the chat size
+// declared it, with the numbers the declaration now holds spelled out: two
+// columns of padding, the rail from a content width of 126, a divider column,
+// the ladder's 46 columns growing one in four to 72, and a two-column gutter.
+func referenceColumns(m Model) paneColumns {
+	w, h := max(m.width, 0), max(m.height, 0)
+	var cols paneColumns
+	cols.content = span(min(2, w), 0, max(w-2, min(2, w)), h)
+	cols.pane = cols.content
+	if c := cols.content.Dx(); c >= 126 && !m.inspectorHidden() {
+		rail := min(46+(c-126)/4, 72)
+		if m.railCols > 0 {
+			rail = min(max(m.railCols, 46), rail)
+		}
+		cols.pane = span(cols.content.Min.X, 0, cols.content.Max.X-1-rail, h)
+		cols.divider = span(cols.pane.Max.X, 0, cols.pane.Max.X+1, h)
+		cols.inspector = span(cols.divider.Max.X, 0, cols.content.Max.X, h)
+	}
+	cols.feed = span(cols.pane.Min.X, 0, cols.pane.Max.X-2, h)
+	cols.gutter = span(cols.feed.Max.X, 0, cols.pane.Max.X, h)
+	return cols
+}
+
+// TestLayout_ChatDeclarationMatchesToday holds the move: the rectangles the
+// resolvers compute from the chat size's declaration are the ones the
+// arithmetic they replaced computed, at every width the goldens use, on both
+// sides of the rail's rung, and under a given rail width.
+func TestLayout_ChatDeclarationMatchesToday(t *testing.T) {
+	widths := append([]int{20, 125, 129, 130, 131, 160, 200, 300}, goldenWidths...)
+	for _, width := range widths {
+		for _, railCols := range []int{0, 60, 200} {
+			m := frameModel(t, width, 40)
+			m.railCols = railCols
+			want := referenceColumns(m)
+			if got := m.resolveColumns(); got != want {
+				t.Errorf("width %d rail %d: columns = %+v, want %+v", width, railCols, got, want)
+			}
+
+			s := m.resolveSurface()
+			if s.paneColumns != want {
+				t.Errorf("width %d rail %d: the surface's columns drifted from the split", width, railCols)
+			}
+			c := want.content
+			bottom := m.bottomRows()
+			wantRows := []uv.Rectangle{
+				span(c.Min.X, 0, c.Max.X, 1),
+				span(c.Min.X, 1, c.Max.X, 2),
+				span(c.Min.X, 2, c.Max.X, 40-bottom),
+				span(c.Min.X, 40-bottom, c.Max.X, 40),
+			}
+			gotRows := []uv.Rectangle{s.header, s.rail, s.body, s.bottom}
+			for i := range wantRows {
+				if c.Empty() {
+					break
+				}
+				if gotRows[i] != wantRows[i] {
+					t.Errorf("width %d rail %d: row region %d = %v, want %v", width, railCols, i, gotRows[i], wantRows[i])
+				}
+			}
+		}
+	}
+}
+
+// TestLayout_RailFoldAndFloorAreTheDeclarations pins the two numbers the rail
+// is stated by to the component's own, so a rung moved there is moved here.
+func TestLayout_RailFoldAndFloorAreTheDeclarations(t *testing.T) {
+	rail := chatLayout.Rail
+	if rail.fold != components.InspectorMinContentWidth || rail.n != components.InspectorWidth {
+		t.Errorf("rail fold %d floor %d, want %d and %d", rail.fold, rail.n,
+			components.InspectorMinContentWidth, components.InspectorWidth)
+	}
+}

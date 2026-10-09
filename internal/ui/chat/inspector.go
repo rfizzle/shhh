@@ -1107,12 +1107,12 @@ func (m *Model) railCommand(parts []string) string {
 	// stays wrapped to the old pane until the next terminal resize, which
 	// reads as a command that half worked.
 	m.syncViewport()
-	if m.contentWidth() < components.InspectorMinContentWidth {
+	if decl := m.layout(); decl.Rail.folds(m.contentWidth()) {
 		// Nothing on screen changes at this width, so the reply has to carry
 		// the whole answer: the setting took, and the rung is why it is not
 		// visible.
 		return fmt.Sprintf("inspector rail %s — this terminal is too narrow to split, so nothing changes until it is %d columns wide",
-			railSetting(cols), components.InspectorMinContentWidth+horizontalPadding*2)
+			railSetting(cols), decl.Rail.fold+decl.Padding.n*2)
 	}
 	return fmt.Sprintf("inspector rail %s — %s", railSetting(cols), m.inspectorStatus())
 }

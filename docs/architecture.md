@@ -131,6 +131,15 @@ Clipping is a property of the rectangle rather than a thing each renderer
 remembers to do, so a block that is too big is cut off instead of corrupting
 the frame around it.
 
+A size declares its regions and the resolver computes them. The chat screen
+states its arrangement once, as data: which regions it draws, and for each
+the rule it takes its share by: fill, a fixed length, a count the block
+measures for itself, or a width ladder with the rung below which it folds.
+The resolver reads that declaration and knows nothing of this screen, so a
+second arrangement of panes declares its own regions instead of forking the
+code that splits the terminal, and a rung that moves is moved where it is
+declared.
+
 ## Colour is resolved once, at the top
 
 The terminal's actual capability is decided in one place, and every style is

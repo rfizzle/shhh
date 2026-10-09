@@ -129,6 +129,96 @@ func padPanel(lines []string, height int) string {
 	return strings.Join(lines[:height], "\n")
 }
 
+// ruleKind is how a region takes its share of the rectangle it is split from.
+type ruleKind int
+
+const (
+	// ruleFill takes what the fixed and measured regions leave.
+	ruleFill ruleKind = iota
+	// ruleFixed takes exactly n.
+	ruleFixed
+	// ruleMeasured takes the count the model asks the block for at paint time:
+	// the bottom panel renders itself to learn its rows, so the declaration
+	// cannot state them.
+	ruleMeasured
+	// ruleLadder takes the width the ladder gives at the content width, and
+	// folds — is dropped, and the feed takes its columns — below the fold rung.
+	ruleLadder
+)
+
+// rule is one region's claim on the rectangle it is split from: columns for a
+// horizontal split, rows for a vertical one.
+type rule struct {
+	kind ruleKind
+	// n is the fixed length, or a ladder's floor.
+	n int
+	// fold is the content width below which a ladder region is dropped.
+	fold int
+	// ladder is the width at a content width, for ruleLadder.
+	ladder func(content int) int
+}
+
+func fill() rule       { return rule{kind: ruleFill} }
+func fixed(n int) rule { return rule{kind: ruleFixed, n: n} }
+func measured() rule   { return rule{kind: ruleMeasured} }
+func ladderRule(floor, fold int, at func(content int) int) rule {
+	return rule{kind: ruleLadder, n: floor, fold: fold, ladder: at}
+}
+
+// constraint is the rule as the engine's constraint. got is the count a
+// measured region was asked for.
+func (r rule) constraint(got int) layout.Constraint {
+	switch r.kind {
+	case ruleFixed:
+		return layout.Len(r.n)
+	case ruleMeasured:
+		return layout.Len(got)
+	}
+	return layout.Fill(1)
+}
+
+// folds says whether a ladder region is dropped at a content width.
+func (r rule) folds(content int) bool { return content < r.fold }
+
+// Layout is what a size declares: the regions it draws and the rule each takes
+// its share by. The resolvers (resolveColumns, resolveSurface) compute
+// rectangles from a Layout and know nothing of any one size, so a second size
+// declares its own value instead of forking them
+// (docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it).
+type Layout struct {
+	// Padding is the inset on each side of the terminal.
+	Padding rule
+	// Header, Focus, Bottom, Tail and Agents are the rows: the title row, the
+	// line under it that says which pane has the keyboard, the command-center
+	// frame, the live block under the feed and the working children's rows.
+	// What lies between Focus and Bottom is the body, and the feed takes what
+	// Tail and Agents leave of it.
+	Header, Focus, Bottom, Tail, Agents rule
+	// Feed, Divider, Rail and Gutter are the columns of the body. Rail is a
+	// ladder that folds below its rung, and Divider goes with it; Gutter is
+	// the feed's scroll column.
+	Feed, Divider, Rail, Gutter rule
+}
+
+// chatLayout is the chat size's declaration — the arrangement `shhh chat` and
+// `shhh code` draw. It is a value the size owns rather than a field on the
+// model, which would count against the model's width.
+var chatLayout = Layout{
+	Padding: fixed(horizontalPadding),
+	Header:  fixed(headerHeight),
+	Focus:   fixed(dividerHeight),
+	Bottom:  measured(),
+	Tail:    measured(),
+	Agents:  measured(),
+	Feed:    fill(),
+	Divider: fixed(paneDividerWidth),
+	Rail:    ladderRule(components.InspectorWidth, components.InspectorMinContentWidth, components.InspectorWidthFor),
+	Gutter:  fixed(components.ScrollGutterWidth),
+}
+
+// layout is the declaration this model's size draws by.
+func (m Model) layout() Layout { return chatLayout }
+
 // paneColumns is the horizontal half of the model: which columns each pane
 // owns, at this terminal width, with the two-pane split already decided.
 type paneColumns struct {
@@ -176,27 +266,28 @@ func (m Model) resolveColumns() paneColumns {
 	// strings.Repeat downstream would have panicked on.
 	area := uv.Rect(0, 0, max(m.width, 0), max(m.height, 0))
 
+	decl := m.layout()
 	var cols paneColumns
 	layout.Horizontal(
-		layout.Len(horizontalPadding),
+		decl.Padding.constraint(0),
 		layout.Fill(1),
-		layout.Len(horizontalPadding),
+		decl.Padding.constraint(0),
 	).Split(area).Assign(new(uv.Rectangle), &cols.content, new(uv.Rectangle))
 
 	// Past the top rung of the width ladder the rail takes its columns
 	// off the right of the content and one dim column divides the panes.
 	cols.pane = cols.content
-	if cols.content.Dx() >= components.InspectorMinContentWidth && !m.inspectorHidden() {
+	if !decl.Rail.folds(cols.content.Dx()) && !m.inspectorHidden() {
 		layout.Horizontal(
-			layout.Fill(1),
-			layout.Len(paneDividerWidth),
+			decl.Feed.constraint(0),
+			decl.Divider.constraint(0),
 			layout.Len(m.railWidth(cols.content.Dx())),
 		).Split(cols.content).Assign(&cols.pane, &cols.divider, &cols.inspector)
 	}
 
 	layout.Horizontal(
-		layout.Fill(1),
-		layout.Len(components.ScrollGutterWidth),
+		decl.Feed.constraint(0),
+		decl.Gutter.constraint(0),
 	).Split(cols.pane).Assign(&cols.feed, &cols.gutter)
 
 	return cols
@@ -217,11 +308,12 @@ func (m Model) resolveColumns() paneColumns {
 // arrangement the ladder exists to prevent
 // (docs/interface/surfaces.md#the-inspector-rail).
 func (m Model) railWidth(content int) int {
-	ladder := components.InspectorWidthFor(content)
+	rail := m.layout().Rail
+	ladder := rail.ladder(content)
 	if m.railCols <= 0 {
 		return ladder
 	}
-	return min(max(m.railCols, components.InspectorWidth), ladder)
+	return min(max(m.railCols, rail.n), ladder)
 }
 
 // surfaceLayout is every rectangle View() paints into, in terminal
@@ -275,21 +367,22 @@ func (m Model) surface() surfaceLayout {
 
 // resolveSurface is the arrangement itself, taken once per frame.
 func (m Model) resolveSurface() surfaceLayout {
+	decl := m.layout()
 	s := surfaceLayout{paneColumns: m.columns()}
 
 	layout.Vertical(
-		layout.Len(headerHeight),
-		layout.Len(dividerHeight),
+		decl.Header.constraint(0),
+		decl.Focus.constraint(0),
 		layout.Fill(1),
-		layout.Len(m.bottomRows()),
+		decl.Bottom.constraint(m.bottomRows()),
 	).Split(s.content).Assign(&s.header, &s.rail, &s.body, &s.bottom)
 
 	// Inside the body, the transcript takes what the two blocks under it do
 	// not. They are drawn in this order, so they are split in it.
 	layout.Vertical(
 		layout.Fill(1),
-		layout.Len(m.liveTailHeight()),
-		layout.Len(m.agentRowsHeight()),
+		decl.Tail.constraint(m.liveTailHeight()),
+		decl.Agents.constraint(m.agentRowsHeight()),
 	).Split(s.body).Assign(&s.view, &s.tail, &s.agents)
 
 	return s
