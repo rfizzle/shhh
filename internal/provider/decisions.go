@@ -205,7 +205,7 @@ func postDecisions(ctx context.Context, client *http.Client, baseURL, apiKey str
 	wire := decisionsWire{Model: req.Model, Input: req.Input}
 	counted := len(req.Input)
 	for _, q := range req.Questions {
-		wire.Questions = append(wire.Questions, decisionsQuestion{Type: q.Type, Name: q.Name, Instructions: q.Instructions})
+		wire.Questions = append(wire.Questions, decisionsQuestion(q))
 		counted += len(q.Name) + len(q.Instructions)
 	}
 	body, err := json.Marshal(wire)
