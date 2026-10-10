@@ -313,6 +313,11 @@ type Wiring struct {
 	// leaves the totals on the main agent's own figures.
 	// See docs/architecture.md#spend-is-counted-at-the-provider.
 	Ledger *meter.Ledger
+	// KeepCacheReadings writes what the ledger has learned about each
+	// endpoint's prompt cache to the store. It rides the autosave, so it
+	// runs at every turn's close and on the way out; nil writes nothing.
+	// See docs/capabilities/providers.md#the-session-says-whether-the-cache-worked.
+	KeepCacheReadings func()
 	// Prices is the price table the session's spend is read against.
 	Prices *pricing.Table
 	// Sessions backs /sessions.

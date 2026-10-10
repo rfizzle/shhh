@@ -1520,7 +1520,14 @@ func (m Model) saveCmd(revise func() string) tea.Cmd {
 	msgs := agent.StripResumeContext(m.agent.RequestMessages())
 	// And the turns a compaction folded stay, beside it, in the record.
 	folded := agent.FoldedWithoutReading(append([]provider.Message(nil), m.agent.Folded()...))
+	keepCaches := m.wiring.KeepCacheReadings
 	return func() tea.Msg {
+		// The cache readings ride the save, which is what runs at a turn's
+		// close and on the way out; they are about the endpoint, not the
+		// slot, so a save that fails below has still written them.
+		if keepCaches != nil {
+			keepCaches()
+		}
 		// A slot another session has taken over is not written to; the
 		// store puts the conversation in one of this session's own and
 		// says where, which is the slot every save after this one goes to.

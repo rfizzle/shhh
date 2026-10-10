@@ -231,6 +231,9 @@ type ContextScreen struct {
 	// that missed rather than as one that has not been asked yet.
 	CacheRead, CacheInput string
 	CachePct              int
+	// Cache is whether the endpoint's prompt cache has been seen to work,
+	// drawn under the cache reads it explains and left out with them.
+	Cache ContextCache
 	// Categories are the legend, in the host's order, with the free-space
 	// row last.
 	Categories []ContextCategory
@@ -485,6 +488,9 @@ func (c *ContextScreen) legendRows() []string {
 	rows = append(rows, c.occupancyRow())
 	if c.CacheRead != "" {
 		rows = append(rows, c.cacheRow())
+		if c.Cache.Verdict != "" {
+			rows = append(rows, c.Cache.rows()...)
+		}
 	}
 	rows = append(rows, "", sty.info.Bold(true).Render("OCCUPANCY BY CATEGORY"))
 	for _, cat := range c.Categories {
@@ -518,6 +524,60 @@ func (c *ContextScreen) cacheRow() string {
 	return sty.dim.Render("cache reads · ") + sty.body.Render(c.CacheRead) +
 		sty.dim.Render(" of "+c.CacheInput+" input · ") +
 		sty.body.Render(fmt.Sprintf("%d%%", min(max(c.CachePct, 0), 100)))
+}
+
+// ContextCache is the cache's reading in the surface's words: whether the
+// endpoint's cache works, which lease the provider says it honoured, and how
+// much of the last input it served. It sits under the cache reads because it
+// is the reason behind that figure — a low share on an endpoint whose cache
+// works is a prefix that changed, and on one where it was never seen is a
+// gateway that strips the marks.
+// See docs/capabilities/providers.md#the-session-says-whether-the-cache-worked.
+type ContextCache struct {
+	// Verdict is the reading with where it was taken: `works on agoda`,
+	// `not seen on vllm-local in 14 requests`, `off (profile agoda)`. Empty
+	// leaves the row out.
+	Verdict string
+	// Model is the model the reading is for, drawn after a verdict that
+	// works.
+	Model string
+	// Lease is the lease the requests asked for and Confirmed the one the
+	// provider said it wrote for; either is left out where nothing said.
+	// A confirmation that differs from the lease asked for is drawn in the
+	// warn tone: it is the dearer write paid for the shorter cache.
+	Lease, Confirmed string
+	// Share is the part of the last input read from the cache, `95%`.
+	Share string
+}
+
+// rows is the reading as legend lines: the verdict and where it was taken,
+// then what the provider confirmed and served on a line of its own under
+// it. One line would not fit beside the grid, and a legend line clipped at
+// the edge loses the figure it was drawn to state.
+func (c ContextCache) rows() []string {
+	head := sty.dim.Render("cache · ") + sty.body.Render(c.Verdict)
+	if c.Model != "" {
+		head += sty.dim.Render(" · " + c.Model)
+	}
+	var parts []string
+	if c.Lease != "" {
+		lease := sty.dim.Render("lease ") + sty.body.Render(c.Lease)
+		if c.Confirmed != "" {
+			tone := sty.body
+			if c.Confirmed != c.Lease {
+				tone = sty.accent
+			}
+			lease += sty.dim.Render(", confirmed ") + tone.Render(c.Confirmed)
+		}
+		parts = append(parts, lease)
+	}
+	if c.Share != "" {
+		parts = append(parts, sty.body.Render(c.Share)+sty.dim.Render(" of the last input"))
+	}
+	if len(parts) == 0 {
+		return []string{head}
+	}
+	return []string{head, sty.dim.Render("  ") + strings.Join(parts, sty.dim.Render(" · "))}
 }
 
 // categoryRow is one legend row: the swatch that keys the grid, the label,

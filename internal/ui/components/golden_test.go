@@ -2760,6 +2760,15 @@ func TestGolden_ContextScreen(t *testing.T) {
 			{Label: "the tool definitions opened", View: screen(func(c *ContextScreen) {
 				c.Groups[0].Open = true
 			})},
+			{Label: "the cache row · works, lease confirmed", View: screen(func(c *ContextScreen) {
+				c.Cache = ContextCache{Verdict: "works on agoda", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "1h", Share: "95%"}
+			})},
+			{Label: "the cache row · an hour written as five minutes", View: screen(func(c *ContextScreen) {
+				c.Cache = ContextCache{Verdict: "works on agoda", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "5m", Share: "0%"}
+			})},
+			{Label: "the cache row · not seen", View: screen(func(c *ContextScreen) {
+				c.Cache = ContextCache{Verdict: "not seen on vllm-local in 14 requests"}
+			})},
 			{Label: "94% · an estimated total, nothing sent yet", View: screen(func(c *ContextScreen) {
 				c.Pct, c.Tokens, c.Source = 94, "~940.0k", "estimated"
 				c.CacheRead, c.CacheInput, c.CachePct = "", "", 0

@@ -1682,9 +1682,12 @@ func TestGolden_ContextScreen(t *testing.T) {
 		folded := strings.Join(m.contextLines(), "\n")
 		updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 		m = updated.(Model)
+		cached, _ := cacheContextModel(t, width, cacheHit)
+		cached = sendText(t, cached, "/context")
 		return []golden.Panel{
 			{Label: "as it opens · both groups folded", View: folded},
 			{Label: "the tool definitions opened", View: strings.Join(m.contextLines(), "\n")},
+			{Label: "the cache row · works, lease confirmed", View: strings.Join(cached.contextLines(), "\n")},
 		}
 	})
 }

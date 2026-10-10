@@ -5,13 +5,50 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // contextModel is a session with a toolset, a couple of tool calls and their
 // results — enough for both folds to have something to itemise.
 func contextModel(t *testing.T, width int) Model {
 	t.Helper()
+	return contextModelWith(t, width, func(*Wiring) {})
+}
+
+// cacheContextModel is the same session on a gateway profile's endpoint,
+// after one reply whose usage carried cache figures: the event the gate
+// reads into the ledger and the stream into the vitals.
+func cacheContextModel(t *testing.T, width int, u provider.Usage) (Model, *meter.Ledger) {
+	t.Helper()
+	ledger := meter.New(nil)
+	ledger.SetCacheLease("1h")
+	m := contextModelWith(t, width, func(w *Wiring) {
+		w.Ledger, w.ProviderName, w.ModelName = ledger, "agoda", "claude-sonnet-5-5"
+	})
+	ledger.ObserveCache("agoda", "claude-sonnet-5-5", u)
+	m.accumulateUsage(&u)
+	return m, ledger
+}
+
+// cacheHit is a request through the hour's lease that read most of its
+// prefix and wrote the rest, and was told it was written for the hour.
+var cacheHit = provider.Usage{PromptTokens: 20_000, CompletionTokens: 200, CachedTokens: 19_000,
+	CacheCreationTokens: 600, CacheCreation1h: 600,
+	Reports: provider.FieldCacheRead | provider.FieldCacheCreation | provider.FieldCacheLease}
+
+func contextModelWith(t *testing.T, width int, wire func(*Wiring)) Model {
+	t.Helper()
+	w := Wiring{
+		ToolDefinitions: []ToolTokens{
+			{Name: "execute_command", Tokens: 4100},
+			{Name: "edit_file", Tokens: 3200},
+			{Name: "search", Tokens: 2600},
+			{Name: "read_file", Tokens: 1400},
+		},
+	}
+	wire(&w)
 	m := New([]provider.Message{
 		{Role: provider.RoleSystem, Content: strings.Repeat("system prompt. ", 40)},
 		{Role: provider.RoleUser, Content: "find the round limit"},
@@ -21,14 +58,7 @@ func contextModel(t *testing.T, width int) Model {
 		}},
 		{Role: provider.RoleTool, ToolCallID: "a", Content: strings.Repeat("hit. ", 200)},
 		{Role: provider.RoleTool, ToolCallID: "b", Content: strings.Repeat("line. ", 40)},
-	}, mockStream, Wiring{
-		ToolDefinitions: []ToolTokens{
-			{Name: "execute_command", Tokens: 4100},
-			{Name: "edit_file", Tokens: 3200},
-			{Name: "search", Tokens: 2600},
-			{Name: "read_file", Tokens: 1400},
-		},
-	})
+	}, mockStream, w)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 40})
 	return updated.(Model)
 }
@@ -260,5 +290,44 @@ func TestContext_IsOfferedInTheRegistryAndTheHelp(t *testing.T) {
 	m := frameModel(t, 80, 30)
 	if !strings.Contains(helpText(&m), "/context") {
 		t.Error("/help does not list /context")
+	}
+}
+
+// The cache row says whether the endpoint's cache works, in each of the
+// reading's words, and is left out before the first reply like the cache
+// reads above it.
+func TestContext_SaysWhetherTheCacheWorked(t *testing.T) {
+	m, _ := cacheContextModel(t, 110, cacheHit)
+	got := m.contextScreenData().Cache
+	want := components.ContextCache{Verdict: "works on agoda", Model: "claude-sonnet-5-5", Lease: "1h", Confirmed: "1h", Share: "95%"}
+	if got != want {
+		t.Errorf("works: %+v, want %+v", got, want)
+	}
+
+	m, _ = cacheContextModel(t, 110, provider.Usage{PromptTokens: 20_000, CacheCreationTokens: 20_000, CacheCreation5m: 20_000})
+	if got := m.contextScreenData().Cache; got.Confirmed != "5m" || got.Lease != "1h" {
+		t.Errorf("an hour written as five minutes: %+v", got)
+	}
+	m, ledger := cacheContextModel(t, 110, provider.Usage{PromptTokens: 20_000})
+	if got := m.contextScreenData().Cache.Verdict; got != "none yet" {
+		t.Errorf("one silent request: %q", got)
+	}
+	for range 13 {
+		ledger.ObserveCache("agoda", "claude-sonnet-5-5", provider.Usage{PromptTokens: 20_000})
+	}
+	if got := m.contextScreenData().Cache.Verdict; got != "not seen on agoda in 14 requests" {
+		t.Errorf("not seen: %q", got)
+	}
+
+	provider.RegisterDeclarations("agoda", map[string]provider.Declared{
+		"claude-sonnet-5-5": {Model: map[string]any{provider.KeyPromptCache: false}},
+	})
+	t.Cleanup(func() { provider.RegisterDeclarations("agoda", nil) })
+	if got := m.contextScreenData().Cache; got != (components.ContextCache{Verdict: "off (profile agoda)"}) {
+		t.Errorf("off: %+v", got)
+	}
+
+	if got := contextModel(t, 110).contextScreenData().Cache; got.Verdict != "" {
+		t.Errorf("before the first reply the row is left out: %+v", got)
 	}
 }

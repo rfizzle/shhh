@@ -20,6 +20,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -129,8 +130,35 @@ func (m Model) contextScreenData() components.ContextScreen {
 		screen.CacheRead = formatTokenCount(m.vitals.lastCached)
 		screen.CacheInput = formatTokenCount(in)
 		screen.CachePct = percentOf(m.vitals.lastCached, in)
+		screen.Cache = m.contextCache()
 	}
 	return screen
+}
+
+// contextCache is the ledger's cache reading for the endpoint and model the
+// session is on, in the surface's words. A session with no ledger has no
+// reading to state, and leaves the row out.
+// See docs/capabilities/providers.md#the-session-says-whether-the-cache-worked.
+func (m Model) contextCache() components.ContextCache {
+	if m.wiring.Ledger == nil {
+		return components.ContextCache{}
+	}
+	r := m.wiring.Ledger.CacheReadingFor(m.providerName, m.modelName)
+	switch r.State() {
+	case meter.CacheOff:
+		return components.ContextCache{Verdict: "off (profile " + strings.Join(r.OffBy, ", ") + ")"}
+	case meter.CacheNotSeen:
+		return components.ContextCache{Verdict: fmt.Sprintf("not seen on %s in %d requests", r.Provider, r.Requests)}
+	case meter.CacheNoneYet:
+		return components.ContextCache{Verdict: "none yet"}
+	}
+	return components.ContextCache{
+		Verdict:   "works on " + r.Provider,
+		Model:     r.Model,
+		Lease:     r.Lease,
+		Confirmed: r.Confirmed,
+		Share:     fmt.Sprintf("%d%%", r.LastShare()),
+	}
 }
 
 // contextCategories is the legend: the accounting's categories in the
