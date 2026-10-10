@@ -376,7 +376,7 @@ command is the one let past it. `shhh doctor`'s `config` row warns when the
 file is behind — `behind by 4 keys · 1 renamed · 2 wordings` — and offers
 `[a]` to run the update, asking first as a migration does; the offer is the
 row's own, since the row names the file. The config screen's header says
-`behind` beside the path, and nothing more.
+`outdated` beside the path, and nothing more.
 
 ## A value is refused before it is written
 

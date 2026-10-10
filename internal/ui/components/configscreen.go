@@ -561,7 +561,7 @@ func (c *ConfigScreen) header() screenHeader {
 		// Kept longer than the path it qualifies: a long path is the first
 		// field to go, and the word is the one thing here the reader would
 		// not otherwise learn.
-		h.left = append(h.left, RailSegment{Text: sty.warn.Render(" · behind"), Drop: RailNormal})
+		h.left = append(h.left, RailSegment{Text: sty.warn.Render(" · outdated"), Drop: RailNormal})
 	}
 	if c.Changed > 0 {
 		h.left = append(h.left, RailSegment{

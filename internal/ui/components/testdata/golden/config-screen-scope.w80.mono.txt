@@ -38,8 +38,8 @@ shhh config · your file · ~/.config/shhh/config.toml       [?] keys · [esc] b
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset          14 settings
 [shift+tab] write the checkout's · [esc] leave
 
-· your file behind the table · one word beside the path, outliving it
-shhh config · your file · behind                           [?] keys · [esc] back
+· your file older than the table · one word beside the path, outliving it
+shhh config · your file · outdated                         [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────────
 
   SESSION
@@ -131,8 +131,8 @@ $  a shell command
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m          ␛[38;5;244m14 settings␛[m
 ␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write the checkout's␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m
 
-· your file behind the table · one word beside the path, outliving it
-␛[1;38;5;254mshhh config␛[m␛[38;5;244m · your file␛[m␛[38;5;254m · behind␛[m                           ␛[38;5;244m[?] keys · [esc] back␛[m
+· your file older than the table · one word beside the path, outliving it
+␛[1;38;5;254mshhh config␛[m␛[38;5;244m · your file␛[m␛[38;5;254m · outdated␛[m                         ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m

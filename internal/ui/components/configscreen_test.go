@@ -192,6 +192,26 @@ func TestConfigScreen_TheScopeKeyIsOfferedOnlyInACheckout(t *testing.T) {
 	}
 }
 
+// A settings file older than the table says so in the header, in one word
+// after the path, and outlives the path when the width takes it. A screen that
+// is not behind draws neither word.
+func TestConfigScreen_AnOutdatedFileSaysSo(t *testing.T) {
+	for _, width := range []int{60, 110} {
+		c := configFixture()
+		if head := strings.SplitN(c.View(width), "\n", 2)[0]; strings.Contains(head, "outdated") || strings.Contains(head, "behind") {
+			t.Fatalf("width %d: a screen not behind draws a word for it:\n%s", width, head)
+		}
+		c.Behind = true
+		head := strings.SplitN(c.View(width), "\n", 2)[0]
+		if !strings.Contains(head, "· outdated") || strings.Contains(head, "behind") {
+			t.Fatalf("width %d: the header does not say the file is outdated:\n%s", width, head)
+		}
+		if width == 110 && !strings.Contains(head, "config.toml") {
+			t.Fatalf("width %d: the path is gone before the word:\n%s", width, head)
+		}
+	}
+}
+
 // ctrl+s writes at once: no question stands in front of it, the screen stays
 // up for the host's receipt, and the old bare letter is only a letter. With
 // nothing staged the key says so on the foot row and writes nothing.
