@@ -58,7 +58,7 @@ snap 07-nothing "no match in this session" "8 rows searched, folds and pastes in
 # escape sequence, which is a chord and not two keys.
 keys Escape
 sleep 0.3
-keys q
+keys Escape
 snap 08-prompt "[enter] send"
 keys C-c
 snap 09-quit-armed "again quits"

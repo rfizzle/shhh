@@ -2,7 +2,7 @@ package chat
 
 // Rich diff rendering (docs/interface/surfaces.md#the-diff-view): the
 // full-screen diff state shared by transcript edit rows, the approval card's
-// [d], and the /diff session diff.
+// [v], and the /diff session diff.
 
 import (
 	"fmt"
@@ -158,12 +158,7 @@ func (m Model) updateDiffFull(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.closeDiffFull()
 	}
 	m.fullDiff.Height = m.viewportHeight()
-	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Diff.Leave):
-		m.fullDiff.Mode = components.DiffExpanded
-	default:
-		m.fullDiff.Update(msg)
-	}
+	m.fullDiff.Update(msg)
 	if m.fullDiff.Mode != components.DiffFull {
 		return m.closeDiffFull()
 	}

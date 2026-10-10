@@ -47,14 +47,15 @@ snap 04-cards "The cap is where the file says it is" "▎✎ read loop.go · wro
 # The row the scene is for is inside the first card, so the card is opened.
 # The cursor opens on the turn's close, and the card is three stops above it.
 keys C-o
-snap 05-reading "[j/k] move"
+snap 05-reading "[↑↓/jk] move"
 keys k
 keys k
 keys k
 snap 06-on-the-card "[enter] open it"
 keys Enter
 snap 07-rows "+1 −1 · 1 hunk · approved by you" "▎✎ loop.go · - const limit = 25"
-keys q
+keys Escape
+sleep 0.3
 keys C-c
 snap 08-quit-armed "again quits"
 keys C-c

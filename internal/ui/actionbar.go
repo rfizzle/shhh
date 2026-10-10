@@ -39,7 +39,7 @@ const (
 	// ActionAffected is enter on a destructive command: state what the
 	// command would reach, and leave running to `y`.
 	ActionAffected
-	// ActionDryRun is `[d]` — run the command's own no-op form.
+	// ActionDryRun is `[p]` — run the command's own no-op form.
 	ActionDryRun
 	// ActionBack is `[u]` — step back to the command before the last revise.
 	ActionBack
@@ -120,7 +120,7 @@ func (m ActionBarModel) SetDanger(danger bool) ActionBarModel {
 	return m
 }
 
-// SetDryRun offers `[d]` only where a dry run exists. A key that cannot be
+// SetDryRun offers `[p]` only where a dry run exists. A key that cannot be
 // honoured is not offered (docs/interface/surfaces.md#the-recovery-row), and
 // here the cost of offering one that is not there is running the real
 // command.
@@ -226,9 +226,8 @@ func (m ActionBarModel) Update(msg tea.Msg) (ActionBarModel, tea.Cmd) {
 	}
 	pressed := msgKey.String()
 	for _, k := range m.keys() {
-		// The whole binding rather than the spelling it prints: the bar leaves
-		// on `q` as well as on esc, the way every full-screen surface in shhh
-		// does, and a keymap file that moved one moves what the row answers.
+		// The whole binding rather than the spelling it prints: a keymap file
+		// that moved one moves what the row answers.
 		if !keys.Is(pressed, k.bind) {
 			continue
 		}

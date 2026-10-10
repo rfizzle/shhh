@@ -73,11 +73,11 @@ const (
 	stateFocus
 	// stateDiffFull: a diff is showing full screen (
 	// docs/interface/surfaces.md#the-diff-view) — from a transcript edit
-	// row, an approval's [d], or /diff.
+	// row, an approval's [v], or /diff.
 	stateDiffFull
 	// stateOutputFull: a row's whole output is showing full screen (
 	// docs/interface/surfaces.md#the-activity-row) — the depth past the
-	// in-place body, from reading mode's [enter] or a command card's [d].
+	// in-place body, from reading mode's [enter] or a command card's [v].
 	stateOutputFull
 	// statePick: a generic slash-command picker (/model, /permissions) is
 	// showing.
@@ -1150,7 +1150,7 @@ type Model struct {
 	fullOutput   *components.OutputView
 	outputIdx    int
 	outputReturn state
-	// readingCopied is the reading rail's note about the last [y] or [c]:
+	// readingCopied is the reading rail's note about the last [c]:
 	// what was copied and how far it ran. It stands until the next key in the mode,
 	// which is the moment the reader has moved on from the copy it captions.
 	readingCopied string

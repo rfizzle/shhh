@@ -23,7 +23,8 @@ keys k
 keys k
 keys Enter
 snap 03b-allowed "auto-allowed · conversation read"
-keys q
+keys Escape
+sleep 0.3
 keys BTab
 snap 04-one-mode "A conversation has one mode" "⏸ read-only"
 keys C-c

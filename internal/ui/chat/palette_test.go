@@ -280,7 +280,13 @@ func TestPalette_EscDismissesAndKeepsTheDraft(t *testing.T) {
 	m.input.SetValue("half a sentence")
 	m = openPaletteWith(t, m, "mo")
 
+	// esc backs out a level a press: the typed query first, then the palette.
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = updated.(Model)
+	if m.palette == nil || m.state != statePick {
+		t.Fatal("the first esc should clear the query and keep the palette")
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
 	if m.palette != nil || m.state != stateInput {

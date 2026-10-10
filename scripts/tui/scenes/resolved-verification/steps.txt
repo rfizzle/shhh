@@ -43,7 +43,7 @@ narrow 130 snap 05-flaked-again "flaked 1 time before · /gate flakes" "· 2 of 
 wide 130 snap 05-flaked-again "Green again; vet flaked a second time." "· 2 of 2 checks · 1 flaked ·"
 keys "/gate flakes" Enter
 snap 06-flakes "flaked 2 times in this checkout" "/gate flakes · 1 check · 2 flakes" "default · 2 times" "./checks/vet.sh" "the failing run exited 1"
-keys q
+keys Escape
 snap 07-back "vet flaked a second time"
 keys "run the suite a third time" Enter
 wide 130 snap 08-flaky-standing "flaked 3× this week" "~ vet" "1 standing"

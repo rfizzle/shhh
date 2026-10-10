@@ -18,7 +18,7 @@
 │   3. find where rounds are counted · reads only, nothing changed                                   12m │
 │   2. regenerate the fixtures · ▎1 file +200 −0                                                     21m │
 │   1. ⊘ clear the tmp dir · code can't be restored past this — turn 2's records were dropped to s…  30m │
-│ [↑↓] move · [enter] select · [ctrl+u] row keys · [esc] take none                                       │
+│ [↑↓] move · [enter] select · [esc] row keys                                                            │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · typed into · the run the query named is bold
@@ -27,17 +27,17 @@
 │ ▸ rounds                                                                                  2 of 4 match │
 │ ❯ 4. cap rounds instead of erroring · ▎2 files +18 −12                                              3m │
 │   3. find where rounds are counted · reads only, nothing changed                                   12m │
-│ [↑↓] move · [enter] select · [ctrl+u] clear · [esc] take none                                          │
+│ [↑↓] move · [enter] select · [esc] clear                                                               │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-· the query row closed · [d] reads what a rewind here takes back
+· the query row closed · [v] reads what a rewind here takes back
 ──── REWIND · pick a turn to return to ───────────────────────────────────────────────────────────────────
 ╭────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ❯ 4. cap rounds instead of erroring · ▎2 files +18 −12                                              3m │
 │   3. find where rounds are counted · reads only, nothing changed                                   12m │
 │   2. regenerate the fixtures · ▎1 file +200 −0                                                     21m │
 │   1. ⊘ clear the tmp dir · code can't be restored past this — turn 2's records were dropped to s…  30m │
-│ [↑↓] move · [enter] select · [d] what the turns after it changed · [/] filter · [esc] take none        │
+│ [↑↓] move · [enter] select · [v] what the turns after it changed · [/] filter · [esc] take none        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -49,7 +49,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mfind where rounds are counted␛[m␛[38;5;241m · ␛[m␛[38;5;241mreads only, nothing changed␛[m                                   ␛[38;5;252m12m␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mregenerate the fixtures␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m1 file ␛[m␛[92m+200␛[m␛[38;5;241m ␛[m␛[91m−0␛[m                                                     ␛[38;5;252m21m␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m1. ␛[m␛[38;5;245m⊘ clear the tmp dir␛[m␛[38;5;245m · ␛[m␛[38;5;245mcode can't be restored past this — turn 2's records were dropped to s…␛[m  ␛[38;5;245m30m␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+u]␛[m␛[38;5;241m row keys␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                       ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m row keys␛[m                                                            ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · typed into · the run the query named is bold
@@ -58,15 +58,15 @@
 ␛[38;5;241m│␛[m ␛[94m▸ ␛[m␛[97mrounds ␛[m                                                                                 ␛[38;5;241m2 of 4 match␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m4. cap rounds instead of erroring · ▎2 files +18 −12                                              3m␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mfind where ␛[m␛[1;38;5;252mrounds␛[m␛[38;5;252m are counted␛[m␛[38;5;241m · ␛[m␛[38;5;241mreads only, nothing changed␛[m                                   ␛[38;5;252m12m␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+u]␛[m␛[38;5;241m clear␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                          ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m clear␛[m                                                               ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-· the query row closed · [d] reads what a rewind here takes back
+· the query row closed · [v] reads what a rewind here takes back
 ␛[38;5;241m────␛[m ␛[1;94mREWIND · pick a turn to return to␛[m ␛[38;5;241m───────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;241m╭─␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m4. cap rounds instead of erroring · ▎2 files +18 −12                                              3m␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mfind where rounds are counted␛[m␛[38;5;241m · ␛[m␛[38;5;241mreads only, nothing changed␛[m                                   ␛[38;5;252m12m␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mregenerate the fixtures␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m1 file ␛[m␛[92m+200␛[m␛[38;5;241m ␛[m␛[91m−0␛[m                                                     ␛[38;5;252m21m␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m1. ␛[m␛[38;5;245m⊘ clear the tmp dir␛[m␛[38;5;245m · ␛[m␛[38;5;245mcode can't be restored past this — turn 2's records were dropped to s…␛[m  ␛[38;5;245m30m␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m what the turns after it changed␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m        ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;241m what the turns after it changed␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m        ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

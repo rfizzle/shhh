@@ -29,12 +29,13 @@ snap 02-staged "reaches it to look or" "attached Image#1 (shot.png" "▣ Image#1
 keys "this is the error I"
 keys C-o
 keys j
-snap 03-strip "chip 1 of 1" "❯ Image#1 shot.png" "[←→] chip · [enter] open · [x] drop · [esc] back to the draft"
+snap 03-strip "chip 1 of 1" "❯ Image#1 shot.png" "[←→] chip · [enter] open · [d] delete · [esc] back to the draft"
 keys Enter
-snap 04-card "back to the strip" "[x] remove" "16×8"
-keys q
+snap 04-card "back to the strip" "[d] delete" "16×8"
+keys Escape
 snap 05-strip-again "chip 1 of 1"
-keys x
+keys d
+
 snap 06-dropped "dropped Image#1 (shot.png"
 keys Escape
 snap 07-draft "[enter] send" "this is the error I"

@@ -75,7 +75,7 @@ func (m StreamModel) Update(msg tea.Msg) (StreamModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch pressed := msg.String(); {
-		case keys.Is(pressed, keys.Screen.Quit):
+		case keys.Is(pressed, keys.Screen.Quit, keys.Draft.Cancel):
 			if !m.done {
 				// A stream still being opened has no cancel yet; it
 				// is the surface's gen counter that discards its answer.

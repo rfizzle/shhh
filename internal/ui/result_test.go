@@ -210,10 +210,10 @@ func TestResult_DryRunRunsTheDerivedForm(t *testing.T) {
 		})
 	m = drainStream(m, 2)
 
-	if !strings.Contains(m.View().Content, "[d] dry run") {
+	if !strings.Contains(m.View().Content, "[p] dry run") {
 		t.Fatalf("a command with a dry run was not offered one:\n%s", m.View().Content)
 	}
-	m = press(t, m, "d")
+	m = press(t, m, "p")
 	if m.Phase() != phaseDryRun {
 		t.Fatalf("expected phaseDryRun, got %v", m.Phase())
 	}
@@ -236,9 +236,9 @@ func TestResult_DryRunNotOfferedWithoutOne(t *testing.T) {
 	if strings.Contains(m.View().Content, "dry run") {
 		t.Errorf("rm was offered a dry run it does not have:\n%s", m.View().Content)
 	}
-	m = press(t, m, "d")
+	m = press(t, m, "p")
 	if m.Phase() != phaseAction {
-		t.Errorf("[d] did something on a command with no dry run: phase %v", m.Phase())
+		t.Errorf("[p] did something on a command with no dry run: phase %v", m.Phase())
 	}
 }
 

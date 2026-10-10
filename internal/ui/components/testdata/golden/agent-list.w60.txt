@@ -21,7 +21,7 @@
 │   ✗ patcher-4 · apply patch    ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                             │
 │ [enter] attach · [a] answer without attaching            │
-│ [x] cancel · [X] kill · [K] kill all · every level       │
+│ [d] cancel · [X] kill · [K] kill all · every level       │
 │ [esc] back to the turn                                   │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -36,7 +36,7 @@
 │   ✗ patcher-4 · apply patch    ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                             │
 │ [enter] attach · [a] answer without attaching            │
-│ [s] steer · [x] cancel · [X] kill                        │
+│ [s] steer · [d] cancel · [X] kill                        │
 │ [K] kill all · every level · [esc] back to the turn      │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -51,7 +51,7 @@
 │ ❯ ✗ patcher-4 · apply patch    ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                             │
 │ [enter] attach · [a] answer without attaching            │
-│ [r] retry · [x] cancel · [X] kill                        │
+│ [r] retry · [d] cancel · [X] kill                        │
 │ [K] kill all · every level · [esc] back to the turn      │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -66,7 +66,7 @@
 │ ❯ ✗ writer-5…  patch kept · [p] review · 4 tools · $0.03 │
 │     cancelled · handoff handoff-130ebba38aed7            │
 │ [enter] attach · [a] answer without attaching            │
-│ [r] retry · [p] review · [x] cancel · [X] kill           │
+│ [r] retry · [p] review · [d] cancel · [X] kill           │
 │ [K] kill all · every level · [esc] back to the turn      │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -102,8 +102,8 @@
 │   ◇ reviewer · reads a change fo…                project │
 │   ◇ researcher · read-only tools p…             built-in │
 │   ⚙ draft a new profile                      /agents new │
-│ [enter] open it · [m] move it into sections              │
-│ [e] open its file · [a] answer without attaching         │
+│ [enter] open it · [m] move it into sections · [e] edit   │
+│ [a] answer without attaching                             │
 │ [K] kill all · every level · [esc] back to the turn      │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -121,7 +121,7 @@
 │ ❯ ◇ reviewer · reads a change fo…                project │
 │   ◇ researcher · read-only tools p…             built-in │
 │   ⚙ draft a new profile                      /agents new │
-│ [enter] open it · [e] open its file                      │
+│ [enter] open it · [e] edit                               │
 │ [a] answer without attaching                             │
 │ [K] kill all · every level · [esc] back to the turn      │
 ╰──────────────────────────────────────────────────────────╯
@@ -135,7 +135,7 @@
 │   ◇ reader-2 · survey interna…  ✓ done · 8 tools · $0.02 │
 │     the rails and the frame are one component            │
 │ [enter] attach · [a] answer without attaching            │
-│ [s] steer · [x] cancel · [X] kill                        │
+│ [s] steer · [d] cancel · [X] kill                        │
 │ [K] kill all · every level · [esc] back to the turn      │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -165,7 +165,7 @@
 │   ✗ patcher-4 · apply patch    ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                             │
 │ [enter] attach · [a] answer without attaching            │
-│ [s] follow up · [x] cancel · [X] kill                    │
+│ [s] follow up · [d] cancel · [X] kill                    │
 │ [K] kill all · every level · [esc] back to the turn      │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -195,7 +195,7 @@
 │   ✗ patcher-4 · apply patch    ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                             │
 │ [enter] attach · [a] answer without attaching            │
-│ [s] steer · [x] cancel · [X] kill                        │
+│ [s] steer · [d] cancel · [X] kill                        │
 │ [K] kill all · every level · [esc] back to the turn      │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -210,7 +210,7 @@
 │   ✗ patcher-4 · apply patch    ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                             │
 │ [enter] attach · [a] answer without attaching            │
-│ [s] steer · [x] cancel · [X] kill                        │
+│ [s] steer · [d] cancel · [X] kill                        │
 │ [K] kill all · every level · [esc] back to the turn      │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -225,7 +225,7 @@
 │   ✗ patcher-4 · apply patch    ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                             │
 │ [enter] attach · [a] answer without attaching            │
-│ [s] steer · [x] cancel · [X] kill                        │
+│ [s] steer · [d] cancel · [X] kill                        │
 │ [K] kill all · every level · [esc] back to the turn      │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -240,7 +240,7 @@
 │   ✗ patcher-4 · apply patch    ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                             │
 │ [enter] attach · [a] answer without attaching            │
-│ [s] steer · [x] cancel · [X] kill                        │
+│ [s] steer · [d] cancel · [X] kill                        │
 │ [K] kill all · every level · [esc] back to the turn      │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -256,7 +256,7 @@
 │   ✗ patcher-4 · apply patch    ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                             │
 │ [enter] attach · [a] answer without attaching            │
-│ [s] steer · [x] cancel · [X] kill                        │
+│ [s] steer · [d] cancel · [X] kill                        │
 │ [K] kill all · every level · [esc] back to the turn      │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -271,7 +271,7 @@
 │   ✗ patcher-4 · apply patch    ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                             │
 │ [enter] attach · [a] answer without attaching            │
-│ [s] steer · [x] cancel · [X] kill                        │
+│ [s] steer · [d] cancel · [X] kill                        │
 │ [K] kill all · every level · [esc] back to the turn      │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -287,7 +287,7 @@
 ␛[94m│␛[m   ␛[91m✗␛[m patcher-4␛[38;5;245m · apply patch␛[m    ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                             ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m␛[38;5;241m · ␛[m␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m       ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[d]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m␛[38;5;241m · ␛[m␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m       ␛[94m│␛[m
 ␛[94m│␛[m ␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m                                   ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -302,7 +302,7 @@
 ␛[94m│␛[m   ␛[91m✗␛[m patcher-4␛[38;5;245m · apply patch␛[m    ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                             ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -317,7 +317,7 @@
 ␛[94m│␛[m ␛[94m❯␛[m ␛[91m␛[m␛[38;5;245m␛[m␛[91m␛[m␛[38;5;241m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[91m✗␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mpatcher-4 · apply patch    ✗ failed · 1 tool · $0.01␛[m␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                             ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[r]␛[m␛[38;5;241m retry␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[r]␛[m␛[38;5;241m retry␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -332,7 +332,7 @@
 ␛[94m│␛[m ␛[94m❯␛[m ␛[91m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[91m✗␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mwriter-5…  patch kept · [p] review · 4 tools · $0.03␛[m␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mcancelled · handoff handoff-130ebba38aed7␛[m            ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[r]␛[m␛[38;5;241m retry␛[m␛[38;5;241m · ␛[m␛[38;5;103m[p]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m           ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[r]␛[m␛[38;5;241m retry␛[m␛[38;5;241m · ␛[m␛[38;5;103m[p]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m           ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -368,8 +368,8 @@
 ␛[94m│␛[m   ␛[38;5;245m◇␛[m reviewer␛[38;5;245m · reads a change fo…␛[m                ␛[38;5;245mproject␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;245m◇␛[m researcher␛[38;5;245m · read-only tools p…␛[m             ␛[38;5;245mbuilt-in␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;214m⚙␛[m draft a new profile                      ␛[38;5;245m/agents new␛[m ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[m]␛[m␛[38;5;241m move it into sections␛[m              ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[e]␛[m␛[38;5;241m open its file␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m         ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[m]␛[m␛[38;5;241m move it into sections␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m   ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m                             ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -387,7 +387,7 @@
 ␛[94m│␛[m ␛[94m❯␛[m ␛[38;5;245m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[38;5;245m◇␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mreviewer · reads a change fo…                project␛[m␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;245m◇␛[m researcher␛[38;5;245m · read-only tools p…␛[m             ␛[38;5;245mbuilt-in␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;214m⚙␛[m draft a new profile                      ␛[38;5;245m/agents new␛[m ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m open its file␛[m                      ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m                               ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m                             ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
@@ -401,7 +401,7 @@
 ␛[94m│␛[m   ␛[92m◇␛[m reader-2␛[38;5;245m · survey interna…␛[m  ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m8 tools · $0.02␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mthe rails and the frame are one component␛[m            ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -431,7 +431,7 @@
 ␛[94m│␛[m   ␛[91m✗␛[m patcher-4␛[38;5;245m · apply patch␛[m    ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                             ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m follow up␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                    ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m follow up␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                    ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -461,7 +461,7 @@
 ␛[94m│␛[m   ␛[91m✗␛[m patcher-4␛[38;5;245m · apply patch␛[m    ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                             ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -476,7 +476,7 @@
 ␛[94m│␛[m   ␛[91m✗␛[m patcher-4␛[38;5;245m · apply patch␛[m    ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                             ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -491,7 +491,7 @@
 ␛[94m│␛[m   ␛[91m✗␛[m patcher-4␛[38;5;245m · apply patch␛[m    ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                             ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -506,7 +506,7 @@
 ␛[94m│␛[m   ␛[91m✗␛[m patcher-4␛[38;5;245m · apply patch␛[m    ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                             ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -522,7 +522,7 @@
 ␛[94m│␛[m   ␛[91m✗␛[m patcher-4␛[38;5;245m · apply patch␛[m    ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                             ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -537,6 +537,6 @@
 ␛[94m│␛[m   ␛[91m✗␛[m patcher-4␛[38;5;245m · apply patch␛[m    ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                             ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                        ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m

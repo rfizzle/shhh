@@ -709,11 +709,11 @@ func TestQuestion_UngatedDrawsTheHandoverAndNoneOfItsOwnKeys(t *testing.T) {
 		// each of which is reached by a key a sentence produces.
 		gone []string
 	}{
-		{"pick one", chooseArgs, []string{"[tab]", "[enter]", "[d]", "[esc]"}},
+		{"pick one", chooseArgs, []string{"[tab]", "[enter]", "[v]", "[esc]"}},
 		{"pick several", manyArgs, []string{"[tab]", "[space]", "[a]", "[enter]", "[esc]"}},
 		{"the free answer", textArgs, []string{"[enter]", "[esc]"}},
 		{"yes or no", confirmArgs, []string{"[y", "[tab]", "/N]"}},
-		{"the sheet of tabs", tabbedArgs, []string{"[tab]", "[enter]", "[d]", "[←→]", "[esc]"}},
+		{"the sheet of tabs", tabbedArgs, []string{"[tab]", "[enter]", "[v]", "[←→]", "[esc]"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			m := questionModel(t, agent.ModeManual)
@@ -1042,7 +1042,7 @@ func TestQuestion_EscFromASecondTabClosesTheWholeCard(t *testing.T) {
 // answers nothing.
 func TestQuestion_TheFullViewReadsARowAndAnswersNothing(t *testing.T) {
 	m := openedQuestion(t, agent.ModeManual, chooseArgs)
-	m = sendKey(t, m, tea.KeyPressMsg{Code: 'd', Text: "d"})
+	m = sendKey(t, m, tea.KeyPressMsg{Code: 'v', Text: "v"})
 	if m.state != stateOutputFull || m.fullOutput == nil {
 		t.Fatalf("the full-view key should open the screen, state = %d", m.state)
 	}
@@ -1071,14 +1071,14 @@ func TestQuestion_TheFullViewReadsARowAndAnswersNothing(t *testing.T) {
 }
 
 // While the note holds the keyboard the card's own keys are text: an arrow
-// moves the cursor and `d` is a `d`.
+// moves the cursor and `v` is a `v`.
 func TestQuestion_TheStripAndTheFullViewAreInertWhileTheNoteIsOpen(t *testing.T) {
 	m := openedQuestion(t, agent.ModeManual, tabbedArgs)
 	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyTab})
 	if !m.question.noteHolds() {
 		t.Fatal("tab should put the keyboard in the note")
 	}
-	m = sendKey(t, m, tea.KeyPressMsg{Code: 'd', Text: "d"})
+	m = sendKey(t, m, tea.KeyPressMsg{Code: 'v', Text: "v"})
 	if m.state == stateOutputFull {
 		t.Error("the full-view key is a letter while the note has the keyboard")
 	}
@@ -1086,7 +1086,7 @@ func TestQuestion_TheStripAndTheFullViewAreInertWhileTheNoteIsOpen(t *testing.T)
 	if m.question.sheet.at != 0 {
 		t.Errorf("the strip does not move while the note has the keyboard, at = %d", m.question.sheet.at)
 	}
-	if got := m.question.sel.Note.Value(); got != "d" {
+	if got := m.question.sel.Note.Value(); got != "v" {
 		t.Errorf("the letter should have been typed, note = %q", got)
 	}
 }

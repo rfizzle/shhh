@@ -119,50 +119,63 @@ func TestSelectFilter_TheComponentDoesNotFilter(t *testing.T) {
 	}
 }
 
-// ctrl+u clears the query and says so, and esc leaves the picker rather than
-// closing the row: a filter you have to escape twice is a mode.
+// esc walks the query row out a level a press: it clears the query and says
+// so, leaving the row open; on an empty row in front of the card's own keys
+// the next esc closes the row, and only then does the picker go. A card with
+// no row keys behind the row leaves on the second.
 func TestSelectFilter_ClearAndLeave(t *testing.T) {
 	s := filtered("mini")
-	s.Update(key("ctrl+u"))
+	if done, _ := s.Update(key("esc")); done {
+		t.Fatal("esc over a typed query should clear it, not leave")
+	}
 	if s.Query != "" || !s.QueryChanged() {
-		t.Fatalf("ctrl+u should clear the query and report it, got %q", s.Query)
+		t.Fatalf("esc should clear the query and report it, got %q", s.Query)
 	}
 
 	if !s.Filtering {
 		t.Fatal("clearing a query that had something in it leaves the row open")
 	}
 
-	s = filtered("mini")
+	if done, _ := s.Update(key("esc")); done || s.Filtering {
+		t.Fatalf("esc on an empty row in front of the numbers should close the row (done=%v filtering=%v)", done, s.Filtering)
+	}
 	done, result := s.Update(key("esc"))
 	if !done || !result.Canceled {
-		t.Fatalf("esc should leave the picker changing nothing, got %v %v", done, result)
+		t.Fatalf("esc on the closed row should leave the picker changing nothing, got %v %v", done, result)
+	}
+
+	bare := filtered("")
+	bare.Unnumbered = true
+	done, result = bare.Update(key("esc"))
+	if !done || !result.Canceled {
+		t.Fatalf("esc on an empty row with no row keys behind it should leave, got %v %v", done, result)
 	}
 }
 
 // A card that opens as a search has handed its letters to the query line, so
-// ctrl+u has a second reading on an empty query: it closes the row and gives
+// esc has a second reading on an empty query: it closes the row and gives
 // the card its own keys back, without leaving it. The key row names which of
 // the two readings the key has.
 func TestSelectFilter_ClearingAnEmptyQueryClosesTheRow(t *testing.T) {
 	s := filtered("")
-	s.AltKey, s.AltLabel = "d", "and make it default"
+	s.AltKey, s.AltLabel = "m", "and make it default"
 
-	if view := ansi.Strip(s.View(70)); !strings.Contains(view, "[ctrl+u] row keys") {
+	if view := ansi.Strip(s.View(70)); !strings.Contains(view, "[esc] row keys") {
 		t.Fatalf("an empty query offers the way back to the row's keys:\n%s", view)
 	}
 
-	s.Update(key("ctrl+u"))
+	s.Update(key("esc"))
 	if s.Filtering {
-		t.Fatal("ctrl+u on an empty query should close the row")
+		t.Fatal("esc on an empty query should close the row")
 	}
 	if s.QueryChanged() {
 		t.Fatal("closing the row is not a query change: there is nothing to re-filter")
 	}
-	if view := ansi.Strip(s.View(70)); !strings.Contains(view, "[d] and make it default") {
+	if view := ansi.Strip(s.View(70)); !strings.Contains(view, "[m] and make it default") {
 		t.Fatalf("the card's own keys are back on the row:\n%s", view)
 	}
 
-	done, result := s.Update(key("d"))
+	done, result := s.Update(key("m"))
 	if !done || !result.Alt {
 		t.Fatalf("the letter should be a key again, got %v %v", done, result)
 	}
@@ -244,7 +257,7 @@ func TestSelectFilter_NoMatchIsARowNotAnEmptyPane(t *testing.T) {
 	view := ansi.Strip(s.View(70))
 	for _, want := range []string{
 		"0 of 24 match", `no match for "sonnet-5"`,
-		"closest is claude-sonnet-4.6", "[ctrl+u] clear the filter", "[esc] take none",
+		"closest is claude-sonnet-4.6", "[esc] clear",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("expected %q on the empty card:\n%s", want, view)
@@ -257,7 +270,11 @@ func TestSelectFilter_NoMatchIsARowNotAnEmptyPane(t *testing.T) {
 	if done, _ := s.Update(key("enter")); done {
 		t.Fatal("enter on a card that matched nothing should do nothing")
 	}
-	// esc still changes nothing.
+	// esc clears the filter and then still changes nothing.
+	if done, _ := s.Update(key("esc")); done || s.Query != "" {
+		t.Fatalf("esc over a typed query should clear it, not leave (done=%v query=%q)", done, s.Query)
+	}
+	s.Unnumbered = true
 	done, result := s.Update(key("esc"))
 	if !done || !result.Canceled {
 		t.Fatalf("esc should still leave without changing anything, got %v %v", done, result)
@@ -403,7 +420,7 @@ func TestNoteSelectFilter_PinsItsQueryRowAndKeepsTheNote(t *testing.T) {
 		t.Fatalf("digits are text on an open query line, got %q", ns.Select.Query)
 	}
 	view := ansi.Strip(ns.View(70))
-	for _, want := range []string{"▸ 19█", "20 of 20 match", "note (optional)", "[ctrl+u] clear"} {
+	for _, want := range []string{"▸ 19█", "20 of 20 match", "note (optional)", "[esc] clear"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("expected %q on the card:\n%s", want, view)
 		}

@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the run · a row per check, the fix offered on the ones that need it
-shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
+shhh doctor · 10 checks         1.4s · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
    ✓ binary  shhh 0.9.4 · darwin/arm64 · ~/.loca…  ok
@@ -33,11 +33,11 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
     [f] show how to upgrade
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
-[↑↓/jk] move · [c] copy the report
-[r] run the checks again · [esc] back to the shell
+[↑↓/jk] move · [c] copy the report · [r] retry
+[esc] back to the shell
 
 · the fix open · under the row it belongs to, one indent past the consequence
-shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
+shhh doctor · 10 checks         1.4s · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
    ✓ binary  shhh 0.9.4 · darwin/arm64 · ~/.loca…  ok
@@ -63,11 +63,11 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
     [f] show how to upgrade
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
-[↑↓/jk] move · [c] copy the report
-[r] run the checks again · [esc] back to the shell
+[↑↓/jk] move · [c] copy the report · [r] retry
+[esc] back to the shell
 
 · the pointer moved · the next check that needs something takes the live key
-shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
+shhh doctor · 10 checks         1.4s · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
    ✓ binary  shhh 0.9.4 · darwin/arm64 · ~/.loca…  ok
@@ -89,11 +89,11 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
     [f] show how to upgrade
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
-[↑↓/jk] move · [c] copy the report
-[r] run the checks again · [esc] back to the shell
+[↑↓/jk] move · [c] copy the report · [r] retry
+[esc] back to the shell
 
 · still going · what has answered, one running, the rest queued
-shhh doctor · ▸ running           0.3s · [?] keys · [q] quit
+shhh doctor · ▸ running         0.3s · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
    ✓ binary  shhh 0.9.4 · darwin/arm64 · ~/.loca…  ok
@@ -113,7 +113,7 @@ shhh doctor · ▸ running           0.3s · [?] keys · [q] quit
 [c] copy the report · [esc] back to the shell
 
 · a short terminal · the passes go first, and the marker names them
-shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
+shhh doctor · 10 checks         1.4s · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
 ❯  ✗ model   anthropic · claude-opus-5 · no …  no key       
@@ -128,11 +128,11 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
   ↓ 7 more · binary · config · store · git · tools · memory…
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
-[↑↓/jk] move · [c] copy the report
-[r] run the checks again · [esc] back to the shell
+[↑↓/jk] move · [c] copy the report · [r] retry
+[esc] back to the shell
 
 · the keys · [?] over a screen that has five of them
-shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
+shhh doctor · 10 checks         1.4s · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
    ✓ binary  shhh 0.9.4 · darwin/arm64 · ~/.loca…  ok
@@ -158,7 +158,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
 [c] copy the whole report as text
 [r] run every check again
 [esc] back to the shell
-[q] back to the shell
+[esc] back to the shell
 
 glyphs
 ⚙  a read: a file, a search, a listing
@@ -178,7 +178,7 @@ $  a shell command
 [?] hide the keys
 
 · a clean run · no pointer, no fix key, and nothing to act on
-shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
+shhh doctor · 3 checks          0.9s · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
    ✓ binary  shhh 0.9.4 · darwin/arm64             ok
@@ -186,12 +186,11 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
    ✓ git     ~/src/shhh · clean                    ok   0.2s
 
   ✓ 3 passed
-[c] copy the report · [r] run the checks again
-[esc] back to the shell
+[c] copy the report · [r] retry · [esc] back to the shell
 
 ── ansi ────────────────────────────────────────────────────
 · the run · a row per check, the fix offered on the ones that need it
-␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
+␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m         ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mbinary␛[m  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.loca…␛[m  ␛[38;5;241mok␛[m
@@ -213,11 +212,11 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
     ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m
-␛[38;5;103m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m retry␛[m
+␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · the fix open · under the row it belongs to, one indent past the consequence
-␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
+␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m         ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mbinary␛[m  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.loca…␛[m  ␛[38;5;241mok␛[m
@@ -243,11 +242,11 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
     ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m
-␛[38;5;103m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m retry␛[m
+␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · the pointer moved · the next check that needs something takes the live key
-␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
+␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m         ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mbinary␛[m  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.loca…␛[m  ␛[38;5;241mok␛[m
@@ -269,11 +268,11 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
     ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m
-␛[38;5;103m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m retry␛[m
+␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · still going · what has answered, one running, the rest queued
-␛[1;97mshhh doctor␛[m␛[38;5;241m · ␛[m␛[38;5;205m▸ running␛[m           ␛[38;5;245m0.3s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
+␛[1;97mshhh doctor␛[m␛[38;5;241m · ␛[m␛[38;5;205m▸ running␛[m         ␛[38;5;245m0.3s␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mbinary␛[m  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.loca…␛[m  ␛[38;5;241mok␛[m
@@ -293,7 +292,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 ␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · a short terminal · the passes go first, and the marker names them
-␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
+␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m         ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[91m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[91m✗␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62mmodel   anthropic · claude-opus-5 · no …  no key       ␛[m␛[m
@@ -308,11 +307,11 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
   ␛[38;5;241m↓ 7 more · binary · config · store · git · tools · memory…␛[m
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m
-␛[38;5;103m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m retry␛[m
+␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · the keys · [?] over a screen that has five of them
-␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
+␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m         ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mbinary␛[m  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.loca…␛[m  ␛[38;5;241mok␛[m
@@ -338,7 +337,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 ␛[38;5;103m[c]␛[m␛[38;5;241m copy the whole report as text␛[m
 ␛[38;5;103m[r]␛[m␛[38;5;241m run every check again␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
-␛[38;5;103m[q]␛[m␛[38;5;241m back to the shell␛[m
+␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 ␛[38;5;241mglyphs␛[m
 ␛[38;5;241m⚙␛[m  ␛[38;5;241ma read: a file, a search, a listing␛[m
@@ -358,7 +357,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 ␛[38;5;103m[?]␛[m␛[38;5;241m hide the keys␛[m
 
 · a clean run · no pointer, no fix key, and nothing to act on
-␛[1;97mshhh doctor␛[m␛[38;5;241m · 3 checks␛[m            ␛[38;5;245m0.9s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
+␛[1;97mshhh doctor␛[m␛[38;5;241m · 3 checks␛[m          ␛[38;5;245m0.9s␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mbinary␛[m  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64␛[m             ␛[38;5;241mok␛[m
@@ -366,5 +365,4 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
    ␛[92m✓␛[m ␛[38;5;252mgit␛[m     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · clean␛[m                    ␛[38;5;241mok␛[m   ␛[38;5;241m0.2s␛[m
 
   ␛[92m✓␛[m ␛[38;5;252m3 passed␛[m
-␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m run the checks again␛[m
-␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m retry␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m

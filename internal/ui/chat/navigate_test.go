@@ -272,7 +272,7 @@ func TestUpFromAnEmptyPrompt_KeepsTheHistoryWhereThereIsOne(t *testing.T) {
 }
 
 // A transcript of prose used to open without a cursor. An assistant message
-// is addressable now — [y] copies it as markdown source — so the cursor
+// is addressable now — [c] copies it as markdown source — so the cursor
 // lands on the last one, [enter] stays on the bar with its reason, and the
 // copy key is offered.
 func TestReadingMode_ProseRowsTakeTheCursor(t *testing.T) {
@@ -340,7 +340,7 @@ func TestReadingMode_OpensOnATranscriptWithNothingSelectable(t *testing.T) {
 	}
 }
 
-// [u] and [d] move half the viewport at a time, and the cursor follows the
+// [ctrl+u] and [ctrl+d] move half the viewport at a time, and the cursor follows the
 // pane rather than staying lit somewhere off screen.
 func TestReadingMode_HalfPageKeys(t *testing.T) {
 	m := proseModel(t)
@@ -349,21 +349,21 @@ func TestReadingMode_HalfPageKeys(t *testing.T) {
 
 	half := max(m.viewport.Height()/2, 1)
 	m.viewport.SetYOffset(0)
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if got := m.viewport.YOffset(); got != half {
-		t.Fatalf("d should scroll half the viewport (%d), offset 0 → %d", half, got)
+		t.Fatalf("ctrl+d should scroll half the viewport (%d), offset 0 → %d", half, got)
 	}
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'u', Text: "u"})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if got := m.viewport.YOffset(); got != 0 {
-		t.Fatalf("u should scroll back up, offset %d", got)
+		t.Fatalf("ctrl+u should scroll back up, offset %d", got)
 	}
 
 	// The jump moved the pane away from the cursor's row, so the cursor
 	// snapped to one the pane still shows.
 	m.viewport.SetYOffset(0)
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'u', Text: "u"})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	starts := m.unitLineStarts()
 	if s, ok := starts[m.focusIdx]; !ok ||
@@ -837,9 +837,9 @@ func TestSearch_LeavingReadingModeClearsIt(t *testing.T) {
 	if !m.viewport.Searching() {
 		t.Fatal("the search should be standing")
 	}
-	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: 'q', Text: "q"})
+	m, _ = pressKey(t, m, escK)
 	if m.state == stateFocus {
-		t.Fatal("[q] should leave reading mode")
+		t.Fatal("[esc] should leave reading mode")
 	}
 	if m.viewport.Searching() {
 		t.Fatal("a query left standing would mark lines nothing on screen can clear")

@@ -4,7 +4,7 @@ package chat
 // the depth past a row's in-place body. A command's output, a read's file
 // content or a search's matches opens whole here from reading mode's [enter]
 // when the bounded body was not all of it, and the command approval card's
-// [d] opens its own facts the same way — the host the full-screen diff uses,
+// [v] opens its own facts the same way — the host the full-screen diff uses,
 // with lines for hunks. Esc returns to wherever it was opened from; esc
 // never destroys.
 

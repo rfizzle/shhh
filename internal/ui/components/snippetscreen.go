@@ -16,7 +16,7 @@ package components
 // columns on. Nothing runs until `[enter]`, which the footer says in words.
 //
 // It is a passive component like the rest of this package. It owns no snippet
-// semantics: `[c]`, `[r]` and `[x]` resolve to a SnippetCommand the host
+// semantics: `[c]`, `[e]` and `[d]` resolve to a SnippetCommand the host
 // carries out against its own store, and the host hands back fresh Rows.
 
 import (
@@ -69,7 +69,7 @@ const (
 	SnippetCopy snippetAct = iota
 	// SnippetRename is `[r]`, once the rename row has been committed.
 	SnippetRename
-	// SnippetDelete is `[x]`, and only after the inline confirm has been
+	// SnippetDelete is `[d]`, and only after the inline confirm has been
 	// answered — the screen never resolves a delete the reader has not said
 	// yes to.
 	SnippetDelete
@@ -125,7 +125,7 @@ type SnippetScreen struct {
 
 // Update is the screen's whole keyboard. The confirm and the rename row
 // answer first while either is up — each holds the keyboard, so `y` is not a
-// letter to one and `x` is text to the other (invariant 5).
+// letter to one and `d` is text to the other (invariant 5).
 func (s *SnippetScreen) Update(msg tea.KeyPressMsg) (done bool, result SnippetResult) {
 	s.sync()
 	if s.confirm != nil {
@@ -145,13 +145,11 @@ func (s *SnippetScreen) Update(msg tea.KeyPressMsg) (done bool, result SnippetRe
 			return true, SnippetResult{Run: true, id: row.ID, Command: row.Command}
 		}
 		return false, SnippetResult{}
-	case keys.Is(pressed, keys.Select.Cancel):
-		return true, SnippetResult{canceled: true}
 	}
-	// With the query line open the query line is the surface, so c, r, x and q
+	// With the query line open the query line is the surface, so c, e and d
 	// are letters rather than keys — the reading every picker in the product
-	// makes. ctrl+u clears it, and clearing a filter that is already empty
-	// closes it, which is how the row keys are got back without leaving the
+	// makes. esc clears it, and on a filter that is already empty it closes
+	// the line, which is how the row keys are got back without leaving the
 	// screen.
 	if open, changed := s.filterKey(msg); open {
 		if changed {
@@ -162,7 +160,7 @@ func (s *SnippetScreen) Update(msg tea.KeyPressMsg) (done bool, result SnippetRe
 	switch {
 	case keys.Is(pressed, keys.Screen.Filter):
 		s.list.Filtering = true
-	case pressed == keys.Shown(keys.Screen.Quit):
+	case keys.Is(pressed, keys.Screen.Quit):
 		return true, SnippetResult{canceled: true}
 	case keys.Is(pressed, keys.Screen.List):
 		s.keys = !s.keys
@@ -311,7 +309,6 @@ func (s *SnippetScreen) offers(width int, field string) []KeyOffer {
 	if s.rename != nil {
 		return []KeyOffer{
 			keyOfferAs(keys.Screen.Take, "rename it"),
-			keyOfferAs(keys.Screen.ClearQ, "clear the row"),
 			keyOfferAs(keys.Screen.Keep, "keep the name"),
 		}
 	}
@@ -321,7 +318,7 @@ func (s *SnippetScreen) offers(width int, field string) []KeyOffer {
 		acts = append(acts, keyOfferAs(keys.Screen.Rerun, "run it"))
 	}
 	if s.list.Filtering {
-		acts = append(acts, keyOfferAs(keys.Screen.ClearQ, "clear the filter, then close it"))
+		acts = append(acts, keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"))
 	} else {
 		if s.currentShown(s.Rows) != nil {
 			acts = append(acts,
@@ -329,9 +326,8 @@ func (s *SnippetScreen) offers(width int, field string) []KeyOffer {
 				keyOffer(keys.Screen.Rename),
 				keyOffer(keys.Screen.Delete))
 		}
-		acts = append(acts, keyOffer(keys.Screen.Filter))
+		acts = append(acts, keyOffer(keys.Screen.Filter), wayOut(backToShell))
 	}
-	acts = append(acts, wayOut(backToShell))
 
 	return fitRungs(field, width,
 		append([]KeyOffer{move}, acts...),
@@ -349,9 +345,8 @@ func (s *SnippetScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Rename, "rename it, in a row under the list"),
 		keyOfferAs(keys.Screen.Delete, "delete it, after confirming it"),
 		keyOfferAs(keys.Screen.Filter, "filter by name or by what the command is"),
-		keyOfferAs(keys.Screen.ClearQ, "clear the filter or the rename row"),
-		keyOfferAs(keys.Query.Rub, "delete a character from either"),
-		keyOfferAs(keys.Screen.Keep, "keep the name, or "+backToShell),
+		keyOfferAs(keys.Query.Rub, "delete a character from the filter or the rename row"),
+		keyOfferAs(keys.Screen.Keep, "keep the name; clear the filter, then close it"),
 		keyOfferAs(keys.Screen.Quit, backToShell),
 	}
 }

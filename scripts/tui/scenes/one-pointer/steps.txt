@@ -37,7 +37,7 @@ snap 06-cursor "open it" "❯ ⚙ read 2 files"
 keys Enter
 keys j
 snap 07-on-a-read "./ loop.go · limit.go" "❯   ▾ read 2 files"
-keys q
+keys Escape
 sleep 0.5
 # The palette's list, opened from the draft: the same pointer in the same
 # column, and the filter row's own glyph above it.

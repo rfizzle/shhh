@@ -174,8 +174,8 @@ func TestProfileScreen_TheSelectedSectionIsRevised(t *testing.T) {
 	if done, res := p.Update(key("e")); !done || res.Action != ProfileEdit || res.Index != 1 {
 		t.Fatalf("e = %+v", res)
 	}
-	if done, res := p.Update(key("x")); !done || res.Action != ProfileClear || res.Index != 1 {
-		t.Fatalf("x = %+v", res)
+	if done, res := p.Update(key("d")); !done || res.Action != ProfileClear || res.Index != 1 {
+		t.Fatalf("d = %+v", res)
 	}
 	// enter opens a note under the section; an empty one sends nothing, esc
 	// closes it, and a note is sent with the section it is about.

@@ -106,7 +106,8 @@ func TestConfigScreen_FieldEditsResolveWhatWasTyped(t *testing.T) {
 	c := configFixture()
 	c.Focus = 1
 	c.Update(key("enter"))
-	c.Update(key("ctrl+u"))
+	c.Update(key("backspace"))
+	c.Update(key("backspace"))
 	typeInto(c, "40")
 	if view := c.View(110); !strings.Contains(view, "▸ 40") {
 		t.Fatalf("the field echoes what is typed in the query row's grammar:\n%s", view)
@@ -237,24 +238,24 @@ func TestSettings_TheHintAndAnnotationAreDrawnAtEveryWidth(t *testing.T) {
 	}
 }
 
-// esc and q both leave without writing, and with nothing staged they leave on
-// the press: there is no typed work to put back.
+// esc leaves without writing, and with nothing staged it leaves on the
+// press: there is no typed work to put back. q is a plain letter.
 func TestConfigScreen_LeavingWritesNothing(t *testing.T) {
-	for _, k := range []string{"esc", "q"} {
-		c := configFixture()
-		done, result := c.Update(key(k))
-		if !done || result.Write || !result.Canceled {
-			t.Fatalf("%s leaves writing nothing: done=%v result=%#v", k, done, result)
-		}
+	c := configFixture()
+	done, result := c.Update(key("esc"))
+	if !done || result.Write || !result.Canceled {
+		t.Fatalf("esc leaves writing nothing: done=%v result=%#v", done, result)
+	}
+	if done, _ := configFixture().Update(key("q")); done {
+		t.Fatal("q left the screen")
 	}
 }
 
 // Staged edits are typed work, so the way out asks before it drops them
 // (docs/interface/principles.md#esc-is-always-the-safe-answer), over the same
-// count the header is carrying. q is held to it too: the invariant is about
-// abandoning work, not about which key was pressed.
+// count the header is carrying.
 func TestConfigScreen_LeavingAsksBeforeItDiscards(t *testing.T) {
-	for _, k := range []string{"esc", "q"} {
+	for _, k := range []string{"esc"} {
 		c := configFixture()
 		c.Changed = 2
 		done, result := c.Update(key(k))
@@ -322,16 +323,16 @@ func TestConfigScreen_TheRegisterReadsWhatIsStaged(t *testing.T) {
 	c := configFixture()
 	c.Update(key("?"))
 	if view := stripANSI(c.View(110)); strings.Contains(view, "asking") ||
-		!strings.Contains(view, "[q] leave the screen writing nothing") {
+		!strings.Contains(view, "[esc] leave the screen writing nothing") {
 		t.Fatalf("with nothing staged the register promises no question:\n%s", view)
 	}
 	c.Changed = 2
 	view := stripANSI(c.View(110))
-	if !strings.Contains(view, "[esc] leave the picker, or ask before discarding the lot") {
+	if !strings.Contains(view, "leave the picker, or ask before discarding the lot") {
 		t.Fatalf("with edits staged the register says esc asks:\n%s", view)
 	}
-	if !strings.Contains(view, "[q] ask before discarding the lot and leaving") {
-		t.Fatalf("with edits staged the register says q asks too:\n%s", view)
+	if !strings.Contains(view, "[esc] ask before discarding the lot and leaving") {
+		t.Fatalf("with edits staged the register says the way out asks too:\n%s", view)
 	}
 }
 
@@ -385,13 +386,13 @@ func TestConfigScreen_SourceStatesWhereTheValueCameFrom(t *testing.T) {
 	}
 }
 
-// [r] resets one row rather than the screen, and says so.
+// [ctrl+r] resets one row rather than the screen, and says so.
 func TestConfigScreen_ResetIsOneRow(t *testing.T) {
 	c := configFixture()
-	_, result := c.Update(key("r"))
+	_, result := c.Update(key("ctrl+r"))
 	change := result.Change
 	if change == nil || !change.Reset || change.Key != "behavior.default_mode" {
-		t.Fatalf("r resets the row under the pointer: %#v", result)
+		t.Fatalf("ctrl+r resets the row under the pointer: %#v", result)
 	}
 }
 
@@ -424,7 +425,7 @@ func TestConfigScreen_IsATakeoverNotACard(t *testing.T) {
 	if !strings.HasPrefix(lines[0], "shhh config") {
 		t.Fatalf("the header names the command and its subject: %q", lines[0])
 	}
-	if !strings.Contains(lines[0], "[?] keys · [q] quit") {
+	if !strings.Contains(lines[0], "[?] keys · [esc] back") {
 		t.Fatalf("the header carries the two keys every one of these screens has: %q", lines[0])
 	}
 }
@@ -446,12 +447,12 @@ func TestConfigScreen_AFlowsPickerSendsTheChoiceWhereItsKeySays(t *testing.T) {
 		return c
 	}
 	foot := ansi.Strip(flows().View(130))
-	for _, want := range []string{"[enter] this session", "[d] my settings", "[g] this checkout"} {
+	for _, want := range []string{"[enter] this session", "[m] my settings", "[g] this checkout"} {
 		if !strings.Contains(foot, want) {
 			t.Errorf("the picker's key row does not offer %q:\n%s", want, foot)
 		}
 	}
-	for pressed, want := range map[string]ConfigTake{"enter": TakeSession, "d": TakeMine, "g": TakeCheckout} {
+	for pressed, want := range map[string]ConfigTake{"enter": TakeSession, "m": TakeMine, "g": TakeCheckout} {
 		_, result := flows().Update(key(pressed))
 		if result.Change == nil || result.Change.Take != want || result.Change.Value != "gpt-5.2-mini" {
 			t.Errorf("[%s] answered %+v, want %v with the option under the pointer", pressed, result.Change, want)
@@ -459,7 +460,7 @@ func TestConfigScreen_AFlowsPickerSendsTheChoiceWhereItsKeySays(t *testing.T) {
 	}
 	c := flows()
 	c.Update(key("/"))
-	if _, result := c.Update(key("d")); result.Change != nil {
-		t.Errorf("a d typed into the picker's query took the choice: %+v", result.Change)
+	if _, result := c.Update(key("m")); result.Change != nil {
+		t.Errorf("an m typed into the picker's query took the choice: %+v", result.Change)
 	}
 }

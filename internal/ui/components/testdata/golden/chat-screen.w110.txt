@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · titled and summarised · the account under the title
-shhh chats · 3 conversations                                                               [?] keys · [q] quit
+shhh chats · 3 conversations                                                             [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ❯ 2026-09-29 09:14:02  the retry backoff was doubling … │ 2026-09-29 09:14:02              2026-09-29 09:14:02
@@ -23,10 +23,10 @@ shhh chats · 3 conversations                                                   
                                                         │ 
                                                         │   12 turns
 
-[↑↓/jk] move · [enter] open it · [r] rename it · [x] delete it · [/] filter · [esc] back to the shell
+[↑↓/jk] move · [enter] open it · [e] rename · [d] delete · [/] filter · [esc] back to the shell
 
 · titled only
-shhh chats · 3 conversations                                                               [?] keys · [q] quit
+shhh chats · 3 conversations                                                             [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   2026-09-29 09:14:02  the retry backoff was doubling … │ 2026-09-28 17:40:11              2026-09-28 17:40:11
@@ -34,21 +34,21 @@ shhh chats · 3 conversations                                                   
   2026-09-27 08:02:41  1 turn · Sep 27 08:02            │ 
                                                         │   4 turns
 
-[↑↓/jk] move · [enter] open it · [r] rename it · [x] delete it · [/] filter · [esc] back to the shell
+[↑↓/jk] move · [enter] open it · [e] rename · [d] delete · [/] filter · [esc] back to the shell
 
 · neither
-shhh chats · 3 conversations                                                               [?] keys · [q] quit
+shhh chats · 3 conversations                                                             [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   2026-09-29 09:14:02  the retry backoff was doubling … │ 2026-09-27 08:02:41              2026-09-27 08:02:41
   2026-09-28 17:40:11  naming the report pages · 4 tur… │ 
 ❯ 2026-09-27 08:02:41  1 turn · Sep 27 08:02            │   1 turn
 
-[↑↓/jk] move · [enter] open it · [r] rename it · [x] delete it · [/] filter · [esc] back to the shell
+[↑↓/jk] move · [enter] open it · [e] rename · [d] delete · [/] filter · [esc] back to the shell
 
 ── ansi ────────────────────────────────────────────────────
 · titled and summarised · the account under the title
-␛[1;97mshhh chats␛[m␛[38;5;241m · 3 conversations␛[m                                                               ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[1;97mshhh chats␛[m␛[38;5;241m · 3 conversations␛[m                                                             ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯␛[m ␛[1;97;48;5;62m2026-09-29 09:14:02  the retry backoff was doubling …␛[m␛[38;5;241m │ ␛[m␛[1;97m2026-09-29 09:14:02␛[m              ␛[38;5;241m2026-09-29 09:14:02␛[m
@@ -60,10 +60,10 @@ shhh chats · 3 conversations                                                   
                                                        ␛[38;5;241m │ ␛[m
                                                        ␛[38;5;241m │ ␛[m  ␛[38;5;252m12 turns␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m rename␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m delete␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · titled only
-␛[1;97mshhh chats␛[m␛[38;5;241m · 3 conversations␛[m                                                               ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[1;97mshhh chats␛[m␛[38;5;241m · 3 conversations␛[m                                                             ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252m2026-09-29 09:14:02␛[m  ␛[38;5;241mthe retry backoff was doubling …␛[m␛[38;5;241m │ ␛[m␛[1;97m2026-09-28 17:40:11␛[m              ␛[38;5;241m2026-09-28 17:40:11␛[m
@@ -71,14 +71,14 @@ shhh chats · 3 conversations                                                   
   ␛[38;5;252m2026-09-27 08:02:41␛[m  ␛[38;5;241m1 turn · Sep 27 08:02␛[m           ␛[38;5;241m │ ␛[m
                                                        ␛[38;5;241m │ ␛[m  ␛[38;5;252m4 turns␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m rename␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m delete␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · neither
-␛[1;97mshhh chats␛[m␛[38;5;241m · 3 conversations␛[m                                                               ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[1;97mshhh chats␛[m␛[38;5;241m · 3 conversations␛[m                                                             ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252m2026-09-29 09:14:02␛[m  ␛[38;5;241mthe retry backoff was doubling …␛[m␛[38;5;241m │ ␛[m␛[1;97m2026-09-27 08:02:41␛[m              ␛[38;5;241m2026-09-27 08:02:41␛[m
   ␛[38;5;252m2026-09-28 17:40:11␛[m  ␛[38;5;241mnaming the report pages · 4 tur…␛[m␛[38;5;241m │ ␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;62m2026-09-27 08:02:41  1 turn · Sep 27 08:02           ␛[m␛[38;5;241m │ ␛[m  ␛[38;5;252m1 turn␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m rename␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m delete␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m

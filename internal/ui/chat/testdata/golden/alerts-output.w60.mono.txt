@@ -35,7 +35,7 @@ exit status 1
 
 
 
-output · [j/k] scroll · [pgup] page up · [pgdn] page down · [esc] back
+output · [↑↓/jk] move · [pgup] page up · [pgdn] page down · [esc] back
 
 · the panel it leaves · the way back to the alerts
 ────────────────────────────────────────────────────────
@@ -68,7 +68,7 @@ output · [j/k] scroll · [pgup] page up · [pgdn] page down · [esc] back
 
 
 
-␛[38;5;244moutput · ␛[m␛[38;5;254m[j/k]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[pgup]␛[m␛[38;5;244m page up␛[m␛[38;5;244m · ␛[m␛[38;5;254m[pgdn]␛[m␛[38;5;244m page down␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;244moutput · ␛[m␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[pgup]␛[m␛[38;5;244m page up␛[m␛[38;5;244m · ␛[m␛[38;5;254m[pgdn]␛[m␛[38;5;244m page down␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · the panel it leaves · the way back to the alerts
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m

@@ -25,8 +25,8 @@ follow-up  then run the whole suite
 │   follow-up  then run the whole suite                                    │
 │ steering joins the turn at its next round; a follow-up goes when it ends │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ [↑↓] select a message · [enter] pull it back into the draft              │
-│ [x] cancel it · [?] keys · [esc] back to the draft                       │
+│ [↑↓/jk] move · [enter] pull it back into the draft · [d] delete          │
+│ [?] keys · [esc] back to the draft                                       │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 · the steer pulled back into the draft · its picture on the strip
@@ -45,8 +45,8 @@ follow-up  then run the whole suite
 │ ❯ steering   the header in this one is wrong too · Image#1               │
 │ steering joins the turn at its next round; a follow-up goes when it ends │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ [↑↓] select a message · [enter] pull it back into the draft              │
-│ [x] cancel it · [?] keys · [esc] back to the draft                       │
+│ [↑↓/jk] move · [enter] pull it back into the draft · [d] delete          │
+│ [?] keys · [esc] back to the draft                                       │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -65,8 +65,8 @@ follow-up  then run the whole suite
 ␛[38;5;244m│␛[m   ␛[38;5;254mfollow-up␛[m  ␛[38;5;254mthen run the whole suite␛[m␛[38;5;244m␛[m                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244msteering joins the turn at its next round; a follow-up goes when it ends␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m select a message␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m pull it back into the draft␛[m              ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[x]␛[m␛[38;5;244m cancel it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft␛[m                       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m pull it back into the draft␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m          ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft␛[m                                       ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the steer pulled back into the draft · its picture on the strip
@@ -85,6 +85,6 @@ follow-up  then run the whole suite
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237msteering   the header in this one is wrong too · Image#1␛[m␛[m               ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244msteering joins the turn at its next round; a follow-up goes when it ends␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m select a message␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m pull it back into the draft␛[m              ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[x]␛[m␛[38;5;244m cancel it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft␛[m                       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m pull it back into the draft␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m          ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft␛[m                                       ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────╯␛[m

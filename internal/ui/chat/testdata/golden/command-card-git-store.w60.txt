@@ -23,7 +23,7 @@
 ├──────────────────────────────────────────────────────┤
 │ [y] run it once · [Y] run with a note · [n] deny     │
 │ [N] deny with a note                                 │
-│ [a] allow "go test" without asking · [d] full view   │
+│ [a] allow "go test" without asking · [v] full view   │
 │ [e] edit the command · [?] keys · [esc] wait         │
 ╰──────────────────────────────────────────────────────╯
 
@@ -40,7 +40,7 @@
 ├──────────────────────────────────────────────────────┤
 │ [y] run it once · [Y] run with a note · [n] deny     │
 │ [N] deny with a note                                 │
-│ [a] allow "go test" without asking · [d] full view   │
+│ [a] allow "go test" without asking · [v] full view   │
 │ [e] edit the command · [?] keys · [esc] wait         │
 ╰──────────────────────────────────────────────────────╯
 
@@ -58,7 +58,7 @@
 ␛[38;5;214m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[38;5;103m[Y]␛[m ␛[38;5;252mrun with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;103m[N]␛[m ␛[38;5;252mdeny with a note␛[m                                 ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[a]␛[m ␛[38;5;252mallow "go test" without asking␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m ␛[38;5;252mfull view␛[m   ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[a]␛[m ␛[38;5;252mallow "go test" without asking␛[m␛[38;5;241m · ␛[m␛[38;5;103m[v]␛[m ␛[38;5;252mfull view␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;103m[e]␛[m ␛[38;5;252medit the command␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] wait␛[m         ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────╯␛[m
 
@@ -75,6 +75,6 @@
 ␛[38;5;214m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[38;5;103m[Y]␛[m ␛[38;5;252mrun with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;103m[N]␛[m ␛[38;5;252mdeny with a note␛[m                                 ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[a]␛[m ␛[38;5;252mallow "go test" without asking␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m ␛[38;5;252mfull view␛[m   ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[a]␛[m ␛[38;5;252mallow "go test" without asking␛[m␛[38;5;241m · ␛[m␛[38;5;103m[v]␛[m ␛[38;5;252mfull view␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;103m[e]␛[m ␛[38;5;252medit the command␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] wait␛[m         ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────╯␛[m

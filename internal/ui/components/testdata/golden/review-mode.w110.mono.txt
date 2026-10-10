@@ -28,7 +28,7 @@ REVIEW turn 7                        3 files │ internal/agent/loop.go  1 hunk 
                                              │ 
                                              │ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[n/p] hunk · [esc] leave, change nothing
+[n/N] hunk · [esc] leave, change nothing
 
 · a turn's review · the second file focused
 REVIEW turn 7                        3 files │ internal/ui/chat/model.go  1 hunk · +2 −1
@@ -48,7 +48,7 @@ REVIEW turn 7                        3 files │ internal/ui/chat/model.go  1 hu
                                              │ 
                                              │ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[n/p] hunk · [esc] leave, change nothing
+[n/N] hunk · [esc] leave, change nothing
 
 · layout · side-by-side forced
 REVIEW turn 7                        3 files │ internal/agent/loop.go  1 hunk · +2 −1
@@ -68,7 +68,7 @@ REVIEW turn 7                        3 files │ internal/agent/loop.go  1 hunk 
                                              │ 
                                              │ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[n/p] hunk · [esc] leave, change nothing
+[n/N] hunk · [esc] leave, change nothing
 
 ── ansi ────────────────────────────────────────────────────
 · a turn's review · the first file focused
@@ -89,7 +89,7 @@ REVIEW turn 7                        3 files │ internal/agent/loop.go  1 hunk 
                                             ␛[38;5;244m │ ␛[m
                                             ␛[38;5;244m │ ␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[n/p]␛[m␛[38;5;244m hunk␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave, change nothing␛[m
+␛[38;5;254m[n/N]␛[m␛[38;5;244m hunk␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave, change nothing␛[m
 
 · a turn's review · the second file focused
 ␛[1;38;5;254mREVIEW␛[m␛[38;5;244m turn 7␛[m                        ␛[38;5;244m3 files␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254minternal/ui/chat/model.go␛[m␛[38;5;244m  1 hunk · ␛[m␛[38;5;254m+2␛[m ␛[38;5;254m−1␛[m
@@ -109,7 +109,7 @@ REVIEW turn 7                        3 files │ internal/agent/loop.go  1 hunk 
                                             ␛[38;5;244m │ ␛[m
                                             ␛[38;5;244m │ ␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[n/p]␛[m␛[38;5;244m hunk␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave, change nothing␛[m
+␛[38;5;254m[n/N]␛[m␛[38;5;244m hunk␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave, change nothing␛[m
 
 · layout · side-by-side forced
 ␛[1;38;5;254mREVIEW␛[m␛[38;5;244m turn 7␛[m                        ␛[38;5;244m3 files␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254minternal/agent/loop.go␛[m␛[38;5;244m  1 hunk · ␛[m␛[38;5;254m+2␛[m ␛[38;5;254m−1␛[m
@@ -129,4 +129,4 @@ REVIEW turn 7                        3 files │ internal/agent/loop.go  1 hunk 
                                             ␛[38;5;244m │ ␛[m
                                             ␛[38;5;244m │ ␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[n/p]␛[m␛[38;5;244m hunk␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave, change nothing␛[m
+␛[38;5;254m[n/N]␛[m␛[38;5;244m hunk␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave, change nothing␛[m

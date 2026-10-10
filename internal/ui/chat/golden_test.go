@@ -1039,7 +1039,7 @@ func TestGolden_StagedRail(t *testing.T) {
 				}
 				return dividerStyle(rm.contentWidth()) + "\n" + rm.panelView()
 			}()},
-			{Label: "the card a chip opened · [x] remove on its hint row, and back is to the strip", View: func() string {
+			{Label: "the card a chip opened · [d] delete on its hint row, and back is to the strip", View: func() string {
 				m := stageImage(t, goldenModel(t, width), "shot.png")
 				next, _ := m.enterFocusMode()
 				rm := pressOn(t, next.(Model), key('j'))
@@ -1911,7 +1911,7 @@ func TestGolden_ProfileCommands(t *testing.T) {
 		m = handEdit(t, m, persona.SectionCommands, "intent: running the package's tests\ndeny: git push\ndeny: go install")
 		edited := pane(m)
 		refused := pane(handEdit(t, m, persona.SectionCommands, "allow: go test"))
-		m = pressOn(t, m, tea.KeyPressMsg{Code: 'x', Text: "x"})
+		m = pressOn(t, m, tea.KeyPressMsg{Code: 'd', Text: "d"})
 		return []golden.Panel{
 			{Label: "Commands selected · what its commands are for and what it never runs, on one line", View: selected},
 			{Label: "a note open under Commands · only its two fields are taken from the answer", View: noting},
@@ -2428,7 +2428,7 @@ func TestGolden_ReadingMode(t *testing.T) {
 				next, _ := m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
 				*m = next.(Model)
 			})},
-			{Label: "prose · the cursor on a message: [y] copies its markdown source", View: func() string {
+			{Label: "prose · the cursor on a message: [c] copies its markdown source", View: func() string {
 				m := frameModel(t, width, 40)
 				m.transcript = []entry{
 					{kind: entryUser, text: "why is the round limit fatal"},

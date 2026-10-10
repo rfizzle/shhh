@@ -200,15 +200,21 @@ func (l *listScreen[T]) showFiltered(opts []SelectOption, total int, hint string
 
 // filterKey answers a key while the query line is open, and reports whether
 // it was — with the line open the line is the surface, so every letter is
-// text — and whether the query changed. A clear on an empty query closes the
-// line, which is how the row keys are got back without leaving the screen.
+// text — and whether the query changed. Esc backs out of the line one level
+// at a time: it clears what was typed, and on an empty query it closes the
+// line, which is how the row keys are got back without leaving the screen
+// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 func (l *listScreen[T]) filterKey(msg tea.KeyPressMsg) (open, changed bool) {
 	if !l.list.Filtering {
 		return false, false
 	}
-	if keys.Is(msg.String(), keys.Screen.ClearQ) && l.list.Query == "" {
-		l.list.Filtering = false
-		return true, false
+	if keys.Is(msg.String(), keys.Screen.Quit) {
+		if l.list.Query == "" {
+			l.list.Filtering = false
+			return true, false
+		}
+		l.list.Query, l.list.queryEdited = "", true
+		return true, l.list.QueryChanged()
 	}
 	l.list.editQuery(msg)
 	return true, l.list.QueryChanged()
@@ -248,7 +254,8 @@ func (l *listScreen[T]) hiddenRows(total int, hidden func(n int) string, width i
 		return nil
 	}
 	row := sty.dim.Render(hidden(n)+" hidden by the filter · ") +
-		sty.key.Render(keys.Bracket(keys.Screen.ClearQ)) + sty.dim.Render(" clear it")
+		sty.key.Render(keys.Bracket(keys.Screen.Quit)) + sty.dim.Render(" clear it")
+
 	return []string{screenRule(width), Clip(row, width)}
 }
 

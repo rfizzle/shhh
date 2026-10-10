@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the current step · its paths and the run the transcript titled for it
-/steps · 1 of 7                          [?] keys · [q] back
+/steps · 1 of 7                        [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   1. ✓ Read the loop                 done            2 tools
@@ -29,7 +29,7 @@
 [esc] back to the prompt    the agent's own list, not a plan
 
 · a finished step · marked done by the agent's own progress line
-/steps · 1 of 7                          [?] keys · [q] back
+/steps · 1 of 7                        [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
 ❯ 1. ✓ Read the loop                 done            2 tools
@@ -47,7 +47,7 @@
 [esc] back to the prompt    the agent's own list, not a plan
 
 · a step with no run · not started, and the paths it said it would touch
-/steps · 1 of 7                          [?] keys · [q] back
+/steps · 1 of 7                        [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   1. ✓ Read the loop                 done            2 tools
@@ -66,7 +66,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · the current step · its paths and the run the transcript titled for it
-␛[1;97m/steps␛[m␛[38;5;241m · 1 of 7␛[m                          ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/steps␛[m␛[38;5;241m · 1 of 7␛[m                        ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m1. ␛[m␛[38;5;252m✓ Read the loop␛[m                 ␛[92mdone␛[m            ␛[38;5;252m2 tools␛[m
@@ -84,7 +84,7 @@
 ␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m    ␛[38;5;241mthe agent's own list, not a plan␛[m
 
 · a finished step · marked done by the agent's own progress line
-␛[1;97m/steps␛[m␛[38;5;241m · 1 of 7␛[m                          ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/steps␛[m␛[38;5;241m · 1 of 7␛[m                        ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯␛[m ␛[1;97;48;5;62m1. ✓ Read the loop                 done            2 tools␛[m
@@ -102,7 +102,7 @@
 ␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m    ␛[38;5;241mthe agent's own list, not a plan␛[m
 
 · a step with no run · not started, and the paths it said it would touch
-␛[1;97m/steps␛[m␛[38;5;241m · 1 of 7␛[m                          ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/steps␛[m␛[38;5;241m · 1 of 7␛[m                        ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m1. ␛[m␛[38;5;252m✓ Read the loop␛[m                 ␛[92mdone␛[m            ␛[38;5;252m2 tools␛[m

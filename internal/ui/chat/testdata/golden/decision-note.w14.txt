@@ -18,7 +18,7 @@
 [n] deny
 [N] deny with a note
 [a] allow edits in ./ without asking
-[d] full diff
+[v] full diff
 these…
 ┄ why…
   not…
@@ -44,7 +44,7 @@ ed
 ␛[38;5;245m[n] deny␛[m
 ␛[38;5;245m[N] deny with a note␛[m
 ␛[38;5;245m[a] allow edits in ./ without asking␛[m
-␛[38;5;245m[d] full diff␛[m
+␛[38;5;245m[v] full diff␛[m
 ␛[38;5;241mthese…␛[m
 ␛[38;5;241m┄ why…␛[m
   ␛[38;5;241m␛[m␛[38;5;252mnot…␛[m

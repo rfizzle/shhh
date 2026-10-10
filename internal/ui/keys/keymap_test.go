@@ -67,7 +67,7 @@ history_search = ["ctrl+r", "alt+r"]
 	if err := Load(path); err != nil {
 		t.Fatalf("a valid keymap was refused: %v", err)
 	}
-	if !Is("x", Reading.Copy) || Is("y", Reading.Copy) {
+	if !Is("x", Reading.Copy) || Is("c", Reading.Copy) {
 		t.Errorf("the copy key answers %v, want x alone", Reading.Copy.Keys())
 	}
 	if got := Shown(Reading.Copy); got != "x" {
@@ -244,7 +244,7 @@ func TestLoad_RefusesTheWholeFileNotTheBadLine(t *testing.T) {
 	if err := Load(path); err == nil {
 		t.Fatal("the file should be refused")
 	}
-	if !Is("y", Reading.Copy) {
+	if !Is("c", Reading.Copy) {
 		t.Errorf("the good half of a refused file was kept: %v", Reading.Copy.Keys())
 	}
 }
@@ -323,7 +323,7 @@ list = "i"
 [notes]
 drop = "x"
 [backlog]
-new = "a"
+new = "c"
 [sprint]
 goal = "G"
 [commit]
@@ -341,7 +341,7 @@ talk = "a"
 	}{
 		{"sources.list", Sources.List, "i"},
 		{"notes.drop", Notes.Drop, "x"},
-		{"backlog.new", Backlog.New, "a"},
+		{"backlog.new", Backlog.New, "c"},
 		{"sprint.goal", Sprint.Goal, "G"},
 		{"commit.edit", Commit.Edit, "m"},
 		{"rewind.talk", Rewind.Talk, "a"},
@@ -529,7 +529,7 @@ func TestKeyboard_MarksAMovedKey(t *testing.T) {
 				continue
 			}
 			moved++
-			if a.Name != "reading.copy" || !slices.Equal(a.Keys, []string{"x"}) || !slices.Equal(a.Shipped, []string{"y"}) {
+			if a.Name != "reading.copy" || !slices.Equal(a.Keys, []string{"x"}) || !slices.Equal(a.Shipped, []string{"c"}) {
 				t.Errorf("the mark is on %s: %v shipped as %v", a.Name, a.Keys, a.Shipped)
 			}
 		}

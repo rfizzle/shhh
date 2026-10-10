@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the question · what was asked, what came back, and what it exited
-shhh rate · 1 of 5                                                                                             [?] keys · [q] quit
+shhh rate · 1 of 5                                                                                           [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ╭─ 4m ago ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -23,7 +23,7 @@ shhh rate · 1 of 5                                                             
 [y] worked · [n] did not · [s] skip · [esc] stop
 
 · answered · the next card already, and this one never ran at all
-shhh rate · 2 of 5                                                                                             [?] keys · [q] quit
+shhh rate · 2 of 5                                                                                           [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ╭─ yesterday ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -35,7 +35,7 @@ shhh rate · 2 of 5                                                             
 [y] worked · [n] did not · [s] skip · [esc] stop
 
 · a long command · continued under its own row, never clipped away
-shhh rate · 4 of 5                                                                                             [?] keys · [q] quit
+shhh rate · 4 of 5                                                                                           [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ╭─ mon ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -47,7 +47,7 @@ shhh rate · 4 of 5                                                             
 [y] worked · [n] did not · [s] skip · [esc] stop
 
 · a session · the same card over an agent run, and no rail on a good one
-shhh rate · 5 of 5                                                                                             [?] keys · [q] quit
+shhh rate · 5 of 5                                                                                           [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ╭─ mon ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -59,7 +59,7 @@ shhh rate · 5 of 5                                                             
 [y] worked · [n] did not · [s] skip · [esc] stop
 
 · a session that was given up on · the rail and the glyph every broken row takes
-shhh rate · 5 of 5                                                                                             [?] keys · [q] quit
+shhh rate · 5 of 5                                                                                           [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ╭─ mon ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -71,7 +71,7 @@ shhh rate · 5 of 5                                                             
 [y] worked · [n] did not · [s] skip · [esc] stop
 
 · a short terminal · the card folds behind a counted tail
-shhh rate · 4 of 5                                                                                             [?] keys · [q] quit
+shhh rate · 4 of 5                                                                                           [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ╭─ mon ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -83,7 +83,7 @@ shhh rate · 4 of 5                                                             
 [y] worked · [n] did not · [s] skip · [esc] stop
 
 · a write that failed · the notice, and the entry left unrated
-shhh rate · 3 of 5                                                                                             [?] keys · [q] quit
+shhh rate · 3 of 5                                                                                           [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ╭─ tue ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -96,7 +96,7 @@ shhh rate · 3 of 5                                                             
 rate: database is locked
 
 · nothing left to answer · the three answers are gone from the row
-shhh rate · 5 asked                                                                                            [?] keys · [q] quit
+shhh rate · 5 asked                                                                                          [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 every one of them has been asked about
@@ -104,7 +104,7 @@ every one of them has been asked about
 [esc] stop
 
 · [?] · every key the screen has
-shhh rate · 1 of 5                                                                                             [?] keys · [q] quit
+shhh rate · 1 of 5                                                                                           [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 delete every log file older than a week
@@ -114,7 +114,7 @@ delete every log file older than a week
 [n] it did not
 [s] no answer; it stays unrated
 [esc] stop, keeping every answer already given
-[q] stop, keeping every answer already given
+[esc] stop, keeping every answer already given
 
 glyphs
 ⚙  a read: a file, a search, a listing
@@ -135,7 +135,7 @@ $  a shell command
 
 ── ansi ────────────────────────────────────────────────────
 · the question · what was asked, what came back, and what it exited
-␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 1 of 5␛[m                                                                                             ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 1 of 5␛[m                                                                                           ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254m4m ago ␛[m␛[38;5;244m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -147,7 +147,7 @@ $  a shell command
 ␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
 
 · answered · the next card already, and this one never ran at all
-␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 2 of 5␛[m                                                                                             ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 2 of 5␛[m                                                                                           ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254myesterday ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -159,7 +159,7 @@ $  a shell command
 ␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
 
 · a long command · continued under its own row, never clipped away
-␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 4 of 5␛[m                                                                                             ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 4 of 5␛[m                                                                                           ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mmon ␛[m␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -171,7 +171,7 @@ $  a shell command
 ␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
 
 · a session · the same card over an agent run, and no rail on a good one
-␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 5 of 5␛[m                                                                                             ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 5 of 5␛[m                                                                                           ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mmon ␛[m␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -183,7 +183,7 @@ $  a shell command
 ␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
 
 · a session that was given up on · the rail and the glyph every broken row takes
-␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 5 of 5␛[m                                                                                             ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 5 of 5␛[m                                                                                           ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mmon ␛[m␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -195,7 +195,7 @@ $  a shell command
 ␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
 
 · a short terminal · the card folds behind a counted tail
-␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 4 of 5␛[m                                                                                             ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 4 of 5␛[m                                                                                           ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mmon ␛[m␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -207,7 +207,7 @@ $  a shell command
 ␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
 
 · a write that failed · the notice, and the entry left unrated
-␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 3 of 5␛[m                                                                                             ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 3 of 5␛[m                                                                                           ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mtue ␛[m␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -220,7 +220,7 @@ $  a shell command
 ␛[38;5;244mrate: database is locked␛[m
 
 · nothing left to answer · the three answers are gone from the row
-␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 5 asked␛[m                                                                                            ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 5 asked␛[m                                                                                          ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244mevery one of them has been asked about␛[m
@@ -228,7 +228,7 @@ $  a shell command
 ␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
 
 · [?] · every key the screen has
-␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 1 of 5␛[m                                                                                             ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 1 of 5␛[m                                                                                           ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254mdelete every log file older than a week␛[m
@@ -238,7 +238,7 @@ $  a shell command
 ␛[38;5;254m[n]␛[m␛[38;5;244m it did not␛[m
 ␛[38;5;254m[s]␛[m␛[38;5;244m no answer; it stays unrated␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m stop, keeping every answer already given␛[m
-␛[38;5;254m[q]␛[m␛[38;5;244m stop, keeping every answer already given␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m stop, keeping every answer already given␛[m
 
 ␛[38;5;244mglyphs␛[m
 ␛[38;5;244m⚙␛[m  ␛[38;5;244ma read: a file, a search, a listing␛[m

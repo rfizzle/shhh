@@ -87,12 +87,15 @@ func configModelWith(t *testing.T, h *fakeConfigHost) Model {
 }
 
 // stageOne types a value into the first row: enter opens the field over what
-// is already there, ctrl+u clears it, the runes go in, enter takes it. That
+// is already there, backspace clears it, the runes go in, enter takes it. That
 // is the path a reader walks, which is what makes the count the header
 // carries afterwards mean anything.
 func stageOne(t *testing.T, m Model, value string) Model {
 	t.Helper()
-	m = pressKeys(t, m, keyEnter, tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl})
+	m = pressKeys(t, m, keyEnter)
+	for range 12 {
+		m = pressKeys(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
+	}
 	m = typeChars(t, m, value)
 	return pressKeys(t, m, keyEnter)
 }

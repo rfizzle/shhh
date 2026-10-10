@@ -101,7 +101,7 @@ func (m *Model) setTurnState(s state) {
 	// Cleared on every arrival — /run, a !bang, the classifier skip and the
 	// queue all pass through here
 	// (docs/interface/surfaces.md#the-approval-card). A card's own
-	// full-screen [d] round trip is surface mechanics and never re-arrives.
+	// full-screen [v] round trip is surface mechanics and never re-arrives.
 	if s == stateConfirmRun {
 		m.approval.clear()
 	}

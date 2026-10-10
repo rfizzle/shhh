@@ -19,7 +19,7 @@
 │ [↑↓] move · [enter] select · [esc] keep nothing                          │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
-· reading mode on the reply · [c] beside [y]
+· reading mode on the reply · [c] copies the block
 ──── READING 1/1 ───────────────────────────────────────────────────────────
 ❯ show me the handler
 ──────────────────────────────────────────────────────────────────────────
@@ -47,12 +47,12 @@
       snap 01-list "copy which block?"
 
 ────────────────────────────────────────────────────────────────────────────
-[j/k] move · [y] copy the row · [c] copy a block · [q] prompt     row 1 of 1
+[↑↓/jk] move · [c] copy a block · [/] search · [esc] back to the prompt  1/1
 
 
 
 · a block taken · the caption on the bar
-[j/k] move · [y] copy the row · [q] prompt   ✓ copied block 2 · sh · 3 lines
+[↑↓/jk] move · [esc] prompt                  ✓ copied block 2 · sh · 3 lines
 
 
 
@@ -66,7 +66,7 @@
 ␛[94m│␛[m ␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m keep nothing␛[m                          ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
-· reading mode on the reply · [c] beside [y]
+· reading mode on the reply · [c] copies the block
 ␛[38;5;241m────␛[m ␛[1;94mREADING 1/1␛[m ␛[38;5;241m───────────────────────────────────────────────────────────␛[m
 ␛[94m❯␛[m ␛[97mshow me the handler␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────────────────────────␛[m
@@ -94,11 +94,11 @@
       ␛[38;5;180msnap 01-list "copy which block?"␛[m
 
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;103m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[y]␛[m␛[38;5;241m copy the row␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy a block␛[m␛[38;5;241m · ␛[m␛[38;5;103m[q]␛[m␛[38;5;241m prompt␛[m     ␛[38;5;241mrow 1 of 1␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy a block␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m search␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m  ␛[38;5;241m1/1␛[m
 
 
 
 · a block taken · the caption on the bar
-␛[38;5;103m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[y]␛[m␛[38;5;241m copy the row␛[m␛[38;5;241m · ␛[m␛[38;5;103m[q]␛[m␛[38;5;241m prompt␛[m   ␛[38;5;241m✓ copied block 2 · sh · 3 lines␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m prompt␛[m                  ␛[38;5;241m✓ copied block 2 · sh · 3 lines␛[m
 
 

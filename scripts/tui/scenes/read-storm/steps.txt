@@ -28,7 +28,7 @@ snap 05-opened "./ one.go · two.go" "❯   ▾ read 12 files" "… +6"
 keys "-"
 snap 06-refolded "[enter] unfold it" "❯   ▸ read 12 files"
 # The way out of reading mode, and the session's.
-keys q
+keys Escape
 snap 07-prompt "[enter] send"
 keys C-c
 snap 08-quit-armed "again quits"

@@ -53,26 +53,23 @@ func (b *backlogFilter) toggleReady() { b.ready = !b.ready }
 func (b *backlogFilter) forArchive() { b.status, b.ready = 0, false }
 
 // edit is the keyboard while the filter row is open, once the screen has
-// taken the arrows for the pointer. Every letter is a letter here, and the two
-// keys that are not letters close the row. It reports whether the filter
+// taken the arrows for the pointer. Every letter is a letter here, and esc
+// backs out of the row one level at a time. It reports whether the filter
 // changed, which every key here does but the one that closes an empty row.
 func (b *backlogFilter) edit(msg tea.KeyPressMsg, pressed string) bool {
 	switch {
-	case keys.Is(pressed, keys.Backlog.ClearQ):
-		// An empty filter has nothing left to clear, so the same key closes
-		// the row and hands the letters back — the rule every selector in
-		// the product answers to.
+	case keys.Is(pressed, keys.Backlog.Back):
+		// Esc clears what was typed, and on an empty filter it closes the
+		// row and hands the letters back — the rule every list in the
+		// product answers to
+		// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 		if b.query == "" {
 			b.filtering = false
 			return false
 		}
 		b.query = ""
-	case keys.Is(pressed, keys.Backlog.Back) && pressed != keys.Shown(keys.Backlog.Back):
-		// The way out answers to three keystrokes and one of them is `q`.
-		// Here `q` is a letter, so only the two that no sentence produces
-		// close the row.
-		b.filtering, b.query = false, ""
 	case keys.Is(pressed, keys.Query.Rub):
+
 		if r := []rune(b.query); len(r) > 0 {
 			b.query = string(r[:len(r)-1])
 		}

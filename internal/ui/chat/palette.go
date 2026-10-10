@@ -164,7 +164,10 @@ func (m *Model) closePalette() {
 // j, which is why the card is unnumbered.
 func (m Model) updatePalette(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Select.Cancel):
+	case keys.Is(pressed, keys.Select.Cancel) && m.picker.card.Query == "":
+		// esc backs out one level: a query typed into the palette is
+		// cleared by the card below, and the press that finds it empty
+		// closes the palette.
 		m.closePalette()
 		m.syncViewport()
 		return m, nil
@@ -194,7 +197,7 @@ func (m Model) updatePalette(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 	}
 
-	// Everything else belongs to the card's query line — backspace, ctrl+u
+	// Everything else belongs to the card's query line — backspace, esc
 	// and every key that types. The palette stopped keeping its own copy of
 	// that when the filter row landed; it keeps the match rule, which
 	// is the half the component never had.

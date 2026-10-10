@@ -3135,9 +3135,9 @@ func TestGolden_HistoryScreen(t *testing.T) {
 				typed(h, "kubectl")
 				return h.View(width)
 			}()},
-			{Label: "[x] · the inline confirm, naming what it would take, defaulting to no", View: func() string {
+			{Label: "[d] · the inline confirm, naming what it would take, defaulting to no", View: func() string {
 				h := screen(nil)
-				h.Update(key("x"))
+				h.Update(key("d"))
 				return h.View(width)
 			}()},
 			{Label: "a command carried out · the notice the host left behind", View: screen(func(h *HistoryScreen) {
@@ -3430,9 +3430,9 @@ func TestGolden_BacklogScreen(t *testing.T) {
 				b.Update(key("tab"))
 				return b.View(width)
 			}()},
-			{Label: "[x] · the one confirm that names what it loses", View: func() string {
+			{Label: "[d] · the one confirm that names what it loses", View: func() string {
 				b := screen(nil)
-				typed(b, "x")
+				typed(b, "d")
 				return b.View(width)
 			}()},
 			{Label: "a turn is running · the keys that change a file are grey, and the row says why", View: screen(func(b *BacklogScreen) {

@@ -20,7 +20,7 @@
 │     the rails and the frame are one component                                                                                  │
 │   ✗ patcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                                                   │
-│ [enter] attach · [a] answer without attaching · [x] cancel · [X] kill · [K] kill all · every level · [esc] back to the turn    │
+│ [enter] attach · [a] answer without attaching · [d] cancel · [X] kill · [K] kill all · every level · [esc] back to the turn    │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · focus · the blocked child, [a] answers it here
@@ -33,7 +33,7 @@
 │     the rails and the frame are one component                                                                                  │
 │   ✗ patcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                                                   │
-│ [enter] attach · [a] answer without attaching · [s] steer · [x] cancel · [X] kill · [K] kill all · every level                 │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] cancel · [X] kill · [K] kill all · every level                 │
 │ [esc] back to the turn                                                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -47,7 +47,7 @@
 │     the rails and the frame are one component                                                                                  │
 │ ❯ ✗ patcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                                                   │
-│ [enter] attach · [a] answer without attaching · [r] retry · [x] cancel · [X] kill · [K] kill all · every level                 │
+│ [enter] attach · [a] answer without attaching · [r] retry · [d] cancel · [X] kill · [K] kill all · every level                 │
 │ [esc] back to the turn                                                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -61,7 +61,7 @@
 │     the rails and the frame are one component                                                                                  │
 │ ❯ ✗ writer-5 · docs/round.md                                                         patch kept · [p] review · 4 tools · $0.03 │
 │     cancelled · handoff handoff-130ebba38aed7                                                                                  │
-│ [enter] attach · [a] answer without attaching · [r] retry · [p] review · [x] cancel · [X] kill · [K] kill all · every level    │
+│ [enter] attach · [a] answer without attaching · [r] retry · [p] review · [d] cancel · [X] kill · [K] kill all · every level    │
 │ [esc] back to the turn                                                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -96,7 +96,7 @@
 │   ◇ reviewer · reads a change for what it breaks                                                                       project │
 │   ◇ researcher · read-only tools plus web                                                                             built-in │
 │   ⚙ draft a new profile                                                                                            /agents new │
-│ [enter] open it · [m] move it into sections · [e] open its file · [a] answer without attaching · [K] kill all · every level    │
+│ [enter] open it · [m] move it into sections · [e] edit · [a] answer without attaching · [K] kill all · every level             │
 │ [esc] back to the turn                                                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -114,7 +114,7 @@
 │ ❯ ◇ reviewer · reads a change for what it breaks                                                                       project │
 │   ◇ researcher · read-only tools plus web                                                                             built-in │
 │   ⚙ draft a new profile                                                                                            /agents new │
-│ [enter] open it · [e] open its file · [a] answer without attaching · [K] kill all · every level · [esc] back to the turn       │
+│ [enter] open it · [e] edit · [a] answer without attaching · [K] kill all · every level · [esc] back to the turn                │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a child that delegated · the request is under the row it belongs to
@@ -125,7 +125,7 @@
 │      waiting approval: read internal/agent/loop.go                                                                             │
 │   ◇ reader-2 · survey internal/ui                                                                     ✓ done · 8 tools · $0.02 │
 │     the rails and the frame are one component                                                                                  │
-│ [enter] attach · [a] answer without attaching · [s] steer · [x] cancel · [X] kill · [K] kill all · every level                 │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] cancel · [X] kill · [K] kill all · every level                 │
 │ [esc] back to the turn                                                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -154,7 +154,7 @@
 │     the rails and the frame are one component                                                                                  │
 │   ✗ patcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                                                   │
-│ [enter] attach · [a] answer without attaching · [s] follow up · [x] cancel · [X] kill · [K] kill all · every level             │
+│ [enter] attach · [a] answer without attaching · [s] follow up · [d] cancel · [X] kill · [K] kill all · every level             │
 │ [esc] back to the turn                                                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -183,7 +183,7 @@
 │     follow-up · which component owns the rail?                                                                                 │
 │   ✗ patcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                                                   │
-│ [enter] attach · [a] answer without attaching · [s] steer · [x] cancel · [X] kill · [K] kill all · every level                 │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] cancel · [X] kill · [K] kill all · every level                 │
 │ [esc] back to the turn                                                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -197,7 +197,7 @@
 │     the rails and the frame are one component                                                                                  │
 │   ✗ patcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                                                   │
-│ [enter] attach · [a] answer without attaching · [s] steer · [x] cancel · [X] kill · [K] kill all · every level                 │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] cancel · [X] kill · [K] kill all · every level                 │
 │ [esc] back to the turn                                                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -211,7 +211,7 @@
 │     the rails and the frame are one component                                                                                  │
 │   ✗ patcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                                                   │
-│ [enter] attach · [a] answer without attaching · [s] steer · [x] cancel · [X] kill · [K] kill all · every level                 │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] cancel · [X] kill · [K] kill all · every level                 │
 │ [esc] back to the turn                                                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -225,7 +225,7 @@
 │     the rails and the frame are one component                                                                                  │
 │   ✗ patcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                                                   │
-│ [enter] attach · [a] answer without attaching · [s] steer · [x] cancel · [X] kill · [K] kill all · every level                 │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] cancel · [X] kill · [K] kill all · every level                 │
 │ [esc] back to the turn                                                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -240,7 +240,7 @@
 │     the rails and the frame are one component                                                                                  │
 │   ✗ patcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                                                   │
-│ [enter] attach · [a] answer without attaching · [s] steer · [x] cancel · [X] kill · [K] kill all · every level                 │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] cancel · [X] kill · [K] kill all · every level                 │
 │ [esc] back to the turn                                                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -254,7 +254,7 @@
 │     the rails and the frame are one component                                                                                  │
 │   ✗ patcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                                                                   │
-│ [enter] attach · [a] answer without attaching · [s] steer · [x] cancel · [X] kill · [K] kill all · every level                 │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] cancel · [X] kill · [K] kill all · every level                 │
 │ [esc] back to the turn                                                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -269,7 +269,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                                          ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m    ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m    ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · focus · the blocked child, [a] answers it here
@@ -282,7 +282,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                                          ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -296,7 +296,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mpatcher-4 · apply patch                                                                          ✗ failed · 1 tool · $0.01␛[m␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -310,7 +310,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mwriter-5 · docs/round.md                                                         patch kept · [p] review · 4 tools · $0.03␛[m␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mcancelled · handoff handoff-130ebba38aed7␛[m                                                                                  ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[p]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m    ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[p]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -345,7 +345,7 @@
 ␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m reviewer␛[38;5;244m · reads a change for what it breaks␛[m                                                                       ␛[38;5;244mproject␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m researcher␛[38;5;244m · read-only tools plus web␛[m                                                                             ␛[38;5;244mbuilt-in␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m⚙␛[m draft a new profile                                                                                            ␛[38;5;244m/agents new␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[m]␛[m␛[38;5;244m move it into sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m open its file␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m    ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[m]␛[m␛[38;5;244m move it into sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -363,7 +363,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m◇␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mreviewer · reads a change for what it breaks                                                                       project␛[m␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m◇␛[m researcher␛[38;5;244m · read-only tools plus web␛[m                                                                             ␛[38;5;244mbuilt-in␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m⚙␛[m draft a new profile                                                                                            ␛[38;5;244m/agents new␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m open its file␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m open it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a child that delegated · the request is under the row it belongs to
@@ -374,7 +374,7 @@
 ␛[38;5;254m│␛[m      ␛[38;5;244mwaiting approval: read internal/agent/loop.go␛[m                                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m reader-2␛[38;5;244m · survey internal/ui␛[m                                                                     ␛[38;5;254m✓ done␛[m␛[38;5;244m · ␛[m␛[38;5;244m8 tools · $0.02␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                                                  ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -403,7 +403,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                                          ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m follow up␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m follow up␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -432,7 +432,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mfollow-up · which component owns the rail?␛[m                                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                                          ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -446,7 +446,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                                          ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -460,7 +460,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                                          ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -474,7 +474,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                                          ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -489,7 +489,7 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                                          ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -503,6 +503,6 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m                                                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m patcher-4␛[38;5;244m · apply patch␛[m                                                                          ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                                                                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m steer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

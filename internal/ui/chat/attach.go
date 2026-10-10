@@ -846,7 +846,7 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 }
 
 // reviewKeptPatch is [p] on a row holding a kept patch: the patch opens full
-// screen on the surface [d] opens from a live card, headed with whose it is,
+// screen on the surface [v] opens from a live card, headed with whose it is,
 // and the card behind it is the one a finishing writer's patch is put on —
 // apply and decline, over the list, the way [a] answers a blocked child from
 // here. Pressing it again finds the card already out rather than putting out

@@ -363,7 +363,7 @@ func TestPreview_ASentPictureSaysWhichTurnCarriedIt(t *testing.T) {
 	if hint := stripANSI(card.renderPreviewHint()); hint != "[esc] back to reading" {
 		t.Fatalf("with its recalled copy staged, the sent card's hint is %q", hint)
 	}
-	if kept := pressOn(t, card, tea.KeyPressMsg{Code: 'x', Text: "x"}); len(kept.attachments) != 1 {
+	if kept := pressOn(t, card, tea.KeyPressMsg{Code: 'd', Text: "d"}); len(kept.attachments) != 1 {
 		t.Fatal("the sent card's drop took the recalled chip out of the draft")
 	}
 }

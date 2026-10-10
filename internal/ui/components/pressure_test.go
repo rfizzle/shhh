@@ -138,7 +138,6 @@ func TestPressureCard_KeysResolveAndEscDeclines(t *testing.T) {
 		{"enter", PressureCompact},
 		{"n", PressureNewSession},
 		{"esc", pressureKeepGoing},
-		{"ctrl+c", pressureKeepGoing},
 	} {
 		c := pressureFixture()
 		done, result := c.Update(pressFor(tc.key))
@@ -151,6 +150,10 @@ func TestPressureCard_KeysResolveAndEscDeclines(t *testing.T) {
 	}
 
 	c := pressureFixture()
+	if done, _ := c.Update(pressFor("ctrl+c")); done {
+		t.Fatal("ctrl+c is the draft's alone; it should not resolve the card")
+	}
+	c = pressureFixture()
 	if done, _ := c.Update(tea.KeyPressMsg{Code: 'z', Text: "z"}); done {
 		t.Fatal("a key the card does not offer should not resolve it")
 	}

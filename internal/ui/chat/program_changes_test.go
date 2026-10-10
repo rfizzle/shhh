@@ -413,7 +413,7 @@ func TestProgram_TheRewoundTurnsFoldAndReapply(t *testing.T) {
 	waitForText(t, tm, "Raised again")
 	send(tm, "/rewind")
 	waitForText(t, tm, "pick a turn to return to")
-	programPress(t, tm, "ctrl+u", "down", "d")
+	programPress(t, tm, "esc", "down", "v")
 	waitForText(t, tm, "+1 −1 · 1 file")
 	programPress(t, tm, "esc")
 	waitForText(t, tm, "what the turns after it changed")

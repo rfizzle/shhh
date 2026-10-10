@@ -522,8 +522,8 @@ func TestRateLineKeys_ComeFromTheRegister(t *testing.T) {
 			t.Errorf("the key row does not offer %q: %q", want, got)
 		}
 	}
-	// The one word the walk owns: it reads lines, and esc is not a line.
-	if want := keys.Bracket(keys.Screen.Quit) + " stop"; !strings.Contains(got, want) {
+	// The one word the walk owns: it reads lines, esc is not a line, and the stop is the q its answer switch reads.
+	if want := keys.Bracketed("q") + " stop"; !strings.Contains(got, want) {
 		t.Errorf("the key row does not offer %q: %q", want, got)
 	}
 }

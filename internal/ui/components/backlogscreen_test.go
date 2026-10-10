@@ -76,7 +76,8 @@ func TestBacklogScreen_TextFilterStatesItsCount(t *testing.T) {
 }
 
 // The selectors' rule: while the query row is open every letter is a letter,
-// and clearing an already empty query closes the row and hands them back.
+// and esc walks the row out a level at a time: it clears the query, then
+// closes the row and hands them back.
 func TestBacklogScreen_QueryRowKeepsTheLettersUntilItCloses(t *testing.T) {
 	b := goldenBacklogScreen()
 	b.Update(key("/"))
@@ -84,13 +85,13 @@ func TestBacklogScreen_QueryRowKeepsTheLettersUntilItCloses(t *testing.T) {
 	if b.filter.query != "sr" || b.filter.status != 0 || b.filter.ready {
 		t.Fatalf("letters typed into the query cycled a filter: query=%q status=%d ready=%v", b.filter.query, b.filter.status, b.filter.ready)
 	}
-	b.Update(key("ctrl+u"))
+	b.Update(key("esc"))
 	if b.filter.query != "" || !b.filter.filtering {
 		t.Fatalf("the first clear should empty the query and leave the row open, got %q filtering=%v", b.filter.query, b.filter.filtering)
 	}
-	b.Update(key("ctrl+u"))
+	b.Update(key("esc"))
 	if b.filter.filtering {
-		t.Fatal("clearing an empty query should close the row")
+		t.Fatal("esc over an empty query should close the row")
 	}
 	pressAll(b, "s")
 	if b.filter.status == 0 {
@@ -166,8 +167,8 @@ func TestBacklogScreen_DestructiveKeysAskFirst(t *testing.T) {
 		act    backlogAct
 	}{
 		{"b", "Block rail-todo-block?", BacklogBlock},
-		{"d", "Archive rail-todo-block?", BacklogArchive},
-		{"x", "Drop rail-todo-block? The file is deleted, not archived.", BacklogDrop},
+		{"a", "Archive rail-todo-block?", BacklogArchive},
+		{"d", "Drop rail-todo-block? The file is deleted, not archived.", BacklogDrop},
 	} {
 		b := goldenBacklogScreen()
 		_, result := pressAll(b, tc.press)
@@ -294,9 +295,9 @@ func TestBacklogScreen_FootIsOneRow(t *testing.T) {
 		}
 	}
 
-	// The query row's foot sheds esc's words and then shortens the clear
-	// key's clause, and never offers fewer than its three keys, down to the
-	// narrowest width a surface is drawn at.
+	// The query row's foot is two keys, esc walking the row out a level at a
+	// time, and never offers fewer than them, down to the narrowest width a
+	// surface is drawn at.
 	for _, width := range goldenWidths {
 		b := goldenBacklogScreen()
 		pressAll(b, "/")
@@ -305,12 +306,12 @@ func TestBacklogScreen_FootIsOneRow(t *testing.T) {
 			t.Fatalf("at %d columns the filter's foot is %d rows:\n%s", width, len(rows), strings.Join(rows, "\n"))
 		}
 		foot := ansi.Strip(rows[0])
-		for _, want := range []string{"[↑↓] move", "[ctrl+u] clear", "[esc]"} {
+		for _, want := range []string{"[↑↓] move", "[esc]"} {
 			if !strings.Contains(foot, want) {
 				t.Errorf("at %d columns the filter's foot sheds %q: %s", width, want, foot)
 			}
 		}
-		if width >= 80 && !strings.Contains(foot, "[esc] close it") {
+		if width >= 80 && !strings.Contains(foot, "[esc] clear the filter, then close it") {
 			t.Errorf("at %d columns the filter's foot gives up esc's words with room for them: %s", width, foot)
 		}
 	}
@@ -318,7 +319,7 @@ func TestBacklogScreen_FootIsOneRow(t *testing.T) {
 	b := goldenBacklogScreen()
 	pressAll(b, "?")
 	register := ansi.Strip(strings.Join(b.foot().rows(110), "\n"))
-	for _, want := range []string{"[s] cycle the status filter", "[tab] the backlog, the sprint, or what shipped", "[R] work it through", "[x] delete the file"} {
+	for _, want := range []string{"[s] cycle the status filter", "[tab] the backlog, the sprint, or what shipped", "[R] work it through", "[d] delete the file"} {
 		if !strings.Contains(register, want) {
 			t.Errorf("[?] never lists %q:\n%s", want, register)
 		}
@@ -423,7 +424,7 @@ func TestBacklogScreen_QueryRowCorners(t *testing.T) {
 	if !b.filter.filtering || b.filter.query != "q" {
 		t.Fatalf("q closed the query row instead of typing into it: filtering=%v query=%q", b.filter.filtering, b.filter.query)
 	}
-	b.Update(key("ctrl+u"))
+	b.Update(key("esc"))
 	b.Update(key("down"))
 	if got := b.current(); got == nil || got.Slug != "screen-over-items" {
 		t.Fatalf("the arrows should still move the pointer under an open query, landed on %+v", got)

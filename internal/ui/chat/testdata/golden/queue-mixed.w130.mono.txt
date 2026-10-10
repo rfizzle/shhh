@@ -31,7 +31,7 @@ follow-up  then run the whole suite
 │   follow-up  then run the whole suite                                                                                      │
 │ steering joins the turn at its next round; a follow-up goes when it ends                                                   │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [↑↓] select a message · [x] cancel it · [?] keys · [esc] back to the draft                                                 │
+│ [↑↓/jk] move · [d] delete · [?] keys · [esc] back to the draft                                                             │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the keyboard in the queue · an approval's note selected
@@ -45,7 +45,7 @@ follow-up  then run the whole suite
 │   follow-up  then run the whole suite                                                                                      │
 │ steering joins the turn at its next round; a follow-up goes when it ends                                                   │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [↑↓] select a message · [?] keys · [esc] back to the draft                                                                 │
+│ [↑↓/jk] move · [?] keys · [esc] back to the draft                                                                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -70,7 +70,7 @@ follow-up  then run the whole suite
 ␛[38;5;244m│␛[m   ␛[38;5;254mfollow-up␛[m  ␛[38;5;254mthen run the whole suite␛[m␛[38;5;244m␛[m                                                                                      ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244msteering joins the turn at its next round; a follow-up goes when it ends␛[m                                                   ␛[38;5;244m│␛[m
 ␛[38;5;244m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m select a message␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft␛[m                                                 ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft␛[m                                                             ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the keyboard in the queue · an approval's note selected
@@ -84,5 +84,5 @@ follow-up  then run the whole suite
 ␛[38;5;244m│␛[m   ␛[38;5;254mfollow-up␛[m  ␛[38;5;254mthen run the whole suite␛[m␛[38;5;244m␛[m                                                                                      ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244msteering joins the turn at its next round; a follow-up goes when it ends␛[m                                                   ␛[38;5;244m│␛[m
 ␛[38;5;244m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m select a message␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft␛[m                                                                 ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft␛[m                                                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

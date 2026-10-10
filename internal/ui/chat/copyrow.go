@@ -1,7 +1,7 @@
 package chat
 
-// Reading mode's [y] (docs/interface/surfaces.md#reading-mode): one key that
-// copies the focused row's content, shaped by what the row is. Getting a
+// Reading mode's [c] off a fenced block (docs/interface/surfaces.md#reading-mode):
+// the key copies the focused row's content, shaped by what the row is. Getting a
 // command's output onto the clipboard used to require mouse reporting and a
 // drag over however many screens the output ran; the cursor already stands
 // on the row, and the row already knows what it holds.
@@ -21,7 +21,7 @@ import (
 	"github.com/rfizzle/shhh/internal/diff"
 )
 
-// copyFocusedRow answers [y]: the focused row's content goes to the
+// copyFocusedRow answers [c] on a row with no block: the focused row's content goes to the
 // clipboard and the reading rail captions what was caught. A row with
 // nothing to copy hands the letter back to the draft, the way [-] does with
 // nothing open.
@@ -151,7 +151,7 @@ func (m Model) entryCopyText(e entry) (text, what string) {
 	return "", ""
 }
 
-// focusedCopyable reports whether [y] has anything to act on, without
+// focusedCopyable reports whether the row copy has anything to act on, without
 // building the text: it is what the hint bar offers the key by, so the bar
 // and the dispatch read the same facts.
 func (m Model) focusedCopyable() bool {

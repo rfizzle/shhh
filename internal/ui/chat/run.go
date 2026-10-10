@@ -130,7 +130,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case components.ApprovalDenyNoted:
 		return m.openDecisionNote(false)
 	case components.ApprovalFullDiff:
-		// [d] opens the pending edit full screen; esc returns here
+		// [v] opens the pending edit full screen; esc returns here
 		// with the approval still pending.
 		if req := m.approval.request; req != nil && req.kind == approvalDiff {
 			return m.openDiffFull(&components.DiffView{
@@ -140,7 +140,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				Syntax: diffSyntax(req.path),
 			}, stateConfirmRun)
 		}
-		// A command card's [d] opens its own facts the same way: the whole
+		// A command card's [v] opens its own facts the same way: the whole
 		// command, the warnings and the blast radius, unclipped, with the
 		// decision still pending behind it.
 		if req := m.approval.request; req == nil || req.kind == approvalExec {

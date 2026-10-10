@@ -8,8 +8,6 @@ package chat
 import (
 	"strings"
 	"testing"
-
-	tea "charm.land/bubbletea/v2"
 )
 
 // foldedSearchModel is reading mode over the golden transcript, whose first
@@ -161,9 +159,9 @@ func TestSearch_LeavingTheModePutsTheSearchsFoldsBack(t *testing.T) {
 	m, _ = pressKey(t, m, enter)
 	m, _ = pressKey(t, m, enter)
 
-	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: 'q', Text: "q"})
+	m, _ = pressKey(t, m, escK)
 	if m.state == stateFocus {
-		t.Fatal("[q] should leave reading mode")
+		t.Fatal("[esc] should leave reading mode")
 	}
 	if got := (*m.entries())[1].stepFold; got != foldAuto {
 		t.Fatalf("the search's fold is %v, want it back at rest", got)

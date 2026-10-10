@@ -11,7 +11,6 @@ import (
 	"strings"
 	"testing"
 
-	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -241,7 +240,7 @@ func TestRewind_TheFoldIsSearched(t *testing.T) {
 	}
 }
 
-// [d] on the picker opens what a rewind to the row would take back, full
+// [v] on the picker opens what a rewind to the row would take back, full
 // screen, and esc comes back to the picker as it was left.
 func TestRewindPicker_TheDiffKeyOpensTheRunAndComesBack(t *testing.T) {
 	m, _, _ := rewindOfferModel(t)
@@ -251,10 +250,9 @@ func TestRewindPicker_TheDiffKeyOpensTheRunAndComesBack(t *testing.T) {
 	if m.state != statePick || m.picker.card.Query != "d" {
 		t.Fatalf("a letter typed into the query is text, got state %v query %q", m.state, m.picker.card.Query)
 	}
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl})
-	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl})
-	m = updated.(Model)
+	// esc clears the typed query, then closes the row.
+	m = press(t, m, "esc")
+	m = press(t, m, "esc")
 	if m.picker.card.Filtering {
 		t.Fatal("the fixture wants the query row closed")
 	}

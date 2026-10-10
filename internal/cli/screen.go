@@ -18,8 +18,12 @@ package cli
 // screen has closed.
 
 import (
+	"time"
+
 	tea "charm.land/bubbletea/v2"
+
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // takeover is what a component takes and gives while it holds the terminal:
@@ -47,7 +51,15 @@ type screenModel[R any] struct {
 	// other handles the messages a command drives its own screen with. nil is
 	// a screen that answers keys and nothing else, which is four of the five.
 	other func(msg tea.Msg) tea.Cmd
+	// armed is when the first press of the cancel chord came, waiting for
+	// the second; zero is no press waiting.
+	armed time.Time
 }
+
+// pressAgain is how long the cancel chord's first press waits for its
+// second: the chat's own window, so the quit is the same two presses on
+// every surface.
+const pressAgain = 2 * time.Second
 
 // newScreenModel hosts a screen at the width it is drawn at for the one frame
 // before the terminal has said how wide it is.
@@ -79,6 +91,20 @@ func (m screenModel[R]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		components.SetGround(msg.IsDark())
 		return m, nil
 	case tea.KeyPressMsg:
+		// The cancel chord is the one destructive key and it means the same
+		// on every surface: there is no run here to stop, so it is the quit,
+		// and the quit is two presses of it in a row. It is answered here,
+		// around the screen, because no screen's own way back is it — that
+		// is esc (docs/interface/principles.md#esc-is-always-the-safe-answer).
+		if keys.Match(msg, keys.Draft.Cancel) {
+			now := time.Now()
+			if !m.armed.IsZero() && now.Sub(m.armed) < pressAgain {
+				return m, tea.Quit
+			}
+			m.armed = now
+			return m, nil
+		}
+		m.armed = time.Time{}
 		return m, m.answer(m.screen.Update(msg))
 	}
 	if m.other == nil {

@@ -142,7 +142,7 @@ func TestTodoScreen_ChordOpensAndAWorkingTurnMakesItReadOnly(t *testing.T) {
 	}
 	// The state key is inert rather than refused after the fact.
 	before := len(next.transcript)
-	after, _ := next.updateTodoScreen(key('x'))
+	after, _ := next.updateTodoScreen(key('d'))
 	if got := after.(Model); len(got.transcript) != before || got.screens.backlog() == nil {
 		t.Fatal("a state key over a working turn should do nothing at all")
 	}
@@ -186,8 +186,8 @@ func TestTodoScreen_KeysGoThroughTheSameVerbs(t *testing.T) {
 		want string
 	}{
 		{'b', "managed block a-high"},
-		{'d', "managed done a-high"},
-		{'x', "managed drop a-high"},
+		{'a', "managed done a-high"},
+		{'d', "managed drop a-high"},
 	} {
 		after, _ := next.updateTodoScreen(key(tc.key))
 		m2 := after.(Model)
@@ -203,7 +203,7 @@ func TestTodoScreen_KeysGoThroughTheSameVerbs(t *testing.T) {
 }
 
 // The row under the screen names it and offers nothing: the screen's header
-// carries `[q] back`, and one frame draws the key once.
+// carries `[esc] back`, and one frame draws the key once.
 func TestTodoScreen_TheRowUnderItOffersNoKey(t *testing.T) {
 	m := todoModel(t, todoTestRoot(t))
 	opened, _ := m.openTodoScreen()

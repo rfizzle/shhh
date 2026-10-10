@@ -392,7 +392,7 @@ func (m Model) removePaste(a provider.Attachment) (tea.Model, bool) {
 
 // dropPasteToken takes the fold for one attachment back out of the draft. It is
 // called wherever a chip leaves the staging area — the reader's backspace,
-// `/paste drop`, the reader's `[x]` — because a token standing for bytes
+// `/paste drop`, the reader's `[d]` — because a token standing for bytes
 // that are no longer staged is a sentence that lies about what it carries.
 //
 // Only the first occurrence goes. A reader who copied their own token into

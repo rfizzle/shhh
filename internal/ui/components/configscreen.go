@@ -245,16 +245,23 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	case keys.Is(pressed, keys.Screen.Take):
 		c.open()
 		return false, ConfigResult{}
-	case keys.Is(pressed, keys.Select.Cancel):
-		return c.leave()
 	case keys.Is(pressed, keys.Screen.Write):
 		return c.write()
 	}
-	// With the query line open the query line is the surface, so r and q are
-	// letters rather than keys — the same reading every picker in the product
-	// makes.
+	// With the query line open the query line is the surface, so g is a
+	// letter rather than a key — the same reading every picker in the product
+	// makes — and esc backs out of the line before it leaves the screen: it
+	// clears what was typed, then closes the line.
 	if c.list.Filtering {
-		c.list.editQuery(msg)
+		if keys.Is(pressed, keys.Screen.Quit) {
+			if c.list.Query == "" {
+				c.list.Filtering = false
+				return false, ConfigResult{}
+			}
+			c.list.Query, c.list.queryEdited = "", true
+		} else {
+			c.list.editQuery(msg)
+		}
 		if c.list.QueryChanged() {
 			c.refilter()
 		}
@@ -296,8 +303,7 @@ func (c *ConfigScreen) write() (bool, ConfigResult) {
 // (docs/interface/principles.md#esc-is-always-the-safe-answer): with
 // something standing against the file the question comes up first, over the
 // same count the header is carrying. With nothing staged there is nothing to
-// lose and the press closes the screen. `[q]` comes through here too — the
-// invariant is about abandoning work, not about which key was pressed.
+// lose and the press closes the screen.
 func (c *ConfigScreen) leave() (bool, ConfigResult) {
 	if c.Changed == 0 {
 		return true, ConfigResult{Canceled: true}
@@ -349,9 +355,21 @@ func (c *ConfigScreen) open() {
 func (c *ConfigScreen) updatePicker(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Select.Cancel):
-		// esc keeps the current value — it is the one key on this screen that is
-		// guaranteed to change nothing.
-		c.picker = nil
+		// esc keeps the current value — it is the one key on this screen that
+		// is guaranteed to change nothing — one level at a time: a query typed
+		// into the picker's row is cleared, an empty row closes, and then the
+		// picker goes.
+		switch {
+		case c.picker.Filtering && c.picker.Query != "":
+			c.picker.Query, c.picker.queryEdited = "", true
+			if c.picker.QueryChanged() {
+				c.refilterPicker()
+			}
+		case c.picker.Filtering:
+			c.picker.Filtering = false
+		default:
+			c.picker = nil
+		}
 		return false, ConfigResult{}
 	case keys.Is(pressed, keys.Screen.Take):
 		return c.takeChosen(c.firstTake())
@@ -650,7 +668,9 @@ func (c *ConfigScreen) offers() []KeyOffer {
 	case c.picker != nil:
 		offers := []KeyOffer{keyOffer(keys.Select.Move)}
 		if c.picker.Filtering {
-			offers = append(offers, keyOffer(keys.Screen.ClearQ))
+			// esc steps out of the row before it keeps the value, so while
+			// the row is open that is what it offers.
+			keep = keyOfferAs(keys.Screen.Keep, "clear the filter, then close it")
 		} else {
 			offers = append(offers, keyOffer(keys.Screen.Filter))
 		}
@@ -679,13 +699,12 @@ func (c *ConfigScreen) offers() []KeyOffer {
 		}
 		return []KeyOffer{
 			keyOfferAs(keys.Screen.Take, set),
-			keyOfferAs(keys.Screen.ClearQ, "clear the field"),
 			keep,
 		}
 	}
 	offers := []KeyOffer{keyOffer(keys.Screen.Move), keyOfferAs(keys.Screen.Take, "change")}
 	if c.list.Filtering {
-		offers = append(offers, keyOffer(keys.Screen.ClearQ))
+		return append(offers, keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"))
 	} else {
 		offers = append(offers, keyOffer(keys.Screen.Filter), keyOffer(keys.Screen.Reset))
 		if c.Scoped {
@@ -719,8 +738,7 @@ func (c *ConfigScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Move, "move between settings"),
 		keyOfferAs(keys.Screen.Take, "change the setting under the pointer"),
 		keyOfferAs(keys.Screen.Filter, "filter the settings by name"),
-		keyOfferAs(keys.Screen.ClearQ, "clear the filter, or the field being typed into"),
-		keyOfferAs(keys.Query.Rub, "delete a character from either"),
+		keyOfferAs(keys.Query.Rub, "delete a character from the filter or the field being typed into"),
 		keyOfferAs(keys.Screen.Reset, "reset this setting to its default"),
 		keyOfferAs(keys.Screen.Write, "write every staged change to "+c.owner()+c.Path),
 	}
@@ -735,7 +753,7 @@ func (c *ConfigScreen) keyList() []KeyOffer {
 	case c.Scoped:
 		list = append(list, keyOfferAs(keys.Screen.Scope, "switch the write between the checkout's file and yours"))
 	}
-	return append(list, wayOut(out), keyOfferAs(keys.Screen.Quit, quit))
+	return append(list, keyOfferAs(keys.Screen.Keep, "clear the filter, then close it; "+out), keyOfferAs(keys.Screen.Quit, quit))
 }
 
 // offersTake reports whether any row sends its answer to t on a key of its
@@ -892,9 +910,8 @@ type lineEdit struct {
 
 func (e *lineEdit) update(msg tea.KeyPressMsg) {
 	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Screen.ClearQ):
-		e.value = nil
 	case keys.Is(pressed, keys.Query.Rub):
+
 		if len(e.value) > 0 {
 			e.value = e.value[:len(e.value)-1]
 		}

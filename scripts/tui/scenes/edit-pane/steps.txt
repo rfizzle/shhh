@@ -8,9 +8,9 @@
 # /edit loop.go opens the file over the feed: at 130 the OUTLINE stands beside
 # the code with its two declarations; at 60 it folds and the header names the
 # file alone. A typed line marks the buffer modified. esc asks on the foot
-# row, and esc again keeps editing. ctrl+c over the modified buffer asks the
-# same question and opens no quit window; a second ctrl+c answers it as keep
-# editing, and the session is still up. ctrl+s writes through the write tool's
+# row, and esc again keeps editing. ctrl+c over the modified buffer does
+# nothing and opens no quit window, so a second ctrl+c leaves the buffer as
+# it was and the session up. ctrl+s writes through the write tool's
 # path and the foot row says what it wrote; esc goes back to the prompt, and
 # the next turn's close counts the save as changed by you.
 setup printf 'package agent\n\n// limit is how many rounds a turn may run.\nconst limit = 25\n\nfunc rounds() int {\n\treturn limit\n}\n' > loop.go
@@ -26,9 +26,9 @@ narrow 130 snap 04-asking "leave unsaved?" "[y] discard · [esc] keep editing"
 keys Escape
 snap 05-editing "[ctrl+s] save · [esc] back" "· modified"
 keys C-c
-wide 130 snap 05a-ctrlc-asks "leave without saving?" "[y] discard the change · [ctrl+s] save and leave · [esc] keep editing"
 keys C-c
-snap 05b-ctrlc-keeps "[ctrl+s] save · [esc] back" "· modified"
+snap 05a-ctrlc-holds "[ctrl+s] save · [esc] back" "· modified"
+
 keys C-s
 snap 06-saved "wrote 9 lines to loop.go"
 keys Escape

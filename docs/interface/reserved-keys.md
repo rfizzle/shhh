@@ -208,6 +208,7 @@ The chords the keyboard shhh ships spends although the list names them. Each is 
 | Chord | Why |
 |---|---|
 | `ctrl+c` | the interrupt is shhh's own in raw mode, and it is the one quit, escalating: stop the run, clear the draft, then press twice to quit |
+| `ctrl+d` | end of input is shhh's own in raw mode, and reading mode pages half a screen down on it, the pager's own chord; it quits nowhere |
 | `ctrl+j` | the newline's own byte, declared as the cover for shift+enter |
 | `ctrl+s` | the save is shhh's own in raw mode, where a local terminal hands it over; on a cooked hop that keeps XON/XOFF it never arrives, and the keymap file moves the act |
 | `ctrl+space` | its alias ctrl+y is the cover where the desktop takes it, which the register says beside it |
@@ -217,12 +218,14 @@ The chords the keyboard shhh ships spends although the list names them. Each is 
 
 <!-- END generated reserved keys -->
 
-`ctrl+d` is reserved and spent on nothing. It is end of input in a shell and
-a tmux chord, so a key that quit the session on it would be a key a hand
-trained on either one reaches by reflex. Quit is `ctrl+c` alone: it cancels
-first (stops a run, clears a draft, backs out), then quits on a second press
-of the same chord
+`ctrl+d` quits nowhere. It is end of input in a shell and a tmux chord, so a
+key that quit the session on it would be a key a hand trained on either one
+reaches by reflex; the one act it is spent on is reading mode's half page
+down, the pager's own chord, where shhh holds the keyboard in raw mode. Quit
+is `ctrl+c` alone: it cancels first (stops a run, clears a draft), then quits
+on a second press of the same chord, and it is never a way back — esc is
 ([the input frame](surfaces.md#the-input-frame)).
+
 
 ## What is left
 

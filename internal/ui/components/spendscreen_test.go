@@ -78,7 +78,7 @@ func TestSpendScreen_APausedTurnIsItsPauseRowsFigures(t *testing.T) {
 func TestSpendScreen_ListsTheBillThreeWays(t *testing.T) {
 	view := ansi.Strip(spendScreen(0).View(130))
 	for _, want := range []string{
-		"/stats", "2 models · 2 children · 3 turns", "$0.4210 spent", "[q] back",
+		"/stats", "2 models · 2 children · 3 turns", "$0.4210 spent", "[esc] back",
 		"session total", "by model", "claude-opus-5-5", "main · classifier · $0.0520 ◇",
 		"by child", "◇ writer-1", "by turn", "▸ turn 3", "running", "⊘ turn 1", "cancelled",
 		"by kind of request", "sub-agent", "96.0k cached",

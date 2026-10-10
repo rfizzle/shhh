@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · standing · the suite still failing, nothing has answered it
-/alerts · 2 standing · 2 superseded                                                        [?] keys · [q] back
+/alerts · 2 standing · 2 superseded                                                      [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ❯ ✗ make test  standing · exit 2 · 3 runs  since turn 3 │ make test                                   standing
@@ -24,7 +24,7 @@
 [enter] show each run · [esc] back to the prompt        every command this session broke, as the rail reads it
 
 · superseded · the linter the quality gate answered, and the turn it did
-/alerts · 2 standing · 2 superseded                                                        [?] keys · [q] back
+/alerts · 2 standing · 2 superseded                                                      [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ✗ make test  standing · exit 2 · 3 runs  since turn 3 │ golangci-lint run                         superseded
@@ -37,7 +37,7 @@
 [enter] show each run · [esc] back to the prompt        every command this session broke, as the rail reads it
 
 · one episode opened · each run, its ending, its time and the evidence id its output was kept under
-/alerts · 2 standing · 2 superseded                                                        [?] keys · [q] back
+/alerts · 2 standing · 2 superseded                                                      [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ❯ ✗ make test  standing · exit 2 · 3 runs  since turn 3 │ make test                                   standing
@@ -59,7 +59,7 @@
 [enter] open its output · [esc] back to the prompt      every command this session broke, as the rail reads it
 
 · empty · a session that has broken nothing
-/alerts                                                                                    [?] keys · [q] back
+/alerts                                                                                  [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 nothing this session ran has come back broken           │ no alert selected
@@ -68,7 +68,7 @@ nothing this session ran has come back broken           │ no alert selected
 
 ── ansi ────────────────────────────────────────────────────
 · standing · the suite still failing, nothing has answered it
-␛[1;97m/alerts␛[m␛[38;5;241m · 2 standing␛[m␛[38;5;241m · 2 superseded␛[m                                                        ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/alerts␛[m␛[38;5;241m · 2 standing␛[m␛[38;5;241m · 2 superseded␛[m                                                      ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯␛[m ␛[1;97;48;5;62m✗ make test  standing · exit 2 · 3 runs  since turn 3␛[m␛[38;5;241m │ ␛[m␛[1;97mmake test␛[m                                   ␛[38;5;241mstanding␛[m
@@ -81,7 +81,7 @@ nothing this session ran has come back broken           │ no alert selected
 ␛[38;5;103m[enter]␛[m␛[38;5;241m show each run␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m        ␛[38;5;241mevery command this session broke, as the rail reads it␛[m
 
 · superseded · the linter the quality gate answered, and the turn it did
-␛[1;97m/alerts␛[m␛[38;5;241m · 2 standing␛[m␛[38;5;241m · 2 superseded␛[m                                                        ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/alerts␛[m␛[38;5;241m · 2 standing␛[m␛[38;5;241m · 2 superseded␛[m                                                      ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252m✗ make test␛[m  ␛[91mstanding␛[m␛[38;5;241m · ␛[m␛[38;5;241mexit 2 · 3 runs␛[m  ␛[38;5;241msince turn 3␛[m␛[38;5;241m │ ␛[m␛[1;97mgolangci-lint run␛[m                         ␛[38;5;241msuperseded␛[m
@@ -94,7 +94,7 @@ nothing this session ran has come back broken           │ no alert selected
 ␛[38;5;103m[enter]␛[m␛[38;5;241m show each run␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m        ␛[38;5;241mevery command this session broke, as the rail reads it␛[m
 
 · one episode opened · each run, its ending, its time and the evidence id its output was kept under
-␛[1;97m/alerts␛[m␛[38;5;241m · 2 standing␛[m␛[38;5;241m · 2 superseded␛[m                                                        ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/alerts␛[m␛[38;5;241m · 2 standing␛[m␛[38;5;241m · 2 superseded␛[m                                                      ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯␛[m ␛[1;97;48;5;62m✗ make test  standing · exit 2 · 3 runs  since turn 3␛[m␛[38;5;241m │ ␛[m␛[1;97mmake test␛[m                                   ␛[38;5;241mstanding␛[m
@@ -116,7 +116,7 @@ nothing this session ran has come back broken           │ no alert selected
 ␛[38;5;103m[enter]␛[m␛[38;5;241m open its output␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m      ␛[38;5;241mevery command this session broke, as the rail reads it␛[m
 
 · empty · a session that has broken nothing
-␛[1;97m/alerts␛[m                                                                                    ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/alerts␛[m                                                                                  ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241mnothing this session ran has come back broken␛[m          ␛[38;5;241m │ ␛[m␛[38;5;241mno alert selected␛[m

@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · every section in force · each ends on the command that changes it
-/safety · manual · sandbox-exec                                                            [?] keys · [q] back
+/safety · manual · sandbox-exec                                                          [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 MODE AND POLICY
@@ -74,7 +74,7 @@ TOOLS
 [esc] back to the prompt                                                   a reading · nothing here changes it
 
 · a pane shorter than the reading · the ends name the sections they fold
-/safety · manual · sandbox-exec                                                            [?] keys · [q] back
+/safety · manual · sandbox-exec                                                          [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ↑ 2 more · mode and policy · where it may write
@@ -100,7 +100,7 @@ CONTAINMENT
 [↑↓/jk] scroll · [esc] back to the prompt                                  a reading · nothing here changes it
 
 · containment unavailable, trust withheld, no servers · stated, not left out
-/safety · manual · unconfined                                                              [?] keys · [q] back
+/safety · manual · unconfined                                                            [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 MODE AND POLICY
@@ -161,7 +161,7 @@ TOOLS
 
 ── ansi ────────────────────────────────────────────────────
 · every section in force · each ends on the command that changes it
-␛[1;97m/safety␛[m␛[38;5;241m · manual · sandbox-exec␛[m                                                            ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/safety␛[m␛[38;5;241m · manual · sandbox-exec␛[m                                                          ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;243mMODE AND POLICY␛[m
@@ -224,7 +224,7 @@ TOOLS
 ␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                   ␛[38;5;241ma reading · nothing here changes it␛[m
 
 · a pane shorter than the reading · the ends name the sections they fold
-␛[1;97m/safety␛[m␛[38;5;241m · manual · sandbox-exec␛[m                                                            ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/safety␛[m␛[38;5;241m · manual · sandbox-exec␛[m                                                          ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241m↑ 2 more · mode and policy · where it may write␛[m
@@ -250,7 +250,7 @@ TOOLS
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                  ␛[38;5;241ma reading · nothing here changes it␛[m
 
 · containment unavailable, trust withheld, no servers · stated, not left out
-␛[1;97m/safety␛[m␛[38;5;241m · manual · unconfined␛[m                                                              ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/safety␛[m␛[38;5;241m · manual · unconfined␛[m                                                            ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;243mMODE AND POLICY␛[m

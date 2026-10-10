@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the step being worked · its paths and the calls that carried it out
-/plan · make the round limit recoverable · 2 of 4 done                                     [?] keys · [q] back
+/plan · make the round limit recoverable · 2 of 4 done                                   [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   1. ✓ Locate the round accounting  done         1 tool │ 3. Return it from runRound                   running
@@ -25,7 +25,7 @@ the order it named them                                 │
 [↑↓/jk] move · [esc] back to the prompt                the approved plan, as the transcript has carried it out
 
 · a failed step · finished, and not cleanly
-/plan · make the round limit recoverable · 2 of 4 done                                     [?] keys · [q] back
+/plan · make the round limit recoverable · 2 of 4 done                                   [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   1. ✓ Locate the round accounting  done         1 tool │ 2. Add a RoundsExhausted sentinel             failed
@@ -39,7 +39,7 @@ the order it named them                                 │
 [↑↓/jk] move · [esc] back to the prompt                the approved plan, as the transcript has carried it out
 
 · a step not reached · with what the run did that the plan did not say
-/plan · make the round limit recoverable · 2 of 4 done                                     [?] keys · [q] back
+/plan · make the round limit recoverable · 2 of 4 done                                   [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   1. ✓ Locate the round accounting  done         1 tool │ 4. Offer more rounds in the chat model        queued
@@ -55,7 +55,7 @@ from scratch")                                          │
 
 ── ansi ────────────────────────────────────────────────────
 · the step being worked · its paths and the calls that carried it out
-␛[1;38;5;254m/plan␛[m␛[38;5;244m · make the round limit recoverable · 2 of 4 done␛[m                                     ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/plan␛[m␛[38;5;244m · make the round limit recoverable · 2 of 4 done␛[m                                   ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;244m1. ␛[m␛[38;5;254m✓ Locate the round accounting␛[m  ␛[38;5;254mdone␛[m         ␛[38;5;254m1 tool␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254m3. Return it from runRound␛[m                   ␛[38;5;244mrunning␛[m
@@ -69,7 +69,7 @@ from scratch")                                          │
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                ␛[38;5;244mthe approved plan, as the transcript has carried it out␛[m
 
 · a failed step · finished, and not cleanly
-␛[1;38;5;254m/plan␛[m␛[38;5;244m · make the round limit recoverable · 2 of 4 done␛[m                                     ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/plan␛[m␛[38;5;244m · make the round limit recoverable · 2 of 4 done␛[m                                   ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;244m1. ␛[m␛[38;5;254m✓ Locate the round accounting␛[m  ␛[38;5;254mdone␛[m         ␛[38;5;254m1 tool␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254m2. Add a RoundsExhausted sentinel␛[m             ␛[38;5;244mfailed␛[m
@@ -83,7 +83,7 @@ from scratch")                                          │
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                ␛[38;5;244mthe approved plan, as the transcript has carried it out␛[m
 
 · a step not reached · with what the run did that the plan did not say
-␛[1;38;5;254m/plan␛[m␛[38;5;244m · make the round limit recoverable · 2 of 4 done␛[m                                     ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/plan␛[m␛[38;5;244m · make the round limit recoverable · 2 of 4 done␛[m                                   ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;244m1. ␛[m␛[38;5;254m✓ Locate the round accounting␛[m  ␛[38;5;254mdone␛[m         ␛[38;5;254m1 tool␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254m4. Offer more rounds in the chat model␛[m        ␛[38;5;244mqueued␛[m

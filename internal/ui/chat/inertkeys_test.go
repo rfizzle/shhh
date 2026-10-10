@@ -68,7 +68,7 @@ func register(t *testing.T) []keyedSurface {
 			// The shifted pair is on this list for the reason the rest of it
 			// is: a capital is a bare key too, and "Y" is how a sentence
 			// about YAML starts.
-			keys: []string{"y", "n", "Y", "N", "a", "d", "A"},
+			keys: []string{"y", "n", "Y", "N", "a", "v", "A"},
 			open: func(t *testing.T) Model { return interruptedModel(t, draftLead) },
 			hold: handover,
 		},
@@ -130,7 +130,7 @@ func register(t *testing.T) []keyedSurface {
 			// Every one of these is on the list as the letter it now only
 			// is: review is the row's own open, and undo, commit and
 			// running the checks again are commands, not keys it offers.
-			keys: []string{"u", "g", "t", "v"},
+			keys: []string{"j", "u", "g", "t", "v"},
 			open: func(t *testing.T) Model {
 				m, _ := undoModel(t)
 				return typeChars(t, m, draftLead)

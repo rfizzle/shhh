@@ -119,7 +119,7 @@ func TestDiffView_FullViewScrollAndToggle(t *testing.T) {
 	v := &DiffView{Path: "big.txt", Hunks: hunks, Mode: DiffFull, Height: 10}
 
 	view := v.View(80)
-	if !strings.Contains(ansi.Strip(view), "[j/k] scroll") {
+	if !strings.Contains(ansi.Strip(view), "[↑↓/jk] move") {
 		t.Fatalf("full view should show its key hints:\n%s", view)
 	}
 	if got := len(strings.Split(view, "\n")); got != 10 {
@@ -179,9 +179,9 @@ func TestDiffView_HunkJump(t *testing.T) {
 	if v.Offset == 0 {
 		t.Fatal("n should jump to the next hunk")
 	}
-	v.Update(key("p"))
+	v.Update(key("N"))
 	if v.Offset != 0 {
-		t.Fatalf("p should jump back to the first hunk, offset %d", v.Offset)
+		t.Fatalf("N should jump back to the first hunk, offset %d", v.Offset)
 	}
 }
 

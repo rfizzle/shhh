@@ -921,7 +921,7 @@ func todoBlockedBy(s *todo.Store, slug string) []string {
 
 // renderTodoScreenHint fills the input area while the backlog has the
 // screen. It says what is up and offers nothing: the screen's header already
-// carries `[q] back`, and a key drawn twice on one frame says nothing the
+// carries `[esc] back`, and a key drawn twice on one frame says nothing the
 // second time.
 func (m Model) renderTodoScreenHint() string {
 	return sty.SystemMsg.Render("backlog")

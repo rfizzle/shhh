@@ -137,16 +137,14 @@ func (m Model) readingModeKeys() []hintSeg {
 		expand.reason = "nothing on this row expands"
 		segs = append(segs, expand)
 	}
-	// Like [-], [y] is offered only while the row under the cursor can
-	// honour it — an offer nothing accepts is worse than no offer at all.
-	if m.focusedCopyable() {
-		segs = append(segs, seg(keys.Reading.Copy))
-	}
-	// [c] beside it, on a reply holding a fenced block: [y] takes the whole
-	// message and [c] one block of it. Off such a row it is not offered at
-	// all, the way [y] is not on a row with nothing to copy.
+	// Like [-], [c] is offered only while the row under the cursor can
+	// honour it — an offer nothing accepts is worse than no offer at all —
+	// and its words say which copy it is: one fenced block on a reply that
+	// holds one, the whole row everywhere else.
 	if _, blocks := m.focusedBlocks(); len(blocks) > 0 {
-		segs = append(segs, seg(keys.Reading.CopyBlock))
+		segs = append(segs, segAs(keys.Reading.Copy, "copy a block"))
+	} else if m.focusedCopyable() {
+		segs = append(segs, segAs(keys.Reading.Copy, "copy the row"))
 	}
 	// [/] stands whether or not a search is open: it opens the query row, or
 	// reopens it on the query already in it. The step pair joins it only once
@@ -159,7 +157,7 @@ func (m Model) readingModeKeys() []hintSeg {
 	// The register's own key sits between the row's offers and the way out:
 	// it is the last thing a reader reaches for and the first the bar sheds.
 	segs = append(segs, seg(keys.Reading.List))
-	return append(segs, seg(keys.Reading.Back))
+	return append(segs, segAs(keys.Reading.Back, "back to the prompt"))
 }
 
 // openTrayWords is what enter does on a sent picture's row.
@@ -232,9 +230,9 @@ func seg(b keys.Binding) hintSeg { return segAs(b, keys.Words(b)) }
 // rather than by each row: esc is the answer that changes nothing wherever a
 // surface holds the whole keyboard, and a row that had to remember to say so
 // is a row that will one day forget
-// (docs/interface/principles.md#esc-is-always-the-safe-answer). A binding esc
-// answers but the register spells `q` is not it — the reader pressed a
-// letter, and what the letter does is the surface's to say.
+// (docs/interface/principles.md#esc-is-always-the-safe-answer). A binding
+// the register spells with another key is not it, whatever else it answers —
+// the reader pressed that key, and what it does is the surface's to say.
 func segAs(b keys.Binding, label string) hintSeg {
 	return hintSeg{key: keys.Shown(b), label: label, safe: keys.Shown(b) == safeSpelling}
 }
@@ -330,14 +328,8 @@ func dropCopyKey(segs []hintSeg) []hintSeg {
 	return withoutSeg(segs, keys.Shown(keys.Reading.Copy))
 }
 
-// dropCopyBlockKey goes just before [y]: it is the narrower of the two
-// copies, and the row copy still carries the block inside the message.
-func dropCopyBlockKey(segs []hintSeg) []hintSeg {
-	return withoutSeg(segs, keys.Shown(keys.Reading.CopyBlock))
-}
-
 // dropSearchKey goes before the copy, because the two are different kinds of
-// offer: [y] acts on the row the reader is already standing on, and [/] opens
+// offer: [c] acts on the row the reader is already standing on, and [/] opens
 // a surface they have not asked for yet. What is on screen wins the column.
 func dropSearchKey(segs []hintSeg) []hintSeg {
 	return withoutSeg(segs, keys.Shown(keys.Reading.Search))
@@ -358,7 +350,7 @@ func dropExpandKey(segs []hintSeg) []hintSeg {
 
 // readingPositionFields is the right-hand field in its forms, widest first.
 // It is the position of the cursor among the rows — or, once rows are open,
-// how many are, and just after a [y], what the copy caught (copyrow.go),
+// how many are, and just after a [c], what the copy caught (copyrow.go),
 // which is the one moment that fact outranks the position. Prose
 // has no addressable rows to count, so it reports nothing.
 func (m Model) readingPositionFields() []string {
@@ -775,17 +767,17 @@ func stackSegs(segs []hintSeg, rail string, width, budget int) []string {
 func (m Model) readingKeyLine(width int) string {
 	full := m.readingModeKeys()
 	// The settled order: [?] goes first, then a key stated absent with its
-	// reason, then [q] gives up its words, then [/], then [c], then [y],
-	// then [n/N], then a live [enter] goes whole.
+	// reason, then [esc] gives up its words, then [/], then [c], then
+	// [n/N], then a live [enter] goes whole.
 	noList := dropKeyListKey(full)
 	noAbsent := dropAbsentKey(noList)
 	short := shortenBackKey(noAbsent)
 	noSearch := dropSearchKey(short)
-	noBlock := dropCopyBlockKey(noSearch)
-	noCopy := dropCopyKey(noBlock)
+	noCopy := dropCopyKey(noSearch)
 	noMatch := dropMatchKey(noCopy)
-	forms := [][]hintSeg{full, noList, noAbsent, short, noSearch, noBlock, noCopy, noMatch,
+	forms := [][]hintSeg{full, noList, noAbsent, short, noSearch, noCopy, noMatch,
 		dropExpandKey(noMatch)}
+
 	if m.stripLive() {
 		// The strip's three keys are its whole bar, so none of them is
 		// given up: their words are, to the verb.

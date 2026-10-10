@@ -75,7 +75,7 @@ func TestChatScreen_ARefusedRowSaysSoAndKeepsTheList(t *testing.T) {
 		t.Fatalf("the row does not carry the mark:\n%s", view)
 	}
 	// The row is still a row: the housekeeping keys reach it.
-	if _, result := pressChat(c, 'r'); result.Do != nil || c.rename == nil {
+	if _, result := pressChat(c, 'e'); result.Do != nil || c.rename == nil {
 		t.Fatalf("a refused row cannot be renamed: %+v", result.Do)
 	}
 }
@@ -97,8 +97,8 @@ func TestChatScreen_ARefusedRowOffersNoOpen(t *testing.T) {
 // branches that would go with the conversation.
 func TestChatScreen_DeleteAsksAndNamesTheBranches(t *testing.T) {
 	c := chatScreen()
-	if _, result := pressChat(c, 'x'); result.Do != nil {
-		t.Fatalf("x resolved a delete before the confirm: %+v", result.Do)
+	if _, result := pressChat(c, 'd'); result.Do != nil {
+		t.Fatalf("d resolved a delete before the confirm: %+v", result.Do)
 	}
 	view := ansi.Strip(c.View(130))
 	if !strings.Contains(view, `Delete "morning-fix" and its 2 branches?`) {
@@ -107,7 +107,7 @@ func TestChatScreen_DeleteAsksAndNamesTheBranches(t *testing.T) {
 	if _, result := c.Update(tea.KeyPressMsg{Code: tea.KeyEnter}); result.Do != nil {
 		t.Fatalf("enter is No, got %+v", result.Do)
 	}
-	pressChat(c, 'x')
+	pressChat(c, 'd')
 	done, result := pressChat(c, 'y')
 	if done || result.Do == nil || result.Do.Act != ChatDelete || result.Do.ID != "morning-fix" {
 		t.Fatalf("y should resolve the delete, got %+v (done=%v)", result.Do, done)
@@ -118,7 +118,7 @@ func TestChatScreen_DeleteAsksAndNamesTheBranches(t *testing.T) {
 // keeps the name on esc (docs/interface/principles.md#esc-is-always-the-safe-answer).
 func TestChatScreen_RenameCommitsOnEnterAndKeepsOnEsc(t *testing.T) {
 	c := chatScreen()
-	pressChat(c, 'r')
+	pressChat(c, 'e')
 	if view := ansi.Strip(c.View(130)); !strings.Contains(view, "rename ▸ morning-fix") {
 		t.Fatalf("the rename row did not open prefilled:\n%s", view)
 	}
@@ -127,7 +127,7 @@ func TestChatScreen_RenameCommitsOnEnterAndKeepsOnEsc(t *testing.T) {
 		t.Fatalf("esc renamed something: %+v", result.Do)
 	}
 
-	pressChat(c, 'r')
+	pressChat(c, 'e')
 	typeIntoChats(c, "-2")
 	done, result := c.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if done {
@@ -162,24 +162,23 @@ func TestChatScreen_KeyListIsComplete(t *testing.T) {
 	c := chatScreen()
 	pressChat(c, '?')
 	view := ansi.Strip(c.View(130))
-	for _, key := range []string{"[↑↓/jk]", "[enter]", "[r]", "[x]", "[/]", "[ctrl+u]", "[q]"} {
+	for _, key := range []string{"[↑↓/jk]", "[enter]", "[e]", "[d]", "[/]", "[esc]"} {
 		if !strings.Contains(view, key) {
 			t.Fatalf("the key list is missing %s:\n%s", key, view)
 		}
 	}
 }
 
-// Leaving opens nothing, whichever of the two ways out was taken.
+// Leaving opens nothing, and esc is the one way out: q is a plain letter.
 func TestChatScreen_LeavingOpensNothing(t *testing.T) {
-	for _, press := range []tea.KeyPressMsg{
-		{Code: tea.KeyEscape},
-		{Code: 'q', Text: "q"},
-	} {
-		c := chatScreen()
-		done, result := c.Update(press)
-		if !done || !result.canceled || result.Open {
-			t.Fatalf("%v left with something open: %+v", press, result)
-		}
+	c := chatScreen()
+	done, result := c.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if !done || !result.canceled || result.Open {
+		t.Fatalf("esc left with something open: %+v", result)
+	}
+	c = chatScreen()
+	if done, result := c.Update(tea.KeyPressMsg{Code: 'q', Text: "q"}); done || result.Open {
+		t.Fatalf("q left the screen: %+v (done=%v)", result, done)
 	}
 }
 

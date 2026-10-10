@@ -92,7 +92,7 @@ type chatAct int
 const (
 	// ChatRename is `[r]`, once the rename row has been committed.
 	ChatRename chatAct = iota
-	// ChatDelete is `[x]`, and only after the inline confirm has been
+	// ChatDelete is `[d]`, and only after the inline confirm has been
 	// answered — the screen never resolves a delete the reader has not said
 	// yes to.
 	ChatDelete
@@ -147,7 +147,7 @@ type ChatScreen struct {
 
 // Update is the screen's whole keyboard. The confirm and the rename row
 // answer first while either is up — each holds the keyboard, so `y` is not a
-// letter to one and `x` is text to the other (invariant 5).
+// letter to one and `d` is text to the other (invariant 5).
 func (c *ChatScreen) Update(msg tea.KeyPressMsg) (done bool, result ChatResult) {
 	c.sync()
 	// The notice is cleared here rather than by the host, which is where the
@@ -167,13 +167,11 @@ func (c *ChatScreen) Update(msg tea.KeyPressMsg) (done bool, result ChatResult) 
 		return false, ChatResult{}
 	case keys.Is(pressed, keys.Screen.Take):
 		return c.open()
-	case keys.Is(pressed, keys.Select.Cancel):
-		return true, ChatResult{canceled: true}
 	}
-	// With the query line open the query line is the surface, so r, x and q
+	// With the query line open the query line is the surface, so e and d
 	// are letters rather than keys — the reading every picker in the product
-	// makes. ctrl+u clears it, and clearing a filter that is already empty
-	// closes it, which is how the row keys are got back without leaving the
+	// makes. esc clears it, and on a filter that is already empty it closes
+	// the line, which is how the row keys are got back without leaving the
 	// screen.
 	if open, changed := c.filterKey(msg); open {
 		if changed {
@@ -184,7 +182,7 @@ func (c *ChatScreen) Update(msg tea.KeyPressMsg) (done bool, result ChatResult) 
 	switch {
 	case keys.Is(pressed, keys.Screen.Filter):
 		c.list.Filtering = true
-	case pressed == keys.Shown(keys.Screen.Quit):
+	case keys.Is(pressed, keys.Screen.Quit):
 		return true, ChatResult{canceled: true}
 	case keys.Is(pressed, keys.Screen.List):
 		c.keys = !c.keys
@@ -348,7 +346,6 @@ func (c *ChatScreen) offers() []KeyOffer {
 	if c.rename != nil {
 		return []KeyOffer{
 			keyOfferAs(keys.Screen.Take, "rename it"),
-			keyOfferAs(keys.Screen.ClearQ, "clear the row"),
 			keyOfferAs(keys.Screen.Keep, "keep the name"),
 		}
 	}
@@ -360,13 +357,12 @@ func (c *ChatScreen) offers() []KeyOffer {
 		offers = append(offers, keyOfferAs(keys.Screen.Take, "open it"))
 	}
 	if c.list.Filtering {
-		offers = append(offers, keyOfferAs(keys.Screen.ClearQ, "clear the filter, then close it"))
-	} else {
-		if c.currentShown(c.Rows) != nil {
-			offers = append(offers, keyOffer(keys.Screen.Rename), keyOffer(keys.Screen.Delete))
-		}
-		offers = append(offers, keyOffer(keys.Screen.Filter))
+		return append(offers, keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"))
 	}
+	if c.currentShown(c.Rows) != nil {
+		offers = append(offers, keyOffer(keys.Screen.Rename), keyOffer(keys.Screen.Delete))
+	}
+	offers = append(offers, keyOffer(keys.Screen.Filter))
 	return append(offers, wayOut(backToShell))
 }
 
@@ -378,9 +374,8 @@ func (c *ChatScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Rename, "rename it, in a row under the list"),
 		keyOfferAs(keys.Screen.Delete, "delete it and its branches, after confirming it"),
 		keyOfferAs(keys.Screen.Filter, "filter by name or by what it was about"),
-		keyOfferAs(keys.Screen.ClearQ, "clear the filter or the rename row"),
-		keyOfferAs(keys.Query.Rub, "delete a character from either"),
-		keyOfferAs(keys.Screen.Keep, "keep the name, or "+backToShell),
+		keyOfferAs(keys.Query.Rub, "delete a character from the filter or the rename row"),
+		keyOfferAs(keys.Screen.Keep, "keep the name; clear the filter, then close it"),
 		keyOfferAs(keys.Screen.Quit, backToShell),
 	}
 }

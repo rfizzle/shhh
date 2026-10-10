@@ -40,7 +40,7 @@ func TestFocus_ReachesTheStagedRail(t *testing.T) {
 			t.Fatalf("→ picks the next chip, got %d", m.pickedChip())
 		}
 		panel := stripANSI(strings.Join(m.focusHintLines(), "\n"))
-		for _, want := range []string{"❯ Image#2", "[←→] chip", "[enter] open", "[x] drop", "[esc] back to the draft", "chip 2 of 3"} {
+		for _, want := range []string{"❯ Image#2", "[←→] chip", "[enter] open", "[d] delete", "[esc] back to the draft", "chip 2 of 3"} {
 			if !strings.Contains(panel, want) {
 				t.Fatalf("the panel should carry %q:\n%s", want, panel)
 			}
@@ -87,9 +87,9 @@ func TestFocus_ReachesTheStagedRail(t *testing.T) {
 		m = pressOn(t, m, key('j'))
 		m = pressOn(t, m, arrow(false))
 
-		m = pressOn(t, m, key('x'))
+		m = pressOn(t, m, key('d'))
 		if len(m.attachments) != 1 || m.attachments[0].Name != "one.png" {
-			t.Fatalf("x drops the chip under the cursor, left %v", m.attachments)
+			t.Fatalf("d drops the chip under the cursor, left %v", m.attachments)
 		}
 		if !m.atStrip() || m.pickedChip() != 0 {
 			t.Fatalf("the cursor moves to the chip that is left, strip %v chip %d", m.atStrip(), m.pickedChip())
@@ -97,7 +97,7 @@ func TestFocus_ReachesTheStagedRail(t *testing.T) {
 		if got := stripANSI(m.renderHistory()); !strings.Contains(got, "dropped Image#2 (two.png") {
 			t.Fatalf("the drop says what went:\n%s", got)
 		}
-		m = pressOn(t, m, key('x'))
+		m = pressOn(t, m, key('d'))
 		if len(m.attachments) != 0 || m.atStrip() {
 			t.Fatalf("the last drop empties the strip, %d left, strip %v", len(m.attachments), m.atStrip())
 		}
@@ -112,7 +112,7 @@ func TestFocus_ReachesTheStagedRail(t *testing.T) {
 
 // Enter on a chip opens the card, and its way out goes back to the strip
 // rather than to the draft, since that is where the reader came from. The
-// card's own [x] drops what it is showing and comes back to the strip too.
+// card's own [d] drops what it is showing and comes back to the strip too.
 func TestStrip_TheCardGoesBackToTheStrip(t *testing.T) {
 	m := focusModel(t)
 	m = stageImage(t, m, "one.png")
@@ -124,17 +124,17 @@ func TestStrip_TheCardGoesBackToTheStrip(t *testing.T) {
 	if m.state != statePreview || m.preview == nil || m.preview.Name != "two.png" {
 		t.Fatalf("enter opens the chip under the cursor: state %v", m.state)
 	}
-	if hint := stripANSI(m.renderPreviewHint()); !strings.Contains(hint, "[x] remove") || !strings.Contains(hint, "back to the strip") {
+	if hint := stripANSI(m.renderPreviewHint()); !strings.Contains(hint, "[d] delete") || !strings.Contains(hint, "back to the strip") {
 		t.Fatalf("the card offers the drop and says where back is: %q", hint)
 	}
-	m = pressOn(t, m, key('q'))
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
 	if m.state != stateFocus || !m.atStrip() || m.pickedChip() != 1 {
-		t.Fatalf("q goes back to the strip on the same chip: state %v strip %v chip %d", m.state, m.atStrip(), m.pickedChip())
+		t.Fatalf("esc goes back to the strip on the same chip: state %v strip %v chip %d", m.state, m.atStrip(), m.pickedChip())
 	}
 	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = pressOn(t, m, key('x'))
+	m = pressOn(t, m, key('d'))
 	if m.state != stateFocus || len(m.attachments) != 1 || !m.atStrip() || m.pickedChip() != 0 {
-		t.Fatalf("the card's x drops and comes back to the strip: state %v, %d staged, chip %d", m.state, len(m.attachments), m.pickedChip())
+		t.Fatalf("the card's d drops and comes back to the strip: state %v, %d staged, chip %d", m.state, len(m.attachments), m.pickedChip())
 	}
 }
 
@@ -156,9 +156,9 @@ func TestPreview_EveryOfferedKeyDoesSomething(t *testing.T) {
 			}
 		}
 	}
-	m := pressSpelling(t, open(t), "x")
+	m := pressSpelling(t, open(t), "d")
 	if len(m.attachments) != 0 || m.state != stateInput {
-		t.Fatalf("x on the card drops what it shows and goes back to the draft: %d staged, state %v", len(m.attachments), m.state)
+		t.Fatalf("d on the card drops what it shows and goes back to the draft: %d staged, state %v", len(m.attachments), m.state)
 	}
 	if got := stripANSI(m.renderHistory()); !strings.Contains(got, "dropped Image#1 (shot.png") {
 		t.Fatalf("the drop says what went:\n%s", got)

@@ -123,7 +123,7 @@ type mode struct {
 	borrows bool
 	// aboveDecision routes the mode's keys ahead of the handover chord and
 	// the grace window. It is the three viewers that replace the pane and
-	// nothing else: two of them are where a decision card's own [d] goes, so
+	// nothing else: two of them are where a decision card's own [v] goes, so
 	// the reader is inside the card's detail and the chord that would gate
 	// the card behind it is not what the key means there. Moving one of them
 	// below the handover would spend a key meant for the diff on the card

@@ -78,7 +78,7 @@ keys changed: [ctrl+]] key list … — [ctrl+]]
 ├──────────────────────────────────────────────────────┤
 │ [y] apply the change · [Y] apply with a note         │
 │ [n] deny · [N] deny with a note                      │
-│ [a] allow edits in ./ without asking · [d] full diff │
+│ [a] allow edits in ./ without asking · [v] full diff │
 │ [?] keys · [esc] leave it waiting, nothing is denied │
 ╰──────────────────────────────────────────────────────╯
 
@@ -171,7 +171,7 @@ keys changed: [ctrl+]] key list … — [ctrl+]]
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mapply the change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[Y]␛[m ␛[38;5;254mapply with a note␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m ␛[38;5;254mdeny with a note␛[m                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow edits in ./ without asking␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m ␛[38;5;254mfull diff␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow edits in ./ without asking␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m ␛[38;5;254mfull diff␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 

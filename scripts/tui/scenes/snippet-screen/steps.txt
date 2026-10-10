@@ -15,16 +15,17 @@ keys /
 snap 03-filter-open "type to filter by name or by command"
 keys "xargs"
 snap 04-filtered "1 of 3 match" "2 snippets hidden by the filter" "filtered by \"xargs\""
-keys C-u
+keys Escape
 snap 05-cleared "3 of 3 match"
-keys C-u
+keys Escape
 snap 06-closed "[/] filter" "nothing is run until [enter]"
-keys r
+keys e
 snap 07-rename "rename ▸" "[enter] rename it"
 keys Escape
 snap 08-renamed-nothing "nothing is run until [enter]"
-keys x
+keys d
+
 snap 09-confirm "Delete the snippet"
 keys Enter
 snap 10-declined "nothing is run until [enter]"
-keys q
+keys Escape

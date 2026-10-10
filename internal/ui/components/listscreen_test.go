@@ -80,7 +80,7 @@ func TestListScreen_TheFilterIsTheLinesKeys(t *testing.T) {
 		t.Fatalf("the header should state the query: %+v", head)
 	}
 
-	clear := tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl}
+	clear := tea.KeyPressMsg{Code: tea.KeyEscape}
 	l.filterKey(clear)
 	if l.list.Query != "" || !l.list.Filtering {
 		t.Fatalf("the first clear should empty the line and leave it open: %q", l.list.Query)
@@ -100,7 +100,7 @@ func TestListScreen_DrawsTheFrame(t *testing.T) {
 		t.Fatal("no width draws nothing")
 	}
 	view := ansi.Strip(s.View(80))
-	for _, want := range []string{"/test", "[?] keys · [q] back", "❯ one", "the row is one", "[esc] back to the prompt"} {
+	for _, want := range []string{"/test", "[?] keys · [esc] back", "❯ one", "the row is one", "[esc] back to the prompt"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the frame is missing %q:\n%s", want, view)
 		}

@@ -32,7 +32,7 @@ snap 04-yours "/config · your file" "[g] write the checkout's"
 keys g
 snap 05-back "/config · the checkout's file" "[g] write yours"
 keys Enter
-snap 06-flow-picker "[enter] this session" "[d] my settings" "[g] this checkout"
+snap 06-flow-picker "[enter] this session" "[m] my settings" "[g] this checkout"
 keys Up Enter
 snap 07-session "this session only, written to no file" "for the rest of this session"
 keys Escape

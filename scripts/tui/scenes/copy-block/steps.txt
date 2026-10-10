@@ -40,16 +40,16 @@ snap 05-copied "copied block 3 · code · 2 lines"
 keys "/copy code 4" Enter
 snap 06-usage "usage: /copy code [1-3]"
 # Reading mode, the cursor walked onto the later reply by a search for its
-# first words: the bar offers the block copy beside the row copy.
+# first words: on a reply with blocks the bar's copy is the block copy.
 keys C-o
-snap 07-reading "[j/k] move"
+snap 07-reading "[↑↓/jk] move"
 keys "/"
 keys "Here is the handler"
 keys Enter
-# Below 80 columns the bar sheds the block copy before the row copy, so the
-# narrow capture waits on the search's own key instead.
-wide 80 snap 08-offer "[c] copy a block" "[y] copy the row"
-narrow 80 snap 08-offer "[n/N] match" "row 3 of 4"
+# Below 80 columns the bar sheds the copy, so the narrow capture waits on
+# the search's own key instead.
+wide 80 snap 08-offer "[c] copy a block"
+narrow 80 snap 08-offer "[n/N] match" "3 of 4"
 # [c] on a reply with three blocks opens the card over that reply's blocks.
 keys c
 snap 09-row-list "copy which block?" "3 blocks"
@@ -71,7 +71,7 @@ snap 11-earlier-caption "✓ copied block 1 · sh · 1 line"
 keys -l $'\e[<0;7;24M' $'\e[<0;7;24m'
 snap 11a-reading-click "✓ copied block 2 · sh · 3 lines" "❯   Here is the handler:"
 # The way out.
-keys q
+keys Escape
 snap 12-prompt "╭─ ✓ done"
 keys C-c
 snap 13-quit-armed "again quits"

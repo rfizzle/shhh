@@ -33,9 +33,9 @@ func chatsPicker(t *testing.T, focus string, names ...string) Model {
 func TestChatPick_DeleteArmsConfirmAndEnterIsNo(t *testing.T) {
 	m := chatsPicker(t, "alpha", "alpha", "beta")
 
-	m = press(t, m, "x")
+	m = press(t, m, "d")
 	if m.chats.confirm == nil {
-		t.Fatal("x should arm the delete confirm")
+		t.Fatal("d should arm the delete confirm")
 	}
 	if !strings.Contains(m.chats.confirm.Prompt, `"alpha"`) {
 		t.Fatalf("the confirm should name the chat, got %q", m.chats.confirm.Prompt)
@@ -58,7 +58,7 @@ func TestChatPick_DeleteArmsConfirmAndEnterIsNo(t *testing.T) {
 
 func TestChatPick_DeleteConfirmedRemovesTheChatAndKeepsThePicker(t *testing.T) {
 	m := chatsPicker(t, "alpha", "alpha", "beta")
-	m = press(t, m, "x")
+	m = press(t, m, "d")
 	m = press(t, m, "y")
 
 	if _, err := m.wiring.DB.LoadChat("alpha"); err == nil {
@@ -85,7 +85,7 @@ func TestChatPick_DeleteNamesTheBranches(t *testing.T) {
 	for m.picker.card.Options[m.picker.card.Focus].Label != "alpha" {
 		m = press(t, m, "j")
 	}
-	m = press(t, m, "x")
+	m = press(t, m, "d")
 	if !strings.Contains(m.chats.confirm.Prompt, "and its 1 branch?") {
 		t.Fatalf("the confirm should count the branches, got %q", m.chats.confirm.Prompt)
 	}
@@ -93,7 +93,7 @@ func TestChatPick_DeleteNamesTheBranches(t *testing.T) {
 	if err := m.wiring.DB.SaveChatBranch("alpha", "alpha@turn3", tail); err != nil {
 		t.Fatal(err)
 	}
-	m = press(t, m, "x")
+	m = press(t, m, "d")
 	if !strings.Contains(m.chats.confirm.Prompt, "and its 2 branches?") {
 		t.Fatalf("two branches are plural, got %q", m.chats.confirm.Prompt)
 	}
@@ -101,7 +101,7 @@ func TestChatPick_DeleteNamesTheBranches(t *testing.T) {
 
 func TestChatPick_DeletingTheLastChatClosesThePicker(t *testing.T) {
 	m := chatsPicker(t, "alpha", "alpha")
-	m = press(t, m, "x")
+	m = press(t, m, "d")
 	m = press(t, m, "y")
 	if m.state != stateInput || m.picker.card != nil || m.chats.active {
 		t.Fatal("a picker with no rows left should close")
@@ -112,7 +112,7 @@ func TestChatPick_DeletingTheLastChatClosesThePicker(t *testing.T) {
 // card's filter row above it — one keyboard, one cursor.
 func TestChatPick_RenameRowTakesTheCursor(t *testing.T) {
 	m := chatsPicker(t, "alpha", "alpha", "beta")
-	m = press(t, m, "r")
+	m = press(t, m, "e")
 
 	var cur cursorSink
 	screen := strings.Split(ansi.Strip(m.paint(&cur)), "\n")
@@ -141,7 +141,7 @@ func TestChatPick_RenameRowTakesTheCursor(t *testing.T) {
 func TestChatPick_RenameCommitsOnEnter(t *testing.T) {
 	m := chatsPicker(t, "alpha", "alpha", "beta")
 
-	m = press(t, m, "r")
+	m = press(t, m, "e")
 	if m.chats.rename == nil {
 		t.Fatal("r should open the rename row")
 	}
@@ -170,7 +170,7 @@ func TestChatPick_RenameCommitsOnEnter(t *testing.T) {
 
 func TestChatPick_RenameEscKeepsTheName(t *testing.T) {
 	m := chatsPicker(t, "alpha", "alpha", "beta")
-	m = press(t, m, "r")
+	m = press(t, m, "e")
 	m = press(t, m, "2")
 	m = press(t, m, "esc")
 
@@ -187,7 +187,7 @@ func TestChatPick_RenameEscKeepsTheName(t *testing.T) {
 
 func TestChatPick_RenameCollisionIsRefusedByName(t *testing.T) {
 	m := chatsPicker(t, "alpha", "alpha", "beta")
-	m = press(t, m, "r")
+	m = press(t, m, "e")
 	for range len("alpha") {
 		m = press(t, m, "backspace")
 	}
@@ -210,9 +210,9 @@ func TestChatPick_OwnSlotCannotBeDeletedOrRenamed(t *testing.T) {
 		t.Fatal("the session's own slot should be focused")
 	}
 
-	m = press(t, m, "x")
+	m = press(t, m, "d")
 	if m.chats.confirm != nil {
-		t.Fatal("x on the session's own slot must not arm a confirm")
+		t.Fatal("d on the session's own slot must not arm a confirm")
 	}
 	if !strings.Contains(m.chats.notice, "⊘") || !strings.Contains(m.chats.notice, protectedPhrase) {
 		t.Fatalf("the refusal should be a notice with the glyph and the phrase, got %q", m.chats.notice)
@@ -220,9 +220,9 @@ func TestChatPick_OwnSlotCannotBeDeletedOrRenamed(t *testing.T) {
 	if lines := strings.Join(m.pickerLines(), "\n"); !strings.Contains(lines, protectedPhrase) {
 		t.Fatalf("the notice should be drawn under the card, got:\n%s", lines)
 	}
-	m = press(t, m, "r")
+	m = press(t, m, "e")
 	if m.chats.rename != nil {
-		t.Fatal("r on the session's own slot must not open the rename row")
+		t.Fatal("e on the session's own slot must not open the rename row")
 	}
 	if _, err := m.wiring.DB.LoadChat("beta"); err != nil {
 		t.Fatalf("the slot must be untouched: %v", err)
@@ -232,12 +232,12 @@ func TestChatPick_OwnSlotCannotBeDeletedOrRenamed(t *testing.T) {
 func TestChatPick_KeysAreTextWhileFiltering(t *testing.T) {
 	m := chatsPicker(t, "alpha", "alpha", "beta")
 	m = press(t, m, "/")
-	m = press(t, m, "x")
+	m = press(t, m, "d")
 	if m.chats.confirm != nil {
-		t.Fatal("x typed into the filter row is text")
+		t.Fatal("d typed into the filter row is text")
 	}
-	if m.picker.card.Query != "x" {
-		t.Fatalf("the query should have taken the x, got %q", m.picker.card.Query)
+	if m.picker.card.Query != "d" {
+		t.Fatalf("the query should have taken the d, got %q", m.picker.card.Query)
 	}
 }
 
@@ -321,13 +321,13 @@ func TestGolden_ChatPicker(t *testing.T) {
 		}
 		listed := opened
 		armed := press(t, branch(listed), "k")
-		armed = press(t, armed, "x")
+		armed = press(t, armed, "d")
 		renaming := press(t, branch(listed), "k")
-		renaming = press(t, renaming, "r")
+		renaming = press(t, renaming, "e")
 
 		return []golden.Panel{
 			{Label: "titled, untitled, and the session's own slot", View: strings.Join(listed.pickerLines(), "\n")},
-			{Label: "[x] armed the confirm", View: strings.Join(armed.pickerLines(), "\n")},
+			{Label: "[d] armed the confirm", View: strings.Join(armed.pickerLines(), "\n")},
 			{Label: "[r] opened the rename row", View: strings.Join(renaming.pickerLines(), "\n")},
 		}
 	})

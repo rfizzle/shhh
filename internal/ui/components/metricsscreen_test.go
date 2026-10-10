@@ -89,23 +89,21 @@ func metricsColumnEnd(line, field string) int {
 // key the screen has.
 func TestMetricsScreen_HeaderStatesTheSpendAndTheKey(t *testing.T) {
 	head := metricsLines(metricsScreen(), 130)[0]
-	for _, want := range []string{"shhh metrics", "242 requests", "$18.42", "[q] quit"} {
+	for _, want := range []string{"shhh metrics", "242 requests", "$18.42", "[esc] back"} {
 		if !strings.Contains(head, want) {
 			t.Fatalf("the header %q does not state %q", head, want)
 		}
 	}
 }
 
-// `[q]`, `[esc]` and ctrl+c close the screen; nothing else does anything,
-// because there is nothing else to do.
-func TestMetricsScreen_OnlyTheQuitKeysCloseIt(t *testing.T) {
-	for _, k := range []string{"q", "esc", "ctrl+c"} {
-		m := metricsScreen()
-		if done, _ := m.Update(key(k)); !done {
-			t.Fatalf("%s did not close the screen", k)
-		}
+// `[esc]` closes the screen; nothing else does anything, because there is
+// nothing else to do.
+func TestMetricsScreen_OnlyEscCloses(t *testing.T) {
+	m := metricsScreen()
+	if done, _ := m.Update(key("esc")); !done {
+		t.Fatal("esc did not close the screen")
 	}
-	for _, k := range []string{"?", "enter", "down", "/", "j"} {
+	for _, k := range []string{"q", "ctrl+c", "?", "enter", "down", "/", "j"} {
 		m := metricsScreen()
 		if done, _ := m.Update(key(k)); done {
 			t.Fatalf("%s closed a screen that has no such key", k)

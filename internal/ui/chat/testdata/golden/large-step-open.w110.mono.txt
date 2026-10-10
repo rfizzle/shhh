@@ -87,7 +87,7 @@
 
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
-[←→] along the strip · [enter] open that tool · [q] close the card                  tool 22 of 22 · exit 1
+[←→] along the strip · [enter] open that tool · [esc] close the card                tool 22 of 22 · exit 1
 
 
 
@@ -169,6 +169,6 @@
 
 
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[←→]␛[m␛[38;5;244m along the strip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open that tool␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m close the card␛[m                  ␛[38;5;244mtool 22 of 22 · exit 1␛[m
+␛[38;5;254m[←→]␛[m␛[38;5;244m along the strip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open that tool␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m close the card␛[m                ␛[38;5;244mtool 22 of 22 · exit 1␛[m
 
 

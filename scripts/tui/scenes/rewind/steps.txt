@@ -49,11 +49,12 @@ snap 08-picker "pick a turn to return to"
 # Close the query row, which is what makes the picker's own key live, and
 # read what a rewind to turn 2 would take back — turn 3's two files, full
 # screen — before taking it. Esc comes back to the picker where it was.
-keys C-u
+keys Escape
 sleep 0.3
 keys Down
 sleep 0.3
-keys d
+keys v
+
 snap 09-diff "+6 −1 · 2 files"
 keys Escape
 snap 10-picker-again "what the turns after it changed"

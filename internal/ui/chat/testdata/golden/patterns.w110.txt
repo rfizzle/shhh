@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the list as it opens
-/patterns · 3 proposals                                                                [?] keys · [q] back
+/patterns · 3 proposals                                                              [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ❯ memory · internal/cli/session.go         4 sessions │ memory                                  4 sessions
@@ -40,7 +40,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · the list as it opens
-␛[1;97m/patterns␛[m␛[38;5;241m · 3 proposals␛[m                                                                ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/patterns␛[m␛[38;5;241m · 3 proposals␛[m                                                              ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯␛[m ␛[1;97;48;5;62mmemory · internal/cli/session.go         4 sessions␛[m␛[38;5;241m │ ␛[m␛[1;97mmemory␛[m                                  ␛[38;5;241m4 sessions␛[m

@@ -24,8 +24,8 @@ func TestProgram_TheKeyListOpensOverADraftAndLeavesItStanding(t *testing.T) {
 	programPress(t, tm, "ctrl+]")
 	waitForAll(t, tm, "first or last", "DRAFT")
 	programPress(t, tm, "r", "e", "a", "d", "i", "n", "g")
-	waitForAll(t, tm, "READING", "copy the row")
-	programPress(t, tm, "esc")
+	waitForAll(t, tm, "READING", "copy")
+	programPress(t, tm, "esc", "esc")
 	waitForGone(t, tm, "first or last")
 
 	frame := finalFrame(t, tm)

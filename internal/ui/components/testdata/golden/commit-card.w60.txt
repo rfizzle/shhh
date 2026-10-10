@@ -20,9 +20,9 @@
 │ hooks     pre-commit runs                                │
 │ push      no                                             │
 ├──────────────────────────────────────────────────────────┤
-│ [enter] commit · [e] edit the message                    │
-│ [s] read the hunks · [?] keys                            │
-│ [esc] not now — nothing is committed                     │
+│ [enter] commit · [e] edit · [s] read the hunks           │
+│ [?] keys                                                 │
+│ [esc] back — nothing is committed, and the offer stays   │
 ╰──────────────────────────────────────────────────────────╯
 
 · a clean tree · nothing is being left behind
@@ -35,9 +35,9 @@
 │ hooks     pre-commit runs                                │
 │ push      no                                             │
 ├──────────────────────────────────────────────────────────┤
-│ [enter] commit · [e] edit the message                    │
-│ [s] read the hunks · [?] keys                            │
-│ [esc] not now — nothing is committed                     │
+│ [enter] commit · [e] edit · [s] read the hunks           │
+│ [?] keys                                                 │
+│ [esc] back — nothing is committed, and the offer stays   │
 ╰──────────────────────────────────────────────────────────╯
 
 · two hooks skipped · the checkout is not trusted
@@ -50,9 +50,9 @@
 │ hooks     pre-commit and commit-msg skipped              │
 │ push      no                                             │
 ├──────────────────────────────────────────────────────────┤
-│ [enter] commit · [e] edit the message                    │
-│ [s] read the hunks · [?] keys                            │
-│ [esc] not now — nothing is committed                     │
+│ [enter] commit · [e] edit · [s] read the hunks           │
+│ [?] keys                                                 │
+│ [esc] back — nothing is committed, and the offer stays   │
 ╰──────────────────────────────────────────────────────────╯
 
 · a hook refused · the changeset is where it was
@@ -67,9 +67,9 @@
 │                                                          │
 │ ✗ git commit: pre-commit hook failed: gofmt -l found 2 … │
 ├──────────────────────────────────────────────────────────┤
-│ [enter] commit · [e] edit the message                    │
-│ [s] read the hunks · [?] keys                            │
-│ [esc] not now — nothing is committed                     │
+│ [enter] commit · [e] edit · [s] read the hunks           │
+│ [?] keys                                                 │
+│ [esc] back — nothing is committed, and the offer stays   │
 ╰──────────────────────────────────────────────────────────╯
 
 · drifted · a file the turn wrote and you changed
@@ -83,9 +83,9 @@
 │ hooks     pre-commit runs                                │
 │ push      no                                             │
 ├──────────────────────────────────────────────────────────┤
-│ [enter] commit · [e] edit the message                    │
-│ [s] read the hunks · [?] keys                            │
-│ [esc] not now — nothing is committed                     │
+│ [enter] commit · [e] edit · [s] read the hunks           │
+│ [?] keys                                                 │
+│ [esc] back — nothing is committed, and the offer stays   │
 ╰──────────────────────────────────────────────────────────╯
 
 · a secret in the diff · named, and the override offered
@@ -99,10 +99,10 @@
 │ secrets   1 github token · config/dev.env:12             │
 │ push      no                                             │
 ├──────────────────────────────────────────────────────────┤
-│ [enter] commit · [e] edit the message                    │
-│ [s] read the hunks · [?] keys                            │
+│ [enter] commit · [e] edit · [s] read the hunks           │
+│ [?] keys                                                 │
 │ [!] commit with the secret — it stays in history         │
-│ [esc] not now — nothing is committed                     │
+│ [esc] back — nothing is committed, and the offer stays   │
 ╰──────────────────────────────────────────────────────────╯
 
 · the override taken · committing on your say
@@ -116,8 +116,8 @@
 │ secrets   1 github token · config/dev.env:12             │
 │ push      no                                             │
 ├──────────────────────────────────────────────────────────┤
-│ [enter] commit · [e] edit the message                    │
-│ [s] read the hunks               committing — git has it │
+│ [enter] commit · [e] edit · [s] read the hunks           │
+│ committing — git has it                                  │
 ╰──────────────────────────────────────────────────────────╯
 
 · an ignored fixture · drawn dim and committed
@@ -131,9 +131,9 @@
 │ secrets   1 github token · config/dev.env:12             │
 │ push      no                                             │
 ├──────────────────────────────────────────────────────────┤
-│ [enter] commit · [e] edit the message                    │
-│ [s] read the hunks · [?] keys                            │
-│ [esc] not now — nothing is committed                     │
+│ [enter] commit · [e] edit · [s] read the hunks           │
+│ [?] keys                                                 │
+│ [esc] back — nothing is committed, and the offer stays   │
 ╰──────────────────────────────────────────────────────────╯
 
 · asked · the keys are drawn and none is live
@@ -146,8 +146,8 @@
 │ hooks     pre-commit runs                                │
 │ push      no                                             │
 ├──────────────────────────────────────────────────────────┤
-│ [enter] commit · [e] edit the message                    │
-│ [s] read the hunks               committing — git has it │
+│ [enter] commit · [e] edit · [s] read the hunks           │
+│ committing — git has it                                  │
 ╰──────────────────────────────────────────────────────────╯
 
 · the message as a draft · the budget is the title
@@ -177,9 +177,9 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the message␛[m                    ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                            ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] not now — nothing is committed␛[m                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m           ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                                                 ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[92m[esc] back — nothing is committed, and the offer stays␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · a clean tree · nothing is being left behind
@@ -192,9 +192,9 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the message␛[m                    ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                            ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] not now — nothing is committed␛[m                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m           ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                                                 ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[92m[esc] back — nothing is committed, and the offer stays␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · two hooks skipped · the checkout is not trusted
@@ -207,9 +207,9 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;243mpre-commit and commit-msg skipped␛[m              ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the message␛[m                    ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                            ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] not now — nothing is committed␛[m                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m           ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                                                 ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[92m[esc] back — nothing is committed, and the offer stays␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · a hook refused · the changeset is where it was
@@ -224,9 +224,9 @@
 ␛[38;5;214m│␛[m                                                          ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[91m✗ git commit: pre-commit hook failed: gofmt -l found 2 …␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the message␛[m                    ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                            ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] not now — nothing is committed␛[m                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m           ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                                                 ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[92m[esc] back — nothing is committed, and the offer stays␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · drifted · a file the turn wrote and you changed
@@ -240,9 +240,9 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the message␛[m                    ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                            ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] not now — nothing is committed␛[m                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m           ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                                                 ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[92m[esc] back — nothing is committed, and the offer stays␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · a secret in the diff · named, and the override offered
@@ -256,10 +256,10 @@
 ␛[38;5;214m│␛[m ␛[38;5;243msecrets   ␛[m␛[91m1 github token · config/dev.env:12␛[m             ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the message␛[m                    ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                            ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m           ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                                                 ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;103m[!]␛[m ␛[91mcommit with the secret — it stays in history␛[m         ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] not now — nothing is committed␛[m                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[92m[esc] back — nothing is committed, and the offer stays␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the override taken · committing on your say
@@ -273,8 +273,8 @@
 ␛[38;5;214m│␛[m ␛[38;5;243msecrets   ␛[m␛[91m1 github token · config/dev.env:12␛[m             ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;245m[enter] commit␛[m␛[38;5;241m · ␛[m␛[38;5;245m[e] edit the message␛[m                    ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;245m[s] read the hunks␛[m               ␛[38;5;241mcommitting — git has it␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;245m[enter] commit␛[m␛[38;5;241m · ␛[m␛[38;5;245m[e] edit␛[m␛[38;5;241m · ␛[m␛[38;5;245m[s] read the hunks␛[m           ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241mcommitting — git has it␛[m                                  ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · an ignored fixture · drawn dim and committed
@@ -288,9 +288,9 @@
 ␛[38;5;214m│␛[m ␛[38;5;243msecrets   ␛[m␛[38;5;241m1 github token · config/dev.env:12␛[m             ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the message␛[m                    ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                            ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] not now — nothing is committed␛[m                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[s]␛[m ␛[38;5;252mread the hunks␛[m           ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                                                 ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[92m[esc] back — nothing is committed, and the offer stays␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · asked · the keys are drawn and none is live
@@ -303,8 +303,8 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;245m[enter] commit␛[m␛[38;5;241m · ␛[m␛[38;5;245m[e] edit the message␛[m                    ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;245m[s] read the hunks␛[m               ␛[38;5;241mcommitting — git has it␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;245m[enter] commit␛[m␛[38;5;241m · ␛[m␛[38;5;245m[e] edit␛[m␛[38;5;241m · ␛[m␛[38;5;245m[s] read the hunks␛[m           ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241mcommitting — git has it␛[m                                  ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the message as a draft · the budget is the title

@@ -8,7 +8,7 @@ package chat
 // so they were out of reach at exactly the moment they were wanted. Reading
 // mode already keeps the draft and hands the keyboard to the transcript, so
 // the strip is the last thing its cursor reaches: `j` off the last row lands
-// on it, the arrows pick a chip, enter opens it, `x` drops it, and esc goes
+// on it, the arrows pick a chip, enter opens it, `d` drops it, and esc goes
 // back to the sentence as it was.
 //
 // Nothing is printed on a chip to say so. The keys are the mode's, live
@@ -162,7 +162,7 @@ func (m *Model) settleStrip() {
 
 // updateStrip answers the strip's own keys while the cursor is on it, and
 // reports whether it took one. Every other key is the mode's, answered as it
-// always is: `k` leaves, `q` goes back, a letter goes to the draft.
+// always is: `k` leaves, esc goes back, a letter goes to the draft.
 func (m Model) updateStrip(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	if !m.atStrip() {
 		return m, nil, false
@@ -274,6 +274,9 @@ func (m Model) stripKeyLine(width int) string {
 	for _, b := range keys.Staged.All() {
 		segs = append(segs, seg(b))
 	}
+	// The way back says where it goes, which is the draft the strip sits
+	// under; the register's own word is what a narrow bar keeps.
+	segs[len(segs)-1] = segAs(keys.Staged.Back, "back to the draft")
 	full := joinSegs(segs)
 	pos := fmt.Sprintf("chip %d of %d", m.pickedChip()+1, len(m.attachments))
 	if gap := width - lipgloss.Width(full) - lipgloss.Width(pos); gap >= 2 {

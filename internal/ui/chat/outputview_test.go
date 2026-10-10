@@ -3,7 +3,7 @@ package chat
 // The three depths of a row's output (
 // docs/interface/surfaces.md#the-activity-row): the bounded body with its
 // counted tail, the wider in-place window, and the full screen — plus the
-// command card's [d], which opens the same host on the card's own facts.
+// command card's [v], which opens the same host on the card's own facts.
 
 import (
 	"context"
@@ -223,7 +223,7 @@ func TestApprovalCard_ScrollResetsWhenTheCardChanges(t *testing.T) {
 	}
 }
 
-// The command card's [d] opens the card's own facts on the same host, and
+// The command card's [v] opens the card's own facts on the same host, and
 // esc returns to the card with the decision still pending.
 func TestApprovalCard_FullViewForCommands(t *testing.T) {
 	var ran []string
@@ -242,10 +242,10 @@ func TestApprovalCard_FullViewForCommands(t *testing.T) {
 	m.state = stateStreaming
 	m = runExecApproval(t, m)
 
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'v', Text: "v"})
 	m = updated.(Model)
 	if m.state != stateOutputFull || m.fullOutput == nil {
-		t.Fatalf("[d] on a command card should open the full view, got state %d", m.state)
+		t.Fatalf("[v] on a command card should open the full view, got state %d", m.state)
 	}
 	if view := ansi.Strip(m.View().Content); !strings.Contains(view, "echo hi") {
 		t.Fatalf("the full view should carry the command text:\n%s", view)

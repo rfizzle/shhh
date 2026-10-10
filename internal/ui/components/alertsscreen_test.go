@@ -49,7 +49,7 @@ func alertsScreen(focus int, open bool) *AlertsScreen {
 func TestAlertsScreen_ListsEveryEpisodeAndTheOneUnderThePointer(t *testing.T) {
 	view := ansi.Strip(alertsScreen(2, false).View(130))
 	for _, want := range []string{
-		"/alerts", "2 standing", "2 superseded", "[q] back",
+		"/alerts", "2 standing", "2 superseded", "[esc] back",
 		"✗ make test", "exit 2 · 3 runs", "since turn 3", "standing",
 		"✗ gofmt", "✓ golangci-lint run", "✓ go build", "superseded",
 		"quality gate default passed · turn 4", "[enter] show each run",

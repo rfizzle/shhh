@@ -151,12 +151,12 @@ func TestReadingHint_CarriesTheModeKeysInOrder(t *testing.T) {
 	m.moveFocus(-1)
 	line := ansi.Strip(m.readingKeyLine(m.contentWidth()))
 
-	for i, want := range []string{"[j/k] move", "[enter] expand", "[q] back to the prompt"} {
+	for i, want := range []string{"[↑↓/jk] move", "[enter] expand", "[esc] back to the prompt"} {
 		idx := strings.Index(line, want)
 		if idx < 0 {
 			t.Fatalf("the bar should offer %q, got %q", want, line)
 		}
-		if i > 0 && idx < strings.Index(line, "[j/k] move") {
+		if i > 0 && idx < strings.Index(line, "[↑↓/jk] move") {
 			t.Fatalf("the keys are out of order in %q", line)
 		}
 	}
@@ -186,8 +186,10 @@ func TestReadingHint_CollapseIsOfferedOnlyWhenSomethingIsOpen(t *testing.T) {
 	if !strings.Contains(ansi.Strip(m.readingKeyLine(m.contentWidth())), "[-] collapse") {
 		t.Fatalf("an open row should offer to close it, got %q", ansi.Strip(m.readingKeyLine(m.contentWidth())))
 	}
-	if !strings.Contains(ansi.Strip(m.readingKeyLine(m.contentWidth())), "1 row expanded") {
-		t.Fatal("the position field reports what is open once something is")
+	// The position narrows before the keys give up a word, and at this width
+	// the longer move key has taken the room "1 row expanded" had.
+	if bar := ansi.Strip(m.readingKeyLine(m.contentWidth())); !strings.Contains(bar, "1 row expanded") && !strings.Contains(bar, "1 expanded") {
+		t.Fatalf("the position field reports what is open once something is: %q", bar)
 	}
 
 	closed, _ := m.updateFocus(tea.KeyPressMsg{Code: []rune(keys.Shown(keys.Reading.Collapse))[0], Text: keys.Shown(keys.Reading.Collapse)})
@@ -286,7 +288,7 @@ func TestReadingMode_OnlyOnePaneIsDressedAtATime(t *testing.T) {
 	if reading.frameShowing() {
 		t.Fatal("the frame goes when the transcript takes the keyboard")
 	}
-	if !strings.Contains(ansi.Strip(readingView), "[q] back to the prompt") {
+	if !strings.Contains(ansi.Strip(readingView), "[esc] back to the prompt") {
 		t.Fatal("the hint bar stands where the frame was")
 	}
 }
@@ -303,7 +305,7 @@ func TestReadingHint_ShortensRatherThanClipping(t *testing.T) {
 		if strings.Contains(line, "…") {
 			t.Fatalf("at %d columns a key was clipped: %q", width, line)
 		}
-		if !strings.Contains(line, "[j/k] move") || !strings.Contains(line, "[q]") {
+		if !strings.Contains(line, "[↑↓/jk] move") || !strings.Contains(line, "[esc]") {
 			t.Fatalf("at %d columns the bar lost a key it cannot lose: %q", width, line)
 		}
 	}
@@ -321,7 +323,7 @@ func TestReadingMode_SurvivesMono(t *testing.T) {
 	if !strings.Contains(view, "READING") {
 		t.Fatal("the rail's word is what carries it, so mono keeps it")
 	}
-	if !strings.Contains(view, "[q] back to the prompt") {
+	if !strings.Contains(view, "[esc] back to the prompt") {
 		t.Fatal("the hint bar is words before it is colours")
 	}
 	// The background's own parameters, which the row may carry inside a

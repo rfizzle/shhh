@@ -1,6 +1,6 @@
 package chat
 
-// [y] in reading mode (docs/interface/surfaces.md#reading-mode): the focused
+// [c] in reading mode (docs/interface/surfaces.md#reading-mode): the focused
 // row's content, shaped by what the row is, put on the terminal's own
 // clipboard where it takes one and on this machine's where it does not.
 
@@ -32,7 +32,7 @@ func copyModel(t *testing.T, caught *[]string) Model {
 	return m
 }
 
-// yank opens reading mode (cursor on the last row) and presses [y].
+// yank opens reading mode (cursor on the last row) and presses [c].
 func yank(t *testing.T, m Model) Model {
 	t.Helper()
 	m.viewport.SetLines(m.renderHistoryLines())
@@ -41,7 +41,7 @@ func yank(t *testing.T, m Model) Model {
 	if m.state != stateFocus {
 		t.Fatalf("reading mode should open, got state %d", m.state)
 	}
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Text: "c"})
 	return updated.(Model)
 }
 
@@ -120,7 +120,7 @@ func TestCopyRow_NothingToCopyIsALetter(t *testing.T) {
 	if len(caught) != 0 {
 		t.Fatalf("a pending call has no result to copy, got %v", caught)
 	}
-	if m.state == stateFocus || m.input.Value() != "y" {
+	if m.state == stateFocus || m.input.Value() != "c" {
 		t.Fatalf("the letter should land in the draft, state %d draft %q", m.state, m.input.Value())
 	}
 }
@@ -164,7 +164,7 @@ func TestCopyRow_FailureIsATranscriptRow(t *testing.T) {
 	}
 }
 
-// [y] is offered on the bar only while the row can honour it.
+// [c] is offered on the bar only while the row can honour it.
 func TestReadingHint_CopyOfferFollowsTheRow(t *testing.T) {
 	var caught []string
 	m := copyModel(t, &caught)
@@ -173,7 +173,7 @@ func TestReadingHint_CopyOfferFollowsTheRow(t *testing.T) {
 	updated, _ := m.Update(readingChord())
 	m = updated.(Model)
 	if line := ansi.Strip(m.readingKeyLine(m.contentWidth())); !strings.Contains(line, "["+keys.Shown(keys.Reading.Copy)+"]") {
-		t.Fatalf("a command row should offer [y], got %q", line)
+		t.Fatalf("a command row should offer [c], got %q", line)
 	}
 }
 
@@ -196,7 +196,7 @@ func TestCopyRow_TheTerminalTakesItWithNoToolOnPath(t *testing.T) {
 	m.viewport.SetLines(m.renderHistoryLines())
 	updated, _ = m.Update(readingChord())
 	m = updated.(Model)
-	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'c', Text: "c"})
 	m = updated.(Model)
 
 	want, ok := clipboard.OSC52("$ go build\nok")

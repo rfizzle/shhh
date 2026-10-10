@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · a fetch · the fetcher's own read, under ⚙
-/sources · 2 pages · 1 via mcp · 2 hosts · 1 search                                        [?] keys · [q] back
+/sources · 2 pages · 1 via mcp · 2 hosts · 1 search                                      [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 searches                                                │ https://docs.rs/tokio/latest/tokio/     orchestrator
@@ -26,10 +26,10 @@ example.com                                             │   asked for https://
                                                         │   kept as ev-1
                                                         │ 
 
-[enter] read the page that was kept · [esc] back to the prompt          recorded by the tool, not by the model
+[↑↓/jk] move · [enter] open · [esc] back to the prompt                  recorded by the tool, not by the model
 
 · a server's read · ⇄, and the way it came in place of a status
-/sources · 2 pages · 1 via mcp · 2 hosts · 1 search                                        [?] keys · [q] back
+/sources · 2 pages · 1 via mcp · 2 hosts · 1 search                                      [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 searches                                                │ https://example.com/guide               orchestrator
@@ -44,7 +44,7 @@ example.com                                             │   read 8 KB
 
 ── ansi ────────────────────────────────────────────────────
 · a fetch · the fetcher's own read, under ⚙
-␛[1;97m/sources␛[m␛[38;5;241m · 2 pages · 1 via mcp · 2 hosts · 1 search␛[m                                        ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/sources␛[m␛[38;5;241m · 2 pages · 1 via mcp · 2 hosts · 1 search␛[m                                      ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94msearches␛[m                                               ␛[38;5;241m │ ␛[m␛[1;97mhttps://docs.rs/tokio/latest/tokio/␛[m     ␛[38;5;241morchestrator␛[m
@@ -59,10 +59,10 @@ example.com                                             │   read 8 KB
                                                        ␛[38;5;241m │ ␛[m  ␛[38;5;243mkept as ␛[m␛[38;5;252mev-1␛[m
                                                        ␛[38;5;241m │ ␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;241m read the page that was kept␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m          ␛[38;5;241mrecorded by the tool, not by the model␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                  ␛[38;5;241mrecorded by the tool, not by the model␛[m
 
 · a server's read · ⇄, and the way it came in place of a status
-␛[1;97m/sources␛[m␛[38;5;241m · 2 pages · 1 via mcp · 2 hosts · 1 search␛[m                                        ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/sources␛[m␛[38;5;241m · 2 pages · 1 via mcp · 2 hosts · 1 search␛[m                                      ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94msearches␛[m                                               ␛[38;5;241m │ ␛[m␛[1;97mhttps://example.com/guide␛[m               ␛[38;5;241morchestrator␛[m

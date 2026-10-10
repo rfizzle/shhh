@@ -75,14 +75,14 @@ func TestInterrupt_ALetterGoesIntoTheSentenceNotIntoTheCard(t *testing.T) {
 		t.Fatalf("the letter belongs in the draft, got %q", got)
 	}
 	// The other three, and enter, which is how a sentence ends.
-	for _, k := range []rune{'n', 'a', 'd', 'A'} {
+	for _, k := range []rune{'n', 'a', 'v', 'A'} {
 		updated, _ = m.Update(tea.KeyPressMsg{Code: k, Text: string(k)})
 		m = updated.(Model)
 		if m.state != stateConfirmRun {
 			t.Fatalf("%q answered a card that does not hold the keyboard", k)
 		}
 	}
-	if got := m.input.Value(); got != draft+"ynadA" {
+	if got := m.input.Value(); got != draft+"ynavA" {
 		t.Fatalf("every letter belongs in the draft, got %q", got)
 	}
 }
@@ -99,7 +99,7 @@ func TestInterrupt_TheCardOffersOnlyTheKeyThatIsLive(t *testing.T) {
 	// And none of its own keys, however they would have been painted: a
 	// bracketed letter beside a live draft is an offer the draft answers
 	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-	for _, gone := range []string{"[y]", "[Y]", "[n]", "[N]", "[a]", "[d]"} {
+	for _, gone := range []string{"[y]", "[Y]", "[n]", "[N]", "[a]", "[v]"} {
 		if strings.Contains(view, gone) {
 			t.Fatalf("the ungated card draws %s, which the draft would answer:\n%s", gone, view)
 		}
@@ -119,7 +119,7 @@ func TestInterrupt_TheCardOffersOnlyTheKeyThatIsLive(t *testing.T) {
 
 	m = handover(t, m)
 	view = ansi.Strip(m.View().Content)
-	for _, back := range []string{"[y]", "[n]", "[d]"} {
+	for _, back := range []string{"[y]", "[n]", "[v]"} {
 		if !strings.Contains(view, back) {
 			t.Fatalf("a gated card's keys are ordinary keys, %s is missing:\n%s", back, view)
 		}
@@ -428,10 +428,12 @@ func TestArrival_AWarmKeyboardOpensTheGraceWindow(t *testing.T) {
 	if got := m.input.Value(); got != "" {
 		t.Fatalf("a discarded key must not land in the draft either, got %q", got)
 	}
-	// The chord no sentence can produce stays live: ctrl+c still denies.
+	// The chord no sentence can produce stays live: ctrl+c is not swallowed
+	// by the window. It no longer denies the card; with no turn under it the
+	// press goes on to arm the quit.
 	warm := m
 	updated, _ = warm.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
-	if got := updated.(Model); got.state == stateConfirmRun && got.approval.request != nil {
+	if got := updated.(Model); !got.armed.open(armQuit) {
 		t.Fatal("ctrl+c must stay live through the grace window")
 	}
 

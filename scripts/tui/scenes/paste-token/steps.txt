@@ -25,7 +25,7 @@ keys C-o
 snap 03b-strip "[enter] open" "back to the draft"
 keys Enter
 snap 04-open "PASTE#1 · lines"
-keys q
+keys Escape
 snap 05-back "[enter] open" "back to the draft"
 keys Escape
 snap 05b-draft "[enter] send" "fix the exit condition"
@@ -42,6 +42,7 @@ keys j
 snap 07b-strip "[enter] open" "back to the draft"
 keys Enter
 snap 08-reopened "PASTE#1 · lines"
-keys q
+keys Escape
+sleep 0.3
 keys C-c
 keys C-c

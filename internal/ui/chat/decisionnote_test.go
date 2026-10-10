@@ -226,7 +226,7 @@ func TestAllowNoted_TheSentenceGoesOutAsYourOwnSteer(t *testing.T) {
 // table are the ones that answer this card when it does not: the digits the
 // queue answers, and the three letters the run and its qualifiers print.
 func TestDecisionNote_EveryLetterIsTextWhileTheFieldIsOpen(t *testing.T) {
-	for _, key := range []string{"1", "2", "9", "d", "t", "a", "y", "n", "A"} {
+	for _, key := range []string{"1", "2", "9", "v", "t", "a", "y", "n", "A"} {
 		t.Run(key, func(t *testing.T) {
 			m := press(t, notedCardModel(t), "N")
 			before := m.state

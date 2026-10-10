@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the whole register open
-shhh snippets · 3 snippets                                                                                     [?] keys · [q] quit
+shhh snippets · 3 snippets                                                                                   [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ❯ ports      what is listening on t…  4m ago │ ports                                                                        4m ago
@@ -19,13 +19,12 @@ shhh snippets · 3 snippets                                                     
 [↑↓/jk] move between snippets
 [enter] run the snippet under the pointer
 [c] copy its command to the clipboard
-[r] rename it, in a row under the list
-[x] delete it, after confirming it
+[e] rename it, in a row under the list
+[d] delete it, after confirming it
 [/] filter by name or by what the command is
-[ctrl+u] clear the filter or the rename row
-[backspace] delete a character from either
-[esc] keep the name, or back to the shell
-[q] back to the shell
+[backspace] delete a character from the filter or the rename row
+[esc] keep the name; clear the filter, then close it
+[esc] back to the shell
 
 glyphs
 ⚙  a read: a file, a search, a listing
@@ -46,7 +45,7 @@ $  a shell command
 
 ── ansi ────────────────────────────────────────────────────
 · the whole register open
-␛[1;97mshhh snippets␛[m␛[38;5;241m · 3 snippets␛[m                                                                                     ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[1;97mshhh snippets␛[m␛[38;5;241m · 3 snippets␛[m                                                                                   ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯␛[m ␛[1;97;48;5;62mports      what is listening on t…  4m ago␛[m␛[38;5;241m │ ␛[m␛[1;97mports␛[m                                                                        ␛[38;5;241m4m ago␛[m
@@ -54,13 +53,12 @@ $  a shell command
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move between snippets␛[m
 ␛[38;5;103m[enter]␛[m␛[38;5;241m run the snippet under the pointer␛[m
 ␛[38;5;103m[c]␛[m␛[38;5;241m copy its command to the clipboard␛[m
-␛[38;5;103m[r]␛[m␛[38;5;241m rename it, in a row under the list␛[m
-␛[38;5;103m[x]␛[m␛[38;5;241m delete it, after confirming it␛[m
+␛[38;5;103m[e]␛[m␛[38;5;241m rename it, in a row under the list␛[m
+␛[38;5;103m[d]␛[m␛[38;5;241m delete it, after confirming it␛[m
 ␛[38;5;103m[/]␛[m␛[38;5;241m filter by name or by what the command is␛[m
-␛[38;5;103m[ctrl+u]␛[m␛[38;5;241m clear the filter or the rename row␛[m
-␛[38;5;103m[backspace]␛[m␛[38;5;241m delete a character from either␛[m
-␛[92m[esc]␛[m␛[38;5;241m keep the name, or back to the shell␛[m
-␛[38;5;103m[q]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[backspace]␛[m␛[38;5;241m delete a character from the filter or the rename row␛[m
+␛[92m[esc]␛[m␛[38;5;241m keep the name; clear the filter, then close it␛[m
+␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 ␛[38;5;241mglyphs␛[m
 ␛[38;5;241m⚙␛[m  ␛[38;5;241ma read: a file, a search, a listing␛[m

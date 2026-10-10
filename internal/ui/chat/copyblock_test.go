@@ -249,7 +249,7 @@ func readingOn(t *testing.T, earlier, later string, idx int, caught *[]string) M
 
 func pressC(t *testing.T, m Model) Model {
 	t.Helper()
-	k := keys.Shown(keys.Reading.CopyBlock)
+	k := keys.Shown(keys.Reading.Copy)
 	updated, _ := m.Update(tea.KeyPressMsg{Code: rune(k[0]), Text: k})
 	return updated.(Model)
 }
@@ -257,8 +257,8 @@ func pressC(t *testing.T, m Model) Model {
 func TestReading_CopyBlockOnARowWithOneBlock(t *testing.T) {
 	var caught []string
 	m := readingOn(t, oneBlock, threeBlocks, 1, &caught)
-	if bar := ansi.Strip(m.readingKeyLine(m.contentWidth())); !strings.Contains(bar, "[c] copy a block") || !strings.Contains(bar, "[y] copy the row") {
-		t.Fatalf("a reply with a block offers both copies, got %q", bar)
+	if bar := ansi.Strip(m.readingKeyLine(m.contentWidth())); !strings.Contains(bar, "[c] copy a block") {
+		t.Fatalf("a reply with a block offers the block copy, got %q", bar)
 	}
 	m = pressC(t, m)
 	if m.picker.card != nil || m.state != stateFocus {
@@ -307,23 +307,33 @@ func TestReading_CopyBlockListsOnlyThatRowsBlocks(t *testing.T) {
 	}
 }
 
-func TestReading_CopyBlockIsSilentOnARowWithoutOne(t *testing.T) {
+func TestReading_CopyOnARowWithoutABlockCopiesTheRowOrIsSilent(t *testing.T) {
 	cases := []struct {
-		name string
-		idx  int
+		name   string
+		idx    int
+		copies bool
 	}{
-		{"the reader's own message", 0},
-		{"a reply with no block", 1},
+		{"the reader's own message", 0, false},
+		{"a reply with no block", 1, true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var caught []string
 			m := readingOn(t, "No code here, only prose.", threeBlocks, tc.idx, &caught)
-			if bar := ansi.Strip(m.readingKeyLine(m.contentWidth())); strings.Contains(bar, "[c]") {
+			if bar := ansi.Strip(m.readingKeyLine(m.contentWidth())); strings.Contains(bar, "copy a block") {
 				t.Fatalf("a row with no block offers no block copy, got %q", bar)
 			}
 			m = pressC(t, m)
-			if len(caught) != 0 || m.picker.card != nil {
+			if m.picker.card != nil {
+				t.Fatal("a row with no block opens no block card")
+			}
+			if tc.copies {
+				if len(caught) != 1 || m.state != stateFocus {
+					t.Fatalf("c should copy the row and stay in the mode, copied %q, state %d", caught, m.state)
+				}
+				return
+			}
+			if len(caught) != 0 {
 				t.Fatalf("copied %q", caught)
 			}
 			if m.state == stateFocus || m.input.Value() != "c" {
@@ -361,7 +371,7 @@ func TestGolden_CopyBlock(t *testing.T) {
 
 		return []golden.Panel{
 			{Label: "/copy code over three blocks · the numbered card, the second row lit", View: strings.Join(card.pickerLines(), "\n")},
-			{Label: "reading mode on the reply · [c] beside [y]", View: readingSurface(reading)},
+			{Label: "reading mode on the reply · [c] copies the block", View: readingSurface(reading)},
 			{Label: "a block taken · the caption on the bar", View: copied.panelView()},
 		}
 	})

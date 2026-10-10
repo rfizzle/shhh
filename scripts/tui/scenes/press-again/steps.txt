@@ -6,9 +6,10 @@
 #
 # What the capture is for: the one chord, escalating, read against that
 # golden: the idle rail offers it as a quit, a draft turns the offer into a
-# clear, the first press arms and the second quits; and over a card the
-# first press denies it and opens the same window, so the session is still
-# open after a different key. ctrl+d is not pressed anywhere: it quits nowhere.
+# clear, the first press arms and the second quits; and over a card waiting
+# in a running turn the first press stops the turn and arms nothing, so the
+# session is still open after a different key. ctrl+d is not pressed
+# anywhere: it quits nowhere.
 snap 01-idle "Some things worth doing first" "[ctrl+c] ×2 quit"
 keys "half a thought"
 snap 02-draft "half a thought" "[ctrl+c] clear"
@@ -18,7 +19,8 @@ keys "run the checks" Enter
 snap 04-card "[y] run it once"
 sleep 1
 keys C-c
-snap 05-over-a-card "again quits" "[ctrl+c] again quits"
+snap 05-over-a-card "⊘" "[ctrl+c] ×2 quit"
+
 keys x
 snap 06-still-open "the session never closed" "x"
 keys C-c

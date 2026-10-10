@@ -50,10 +50,10 @@ steering   and check the parser
 · reading mode on the strip · the cursor on the second of three chips, the strip's keys under it
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ▣ Image#1 clipboard.png 412 KB · ❯ Image#2 clipboard.png 380 KB · ≡ File#1 notes.md 2 KB 84 lines
-[←→] chip · [enter] open · [x] drop · [esc] back to the draft                                                      chip 2 of 3
+[←→] chip · [enter] open · [d] delete · [esc] back to the draft                                                    chip 2 of 3
 
 
-· the card a chip opened · [x] remove on its hint row, and back is to the strip
+· the card a chip opened · [d] delete on its hint row, and back is to the strip
 ╭─ shot.png ────────────────────────────────────────────────── 128 B ─ 32×16 ─╮
 │                      ░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒                       │
 │                      ░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒                       │
@@ -64,7 +64,7 @@ steering   and check the parser
 │                      ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓███████                       │
 │                      ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓███████████████                       │
 ╰─────────────────────────────────────────────────────────────────────────────╯
-[x] remove · [esc] back to the strip
+[d] delete · [esc] back to the strip
 
 ── ansi ────────────────────────────────────────────────────
 · one screenshot waiting
@@ -107,10 +107,10 @@ steering   and check the parser
 · reading mode on the strip · the cursor on the second of three chips, the strip's keys under it
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m▣ Image#1 clipboard.png␛[m␛[38;5;244m 412 KB␛[m␛[38;5;244m · ␛[m␛[38;5;254m❯␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m ␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mImage#2 clipboard.png 380 KB␛[m␛[m␛[38;5;244m · ␛[m␛[38;5;254m≡ File#1 notes.md␛[m␛[38;5;244m 2 KB␛[m␛[38;5;244m 84 lines␛[m
-␛[38;5;254m[←→]␛[m␛[38;5;244m chip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m drop␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft␛[m                                                      ␛[38;5;244mchip 2 of 3␛[m
+␛[38;5;254m[←→]␛[m␛[38;5;244m chip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft␛[m                                                    ␛[38;5;244mchip 2 of 3␛[m
 
 
-· the card a chip opened · [x] remove on its hint row, and back is to the strip
+· the card a chip opened · [d] delete on its hint row, and back is to the strip
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mshot.png ␛[m␛[38;5;244m────────────────────────────────────────────────── ␛[38;5;244m128 B␛[m ─ ␛[38;5;244m32×16␛[m ─╮␛[m
 ␛[38;5;244m│␛[m                      ░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m                      ░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒                       ␛[38;5;244m│␛[m
@@ -121,4 +121,4 @@ steering   and check the parser
 ␛[38;5;244m│␛[m                      ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓███████                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m                      ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓███████████████                       ␛[38;5;244m│␛[m
 ␛[38;5;244m╰─────────────────────────────────────────────────────────────────────────────╯␛[m
-␛[38;5;254m[x]␛[m␛[38;5;244m remove␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the strip␛[m
+␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the strip␛[m

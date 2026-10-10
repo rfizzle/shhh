@@ -27,7 +27,7 @@ func (b *BacklogScreen) Update(msg tea.KeyPressMsg) (done bool, result backlogRe
 	pressed := msg.String()
 	// The plan card answers every keystroke while it is up, including the
 	// way out: a card that is asking for one answer and a screen underneath
-	// it that closes on `q` would lose the proposal to a letter.
+	// it that closes on esc would lose the proposal to the reflex.
 	if b.planning() {
 		var res backlogResult
 		res, b.Notice = b.Plan.update(pressed)
@@ -35,8 +35,8 @@ func (b *BacklogScreen) Update(msg tea.KeyPressMsg) (done bool, result backlogRe
 	}
 	// With the query line open the query line is the surface, so every
 	// selector letter is a letter — the reading every list in the product
-	// makes. ctrl+u clears it, and clearing a filter that is already empty
-	// closes it, which is how the row keys are got back without leaving.
+	// makes. esc clears it, and on a filter that is already empty it closes
+	// the row, which is how the row keys are got back without leaving.
 	if b.filter.filtering {
 		// The list under the row is still a list, which is why the movement
 		// binding is the arrows and not j/k: a query being typed into has

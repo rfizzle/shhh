@@ -64,15 +64,18 @@ func (b *BacklogScreen) listRows(width, budget int) []string {
 }
 
 // hiddenRows is the line under the list saying what the filters took out of
-// it, and the key that puts them back. It is drawn only while something is
-// hidden: a filter that hid nothing has nothing to confess.
+// it, and, while the query row is open, the key that clears it. It is drawn
+// only while something is hidden: a filter that hid nothing has nothing to
+// confess.
 func (b *BacklogScreen) hiddenRows(width int) []string {
 	hidden := len(b.rows()) - len(b.filter.shown)
 	if hidden <= 0 {
 		return nil
 	}
-	row := sty.dim.Render(fmt.Sprintf("%d hidden · ", hidden)) +
-		sty.key.Render(keys.Bracket(keys.Backlog.ClearQ)) + sty.dim.Render(" clear it")
+	row := sty.dim.Render(fmt.Sprintf("%d hidden", hidden))
+	if b.filter.filtering && b.filter.query != "" {
+		row += sty.dim.Render(" · ") + sty.key.Render(keys.Bracket(keys.Backlog.Back)) + sty.dim.Render(" clear it")
+	}
 	return []string{screenRule(width), Clip(row, width)}
 }
 

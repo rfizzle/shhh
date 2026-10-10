@@ -1335,7 +1335,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		card.Variant = components.ApprovalCommand
 		card.Title = "Approve command"
 		card.Answer = "run it once"
-		// [d] opens the command card's own full view — the whole command,
+		// [v] opens the command card's own full view — the whole command,
 		// the warnings and the blast radius, unclipped — the way it opens an
 		// edit's diff (docs/interface/surfaces.md#the-approval-card).
 		card.FullDiff = true
@@ -1608,7 +1608,7 @@ func (m Model) scrollCard(msg tea.KeyPressMsg, card *components.ApprovalCard) (t
 	return m, nil
 }
 
-// commandCardView is the command card's [d]: the whole command, the warnings
+// commandCardView is the command card's [v]: the whole command, the warnings
 // and the blast radius as one full-screen page, wrapped rather than clipped
 // — the card's body clips wide lines behind the pan; this view is where the
 // whole of a long command is read before it is answered.

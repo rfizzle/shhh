@@ -207,7 +207,7 @@ func TestSprintPlan_RefusesAnEmptySet(t *testing.T) {
 // of them is offered: a key that cannot act is not an offer.
 func TestSprintPlan_OffersOnlyItsOwnKeys(t *testing.T) {
 	view := ansi.Strip(planScreen().View(110))
-	for _, want := range []string{"[↑↓/jk] move", "[space] drop it, or put it back", "[enter] write the sprint", "[esc] write nothing"} {
+	for _, want := range []string{"[↑↓/jk] move", "[space] toggle", "[enter] write the sprint", "[esc] back"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the card never offers %q:\n%s", want, view)
 		}

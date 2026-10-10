@@ -65,7 +65,7 @@ func doctorIndent(line string) int {
 // has taken and the two keys every supporting screen offers.
 func TestDoctorScreen_HeaderStatesTheRunAndTheKeys(t *testing.T) {
 	head := doctorLines(doctorScreen(), 110)[0]
-	for _, want := range []string{"shhh doctor", "6 checks", "0.4s", "[?] keys", "[q] quit"} {
+	for _, want := range []string{"shhh doctor", "6 checks", "0.4s", "[?] keys", "[esc] back"} {
 		if !strings.Contains(head, want) {
 			t.Fatalf("the header %q does not state %q", head, want)
 		}
@@ -353,14 +353,12 @@ func TestDoctorScreen_CopyAndRerunResolveToTheHost(t *testing.T) {
 	}
 }
 
-// `[q]`, `[esc]` and ctrl+c leave; nothing else does.
-func TestDoctorScreen_OnlyTheQuitKeysCloseIt(t *testing.T) {
-	for _, k := range []string{"q", "esc", "ctrl+c"} {
-		if done, _ := doctorScreen().Update(key(k)); !done {
-			t.Fatalf("%s did not close the screen", k)
-		}
+// `[esc]` leaves; nothing else does.
+func TestDoctorScreen_OnlyEscCloses(t *testing.T) {
+	if done, _ := doctorScreen().Update(key("esc")); !done {
+		t.Fatal("esc did not close the screen")
 	}
-	for _, k := range []string{"f", "c", "r", "?", "down", "enter", "/"} {
+	for _, k := range []string{"q", "ctrl+c", "f", "c", "r", "?", "down", "enter", "/"} {
 		if done, _ := doctorScreen().Update(key(k)); done {
 			t.Fatalf("%s closed the screen", k)
 		}
@@ -372,7 +370,7 @@ func TestDoctorScreen_QuestionMarkListsEveryKey(t *testing.T) {
 	d := doctorScreen()
 	d.Update(key("?"))
 	out := doctorPlain(d, 110)
-	for _, want := range []string{"[↑↓/jk]", "[f]", "[c]", "[r]", "[esc]", "[q]", "hide the keys"} {
+	for _, want := range []string{"[↑↓/jk]", "[f]", "[c]", "[r]", "[esc]", "hide the keys"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("the key list does not offer %q:\n%s", want, out)
 		}

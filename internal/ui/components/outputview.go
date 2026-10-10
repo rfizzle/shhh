@@ -76,7 +76,7 @@ func (v *OutputView) Scroll(delta int) {
 // key in (Keyed) — a scroll leaves the view up and says so.
 func (v *OutputView) Update(msg tea.KeyPressMsg) (done bool, result outputResult) {
 	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Output.Back, keys.Output.Leave):
+	case keys.Is(pressed, keys.Output.Back):
 		return true, outputBack
 	case keys.Is(pressed, keys.Output.Collapse):
 		return true, OutputCollapse

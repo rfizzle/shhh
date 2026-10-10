@@ -240,7 +240,7 @@ func TestProgram_TheSafetyReadingReadsTheLiveSession(t *testing.T) {
 	send(tm, "/security")
 	waitForText(t, tm, "/safety · accept-edits · unconfined")
 	waitForText(t, tm, "shared-assets")
-	frameHas(t, finalFrame(t, tm), "accept-edits", "shared-assets", "[q] back")
+	frameHas(t, finalFrame(t, tm), "accept-edits", "shared-assets", "[esc] back")
 }
 
 // The same route in a conversation: the screen opens, and says the session

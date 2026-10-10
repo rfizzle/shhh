@@ -107,7 +107,7 @@ func (i interruptState) update(msg tea.KeyPressMsg, at decisionAt) (interruptSta
 	// give the card the whole keyboard. From ungated it is the mid-sentence
 	// rule's transfer — every letter belonged to the draft, and now none do.
 	// From a card holding the keyboard by arrival it buys the keys that card
-	// left alone on purpose ([a], [d], [A]).
+	// left alone on purpose ([a], [v], [A]).
 	if at.showing && keys.Match(msg, keys.Draft.Answer) && (ungated || i.heldOnArrival) {
 		return i, decisionGate
 	}

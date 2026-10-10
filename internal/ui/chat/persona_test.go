@@ -656,9 +656,9 @@ func TestPersona_EscTakesBackASectionsRevisionsOneAtATime(t *testing.T) {
 	m, _, saves := sectionedModel(t, persona.KindCode, answerRewritingEverything())
 	m = refineSection(t, m, 1, "name the goldens")
 	m = handEdit(t, m, "Scope", "Only internal/agent.")
-	m = pressOn(t, m, tea.KeyPressMsg{Code: 'x', Text: "x"})
+	m = pressOn(t, m, tea.KeyPressMsg{Code: 'd', Text: "d"})
 	if got := m.persona.draft.Sections.Scope; got != "" {
-		t.Fatalf("x should clear the section, got %q", got)
+		t.Fatalf("d should clear the section, got %q", got)
 	}
 	if view := personaView(m); !strings.Contains(view, "Scope ⚠ empty · you cleared it") {
 		t.Fatalf("a cleared section should say so:\n%s", view)
@@ -988,9 +988,9 @@ func TestPersona_TheCommandsSectionIsRevisedLikeAProseOne(t *testing.T) {
 		t.Fatalf("a refused edit changed the draft: %v", m.persona.draft.Deny)
 	}
 
-	m = pressOn(t, m, tea.KeyPressMsg{Code: 'x', Text: "x"})
+	m = pressOn(t, m, tea.KeyPressMsg{Code: 'd', Text: "d"})
 	if d := m.persona.draft; d.Intent != "" || len(d.Deny) != 0 {
-		t.Fatalf("x should clear the Commands fields: %q %v", d.Intent, d.Deny)
+		t.Fatalf("d should clear the Commands fields: %q %v", d.Intent, d.Deny)
 	}
 	if view := personaView(m); !strings.Contains(view, "Commands · you cleared it") {
 		t.Fatalf("a cleared Commands block should say so:\n%s", view)

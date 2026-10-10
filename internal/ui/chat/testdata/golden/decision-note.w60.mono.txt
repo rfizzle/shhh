@@ -21,7 +21,7 @@
 ├──────────────────────────────────────────────────────┤
 │ [y] apply the change · [Y] apply with a note         │
 │ [n] deny · [N] deny with a note                      │
-│ [a] allow edits in ./ without asking · [d] full diff │
+│ [a] allow edits in ./ without asking · [v] full diff │
 │ these letters go into the field                      │
 │ ┄ why not                                            │
 │   not that file                                      │
@@ -41,7 +41,7 @@
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[y] apply the change␛[m␛[38;5;244m · ␛[m␛[38;5;244m[Y] apply with a note␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[N] deny with a note␛[m                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[a] allow edits in ./ without asking␛[m␛[38;5;244m · ␛[m␛[38;5;244m[d] full diff␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[a] allow edits in ./ without asking␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v] full diff␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mthese letters go into the field␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ why not␛[m                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m␛[m␛[38;5;254mnot that file␛[m ␛[38;5;254m                                    ␛[m ␛[38;5;254m│␛[m

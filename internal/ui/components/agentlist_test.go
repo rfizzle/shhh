@@ -57,7 +57,7 @@ func TestAgentListReadsTheSessionsRoles(t *testing.T) {
 	for _, want := range []string{
 		"researcher · read-only tools", "built-in",
 		"critic · reads a diff", "project",
-		"[enter] open it", "[e] open its file",
+		"[enter] open it", "[e] edit",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the roles section lacks %q:\n%s", want, view)
@@ -162,7 +162,7 @@ func TestAgentListIgnoresAgentKeysOverARoleRow(t *testing.T) {
 		t.Fatal("[s] over a role row must not open the redirect field")
 	}
 	view := ansi.Strip(l.View(96))
-	for _, gone := range []string{"[x] cancel", "[X] kill agent", "[s] steer", "[r] retry"} {
+	for _, gone := range []string{"[d] cancel", "[X] kill agent", "[s] steer", "[r] retry"} {
 		if strings.Contains(view, gone) {
 			t.Fatalf("a role row must not offer %q:\n%s", gone, view)
 		}
@@ -211,7 +211,7 @@ func TestAgentListOffersWhatTheListCanDo(t *testing.T) {
 				t.Fatalf("focus %d missing %q:\n%s", focus, want, view)
 			}
 		}
-		if got := strings.Contains(view, "[x] cancel"); got != (focus != 4) {
+		if got := strings.Contains(view, "[d] cancel"); got != (focus != 4) {
 			t.Fatalf("focus %d offers cancel=%v, want %v:\n%s", focus, got, focus != 4, view)
 		}
 		if got := strings.Contains(view, "[r] retry"); got != (focus == 3) {
@@ -461,8 +461,8 @@ func TestAgentListKeepsTodaysSemantics(t *testing.T) {
 	if done, result := l.Update(agentKey("enter")); !done || result.Action != AgentAttach {
 		t.Fatalf("enter = %#v (done=%v), want AgentAttach", result, done)
 	}
-	if done, result := l.Update(agentKey("x")); done || result.Action != AgentCancel {
-		t.Fatalf("x = %#v (done=%v), want AgentCancel with the list open", result, done)
+	if done, result := l.Update(agentKey("d")); done || result.Action != AgentCancel {
+		t.Fatalf("d = %#v (done=%v), want AgentCancel with the list open", result, done)
 	}
 	if done, result := l.Update(agentKey("X")); done || result.Action != AgentKill {
 		t.Fatalf("X = %#v (done=%v), want AgentKill with the list open", result, done)

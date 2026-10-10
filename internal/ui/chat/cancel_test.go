@@ -169,10 +169,10 @@ func TestQuit_OverALiveTurnAsksFirst(t *testing.T) {
 	}
 }
 
-// Over a card or a picker the chord escalates as it does everywhere: cancel
-// first, then quit. The first press does what the surface lets it do (back
-// out) and opens the quit window; a second press of the same chord inside it
-// quits, and a different key inside the window completes nothing.
+// Over a card or a picker with no turn under it the chord leaves the surface
+// exactly as it was and opens the quit window; a second press of the same
+// chord inside it quits, and a different key inside the window completes
+// nothing.
 func TestQuit_NeedsTwoOfTheSameChordEverywhere(t *testing.T) {
 	surfaces := []struct {
 		name string
@@ -202,8 +202,8 @@ func TestQuit_NeedsTwoOfTheSameChordEverywhere(t *testing.T) {
 			if m.quitting {
 				t.Fatal("one ctrl+c must not quit")
 			}
-			if m.state == tc.held {
-				t.Fatal("the first press must do the surface's own cancel")
+			if m.state != tc.held {
+				t.Fatalf("the first press must leave the surface up, got state %d", m.state)
 			}
 			if !m.armed.openOn(armQuit, quitChord()) {
 				t.Fatal("the first press must open the quit window")

@@ -302,7 +302,7 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 		return m.releaseToDraft(msg)
 	}
 	if result == components.ApprovalFullDiff {
-		// [d] opens the child's change full screen with the request still
+		// [v] opens the child's change full screen with the request still
 		// waiting behind it; esc comes back to the card, which keeps the
 		// keyboard because the reader took it on purpose (leaveSurface).
 		return m.openChildDiff(ask)
@@ -357,7 +357,7 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 // jump into its view.
 //
 // It carries what the session's own card carries — the blast radius, the
-// severity and its reading, the containment chip, reversibility, and [d] into
+// severity and its reading, the containment chip, reversibility, and [v] into
 // the whole diff. The person answering is the same person deciding on the
 // same terms, and this is the card they have least else to go on from: the
 // work happened somewhere they were not watching. The variant it matters most
@@ -475,7 +475,7 @@ func (m *Model) forgetChildBlast(asks ...*subagent.Ask) {
 // Only the two answers resolve a request. A result the surface routes
 // somewhere else — the full-screen diff — must never reach the answer below
 // on its way, because everything that is not an approval there is a decline:
-// a reader who pressed [d] to read a patch before deciding would have
+// a reader who pressed [v] to read a patch before deciding would have
 // declined it by asking to read it, and the child would be told so.
 func askAnswer(result components.ApprovalDecision) (approved, ok bool) {
 	switch result {

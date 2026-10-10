@@ -513,9 +513,10 @@ func rateByLine(db rateStore, in io.Reader, out io.Writer, items []rateItem, now
 
 // rateLineKeys is the walk's key row, spelled from the register rather than
 // written down: these are the screen's own four keys, and a line that said
-// them in its own words would go stale the first time one was reworded. `[q]`
-// rather than `[esc]` is the one difference the surface owns — this walk is
-// reading lines, and esc is not a line.
+// them in its own words would go stale the first time one was reworded. The
+// way out is the one difference the surface owns: the screen leaves on esc,
+// and this walk is reading lines, where esc is not a line and the stop is the
+// q the answer switch reads.
 func rateLineKeys() string {
 	parts := make([]string, 0, 4)
 	for _, b := range []keys.Binding{
@@ -524,7 +525,7 @@ func rateLineKeys() string {
 		parts = append(parts, keys.Bracket(b)+" "+keys.Words(b))
 	}
 	return strings.Join(append(parts,
-		keys.Bracket(keys.Screen.Quit)+" stop"), " · ")
+		keys.Bracketed("q")+" stop"), " · ")
 }
 
 // rateSubject counts what is waiting, by kind. A reader who asked for both

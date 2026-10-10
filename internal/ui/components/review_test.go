@@ -186,9 +186,9 @@ func TestReview_HunkCursorSpillsBetweenFiles(t *testing.T) {
 	if v.file != 1 || v.hunk != 0 {
 		t.Fatalf("n should spill into the next file, got file %d hunk %d", v.file, v.hunk)
 	}
-	v.Update(key("p"))
+	v.Update(key("N"))
 	if v.file != 0 || v.hunk != len(v.Files[0].Hunks)-1 {
-		t.Fatalf("p should spill back to the previous file's last hunk, got file %d hunk %d", v.file, v.hunk)
+		t.Fatalf("N should spill back to the previous file's last hunk, got file %d hunk %d", v.file, v.hunk)
 	}
 }
 

@@ -319,7 +319,7 @@ func TestPatterns_AReadingThatLandsAfterTheListClosedIsDropped(t *testing.T) {
 		t.Fatal("enter on a memory row should ask for its words")
 	}
 	msg := cmd()
-	next = press(t, next, "q")
+	next = press(t, next, "esc")
 	updated, _ := next.Update(msg)
 	if updated.(Model).state == stateProposal {
 		t.Fatal("a card opened on a list that was closed")

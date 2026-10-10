@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · a steer taken back · the reading whole, and what became of its steer
-/readings · 5 readings   $0.0142 spent · [?] keys · [q] back
+/readings              $0.0142 spent · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
 ❯ ⚠ r 11 · off target  withdrawn                      turn 2
@@ -30,7 +30,7 @@ r 11 · off target                                     turn 2
 [esc] back to the prompt
 
 · a steer that stood · the oldest let go, and the screen saying so
-/readings · 5 readings   $0.0142 spent · [?] keys · [q] back
+/readings              $0.0142 spent · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
 3 oldest readings let go · the screen keeps the last 200
@@ -49,7 +49,7 @@ r 6 · off target                                      turn 2
 [esc] back to the prompt
 
 · a quiet reading · kept here though the transcript drew no row for it
-/readings · 5 readings   $0.0142 spent · [?] keys · [q] back
+/readings              $0.0142 spent · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   ⚠ r 11 · off target  withdrawn                      turn 2
@@ -69,7 +69,7 @@ r 3 · on target                                       turn 1
 
 ── ansi ────────────────────────────────────────────────────
 · a steer taken back · the reading whole, and what became of its steer
-␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m   ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/readings␛[m              ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ r 11 · off target  withdrawn                      turn 2␛[m
@@ -88,7 +88,7 @@ r 3 · on target                                       turn 1
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · a steer that stood · the oldest let go, and the screen saying so
-␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m   ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/readings␛[m              ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m3 oldest readings let go · the screen keeps the last 200␛[m
@@ -107,7 +107,7 @@ r 3 · on target                                       turn 1
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · a quiet reading · kept here though the transcript drew no row for it
-␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m   ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/readings␛[m              ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m⚠ r 11 · off target␛[m  ␛[38;5;244mwithdrawn␛[m                      ␛[38;5;244mturn 2␛[m

@@ -22,7 +22,8 @@ keys "read the notes" Enter
 snap 03-paused "the turn's own bound" "1 of 1 used"
 keys "/turns" Enter
 snap 04-turns "Paused at its round limit" "⚠ turn 2" "paused" "rounds used" "✓ turn 1"
-keys q
+keys Escape
+sleep 0.3
 keys "/stats" Enter
 # The paused turn is on the bill under the pause row's word, beside the turn
 # that closed; the total over them is the session's.

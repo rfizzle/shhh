@@ -25,13 +25,14 @@ keys y
 # cursor opens on the turn's close, and the card is two stops above it.
 snap 03-card "Two warnings and an error" "1 error, 2 warnings"
 keys C-o
-snap 04-reading "[j/k] move"
+snap 04-reading "[↑↓/jk] move"
 keys k
 keys k
 snap 05-on-the-card "[enter] open it"
 keys Enter
 snap 06-repainted "no-unused-vars" "warn  no-unused-vars  src/app.ts" "1 error, 2 warnings"
-keys q
+keys Escape
+sleep 0.3
 keys C-c
 keys C-c
 snap 07-exit "that is everything the screen was holding"

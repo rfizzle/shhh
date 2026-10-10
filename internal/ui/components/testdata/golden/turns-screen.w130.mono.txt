@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the turn in flight · the rail's reading of it, on the close's grid
-/turns · 6 turns · 26 tools                                                                    $0.1580 spent · [?] keys · [q] back
+/turns · 6 turns · 26 tools                                                                  $0.1580 spent · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ❯ ▸ turn 6  running · ▎1 file +4 −1                      │ turn 6                                                          running
@@ -24,7 +24,7 @@
 [↑↓/jk] move · [enter] review turn 6 · [esc] back to the prompt                                each turn as its close row reads it
 
 · a turn that wrote nothing · the review offered grey
-/turns · 6 turns · 26 tools                                                                    $0.1580 spent · [?] keys · [q] back
+/turns · 6 turns · 26 tools                                                                  $0.1580 spent · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ▸ turn 6  running · ▎1 file +4 −1                      │ turn 5                                                             done
@@ -37,7 +37,7 @@
 [↑↓/jk] move · [enter] review turn 5 · [esc] back to the prompt                                each turn as its close row reads it
 
 · a turn that committed · its close whole, and its files
-/turns · 6 turns · 26 tools                                                                    $0.1580 spent · [?] keys · [q] back
+/turns · 6 turns · 26 tools                                                                  $0.1580 spent · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ▸ turn 6  running · ▎1 file +4 −1                      │ turn 4                                                             done
@@ -52,7 +52,7 @@
 [↑↓/jk] move · [enter] review turn 4 · [esc] back to the prompt                                each turn as its close row reads it
 
 · a failing check · the close's verdict, none of the row's keys
-/turns · 6 turns · 26 tools                                                                    $0.1580 spent · [?] keys · [q] back
+/turns · 6 turns · 26 tools                                                                  $0.1580 spent · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ▸ turn 6  running · ▎1 file +4 −1                      │ turn 3                                                             done
@@ -66,7 +66,7 @@
 [↑↓/jk] move · [enter] review turn 3 · [esc] back to the prompt                                each turn as its close row reads it
 
 · a restored turn · its files, and no figures kept
-/turns · 6 turns · 26 tools                                                                    $0.1580 spent · [?] keys · [q] back
+/turns · 6 turns · 26 tools                                                                  $0.1580 spent · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ▸ turn 6  running · ▎1 file +4 −1                      │ turn 2                                                  no figures kept
@@ -80,7 +80,7 @@
 [↑↓/jk] move · [enter] review turn 2 · [esc] back to the prompt                                each turn as its close row reads it
 
 · a turn paused at its round limit · the pause row's rounds, time and cost
-/turns · 6 turns · 26 tools                                                                    $0.1580 spent · [?] keys · [q] back
+/turns · 6 turns · 26 tools                                                                  $0.1580 spent · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ❯ ⚠ turn 6  paused · ▎1 file +4 −1               $0.3140 │ turn 6                                                           paused
@@ -94,7 +94,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · the turn in flight · the rail's reading of it, on the close's grid
-␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m␛[38;5;244m · 26 tools␛[m                                                                    ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m␛[38;5;244m · 26 tools␛[m                                                                  ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m▸ turn 6  running · ▎1 file +4 −1                     ␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mturn 6␛[m                                                          ␛[38;5;244mrunning␛[m
@@ -107,7 +107,7 @@
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn 6␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                ␛[38;5;244meach turn as its close row reads it␛[m
 
 · a turn that wrote nothing · the review offered grey
-␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m␛[38;5;244m · 26 tools␛[m                                                                    ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m␛[38;5;244m · 26 tools␛[m                                                                  ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m▸ turn 6␛[m  ␛[38;5;254mrunning␛[m␛[38;5;244m · ␛[m␛[38;5;254m▎␛[m␛[38;5;244m1 file ␛[m␛[38;5;254m+4␛[m␛[38;5;244m ␛[m␛[38;5;254m−1␛[m                     ␛[38;5;244m │ ␛[m␛[1;38;5;254mturn 5␛[m                                                             ␛[38;5;244mdone␛[m
@@ -120,7 +120,7 @@
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter]␛[m␛[38;5;244m review turn 5␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                ␛[38;5;244meach turn as its close row reads it␛[m
 
 · a turn that committed · its close whole, and its files
-␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m␛[38;5;244m · 26 tools␛[m                                                                    ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m␛[38;5;244m · 26 tools␛[m                                                                  ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m▸ turn 6␛[m  ␛[38;5;254mrunning␛[m␛[38;5;244m · ␛[m␛[38;5;254m▎␛[m␛[38;5;244m1 file ␛[m␛[38;5;254m+4␛[m␛[38;5;244m ␛[m␛[38;5;254m−1␛[m                     ␛[38;5;244m │ ␛[m␛[1;38;5;254mturn 4␛[m                                                             ␛[38;5;244mdone␛[m
@@ -135,7 +135,7 @@
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn 4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                ␛[38;5;244meach turn as its close row reads it␛[m
 
 · a failing check · the close's verdict, none of the row's keys
-␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m␛[38;5;244m · 26 tools␛[m                                                                    ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m␛[38;5;244m · 26 tools␛[m                                                                  ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m▸ turn 6␛[m  ␛[38;5;254mrunning␛[m␛[38;5;244m · ␛[m␛[38;5;254m▎␛[m␛[38;5;244m1 file ␛[m␛[38;5;254m+4␛[m␛[38;5;244m ␛[m␛[38;5;254m−1␛[m                     ␛[38;5;244m │ ␛[m␛[1;38;5;254mturn 3␛[m                                                             ␛[38;5;244mdone␛[m
@@ -149,7 +149,7 @@
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn 3␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                ␛[38;5;244meach turn as its close row reads it␛[m
 
 · a restored turn · its files, and no figures kept
-␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m␛[38;5;244m · 26 tools␛[m                                                                    ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m␛[38;5;244m · 26 tools␛[m                                                                  ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m▸ turn 6␛[m  ␛[38;5;254mrunning␛[m␛[38;5;244m · ␛[m␛[38;5;254m▎␛[m␛[38;5;244m1 file ␛[m␛[38;5;254m+4␛[m␛[38;5;244m ␛[m␛[38;5;254m−1␛[m                     ␛[38;5;244m │ ␛[m␛[1;38;5;254mturn 2␛[m                                                  ␛[38;5;244mno figures kept␛[m
@@ -163,7 +163,7 @@
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn 2␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                ␛[38;5;244meach turn as its close row reads it␛[m
 
 · a turn paused at its round limit · the pause row's rounds, time and cost
-␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m␛[38;5;244m · 26 tools␛[m                                                                    ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m␛[38;5;244m · 26 tools␛[m                                                                  ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ turn 6  paused · ▎1 file +4 −1               $0.3140␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mturn 6␛[m                                                           ␛[38;5;244mpaused␛[m

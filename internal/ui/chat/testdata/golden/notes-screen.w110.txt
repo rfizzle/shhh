@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · as it opens · the pointer on the last note written
-/notes · 4 notes · 4 agents                                                            [?] keys · [q] back
+/notes · 4 notes · 4 agents                                                          [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 orchestrator                                          │ The reviewer's own delegate
@@ -22,10 +22,10 @@ researcher-1                                          │   front, so its note f
   Where the goldens live      n3               turn 4 │ 
 ❯ The reviewer's own delegate  n4              turn 4 │ 
 
-[↑↓/jk] move · [enter] read the whole note · [d] drop it · [esc] back to the prompt
+[enter] open · [d] delete · [esc] back to the prompt          written by the agents; dropping one is yours
 
 · a note from the fan-out · the preview reads it
-/notes · 4 notes · 4 agents                                                            [?] keys · [q] back
+/notes · 4 notes · 4 agents                                                          [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 orchestrator                                          │ The deny list is read before the tier   reviewer-1
@@ -36,10 +36,10 @@ researcher-1                                          │   entry refuses the ve
   Where the goldens live      n3               turn 4 │ 
   The reviewer's own delegate  n4              turn 4 │ 
 
-[↑↓/jk] move · [enter] read the whole note · [d] drop it · [esc] back to the prompt
+[enter] open · [d] delete · [esc] back to the prompt          written by the agents; dropping one is yours
 
 · [d] · the one key that takes something out asks first
-/notes · 4 notes · 4 agents                                                            [?] keys · [q] back
+/notes · 4 notes · 4 agents                                                          [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 orchestrator                                          │ The deny list is read before the tier   reviewer-1
@@ -53,7 +53,7 @@ researcher-1                                          │   entry refuses the ve
 Drop "The deny list is read before the tier"?  [y/N]
 
 · /notes clear · the question counts what it would take
-/notes · 4 notes · 4 agents                                                            [?] keys · [q] back
+/notes · 4 notes · 4 agents                                                          [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 orchestrator                                          │ The reviewer's own delegate
@@ -69,11 +69,11 @@ Drop 4 notes? Nothing else in the session is touched.  [y/N]
 · the panel it leaves · the way out, on one row
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 ⏸ manual · context 32% ▰▰▱▱▱▱▱▱ · $0.51                                                                   
-notes · [q] back to the prompt
+notes · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · as it opens · the pointer on the last note written
-␛[1;97m/notes␛[m␛[38;5;241m · 4 notes · 4 agents␛[m                                                            ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/notes␛[m␛[38;5;241m · 4 notes · 4 agents␛[m                                                          ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94morchestrator␛[m                                         ␛[38;5;241m │ ␛[m␛[1;97mThe reviewer's own delegate␛[m
@@ -84,10 +84,10 @@ notes · [q] back to the prompt
   ␛[38;5;252mWhere the goldens live␛[m      ␛[38;5;252mn3␛[m               ␛[38;5;252mturn 4␛[m␛[38;5;241m │ ␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;62mThe reviewer's own delegate  n4              turn 4␛[m␛[38;5;241m │ ␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read the whole note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m drop it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m open␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m delete␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m          ␛[38;5;241mwritten by the agents; dropping one is yours␛[m
 
 · a note from the fan-out · the preview reads it
-␛[1;97m/notes␛[m␛[38;5;241m · 4 notes · 4 agents␛[m                                                            ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/notes␛[m␛[38;5;241m · 4 notes · 4 agents␛[m                                                          ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94morchestrator␛[m                                         ␛[38;5;241m │ ␛[m␛[1;97mThe deny list is read before the tier␛[m   ␛[38;5;241mreviewer-1␛[m
@@ -98,10 +98,10 @@ notes · [q] back to the prompt
   ␛[38;5;252mWhere the goldens live␛[m      ␛[38;5;252mn3␛[m               ␛[38;5;252mturn 4␛[m␛[38;5;241m │ ␛[m
   ␛[38;5;252mThe reviewer's own delegate␛[m  ␛[38;5;252mn4␛[m              ␛[38;5;252mturn 4␛[m␛[38;5;241m │ ␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read the whole note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m drop it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m open␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m delete␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m          ␛[38;5;241mwritten by the agents; dropping one is yours␛[m
 
 · [d] · the one key that takes something out asks first
-␛[1;97m/notes␛[m␛[38;5;241m · 4 notes · 4 agents␛[m                                                            ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/notes␛[m␛[38;5;241m · 4 notes · 4 agents␛[m                                                          ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94morchestrator␛[m                                         ␛[38;5;241m │ ␛[m␛[1;97mThe deny list is read before the tier␛[m   ␛[38;5;241mreviewer-1␛[m
@@ -115,7 +115,7 @@ notes · [q] back to the prompt
 ␛[38;5;252m␛[38;5;252mDrop "The deny list is read before the tier"?␛[m␛[m  ␛[38;5;241m[␛[m␛[38;5;241my␛[m␛[38;5;241m/␛[m␛[1;97mN␛[m␛[38;5;241m]␛[m
 
 · /notes clear · the question counts what it would take
-␛[1;97m/notes␛[m␛[38;5;241m · 4 notes · 4 agents␛[m                                                            ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/notes␛[m␛[38;5;241m · 4 notes · 4 agents␛[m                                                          ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94morchestrator␛[m                                         ␛[38;5;241m │ ␛[m␛[1;97mThe reviewer's own delegate␛[m
@@ -131,4 +131,4 @@ notes · [q] back to the prompt
 · the panel it leaves · the way out, on one row
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;214m⏸ manual␛[m␛[38;5;243m · ␛[m␛[92mcontext 32%␛[m ␛[92m▰▰␛[m␛[38;5;241m▱▱▱▱▱▱␛[m␛[38;5;243m · ␛[m␛[38;5;243m$0.51␛[m                                                                   
-␛[38;5;241mnotes · ␛[m␛[38;5;103m[q]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;241mnotes · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m

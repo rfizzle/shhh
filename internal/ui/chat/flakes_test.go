@@ -44,7 +44,7 @@ func TestGate_FlakesOpensTheLedgerAsAScreen(t *testing.T) {
 			t.Errorf("the screen is missing %q:\n%s", want, view)
 		}
 	}
-	closed, _ := opened.updateFlakes(keyPress('q'))
+	closed, _ := opened.updateFlakes(escK)
 	if got := closed.(Model); got.state == stateFlakes || got.screens.flakes() != nil {
 		t.Fatalf("the way out should close the screen, got state %d", got.state)
 	}

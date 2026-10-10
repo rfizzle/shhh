@@ -111,7 +111,7 @@ keys Enter
 wide 80 snap 15b-open-for-the-click "[enter] close it" "▎$ git status --short notes.md"
 narrow 80 snap 15b-open-for-the-click "[-] collapse" "▎$ git status --short notes.md"
 keys -l $'\e[<0;12;31M' $'\e[<0;12;31m'
-snap 16-the-clicked-call "output · [j/k] scroll" "$ git status --short notes.md" "?? notes.md" "[esc] back"
+snap 16-the-clicked-call "output · [↑↓/jk] move" "$ git status --short notes.md" "?? notes.md" "[esc] back"
 keys Escape
 wide 80 snap 17-back-on-the-open-card "[enter] fold it" "❯   ▾ ran 2 commands" "▎$ git status"
 narrow 80 snap 17-back-on-the-open-card "[-] collapse" "❯   ▾ ran 2 commands" "▎$ git status"
@@ -121,7 +121,7 @@ wide 80 snap 17a-on-the-header "[enter] close it" "❯▎✗ read"
 narrow 80 snap 17a-on-the-header "[-] collapse" "❯▎✗ read"
 keys Enter
 snap 17b-closed "[enter] open it" "Running the suite once more" "--- FAIL: TestReplyGolden"
-keys q
+keys Escape
 snap 18-prompt "╭─ ✓ done"
 
 # A read of a picture: the card's footer row names it and says it opens like
@@ -140,7 +140,7 @@ keys Enter
 snap 21-attachment-card "shot.png" "1×1"
 keys Escape
 sleep 1
-keys q
+keys Escape
 snap 22-prompt "╭─ ✓ done"
 # The ladder: at high every card is open on its groups, the large step's
 # strip under them (read against the `Cards` artboard's screen 10); at low
@@ -158,7 +158,7 @@ snap 22b-low "verbosity set to low" "⚙ read 2 files" "▎✎ wrote story.md"
 # gives back the one row. Reading mode opens on the last notice, and up
 # five is the first turn's large step.
 keys C-o
-snap 22c-reading-at-low "[j/k] move"
+snap 22c-reading-at-low "[↑↓/jk] move"
 keys k
 keys k
 keys k
@@ -170,7 +170,7 @@ wide 80 snap 22e-low-open "[enter] close it" "▾ read 6 files" "▾ ran 2 comma
 narrow 80 snap 22e-low-open "[-] collapse" "▾ ran 2 commands"
 keys Enter
 snap 22f-low-closed "[enter] open it" "❯▎✗ read"
-keys q
+keys Escape
 snap 22g-prompt "╭─ ✓ done"
 keys C-c
 snap 23-quit-armed "again quits"

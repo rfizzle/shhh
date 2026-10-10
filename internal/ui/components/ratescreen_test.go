@@ -116,19 +116,22 @@ func TestRateScreen_TheLastAnswerClosesTheScreen(t *testing.T) {
 // Esc stops, and it stops without an answer for the card that was up: the way
 // out never writes anything (docs/interface/principles.md#esc-is-always-the-safe-answer).
 func TestRateScreen_EscStopsWithoutAnswering(t *testing.T) {
-	for _, pressed := range []string{"esc", "q"} {
-		r := rateScreen()
-		rateAnswer(t, r, "y")
-		done, result := rateAnswer(t, r, pressed)
-		if !done {
-			t.Errorf("%q did not stop", pressed)
-		}
-		if !result.stopped {
-			t.Errorf("%q resolved to %#v, not a stop", pressed, result)
-		}
-		if r.focus != 1 {
-			t.Errorf("%q moved the card", pressed)
-		}
+	r := rateScreen()
+	rateAnswer(t, r, "y")
+	done, result := rateAnswer(t, r, "esc")
+	if !done {
+		t.Error("esc did not stop")
+	}
+	if !result.stopped {
+		t.Errorf("esc resolved to %#v, not a stop", result)
+	}
+	if r.focus != 1 {
+		t.Error("esc moved the card")
+	}
+	// q is a plain letter now: it neither stops nor answers.
+	r = rateScreen()
+	if done, result := rateAnswer(t, r, "q"); done || result.stopped || r.focus != 0 {
+		t.Errorf("q acted: done %v, result %#v, focus %d", done, result, r.focus)
 	}
 }
 

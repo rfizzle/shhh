@@ -75,11 +75,11 @@ func TestShippedKeyboard_IsTheDeclaration(t *testing.T) {
 // move, a draft chord may go back on alt, and the refusals fire.
 func TestShippedKeyboard_AFileMovesIt(t *testing.T) {
 	restoreRegister(t)
-	path := keymapFile(t, "[sources]\nlist = \"i\"\n[backlog]\nnew = \"a\"\n[draft]\nagents = \"alt+a\"\n")
+	path := keymapFile(t, "[sources]\nlist = \"i\"\n[backlog]\nnew = \"c\"\n[draft]\nagents = \"alt+a\"\n")
 	if err := Load(path); err != nil {
 		t.Fatalf("a file moving a screen key and a draft chord was refused: %v", err)
 	}
-	if !Is("i", Sources.List) || !Is("a", Backlog.New) || !Is("alt+a", Draft.Agents) {
+	if !Is("i", Sources.List) || !Is("c", Backlog.New) || !Is("alt+a", Draft.Agents) {
 		t.Errorf("the moves did not land: %v %v %v", Sources.List.Keys(), Backlog.New.Keys(), Draft.Agents.Keys())
 	}
 	for _, refused := range []struct{ body, says string }{

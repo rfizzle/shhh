@@ -59,7 +59,6 @@ func TestActionBar_KeysAreDirect(t *testing.T) {
 		{"c", ActionCopy},
 		{"ctrl+s", ActionSave},
 		{"esc", ActionCancel},
-		{"q", ActionCancel},
 	} {
 		if _, got := pressBar(t, NewActionBarModel(), tc.key); got != tc.want {
 			t.Errorf("%q selected %v, want %v", tc.key, got, tc.want)
@@ -128,12 +127,12 @@ func TestActionBar_EnterIsSpentOnceTheRadiusIsShowing(t *testing.T) {
 }
 
 func TestActionBar_DryRunOfferedOnlyWhenItExists(t *testing.T) {
-	if _, got := pressBar(t, NewActionBarModel(), "d"); got != ActionNone {
-		t.Errorf("[d] selected %v with no dry run available", got)
+	if _, got := pressBar(t, NewActionBarModel(), "p"); got != ActionNone {
+		t.Errorf("[p] selected %v with no dry run available", got)
 	}
 	m := NewActionBarModel().SetDryRun(true)
-	if _, got := pressBar(t, m, "d"); got != ActionDryRun {
-		t.Errorf("[d] selected %v, want ActionDryRun", got)
+	if _, got := pressBar(t, m, "p"); got != ActionDryRun {
+		t.Errorf("[p] selected %v, want ActionDryRun", got)
 	}
 	if strings.Contains(NewActionBarModel().View(barWidth), "dry run") {
 		t.Error("the bar offered a dry run it cannot perform")
@@ -158,7 +157,7 @@ func TestActionBar_ViewIsOneRowOfBracketedKeys(t *testing.T) {
 	view := NewActionBarModel().View(barWidth)
 	for _, want := range []string{
 		"[enter] run", "[e] edit", "[r] revise", "[x] explain",
-		"[c] copy", "[ctrl+s] save", "[esc] quit",
+		"[c] copy", "[ctrl+s] write", "[esc] back",
 	} {
 		if !strings.Contains(view, want) {
 			t.Errorf("bar is missing %q:\n%s", want, view)
@@ -171,14 +170,14 @@ func TestActionBar_ViewIsOneRowOfBracketedKeys(t *testing.T) {
 
 // A narrow terminal is the one that used to lose the end of the row: the
 // renderer drops what is past the last column, so the keys that went missing
-// were `[ctrl+s] save` and the `[esc]` that says how to leave.
+// were `[ctrl+s] write` and the `[esc]` that says how to leave.
 func TestActionBar_NarrowRowBreaksBetweenKeysAndKeepsThemAll(t *testing.T) {
 	const width = 60
 	view := NewActionBarModel().SetDanger(true).SetDryRun(true).View(width)
 	for _, want := range []string{
-		"[enter] show what it would affect", "[y] run it", "[d] dry run",
-		"[e] edit", "[r] revise", "[x] explain", "[c] copy", "[ctrl+s] save",
-		"[esc] quit",
+		"[enter] show what it would affect", "[y] run it", "[p] dry run",
+		"[e] edit", "[r] revise", "[x] explain", "[c] copy", "[ctrl+s] write",
+		"[esc] back",
 	} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the narrow bar dropped %q:\n%s", want, view)
@@ -211,7 +210,7 @@ func TestActionBar_NarrowRowKeepsTheRevisionCountBesideTheFirstKey(t *testing.T)
 
 func TestActionBar_DangerViewNamesBothHalves(t *testing.T) {
 	view := NewActionBarModel().SetDanger(true).SetDryRun(true).View(barWidth)
-	for _, want := range []string{"[enter] show what it would affect", "[y] run it", "[d] dry run"} {
+	for _, want := range []string{"[enter] show what it would affect", "[y] run it", "[p] dry run"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("destructive bar is missing %q:\n%s", want, view)
 		}

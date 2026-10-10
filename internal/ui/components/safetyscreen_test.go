@@ -162,13 +162,13 @@ func TestSafetyScreen_AShortReadingOffersNoScroll(t *testing.T) {
 // in the family acts on do nothing here.
 func TestSafetyScreen_OnlyTheWayOutCloses(t *testing.T) {
 	s := &SafetyScreen{Sections: safetySections()}
-	for _, k := range []string{"a", "r", "w", "x", "enter", "d"} {
+	for _, k := range []string{"a", "r", "w", "x", "enter", "d", "q"} {
 		if done, _ := s.Update(key(k)); done {
 			t.Errorf("%q closed a reading", k)
 		}
 	}
-	if done, result := s.Update(key("q")); !done || !result.canceled {
-		t.Error("q did not leave the reading")
+	if done, result := s.Update(key("esc")); !done || !result.canceled {
+		t.Error("esc did not leave the reading")
 	}
 }
 

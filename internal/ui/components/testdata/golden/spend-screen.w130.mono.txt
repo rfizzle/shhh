@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the total · the whole bill by kind of request
-/stats · 2 models · 2 children · 3 turns                                                       $0.4210 spent · [?] keys · [q] back
+/stats · 2 models · 2 children · 3 turns                                                     $0.4210 spent · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ❯ session total                                      $0.4210 │ session total                                        the whole bill
@@ -29,7 +29,7 @@ by turn                                                      │   main         
 [↑↓/jk] move · [enter] open the turn · [esc] back to the prompt             the session's bill, as the rail's SPEND block reads it
 
 · a model · its own kinds of request, and its children's share after the ◇
-/stats · 2 models · 2 children · 3 turns                                                       $0.4210 spent · [?] keys · [q] back
+/stats · 2 models · 2 children · 3 turns                                                     $0.4210 spent · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   session total                                      $0.4210 │ claude-opus-5-5                                               model
@@ -47,7 +47,7 @@ by turn                                                      │   main         
 [↑↓/jk] move · [enter] open the turn · [esc] back to the prompt             the session's bill, as the rail's SPEND block reads it
 
 · a child · its share by name, and the model it ran on
-/stats · 2 models · 2 children · 3 turns                                                       $0.4210 spent · [?] keys · [q] back
+/stats · 2 models · 2 children · 3 turns                                                     $0.4210 spent · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   session total                                      $0.4210 │ ◇ writer-1                                                    child
@@ -65,7 +65,7 @@ by turn                                                      │
 [↑↓/jk] move · [enter] open the turn · [esc] back to the prompt             the session's bill, as the rail's SPEND block reads it
 
 · a turn · its cost as its close states it, enter opens it on the turns screen
-/stats · 2 models · 2 children · 3 turns                                                       $0.4210 spent · [?] keys · [q] back
+/stats · 2 models · 2 children · 3 turns                                                     $0.4210 spent · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   session total                                      $0.4210 │ turn 2                                                         done
@@ -83,7 +83,7 @@ by turn                                                      │
 [↑↓/jk] move · [enter] open the turn · [esc] back to the prompt             the session's bill, as the rail's SPEND block reads it
 
 · a paused turn · the figure its pause row kept, the time and rounds it used
-/stats · 2 models · 2 children · 3 turns                                                       $0.4210 spent · [?] keys · [q] back
+/stats · 2 models · 2 children · 3 turns                                                     $0.4210 spent · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   session total                                      $0.4210 │ turn 3                                                       paused
@@ -101,7 +101,7 @@ by turn                                                      │
 [↑↓/jk] move · [enter] open the turn · [esc] back to the prompt             the session's bill, as the rail's SPEND block reads it
 
 · empty · a session that has spent nothing
-/stats                                                                                                         [?] keys · [q] back
+/stats                                                                                                       [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 the session has not been billed for anything yet             │ nothing selected
@@ -110,7 +110,7 @@ the session has not been billed for anything yet             │ nothing selecte
 
 ── ansi ────────────────────────────────────────────────────
 · the total · the whole bill by kind of request
-␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m␛[38;5;244m · 2 children␛[m␛[38;5;244m · 3 turns␛[m                                                       ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m␛[38;5;244m · 2 children␛[m␛[38;5;244m · 3 turns␛[m                                                     ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237msession total                                      $0.4210␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254msession total␛[m                                        ␛[38;5;244mthe whole bill␛[m
@@ -128,7 +128,7 @@ the session has not been billed for anything yet             │ nothing selecte
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m             ␛[38;5;244mthe session's bill, as the rail's SPEND block reads it␛[m
 
 · a model · its own kinds of request, and its children's share after the ◇
-␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m␛[38;5;244m · 2 children␛[m␛[38;5;244m · 3 turns␛[m                                                       ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m␛[38;5;244m · 2 children␛[m␛[38;5;244m · 3 turns␛[m                                                     ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254msession total␛[m                                      ␛[38;5;244m$0.4210␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mclaude-opus-5-5␛[m                                               ␛[38;5;244mmodel␛[m
@@ -146,7 +146,7 @@ the session has not been billed for anything yet             │ nothing selecte
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m             ␛[38;5;244mthe session's bill, as the rail's SPEND block reads it␛[m
 
 · a child · its share by name, and the model it ran on
-␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m␛[38;5;244m · 2 children␛[m␛[38;5;244m · 3 turns␛[m                                                       ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m␛[38;5;244m · 2 children␛[m␛[38;5;244m · 3 turns␛[m                                                     ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254msession total␛[m                                      ␛[38;5;244m$0.4210␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254m◇ writer-1␛[m                                                    ␛[38;5;244mchild␛[m
@@ -164,7 +164,7 @@ the session has not been billed for anything yet             │ nothing selecte
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m             ␛[38;5;244mthe session's bill, as the rail's SPEND block reads it␛[m
 
 · a turn · its cost as its close states it, enter opens it on the turns screen
-␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m␛[38;5;244m · 2 children␛[m␛[38;5;244m · 3 turns␛[m                                                       ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m␛[38;5;244m · 2 children␛[m␛[38;5;244m · 3 turns␛[m                                                     ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254msession total␛[m                                      ␛[38;5;244m$0.4210␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mturn 2␛[m                                                         ␛[38;5;244mdone␛[m
@@ -182,7 +182,7 @@ the session has not been billed for anything yet             │ nothing selecte
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m             ␛[38;5;244mthe session's bill, as the rail's SPEND block reads it␛[m
 
 · a paused turn · the figure its pause row kept, the time and rounds it used
-␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m␛[38;5;244m · 2 children␛[m␛[38;5;244m · 3 turns␛[m                                                       ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m␛[38;5;244m · 2 children␛[m␛[38;5;244m · 3 turns␛[m                                                     ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254msession total␛[m                                      ␛[38;5;244m$0.4210␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mturn 3␛[m                                                       ␛[38;5;244mpaused␛[m
@@ -200,7 +200,7 @@ the session has not been billed for anything yet             │ nothing selecte
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m             ␛[38;5;244mthe session's bill, as the rail's SPEND block reads it␛[m
 
 · empty · a session that has spent nothing
-␛[1;38;5;254m/stats␛[m                                                                                                         ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/stats␛[m                                                                                                       ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244mthe session has not been billed for anything yet␛[m            ␛[38;5;244m │ ␛[m␛[38;5;244mnothing selected␛[m

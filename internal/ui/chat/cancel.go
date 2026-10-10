@@ -4,9 +4,9 @@ package chat
 // (docs/interface/surfaces.md#the-input-frame): while a turn works the first
 // press stops the run; idle with a draft it clears the draft; idle with an
 // empty draft the first press arms a short window and a second press of the
-// same chord inside it quits. Over a card or a picker the first press is the
-// surface's own cancel (back, deny) and it opens that window too: cancel
-// first, then quit. Stopping a run is reversible work already kept
+// same chord inside it quits. Over a card, a picker or any surface it is the
+// same chord and never a way back — esc is that: it stops a turn still going,
+// and otherwise leaves the surface as it was and opens the window. Stopping a run is reversible work already kept
 // and autosaved, so it takes one press; leaving the session is the act that
 // takes two, and a stop never becomes a quit by itself — a press that stops
 // the run opens no window, so the next one is a new first press.
@@ -190,13 +190,16 @@ func (m Model) editorUnsaved() bool {
 }
 
 // surfaceKey routes a key to the surface holding the keyboard, answering the
-// quit chord around it. The chord escalates here as it does everywhere:
-// cancel first, then quit. The first press does what the surface has always
-// let it do — back out of a picker, a preview or the key list, deny on an
-// approval card — and opens the quit window; a second press of the same
-// chord inside the window leaves the session. A single press never quits
-// over a card. Over a modified editor buffer the cancel is the surface's and
-// nothing more: no window opens, so no run of presses quits. It is answered once here rather than at the top of each
+// quit chord around it. The chord means one thing on every surface, and it is
+// never a way back: esc is that
+// (docs/interface/principles.md#esc-is-always-the-safe-answer). Its first
+// press stops a turn that is still going — working, parked, or waiting on a
+// decision — and arms nothing, the way it does at the draft; with nothing to
+// stop it leaves the surface as it was and opens the quit window, and a
+// second press of the same chord inside the window leaves the session. A
+// single press never quits. Over a modified editor buffer the chord does
+// nothing at all and opens no window, so no run of presses quits with the
+// change unsaved. It is answered once here rather than at the top of each
 // surface's own key handler, where the copies drifted into cancelling
 // different halves of what was still running. Two branches of the ladder are
 // not routed through here: the quit confirm, because that surface is the
@@ -207,7 +210,7 @@ func (m Model) surfaceKey(msg tea.KeyPressMsg, to func(tea.KeyPressMsg) (tea.Mod
 		return to(msg)
 	}
 	if m.editorUnsaved() {
-		return to(msg)
+		return m, nil
 	}
 	if m.pressed.openOn(armQuit, quitChord()) {
 		// Over a card the chord asks the same once as it does idle; the card
@@ -218,13 +221,57 @@ func (m Model) surfaceKey(msg tea.KeyPressMsg, to func(tea.KeyPressMsg) (tea.Mod
 		cmd := m.quitNow()
 		return m, cmd
 	}
-	next, cmd := to(msg)
-	nm, ok := next.(Model)
-	if !ok {
+	if next, cmd, stopped := m.stopRun(); stopped {
 		return next, cmd
 	}
-	arm := nm.armPress(armQuit, quitChord())
-	return nm, tea.Batch(cmd, arm)
+	arm := m.armPress(armQuit, quitChord())
+	return m, arm
+}
+
+// stopRun is the cancel chord's first press over a turn that is still going,
+// from the draft or from any surface over it: a command the session is
+// running is cancelled, a working or parked turn is stopped, and so is a turn
+// waiting on a decision, which the stop answers. What the turn already did is
+// kept and autosaved, and the press arms nothing: a stop never becomes a quit
+// by itself, so the next press is a new first press. It reports false where
+// there is nothing to stop.
+func (m Model) stopRun() (tea.Model, tea.Cmd, bool) {
+	switch m.turnState() {
+	case stateRunningCmd:
+		if m.runCancel != nil {
+			m.runCancel()
+		}
+		return m, nil, true
+	case stateStreaming, stateCloseGate:
+		return m.stopped(m.cancelTurnNow())
+	case stateConfirmRun, statePlanApprove, stateQuestion:
+		// A decision on its card is a stage of the turn, and stopping the
+		// turn is the one thing the chord does to it: the card's own no is
+		// a letter. A /run the reader typed has no turn under it, and the
+		// press goes on to arm the quit.
+		if m.cancel != nil {
+			return m.stopped(m.cancelTurnNow())
+		}
+	}
+	if m.heldAtBoundary() {
+		// A held turn is what the chord has to reach next: the turn is
+		// parked rather than finished, and without this the press falls
+		// through and arms a quit instead of giving the turn up (hold.go).
+		m.dropHold()
+		m.setTurnState(stateStreaming)
+		return m.stopped(m.cancelTurnNow())
+	}
+	return m, nil, false
+}
+
+// stopped repaints reading mode after a stop taken from inside it, which
+// would otherwise be left showing the plain transcript the stop drew.
+func (m Model) stopped(next tea.Model, cmd tea.Cmd) (tea.Model, tea.Cmd, bool) {
+	if nm, ok := next.(Model); ok && nm.state == stateFocus {
+		nm.refreshFocusView()
+		return nm, cmd, true
+	}
+	return next, cmd, true
 }
 
 // openQuitConfirm asks before quitting over a live turn: what the quit

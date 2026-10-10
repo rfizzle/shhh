@@ -157,7 +157,7 @@ func (c QueueCard) View(width int) string {
 	if !sel.Kept {
 		offers = append(offers, Offer(keys.Queue.Cancel))
 	}
-	offers = append(offers, Offer(keys.Queue.Back))
+	offers = append(offers, OfferAs(keys.Queue.Back, "back to the draft"))
 	rows = append(rows, CardHintRows(withKeyListOffer(offers), width)...)
 	return card.Render(rows, width)
 }

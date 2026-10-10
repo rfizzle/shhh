@@ -506,7 +506,9 @@ func TestProgram_ACtrlSWriteLeavesAReceipt(t *testing.T) {
 	send(tm, "/config")
 	waitForText(t, tm, "Check in every")
 	tm.Send(programEnter)
-	tm.Send(tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl})
+	for range 12 {
+		tm.Send(tea.KeyPressMsg{Code: tea.KeyBackspace})
+	}
 	tm.Type("3")
 	tm.Send(programEnter)
 	waitForText(t, tm, "[ctrl+s] write 1 change")

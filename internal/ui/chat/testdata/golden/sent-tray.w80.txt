@@ -38,7 +38,7 @@
     Moving the caption to the bar.
 
 ────────────────────────────────────────────────────────────────────────────
-[j/k] move · [enter] open it · [/] search · [q] back to the prompt    2 of 3
+[↑↓/jk] move · [enter] open it · [/] search · [esc] back to the prompt   2/3
 
 
 
@@ -135,7 +135,7 @@
     ␛[38;5;252mMoving the caption to the bar.␛[m
 
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;103m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m search␛[m␛[38;5;241m · ␛[m␛[38;5;103m[q]␛[m␛[38;5;241m back to the prompt␛[m    ␛[38;5;241m2 of 3␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m search␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m   ␛[38;5;241m2/3␛[m
 
 
 

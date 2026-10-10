@@ -539,7 +539,7 @@ func TestProgram_AnOlderProfileIsMigratedFromTheManager(t *testing.T) {
 	tm.Send(tea.KeyPressMsg{Code: tea.KeyDown})
 	tm.Send(programEnter)
 	waitForText(t, tm, "Keep terse?")
-	tm.Send(tea.KeyPressMsg{Code: 'x', Text: "x"})
+	tm.Send(tea.KeyPressMsg{Code: 'd', Text: "d"})
 	tm.Send(tea.KeyPressMsg{Code: tea.KeyTab})
 	tm.Send(programEnter)
 	waitForText(t, tm, "needs a prompt to replace the base with")

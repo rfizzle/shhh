@@ -49,7 +49,7 @@ func stepsScreen(focus int) *StepsScreen {
 func TestStepsScreen_ThePreviewIsTheStepsRun(t *testing.T) {
 	view := ansi.Strip(stepsScreen(1).View(130))
 	for _, want := range []string{
-		"/steps", "1 of 7", "[?] keys", "[q] back",
+		"/steps", "1 of 7", "[?] keys", "[esc] back",
 		"▸ Patch the round limit", "current", "✓ Read the loop", "done",
 		"touches internal/agent/round.go", "internal/agent/round_test.go",
 		"in the transcript · 2 tools · 4.1s", "+12 −4 · 2 hunks", "go test ./internal/agent/...",
@@ -79,8 +79,11 @@ func TestStepsScreen_MovesAndLeaves(t *testing.T) {
 	if done := s.Update(tea.KeyPressMsg{Code: tea.KeyDown}); done || s.Focus != 1 {
 		t.Fatalf("down: done %v, focus %d", done, s.Focus)
 	}
-	if done := s.Update(tea.KeyPressMsg{Code: 'q', Text: "q"}); !done {
-		t.Fatal("q did not close the screen")
+	if done := s.Update(tea.KeyPressMsg{Code: 'q', Text: "q"}); done {
+		t.Fatal("q closed the screen; esc is the one way out")
+	}
+	if done := s.Update(tea.KeyPressMsg{Code: tea.KeyEscape}); !done {
+		t.Fatal("esc did not close the screen")
 	}
 }
 

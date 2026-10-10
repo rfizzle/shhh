@@ -18,7 +18,7 @@ package components
 // screen could do.
 //
 // It is a passive component like the rest of this package. It owns no history
-// semantics: `[c]`, `[s]` and `[x]` resolve to a HistoryCommand the host
+// semantics: `[c]`, `[ctrl+s]` and `[d]` resolve to a HistoryCommand the host
 // carries out against its own store, and the host hands back fresh Rows. That
 // is why the screen can draw `exit 3` in del without knowing what an exit
 // code is.
@@ -176,13 +176,11 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result HistoryRe
 			return true, HistoryResult{Run: true, id: row.ID, Command: row.Command}
 		}
 		return false, HistoryResult{}
-	case keys.Is(pressed, keys.Select.Cancel):
-		return true, HistoryResult{canceled: true}
 	}
-	// With the query line open the query line is the surface, so c, s, x and q
+	// With the query line open the query line is the surface, so c and d
 	// are letters rather than keys — the reading every picker in the product
-	// makes. ctrl+u clears it, and clearing a filter that is already empty
-	// closes it, which is how the row keys are got back without leaving the
+	// makes. esc clears it, and on a filter that is already empty it closes
+	// the line, which is how the row keys are got back without leaving the
 	// screen.
 	if open, changed := h.filterKey(msg); open {
 		if changed {
@@ -193,7 +191,7 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result HistoryRe
 	switch {
 	case keys.Is(pressed, keys.Screen.Filter):
 		h.list.Filtering = true
-	case pressed == keys.Shown(keys.Screen.Quit):
+	case keys.Is(pressed, keys.Screen.Quit):
 		return true, HistoryResult{canceled: true}
 	case keys.Is(pressed, keys.Screen.List):
 		h.keys = !h.keys
@@ -218,7 +216,7 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result HistoryRe
 
 // SetQuery opens the filter row with a query already in it, for a host that
 // was given one on the command line. It is the same state `[/]` and a run of
-// keystrokes would have left behind, so `[ctrl+u]` clears it and the query
+// keystrokes would have left behind, so `[esc]` clears it and the query
 // row states both counts exactly as it does when the reader typed it.
 func (h *HistoryScreen) SetQuery(query string) {
 	h.list.Filtering = true
@@ -474,7 +472,7 @@ func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
 		acts = append(acts, keyOffer(keys.Screen.Rerun))
 	}
 	if h.list.Filtering {
-		acts = append(acts, keyOfferAs(keys.Screen.ClearQ, "clear the filter, then close it"))
+		acts = append(acts, keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"))
 	} else {
 		if h.currentShown(h.Rows) != nil {
 			acts = append(acts,
@@ -482,9 +480,8 @@ func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
 				keyOffer(keys.Screen.Snippet),
 				keyOffer(keys.Screen.Delete))
 		}
-		acts = append(acts, keyOffer(keys.Screen.Filter))
+		acts = append(acts, keyOffer(keys.Screen.Filter), wayOut(backToShell))
 	}
-	acts = append(acts, wayOut(backToShell))
 
 	// The rungs, in the order the row gives ground: the movement reminder first,
 	// because `[?]` still carries it in full and every list in the product moves
@@ -524,10 +521,8 @@ func (h *HistoryScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Snippet, "save the command as a snippet"),
 		keyOfferAs(keys.Screen.Delete, "delete the entry, after confirming it"),
 		keyOfferAs(keys.Screen.Filter, "filter by what was asked or by what came back"),
-		keyOfferAs(keys.Screen.ClearQ, "clear the filter; clear it again to close it"),
 		keyOfferAs(keys.Query.Rub, "delete a character from the filter"),
-		wayOut(backToShell),
-		keyOfferAs(keys.Screen.Quit, backToShell),
+		keyOfferAs(keys.Screen.Quit, "clear the filter, close it, then "+backToShell),
 	}
 }
 

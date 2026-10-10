@@ -24,7 +24,7 @@ keys C-Space
 snap 04-strip "1 of 3" "3 unanswered will be sent as skipped"
 # The long form of the marked row, on the screen the dry run already takes.
 # It answers nothing.
-keys d
+keys v
 snap 05-long "in the checkout already"
 keys Escape
 snap 06-back "1 of 3"

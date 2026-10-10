@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · as it opens · the pointer on the last thing read
-/sources                             [?] keys · [q] back
+/sources                           [?] keys · [esc] back
 ────────────────────────────────────────────────────────
 
 searches
@@ -32,7 +32,7 @@ https://example.com/gone                  web-researcher
 [↑↓/jk] move · [esc] back to the prompt
 
 · a page that was kept · the preview opens it
-/sources                             [?] keys · [q] back
+/sources                           [?] keys · [esc] back
 ────────────────────────────────────────────────────────
 
 searches
@@ -58,17 +58,16 @@ https://docs.rs/tokio/latest/tokio/         orchestrator
   Tokio is an asynchronous runtime.
   It provides the building blocks.
 
-[↑↓/jk] move · [enter] read the page that was kept
-[esc] back to the prompt
+[↑↓/jk] move · [enter] open · [esc] back to the prompt
 
 · the panel it leaves · the way out, on one row
 ────────────────────────────────────────────────────────
 ⏸ manual                                                
-sources · [q] back to the prompt
+sources · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · as it opens · the pointer on the last thing read
-␛[1;38;5;254m/sources␛[m                             ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/sources␛[m                           ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254msearches␛[m
@@ -89,7 +88,7 @@ sources · [q] back to the prompt
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · a page that was kept · the preview opens it
-␛[1;38;5;254m/sources␛[m                             ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/sources␛[m                           ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254msearches␛[m
@@ -115,10 +114,9 @@ sources · [q] back to the prompt
   ␛[38;5;244mTokio is an asynchronous runtime.␛[m
   ␛[38;5;244mIt provides the building blocks.␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the page that was kept␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · the panel it leaves · the way out, on one row
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m⏸ manual␛[m                                                
-␛[38;5;244msources · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;244msources · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m

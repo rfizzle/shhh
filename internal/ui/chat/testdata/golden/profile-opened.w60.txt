@@ -40,7 +40,7 @@ critic               [?] keys · [esc] close, nothing written
   ⋮ 2 more sections · [shift+↓] scroll the profile
 
   [↑↓] section · [enter] refine it with a note
-  [e] edit it yourself · [x] clear it
+  [e] edit it yourself · [d] clear it
   [m] move it into sections · [R] all · [tab] the card
   [esc] close, nothing written
 
@@ -93,7 +93,7 @@ critic               [?] keys · [esc] close, nothing written
   ⋮ 1 more section · [shift+↓] scroll the profile
 
   [↑↓] section · [enter] refine it with a note
-  [e] edit it yourself · [x] clear it · [R] all
+  [e] edit it yourself · [d] clear it · [R] all
   [tab] the card · [esc] close, nothing written
 
 ╭─ Keep critic? ───────────────────────────────────────────╮
@@ -219,7 +219,7 @@ critic               [?] keys · [esc] close, nothing written
   ␛[38;5;241m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
   ␛[38;5;103m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m refine it with a note␛[m
-  ␛[38;5;103m[e]␛[m␛[38;5;241m edit it yourself␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m clear it␛[m
+  ␛[38;5;103m[e]␛[m␛[38;5;241m edit it yourself␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m clear it␛[m
   ␛[38;5;103m[m]␛[m␛[38;5;241m move it into sections␛[m␛[38;5;241m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m
   ␛[92m[esc]␛[m␛[38;5;241m close, nothing written␛[m
 
@@ -272,7 +272,7 @@ critic               [?] keys · [esc] close, nothing written
   ␛[38;5;241m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
   ␛[38;5;103m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m refine it with a note␛[m
-  ␛[38;5;103m[e]␛[m␛[38;5;241m edit it yourself␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m clear it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;241m all␛[m
+  ␛[38;5;103m[e]␛[m␛[38;5;241m edit it yourself␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m clear it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;241m all␛[m
   ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m close, nothing written␛[m
 
 ␛[38;5;241m╭─ ␛[m␛[1;97mKeep critic? ␛[m␛[38;5;241m───────────────────────────────────────────␛[m␛[38;5;241m╮␛[m

@@ -47,7 +47,7 @@ snap 07-click-opens "sent with turn 1" "back to the draft"
 keys Escape
 snap 08-back-to-the-draft "Looked at both."
 keys C-o
-snap 09-reading "[j/k] move"
+snap 09-reading "[↑↓/jk] move"
 keys k k k
 snap 10-on-image-2 "[enter] open it" "❯ ⟨▣ Image#2⟩"
 keys Enter
@@ -58,7 +58,7 @@ keys Enter
 snap 13-opens-again "sent with turn 1" "back to reading"
 keys Escape
 snap 14-row-again "[enter] open it" "❯ ⟨▣ Image#2⟩"
-keys q
+keys Escape
 snap 15-prompt "✓ done"
 keys "/paste show Image#1" Enter
 snap 16-by-name "sent with turn 1" "back to the draft"

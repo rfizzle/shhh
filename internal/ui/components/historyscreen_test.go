@@ -175,7 +175,7 @@ func TestHistoryScreen_FilterRowIsTheSharedOne(t *testing.T) {
 	h.Update(key("/"))
 	typeIntoHistory(h, "log")
 	out := plainView(h, 130)
-	for _, want := range []string{"▸ log█", "2 of 4 match", "2 entries hidden by the filter", "[ctrl+u] clear it"} {
+	for _, want := range []string{"▸ log█", "2 of 4 match", "2 entries hidden by the filter", "[esc] clear it"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("filtered view is missing %q:\n%s", want, out)
 		}
@@ -225,7 +225,7 @@ func TestHistoryScreen_NoMatchSaysSo(t *testing.T) {
 	if !strings.Contains(out, `no match for "zzz"`) {
 		t.Fatalf("a filter that matched nothing said nothing:\n%s", out)
 	}
-	if !strings.Contains(out, "[ctrl+u]") {
+	if !strings.Contains(out, "[esc] clear it") {
 		t.Fatalf("the key that clears the filter is gone:\n%s", out)
 	}
 	if !strings.Contains(out, "no entry selected") {
@@ -233,40 +233,40 @@ func TestHistoryScreen_NoMatchSaysSo(t *testing.T) {
 	}
 }
 
-// While the query line is open the row keys are letters: x types an x
+// While the query line is open the row keys are letters: d types a d
 // rather than opening the delete confirm.
 func TestHistoryScreen_LettersAreTextWhileFiltering(t *testing.T) {
 	h := historyScreen()
 	h.Update(key("/"))
-	typeIntoHistory(h, "x")
+	typeIntoHistory(h, "d")
 	out := plainView(h, 130)
 	if strings.Contains(out, "Delete the entry") {
-		t.Fatalf("x opened the confirm from inside the query line:\n%s", out)
+		t.Fatalf("d opened the confirm from inside the query line:\n%s", out)
 	}
-	if !strings.Contains(out, "▸ x█") {
-		t.Fatalf("x was not typed into the query line:\n%s", out)
+	if !strings.Contains(out, "▸ d█") {
+		t.Fatalf("d was not typed into the query line:\n%s", out)
 	}
-	if strings.Contains(out, "[x] delete it") {
+	if strings.Contains(out, "[d] delete") {
 		t.Fatalf("a key that cannot act is still offered:\n%s", out)
 	}
 }
 
-// ctrl+u clears the filter, and clearing one that is already empty closes it
+// esc clears the filter, and clearing one that is already empty closes it
 // — which is how the row keys are got back without leaving the screen.
-func TestHistoryScreen_CtrlUClearsThenCloses(t *testing.T) {
+func TestHistoryScreen_EscClearsThenCloses(t *testing.T) {
 	h := historyScreen()
 	h.Update(key("/"))
 	typeIntoHistory(h, "log")
-	h.Update(key("ctrl+u"))
+	h.Update(key("esc"))
 	if out := plainView(h, 130); !strings.Contains(out, "▸ █") {
-		t.Fatalf("ctrl+u did not clear the query:\n%s", out)
+		t.Fatalf("esc did not clear the query:\n%s", out)
 	}
-	h.Update(key("ctrl+u"))
+	h.Update(key("esc"))
 	out := plainView(h, 130)
 	if strings.Contains(out, "▸ ") {
-		t.Fatalf("a second ctrl+u did not close the query line:\n%s", out)
+		t.Fatalf("a second esc did not close the query line:\n%s", out)
 	}
-	if !strings.Contains(out, "[x] delete it") {
+	if !strings.Contains(out, "[d] delete") {
 		t.Fatalf("the row keys did not come back:\n%s", out)
 	}
 }
@@ -303,18 +303,21 @@ func TestHistoryScreen_EnterRunsTheEntryUnderThePointer(t *testing.T) {
 	}
 }
 
-// esc and q both leave running nothing, and the foot says so before they are
-// pressed.
+// esc leaves running nothing, and the foot says so before it is pressed. q
+// and ctrl+c are not ways out.
 func TestHistoryScreen_LeavingRunsNothing(t *testing.T) {
 	if !strings.Contains(plainView(historyScreen(), 130), "nothing is re-run until [enter]") {
 		t.Fatal("the hint line does not say that nothing is re-run on its own")
 	}
-	for _, k := range []string{"esc", "q", "ctrl+c"} {
+	h := historyScreen()
+	done, result := h.Update(key("esc"))
+	if !done || !result.canceled || result.Run {
+		t.Fatalf("esc should leave running nothing, got done=%v %#v", done, result)
+	}
+	for _, k := range []string{"q", "ctrl+c"} {
 		h := historyScreen()
-		done, result := h.Update(key(k))
-		got := result
-		if !done || !got.canceled || got.Run {
-			t.Fatalf("%s should leave running nothing, got done=%v %#v", k, done, result)
+		if done, result := h.Update(key(k)); done || result.Run {
+			t.Fatalf("%s should not leave the screen, got done=%v %#v", k, done, result)
 		}
 	}
 }
@@ -339,13 +342,13 @@ func TestHistoryScreen_CopyAndSaveResolveWithoutClosing(t *testing.T) {
 	}
 }
 
-// [x] asks before it destroys, names what it would take, and resolves
+// [d] asks before it destroys, names what it would take, and resolves
 // nothing until the answer is yes.
 func TestHistoryScreen_DeleteAsksFirst(t *testing.T) {
 	h := historyScreen()
-	done, result := h.Update(key("x"))
+	done, result := h.Update(key("d"))
 	if done || result != (HistoryResult{}) {
-		t.Fatalf("x resolved a delete without asking: done=%v %#v", done, result)
+		t.Fatalf("d resolved a delete without asking: done=%v %#v", done, result)
 	}
 	out := plainView(h, 130)
 	if !strings.Contains(out, `Delete the entry for "delete every log file older than a week"?`) {
@@ -363,7 +366,7 @@ func TestHistoryScreen_DeleteAsksFirst(t *testing.T) {
 		t.Fatal("the confirm is still up after declining")
 	}
 
-	h.Update(key("x"))
+	h.Update(key("d"))
 	done, result = h.Update(key("y"))
 	got := result.Do
 	if done || got == nil || got.Act != HistoryDelete || got.ID != "1" {
@@ -375,7 +378,7 @@ func TestHistoryScreen_DeleteAsksFirst(t *testing.T) {
 // being a letter, and the row keys underneath it are inert (invariant 5).
 func TestHistoryScreen_ConfirmHoldsTheKeyboard(t *testing.T) {
 	h := historyScreen()
-	h.Update(key("x"))
+	h.Update(key("d"))
 	out := plainView(h, 130)
 	if strings.Contains(out, "[c] copy it") {
 		t.Fatalf("the row keys are still offered under the confirm:\n%s", out)
@@ -420,7 +423,7 @@ func TestHistoryScreen_NarrowStacksThePanes(t *testing.T) {
 // one of these screens offers.
 func TestHistoryScreen_Header(t *testing.T) {
 	head := strings.SplitN(plainView(historyScreen(), 130), "\n", 2)[0]
-	for _, want := range []string{"shhh history", "4 entries · 2 run", "[?] keys · [q] quit"} {
+	for _, want := range []string{"shhh history", "4 entries · 2 run", "[?] keys · [esc] back"} {
 		if !strings.Contains(head, want) {
 			t.Fatalf("header is missing %q: %q", want, head)
 		}
@@ -433,7 +436,7 @@ func TestHistoryScreen_KeyListIsComplete(t *testing.T) {
 	h := historyScreen()
 	h.Update(key("?"))
 	out := plainView(h, 130)
-	for _, want := range []string{"[↑↓/jk] move", "[enter] run the command", "[c] copy", "[ctrl+s] save", "[x] delete", "[/] filter", "[ctrl+u]", "[esc]", "[q]"} {
+	for _, want := range []string{"[↑↓/jk] move", "[enter] run the command", "[c] copy", "[ctrl+s] save", "[d] delete", "[/] filter", "[esc]"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("[?] does not list %q:\n%s", want, out)
 		}

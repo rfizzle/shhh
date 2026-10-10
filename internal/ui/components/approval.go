@@ -39,7 +39,7 @@ const (
 	approvalWaiting ApprovalDecision = iota
 	// ApprovalApprove runs the pending action (y / enter).
 	ApprovalApprove
-	// ApprovalDeny declines it (n / esc / ctrl+c) — esc never destroys.
+	// ApprovalDeny declines it (n) — esc never destroys.
 	ApprovalDeny
 	// ApprovalAlways approves and auto-allows the category for the session
 	// (a, only when AllowAlways is set).

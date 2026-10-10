@@ -817,15 +817,15 @@ func TestPasteFold_TheChipReadsItAndLeavesItAlone(t *testing.T) {
 	if view := stripANSI(strings.Join(read.pasteReaderLines(120, 12), "\n")); !strings.Contains(view, "PASTE#1 · lines 1–10 of 214") {
 		t.Fatalf("the rail does not say where in the paste this is:\n%s", view)
 	}
-	left, _ := read.updatePasteReader(tea.KeyPressMsg{Code: 'q', Text: "q"})
+	left, _ := read.updatePasteReader(tea.KeyPressMsg{Code: tea.KeyEscape})
 	back := left.(Model)
 	if len(back.attachments) != 1 || back.input.Value() != sentence {
 		t.Fatalf("leaving changed something: %d staged, draft %q", len(back.attachments), back.input.Value())
 	}
-	dropped, _ := read.updatePasteReader(tea.KeyPressMsg{Code: 'x', Text: "x"})
+	dropped, _ := read.updatePasteReader(tea.KeyPressMsg{Code: 'd', Text: "d"})
 	gone := dropped.(Model)
 	if len(gone.attachments) != 0 || gone.input.Value() != "" {
-		t.Fatalf("[x] left %d staged and the draft at %q", len(gone.attachments), gone.input.Value())
+		t.Fatalf("[d] left %d staged and the draft at %q", len(gone.attachments), gone.input.Value())
 	}
 }
 

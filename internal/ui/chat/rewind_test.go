@@ -241,7 +241,13 @@ func TestRewind_BarePicker_EscKeepsConversation(t *testing.T) {
 		t.Fatalf("picker should list every checkpoint, got %d", len(m.picker.card.Options))
 	}
 
+	// The first esc closes the search row, the second dismisses the picker.
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = updated.(Model)
+	if m.state != statePick || m.picker.card.Filtering {
+		t.Fatal("the first esc should close the search row")
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state != stateInput || m.picker.card != nil {
 		t.Fatal("esc should dismiss the picker")
@@ -1056,14 +1062,14 @@ func TestGolden_RewindPicker(t *testing.T) {
 			// live: what a rewind to the row would take back.
 			c := rewindPickerModel(t, width)
 			c = sendText(t, c, "/rewind")
-			updated, _ := c.Update(tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl})
+			updated, _ := c.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 			c = updated.(Model)
 			c.syncViewport()
 			return []golden.Panel{
 				{Label: "the timeline · newest first, one row per turn", View: whole},
 				{Label: "typed into · the run the query named is bold",
 					View: strings.Join(m.pickerLines(), "\n")},
-				{Label: "the query row closed · [d] reads what a rewind here takes back",
+				{Label: "the query row closed · [v] reads what a rewind here takes back",
 					View: strings.Join(c.pickerLines(), "\n")},
 			}
 		})

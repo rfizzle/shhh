@@ -33,7 +33,7 @@ snap 03-close "2 notes from writer-1, writer-2"
 keys "/notes" Enter
 # The screen: the notes under the agents that signed them, the one the
 # pointer is on beside the list, and the key row at the foot.
-snap 04-screen "2 notes · 2 agents" "[d] drop it"
+snap 04-screen "2 notes · 2 agents" "[d] delete"
 # The pointer walks to the other author's note, which is what the grouping is
 # for: the reader moves between authors, not between arrivals.
 keys k

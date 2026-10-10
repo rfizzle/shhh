@@ -39,7 +39,7 @@ hold 2.5
 # Reading mode opens on the last row of the turn, which is the close, and the
 # close's commit offer is the handover there.
 keys C-o
-snap 05-reading "[ctrl+space/ctrl+y] commit" "row 5 of 5"
+snap 05-reading "[ctrl+space/ctrl+y] commit" "5 of 5"
 hold 1.2
 keys C-Space
 snap 06-commit-card "Commit this turn"

@@ -24,16 +24,16 @@
 ╰──────────────────────────────────────────────────────────╯
 
 · the filter just opened · the row names what the key was for
-╭─ Switch model ──────────────── 24 available · 5 showing ─╮
+╭─ Switch model ──────────────── 24 available · 6 showing ─╮
 │ ▸ █ type to filter                        24 of 24 match │
 │ ❯  1. gpt-5.2            current default     $1.25 / $10 │
 │    2. gpt-5.2-mini                            $0.25 / $2 │
 │    3. gpt-5.1                                            │
 │    4. gpt-5.1-mini                                       │
 │    5. o4-mini                                            │
-│ ↓ 19 more                                                │
-│ [↑↓] move · [enter] select · [ctrl+u] row keys           │
-│ [esc] take none                                          │
+│    6. claude-opus-4.6    deepest reasoning     $15 / $75 │
+│ ↓ 18 more                                                │
+│ [↑↓] move · [enter] select · [esc] row keys              │
 ╰──────────────────────────────────────────────────────────╯
 
 · mid-list from above · the option sits at the foot of the window
@@ -84,8 +84,7 @@
 │   4. gemini-3-pro    1M ctx                     $2 / $12 │
 │   5. gemini-3-flash                        $0.30 / $2.50 │
 │   6. phi-5-mini                                          │
-│ [↑↓] move · [enter] select · [ctrl+u] clear              │
-│ [esc] take none                                          │
+│ [↑↓] move · [enter] select · [esc] clear                 │
 ╰──────────────────────────────────────────────────────────╯
 
 · no match · a row, not an empty pane
@@ -93,7 +92,7 @@
 │ ▸ sonnet-5█                                0 of 24 match │
 │   no match for "sonnet-5"                                │
 │   closest is claude-sonnet-4.6                           │
-│ [ctrl+u] clear the filter · [esc] take none              │
+│ [esc] clear                                              │
 ╰──────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -111,16 +110,16 @@
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the filter just opened · the row names what the key was for
-␛[38;5;244m╭─ ␛[m␛[1;38;5;254mSwitch model ␛[m␛[38;5;244m──────────────── 24 available · 5 showing ─╮␛[m
+␛[38;5;244m╭─ ␛[m␛[1;38;5;254mSwitch model ␛[m␛[38;5;244m──────────────── 24 available · 6 showing ─╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254m█␛[m␛[38;5;244m type to filter␛[m                        ␛[38;5;244m24 of 24 match␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m 1. gpt-5.2            current default     $1.25 / $10␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m 2. ␛[m␛[38;5;254mgpt-5.2-mini␛[m                            ␛[38;5;254m$0.25 / $2␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m 3. ␛[m␛[38;5;254mgpt-5.1␛[m                                            ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m 4. ␛[m␛[38;5;254mgpt-5.1-mini␛[m                                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m 5. ␛[m␛[38;5;254mo4-mini␛[m                                            ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m↓ 19 more␛[m                                                ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+u]␛[m␛[38;5;244m row keys␛[m           ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                          ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;244m 6. ␛[m␛[38;5;254mclaude-opus-4.6␛[m    ␛[38;5;244mdeepest reasoning␛[m     ␛[38;5;254m$15 / $75␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m↓ 18 more␛[m                                                ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m row keys␛[m              ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
 · mid-list from above · the option sits at the foot of the window
@@ -171,8 +170,7 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mge␛[m␛[1;38;5;254mmini␛[m␛[38;5;254m-3-pro␛[m    ␛[38;5;244m1M ctx␛[m                     ␛[38;5;254m$2 / $12␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m5. ␛[m␛[38;5;254mge␛[m␛[1;38;5;254mmini␛[m␛[38;5;254m-3-flash␛[m                        ␛[38;5;254m$0.30 / $2.50␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m6. ␛[m␛[38;5;254mphi-5-␛[m␛[1;38;5;254mmini␛[m                                          ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+u]␛[m␛[38;5;244m clear␛[m              ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                          ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m clear␛[m                 ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
 · no match · a row, not an empty pane
@@ -180,5 +178,5 @@
 ␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254msonnet-5█␛[m                                ␛[38;5;244m0 of 24 match␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m  no match for "sonnet-5"␛[m                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m  closest is claude-sonnet-4.6␛[m                           ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[ctrl+u]␛[m␛[38;5;244m clear the filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m              ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m clear␛[m                                              ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m

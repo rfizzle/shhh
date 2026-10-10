@@ -179,22 +179,39 @@ func TestStreamModel_EscCancelsStream(t *testing.T) {
 	close(ch)
 }
 
-func TestStreamModel_QCancelsStream(t *testing.T) {
+func TestStreamModel_EscAndCtrlCCancelTheStream(t *testing.T) {
+	for _, key := range []tea.KeyPressMsg{
+		{Code: tea.KeyEscape},
+		{Code: 'c', Mod: tea.ModCtrl},
+	} {
+		ch := make(chan provider.StreamEvent, 1)
+		cancel, called := testCancel()
+		m := NewStreamModel(ch, cancel)
+
+		sm, _ := m.Update(key)
+
+		if !sm.Done() {
+			t.Errorf("expected done after %q", key.String())
+		}
+		if !sm.Cancelled() {
+			t.Errorf("expected cancelled flag after %q", key.String())
+		}
+		if !*called {
+			t.Errorf("expected cancel function to be called after %q", key.String())
+		}
+		close(ch)
+	}
+}
+
+func TestStreamModel_QDoesNotCancelTheStream(t *testing.T) {
 	ch := make(chan provider.StreamEvent, 1)
 	cancel, called := testCancel()
 	m := NewStreamModel(ch, cancel)
 
-	model, _ := m.Update(tea.KeyPressMsg{Code: 'q', Text: "q"})
+	sm, _ := m.Update(tea.KeyPressMsg{Code: 'q', Text: "q"})
 
-	sm := model
-	if !sm.Done() {
-		t.Error("expected done after q")
-	}
-	if !sm.Cancelled() {
-		t.Error("expected cancelled flag after q")
-	}
-	if !*called {
-		t.Error("expected cancel function to be called")
+	if sm.Done() || sm.Cancelled() || *called {
+		t.Error("q is a plain letter; it must not stop the stream")
 	}
 	close(ch)
 }

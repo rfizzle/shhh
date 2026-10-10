@@ -34,7 +34,8 @@ func TestKeyPopup_OpensOverAHalfWrittenDraftAndLeavesItAsItWas(t *testing.T) {
 	messages := len(m.Messages())
 	entries := len(*m.entries())
 
-	for _, close := range []tea.KeyPressMsg{keyListEsc, keyListChord, {Code: 'c', Mod: tea.ModCtrl}} {
+	// esc backs out a level a press: the typed filter first, then the list.
+	for _, close := range [][]tea.KeyPressMsg{{keyListEsc, keyListEsc}, {keyListChord}} {
 		opened, _ := pressKey(t, m, keyListChord)
 		if opened.state != stateKeyPopup || opened.screens.keyPopup() == nil {
 			t.Fatalf("the chord did not open the key list, state %d", opened.state)
@@ -43,15 +44,15 @@ func TestKeyPopup_OpensOverAHalfWrittenDraftAndLeavesItAsItWas(t *testing.T) {
 			t.Fatalf("the list does not start at the draft's group:\n%s", keyPopupView(opened))
 		}
 		opened = typeInto(t, opened, "copy")
-		closed, _ := pressKey(t, opened, close)
+		closed := pressKeys(t, opened, close...)
 		if closed.state != stateInput || closed.screens.keyPopup() != nil {
-			t.Fatalf("%q did not close the key list, state %d", close.String(), closed.state)
+			t.Fatalf("%v did not close the key list, state %d", close, closed.state)
 		}
 		if got := closed.input.Value(); got != "why does the parser" {
-			t.Fatalf("closing with %q changed the draft to %q", close.String(), got)
+			t.Fatalf("closing with %v changed the draft to %q", close, got)
 		}
 		if got := closed.input.Column(); got != 4 {
-			t.Fatalf("closing with %q moved the cursor to %d", close.String(), got)
+			t.Fatalf("closing with %v moved the cursor to %d", close, got)
 		}
 		if closed.renderHistory() != history || len(*closed.entries()) != entries || len(closed.Messages()) != messages {
 			t.Fatalf("the key list left something in the transcript or the conversation")
@@ -122,10 +123,13 @@ func TestKeyPopup_TypingFiltersByKeyOrWordsAndTheGroupsKeepTheirOrder(t *testing
 		t.Fatalf("the filter kept a key it does not match:\n%s", view)
 	}
 
-	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl})
-	m = typeInto(t, m, "cancel it")
+	m, _ = pressKey(t, m, keyListEsc)
+	if m.state != stateKeyPopup {
+		t.Fatal("esc over a typed filter closed the list instead of clearing it")
+	}
+	m = typeInto(t, m, "delete")
 	view = keyPopupView(m)
-	if !strings.Contains(view, "QUEUE") || !strings.Contains(view, "cancel it") {
+	if !strings.Contains(view, "QUEUE") || !strings.Contains(view, "delete") {
 		t.Fatalf("filtering by the words did not find the queue's key:\n%s", view)
 	}
 	if !strings.Contains(view, "of") || !strings.Contains(view, "keys") {
@@ -137,12 +141,15 @@ func TestKeyPopup_TypingFiltersByKeyOrWordsAndTheGroupsKeepTheirOrder(t *testing
 		t.Fatalf("a query that matches nothing does not say so:\n%s", view)
 	}
 	// A query line emptied back out keeps the list a query line.
-	for range len("cancel itzzz") {
+	for range len("deletezzz") {
 		m, _ = pressKey(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
 	}
-	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl})
 	if p := m.screens.keyPopup(); p == nil || !p.card.Filtering {
-		t.Fatal("ctrl+u on an empty query closed the list's query line")
+		t.Fatal("emptying the query closed the list's query line")
+	}
+	m, _ = pressKey(t, m, keyListEsc)
+	if m.state != stateInput || m.screens.keyPopup() != nil {
+		t.Fatalf("esc on an empty query should leave the list, state %d", m.state)
 	}
 }
 

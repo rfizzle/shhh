@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · a steer taken back · the reading whole, and what became of its steer
-/readings · 5 readings                                                     $0.0142 spent · [?] keys · [q] back
+/readings · 5 readings                                                   $0.0142 spent · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ❯ ⚠ r 11 · off target  withdrawn          turn 2 │ r 11 · off target                                    turn 2
@@ -27,7 +27,7 @@
 [↑↓/jk] move · [esc] back to the prompt                            a reader's account of the run, newest first
 
 · a steer that stood · the oldest let go, and the screen saying so
-/readings · 5 readings                                                     $0.0142 spent · [?] keys · [q] back
+/readings · 5 readings                                                   $0.0142 spent · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 3 oldest readings let go · the screen keeps the last 200
@@ -44,7 +44,7 @@
 [↑↓/jk] move · [esc] back to the prompt                            a reader's account of the run, newest first
 
 · a quiet reading · kept here though the transcript drew no row for it
-/readings · 5 readings                                                     $0.0142 spent · [?] keys · [q] back
+/readings · 5 readings                                                   $0.0142 spent · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ⚠ r 11 · off target  withdrawn          turn 2 │ r 3 · on target                                      turn 1
@@ -58,7 +58,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · a steer taken back · the reading whole, and what became of its steer
-␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m                                                     ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m                                                   ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ r 11 · off target  withdrawn          turn 2␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mr 11 · off target␛[m                                    ␛[38;5;244mturn 2␛[m
@@ -74,7 +74,7 @@
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                            ␛[38;5;244ma reader's account of the run, newest first␛[m
 
 · a steer that stood · the oldest let go, and the screen saying so
-␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m                                                     ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m                                                   ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m3 oldest readings let go · the screen keeps the last 200␛[m
@@ -91,7 +91,7 @@
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                            ␛[38;5;244ma reader's account of the run, newest first␛[m
 
 · a quiet reading · kept here though the transcript drew no row for it
-␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m                                                     ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m                                                   ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m⚠ r 11 · off target␛[m  ␛[38;5;244mwithdrawn␛[m          ␛[38;5;244mturn 2␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mr 3 · on target␛[m                                      ␛[38;5;244mturn 1␛[m

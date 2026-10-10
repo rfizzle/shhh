@@ -32,14 +32,15 @@ snap 04-refused "Every state the row paints is above" "denied · you" "exit 1"
 # rows are where each call's own outcome is, so it is opened. The cursor
 # opens on the turn's close, and the card is three stops above it.
 keys C-o
-snap 05-reading "[j/k] move"
+snap 05-reading "[↑↓/jk] move"
 keys k
 keys k
 keys k
 snap 06-on-the-card "[enter] open it"
 keys Enter
 snap 07-rows "ok · 7 lines · auto-allowed · read-only" "exit 1 · auto-allowed · read-only" "denied · you"
-keys q
+keys Escape
+sleep 0.3
 keys C-c
 snap 08-quit-armed "again quits"
 keys C-c

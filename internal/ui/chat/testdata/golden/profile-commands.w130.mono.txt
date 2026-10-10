@@ -42,7 +42,7 @@
   Model
     inherited from this session
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [R] all · [tab] the card
+  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [d] clear it · [R] all · [tab] the card
   [esc] discard the draft
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -126,7 +126,7 @@
   Model
     inherited from this session
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [R] all · [tab] the card
+  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [d] clear it · [R] all · [tab] the card
   [esc] take back its last revision
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -168,7 +168,7 @@
     for: running the package's tests · never: git push, go install
   ⋮ 1 more section · [shift+↓] scroll the profile
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [R] all · [tab] the card
+  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [d] clear it · [R] all · [tab] the card
   [esc] take back its last revision
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -253,7 +253,7 @@
   ␛[38;5;254mModel␛[m
     ␛[38;5;254minherited from this session␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
+  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
   ␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -337,7 +337,7 @@
   ␛[38;5;254mModel␛[m
     ␛[38;5;254minherited from this session␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
+  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
   ␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -379,7 +379,7 @@
     ␛[38;5;254mfor: running the package's tests␛[m␛[38;5;244m · never: git push, go install␛[m
   ␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
+  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m
   ␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m

@@ -105,8 +105,8 @@ func (b backlogFoot) offers(width int) []KeyOffer {
 		return []KeyOffer{
 			keyOfferAs(keys.Backlog.Move, "scroll"),
 			keyOffer(keys.Backlog.Page),
-			// esc and not `q`: the header already spells `[q] back`, and
-			// both answer this step back to the list.
+			// esc backs out one level, so here it is the step back to the
+			// list rather than the way off the screen.
 			wayOut("back to the list"),
 		}
 	}
@@ -115,19 +115,17 @@ func (b backlogFoot) offers(width int) []KeyOffer {
 
 // filterOffers is the query row's key row, and it is one row at every width
 // the way the list's is. Where the full words do not fit, esc gives up its
-// words first — it is the way out, and its tone says so — and then the clear
-// key its clause, down to the two things it does in turn. No offer is shed:
-// these three are the whole of what a row being typed into answers.
+// clause, down to the two things it does in turn. No offer is shed: these
+// two are the whole of what a row being typed into answers besides its text.
 func filterOffers(width int) []KeyOffer {
 	move := keyOffer(keys.Backlog.Move)
-	clearQ := keyOfferAs(keys.Backlog.ClearQ, "clear the filter, then close it")
 	rungs := [][]KeyOffer{
-		// esc and not the letter: a row being typed into keeps every letter
-		// as text, so the two keystrokes no sentence produces are the whole
-		// of what closes it (invariant 5).
-		{move, clearQ, wayOut("close it")},
-		{move, clearQ, wayOut("")},
-		{move, keyOfferAs(keys.Backlog.ClearQ, "clear, then close"), wayOut("")},
+		// esc and not a letter: a row being typed into keeps every letter
+		// as text, so esc is what backs out of it, one level a press
+		// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+		{move, wayOut("clear the filter, then close it")},
+		{move, wayOut("clear, then close")},
+		{move, wayOut("")},
 	}
 	for _, rung := range rungs {
 		if lipgloss.Width(keyOffers(rung)) <= width {
@@ -270,7 +268,7 @@ func (b backlogFoot) keyList() []KeyOffer {
 		keyOfferAs(keys.Backlog.Page, "page the body while reading it"),
 		keyOfferAs(keys.Backlog.Tab, "the backlog, the sprint, or what shipped"),
 		keyOfferAs(keys.Backlog.Filter, "filter by slug or title"),
-		keyOfferAs(keys.Backlog.ClearQ, "clear the filter; clear it again to close it"),
+		keyOfferAs(keys.Backlog.Back, "clear the filter; again to close it"),
 		keyOfferAs(keys.Query.Rub, "delete a character from the filter"),
 		keyOfferAs(keys.Backlog.Status, "cycle the status filter"),
 		keyOfferAs(keys.Backlog.Priority, "cycle the priority filter"),
@@ -292,7 +290,8 @@ func (b backlogFoot) keyList() []KeyOffer {
 	if b.sprint != "" {
 		out = append(out, keyOfferAs(keys.Backlog.Sprint, "add it to "+b.sprint+", or drop it"))
 	}
-	return append(out, wayOut(backToPrompt), keyOfferAs(keys.Backlog.Back, backToPrompt))
+	return append(out, wayOut(backToPrompt))
+
 }
 
 // fieldNames is the fields the field-filter key cycles through, named: `kind

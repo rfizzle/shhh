@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the step being worked · its paths and the calls that carried it out
-/plan                                    [?] keys · [q] back
+/plan                                  [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   1. ✓ Locate the round accounting   done             1 tool
@@ -28,7 +28,7 @@
 [esc] back to the prompt
 
 · a failed step · finished, and not cleanly
-/plan                                    [?] keys · [q] back
+/plan                                  [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   1. ✓ Locate the round accounting   done             1 tool
@@ -45,7 +45,7 @@
 [esc] back to the prompt
 
 · a step not reached · with what the run did that the plan did not say
-/plan                                    [?] keys · [q] back
+/plan                                  [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   1. ✓ Locate the round accounting   done             1 tool
@@ -63,7 +63,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · the step being worked · its paths and the calls that carried it out
-␛[1;97m/plan␛[m                                    ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/plan␛[m                                  ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m   ␛[92mdone␛[m             ␛[38;5;252m1 tool␛[m
@@ -80,7 +80,7 @@
 ␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
 
 · a failed step · finished, and not cleanly
-␛[1;97m/plan␛[m                                    ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/plan␛[m                                  ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m   ␛[92mdone␛[m             ␛[38;5;252m1 tool␛[m
@@ -97,7 +97,7 @@
 ␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
 
 · a step not reached · with what the run did that the plan did not say
-␛[1;97m/plan␛[m                                    ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/plan␛[m                                  ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m   ␛[92mdone␛[m             ␛[38;5;252m1 tool␛[m

@@ -186,7 +186,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 			Decision.PanLeft, Decision.PanRight}},
 		{"Confirm", []Binding{Confirm.Yes, Confirm.No, Confirm.Force}},
 		{"Select", []Binding{Select.Move, Select.MoveJK, Select.Take, Select.Alt,
-			Select.Filter, Select.ClearQ, Select.Toggle, Select.All, Select.Note,
+			Select.Filter, Select.Toggle, Select.All, Select.Note, Select.Jump,
 			Select.Delete, Select.Rename, Select.Cancel, Select.Palette.Prev, Select.Palette.Next,
 			Select.Palette.Run, Select.Palette.Write}},
 		{"Review", []Binding{Review.MoveFile, Review.MoveHunk, Review.SideBySide,
@@ -200,13 +200,13 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		{"Query", []Binding{Query.Rub}},
 		{"Wait", []Binding{Wait.Fallback, Wait.Stop, Wait.Compact, Wait.NewSession,
 			Wait.KeepGoing, Wait.UseKey, Wait.KeepKey}},
-		{"Diff", []Binding{Diff.Scroll, Diff.Hunk, Diff.SideBySide, Diff.Back, Diff.Leave}},
+		{"Diff", []Binding{Diff.Scroll, Diff.Hunk, Diff.SideBySide, Diff.Back}},
 		{"Output", []Binding{Output.Scroll, Output.PageUp, Output.PageDown,
-			Output.Collapse, Output.Back, Output.Leave}},
-		{"Preview", []Binding{Preview.Back, Preview.Leave}},
+			Output.Collapse, Output.Back}},
+		{"Preview", Preview.All()},
 		{"Paste", Paste.All()},
 		{"KeyList", KeyList.All()},
-		{"Screen", []Binding{Screen.Move, Screen.Take, Screen.Filter, Screen.ClearQ,
+		{"Screen", []Binding{Screen.Move, Screen.Take, Screen.Filter,
 			Screen.List, Screen.Quit, Screen.Reset, Screen.Write, Screen.Keep, Screen.Scope,
 			Screen.Copy, Screen.Rerun, Screen.Snippet, Screen.Delete, Screen.Rename,
 			Screen.Fix, Screen.Again, Screen.Worked, Screen.Failed, Screen.Skip}},
@@ -290,13 +290,15 @@ func TestMapCycleChordsHaveOneHome(t *testing.T) {
 }
 
 // TestReadingRowKeysHaveOneHome pins reading mode's bare letters the way the
-// realigned chords are pinned: the copy, half-page and search bindings belong
-// to reading mode and to no other surface. The keystrokes themselves have
-// other lives — [y] answers a card, [d] marks a selector's default, [/] opens
-// a filter and [n] steps a hunk — but those are other surfaces' bindings;
-// these four may not quietly grow a second home.
+// realigned chords are pinned: the half-page, search and match bindings
+// belong to reading mode and to no other surface. The keystrokes themselves
+// have other lives — [/] opens a filter and [n] steps a hunk — but those are
+// other surfaces' bindings; these three may not quietly grow a second home.
+// The copy is not among them: [c] is the shared vocabulary's, and the same
+// binding on every surface that copies is the point of it.
 func TestReadingRowKeysHaveOneHome(t *testing.T) {
-	for _, b := range []Binding{Reading.Copy, Reading.Half, Reading.Search, Reading.Match} {
+	for _, b := range []Binding{Reading.Half, Reading.Search, Reading.Match} {
+
 		sig := strings.Join(b.Keys(), ",") + "|" + Shown(b) + "|" + Words(b)
 		var homes []string
 		for _, s := range all() {
@@ -552,11 +554,11 @@ func TestEveryPairIsDeclaredBackFirst(t *testing.T) {
 	// point of a rebind — so what is checked is the shipped declarations,
 	// where every half is one of these.
 	back := map[string]bool{
-		"up": true, "k": true, "p": true, "N": true, "u": true,
+		"up": true, "k": true, "N": true, "ctrl+u": true,
 		"pgup": true, "left": true, "h": true, "home": true,
 	}
 	on := map[string]bool{
-		"down": true, "j": true, "n": true, "d": true,
+		"down": true, "j": true, "n": true, "ctrl+d": true,
 		"pgdown": true, "right": true, "l": true, "end": true,
 	}
 	for _, b := range pairs() {
@@ -588,8 +590,10 @@ func TestStepReadsTheHalfThatWasPressed(t *testing.T) {
 		{"up", Screen.Move, -1},
 		{"down", Screen.Move, 1},
 		{"j", Screen.Move, 1},
-		{"p", Diff.Hunk, -1},
+		{"N", Diff.Hunk, -1},
 		{"n", Diff.Hunk, 1},
+		{"ctrl+u", Reading.Half, -1},
+		{"ctrl+d", Reading.Half, 1},
 		{"q", Screen.Move, 0},
 	} {
 		if got := Step(c.pressed, c.bind); got != c.want {

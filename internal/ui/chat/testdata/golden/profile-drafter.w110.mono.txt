@@ -93,7 +93,7 @@
     none stated · the session's own command lists apply
   ⋮ 1 more section · [shift+↓] scroll the profile
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [R] all
+  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [d] clear it · [R] all
   [tab] the card · [esc] discard the draft
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────╮
@@ -135,7 +135,7 @@
     none stated · the session's own command lists apply
   ⋮ 1 more section · [shift+↓] scroll the profile
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [R] all
+  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [d] clear it · [R] all
   [tab] the card · [esc] discard the draft
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────╮
@@ -257,7 +257,7 @@
     none stated · the session's own command lists apply
   ⋮ 1 more section · [shift+↓] scroll the profile
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [R] all
+  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [d] clear it · [R] all
   [tab] the card · [esc] take back its last revision
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────╮
@@ -299,7 +299,7 @@
     none stated · the session's own command lists apply
   ⋮ 1 more section · [shift+↓] scroll the profile
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [R] all
+  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [d] clear it · [R] all
   [tab] the card · [esc] discard the draft
 
 ╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────╮
@@ -385,13 +385,13 @@
 [enter] take it
 [enter] refine it with a note
 [R] refine the whole draft with one note
-[e] edit it yourself
-[x] clear it
+[e] edit
+[d] delete
 [tab] the sections or the card
-[ctrl+s] save the profile
+[ctrl+s] write
 [shift+↑] scroll the profile up
 [shift+↓] scroll the profile
-[esc] back a step
+[esc] back
 
 glyphs
 ⚙  a read: a file, a search, a listing
@@ -494,7 +494,7 @@ $  a shell command
     ␛[38;5;244mnone stated␛[m␛[38;5;244m · the session's own command lists apply␛[m
   ␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
+  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
   ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -536,7 +536,7 @@ $  a shell command
     ␛[38;5;244mnone stated␛[m␛[38;5;244m · the session's own command lists apply␛[m
   ␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
+  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
   ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -658,7 +658,7 @@ $  a shell command
     ␛[38;5;244mnone stated␛[m␛[38;5;244m · the session's own command lists apply␛[m
   ␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
+  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
   ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take back its last revision␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -700,7 +700,7 @@ $  a shell command
     ␛[38;5;244mnone stated␛[m␛[38;5;244m · the session's own command lists apply␛[m
   ␛[38;5;244m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
+  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
   ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard the draft␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -786,13 +786,13 @@ $  a shell command
 ␛[38;5;254m[enter]␛[m␛[38;5;244m take it␛[m
 ␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m
 ␛[38;5;254m[R]␛[m␛[38;5;244m refine the whole draft with one note␛[m
-␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m
-␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m
+␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m
+␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m
 ␛[38;5;254m[tab]␛[m␛[38;5;244m the sections or the card␛[m
-␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save the profile␛[m
+␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write␛[m
 ␛[38;5;254m[shift+↑]␛[m␛[38;5;244m scroll the profile up␛[m
 ␛[38;5;254m[shift+↓]␛[m␛[38;5;244m scroll the profile␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m back a step␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 ␛[38;5;244mglyphs␛[m
 ␛[38;5;244m⚙␛[m  ␛[38;5;244ma read: a file, a search, a listing␛[m

@@ -72,7 +72,7 @@ func TestSnippetScreen_CopyResolvesWithoutClosing(t *testing.T) {
 // would take, and enter is No.
 func TestSnippetScreen_DeleteAsksFirst(t *testing.T) {
 	s := snippetScreen()
-	if _, result := pressKey(s, 'x'); result.Do != nil {
+	if _, result := pressKey(s, 'd'); result.Do != nil {
 		t.Fatalf("x resolved a delete before the confirm: %+v", result.Do)
 	}
 	view := ansi.Strip(s.View(130))
@@ -83,7 +83,7 @@ func TestSnippetScreen_DeleteAsksFirst(t *testing.T) {
 		t.Fatalf("enter is No, got %+v", result.Do)
 	}
 
-	pressKey(s, 'x')
+	pressKey(s, 'd')
 	done, result := pressKey(s, 'y')
 	if done || result.Do == nil || result.Do.Act != SnippetDelete || result.Do.ID != "1" {
 		t.Fatalf("y should resolve the delete, got %+v (done=%v)", result.Do, done)
@@ -95,7 +95,7 @@ func TestSnippetScreen_DeleteAsksFirst(t *testing.T) {
 // over (docs/interface/principles.md#esc-is-always-the-safe-answer).
 func TestSnippetScreen_RenameCommitsOnEnterAndKeepsOnEsc(t *testing.T) {
 	s := snippetScreen()
-	pressKey(s, 'r')
+	pressKey(s, 'e')
 	if view := ansi.Strip(s.View(130)); !strings.Contains(view, "rename ▸ ports") {
 		t.Fatalf("the rename row did not open prefilled:\n%s", view)
 	}
@@ -104,7 +104,7 @@ func TestSnippetScreen_RenameCommitsOnEnterAndKeepsOnEsc(t *testing.T) {
 		t.Fatalf("esc renamed something: %+v", result.Do)
 	}
 
-	pressKey(s, 'r')
+	pressKey(s, 'e')
 	typeIntoSnippets(s, "2")
 	done, result := s.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if done {
@@ -119,7 +119,7 @@ func TestSnippetScreen_RenameCommitsOnEnterAndKeepsOnEsc(t *testing.T) {
 // rename something to what it is already called is a write nobody made.
 func TestSnippetScreen_UnchangedRenameResolvesNothing(t *testing.T) {
 	s := snippetScreen()
-	pressKey(s, 'r')
+	pressKey(s, 'e')
 	if _, result := s.Update(tea.KeyPressMsg{Code: tea.KeyEnter}); result.Do != nil {
 		t.Fatalf("an unchanged name resolved %+v", result.Do)
 	}
@@ -130,10 +130,10 @@ func TestSnippetScreen_UnchangedRenameResolvesNothing(t *testing.T) {
 func TestSnippetScreen_LettersAreTextWhileFiltering(t *testing.T) {
 	s := snippetScreen()
 	pressKey(s, '/')
-	if _, result := pressKey(s, 'x'); result.Do != nil {
+	if _, result := pressKey(s, 'd'); result.Do != nil {
 		t.Fatalf("a letter typed into the filter deleted something: %+v", result.Do)
 	}
-	if s.list.Query != "x" {
+	if s.list.Query != "d" {
 		t.Fatalf("query = %q, want the letter as text", s.list.Query)
 	}
 }
@@ -180,24 +180,23 @@ func TestSnippetScreen_KeyListIsComplete(t *testing.T) {
 	s := snippetScreen()
 	pressKey(s, '?')
 	view := ansi.Strip(s.View(130))
-	for _, key := range []string{"[↑↓/jk]", "[enter]", "[c]", "[r]", "[x]", "[/]", "[ctrl+u]", "[q]"} {
+	for _, key := range []string{"[↑↓/jk]", "[enter]", "[c]", "[e]", "[d]", "[/]", "[esc]"} {
 		if !strings.Contains(view, key) {
 			t.Fatalf("the key list is missing %s:\n%s", key, view)
 		}
 	}
 }
 
-// Leaving runs nothing, whichever of the two ways out was taken.
+// Leaving runs nothing, and esc is the one way out: q is a plain letter.
 func TestSnippetScreen_LeavingRunsNothing(t *testing.T) {
-	for _, press := range []tea.KeyPressMsg{
-		{Code: tea.KeyEscape},
-		{Code: 'q', Text: "q"},
-	} {
-		s := snippetScreen()
-		done, result := s.Update(press)
-		if !done || !result.canceled || result.Run {
-			t.Fatalf("%v left with something to run: %+v", press, result)
-		}
+	s := snippetScreen()
+	done, result := s.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if !done || !result.canceled || result.Run {
+		t.Fatalf("esc left with something to run: %+v", result)
+	}
+	s = snippetScreen()
+	if done, result := s.Update(tea.KeyPressMsg{Code: 'q', Text: "q"}); done || result.Run {
+		t.Fatalf("q left the screen: %+v (done=%v)", result, done)
 	}
 }
 
@@ -247,9 +246,9 @@ func TestGolden_SnippetScreen(t *testing.T) {
 		{"snippet-filter-nothing", "a query that left nothing",
 			func() *SnippetScreen { return keyed(snippetScreen(), "/zzz") }},
 		{"snippet-rename", "the rename row under the panes, holding the name",
-			func() *SnippetScreen { return keyed(snippetScreen(), "r") }},
+			func() *SnippetScreen { return keyed(snippetScreen(), "e") }},
 		{"snippet-confirm", "the delete asked before it is carried out",
-			func() *SnippetScreen { return keyed(snippetScreen(), "x") }},
+			func() *SnippetScreen { return keyed(snippetScreen(), "d") }},
 		{"snippet-keys", "the whole register open",
 			func() *SnippetScreen { return keyed(snippetScreen(), "?") }},
 		{"snippet-notice", "the line the last key left",

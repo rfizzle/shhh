@@ -71,7 +71,7 @@ snap 11-plan-closed "… 2 more, 1 of them writes" "▸ planned 6 steps" "✓ 1 
 # Enter with reading mode's cursor on the card does the same. The first stop
 # is the reply that wrote the plan, then its turn's close, and the card.
 keys C-o
-snap 12-reading "[j/k] move"
+snap 12-reading "[↑↓/jk] move"
 keys k k k k k k k k k k k k
 sleep 1
 keys j j
@@ -80,7 +80,8 @@ keys Enter
 snap 14-enter-opens "6  Read the result back" "❯ ▸ planned 6 steps"
 keys Enter
 snap 15-enter-closes "… 2 more, 1 of them writes" "❯ ▸ planned 6 steps"
-keys q
+keys Escape
+sleep 0.3
 # At low the closed card is its header alone on one inset band row, and a
 # click on it opens it whole; the same click gives the row back.
 keys "/ui verbosity low" Enter

@@ -253,7 +253,7 @@ func (m *Model) answerPreview(msg tea.KeyPressMsg) (bool, overlayAction) {
 			m.refreshFocusView()
 		}
 		return true, overlayAction{run: act.run}
-	case keys.Match(msg, keys.Preview.Back), keys.Match(msg, keys.Preview.Leave):
+	case keys.Match(msg, keys.Preview.Back):
 		row := m.staged.row
 		act := m.closePreview()
 		if row {
@@ -427,8 +427,8 @@ func (m Model) updatePasteReader(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		m.closePasteReader()
 		return m, nil
-	case keys.Is(pressed, keys.Paste.Leave), keys.Is(pressed, keys.Paste.Back):
-		// Esc never destroys and neither does q: the paste is still staged,
+	case keys.Is(pressed, keys.Paste.Back):
+		// Esc never destroys: the paste is still staged,
 		// and the cursor is still where the sentence left it (invariant 3).
 		m.closePasteReader()
 		return m, nil
@@ -447,9 +447,9 @@ func (m *Model) closePasteReader() {
 // every other pane overlay's hint does. Opened from the strip, the way out
 // says it goes back there, since that is where the reader came from.
 func (m Model) renderPasteReaderHint() string {
-	leave := seg(keys.Paste.Leave)
+	leave := segAs(keys.Paste.Back, "back to the draft, cursor where you left it")
 	if m.staged.back {
-		leave = segAs(keys.Paste.Leave, "back to the strip")
+		leave = segAs(keys.Paste.Back, "back to the strip")
 	}
 	// A paste reached by its handle after the send is no longer staged, so
 	// there is nothing for the drop to take.

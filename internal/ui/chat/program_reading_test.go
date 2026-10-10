@@ -44,20 +44,20 @@ func TestProgram_AnEditRowOpensToEachDepth(t *testing.T) {
 	// onto them, the two reads under one line and the edit a row of its own
 	// after it.
 	programPress(t, tm, "ctrl+o", "k", "k")
-	waitForText(t, tm, "row 1 of 3")
+	waitForText(t, tm, "1 of 3")
 	programPress(t, tm, "enter")
-	waitForText(t, tm, "row 1 of 4")
+	waitForText(t, tm, "1 of 4")
 	programPress(t, tm, "j")
-	waitForText(t, tm, "row 2 of 4")
+	waitForText(t, tm, "2 of 4")
 	programPress(t, tm, "enter")
 	waitForText(t, tm, "@@ -4,7 +4,7 @@")
 	programPress(t, tm, "enter")
-	waitForText(t, tm, "[j/k] scroll")
+	waitForText(t, tm, "diff · [↑↓/jk] move")
 	programPress(t, tm, "esc")
 
 	frame := finalFrame(t, tm)
 	frameHas(t, frame, "@@ -4,7 +4,7 @@", "RoundsExhausted")
-	if strings.Contains(frame, "[j/k] scroll") {
+	if strings.Contains(frame, "diff · [↑↓/jk] move") {
 		t.Fatalf("esc did not come back from the full screen:\n%s", frame)
 	}
 }
@@ -138,7 +138,7 @@ func TestProgram_APasteTooBigForTheDraftIsAToken(t *testing.T) {
 	waitForText(t, tm, "will cost")
 	programPress(t, tm, "ctrl+o", "enter")
 	waitForText(t, tm, "PASTE#1")
-	programPress(t, tm, "q")
+	programPress(t, tm, "esc")
 	waitForText(t, tm, "back to the draft")
 	programPress(t, tm, "esc", "enter")
 	waitForText(t, tm, "never leaves the round")
@@ -248,9 +248,9 @@ func TestProgram_AStagedChipIsReachedOpenedAndDropped(t *testing.T) {
 	waitForText(t, tm, "chip 1 of 1")
 	programPress(t, tm, "enter")
 	waitForText(t, tm, "32×16")
-	programPress(t, tm, "q")
+	programPress(t, tm, "esc")
 	waitForText(t, tm, "chip 1 of 1")
-	programPress(t, tm, "x")
+	programPress(t, tm, "d")
 	waitForText(t, tm, "dropped Image#1")
 	programPress(t, tm, "esc")
 

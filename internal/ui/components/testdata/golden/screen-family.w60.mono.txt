@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
-shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
+shhh doctor · 10 checks         1.4s · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
 ❯  ✗ model   anthropic · claude-opus-5 · no …  no key       
@@ -20,11 +20,11 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
   ↓ 9 more · binary · config · store · sandbox · engine · g…
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
-[↑↓/jk] move · [c] copy the report
-[r] run the checks again · [esc] back to the shell
+[↑↓/jk] move · [c] copy the report · [r] retry
+[esc] back to the shell
 
 · metrics · the spend rides with the one key the screen has
-shhh metrics                    $18.42 · [?] keys · [q] quit
+shhh metrics                  $18.42 · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT
@@ -36,21 +36,21 @@ shhh metrics                    $18.42 · [?] keys · [q] quit
 [esc] back to the shell
 
 · config · the file, and what is standing against it, over the flows section
-/config · 2 changes unwritten            [?] keys · [q] back
+/config · 2 changes unwritten          [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   FLOWS
   ❯ classifier         gemini-3-flash — this sessi…  session
     explanation        claude-sonnet-4.6 — behavi…  flow key
-  ↓ 17 more
+    reading            gpt-5.2-mini — provider.c…  cheap key
+  ↓ 16 more
 
-[↑↓/jk] move · [enter] change · [/] filter
-[r] reset to default · [ctrl+s] write 2 changes
-[esc] discard, after asking
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
+[ctrl+s] write 2 changes · [esc] discard, after asking
 nothing is written until [ctrl+s]
 
 · history · the subject, and a foot key row that states the way out
-shhh history · 6 entries · 2 run         [?] keys · [q] quit
+shhh history · 6 entries · 2 run       [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
 ❯ $ delete every log file older than a week  exit 0     1.4s
@@ -59,12 +59,12 @@ shhh history · 6 entries · 2 run         [?] keys · [q] quit
   $ find every reference to ErrRoundLimit u…  saved     1.1s
 ↓ 2 more
 
-[↑↓/jk] move · [enter] re-run it · [c] copy it
-[ctrl+s] save it as a snippet · [x] delete it · [/] filter
+[↑↓/jk] move · [enter] re-run it · [c] copy
+[ctrl+s] write it as a snippet · [d] delete · [/] filter
 [esc] back to the shell
 
 · rate · the same header over one card
-shhh rate · 1 of 5                       [?] keys · [q] quit
+shhh rate · 1 of 5                     [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
 ╭─ 4m ago ─────────────────────────────────────────────────╮
@@ -77,7 +77,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 [y] worked · [n] did not · [s] skip · [esc] stop
 
 · context · the occupancy is the tally beside the keys
-/context                       ~312.4k · [?] keys · [q] back
+/context                     ~312.4k · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
@@ -105,42 +105,44 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
   [esc] nothing is drafted
 
 · snippets · the list, the command it would run, and the promise that it will not
-shhh snippets · 3 snippets               [?] keys · [q] quit
+shhh snippets · 3 snippets             [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
 ❯ ports      what is listening on this machine        4m ago
   big-files  the ten biggest files here            yesterday
   prune      drop every merged branch                    tue
 
-[↑↓/jk] move · [enter] run it · [c] copy it · [r] rename it
-[x] delete it · [/] filter · [esc] back to the shell
+[↑↓/jk] move · [enter] run it · [c] copy · [e] rename
+[d] delete · [/] filter · [esc] back to the shell
 
 · the saved-chat browser · a row another session holds says so in a word
-shhh chats · 3 conversations             [?] keys · [q] quit
+shhh chats · 3 conversations           [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   morning-fix  the retry backoff was doubling twice · 12 tu…
 ❯ held         reading the sandbox…  open in another session
   tuesday      naming the report pages · 31 turns · Sep 3 1…
 
-[↑↓/jk] move · [r] rename it · [x] delete it · [/] filter
+[↑↓/jk] move · [e] rename · [d] delete · [/] filter
 [esc] back to the shell
 
 · sources · the list is grouped under the hosts it read
-/sources · 2 pages · 1 host · 1 search   [?] keys · [q] back
+/sources                               [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
-searches
-  ⚙ tokio runtime                 3 results · orchestrator
-docs.rs
+↑ 1 more
 ❯ ⚙ /tokio/latest/tokio/          200 · orchestrator   60 KB
-  ⚙ /tokio/latest/tokio/runtime/  200 (cached)         12 KB
+↓ 1 more
+────────────────────────────────────────────────────────────
+https://docs.rs/tokio/latest/tokio/             orchestrator
+  tokio — Rust
 
-[↑↓/jk] move · [enter] read the page that was kept
-[esc] back to the prompt
+… (+10 more rows)
+
+[↑↓/jk] move · [enter] open · [esc] back to the prompt
 
 · safety · the reading, its subject beside the title and the way back on the right
-/safety · manual · sandbox-exec          [?] keys · [q] back
+/safety · manual · sandbox-exec        [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
 MODE AND POLICY
@@ -154,7 +156,7 @@ MODE AND POLICY
 [↑↓/jk] scroll · [esc] back to the prompt
 
 · steps · the session's own list, the run the transcript titled for the step beside it
-/steps · 1 of 7                          [?] keys · [q] back
+/steps · 1 of 7                        [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   1. ✓ Read the loop                 done            2 tools
@@ -168,7 +170,7 @@ MODE AND POLICY
 [esc] back to the prompt    the agent's own list, not a plan
 
 · readings · every reading the session took, the one under the pointer whole beside it
-/readings · 5 readings   $0.0142 spent · [?] keys · [q] back
+/readings              $0.0142 spent · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
 ❯ ⚠ r 11 · off target  withdrawn                      turn 2
@@ -182,7 +184,7 @@ r 11 · off target                                     turn 2
 [esc] back to the prompt
 
 · turns · every turn the session ran, the close of the one under the pointer beside it
-/turns · 6 turns         $0.1580 spent · [?] keys · [q] back
+/turns · 6 turns       $0.1580 spent · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
 ↑ 2 more
@@ -196,7 +198,7 @@ turn 4                                                  done
 [enter] review turn 4 · [esc] back to the prompt
 
 · alerts · every command the session broke, standing first, the one under the pointer's account beside it
-/alerts · 2 standing · 2 superseded      [?] keys · [q] back
+/alerts · 2 standing · 2 superseded    [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
 ❯ ✗ make test  standing · exit 2 · 3 runs       since turn 3
@@ -210,7 +212,7 @@ make test                                           standing
 [enter] show each run · [esc] back to the prompt
 
 · spend · the session's bill by model, by child and by turn, the row under the pointer's account beside it
-/stats · 2 models        $0.4210 spent · [?] keys · [q] back
+/stats · 2 models      $0.4210 spent · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
 ↑ 1 more
@@ -224,7 +226,7 @@ claude-opus-5-5                                        model
 [enter] open the turn · [esc] back to the prompt
 
 · tools · where the session's tools came from, the source under the pointer's account beside it
-/mcp · 3 servers · 2 of 4 up             [?] keys · [q] back
+/mcp · 3 servers · 2 of 4 up           [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
 ↑ 3 more
@@ -239,7 +241,7 @@ linear                                                 error
 
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
-␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m           ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m         ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel   anthropic · claude-opus-5 · no …  no key       ␛[m␛[m
@@ -248,11 +250,11 @@ linear                                                 error
   ␛[38;5;244m↓ 9 more · binary · config · store · sandbox · engine · g…␛[m
 
   ␛[38;5;254m✗␛[m ␛[38;5;254m2 failed␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 warnings␛[m␛[38;5;244m · ␛[m␛[38;5;254m5 passed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 not checked␛[m
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m
-␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · metrics · the spend rides with the one key the screen has
-␛[1;38;5;254mshhh metrics␛[m                    ␛[38;5;254m$18.42␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh metrics␛[m                  ␛[38;5;254m$18.42␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT␛[m
@@ -264,21 +266,21 @@ linear                                                 error
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · config · the file, and what is standing against it, over the flows section
-␛[1;38;5;254m/config␛[m␛[38;5;254m · 2 changes unwritten␛[m            ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/config␛[m␛[38;5;254m · 2 changes unwritten␛[m          ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mFLOWS␛[m
   ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mclassifier         gemini-3-flash — this sessi…  session␛[m
     ␛[38;5;254mexplanation␛[m        ␛[38;5;254mclaude-sonnet-4.6␛[m ␛[38;5;244m— behavi…␛[m  ␛[38;5;254mflow key␛[m
-  ␛[38;5;244m↓ 17 more␛[m
+    ␛[38;5;254mreading␛[m            ␛[38;5;254mgpt-5.2-mini␛[m ␛[38;5;244m— provider.c…␛[m  ␛[38;5;254mcheap key␛[m
+  ␛[38;5;244m↓ 16 more␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m
-␛[38;5;254m[r]␛[m␛[38;5;244m reset to default␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write 2 changes␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m discard, after asking␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m
+␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write 2 changes␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard, after asking␛[m
 ␛[38;5;244mnothing is written until [ctrl+s]␛[m
 
 · history · the subject, and a foot key row that states the way out
-␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m         ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m       ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m$ delete every log file older than a week  exit 0     1.4s␛[m
@@ -287,12 +289,12 @@ linear                                                 error
   ␛[38;5;254m$ find every reference to ErrRoundLimit u…␛[m  ␛[38;5;254msaved␛[m     ␛[38;5;254m1.1s␛[m
 ␛[38;5;244m↓ 2 more␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m re-run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy it␛[m
-␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save it as a snippet␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m delete it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m re-run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m
+␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write it as a snippet␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · rate · the same header over one card
-␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 1 of 5␛[m                       ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh rate␛[m␛[38;5;244m · 1 of 5␛[m                     ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254m4m ago ␛[m␛[38;5;244m─────────────────────────────────────────────────╮␛[m
@@ -305,7 +307,7 @@ linear                                                 error
 ␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
 
 · context · the occupancy is the tally beside the keys
-␛[1;38;5;254m/context␛[m                       ␛[38;5;254m~312.4k␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/context␛[m                     ␛[38;5;254m~312.4k␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;244m▰␛[m␛[38;5;254m▰␛[m␛[38;5;254m▰▰▰␛[m␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m
@@ -333,42 +335,44 @@ linear                                                 error
   ␛[38;5;254m[esc]␛[m␛[38;5;244m nothing is drafted␛[m
 
 · snippets · the list, the command it would run, and the promise that it will not
-␛[1;38;5;254mshhh snippets␛[m␛[38;5;244m · 3 snippets␛[m               ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh snippets␛[m␛[38;5;244m · 3 snippets␛[m             ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mports      what is listening on this machine        4m ago␛[m
   ␛[38;5;254mbig-files␛[m  ␛[38;5;244mthe ten biggest files here␛[m            ␛[38;5;254myesterday␛[m
   ␛[38;5;254mprune␛[m      ␛[38;5;244mdrop every merged branch␛[m                    ␛[38;5;254mtue␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m rename it␛[m
-␛[38;5;254m[x]␛[m␛[38;5;244m delete it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m
+␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · the saved-chat browser · a row another session holds says so in a word
-␛[1;38;5;254mshhh chats␛[m␛[38;5;244m · 3 conversations␛[m             ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh chats␛[m␛[38;5;244m · 3 conversations␛[m           ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254mmorning-fix␛[m  ␛[38;5;244mthe retry backoff was doubling twice · 12 tu…␛[m
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mheld         reading the sandbox…  open in another session␛[m
   ␛[38;5;254mtuesday␛[m      ␛[38;5;244mnaming the report pages · 31 turns · Sep 3 1…␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m rename it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m delete it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · sources · the list is grouped under the hosts it read
-␛[1;38;5;254m/sources␛[m␛[38;5;244m · 2 pages · 1 host · 1 search␛[m   ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/sources␛[m                               ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-␛[1;38;5;254msearches␛[m
-  ␛[38;5;254m⚙ tokio runtime␛[m                 ␛[38;5;254m3 results␛[m ␛[38;5;244m· orchestrator␛[m
-␛[1;38;5;254mdocs.rs␛[m
+␛[38;5;244m↑ 1 more␛[m
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚙ /tokio/latest/tokio/          200 · orchestrator   60 KB␛[m
-  ␛[38;5;254m⚙ /tokio/latest/tokio/runtime/␛[m  ␛[38;5;254m200 (cached)␛[m         ␛[38;5;254m12 KB␛[m
+␛[38;5;244m↓ 1 more␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
+␛[1;38;5;254mhttps://docs.rs/tokio/latest/tokio/␛[m             ␛[38;5;244morchestrator␛[m
+  ␛[38;5;244mtokio — Rust␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the page that was kept␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;244m… (+10 more rows)␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · safety · the reading, its subject beside the title and the way back on the right
-␛[1;38;5;254m/safety␛[m␛[38;5;244m · manual · sandbox-exec␛[m          ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/safety␛[m␛[38;5;244m · manual · sandbox-exec␛[m        ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244mMODE AND POLICY␛[m
@@ -382,7 +386,7 @@ linear                                                 error
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · steps · the session's own list, the run the transcript titled for the step beside it
-␛[1;38;5;254m/steps␛[m␛[38;5;244m · 1 of 7␛[m                          ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/steps␛[m␛[38;5;244m · 1 of 7␛[m                        ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;244m1. ␛[m␛[38;5;254m✓ Read the loop␛[m                 ␛[38;5;254mdone␛[m            ␛[38;5;254m2 tools␛[m
@@ -396,7 +400,7 @@ linear                                                 error
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m    ␛[38;5;244mthe agent's own list, not a plan␛[m
 
 · readings · every reading the session took, the one under the pointer whole beside it
-␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m   ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/readings␛[m              ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ r 11 · off target  withdrawn                      turn 2␛[m
@@ -410,7 +414,7 @@ linear                                                 error
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · turns · every turn the session ran, the close of the one under the pointer beside it
-␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m         ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m       ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m↑ 2 more␛[m
@@ -424,7 +428,7 @@ linear                                                 error
 ␛[38;5;254m[enter]␛[m␛[38;5;244m review turn 4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · alerts · every command the session broke, standing first, the one under the pointer's account beside it
-␛[1;38;5;254m/alerts␛[m␛[38;5;244m · 2 standing␛[m␛[38;5;244m · 2 superseded␛[m      ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/alerts␛[m␛[38;5;244m · 2 standing␛[m␛[38;5;244m · 2 superseded␛[m    ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m✗ make test  standing · exit 2 · 3 runs       since turn 3␛[m
@@ -438,7 +442,7 @@ linear                                                 error
 ␛[38;5;254m[enter]␛[m␛[38;5;244m show each run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · spend · the session's bill by model, by child and by turn, the row under the pointer's account beside it
-␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m        ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m      ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m↑ 1 more␛[m
@@ -452,7 +456,7 @@ linear                                                 error
 ␛[38;5;244m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · tools · where the session's tools came from, the source under the pointer's account beside it
-␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m             ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m           ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m↑ 3 more␛[m

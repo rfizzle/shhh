@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · as it opens · the pointer on the last note written
-/notes · 4 notes · 4 agents                              [?] keys · [q] back
+/notes · 4 notes · 4 agents                            [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────
 
 orchestrator
@@ -28,11 +28,10 @@ The reviewer's own delegate                         researcher-1/reviewer-1a
   A grandchild signs with its spawner's name in front, so its note files
   under researcher-1.
 
-[↑↓/jk] move · [enter] read the whole note · [d] drop it
-[esc] back to the prompt
+[↑↓/jk] move · [enter] open · [d] delete · [esc] back to the prompt
 
 · a note from the fan-out · the preview reads it
-/notes · 4 notes · 4 agents                              [?] keys · [q] back
+/notes · 4 notes · 4 agents                            [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────
 
 orchestrator
@@ -49,11 +48,10 @@ The deny list is read before the tier                             reviewer-1
   policy.Decide matches on the command, so an entry refuses the verb in
   every mode.
 
-[↑↓/jk] move · [enter] read the whole note · [d] drop it
-[esc] back to the prompt
+[↑↓/jk] move · [enter] open · [d] delete · [esc] back to the prompt
 
 · [d] · the one key that takes something out asks first
-/notes · 4 notes · 4 agents                              [?] keys · [q] back
+/notes · 4 notes · 4 agents                            [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────
 
 orchestrator
@@ -73,7 +71,7 @@ The deny list is read before the tier                             reviewer-1
 Drop "The deny list is read before the tier"?  [y/N]
 
 · /notes clear · the question counts what it would take
-/notes · 4 notes · 4 agents                              [?] keys · [q] back
+/notes · 4 notes · 4 agents                            [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────
 
 orchestrator
@@ -95,11 +93,11 @@ Drop 4 notes? Nothing else in the session is touched.  [y/N]
 · the panel it leaves · the way out, on one row
 ────────────────────────────────────────────────────────────────────────────
 ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51                                         
-notes · [q] back to the prompt
+notes · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · as it opens · the pointer on the last note written
-␛[1;38;5;254m/notes␛[m␛[38;5;244m · 4 notes · 4 agents␛[m                              ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/notes␛[m␛[38;5;244m · 4 notes · 4 agents␛[m                            ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254morchestrator␛[m
@@ -116,11 +114,10 @@ notes · [q] back to the prompt
   ␛[38;5;244mA grandchild signs with its spawner's name in front, so its note files␛[m
   ␛[38;5;244munder researcher-1.␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the whole note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m drop it␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · a note from the fan-out · the preview reads it
-␛[1;38;5;254m/notes␛[m␛[38;5;244m · 4 notes · 4 agents␛[m                              ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/notes␛[m␛[38;5;244m · 4 notes · 4 agents␛[m                            ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254morchestrator␛[m
@@ -137,11 +134,10 @@ notes · [q] back to the prompt
   ␛[38;5;244mpolicy.Decide matches on the command, so an entry refuses the verb in␛[m
   ␛[38;5;244mevery mode.␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the whole note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m drop it␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · [d] · the one key that takes something out asks first
-␛[1;38;5;254m/notes␛[m␛[38;5;244m · 4 notes · 4 agents␛[m                              ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/notes␛[m␛[38;5;244m · 4 notes · 4 agents␛[m                            ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254morchestrator␛[m
@@ -161,7 +157,7 @@ notes · [q] back to the prompt
 ␛[38;5;254m␛[38;5;254mDrop "The deny list is read before the tier"?␛[m␛[m  ␛[38;5;244m[␛[m␛[38;5;244my␛[m␛[38;5;244m/␛[m␛[1;38;5;254mN␛[m␛[38;5;244m]␛[m
 
 · /notes clear · the question counts what it would take
-␛[1;38;5;254m/notes␛[m␛[38;5;244m · 4 notes · 4 agents␛[m                              ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/notes␛[m␛[38;5;244m · 4 notes · 4 agents␛[m                            ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254morchestrator␛[m
@@ -183,4 +179,4 @@ notes · [q] back to the prompt
 · the panel it leaves · the way out, on one row
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m⏸ manual␛[m␛[38;5;244m · ␛[m␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱▱▱▱␛[m␛[38;5;244m · ␛[m␛[38;5;244m$0.51␛[m                                         
-␛[38;5;244mnotes · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;244mnotes · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m

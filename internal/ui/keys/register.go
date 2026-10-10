@@ -388,7 +388,7 @@ func register() [surfaceCount]Surface {
 			Position: Takeover,
 			Reached:  Bracket(Decision.Batch) + " on a card with a queue behind it",
 			Bindings: []Binding{
-				Select.MoveJK, Select.Toggle, Select.All,
+				Select.MoveJK, Select.Toggle, Select.All, Select.Jump,
 				Select.Take, Select.Cancel, Screen.List,
 			},
 		},
@@ -404,7 +404,7 @@ func register() [surfaceCount]Surface {
 			Section:  "docs/interface/surfaces.md#the-approval-card, docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends",
 			Position: Takeover,
 			Reached:  Bracket(Decision.Always) + " on a card that offers a grant",
-			Bindings: []Binding{Select.MoveJK, Select.Take, Select.Cancel, Screen.List},
+			Bindings: []Binding{Select.MoveJK, Select.Take, Select.Jump, Select.Cancel, Screen.List},
 		},
 		OnPlanCard: {
 			// A row of its own, because the card is a list and answers a
@@ -444,16 +444,15 @@ func register() [surfaceCount]Surface {
 			// Which is what decides the strip: a call carrying several
 			// questions draws them as tabs, and the keystroke a tab strip
 			// has everywhere else is the one the note is already on. So the
-			// strip takes the arrows — see Select.Tab — and `d` takes the
-			// marked row's long form to the full screen, which is free here
-			// because Select.Alt is not on this row and this card has no
-			// default to set.
+			// strip takes the arrows — see Select.Tab — and `v` takes the
+			// marked row's long form to the full screen, the letter the
+			// approval card's full diff spends on the same act.
 			Name:     "the question card",
 			Section:  "docs/interface/surfaces.md#the-question-card, docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard",
 			Position: Beside,
 			Reached:  Shown(Draft.Answer),
 			Bindings: []Binding{
-				Select.MoveJK, Select.Take, Select.Toggle, Select.All,
+				Select.MoveJK, Select.Take, Select.Toggle, Select.All, Select.Jump,
 				Select.Note, Select.Long, Select.Tab, Select.Cancel, Screen.List,
 			},
 		},
@@ -546,7 +545,7 @@ func register() [surfaceCount]Surface {
 			Reached:  "the command or key that opens it",
 			Bindings: []Binding{
 				Select.MoveJK, Select.Take, Select.Alt, Select.Filter,
-				Select.ClearQ, Select.Toggle, Select.All, Select.Note,
+				Select.Toggle, Select.All, Select.Note, Select.Jump,
 				Select.Cancel,
 			},
 		},
@@ -571,14 +570,15 @@ func register() [surfaceCount]Surface {
 		OnSelectorQuery: {
 			// The same family with the query line open, which is why it is
 			// a row of its own: a list being typed into keeps every letter
-			// as text, so j/k are not keys and the arrows are the movement
-			//. Nothing here is a bare letter.
+			// as text, so j/k are not keys and the arrows are the movement.
+			// Nothing here is a bare letter, and esc clears the query before
+			// it leaves.
 			Name:     "a selector being typed into",
 			Section:  "docs/interface/surfaces.md#selectors",
 			Position: Takeover,
 			Reached:  "a card that opens over a catalog, or " + Bracket(Select.Filter) + " on one that does not",
 			Bindings: []Binding{
-				Select.Move, Select.Take, Select.ClearQ, Query.Rub, Select.Cancel,
+				Select.Move, Select.Take, Query.Rub, Select.Cancel,
 			},
 		},
 		OnPalette: {
@@ -678,7 +678,7 @@ func register() [surfaceCount]Surface {
 			Position: Takeover,
 			Reached:  "the key that opens it",
 			Bindings: []Binding{
-				Diff.Scroll, Diff.Hunk, Diff.SideBySide, Diff.Back, Diff.Leave,
+				Diff.Scroll, Diff.Hunk, Diff.SideBySide, Diff.Back,
 			},
 		},
 		OnOutput: {
@@ -688,7 +688,7 @@ func register() [surfaceCount]Surface {
 			Reached:  "the key that opens it",
 			Bindings: []Binding{
 				Output.Scroll, Output.PageUp, Output.PageDown,
-				Output.Collapse, Output.Back, Output.Leave,
+				Output.Collapse, Output.Back,
 			},
 		},
 		OnPreview: {
@@ -746,7 +746,7 @@ func Programs() []Surface {
 			Position: Takeover,
 			Reached:  "shhh config",
 			Bindings: []Binding{
-				Screen.Move, Screen.Take, Screen.Filter, Screen.ClearQ, Query.Rub,
+				Screen.Move, Screen.Take, Screen.Filter, Query.Rub,
 				Screen.Reset, Screen.Write, Screen.Scope, Screen.List, Screen.Quit,
 			},
 		},
@@ -756,7 +756,7 @@ func Programs() []Surface {
 			Position: Takeover,
 			Reached:  Bracket(Screen.Take) + " on a setting",
 			Bindings: []Binding{
-				Select.Move, Screen.Take, Screen.Filter, Screen.ClearQ, Query.Rub,
+				Select.Move, Screen.Take, Screen.Filter, Query.Rub,
 				Select.Alt, Screen.Scope, Screen.Keep,
 			},
 		},
@@ -767,7 +767,7 @@ func Programs() []Surface {
 			Reached:  "shhh history",
 			Bindings: []Binding{
 				Screen.Move, Screen.Rerun, Screen.Copy, Screen.Snippet,
-				Screen.Delete, Screen.Filter, Screen.ClearQ, Query.Rub,
+				Screen.Delete, Screen.Filter, Query.Rub,
 				Screen.List, Screen.Quit,
 			},
 		},
@@ -826,7 +826,7 @@ func Programs() []Surface {
 			Reached:  "shhh snippets",
 			Bindings: []Binding{
 				Screen.Move, Screen.Rerun, Screen.Copy, Screen.Rename,
-				Screen.Delete, Screen.Filter, Screen.ClearQ, Query.Rub,
+				Screen.Delete, Screen.Filter, Query.Rub,
 				Screen.List, Screen.Quit,
 			},
 		},
@@ -837,7 +837,7 @@ func Programs() []Surface {
 			Reached:  "shhh chats, or --resume on shhh chat and shhh code",
 			Bindings: []Binding{
 				Screen.Move, Screen.Take, Screen.Rename, Screen.Delete,
-				Screen.Filter, Screen.ClearQ, Query.Rub, Screen.List, Screen.Quit,
+				Screen.Filter, Query.Rub, Screen.List, Screen.Quit,
 			},
 		},
 		{
@@ -850,7 +850,7 @@ func Programs() []Surface {
 			Section:  "docs/interface/surfaces.md#the-supporting-screens",
 			Position: Takeover,
 			Reached:  Bracket(Screen.Rename) + " on a snippet or a saved chat",
-			Bindings: []Binding{Screen.Take, Screen.ClearQ, Query.Rub, Screen.Keep},
+			Bindings: []Binding{Screen.Take, Query.Rub, Screen.Keep},
 		},
 	}
 }

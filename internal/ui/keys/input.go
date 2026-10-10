@@ -152,7 +152,8 @@ the step is offered after a turn closes and never sent on its own; any other key
 		{
 			Weight: 200,
 			Binds:  []Binding{Draft.Reading},
-			Help: `reading mode: select transcript rows (j/k, u/d half a page), expand/collapse (enter), y copies the row under the cursor — a command as $ cmd over its output, an edit as its unified diff, a message as markdown source, a card call by call — / searches the transcript and n/N walk what it found, pgup/pgdn page, ? lists every key the mode has, esc or typing returns to the prompt
+			Help: `reading mode: select transcript rows (↑↓/jk, ctrl+u/ctrl+d half a page), expand/collapse (enter), c copies the fenced block under the cursor, or the row where there is none — a command as $ cmd over its output, an edit as its unified diff, a message as markdown source, a card call by call — / searches the transcript and n/N walk what it found, pgup/pgdn page, ? lists every key the mode has, esc or typing returns to the prompt
+
 enter on a step's card opens it onto its calls and enter again closes it, as - does; on an open card ←→ walk the strip of its calls and enter opens that tool, esc there coming back to the strip, and a click on a call's row opens it the same way. enter on an edit row cycles collapsed → expanded → full-screen diff, and on a command or read row the same three depths over its output, the whole of it scrollable at the last one. It opens over a running turn, which keeps streaming underneath; a transcript with nothing selectable opens as a plain pager. /step opens the in-flight step's detail from the prompt`,
 		},
 		{

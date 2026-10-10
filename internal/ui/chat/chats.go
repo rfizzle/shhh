@@ -3,8 +3,8 @@ package chat
 // Housekeeping in the saved-chat picker
 // (docs/capabilities/sessions-and-memory.md#housekeeping). The picker behind
 // bare /load and /chats is the generic select card with two keys the card
-// only offers and this file answers: [x] arms an inline confirm under the
-// card, [r] opens a one-line rename row there. Both act on the focused row
+// only offers and this file answers: [d] arms an inline confirm under the
+// card, [e] opens a one-line rename row there. Both act on the focused row
 // and both leave the picker open, so a reader tidying a dozen sessions does
 // not reopen it a dozen times.
 //
@@ -46,7 +46,7 @@ type chatOps struct {
 	target  string
 	// rename is the open rename row, prefilled with target's current name.
 	rename *textinput.Model
-	// notice is the one-line answer to a key that could not act — [x] on
+	// notice is the one-line answer to a key that could not act — [d] on
 	// the chat the session is in — drawn where the confirm would be. It
 	// goes on the next key.
 	notice string
@@ -130,7 +130,7 @@ func (m Model) openChatPick() (tea.Model, tea.Cmd, bool) {
 	}
 	opts, focus := m.chatPickOptions(entries)
 	// The one card in the family that opens as a list rather than as a
-	// search: its rows carry [x] and [r], and a session's saved chats are
+	// search: its rows carry [d] and [e], and a session's saved chats are
 	// short enough to walk. [/] turns it into a search when the list is long.
 	model, cmd := m.openPicker("Load a saved chat", opts, focus, func(m *Model, idx int) string {
 		// The rows are rebuilt after every delete and rename, so the apply

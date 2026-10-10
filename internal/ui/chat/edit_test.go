@@ -126,22 +126,27 @@ func TestEdit_EscAsksAndYDiscards(t *testing.T) {
 	}
 }
 
-// The cancel chord backs out of the pane as esc does — asking over a
-// modified buffer — and arms nothing: a cancel that asks opens no window.
-func TestEdit_TheCancelChordBacksOutFirst(t *testing.T) {
+// The cancel chord over a modified buffer does nothing at all: it neither asks
+// nor arms, so the typed buffer cannot be put at risk by the chord.
+func TestEdit_TheCancelChordLeavesAModifiedBufferAlone(t *testing.T) {
 	m, _ := editSessionAt(t, 130)
 	m = sendText(t, m, "/edit loop.go")
 	m = typeInto(t, m, "zz")
 	m = pressKeys(t, m, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
-	if m.state != stateEditor || !m.screens.editPane().pane.Asking() {
-		t.Fatal("the cancel chord over a modified buffer did not ask")
+	if m.state != stateEditor || m.screens.editPane().pane.Asking() {
+		t.Fatal("the cancel chord over a modified buffer must not ask")
+	}
+	if m.armed.open(armQuit) || m.quitting {
+		t.Fatal("the cancel chord over a modified buffer must arm nothing")
+	}
+	if !m.screens.editPane().pane.Modified() {
+		t.Error("the typed buffer was lost")
 	}
 }
 
-// No run of ctrl+c presses over a modified buffer reaches the quit. The first
-// asks and opens no window, the second answers keep editing and arms nothing,
-// and so on without end; only a save or a discard on purpose lets ctrl+c ×2
-// quit as anywhere.
+// No run of ctrl+c presses over a modified buffer reaches the quit or changes
+// the pane: every press does nothing and arms nothing. Only a save or a
+// discard on purpose lets ctrl+c x2 quit as anywhere.
 func TestEdit_CtrlCNeverDiscardsATypedBuffer(t *testing.T) {
 	ctrlC := tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl}
 	start := func(t *testing.T) Model {
@@ -149,7 +154,7 @@ func TestEdit_CtrlCNeverDiscardsATypedBuffer(t *testing.T) {
 		m = sendText(t, m, "/edit loop.go")
 		return typeInto(t, m, "zz")
 	}
-	t.Run("a run of presses asks and keeps, forever", func(t *testing.T) {
+	t.Run("a run of presses does nothing, forever", func(t *testing.T) {
 		m := start(t)
 		for i := 1; i <= 7; i++ {
 			next, _ := m.Update(ctrlC)
@@ -160,7 +165,7 @@ func TestEdit_CtrlCNeverDiscardsATypedBuffer(t *testing.T) {
 			if m.armed.open(armQuit) {
 				t.Fatalf("press %d opened the quit window", i)
 			}
-			if m.state != stateEditor || m.screens.editPane().pane.Asking() != (i%2 == 1) {
+			if m.state != stateEditor || m.screens.editPane().pane.Asking() {
 				t.Fatalf("press %d: state %v, asking %v", i, m.state, m.screens.editPane().pane.Asking())
 			}
 		}
@@ -179,8 +184,8 @@ func TestEdit_CtrlCNeverDiscardsATypedBuffer(t *testing.T) {
 		m := start(t)
 		m = pressKeys(t, m, editSave)
 		m = pressKeys(t, m, ctrlC)
-		if m.state == stateEditor || m.quitting || !m.armed.open(armQuit) {
-			t.Fatal("the first press over a saved buffer did not go back and arm")
+		if m.state != stateEditor || m.quitting || !m.armed.open(armQuit) {
+			t.Fatal("the first press over a saved buffer did not leave the pane up and arm")
 		}
 		m = pressKeys(t, m, ctrlC)
 		if !m.quitting {
@@ -189,7 +194,7 @@ func TestEdit_CtrlCNeverDiscardsATypedBuffer(t *testing.T) {
 	})
 	t.Run("discarded, ctrl+c twice quits as anywhere", func(t *testing.T) {
 		m := start(t)
-		m = pressKeys(t, m, ctrlC)
+		m = pressKeys(t, m, editEsc)
 		m = typeInto(t, m, "y")
 		if m.state == stateEditor {
 			t.Fatal("y did not discard")
@@ -288,7 +293,7 @@ func TestGolden_EditPane(t *testing.T) {
 			{Label: "opened over the feed", View: opened},
 			{Label: "modified, and esc asked", View: asked},
 			{Label: "the panel it leaves · the way out, and no letter", View: askedPanel},
-			{Label: "ctrl+c asked the same question · no quit window is open", View: strings.Join(m.editPaneLines(m.contentWidth(), 16), "\n") + "\n" + m.takeoverPanel(m.contentWidth())},
+			{Label: "ctrl+c over the modified buffer · it does nothing, and no quit window is open", View: strings.Join(m.editPaneLines(m.contentWidth(), 16), "\n") + "\n" + m.takeoverPanel(m.contentWidth())},
 		}
 	})
 }

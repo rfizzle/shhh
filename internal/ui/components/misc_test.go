@@ -87,8 +87,8 @@ func TestAgentList_ViewAndKeys(t *testing.T) {
 	if l.Focus != 2 {
 		t.Fatalf("j should move focus, got %d", l.Focus)
 	}
-	if done, result := l.Update(key("x")); done || result.Action != AgentCancel {
-		t.Fatal("x should request cancel and keep the list open")
+	if done, result := l.Update(key("d")); done || result.Action != AgentCancel {
+		t.Fatal("d should request cancel and keep the list open")
 	}
 	if done, result := l.Update(key("X")); done || result.Action != AgentKill {
 		t.Fatal("X should request kill and keep the list open")

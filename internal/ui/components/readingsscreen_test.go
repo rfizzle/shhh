@@ -67,7 +67,7 @@ func readingsScreen(focus int) *ReadingsScreen {
 func TestReadingsScreen_ThePreviewIsTheReadingWhole(t *testing.T) {
 	view := ansi.Strip(readingsScreen(0).View(130))
 	for _, want := range []string{
-		"/readings", "5 readings", "$0.0142 spent", "[q] back",
+		"/readings", "5 readings", "$0.0142 spent", "[esc] back",
 		"⚠ r 11 · off target", "withdrawn", "⚠ r 6 · off target", "steered",
 		"▸ r 3 · on target", "turn 1",
 		"docs were not asked for", "read against: fix the CSV exporter's quoting",
@@ -107,8 +107,11 @@ func TestReadingsScreen_MovesAndLeaves(t *testing.T) {
 	if done := s.Update(tea.KeyPressMsg{Code: tea.KeyDown}); done || s.Focus != 1 {
 		t.Fatalf("down: done %v, focus %d", done, s.Focus)
 	}
-	if done := s.Update(tea.KeyPressMsg{Code: 'q', Text: "q"}); !done {
-		t.Fatal("q did not close the screen")
+	if done := s.Update(tea.KeyPressMsg{Code: 'q', Text: "q"}); done {
+		t.Fatal("q closed the screen; esc is the one way out")
+	}
+	if done := s.Update(tea.KeyPressMsg{Code: tea.KeyEscape}); !done {
+		t.Fatal("esc did not close the screen")
 	}
 }
 

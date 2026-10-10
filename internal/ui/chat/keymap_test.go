@@ -131,6 +131,12 @@ func TestRewind_DoubleEscOnAnEmptyIdleDraftOpensThePicker(t *testing.T) {
 	}
 
 	before := len(m.transcript)
+	// esc walks out one level a press: the search row closes first, then the
+	// picker.
+	m, _ = pressKey(t, m, escK)
+	if m.state != statePick || m.picker.card.Filtering {
+		t.Fatal("esc did not close the search row first")
+	}
 	m, _ = pressKey(t, m, escK)
 	if m.state != stateInput {
 		t.Fatal("esc did not close the picker")

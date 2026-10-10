@@ -14,7 +14,7 @@ package ui
 // from the same resolver the approval cards use (internal/radius), so the
 // front door and the session agree about what a command is. The action bar is
 // a row of keys rather than a menu. And on a destructive command the safe
-// default moves: enter spends itself saying what would be affected, `[d]`
+// default moves: enter spends itself saying what would be affected, `[p]`
 // runs the command's own no-op form where one exists, and running takes a
 // deliberate `y`.
 //
@@ -143,7 +143,7 @@ type GenerateModel struct {
 	// reach is the resolved radius of the command on screen.
 	reach radius.Command
 	// dryCommand is the command's no-op form, and dryAvailable whether it has
-	// one at all. Without one, `[d]` is not offered.
+	// one at all. Without one, `[p]` is not offered.
 	dryCommand   string
 	dryAvailable bool
 	dryOutput    string
@@ -241,7 +241,7 @@ func (m GenerateModel) WithExplain(mode ExplainMode) GenerateModel {
 	return m
 }
 
-// WithDryRun replaces how `[d]` executes a no-op form.
+// WithDryRun replaces how `[p]` executes a no-op form.
 func (m GenerateModel) WithDryRun(f DryRunFunc) GenerateModel {
 	m.runDry = f
 	return m
@@ -1016,7 +1016,7 @@ func (m GenerateModel) updateExplain(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		switch pressed := msg.String(); {
-		case keys.Is(pressed, keys.Screen.Quit):
+		case keys.Is(pressed, keys.Screen.Quit, keys.Draft.Cancel):
 			if m.explainStream.cancel != nil {
 				m.explainStream.cancel()
 			}
@@ -1169,7 +1169,7 @@ func (m GenerateModel) affectedView() string {
 	return b.String()
 }
 
-// dryRunView is what `[d]` came back with, bounded and counted.
+// dryRunView is what `[p]` came back with, bounded and counted.
 func (m GenerateModel) dryRunView() string {
 	if m.phase == phaseDryRun {
 		return "\n" + indent(sty.Dim.Render("▸ dry run — "+m.dryCommand))

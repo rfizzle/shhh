@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the list, the pointer on the second snippet and its command beside it
-shhh snippets · 3 snippets                                                                 [?] keys · [q] quit
+shhh snippets · 3 snippets                                                               [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ports      what is listening on t…  4m ago │ big-files                                             yesterday
@@ -19,11 +19,11 @@ shhh snippets · 3 snippets                                                     
   prune      drop every merged branch    tue │ 
                                              │   ▎$ run     du -ah . | sort -rh | head -10
 
-[enter] run it · [r] rename it · [x] delete it · [esc] back to the shell          nothing is run until [enter]
+[enter] run it · [e] rename · [d] delete · [/] filter · [esc] back to the shell   nothing is run until [enter]
 
 ── ansi ────────────────────────────────────────────────────
 · the list, the pointer on the second snippet and its command beside it
-␛[1;97mshhh snippets␛[m␛[38;5;241m · 3 snippets␛[m                                                                 ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[1;97mshhh snippets␛[m␛[38;5;241m · 3 snippets␛[m                                                               ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252mports␛[m      ␛[38;5;241mwhat is listening on t…␛[m  ␛[38;5;252m4m ago␛[m␛[38;5;241m │ ␛[m␛[1;97mbig-files␛[m                                             ␛[38;5;241myesterday␛[m
@@ -31,4 +31,4 @@ shhh snippets · 3 snippets                                                     
   ␛[38;5;252mprune␛[m      ␛[38;5;241mdrop every merged branch␛[m    ␛[38;5;252mtue␛[m␛[38;5;241m │ ␛[m
                                             ␛[38;5;241m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mdu -ah . | sort -rh | head -10␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;241m run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m          ␛[38;5;241mnothing is run until [enter]␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m rename␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m delete␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m   ␛[38;5;241mnothing is run until [enter]␛[m

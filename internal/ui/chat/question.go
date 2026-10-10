@@ -770,9 +770,8 @@ func (m Model) updateQuestion(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// lost the pick would not be the safe one, and the reader who opened the
 	// field by mistake has not also un-chosen their answer
 	// (docs/interface/surfaces.md#the-question-card). Esc again leaves the
-	// card. It is spelled from the draft's own cancel because that binding
-	// is esc alone — the card's cancel is esc *and* ctrl+c, and ctrl+c ends
-	// a decision rather than backing out of a field of it.
+	// card. It is spelled from the draft's own esc, the binding every way
+	// back shares.
 	//
 	// A card with no rows is the other branch: the note is the answer, so
 	// there is no pick for esc to keep and it leaves outright — unless it is

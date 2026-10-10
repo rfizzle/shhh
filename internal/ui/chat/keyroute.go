@@ -128,7 +128,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		m.closeHistorySearch(true)
 	}
 	// The full-screen viewers answer before the handover chord and the
-	// grace window below: two of them are where a decision card's own [d]
+	// grace window below: two of them are where a decision card's own [v]
 	// goes, so the reader is inside the card's detail and a chord that would
 	// gate the card behind it is not what the key means there
 	// (the register's aboveDecision, overlay.go).
@@ -224,37 +224,17 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			m.syncViewport()
 			return m, nil, true
 		}
-		if m.state == stateRunningCmd {
-			if m.runCancel != nil {
-				m.runCancel()
-			}
-			return m, nil, true
-		}
-		if m.state == stateStreaming || m.state == stateCloseGate {
-			// The first press stops the run and arms nothing: what the
-			// turn already did is kept and autosaved, and a stop never
-			// becomes a quit by itself, so the next press is a new
-			// first press (cancel.go).
-			return answered(m.cancelTurnNow())
-		}
-		if m.heldAtBoundary() {
-			// A held turn is what the chord has to reach next: the turn
-			// is parked rather than finished, and without this the
-			// press falls through to the empty idle draft below and
-			// arms a quit instead of giving the turn up (hold.go).
-			m.dropHold()
-			m.setTurnState(stateStreaming)
-			return answered(m.cancelTurnNow())
-		}
-		if m.decisionUngated() {
-			// Ctrl+C keeps the meaning the card has always given it: it
-			// answers the decision no. No draft can produce the chord, so
-			// leaving it live is what keeps a waiting decision endable
-			// without first taking the keyboard.
-			m.interrupt.held = true
-			return answered(m.routeDecision(msg))
+		// The first press stops a running command, a working or parked
+		// turn, or a turn waiting on a decision that arrived beside the
+		// sentence — no draft can produce the chord, so it stays live while
+		// the card waits — and arms nothing: what the turn already did is
+		// kept and autosaved, and a stop never becomes a quit by itself
+		// (cancel.go).
+		if next, cmd, stopped := m.stopRun(); stopped {
+			return next, cmd, true
 		}
 		if strings.TrimSpace(m.input.Value()) != "" {
+
 			m.clearDraft()
 			return m, nil, true
 		}

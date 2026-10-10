@@ -58,24 +58,24 @@ func TestScreenHeader_TheTallyDropsBeforeTheWayOut(t *testing.T) {
 		tally string
 		view  func(width int) string
 	}{
-		{"doctor", 44, "[q] quit", "6 checks", func(w int) string { return doctorScreen().View(w) }},
-		{"metrics", 44, "[q] quit", "3 models", func(w int) string { return metricsScreen().View(w) }},
-		{"config", 44, "[q] quit", "config.toml", func(w int) string { return configFixture().View(w) }},
-		{"history", 44, "[q] quit", "4 entries", func(w int) string { return historyScreen().View(w) }},
-		{"rate", 30, "[q] quit", "1 of 3", func(w int) string { return rateScreen().View(w) }},
-		{"context", 44, "[q] back", "this session", func(w int) string { return context.View(w) }},
+		{"doctor", 44, "[esc] back", "6 checks", func(w int) string { return doctorScreen().View(w) }},
+		{"metrics", 44, "[esc] back", "3 models", func(w int) string { return metricsScreen().View(w) }},
+		{"config", 44, "[esc] back", "config.toml", func(w int) string { return configFixture().View(w) }},
+		{"history", 44, "[esc] back", "4 entries", func(w int) string { return historyScreen().View(w) }},
+		{"rate", 30, "[esc] back", "1 of 3", func(w int) string { return rateScreen().View(w) }},
+		{"context", 44, "[esc] back", "this session", func(w int) string { return context.View(w) }},
 		{"profile", 44, "[esc] leave", "reviewer tester", func(w int) string { return profile().View(w) }},
-		{"snippets", 44, "[q] quit", "3 snippets", func(w int) string { return snippetScreen().View(w) }},
-		{"chats", 44, "[q] quit", "3 conversations", func(w int) string { return chatScreen().View(w) }},
-		{"safety", 36, "[q] back", "sandbox-exec", func(w int) string {
+		{"snippets", 44, "[esc] back", "3 snippets", func(w int) string { return snippetScreen().View(w) }},
+		{"chats", 44, "[esc] back", "3 conversations", func(w int) string { return chatScreen().View(w) }},
+		{"safety", 36, "[esc] back", "sandbox-exec", func(w int) string {
 			return (&SafetyScreen{Sections: safetySections(), Subject: "manual · sandbox-exec", maxLines: 12}).View(w)
 		}},
-		{"steps", 30, "[q] back", "1 of 7", func(w int) string { return stepsScreen(1).View(w) }},
-		{"readings", 30, "[q] back", "$0.0142", func(w int) string { return readingsScreen(0).View(w) }},
-		{"turns", 30, "[q] back", "$0.1580", func(w int) string { return turnsScreen(2).View(w) }},
-		{"alerts", 30, "[q] back", "2 standing", func(w int) string { return alertsScreen(0, false).View(w) }},
-		{"spend", 30, "[q] back", "$0.4210 spent", func(w int) string { return spendScreen(0).View(w) }},
-		{"tools", 30, "[q] back", "2 of 4 up", func(w int) string { return toolsScreen(0).View(w) }},
+		{"steps", 30, "[esc] back", "1 of 7", func(w int) string { return stepsScreen(1).View(w) }},
+		{"readings", 30, "[esc] back", "$0.0142", func(w int) string { return readingsScreen(0).View(w) }},
+		{"turns", 30, "[esc] back", "$0.1580", func(w int) string { return turnsScreen(2).View(w) }},
+		{"alerts", 30, "[esc] back", "2 standing", func(w int) string { return alertsScreen(0, false).View(w) }},
+		{"spend", 30, "[esc] back", "$0.4210 spent", func(w int) string { return spendScreen(0).View(w) }},
+		{"tools", 30, "[esc] back", "2 of 4 up", func(w int) string { return toolsScreen(0).View(w) }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			head := headerOf(tc.view(tc.narrow))
@@ -97,7 +97,7 @@ func TestScreenHeader_TheTallyDropsBeforeTheWayOut(t *testing.T) {
 func TestScreenHeader_TheTitleIsClippedRatherThanDropped(t *testing.T) {
 	h := screenHeader{
 		left: []RailSegment{screenTitle("shhh doctor"), screenField("10 checks")},
-		keys: "[q] quit",
+		keys: "[esc] back",
 	}
 	row := ansi.Strip(h.row(24))
 	if !strings.HasPrefix(row, "shhh d") {
@@ -116,7 +116,7 @@ func TestScreenHeader_TheTitleIsClippedRatherThanDropped(t *testing.T) {
 func TestScreenHeader_ADroppedFieldTakesItsSeparator(t *testing.T) {
 	h := screenHeader{
 		left: []RailSegment{screenTitle("shhh config"), screenField("~/.config/shhh/config.toml")},
-		keys: "[?] keys · [q] quit",
+		keys: "[?] keys · [esc] back",
 	}
 	row := ansi.Strip(h.row(40))
 	if strings.Contains(row, "shhh config ·") {
@@ -130,10 +130,10 @@ func TestScreenHeader_ADroppedFieldTakesItsSeparator(t *testing.T) {
 func TestScreenHeader_AnEmptyTallyDrawsNoSeparator(t *testing.T) {
 	h := screenHeader{
 		left:  []RailSegment{screenTitle("shhh metrics")},
-		keys:  "[q] quit",
+		keys:  "[esc] back",
 		tally: sty.body.Render(""),
 	}
-	if row := ansi.Strip(h.row(80)); !strings.HasSuffix(row, "[q] quit") {
+	if row := ansi.Strip(h.row(80)); !strings.HasSuffix(row, "[esc] back") {
 		t.Fatalf("an empty tally left a separator on the row: %q", row)
 	}
 }
@@ -144,7 +144,7 @@ func TestScreenHeader_AnEmptyTallyDrawsNoSeparator(t *testing.T) {
 func TestScreenChrome_NoFooterMeansNoTrailingBlank(t *testing.T) {
 	body := func(int) []string { return []string{"one", "two"} }
 	rows := strings.Split(screenChrome{header: screenHeader{
-		left: []RailSegment{screenTitle("shhh doctor")}, keys: "[q] quit",
+		left: []RailSegment{screenTitle("shhh doctor")}, keys: "[esc] back",
 	}}.view(40, body), "\n")
 	if got := rows[len(rows)-1]; got != "two" {
 		t.Fatalf("the body is not the last row: %q", got)
@@ -157,7 +157,7 @@ func TestScreenChrome_BudgetCountsEverythingPinned(t *testing.T) {
 	var got int
 	screenChrome{
 		maxLines: 20,
-		foot:     []string{"[q] quit"},
+		foot:     []string{"[esc] back"},
 		notice:   "copied the report to the clipboard",
 		head:     []string{"filter"},
 		reserve:  2,

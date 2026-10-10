@@ -377,9 +377,18 @@ func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result selectResult) {
 		}
 		return true, selectResult{Index: s.Focus}
 	case keys.Is(pressed, keys.Select.Cancel):
-		// esc leaves the picker rather than closing the query line: the card asks
-		// that leaving change nothing, and a filter you have to escape twice
-		// is a mode.
+		// esc backs out one level and changes nothing: a query typed into
+		// the row is cleared, an empty row in front of the card's own keys
+		// closes and hands them back, and only then does the card go
+		// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+		if s.Filtering && s.Query != "" {
+			s.Query, s.queryEdited = "", true
+			return false, selectResult{}
+		}
+		if s.Filtering && s.hasRowKeys() {
+			s.Filtering = false
+			return false, selectResult{}
+		}
 		return true, selectResult{Index: -1, Canceled: true}
 	}
 	// With the query line open, the query line is the surface: everything
@@ -388,14 +397,6 @@ func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result selectResult) {
 	//, which the filter row is what generalizes. It is also what
 	// stops a model name with a 5 in it from switching the model mid-word.
 	if s.Filtering {
-		// Clearing a filter that is already empty closes the row, which is
-		// how the card's own letters are got back without leaving it — the
-		// history screen's rule, and the only way back for a card that opened
-		// with the row already open.
-		if keys.Is(pressed, keys.Select.ClearQ) && s.Query == "" {
-			s.Filtering = false
-			return false, selectResult{}
-		}
 		s.editQuery(msg)
 		return false, selectResult{}
 	}
@@ -457,15 +458,11 @@ func (s *Select) cycles() bool {
 	return false
 }
 
-// editQuery applies one keystroke to the open query line: ctrl+u clears it,
-// backspace takes a rune back, and anything that types adds to it.
+// editQuery applies one keystroke to the open query line: backspace takes a
+// rune back, and anything that types adds to it. Clearing it is esc's
+// (Update).
 func (s *Select) editQuery(msg tea.KeyPressMsg) {
 	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Select.ClearQ):
-		if s.Query == "" {
-			return
-		}
-		s.Query, s.queryEdited = "", true
 	case keys.Is(pressed, keys.Query.Rub):
 		if r := []rune(s.Query); len(r) > 0 {
 			s.Query, s.queryEdited = string(r[:len(r)-1]), true
@@ -620,24 +617,24 @@ func (s *Select) hintSegments(width int) []KeyOffer {
 		return s.HintKeys
 	}
 	if s.Filtering {
-		if s.selectable() == 0 {
-			return []KeyOffer{keyOffer(keys.Select.ClearQ), s.cancelOffer()}
-		}
-		// ctrl+u is one key with two readings, and the row names the one it
-		// has: with something typed it clears; with nothing typed it closes
-		// the row, which is what a card whose rows carry their own keys —
-		// /model's [d], the saved chats' [x] and [r] — needs said, because
-		// those keys are text until it does.
-		back := keyOfferAs(keys.Select.ClearQ, "clear")
-		if s.Query == "" {
-			if !s.hasRowKeys() {
-				return []KeyOffer{keyOffer(keys.Select.Move), keyOffer(keys.Select.Take),
-					s.cancelOffer()}
+		// esc is one key with three readings while the row is open, and the
+		// row names the one it has: with something typed it clears; with
+		// nothing typed it closes the row, which is what a card whose rows
+		// carry their own keys — /model's [m], the saved chats' [d] and [e]
+		// — needs said, because those keys are text until it does; and on a
+		// card with nothing behind the row it leaves.
+		if s.Query != "" {
+			clear := keyOfferAs(keys.Select.Cancel, "clear")
+			if s.selectable() == 0 {
+				return []KeyOffer{clear}
 			}
-			back = keyOfferAs(keys.Select.ClearQ, "row keys")
+			return []KeyOffer{keyOffer(keys.Select.Move), keyOffer(keys.Select.Take), clear}
 		}
-		return []KeyOffer{keyOffer(keys.Select.Move), keyOffer(keys.Select.Take),
-			back, s.cancelOffer()}
+		back := s.cancelOffer()
+		if s.hasRowKeys() {
+			back = keyOfferAs(keys.Select.Cancel, "row keys")
+		}
+		return []KeyOffer{keyOffer(keys.Select.Move), keyOffer(keys.Select.Take), back}
 	}
 	move := keyOffer(keys.Select.MoveJK)
 	// A card whose rows are fields offers the key that changes one. It is an
@@ -652,6 +649,7 @@ func (s *Select) hintSegments(width int) []KeyOffer {
 	// beside it, rather than a bare `1–9` a reader has to be told is a key
 	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 	jump := KeyOffer{Key: keys.Bracketed(fmt.Sprintf("1–%d", s.selectable())), Label: "jump"}
+
 	var filter KeyOffer
 	if s.Unnumbered {
 		// No numbers to offer means no j/k either, on a list typed into.
@@ -1230,12 +1228,11 @@ func (s *Select) selectable() int { return s.pointer().count() }
 // the number keys and the "1." prefixes count — to its index in Options.
 func (s *Select) selectableIndex(n int) int { return s.pointer().Index(n) }
 
-// digitIndex maps a number key to a 1-based position among n rows, or -1.
+// digitIndex maps a number key to a 1-based position among n rows, or -1. The
+// digits are the register's Select.Jump, read by position the way a pair is
+// read by half, so the key list names the keys this answers.
 func digitIndex(key string, n int) int {
-	if len(key) != 1 || key[0] < '1' || key[0] > '9' {
-		return -1
-	}
-	if pos := int(key[0] - '0'); pos <= n {
+	if pos := keys.Nth(key, keys.Select.Jump) + 1; pos > 0 && pos <= n {
 		return pos
 	}
 	return -1

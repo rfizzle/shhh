@@ -71,7 +71,7 @@ snap 17-commands-note "what to change in Commands"
 keys "it must never push or install"
 keys Enter
 snap 18-commands-refined "Commands · refined once" "for: running the package's tests and go vet" "never: git push, go install"
-keys x
+keys d
 snap 19-commands-cleared "Commands · you cleared it" "none stated"
 keys Escape
 snap 20-commands-back "never: git push, go install" "[esc] take back its last revision"

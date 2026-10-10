@@ -72,6 +72,16 @@ func TestModelPick_EscSaysWhichModelItKeeps(t *testing.T) {
 	if got := m.picker.card.CancelLabel; got != "keep m1" {
 		t.Fatalf("esc should offer %q, got %q", "keep m1", got)
 	}
+	// The card opens as a search; esc first closes the row (and says so),
+	// and with the row closed it names the model it keeps.
+	if view := ansi.Strip(m.picker.card.View(110)); !strings.Contains(view, "[esc] row keys") {
+		t.Fatalf("the open row should offer `[esc] row keys`:\n%s", view)
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = updated.(Model)
+	if m.picker.card == nil {
+		t.Fatal("the first esc should close the search row, not the picker")
+	}
 	if view := ansi.Strip(m.picker.card.View(110)); !strings.Contains(view, "[esc] keep m1") {
 		t.Fatalf("the key row should offer `[esc] keep m1`:\n%s", view)
 	}
@@ -112,6 +122,9 @@ func TestModelPick_EscCancels(t *testing.T) {
 
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	// The first esc closes the search row, the second closes the picker.
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
@@ -343,7 +356,10 @@ func TestChatPick_EscDoesNotLoad(t *testing.T) {
 	m := sendText(t, chatPickModel(t, "alpha", "beta"), "/load")
 	before := m.sessionName
 
+	// The first esc closes the search row, the second closes the picker.
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = updated.(Model)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
 	if m.state != stateInput || m.picker.card != nil {
@@ -461,7 +477,10 @@ func TestBranchPick_EscDoesNotSwitch(t *testing.T) {
 	before := m.sessionName
 	messages := len(m.Messages())
 
+	// The first esc closes the search row, the second closes the picker.
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = updated.(Model)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
 	if m.state != stateInput || m.picker.card != nil {
@@ -821,6 +840,9 @@ func TestModelList_QueriedOncePerSession(t *testing.T) {
 	runBatch(cmd)
 	updated, _ = m.Update(modelListMsg{names: []string{"llama3", "qwen3:8b"}})
 	m = updated.(Model)
+	// The first esc closes the search row, the second closes the picker.
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
@@ -1030,7 +1052,7 @@ func TestModelPick_DigitsAreTextWhileTheQueryLineIsOpen(t *testing.T) {
 	}
 }
 
-// ctrl+u puts the whole catalog back, and esc leaves without changing
+// esc puts the whole catalog back, then closes the row, then leaves without changing
 // anything at all.
 func TestModelPick_ClearAndEscape(t *testing.T) {
 	var switched string
@@ -1047,10 +1069,10 @@ func TestModelPick_ClearAndEscape(t *testing.T) {
 		t.Fatalf("the filter should have narrowed the list, got %d", len(m.picker.card.Options))
 	}
 
-	updated, _ = m.Update(ctrlU)
+	updated, _ = m.Update(escK)
 	m = updated.(Model)
 	if len(m.picker.card.Options) != 3 || m.picker.card.Query != "" {
-		t.Fatalf("ctrl+u should put the whole catalog back, got %d options and query %q",
+		t.Fatalf("esc should put the whole catalog back, got %d options and query %q",
 			len(m.picker.card.Options), m.picker.card.Query)
 	}
 	if !m.picker.card.Filtering {
@@ -1058,10 +1080,10 @@ func TestModelPick_ClearAndEscape(t *testing.T) {
 	}
 	// Again on the empty query closes the row, which is how the card's own
 	// letters are got back without leaving it.
-	updated, _ = m.Update(ctrlU)
+	updated, _ = m.Update(escK)
 	m = updated.(Model)
 	if m.picker.card.Filtering {
-		t.Fatal("ctrl+u on an empty query should close the row")
+		t.Fatal("esc on an empty query should close the row")
 	}
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
@@ -1123,9 +1145,9 @@ func TestClosestOption(t *testing.T) {
 }
 
 // The picker is where a model is chosen, so it is where the choice can be
-// made to stick: [d] switches the session and writes provider.model, so the
+// made to stick: [m] switches the session and writes provider.model, so the
 // name just read off a list does not have to be typed back. The card opens as
-// a search, so [d] is a letter until ctrl+u closes the query row.
+// a search, so [m] is a letter until esc closes the query row.
 func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 	var switched string
 	var wrote [][2]string
@@ -1146,17 +1168,17 @@ func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 	}
 	// The open query row offers the way back to the card's own keys rather
 	// than a clear that would do nothing.
-	if hint := ansi.Strip(m.picker.card.View(110)); !strings.Contains(hint, "[ctrl+u] row keys") {
+	if hint := ansi.Strip(m.picker.card.View(110)); !strings.Contains(hint, "[esc] row keys") {
 		t.Errorf("the searching card should name the way back to its keys:\n%s", hint)
 	}
-	updated, _ = m.Update(ctrlU)
+	updated, _ = m.Update(escK)
 	m = updated.(Model)
 	if m.picker.card.Filtering {
-		t.Fatal("ctrl+u on an empty query should close the row")
+		t.Fatal("esc on an empty query should close the row")
 	}
-	// Both readings are on the card, and enter's is named once d's is.
+	// Both readings are on the card, and enter's is named once m's is.
 	hint := ansi.Strip(m.picker.card.View(110))
-	for _, want := range []string{"[enter] this session", "[d] and make it default"} {
+	for _, want := range []string{"[enter] this session", "[m] and make it default"} {
 		if !strings.Contains(hint, want) {
 			t.Errorf("the card should offer %q:\n%s", want, hint)
 		}
@@ -1167,7 +1189,7 @@ func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 	next := updated.(Model)
 
 	if switched != "m2" || next.modelName != "m2" {
-		t.Fatalf("[d] switches the session too, got switched=%q modelName=%q", switched, next.modelName)
+		t.Fatalf("[m] switches the session too, got switched=%q modelName=%q", switched, next.modelName)
 	}
 	if len(wrote) != 1 || wrote[0] != [2]string{"provider.model", "m2"} {
 		t.Fatalf("persisted %v, want provider.model=m2", wrote)
@@ -1192,7 +1214,7 @@ func TestModelPick_NoWriterNoDefaultOffer(t *testing.T) {
 	if m.picker.card.AltKey != "" {
 		t.Errorf("no writer means no offer, got %q", m.picker.card.AltKey)
 	}
-	updated, _ = m.Update(ctrlU)
+	updated, _ = m.Update(escK)
 	m = updated.(Model)
 	if hint := ansi.Strip(m.picker.card.View(110)); !strings.Contains(hint, "[enter] select") {
 		t.Errorf("enter goes back to its plain label when it is the only one:\n%s", hint)

@@ -13,7 +13,7 @@ import (
 var (
 	queueKey    = tea.KeyPressMsg{Code: tea.KeyF2}
 	queueUp     = tea.KeyPressMsg{Code: tea.KeyUp}
-	queueCancel = tea.KeyPressMsg{Code: 'x', Text: "x"}
+	queueCancel = tea.KeyPressMsg{Code: 'd', Text: "d"}
 	queueEnter  = tea.KeyPressMsg{Code: tea.KeyEnter}
 )
 
@@ -346,7 +346,7 @@ func TestQueue_ALineTheSessionQueuedIsReadNotPulledBack(t *testing.T) {
 	}
 	m = pressKeys(t, m, queueCancel)
 	if len(m.steering) != 1 || m.steering[0].kind != "" {
-		t.Fatalf("x should cancel the session's line and leave the steer: %+v", m.steering)
+		t.Fatalf("d should cancel the session's line and leave the steer: %+v", m.steering)
 	}
 	last := m.transcript[len(m.transcript)-1]
 	if last.notice == nil || !strings.HasPrefix(last.notice.Subject, "session · A secret named DEMO_TOKEN") || last.notice.Outcome != "cancelled" {

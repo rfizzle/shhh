@@ -101,7 +101,7 @@ func TestReadings_TheCommandOpensTheReadingWhole(t *testing.T) {
 	if strings.Index(view, "r 9 ·") > strings.Index(view, "r 3 ·") {
 		t.Errorf("the newest reading should come first:\n%s", view)
 	}
-	closed, _ := opened.updateReadings(keyPress('q'))
+	closed, _ := opened.updateReadings(escK)
 	if got := closed.(Model); got.state == stateReadings || got.screens.readings() != nil {
 		t.Fatalf("the way out should close the screen, got state %d", got.state)
 	}

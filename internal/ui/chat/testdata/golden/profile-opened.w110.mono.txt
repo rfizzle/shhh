@@ -42,7 +42,7 @@ critic · /repo/.shhh/agents/critic.toml · project                      [?] key
   Model
     inherited from this session · reasoning xhigh · read-only · 30 rounds · reviews
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it
+  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [d] clear it
   [m] move it into sections · [R] all · [tab] the card · [esc] close, nothing written
 
 ╭─ Keep critic? ─────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -94,7 +94,7 @@ critic · /repo/.shhh/agents/critic.toml · project                      [?] key
     inherited from this session
     reasoning xhigh · read-only · 30 rounds · reviews
 
-  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [x] clear it · [R] all
+  [↑↓] section · [enter] refine it with a note · [e] edit it yourself · [d] clear it · [R] all
   [tab] the card · [esc] close, nothing written
 
 ╭─ Keep critic? ─────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -216,7 +216,7 @@ critic · /repo/.shhh/agents/critic.toml · project                      [?] key
   ␛[38;5;254mModel␛[m
     ␛[38;5;254minherited from this session␛[m␛[38;5;244m · reasoning xhigh · read-only · 30 rounds · reviews␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m
+  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m
   ␛[38;5;254m[m]␛[m␛[38;5;244m move it into sections␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m close, nothing written␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep critic? ␛[m␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -268,7 +268,7 @@ critic · /repo/.shhh/agents/critic.toml · project                      [?] key
     ␛[38;5;254minherited from this session␛[m
     ␛[38;5;244mreasoning xhigh · read-only · 30 rounds · reviews␛[m
 
-  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
+  ␛[38;5;254m[↑↓]␛[m␛[38;5;244m section␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m refine it with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit it yourself␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m clear it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m all␛[m
   ␛[38;5;254m[tab]␛[m␛[38;5;244m the card␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m close, nothing written␛[m
 
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep critic? ␛[m␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────────╮␛[m

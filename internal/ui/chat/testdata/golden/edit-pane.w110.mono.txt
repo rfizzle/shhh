@@ -51,7 +51,7 @@ leave unsaved? [y] discard · [esc] keep editing                                
 ⏸ manual                                                                                                  
 edit · [esc] keep editing
 
-· ctrl+c asked the same question · no quit window is open
+· ctrl+c over the modified buffer · it does nothing, and no quit window is open
 /edit loop.go · modified                                                                        [esc] back
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -67,10 +67,10 @@ edit · [esc] keep editing
 
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
-leave unsaved? [y] discard · [esc] keep editing                                                        2:1
+[ctrl+s] save · [esc] back                                                                             2:1
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 ⏸ manual                                                                                                  
-edit · [esc] keep editing
+edit · [esc] back to the prompt
 
 ── ansi ────────────────────────────────────────────────────
 · opened over the feed
@@ -114,7 +114,7 @@ edit · [esc] keep editing
 ␛[38;5;254m⏸ manual␛[m                                                                                                  
 ␛[38;5;244medit · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep editing␛[m
 
-· ctrl+c asked the same question · no quit window is open
+· ctrl+c over the modified buffer · it does nothing, and no quit window is open
 ␛[1;38;5;254m/edit␛[m␛[38;5;254m loop.go␛[m␛[38;5;244m · ␛[m␛[38;5;254mmodified␛[m                                                                        ␛[38;5;244m[esc] back␛[m
 ␛[38;5;244m␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
@@ -130,7 +130,7 @@ edit · [esc] keep editing
 
 
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254mleave unsaved?␛[m ␛[38;5;254m[y]␛[m␛[38;5;244m discard␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep editing␛[m                                                        ␛[38;5;244m2:1␛[m
+␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m save␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                                                                             ␛[38;5;244m2:1␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m⏸ manual␛[m                                                                                                  
-␛[38;5;244medit · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep editing␛[m
+␛[38;5;244medit · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m

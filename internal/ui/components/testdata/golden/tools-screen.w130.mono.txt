@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · a server still starting · what it costs until it answers, and how long it has
-/mcp · 3 servers · 2 of 4 up                                                                                   [?] keys · [q] back
+/mcp · 3 servers · 2 of 4 up                                                                                 [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ✓ built-in  up · 14 tools                              │ linear                                                         starting
@@ -28,7 +28,7 @@ web                                                      │             first t
 [↑↓/jk] move · [esc] back to the prompt                                 where this session's tools came from, as the rail reads it
 
 · the built-in toolset · every tool it registered
-/mcp · 3 servers · 2 of 4 up                                                                                   [?] keys · [q] back
+/mcp · 3 servers · 2 of 4 up                                                                                 [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ❯ ✓ built-in  up · 14 tools                              │ built-in                                                             up
@@ -51,7 +51,7 @@ web                                                      │
 [↑↓/jk] move · [esc] back to the prompt                                 where this session's tools came from, as the rail reads it
 
 · a project server · waiting on the checkout, [a] answers after asking
-/mcp · 3 servers · 2 of 4 up                                                                                   [?] keys · [q] back
+/mcp · 3 servers · 2 of 4 up                                                                                 [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ✓ built-in  up · 14 tools                              │ tracker                                                         blocked
@@ -74,7 +74,7 @@ web                                                      │
 [↑↓/jk] move · [a] trust this checkout · [esc] back to the prompt       where this session's tools came from, as the rail reads it
 
 · a server that did not start · what it costs, and /mcp's words for what would move it
-/mcp · 3 servers · 2 of 4 up                                                                                   [?] keys · [q] back
+/mcp · 3 servers · 2 of 4 up                                                                                 [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ✓ built-in  up · 14 tools                              │ linear                                                            error
@@ -97,7 +97,7 @@ web                                                      │
 [↑↓/jk] move · [esc] back to the prompt                                 where this session's tools came from, as the rail reads it
 
 · nothing outside shhh · the session's own tools and the web
-/mcp                                                                                                           [?] keys · [q] back
+/mcp                                                                                                         [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ❯ ✓ built-in  up · 14 tools                              │ built-in                                                             up
@@ -115,7 +115,7 @@ web                                                      │
 
 ── ansi ────────────────────────────────────────────────────
 · a server still starting · what it costs until it answers, and how long it has
-␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m                                                                                   ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m                                                                                 ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m✓ built-in␛[m  ␛[38;5;244mup␛[m␛[38;5;244m · ␛[m␛[38;5;244m14 tools␛[m                             ␛[38;5;244m │ ␛[m␛[1;38;5;254mlinear␛[m                                                         ␛[38;5;244mstarting␛[m
@@ -132,7 +132,7 @@ web                                                      │
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                 ␛[38;5;244mwhere this session's tools came from, as the rail reads it␛[m
 
 · the built-in toolset · every tool it registered
-␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m                                                                                   ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m                                                                                 ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m✓ built-in  up · 14 tools                             ␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mbuilt-in␛[m                                                             ␛[38;5;244mup␛[m
@@ -155,7 +155,7 @@ web                                                      │
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                 ␛[38;5;244mwhere this session's tools came from, as the rail reads it␛[m
 
 · a project server · waiting on the checkout, [a] answers after asking
-␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m                                                                                   ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m                                                                                 ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m✓ built-in␛[m  ␛[38;5;244mup␛[m␛[38;5;244m · ␛[m␛[38;5;244m14 tools␛[m                             ␛[38;5;244m │ ␛[m␛[1;38;5;254mtracker␛[m                                                         ␛[38;5;244mblocked␛[m
@@ -178,7 +178,7 @@ web                                                      │
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m trust this checkout␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m       ␛[38;5;244mwhere this session's tools came from, as the rail reads it␛[m
 
 · a server that did not start · what it costs, and /mcp's words for what would move it
-␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m                                                                                   ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/mcp␛[m␛[38;5;244m · 3 servers␛[m␛[38;5;244m · 2 of 4 up␛[m                                                                                 ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m✓ built-in␛[m  ␛[38;5;244mup␛[m␛[38;5;244m · ␛[m␛[38;5;244m14 tools␛[m                             ␛[38;5;244m │ ␛[m␛[1;38;5;254mlinear␛[m                                                            ␛[38;5;244merror␛[m
@@ -201,7 +201,7 @@ web                                                      │
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                 ␛[38;5;244mwhere this session's tools came from, as the rail reads it␛[m
 
 · nothing outside shhh · the session's own tools and the web
-␛[1;38;5;254m/mcp␛[m                                                                                                           ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/mcp␛[m                                                                                                         ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m✓ built-in  up · 14 tools                             ␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mbuilt-in␛[m                                                             ␛[38;5;244mup␛[m

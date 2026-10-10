@@ -40,64 +40,62 @@
 
   · older   ctrl+r · an older match  [shipped]
   · keep    enter · keep it in the draft  [shipped]
-  · cancel  esc ctrl+c · put the draft back  [shipped]
+  · cancel  esc · back  [shipped]
 
   READING
 
-  · move         k j up down · move  [shipped]
+  · move         up down k j · move  [shipped]
   · strip_left   left · along the strip, back  [shipped]
   · strip_right  right · along the strip, on  [shipped]
   · expand       enter · expand  [shipped]
   · collapse     - · collapse  [shipped]
-  ✓ copy         x · copy the row · shipped as y  [moved]
-  · copy_block   c · copy a block  [shipped]
+  ✓ copy         x · copy · shipped as c  [moved]
   · search       / · search  [shipped]
   · match        N n · match  [shipped]
-  · half         u d · half page  [shipped]
+  · half         ctrl+u ctrl+d · half page  [shipped]
   · page_up      pgup · page up  [shipped]
   · page_down    pgdown · page down  [shipped]
   · list         ? · keys  [shipped]
-  · back         q esc ctrl+c · back to the prompt  [shipped]
+  · back         esc · back  [shipped]
 
   FIND
 
   · keep   enter · keep the search  [shipped]
-  · clear  esc ctrl+c · clear it  [shipped]
+  · clear  esc · back  [shipped]
 
   STAGED
 
   · pick  left right · chip  [shipped]
   · open  enter · open  [shipped]
-  · drop  x · drop  [shipped]
-  · back  esc · back to the draft  [shipped]
+  · drop  d · delete  [shipped]
+  · back  esc · back  [shipped]
 
   QUEUE
 
-  · move    up down k j · select a message  [shipped]
+  · move    up down k j · move  [shipped]
   · edit    enter · pull it back into the draft  [shipped]
-  · cancel  x · cancel it  [shipped]
-  · back    esc ctrl+c · back to the draft  [shipped]
+  · cancel  d · delete  [shipped]
+  · back    esc · back  [shipped]
 
   KEYLIST
 
   · move   up down · move  [shipped]
   · page   pgup pgdown · page  [shipped]
   · ends   home end · first or last  [shipped]
-  · close  esc ctrl+c · close it  [shipped]
+  · close  esc · back  [shipped]
 
   PASTE
 
-  · scroll  k j up down · scroll  [shipped]
-  · remove  x · remove the paste  [shipped]
-  · leave   q ctrl+c · back to the draft, cursor where you left it  [shipped]
-  · back    esc · back to the draft  [shipped]
+  · scroll  up down k j · move  [shipped]
+  · remove  d · delete  [shipped]
+  · back    esc · back  [shipped]
 
   CONTEXT
 
   · move    up down k j · move  [shipped]
   · expand  enter · expand or fold  [shipped]
   · list    ? · keys  [shipped]
-  · back    q esc ctrl+c · back to the prompt  [shipped]
+  · back    esc · back  [shipped]
 
   ROW
 
@@ -112,10 +110,10 @@
   DECISION
 
   · allow        y enter · allow  [shipped]
-  · deny         n esc ctrl+c · deny  [shipped]
+  · deny         n · deny  [shipped]
   · always       a · allow without asking — choose how long  [shipped]
   · batch        A · open the queue  [shipped]
-  · diff         d D · full diff  [shipped]
+  · diff         v V · full diff  [shipped]
   · allow_noted  Y · allow with a note  [shipped]
   · deny_noted   N · deny with a note  [shipped]
   · dry_run      t · dry run  [shipped]
@@ -138,7 +136,7 @@
   CONFIRM
 
   · yes    y Y · yes  [shipped]
-  · no     n N enter esc ctrl+c · no — the default  [shipped]
+  · no     n N enter esc · no — the default  [shipped]
   · force  f F · force  [shipped]
 
   SELECT
@@ -146,17 +144,17 @@
   · move           up down · move  [shipped]
   · move_jk        up down k j · move  [shipped]
   · take           enter · select  [shipped]
-  · alt            d · make it the default  [shipped]
+  · alt            m · make it the default  [shipped]
   · filter         / · filter  [shipped]
-  · clear_q        ctrl+u · clear the filter  [shipped]
   · toggle         " " space · toggle  [shipped]
   · all            a · all or none  [shipped]
   · note           tab · note or options  [shipped]
+  · jump           1 2 3 4 5 6 7 8 9 · take a row  [shipped]
   · tab            left right · the next question  [shipped]
-  · long           d · the full answer  [shipped]
-  · delete         x · delete  [shipped]
-  · rename         r · rename  [shipped]
-  · cancel         esc ctrl+c · cancel  [shipped]
+  · long           v · the full answer  [shipped]
+  · delete         d · delete  [shipped]
+  · rename         e · rename  [shipped]
+  · cancel         esc · back  [shipped]
   · palette.prev   up ctrl+p · move  [shipped]
   · palette.next   down ctrl+n · move  [shipped]
   · palette.run    enter · run it  [shipped]
@@ -164,32 +162,32 @@
 
   REVIEW
 
-  · move_file     k j up down · file  [shipped]
-  · move_hunk     p n · hunk  [shipped]
+  · move_file     up down k j · move  [shipped]
+  · move_hunk     N n · hunk  [shipped]
   · side_by_side  \ · side by side  [shipped]
   · page_up       pgup · page up  [shipped]
   · page_down     pgdown · page down  [shipped]
-  · back          esc ctrl+c · back  [shipped]
+  · back          esc · back  [shipped]
 
   COMMIT
 
   · take      enter · commit  [shipped]
-  · edit      e · edit the message  [shipped]
+  · edit      e · edit  [shipped]
   · hunks     s · read the hunks  [shipped]
   · override  ! · commit with the secret  [shipped]
-  · cancel    esc · not now  [shipped]
+  · cancel    esc · back  [shipped]
 
   REWIND
 
   · both    b · both  [shipped]
   · code    c · code only  [shipped]
   · talk    t · talk only  [shipped]
-  · cancel  esc · don't  [shipped]
-  · diff    d · what the turns after it changed  [shipped]
+  · cancel  esc · back  [shipped]
+  · diff    v · what the turns after it changed  [shipped]
 
   AGENT
 
-  · move      k j up down · move  [shipped]
+  · move      up down k j · move  [shipped]
   · attach    enter · attach  [shipped]
   · go        g · go to the agent that asked  [shipped]
   · answer    a · answer  [shipped]
@@ -197,12 +195,12 @@
   · retry     r · retry  [shipped]
   · review    p · review  [shipped]
   · migrate   m · move it into sections  [shipped]
-  · edit      e · open its file  [shipped]
-  · cancel    x · cancel  [shipped]
+  · edit      e · edit  [shipped]
+  · cancel    d · cancel  [shipped]
   · kill      X · kill  [shipped]
   · kill_all  K · kill all  [shipped]
-  · back      esc ctrl+c · back  [shipped]
-  · detach    esc · back to your own session  [shipped]
+  · back      esc · back  [shipped]
+  · detach    esc · back  [shipped]
 
   PROFILE
 
@@ -210,75 +208,71 @@
   · take         enter · take it  [shipped]
   · refine       enter · refine it with a note  [shipped]
   · refine_all   R · refine the whole draft with one note  [shipped]
-  · edit         e · edit it yourself  [shipped]
-  · clear        x · clear it  [shipped]
+  · edit         e · edit  [shipped]
+  · clear        d · delete  [shipped]
   · migrate      m · move it into sections  [shipped]
   · note         tab · the sections or the card  [shipped]
   · scroll_up    shift+up · scroll the profile up  [shipped]
   · scroll_down  shift+down · scroll the profile  [shipped]
-  · back         esc ctrl+c · back a step  [shipped]
-  · save         ctrl+s · save the profile  [shipped]
+  · back         esc · back  [shipped]
+  · save         ctrl+s · write  [shipped]
 
   EDITOR
 
-  · save        ctrl+s · save the buffer  [shipped]
-  · back        esc ctrl+c · back to the prompt  [shipped]
+  · save        ctrl+s · write  [shipped]
+  · back        esc · back  [shipped]
   · discard     y · discard the change  [shipped]
-  · save_leave  ctrl+s · save and leave  [shipped]
-  · keep        esc ctrl+c · keep editing  [shipped]
+  · save_leave  ctrl+s · write and leave  [shipped]
+  · keep        esc · back  [shipped]
 
   WAIT
 
   · fallback     m · finish this turn on the fallback model  [shipped]
-  · stop         esc · stop waiting  [shipped]
+  · stop         esc · back  [shipped]
   · compact      enter · compact now  [shipped]
   · new_session  n · new session  [shipped]
-  · keep_going   esc · keep going  [shipped]
+  · keep_going   esc · back  [shipped]
   · use_key      enter · use it for this session  [shipped]
-  · keep_key     esc · keep the current key  [shipped]
+  · keep_key     esc · back  [shipped]
 
   DIFF
 
-  · scroll        k j up down · scroll  [shipped]
+  · scroll        up down k j · move  [shipped]
   · side_by_side  s · side-by-side  [shipped]
-  · hunk          p n · hunk  [shipped]
+  · hunk          N n · hunk  [shipped]
   · back          esc · back  [shipped]
-  · leave         q ctrl+c · back  [shipped]
 
   OUTPUT
 
-  · scroll     k j up down · scroll  [shipped]
+  · scroll     up down k j · move  [shipped]
   · page_up    pgup · page up  [shipped]
   · page_down  pgdown · page down  [shipped]
   · collapse   enter · close the row  [shipped]
   · back       esc · back  [shipped]
-  · leave      q ctrl+c · back  [shipped]
 
   PREVIEW
 
-  · remove  x · remove  [shipped]
+  · remove  d · delete  [shipped]
   · back    esc · back  [shipped]
-  · leave   q ctrl+c · back  [shipped]
 
   SCREEN
 
   · move     up down k j · move  [shipped]
   · take     enter · take it  [shipped]
   · filter   / · filter  [shipped]
-  · clear_q  ctrl+u · clear the filter  [shipped]
   · list     ? · keys  [shipped]
-  · quit     q esc ctrl+c · quit  [shipped]
-  · reset    r · reset to default  [shipped]
-  · write    ctrl+s · write the file  [shipped]
-  · keep     esc · keep the current value  [shipped]
+  · quit     esc · back  [shipped]
+  · reset    ctrl+r · reset  [shipped]
+  · write    ctrl+s · write  [shipped]
+  · keep     esc · back  [shipped]
   · scope    g · switch the file  [shipped]
-  · copy     c · copy it  [shipped]
+  · copy     c · copy  [shipped]
   · rerun    enter · re-run it  [shipped]
-  · snippet  ctrl+s · save it as a snippet  [shipped]
-  · delete   x · delete it  [shipped]
-  · rename   r · rename it  [shipped]
+  · snippet  ctrl+s · write it as a snippet  [shipped]
+  · delete   d · delete  [shipped]
+  · rename   e · rename  [shipped]
   · fix      f · show the fix  [shipped]
-  · again    r · run the checks again  [shipped]
+  · again    r · retry  [shipped]
   · apply    a · apply it  [shipped]
   · worked   y · worked  [shipped]
   · failed   n · did not  [shipped]
@@ -287,56 +281,55 @@
   SOURCES
 
   · move  up down k j · move  [shipped]
-  · open  enter · read the page that was kept  [shipped]
+  · open  enter · open  [shipped]
   · list  ? · keys  [shipped]
-  · back  q esc ctrl+c · back to the prompt  [shipped]
+  · back  esc · back  [shipped]
 
   NOTES
 
   · move  up down k j · move  [shipped]
-  · read  enter · read the whole note  [shipped]
-  · drop  d · drop it  [shipped]
+  · read  enter · open  [shipped]
+  · drop  d · delete  [shipped]
   · list  ? · keys  [shipped]
-  · back  q esc ctrl+c · back to the prompt  [shipped]
+  · back  esc · back  [shipped]
 
   BACKLOG
 
   · move      up down · move  [shipped]
-  · read      enter · read the body  [shipped]
+  · read      enter · open  [shipped]
   · page      pgup pgdown · page the body  [shipped]
   · tab       tab · the backlog, the sprint, or what shipped  [shipped]
-  · filter    / · filter by text  [shipped]
-  · clear_q   ctrl+u · clear the filter  [shipped]
+  · filter    / · filter  [shipped]
   · status    s · cycle the status filter  [shipped]
   · priority  p · cycle the priority filter  [shipped]
   · kind      k · cycle the kind filter  [shipped]
   · ready     r · only what can be started now  [shipped]
   · depends   w · jump to what it waits on  [shipped]
-  · edit      e · open it in $EDITOR  [shipped]
+  · edit      e · edit  [shipped]
   · run       R · run it  [shipped]
   · block     b · block it  [shipped]
   · reopen    o · reopen it  [shipped]
-  · archive   d · archive it  [shipped]
-  · drop      x · drop it, deleting the file  [shipped]
+  · archive   a · archive it  [shipped]
+  · drop      d · delete  [shipped]
   · new       n · a new item  [shipped]
   · sprint    S · add it to the sprint, or drop it from one  [shipped]
   · groom     g · read it against the tree  [shipped]
   · list      ? · keys  [shipped]
-  · back      q esc ctrl+c · back to the prompt  [shipped]
+  · back      esc · back  [shipped]
 
   SPRINT
 
   · move    up down k j · move  [shipped]
-  · toggle  " " space · drop it, or put it back  [shipped]
+  · toggle  " " space · toggle  [shipped]
   · left    o · what was left out, and why  [shipped]
   · goal    g · write what the set is for  [shipped]
   · take    enter · write the sprint  [shipped]
-  · cancel  esc · write nothing  [shipped]
+  · cancel  esc · back  [shipped]
 
   PLAN
 
   · jump       1 2 3 4 5 · jump to a row  [shipped]
-  · save       ctrl+s · save the plan  [shipped]
+  · save       ctrl+s · write  [shipped]
   · implement  i · implement in a new session  [shipped]
 
   QUERY
@@ -348,15 +341,15 @@
   · run           enter · run  [shipped]
   · confirm       y · run it  [shipped]
   · step          t · step by step  [shipped]
-  · dry_run       d · dry run  [shipped]
+  · dry_run       p · dry run  [shipped]
   · edit          e · edit  [shipped]
   · revise        r · revise  [shipped]
   · back          u · back  [shipped]
   · alternatives  a · the other commands  [shipped]
   · explain       x · explain  [shipped]
   · copy          c · copy  [shipped]
-  · save          ctrl+s · save  [shipped]
-  · quit          esc q · quit  [shipped]
+  · save          ctrl+s · write  [shipped]
+  · quit          esc · back  [shipped]
 
   SETUP
 
@@ -364,4 +357,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  265 keys · 1 moved
+  258 keys · 1 moved

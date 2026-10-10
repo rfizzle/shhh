@@ -314,18 +314,18 @@ func TestApprovalCard_FullDiffKey(t *testing.T) {
 		Answer:   "apply the change",
 		FullDiff: true,
 	}
-	if !strings.Contains(ansi.Strip(c.View(80)), "[d] full diff") {
+	if !strings.Contains(ansi.Strip(c.View(80)), "[v] full diff") {
 		t.Fatal("card should hint the full-diff key when FullDiff is set")
 	}
-	done, result := c.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
+	done, result := c.Update(tea.KeyPressMsg{Code: 'v', Text: "v"})
 	if !done || result != ApprovalFullDiff {
-		t.Fatalf("d should request the full diff, got done=%v result=%v", done, result)
+		t.Fatalf("v should request the full diff, got done=%v result=%v", done, result)
 	}
 
-	// Without FullDiff, d is unrecognized and the card keeps waiting.
+	// Without FullDiff, v is unrecognized and the card keeps waiting.
 	c.FullDiff = false
-	if done, _ := c.Update(tea.KeyPressMsg{Code: 'd', Text: "d"}); done {
-		t.Fatal("d should be ignored when FullDiff is off")
+	if done, _ := c.Update(tea.KeyPressMsg{Code: 'v', Text: "v"}); done {
+		t.Fatal("v should be ignored when FullDiff is off")
 	}
 }
 
@@ -513,9 +513,9 @@ func TestApprovalCard_Keys(t *testing.T) {
 		{"y", true, ApprovalApprove},
 		{"enter", true, ApprovalApprove},
 		{"n", true, ApprovalDeny},
-		{"esc", true, ApprovalDeny},
-		{"ctrl+c", true, ApprovalDeny},
-		{"a", false, approvalWaiting}, // AllowAlways off: [a] ignored
+		{"esc", false, approvalWaiting},    // esc backs out; it never denies
+		{"ctrl+c", false, approvalWaiting}, // only the draft answers ctrl+c
+		{"a", false, approvalWaiting},      // AllowAlways off: [a] ignored
 		{"z", false, approvalWaiting},
 	}
 	for _, tc := range cases {
@@ -559,7 +559,7 @@ func TestApprovalCard_TheRunIsBracketedOffers(t *testing.T) {
 	view := ansi.Strip(c.View(110))
 	for _, want := range []string{
 		"[y] run it once", "[n] deny", `[a] allow "go test" without asking`,
-		"[d] full view", "[esc] leave it waiting",
+		"[v] full view", "[esc] leave it waiting",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the run should offer %q:\n%s", want, view)
@@ -736,7 +736,7 @@ func TestApprovalCard_ANotedArrivalClaimsAllFourAnswers(t *testing.T) {
 		t.Fatalf("an arrival card should draw the four answers alone, got %v", got)
 	}
 	row := runRow(t, c, 80, "[y] run it once")
-	for _, absent := range []string{"a", "d"} {
+	for _, absent := range []string{"a", "v"} {
 		for col := range ansi.StringWidth(ansi.Strip(row)) {
 			if k, ok := c.KeyAt(row, col); ok && k == absent {
 				t.Fatalf("an arrival card must offer no cell for %q", absent)
@@ -820,7 +820,7 @@ func TestApprovalCard_ARowWithoutTheRunHasNoKeys(t *testing.T) {
 }
 
 // A card holding the keyboard by arrival claims two keys, so those are the
-// only two cells a pointer can land on — [a] and [d] still want the handover.
+// only two cells a pointer can land on — [a] and [v] still want the handover.
 func TestApprovalCard_HeldOnArrivalOffersOnlyItsTwoKeys(t *testing.T) {
 	c := &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",
@@ -834,7 +834,7 @@ func TestApprovalCard_HeldOnArrivalOffersOnlyItsTwoKeys(t *testing.T) {
 		t.Fatalf("an arrival card should draw y and n alone, got %+v", run)
 	}
 	row := runRow(t, c, 80, "[y] run it once")
-	for _, absent := range []string{"a", "d"} {
+	for _, absent := range []string{"a", "v"} {
 		for col := range ansi.StringWidth(ansi.Strip(row)) {
 			if k, ok := c.KeyAt(row, col); ok && k == absent {
 				t.Fatalf("an arrival card must offer no cell for %q", absent)

@@ -19,7 +19,7 @@
 │ … 3 more lines · [shift+↓]                                               │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [Y] run with a note · [n] deny · [N] deny with a note  │
-│ [a] allow "npm test" without asking · [d] full view                      │
+│ [a] allow "npm test" without asking · [v] full view                      │
 │ the list below has the keyboard                                          │
 │ ┄ allow without asking                                                   │
 │ ❯ this turn only   npm test …                       until this turn ends │
@@ -38,7 +38,7 @@
 │ … 3 more lines · [shift+↓]                                               │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [Y] run with a note · [n] deny · [N] deny with a note  │
-│ [a] allow "npm test" without asking · [d] full view                      │
+│ [a] allow "npm test" without asking · [v] full view                      │
 │ the list below has the keyboard                                          │
 │ ┄ allow without asking                                                   │
 │   this turn only   npm test …                       until this turn ends │
@@ -58,7 +58,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244m… 3 more lines · [shift+↓]␛[m                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[y] run it once␛[m␛[38;5;244m · ␛[m␛[38;5;244m[Y] run with a note␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[N] deny with a note␛[m  ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[a] allow "npm test" without asking␛[m␛[38;5;244m · ␛[m␛[38;5;244m[d] full view␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[a] allow "npm test" without asking␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v] full view␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mthe list below has the keyboard␛[m                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ allow without asking␛[m                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mthis turn only   npm test …                       until this turn ends␛[m ␛[38;5;254m│␛[m
@@ -77,7 +77,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244m… 3 more lines · [shift+↓]␛[m                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[y] run it once␛[m␛[38;5;244m · ␛[m␛[38;5;244m[Y] run with a note␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[N] deny with a note␛[m  ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[a] allow "npm test" without asking␛[m␛[38;5;244m · ␛[m␛[38;5;244m[d] full view␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[a] allow "npm test" without asking␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v] full view␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mthe list below has the keyboard␛[m                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ allow without asking␛[m                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254mthis turn only␛[m   ␛[38;5;244mnpm test …␛[m                       ␛[38;5;254muntil this turn ends␛[m ␛[38;5;254m│␛[m

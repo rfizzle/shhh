@@ -378,7 +378,7 @@ func TestAmend_EscRestoresTheOriginalAndSettlesNothing(t *testing.T) {
 // While the field holds the keyboard every letter is text. The keys in the
 // table are the ones that answer this card when it does not.
 func TestAmend_EveryLetterIsTextWhileTheFieldIsOpen(t *testing.T) {
-	for _, key := range []string{"1", "y", "n", "Y", "N", "a", "A", "d", "t", "x", "e"} {
+	for _, key := range []string{"1", "y", "n", "Y", "N", "a", "A", "v", "t", "x", "e"} {
 		t.Run(key, func(t *testing.T) {
 			var ran []string
 			m := press(t, amendModel(t, "npm test", &ran), keys.Shown(keys.Decision.Amend))

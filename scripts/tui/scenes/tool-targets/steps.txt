@@ -32,7 +32,7 @@ snap 03-refused "(no path)" "internal/agent/loop.go" "skipped · invalid argumen
 # command each stands for. The cursor opens on the turn's close, and the
 # reads' card is five stops above it.
 keys C-o
-snap 04-reading "[j/k] move"
+snap 04-reading "[↑↓/jk] move"
 keys k
 keys k
 keys k
@@ -41,7 +41,8 @@ keys k
 snap 05-on-the-card "❯ ⚙ read twice"
 keys Enter
 snap 06-history "git diff HEAD" "git status"
-keys q
+keys Escape
+sleep 0.3
 keys C-c
 keys C-c
 snap 07-exit "that is everything the screen was holding"

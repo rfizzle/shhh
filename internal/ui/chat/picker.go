@@ -32,7 +32,7 @@ import (
 // make it the default, rather than taking it for this session. A bare letter
 // like the card's own j/k, so it is text while the filter row is open — and
 // that card opens with the row open, which is why everything that names the
-// key names the [ctrl+u] that closes the row first.
+// key names the esc that closes the row first.
 
 // openPicker shows a select card in the bottom panel; apply consumes the
 // chosen index — always an index into the list the picker opened over, never
@@ -377,9 +377,9 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 	}
 	// The picker is where a model gets chosen, so it is where the choice has
 	// to be able to stick. Enter switches the session, as it always
-	// did; [d] switches it and writes provider.model, so the name you just
+	// did; [m] switches it and writes provider.model, so the name you just
 	// read off a list does not have to be typed back to `/model default`. The
-	// card opens as a search, so [d] is a letter until [ctrl+u] closes the
+	// card opens as a search, so [m] is a letter until esc closes the
 	// query row — which is what the key row offers while it is open.
 	alt := pickerAlt{Key: keys.Shown(keys.Select.Alt), Label: "and make it default", Enter: "this session"}
 	if m.wiring.ConfigWriter == nil {
@@ -406,8 +406,8 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 			if !switched {
 				return fmt.Sprintf("already using %s", name), nil
 			}
-			return fmt.Sprintf("switched to %s for this session. In the picker, [%s] then [%s] makes a choice the default",
-				name, keys.Shown(keys.Select.ClearQ), keys.Shown(keys.Select.Alt)), nil
+			return fmt.Sprintf("switched to %s for this session. In the picker, [%s] closes the search, then [%s] makes a choice the default",
+				name, keys.Shown(keys.Select.Cancel), keys.Shown(keys.Select.Alt)), nil
 		}
 		// setModelDefault owns the writing and everything true about it —
 		// the failure wording, and the warning when something outranks the

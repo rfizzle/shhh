@@ -121,14 +121,14 @@ func TestPreview_LeavingKeepsWhatIsStaged(t *testing.T) {
 	}
 }
 
-// `q` is the other spelling of the same thing, as it is on every full-screen
-// viewer in shhh.
-func TestPreview_QLeavesToo(t *testing.T) {
+// esc is the one way out: `q` is a plain letter on every full-screen viewer in
+// shhh, and on the preview it leaves the pane up.
+func TestPreview_QIsNotAWayOut(t *testing.T) {
 	m := stageImage(t, frameModel(t, 130, 40), "shot.png")
 	updated, _ := m.runPaste([]string{"/paste", "show", "shot.png"})
 	updated, _ = updated.(Model).Update(key('q'))
-	if m := updated.(Model); m.state != stateInput || m.preview != nil {
-		t.Fatalf("q should hand the pane back: state = %v", m.state)
+	if m := updated.(Model); m.preview == nil {
+		t.Fatalf("q should leave the preview up: state = %v", m.state)
 	}
 }
 

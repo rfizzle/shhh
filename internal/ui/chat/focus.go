@@ -53,7 +53,7 @@ func expandable(e entry) bool {
 // expandable plus the rows that offer keys without expanding: a turn's close
 // block is passive, but its review and its commit are handled on it, and so are
 // a provider failure's own keys and a round-limit pause's — and the model's
-// prose and its thinking, which expand nothing but are what [y] copies
+// prose and its thinking, which expand nothing but are what [c] copies
 // (docs/interface/surfaces.md#reading-mode).
 //
 // An interruption's notice is the one system row on the list. It is a
@@ -451,27 +451,24 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if next, cmd, claimed := m.rowLetter(pressed); claimed {
 			return next, cmd
 		}
-		// [u] off a steer's notice is the pager's half page, not an offer
-		// nothing made; the rest go back to the draft as the characters they
-		// are.
-		if keys.Is(pressed, keys.Reading.Half) {
-			m.halfPageFocus(pressed)
-			return m, nil
-		}
+		// Off the rows that offer them these are characters, and they go
+		// back to the draft as what they are.
 		return m.returnToInput(msg)
 	case keys.Is(pressed, keys.Reading.Copy):
-		// [y] copies the row under the cursor, type-aware (copyrow.go). A
+		// [c] shares its letter with a dropped stream's "continue from
+		// here", which answers on its own row first. Elsewhere it is the one
+		// copy: a reply's fenced block where the row has one (copyblock.go),
+		// and the row itself, type-aware, where it does not (copyrow.go). A
 		// row with nothing to copy hands the letter back to the draft, the
 		// way [-] does with nothing open.
-		return m.copyFocusedRow(msg)
-	case keys.Is(pressed, keys.Reading.CopyBlock):
-		// [c] shares its letter with a dropped stream's "continue from
-		// here", which answers on its own row first; on a reply it copies
-		// one of the reply's blocks (copyblock.go).
 		if next, cmd, claimed := m.rowLetter(pressed); claimed {
 			return next, cmd
 		}
-		return m.copyFocusedBlock(msg)
+		if _, blocks := m.focusedBlocks(); len(blocks) > 0 {
+			return m.copyFocusedBlock(msg)
+		}
+		return m.copyFocusedRow(msg)
+
 	case keys.Is(pressed, keys.Reading.Half):
 		// Half the viewport at a time, so the reader keeps context while
 		// moving quickly; the cursor follows the pane rather than pinning
@@ -655,7 +652,7 @@ func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// halfPageFocus scrolls half the viewport — [u] up, [d] down — and brings
+// halfPageFocus scrolls half the viewport — ctrl+u up, ctrl+d down — and brings
 // the cursor along: a cursor left behind a half-page jump would be a lit row
 // nobody can see, which is the thing selectableRow exists to prevent.
 func (m *Model) halfPageFocus(pressed string) {

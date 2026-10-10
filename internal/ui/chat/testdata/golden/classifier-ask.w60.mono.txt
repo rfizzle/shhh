@@ -22,7 +22,7 @@
 │ … 2 more lines · [shift+↓]                           │
 ├──────────────────────────────────────────────────────┤
 │ [y] run it once · [Y] run with a note · [n] deny     │
-│ [N] deny with a note · [d] full view                 │
+│ [N] deny with a note · [v] full view                 │
 │ [e] edit the command · [?] keys                      │
 │ [esc] not now — it keeps waiting                     │
 │ [a] always — not offered: the classifier would       │
@@ -60,7 +60,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244m… 2 more lines · [shift+↓]␛[m                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[Y]␛[m ␛[38;5;254mrun with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[N]␛[m ␛[38;5;254mdeny with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m ␛[38;5;254mfull view␛[m                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[N]␛[m ␛[38;5;254mdeny with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m ␛[38;5;254mfull view␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[e]␛[m ␛[38;5;254medit the command␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] not now — it keeps waiting␛[m                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: the classifier would␛[m       ␛[38;5;254m│␛[m

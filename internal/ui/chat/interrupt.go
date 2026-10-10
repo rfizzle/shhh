@@ -201,7 +201,7 @@ func (m Model) graceShowing() bool {
 // — a shifted letter from the tail of a buffered burst is the reflex this
 // window exists for, and a field opened by one is a mode the reader did not
 // ask for. Three keys the run prints stay out of it. The
-// chords no sentence can produce stay live — ctrl+c still denies, the
+// chords no sentence can produce stay live — ctrl+c still stops the turn, the
 // handover still gates — and esc keeps its way back to the draft, because
 // the safe answer has to stay reachable for esc to be it
 // (docs/interface/principles.md#esc-is-always-the-safe-answer), and here it

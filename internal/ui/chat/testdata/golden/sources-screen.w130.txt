@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · as it opens · the pointer on the last thing read
-/sources · 2 pages · 1 host · 1 search                                                                     [?] keys · [q] back
+/sources · 2 pages · 1 host · 1 search                                                                   [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 searches                                                        │ https://example.com/gone                      web-researcher
@@ -25,7 +25,7 @@ example.com                                                     │   when turn 
 [↑↓/jk] move · [esc] back to the prompt                                                 recorded by the tool, not by the model
 
 · a page that was kept · the preview opens it
-/sources · 2 pages · 1 host · 1 search                                                                     [?] keys · [q] back
+/sources · 2 pages · 1 host · 1 search                                                                   [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 searches                                                        │ https://docs.rs/tokio/latest/tokio/             orchestrator
@@ -43,16 +43,16 @@ example.com                                                     │   asked for 
                                                                 │   Tokio is an asynchronous runtime.
                                                                 │   It provides the building blocks.
 
-[↑↓/jk] move · [enter] read the page that was kept · [esc] back to the prompt           recorded by the tool, not by the model
+[↑↓/jk] move · [enter] open · [esc] back to the prompt                                  recorded by the tool, not by the model
 
 · the panel it leaves · the way out, on one row
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ⏸ manual                                                                                                                      
-sources · [q] back to the prompt
+sources · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · as it opens · the pointer on the last thing read
-␛[1;97m/sources␛[m␛[38;5;241m · 2 pages · 1 host · 1 search␛[m                                                                     ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/sources␛[m␛[38;5;241m · 2 pages · 1 host · 1 search␛[m                                                                   ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94msearches␛[m                                                       ␛[38;5;241m │ ␛[m␛[1;97mhttps://example.com/gone␛[m                      ␛[38;5;241mweb-researcher␛[m
@@ -66,7 +66,7 @@ sources · [q] back to the prompt
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                 ␛[38;5;241mrecorded by the tool, not by the model␛[m
 
 · a page that was kept · the preview opens it
-␛[1;97m/sources␛[m␛[38;5;241m · 2 pages · 1 host · 1 search␛[m                                                                     ␛[38;5;241m[?] keys · [q] back␛[m
+␛[1;97m/sources␛[m␛[38;5;241m · 2 pages · 1 host · 1 search␛[m                                                                   ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94msearches␛[m                                                       ␛[38;5;241m │ ␛[m␛[1;97mhttps://docs.rs/tokio/latest/tokio/␛[m             ␛[38;5;241morchestrator␛[m
@@ -84,9 +84,9 @@ sources · [q] back to the prompt
                                                                ␛[38;5;241m │ ␛[m  ␛[38;5;241mTokio is an asynchronous runtime.␛[m
                                                                ␛[38;5;241m │ ␛[m  ␛[38;5;241mIt provides the building blocks.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read the page that was kept␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m           ␛[38;5;241mrecorded by the tool, not by the model␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                  ␛[38;5;241mrecorded by the tool, not by the model␛[m
 
 · the panel it leaves · the way out, on one row
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;214m⏸ manual␛[m                                                                                                                      
-␛[38;5;241msources · ␛[m␛[38;5;103m[q]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;241msources · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m

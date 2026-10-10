@@ -769,11 +769,11 @@ func TestSummaryRow_IsExpandableAndCopyable(t *testing.T) {
 	m.transcript = []entry{e}
 	m.focusIdx = 0
 	if !m.focusedCopyable() {
-		t.Fatal("[y] copies the reading")
+		t.Fatal("[c] copies the reading")
 	}
 	text, label := m.rowCopyText(m.transcript, 0)
 	if text != "Reading the loop." || label != "summary" {
-		t.Fatalf("[y] copies the reading itself, got %q / %q", text, label)
+		t.Fatalf("[c] copies the reading itself, got %q / %q", text, label)
 	}
 }
 

@@ -228,7 +228,7 @@ func TestGrantList_AFlaggedCardOffersNoGrant(t *testing.T) {
 // the list holds the keyboard the card's own answers are inert — the reading
 // every surface that holds the keyboard under this card already makes.
 func TestGrantList_EscGrantsNothingAndTheCardsKeysAreInert(t *testing.T) {
-	for _, key := range []string{"y", "n", "Y", "N", "d", "t", "e", "1"} {
+	for _, key := range []string{"y", "n", "Y", "N", "v", "t", "e", "1"} {
 		t.Run(key, func(t *testing.T) {
 			var ran []string
 			m := grantCardModel(t, &ran, "go build ./one")
@@ -417,8 +417,8 @@ func TestGrantList_TheRegisterRowIsTheKeysItAnswers(t *testing.T) {
 	if found == nil {
 		t.Fatal("the grant list has no row in the register")
 	}
-	if got := len(found.Bindings); got != 4 {
-		t.Fatalf("the row declares %d bindings; want move, take, cancel and the key list", got)
+	if got := len(found.Bindings); got != 5 {
+		t.Fatalf("the row declares %d bindings; want move, take, jump, cancel and the key list", got)
 	}
 	var ran []string
 	m := grantCardModel(t, &ran, "go build ./one")

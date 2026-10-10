@@ -60,7 +60,7 @@ func TestAlternatives_TheirAbsenceChangesNothing(t *testing.T) {
 		t.Errorf("a response with no alternatives offered a key for them:\n%s", plain)
 	}
 	// The key that is not there is not a gap in the row either.
-	if !strings.Contains(plain, "[enter] run") || !strings.Contains(plain, "[esc] quit") {
+	if !strings.Contains(plain, "[enter] run") || !strings.Contains(plain, "[esc] back") {
 		t.Errorf("the row is not the row it was:\n%s", plain)
 	}
 	m := press(t, armed(t, "ls -la", nil), "a")

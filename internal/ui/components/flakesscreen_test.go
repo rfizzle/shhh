@@ -36,7 +36,7 @@ func TestFlakesScreen_ListsEveryCheckWithItsCount(t *testing.T) {
 		not   []string
 	}{
 		{"a check that keeps flaking", 0,
-			[]string{"/gate flakes", "3 checks · 13 flakes", "[q] back", "test", "default · 9 times", "2h ago",
+			[]string{"/gate flakes", "3 checks · 13 flakes", "[esc] back", "test", "default · 9 times", "2h ago",
 				"lint", "default · 1 time", "vet", "fast · 3 times", "flaked 9 times in this checkout",
 				"last 2h ago · first 6d ago", "the failing run exited 2", "last in session 418", "make test"}, nil},
 		{"a first flake has no first date beside its last", 1,
@@ -76,8 +76,11 @@ func TestFlakesScreen_MovesAndLeaves(t *testing.T) {
 	if done := s.Update(tea.KeyPressMsg{Code: tea.KeyDown}); done || s.Focus != 1 {
 		t.Fatalf("down: done %v, focus %d", done, s.Focus)
 	}
-	if done := s.Update(tea.KeyPressMsg{Code: 'q', Text: "q"}); !done {
-		t.Fatal("q did not close the screen")
+	if done := s.Update(tea.KeyPressMsg{Code: 'q', Text: "q"}); done {
+		t.Fatal("q closed the screen; esc is the one way out")
+	}
+	if done := s.Update(tea.KeyPressMsg{Code: tea.KeyEscape}); !done {
+		t.Fatal("esc did not close the screen")
 	}
 }
 

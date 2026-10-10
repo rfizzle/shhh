@@ -225,19 +225,22 @@ func TestEditorPane_EscAsksOverAModifiedBuffer(t *testing.T) {
 	}
 }
 
-// The cancel chord backs out the way esc does: it asks over a modified buffer
-// and keeps editing on the question.
-func TestEditorPane_TheCancelChordBacksOutAsEscDoes(t *testing.T) {
+// ctrl+c is the draft's alone: over a modified buffer it neither asks nor
+// leaves, where esc asks and keeps editing on the question.
+func TestEditorPane_CtrlCDoesNotBackOutWhereEscDoes(t *testing.T) {
 	ctrlC := tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl}
 	p := NewEditorPane("f.txt", "one\n")
 	typeEditor(t, p, "x")
-	pressEditor(t, p, ctrlC)
-	if !p.Asking() {
-		t.Fatal("the cancel chord over a modified buffer did not ask")
+	if done, _ := pressEditor(t, p, ctrlC); done || p.Asking() || p.Value() != "xone\n" {
+		t.Fatalf("ctrl+c over a modified buffer: done %v asking %v buffer %q", done, p.Asking(), p.Value())
 	}
-	pressEditor(t, p, ctrlC)
+	pressEditor(t, p, tea.KeyPressMsg{Code: tea.KeyEscape})
+	if !p.Asking() {
+		t.Fatal("esc over a modified buffer did not ask")
+	}
+	pressEditor(t, p, tea.KeyPressMsg{Code: tea.KeyEscape})
 	if p.Asking() || p.Value() != "xone\n" {
-		t.Errorf("the cancel chord on the question: asking %v, buffer %q", p.Asking(), p.Value())
+		t.Errorf("esc on the question: asking %v, buffer %q", p.Asking(), p.Value())
 	}
 }
 

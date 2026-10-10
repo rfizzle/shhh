@@ -183,6 +183,34 @@ func BracketPair(up, down Binding) string {
 // second thing.
 func Words(b Binding) string { return b.Help().Desc }
 
+// The shared vocabulary. A key means the same act on every surface that
+// answers it, and the act has one word: a reader learns the keyboard once
+// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+//
+//   - move is ↑↓/jk, shown that way on every list that answers both, and ↑↓
+//     on a surface being typed into, where j is a letter; pgup/pgdn page.
+//   - enter opens or takes.
+//   - esc backs out one level and never destroys: it closes what is open,
+//     clears a query, then leaves, asking first over staged work.
+//   - ctrl+c is the one destructive chord: it stops the run, and pressed
+//     twice it quits. It is Draft.Cancel's alone.
+//   - / filters, ctrl+s writes, ctrl+r resets, d deletes or drops (asking
+//     where it cannot be got back), c copies, e edits or opens in $EDITOR,
+//     r retries or runs again, n/N step to the next and previous match,
+//     tab and shift+tab move between tabs, sections or scopes, space toggles
+//     a row's mark, digits take a numbered row, and ? lists the keys
+//     (ctrl+] where ? is a character).
+//
+// A screen may add a few letters of its own, and none that is in this set
+// with another meaning.
+const (
+	// MoveShown is how every list that moves on both the arrows and j/k
+	// prints the pair.
+	MoveShown = "↑↓/jk"
+	// MoveTypedShown is the same movement on a surface being typed into.
+	MoveTypedShown = "↑↓"
+)
+
 // Draft is the framed input: the keys that are live while the sentence
 // being typed holds the keyboard. Every one of them is a chord or a
 // navigation key, and there is no exception but the two the rule itself
@@ -421,7 +449,7 @@ var Search = SearchKeys{
 	Keep:  bind("enter", "keep it in the draft", "enter"),
 	// The safe answer: the draft comes back exactly as it was
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-	Cancel: bind("esc", "put the draft back", "esc", "ctrl+c"),
+	Cancel: bind("esc", "back", "esc"),
 }
 
 // ReadingKeys are reading mode's own. It is a takeover, so its letters
@@ -433,7 +461,6 @@ type ReadingKeys struct {
 	Expand     Binding
 	Collapse   Binding
 	Copy       Binding
-	CopyBlock  Binding
 	Search     Binding
 	Match      Binding
 	Half       Binding
@@ -446,12 +473,12 @@ type ReadingKeys struct {
 // All is reading mode's keys in the order it offers them, which is the order
 // `?` lists them in.
 func (k ReadingKeys) All() []Binding {
-	return []Binding{k.Move, k.StripLeft, k.StripRight, k.Expand, k.Collapse, k.Copy, k.CopyBlock, k.Search,
+	return []Binding{k.Move, k.StripLeft, k.StripRight, k.Expand, k.Collapse, k.Copy, k.Search,
 		k.Match, k.Half, k.PageUp, k.PageDown, k.List, k.Back}
 }
 
 var Reading = ReadingKeys{
-	Move: bind("j/k", "move", "k", "j", "up", "down"),
+	Move: bind(MoveShown, "move", "up", "down", "k", "j"),
 	// StripLeft and StripRight walk an open card's strip a call at a time
 	// (docs/interface/surfaces.md#the-step). They are the arrows because
 	// the strip is one row and j/k already walk the rows: along the row is
@@ -461,15 +488,12 @@ var Reading = ReadingKeys{
 	StripRight: bind("→", "along the strip, on", "right"),
 	Expand:     bind("enter", "expand", "enter"),
 	Collapse:   bind("-", "collapse", "-"),
-	// Copy is [y] rather than [c]: the row is the whole message, and c is
-	// the narrower copy beside it.
-	Copy: bind("y", "copy the row", "y"),
-	// CopyBlock is [c], one fenced block of the reply under the cursor. It
-	// shares the letter with a dropped stream's "continue from here"
-	// (RowKeys) the way Half shares u with a steer's withdraw: the two are
-	// offered on different rows — a drop row is never a reply with a block —
-	// and the dispatch asks the row first.
-	CopyBlock: bind("c", "copy a block", "c"),
+	// Copy is the one copy every surface spells [c]: the fenced block under
+	// the cursor where the reply has one, and the whole row where it does
+	// not. It shares the letter with a dropped stream's "continue from here"
+	// (RowKeys): the two are offered on different rows — a drop row is never
+	// a reply with a block — and the dispatch asks the row first.
+	Copy: bind("c", "copy", "c"),
 	// Search is the slash every pager in the terminal opens a query with, and
 	// it is free here for the reason the bare letters are: nothing else on
 	// this surface is listening. On the input it is the palette's other door,
@@ -480,11 +504,13 @@ var Reading = ReadingKeys{
 	// only while a search is live: with nothing found, n and N are letters
 	// and belong to the draft.
 	Match: bind("n/N", "match", "N", "n"),
-	// Half is the pager pair u/d: half the viewport, so the reader keeps
-	// context while moving quickly. Like Move it is one binding both ways,
-	// and the dispatch reads which half was pressed. On a turn-close row
-	// [u] is that row's own undo offer first; everywhere else it pages.
-	Half:     bind("u/d", "half page", "u", "d"),
+	// Half is the pair every terminal pager answers under ctrl: half the
+	// viewport, so the reader keeps context while moving quickly. Like Move
+	// it is one binding both ways, and the dispatch reads which half was
+	// pressed. It is a chord rather than u/d because d is the register's
+	// delete, and a reading surface that paged on the letter every other
+	// surface deletes with would be the one place a reflex lands wrong.
+	Half:     bind("ctrl+u/ctrl+d", "half page", "ctrl+u", "ctrl+d"),
 	PageUp:   bind("pgup", "page up", "pgup"),
 	PageDown: bind("pgdn", "page down", "pgdown"),
 	// List is the same `?` the supporting TUIs offer: the
@@ -496,7 +522,7 @@ var Reading = ReadingKeys{
 	// declared once, on the input, and typing is the other way out anyway —
 	// a reader who forgot which pane they were in loses a mode, not a
 	// sentence.
-	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
+	Back: bind("esc", "back", "esc"),
 }
 
 // StagedKeys are reading mode's with its cursor on the staged strip — the
@@ -521,13 +547,13 @@ var Staged = StagedKeys{
 	// so the arrows along it are the gesture j/k is down the transcript.
 	Pick: bind("←→", "chip", "left", "right"),
 	Open: bind("enter", "open", "enter"),
-	// Drop is the paste reader's letter for the same act, and it is free
-	// here for the reason every letter on reading mode's bar is: nothing
-	// else is listening.
-	Drop: bind("x", "drop", "x"),
+	// Drop is the register's delete, the paste reader's letter for the same
+	// act, and it is free here for the reason every letter on reading mode's
+	// bar is: nothing else is listening.
+	Drop: bind("d", "delete", "d"),
 	// The safe answer: the draft comes back as it was, with the chip still
 	// staged (docs/interface/principles.md#esc-is-always-the-safe-answer).
-	Back: bind("esc", "back to the draft", "esc"),
+	Back: bind("esc", "back", "esc"),
 }
 
 // QueueKeys are the queue's: the messages typed while a turn runs and not
@@ -546,17 +572,17 @@ type QueueKeys struct {
 func (k QueueKeys) All() []Binding { return []Binding{k.Move, k.Edit, k.Cancel, k.Back} }
 
 var Queue = QueueKeys{
-	Move: bind("↑↓", "select a message", "up", "down", "k", "j"),
+	Move: bind(MoveShown, "move", "up", "down", "k", "j"),
 	// Edit takes the message out of the queue and puts it in the draft: it
 	// is the reader's sentence again, and sending it queues it afresh at the
 	// end like any other.
 	Edit: bind("enter", "pull it back into the draft", "enter"),
-	// Cancel is the letter the staged strip drops a chip on, for the same
-	// act on a different thing.
-	Cancel: bind("x", "cancel it", "x"),
+	// Cancel is the register's delete, the letter the staged strip drops a
+	// chip on, for the same act on a different thing.
+	Cancel: bind("d", "delete", "d"),
 	// The safe answer: the draft comes back exactly as it was and nothing
 	// queued moves (docs/interface/principles.md#esc-is-always-the-safe-answer).
-	Back: bind("esc", "back to the draft", "esc", "ctrl+c"),
+	Back: bind("esc", "back", "esc"),
 }
 
 // KeyListKeys are the key list's: every key the register binds, by group,
@@ -583,7 +609,7 @@ var KeyList = KeyListKeys{
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer). The
 	// chord that opened it closes it too, answered as that chord so a file
 	// that moves one moves both.
-	Close: bind("esc", "close it", "esc", "ctrl+c"),
+	Close: bind("esc", "back", "esc"),
 }
 
 // FindKeys are the transcript search's query row — what reading mode's bar
@@ -606,7 +632,7 @@ var Find = FindKeys{
 	// The safe answer, one level in: the query, the marks and the count on
 	// the rail go together, and the mode the reader was in is still there
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-	Clear: bind("esc", "clear it", "esc", "ctrl+c"),
+	Clear: bind("esc", "back", "esc"),
 }
 
 // ContextKeys are the occupancy surface's own. It is a takeover in the chat
@@ -627,12 +653,12 @@ func (k ContextKeys) All() []Binding {
 }
 
 var Context = ContextKeys{
-	Move: bind("↑↓/jk", "move", "up", "down", "k", "j"),
+	Move: bind(MoveShown, "move", "up", "down", "k", "j"),
 	// One key both folds and unfolds. A surface whose every group is a fold
 	// would spend a second key saying what the glyph on the row already says.
 	Expand: bind("enter", "expand or fold", "enter"),
 	List:   bind("?", "keys", "?"),
-	Back:   bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
+	Back:   bind("esc", "back", "esc"),
 }
 
 // SourcesKeys are the sources screen's own — the ledger of what the session
@@ -657,10 +683,10 @@ func (k SourcesKeys) All() []Binding {
 }
 
 var Sources = SourcesKeys{
-	Move: bind("↑↓/jk", "move", "up", "down", "k", "j"),
-	Open: bind("enter", "read the page that was kept", "enter"),
+	Move: bind(MoveShown, "move", "up", "down", "k", "j"),
+	Open: bind("enter", "open", "enter"),
 	List: bind("?", "keys", "?"),
-	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
+	Back: bind("esc", "back", "esc"),
 }
 
 // NotesKeys are the notes screen's own — the session's shared notebook. It
@@ -687,11 +713,11 @@ func (k NotesKeys) All() []Binding {
 }
 
 var Notes = NotesKeys{
-	Move: bind("↑↓/jk", "move", "up", "down", "k", "j"),
-	Read: bind("enter", "read the whole note", "enter"),
-	Drop: bind("d", "drop it", "d"),
+	Move: bind(MoveShown, "move", "up", "down", "k", "j"),
+	Read: bind("enter", "open", "enter"),
+	Drop: bind("d", "delete", "d"),
 	List: bind("?", "keys", "?"),
-	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
+	Back: bind("esc", "back", "esc"),
 }
 
 // BacklogKeys are the backlog screen's own. It is a takeover in the chat
@@ -712,7 +738,6 @@ type BacklogKeys struct {
 	Tab  Binding
 
 	Filter   Binding
-	ClearQ   Binding
 	Status   Binding
 	Priority Binding
 	Kind     Binding
@@ -738,7 +763,7 @@ type BacklogKeys struct {
 func (k BacklogKeys) All() []Binding {
 	return []Binding{
 		k.Move, k.Read, k.Page, k.Tab,
-		k.Filter, k.ClearQ, k.Status, k.Priority, k.Kind, k.Ready,
+		k.Filter, k.Status, k.Priority, k.Kind, k.Ready,
 		k.Depends, k.Edit, k.Run, k.Block, k.Reopen, k.Archive, k.Drop,
 		k.New, k.Sprint, k.Groom, k.List, k.Back,
 	}
@@ -746,12 +771,11 @@ func (k BacklogKeys) All() []Binding {
 
 var Backlog = BacklogKeys{
 	Move: bind("↑↓", "move", "up", "down"),
-	Read: bind("enter", "read the body", "enter"),
+	Read: bind("enter", "open", "enter"),
 	Page: bind("pgup/pgdn", "page the body", "pgup", "pgdown"),
 	Tab:  bind("tab", "the backlog, the sprint, or what shipped", "tab"),
 
-	Filter: bind("/", "filter by text", "/"),
-	ClearQ: bind("ctrl+u", "clear the filter", "ctrl+u"),
+	Filter: bind("/", "filter", "/"),
 	Status: bind("s", "cycle the status filter", "s"),
 	// Priority and Kind are the two words a header field uses for what an
 	// item is: how soon and what sort. They are separate filters because
@@ -762,17 +786,19 @@ var Backlog = BacklogKeys{
 	Ready:    bind("r", "only what can be started now", "r"),
 
 	Depends: bind("w", "jump to what it waits on", "w"),
-	Edit:    bind("e", "open it in $EDITOR", "e"),
+	Edit:    bind("e", "edit", "e"),
 	// Running an item is the one key here that starts work rather than
 	// recording it, and it is the shifted letter for that reason: the row
 	// under the pointer moves as the list is filtered, and a run started by
 	// a mistyped lowercase letter is minutes of the model's work on the
 	// wrong item.
-	Run:     bind("R", "run it", "R"),
-	Block:   bind("b", "block it", "b"),
-	Reopen:  bind("o", "reopen it", "o"),
-	Archive: bind("d", "archive it", "d"),
-	Drop:    bind("x", "drop it, deleting the file", "x"),
+	Run:    bind("R", "run it", "R"),
+	Block:  bind("b", "block it", "b"),
+	Reopen: bind("o", "reopen it", "o"),
+	// Archive is [a] because [d] is the register's delete, which here is
+	// the drop below.
+	Archive: bind("a", "archive it", "a"),
+	Drop:    bind("d", "delete", "d"),
 	New:     bind("n", "a new item", "n"),
 	Sprint:  bind("S", "add it to the sprint, or drop it from one", "S"),
 	// Grooming reads rather than writes, which is why it keeps the
@@ -781,7 +807,7 @@ var Backlog = BacklogKeys{
 	Groom: bind("g", "read it against the tree", "g"),
 
 	List: bind("?", "keys", "?"),
-	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
+	Back: bind("esc", "back", "esc"),
 }
 
 // SprintKeys are the sprint plan card's, on the backlog screen's sprint tab.
@@ -808,18 +834,18 @@ func (k SprintKeys) All() []Binding {
 }
 
 var Sprint = SprintKeys{
-	Move: bind("↑↓/jk", "move", "up", "down", "k", "j"),
+	Move: bind(MoveShown, "move", "up", "down", "k", "j"),
 	// Dropping is a toggle rather than a removal because the row is the
 	// only record of what was proposed: a row that left the card could not
 	// be put back, and the reader would have to plan again to see it.
-	Toggle: bind("space", "drop it, or put it back", " ", "space"),
+	Toggle: bind("space", "toggle", " ", "space"),
 	// The left-out list is folded rather than absent: the words behind a
 	// recommendation are what makes it arguable, and a proposal that showed
 	// only what it took could not be argued with.
 	Left:   bind("o", "what was left out, and why", "o"),
 	Goal:   bind("g", "write what the set is for", "g"),
 	Take:   bind("enter", "write the sprint", "enter"),
-	Cancel: bind("esc", "write nothing", "esc"),
+	Cancel: bind("esc", "back", "esc"),
 }
 
 // RowKeys are the offers a transcript row carries. They are the register's
@@ -917,13 +943,13 @@ func (k CommitKeys) All() []Binding {
 
 var Commit = CommitKeys{
 	Take:     bind("enter", "commit", "enter"),
-	Edit:     bind("e", "edit the message", "e"),
+	Edit:     bind("e", "edit", "e"),
 	Hunks:    bind("s", "read the hunks", "s"),
 	Override: bind("!", "commit with the secret", "!"),
 	// The words say what is left standing rather than "cancel": a changeset
 	// nobody committed is still there, and so is the offer
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-	Cancel: bind("esc", "not now", "esc"),
+	Cancel: bind("esc", "back", "esc"),
 }
 
 // DecisionKeys are the approval card's, the `/run` confirm's, the plan
@@ -964,7 +990,7 @@ type DecisionKeys struct {
 	//
 	// They are the shifted spellings of the answers they carry, which is a
 	// choice about legibility and not about scarcity: `e`, `x` and every
-	// unshifted letter but `y`, `n`, `a`, `d` and `t` are unclaimed on this
+	// unshifted letter but `y`, `n`, `a`, `v` and `t` are unclaimed on this
 	// surface. A shifted letter says "the same answer, more of it" without
 	// asking the reader to learn a second alphabet, and the pairing is
 	// visible in the run the card prints.
@@ -990,11 +1016,7 @@ type DecisionKeys struct {
 	// is there for without answering the card
 	// (docs/interface/surfaces.md#the-approval-card).
 	//
-	// It is not [d], which a reader of the one-shot's action bar would
-	// expect: on this surface that keystroke is already the full view, and
-	// one surface answering a keystroke with two bindings is what this
-	// register refuses (register.go). So the key is [t] — try it — and the
-	// card's own words say what it would try.
+	// It is [t] — try it — and the card's own words say what it would try.
 	DryRun Binding
 
 	// Explain is the command card's other question about the command rather
@@ -1020,7 +1042,8 @@ type DecisionKeys struct {
 	//
 	// It is [e] — edit — the letter the one-shot's action bar already spends
 	// on the same act (OneShot.Edit), and it is unclaimed here: this card
-	// spends `y Y n N a A d D t x g` and the draft's own editor is a chord.
+	// spends `y Y n N a A v V t x g` and the draft's own editor is a chord.
+
 	// So this is a declaration rather than a move, and the one argument that
 	// could have taken the letter first — the explain key wanting a
 	// mnemonic — was settled the other way when it was made (Explain).
@@ -1078,12 +1101,12 @@ const AlwaysRouted = "allow this command for every agent, this turn"
 
 var Decision = DecisionKeys{
 	Allow:      bind("y", "allow", "y", "enter"),
-	Deny:       bind("n", "deny", "n", "esc", "ctrl+c"),
+	Deny:       bind("n", "deny", "n"),
 	AllowNoted: bind("Y", "allow with a note", "Y"),
 	DenyNoted:  bind("N", "deny with a note", "N"),
 	Always:     bind("a", "allow without asking — choose how long", "a"),
 	Batch:      bind("A", "open the queue", "A"),
-	Diff:       bind("d", "full diff", "d", "D"),
+	Diff:       bind("v", "full diff", "v", "V"),
 	DryRun:     bind("t", "dry run", "t"),
 	Explain:    bind("x", "explain what the command does", "x"),
 	Amend:      bind("e", "edit the command before it runs", "e"),
@@ -1111,7 +1134,7 @@ type ConfirmKeys struct {
 
 var Confirm = ConfirmKeys{
 	Yes: bind("y", "yes", "y", "Y"),
-	No:  bind("N", "no — the default", "n", "N", "enter", "esc", "ctrl+c"),
+	No:  bind("N", "no — the default", "n", "N", "enter", "esc"),
 	// Force is the undo confirm's second reading: the same shape, with the
 	// destructive answer spelled differently so it is not the one a reflex
 	// presses.
@@ -1126,10 +1149,15 @@ type SelectKeys struct {
 	Take   Binding
 	Alt    Binding
 	Filter Binding
-	ClearQ Binding
 	Toggle Binding
 	All    Binding
 	Note   Binding
+	// Jump takes a row by the number the card prints beside it, on every
+	// card whose rows are numbered. One binding for the nine digits rather
+	// than nine: what a reader learns is "the number on the row", and the
+	// handler reads which digit from the keystroke the way a pair reads
+	// which half. A card being typed into keeps its digits as text.
+	Jump Binding
 	// Tab steps between the parts of one card — the questions of a call that
 	// asked several, and the submit that ends them.
 	//
@@ -1148,11 +1176,9 @@ type SelectKeys struct {
 	// second column, and the full view is where a card already sends what
 	// will not fit (docs/interface/surfaces.md#the-approval-card).
 	//
-	// It is `d`, which is the letter the approval card's full diff already
+	// It is `v`, which is the letter the approval card's full diff already
 	// spends on the same act: take what is under the pointer to the screen
-	// the whole product reads long things on. `Alt` spends `d` too and no
-	// surface offers both — a card with a default to set has no long form
-	// behind it and the question card has no default to set.
+	// the whole product reads long things on.
 	Long Binding
 	// Delete and Rename are the saved-chat picker's housekeeping keys,
 	// answered on the focused row: the first arms an inline confirm, the
@@ -1175,20 +1201,22 @@ type PaletteKeys struct {
 }
 
 var Select = SelectKeys{
-	Move:   bind("↑↓", "move", "up", "down"),
-	MoveJK: bind("↑↓/jk", "move", "up", "down", "k", "j"),
+	Move:   bind(MoveTypedShown, "move", "up", "down"),
+	MoveJK: bind(MoveShown, "move", "up", "down", "k", "j"),
 	Take:   bind("enter", "select", "enter"),
-	Alt:    bind("d", "make it the default", "d"),
+	// Alt is [m] — make it mine, make it the default — because [d] is the
+	// register's delete, and the saved-chat picker deletes on it.
+	Alt:    bind("m", "make it the default", "m"),
 	Filter: bind("/", "filter", "/"),
-	ClearQ: bind("ctrl+u", "clear the filter", "ctrl+u"),
 	Toggle: bind("space", "toggle", " ", "space"),
 	All:    bind("a", "all or none", "a"),
 	Note:   bind("tab", "note or options", "tab"),
+	Jump:   bind("1–9", "take a row", "1", "2", "3", "4", "5", "6", "7", "8", "9"),
 	Tab:    bind("←→", "the next question", "left", "right"),
-	Long:   bind("d", "the full answer", "d"),
-	Delete: bind("x", "delete", "x"),
-	Rename: bind("r", "rename", "r"),
-	Cancel: bind("esc", "cancel", "esc", "ctrl+c"),
+	Long:   bind("v", "the full answer", "v"),
+	Delete: bind("d", "delete", "d"),
+	Rename: bind("e", "rename", "e"),
+	Cancel: bind("esc", "back", "esc"),
 	Palette: PaletteKeys{
 		Prev:  bind("↑", "move", "up", "ctrl+p"),
 		Next:  bind("↓", "move", "down", "ctrl+n"),
@@ -1211,12 +1239,12 @@ type ReviewKeys struct {
 }
 
 var Review = ReviewKeys{
-	MoveFile:   bind("j/k", "file", "k", "j", "up", "down"),
-	MoveHunk:   bind("n/p", "hunk", "p", "n"),
+	MoveFile:   bind(MoveShown, "move", "up", "down", "k", "j"),
+	MoveHunk:   bind("n/N", "hunk", "N", "n"),
 	SideBySide: bind("\\", "side by side", "\\"),
 	PageUp:     bind("pgup", "page up", "pgup"),
 	PageDown:   bind("pgdn", "page down", "pgdown"),
-	Back:       bind("esc", "back", "esc", "ctrl+c"),
+	Back:       bind("esc", "back", "esc"),
 }
 
 // AgentKeys are the agent manager's.
@@ -1261,7 +1289,7 @@ type AgentKeys struct {
 }
 
 var Agent = AgentKeys{
-	Move:    bind("j/k", "move", "k", "j", "up", "down"),
+	Move:    bind(MoveShown, "move", "up", "down", "k", "j"),
 	Attach:  bind("enter", "attach", "enter"),
 	Go:      bind("g", "go to the agent that asked", "g"),
 	Answer:  bind("a", "answer", "a"),
@@ -1269,12 +1297,12 @@ var Agent = AgentKeys{
 	Retry:   bind("r", "retry", "r"),
 	Review:  bind("p", "review", "p"),
 	Migrate: bind("m", "move it into sections", "m"),
-	Edit:    bind("e", "open its file", "e"),
-	Cancel:  bind("x", "cancel", "x"),
+	Edit:    bind("e", "edit", "e"),
+	Cancel:  bind("d", "cancel", "d"),
 	Kill:    bind("X", "kill", "X"),
 	KillAll: bind("K", "kill all", "K"),
-	Back:    bind("esc", "back", "esc", "ctrl+c"),
-	Detach:  bind("esc", "back to your own session", "esc"),
+	Back:    bind("esc", "back", "esc"),
+	Detach:  bind("esc", "back", "esc"),
 }
 
 // ProfileKeys are the profile drafter's. The surface is a flow rather than a
@@ -1307,12 +1335,12 @@ var Profile = ProfileKeys{
 	// palette and the open query line already have.
 	Move: bind("↑↓", "move", "up", "down"),
 	Take: bind("enter", "take it", "enter"),
-	// The draft step's three acts on the selected section. e and x are the
+	// The draft step's three acts on the selected section. e and d are the
 	// letters the same acts spend everywhere else: backlog.edit and
-	// commit.edit open the editor, and every drop and remove is x.
+	// commit.edit open the editor, and every drop and remove is d.
 	Refine: bind("enter", "refine it with a note", "enter"),
-	Edit:   bind("e", "edit it yourself", "e"),
-	Clear:  bind("x", "clear it", "x"),
+	Edit:   bind("e", "edit", "e"),
+	Clear:  bind("d", "delete", "d"),
 	// The one note for every section is refine widened, and a widened act
 	// is the capital here the way the manager's kill all is: R is free on
 	// the draft step, and pressed again while its note is still empty it
@@ -1329,8 +1357,8 @@ var Profile = ProfileKeys{
 	// other card scrolls its body under.
 	ScrollUp:   bind("shift+↑", "scroll the profile up", "shift+up"),
 	ScrollDown: bind("shift+↓", "scroll the profile", "shift+down"),
-	Back:       bind("esc", "back a step", "esc", "ctrl+c"),
-	Save:       Save("save the profile"),
+	Back:       bind("esc", "back", "esc"),
+	Save:       Save("write"),
 }
 
 // EditorKeys are the editor pane's: the second surface that is typed into,
@@ -1355,13 +1383,11 @@ func (k EditorKeys) All() []Binding { return []Binding{k.Save, Draft.KeyList, k.
 func (k EditorKeys) Leaving() []Binding { return []Binding{k.Discard, k.SaveLeave, k.Keep} }
 
 var Editor = EditorKeys{
-	Save: Save("save the buffer"),
-	// ctrl+c beside esc, as on the profile drafter: the cancel chord backs
-	// out of a surface first, and a second press inside its window quits.
-	Back:      bind("esc", "back to the prompt", "esc", "ctrl+c"),
+	Save:      Save("write"),
+	Back:      bind("esc", "back", "esc"),
 	Discard:   bind("y", "discard the change", "y"),
-	SaveLeave: Save("save and leave"),
-	Keep:      bind("esc", "keep editing", "esc", "ctrl+c"),
+	SaveLeave: Save("write and leave"),
+	Keep:      bind("esc", "back", "esc"),
 }
 
 // WaitKeys are the surfaces that open on their own and take the keyboard with
@@ -1381,14 +1407,14 @@ type WaitKeys struct {
 
 var Wait = WaitKeys{
 	Fallback: bind("m", "finish this turn on the fallback model", "m"),
-	Stop:     bind("esc", "stop waiting", "esc"),
+	Stop:     bind("esc", "back", "esc"),
 
 	Compact:    bind("enter", "compact now", "enter"),
 	NewSession: bind("n", "new session", "n"),
-	KeepGoing:  bind("esc", "keep going", "esc"),
+	KeepGoing:  bind("esc", "back", "esc"),
 
 	UseKey:  bind("enter", "use it for this session", "enter"),
-	KeepKey: bind("esc", "keep the current key", "esc"),
+	KeepKey: bind("esc", "back", "esc"),
 }
 
 // DiffKeys are the full-screen viewer's.
@@ -1397,20 +1423,13 @@ type DiffKeys struct {
 	SideBySide Binding
 	Hunk       Binding
 	Back       Binding
-	// Leave is the full-screen form's other ways out, and it is separate
-	// from Back for a reason worth the second field: the viewer is also a
-	// transcript row, and there `q` is reading mode's own. Only
-	// the surface that has the whole screen can claim it, so only that host
-	// answers this one.
-	Leave Binding
 }
 
 var Diff = DiffKeys{
-	Scroll:     bind("j/k", "scroll", "k", "j", "up", "down"),
+	Scroll:     bind(MoveShown, "move", "up", "down", "k", "j"),
 	SideBySide: bind("s", "side-by-side", "s"),
-	Hunk:       bind("n/p", "hunk", "p", "n"),
+	Hunk:       bind("n/N", "hunk", "N", "n"),
 	Back:       bind("esc", "back", "esc"),
-	Leave:      bind("q", "back", "q", "ctrl+c"),
 }
 
 // OutputKeys are the full-screen output viewer's: a command's output, or a
@@ -1427,43 +1446,36 @@ type OutputKeys struct {
 	// key that puts it away.
 	Collapse Binding
 	Back     Binding
-	// Leave is separate from Back the way the diff viewer's is: only the
-	// surface holding the whole screen can claim a bare letter.
-	Leave Binding
 }
 
 var Output = OutputKeys{
-	Scroll:   bind("j/k", "scroll", "k", "j", "up", "down"),
+	Scroll:   bind(MoveShown, "move", "up", "down", "k", "j"),
 	PageUp:   bind("pgup", "page up", "pgup"),
 	PageDown: bind("pgdn", "page down", "pgdown"),
 	Collapse: bind("enter", "close the row", "enter"),
 	Back:     bind("esc", "back", "esc"),
-	Leave:    bind("q", "back", "q", "ctrl+c"),
 }
 
 // PreviewKeys are the staged attachment preview's. The surface has nothing
 // to scroll and nothing to stage — a thumbnail is fitted to the pane and a
 // text file is clipped with what did not fit counted at the foot, rather
-// than either being panned around — so what it offers is the two spellings
-// of leaving every full-screen viewer in shhh has always answered to, and the
-// one act this card is the moment for: a wrong screenshot is recognised
-// here, so here is where it is dropped
+// than either being panned around — so what it offers is the way out every
+// surface in shhh answers to, and the one act this card is the moment for: a
+// wrong screenshot is recognised here, so here is where it is dropped
 // (docs/interface/surfaces.md#a-staged-attachment).
 type PreviewKeys struct {
 	Remove Binding
 	Back   Binding
-	Leave  Binding
 }
 
 // All is the card's keys in the order its hint row offers them.
-func (k PreviewKeys) All() []Binding { return []Binding{k.Remove, k.Back, k.Leave} }
+func (k PreviewKeys) All() []Binding { return []Binding{k.Remove, k.Back} }
 
 var Preview = PreviewKeys{
-	// The paste reader's letter, because it is the same act on the same
-	// staging area from the surface beside it.
-	Remove: bind("x", "remove", "x"),
+	// The register's delete, and the paste reader's letter, because it is
+	// the same act on the same staging area from the surface beside it.
+	Remove: bind("d", "delete", "d"),
 	Back:   bind("esc", "back", "esc"),
-	Leave:  bind("q", "back", "q", "ctrl+c"),
 }
 
 // PasteKeys are the staged paste's reader — the surface the draft's fold
@@ -1478,26 +1490,24 @@ var Preview = PreviewKeys{
 //
 // So it scrolls, and it carries the one destructive key on any reading
 // surface in the product. That key is a letter rather than a chord because
-// this is a takeover and nothing else is listening, and it is `x` rather
-// than `d` because `d` pages half a screen everywhere a body scrolls.
+// this is a takeover and nothing else is listening, and it is `d` because
+// that is the register's delete on every surface.
 type PasteKeys struct {
 	Scroll Binding
 	Remove Binding
-	Leave  Binding
 	Back   Binding
 }
 
 // All is the reader's keys in the order its row offers them.
-func (k PasteKeys) All() []Binding { return []Binding{k.Scroll, k.Remove, k.Leave, k.Back} }
+func (k PasteKeys) All() []Binding { return []Binding{k.Scroll, k.Remove, k.Back} }
 
 var Paste = PasteKeys{
-	Scroll: bind("j/k", "scroll", "k", "j", "up", "down"),
-	Remove: bind("x", "remove the paste", "x"),
-	// The words are the whole promise, and the promise is the reason the
-	// reader can be talked into opening this at all: the sentence they were
-	// half way through is still there, with the cursor in it.
-	Leave: bind("q", "back to the draft, cursor where you left it", "q", "ctrl+c"),
-	Back:  bind("esc", "back to the draft", "esc"),
+	Scroll: bind(MoveShown, "move", "up", "down", "k", "j"),
+	Remove: bind("d", "delete", "d"),
+	// The sentence the reader was half way through is still there, with the
+	// cursor in it, which is the reason they can be talked into opening this
+	// at all.
+	Back: bind("esc", "back", "esc"),
 }
 
 // ScreenKeys are the supporting TUIs': `shhh config`, `shhh history`,
@@ -1510,9 +1520,12 @@ type ScreenKeys struct {
 	Move   Binding
 	Take   Binding
 	Filter Binding
-	ClearQ Binding
 	List   Binding
-	Quit   Binding
+	// Quit is the way out of a screen, which is esc on every one of them:
+	// it closes what is open, clears a query, and then leaves, asking first
+	// over staged work
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	Quit Binding
 
 	Reset Binding
 	Write Binding
@@ -1547,25 +1560,24 @@ type ScreenKeys struct {
 }
 
 var Screen = ScreenKeys{
-	Move:   bind("↑↓/jk", "move", "up", "down", "k", "j"),
+	Move:   bind(MoveShown, "move", "up", "down", "k", "j"),
 	Take:   bind("enter", "take it", "enter"),
 	Filter: bind("/", "filter", "/"),
-	ClearQ: bind("ctrl+u", "clear the filter", "ctrl+u"),
 	List:   bind("?", "keys", "?"),
-	Quit:   bind("q", "quit", "q", "esc", "ctrl+c"),
+	Quit:   bind("esc", "back", "esc"),
 
-	Reset: bind("r", "reset to default", "r"),
-	Write: Save("write the file"),
-	Keep:  bind("esc", "keep the current value", "esc"),
+	Reset: bind("ctrl+r", "reset", "ctrl+r"),
+	Write: Save("write"),
+	Keep:  bind("esc", "back", "esc"),
 	Scope: bind("g", "switch the file", "g"),
 
-	Copy:    bind("c", "copy it", "c"),
+	Copy:    bind("c", "copy", "c"),
 	Rerun:   bind("enter", "re-run it", "enter"),
-	Snippet: Save("save it as a snippet"),
-	Delete:  bind("x", "delete it", "x"),
-	Rename:  bind("r", "rename it", "r"),
+	Snippet: Save("write it as a snippet"),
+	Delete:  bind("d", "delete", "d"),
+	Rename:  bind("e", "rename", "e"),
 	Fix:     bind("f", "show the fix", "f"),
-	Again:   bind("r", "run the checks again", "r"),
+	Again:   bind("r", "retry", "r"),
 	// Apply is the one key on a supporting screen that changes the machine
 	// rather than reporting on it, and it is why doctor grew a confirm: none
 	// of these screens writes without asking first
@@ -1599,21 +1611,19 @@ type OneShotKeys struct {
 }
 
 var OneShot = OneShotKeys{
-	Run:          bind("enter", "run", "enter"),
-	Confirm:      bind("y", "run it", "y"),
-	Step:         bind("t", "step by step", "t"),
-	DryRun:       bind("d", "dry run", "d"),
+	Run:     bind("enter", "run", "enter"),
+	Confirm: bind("y", "run it", "y"),
+	Step:    bind("t", "step by step", "t"),
+	// DryRun is [p] — preview it — because [d] is the register's delete.
+	DryRun:       bind("p", "dry run", "p"),
 	Edit:         bind("e", "edit", "e"),
 	Revise:       bind("r", "revise", "r"),
 	Back:         bind("u", "back", "u"),
 	Alternatives: bind("a", "the other commands", "a"),
 	Explain:      bind("x", "explain", "x"),
 	Copy:         bind("c", "copy", "c"),
-	Save:         Save("save"),
-	// The bar is the whole screen while it is up, so the letter every
-	// full-screen viewer in shhh leaves on is live here too. The hint prints
-	// the chord a reader reaches for first and answers to both.
-	Quit: bind("esc", "quit", "esc", "q"),
+	Save:         Save("write"),
+	Quit:         bind("esc", "back", "esc"),
 }
 
 // PlanKeys are the plan-approval card's own three: the five rows are the
@@ -1641,7 +1651,7 @@ type PlanKeys struct {
 
 var Plan = PlanKeys{
 	Jump:      bind("1–5", "jump to a row", "1", "2", "3", "4", "5"),
-	Save:      Save("save the plan"),
+	Save:      Save("write"),
 	Implement: bind("i", "implement in a new session", "i"),
 }
 
@@ -1696,9 +1706,9 @@ type RewindKeys struct {
 
 	// Diff is the picker's own key rather than the card's: the change a
 	// rewind to the row under the pointer would take back, read full screen
-	// before the row is taken. It is `d` for the diff it opens, and like
-	// every letter on a card that opens as a search it is live once the
-	// query row is closed.
+	// before the row is taken. It is `v` — view it — the letter the
+	// approval card's full diff spends, and like every letter on a card that
+	// opens as a search it is live once the query row is closed.
 	Diff Binding
 }
 
@@ -1712,7 +1722,7 @@ var Rewind = RewindKeys{
 	// The words say what is still standing rather than "cancel": nothing was
 	// restored, nothing left the window, and the picker is still there
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-	Cancel: bind("esc", "don't", "esc"),
+	Cancel: bind("esc", "back", "esc"),
 
-	Diff: bind("d", "what the turns after it changed", "d"),
+	Diff: bind("v", "what the turns after it changed", "v"),
 }

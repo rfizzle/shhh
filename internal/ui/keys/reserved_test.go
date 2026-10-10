@@ -55,20 +55,23 @@ func TestKeptChordsAreSpentReservedAndReasoned(t *testing.T) {
 	}
 }
 
-// ctrl+d is end of input in a shell and a tmux chord, so no act of the
-// keyboard shhh ships is bound to it and it is not among the kept chords.
+// ctrl+d is end of input in a shell, so it quits nowhere. The one act that
+// spends it is reading mode's half page down, the pager's own chord, kept
+// with its reason: reading mode is a takeover in raw mode, where the line
+// discipline never sees the byte, and no other surface may grow a second
+// home for it.
 func TestKeys_CtrlDIsReserved(t *testing.T) {
 	if _, ok := Reservation("ctrl+d"); !ok {
 		t.Fatal("ctrl+d must be reserved")
 	}
-	if _, ok := kept["ctrl+d"]; ok {
-		t.Error("ctrl+d must not be kept: no act of shhh's spends it")
+	if _, ok := kept["ctrl+d"]; !ok {
+		t.Error("ctrl+d must be kept, with the reason reading mode spends it")
 	}
 	for _, s := range all() {
 		for _, b := range s.Bindings {
 			for _, k := range b.Keys() {
-				if k == "ctrl+d" {
-					t.Errorf("%s: %q is bound to ctrl+d", s.Name, Words(b))
+				if k == "ctrl+d" && (s.Name != "reading mode" || Shown(b) != Shown(Reading.Half)) {
+					t.Errorf("%s: %q is bound to ctrl+d; only reading mode's half page may be", s.Name, Words(b))
 				}
 			}
 		}
@@ -122,7 +125,7 @@ func TestLoad_RefusesAChordTheDesktopTakes(t *testing.T) {
 			t.Errorf("the refusal does not name %s: %v", want, err)
 		}
 	}
-	if !Is("y", Reading.Copy) {
+	if !Is("c", Reading.Copy) {
 		t.Errorf("a refused file left the register at %v", Reading.Copy.Keys())
 	}
 }
@@ -164,7 +167,7 @@ func TestLoad_RefusesMovingAnotherActOntoAKeptChord(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), chord) {
 			t.Errorf("%s is kept for one act only, got %v", chord, err)
 		}
-		if !Is("y", Reading.Copy) {
+		if !Is("c", Reading.Copy) {
 			t.Errorf("a refused file left the register at %v", Reading.Copy.Keys())
 		}
 	}

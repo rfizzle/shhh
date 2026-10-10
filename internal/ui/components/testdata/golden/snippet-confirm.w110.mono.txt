@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the delete asked before it is carried out
-shhh snippets · 3 snippets                                                                 [?] keys · [q] quit
+shhh snippets · 3 snippets                                                               [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ❯ ports      what is listening on t…  4m ago │ ports                                                    4m ago
@@ -23,7 +23,7 @@ Delete the snippet "ports"? Files on disk are untouched.  [y/N]
 
 ── ansi ────────────────────────────────────────────────────
 · the delete asked before it is carried out
-␛[1;38;5;254mshhh snippets␛[m␛[38;5;244m · 3 snippets␛[m                                                                 ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[1;38;5;254mshhh snippets␛[m␛[38;5;244m · 3 snippets␛[m                                                               ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mports      what is listening on t…  4m ago␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mports␛[m                                                    ␛[38;5;244m4m ago␛[m

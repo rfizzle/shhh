@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · 31% · both groups folded
-/context · this session · 1m window                                              ~312.4k · [?] keys · [q] back
+/context · this session · 1m window                                            ~312.4k · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰   claude-opus-5[1m]
@@ -33,7 +33,7 @@
 [↑↓/jk] move · [enter] expand or fold · [esc] back to the prompt
 
 · the tool definitions opened
-/context · this session · 1m window                                              ~312.4k · [?] keys · [q] back
+/context · this session · 1m window                                            ~312.4k · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰   claude-opus-5[1m]
@@ -59,7 +59,7 @@
 [↑↓/jk] move · [enter] expand or fold · [esc] back to the prompt
 
 · 94% · an estimated total, nothing sent yet
-/context · this session · 1m window                                              ~940.0k · [?] keys · [q] back
+/context · this session · 1m window                                            ~940.0k · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰   claude-opus-5[1m]
@@ -77,7 +77,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · 31% · both groups folded
-␛[1;97m/context␛[m␛[38;5;241m · this session · 1m window␛[m                                              ␛[92m~312.4k␛[m␛[38;5;241m · [?] keys · [q] back␛[m
+␛[1;97m/context␛[m␛[38;5;241m · this session · 1m window␛[m                                            ␛[92m~312.4k␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;243m▰␛[m␛[94m▰␛[m␛[38;5;214m▰▰▰␛[m␛[38;5;252m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m   ␛[1;97mclaude-opus-5[1m]␛[m
@@ -99,7 +99,7 @@
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m expand or fold␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
 
 · the tool definitions opened
-␛[1;97m/context␛[m␛[38;5;241m · this session · 1m window␛[m                                              ␛[92m~312.4k␛[m␛[38;5;241m · [?] keys · [q] back␛[m
+␛[1;97m/context␛[m␛[38;5;241m · this session · 1m window␛[m                                            ␛[92m~312.4k␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;243m▰␛[m␛[94m▰␛[m␛[38;5;214m▰▰▰␛[m␛[38;5;252m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m   ␛[1;97mclaude-opus-5[1m]␛[m
@@ -125,7 +125,7 @@
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m expand or fold␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
 
 · 94% · an estimated total, nothing sent yet
-␛[1;97m/context␛[m␛[38;5;241m · this session · 1m window␛[m                                              ␛[1;91m~940.0k␛[m␛[38;5;241m · [?] keys · [q] back␛[m
+␛[1;97m/context␛[m␛[38;5;241m · this session · 1m window␛[m                                            ␛[1;91m~940.0k␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;243m▰␛[m␛[38;5;214m▰▰▰▰␛[m␛[38;5;252m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m   ␛[1;97mclaude-opus-5[1m]␛[m

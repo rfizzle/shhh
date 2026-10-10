@@ -104,7 +104,7 @@ snap 07-report-open "▾ report · 6 lines" "## Assumptions"
 # draws it as its header alone at normal.
 keys Enter
 snap 08-enter-closes "▸ report · 6 lines" "❯ ◇ spawned 3 agents" "◇ writer-2"
-keys q
+keys Escape
 sleep 1
 keys -l "$(r=$(tmux -L "$SOCK" capture-pane -p -t scene | grep -n -m1 'spawned 3 agents' | cut -d: -f1); printf '\033[<0;8;%sM\033[<0;8;%sm' "$r" "$r")"
 snap 09-header-opens "## Assumptions" "▾ report · 6 lines" "◇ writer-2"

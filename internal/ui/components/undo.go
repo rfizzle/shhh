@@ -62,7 +62,7 @@ type UndoConfirm struct {
 func (c UndoConfirm) touches() int { return c.Restores + c.Removes }
 
 // Update resolves on the first decisive key: y undoes, f forces through
-// drift, and n, enter, esc and ctrl+c all decline. The yes/no half is the
+// drift, and n, enter and esc all decline. The yes/no half is the
 // embedded confirm's, so an answer that changes there changes here. With
 // nothing for [y] to do — every file drifted — y is not bound, so the only
 // ways out are the deliberate [f] and declining.

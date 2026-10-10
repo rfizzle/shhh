@@ -142,6 +142,13 @@ func (m Model) updateKeyPopup(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	pressed := msg.String()
 	switch {
+	case keys.Is(pressed, keys.KeyList.Close) && p.card.Query != "":
+		// esc backs out one level: what was typed goes first, and the
+		// list with it, before the next press closes the list.
+		p.card.Update(msg)
+		if p.card.QueryChanged() {
+			p.refresh()
+		}
 	case keys.Is(pressed, keys.KeyList.Close, keys.Draft.KeyList):
 		return m.closeKeyPopup()
 	case keys.Is(pressed, keys.KeyList.Move):
@@ -156,11 +163,9 @@ func (m Model) updateKeyPopup(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		} else {
 			p.card.Focus = p.last()
 		}
-	case msg.Text != "", keys.Is(pressed, keys.Query.Rub),
-		keys.Is(pressed, keys.Select.ClearQ) && p.card.Query != "":
-		// ctrl+u on an empty query would close the card's query line, and
-		// this list is nothing but a query line with rows under it.
+	case msg.Text != "", keys.Is(pressed, keys.Query.Rub):
 		p.card.Update(msg)
+
 		if p.card.QueryChanged() {
 			p.refresh()
 		}

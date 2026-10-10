@@ -64,7 +64,7 @@ func toolsScreen(focus int) *ToolsScreen {
 func TestToolsScreen_ListsEverySourceUnderItsGroup(t *testing.T) {
 	view := ansi.Strip(toolsScreen(0).View(130))
 	for _, want := range []string{
-		"/mcp", "3 servers", "2 of 4 up", "[q] back",
+		"/mcp", "3 servers", "2 of 4 up", "[esc] back",
 		"✓ built-in", "mcp servers", "✓ docs", "⚠ tracker", "blocked", "✗ linear", "error",
 		"definitions not loaded", "language servers", "✓ gopls", "binaries on PATH", "⊘ ast-grep, sd",
 		"web", "✓ fetch", "⊘ search",

@@ -112,7 +112,7 @@ func (m Model) scaffoldCard() *components.ApprovalCard {
 }
 
 // updateScaffold routes the card's three keys. It does not go through the
-// card's own Update: that maps esc and ctrl+c onto the decline, which is
+// card's own Update: that maps esc onto the decline, which is
 // right for a card nobody asked for and wrong here, where esc is the way
 // back out of a screen the reader opened (keys.Decision.Refuse), and why its
 // yes is Proposal.Write rather than Allow: a summoned card offers no note, and

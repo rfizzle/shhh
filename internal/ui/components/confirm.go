@@ -31,8 +31,8 @@ type Confirm struct {
 	KeyList bool
 }
 
-// Update resolves on the first decisive key: y confirms; n, enter, esc, and
-// ctrl+c decline (default No).
+// Update resolves on the first decisive key: y confirms; n, enter and esc
+// decline (default No).
 func (c *Confirm) Update(msg tea.KeyPressMsg) (done, yes bool) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Confirm.Yes):

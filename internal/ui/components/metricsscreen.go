@@ -139,7 +139,7 @@ type MetricsScreen struct {
 type MetricsResult struct{}
 
 // Update is the screen's whole keyboard. It has one act — leaving, which the
-// header offers as `[q]` and the footer as `[esc]` — and the `?` every
+// header and the footer both offer as `[esc]` — and the `?` every
 // surface that holds the keyboard answers the same way: the register with the
 // glyph legend under it. A screen with one act still has a legend a reader may
 // have come for, and a `?` that did nothing here would be the one surface a

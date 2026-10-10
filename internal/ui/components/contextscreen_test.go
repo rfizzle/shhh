@@ -250,10 +250,14 @@ func TestContextCursorStopsAtBothEnds(t *testing.T) {
 // TestContextEscLeaves is invariant 3: the safe answer is the one that gives
 // the keyboard back, and this surface has no other kind of answer.
 func TestContextEscLeaves(t *testing.T) {
-	for _, pressed := range []string{"esc", "q", "ctrl+c"} {
+	screen := goldenContextScreen()
+	if done, _ := screen.Update(key("esc")); !done {
+		t.Error("esc did not leave the surface")
+	}
+	for _, pressed := range []string{"q", "ctrl+c"} {
 		screen := goldenContextScreen()
-		if done, _ := screen.Update(key(pressed)); !done {
-			t.Errorf("%q did not leave the surface", pressed)
+		if done, _ := screen.Update(key(pressed)); done {
+			t.Errorf("%q left the surface; esc is the one way out", pressed)
 		}
 	}
 }
@@ -262,7 +266,7 @@ func TestContextEscLeaves(t *testing.T) {
 // to give the keyboard back would be holding it silently.
 func TestContextStatesItsWayOut(t *testing.T) {
 	screen := goldenContextScreen()
-	if out := stripANSI(screen.View(130)); !strings.Contains(out, "[q]") {
+	if out := stripANSI(screen.View(130)); !strings.Contains(out, "[esc] back") {
 		t.Errorf("the surface does not state its way out:\n%s", out)
 	}
 }

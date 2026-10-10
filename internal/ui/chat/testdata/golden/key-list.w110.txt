@@ -20,7 +20,7 @@ keys · the approval card and the /run confirm                                  
 [N] deny with a note
 [a] allow without asking — choose how long
 [A] open the queue
-[d] full diff
+[v] full diff
 [t] dry run
 [x] explain what the command does
 [e] edit the command before it runs
@@ -51,19 +51,18 @@ keys · [esc] back to the approval card and the /run confirm
 keys · reading mode                                                                               [?] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-[j/k] move
+[↑↓/jk] move
 [←] along the strip, back
 [→] along the strip, on
 [enter] expand
 [-] collapse
-[y] copy the row
-[c] copy a block
+[c] copy
 [/] search
 [n/N] match
-[u/d] half page
+[ctrl+u/ctrl+d] half page
 [pgup] page up
 [pgdn] page down
-[q] back to the prompt
+[esc] back
 ▎[ctrl+space/ctrl+y] commit
 
 glyphs
@@ -87,19 +86,18 @@ keys · [esc] back to reading mode
 keys · reading mode                                                                               [?] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-[j/k] move
+[↑↓/jk] move
 [←] along the strip, back
 [→] along the strip, on
 [enter] expand
 [-] collapse
-[y] copy the row
-[c] copy a block
+[c] copy
 [/] search
 [n/N] match
-[u/d] half page
+[ctrl+u/ctrl+d] half page
 [pgup] page up
 [pgdn] page down
-[q] back to the prompt
+[esc] back
 ▎[enter] close it
 ▎[-] close it
 
@@ -124,23 +122,21 @@ keys · [esc] back to reading mode
 keys · reading mode                                                                               [?] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-
-[j/k] move
+[↑↓/jk] move
 [←] along the strip, back
 [→] along the strip, on
 [enter] expand
 [-] collapse
-[y] copy the row
-[c] copy a block
+[c] copy
 [/] search
 [n/N] match
-[u/d] half page
+[ctrl+u/ctrl+d] half page
 [pgup] page up
 [pgdn] page down
-[q] back to the prompt
+[esc] back
 ▎[←→] along the strip
 ▎[enter] open that tool
-▎[q] close the card
+▎[esc] close the card
 
 glyphs
 ⚙  a read: a file, a search, a listing
@@ -154,7 +150,9 @@ $  a shell command
 ✓  a compaction that brought the window back
 ·  accepted, not started
 ▸  running
-↓ 3 more · [↑↓/jk] read on
+✦  the classifier is deciding
+✗  failed
+⊘  refused: dim by you, red by a rule
 keys · [esc] back to reading mode
 
 ── ansi ────────────────────────────────────────────────────
@@ -168,7 +166,7 @@ keys · [esc] back to reading mode
 ␛[38;5;103m[N]␛[m␛[38;5;241m deny with a note␛[m
 ␛[38;5;103m[a]␛[m␛[38;5;241m allow without asking — choose how long␛[m
 ␛[38;5;103m[A]␛[m␛[38;5;241m open the queue␛[m
-␛[38;5;103m[d]␛[m␛[38;5;241m full diff␛[m
+␛[38;5;103m[v]␛[m␛[38;5;241m full diff␛[m
 ␛[38;5;103m[t]␛[m␛[38;5;241m dry run␛[m
 ␛[38;5;103m[x]␛[m␛[38;5;241m explain what the command does␛[m
 ␛[38;5;103m[e]␛[m␛[38;5;241m edit the command before it runs␛[m
@@ -199,19 +197,18 @@ keys · [esc] back to reading mode
 ␛[1;97mkeys␛[m␛[38;5;241m · reading mode␛[m                                                                               ␛[38;5;241m[?] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;103m[j/k]␛[m␛[38;5;241m move␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m
 ␛[38;5;103m[←]␛[m␛[38;5;241m along the strip, back␛[m
 ␛[38;5;103m[→]␛[m␛[38;5;241m along the strip, on␛[m
 ␛[38;5;103m[enter]␛[m␛[38;5;241m expand␛[m
 ␛[38;5;103m[-]␛[m␛[38;5;241m collapse␛[m
-␛[38;5;103m[y]␛[m␛[38;5;241m copy the row␛[m
-␛[38;5;103m[c]␛[m␛[38;5;241m copy a block␛[m
+␛[38;5;103m[c]␛[m␛[38;5;241m copy␛[m
 ␛[38;5;103m[/]␛[m␛[38;5;241m search␛[m
 ␛[38;5;103m[n/N]␛[m␛[38;5;241m match␛[m
-␛[38;5;103m[u/d]␛[m␛[38;5;241m half page␛[m
+␛[38;5;103m[ctrl+u/ctrl+d]␛[m␛[38;5;241m half page␛[m
 ␛[38;5;103m[pgup]␛[m␛[38;5;241m page up␛[m
 ␛[38;5;103m[pgdn]␛[m␛[38;5;241m page down␛[m
-␛[38;5;103m[q]␛[m␛[38;5;241m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;241m back␛[m
 ␛[38;5;214m▎␛[m␛[38;5;103m[ctrl+space/ctrl+y]␛[m␛[38;5;241m commit␛[m
 
 ␛[38;5;241mglyphs␛[m
@@ -235,19 +232,18 @@ keys · [esc] back to reading mode
 ␛[1;97mkeys␛[m␛[38;5;241m · reading mode␛[m                                                                               ␛[38;5;241m[?] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;103m[j/k]␛[m␛[38;5;241m move␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m
 ␛[38;5;103m[←]␛[m␛[38;5;241m along the strip, back␛[m
 ␛[38;5;103m[→]␛[m␛[38;5;241m along the strip, on␛[m
 ␛[38;5;103m[enter]␛[m␛[38;5;241m expand␛[m
 ␛[38;5;103m[-]␛[m␛[38;5;241m collapse␛[m
-␛[38;5;103m[y]␛[m␛[38;5;241m copy the row␛[m
-␛[38;5;103m[c]␛[m␛[38;5;241m copy a block␛[m
+␛[38;5;103m[c]␛[m␛[38;5;241m copy␛[m
 ␛[38;5;103m[/]␛[m␛[38;5;241m search␛[m
 ␛[38;5;103m[n/N]␛[m␛[38;5;241m match␛[m
-␛[38;5;103m[u/d]␛[m␛[38;5;241m half page␛[m
+␛[38;5;103m[ctrl+u/ctrl+d]␛[m␛[38;5;241m half page␛[m
 ␛[38;5;103m[pgup]␛[m␛[38;5;241m page up␛[m
 ␛[38;5;103m[pgdn]␛[m␛[38;5;241m page down␛[m
-␛[38;5;103m[q]␛[m␛[38;5;241m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;241m back␛[m
 ␛[38;5;214m▎␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m close it␛[m
 ␛[38;5;214m▎␛[m␛[38;5;103m[-]␛[m␛[38;5;241m close it␛[m
 
@@ -272,23 +268,21 @@ keys · [esc] back to reading mode
 ␛[1;97mkeys␛[m␛[38;5;241m · reading mode␛[m                                                                               ␛[38;5;241m[?] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241m␛[m
-␛[38;5;103m[j/k]␛[m␛[38;5;241m move␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m
 ␛[38;5;103m[←]␛[m␛[38;5;241m along the strip, back␛[m
 ␛[38;5;103m[→]␛[m␛[38;5;241m along the strip, on␛[m
 ␛[38;5;103m[enter]␛[m␛[38;5;241m expand␛[m
 ␛[38;5;103m[-]␛[m␛[38;5;241m collapse␛[m
-␛[38;5;103m[y]␛[m␛[38;5;241m copy the row␛[m
-␛[38;5;103m[c]␛[m␛[38;5;241m copy a block␛[m
+␛[38;5;103m[c]␛[m␛[38;5;241m copy␛[m
 ␛[38;5;103m[/]␛[m␛[38;5;241m search␛[m
 ␛[38;5;103m[n/N]␛[m␛[38;5;241m match␛[m
-␛[38;5;103m[u/d]␛[m␛[38;5;241m half page␛[m
+␛[38;5;103m[ctrl+u/ctrl+d]␛[m␛[38;5;241m half page␛[m
 ␛[38;5;103m[pgup]␛[m␛[38;5;241m page up␛[m
 ␛[38;5;103m[pgdn]␛[m␛[38;5;241m page down␛[m
-␛[38;5;103m[q]␛[m␛[38;5;241m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;241m back␛[m
 ␛[38;5;214m▎␛[m␛[38;5;103m[←→]␛[m␛[38;5;241m along the strip␛[m
 ␛[38;5;214m▎␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open that tool␛[m
-␛[38;5;214m▎␛[m␛[38;5;103m[q]␛[m␛[38;5;241m close the card␛[m
+␛[38;5;214m▎␛[m␛[92m[esc]␛[m␛[38;5;241m close the card␛[m
 
 ␛[38;5;241mglyphs␛[m
 ␛[38;5;241m⚙␛[m  ␛[38;5;241ma read: a file, a search, a listing␛[m
@@ -302,5 +296,7 @@ keys · [esc] back to reading mode
 ␛[92m✓␛[m  ␛[38;5;241ma compaction that brought the window back␛[m
 ␛[38;5;241m·␛[m  ␛[38;5;241maccepted, not started␛[m
 ␛[38;5;205m▸␛[m  ␛[38;5;241mrunning␛[m
-␛[38;5;241m↓ 3 more · [↑↓/jk] read on␛[m
+␛[38;5;205m✦␛[m  ␛[38;5;241mthe classifier is deciding␛[m
+␛[91m✗␛[m  ␛[38;5;241mfailed␛[m
+␛[38;5;241m⊘␛[m  ␛[38;5;241mrefused: dim by you, red by a rule␛[m
 ␛[38;5;241mkeys · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to reading mode␛[m

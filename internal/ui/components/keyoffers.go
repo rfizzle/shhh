@@ -41,8 +41,7 @@ func keyOffer(b keys.Binding) KeyOffer {
 // holds the whole keyboard, and a row that had to remember to say so is a row
 // that will one day forget
 // (docs/interface/principles.md#esc-is-always-the-safe-answer). A binding
-// answered by esc but spelled `q` is not it — the reader pressed a letter,
-// and what the letter does is the surface's to say.
+// the register spells with another key is not it, whatever else it answers.
 func keyOfferAs(b keys.Binding, label string) KeyOffer {
 	return KeyOffer{Key: keys.Bracket(b), Label: label, Safe: keys.Shown(b) == safeSpelling}
 }
@@ -97,10 +96,9 @@ const (
 // frame that spelled one key the same way twice would be saying nothing the
 // second time.
 //
-// The esc spelling comes from the cancel declaration rather than from a
-// screen's own quit, which is spelled `[q]`: esc is one keystroke with one
-// meaning wherever a surface holds the whole keyboard, and every screen in
-// this family answers it.
+// The esc spelling comes from the cancel declaration: esc is one keystroke
+// with one meaning wherever a surface holds the whole keyboard, and every
+// screen in this family answers it.
 func wayOut(phrase string) KeyOffer { return keyOfferAs(keys.Select.Cancel, phrase) }
 
 // screenHeaderKeys is the pair every supporting TUI puts at the right end of
