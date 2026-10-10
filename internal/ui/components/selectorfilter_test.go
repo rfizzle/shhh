@@ -1,7 +1,7 @@
 package components
 
 // The filter row over the window (
-// docs/interface/surfaces.md#selectors, ui_kits/cockpit/Lists.html). The
+// docs/interface/surfaces.md#selectors, the lists golden). The
 // window
 // gave every picker one window; past a dozen entries walking that window is
 // still the slow way, so the same component pins a query line above it. The

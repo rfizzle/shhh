@@ -8,8 +8,7 @@ package components
 // length is share, and the mark touching the bottom is the fact the column is
 // read for.
 //
-// The drawing is the `Scroll` artboard of the cockpit kit in the `shhh Design
-// System` (`ui_kits/cockpit/Scroll.html`), which is what settles the glyph and
+// The drawing is the scrollbar's golden, which is what settles the glyph and
 // the rung rather than this file (docs/interface/README.md). There is no
 // track: any full-height run one column from the pane divider grows the double
 // border back, and the pane's own top and bottom already say what the whole

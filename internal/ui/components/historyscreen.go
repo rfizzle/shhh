@@ -2,7 +2,7 @@ package components
 
 // The history browser (
 // docs/interface/surfaces.md#the-supporting-screens,
-// ui_kits/cockpit/Tools.html). `shhh history` shipped on a browser of its
+// the history-screen golden). `shhh history` shipped on a browser of its
 // own that invented a list, a query line, a detail page and an action bar
 // nothing else in the product drew. It is re-cut here from parts that already
 // exist: the selector window with its markers, its filter row and its two

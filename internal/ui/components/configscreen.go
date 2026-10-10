@@ -2,7 +2,7 @@ package components
 
 // The config screen (
 // docs/interface/surfaces.md#the-supporting-screens,
-// ui_kits/cockpit/Tools.html). `shhh config` shipped before the cockpit and
+// the config-screen golden). `shhh config` shipped before the cockpit and
 // invented its own list, its own idea of a value and its own key words for
 // them. It is re-cut here from parts that already exist: the selector window
 // with its markers and its filter row, the grid row with a right-hand field,

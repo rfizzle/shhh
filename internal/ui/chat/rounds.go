@@ -39,7 +39,7 @@ const roundGrantBlock = 50
 // the one that ends the question for the rest of the turn. The row
 // draws the grant as `[+50]` — the block, not the keystroke — because both
 // design surfaces do (docs/interface/surfaces.md#the-recovery-row and
-// ui_kits/cockpit/Edges.html in the shhh Design System project); focus mode's
+// the round-limit-pause golden); focus mode's
 // hint line names the literal keys, which is where the reader looks for one.
 
 // uncapRoundsLabel is the second offer, which appears only once the first has

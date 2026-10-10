@@ -244,8 +244,7 @@ func detailLine(s string, width int) string {
 // retry waits out the provider's own countdown. The row above
 // it is history and does not move; this is the part that drains.
 //
-// The shape is guidelines/meters-progress and ui_kits/cockpit/Edges.html in
-// the shhh Design System project: a draining accent meter with its seconds
+// The shape is the recovery-rows golden: a draining accent meter with its seconds
 // beside it, then the offers, both in the detail body's column.
 //
 // It is a passive renderer like the row: what the offered keys do, how long
@@ -407,7 +406,7 @@ func (c ProviderCard) View(width int) string {
 	// Accent, not the default gray: this is the one card that stops the
 	// session, and an accent border is a card's weight — a decision waiting
 	// on the reader — while the input frame's border stays chrome in every
-	// mode (ui_kits/cockpit/Edges.html in the shhh Design System project).
+	// mode (the recovery-rows golden).
 	// See docs/interface/departures.md#the-frames-border-is-chrome-and-the-mode-segment-carries-the-mode.
 	border := sty.accent
 	return Card{

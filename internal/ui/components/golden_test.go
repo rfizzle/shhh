@@ -1014,7 +1014,7 @@ func goldenCatalog() []SelectOption {
 }
 
 // TestGolden_Lists captures the window and the filter row over it (
-// ui_kits/cockpit/Lists.html): the window at the head of a list, mid-list
+// the lists golden): the window at the head of a list, mid-list
 // where both markers count, and at its tail, then the same card with a query
 // on it and the card a query matched nothing on.
 //

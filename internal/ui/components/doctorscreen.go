@@ -2,7 +2,7 @@ package components
 
 // The doctor surface (
 // docs/interface/surfaces.md#the-supporting-screens,
-// ui_kits/cockpit/Tools.html). `shhh code doctor` printed two paragraphs of
+// the doctor-screen golden). `shhh code doctor` printed two paragraphs of
 // key/value lines about the sandbox ladder and nothing else; `shhh doctor` is
 // the whole setup, and it is re-cut here from parts that already exist: the
 // column grid for each check, the closed state vocabulary for what became of

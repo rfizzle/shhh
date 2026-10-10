@@ -140,7 +140,7 @@ func bodyBudget(maxLines, pinned int) int {
 // listOverflowRow is the marker on a windowed list's edge. It counts what it
 // is hiding rather than only marking that something is (invariant 4) — the
 // form the queue strip's own overflowRow uses about a different list, which
-// `ui_kits/cockpit/Lists.html` keeps for this one, so the borrowing it
+// the `lists` golden keeps for this one, so the borrowing it
 // made with nothing to check against is now the decision. A run that hid
 // nothing selectable keeps the bare …, because writing ↑ 1 more there would
 // promise an option that does not exist.

@@ -2,7 +2,7 @@ package components
 
 // The metrics surface (
 // docs/interface/surfaces.md#the-supporting-screens,
-// ui_kits/cockpit/Tools.html). `shhh metrics` printed a tabwriter table of
+// the metrics-screen golden). `shhh metrics` printed a tabwriter table of
 // fifteen unaligned columns and no Bubble Tea at all. It is re-cut here from
 // parts that already exist: the column grid applied to a table, the sparkline
 // for the shape of a trend, and the block meter for every ratio — so the

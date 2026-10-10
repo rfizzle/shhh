@@ -53,7 +53,7 @@ type Keyed[R any] interface {
 // plainMark is the rule every empty run of chrome is drawn in: the rule under
 // a screen's header, a card's top edge between its title and its chips, the
 // divider between two panes. It is one glyph because the drawing kit is one
-// material (`ui_kits/cockpit/Sheet.html`, the kit line), and a run that
+// material (the goldens' rule line), and a run that
 // carries nothing has nothing to say with a second one. A diagonal texture
 // was tried here and declined: it collapsed to this rule under mono, which is
 // the proof that it carried nothing, and it was a material no artboard draws

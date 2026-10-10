@@ -1,7 +1,7 @@
 package components
 
 // The context surface (docs/interface/surfaces.md#the-context-surface, and
-// ui_kits/cockpit/Context.html in the shhh Design System project).
+// the context-screen golden).
 //
 // The occupancy breakdown on demand. The pressure card already draws this
 // accounting, but only when the window is nearly full and only as a sentence
