@@ -177,8 +177,10 @@ func liveSleeps(listing string) int {
 }
 
 // A process started in the container is read through the client's stdout and
-// stopped by the supervisor signalling the client, and nothing of it is left
-// in the container: the stop reaches the helper through the stream.
+// stopped the way a cancelled command is — the stream hung up, the far end's
+// grace, then the second exec and the kill — and nothing of it is left in the
+// container. With SHHH_SANDBOX_EXEC_DEBUG set the helper says on the
+// process's output whether it saw the hang-up, and the output is logged.
 func TestSandboxProcessStopsInsideTheContainer(t *testing.T) {
 	c, enginePath, name := integrationContainer(t)
 	sup, err := process.New(c.Record.Workspace, nil)
@@ -186,10 +188,15 @@ func TestSandboxProcessStopsInsideTheContainer(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(sup.Close)
+	var debug []string
+	if os.Getenv("SHHH_SANDBOX_EXEC_DEBUG") != "" {
+		debug = []string{"SHHH_SANDBOX_EXEC_DEBUG=1"}
+	}
 	sup.SetContainment(process.Containment{
 		Mechanism: sandboxMechanism,
-		Wrap: func(dir string, argv, env []string) ([]string, error) {
-			return c.HelperCommand(sandbox.HelperExec{Dir: dir, Env: env, Inherit: true}, argv[len(argv)-1])
+		Wrap: func(dir string, argv, env []string) ([]string, []string, error) {
+			return containedExec(c, sandbox.HelperExec{Dir: dir, Env: append(env, debug...), Inherit: true},
+				[]string{"/bin/sh", "-c", argv[len(argv)-1]})
 		},
 	})
 	if _, err := sup.Execute(json.RawMessage(`{"action":"start","name":"dev","command":"echo ready; sleep 300 & wait"}`)); err != nil {
@@ -206,17 +213,17 @@ func TestSandboxProcessStopsInsideTheContainer(t *testing.T) {
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-	if _, err := sup.Execute(json.RawMessage(`{"action":"stop","name":"dev"}`)); err != nil {
+	stopped := time.Now()
+	status, err := sup.Execute(json.RawMessage(`{"action":"stop","name":"dev"}`))
+	if err != nil {
 		t.Fatalf("stop: %v", err)
 	}
-	deadline = time.Now().Add(10 * time.Second)
+	output, _ := sup.Execute(json.RawMessage(`{"action":"read","name":"dev","stream":"stderr"}`))
+	t.Logf("the stopped process returned after %s:\n%s\n%s", time.Since(stopped).Round(time.Millisecond), status, output)
+	deadline = time.Now().Add(5 * time.Second)
 	for {
-		out, err := exec.Command(enginePath, "exec", name, "/bin/sh", "-c",
-			`for p in /proc/[0-9]*; do cat "$p/comm" 2>/dev/null; done`).CombinedOutput()
-		if err != nil {
-			t.Fatalf("list the container's processes: %v\n%s", err, out)
-		}
-		if strings.Count(string(out), "sleep\n") <= 1 {
+		out := containerProcesses(t, enginePath, name)
+		if liveSleeps(out) <= 1 {
 			// The one sleep left is the container's own keeper.
 			return
 		}

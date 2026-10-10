@@ -688,11 +688,11 @@ func TestSetContainment_StartRunsUnderTheWrap(t *testing.T) {
 	)
 	s.SetContainment(Containment{
 		Mechanism: "testwrap",
-		Wrap: func(dir string, argv, env []string) ([]string, error) {
+		Wrap: func(dir string, argv, env []string) ([]string, []string, error) {
 			mu.Lock()
 			defer mu.Unlock()
 			sawDir, sawArgv, sawEnv, wrapRuns = dir, argv, env, wrapRuns+1
-			return []string{"/bin/sh", "-c", "echo wrapped-by-the-mechanism"}, nil
+			return []string{"/bin/sh", "-c", "echo wrapped-by-the-mechanism"}, nil, nil
 		},
 	})
 
@@ -747,8 +747,8 @@ func TestSetContainment_WrapFailureRefusesTheStart(t *testing.T) {
 	s := newTestSupervisor(t, nil)
 	s.SetContainment(Containment{
 		Mechanism: "testwrap",
-		Wrap: func(string, []string, []string) ([]string, error) {
-			return nil, fmt.Errorf("writable path /w is inside masked path /w/m")
+		Wrap: func(string, []string, []string) ([]string, []string, error) {
+			return nil, nil, fmt.Errorf("writable path /w is inside masked path /w/m")
 		},
 	})
 
@@ -776,7 +776,7 @@ func TestSetContainment_WrapFailureRefusesTheStart(t *testing.T) {
 	})
 	s.SetContainment(Containment{
 		Mechanism: "testwrap",
-		Wrap:      func(string, []string, []string) ([]string, error) { return nil, fmt.Errorf("no") },
+		Wrap:      func(string, []string, []string) ([]string, []string, error) { return nil, nil, fmt.Errorf("no") },
 	})
 	_ = executeErr(t, s, `{"action":"start","name":"srv","command":"sleep 30"}`)
 	if !strings.Contains(execute(t, s, `{"action":"status","name":"srv"}`), "exited") {
@@ -831,9 +831,10 @@ func TestStart_ContainedProcessCannotReadTheDenyMask(t *testing.T) {
 	s := newTestSupervisor(t, nil)
 	s.SetContainment(Containment{
 		Mechanism: avail.Mechanism,
-		Wrap: func(dir string, argv, env []string) ([]string, error) {
+		Wrap: func(dir string, argv, env []string) ([]string, []string, error) {
 			p := sandbox.Policy{Workspace: s.root, Cwd: dir}.WithEnv(env)
-			return sandbox.WrapArgv(avail, p, argv)
+			wrapped, err := sandbox.WrapArgv(avail, p, argv)
+			return wrapped, nil, err
 		},
 	})
 	execute(t, s, peek)
@@ -860,11 +861,11 @@ func TestSetContainment_TheStartsEnvReachesTheWrap(t *testing.T) {
 	)
 	s.SetContainment(Containment{
 		Mechanism: "testwrap",
-		Wrap: func(_ string, _, env []string) ([]string, error) {
+		Wrap: func(_ string, _, env []string) ([]string, []string, error) {
 			mu.Lock()
 			defer mu.Unlock()
 			sawEnv = env
-			return []string{"/bin/sh", "-c", "true"}, nil
+			return []string{"/bin/sh", "-c", "true"}, nil, nil
 		},
 	})
 
@@ -896,9 +897,10 @@ func TestStart_ContainedProcessCarriesTheEnvItWasGiven(t *testing.T) {
 	s := newTestSupervisor(t, nil)
 	s.SetContainment(Containment{
 		Mechanism: avail.Mechanism,
-		Wrap: func(dir string, argv, env []string) ([]string, error) {
+		Wrap: func(dir string, argv, env []string) ([]string, []string, error) {
 			p := sandbox.Policy{Workspace: s.root, Cwd: dir}.WithEnv(env)
-			return sandbox.WrapArgv(avail, p, argv)
+			wrapped, err := sandbox.WrapArgv(avail, p, argv)
+			return wrapped, nil, err
 		},
 	})
 

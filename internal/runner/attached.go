@@ -69,10 +69,12 @@ func holdStdin(g *group, stop []string) (*os.File, error) {
 	}
 	g.cmd.Stdin = r
 	g.stdin = w
+	g.attached = true
+	g.stopExec = stop
 	g.cmd.WaitDelay = attachedWaitDelay
 	g.cmd.Cancel = func() error {
 		g.hangUp()
-		go stopAttached(g, stop)
+		go g.stopAttached()
 		return nil
 	}
 	return r, nil
@@ -81,14 +83,18 @@ func holdStdin(g *group, stop []string) (*os.File, error) {
 // stopAttached is the attached stop after the hang-up: wait for the client
 // to end by itself, then the second exec, then the kill. It runs beside the
 // wait rather than in it, since the client ending is the wait returning.
-func stopAttached(g *group, stop []string) {
-	if awaitExit(g, farGrace) {
-		return
-	}
-	if len(stop) > 0 {
-		runStopExec(stop)
-	}
-	killGroup(g)
+// A cancel and a quit's drain can both ask for it; it runs once, and a
+// second caller returns when the first's has finished.
+func (g *group) stopAttached() {
+	g.attachedStop.Do(func() {
+		if awaitExit(g, farGrace) {
+			return
+		}
+		if len(g.stopExec) > 0 {
+			runStopExec(g.stopExec)
+		}
+		killGroup(g)
+	})
 }
 
 // awaitExit reports whether the command's wait returned inside the window.

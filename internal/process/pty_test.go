@@ -42,9 +42,9 @@ func TestStart_APtyIsATerminalAndAPipeIsNot(t *testing.T) {
 // WrapTTY, and only for a start that asked: a plain start goes through Wrap.
 func TestSetContainment_ATerminalStartTakesWrapTTY(t *testing.T) {
 	s := newTestSupervisor(t, nil)
-	said := func(word string) func(string, []string, []string) ([]string, error) {
-		return func(string, []string, []string) ([]string, error) {
-			return []string{"/bin/sh", "-c", "echo " + word}, nil
+	said := func(word string) func(string, []string, []string) ([]string, []string, error) {
+		return func(string, []string, []string) ([]string, []string, error) {
+			return []string{"/bin/sh", "-c", "echo " + word}, nil, nil
 		}
 	}
 	s.SetContainment(Containment{Mechanism: "testwrap", Wrap: said("plain-wrap"), WrapTTY: said("tty-wrap")})

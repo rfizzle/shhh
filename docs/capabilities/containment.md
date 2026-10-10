@@ -1026,6 +1026,18 @@ may belong to something else by then. Each step is bounded, so a cancel
 still returns within the grace, the second exec's own timeout and the kill,
 whatever the engine does.
 
+The two legs are every container command's, not only a cancelled one's. A
+started process ([below](#a-started-process-is-contained-too)) is stopped
+the same way when it is asked to stop and when the session ends, and a quit's
+drain gives each command still running in the container the hang-up, the
+grace, the second exec and the kill rather than the interrupt a host command
+gets: an interrupt to the client is the client gone at once, which is the
+race the first leg exists to avoid. The drain stops every such command at
+once rather than one after another, so a quit waits at most one grace, one
+second exec and the kill, however many commands are in the container. A
+process given a terminal has no stream that can be hung up without hanging
+up the client with it, so its stop starts at the second leg.
+
 ## A command that will not finish is not waited on forever
 
 There is a ceiling on how long one command the assistant runs may take.
@@ -1118,9 +1130,10 @@ A session whose commands go inside a disposable container
 a start is one more exec through the helper, with the stream as the process's
 stdin, and a terminal is asked of the engine with `exec -t`. The supervisor
 holds the exec's client, so its reads and its input are the process's own
-output and input, and stopping it signals the client's group, which hangs the
-stream up and so tells the helper to stop the process inside the container
-with the sequence a command gets. A command that reaches its ceiling while it
+output and input, and stopping it takes the two legs a cancelled command's
+stop does ([above](#a-cancelled-command-takes-its-children-with-it)): the
+stream hung up, which tells the helper to stop the process inside the
+container, then the second exec where the hang-up did not arrive. A command that reaches its ceiling while it
 is still printing is handed to the supervisor as anywhere, and the session
 ending removes the container with whatever process is left in it.
 

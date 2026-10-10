@@ -205,13 +205,14 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 	if sup != nil {
 		sup.SetContainment(process.Containment{
 			Mechanism: avail.Mechanism,
-			Wrap: func(dir string, argv, env []string) ([]string, error) {
+			Wrap: func(dir string, argv, env []string) ([]string, []string, error) {
 				p, err := policyNow()
 				if err != nil {
-					return nil, err
+					return nil, nil, err
 				}
 				p.Cwd = dir
-				return sandbox.WrapArgv(avail, p.WithEnv(env), argv)
+				wrapped, err := sandbox.WrapArgv(avail, p.WithEnv(env), argv)
+				return wrapped, nil, err
 			},
 		})
 	}
@@ -426,26 +427,28 @@ func sandboxContainment(ctx context.Context, cfg config.Config, workspace string
 	if sup != nil {
 		// A process is one more exec through the helper, with its stdin the
 		// stream (--stdin=inherit): the supervisor's pipes are the client's,
-		// so read and input work as they do for any process, and stopping
-		// the client's group hangs the stream up, which is the helper's cue
-		// to stop the process inside. Nothing names a pid in the container.
+		// so read and input work as they do for any process. Its wrap comes
+		// with the second exec beside it, so the supervisor stops it as a
+		// cancelled command is stopped: the stream hung up, the far end's
+		// grace, then the second exec and the kill. Nothing names a pid in
+		// the container.
 		// See docs/capabilities/containment.md#a-started-process-is-contained-too.
-		start := func(tty bool) func(dir string, argv, env []string) ([]string, error) {
-			return func(dir string, argv, env []string) ([]string, error) {
+		start := func(tty bool) func(dir string, argv, env []string) ([]string, []string, error) {
+			return func(dir string, argv, env []string) ([]string, []string, error) {
 				if len(argv) == 0 {
-					return nil, errors.New("nothing to run in the sandbox")
+					return nil, nil, errors.New("nothing to run in the sandbox")
 				}
 				// The supervisor composed the host's shell around the
 				// command, and the host's shell is not the image's: the
 				// command text rides under /bin/sh, as every command of the
 				// session does.
-				return c.HelperCommand(sandbox.HelperExec{
+				return containedExec(c, sandbox.HelperExec{
 					Dir:     dir,
 					TTY:     tty,
 					Secrets: runner.SessionEnvNames(),
 					Env:     env,
 					Inherit: true,
-				}, argv[len(argv)-1])
+				}, []string{"/bin/sh", "-c", argv[len(argv)-1]})
 			}
 		}
 		sup.SetContainment(process.Containment{

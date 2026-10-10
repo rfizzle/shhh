@@ -11,6 +11,7 @@
 package process
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -64,6 +65,16 @@ const (
 	// behind it, open for as long as the child lives.
 	// See docs/capabilities/subagents.md.
 	waitDelay = 2 * time.Second
+
+	// farGrace and stopExecTimeout are the attached stop's two bounds, the
+	// runner's own (internal/runner/attached.go): how long a hung-up
+	// container client is left to end by itself — the helper's grace and a
+	// margin — and how long its second exec may take. They are the runner's
+	// values because the helper at the far end stops the group with the
+	// runner's sequence; the two packages share no code, since the runner's
+	// tests already import this one.
+	farGrace        = 5 * time.Second
+	stopExecTimeout = 8 * time.Second
 )
 
 var (
@@ -120,14 +131,20 @@ type Containment struct {
 	// directory instead of the cwd the start asked for, and a cleared
 	// environment takes the extras with it — a server told PORT=3001 comes
 	// up on 3000, and the model debugs a server that is running fine.
-	Wrap func(dir string, argv, env []string) ([]string, error)
+	//
+	// stop is the second exec that reaches the program where the wrapped
+	// argv is a client of something that forwards no signal — a container
+	// engine's exec — and nil where the wrapped argv is the program's own
+	// group on this machine. A process with one is stopped the attached way
+	// (terminateAttached).
+	Wrap func(dir string, argv, env []string) (wrapped, stop []string, err error)
 	// WrapTTY is Wrap for a start that asked for a terminal, for a mechanism
 	// whose wrapper has to be told: a container's exec gives the program a
 	// terminal of its own only when it is asked with -t, and the pseudo-
 	// terminal this supervisor puts on the wrapper's client would otherwise
 	// end at the client. Nil means Wrap serves both, as it does where the
 	// wrapper runs the program on the terminal it is given.
-	WrapTTY func(dir string, argv, env []string) ([]string, error)
+	WrapTTY func(dir string, argv, env []string) (wrapped, stop []string, err error)
 }
 
 // inForce reports whether this containment can actually wrap a start. A
@@ -267,6 +284,16 @@ type proc struct {
 	stdin  io.WriteCloser
 	stdout *streamBuf
 	stderr *streamBuf
+
+	// stopExec is the second exec of a process whose wrap made it a
+	// container engine's client (Containment.Wrap), nil for every other;
+	// tty says its stdin is a terminal rather than a stream it can hang up.
+	stopExec []string
+	stopEnv  []string
+	tty      bool
+	// stopOnce runs the attached stop once when a stop and the session's
+	// end both ask for it.
+	stopOnce sync.Once
 
 	// exited is closed by the reaper once the process is gone and its exit
 	// state below is recorded.
@@ -506,12 +533,13 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 	// it — including the exited entry a restart under the same name is
 	// about to replace.
 	argv := shell.Execution().Argv(command)
+	var stopExec []string
 	if contain := s.containment(); contain.inForce() {
 		wrap := contain.Wrap
 		if tty && contain.WrapTTY != nil {
 			wrap = contain.WrapTTY
 		}
-		wrapped, err := wrap(dir, argv, extras)
+		wrapped, stop, err := wrap(dir, argv, extras)
 		if err != nil {
 			// Refused, never started bare. Every surface in this session
 			// says the mechanism is containing what the assistant runs, and
@@ -521,7 +549,7 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 			return "", fmt.Errorf("cannot start %q under %s containment: %w (it was not started)",
 				name, contain.Mechanism, err)
 		}
-		argv = wrapped
+		argv, stopExec = wrapped, stop
 	}
 
 	s.mu.Lock()
@@ -551,6 +579,9 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 		name:     name,
 		command:  command,
 		started:  time.Now(),
+		stopExec: stopExec,
+		stopEnv:  cmd.Env,
+		tty:      tty,
 		stdout:   newStreamBuf(s.ringBytes, s.spoolBytes, s.scrub),
 		stderr:   newStreamBuf(s.ringBytes, s.spoolBytes, s.scrub),
 		exited:   make(chan struct{}),
@@ -701,9 +732,15 @@ func (s *Supervisor) stop(name string) (string, error) {
 	return s.statusOf(p), nil
 }
 
-// terminate runs the TERM → grace → KILL sequence and waits for the reaper.
+// terminate runs the TERM → grace → KILL sequence and waits for the reaper,
+// or the attached stop for a container engine's client.
 func (s *Supervisor) terminate(p *proc) {
 	if p.isDone() {
+		return
+	}
+	if p.stopExec != nil {
+		p.stopOnce.Do(func() { terminateAttached(p) })
+		<-p.exited
 		return
 	}
 	signalGroup(p.pid, signalTerm)
@@ -714,6 +751,56 @@ func (s *Supervisor) terminate(p *proc) {
 	}
 	signalGroup(p.pid, signalKill)
 	<-p.exited
+}
+
+// terminateAttached stops a process whose client is a container engine's
+// exec the way a cancelled command in the container is stopped: the client
+// is not signalled first, because an engine ends the exec's one process —
+// the helper — when its client goes, and a helper ended that way has not
+// stopped what the program started. So the stream is hung up, which is the
+// helper's cue, and the client is left the far end's grace to end by
+// itself; a client still there then gets the second exec, the helper's own
+// stop of the group it recorded, and only then the kill. A terminal cannot
+// be hung up without hanging up the client with it, so a process given one
+// goes straight to the second exec. Each step is bounded: the far end's
+// grace, the second exec's timeout, the kill.
+// See docs/capabilities/containment.md#a-cancelled-command-takes-its-children-with-it.
+func terminateAttached(p *proc) {
+	if !p.tty && p.stdin != nil {
+		_ = p.stdin.Close()
+		select {
+		case <-p.exited:
+			return
+		case <-time.After(farGrace):
+		}
+	}
+	runStopExec(p.stopExec, p.stopEnv)
+	// A second exec that worked ends the client while it runs, and once
+	// the reaper has it the number is free for something else: no kill
+	// goes to a client already gone.
+	select {
+	case <-p.exited:
+	default:
+		signalGroup(p.pid, signalKill)
+	}
+}
+
+// runStopExec runs the second exec, in a group of its own, to its end or its
+// timeout, with the environment the client had: the engine it reaches is
+// the one the client did. What it says is not the process's output, and a
+// failure of it leaves nothing to do but the kill that follows.
+func runStopExec(stop, env []string) {
+	ctx, cancel := context.WithTimeout(context.Background(), stopExecTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, stop[0], stop[1:]...)
+	cmd.Env = env
+	cmd.SysProcAttr = sysProcAttr(false)
+	cmd.WaitDelay = drainGrace
+	cmd.Cancel = func() error {
+		signalGroup(cmd.Process.Pid, signalKill)
+		return nil
+	}
+	_ = cmd.Run()
 }
 
 // input writes text to a running process's stdin, verbatim.

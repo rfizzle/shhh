@@ -382,10 +382,9 @@ func TestContainerProcessOutputIsRead(t *testing.T) {
 	}
 }
 
-// Input reaches the process through the client's stdin, and a stop signals
-// the client's group — the stop the supervisor already has — which ends the
-// exec and so hangs the stream up for the helper. A terminal is asked of the
-// engine with -t.
+// Input reaches the process through the client's stdin, and a stop hangs
+// that stream up, which is the helper's cue to stop the process inside. A
+// terminal is asked of the engine with -t.
 func TestContainerProcessStopReachesTheClient(t *testing.T) {
 	sup, log := sandboxProcessSession(t)
 	if _, err := sup.Execute(json.RawMessage(`{"action":"start","name":"echoer","command":"cat"}`)); err != nil {
@@ -406,6 +405,70 @@ func TestContainerProcessStopReachesTheClient(t *testing.T) {
 	if calls := engineCalls(t, log); !strings.Contains(calls, "exec -i -t --workdir /workspace") {
 		t.Errorf("a terminal was not asked of the engine:\n%s", calls)
 	}
+
+	// The process stop is the attached one a cancel gets. Where the engine
+	// passes the hang-up on, the helper stops the group and the client ends
+	// by itself; where it holds the stream open, the client is still there
+	// when the far end's grace is up, and one second exec, of the helper's
+	// stop for the process's own token, reaches the group it recorded.
+	t.Run("the hang-up lands", func(t *testing.T) {
+		if calls := stopProcessInTheContainer(t, false); strings.Contains(calls, "--stop=") {
+			t.Errorf("a second exec was made although the hang-up landed:\n%s", calls)
+		}
+	})
+	t.Run("the engine holds the hang-up", func(t *testing.T) {
+		calls := stopProcessInTheContainer(t, true)
+		first := regexp.MustCompile(regexp.QuoteMeta(sandbox.ExecArg+" --id=") + "([0-9a-f]{16})").FindStringSubmatch(calls)
+		if first == nil {
+			t.Fatalf("no exec through the helper:\n%s", calls)
+		}
+		second := regexp.MustCompile(`exec shhh-sbx-\S+ ` + regexp.QuoteMeta(sandbox.HelperPath+" "+sandbox.ExecArg+" --stop="+first[1]) + "\n")
+		if !second.MatchString(calls) || strings.Count(calls, "--stop=") != 1 {
+			t.Errorf("want one second exec stopping %s:\n%s", first[1], calls)
+		}
+	})
+}
+
+// stopProcessInTheContainer starts, through a sandbox session whose engine
+// runs this binary as the helper, a process that leaves a sleep behind it in
+// the background, stops it once the sleep is running, and hands back the
+// engine's log once the stop has returned and the sleep is gone.
+func stopProcessInTheContainer(t *testing.T, hold bool) string {
+	t.Helper()
+	sup, log := sandboxProcessSession(t)
+	// The supervisor hands a process a bare environment, so the stand-in
+	// engine's switches cross as the session's pairs.
+	env := []string{engineHelperEnv + "=" + os.Args[0], "SHHH_SANDBOX_EXEC_DIR=" + t.TempDir()}
+	if hold {
+		env = append(env, engineHoldEnv+"=1")
+	}
+	sup.SetEnv(env)
+	if _, err := sup.Execute(json.RawMessage(`{"action":"start","name":"dev","command":"sleep 300 & echo \"sleeping $!\"; wait"}`)); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	got := untilProcess(t, sup, `{"action":"read","name":"dev"}`, "sleeping ")
+	m := regexp.MustCompile(`sleeping (\d+)`).FindStringSubmatch(got)
+	if m == nil {
+		t.Fatalf("the process never said its sleep was running: %q", got)
+	}
+	pid, _ := strconv.Atoi(m[1])
+	stopped := time.Now()
+	if _, err := sup.Execute(json.RawMessage(`{"action":"stop","name":"dev"}`)); err != nil {
+		t.Fatalf("stop: %v", err)
+	}
+	// The ceiling a stop is held to: the far end's grace, the second exec's
+	// own timeout and the kill, with room for a loaded machine.
+	if took := time.Since(stopped); took > 30*time.Second {
+		t.Errorf("the stop took %s", took)
+	}
+	for i := 0; i < 50 && syscall.Kill(pid, 0) == nil; i++ {
+		time.Sleep(100 * time.Millisecond)
+	}
+	if syscall.Kill(pid, 0) == nil {
+		_ = syscall.Kill(pid, syscall.SIGKILL)
+		t.Fatalf("the sleep %d outlived the stop", pid)
+	}
+	return engineCalls(t, log)
 }
 
 // The stand-in engine's switches: engineHelperEnv names the program it runs

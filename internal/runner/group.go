@@ -71,6 +71,12 @@ type group struct {
 	// for every other command (attached.go). hung closes it once.
 	stdin *os.File
 	hung  sync.Once
+	// attached marks a command stopped the attached way, with stopExec its
+	// second exec (nil for none); attachedStop runs that stop once, whether
+	// a cancel or a quit's drain asks first.
+	attached     bool
+	stopExec     []string
+	attachedStop sync.Once
 }
 
 // hangUp closes an attached command's stdin, which is how the far end of
@@ -153,28 +159,51 @@ func (g *group) release() {
 // A session that only cancels leaves the kill to a timer inside a process
 // that is going away, so a command which ignores SIGINT survives the session
 // that started it and goes on holding the port or the lock the next attempt
-// needs. The whole drain is bounded by killGrace, so a quit with something to
-// stop is still a quit and not a wait.
+// needs. The drain of a host command is bounded by killGrace, so a quit with
+// something to stop is still a quit and not a wait.
+//
+// An attached command is not interrupted: its client is the engine's, and a
+// client signalled at once takes the far end's helper with it before the
+// helper has stopped the command (attached.go). It gets the attached stop
+// instead — hang-up, the far end's grace, the second exec, the kill — every
+// client at once rather than one after another, so the quit waits at most
+// one far end's grace, one second exec's timeout and the kill, however many
+// commands are in containers.
 // See docs/capabilities/containment.md#a-cancelled-command-takes-its-children-with-it.
 func StopCaptured() {
 	liveMu.Lock()
-	groups := make([]*group, 0, len(live))
+	var plain, attached []*group
 	for g := range live {
-		groups = append(groups, g)
+		if g.attached {
+			attached = append(attached, g)
+		} else {
+			plain = append(plain, g)
+		}
 	}
 	liveMu.Unlock()
-	if len(groups) == 0 {
-		return
-	}
-	for _, g := range groups {
+	var far sync.WaitGroup
+	for _, g := range attached {
 		g.hangUp()
-		interruptGroup(g)
+		far.Add(1)
+		go func() {
+			defer far.Done()
+			g.stopAttached()
+		}()
 	}
-	awaitGroups(groups, killGrace-reapGrace)
-	for _, g := range groups {
-		killGroup(g)
+	if len(plain) > 0 {
+		for _, g := range plain {
+			interruptGroup(g)
+		}
+		awaitGroups(plain, killGrace-reapGrace)
+		for _, g := range plain {
+			killGroup(g)
+		}
+		awaitGroups(plain, reapGrace)
 	}
-	awaitGroups(groups, reapGrace)
+	if len(attached) > 0 {
+		far.Wait()
+		awaitGroups(attached, reapGrace)
+	}
 }
 
 // awaitGroups blocks until every group has been waited on, or until the

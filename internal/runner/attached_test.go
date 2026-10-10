@@ -107,6 +107,82 @@ func TestAttachedStopRunsTheSecondExecThenKills(t *testing.T) {
 	}
 }
 
+// A quit's drain gives an attached command the order a cancel gives it:
+// the hang-up, the far end's grace, the second exec, the kill — never an
+// interrupt to the client first, which would take the far end's helper with
+// it. A client that ends inside the grace is left to end by itself; clients
+// still there get their second execs at once rather than one after another,
+// so the drain is bounded by one grace, one second exec's timeout and the
+// kill however many there are.
+func TestStopCapturedWaitsForTheFarEnd(t *testing.T) {
+	t.Run("the far end ends", func(t *testing.T) {
+		t.Setenv(farEndEnv, "1")
+		ready := make(chan struct{})
+		done := make(chan tools.ExecResult, 1)
+		go func() {
+			done <- RunCaptureArgvTailAttached(context.Background(), "the command", []string{os.Args[0]}, nil, func(line string) {
+				if line == "ready" {
+					close(ready)
+				}
+			})
+		}()
+		<-ready
+		drained := time.Now()
+		StopCaptured()
+		if took := time.Since(drained); took >= farGrace {
+			t.Errorf("the drain took %s, past the far end's grace %s", took, farGrace)
+		}
+		result := <-done
+		if !strings.Contains(result.Output, "ended by itself") {
+			t.Fatalf("the drain signalled the client while its far end was stopping:\n%s", result.Output)
+		}
+	})
+
+	t.Run("the hang-up does not land", func(t *testing.T) {
+		const clients = 3
+		dir := t.TempDir()
+		argv := []string{"/bin/sh", "-c", "trap '' INT TERM HUP; echo ready; while :; do sleep 0.1; done"}
+		ready := make(chan struct{}, clients)
+		done := make(chan tools.ExecResult, clients)
+		for i := range clients {
+			// Each second exec takes most of a second, so three run one
+			// after another would show as a drain three seconds longer.
+			stop := []string{"/bin/sh", "-c", fmt.Sprintf("sleep 1; echo ran > %s/second-exec-%d", dir, i)}
+			go func() {
+				done <- RunCaptureArgvTailAttached(context.Background(), "deaf", argv, stop, func(line string) {
+					if line == "ready" {
+						ready <- struct{}{}
+					}
+				})
+			}()
+		}
+		for range clients {
+			<-ready
+		}
+		drained := time.Now()
+		StopCaptured()
+		took := time.Since(drained)
+		for i := range clients {
+			if _, err := os.Stat(fmt.Sprintf("%s/second-exec-%d", dir, i)); err != nil {
+				t.Errorf("client %d's second exec did not run: %v", i, err)
+			}
+		}
+		if took < farGrace {
+			t.Errorf("the clients were killed after %s, inside the far end's grace %s", took, farGrace)
+		}
+		if limit := farGrace + 2*time.Second; took > limit {
+			t.Errorf("the drain took %s, past one grace and one second exec (%s): the clients were stopped one after another", took, limit)
+		}
+		for range clients {
+			select {
+			case <-done:
+			case <-time.After(10 * time.Second):
+				t.Fatal("a drained client's capture did not return")
+			}
+		}
+	})
+}
+
 // The attached forms report and capture exactly as the plain ones do, and a
 // command that ends by itself ends with its own status: the held stdin is
 // what the command does not read, not a reason for it to wait.
