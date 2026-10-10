@@ -176,7 +176,10 @@ func serveOnSocket(ctx context.Context, srv *rpc.Server, path string) error {
 // wired into it, so a client driving a turn gets the run's own behaviour and
 // not an imitation of it.
 type serveLoop struct {
-	agent    *agent.Agent
+	agent *agent.Agent
+	// retake reads the file again at a turn's start and sets the loop's
+	// live keys from it (retakeLoop).
+	retake   func()
 	headless *agent.Headless
 	saved    *headlessChat
 	recorder *observeRecorder
@@ -473,13 +476,17 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// The loop's settings, written by the applier the screen's constructor
 	// uses; a served turn recovers its window at every round boundary, which
 	// is why the trim's archive is among them.
-	chat.ApplyLoop(a, headlessLoop(cfg, env, session, ts,
+	loop := headlessLoop(cfg, env, session, ts,
 		maxRoundsFor(cfg, opts.maxRounds, opts.maxRoundsSet),
 		agent.ToolExecutor(hooks.WrapExecutor(l.hookPos,
 			func(name string, args json.RawMessage) bool {
 				return gate(provider.ToolCall{Name: name, Arguments: string(args)})
 			},
-			hook.Executor(repeats.WrapExecutor(exec))))))
+			hook.Executor(repeats.WrapExecutor(exec)))))
+	chat.ApplyLoop(a, loop)
+	// And again at every turn's start, from the file as it is then, for the
+	// keys a session takes at a turn boundary (headlessloop.go).
+	l.retake = retakeLoop(a, loop, env, workingDir(), opts.maxRounds, opts.maxRoundsSet)
 	scopeGateToWrites(qgate, own.paths)
 
 	// The unattended run's approver, opted in, is what a call the client
@@ -997,6 +1004,9 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	// and a server the turn before lost is said
 	// (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
 	mcpTurnBoundary(l.mcp)
+	if l.retake != nil {
+		l.retake()
+	}
 	l.mu.Lock()
 	l.turn = turn
 	l.steering = nil

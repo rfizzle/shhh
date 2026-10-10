@@ -42,3 +42,46 @@ func headlessLoop(cfg config.Config, env *sessionEnv, session chatSession, ts *t
 	w.Evidence.Keep = ts.evidence.Keep
 	return w
 }
+
+// loopKeys are the live keys a loop's settings carry (chat.ApplySettings):
+// what a served session takes again at each turn's start.
+var loopKeys = []string{
+	"behavior.max_tool_rounds", "behavior.check_in_interval_rounds", "behavior.check_in_max_doublings",
+	"behavior.progress_interval_calls", "behavior.progress_interval_seconds",
+}
+
+// retakeLoop is a served session's turn boundary for its settings. A served
+// session has no settings screen, so what it takes is what the file holds
+// now: the file is read again, every live key the loop carries is read from
+// it the way the settings screen's take reads it (liveTakers), and the loop
+// is set through the applier the screen uses, so a written round limit or
+// check-in interval reaches the session at its next turn
+// (docs/interface/surfaces.md#the-settings-screen). A key the session's
+// readers ask for at the call — a flow's model, the readings' cadence — is
+// held for them as the screen holds it (heldKey). Everything else stays as
+// the session opened on it. flag and set are the --max-rounds it was served
+// with, which outranks the file's round cap here as it did at the open. A
+// file that does not read leaves the session as it was.
+func retakeLoop(a *agent.Agent, opened chat.Wiring, env *sessionEnv, dir string, flag int, set bool) func() {
+	return func() {
+		cfg, _, err := loadLayeredConfig(dir)
+		if err != nil {
+			return
+		}
+		w := opened
+		for _, key := range loopKeys {
+			liveTakers[key](cfg, nil, &w)
+		}
+		w.MaxToolRounds = maxRoundsFor(cfg, flag, set)
+		chat.ApplySettings(a, w)
+		if env == nil {
+			return
+		}
+		for _, s := range config.Settings() {
+			if heldKey(s.Key) {
+				v, _ := config.Value(cfg, s.Key)
+				env.flows.set(s.Key, v)
+			}
+		}
+	}
+}
