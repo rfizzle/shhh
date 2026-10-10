@@ -26,6 +26,10 @@ import (
 // or when the helper itself is sent an interrupt or a termination. The
 // sequence is the runner's own, imported rather than copied.
 //
+// With --id the child's group is recorded under that token while it runs,
+// and `--stop=<token>` — a second exec, the second leg of the stop — runs
+// the same sequence against a recorded group (helperstop_unix.go).
+//
 // args are the helper's flags, "--", and the command's argv.
 func RunExec(args []string) int {
 	f, err := parseExecArgs(args)
@@ -36,6 +40,9 @@ func RunExec(args []string) int {
 	if f.version {
 		fmt.Println(helperBanner + HelperVersion)
 		return 0
+	}
+	if f.stop != "" {
+		return stopRecorded(f.stop)
 	}
 
 	stop := make(chan struct{})
@@ -52,6 +59,7 @@ func RunExec(args []string) int {
 	defer signal.Stop(sigs)
 	go func() {
 		for sig := range sigs {
+			debugf("%v seen", sig)
 			if sig == syscall.SIGHUP && f.hangup == hangupIgnore {
 				continue
 			}
@@ -61,6 +69,7 @@ func RunExec(args []string) int {
 	if f.hangup == hangupStop {
 		go func() {
 			if watchHangup(int(os.Stdin.Fd())) {
+				debugf("hang-up seen")
 				halt()
 			}
 		}()
@@ -80,7 +89,31 @@ func RunExec(args []string) int {
 	// group with a member left in it is a group the stop can still reach.
 	cmd.Stdout = struct{ io.Writer }{os.Stdout}
 	cmd.Stderr = struct{ io.Writer }{os.Stderr}
-	return exitStatus(runner.RunGroupUntil(cmd, stop))
+	var recorded func()
+	started := func(pgid int) {
+		if f.id != "" {
+			recorded = recordGroup(f.id, pgid)
+		}
+	}
+	err = runner.RunGroupUntil(cmd, stop, started)
+	if recorded != nil {
+		// The wait has returned: from here the number is not this
+		// command's, and a second exec must find nothing to signal.
+		recorded()
+	}
+	debugf("the command has ended")
+	return exitStatus(err)
+}
+
+// debugEnv makes the helper say on its stderr what it saw — a hang-up, a
+// signal, a stop — for a person diagnosing an engine. Nothing reads it.
+const debugEnv = "SHHH_SANDBOX_EXEC_DEBUG"
+
+func debugf(format string, args ...any) {
+	if os.Getenv(debugEnv) == "" {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "shhh: sandbox exec: "+format+"\n", args...)
 }
 
 // exitStatus is the status the helper exits with for the child's ending.

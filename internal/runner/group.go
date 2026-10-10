@@ -239,12 +239,18 @@ func RunGrouped(cmd *exec.Cmd) error {
 // blocks on what a surviving relative still holds open, as a captured
 // command's does, which is what keeps the group signallable while something
 // the command started is still printing. waitDelay bounds that wait.
-func RunGroupUntil(cmd *exec.Cmd, stop <-chan struct{}) error {
+//
+// started, when it is not nil, is told the group's id once the command has
+// started and before anything can stop it.
+func RunGroupUntil(cmd *exec.Cmd, stop <-chan struct{}, started func(pgid int)) error {
 	g := &group{cmd: cmd, exited: make(chan struct{})}
 	cmd.SysProcAttr = sysProcAttr()
 	cmd.WaitDelay = waitDelay
 	if err := cmd.Start(); err != nil {
 		return err
+	}
+	if started != nil {
+		started(cmd.Process.Pid)
 	}
 	go func() {
 		select {

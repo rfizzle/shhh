@@ -8,7 +8,10 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -32,6 +35,12 @@ var sandboxTestConfig = "\n[sandbox]\ncontainer_engine = \"docker\"\ncontainer_i
 // answers the ones a sandbox session makes: the probe, the create, the
 // helper's --version with helper, an exec by running the argv after `--`
 // here, and the remove. It hands back the log.
+//
+// With engineHelperEnv naming a program, an exec runs that program as the
+// helper instead, with the helper's own arguments — the second exec's
+// `--stop` among them — and with engineHoldEnv set too the helper's stdin
+// is one that never hangs up: an engine that holds the stream open after
+// its client has let go.
 func fakeSandboxEngine(t *testing.T, helper string) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -45,6 +54,12 @@ func fakeSandboxEngine(t *testing.T, helper string) string {
 		"exec)\n" +
 		"  for last; do :; done\n" +
 		"  if [ \"$last\" = --version ]; then " + helper + "; exit; fi\n" +
+		"  if [ -n \"$" + engineHelperEnv + "\" ]; then\n" +
+		"    while [ $# -gt 0 ] && [ \"$1\" != " + sandbox.HelperPath + " ]; do shift; done\n" +
+		"    shift\n" +
+		"    if [ -n \"$" + engineHoldEnv + "\" ]; then exec \"$" + engineHelperEnv + "\" \"$@\" </dev/zero; fi\n" +
+		"    exec \"$" + engineHelperEnv + "\" \"$@\"\n" +
+		"  fi\n" +
 		"  while [ $# -gt 0 ] && [ \"$1\" != -- ]; do shift; done\n" +
 		"  shift\n" +
 		"  exec \"$@\" ;;\n" +
@@ -119,8 +134,8 @@ func TestSandboxContainmentValues(t *testing.T) {
 	}
 	calls := engineCalls(t, log)
 	want := "exec -i --workdir /workspace shhh-sbx-"
-	helper := sandbox.HelperPath + " " + sandbox.ExecArg + " --stdin=null --hangup=stop -- /bin/sh -c echo from-the-container"
-	if !strings.Contains(calls, want) || !strings.Contains(calls, helper) {
+	helper := helperCall(" --stdin=null --hangup=stop -- /bin/sh -c echo from-the-container")
+	if !strings.Contains(calls, want) || !helper.MatchString(calls) {
 		t.Errorf("the command did not go through the helper:\n%s", calls)
 	}
 	if !strings.Contains(calls, sandbox.ExecArg+" --version") {
@@ -361,8 +376,8 @@ func TestContainerProcessOutputIsRead(t *testing.T) {
 	untilProcess(t, sup, `{"action":"read","name":"dev"}`, "ready")
 	calls := engineCalls(t, log)
 	want := "exec -i --workdir /workspace shhh-sbx-"
-	helper := sandbox.HelperPath + " " + sandbox.ExecArg + " --stdin=inherit --hangup=stop -- /bin/sh -c echo ready; sleep 30"
-	if !strings.Contains(calls, want) || !strings.Contains(calls, helper) {
+	helper := helperCall(" --stdin=inherit --hangup=stop -- /bin/sh -c echo ready; sleep 30")
+	if !strings.Contains(calls, want) || !helper.MatchString(calls) {
 		t.Errorf("the process did not start through the helper with its stdin inherited:\n%s", calls)
 	}
 }
@@ -390,5 +405,96 @@ func TestContainerProcessStopReachesTheClient(t *testing.T) {
 	}
 	if calls := engineCalls(t, log); !strings.Contains(calls, "exec -i -t --workdir /workspace") {
 		t.Errorf("a terminal was not asked of the engine:\n%s", calls)
+	}
+}
+
+// The stand-in engine's switches: engineHelperEnv names the program it runs
+// as the helper, and engineHoldEnv holds the hang-up back from it.
+const (
+	engineHelperEnv = "SHHH_TEST_ENGINE_HELPER"
+	engineHoldEnv   = "SHHH_TEST_ENGINE_HOLD"
+)
+
+// helperCall matches the helper's part of an exec in the engine's log: its
+// argument, the fresh token every exec is handed, then rest.
+func helperCall(rest string) *regexp.Regexp {
+	return regexp.MustCompile(regexp.QuoteMeta(sandbox.HelperPath+" "+sandbox.ExecArg+" --id=") + "[0-9a-f]{16}" + regexp.QuoteMeta(rest))
+}
+
+// cancelInTheContainer runs, through a sandbox session whose engine runs
+// this binary as the helper, a command that leaves a sleep behind it in the
+// background, cancels it once the sleep is running, and hands back the
+// engine's log once the cancel has returned and the sleep is gone.
+func cancelInTheContainer(t *testing.T, hold bool) string {
+	t.Helper()
+	log := fakeSandboxEngine(t, helperAnswers)
+	t.Setenv(engineHelperEnv, os.Args[0])
+	if hold {
+		t.Setenv(engineHoldEnv, "1")
+	}
+	t.Setenv("SHHH_SANDBOX_EXEC_DIR", t.TempDir())
+	cfg, sc, ws := sandboxTestSetup(t)
+	c, cleanup, err := sandboxContainment(context.Background(), cfg, ws, sc, nil)
+	if err != nil {
+		t.Fatalf("sandboxContainment: %v", err)
+	}
+	t.Cleanup(cleanup)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	pid := 0
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		c.TailRun(ctx, `sleep 300 & echo "sleeping $!"; wait`, func(line string) {
+			if p, ok := strings.CutPrefix(line, "sleeping "); ok {
+				pid, _ = strconv.Atoi(p)
+				cancel()
+			}
+		})
+	}()
+	// The ceiling a cancel is held to: the far end's grace, the second
+	// exec's own timeout and the kill, with room for a loaded machine.
+	select {
+	case <-done:
+	case <-time.After(30 * time.Second):
+		t.Fatal("the cancelled command did not return")
+	}
+	if pid == 0 {
+		t.Fatal("the command never said its sleep was running")
+	}
+	for i := 0; i < 50 && syscall.Kill(pid, 0) == nil; i++ {
+		time.Sleep(100 * time.Millisecond)
+	}
+	if syscall.Kill(pid, 0) == nil {
+		_ = syscall.Kill(pid, syscall.SIGKILL)
+		t.Fatalf("the sleep %d outlived the cancel", pid)
+	}
+	return engineCalls(t, log)
+}
+
+// When the engine passes the hang-up on, the helper stops the group and the
+// exec ends by itself: the stream was enough, and no second exec is made.
+func TestAttachedStopNeedsNoSecondExecWhenTheHangupLands(t *testing.T) {
+	calls := cancelInTheContainer(t, false)
+	if strings.Contains(calls, "--stop=") {
+		t.Errorf("a second exec was made although the hang-up landed:\n%s", calls)
+	}
+}
+
+// When the engine holds the stream open, the helper never hears the
+// hang-up, and the client is still there when the far end's grace is up:
+// one second exec, of the helper's stop for the first exec's own token,
+// reaches the group it recorded, and nothing of the command is left.
+func TestAttachedStopFallsBackToTheSecondExec(t *testing.T) {
+	calls := cancelInTheContainer(t, true)
+	first := regexp.MustCompile(regexp.QuoteMeta(sandbox.ExecArg+" --id=") + "([0-9a-f]{16})").FindStringSubmatch(calls)
+	if first == nil {
+		t.Fatalf("no exec through the helper:\n%s", calls)
+	}
+	stop := "exec shhh-sbx-"
+	second := regexp.MustCompile(regexp.QuoteMeta(stop) + `\S+ ` + regexp.QuoteMeta(sandbox.HelperPath+" "+sandbox.ExecArg+" --stop="+first[1]) + "\n")
+	if !second.MatchString(calls) || strings.Count(calls, "--stop=") != 1 {
+		t.Errorf("want one second exec stopping %s:\n%s", first[1], calls)
 	}
 }

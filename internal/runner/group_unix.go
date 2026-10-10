@@ -70,6 +70,40 @@ func stopGroup(g *group) error {
 	return nil
 }
 
+// StopRecordedGroup stops a process group this process did not start — one
+// a sandbox command helper recorded, reached by a second exec — with the
+// sequence a cancelled captured command gets: interrupt, killGrace, then
+// freeze and kill whatever ignored it. It returns once the group is gone or
+// the kill has gone out, and a moment more for the kill to land.
+//
+// ours reports whether pgid still names that group, and is asked before
+// every signal: there is no wait here to say the group has ended, and once
+// it has, its number is free for something else.
+func StopRecordedGroup(pgid int, ours func() bool) {
+	if !ours() {
+		return
+	}
+	sendGroup(pgid, syscall.SIGINT)
+	if awaitGone(ours, killGrace) {
+		return
+	}
+	sendGroup(pgid, killSequence...)
+	awaitGone(ours, reapGrace)
+}
+
+// awaitGone polls until ours stops answering or the window is spent, and
+// reports whether it stopped.
+func awaitGone(ours func() bool, window time.Duration) bool {
+	deadline := time.Now().Add(window)
+	for ours() {
+		if time.Now().After(deadline) {
+			return false
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	return true
+}
+
 // killAfterGrace kills the group once the grace is up, unless the wait
 // returned first — in which case there is nothing of this command left to
 // kill and the pid may already belong to something else.

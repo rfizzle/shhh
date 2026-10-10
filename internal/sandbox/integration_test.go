@@ -24,7 +24,7 @@ import (
 // destroy. It needs a container engine and a local digest-pinned image with a
 // POSIX sh, so it only runs when SHHH_SANDBOX_IT_IMAGE is set, e.g.:
 //
-//	SHHH_SANDBOX_IT_IMAGE=docker.io/library/alpine@sha256:… go test ./internal/sandbox -run Integration -v
+//	SHHH_SANDBOX_IT_IMAGE=cgr.dev/chainguard/wolfi-base@sha256:… go test ./internal/sandbox -run Integration -v
 func TestContainerLifecycleIntegration(t *testing.T) {
 	image := os.Getenv("SHHH_SANDBOX_IT_IMAGE")
 	if image == "" {

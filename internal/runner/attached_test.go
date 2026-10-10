@@ -4,8 +4,8 @@ package runner
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"strings"
@@ -16,56 +16,91 @@ import (
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
-// stdinAtInterruptEnv makes this test binary a command that says, when it is
-// interrupted, whether its stdin had already hung up (TestMain).
-const stdinAtInterruptEnv = "SHHH_TEST_STDIN_AT_INTERRUPT"
+// farEndEnv makes this test binary a client whose far end takes a while to
+// stop once its stdin hangs up, and which says whether it was signalled in
+// the meantime (TestMain).
+const farEndEnv = "SHHH_TEST_FAR_END"
 
 func TestMain(m *testing.M) {
-	if os.Getenv(stdinAtInterruptEnv) == "1" {
-		os.Exit(stdinAtInterrupt())
+	if os.Getenv(farEndEnv) == "1" {
+		os.Exit(farEnd())
 	}
 	os.Exit(m.Run())
 }
 
-// stdinAtInterrupt waits for an interrupt and then reads its stdin without
-// blocking: nothing to read and no writer left is a stdin that hung up before
-// the signal arrived; a read that would block is one still held open.
-func stdinAtInterrupt() int {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt)
+// farEnd stands in for a client whose helper stops its group on the
+// hang-up: it reads its stdin to the end, takes a second over the stop — the
+// far end's grace — and exits by itself, saying whether a signal reached it
+// first.
+func farEnd() int {
+	sigs := make(chan os.Signal, 4)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	fmt.Println("ready")
-	<-sigs
-	if err := syscall.SetNonblock(0, true); err != nil {
-		fmt.Println("stdin:", err)
-		return 2
-	}
-	n, err := syscall.Read(0, make([]byte, 1))
-	switch {
-	case n == 0 && err == nil:
-		fmt.Println("stdin closed at the interrupt")
-	case errors.Is(err, syscall.EAGAIN):
-		fmt.Println("stdin open at the interrupt")
+	_, _ = io.Copy(io.Discard, os.Stdin)
+	time.Sleep(time.Second)
+	select {
+	case sig := <-sigs:
+		fmt.Println("signalled before it ended:", sig)
 	default:
-		fmt.Println("stdin:", n, err)
+		fmt.Println("ended by itself")
 	}
 	return 0
 }
 
-// An attached command's stdin is the stream its far end watches, and the
-// stop starts there: by the time the interrupt reaches the command, the
-// stdin has already hung up — so a helper in a container is stopping the
-// work before the client it is attached to has even been signalled.
-func TestAttachedCaptureClosesStdinBeforeTheSignal(t *testing.T) {
-	t.Setenv(stdinAtInterruptEnv, "1")
+// An attached command's stop starts by hanging its stdin up, and then
+// leaves the client alone while the far end stops the command: an engine
+// ends the exec's one process — the helper — when its client goes, so a
+// client signalled at once takes the helper with it before the helper has
+// stopped what the command started. A client that ends inside the far end's
+// grace is a stop that arrived, and nothing more is done.
+func TestAttachedStopWaitsForTheFarEnd(t *testing.T) {
+	t.Setenv(farEndEnv, "1")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	result := RunCaptureArgvTailAttached(ctx, "the command", []string{os.Args[0]}, func(line string) {
+	var cancelled time.Time
+	result := RunCaptureArgvTailAttached(ctx, "the command", []string{os.Args[0]}, nil, func(line string) {
 		if line == "ready" {
+			cancelled = time.Now()
 			cancel()
 		}
 	})
-	if !strings.Contains(result.Output, "stdin closed at the interrupt") {
-		t.Fatalf("the signal reached the command before its stdin hung up:\n%s", result.Output)
+	if !strings.Contains(result.Output, "ended by itself") {
+		t.Fatalf("the client was signalled while its far end was stopping:\n%s", result.Output)
+	}
+	if result.Outcome != tools.ExecStopped {
+		t.Errorf("outcome = %v, want stopped", result.Outcome)
+	}
+	if took := time.Since(cancelled); took >= farGrace {
+		t.Errorf("the stop took %s, past the far end's grace %s", took, farGrace)
+	}
+}
+
+// A client still there when the far end's grace is up gets the second exec
+// and then the kill, and the whole of it is bounded: a cancel returns within
+// the grace, the second exec's own timeout and the kill, however the client
+// behaves.
+func TestAttachedStopRunsTheSecondExecThenKills(t *testing.T) {
+	marker := t.TempDir() + "/second-exec"
+	stop := []string{"/bin/sh", "-c", "echo ran > " + marker}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	argv := []string{"/bin/sh", "-c", "trap '' INT TERM HUP; echo ready; while :; do sleep 0.1; done"}
+	var cancelled time.Time
+	result := RunCaptureArgvTailAttached(ctx, "deaf", argv, stop, func(line string) {
+		if line == "ready" {
+			cancelled = time.Now()
+			cancel()
+		}
+	})
+	took := time.Since(cancelled)
+	if _, err := os.Stat(marker); err != nil {
+		t.Errorf("the second exec did not run: %v", err)
+	}
+	if took < farGrace {
+		t.Errorf("the client was killed after %s, inside the far end's grace %s", took, farGrace)
+	}
+	if limit := farGrace + stopExecTimeout + 2*time.Second; took > limit {
+		t.Errorf("the stop took %s, past its ceiling %s", took, limit)
 	}
 	if result.Outcome != tools.ExecStopped {
 		t.Errorf("outcome = %v, want stopped", result.Outcome)
@@ -78,7 +113,7 @@ func TestAttachedCaptureClosesStdinBeforeTheSignal(t *testing.T) {
 func TestAttachedTailReportsLines(t *testing.T) {
 	var lines []string
 	argv := []string{"/bin/sh", "-c", "echo one; sleep 0.1; echo two; sleep 0.1; echo three; exit 4"}
-	result := RunCaptureArgvTailAttached(context.Background(), "three lines", argv, func(line string) {
+	result := RunCaptureArgvTailAttached(context.Background(), "three lines", argv, nil, func(line string) {
 		lines = append(lines, line)
 	})
 	if strings.Join(lines, ",") != "one,two,three" {
@@ -90,7 +125,7 @@ func TestAttachedTailReportsLines(t *testing.T) {
 
 	done := make(chan tools.ExecResult, 1)
 	go func() {
-		done <- RunCaptureArgvInAttached(context.Background(), t.TempDir(), "pwd", []string{"/bin/sh", "-c", "echo in; exit 0"})
+		done <- RunCaptureArgvInAttached(context.Background(), t.TempDir(), "pwd", []string{"/bin/sh", "-c", "echo in; exit 0"}, nil)
 	}()
 	select {
 	case got := <-done:

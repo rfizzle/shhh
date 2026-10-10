@@ -607,7 +607,9 @@ command — a cancel, the ceiling, the session ending — first closes that
 stream, and the hang-up is the helper's cue to interrupt the group, wait the
 grace and freeze and kill whatever ignored it, the same sequence a command on
 the host gets ([below](#a-cancelled-command-takes-its-children-with-it)).
-Nothing on this machine names a process inside the container.
+Where the hang-up does not arrive, a second exec of the helper stops the
+group the first one recorded. Nothing on this machine names a process inside
+the container.
 
 **An image without the helper is refused, and so is every other failure.** The
 session asks the helper which protocol it speaks before its first turn. A
@@ -939,6 +941,31 @@ is named by a number, and the moment the command has been reaped that number
 belongs to the machine again. On a fork-heavy build it can be handed out well
 inside the grace, so a kill that arrived late would not be a late kill for the
 command that was cancelled; it would be a prompt one for a stranger.
+
+**In a container the stop has two legs.** What shhh holds for a command in a
+sandbox container is the engine's client, and the command is at the far end
+of it, under the helper ([above](#a-session-can-run-in-the-sandbox)). The
+first leg is the stream: the stop closes the client's stdin, and the hang-up
+is the helper's cue to run the sequence above on the group. The client is
+then left alone to end by itself, because an engine ends the exec's one
+process — the helper, not the group it leads — when its client goes, so a
+client stopped at once could take the helper with it halfway through the
+stop and leave what the command started running in the container with
+nothing watching it. The helper exits once its group is gone, which ends the
+exec and the client.
+
+The second leg exists because the stream is not always enough: an engine
+forwards no signal to an exec, and it may hold the stream open after the
+client has let go, so the hang-up never arrives. Every exec is therefore
+handed a fresh token, and the helper records the group it started under it,
+inside the container, until the group has ended. A client still there when
+the far end's grace is up gets one more exec through the same engine — the
+helper's own stop for that token, which runs the same sequence on the
+recorded group — and only then is the client killed. A token whose command
+has ended is no such command, and nothing is signalled: the number it held
+may belong to something else by then. Each step is bounded, so a cancel
+still returns within the grace, the second exec's own timeout and the kill,
+whatever the engine does.
 
 ## A command that will not finish is not waited on forever
 

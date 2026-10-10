@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/pricing"
+	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -45,6 +46,11 @@ import (
 // the goldens would pass where they were written and fail on CI, which runs
 // in UTC. Pinning makes the checked-in text mean the same thing everywhere.
 func TestMain(m *testing.M) {
+	// The sandbox command helper, which the stand-in engine runs as the far
+	// end of an exec (sandboxsession_test.go): this binary is shhh there.
+	if len(os.Args) > 1 && os.Args[1] == sandbox.ExecArg {
+		os.Exit(sandbox.RunExec(os.Args[2:]))
+	}
 	// Before anything else, and before the package build below: with this set
 	// the process is not running tests at all, it is the language server one
 	// of them spawned (subagents_test.go), and everything this function does

@@ -7,9 +7,9 @@ package cli
 // the engine's exec as much as of shhh, and nothing hermetic can stand in for
 // the engine. The engine is the one SHHH_SANDBOX_IT_ENGINE names, so the same
 // test runs on docker and, when it passes there, on podman; the image is
-// SHHH_SANDBOX_IT_IMAGE, any image with a POSIX sh and sleep. The helper is
-// this checkout's own shhh, built for Linux and bound read-only where the
-// released image carries it.
+// SHHH_SANDBOX_IT_IMAGE, any image with a POSIX sh, sleep and sed — CI runs
+// the sandbox image's own base. The helper is this checkout's own shhh,
+// built for Linux and bound read-only where the released image carries it.
 
 import (
 	"context"
@@ -91,26 +91,35 @@ func TestSandboxCancelStopsTheContainerGroup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := runner.RunCaptureArgvInAttached(ctx, "", "cat", argv); !strings.Contains(got.Output, "written on the host") {
+	if got := runner.RunCaptureArgvInAttached(ctx, "", "cat", argv, sandbox.StopArgv(argv)); !strings.Contains(got.Output, "written on the host") {
 		t.Fatalf("the container did not read the host's file: %+v", got)
 	}
 
 	// The cancel: a tailed command that starts a sleep and waits on it is
 	// cancelled once it is running, and no sleep is left in the container
-	// inside the grace.
-	argv, err = c.HelperCommand(sandbox.HelperExec{}, "sleep 300 & echo started; wait")
+	// inside the grace. With SHHH_SANDBOX_EXEC_DEBUG set here it is set for
+	// the helper too, which then says on the command's output whether it
+	// saw the hang-up; the output is logged either way.
+	var env []string
+	if os.Getenv("SHHH_SANDBOX_EXEC_DEBUG") != "" {
+		env = []string{"SHHH_SANDBOX_EXEC_DEBUG=1"}
+	}
+	argv, err = c.HelperCommand(sandbox.HelperExec{Env: env}, "sleep 300 & echo started; wait")
 	if err != nil {
 		t.Fatal(err)
 	}
 	cctx, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
+	var cancelled time.Time
 	go func() {
 		defer close(done)
-		runner.RunCaptureArgvTailAttached(cctx, "sleep", argv, func(line string) {
+		got := runner.RunCaptureArgvTailAttached(cctx, "sleep", argv, sandbox.StopArgv(argv), func(line string) {
 			if line == "started" {
+				cancelled = time.Now()
 				cancel()
 			}
 		})
+		t.Logf("the cancelled command returned after %s: exit %d, %s\n%s", time.Since(cancelled).Round(time.Millisecond), got.ExitCode, got.Outcome, got.Output)
 	}()
 	select {
 	case <-done:
@@ -120,12 +129,8 @@ func TestSandboxCancelStopsTheContainerGroup(t *testing.T) {
 	}
 	deadline := time.Now().Add(5 * time.Second)
 	for {
-		out, err := exec.Command(enginePath, "exec", name, "/bin/sh", "-c",
-			`for p in /proc/[0-9]*; do cat "$p/comm" 2>/dev/null; done`).CombinedOutput()
-		if err != nil {
-			t.Fatalf("list the container's processes: %v\n%s", err, out)
-		}
-		if !strings.Contains(string(out), "sleep\n") || strings.Count(string(out), "sleep\n") == 1 {
+		out := containerProcesses(t, enginePath, name)
+		if liveSleeps(out) <= 1 {
 			// The one sleep left is the container's own keeper.
 			break
 		}
@@ -134,6 +139,37 @@ func TestSandboxCancelStopsTheContainerGroup(t *testing.T) {
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
+}
+
+// containerProcesses lists the container's processes, one `name state` a
+// line, leaving out the shell that lists them. The state matters: the keeper
+// is the container's first process and reaps nothing, so a command the stop
+// killed after its shell had gone stays in the list as a zombie, which is
+// stopped and not running.
+func containerProcesses(t *testing.T, enginePath, name string) string {
+	t.Helper()
+	out, err := exec.Command(enginePath, "exec", name, "/bin/sh", "-c",
+		`for p in /proc/[0-9]*; do
+			[ "$p" = "/proc/$$" ] && continue
+			c=$(cat "$p/comm" 2>/dev/null) || continue
+			s=$(sed -n 's/^State:[[:space:]]*\([A-Z]\).*/\1/p' "$p/status" 2>/dev/null)
+			echo "$c $s"
+		done`).CombinedOutput()
+	if err != nil {
+		t.Fatalf("list the container's processes: %v\n%s", err, out)
+	}
+	return string(out)
+}
+
+// liveSleeps counts the sleeps in a listing that are not zombies.
+func liveSleeps(listing string) int {
+	n := 0
+	for _, line := range strings.Split(listing, "\n") {
+		if comm, state, _ := strings.Cut(line, " "); comm == "sleep" && state != "Z" {
+			n++
+		}
+	}
+	return n
 }
 
 // A process started in the container is read through the client's stdout and

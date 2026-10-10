@@ -19,9 +19,11 @@ import (
 // command in a process group of its own and watches its own stdin, which is
 // the far end of the client's: when the client goes, or lets go, the stream
 // hangs up and the helper stops the group with the sequence a cancelled
-// command gets on the host. So the cancel the runner already sends reaches
-// the container through the stream, and nothing on the Mac names a process
-// inside it.
+// command gets on the host. So the cancel the runner sends reaches the
+// container through the stream, and nothing on the Mac names a process
+// inside it. Where the stream does not carry the hang-up, the group the
+// helper recorded under its exec's token is stopped by a second exec
+// (helperstop_unix.go).
 // See docs/capabilities/containment.md#a-cancelled-command-takes-its-children-with-it.
 const ExecArg = "__shhh-sandbox-exec"
 
@@ -34,7 +36,7 @@ const HelperPath = "/usr/local/libexec/shhh/shhh"
 // turn and refuses a container whose helper speaks another: a flag one side
 // sends and the other does not know is a command that never starts, or one
 // whose cancel never arrives.
-const HelperVersion = "1"
+const HelperVersion = "2"
 
 // helperBanner is what `--version` prints, and what the probe expects.
 const helperBanner = "shhh-sandbox-exec "
@@ -61,13 +63,18 @@ type execFlags struct {
 	hangup  string
 	timeout time.Duration
 	version bool
-	argv    []string
+	// id is the token the helper records its group under, and stop is the
+	// token of a recorded group a second exec is to stop.
+	id   string
+	stop string
+	argv []string
 }
 
-// parseExecArgs reads `[--stdin=…] [--hangup=…] [--timeout=<d>] -- argv…`, or
-// a lone `--version`. Each flag has a default that is the command's case — a
-// stdin of /dev/null, a hang-up that stops it, no ceiling of the helper's own
-// — so a caller spells only where it differs.
+// parseExecArgs reads `[--id=<token>] [--stdin=…] [--hangup=…]
+// [--timeout=<d>] -- argv…`, or a lone `--version` or `--stop=<token>`. Each
+// flag has a default that is the command's case — a stdin of /dev/null, a
+// hang-up that stops it, no ceiling of the helper's own, no record — so a
+// caller spells only where it differs.
 func parseExecArgs(args []string) (execFlags, error) {
 	f := execFlags{stdin: stdinNull, hangup: hangupStop}
 	for i, arg := range args {
@@ -76,6 +83,17 @@ func parseExecArgs(args []string) (execFlags, error) {
 		case "--version":
 			f.version = true
 			return f, nil
+		case "--stop":
+			if !validToken(value) {
+				return f, fmt.Errorf("--stop takes a command's token, not %q", value)
+			}
+			f.stop = value
+			return f, nil
+		case "--id":
+			if !validToken(value) {
+				return f, fmt.Errorf("--id takes a token of letters and digits, not %q", value)
+			}
+			f.id = value
 		case "--stdin":
 			if value != stdinNull && value != stdinInherit {
 				return f, fmt.Errorf("--stdin takes null or inherit, not %q", value)
@@ -102,5 +120,19 @@ func parseExecArgs(args []string) (execFlags, error) {
 			return f, fmt.Errorf("unknown argument %q", arg)
 		}
 	}
-	return f, errors.New("usage: [--stdin=null|inherit] [--hangup=stop|ignore] [--timeout=<d>] -- <command…>")
+	return f, errors.New("usage: [--id=<token>] [--stdin=null|inherit] [--hangup=stop|ignore] [--timeout=<d>] -- <command…> | --stop=<token>")
+}
+
+// validToken is a token the helper will name a file after: letters and
+// digits only, so no token reaches outside the record directory.
+func validToken(s string) bool {
+	if s == "" || len(s) > 64 {
+		return false
+	}
+	for _, r := range s {
+		if (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') && (r < '0' || r > '9') {
+			return false
+		}
+	}
+	return true
 }

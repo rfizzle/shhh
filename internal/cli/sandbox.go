@@ -397,9 +397,9 @@ func sandboxContainment(ctx context.Context, cfg config.Config, workspace string
 			return runner.WrapFailure("", err)
 		}
 		if onLine == nil {
-			return runner.RunCaptureArgvInAttached(ctx, "", command, argv)
+			return runner.RunCaptureArgvInAttached(ctx, "", command, argv, sandbox.StopArgv(argv))
 		}
-		return runner.RunCaptureArgvTailAttached(ctx, command, argv, onLine)
+		return runner.RunCaptureArgvTailAttached(ctx, command, argv, sandbox.StopArgv(argv), onLine)
 	}
 	report := func() string { return sandboxSessionReport(c, spec, profile) }
 	cont := chat.Containment{
@@ -527,7 +527,7 @@ func containerMissing(ctx context.Context, c sandbox.Container, check []string) 
 	}
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	result := runner.RunCaptureArgvInAttached(ctx, "", "toolchain check", argv)
+	result := runner.RunCaptureArgvInAttached(ctx, "", "toolchain check", argv, sandbox.StopArgv(argv))
 	if result.Outcome != tools.ExecSucceeded {
 		return nil
 	}

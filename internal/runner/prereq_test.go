@@ -44,7 +44,7 @@ func TestASpawnFailureNamesThePrerequisiteThatFailed(t *testing.T) {
 			name: "the execution shell is gone",
 			run: func() tools.ExecResult {
 				return capture(context.Background(), "", "echo hi",
-					[]string{filepath.Join(t.TempDir(), "no-shell-here"), "-c", "echo hi"}, spawnShell, nil)
+					[]string{filepath.Join(t.TempDir(), "no-shell-here"), "-c", "echo hi"}, spawnShell, nil, nil)
 			},
 			prereq: tools.PrereqShell,
 			detail: "no-shell-here",

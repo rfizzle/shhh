@@ -34,4 +34,4 @@ RUN apk add --no-cache \
 # See docs/capabilities/containment.md#a-session-can-run-in-the-sandbox.
 ARG TARGETARCH
 COPY bin/linux-${TARGETARCH}/shhh /usr/local/libexec/shhh/shhh
-LABEL dev.shhh.sandbox-exec="1"
+LABEL dev.shhh.sandbox-exec="2"

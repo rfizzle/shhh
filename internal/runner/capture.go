@@ -219,7 +219,10 @@ func (w *captureWriter) handOff(dst io.Writer) string {
 // killed the command before there was anything to decide. The caller's
 // cancellation still travels, through the watch below, and stops the command
 // the way it always did.
-func capture(ctx context.Context, dir, command string, argv []string, kind spawnKind, onLine func(string)) tools.ExecResult {
+//
+// stop is an attached command's second exec (attached.go), nil for every
+// other form.
+func capture(ctx context.Context, dir, command string, argv []string, kind spawnKind, stop []string, onLine func(string)) tools.ExecResult {
 	if len(argv) == 0 {
 		return tools.ExecResult{Output: "empty command", ExitCode: -1, Outcome: tools.ExecDidNotStart}
 	}
@@ -238,7 +241,7 @@ func capture(ctx context.Context, dir, command string, argv []string, kind spawn
 	var held *os.File
 	if kind == spawnAttached {
 		var err error
-		if held, err = holdStdin(g); err != nil {
+		if held, err = holdStdin(g, stop); err != nil {
 			cancel()
 			return startFailure(dir, kind, err)
 		}

@@ -258,7 +258,9 @@ type HelperExec struct {
 // helper: `exec -i`, a terminal only where asked, the working directory, the
 // variables that cross, the helper and its flags, then `--` and the argv.
 // The stream `-i` keeps open is what a cancel travels on, so every exec has
-// it whether or not the program reads anything.
+// it whether or not the program reads anything. Every exec is handed a fresh
+// token (--id), under which its helper records the group it starts, so the
+// second exec StopArgv builds can reach that group when the stream could not.
 //
 // A directory outside the workspace is refused rather than run somewhere
 // else: the workspace is the container's one mount, and a command told it
@@ -289,12 +291,45 @@ func (c Container) HelperArgv(e HelperExec, argv []string) ([]string, error) {
 	if e.IgnoreHangup {
 		hangup = hangupIgnore
 	}
-	out = append(out, c.Record.Name, HelperPath, ExecArg, "--stdin="+stdin, "--hangup="+hangup)
+	token, err := newExecToken()
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, c.Record.Name, HelperPath, ExecArg, "--id="+token, "--stdin="+stdin, "--hangup="+hangup)
 	if e.Timeout > 0 {
 		out = append(out, "--timeout="+e.Timeout.String())
 	}
 	out = append(out, "--")
 	return append(out, argv...), nil
+}
+
+// newExecToken is the token one exec's helper records its group under: fresh
+// for every exec, so a second exec names one command and never another.
+func newExecToken() (string, error) {
+	var b [8]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return "", fmt.Errorf("cannot generate a command token: %w", err)
+	}
+	return hex.EncodeToString(b[:]), nil
+}
+
+// StopArgv is the second exec for a helper argv HelperArgv built: the
+// helper's own stop, through the same engine and container, against the
+// group the first exec's helper recorded under its token. It is nil for an
+// argv that is not one, which then has only the stream to stop it.
+// See docs/capabilities/containment.md#a-cancelled-command-takes-its-children-with-it.
+func StopArgv(argv []string) []string {
+	for i := 2; i+1 < len(argv); i++ {
+		if argv[i] != ExecArg || argv[i-1] != HelperPath {
+			continue
+		}
+		token, ok := strings.CutPrefix(argv[i+1], "--id=")
+		if !ok || !validToken(token) {
+			return nil
+		}
+		return []string{argv[0], "exec", argv[i-2], HelperPath, ExecArg, "--stop=" + token}
+	}
+	return nil
 }
 
 // HelperCommand is HelperArgv for a command line. The text rides as one

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -210,6 +211,9 @@ func TestSandboxExecFlags(t *testing.T) {
 		{"--timeout=soon", "--", "true"},
 		{"--"},
 		{"true"},
+		{"--id=../../etc/passwd", "--", "true"},
+		{"--id=", "--", "true"},
+		{"--stop=a/b"},
 	} {
 		if _, err := parseExecArgs(args); err == nil {
 			t.Errorf("parseExecArgs(%q) accepted it", args)
@@ -222,5 +226,101 @@ func TestSandboxExecFlags(t *testing.T) {
 	out, err := exec.Command(os.Args[0], ExecArg, "--version").Output()
 	if err != nil || string(out) != helperBanner+HelperVersion+"\n" {
 		t.Errorf("--version = %q, %v", out, err)
+	}
+}
+
+// With --id the helper records the group it started under that token, as the
+// group's id and its leader's start time, for as long as the command runs,
+// and the record is gone once the command has ended: a second exec after
+// that finds no command to stop.
+func TestHelperRecordsItsGroup(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv(execDirEnv, dir)
+	h := startHelper(t, "--id=tok1", "--", "/bin/sh", "-c", `echo "leader $$"; sleep 300`)
+	pid, err := strconv.Atoi(strings.TrimPrefix(h.await(t, "leader "), "leader "))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := readRecord("tok1")
+	if err != nil {
+		t.Fatalf("no record while the command runs: %v", err)
+	}
+	if r.pgid != pid || r.start == "" || r.start != procStart(pid) {
+		t.Errorf("record = %+v, want group %d started at %s", r, pid, procStart(pid))
+	}
+	_ = h.stdin.Close()
+	h.rest(t, 10*time.Second)
+	if _, err := os.Stat(filepath.Join(dir, "tok1")); !os.IsNotExist(err) {
+		t.Errorf("the record outlived the command: %v", err)
+	}
+}
+
+// The second leg: a helper that never sees the hang-up — here it was told to
+// ignore it, as an engine holding the stream open would leave it — is
+// reached by a second exec of `--stop=<token>`, which runs the runner's own
+// sequence against the recorded group: the shell is interrupted, the sleep
+// that ignored the interrupt is frozen and killed after the grace, and the
+// first helper exits with the shell's status. A stop for a token whose
+// command has ended, or whose number now names another group, is no such
+// command and signals nothing.
+func TestHelperStopReachesARecordedGroup(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv(execDirEnv, dir)
+	h := startHelper(t, "--id=tok2", "--hangup=ignore", "--",
+		"/bin/sh", "-c", `trap 'echo interrupted; exit 7' INT; sleep 300 & echo "sleeping $!"; wait`)
+	pid, err := strconv.Atoi(strings.TrimPrefix(h.await(t, "sleeping "), "sleeping "))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = h.stdin.Close()
+	stop := func(token string) (string, int) {
+		out, err := exec.Command(os.Args[0], ExecArg, "--stop="+token).CombinedOutput()
+		var exit *exec.ExitError
+		if errors.As(err, &exit) {
+			return string(out), exit.ExitCode()
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(out), 0
+	}
+	if out, code := stop("tok2"); code != 0 {
+		t.Fatalf("--stop = %d, %q; want the group stopped", code, out)
+	}
+	out, code := h.rest(t, 10*time.Second)
+	if !strings.Contains(out, "interrupted") || code != 7 {
+		t.Errorf("exit %d, output:\n%s\nwant the shell interrupted and its status 7", code, out)
+	}
+	for i := 0; i < 20 && alive(pid); i++ {
+		time.Sleep(100 * time.Millisecond)
+	}
+	if alive(pid) {
+		_ = syscall.Kill(pid, syscall.SIGKILL)
+		t.Fatal("the sleep that ignored the interrupt outlived the second exec")
+	}
+
+	if out, code := stop("tok2"); code == 0 || !strings.Contains(out, "no such command") {
+		t.Errorf("a stop after the command ended = %d, %q; want no such command", code, out)
+	}
+	// A record whose number now names a group that is not the command's: a
+	// live group, but its leader started at another time.
+	other := exec.Command("sleep", "30")
+	other.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if err := other.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = other.Process.Kill(); _ = other.Wait() })
+	stale := strconv.Itoa(other.Process.Pid) + " 1\n"
+	if err := os.WriteFile(filepath.Join(dir, "tok3"), []byte(stale), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if out, code := stop("tok3"); code == 0 || !strings.Contains(out, "no such command") {
+		t.Errorf("a stop for a reused number = %d, %q; want no such command", code, out)
+	}
+	if !alive(other.Process.Pid) {
+		t.Error("a stop for a reused number signalled the group that has it now")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "tok3")); !os.IsNotExist(err) {
+		t.Errorf("the stale record was kept: %v", err)
 	}
 }

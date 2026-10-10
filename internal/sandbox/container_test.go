@@ -57,7 +57,7 @@ func TestVerifyIsolation(t *testing.T) {
 }
 
 func TestValidateImage(t *testing.T) {
-	pinned := "docker.io/library/alpine" + testDigest
+	pinned := "cgr.dev/chainguard/wolfi-base" + testDigest
 	if err := ValidateImage(pinned, nil); err != nil {
 		t.Errorf("pinned image with no allowlist should pass: %v", err)
 	}
@@ -66,9 +66,9 @@ func TestValidateImage(t *testing.T) {
 	}
 	for name, image := range map[string]string{
 		"empty":        "",
-		"tag only":     "alpine:3.20",
-		"short digest": "alpine@sha256:abcd",
-		"leading dash": "-alpine" + testDigest,
+		"tag only":     "wolfi-base:latest",
+		"short digest": "wolfi-base@sha256:abcd",
+		"leading dash": "-wolfi-base" + testDigest,
 	} {
 		if err := ValidateImage(image, nil); err == nil {
 			t.Errorf("%s image %q should be refused", name, image)
@@ -99,7 +99,7 @@ func TestSpecDefaultsAndCeilingValidation(t *testing.T) {
 func TestCreateArgvHardening(t *testing.T) {
 	eng := Engine{Name: "podman", Path: "/usr/bin/podman", OK: true}
 	ws := t.TempDir()
-	spec, err := ContainerSpec{Image: "alpine" + testDigest, Workspace: ws, Network: true}.withDefaults()
+	spec, err := ContainerSpec{Image: "wolfi-base" + testDigest, Workspace: ws, Network: true}.withDefaults()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -333,7 +333,7 @@ func TestCreateContainerFailsClosed(t *testing.T) {
 		t.Error("create without an engine must fail")
 	}
 	engOK := Engine{Name: "podman", Path: "/usr/bin/podman", OK: true}
-	if _, err := CreateContainer(context.Background(), engOK, ContainerSpec{Image: "alpine:latest", Workspace: t.TempDir()}, nil, store); err == nil {
+	if _, err := CreateContainer(context.Background(), engOK, ContainerSpec{Image: "wolfi-base:latest", Workspace: t.TempDir()}, nil, store); err == nil {
 		t.Error("create with an unpinned image must fail")
 	}
 	if recs, _ := store.List(); len(recs) != 0 {
@@ -350,7 +350,7 @@ func TestTheContainerHoldsTheRepositorysProgramsReadOnly(t *testing.T) {
 	_, ws := gitWorkspace(t)
 	dotgit := filepath.Join(ws, ".git")
 	eng := Engine{Name: "docker", Path: "/usr/bin/docker", OK: true}
-	s, err := ContainerSpec{Image: "alpine" + testDigest, Workspace: ws}.withDefaults()
+	s, err := ContainerSpec{Image: "wolfi-base" + testDigest, Workspace: ws}.withDefaults()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -381,7 +381,7 @@ func TestTheContainerHoldsTheRepositorysProgramsReadOnly(t *testing.T) {
 	if err := os.Mkdir(sub, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	below, err := ContainerSpec{Image: "alpine" + testDigest, Workspace: sub}.withDefaults()
+	below, err := ContainerSpec{Image: "wolfi-base" + testDigest, Workspace: sub}.withDefaults()
 	if err != nil {
 		t.Fatal(err)
 	}

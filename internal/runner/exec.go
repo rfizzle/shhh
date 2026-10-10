@@ -215,7 +215,7 @@ func RunCapture(ctx context.Context, command string) (output string, exitCode in
 // RunCaptureResult is RunCapture with the command-ending fact preserved for
 // execute_command's result formatter.
 func RunCaptureResult(ctx context.Context, command string) tools.ExecResult {
-	return capture(ctx, "", command, shellArgv(command), spawnShell, nil)
+	return capture(ctx, "", command, shellArgv(command), spawnShell, nil, nil)
 }
 
 // RunCaptureTail is RunCapture reporting each completed output line to onLine
@@ -229,7 +229,7 @@ func RunCaptureTail(ctx context.Context, command string, onLine func(string)) (s
 // RunCaptureTailResult is RunCaptureTail with the command-ending fact
 // preserved for execute_command's result formatter.
 func RunCaptureTailResult(ctx context.Context, command string, onLine func(string)) tools.ExecResult {
-	return capture(ctx, "", command, shellArgv(command), spawnShell, onLine)
+	return capture(ctx, "", command, shellArgv(command), spawnShell, nil, onLine)
 }
 
 // RunCaptureArgvTail is RunCaptureArgv with the same live-line reporting, for
@@ -244,7 +244,7 @@ func RunCaptureArgvTail(ctx context.Context, command string, argv []string, onLi
 // RunCaptureArgvTailResult is RunCaptureArgvTail with the command-ending fact
 // preserved for execute_command's result formatter.
 func RunCaptureArgvTailResult(ctx context.Context, command string, argv []string, onLine func(string)) tools.ExecResult {
-	return capture(ctx, "", command, argv, spawnWrapped, onLine)
+	return capture(ctx, "", command, argv, spawnWrapped, nil, onLine)
 }
 
 // RunCaptureIn is RunCapture with an explicit working directory, for
@@ -256,7 +256,7 @@ func RunCaptureIn(ctx context.Context, dir, command string) (output string, exit
 
 // RunCaptureInResult is RunCaptureIn with the command-ending fact preserved.
 func RunCaptureInResult(ctx context.Context, dir, command string) tools.ExecResult {
-	return capture(ctx, dir, command, shellArgv(command), spawnShell, nil)
+	return capture(ctx, dir, command, shellArgv(command), spawnShell, nil, nil)
 }
 
 // RunCaptureArgv executes an explicit argv (no shell) with output captured,
@@ -279,7 +279,7 @@ func RunCaptureArgvIn(ctx context.Context, dir, command string, argv []string) (
 // RunCaptureArgvInResult is RunCaptureArgvIn with the command-ending fact
 // preserved for execute_command's result formatter.
 func RunCaptureArgvInResult(ctx context.Context, dir, command string, argv []string) tools.ExecResult {
-	return capture(ctx, dir, command, argv, spawnWrapped, nil)
+	return capture(ctx, dir, command, argv, spawnWrapped, nil, nil)
 }
 
 // shellArgv is a command line as the execution shell's argv (shell.Execution).

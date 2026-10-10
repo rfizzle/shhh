@@ -66,7 +66,13 @@ func TestContainerHelperArgv(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !slices.Equal(got, tc.want) {
+			// The token is fresh each time, so it is read off and checked
+			// for its shape, and the rest compared whole.
+			at := slices.Index(got, ExecArg) + 1
+			if at == 0 || at >= len(got) || !strings.HasPrefix(got[at], "--id=") || !validToken(strings.TrimPrefix(got[at], "--id=")) {
+				t.Fatalf("HelperArgv = %q, want a token right after the helper's argument", got)
+			}
+			if got = slices.Delete(got, at, at+1); !slices.Equal(got, tc.want) {
 				t.Errorf("HelperArgv =\n  %q\nwant\n  %q", got, tc.want)
 			}
 		})
@@ -79,6 +85,43 @@ func TestContainerHelperArgv(t *testing.T) {
 	}
 	if _, err := c.HelperArgv(HelperExec{}, nil); err == nil {
 		t.Error("an empty argv was built into an exec")
+	}
+}
+
+// Every exec is handed a token of its own, and the second exec built from it
+// is the helper's stop for that token, through the same engine and
+// container, with no stream and no command of its own. An argv that is not
+// the helper's has no second exec.
+func TestContainerStopArgv(t *testing.T) {
+	ws, err := resolvePath(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := Container{Record: Record{Name: "shhh-sbx-abc", Workspace: ws}, Engine: Engine{Path: "/usr/bin/docker"}}
+	first, err := c.HelperCommand(HelperExec{TTY: true, Env: []string{"A=b"}}, "sleep 300")
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := c.HelperCommand(HelperExec{}, "sleep 300")
+	if err != nil {
+		t.Fatal(err)
+	}
+	token := strings.TrimPrefix(first[slices.Index(first, ExecArg)+1], "--id=")
+	if other := strings.TrimPrefix(second[slices.Index(second, ExecArg)+1], "--id="); other == token {
+		t.Errorf("two execs were handed the same token %q", token)
+	}
+	want := []string{"/usr/bin/docker", "exec", "shhh-sbx-abc", HelperPath, ExecArg, "--stop=" + token}
+	if got := StopArgv(first); !slices.Equal(got, want) {
+		t.Errorf("StopArgv = %q, want %q", got, want)
+	}
+	for _, argv := range [][]string{
+		c.ExecArgv("sleep 300"),
+		{"/usr/bin/docker", "exec", "shhh-sbx-abc", HelperPath, ExecArg, "--stdin=null", "--", "true"},
+		nil,
+	} {
+		if got := StopArgv(argv); got != nil {
+			t.Errorf("StopArgv(%q) = %q, want none", argv, got)
+		}
 	}
 }
 

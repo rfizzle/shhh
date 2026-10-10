@@ -8,9 +8,22 @@ package runner
 // stdin: the helper at the far end watches it, and a hang-up there is its
 // cue to stop the command. So an attached command is given a stdin of its
 // own, held open for as long as the command should run, and the stop starts
-// by closing it — before the client is signalled, so the far end starts its
-// own interrupt and grace at once rather than when the client dies. A
-// command that ends by itself has it closed once its wait returns.
+// by closing it. A command that ends by itself has it closed once its wait
+// returns.
+//
+// The client is not signalled when the stop starts. An engine ends the
+// exec's one process — the helper, not the group it leads — when its client
+// goes, so a client stopped at once can take the helper with it before the
+// helper has finished stopping the command, and what the command started is
+// left running in the container with nothing watching it. So the stop waits:
+// the helper exits once its group is gone, which ends the exec and so the
+// client, and a client that ends inside the far end's grace is a stop that
+// arrived. A client still there when that grace is up is one whose hang-up
+// did not arrive — an engine may hold the stream open — and the second leg
+// runs: one more exec, through the same engine, of the helper's own stop
+// against the group it recorded. Only then is the client killed. Every step
+// is bounded, so a cancel returns within the far end's grace, the second
+// exec's own timeout and the kill, whatever the engine does.
 //
 // The read end goes on the command as an *os.File, so os/exec hands it over
 // as the descriptor and starts no copying goroutine: nothing is written to
@@ -24,31 +37,94 @@ package runner
 import (
 	"context"
 	"os"
+	"os/exec"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
+const (
+	// farGrace is how long a hung-up client is left to end by itself: the
+	// far end's own grace, which is this package's, and a margin for the
+	// helper to exit and the engine to end the exec.
+	farGrace = killGrace + 2*time.Second
+	// stopExecTimeout bounds the second exec: the far end's grace again,
+	// since the helper it runs stops the group with the same sequence, and
+	// a margin for the engine to start it.
+	stopExecTimeout = killGrace + 5*time.Second
+	// attachedWaitDelay is os/exec's own kill of the client, after the
+	// whole of the stop above; it is the backstop and never the stop.
+	attachedWaitDelay = farGrace + stopExecTimeout + waitDelay
+)
+
 // holdStdin gives the command a stdin whose write end the group keeps, and
 // returns the read end for the caller to close once the command has started.
-func holdStdin(g *group) (*os.File, error) {
+// It makes the command's stop the attached one, with stop as its second
+// exec; a nil stop has none, and the client is killed after the far end's
+// grace.
+func holdStdin(g *group, stop []string) (*os.File, error) {
 	r, w, err := os.Pipe()
 	if err != nil {
 		return nil, err
 	}
 	g.cmd.Stdin = r
 	g.stdin = w
+	g.cmd.WaitDelay = attachedWaitDelay
+	g.cmd.Cancel = func() error {
+		g.hangUp()
+		go stopAttached(g, stop)
+		return nil
+	}
 	return r, nil
+}
+
+// stopAttached is the attached stop after the hang-up: wait for the client
+// to end by itself, then the second exec, then the kill. It runs beside the
+// wait rather than in it, since the client ending is the wait returning.
+func stopAttached(g *group, stop []string) {
+	if awaitExit(g, farGrace) {
+		return
+	}
+	if len(stop) > 0 {
+		runStopExec(stop)
+	}
+	killGroup(g)
+}
+
+// awaitExit reports whether the command's wait returned inside the window.
+func awaitExit(g *group, window time.Duration) bool {
+	timer := time.NewTimer(window)
+	defer timer.Stop()
+	select {
+	case <-g.exited:
+		return true
+	case <-timer.C:
+		return false
+	}
+}
+
+// runStopExec runs the second exec to its end or its timeout. What it says
+// is not the command's output, and a failure of it leaves nothing to do but
+// the kill that follows.
+func runStopExec(stop []string) {
+	ctx, cancel := context.WithTimeout(context.Background(), stopExecTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, stop[0], stop[1:]...)
+	cmd.Env = Environ()
+	cmd.WaitDelay = reapGrace
+	_ = RunGrouped(cmd)
 }
 
 // RunCaptureArgvInAttached is RunCaptureArgvInResult for an attached argv:
 // the same capture, ceiling and drain, with a stdin held open until the
-// command is to stop.
-func RunCaptureArgvInAttached(ctx context.Context, dir, command string, argv []string) tools.ExecResult {
-	return capture(ctx, dir, command, argv, spawnAttached, nil)
+// command is to stop, and stop the second exec that reaches the far end
+// when the hang-up did not.
+func RunCaptureArgvInAttached(ctx context.Context, dir, command string, argv, stop []string) tools.ExecResult {
+	return capture(ctx, dir, command, argv, spawnAttached, stop, nil)
 }
 
 // RunCaptureArgvTailAttached is RunCaptureArgvTailResult for an attached
 // argv, reporting each completed line to onLine as it appears.
-func RunCaptureArgvTailAttached(ctx context.Context, command string, argv []string, onLine func(string)) tools.ExecResult {
-	return capture(ctx, "", command, argv, spawnAttached, onLine)
+func RunCaptureArgvTailAttached(ctx context.Context, command string, argv, stop []string, onLine func(string)) tools.ExecResult {
+	return capture(ctx, "", command, argv, spawnAttached, stop, onLine)
 }
