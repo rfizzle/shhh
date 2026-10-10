@@ -594,7 +594,7 @@ func inspectionLines(commands, tools []string) string {
 	if !slices.Contains(tools, "execute_command") {
 		return "- Every write is refused and no approval can run one" + readWith + ".\n"
 	}
-	return "- These inspection commands run, matched on their leading words: " + InspectionList(commands) + ".\n" +
+	return "- These inspection commands run, in their read-only form (a flag or operand that writes or runs a program is refused), matched on their leading words: " + InspectionList(commands) + ".\n" +
 		"- Run each on its own: a pipe, chain or redirect outside quotes is refused, and inside single quotes it is only text.\n" +
 		"- Any other command (make, go test, a linter, a build) and every write is refused, and no approval can run one" + readWith + ".\n"
 }

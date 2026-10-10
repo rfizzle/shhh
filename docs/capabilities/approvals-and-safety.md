@@ -205,6 +205,29 @@ a quoted string as a command, it costs a refusal the reader can see is wrong.
 The inspection list's own flag guards read the same unquoted words the
 program will be handed, so `find . '-delete'` is the `-delete` it is.
 
+### The inspection list is read-only invocations
+
+The inspection list is a set of read-only invocations, not of program names.
+`git branch` lists and `git branch topic` makes a branch; `sort go.mod` reads
+and `sort -o out go.mod` writes; `rg foo` searches and `rg --pre ./x foo` runs
+a program. An entry is matched on its leading words and then on the rest of the
+line: a flag that writes a file, runs another program or rewrites configuration
+refuses the line, and so does an operand that names a file to write (`uniq in
+out`), a name to set (`hostname name`) or a clock to set (`date -s`). The
+version entries (`node --version`) and `env` take nothing after them. A short
+flag is found inside a cluster (`rg -uz`), and a git long flag is found
+abbreviated, as git reads it. Nothing on the list writes, runs a program or
+reaches a shell in any mode, plan and read-only included. What a person wants
+beyond that is their own allowlist entry, which skips these guards and is theirs
+to answer for.
+
+The blast-radius block on an approval card reads the same table. A command the
+list refuses is never reported as touching nothing: it is a write, or "shhh
+cannot tell what it writes", so the card never says less than the list does.
+The model is told in the read-only and plan paragraph that these commands run
+in their read-only form and that a flag or operand that writes or runs a
+program is refused.
+
 ## The model is told what read-only mode runs
 
 A read-only session refuses every command but inspection, and a model that

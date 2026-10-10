@@ -281,7 +281,7 @@ func TestReadOnlyInstructionsNameTheInspectionList(t *testing.T) {
 			}
 		}
 		for _, want := range []string{
-			"These inspection commands run, matched on their leading words: ls, pwd, cat, head, tail, wc,",
+			"These inspection commands run, in their read-only form (a flag or operand that writes or runs a program is refused), matched on their leading words: ls, pwd, cat, head, tail, wc,",
 			"go list, go doc, go mod graph", "gofmt -l, go vet", ", tokei.",
 			"Run each on its own: a pipe, chain or redirect outside quotes is refused",
 			"Any other command (make, go test, a linter, a build) and every write is refused",

@@ -613,10 +613,12 @@ func (p ModePolicy) readOnly(a Action) bool {
 }
 
 // ReadOnlyCommands is the built-in allowlist of inspection commands that run
-// without a prompt in every mode: pure reads, nothing that can write, delete,
-// or execute further commands or code. Matching goes through
-// AllowlistMatches, so chained or redirected commands never qualify, and a
-// safety-flagged command is never matched against it at all.
+// without a prompt in every mode: read-only invocations, nothing that can
+// write, delete, or execute further commands or code. An entry names a
+// program's reading form; readOnlyInvocation refuses the same program when a
+// flag or operand makes it write. Matching reads the shell's words, so chained
+// or redirected commands never qualify, and a safety-flagged command is never
+// matched against it at all.
 //
 // Entries are deliberately conservative. Anything that runs project code
 // (go test, go run, make, npm run) stays out: it executes the repository's
@@ -652,19 +654,38 @@ func ReadOnlyCommands() []string {
 // readOnlyGuards names the flags that turn an otherwise read-only command
 // into one that writes, deletes, or executes something else. A command whose
 // prefix matches a key and that carries any of its flags is not read-only,
-// however innocent the rest of it looks ("find . -delete").
+// however innocent the rest of it looks ("find . -delete"). An entry with no
+// banned flags is read bare only. readOnlyRules, in readonlyrules.go, is the
+// other half: the entries whose operands, not their flags, decide.
 var readOnlyGuards = map[string][]string{
 	"find":       {"-delete", "-exec", "-execdir", "-ok", "-okdir", "-fls", "-fprint", "-fprint0", "-fprintf"},
 	"fd":         {"-x", "-X", "--exec", "--exec-batch"},
-	"sort":       {"-o", "--output"},
+	"sort":       {"-o", "--output", "--compress-program"},
 	"tree":       {"-o"},
+	"rg":         {"--pre", "--hostname-bin", "-z", "--search-zip"},
+	"file":       {"-C", "--compile"},
+	"hostname":   {"-F", "--file", "-b", "--boot"},
 	"git branch": {"-d", "-D", "-m", "-M", "-c", "-C", "--delete", "--move", "--copy", "--set-upstream-to", "-u", "--unset-upstream", "--edit-description"},
+	// A diff or a log can be told to write its output to a file, and a diff
+	// to run the external program a repository's configuration names.
+	"git log":        gitOutput,
+	"git diff":       gitOutput,
+	"git show":       gitOutput,
+	"git stash list": gitOutput,
+	"git tag -l":     {"-d", "-a", "-s", "-f", "-m", "-F", "-u", "-e", "--delete", "--annotate", "--sign", "--force", "--message", "--file", "--local-user", "--edit", "--create-reflog"},
 	// env with operands runs a command; bare env just prints the environment.
 	"env": {},
 	// go env -w writes the Go environment file, and a GOFLAGS written there
 	// would hand go vet the very flags it is guarded against.
 	"go env":   {"-w", "--w", "-u", "--u"},
 	"gofmt -l": {"-w", "--w", "-cpuprofile", "--cpuprofile"},
+	// go list builds with -compiled and -export, takes a tool to run, and
+	// -mod=mod rewrites go.mod.
+	"go list": goFlags("toolexec", "exec", "mod", "modfile", "compiled", "export", "o", "pkgdir", "work", "overlay",
+		"debug-actiongraph", "debug-trace", "debug-runtime-trace"),
+	"go doc":       goFlags("http"),
+	"go mod graph": goFlags("modfile"),
+	"go mod why":   goFlags("modfile"),
 	// A vet tool, a toolexec or an exec wrapper is a program run by name; the
 	// module flags can rewrite go.mod; -fix writes the vet's fixes back; the
 	// tool flags and the debug traces each name a file to write.
@@ -679,15 +700,53 @@ var readOnlyGuards = map[string][]string{
 		"-modfile", "--modfile", "-o", "--o", "-pkgdir", "--pkgdir",
 		"-debug-actiongraph", "--debug-actiongraph", "-debug-trace", "--debug-trace",
 		"-debug-runtime-trace", "--debug-runtime-trace"},
+	// A version entry prints a version and takes nothing after it.
+	"node --version":          {},
+	"python --version":        {},
+	"python3 --version":       {},
+	"cargo --version":         {},
+	"rustc --version":         {},
 	"golangci-lint --version": {},
+	"git remote -v":           {},
 }
 
-// guardedReadOnly applies readOnlyGuards to a command already known to match
-// the built-in allowlist. It reads the words the program will be handed, so a
-// quoted '-delete' is the -delete it unquotes to.
+// gitOutput are the flags that make a git read write a file or run a program.
+var gitOutput = []string{"--output", "--ext-diff"}
+
+// goFlags is each name as the go command reads it with one dash or two.
+func goFlags(names ...string) []string {
+	out := make([]string, 0, 2*len(names))
+	for _, n := range names {
+		out = append(out, "-"+n, "--"+n)
+	}
+	return out
+}
+
+// guardedReadOnly reports whether a command is a built-in entry in a form
+// that cannot write or run a program. It reads the words the program will be
+// handed, so a quoted '-delete' is the -delete it unquotes to.
 func guardedReadOnly(command string) bool {
 	words, ok := shellWords(command, posixShell)
 	if !ok {
+		return false
+	}
+	return readOnlyInvocation(words)
+}
+
+// readOnlyInvocation reports whether words, as the program will receive them,
+// are an entry of the built-in list in a read-only form. The entry is matched
+// on the same words the flags are read from, so a quoted word cannot be one
+// thing to the match and another to the guard, and an allowlisted program
+// with writing arguments is judged on the invocation, not the program name.
+func readOnlyInvocation(words []string) bool {
+	matched := false
+	for _, entry := range ReadOnlyCommands() {
+		if hasWords(words, strings.Fields(entry)) {
+			matched = true
+			break
+		}
+	}
+	if !matched {
 		return false
 	}
 	for prefix, banned := range readOnlyGuards {
@@ -702,13 +761,41 @@ func guardedReadOnly(command string) bool {
 		}
 		for _, w := range rest {
 			for _, b := range banned {
-				if w == b || strings.HasPrefix(w, b+"=") {
+				if bannedFlag(words[0], w, b) {
 					return false
 				}
 			}
 		}
 	}
+	for prefix, rule := range readOnlyRules {
+		pattern := strings.Fields(prefix)
+		if hasWords(words, pattern) && !rule(words[len(pattern):]) {
+			return false
+		}
+	}
 	return true
+}
+
+// bannedFlag reports whether word is the banned flag, however the program
+// takes it. Beyond the flag itself and its flag=value form, a short flag is
+// found inside a cluster (-uz, -ofile) for the programs that read one, and a
+// git long flag is found abbreviated (--outp), which git accepts.
+func bannedFlag(program, word, banned string) bool {
+	if word == banned || strings.HasPrefix(word, banned+"=") {
+		return true
+	}
+	switch program {
+	case "find", "go", "gofmt", "golangci-lint":
+		return false // one-dash words that are whole flags, not clusters
+	}
+	if len(banned) == 2 && banned[1] != '-' && len(word) > 2 && word[0] == '-' && word[1] != '-' {
+		return strings.IndexByte(word[1:], banned[1]) >= 0
+	}
+	if program == "git" && strings.HasPrefix(banned, "--") && strings.HasPrefix(word, "--") && len(word) >= 3 {
+		name, _, _ := strings.Cut(word, "=")
+		return strings.HasPrefix(banned, name)
+	}
+	return false
 }
 
 // hasWords reports whether words begins with every word of pattern.
@@ -728,7 +815,7 @@ func hasWords(words, pattern []string) bool {
 // inspection command, or matches one of the caller's extra entries. Extra
 // entries are the user's own call and skip the built-in flag guards.
 func ReadOnlyAllowed(command string, extra []string) bool {
-	if AllowlistMatches(ReadOnlyCommands(), command) && guardedReadOnly(command) {
+	if guardedReadOnly(command) {
 		return true
 	}
 	return len(extra) > 0 && AllowlistMatches(extra, command)
