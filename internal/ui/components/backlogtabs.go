@@ -11,9 +11,9 @@ package components
 // the project has no sprint, so the key never lands on a tab with nothing
 // on it.
 //
-// The status and ready filters come off on the archive: every archived item
-// has the same status, so a status filter carried in there would empty a
-// list the reader had just asked to see.
+// The words asking where an active item stands come off on the archive:
+// every archived item has the same status, so a `ready` carried in there
+// would empty a list the reader had just asked to see.
 func (b *BacklogScreen) swapTab() {
 	for range backlogTabs {
 		b.tab = (b.tab + 1) % backlogTabs
@@ -27,8 +27,8 @@ func (b *BacklogScreen) swapTab() {
 		b.filter.forArchive()
 	}
 	// The pointer is kept per tab rather than reset, so coming back lands
-	// where the reader left off. Dropping the two filters above can only
-	// widen what is showing, so the row it was on is still one of them.
+	// where the reader left off. Dropping those words can only widen what
+	// is showing, so the row it was on is still one of them.
 	b.sync()
 }
 

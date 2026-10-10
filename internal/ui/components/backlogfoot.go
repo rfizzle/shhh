@@ -21,6 +21,8 @@ import (
 // docs/architecture.md#the-backlog-screens-pieces.
 type backlogFoot struct {
 	plan      *SprintPlan
+	picker    *backlogPicker
+	query     string
 	filtering bool
 	reading   bool
 	readOnly  bool
@@ -38,6 +40,8 @@ type backlogFoot struct {
 func (b *BacklogScreen) foot() backlogFoot {
 	return backlogFoot{
 		plan:      b.Plan,
+		picker:    b.picker,
+		query:     b.filter.query,
 		filtering: b.filter.filtering,
 		reading:   b.reader.reading,
 		readOnly:  b.ReadOnly,
@@ -98,6 +102,9 @@ func (b backlogFoot) offers(width int) []KeyOffer {
 	if b.plan != nil {
 		return sprintOffers(b.plan)
 	}
+	if b.picker != nil {
+		return b.picker.offers()
+	}
 	if b.filtering {
 		return filterOffers(width)
 	}
@@ -116,16 +123,21 @@ func (b backlogFoot) offers(width int) []KeyOffer {
 // filterOffers is the query row's key row, and it is one row at every width
 // the way the list's is. Where the full words do not fit, esc gives up its
 // clause, down to the two things it does in turn. No offer is shed: these
-// two are the whole of what a row being typed into answers besides its text.
+// three are the whole of what a row being typed into answers besides its
+// text.
 func filterOffers(width int) []KeyOffer {
-	move := keyOffer(keys.Backlog.Move)
+	// The arrows alone: j is a letter on a row being typed into.
+	move := keyOffer(keys.Select.Move)
+	// enter closes the row and keeps the words, so the list's keys come
+	// back over the list they narrowed.
+	keep := keyOfferAs(keys.Backlog.Read, "keep it")
 	rungs := [][]KeyOffer{
 		// esc and not a letter: a row being typed into keeps every letter
 		// as text, so esc is what backs out of it, one level a press
 		// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-		{move, wayOut("clear the filter, then close it")},
-		{move, wayOut("clear, then close")},
-		{move, wayOut("")},
+		{move, keep, wayOut("clear the filter, then close it")},
+		{move, keep, wayOut("clear, then close")},
+		{move, keep, wayOut("")},
 	}
 	for _, rung := range rungs {
 		if lipgloss.Width(keyOffers(rung)) <= width {
@@ -139,16 +151,15 @@ func filterOffers(width int) []KeyOffer {
 // keys a reader presses every time the screen is open — move, read, filter,
 // edit, a new item and the way out. Every other key is behind the header's
 // `[?] keys`, which the header keeps at every width, so a foot that also
-// listed the filters, the tabs and every verb was offering the register twice
+// listed the tabs and every verb was offering the register twice
 // (docs/interface/departures.md#the-backlog-screens-layout-was-decided-in-the-binary).
 //
 // Where even those will not fit, whole segments give ground, the way the
 // history browser's row does (invariant 4): the way out first, because the
 // header states it at every width; then the two verbs, which `[?]` carries in
-// full. On the archive the row's verb is putting an item back, and its words
-// shorten before it is shed, since it is the one thing that tab is for. The
-// pointer's keys are never shed — this list moves on the arrows alone, which
-// no other list in the product teaches.
+// full, then the filter. On the archive the row's verb is putting an item
+// back, and its words shorten before it is shed, since it is the one thing
+// that tab is for. The pointer's keys and reading the item are never shed.
 func (b backlogFoot) listOffers(width int) []KeyOffer {
 	out := []KeyOffer{keyOffer(keys.Backlog.Move)}
 	if b.row != nil {
@@ -160,17 +171,24 @@ func (b backlogFoot) listOffers(width int) []KeyOffer {
 		// sentence instead: a key that cannot act is not an offer.
 		out = append(out, b.fileOffers()...)
 	}
-	out = append(out, wayOut("back"))
+	// With words narrowing the list, esc takes them off before it leaves,
+	// and the row says which of the two it will do.
+	if b.query != "" {
+		out = append(out, wayOut("clear the filter"))
+	} else {
+		out = append(out, wayOut("back"))
+	}
 
 	way := keys.Bracket(keys.Select.Cancel)
 	edit, fresh := keys.Bracket(keys.Backlog.Edit), keys.Bracket(keys.Backlog.New)
-	reopen := keys.Bracket(keys.Backlog.Reopen)
+	status := keys.Bracket(keys.Backlog.Status)
 	rungs := [][]KeyOffer{
 		out,
 		without(out, way),
 		without(out, way, fresh),
-		reworded(without(out, way, fresh), reopen, "put it back"),
-		without(out, way, fresh, edit, reopen),
+		reworded(without(out, way, fresh), status, "put it back"),
+		without(out, way, fresh, edit, status),
+		without(out, way, fresh, edit, status, keys.Bracket(keys.Backlog.Filter)),
 	}
 	for _, rung := range rungs {
 		if lipgloss.Width(keyOffers(rung)) <= width {
@@ -196,7 +214,7 @@ func (b backlogFoot) fileOffers() []KeyOffer {
 		// None of the verbs is a line edit this file's header could take.
 		verb = keyOfferAs(keys.Backlog.Edit, "fix the header")
 	case b.archived:
-		verb = keyOfferAs(keys.Backlog.Reopen, "put it back in the backlog")
+		verb = keyOfferAs(keys.Backlog.Status, "put it back in the backlog")
 	}
 	return []KeyOffer{verb, fresh}
 }
@@ -232,17 +250,14 @@ func (b backlogFoot) stateOffers() []KeyOffer {
 		out = []KeyOffer{keyOfferAs(keys.Backlog.Edit, "fix the header")}
 	case b.archived:
 		out = []KeyOffer{
-			keyOfferAs(keys.Backlog.Reopen, "put it back in the backlog"),
+			keyOfferAs(keys.Backlog.Status, "put it back in the backlog"),
 			keyOffer(keys.Backlog.Edit),
 		}
 	default:
-		out = []KeyOffer{keyOffer(keys.Backlog.Edit), keyOffer(keys.Backlog.Run), keyOffer(keys.Backlog.Groom)}
-		if row.State == BacklogBlocked {
-			out = append(out, keyOffer(keys.Backlog.Reopen))
-		} else {
-			out = append(out, keyOffer(keys.Backlog.Block))
+		out = []KeyOffer{
+			keyOffer(keys.Backlog.Edit), keyOffer(keys.Backlog.Run),
+			keyOffer(keys.Backlog.Status), keyOffer(keys.Backlog.Drop),
 		}
-		out = append(out, keyOffer(keys.Backlog.Archive), keyOffer(keys.Backlog.Drop))
 		if b.sprint != "" {
 			out = append(out, b.sprintOffer(*row))
 		}
@@ -254,61 +269,48 @@ func (b backlogFoot) stateOffers() []KeyOffer {
 	return append(out, keyOffer(keys.Backlog.New))
 }
 
-// keyList is every key the screen has, for `[?]`. While the plan card holds
-// the keyboard it is the card's keys and only those: a register listing keys
-// the surface in front of the reader does not answer is worse than no
-// register.
+// keyList is every key the screen has, for `[?]`, in the register's own
+// words: a key is learned once, so the list says what the key is called
+// everywhere, and only the filter says more — which words it takes, in the
+// profile's own field names. While a card or a picker holds the keyboard it
+// is that surface's keys and only those: a register listing keys the surface
+// in front of the reader does not answer is worse than no register.
 func (b backlogFoot) keyList() []KeyOffer {
 	if b.plan != nil {
 		return sprintOffers(b.plan)
 	}
+	if b.picker != nil {
+		return b.picker.offers()
+	}
 	out := []KeyOffer{
-		keyOfferAs(keys.Backlog.Move, "move between items"),
-		keyOfferAs(keys.Backlog.Read, "read the body in the pane"),
-		keyOfferAs(keys.Backlog.Page, "page the body while reading it"),
-		keyOfferAs(keys.Backlog.Tab, "the backlog, the sprint, or what shipped"),
-		keyOfferAs(keys.Backlog.Filter, "filter by slug or title"),
-		keyOfferAs(keys.Backlog.Back, "clear the filter; again to close it"),
+		keyOffer(keys.Backlog.Move),
+		keyOffer(keys.Backlog.Read),
+		keyOffer(keys.Backlog.Page),
+		keyOffer(keys.Backlog.Tab),
+		keyOfferAs(keys.Backlog.Filter, "filter by "+b.filterWords()),
 		keyOfferAs(keys.Query.Rub, "delete a character from the filter"),
-		keyOfferAs(keys.Backlog.Status, "cycle the status filter"),
-		keyOfferAs(keys.Backlog.Priority, "cycle the priority filter"),
+		keyOffer(keys.Backlog.Edit),
+		keyOffer(keys.Backlog.New),
+		keyOffer(keys.Backlog.Drop),
+		keyOffer(keys.Backlog.Status),
 	}
-	if len(b.fields) > 0 {
-		out = append(out, keyOfferAs(keys.Backlog.Kind, "cycle the "+b.fieldNames()+" filter"))
-	}
-	out = append(out, []KeyOffer{
-		keyOfferAs(keys.Backlog.Ready, "only what can be started now"),
-		keyOfferAs(keys.Backlog.Depends, "jump to what this one waits on"),
-		keyOfferAs(keys.Backlog.Edit, "open the file in your editor"),
-		keyOfferAs(keys.Backlog.Run, "work it through to a commit"),
-		keyOfferAs(keys.Backlog.Block, "mark it blocked, after confirming it"),
-		keyOfferAs(keys.Backlog.Reopen, "reopen it, from the archive as well"),
-		keyOfferAs(keys.Backlog.Archive, "archive it, after confirming it"),
-		keyOfferAs(keys.Backlog.Drop, "delete the file, after confirming it"),
-		keyOfferAs(keys.Backlog.New, "start a new item"),
-	}...)
 	if b.sprint != "" {
-		out = append(out, keyOfferAs(keys.Backlog.Sprint, "add it to "+b.sprint+", or drop it"))
+		out = append(out, keyOffer(keys.Backlog.Sprint))
 	}
-	return append(out, wayOut(backToPrompt))
-
+	return append(out, keyOffer(keys.Backlog.Run), keyOffer(keys.Backlog.Back))
 }
 
-// fieldNames is the fields the field-filter key cycles through, named: `kind
-// or size`. The names are the profile's, so a second profile's key says what
-// it narrows with nothing written here.
-func (b backlogFoot) fieldNames() string {
-	names := make([]string, len(b.fields))
-	for i, f := range b.fields {
-		names[i] = f.Name
+// filterWords is what the query takes, with a field word for each of the
+// profile's fields so a second profile's filter explains itself: `ready,
+// blocked, done, priority:high, kind:story, or a title`.
+func (b backlogFoot) filterWords() string {
+	words := []string{backlogWordReady, backlogWordBlocked, backlogWordDone}
+	for _, f := range append([]BacklogField{b.priority}, b.fields...) {
+		if f.Name != "" && len(f.Values) > 0 {
+			words = append(words, f.Name+":"+f.Values[0].Word)
+		}
 	}
-	switch len(names) {
-	case 1:
-		return names[0]
-	case 2:
-		return names[0] + " or " + names[1]
-	}
-	return strings.Join(names[:len(names)-1], ", ") + " or " + names[len(names)-1]
+	return strings.Join(words, ", ") + ", or a title"
 }
 
 // lettersLegend is what the letters on every row stand for, built from the

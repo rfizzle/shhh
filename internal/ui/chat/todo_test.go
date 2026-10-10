@@ -176,29 +176,33 @@ func TestTodoState_TheChordIsTheBacklogsOnlyWhenWired(t *testing.T) {
 }
 
 // Every act on the screen goes through the handler the typed verb goes
-// through, so the two cannot come to mean different things.
+// through, so the two cannot come to mean different things. The status
+// picker's done archives and the drop asks first; the picker's blocked
+// leaves the verb in the draft for the reason.
 func TestTodoScreen_KeysGoThroughTheSameVerbs(t *testing.T) {
 	m := todoModel(t, todoTestRoot(t))
 	opened, _ := m.openTodoScreen()
 	next := opened.(Model)
 	for _, tc := range []struct {
-		key  rune
+		keys []rune
 		want string
 	}{
-		{'b', "managed block a-high"},
-		{'a', "managed done a-high"},
-		{'d', "managed drop a-high"},
+		{[]rune{'s', '3'}, "managed done a-high"},
+		{[]rune{'d', 'y'}, "managed drop a-high"},
 	} {
-		after, _ := next.updateTodoScreen(key(tc.key))
-		m2 := after.(Model)
-		if m2.screens.backlog().Notice != "" {
-			t.Fatalf("%c should ask before it acts, notice = %q", tc.key, m2.screens.backlog().Notice)
+		cur := next
+		for _, k := range tc.keys {
+			after, _ := cur.updateTodoScreen(key(k))
+			cur = after.(Model)
 		}
-		answered, _ := m2.updateTodoScreen(key('y'))
-		m3 := answered.(Model)
-		if got := m3.transcript[len(m3.transcript)-1].text; got != tc.want {
-			t.Fatalf("%c wrote %q, want %q", tc.key, got, tc.want)
+		if got := cur.transcript[len(cur.transcript)-1].text; got != tc.want {
+			t.Fatalf("%q wrote %q, want %q", string(tc.keys), got, tc.want)
 		}
+	}
+	picked, _ := next.updateTodoScreen(key('s'))
+	blocked, _ := picked.(Model).updateTodoScreen(key('2'))
+	if got := blocked.(Model); got.screens.backlog() != nil || got.input.Value() != "/todo block a-high " {
+		t.Fatalf("blocked should leave the verb in the draft, got %q", got.input.Value())
 	}
 }
 
@@ -227,7 +231,8 @@ func TestTodoScreen_DoneTabShowsTheReportAndReopens(t *testing.T) {
 		t.Fatalf("the done tab should carry the report, got %+v", next.screens.backlog().Done)
 	}
 	after, _ := next.updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyTab})
-	reopened, _ := after.(Model).updateTodoScreen(key('o'))
+	picked, _ := after.(Model).updateTodoScreen(key('s'))
+	reopened, _ := picked.(Model).updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m3 := reopened.(Model)
 	if _, err := os.Stat(done); !os.IsNotExist(err) {
 		t.Fatalf("the archived file should have moved, stat err = %v", err)

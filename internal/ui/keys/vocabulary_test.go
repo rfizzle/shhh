@@ -39,6 +39,8 @@ var vocabulary = map[string]actSpelling{
 	"edit":   {"e", []string{"e"}, "edit"},
 	"rename": {"e", []string{"e"}, "rename"},
 	"retry":  {"r", []string{"r"}, "retry"},
+	"run":    {"r", []string{"r"}, "run"},
+	"new":    {"n", []string{"n"}, "new"},
 	"match":  {"n/N", []string{"N", "n"}, ""},
 	"toggle": {"space", []string{" ", "space"}, "toggle"},
 	"keys":   {"?", []string{"?"}, "keys"},
@@ -59,11 +61,10 @@ var acts = map[string]string{
 	"sources.move": "move", "sources.open": "open", "sources.list": "keys", "sources.back": "back",
 	"notes.move": "move", "notes.read": "open", "notes.drop": "delete",
 	"notes.list": "keys", "notes.back": "back",
-	// The backlog moves on the arrows alone until its kind filter gives up
-	// the k the pair needs.
-	"backlog.move": "move↑↓", "backlog.read": "open", "backlog.filter": "filter",
-	"backlog.edit": "edit", "backlog.drop": "delete", "backlog.list": "keys", "backlog.back": "back",
-	"sprint.move": "move", "sprint.toggle": "toggle", "sprint.cancel": "back",
+	"backlog.move": "move", "backlog.read": "open", "backlog.filter": "filter",
+	"backlog.edit": "edit", "backlog.new": "new", "backlog.drop": "delete",
+	"backlog.sprint": "toggle", "backlog.run": "run", "backlog.list": "keys", "backlog.back": "back",
+	"sprint.move": "move", "sprint.toggle": "toggle", "sprint.take": "write", "sprint.cancel": "back",
 	"commit.edit": "edit", "commit.cancel": "back",
 	"select.move": "move↑↓", "select.move_jk": "move", "select.filter": "filter",
 	"select.toggle": "toggle", "select.delete": "delete", "select.rename": "rename",
@@ -119,9 +120,6 @@ var shared = map[string]string{
 // the list only ever shrinks, and the test fails if an entry is fixed
 // without being taken off it.
 var owed = map[string]string{
-	"backlog.kind":     "k",
-	"backlog.ready":    "r",
-	"backlog.new":      "n",
 	"agent.cancel":     "d",
 	"oneshot.revise":   "r",
 	"oneshot.explain":  "x",
@@ -134,7 +132,6 @@ var owed = map[string]string{
 // over is every surface carrying more than three letters of its own, with
 // those letters. Like owed it only shrinks.
 var over = map[string]string{
-	"the backlog screen":                     "R S a b g k n o p r s w",
 	"the agent manager":                      "K X a d m p s",
 	"the approval card and the /run confirm": "A V a g t v x",
 	"the one-shot's action bar":              "a p r t u x",

@@ -30,7 +30,7 @@ story · high · size M · in progress · written 2026-08-28 · in the cockpit s
 **As a** reader, **I want** the queue beside the turn.
 … (+5 more rows)
 
-[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new · [esc] back
+[↑↓/jk] move · [enter] read · [/] filter · [e] edit · [n] new · [esc] back
 
 · a waiting item · both ends of the edge on its header row
 backlog · the cockpit sprint                     6 items · [?] keys · [esc] back
@@ -46,13 +46,13 @@ backlog · the cockpit sprint                     6 items · [?] keys · [esc] b
 screen-over-items
 A screen over the whole backlog, with the body beside the list
 story · high · size L · open · written 2026-08-30
-waits on rail-todo-block, prose-renderer · [w] goes there
+waits on rail-todo-block, prose-renderer
 ────────────────────────────────────────────────────────────────────────────────
 
 ## Acceptance criteria
 … (+3 more rows)
 
-[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new · [esc] back
+[↑↓/jk] move · [enter] read · [/] filter · [e] edit · [n] new · [esc] back
 
 · a file that will not parse · a row in warning tone, the reason as its body
 backlog · the cockpit sprint                     6 items · [?] keys · [esc] back
@@ -71,7 +71,7 @@ half-written
 no title in the header
 .shhh/todo/half-written.md is still on disk; [e] opens it
 
-[↑↓] move · [enter] read · [/] filter · [e] fix the header · [n] new
+[↑↓/jk] move · [enter] read · [/] filter · [e] fix the header · [n] new
 
 · [/] · the query row, with the header saying what it left
 backlog · matching sprint                   1 of 6 items · [?] keys · [esc] back
@@ -92,29 +92,62 @@ story · medium · size M · blocked · written 2026-09-01 · in the cockpit spr
 
 Waiting on a decision about where the file lives.
 
-[↑↓] move · [esc] clear the filter, then close it
+[↑↓] move · [enter] keep it · [esc] clear the filter, then close it
 
-· [s] · the status filter in words, and what it hid under the list
-backlog · open · the cockpit sprint         4 of 6 items · [?] keys · [esc] back
+· [/] ready p:low [enter] · the words held over the list, and what they hid under it
+backlog · matching ready p:low              2 of 6 items · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────────
 
-❯ · screen-over-items  HL  waits on rail-todo-block +1  A screen over the whole…
+❯ · drop-loses-the-file  L-  ready  Dropping an item says what it loses         
+  ⚠ half-written  will not load
+────────────────────────────────────────────────────────────────────────────────
+4 hidden
+────────────────────────────────────────────────────────────────────────────────
+drop-loses-the-file
+Dropping an item says what it loses
+bug · low · ungraded · open
+────────────────────────────────────────────────────────────────────────────────
+
+The verb deletes the file and the sentence should say so.
+
+[↑↓/jk] move · [enter] read · [/] filter · [e] edit · [n] new
+
+· [s] · the status picker beside the list, where the item stands now marked
+backlog · the cockpit sprint                     6 items · [?] keys · [esc] back
+────────────────────────────────────────────────────────────────────────────────
+
+  ▸ rail-todo-block  HM  in progress  The backlog block on the inspector rail
+  · screen-over-items  HL  waits on rail-todo-block +1  A screen over the whole…
   · prose-renderer  MS  ready  One renderer for every piece of prose
+❯ ! sprint-file  MM  blocked  The sprint is a file that names its items         
   · drop-loses-the-file  L-  ready  Dropping an item says what it loses
   ⚠ half-written  will not load
 ────────────────────────────────────────────────────────────────────────────────
-2 hidden
-────────────────────────────────────────────────────────────────────────────────
-screen-over-items
-A screen over the whole backlog, with the body beside the list
-story · high · size L · open · written 2026-08-30
-waits on rail-todo-block, prose-renderer · [w] goes there
+set the status of sprint-file
+
+❯ 1. open     back in the queue                                                 
+  2. blocked  say why, in the draft                                          now
+  3. done     archive it
+
+[↑↓/jk] move · [enter] select · [1–3] jump · [esc] back to the list
+
+· [r] · the run picker: run it, or groom it
+backlog · the cockpit sprint                     6 items · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────────
 
-## Acceptance criteria
-… (+3 more rows)
+❯ ▸ rail-todo-block  HM  in progress  The backlog block on the inspector rail   
+  · screen-over-items  HL  waits on rail-todo-block +1  A screen over the whole…
+  · prose-renderer  MS  ready  One renderer for every piece of prose
+  ! sprint-file  MM  blocked  The sprint is a file that names its items
+  · drop-loses-the-file  L-  ready  Dropping an item says what it loses
+  ⚠ half-written  will not load
+────────────────────────────────────────────────────────────────────────────────
+run rail-todo-block
 
-[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new · [esc] back
+❯ 1. run it    work it through to a commit                                      
+  2. groom it  read it against the tree
+
+[↑↓/jk] move · [enter] select · [1–2] jump · [esc] back to the list
 
 · [enter] · the body with the surface to itself
 backlog · the cockpit sprint                     6 items · [?] keys · [esc] back
@@ -133,7 +166,7 @@ story · high · size M · in progress · written 2026-08-28 · in the cockpit s
 - [x] four rows and a count
 - [ ] the running item first
 
-[↑↓] scroll · [pgup/pgdn] page the body · [esc] back to the list
+[↑↓/jk] scroll · [pgup/pgdn] page the body · [esc] back to the list
 
 · [tab] · the archive, each item's report as its body
 backlog · done                                   2 items · [?] keys · [esc] back
@@ -150,7 +183,7 @@ chore · high · size M · done · written 2026-08-20
 Sixty-eight literals came out of twenty files; the register is the one place a
 key is written down.
 
-[↑↓] move · [enter] read · [/] filter · [o] put it back in the backlog · [n] new
+[↑↓/jk] move · [enter] read · [/] filter · [s] put it back in the backlog
 
 · [d] · the one confirm that names what it loses
 backlog · the cockpit sprint                     6 items · [?] keys · [esc] back
@@ -192,11 +225,10 @@ story · high · size M · in progress · written 2026-08-28 · in the cockpit s
 ────────────────────────────────────────────────────────────────────────────────
 … (+7 more rows)
 
-[↑↓] move · [enter] read · [/] filter · [esc] back
+[↑↓/jk] move · [enter] read · [/] filter · [esc] back
 the turn is running; these change the files it may be working from
-[e] edit · [R] run it · [g] read it against the tree · [b] block it
-[a] archive it · [d] delete · [S] drop it from the cockpit sprint
-[n] a new item
+[e] edit · [r] run it · [s] set its status · [d] delete
+[space] drop it from the cockpit sprint · [n] new item
 
 · [?] · every key the screen has
 backlog · the cockpit sprint            6 items · [?] hide the keys · [esc] back
@@ -205,27 +237,20 @@ backlog · the cockpit sprint            6 items · [?] hide the keys · [esc] b
 ❯ ▸ rail-todo-block  HM  in progress  The backlog block on the inspector rail   
 … (+1 more rows)
 
-[↑↓] move between items
-[enter] read the body in the pane
-[pgup/pgdn] page the body while reading it
+[↑↓/jk] move
+[enter] open
+[pgup/pgdn] page the body
 [tab] the backlog, the sprint, or what shipped
-[/] filter by slug or title
-[esc] clear the filter; again to close it
+[/] filter by ready, blocked, done, priority:high, kind:story, size:S, or a
+title
 [backspace] delete a character from the filter
-[s] cycle the status filter
-[p] cycle the priority filter
-[k] cycle the kind or size filter
-[r] only what can be started now
-[w] jump to what this one waits on
-[e] open the file in your editor
-[R] work it through to a commit
-[b] mark it blocked, after confirming it
-[o] reopen it, from the archive as well
-[a] archive it, after confirming it
-[d] delete the file, after confirming it
-[n] start a new item
-[S] add it to the cockpit sprint, or drop it
-[esc] back to the prompt
+[e] edit
+[n] new item
+[d] delete
+[s] set its status
+[space] toggle it in the sprint
+[r] run it
+[esc] back
 letters  priority H high · M medium · L low — size S M L — - unset
 
 glyphs
@@ -266,7 +291,7 @@ $  a shell command
 ␛[38;5;244m**As a** reader, **I want** the queue beside the turn.␛[m
 ␛[38;5;244m… (+5 more rows)␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m new␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m new␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · a waiting item · both ends of the edge on its header row
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m                     ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -282,13 +307,13 @@ $  a shell command
 ␛[1;38;5;254mscreen-over-items␛[m
 ␛[38;5;244mA screen over the whole backlog, with the body beside the list␛[m
 ␛[38;5;244mstory · high · size L · open · written 2026-08-30␛[m
-␛[38;5;244mwaits on rail-todo-block, prose-renderer · [w] goes there␛[m
+␛[38;5;244mwaits on rail-todo-block, prose-renderer␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m## Acceptance criteria␛[m
 ␛[38;5;244m… (+3 more rows)␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m new␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m new␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · a file that will not parse · a row in warning tone, the reason as its body
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m                     ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -307,7 +332,7 @@ $  a shell command
 ␛[38;5;254mno title in the header␛[m
 ␛[38;5;244m.shhh/todo/half-written.md is still on disk; [e] opens it␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m fix the header␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m new␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m fix the header␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m new␛[m
 
 · [/] · the query row, with the header saying what it left
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · matching sprint␛[m                   ␛[38;5;244m1 of 6 items␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -328,29 +353,62 @@ $  a shell command
 
 ␛[38;5;244mWaiting on a decision about where the file lives.␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m clear the filter, then close it␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m keep it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m clear the filter, then close it␛[m
 
-· [s] · the status filter in words, and what it hid under the list
-␛[1;38;5;254mbacklog␛[m␛[38;5;244m · open␛[m␛[38;5;244m · the cockpit sprint␛[m         ␛[38;5;244m4 of 6 items␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
+· [/] ready p:low [enter] · the words held over the list, and what they hid under it
+␛[1;38;5;254mbacklog␛[m␛[38;5;244m · matching ready p:low␛[m              ␛[38;5;244m2 of 6 items␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯ ␛[m␛[38;5;244m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m·␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mscreen-over-items  HL  waits on rail-todo-block +1  A screen over the whole…␛[m␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;244m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m·␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mdrop-loses-the-file  L-  ready  Dropping an item says what it loses         ␛[m␛[m
+  ␛[38;5;254m⚠␛[m ␛[38;5;254mhalf-written␛[m␛[38;5;244m  will not load␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;244m4 hidden␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;38;5;254mdrop-loses-the-file␛[m
+␛[38;5;244mDropping an item says what it loses␛[m
+␛[38;5;244mbug · low · ungraded · open␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;244mThe verb deletes the file and the sentence should say so.␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m new␛[m
+
+· [s] · the status picker beside the list, where the item stands now marked
+␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m                     ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[38;5;254m▸␛[m ␛[1;38;5;254mrail-todo-block␛[m  ␛[38;5;244mHM␛[m␛[38;5;244m  in progress  The backlog block on the inspector rail␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mscreen-over-items␛[m  ␛[38;5;244mHL␛[m␛[38;5;244m  waits on rail-todo-block +1  A screen over the whole…␛[m
   ␛[38;5;244m·␛[m ␛[38;5;254mprose-renderer␛[m  ␛[38;5;244mMS␛[m␛[38;5;244m  ready  One renderer for every piece of prose␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m!␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237msprint-file  MM  blocked  The sprint is a file that names its items         ␛[m␛[m
   ␛[38;5;244m·␛[m ␛[38;5;254mdrop-loses-the-file␛[m  ␛[38;5;244mL-␛[m␛[38;5;244m  ready  Dropping an item says what it loses␛[m
   ␛[38;5;254m⚠␛[m ␛[38;5;254mhalf-written␛[m␛[38;5;244m  will not load␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;244m2 hidden␛[m
-␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
-␛[1;38;5;254mscreen-over-items␛[m
-␛[38;5;244mA screen over the whole backlog, with the body beside the list␛[m
-␛[38;5;244mstory · high · size L · open · written 2026-08-30␛[m
-␛[38;5;244mwaits on rail-todo-block, prose-renderer · [w] goes there␛[m
+␛[1;38;5;254mset the status of sprint-file␛[m
+
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. open     back in the queue                                                 ␛[m
+  ␛[38;5;244m2. ␛[m␛[38;5;254mblocked␛[m  ␛[38;5;244msay why, in the draft␛[m                                          ␛[38;5;254mnow␛[m
+  ␛[38;5;244m3. ␛[m␛[38;5;254mdone␛[m     ␛[38;5;244marchive it␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[1–3]␛[m␛[38;5;244m jump␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the list␛[m
+
+· [r] · the run picker: run it, or groom it
+␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m                     ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;244m## Acceptance criteria␛[m
-␛[38;5;244m… (+3 more rows)␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m▸␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mrail-todo-block  HM  in progress  The backlog block on the inspector rail   ␛[m␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mscreen-over-items␛[m  ␛[38;5;244mHL␛[m␛[38;5;244m  waits on rail-todo-block +1  A screen over the whole…␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;254mprose-renderer␛[m  ␛[38;5;244mMS␛[m␛[38;5;244m  ready  One renderer for every piece of prose␛[m
+  ␛[38;5;254m!␛[m ␛[38;5;254msprint-file␛[m  ␛[38;5;244mMM␛[m␛[38;5;244m  blocked  The sprint is a file that names its items␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;254mdrop-loses-the-file␛[m  ␛[38;5;244mL-␛[m␛[38;5;244m  ready  Dropping an item says what it loses␛[m
+  ␛[38;5;254m⚠␛[m ␛[38;5;254mhalf-written␛[m␛[38;5;244m  will not load␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;38;5;254mrun rail-todo-block␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m new␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. run it    work it through to a commit                                      ␛[m
+  ␛[38;5;244m2. ␛[m␛[38;5;254mgroom it␛[m  ␛[38;5;244mread it against the tree␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[1–2]␛[m␛[38;5;244m jump␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the list␛[m
 
 · [enter] · the body with the surface to itself
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m                     ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -369,7 +427,7 @@ $  a shell command
 ␛[38;5;244m- [x] four rows and a count␛[m
 ␛[38;5;244m- [ ] the running item first␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[pgup/pgdn]␛[m␛[38;5;244m page the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the list␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[pgup/pgdn]␛[m␛[38;5;244m page the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the list␛[m
 
 · [tab] · the archive, each item's report as its body
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · done␛[m                                   ␛[38;5;244m2 items␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -386,7 +444,7 @@ $  a shell command
 ␛[38;5;244mSixty-eight literals came out of twenty files; the register is the one place a␛[m
 ␛[38;5;244mkey is written down.␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[o]␛[m␛[38;5;244m put it back in the backlog␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m new␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m put it back in the backlog␛[m
 
 · [d] · the one confirm that names what it loses
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m                     ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
@@ -428,11 +486,10 @@ $  a shell command
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;244m… (+7 more rows)␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 ␛[38;5;244mthe turn is running; these change the files it may be working from␛[m
-␛[38;5;244m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;244m[R]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;244m[g]␛[m␛[38;5;244m read it against the tree␛[m␛[38;5;244m · ␛[m␛[38;5;244m[b]␛[m␛[38;5;244m block it␛[m
-␛[38;5;244m[a]␛[m␛[38;5;244m archive it␛[m␛[38;5;244m · ␛[m␛[38;5;244m[d]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;244m[S]␛[m␛[38;5;244m drop it from the cockpit sprint␛[m
-␛[38;5;244m[n]␛[m␛[38;5;244m a new item␛[m
+␛[38;5;244m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;244m[s]␛[m␛[38;5;244m set its status␛[m␛[38;5;244m · ␛[m␛[38;5;244m[d]␛[m␛[38;5;244m delete␛[m
+␛[38;5;244m[space]␛[m␛[38;5;244m drop it from the cockpit sprint␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n]␛[m␛[38;5;244m new item␛[m
 
 · [?] · every key the screen has
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m            ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] hide the keys · [esc] back␛[m
@@ -441,27 +498,20 @@ $  a shell command
 ␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m▸␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mrail-todo-block  HM  in progress  The backlog block on the inspector rail   ␛[m␛[m
 ␛[38;5;244m… (+1 more rows)␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move between items␛[m
-␛[38;5;254m[enter]␛[m␛[38;5;244m read the body in the pane␛[m
-␛[38;5;254m[pgup/pgdn]␛[m␛[38;5;244m page the body while reading it␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m open␛[m
+␛[38;5;254m[pgup/pgdn]␛[m␛[38;5;244m page the body␛[m
 ␛[38;5;254m[tab]␛[m␛[38;5;244m the backlog, the sprint, or what shipped␛[m
-␛[38;5;254m[/]␛[m␛[38;5;244m filter by slug or title␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m clear the filter; again to close it␛[m
+␛[38;5;254m[/]␛[m␛[38;5;244m filter by ready, blocked, done, priority:high, kind:story, size:S, or a␛[m
+␛[38;5;244mtitle␛[m
 ␛[38;5;254m[backspace]␛[m␛[38;5;244m delete a character from the filter␛[m
-␛[38;5;254m[s]␛[m␛[38;5;244m cycle the status filter␛[m
-␛[38;5;254m[p]␛[m␛[38;5;244m cycle the priority filter␛[m
-␛[38;5;254m[k]␛[m␛[38;5;244m cycle the kind or size filter␛[m
-␛[38;5;254m[r]␛[m␛[38;5;244m only what can be started now␛[m
-␛[38;5;254m[w]␛[m␛[38;5;244m jump to what this one waits on␛[m
-␛[38;5;254m[e]␛[m␛[38;5;244m open the file in your editor␛[m
-␛[38;5;254m[R]␛[m␛[38;5;244m work it through to a commit␛[m
-␛[38;5;254m[b]␛[m␛[38;5;244m mark it blocked, after confirming it␛[m
-␛[38;5;254m[o]␛[m␛[38;5;244m reopen it, from the archive as well␛[m
-␛[38;5;254m[a]␛[m␛[38;5;244m archive it, after confirming it␛[m
-␛[38;5;254m[d]␛[m␛[38;5;244m delete the file, after confirming it␛[m
-␛[38;5;254m[n]␛[m␛[38;5;244m start a new item␛[m
-␛[38;5;254m[S]␛[m␛[38;5;244m add it to the cockpit sprint, or drop it␛[m
-␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m
+␛[38;5;254m[n]␛[m␛[38;5;244m new item␛[m
+␛[38;5;254m[d]␛[m␛[38;5;244m delete␛[m
+␛[38;5;254m[s]␛[m␛[38;5;244m set its status␛[m
+␛[38;5;254m[space]␛[m␛[38;5;244m toggle it in the sprint␛[m
+␛[38;5;254m[r]␛[m␛[38;5;244m run it␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 ␛[38;5;244mletters  priority H high · M medium · L low — size S M L — - unset␛[m
 
 ␛[38;5;244mglyphs␛[m

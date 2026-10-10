@@ -3564,7 +3564,18 @@ So the backlog is also a surface: the items on the left in the order they
 would be worked, the one under the pointer on the right as the file it is,
 and the keys that would otherwise be composed as verbs. Nothing here is new.
 It is the same two panes, the same windowed list, the same header and rule
-and key row as every other screen in this section.
+and key row as every other screen in this section, and it moves on `↑↓/jk`
+like every other list.
+
+Its keys are a handful, in the words they have everywhere: move, page,
+`enter` to read the item, `tab` for its three tabs, `/` to filter, `e` to
+edit the file, `n` for a new item, `d` to drop one, `s` to set its status,
+`space` to add it to the sprint or drop it from one, `r` to run it, `?` and
+`esc`. Where one key stands for several acts it opens a short picker beside
+the list rather than spending a letter on each: `s` offers open, blocked and
+done, and `r` offers running the item and grooming it. A screen that spent a
+letter on every act had fifteen of them, and a reader held all fifteen to
+press two.
 
 The row carries what decides the order and nothing else: the name, the
 priority and size as two letters, and where the item stands — ready, waiting
@@ -3578,10 +3589,19 @@ prose two columns wide is prose nobody reads.
 Both ends of a dependency are drawn. The row says what an item is waiting on,
 which a listing has always said; the pane says what is waiting on *it*, which
 nothing has ever said and which is what decides whether finishing it is worth
-anything. One key walks the edge.
+anything.
+
+The filter is words rather than letters. `ready`, `blocked` and `done` ask
+where an item stands, a field and a word ask what its header says — `p:high`,
+`kind:bug`, the field named by any prefix of its name — and anything else is
+found in the slug or the title. Every word has to hold, the header states
+them as typed, and `enter` closes the row with them kept so the list's own
+keys come back over the list they narrowed. `esc` clears them before it
+leaves. The words are what the filter letters were — status, priority, kind,
+ready — without the letters, which the list needed back to move.
 
 A file that will not parse is a row in warning tone with the reason as its
-body, and it survives every filter that asks a question it has no header to
+body, and it survives every word that asks a question it has no header to
 answer. It is the one row that must never go missing: an item that vanished
 from the list reads as work somebody finished.
 
@@ -3589,15 +3609,16 @@ There is a second tab for the archive, and what an archived item shows is the
 report of what was actually done rather than the criteria that were the
 question. That is the whole reason it is worth having: what shipped and how
 is read in the same place it was planned. An item can come back out of the
-archive from there, which is the one act on this screen that no typed verb
-has.
+archive from there — its status picker has the one row, open — which is the
+one act on this screen that no typed verb has.
 
 The rule the supporting screens share holds here: nothing changes without a
-card. Blocking, archiving and dropping each ask first, and the one that
-deletes a file says that is what it does. What the screen removes is the
-composing, not the asking. And every act goes through the same handler the
-typed verb goes through, so a refusal on the screen is the refusal the
-command gives.
+card. A status is set through a picker that names the item, blocking leaves
+the verb in the draft for the reason a block carries, and the one key that
+deletes a file asks first and says that is what it does. What the screen
+removes is the composing, not the asking. And every act goes through the
+same handler the typed verb goes through, so a refusal on the screen is the
+refusal the command gives.
 
 It can be opened in the middle of a turn, because *what is in the backlog* is
 a question a running turn provokes rather than one it answers. What it cannot
@@ -3636,7 +3657,8 @@ Planning is the same tab before there is a file. The proposal is drawn here
 as a card that holds the keyboard: the budget it was bounded by is in the
 header, the goal sits above the set with the line saying what kind of
 release it reads as under it, each row carries the line saying why that item
-is in the set, and nothing is written until the card is taken. The goal and
+is in the set, and nothing is written until the card is taken with
+`ctrl+s`, the chord every write is. The goal and
 the release line are two rows because they have two authors — the sentence
 is the reader's to rewrite and the line under it is the reading's judgement,
 and editing one must not take the other with it. Under the set, folded behind its
@@ -3645,9 +3667,10 @@ recommendation did not take is half of what makes it arguable, and the folded
 row states how many went and which words they took so the count is never the
 only thing on screen.
 
-The card keeps `j/k`, which is the one pair the list under it had to give up.
-While a card holds the keyboard nothing else is listening, so no filter
-letter is competing for the keystroke
+The goal is the card's first row rather than a letter of its own: the
+pointer goes up onto it and `enter` writes it, so `enter` means the row under
+the pointer here as it does on every list, and `space` drops and restores the
+rows of the set. While the card holds the keyboard nothing else is listening
 ([invariant 5](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
 Taking an empty set is refused rather than written: a sprint that names
 nothing scopes the ready list to nothing, and it is the one file here nobody

@@ -18,10 +18,9 @@ package components
 //
 // Planning is the same tab before there is a file. The proposal is drawn
 // here as a card that holds the keyboard, and nothing is written until it is
-// taken (docs/capabilities/todo.md#a-session-proposes-you-accept). The card
-// keeps `j/k`, which the list under it had to give up: while the card is up
-// the list is drawn and not live, so no filter letter is competing for the
-// keystroke.
+// taken (docs/capabilities/todo.md#a-session-proposes-you-accept). Taking it
+// is the chord every write is, and the goal is the card's first row, so
+// enter means the row under the pointer here as it does on every list.
 
 import (
 	"fmt"
@@ -127,7 +126,9 @@ type SprintPlan struct {
 
 	// open reports the left-out list is unfolded.
 	open bool
-	// list is the shared pointer and window (list.go).
+	// list is the shared pointer and window (list.go), over the goal row
+	// and then the set. focus is the set's row the pointer is on, and -1
+	// for the goal row above them.
 	list  List[int]
 	focus int
 }
@@ -148,33 +149,40 @@ func (p *SprintPlan) kept() []string {
 // is a snapshot the reader is answering — so this only has to hold the
 // pointer inside them.
 func (p *SprintPlan) sync() {
-	idx := make([]int, len(p.Rows))
+	idx := make([]int, 0, len(p.Rows)+1)
+	idx = append(idx, sprintGoalRow)
 	for i := range p.Rows {
-		idx[i] = i
+		idx = append(idx, i)
 	}
 	p.list.Items = idx
-	p.list.Focus = min(max(p.focus, 0), max(len(p.Rows)-1, 0))
+	p.list.Focus = min(max(p.focus+1, 0), len(idx)-1)
 	p.list.normalize()
-	p.focus = p.list.Focus
+	p.focus = p.list.Focus - 1
 }
 
+// sprintGoalRow is the goal's place in the card's list: above the set.
+const sprintGoalRow = -1
+
+// onGoal reports the pointer is on the goal row.
+func (p *SprintPlan) onGoal() bool { return p.focus == sprintGoalRow }
+
 // update is the keyboard while the plan card is up. Every key here is the
-// card's: the screen's own letters are not live under it, which is the
-// register's reading of a takeover and the reason the pair `j/k` works here
+// card's: the screen's own keys are not live under it, which is the
+// register's reading of a takeover
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 // The notice is the line the screen shows under it, empty for none.
 func (p *SprintPlan) update(pressed string) (backlogResult, string) {
 	p.sync()
 	switch {
 	case p.list.Move(pressed, keys.Sprint.Move):
-		p.focus = p.list.Focus
+		p.focus = p.list.Focus - 1
 	case keys.Is(pressed, keys.Sprint.Toggle):
-		if p.focus < len(p.Rows) {
+		if p.focus >= 0 && p.focus < len(p.Rows) {
 			p.Rows[p.focus].Dropped = !p.Rows[p.focus].Dropped
 		}
 	case keys.Is(pressed, keys.Sprint.Left) && len(p.Left) > 0:
 		p.open = !p.open
-	case keys.Is(pressed, keys.Sprint.Goal):
+	case keys.Is(pressed, keys.Sprint.Goal) && p.onGoal():
 		return backlogResult{Do: &BacklogCommand{Act: BacklogSprintGoal}}, ""
 	case keys.Is(pressed, keys.Sprint.Take):
 		kept := p.kept()
@@ -284,23 +292,44 @@ func leftWordWidth(left []SprintPlanOut) int {
 // and loses its tick.
 func (p *SprintPlan) rows(width, budget int) []string {
 	if len(p.Rows) == 0 {
-		return []string{sty.dim.Render(Clip("nothing was proposed", width))}
+		return []string{p.goalRow(width), sty.dim.Render(Clip("nothing was proposed", width))}
 	}
 	lo, hi := p.list.Range(budget)
 	if budget <= 0 {
-		lo, hi = 0, len(p.Rows)
+		lo, hi = 0, len(p.Rows)+1
 	}
 	var out []string
 	if lo > 0 {
 		out = append(out, sty.dim.Render(Clip(fmt.Sprintf("↑ %d above", lo), width)))
 	}
 	for i := lo; i < hi; i++ {
-		out = append(out, p.row(i, width))
+		if i == 0 {
+			out = append(out, p.goalRow(width))
+			continue
+		}
+		out = append(out, p.row(i-1, width))
 	}
-	if below := len(p.Rows) - hi; below > 0 {
+	if below := len(p.Rows) + 1 - hi; below > 0 {
 		out = append(out, sty.dim.Render(Clip(fmt.Sprintf("↓ %d below", below), width)))
 	}
 	return out
+}
+
+// goalRow is the row the goal is written from. The goal itself is the
+// paragraph above the set; the row is the act on it, which is why it is a
+// row the pointer lands on rather than a letter of its own.
+func (p *SprintPlan) goalRow(width int) string {
+	words := "write what the set is for"
+	if strings.TrimSpace(p.Goal) != "" {
+		words = "rewrite what the set is for"
+	}
+	pointer, name := PointerColumn(), sty.info
+	inner := max(width-GridPointerWidth, 1)
+	body := name.Render("goal") + sty.dim.Render(Clip("  "+words, max(inner-4, 1)))
+	if p.onGoal() {
+		return sty.focusPointer.Render("❯ ") + litRowKeeping(body, 0, 0, inner)
+	}
+	return pointer + body
 }
 
 // row is one proposed item: the box, the slug, the title, and the reason it
@@ -402,18 +431,21 @@ func laneRows(lanes []SprintLane, width int) []string {
 }
 
 // sprintOffers is the key row while the plan card holds the keyboard. The
-// screen's own offers are not among them: a key that cannot act is not an
-// offer (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// screen's own offers are not among them, and of the card's the row the
+// pointer is on decides two: the toggle on a row of the set, the goal on
+// the goal row — a key that cannot act is not an offer
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func sprintOffers(p *SprintPlan) []KeyOffer {
-	out := []KeyOffer{
-		keyOffer(keys.Sprint.Move),
-		keyOffer(keys.Sprint.Toggle),
+	out := []KeyOffer{keyOffer(keys.Sprint.Move)}
+	if p != nil && p.onGoal() {
+		out = append(out, keyOffer(keys.Sprint.Goal))
+	} else {
+		out = append(out, keyOffer(keys.Sprint.Toggle))
 	}
 	if p != nil && len(p.Left) > 0 {
 		out = append(out, keyOffer(keys.Sprint.Left))
 	}
 	return append(out,
-		keyOffer(keys.Sprint.Goal),
 		keyOffer(keys.Sprint.Take),
 		keyOffer(keys.Sprint.Cancel),
 	)

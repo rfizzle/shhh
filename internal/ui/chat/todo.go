@@ -633,9 +633,10 @@ func (m *Model) shutTodoScreen() {
 	m.syncViewport()
 }
 
-// todoScreenAct carries out one of the screen's acts. Three of them leave
-// with the screen: the editor takes the terminal, a run takes the session,
-// and a new item is a card in the panel the screen is covering. The rest
+// todoScreenAct carries out one of the screen's acts. Some of them leave
+// with the screen: the editor takes the terminal, a run or a reading takes
+// the session, and a new item, a block's reason and a sprint's goal are
+// sentences typed into the draft the screen is covering. The rest
 // change one file and the screen stays up over fresh rows.
 func (m Model) todoScreenAct(cmd components.BacklogCommand) (tea.Model, tea.Cmd) {
 	switch cmd.Act {
@@ -664,6 +665,12 @@ func (m Model) todoScreenAct(cmd components.BacklogCommand) (tea.Model, tea.Cmd)
 		m.screens.backlog().Plan, m.todo.sprintPlan = nil, nil
 		m.refreshTodoScreen()
 		return m.systemNotice("nothing written; no sprint was planned")
+	case components.BacklogBlock:
+		// A block carries its reason, and the reason is a sentence the
+		// screen has nowhere to type, so the status picker's blocked hands
+		// the keyboard back with the verb already in the box.
+		m.shutTodoScreen()
+		return m.composeTodoBlock(cmd.Slug)
 	case components.BacklogSprintGoal:
 		// A goal is a sentence and the card has nowhere to type one, so the
 		// key hands the keyboard back with the command already in the box —
@@ -701,6 +708,23 @@ func (m Model) composeTodoNew() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// composeTodoBlock is what the status picker's blocked leaves behind: the
+// verb in the draft box with the cursor after it, waiting for the reason.
+// The verb is the one `/todo block` is everywhere else, so the picker
+// teaches the command rather than hiding it, and a draft already in the box
+// is not thrown away for it.
+func (m Model) composeTodoBlock(slug string) (tea.Model, tea.Cmd) {
+	prefix := "/todo block " + slug + " "
+	if strings.TrimSpace(m.input.Value()) != "" {
+		return m.systemNotice("there is a draft in the input; " + prefix + "<why> blocks it once it is sent or cleared")
+	}
+	m.input.SetValue(prefix)
+	m.input.MoveToEnd()
+	m.syncCompletions()
+	m.syncViewport()
+	return m, nil
+}
+
 // todoScreenVerb is the act as the verb it is. Every one of them goes
 // through the same handler `/todo` and `shhh todo` go through, so a refusal
 // on this screen is the refusal those give and a confirmation is their
@@ -708,8 +732,6 @@ func (m Model) composeTodoNew() (tea.Model, tea.Cmd) {
 // to what archiving is.
 func (m Model) todoScreenVerb(cmd components.BacklogCommand) string {
 	switch cmd.Act {
-	case components.BacklogBlock:
-		return m.todo.wiring.Manage([]string{"block", cmd.Slug})
 	case components.BacklogArchive:
 		return m.todo.wiring.Manage([]string{"done", cmd.Slug})
 	case components.BacklogDrop:
@@ -829,7 +851,7 @@ func (m Model) todoScreenRow(s *todo.Store, it todo.Item) components.BacklogRow 
 	// loading — and it says how far behind, because "stale" without a count
 	// is a word nobody can act on.
 	if note := m.groomStaleNote(it.Slug); note != "" {
-		row.Warnings = append(row.Warnings, note+"; "+keys.Bracket(keys.Backlog.Groom)+" reads it against the tree again")
+		row.Warnings = append(row.Warnings, note+"; "+keys.Bracket(keys.Backlog.Run)+" then groom reads it against the tree again")
 	}
 	row.Fields = todoScreenFields(it, row.Status)
 	if it.Archived {

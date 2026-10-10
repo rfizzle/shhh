@@ -32,7 +32,7 @@ chore · high · size M · done · written 2026-08-20 · in the …
 
 Sixty-eight literals came out of twenty files.
 
-[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new
+[↑↓/jk] move · [enter] read · [/] filter · [e] edit
 
 · under a spend ceiling · the spend said against it, under the meter where the row is too narrow
 backlog · sprint             5 items · [?] keys · [esc] back
@@ -57,7 +57,7 @@ chore · high · size M · done · written 2026-08-20 · in the …
 
 Sixty-eight literals came out of twenty files.
 
-[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new
+[↑↓/jk] move · [enter] read · [/] filter · [e] edit
 
 · one lane · the head counts it and the row names it, with the step it is at
 backlog · sprint             5 items · [?] keys · [esc] back
@@ -82,7 +82,7 @@ chore · high · size M · done · written 2026-08-20 · in the …
 
 Sixty-eight literals came out of twenty files.
 
-[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new
+[↑↓/jk] move · [enter] read · [/] filter · [e] edit
 
 · three lanes at once · the head counts them and each row names its step
 backlog · sprint             5 items · [?] keys · [esc] back
@@ -106,7 +106,7 @@ chore · high · size M · done · written 2026-08-20 · in the …
 
 Sixty-eight literals came out of twenty files.
 
-[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new
+[↑↓/jk] move · [enter] read · [/] filter · [e] edit
 
 · lanes over the ready list · no file, so no name, goal or meter; the lanes and their items
 backlog · sprint             3 items · [?] keys · [esc] back
@@ -128,7 +128,7 @@ story · high · size M · in progress · written 2026-08-28 · …
 
 … (+6 more rows)
 
-[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new
+[↑↓/jk] move · [enter] read · [/] filter · [e] edit
 
 · stopped on a block · the block on the board with the item that wrote it
 backlog · sprint             5 items · [?] keys · [esc] back
@@ -153,7 +153,7 @@ chore · high · size M · done · written 2026-08-20 · in the …
 
 Sixty-eight literals came out of twenty files.
 
-[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new
+[↑↓/jk] move · [enter] read · [/] filter · [e] edit
 
 · closed · the record, with the page it wrote as the last row
 backlog · sprint             0 items · [?] keys · [esc] back
@@ -167,17 +167,18 @@ this sprint is closed; its items are in the backlog and the…
 ────────────────────────────────────────────────────────────
 no item selected
 
-[↑↓] move · [/] filter · [n] new · [esc] back
+[↑↓/jk] move · [/] filter · [n] new · [esc] back
 
 · planning · the proposal with the budget in the header
 backlog            3 of 3 items kept · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
-nothing is written until [enter]
+nothing is written until [ctrl+s]
 Make every piece of prose on screen come out of one
 renderer.
 Reads as a minor release.
 
+  goal  rewrite what the set is for
 ❯ [x] prose-renderer  One renderer for every piece of prose…
   [x] drop-loses-the-file  Dropping an item says what it lo…
   [x] screen-over-items  A screen over the whole backlog  ·…
@@ -185,19 +186,19 @@ Reads as a minor release.
 3 items left out · 1 waits, 1 too big, 1 unrelated [o]
 
 [↑↓/jk] move · [space] toggle
-[o] what was left out, and why
-[g] write what the set is for · [enter] write the sprint
+[o] what was left out, and why · [ctrl+s] write the sprint
 [esc] back
 
 · a row dropped · it keeps its place and loses its tick
 backlog            2 of 3 items kept · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
-nothing is written until [enter]
+nothing is written until [ctrl+s]
 Make every piece of prose on screen come out of one
 renderer.
 Reads as a minor release.
 
+  goal  rewrite what the set is for
   [x] prose-renderer  One renderer for every piece of prose…
 ❯ [ ] drop-loses-the-file  Dropping an item says what it lo…
   [x] screen-over-items  A screen over the whole backlog  ·…
@@ -205,19 +206,19 @@ Reads as a minor release.
 3 items left out · 1 waits, 1 too big, 1 unrelated [o]
 
 [↑↓/jk] move · [space] toggle
-[o] what was left out, and why
-[g] write what the set is for · [enter] write the sprint
+[o] what was left out, and why · [ctrl+s] write the sprint
 [esc] back
 
 · what was left out · folded under the set until the key opens it
 backlog            3 of 3 items kept · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
-nothing is written until [enter]
+nothing is written until [ctrl+s]
 Make every piece of prose on screen come out of one
 renderer.
 Reads as a minor release.
 
+  goal  rewrite what the set is for
 ❯ [x] prose-renderer  One renderer for every piece of prose…
   [x] drop-loses-the-file  Dropping an item says what it lo…
   [x] screen-over-items  A screen over the whole backlog  ·…
@@ -228,8 +229,7 @@ Reads as a minor release.
   unrelated  mcp-forwarders  Forwarders carry the credential
 
 [↑↓/jk] move · [space] toggle
-[o] what was left out, and why
-[g] write what the set is for · [enter] write the sprint
+[o] what was left out, and why · [ctrl+s] write the sprint
 [esc] back
 
 ── ansi ────────────────────────────────────────────────────
@@ -255,7 +255,7 @@ Reads as a minor release.
 
 ␛[38;5;241mSixty-eight literals came out of twenty files.␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m
 
 · under a spend ceiling · the spend said against it, under the meter where the row is too narrow
 ␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m             ␛[38;5;241m5 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
@@ -280,7 +280,7 @@ Reads as a minor release.
 
 ␛[38;5;241mSixty-eight literals came out of twenty files.␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m
 
 · one lane · the head counts it and the row names it, with the step it is at
 ␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m             ␛[38;5;241m5 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
@@ -305,7 +305,7 @@ Reads as a minor release.
 
 ␛[38;5;241mSixty-eight literals came out of twenty files.␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m
 
 · three lanes at once · the head counts them and each row names its step
 ␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m             ␛[38;5;241m5 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
@@ -329,7 +329,7 @@ Reads as a minor release.
 
 ␛[38;5;241mSixty-eight literals came out of twenty files.␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m
 
 · lanes over the ready list · no file, so no name, goal or meter; the lanes and their items
 ␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m             ␛[38;5;241m3 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
@@ -351,7 +351,7 @@ Reads as a minor release.
 
 ␛[38;5;241m… (+6 more rows)␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m
 
 · stopped on a block · the block on the board with the item that wrote it
 ␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m             ␛[38;5;241m5 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
@@ -376,7 +376,7 @@ Reads as a minor release.
 
 ␛[38;5;241mSixty-eight literals came out of twenty files.␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m
 
 · closed · the record, with the page it wrote as the last row
 ␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m             ␛[38;5;241m0 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
@@ -390,17 +390,18 @@ Reads as a minor release.
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 ␛[38;5;241mno item selected␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
 
 · planning · the proposal with the budget in the header
 ␛[1;97mbacklog␛[m            ␛[38;5;241m3 of 3 items kept␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241mnothing is written until ␛[m␛[38;5;103m[enter]␛[m
+␛[38;5;241mnothing is written until ␛[m␛[38;5;103m[ctrl+s]␛[m
 ␛[38;5;241mMake every piece of prose on screen come out of one␛[m
 ␛[38;5;241mrenderer.␛[m
 ␛[38;5;241mReads as a minor release.␛[m
 
+  ␛[94mgoal␛[m␛[38;5;241m  rewrite what the set is for␛[m
 ␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mprose-renderer  One renderer for every piece of prose…␛[m␛[m
   ␛[92m[x]␛[m ␛[1;97mdrop-loses-the-file␛[m␛[38;5;241m  Dropping an item says what it lo…␛[m
   ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;241m  A screen over the whole backlog  ·…␛[m
@@ -408,19 +409,19 @@ Reads as a minor release.
 ␛[38;5;241m3 items left out · 1 waits, 1 too big, 1 unrelated␛[m ␛[38;5;103m[o]␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[space]␛[m␛[38;5;241m toggle␛[m
-␛[38;5;103m[o]␛[m␛[38;5;241m what was left out, and why␛[m
-␛[38;5;103m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m write the sprint␛[m
+␛[38;5;103m[o]␛[m␛[38;5;241m what was left out, and why␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write the sprint␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back␛[m
 
 · a row dropped · it keeps its place and loses its tick
 ␛[1;97mbacklog␛[m            ␛[38;5;241m2 of 3 items kept␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241mnothing is written until ␛[m␛[38;5;103m[enter]␛[m
+␛[38;5;241mnothing is written until ␛[m␛[38;5;103m[ctrl+s]␛[m
 ␛[38;5;241mMake every piece of prose on screen come out of one␛[m
 ␛[38;5;241mrenderer.␛[m
 ␛[38;5;241mReads as a minor release.␛[m
 
+  ␛[94mgoal␛[m␛[38;5;241m  rewrite what the set is for␛[m
   ␛[92m[x]␛[m ␛[1;97mprose-renderer␛[m␛[38;5;241m  One renderer for every piece of prose…␛[m
 ␛[94m❯ ␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m[ ]␛[m␛[48;5;62m ␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mdrop-loses-the-file  Dropping an item says what it lo…␛[m␛[m
   ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;241m  A screen over the whole backlog  ·…␛[m
@@ -428,19 +429,19 @@ Reads as a minor release.
 ␛[38;5;241m3 items left out · 1 waits, 1 too big, 1 unrelated␛[m ␛[38;5;103m[o]␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[space]␛[m␛[38;5;241m toggle␛[m
-␛[38;5;103m[o]␛[m␛[38;5;241m what was left out, and why␛[m
-␛[38;5;103m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m write the sprint␛[m
+␛[38;5;103m[o]␛[m␛[38;5;241m what was left out, and why␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write the sprint␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back␛[m
 
 · what was left out · folded under the set until the key opens it
 ␛[1;97mbacklog␛[m            ␛[38;5;241m3 of 3 items kept␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241mnothing is written until ␛[m␛[38;5;103m[enter]␛[m
+␛[38;5;241mnothing is written until ␛[m␛[38;5;103m[ctrl+s]␛[m
 ␛[38;5;241mMake every piece of prose on screen come out of one␛[m
 ␛[38;5;241mrenderer.␛[m
 ␛[38;5;241mReads as a minor release.␛[m
 
+  ␛[94mgoal␛[m␛[38;5;241m  rewrite what the set is for␛[m
 ␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mprose-renderer  One renderer for every piece of prose…␛[m␛[m
   ␛[92m[x]␛[m ␛[1;97mdrop-loses-the-file␛[m␛[38;5;241m  Dropping an item says what it lo…␛[m
   ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;241m  A screen over the whole backlog  ·…␛[m
@@ -451,6 +452,5 @@ Reads as a minor release.
 ␛[38;5;241m  unrelated  mcp-forwarders  Forwarders carry the credential␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[space]␛[m␛[38;5;241m toggle␛[m
-␛[38;5;103m[o]␛[m␛[38;5;241m what was left out, and why␛[m
-␛[38;5;103m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m write the sprint␛[m
+␛[38;5;103m[o]␛[m␛[38;5;241m what was left out, and why␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write the sprint␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back␛[m

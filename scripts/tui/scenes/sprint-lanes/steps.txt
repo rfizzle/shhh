@@ -21,9 +21,9 @@ snap 01-start "Some things worth doing first"
 keys "/todo" Enter
 snap 02-backlog "cache-evict" "cache-report"
 # The row's two letters are explained in the `?` reveal, in the profile's own
-# words, and the field-filter key names the fields it cycles.
+# words, and the filter says the words it takes.
 keys ?
-snap 02b-letters "letters  priority H high" "cycle the kind or size filter"
+snap 02b-letters "letters  priority H high" "ready, blocked, done, priority:high"
 keys ?
 snap 02c-back "[?] keys"
 keys Tab

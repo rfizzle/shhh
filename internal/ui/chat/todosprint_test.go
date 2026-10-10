@@ -110,7 +110,7 @@ func TestSprintPlan_CardIsTheReadingsSetInItsOwnOrder(t *testing.T) {
 	// reading's goal — and the reasoning lines stay off the file.
 	dropped, _ := next.updateTodoScreen(key('j'))
 	dropped2, _ := dropped.(Model).updateTodoScreen(key(' '))
-	final, _ := dropped2.(Model).updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyEnter})
+	final, _ := dropped2.(Model).updateTodoScreen(writeChord)
 	done := final.(Model)
 	if done.screens.backlog().Plan != nil || done.todo.sprintPlan != nil {
 		t.Fatal("taking the card left the proposal up")
@@ -424,7 +424,7 @@ func TestSprintCommand_ReadsMidTurnAndItsVerbsDoNot(t *testing.T) {
 func TestSprintPlan_NamesTheSecondSprintOfADayApart(t *testing.T) {
 	m, root := sprintModel(t, "")
 	m = planned(m, planAnswerForFixture, nil)
-	final, _ := m.updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyEnter})
+	final, _ := m.updateTodoScreen(writeChord)
 	m = final.(Model)
 	sp, err := todo.LoadSprint(root)
 	if err != nil || sp == nil {
@@ -437,7 +437,7 @@ func TestSprintPlan_NamesTheSecondSprintOfADayApart(t *testing.T) {
 	m.reloadTodos()
 
 	m = planned(m, planAnswerForFixture, nil)
-	final, _ = m.updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyEnter})
+	final, _ = m.updateTodoScreen(writeChord)
 	m = final.(Model)
 	again, err := todo.LoadSprint(root)
 	if err != nil || again == nil {
@@ -682,13 +682,14 @@ func TestSprintClose_PublishesThePageAndTheBoardOffersIt(t *testing.T) {
 	}
 }
 
-// The goal key hands the keyboard back with the command in the box, and the
+// The goal row hands the keyboard back with the command in the box, and the
 // sentence goes on the proposal: there is no sprint file to edit until the
 // card is taken.
 func TestSprintPlan_GoalGoesOnTheProposal(t *testing.T) {
 	m, root := sprintModel(t, "")
 	m = planned(m, planAnswerForFixture, nil)
-	asked, _ := m.updateTodoScreen(key('g'))
+	up, _ := m.updateTodoScreen(key('k'))
+	asked, _ := up.(Model).updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = asked.(Model)
 	if m.input.Value() != sprintGoalPrefix {
 		t.Fatalf("draft = %q", m.input.Value())
@@ -702,7 +703,7 @@ func TestSprintPlan_GoalGoesOnTheProposal(t *testing.T) {
 	if m.screens.backlog() == nil || m.screens.backlog().Plan == nil || m.screens.backlog().Plan.Goal != "Make the cache trustworthy." {
 		t.Fatalf("the goal did not land on the proposal: %+v", m.screens.backlog())
 	}
-	taken, _ := m.updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyEnter})
+	taken, _ := m.updateTodoScreen(writeChord)
 	sp, err := todo.LoadSprint(root)
 	if err != nil || sp == nil {
 		t.Fatalf("sprint = %v %v", sp, err)
@@ -736,3 +737,6 @@ func TestSprintSpendWords_StateTheCeiling(t *testing.T) {
 		}
 	}
 }
+
+// writeChord is the plan card's write: the chord every write is.
+var writeChord = tea.KeyPressMsg{Code: 's', Mod: tea.ModCtrl}

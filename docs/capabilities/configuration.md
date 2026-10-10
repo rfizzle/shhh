@@ -1031,32 +1031,24 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `notes.drop` | `d` | delete | yes |
 | `notes.list` | `?` | keys | yes |
 | `notes.back` | `esc` | back | yes |
-| `backlog.move` | `up`, `down` | move | yes |
+| `backlog.move` | `up`, `down`, `k`, `j` | move | yes |
 | `backlog.read` | `enter` | open | yes |
 | `backlog.page` | `pgup`, `pgdown` | page the body | yes |
 | `backlog.tab` | `tab` | the backlog, the sprint, or what shipped | yes |
 | `backlog.filter` | `/` | filter | yes |
-| `backlog.status` | `s` | cycle the status filter | yes |
-| `backlog.priority` | `p` | cycle the priority filter | yes |
-| `backlog.kind` | `k` | cycle the kind filter | yes |
-| `backlog.ready` | `r` | only what can be started now | yes |
-| `backlog.depends` | `w` | jump to what it waits on | yes |
 | `backlog.edit` | `e` | edit | yes |
-| `backlog.run` | `R` | run it | yes |
-| `backlog.block` | `b` | block it | yes |
-| `backlog.reopen` | `o` | reopen it | yes |
-| `backlog.archive` | `a` | archive it | yes |
+| `backlog.new` | `n` | new item | yes |
 | `backlog.drop` | `d` | delete | yes |
-| `backlog.new` | `n` | a new item | yes |
-| `backlog.sprint` | `S` | add it to the sprint, or drop it from one | yes |
-| `backlog.groom` | `g` | read it against the tree | yes |
+| `backlog.status` | `s` | set its status | yes |
+| `backlog.sprint` | `" "`, `space` | toggle it in the sprint | yes |
+| `backlog.run` | `r` | run it | yes |
 | `backlog.list` | `?` | keys | yes |
 | `backlog.back` | `esc` | back | yes |
 | `sprint.move` | `up`, `down`, `k`, `j` | move | yes |
 | `sprint.toggle` | `" "`, `space` | toggle | yes |
 | `sprint.left` | `o` | what was left out, and why | yes |
-| `sprint.goal` | `g` | write what the set is for | yes |
-| `sprint.take` | `enter` | write the sprint | yes |
+| `sprint.goal` | `enter` | write what the set is for | yes |
+| `sprint.take` | `ctrl+s` | write the sprint | yes |
 | `sprint.cancel` | `esc` | back | yes |
 | `plan.jump` | `1`, `2`, `3`, `4`, `5` | jump to a row | yes |
 | `plan.save` | `ctrl+s` | write | yes |

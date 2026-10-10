@@ -19,7 +19,7 @@ func (b *BacklogScreen) splitRows(width, budget int) []string {
 	listWidth := min(max(width*2/5, backlogListMin), backlogListMax)
 	paneWidth := max(width-listWidth-lipgloss.Width(reviewDivider), 8)
 	list := b.listRows(listWidth, budget)
-	pane := b.reader.itemRows(b.item(), paneWidth)
+	pane := b.pane(paneWidth)
 	rows := max(len(list), len(pane))
 	if budget > 0 {
 		// The pane says what it could not fit rather than ending mid-item:
@@ -34,7 +34,7 @@ func (b *BacklogScreen) splitRows(width, budget int) []string {
 // stackedRows is the narrow layout: the list above, the item below, nothing
 // truncated sideways (invariant 4).
 func (b *BacklogScreen) stackedRows(width, budget int) []string {
-	pane := b.reader.itemRows(b.item(), width)
+	pane := b.pane(width)
 	if budget <= 0 {
 		return append(append(b.listRows(width, 0), screenRule(width)), pane...)
 	}
@@ -230,8 +230,7 @@ func (f BacklogField) lettered() bool {
 }
 
 // stateWords is the row's state field. A waiting item states what it is
-// waiting on rather than only that it is waiting: the slug is the reason,
-// and `[w]` goes to it.
+// waiting on rather than only that it is waiting: the slug is the reason.
 func (row BacklogRow) stateWords() string {
 	// A row the host gave its own words to says those. It is how the sprint
 	// tab draws where a slug stands in the set — finished, waiting, dropped

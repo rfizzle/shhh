@@ -295,35 +295,27 @@
 
   BACKLOG
 
-  · move      up down · move  [shipped]
-  · read      enter · open  [shipped]
-  · page      pgup pgdown · page the body  [shipped]
-  · tab       tab · the backlog, the sprint, or what shipped  [shipped]
-  · filter    / · filter  [shipped]
-  · status    s · cycle the status filter  [shipped]
-  · priority  p · cycle the priority filter  [shipped]
-  · kind      k · cycle the kind filter  [shipped]
-  · ready     r · only what can be started now  [shipped]
-  · depends   w · jump to what it waits on  [shipped]
-  · edit      e · edit  [shipped]
-  · run       R · run it  [shipped]
-  · block     b · block it  [shipped]
-  · reopen    o · reopen it  [shipped]
-  · archive   a · archive it  [shipped]
-  · drop      d · delete  [shipped]
-  · new       n · a new item  [shipped]
-  · sprint    S · add it to the sprint, or drop it from one  [shipped]
-  · groom     g · read it against the tree  [shipped]
-  · list      ? · keys  [shipped]
-  · back      esc · back  [shipped]
+  · move    up down k j · move  [shipped]
+  · read    enter · open  [shipped]
+  · page    pgup pgdown · page the body  [shipped]
+  · tab     tab · the backlog, the sprint, or what shipped  [shipped]
+  · filter  / · filter  [shipped]
+  · edit    e · edit  [shipped]
+  · new     n · new item  [shipped]
+  · drop    d · delete  [shipped]
+  · status  s · set its status  [shipped]
+  · sprint  " " space · toggle it in the sprint  [shipped]
+  · run     r · run it  [shipped]
+  · list    ? · keys  [shipped]
+  · back    esc · back  [shipped]
 
   SPRINT
 
   · move    up down k j · move  [shipped]
   · toggle  " " space · toggle  [shipped]
   · left    o · what was left out, and why  [shipped]
-  · goal    g · write what the set is for  [shipped]
-  · take    enter · write the sprint  [shipped]
+  · goal    enter · write what the set is for  [shipped]
+  · take    ctrl+s · write the sprint  [shipped]
   · cancel  esc · back  [shipped]
 
   PLAN
@@ -357,4 +349,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  258 keys · 1 moved
+  250 keys · 1 moved

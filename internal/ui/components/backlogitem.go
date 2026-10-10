@@ -144,8 +144,7 @@ func (b *backlogReader) fieldRow(it backlogItem, row BacklogRow) string {
 func (b *backlogReader) edgeRow(it backlogItem, row BacklogRow) string {
 	var parts []string
 	if len(row.Waits) > 0 {
-		parts = append(parts, "waits on "+strings.Join(row.Waits, ", ")+
-			" · "+keys.Bracket(keys.Backlog.Depends)+" goes there")
+		parts = append(parts, "waits on "+strings.Join(row.Waits, ", "))
 	}
 	if len(row.Blocks) > 0 {
 		parts = append(parts, plural(len(row.Blocks), it.noun)+" waits on this: "+

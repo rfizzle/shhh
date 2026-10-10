@@ -3376,9 +3376,9 @@ func goldenSprintPlan() *SprintPlan {
 
 // TestGolden_BacklogScreen captures the backlog as a surface: the list on
 // the left and the item's own prose on the right, the fold under the pane
-// width, the filters stating themselves in the header, the confirm in front
-// of the key that deletes a file, and the state keys grey while a turn is
-// running.
+// width, the filter's words stated in the header, the two pickers, the
+// confirm in front of the key that deletes a file, and the state keys grey
+// while a turn is running.
 func TestGolden_BacklogScreen(t *testing.T) {
 	captureGolden(t, "backlog-screen", "the backlog screen", goldenWidths, func(width int) []golden.Panel {
 		screen := func(mut func(*BacklogScreen)) *BacklogScreen {
@@ -3413,9 +3413,24 @@ func TestGolden_BacklogScreen(t *testing.T) {
 				typed(b, "sprint")
 				return b.View(width)
 			}()},
-			{Label: "[s] · the status filter in words, and what it hid under the list", View: func() string {
+			{Label: "[/] ready p:low [enter] · the words held over the list, and what they hid under it", View: func() string {
 				b := screen(nil)
+				b.Update(key("/"))
+				typed(b, "ready p:low")
+				b.Update(key("enter"))
+				return b.View(width)
+			}()},
+			{Label: "[s] · the status picker beside the list, where the item stands now marked", View: func() string {
+				b := screen(nil)
+				for range 3 {
+					b.Update(key("down"))
+				}
 				typed(b, "s")
+				return b.View(width)
+			}()},
+			{Label: "[r] · the run picker: run it, or groom it", View: func() string {
+				b := screen(nil)
+				typed(b, "r")
 				return b.View(width)
 			}()},
 			{Label: "[enter] · the body with the surface to itself", View: func() string {

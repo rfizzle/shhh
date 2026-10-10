@@ -238,13 +238,14 @@ func TestTodoGroom_StaleIsDrawnOnlyForAnItemThatWasRead(t *testing.T) {
 	}
 }
 
-// The screen's [g] is the session's own act, taken through the same handler
-// a typed command reaches.
+// The run picker's groom row is the session's own act, taken through the
+// same handler a typed command reaches.
 func TestTodoGroom_TheScreenKeyStartsTheReading(t *testing.T) {
 	m, _ := groomModel(t, map[string]string{"cache-ttl.md": groomItem})
 	opened, _ := m.openTodoScreen()
 	m = opened.(Model)
-	m = press(t, m, keys.Shown(keys.Backlog.Groom))
+	m = press(t, m, keys.Shown(keys.Backlog.Run))
+	m = press(t, m, "2")
 	if m.state == stateBacklog {
 		t.Fatal("the screen should have closed for the reading")
 	}

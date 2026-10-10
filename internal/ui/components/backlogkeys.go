@@ -1,10 +1,11 @@
 package components
 
 // The backlog screen's keyboard: the ladder Update walks, the split between
-// keys that change nothing and keys that change a file, and the three modes —
-// the confirm, the filter row and the body — that take the keys off it while
-// they are up. The filter row and the body answer their own keys
-// (backlogfilter.go, backlogitem.go); the ladder is what hands them over.
+// keys that change nothing and keys that change a file, and the modes — the
+// confirm, a picker, the filter row and the body — that take the keys off it
+// while they are up. The picker, the filter row and the body answer their own
+// keys (backlogpicker.go, backlogfilter.go, backlogitem.go); the ladder is
+// what hands them over.
 // It is its own file because a surface's whole register is the thing the
 // register's rules are checked against, and a key answered from inside a
 // renderer is a key no such reading finds.
@@ -33,15 +34,19 @@ func (b *BacklogScreen) Update(msg tea.KeyPressMsg) (done bool, result backlogRe
 		res, b.Notice = b.Plan.update(pressed)
 		return false, res
 	}
+	// A picker holds the keyboard the same way, one level in: its esc is
+	// the step back to the list.
+	if b.picker != nil {
+		return false, b.updatePicker(msg)
+	}
 	// With the query line open the query line is the surface, so every
-	// selector letter is a letter — the reading every list in the product
-	// makes. esc clears it, and on a filter that is already empty it closes
-	// the row, which is how the row keys are got back without leaving.
+	// letter is a letter — the reading every list in the product makes.
+	// esc clears it, and on a filter that is already empty it closes the
+	// row; enter closes it keeping the words, which is how the row keys are
+	// got back over the list the words narrowed.
 	if b.filter.filtering {
-		// The list under the row is still a list, which is why the movement
-		// binding is the arrows and not j/k: a query being typed into has
-		// no letters to spare, and this screen would have had to break the
-		// pair here as well as on the list.
+		// The list under the row is still a list, so its arrows still move:
+		// only the halves of the pair no sentence types.
 		if !b.movedTyping(pressed) && b.filter.edit(msg, pressed) {
 			b.refilter()
 		}
@@ -54,6 +59,14 @@ func (b *BacklogScreen) Update(msg tea.KeyPressMsg) (done bool, result backlogRe
 		return false, backlogResult{}
 	}
 	if keys.Is(pressed, keys.Backlog.Back) {
+		// esc clears a query before it leaves: the words narrowing the list
+		// are one level in, and the step back from them is the whole list
+		// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+		if b.filter.query != "" {
+			b.filter.clear()
+			b.refilter()
+			return false, backlogResult{}
+		}
 		return true, backlogResult{canceled: true}
 	}
 	if b.readKey(pressed) {
@@ -63,7 +76,7 @@ func (b *BacklogScreen) Update(msg tea.KeyPressMsg) (done bool, result backlogRe
 }
 
 // readKey answers the keys that change nothing outside this screen — the
-// pointer, the tab, the filters, the register — and reports whether it did.
+// pointer, the tab, the filter, the register — and reports whether it did.
 // They are separated from the keys that change a file because that is the
 // line a running turn is drawn along: everything here stays live while the
 // model works, and nothing here is offered twice.
@@ -78,20 +91,6 @@ func (b *BacklogScreen) readKey(pressed string) bool {
 		b.swapTab()
 	case keys.Is(pressed, keys.Backlog.Filter):
 		b.filter.open()
-	case keys.Is(pressed, keys.Backlog.Status) && !b.archived():
-		b.filter.cycleStatus()
-		b.refilter()
-	case keys.Is(pressed, keys.Backlog.Priority):
-		b.filter.cyclePriority(b.Priority)
-		b.refilter()
-	case keys.Is(pressed, keys.Backlog.Kind):
-		b.filter.cycleField(b.Fields)
-		b.refilter()
-	case keys.Is(pressed, keys.Backlog.Ready) && !b.archived():
-		b.filter.toggleReady()
-		b.refilter()
-	case keys.Is(pressed, keys.Backlog.Depends):
-		b.jumpToDependency()
 	case keys.Is(pressed, keys.Backlog.List):
 		b.keys = !b.keys
 	default:
@@ -100,13 +99,13 @@ func (b *BacklogScreen) readKey(pressed string) bool {
 	return true
 }
 
-// stateKey answers the keys that change a file. Every one of them is inert
-// while the session's own turn is running: the model may be reading these
-// files this second, and a key that changed one under it would leave the
-// turn working from a header that no longer exists. The keys go grey and the
-// footer says why, rather than the surface accepting the press and refusing
-// it afterwards — a refusal after the fact is a key that looked live
-// (invariant 5).
+// stateKey answers the keys that change a file, or open a picker that will.
+// Every one of them is inert while the session's own turn is running: the
+// model may be reading these files this second, and a key that changed one
+// under it would leave the turn working from a header that no longer
+// exists. The keys go grey and the footer says why, rather than the surface
+// accepting the press and refusing it afterwards — a refusal after the fact
+// is a key that looked live (invariant 5).
 func (b *BacklogScreen) stateKey(pressed string) (bool, backlogResult) {
 	if b.ReadOnly {
 		return false, backlogResult{}
@@ -123,30 +122,21 @@ func (b *BacklogScreen) stateKey(pressed string) (bool, backlogResult) {
 		return false, backlogResult{}
 	}
 	switch {
+	case keys.Is(pressed, keys.Backlog.Edit):
+		return false, act(BacklogEdit, row.Slug)
 	case row.State == BacklogUnreadable:
 		// Nothing below this line can be done to a file that will not parse:
 		// the verbs are line edits on a header this one does not have. The
 		// row is still here, and the way to act on it is the editor.
-		if keys.Is(pressed, keys.Backlog.Edit) {
-			return false, act(BacklogEdit, row.Slug)
-		}
-	case keys.Is(pressed, keys.Backlog.Edit):
-		return false, act(BacklogEdit, row.Slug)
+	case keys.Is(pressed, keys.Backlog.Status):
+		b.openStatus(*row)
 	case keys.Is(pressed, keys.Backlog.Run) && !b.archived():
-		return false, act(BacklogRun, row.Slug)
-	case keys.Is(pressed, keys.Backlog.Reopen):
-		return false, act(BacklogReopen, row.Slug)
-	case keys.Is(pressed, keys.Backlog.Block) && !b.archived():
-		b.ask(BacklogBlock, row.Slug, "Block "+row.Slug+"?")
-	case keys.Is(pressed, keys.Backlog.Archive) && !b.archived():
-		b.ask(BacklogArchive, row.Slug, "Archive "+row.Slug+"?")
+		b.openRun(*row)
 	case keys.Is(pressed, keys.Backlog.Drop) && !b.archived():
 		// The one key here that loses information says so in the question,
 		// because the answer to "archive or drop" depends entirely on which
 		// of the two this is.
 		b.ask(BacklogDrop, row.Slug, "Drop "+row.Slug+"? The file is deleted, not archived.")
-	case keys.Is(pressed, keys.Backlog.Groom) && !b.archived():
-		return false, act(BacklogGroom, row.Slug)
 	case keys.Is(pressed, keys.Backlog.Sprint) && b.Sprint != "" && !b.archived():
 		if row.InSprint {
 			return false, act(BacklogSprintDrop, row.Slug)
@@ -182,34 +172,6 @@ func (b *BacklogScreen) updateConfirm(msg tea.KeyPressMsg) (bool, backlogResult)
 		return false, backlogResult{Do: cmd}
 	}
 	return false, backlogResult{}
-}
-
-// jumpToDependency puts the pointer on the first item the row is waiting on,
-// which is what makes the edge something you can follow rather than a slug
-// to remember. A dependency the backlog does not hold is the case the row's
-// own warning is about, and this says so rather than moving nowhere.
-func (b *BacklogScreen) jumpToDependency() {
-	row := b.current()
-	if row == nil || len(row.Waits) == 0 {
-		return
-	}
-	want := row.Waits[0]
-	for i, r := range b.rows() {
-		if r.Slug != want {
-			continue
-		}
-		// The pointer may be moving to a row the filters are hiding, so they
-		// come off: a jump that landed on nothing would be the filter
-		// swallowing the answer to the key that was just pressed.
-		if !b.filter.showing(i) {
-			b.filter.clear()
-		}
-		b.focus[b.tab] = i
-		b.reader.close()
-		b.sync()
-		return
-	}
-	b.Notice = "the backlog has no item named " + want
 }
 
 // act is a key that asked for something with nothing to confirm.

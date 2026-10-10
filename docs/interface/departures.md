@@ -661,25 +661,24 @@ artboard and this differ, the artboard wins.
 _Filed 2026-09-04 · closes by the artboard_
 
 *A gap, mostly closed.* The Backlog artboard now draws `/todo` as the screen
-the binary draws, and it draws the first four decisions below as they are
+the binary draws, and it draws the first three decisions below as they are
 written here: the one-row foot with `[?]` holding the rest, the row's field
-order, the pointer on the arrows alone and both ends of a dependency. What it
-does not draw is the rest of the first — which offers give ground where even
-the foot does not fit, and the keys drawn grey while a turn runs — and the
-fifth, where the two panes stop fitting. The five were decided here, before
-there was an artboard:
+order and both ends of a dependency. What it does not draw is the rest of
+the first — which offers give ground where even the foot does not fit, and
+the keys drawn grey while a turn runs — and the fourth, where the two panes
+stop fitting. The four were decided here, before there was an artboard:
 
 **The foot is one row, and `[?]` holds the rest.** The picker's own key row
 is one row — `[↑↓] choose · [enter] read it · [esc] close` — and a key hint is
-one row of at most six. The screen has more than twenty keys, and a foot that
+one row of at most six. The screen had more than twenty keys, and a foot that
 printed them all ran to three rows under the list while the header offered
 `[?] keys` beside it: the register twice. So the foot offers the keys pressed
 every time the screen is open — move, read, filter, edit, a new item and the
-way out — and the filters, the tabs and the other verbs are behind `[?]`.
+way out — and the tabs and the other verbs are behind `[?]`.
 Where even those do not fit, whole offers give ground: the way out first,
 because the header's `[esc] back` states it at every width, then the new item
-and the editor. The pointer's keys never go, since no other list teaches that
-this one moves on the arrows alone. While a turn runs, the keys that change a
+and the editor, then the filter. The pointer's keys and reading the item
+never go. While a turn runs, the keys that change a
 file leave the row and are drawn grey under the sentence saying why — that
 block is a reading of the screen's state, not the foot's offers, so it keeps
 every such key. `[esc] back` is drawn once, on the header: the frame's row
@@ -690,11 +689,6 @@ under the screen says `backlog` and offers nothing.
 grade letters are kept, the state clips, and the title goes first. The pane
 beside the list carries the title in full, so losing it there is a fold; the
 state is why the list is on screen at all.
-
-**The pointer moves on the arrows alone.** Every other list in the product
-moves on `↑↓` and `j/k`. Four letters select on this screen — status,
-priority, kind and ready-only — and one of them is `k`. A key is answered
-once, so the pair is broken here and nowhere else.
 
 **Both ends of a dependency.** What an item waits on is on the row, and what
 waits on it is on the pane's header line. The design system has no drawing of
@@ -786,8 +780,7 @@ sprint is working at once.
 the set and watching it are the same two questions about the same thing, and
 a proposal drawn somewhere else would be a second place a sprint is looked
 at. The card holds the keyboard while it is up, so the tab's own list is
-drawn and not live — which is what lets the card keep `j/k`, the one pair
-this screen had to break.
+drawn and not live.
 
 **The plan's card carries a reading, and folds what it left out.** The
 proposal is a reading of the ready items — grouped by what makes a set ship

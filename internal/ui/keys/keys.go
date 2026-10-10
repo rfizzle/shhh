@@ -196,7 +196,8 @@ func Words(b Binding) string { return b.Help().Desc }
 //     twice it quits. It is Draft.Cancel's alone.
 //   - / filters, ctrl+s writes, ctrl+r resets, d deletes or drops (asking
 //     where it cannot be got back), c copies, e edits or opens in $EDITOR,
-//     r retries or runs again, n/N step to the next and previous match,
+//     r runs or runs again, n/N step to the next and previous match (n
+//     alone starts a new one on a list with nothing to match),
 //     tab and shift+tab move between tabs, sections or scopes, space toggles
 //     a row's mark, digits take a numbered row, and ? lists the keys
 //     (ctrl+] where ? is a character).
@@ -724,35 +725,27 @@ var Notes = NotesKeys{
 // like the context surface, so its way out goes back to the prompt rather
 // than quitting.
 //
-// It is the one list in the product that does not move on j/k, and the
-// reason is on the row beside it: `k` cycles the kind filter here. Four
-// letters select on this screen — status, priority, kind, ready — and a
-// screen where one of them also moved the pointer would answer a keystroke
-// twice, which is the thing the register exists to make impossible. So the
-// pointer moves on the arrows alone, and every list that has no filter
-// letters keeps the pair.
+// It moves on ↑↓/jk like every other list. It once spent four letters on
+// filters — status, priority, kind, ready — and one of them was `k`, so the
+// pointer moved on the arrows alone; the filters are words typed into the
+// query now (`ready`, `p:high`, `kind:bug`), which hands the pair back. The
+// row's verbs are a handful for the same reason: the status is one key that
+// opens a picker, and grooming is a row of the run's picker, so a reader
+// holds `s` and `r` rather than six letters for the acts behind them.
 type BacklogKeys struct {
 	Move Binding
 	Read Binding
 	Page Binding
 	Tab  Binding
 
-	Filter   Binding
-	Status   Binding
-	Priority Binding
-	Kind     Binding
-	Ready    Binding
+	Filter Binding
 
-	Depends Binding
-	Edit    Binding
-	Run     Binding
-	Block   Binding
-	Reopen  Binding
-	Archive Binding
-	Drop    Binding
-	New     Binding
-	Sprint  Binding
-	Groom   Binding
+	Edit   Binding
+	New    Binding
+	Drop   Binding
+	Status Binding
+	Sprint Binding
+	Run    Binding
 
 	List Binding
 	Back Binding
@@ -762,49 +755,35 @@ type BacklogKeys struct {
 // `?` lists them in.
 func (k BacklogKeys) All() []Binding {
 	return []Binding{
-		k.Move, k.Read, k.Page, k.Tab,
-		k.Filter, k.Status, k.Priority, k.Kind, k.Ready,
-		k.Depends, k.Edit, k.Run, k.Block, k.Reopen, k.Archive, k.Drop,
-		k.New, k.Sprint, k.Groom, k.List, k.Back,
+		k.Move, k.Read, k.Page, k.Tab, k.Filter,
+		k.Edit, k.New, k.Drop, k.Status, k.Sprint, k.Run,
+		k.List, k.Back,
 	}
 }
 
 var Backlog = BacklogKeys{
-	Move: bind("↑↓", "move", "up", "down"),
+	Move: bind(MoveShown, "move", "up", "down", "k", "j"),
 	Read: bind("enter", "open", "enter"),
 	Page: bind("pgup/pgdn", "page the body", "pgup", "pgdown"),
 	Tab:  bind("tab", "the backlog, the sprint, or what shipped", "tab"),
 
 	Filter: bind("/", "filter", "/"),
-	Status: bind("s", "cycle the status filter", "s"),
-	// Priority and Kind are the two words a header field uses for what an
-	// item is: how soon and what sort. They are separate filters because
-	// they answer separate questions — "what is urgent" and "what is
-	// broken" — and a reader asking the second one is not asking the first.
-	Priority: bind("p", "cycle the priority filter", "p"),
-	Kind:     bind("k", "cycle the kind filter", "k"),
-	Ready:    bind("r", "only what can be started now", "r"),
 
-	Depends: bind("w", "jump to what it waits on", "w"),
-	Edit:    bind("e", "edit", "e"),
-	// Running an item is the one key here that starts work rather than
-	// recording it, and it is the shifted letter for that reason: the row
-	// under the pointer moves as the list is filtered, and a run started by
-	// a mistyped lowercase letter is minutes of the model's work on the
-	// wrong item.
-	Run:    bind("R", "run it", "R"),
-	Block:  bind("b", "block it", "b"),
-	Reopen: bind("o", "reopen it", "o"),
-	// Archive is [a] because [d] is the register's delete, which here is
-	// the drop below.
-	Archive: bind("a", "archive it", "a"),
-	Drop:    bind("d", "delete", "d"),
-	New:     bind("n", "a new item", "n"),
-	Sprint:  bind("S", "add it to the sprint, or drop it from one", "S"),
-	// Grooming reads rather than writes, which is why it keeps the
-	// unshifted letter a run gave up: the worst a mistyped `g` costs is one
-	// read-only turn, and nothing it finds reaches the file without a card.
-	Groom: bind("g", "read it against the tree", "g"),
+	Edit: bind("e", "edit", "e"),
+	New:  bind("n", "new item", "n"),
+	Drop: bind("d", "delete", "d"),
+	// Status opens a picker of the three an item can be put in — open,
+	// blocked with a reason, done — rather than spending a letter on each:
+	// the act is one, setting where the item stands, and the picker is
+	// where the reader sees which of them it is in now.
+	Status: bind("s", "set its status", "s"),
+	Sprint: bind("space", "toggle it in the sprint", " ", "space"),
+	// Running an item starts work rather than recording it, so the key
+	// opens a picker rather than starting anything: the row under the
+	// pointer moves as the list is filtered, and a run started by a
+	// mistyped letter is minutes of the model's work on the wrong item.
+	// Grooming is the picker's second row, because it spends a turn too.
+	Run: bind("r", "run it", "r"),
 
 	List: bind("?", "keys", "?"),
 	Back: bind("esc", "back", "esc"),
@@ -813,12 +792,9 @@ var Backlog = BacklogKeys{
 // SprintKeys are the sprint plan card's, on the backlog screen's sprint tab.
 //
 // The card holds the keyboard for as long as it is up, so none of the
-// screen's own row letters is live under it — which is what frees `j/k`
-// here on the one screen whose list moves on the arrows alone, and what
-// lets `g` mean the goal here and the grooming key one tab over. A card
-// that is answered and gone is the shortest-lived surface in the register,
-// and it is a surface for exactly that reason: while it is up it is the
-// only thing listening.
+// screen's own keys is live under it. A card that is answered and gone is
+// the shortest-lived surface in the register, and it is a surface for
+// exactly that reason: while it is up it is the only thing listening.
 type SprintKeys struct {
 	Move   Binding
 	Toggle Binding
@@ -842,9 +818,13 @@ var Sprint = SprintKeys{
 	// The left-out list is folded rather than absent: the words behind a
 	// recommendation are what makes it arguable, and a proposal that showed
 	// only what it took could not be argued with.
-	Left:   bind("o", "what was left out, and why", "o"),
-	Goal:   bind("g", "write what the set is for", "g"),
-	Take:   bind("enter", "write the sprint", "enter"),
+	Left: bind("o", "what was left out, and why", "o"),
+	// The goal is the card's first row, and enter on it is what writing
+	// one is: the pointer says which row the key is about, the way it does
+	// for every row under it.
+	Goal: bind("enter", "write what the set is for", "enter"),
+	// Taking the card writes a file, so it is the chord every write is.
+	Take:   Save("write the sprint"),
 	Cancel: bind("esc", "back", "esc"),
 }
 

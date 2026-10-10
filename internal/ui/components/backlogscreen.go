@@ -14,8 +14,8 @@ package components
 // So this is the doctor/history shape over items and nothing new: the
 // windowed list on the left, the item's own prose on the right, the shared
 // chrome around both. What it removes is the composing, not the asking —
-// blocking, archiving and dropping each still ask, and the drop still names
-// what it loses.
+// a status is set through a picker that names the item, and the drop still
+// asks and names what it loses.
 //
 // It is a passive component like the rest of this package. It owns no
 // backlog semantics: a key resolves to a BacklogCommand the host carries out
@@ -65,21 +65,15 @@ const (
 	backlogTabs
 )
 
-// The status cycle, in the order its key steps through it. It opens on the
-// empty stop, which is "every one of them", so a cycle comes back round to
-// no filter rather than trapping the reader inside one. The header fields
-// cycle the same way over the words the host declared for them.
-var backlogStatuses = []string{"", "open", "in progress", "blocked"}
-
 // BacklogField is one of the header fields an item carries, as the screen
 // filters and letters it. Which fields there are and what each may say is
 // the host's reading of the project, like every other word on a row.
 type BacklogField struct {
-	// Name is the header key. The footer names it beside the word a filter
-	// stopped on, because "story" alone does not say what it narrowed.
+	// Name is the header key, and what a query word names it by:
+	// `kind:bug`, or any prefix of the name, `p:high`.
 	Name string
-	// Values are the words the field may say, in the order the cycle steps
-	// through them.
+	// Values are the words the field may say, in the order the profile
+	// declares them.
 	Values []BacklogValue
 }
 
@@ -88,26 +82,6 @@ type BacklogField struct {
 // carry none is a field the row leaves to the pane beside it.
 type BacklogValue struct {
 	Word, Glyph string
-}
-
-// stop is one position of a field cycle: which field and which of its
-// words, with the zero value meaning no filter at all.
-type stop struct {
-	field, word string
-}
-
-// fieldStops is the flattened cycle the field-filter key steps through:
-// every word of every field, in the order the fields were declared, behind
-// one empty stop. One key rather than one key per field, because a profile
-// may declare four fields and there are not four letters left.
-func fieldStops(fields []BacklogField) []stop {
-	stops := []stop{{}}
-	for _, f := range fields {
-		for _, v := range f.Values {
-			stops = append(stops, stop{field: f.Name, word: v.Word})
-		}
-	}
-	return stops
 }
 
 // BacklogState is what a row's glyph and its state field say about an item.
@@ -156,8 +130,7 @@ type BacklogRow struct {
 	// State picks the glyph and the state field.
 	State BacklogState
 	// Waits are the dependencies not done yet, in the order the header named
-	// them. The row states the first and counts the rest, and `[w]` jumps to
-	// it.
+	// them. The row states the first and counts the rest.
 	Waits []string
 	// Blocks are the active items whose dependencies name this one. They are
 	// the other half of the same edge, and the half a listing has never
@@ -173,7 +146,7 @@ type BacklogRow struct {
 	// that row, in the parser's own words.
 	Reason string
 	// InSprint reports that the open sprint names this item, which is what
-	// `[S]` would add or drop.
+	// `[space]` would add or drop.
 	InSprint bool
 	// Note replaces the row's computed state field with the host's own
 	// words. The sprint tab fills it, because where a slug stands in a set
@@ -191,33 +164,39 @@ type backlogAct int
 const (
 	// BacklogEdit is `[e]`: the file in the reader's own editor.
 	BacklogEdit backlogAct = iota
-	// BacklogRun is `[R]`: the item worked through to a commit.
+	// BacklogRun is the run picker's first row: the item worked through to
+	// a commit.
 	BacklogRun
-	// BacklogBlock is `[b]`, past its confirm.
+	// BacklogBlock is the status picker's blocked. A block carries its
+	// reason, which is a sentence and this screen has nowhere to type one,
+	// so the host takes the keyboard back with the verb already asked.
 	BacklogBlock
-	// BacklogReopen is `[o]`: a blocked item back to open, or an archived
-	// one back into the backlog.
+	// BacklogReopen is the status picker's open: a blocked item back to
+	// open, or an archived one back into the backlog.
 	BacklogReopen
-	// BacklogArchive is `[d]`, past its confirm.
+	// BacklogArchive is the status picker's done.
 	BacklogArchive
-	// BacklogDrop is `[x]`, past the one confirm that names what it loses.
+	// BacklogDrop is `[d]`, past the one confirm that names what it loses.
 	BacklogDrop
 	// BacklogNew is `[n]`: a new item, which is a card rather than anything
 	// this screen can draw.
 	BacklogNew
-	// BacklogSprintAdd and BacklogSprintDrop are the two halves of `[S]`,
-	// which reads the row it is standing on to decide which it is.
+	// BacklogSprintAdd and BacklogSprintDrop are the two halves of
+	// `[space]`, which reads the row it is standing on to decide which it
+	// is.
 	BacklogSprintAdd
 	BacklogSprintDrop
-	// BacklogGroom is `[g]`: the item read against the tree as it stands.
-	// Like a run it spends a turn, so the host closes the screen for it.
+	// BacklogGroom is the run picker's second row: the item read against
+	// the tree as it stands. Like a run it spends a turn, so the host
+	// closes the screen for it.
 	BacklogGroom
-	// BacklogSprintTake is the plan card's `[enter]`: write the sprint from
-	// the slugs still in the set, in the order they are drawn.
+	// BacklogSprintTake is the plan card's write: the sprint from the slugs
+	// still in the set, in the order they are drawn.
 	BacklogSprintTake
-	// BacklogSprintGoal is the plan card's `[g]`: say what the set is for.
-	// The goal is a sentence and the card has nowhere to type one, so the
-	// host takes the keyboard back with the question already asked.
+	// BacklogSprintGoal is enter on the plan card's goal row: say what the
+	// set is for. The goal is a sentence and the card has nowhere to type
+	// one, so the host takes the keyboard back with the question already
+	// asked.
 	BacklogSprintGoal
 	// BacklogSprintCancel is the plan card's `[esc]`: nothing is written
 	// and the proposal is dropped.
@@ -261,18 +240,17 @@ type BacklogScreen struct {
 	// "item". A screen that counted questions as items would be naming the
 	// backlog by a word that appears nowhere in it.
 	Noun string
-	// Priority is the field that orders the list. It has a key of its own
-	// because every backlog has it and it is what the list is sorted by,
-	// so it is the one filter a reader reaches for without reading the
-	// footer first.
+	// Priority is the field that orders the list, and the one a query word
+	// names by its first letter: every backlog has it, and it is what the
+	// list is sorted by.
 	Priority BacklogField
 	// Fields are the rest of the header's fields, in the order the project
-	// declares them: what the field-filter key cycles, and what a row
-	// letters after the priority.
+	// declares them: what a query word can name, and what a row letters
+	// after the priority.
 	Fields []BacklogField
 	// Sprint is the open sprint's name, or empty where the project is
-	// working without one. `[S]` is offered only while there is a set to add
-	// to.
+	// working without one. `[space]` is offered only while there is a set
+	// to add to.
 	Sprint string
 	// Board is the sprint tab. nil is a project with no sprint, and the tab
 	// is absent rather than empty: a tab that opens on "there is no sprint"
@@ -311,10 +289,11 @@ type BacklogScreen struct {
 	// tab, so moving between them keeps every place.
 	tab   int
 	focus [backlogTabs]int
-	// filter is the query row and the cycles, and reader the item pane and
-	// the mode that gives it the surface.
+	// filter is the query row, reader the item pane and the mode that gives
+	// it the surface, and picker the status or run picker while one is up.
 	filter backlogFilter
 	reader backlogReader
+	picker *backlogPicker
 	// list is the shared pointer and window over the positions the filters
 	// left showing (list.go).
 	list List[int]
@@ -366,7 +345,7 @@ func (b *BacklogScreen) header() screenHeader {
 			h.left = append(h.left, screenField(b.Board.Name))
 		}
 	}
-	if words := b.filter.words(b.Priority, b.Fields); words != "" && !b.planning() {
+	if words := b.filter.words(); words != "" && !b.planning() {
 		h.left = append(h.left, screenField(words))
 	}
 	if b.Sprint != "" && b.tab == backlogTabItems {
@@ -501,6 +480,14 @@ func (b *BacklogScreen) after(moved bool) bool {
 	b.focus[b.tab] = b.filter.shown[min(max(b.list.Focus, 0), len(b.filter.shown)-1)]
 	b.confirm, b.pending = nil, nil
 	return true
+}
+
+// pane is the right pane: the picker while one is up, else the item.
+func (b *BacklogScreen) pane(width int) []string {
+	if b.picker != nil {
+		return b.picker.rows(width)
+	}
+	return b.reader.itemRows(b.item(), width)
 }
 
 // item is the row under the pointer as the reader draws it.

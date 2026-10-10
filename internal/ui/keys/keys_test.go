@@ -336,21 +336,6 @@ func TestBacklogChordHasOneHome(t *testing.T) {
 	}
 }
 
-// The backlog screen is the one list in the product whose pointer does not
-// move on j/k, and the reason is that four letters select on it. This holds
-// the two apart: a movement binding that grew `k` back would answer the
-// kind filter's keystroke as well, and the first case in the switch would
-// silently win.
-func TestBacklogMovementLeavesTheFilterLetters(t *testing.T) {
-	for _, b := range []Binding{Backlog.Status, Backlog.Priority, Backlog.Kind, Backlog.Ready} {
-		for _, k := range b.Keys() {
-			if Is(k, Backlog.Move) {
-				t.Errorf("%q is both %q and the pointer's movement", k, Words(b))
-			}
-		}
-	}
-}
-
 // TestSurfacesAreNamedAndPlaced keeps the register readable as a table:
 // every row says what it is, which section is normative for it, and how it
 // gets the keyboard.

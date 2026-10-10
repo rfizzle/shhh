@@ -14,26 +14,28 @@
 backlog · planning · everything ready  2 of 2 items kept · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────────
 
-nothing is written until [enter]
+nothing is written until [ctrl+s]
 Make the cache expire what it should and say what it did.
 Reads as a minor release.
 
+  goal  rewrite what the set is for
 ❯ [x] cache-ttl  Give the cache a lifetime  ·  nothing else can be measured unt…
   [x] cache-invalidate  Invalidate on write  ·  the same package, and it is the…
 
 2 items left out · 1 unrelated, 1 too big [o]
 
 [↑↓/jk] move · [space] toggle · [o] what was left out, and why
-[g] write what the set is for · [enter] write the sprint · [esc] back
+[ctrl+s] write the sprint · [esc] back
 
 · what was left out · the word beside each candidate the reading did not take
 backlog · planning · everything ready  2 of 2 items kept · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────────
 
-nothing is written until [enter]
+nothing is written until [ctrl+s]
 Make the cache expire what it should and say what it did.
 Reads as a minor release.
 
+  goal  rewrite what the set is for
 ❯ [x] cache-ttl  Give the cache a lifetime  ·  nothing else can be measured unt…
   [x] cache-invalidate  Invalidate on write  ·  the same package, and it is the…
 
@@ -42,49 +44,52 @@ Reads as a minor release.
   too big    cache-audit  An audit trail for every eviction
 
 [↑↓/jk] move · [space] toggle · [o] what was left out, and why
-[g] write what the set is for · [enter] write the sprint · [esc] back
+[ctrl+s] write the sprint · [esc] back
 
 · a row dropped · it keeps its place and loses its tick
 backlog · planning · everything ready  1 of 2 items kept · [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────────
 
-nothing is written until [enter]
+nothing is written until [ctrl+s]
 Make the cache expire what it should and say what it did.
 Reads as a minor release.
 
+  goal  rewrite what the set is for
   [x] cache-ttl  Give the cache a lifetime  ·  nothing else can be measured unt…
 ❯ [ ] cache-invalidate  Invalidate on write  ·  the same package, and it is the…
 
 2 items left out · 1 unrelated, 1 too big [o]
 
 [↑↓/jk] move · [space] toggle · [o] what was left out, and why
-[g] write what the set is for · [enter] write the sprint · [esc] back
+[ctrl+s] write the sprint · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · the set · a line per item, and what was left out folded under it
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · planning␛[m␛[38;5;244m · everything ready␛[m  ␛[38;5;244m2 of 2 items kept␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;244mnothing is written until ␛[m␛[38;5;254m[enter]␛[m
+␛[38;5;244mnothing is written until ␛[m␛[38;5;254m[ctrl+s]␛[m
 ␛[38;5;244mMake the cache expire what it should and say what it did.␛[m
 ␛[38;5;244mReads as a minor release.␛[m
 
+  ␛[38;5;254mgoal␛[m␛[38;5;244m  rewrite what the set is for␛[m
 ␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m[x]␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mcache-ttl  Give the cache a lifetime  ·  nothing else can be measured unt…␛[m␛[m
   ␛[38;5;254m[x]␛[m ␛[1;38;5;254mcache-invalidate␛[m␛[38;5;244m  Invalidate on write  ·  the same package, and it is the…␛[m
 
 ␛[38;5;244m2 items left out · 1 unrelated, 1 too big␛[m ␛[38;5;254m[o]␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m toggle␛[m␛[38;5;244m · ␛[m␛[38;5;254m[o]␛[m␛[38;5;244m what was left out, and why␛[m
-␛[38;5;254m[g]␛[m␛[38;5;244m write what the set is for␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m write the sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write the sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · what was left out · the word beside each candidate the reading did not take
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · planning␛[m␛[38;5;244m · everything ready␛[m  ␛[38;5;244m2 of 2 items kept␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;244mnothing is written until ␛[m␛[38;5;254m[enter]␛[m
+␛[38;5;244mnothing is written until ␛[m␛[38;5;254m[ctrl+s]␛[m
 ␛[38;5;244mMake the cache expire what it should and say what it did.␛[m
 ␛[38;5;244mReads as a minor release.␛[m
 
+  ␛[38;5;254mgoal␛[m␛[38;5;244m  rewrite what the set is for␛[m
 ␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m[x]␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mcache-ttl  Give the cache a lifetime  ·  nothing else can be measured unt…␛[m␛[m
   ␛[38;5;254m[x]␛[m ␛[1;38;5;254mcache-invalidate␛[m␛[38;5;244m  Invalidate on write  ·  the same package, and it is the…␛[m
 
@@ -93,20 +98,21 @@ Reads as a minor release.
 ␛[38;5;244m  too big    cache-audit  An audit trail for every eviction␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m toggle␛[m␛[38;5;244m · ␛[m␛[38;5;254m[o]␛[m␛[38;5;244m what was left out, and why␛[m
-␛[38;5;254m[g]␛[m␛[38;5;244m write what the set is for␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m write the sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write the sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · a row dropped · it keeps its place and loses its tick
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · planning␛[m␛[38;5;244m · everything ready␛[m  ␛[38;5;244m1 of 2 items kept␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;244mnothing is written until ␛[m␛[38;5;254m[enter]␛[m
+␛[38;5;244mnothing is written until ␛[m␛[38;5;254m[ctrl+s]␛[m
 ␛[38;5;244mMake the cache expire what it should and say what it did.␛[m
 ␛[38;5;244mReads as a minor release.␛[m
 
+  ␛[38;5;254mgoal␛[m␛[38;5;244m  rewrite what the set is for␛[m
   ␛[38;5;254m[x]␛[m ␛[1;38;5;254mcache-ttl␛[m␛[38;5;244m  Give the cache a lifetime  ·  nothing else can be measured unt…␛[m
 ␛[38;5;254m❯ ␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m[ ]␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mcache-invalidate  Invalidate on write  ·  the same package, and it is the…␛[m␛[m
 
 ␛[38;5;244m2 items left out · 1 unrelated, 1 too big␛[m ␛[38;5;254m[o]␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m toggle␛[m␛[38;5;244m · ␛[m␛[38;5;254m[o]␛[m␛[38;5;244m what was left out, and why␛[m
-␛[38;5;254m[g]␛[m␛[38;5;244m write what the set is for␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m write the sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
+␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write the sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m

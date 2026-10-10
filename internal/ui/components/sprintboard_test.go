@@ -139,9 +139,8 @@ func planScreen() *BacklogScreen {
 	return b
 }
 
-// The card holds the keyboard: j/k move where the list under it moves on
-// the arrows alone, space drops and restores, and enter hands back what is
-// left in the order it is drawn.
+// The card holds the keyboard: j/k move, space drops and restores, and the
+// write chord hands back what is left in the order it is drawn.
 func TestSprintPlan_KeysAnswerTheCard(t *testing.T) {
 	b := planScreen()
 	b.Update(key("j"))
@@ -164,22 +163,36 @@ func TestSprintPlan_KeysAnswerTheCard(t *testing.T) {
 		t.Fatalf("k left the pointer at %d", b.Plan.focus)
 	}
 	b.Plan.Rows[0].Dropped = true
-	_, res := b.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if _, res := b.Update(key("enter")); res.Do != nil {
+		t.Fatalf("enter on a row of the set = %+v; it writes nothing", res.Do)
+	}
+	_, res := b.Update(key("ctrl+s"))
 	if res.Do == nil || res.Do.Act != BacklogSprintTake {
-		t.Fatalf("enter = %+v", res.Do)
+		t.Fatalf("ctrl+s = %+v", res.Do)
 	}
 	if got := strings.Join(res.Do.Slugs, ","); got != "two,three" {
-		t.Fatalf("enter handed back %q, not what was left in order", got)
+		t.Fatalf("ctrl+s handed back %q, not what was left in order", got)
 	}
 }
 
 // Nothing on the card is written until it is taken, and the ways out say
-// which of the two they are.
+// which of the two they are. The goal is the card's first row, and enter
+// on it is what writes one.
 func TestSprintPlan_TheWaysOut(t *testing.T) {
 	b := planScreen()
-	_, res := b.Update(key("g"))
+	if _, res := b.Update(key("g")); res.Do != nil {
+		t.Fatalf("g = %+v; the goal is a row now", res.Do)
+	}
+	b.Update(key("k"))
+	if !strings.Contains(ansi.Strip(b.View(110)), "[enter] write what the set is for") {
+		t.Errorf("the goal row does not offer its key:\n%s", ansi.Strip(b.View(110)))
+	}
+	if _, res := b.Update(key(" ")); res.Do != nil || b.Plan.Rows[0].Dropped {
+		t.Fatal("space on the goal row toggled a row of the set")
+	}
+	_, res := b.Update(key("enter"))
 	if res.Do == nil || res.Do.Act != BacklogSprintGoal {
-		t.Fatalf("g = %+v", res.Do)
+		t.Fatalf("enter on the goal row = %+v", res.Do)
 	}
 	done, res := b.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	if done || res.Do == nil || res.Do.Act != BacklogSprintCancel {
@@ -194,9 +207,9 @@ func TestSprintPlan_RefusesAnEmptySet(t *testing.T) {
 	for i := range b.Plan.Rows {
 		b.Plan.Rows[i].Dropped = true
 	}
-	_, res := b.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	_, res := b.Update(key("ctrl+s"))
 	if res.Do != nil {
-		t.Fatalf("enter over an empty set = %+v", res.Do)
+		t.Fatalf("ctrl+s over an empty set = %+v", res.Do)
 	}
 	if !strings.Contains(b.Notice, "nothing is left in the set") {
 		t.Fatalf("notice = %q", b.Notice)
@@ -207,12 +220,12 @@ func TestSprintPlan_RefusesAnEmptySet(t *testing.T) {
 // of them is offered: a key that cannot act is not an offer.
 func TestSprintPlan_OffersOnlyItsOwnKeys(t *testing.T) {
 	view := ansi.Strip(planScreen().View(110))
-	for _, want := range []string{"[↑↓/jk] move", "[space] toggle", "[enter] write the sprint", "[esc] back"} {
+	for _, want := range []string{"[↑↓/jk] move", "[space] toggle", "[ctrl+s] write the sprint", "[esc] back"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the card never offers %q:\n%s", want, view)
 		}
 	}
-	for _, gone := range []string{"[R] run it", "[x] drop it", "[tab] what shipped"} {
+	for _, gone := range []string{"[r] run it", "[d] delete", "[tab] what shipped"} {
 		if strings.Contains(view, gone) {
 			t.Errorf("the card still offers %q, which it does not answer:\n%s", gone, view)
 		}

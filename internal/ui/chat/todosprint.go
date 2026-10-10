@@ -837,12 +837,12 @@ func sprintReportBlocks(entries []todo.SprintEntry) string {
 	return strings.Join(parts, "\n\n")
 }
 
-// sprintGoalPrefix is what the plan card's goal key leaves in the draft
+// sprintGoalPrefix is what the plan card's goal row leaves in the draft
 // box. It is the verb the goal is written with everywhere else, so the key
 // teaches the command rather than hiding it.
 const sprintGoalPrefix = "/todo sprint goal "
 
-// composeSprintGoal is what the plan card's `[g]` leaves behind: the
+// composeSprintGoal is what the plan card's goal row leaves behind: the
 // command in the draft box with the cursor after it, waiting for the
 // sentence. A draft already in the box is not thrown away for it.
 func (m Model) composeSprintGoal() (tea.Model, tea.Cmd) {
