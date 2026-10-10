@@ -39,6 +39,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
@@ -149,6 +150,9 @@ func (d *todoDriver) sprintParallel(ctx context.Context, maxItems, n int) bool {
 	// A stop left over from an earlier sprint is not this one's to answer.
 	run.ClearStop(d.root)
 	d.out = &todoSyncWriter{w: d.out}
+	// The sprint's checks take turns across every process it starts, under
+	// the run directory.
+	d.slots = subagent.OpenFileSlots(filepath.Join(run.Dir(d.root), todoSlotsDir), d.slotCount, "")
 	set := &todoLanes{root: d.root, out: d.out, sp: sp, top: todoRepoTop(d.root)}
 	for _, l := range sp.Orphans() {
 		d.orphaned(sp, l)
@@ -177,6 +181,7 @@ func (d *todoDriver) sprintParallel(ctx context.Context, maxItems, n int) bool {
 		}
 	}()
 
+	go set.watchSlots(ctx, d.slots.Dir())
 	results := make(chan todoLaneResult)
 	running := 0
 	for {
@@ -318,13 +323,74 @@ func (d *todoDriver) laneDriver(l *todoLane) *todoDriver {
 	// last. A generator the lane's own copies run (a fan-out's landing) is
 	// contained in the tree it writes, as the checkout's is.
 	if d.gate != nil {
-		c.gate = &quality.Runner{Workspace: c.tree, WrapIn: d.gate.WrapIn}
+		c.gate = &quality.Runner{Workspace: c.tree, WrapIn: d.gate.WrapIn, Slot: c.takeCheckSlot}
 		// A flake in the lane's copy is the checkout's flake: the ledger is
 		// keyed on the checkout the copy was made from, never the copy,
 		// which is gone once the lane lands.
 		recordGateFlakes(c.gate, d.root, func() string { return recordedSession(d.rec) })
 	}
 	return &c
+}
+
+// todoSlotsDir is where, under the run directory, a parallel sprint's check
+// slots are locked.
+const (
+	todoSlotsDir  = "slots"
+	todoSlotsPoll = 500 * time.Millisecond
+)
+
+// takeCheckSlot is the one place a lane takes one of the sprint's check
+// slots, for anything of its own that loads the machine: its quality gate
+// takes it through quality.Runner.Slot, and a step that runs a suite itself
+// calls it too. A stage's process takes its slots in the process, from the
+// same directory (subagent.SlotDirEnv). It waits while every slot is held,
+// answers the release, and false where ctx ended first. Outside a parallel
+// sprint there are no slots and it answers at once.
+func (d *todoDriver) takeCheckSlot(ctx context.Context) (func(), bool) {
+	if d.slots == nil {
+		return func() {}, true
+	}
+	lane := ""
+	if d.lane != nil {
+		lane = d.lane.slug
+	}
+	return d.slots.ForLane(lane).Take(ctx, nil)
+}
+
+// watchSlots reads which lanes are waiting for a check slot and says so on
+// the board, through the lane's entry in the checkpoint, and in the sprint's
+// log, once as each wait begins. It runs until the sprint's context ends.
+func (s *todoLanes) watchSlots(ctx context.Context, dir string) {
+	tick := time.NewTicker(todoSlotsPoll)
+	defer tick.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+		}
+		waits := subagent.SlotWaits(dir)
+		s.mu.Lock()
+		changed := false
+		for i := range s.sp.Lanes {
+			l := &s.sp.Lanes[i]
+			want := ""
+			if running, ok := waits[l.Slug]; ok {
+				want = fmt.Sprintf("waiting for a check slot (%d running)", running)
+			}
+			if want == l.Wait {
+				continue
+			}
+			l.Wait, changed = want, true
+			if want != "" {
+				fmt.Fprintf(s.out, "… %s %s\n", l.Slug, want)
+			}
+		}
+		if changed {
+			s.saveLocked()
+		}
+		s.mu.Unlock()
+	}
 }
 
 // boundary writes where the lane's item is and what it has spent, at each

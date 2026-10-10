@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/runner"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo/run"
 )
 
@@ -175,6 +176,12 @@ func (d *todoDriver) stageEnv(dir string, step run.Step) []string {
 	}
 	if step.Stage != "" {
 		env = append(env, todoStageEnv+"="+string(step.Stage))
+	}
+	if d.slots != nil {
+		env = append(env, subagent.SlotDirEnv+"="+d.slots.Dir())
+		if d.lane != nil {
+			env = append(env, subagent.SlotLaneEnv+"="+d.lane.slug)
+		}
 	}
 	if d.spoolDir == "" || dir != d.tree {
 		return env

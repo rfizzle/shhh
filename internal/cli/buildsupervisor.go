@@ -320,7 +320,11 @@ func buildSupervisor(ctx context.Context, a *assembly, session chatSession, reco
 		MaxChildren:   cfg.Agents.MaxChildren,
 		// One throttle on checks for the whole session: a child's build or
 		// test run, a child's gate run and the session's own gate below.
-		CheckSlots:    cfg.Agents.CheckSlots,
+		CheckSlots: cfg.Agents.CheckSlots,
+		// Set on a stage a parallel sprint started, so its lanes' checks
+		// take turns across processes (subagent.SlotDirEnv).
+		CheckSlotDir:  os.Getenv(subagent.SlotDirEnv),
+		CheckSlotLane: os.Getenv(subagent.SlotLaneEnv),
 		CheckCommands: gateCommands(session.gateRunner),
 		// Children answer to the directories the person added on top of
 		// their own worktree, which is where their file edits are already

@@ -696,6 +696,12 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		sup.SetConversation(a.Messages)
 		defer sup.Close()
 		exec = sup.WrapExecutor("", exec)
+		// A stage of a parallel sprint's lane runs its own builds and test
+		// runs too, and they take turns with every other lane's.
+		// See docs/capabilities/subagents.md#what-they-share.
+		if os.Getenv(subagent.SlotDirEnv) != "" {
+			run = sup.ThrottleCommands(run)
+		}
 	}
 
 	// Repeat detection goes on outside the shared chain, so it sees every

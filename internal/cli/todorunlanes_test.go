@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
@@ -491,5 +493,80 @@ func TestTodoRunHeadless_ParallelNeedsASprint(t *testing.T) {
 		if err := todoRunHeadless(newTodoRunCmd(), "", flags); err == nil {
 			t.Errorf("%+v should be refused", flags)
 		}
+	}
+}
+
+// lockedBuf is a log a test reads while the sprint writes it.
+type lockedBuf struct {
+	mu sync.Mutex
+	b  strings.Builder
+}
+
+func (l *lockedBuf) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.b.Write(p)
+}
+
+func (l *lockedBuf) String() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.b.String()
+}
+
+// A lane's gate takes one of the sprint's check slots from the directory
+// every process of the sprint honours: with the only slot held elsewhere the
+// lane waits, says so in the sprint's log and on its entry in the
+// checkpoint, and goes on once the slot is given back.
+func TestTodoRunHeadless_LanesTakeTurnsAtTheGate(t *testing.T) {
+	root := todoRepo(t)
+	laneItem(t, root, "a-one", "a-one.go")
+	a := &laneAnswers{}
+	d, _ := laneDriverFor(t, root, a)
+	buf := &lockedBuf{}
+	d.out = buf
+	d.slotCount = 1
+	// The gate a trusted checkout gets, over a project whose one suite is
+	// committed, so the lane's copy carries it.
+	writeQualityConfig(t, root, `{"suites":{"default":{"checks":[{"name":"ok","exe":"true"}]}}}`)
+	for _, args := range [][]string{{"add", "."}, {"commit", "-q", "-m", "suite"}} {
+		if out, code := run.Git(root, args...); code != 0 {
+			t.Fatalf("git %v: %s", args, out)
+		}
+	}
+	d.gate = &quality.Runner{Workspace: root}
+	slotDir := filepath.Join(run.Dir(root), todoSlotsDir)
+	hold, ok := subagent.OpenFileSlots(slotDir, 1, "").Take(context.Background(), nil)
+	if !ok {
+		t.Fatal("the test could not take the slot")
+	}
+	done := make(chan bool, 1)
+	go func() { done <- d.sprintParallel(context.Background(), 0, 2) }()
+
+	deadline := time.After(30 * time.Second)
+	for !strings.Contains(buf.String(), "a-one waiting for a check slot (1 running)") {
+		select {
+		case <-deadline:
+			hold()
+			t.Fatalf("the lane never said it waited for a slot:\n%s", buf.String())
+		case <-done:
+			hold()
+			t.Fatalf("the sprint ended without the lane waiting:\n%s", buf.String())
+		case <-time.After(50 * time.Millisecond):
+		}
+	}
+	if sp, live := run.Live(root); live {
+		if l, ok := sp.Lane("a-one"); ok && !strings.Contains(l.Where(), "waiting for a check slot (1 running)") {
+			t.Fatalf("the board reads %q", l.Where())
+		}
+	}
+	hold()
+	select {
+	case blocked := <-done:
+		if blocked {
+			t.Fatalf("the sprint should have finished once the slot was free:\n%s", buf.String())
+		}
+	case <-time.After(30 * time.Second):
+		t.Fatalf("the lane never went on:\n%s", buf.String())
 	}
 }

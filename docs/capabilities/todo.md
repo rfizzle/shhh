@@ -1076,6 +1076,14 @@ so the list's order still holds. Declared rather than inferred, because a
 declaration is something a person reviewing the item can check before
 anything runs, and an inference is one more reading paid for on every item.
 
+**The lanes share the check slots.** The slots of `agents.check_slots`
+([`subagents.md`](subagents.md#what-they-share)) span the whole sprint, not
+each lane: a lane's verify run, and the builds and test runs its stages run,
+take one of the sprint's slots from lock files under the run directory that
+every stage process honours, so three lanes on a small host take turns where
+three at once took the machine down. A lane that waits reads `waiting for a
+check slot (2 running)` on the board and in `sprint.log`.
+
 **Landing is one lane at a time, in the order they finish, and it is the
 session's landing.** A lane is a writer, and its patch lands the way a
 writer's does ([`subagents.md`](subagents.md#a-writer-starts-from-your-tree)):

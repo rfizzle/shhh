@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -40,6 +41,12 @@ type todoDriver struct {
 	// checkout is untrusted, which the verify stage blocks on where the item
 	// has no checks of its own rather than passing silently.
 	gate *quality.Runner
+	// slots are the check slots a parallel sprint's processes share, in the
+	// sprint's run directory, and nil outside a parallel sprint. Everything
+	// in a lane that loads the machine takes one through takeCheckSlot, and
+	// every stage's process is told where they are (stageEnv).
+	slots     *subagent.FileSlots
+	slotCount int
 	// closeGate reports that the workspace names an on-close suite, so a
 	// stage's own process checks the tree as it closes and the verify stage
 	// can take that verdict instead of running the same suite again.
@@ -210,6 +217,7 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 	}
 	d.secretIgnore = cfg.Commit.SecretIgnore
 	d.trailers = cfg.Commit.Trailers
+	d.slotCount = cfg.Agents.CheckSlots
 	// The suites are command text out of a file that arrived with the clone
 	// and the runner spends no approval on them, so an untrusted checkout
 	// gets no gate at all rather than one that refuses when it is reached.

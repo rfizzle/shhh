@@ -572,7 +572,7 @@ func (m Model) openSprintBoard(s *todo.Store) *components.SprintBoard {
 		// item is at. The head counts them; each slug's step is its own
 		// row's note, which sprintBoardRow reads off the same checkpoint.
 		for _, l := range sp.Lanes {
-			board.Lanes = append(board.Lanes, components.SprintLane{Slug: l.Slug, Stage: string(l.Stage)})
+			board.Lanes = append(board.Lanes, components.SprintLane{Slug: l.Slug, Stage: l.Where()})
 		}
 	}
 	if c := m.todo.sprintClosed; c != nil && c.report != "" && c.name == s.Sprint.Name {
@@ -596,10 +596,10 @@ func (m Model) lanesBoard(s *todo.Store, sp *run.Sprint) *components.SprintBoard
 		board.Next = next.Slug
 	}
 	for _, l := range sp.Lanes {
-		board.Lanes = append(board.Lanes, components.SprintLane{Slug: l.Slug, Stage: string(l.Stage)})
+		board.Lanes = append(board.Lanes, components.SprintLane{Slug: l.Slug, Stage: l.Where()})
 		if it, ok := s.Find(l.Slug); ok {
 			row := m.todoScreenRow(s, it)
-			row.Note = string(l.Stage)
+			row.Note = l.Where()
 			board.Rows = append(board.Rows, row)
 		}
 	}
@@ -638,7 +638,7 @@ func (m Model) sprintBoardRow(s *todo.Store, e todo.SprintEntry) components.Back
 	}
 	for _, l := range m.todo.runner.lanes {
 		if l.Slug == e.Slug && l.Stage != "" {
-			row.Note = string(l.Stage)
+			row.Note = l.Where()
 		}
 	}
 	return row

@@ -38,6 +38,9 @@ type CheckSlots struct {
 	size    int
 	running int
 	queue   []chan struct{}
+	// shared, when set, is the second turn of every take: the slots every
+	// process of a parallel sprint honours, behind this process's own.
+	shared *FileSlots
 }
 
 // NewCheckSlots is a throttle of n slots; n <= 0 is DefaultCheckSlots.
@@ -46,6 +49,16 @@ func NewCheckSlots(n int) *CheckSlots {
 		n = DefaultCheckSlots
 	}
 	return &CheckSlots{size: n}
+}
+
+// NewSharedCheckSlots is NewCheckSlots with the slots of every process under
+// a directory behind it: a take is this process's turn first, which keeps the
+// order its own checks asked in, and then a slot on disk, which keeps the
+// whole sprint to n. A nil shared is NewCheckSlots.
+func NewSharedCheckSlots(n int, shared *FileSlots) *CheckSlots {
+	s := NewCheckSlots(n)
+	s.shared = shared
+	return s
 }
 
 // Take takes a slot, waiting while every one is held. waiting, when set, is
@@ -57,6 +70,31 @@ func (s *CheckSlots) Take(ctx context.Context, waiting func(running int)) (relea
 	if s == nil {
 		return func() {}, true
 	}
+	if s.shared == nil {
+		return s.takeLocal(ctx, waiting)
+	}
+	// A wait in either turn is one wait to the caller.
+	var told sync.Once
+	once := func(n int) {
+		if waiting != nil {
+			told.Do(func() { waiting(n) })
+		}
+	}
+	local, ok := s.takeLocal(ctx, once)
+	if !ok {
+		return nil, false
+	}
+	disk, ok := s.shared.Take(ctx, once)
+	if !ok {
+		local()
+		return nil, false
+	}
+	var released sync.Once
+	return func() { released.Do(func() { disk(); local() }) }, true
+}
+
+// takeLocal is Take over this process's own slots.
+func (s *CheckSlots) takeLocal(ctx context.Context, waiting func(running int)) (release func(), ok bool) {
 	s.mu.Lock()
 	if s.running < s.size && len(s.queue) == 0 {
 		s.running++
@@ -168,25 +206,9 @@ const slotStopped = "stopped while waiting for a check slot; nothing ran"
 // slot when the attempt ends.
 func (s *Supervisor) throttled(ctx context.Context, c *child, env Env) Env {
 	if run := env.RunCommand; run != nil {
-		env.RunCommand = func(cctx context.Context, command string) tools.ExecResult {
-			if !s.isCheck(command) {
-				return run(cctx, command)
-			}
-			release, ok := s.takeCheckSlot(cctx, c)
-			if !ok {
-				return tools.ExecResult{Output: slotStopped, ExitCode: -1, Outcome: tools.ExecStopped}
-			}
-			// A check still printing at the command ceiling is handed to the
-			// process supervisor and goes on running after this returns, so
-			// its slot goes back when that process exits rather than here —
-			// the throttle counts the builds that are running, not the calls
-			// that started them.
-			result := run(runner.OnHandedOffExit(cctx, release), command)
-			if result.Outcome != tools.ExecHandedOff {
-				release()
-			}
-			return result
-		}
+		env.RunCommand = s.checkedRun(run, func(cctx context.Context) (func(), bool) {
+			return s.takeCheckSlot(cctx, c)
+		})
 	}
 	if exec := env.Executor; exec != nil {
 		env.Executor = func(name string, args json.RawMessage) (string, error) {
@@ -202,6 +224,38 @@ func (s *Supervisor) throttled(ctx context.Context, c *child, env Env) Env {
 		}
 	}
 	return env
+}
+
+// checkedRun puts a check slot, taken through take, in front of the commands
+// of run that are checks; any other command runs at once.
+func (s *Supervisor) checkedRun(run func(context.Context, string) tools.ExecResult, take func(context.Context) (func(), bool)) func(context.Context, string) tools.ExecResult {
+	return func(cctx context.Context, command string) tools.ExecResult {
+		if !s.isCheck(command) {
+			return run(cctx, command)
+		}
+		release, ok := take(cctx)
+		if !ok {
+			return tools.ExecResult{Output: slotStopped, ExitCode: -1, Outcome: tools.ExecStopped}
+		}
+		// A check still printing at the command ceiling is handed to the
+		// process supervisor and goes on running after this returns, so
+		// its slot goes back when that process exits rather than here —
+		// the throttle counts the builds that are running, not the calls
+		// that started them.
+		result := run(runner.OnHandedOffExit(cctx, release), command)
+		if result.Outcome != tools.ExecHandedOff {
+			release()
+		}
+		return result
+	}
+}
+
+// ThrottleCommands puts the session's check slots in front of the session's
+// own commands that are checks, for a process that stands in a parallel
+// sprint's lane: its builds and test runs take turns with every other
+// lane's, as a child's do with its siblings'.
+func (s *Supervisor) ThrottleCommands(run func(context.Context, string) tools.ExecResult) func(context.Context, string) tools.ExecResult {
+	return s.checkedRun(run, s.CheckSlot)
 }
 
 // gateRun reports whether a quality gate call runs a suite rather than

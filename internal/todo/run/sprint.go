@@ -143,11 +143,24 @@ type SprintLane struct {
 	Tree       string `json:"tree,omitempty"`
 	Checkpoint string `json:"checkpoint,omitempty"`
 	// Stage is the step the item's run is at, as the lane last wrote it.
-	Stage   Stage     `json:"stage,omitempty"`
+	Stage Stage `json:"stage,omitempty"`
+	// Wait is what the lane is held up on where it is held up, as a
+	// reader of the board should read it: `waiting for a check slot (2
+	// running)`. Empty when the lane is working.
+	Wait    string    `json:"wait,omitempty"`
 	Started time.Time `json:"started,omitempty"`
 	Ledger  string    `json:"ledger,omitempty"`
 	Turns   int       `json:"turns,omitempty"`
 	Cost    float64   `json:"cost,omitempty"`
+}
+
+// Where is the lane as the board reads it: its step, and what it is held up
+// on where it is.
+func (l SprintLane) Where() string {
+	if l.Wait == "" {
+		return string(l.Stage)
+	}
+	return string(l.Stage) + " — " + l.Wait
 }
 
 // StartSprint begins a sprint. prevMode is the mode to put the session back

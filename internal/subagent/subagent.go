@@ -600,7 +600,13 @@ type Options struct {
 	// a slot as the gate's own run of it would; nil declares none, which
 	// leaves HeavyCommands.
 	// See docs/capabilities/subagents.md#what-they-share.
-	CheckSlots    int
+	CheckSlots int
+	// CheckSlotDir, when set, is a directory of lock files the check slots
+	// are also taken from, so every process pointed at it shares the one
+	// count (SlotDirEnv); CheckSlotLane is the lane a wait on it is written
+	// under.
+	CheckSlotDir  string
+	CheckSlotLane string
 	CheckCommands func() []string
 }
 

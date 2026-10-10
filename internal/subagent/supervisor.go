@@ -133,7 +133,7 @@ func New(ctx context.Context, opts Options) *Supervisor {
 		parentMode:   agent.ModeManual,
 		appliedFiles: map[string]string{},
 		claimsFreed:  make(chan struct{}),
-		checks:       NewCheckSlots(opts.CheckSlots),
+		checks:       NewSharedCheckSlots(opts.CheckSlots, sharedSlots(opts)),
 	}
 }
 
@@ -574,4 +574,12 @@ func (s *Supervisor) reachable(caller, name string) error {
 		return fmt.Errorf("no agent named %q", name)
 	}
 	return fmt.Errorf("no agent named %q among the ones you spawned; agent_report with no arguments lists them", name)
+}
+
+// sharedSlots is the slots on disk the supervisor's options name, or none.
+func sharedSlots(opts Options) *FileSlots {
+	if opts.CheckSlotDir == "" {
+		return nil
+	}
+	return OpenFileSlots(opts.CheckSlotDir, opts.CheckSlots, opts.CheckSlotLane)
 }

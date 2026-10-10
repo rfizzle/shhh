@@ -1083,6 +1083,15 @@ until that process exits, and the lanes waiting behind it count it among the
 running. A command that is not a check — a read, a `git status`, a
 formatter — never waits.
 
+The slots span a parallel sprint as well as a session. Each lane's stages are
+processes of their own, so a sprint (`todo run --all --parallel N`) keeps the
+slots as lock files under its run directory, and every lane's verify run, and
+every build or test run a lane's stage makes, takes one of the same
+`agents.check_slots` before it starts; a lane held up reads `waiting for a
+check slot (2 running)` on the sprint's board and in `sprint.log`. Across
+processes a waiting check polls and no order is promised, and a slot comes
+back when its process ends, however it ends.
+
 The checks share a build cache as well. Every contained command of the
 session that builds Go — each check the gate runs and each command a child
 runs — points `GOCACHE` at one directory in the session's own scratch under
