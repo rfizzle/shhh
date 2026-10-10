@@ -1173,7 +1173,7 @@ own file could hold.
 | `classifier_threshold` | number | `80` | next session | The percentage that probability must reach for the decisions backend to let a call run unasked; below it the classifier says no. |
 | `explainer_model` | text | (the classifier's model) | next turn | The model an approval card's explanation of a command is asked of. |
 | `description_model` | text | (provider.cheap_model) | next turn | The model that writes the one-line description a command saved from `shhh cmd` is listed under. |
-| `suggestions` | true/false | `on` | next turn | Offer a next step, drawn dim in the empty draft after a turn closes, that the right arrow takes into the draft, and let a cheap model write the start screen's read-only offers at session open; off asks for neither. |
+| `suggestions` | true/false | `on` | next turn | Offer a next step, drawn dim in the empty draft after a turn closes, that the right arrow takes into the draft, and let a cheap model write the start screen's read-only offers at session open; off asks for neither, and /suggest asks for one regardless. |
 | `suggestion_model` | text | (provider.cheap_model) | next turn | The model the next step offered in an empty draft is asked of. |
 | `start_offers_model` | text | (provider.cheap_model) | next turn | The model the start screen's read-only offers are written by, read once at session open. |
 | `patterns_model` | text | (provider.cheap_model) | next turn | The model that words a memory or a skill proposed from what repeats across sessions, asked when you open one in /patterns. |

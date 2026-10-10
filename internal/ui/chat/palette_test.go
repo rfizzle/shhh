@@ -132,7 +132,7 @@ func TestPalette_CountsMatchesAgainstTheWholeReach(t *testing.T) {
 // offers. It is the one number that moves when a command joins the registry:
 // the palette's golden draws a reach of its own (paletteFixtureCommands), so
 // adding a command changes this line and no fixture.
-const paletteCommandTotal = 30
+const paletteCommandTotal = 31
 
 // The palette's tally is every command the registry offers this session, and
 // the registry is the one place that count comes from.

@@ -13,23 +13,24 @@ package chat
 //     conversation or shown to the model: it reaches the model only once the
 //     person has taken it and sent it, through every gate a typed line goes
 //     through.
-//   - A keystroke of any kind drops it for that turn, and the next turn's
-//     close replaces it. Each offer ends taken or ignored, and the record
-//     says which.
+//   - A keystroke does not end it: it waits under whatever is typed, and
+//     comes back when the draft is empty again. It ends when a message is
+//     sent, a turn opens, a later offer replaces it or the session ends. Each
+//     offer ends taken or ignored, and the record says which.
 //   - It is asked at a turn's close as a background command like the
 //     title's: nothing waits for it and a failed reading offers nothing. A
 //     turn that broke, was cancelled or stopped at a card is not asked for
 //     one, nor is a session looking at a child.
 //   - behavior.suggestions turns it off and /ui suggest flips it for the
-//     session; off asks for nothing. The same switch holds the start
-//     screen's reading (startoffers.go): one switch for the two offered
-//     things.
+//     session; off asks for nothing after a close. The same switch holds the
+//     start screen's reading (startoffers.go): one switch for the two offered
+//     things. /suggest asks for one on request, switch or no switch, from the
+//     same writer.
 
 import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -53,12 +54,12 @@ type suggestState struct {
 	asked int64
 	// gen counts readings asked for; a reading carries the one it was asked
 	// under, and only the newest may land.
-	gen int
-	// keysAt is when the keyboard had last been touched as the reading was
-	// asked for; a reading that lands after another key is dropped.
-	keysAt   time.Time
+	gen      int
 	inFlight bool
-	cancel   context.CancelFunc
+	// asking is set while a reading the person asked for with /suggest is
+	// out, so the empty draft can say so.
+	asking bool
+	cancel context.CancelFunc
 }
 
 // suggestDoneMsg carries a finished reading back, with the turn and the
@@ -80,21 +81,36 @@ func (m Model) suggestEnabled() bool {
 // typed into. It is the one question the frame, the key bar and the take key
 // all ask, so the key is live exactly where the words are on the screen.
 func (m Model) suggestionShown() bool {
-	return m.suggest.text != "" &&
-		m.input.Value() == "" &&
+	return m.suggest.text != "" && m.emptyIdleDraft()
+}
+
+// emptyIdleDraft is the place an offer, or the word that one is being asked
+// for, is drawn.
+func (m Model) emptyIdleDraft() bool {
+	return m.input.Value() == "" &&
 		m.state == stateInput &&
 		!m.turnInFlight() &&
 		m.attachedTo == "" &&
 		!m.historySearching()
 }
 
+// suggestAsking reports whether the empty draft says an offer asked for with
+// /suggest is on its way.
+func (m Model) suggestAsking() bool {
+	return m.suggest.asking && m.suggest.inFlight && m.emptyIdleDraft()
+}
+
+// suggestAskingWord is what the empty draft says while /suggest waits.
+const suggestAskingWord = "asking for a next step…"
+
 // suggestCloseCmd asks for an offer when a turn has ended at the input,
 // derived from the model before against the model after — the transition
 // the title's and the summary's close readings are asked at.
 func (m *Model) suggestCloseCmd(prev Model) tea.Cmd {
-	// A turn that opens without a keystroke (a line another session sent)
-	// ends the offer the last close left; otherwise it would come back on
-	// the draft when that turn is cancelled or breaks, stale and never filed.
+	// A turn that opens ends the offer the last close left (a sent line ends
+	// it at openTurn; this is the line another session sent, or any path that
+	// opened one without it); otherwise it would come back on the draft when
+	// that turn is cancelled or breaks, stale and never filed.
 	if !prev.working() && m.working() {
 		m.dropSuggestion()
 	}
@@ -121,16 +137,22 @@ func (m *Model) suggestCloseCmd(prev Model) tea.Cmd {
 	if req.Empty() {
 		return nil
 	}
-	// The offer the last close left, if the person never touched the keys
-	// since, is replaced rather than kept beside this one.
+	// The offer the last close left is replaced rather than kept beside this
+	// one.
 	m.dropSuggestion()
+	m.suggest.asked = m.turnCount
+	return m.askSuggestion(req, false)
+}
+
+// askSuggestion sends one reading, replacing any still out: only the newest
+// may land. byCommand marks a reading the person asked for with /suggest.
+func (m *Model) askSuggestion(req agent.SuggestRequest, byCommand bool) tea.Cmd {
 	if m.suggest.cancel != nil {
 		m.suggest.cancel()
 	}
-	m.suggest.asked = m.turnCount
-	m.suggest.keysAt = m.lastKeypress
 	m.suggest.gen++
 	m.suggest.inFlight = true
+	m.suggest.asking = byCommand
 	writer, gen, turn := m.suggest.writer, m.suggest.gen, m.turnCount
 	ctx, cancel := context.WithCancel(context.Background())
 	m.suggest.cancel = cancel
@@ -140,6 +162,21 @@ func (m *Model) suggestCloseCmd(prev Model) tea.Cmd {
 	}
 }
 
+// suggestOnRequest is /suggest: it asks the writer for a next step from the
+// evidence a close uses, whether or not the automatic offer is on, and the
+// answer lands as the offer. The note is what the transcript says when
+// nothing was asked.
+func (m *Model) suggestOnRequest() (string, tea.Cmd) {
+	if !m.suggest.writer.Enabled() {
+		return "no model to ask — set behavior.suggestion_model", nil
+	}
+	req := m.suggestRequest()
+	if req.Empty() {
+		return "nothing to go on yet — send a message first", nil
+	}
+	return "", m.askSuggestion(req, true)
+}
+
 // finishSuggest applies a reading. A failed one offers nothing; one that
 // lands after the session moved on — another reading asked, another turn
 // begun, the switch turned off — is dropped.
@@ -147,21 +184,24 @@ func (m *Model) finishSuggest(msg suggestDoneMsg) {
 	if msg.gen != m.suggest.gen {
 		return
 	}
+	byCommand := m.suggest.asking
 	m.suggest.inFlight = false
+	m.suggest.asking = false
 	m.suggest.cancel = nil
-	if msg.verdict.Failed || msg.verdict.Suggestion == "" || !m.suggestEnabled() {
+	if msg.verdict.Failed || msg.verdict.Suggestion == "" {
+		return
+	}
+	// A close's reading obeys the switch as it stands now; one the person
+	// asked for does not.
+	if !byCommand && !m.suggestEnabled() {
 		return
 	}
 	if msg.turn != m.turnCount || m.turnInFlight() {
 		return
 	}
-	// Words typed while the reading was out are the person's draft: an offer
-	// landing now would reappear behind them once they were cleared.
-	// And a key pressed while it was out has already done what any key does
-	// to an offer, even where the draft was cleared again since.
-	if m.input.Value() != "" || !m.lastKeypress.Equal(m.suggest.keysAt) {
-		return
-	}
+	// Words typed while the reading was out are the person's draft, and the
+	// offer waits under them until the draft is empty again.
+	m.dropSuggestion()
 	m.suggest.text = msg.verdict.Suggestion
 }
 
@@ -179,8 +219,8 @@ func (m Model) takeSuggestion() (tea.Model, tea.Cmd) {
 }
 
 // dropSuggestion takes the offer off the draft, filed as ignored. It is
-// what every keystroke but the take does, and what a later close and the
-// session boundary do to an offer nobody touched.
+// what a sent message, a turn opening, a later offer and the session's end do
+// to an offer nobody took.
 func (m *Model) dropSuggestion() {
 	if m.suggest.text == "" {
 		return
@@ -189,18 +229,15 @@ func (m *Model) dropSuggestion() {
 	m.signal(observe.SignalSuggestion, observe.SuggestionIgnored)
 }
 
-// suggestionKey is the take key and the drop: it runs ahead of every other
-// route, because any keystroke ends the offer and only one of them takes it.
-// handled is true only for the take.
+// suggestionKey is the take key: it runs ahead of every other route, because
+// the take is live only where the offer is drawn and nothing else may answer
+// it there. Any other key goes on to its surface and leaves the offer
+// standing. handled is true only for the take.
 func (m Model) suggestionKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
-	if m.suggest.text == "" {
-		return m, nil, false
-	}
 	if m.suggestionShown() && keys.Match(msg, keys.Draft.TakeSuggestion) {
 		next, cmd := m.takeSuggestion()
 		return next, cmd, true
 	}
-	m.dropSuggestion()
 	return m, nil, false
 }
 

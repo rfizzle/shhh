@@ -1641,6 +1641,8 @@ func (m *Model) noteSlotMove(msg autosaveMovedMsg) {
 // so that no other session could take the name, and a row nothing will ever
 // be written to is one every later rename has to work around.
 func (m Model) quitCmd() tea.Cmd {
+	// An offer still standing at the session's end is ignored for good.
+	m.dropSuggestion()
 	if save := m.saveCmd(m.closingAccount()); save != nil {
 		return tea.Sequence(save, tea.Quit)
 	}
@@ -2048,6 +2050,9 @@ func (m Model) sendUserMessageWith(text, shown string, atts []provider.Attachmen
 // A typed turn and a turn another session's line opens (inbound.go) both
 // start here, so the two cannot come to begin differently.
 func (m *Model) openTurn(shown string) {
+	// A message sent ends the offer standing under the draft: filed as
+	// ignored here, once (suggest.go).
+	m.dropSuggestion()
 	// A plan that has been through its list has answered "where are we", so
 	// the next instruction retires it. One with steps left to go survives the
 	// message, because that question is still open.

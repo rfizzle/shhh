@@ -1,0 +1,24 @@
+# program test: none — the offer is asked through the session's own provider
+# after a turn closes and again by /suggest, which the unit tests over the
+# model drive; this is the terminal's reading of it.
+#
+# A keystroke does not end the offer in the empty draft: it waits under what is
+# typed and comes back when the draft is erased, and /suggest asks for one on
+# request (docs/capabilities/chat.md#the-next-step-is-offered-not-typed).
+#
+# What the captures are for: the offer drawn dim once the turn closes; two
+# letters typed over it, which leave only the letters in the box; two
+# backspaces, which bring the same offer back; /suggest, whose answer replaces
+# it with the second reading; and the arrow putting that one in the draft.
+# Run at 110 columns, where the key bar names the arrow.
+snap 01-start "Some things worth doing first"
+keys "make the retry backoff double" Enter
+snap 02-offer "stops at a minute" "Run the full test suite now." "[→] take the suggestion"
+keys "ab"
+snap 03-typed "▸ ab"
+keys BSpace BSpace
+snap 04-back "Run the full test suite now." "[→] take the suggestion"
+keys "/suggest" Enter
+snap 05-asked "Commit the retry backoff." "[→] take the suggestion"
+keys Right
+snap 06-taken "▸ Commit the retry backoff."

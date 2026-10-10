@@ -373,7 +373,7 @@ var settings = []Setting{
 		Desc: "The model that writes the one-line description a command saved from `shhh cmd` is listed under.",
 	}, {
 		Key: "behavior.suggestions", Kind: KindBool, Taken: AtTurn, Default: "on",
-		Desc: "Offer a next step, drawn dim in the empty draft after a turn closes, that the right arrow takes into the draft, and let a cheap model write the start screen's read-only offers at session open; off asks for neither.",
+		Desc: "Offer a next step, drawn dim in the empty draft after a turn closes, that the right arrow takes into the draft, and let a cheap model write the start screen's read-only offers at session open; off asks for neither, and /suggest asks for one regardless.",
 	}, {
 		Key: "behavior.suggestion_model", Kind: KindString, Taken: AtTurn, Default: "(provider.cheap_model)",
 		Desc: "The model the next step offered in an empty draft is asked of.",

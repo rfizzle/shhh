@@ -414,7 +414,7 @@ const (
 	SignalHook = "hook"
 	// SignalSuggestion: the next step offered in an empty draft left it.
 	// Reason: SuggestionTaken (the person took it into the draft) or
-	// SuggestionIgnored (a keystroke, a later turn's offer or the session's
+	// SuggestionIgnored (a sent message, a later offer or the session's
 	// end dropped it). Every offer ends as one of the two, so the pair is
 	// the take rate's numerator and denominator in one code — and a rate is
 	// the only thing that says whether the offer is worth its request.

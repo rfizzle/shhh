@@ -1,0 +1,9 @@
+# One turn of the session's own.
+[session]
+The retry backoff now doubles from one second and stops at a minute.
+
+# Two readings of the suggestion writer: the offer the turn's close asks for,
+# then the one /suggest asks for.
+[suggestion]
+Run the full test suite now.
+Commit the retry backoff.

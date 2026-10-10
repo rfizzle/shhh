@@ -174,23 +174,137 @@ func TestSuggestion_TheArrowLeadsTheFootRowAtEveryWidth(t *testing.T) {
 	}
 }
 
-// Any other key drops it, filed as ignored — and a letter typed is typed.
-func TestSuggestion_AnyOtherKeyDropsIt(t *testing.T) {
+// A key does not end the offer: it waits under the typed letter, and comes
+// back when the draft is erased.
+func TestSuggest_ErasingTheDraftBringsTheOfferBack(t *testing.T) {
 	m, _, signals := offeredModel(t)
 	m = press(t, m, "n")
-	if m.suggest.text != "" {
-		t.Fatal("a keystroke should drop the offer")
-	}
 	if m.input.Value() != "n" {
 		t.Fatalf("the letter should reach the draft, got %q", m.input.Value())
 	}
+	if m.suggestionShown() || m.suggest.text == "" {
+		t.Fatal("the offer stands under the draft and is not drawn over it")
+	}
+	m = pressKeys(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
+	if !m.suggestionShown() || !strings.Contains(m.renderPromptFrame(), offered) {
+		t.Fatal("an erased draft should bring the offer back")
+	}
+	if len(*signals) != 0 {
+		t.Fatalf("signals = %v, nothing has ended the offer", *signals)
+	}
+	m = pressKeys(t, m, keyRight)
+	if m.input.Value() != offered || strings.Join(*signals, ",") != observe.SuggestionTaken {
+		t.Fatalf("the arrow should take it: %q %v", m.input.Value(), *signals)
+	}
+}
+
+// A sent message ends the offer, filed as ignored.
+func TestSuggest_SendingEndsTheOffer(t *testing.T) {
+	m, _, signals := offeredModel(t)
+	m = press(t, m, "n")
+	m = sendText(t, m, "next thing")
+	if m.suggest.text != "" || strings.Join(*signals, ",") != observe.SuggestionIgnored {
+		t.Fatalf("a send should end the offer as ignored: %q %v", m.suggest.text, *signals)
+	}
+}
+
+// Keys, a turn and the session's end file one ignored between them.
+func TestSuggest_IgnoredIsFiledOnceAtTheEnd(t *testing.T) {
+	m, _, signals := offeredModel(t)
+	m = press(t, m, "n")
+	m = pressKeys(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
+	if len(*signals) != 0 {
+		t.Fatalf("keys filed %v", *signals)
+	}
+	ended := m
+	m = sendText(t, m, "x")
+	_ = sendText(t, m, "y")
 	if strings.Join(*signals, ",") != observe.SuggestionIgnored {
 		t.Fatalf("signals = %v, want one ignored", *signals)
 	}
-	// Emptied again, the draft does not bring it back.
+	// The session's end files it too, for an offer still standing.
+	ended.quitCmd()
+	if strings.Join(*signals, ",") != observe.SuggestionIgnored+","+observe.SuggestionIgnored {
+		t.Fatalf("the end should file the standing offer: %v", *signals)
+	}
+}
+
+// A palette opened and closed, or a half-typed command erased, brings the
+// offer back; a sent command keeps it.
+func TestSuggest_AScreenKeepsTheOffer(t *testing.T) {
+	m, _, signals := offeredModel(t)
+	m = press(t, m, "/")
 	m = pressKeys(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
-	if m.input.Value() != "" || m.suggestionShown() {
-		t.Fatal("a dropped offer stays dropped for that turn")
+	if m.input.Value() != "" || !m.suggestionShown() {
+		t.Fatalf("a half-typed command erased should bring the offer back (draft %q)", m.input.Value())
+	}
+	m, _ = submit(t, m, "/help")
+	if m.suggest.text == "" || len(*signals) != 0 {
+		t.Fatalf("a sent command keeps the offer: %q %v", m.suggest.text, *signals)
+	}
+}
+
+// /suggest asks the writer, switch or no switch, and the answer is the offer.
+func TestSuggest_TheCommandAsksForAnOffer(t *testing.T) {
+	p := &suggestProvider{line: offered}
+	m, signals := suggestingModel(t, p, false)
+	m, _ = closeTurn(t, m, "add the retry backoff")
+	if p.calls != 0 {
+		t.Fatal("an off switch asks for nothing after a close")
+	}
+	m, cmd := submit(t, m, "/suggest")
+	msg, ok := driveSuggestion(t, cmd)
+	if !ok {
+		t.Fatal("/suggest should ask the writer")
+	}
+	if got := stripANSI(m.renderPromptFrame()); !strings.Contains(got, suggestAskingWord) {
+		t.Fatalf("the draft should say it is asking:\n%s", got)
+	}
+	updated, _ := m.Update(msg)
+	m = updated.(Model)
+	if !m.suggestionShown() || !strings.Contains(m.renderPromptFrame(), offered) {
+		t.Fatal("the answer should stand in the empty draft")
+	}
+	// A second ask replaces the first and files the old one once.
+	m, cmd = submit(t, m, "/suggestion")
+	msg, _ = driveSuggestion(t, cmd)
+	updated, _ = m.Update(msg)
+	m = updated.(Model)
+	if !m.suggestionShown() {
+		t.Fatal("the second answer should stand in the draft")
+	}
+	if strings.Join(*signals, ",") != observe.SuggestionIgnored {
+		t.Fatalf("signals = %v", *signals)
+	}
+}
+
+func TestSuggest_TheCommandNeedsAWriter(t *testing.T) {
+	m, _ := suggestingModel(t, &suggestProvider{line: offered}, false)
+	m.suggest.writer = nil
+	m, _ = closeTurn(t, m, "hello")
+	m, cmd := submit(t, m, "/suggest")
+	if _, asked := driveSuggestion(t, cmd); asked {
+		t.Fatal("nothing should be asked")
+	}
+	if got := lastSystemText(m); !strings.Contains(got, "no model to ask — set behavior.suggestion_model") {
+		t.Fatalf("the note is missing: %q", got)
+	}
+}
+
+// One offer from a command counts like one from a close.
+func TestSuggest_TheRecordCountsOneOfferOnce(t *testing.T) {
+	p := &suggestProvider{line: offered}
+	m, signals := suggestingModel(t, p, false)
+	m, _ = closeTurn(t, m, "hello")
+	m, cmd := submit(t, m, "/suggest")
+	msg, _ := driveSuggestion(t, cmd)
+	updated, _ := m.Update(msg)
+	m = pressKeys(t, updated.(Model), keyRight)
+	if m.input.Value() != offered {
+		t.Fatalf("draft = %q", m.input.Value())
+	}
+	if strings.Join(*signals, ",") != observe.SuggestionTaken {
+		t.Fatalf("signals = %v, want one take", *signals)
 	}
 }
 
@@ -239,8 +353,8 @@ func TestSuggestion_ATurnOpenedWithoutAKeyDropsIt(t *testing.T) {
 	}
 }
 
-// A reading landing over words the person typed meanwhile is not kept, or it
-// would come back behind the draft once they were cleared.
+// A reading landing over words the person typed meanwhile waits under them
+// and is drawn once they are cleared.
 func TestSuggestion_ALateReadingDoesNotLandOverTypedWords(t *testing.T) {
 	p := &suggestProvider{line: offered}
 	m, _ := suggestingModel(t, p, true)
@@ -253,30 +367,8 @@ func TestSuggestion_ALateReadingDoesNotLandOverTypedWords(t *testing.T) {
 	updated, _ := m.Update(msg)
 	m = updated.(Model)
 	m.input.SetValue("")
-	if m.suggest.text != "" {
-		t.Fatal("a reading landed over a non-empty draft")
-	}
-}
-
-// A key pressed while the reading was out has dropped it already, even when
-// the draft was emptied again before it landed.
-func TestSuggestion_AKeyPressedWhileItWasOutDropsIt(t *testing.T) {
-	p := &suggestProvider{line: offered}
-	m, signals := suggestingModel(t, p, true)
-	m, cmd := closeTurn(t, m, "hello")
-	msg, ok := driveSuggestion(t, cmd)
-	if !ok {
-		t.Fatal("expected a reading")
-	}
-	m = press(t, m, "x")
-	m = pressKeys(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
-	if m.input.Value() != "" {
-		t.Fatalf("draft = %q", m.input.Value())
-	}
-	updated, _ := m.Update(msg)
-	m = updated.(Model)
-	if m.suggest.text != "" || len(*signals) != 0 {
-		t.Fatalf("a reading landed after a keystroke: %q %v", m.suggest.text, *signals)
+	if !m.suggestionShown() {
+		t.Fatal("a reading that landed over words should be drawn once they are cleared")
 	}
 }
 
@@ -376,11 +468,21 @@ func TestGolden_Suggestion(t *testing.T) {
 	captureBoundedGolden(t, "suggestion", "the offered next step", goldenWidths, func(width int) []golden.Panel {
 		up := frameModel(t, width, 40)
 		up.suggest.text = "Run the full test suite, then commit the retry backoff if it passes."
-		taken := pressKeys(t, up, keyRight)
+		// Each panel is drawn as soon as its state is reached: the draft's
+		// buffer is shared between the copies of a model.
+		offerUp := promptSurface(up)
+		typed := press(t, up, "a")
+		typedView := promptSurface(typed)
+		erased := pressKeys(t, typed, tea.KeyPressMsg{Code: tea.KeyBackspace})
+		erasedView := promptSurface(erased)
+		taken := pressKeys(t, erased, keyRight)
+		takenView := promptSurface(taken)
 		none := frameModel(t, width, 40)
 		return []golden.Panel{
-			{Label: "an offer up · dim in the empty draft, the arrow on the key bar", View: promptSurface(up)},
-			{Label: "taken · the draft's own text, cursor at its end", View: promptSurface(taken)},
+			{Label: "an offer up · dim in the empty draft, the arrow on the key bar", View: offerUp},
+			{Label: "typed over · the offer waits under the letter", View: typedView},
+			{Label: "erased · the offer back in the empty draft", View: erasedView},
+			{Label: "taken · the draft's own text, cursor at its end", View: takenView},
 			{Label: "none · the empty draft as it always was", View: promptSurface(none)},
 		}
 	})

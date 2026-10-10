@@ -108,6 +108,10 @@
     /compact       continue from a summary plus the most recent turns
     /rewind [n]    rewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the
                    abandoned tail is kept as a branch, and a card asks whether the files come back too
+    /suggest       ask the suggestion model for a next step from what the last turn left (also /suggestion).
+                   The answer stands dim in the empty draft and → takes it, as an offer after a turn does; it
+                   works whether /ui suggest is on or off, and a second ask replaces the first. /ui suggest
+                   <on|off> stays the switch for the offer after each turn
     /exit          quit (also /quit, /q)
 
 · a coding session
@@ -228,6 +232,10 @@
     /compact       continue from a summary plus the most recent turns
     /rewind [n]    rewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the
                    abandoned tail is kept as a branch, and a card asks whether the files come back too
+    /suggest       ask the suggestion model for a next step from what the last turn left (also /suggestion).
+                   The answer stands dim in the empty draft and → takes it, as an offer after a turn does; it
+                   works whether /ui suggest is on or off, and a second ask replaces the first. /ui suggest
+                   <on|off> stays the switch for the offer after each turn
     /exit          quit (also /quit, /q)
 
 ── ansi ────────────────────────────────────────────────────
@@ -329,6 +337,10 @@
     ␛[38;5;252m/compact␛[m       ␛[38;5;241mcontinue from a summary plus the most recent turns␛[m
     ␛[38;5;252m/rewind [n]␛[m    ␛[38;5;241mrewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the␛[m
                    ␛[38;5;241mabandoned tail is kept as a branch, and a card asks whether the files come back too␛[m
+    ␛[38;5;252m/suggest␛[m       ␛[38;5;241mask the suggestion model for a next step from what the last turn left (also /suggestion).␛[m
+                   ␛[38;5;241mThe answer stands dim in the empty draft and → takes it, as an offer after a turn does; it␛[m
+                   ␛[38;5;241mworks whether /ui suggest is on or off, and a second ask replaces the first. /ui suggest␛[m
+                   ␛[38;5;241m<on|off> stays the switch for the offer after each turn␛[m
     ␛[38;5;252m/exit␛[m          ␛[38;5;241mquit (also /quit, /q)␛[m
 
 · a coding session
@@ -449,4 +461,8 @@
     ␛[38;5;252m/compact␛[m       ␛[38;5;241mcontinue from a summary plus the most recent turns␛[m
     ␛[38;5;252m/rewind [n]␛[m    ␛[38;5;241mrewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the␛[m
                    ␛[38;5;241mabandoned tail is kept as a branch, and a card asks whether the files come back too␛[m
+    ␛[38;5;252m/suggest␛[m       ␛[38;5;241mask the suggestion model for a next step from what the last turn left (also /suggestion).␛[m
+                   ␛[38;5;241mThe answer stands dim in the empty draft and → takes it, as an offer after a turn does; it␛[m
+                   ␛[38;5;241mworks whether /ui suggest is on or off, and a second ask replaces the first. /ui suggest␛[m
+                   ␛[38;5;241m<on|off> stays the switch for the offer after each turn␛[m
     ␛[38;5;252m/exit␛[m          ␛[38;5;241mquit (also /quit, /q)␛[m

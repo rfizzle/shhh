@@ -317,7 +317,11 @@ an offer was taken against how often it was ignored — the one number that
 says whether it earns the request. A turn that broke, was cancelled, stopped
 at a card or ran while the keyboard was in a child's lane is not asked for
 one. `behavior.suggestions` turns it off and `/ui suggest` flips it for the
-session; off means no request is made, not an answer drawn nowhere. An
+session; off means no request is made after a close, not an answer drawn
+nowhere. A keystroke does not end an offer: it waits under what is typed and
+comes back when the draft is empty again, ending only when a message is sent
+or the session does. `/suggest` asks for one on request, on or off, from the
+same model. An
 unattended run, a served session and a child never ask, because none of
 them has a draft to put an offer in.
 

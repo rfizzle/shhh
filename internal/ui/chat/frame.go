@@ -1349,6 +1349,9 @@ func (m Model) draftView() string {
 	if m.suggestionShown() {
 		return m.input.Styles().Focused.Placeholder.Render(clipRow(m.suggest.text, m.input.Width()))
 	}
+	if m.suggestAsking() {
+		return m.input.Styles().Focused.Placeholder.Render(suggestAskingWord)
+	}
 	return paintPasteFolds(m.input.View())
 }
 

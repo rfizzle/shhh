@@ -1536,8 +1536,12 @@ rather than wrapped, so the box is the size it always is. It is drawn only
 while the draft is empty and the session idle at its own input, and while it
 is up the key bar leads with `[→] take the suggestion`. The arrow puts the
 words in the draft with the cursor at their end, where they are a draft like
-any other; any other key drops the offer for that turn, and the next turn's
-close replaces it. Nothing is sent from it and nothing is saved with it — it
+any other. A key does not end the offer: it waits under whatever is typed and
+comes back when backspace or `ctrl+c` empties the draft again, and a command
+typed and not sent (the palette opened and closed, a half-typed one erased)
+leaves it alone. It ends when a message is sent, a turn opens, a later offer
+replaces it or the session ends. `/suggest` asks for one on request and puts
+the answer in the empty draft the same way. Nothing is sent from it and nothing is saved with it — it
 is the box's suggestion, not a line of the conversation
 ([the next step is offered, not typed](../capabilities/chat.md#the-next-step-is-offered-not-typed)).
 

@@ -1021,6 +1021,20 @@ new [brief]   draft an agent profile from a sentence with the model's help: answ
 				}
 				return m.openSessionDiff()
 			}},
+		// The next step on request (suggest.go). Idle only: the answer is drawn
+		// in the empty draft, which a running turn does not have.
+		{name: "/suggest",
+			slash: &slashCommand{aliases: []string{"/suggestion"}, desc: "ask for a next step in the empty draft",
+				idleOnly: "the offer is for the empty draft once the turn is over",
+				help:     `ask the suggestion model for a next step from what the last turn left (also /suggestion). The answer stands dim in the empty draft and → takes it, as an offer after a turn does; it works whether /ui suggest is on or off, and a second ask replaces the first. /ui suggest <on|off> stays the switch for the offer after each turn`},
+			aliases: []string{"/suggestion"}, exact: true,
+			run: bareRun(func(m Model) (tea.Model, tea.Cmd) {
+				note, cmd := m.suggestOnRequest()
+				if note != "" {
+					return m.systemNotice(note)
+				}
+				return m, cmd
+			})},
 		// Review mode over a turn's changeset; bare takes the most recent
 		// turn that changed anything.
 		{name: "/review",

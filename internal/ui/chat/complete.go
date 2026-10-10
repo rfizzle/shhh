@@ -135,7 +135,7 @@ var slashOrder = []string{
 	"/ps", scaffoldCommandName, setupCommandName, toolchainCommandName,
 	"/skills", "/mcp", "/skill", "/secret", "/notes", "/memory", patternsCommandName, "/agents",
 	"/attach", "/detach", "/todo", "/plan", "/edit", "/diff", "/review", "/undo",
-	"/compact", handoffCommandName, "/rewind", "/branches", "/save", "/load", "/chats", "/exit",
+	"/compact", handoffCommandName, "/rewind", "/branches", "/save", "/load", "/chats", "/suggest", "/exit",
 }
 
 func buildSlashCommands() []slashCommand {
