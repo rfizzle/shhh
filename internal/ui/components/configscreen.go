@@ -73,7 +73,9 @@ type ConfigRow struct {
 	// setting at all: "why is this on" is the only question a config screen is
 	// ever asked, and a setting the machine cannot keep says so rather than
 	// being hidden (invariant 4). A host with two answers to give joins them
-	// with ` · `, longest-lived last.
+	// with ` · `, longest-lived last — `unwritten · next session` for a value
+	// staged in a session that only a session started after the write runs
+	// on.
 	Source     string
 	SourceTone FieldTone
 	// Options are what `[enter]` offers. A row with none opens a field to type

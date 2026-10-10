@@ -3239,9 +3239,9 @@ session takes a staged flow model as it is staged, so the model answers that
 flow from its next call, and `unwritten` means one thing here: this session
 only. `[ctrl+s]` writes it to the file the header names, and the session
 stays on it; leaving over it asks the question every staged change asks, and
-discarding puts the session back on what the file holds. These are the one
-exception to the session keeping the settings it started on, and the receipt
-leaves the sentence off a write that carried flow models alone. A flow no
+discarding puts the session back on what the file holds, as it does for
+every setting a session takes at its next turn
+([the settings screen](#the-settings-screen)). A flow no
 session sends — the one-shot's description, and the compaction an unattended
 run makes — stages and writes the same way and changes nothing in the
 session. `shhh config` has no session, so its flows rows only stage.
@@ -3525,7 +3525,13 @@ the filter, and then leaves, asking first over anything staged; `[/]` filters;
 pointer to its default; and `[shift+tab]` switches the write between your file
 and the checkout's, where the screen stands in one. `[?]` is there because
 every screen has it. A change always means the same thing: it stands as this
-session's until `[ctrl+s]` writes it to the file the header names. A value in
+session's until `[ctrl+s]` writes it to the file the header names. A setting
+a session reads at a turn boundary is taken as it is staged — at once between
+turns, at the next turn's start while one runs, the mode and the model drawn
+as `/permissions` and `/model` draw them — and one it wires when it opens is
+written for the next session only, its row reading `unwritten · next session`
+([every setting](../capabilities/configuration.md#every-setting) says which is
+which). A value in
 a field or a picker that `[enter]` has not taken yet is taken by `[ctrl+s]`
 first and then written, so the chord is never swallowed by what is being
 typed; `[esc]` in a field closes it and stages nothing. `[ctrl+r]` and
@@ -3550,9 +3556,9 @@ A write answers with a receipt, so it is never silent. The foot row, under the
 keys, reads `wrote 2 changes to .shhh/config.toml · provider.model,
 behavior.command_timeout_seconds` until the next key, and in a session the
 transcript gets the same line under the `·` mark, with what the checkout had
-to say about the keys just written and, unless the write carried flow models
-alone, the sentence that the running session keeps the settings it started
-on. The screen stays up and nothing is left
+to say about the keys just written and, when the write carried a setting the
+session wires when it opens, the sentence that the running session keeps the
+settings it started on. The screen stays up and nothing is left
 staged. A write that cannot land says `could not write <path>: <reason>` the
 same two ways and keeps every change staged, so the key can be pressed again
 once the reason is gone. The model picker's `[m]`, which writes `provider.model`

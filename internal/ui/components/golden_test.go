@@ -2963,6 +2963,14 @@ func TestGolden_ConfigScreen(t *testing.T) {
 				c.Rows[1].Value = "40"
 				c.Rows[1].Source, c.Rows[1].SourceTone = "unwritten", ToneOpen
 			}).View(width)},
+			{Label: "staged in a session · a key read at the open says the next session takes it", View: flowsScreen(func(c *ConfigScreen) {
+				rounds, url := len(goldenFlowRows())+1, len(goldenFlowRows())+7
+				c.Focus, c.Changed = url, 2
+				c.Rows[rounds].Value = "40"
+				c.Rows[rounds].Source, c.Rows[rounds].SourceTone = "unwritten", ToneOpen
+				c.Rows[url].Value = "https://gateway.internal/v1"
+				c.Rows[url].Source, c.Rows[url].SourceTone = "unwritten · next session", ToneOpen
+			}).View(width)},
 			{Label: "after a write · the receipt on the foot row, nothing left staged", View: screen(func(c *ConfigScreen) {
 				c.Notice = WriteReceipt(Changes(2), ".shhh/config.toml", "provider.model", "behavior.command_timeout_seconds")
 			}).View(width)},

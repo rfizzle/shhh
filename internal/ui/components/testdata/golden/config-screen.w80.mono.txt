@@ -154,6 +154,30 @@ shhh config · 2 changes unwritten                          [?] keys · [esc] ba
 [ctrl+s] write 2 changes · [esc] discard, after asking
 nothing is written until [ctrl+s]
 
+· staged in a session · a key read at the open says the next session takes it
+/config · the checkout's file · 2 changes unwritten        [?] keys · [esc] back
+────────────────────────────────────────────────────────────────────────────────
+
+  ↑ 4 more
+    compaction         gpt-5.2                                     session model
+
+  SESSION
+    permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      user
+    round limit        40                                              unwritten
+    context budget     8000 tokens                                       default
+    safety warnings    on                                                default
+
+  MODEL
+    provider           openai                                               user
+    model              gpt-5.2                                user · 6 available
+    api key            ···4f9c                                              user
+  ❯ base url           https://gateway.internal/v1      unwritten · next session
+  ↓ 6 more
+
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
+[shift+tab] write yours · [ctrl+s] write 2 changes · [esc] discard, after asking
+nothing is written until [ctrl+s]
+
 · after a write · the receipt on the foot row, nothing left staged
 shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────────
@@ -469,6 +493,30 @@ $  a shell command
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m
 ␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write 2 changes␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard, after asking␛[m
+␛[38;5;244mnothing is written until [ctrl+s]␛[m
+
+· staged in a session · a key read at the open says the next session takes it
+␛[1;38;5;254m/config␛[m␛[38;5;244m · the checkout's file␛[m␛[38;5;254m · 2 changes unwritten␛[m        ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[38;5;244m↑ 4 more␛[m
+    ␛[38;5;254mcompaction␛[m         ␛[38;5;254mgpt-5.2␛[m                                     ␛[38;5;254msession model␛[m
+
+  ␛[1;38;5;254mSESSION␛[m
+    ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m      ␛[38;5;254muser␛[m
+    ␛[38;5;254mround limit␛[m        ␛[38;5;254m40␛[m                                              ␛[38;5;254munwritten␛[m
+    ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                       ␛[38;5;254mdefault␛[m
+    ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                ␛[38;5;254mdefault␛[m
+
+  ␛[1;38;5;254mMODEL␛[m
+    ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                               ␛[38;5;254muser␛[m
+    ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                ␛[38;5;254muser · 6 available␛[m
+    ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                              ␛[38;5;254muser␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mbase url           https://gateway.internal/v1      unwritten · next session␛[m
+  ␛[38;5;244m↓ 6 more␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m
+␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write yours␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write 2 changes␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard, after asking␛[m
 ␛[38;5;244mnothing is written until [ctrl+s]␛[m
 
 · after a write · the receipt on the foot row, nothing left staged

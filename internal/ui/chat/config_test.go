@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -26,6 +27,9 @@ type fakeConfigHost struct {
 	writes int
 	// failWith is a write that cannot land: the reason it gives.
 	failWith string
+	// take is what the host hands the session after each answer, nil for a
+	// host that hands it nothing.
+	take func(w *Wiring) bool
 }
 
 func newFakeConfigHost() *fakeConfigHost {
@@ -45,7 +49,7 @@ func newFakeConfigHost() *fakeConfigHost {
 }
 
 func (h *fakeConfigHost) session() ConfigSession {
-	return ConfigSession{Screen: &h.screen, Answer: h.answer}
+	return ConfigSession{Screen: &h.screen, Answer: h.answer, Take: h.take}
 }
 
 func (h *fakeConfigHost) answer(done bool, result components.ConfigResult) string {
@@ -259,5 +263,80 @@ func TestConfig_ASessionWithoutAHostSaysSo(t *testing.T) {
 	last := m.transcript[len(m.transcript)-1].text
 	if !strings.Contains(last, "shhh config") {
 		t.Errorf("the answer does not name the other door: %q", last)
+	}
+}
+
+// A mode and a model the settings screen has the session take are the
+// session's in every way /permissions and /model would make them: the status
+// line draws them the same, and the mode cycle walks on from the taken mode.
+func TestConfigScreen_ATakenModeReadsLikeTheModeKey(t *testing.T) {
+	var switched []string
+	switchModel := func(name string) { switched = append(switched, name) }
+
+	h := newFakeConfigHost()
+	h.take = func(w *Wiring) bool {
+		if len(h.staged) == 0 {
+			return false
+		}
+		w.Mode, w.ModelName = agent.ModeAuto, "model-b"
+		return true
+	}
+	m := configModelWith(t, h)
+	m.wiring.SwitchModel = switchModel
+	m = sendText(t, m, "/config")
+	m = stageOne(t, m, "auto")
+	if m.policy.mode != agent.ModeAuto || m.modelName != "model-b" {
+		t.Fatalf("the session runs in %s on %q after the staging", m.policy.mode, m.modelName)
+	}
+	if len(switched) != 1 || switched[0] != "model-b" {
+		t.Errorf("the session's stream was switched to %v", switched)
+	}
+	m = pressKeys(t, m, tea.KeyPressMsg{Code: 's', Mod: tea.ModCtrl}, keyEsc)
+
+	ref := readyModel(t)
+	ref.wiring.SwitchModel = switchModel
+	ref = sendText(t, ref, "/permissions auto")
+	ref = sendText(t, ref, "/model model-b")
+	got, header := m.renderStatusBar(120), m.headerRow(120)
+	if !strings.Contains(got, "auto") || !strings.Contains(header, "model-b") {
+		t.Errorf("the frame does not draw the taken mode and model:\n%s\n%s", header, got)
+	}
+	if want := ref.renderStatusBar(120); got != want {
+		t.Errorf("the status line after the screen's take:\n%s\nafter the commands:\n%s", got, want)
+	}
+	if want := ref.headerRow(120); header != want {
+		t.Errorf("the header after the screen's take:\n%s\nafter the commands:\n%s", header, want)
+	}
+	shiftTab := tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift}
+	m, ref = pressKeys(t, m, shiftTab), pressKeys(t, ref, shiftTab)
+	if m.policy.mode != ref.policy.mode || m.policy.mode == agent.ModeAuto {
+		t.Errorf("the cycle walked from the taken mode to %s, from the command's to %s", m.policy.mode, ref.policy.mode)
+	}
+}
+
+// While a turn runs, what the screen staged waits for the next turn to open,
+// so the model and the round limit never move under the turn using them.
+func TestConfigScreen_ATakeWaitsForTheTurnBoundary(t *testing.T) {
+	m := readyModel(t)
+	m.turnOpen = true
+	m.takeStaged(func(w *Wiring) bool { w.Mode, w.MaxToolRounds = agent.ModeAuto, 7; return true })
+	if m.policy.mode == agent.ModeAuto || m.agent.MaxRounds() == 7 {
+		t.Fatal("the take moved the session under a running turn")
+	}
+	m.turnOpen = false
+	m.openTurn("next")
+	if m.policy.mode != agent.ModeAuto || m.agent.MaxRounds() != 7 {
+		t.Errorf("the next turn opened in %s on %d rounds, want the staged auto and 7", m.policy.mode, m.agent.MaxRounds())
+	}
+
+	// What the screen did not move is not put back: a mode cycled while the
+	// take waited is the mode the next turn opens in.
+	m.turnOpen = true
+	m.takeStaged(func(w *Wiring) bool { w.MaxToolRounds = 9; return true })
+	m.applyMode(agent.ModePlan)
+	m.turnOpen = false
+	m.openTurn("after")
+	if m.policy.mode != agent.ModePlan || m.agent.MaxRounds() != 9 {
+		t.Errorf("the turn opened in %s on %d rounds, want the cycled plan and the staged 9", m.policy.mode, m.agent.MaxRounds())
 	}
 }

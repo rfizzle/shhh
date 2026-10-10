@@ -211,9 +211,7 @@ func (m *Model) bindStores() {
 // (docs/architecture.md#the-screen-is-handed-its-wiring-as-one-value).
 func ApplyLoop(a *agent.Agent, w Wiring) {
 	a.SetExecutor(w.Executor)
-	a.SetMaxRounds(w.MaxToolRounds)
-	a.SetSteering(w.Steering)
-	a.SetProgressIntervals(w.ProgressCalls, w.ProgressElapsed)
+	ApplySettings(a, w)
 	if w.Secrets.Scrub != nil {
 		a.SetScrub(w.Secrets.Scrub)
 	}
@@ -224,6 +222,18 @@ func ApplyLoop(a *agent.Agent, w Wiring) {
 		// fails silently — the model just stops following it.
 		a.KeepResults(skill.IsContent)
 	}
+}
+
+// ApplySettings is the part of ApplyLoop a setting decides — the round cap,
+// the steering and the progress clocks — written onto a loop already
+// running. It is how a value a session takes at a turn boundary reaches its
+// loop: the screen's when its settings screen stages one, and a served
+// session's when its file has been written since the last turn
+// (docs/interface/surfaces.md#the-settings-screen).
+func ApplySettings(a *agent.Agent, w Wiring) {
+	a.SetMaxRounds(w.MaxToolRounds)
+	a.SetSteering(w.Steering)
+	a.SetProgressIntervals(w.ProgressCalls, w.ProgressElapsed)
 }
 
 // applyLoop is that, and then what only the screen has: the retry bound and

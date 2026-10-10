@@ -13,6 +13,13 @@
 # with nothing staged says so and writes nothing. The old `w` is only a
 # letter now. Nothing in the scene writes the real config file: the workspace
 # is a fresh repository, so the write lands in its own .shhh/config.toml.
+#
+# The round limit is a key the session reads at a turn boundary, so the
+# session took it as it was staged and its receipt in the transcript has no
+# "This session keeps the settings it started on" sentence (06). The command
+# timeout is read when the session opens: staged, its source reads
+# `unwritten · next session` (07), and the receipt of its write carries the
+# sentence (08).
 snap 01-start "Some things worth doing first"
 keys "/config" Enter
 snap 02-open "/config" "FLOWS"
@@ -31,4 +38,19 @@ snap 04-receipt "wrote 1 change to .shhh/config.toml" "behavior.max_tool_rounds"
 keys C-s
 snap 05-nothing-left "nothing staged to write"
 keys Escape
-snap 06-back "wrote 1 change to .shhh/config.toml"
+snap 06-live-receipt "wrote 1 change to .shhh/config.toml · behavior.max_tool_rounds"
+keys "/config" Enter
+snap 07-reopen "/config" "FLOWS"
+keys "/"
+keys "command timeout"
+keys Enter
+keys BSpace BSpace BSpace
+keys "90" Enter
+keys Escape
+sleep 0.3
+keys Escape
+sleep 0.3
+snap 07-startup-staged "unwritten · next session" "[ctrl+s] write 1 change"
+keys C-s
+keys Escape
+snap 08-startup-receipt "behavior.command_timeout_seconds" "keeps the settings it started on"

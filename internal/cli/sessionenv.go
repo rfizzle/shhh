@@ -85,6 +85,13 @@ type sessionEnv struct {
 	// flowsMoved is told when one of them changes, so the record can say
 	// what the rest of the session is asked on. Nil tells nobody.
 	flowsMoved func()
+	// resolveWith is the model and the reasoning level this session would
+	// have opened on over cfg, read in the order it was opened with — its
+	// flags, the environment, its command's own model key, then the file —
+	// so a value the settings screen takes for it outranks nothing the
+	// session's opening did not let the file outrank. Nil reads the file's
+	// keys alone.
+	resolveWith func(cfg config.Config) resolve.Resolved
 }
 
 // userInstructionsPath is the user's own instructions file: instructions.md
@@ -225,6 +232,12 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	fillConfigHalf(flags, cfg, session.kind)
 
 	resolved := resolve.Resolve(*flags)
+	opened, kind := *flags, session.kind
+	resolveWith := func(c config.Config) resolve.Resolved {
+		o := opened
+		fillConfigHalf(&o, c, kind)
+		return resolve.Resolve(o)
+	}
 
 	p, req, err := resolveProvider(cmd.Context(), cfg, providerRequest{
 		Provider: resolved.Provider,
@@ -387,6 +400,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 			return currentProvider
 		},
 		endpointModels: newEndpointModels(modelListerFor(p)),
+		resolveWith:    resolveWith,
 		effort:         effort,
 		switchReasoning: func(e provider.Effort) {
 			sessionMu.Lock()

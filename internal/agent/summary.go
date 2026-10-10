@@ -199,6 +199,11 @@ type SummaryConfig struct {
 	// thing that decides the cost should carry its own bound.
 	IntervalRounds int
 	MinGap         time.Duration
+	// CadenceAt, when set, answers the interval and the floor at the moment
+	// they are asked, in place of the two above: a session whose settings
+	// screen took a new cadence schedules its next reading on it. Config
+	// fills the two fields from it, so every reader keeps asking Config.
+	CadenceAt func() (rounds int, gap time.Duration)
 	// InterveneCooldownIntervals is how many reading intervals must pass
 	// between two verdict-driven interventions. It lives beside the interval
 	// because it is measured in them; zero takes the built-in count.
@@ -376,7 +381,11 @@ func (s *Summarizer) Config() SummaryConfig {
 	if s == nil {
 		return SummaryConfig{Disabled: true}
 	}
-	return s.cfg
+	c := s.cfg
+	if c.CadenceAt != nil {
+		c.IntervalRounds, c.MinGap = c.CadenceAt()
+	}
+	return c
 }
 
 // Enabled reports whether readings will actually be taken.

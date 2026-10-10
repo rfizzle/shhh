@@ -203,10 +203,11 @@ func resolveFlows(cfg config.Config, provName, sessionModel string) []flowModel 
 	return out
 }
 
-// flowOverrides are the models a session took for itself from the config
-// screen: a flow's key and the name it answers with until the process ends,
-// written to no file. The chain reads them over the config it was built
-// with, so a reader asked after the change is asked on the new model.
+// flowOverrides are the values a session took for itself from the config
+// screen that its readers ask for at the call: a flow's key and the model it
+// answers with, and the readings' cadence, until the process ends, written
+// to no file. The readers read them over the config they were built with,
+// so one asked after the change is asked on the new value.
 // See docs/capabilities/configuration.md#a-session-can-hold-a-value-no-file-does.
 //
 // The lock is there because the readers are not on the goroutine that
@@ -218,11 +219,11 @@ type flowOverrides struct {
 	keys map[string]string
 }
 
-// set takes model for key for the rest of the session. Only a key some flow
-// reads is taken: an override is a value for the chain, and a key outside it
-// has no reader here to move.
-func (o *flowOverrides) set(key, model string) {
-	if !flowKey(key) {
+// set takes value for key for the rest of the session. Only a key read at
+// the call is taken (heldKey): an override is a value for a reader that asks
+// for it, and a key outside them has no reader here to move.
+func (o *flowOverrides) set(key, value string) {
+	if !heldKey(key) {
 		return
 	}
 	o.mu.Lock()
@@ -230,7 +231,7 @@ func (o *flowOverrides) set(key, model string) {
 	if o.keys == nil {
 		o.keys = map[string]string{}
 	}
-	o.keys[key] = model
+	o.keys[key] = value
 }
 
 // over is cfg with the session's own values in place of the files'.
@@ -238,10 +239,11 @@ func (o *flowOverrides) over(cfg config.Config) config.Config {
 	o.mu.Lock()
 	keys := maps.Clone(o.keys)
 	o.mu.Unlock()
-	for key, model := range keys {
-		// Every key here is a plain string field (flowKey), so a copy of
-		// the config takes the value without reaching a map it shares.
-		_ = config.Set(&cfg, key, model)
+	for key, value := range keys {
+		// Every key here is a plain string or number field (heldKey), so a
+		// copy of the config takes the value without reaching a map it
+		// shares.
+		_ = config.Set(&cfg, key, value)
 	}
 	return cfg
 }
@@ -262,6 +264,28 @@ func flowKey(key string) bool {
 		}
 	}
 	return false
+}
+
+// cadenceKeys are the readings' cadence: how many rounds pass between two,
+// and the floor of wall-clock time between them. The summarizer asks for both
+// each time it schedules one (cadenceAt), so a value the session took is
+// what the next reading is scheduled on.
+var cadenceKeys = []string{"summary.interval_rounds", "summary.min_gap_seconds"}
+
+// heldKey reports whether key is one a running session reads at the call,
+// so taking it for the session is holding it here: a flow's model, or the
+// readings' cadence.
+func heldKey(key string) bool {
+	return flowKey(key) || slices.Contains(cadenceKeys, key)
+}
+
+// cadenceAt is the readings' cadence asked when a reading is scheduled
+// rather than at construction, over whatever the session has taken since.
+func (env *sessionEnv) cadenceAt(cfg config.Config) func() (int, time.Duration) {
+	return func() (int, time.Duration) {
+		in := env.flows.over(cfg)
+		return in.Summary.IntervalRounds, time.Duration(in.Summary.MinGapSeconds) * time.Second
+	}
 }
 
 // flowModelAt is a flow's model asked at the call rather than at
@@ -287,6 +311,7 @@ func newSummarizer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger, ena
 		MaxTokens:                  cfg.Summary.MaxTokens,
 		IntervalRounds:             cfg.Summary.IntervalRounds,
 		MinGap:                     time.Duration(cfg.Summary.MinGapSeconds) * time.Second,
+		CadenceAt:                  env.cadenceAt(cfg),
 		InterveneCooldownIntervals: cfg.Summary.InterveneCooldownIntervals,
 		Prompt:                     env.prompts.summary,
 		Disabled:                   !enabled,

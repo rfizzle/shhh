@@ -375,6 +375,12 @@ type configModel struct {
 	// flows is what the flows section is resolved against, and — inside a
 	// session — the session a flow's model can be taken for.
 	flows configFlows
+	// moved is what the last answer had the session take that the session
+	// itself has to be handed (take): each key read at a turn boundary that
+	// was staged, or put back to the file by a discard, with the value the
+	// session is now to run on. A key read at the call is held by the
+	// session's own readers instead (holdFlow), and needs no handing.
+	moved map[string]string
 
 	screen components.ConfigScreen
 }
@@ -395,7 +401,7 @@ type configFlows struct {
 const defaultConfigWidth = 110
 
 func newConfigModel(cfg config.Config, proj config.Project) *configModel {
-	m := &configModel{base: cfg, cfg: cfg, proj: proj, staged: map[string]string{}, path: config.WritePath()}
+	m := &configModel{base: cfg, cfg: cfg, proj: proj, staged: map[string]string{}, moved: map[string]string{}, path: config.WritePath()}
 	// Outside a session the chain falls back on what a session started now
 	// would run, which is the doctor's flows row's reading too.
 	resolved := resolve.Resolve(resolve.Opts{ConfigProvider: cfg.Provider.Default, ConfigModel: cfg.Provider.Model})
@@ -587,7 +593,7 @@ func configSessionOpener(env *sessionEnv) chat.ConfigOpener {
 		m.standIn(false, workingDir())
 		m.screen.InSession = true
 		m.refresh()
-		return chat.ConfigSession{Screen: &m.screen, Answer: m.answered}, nil
+		return chat.ConfigSession{Screen: &m.screen, Answer: m.answered, Take: m.take}, nil
 	}
 }
 
@@ -616,15 +622,16 @@ func (m *configModel) answered(done bool, result components.ConfigResult) string
 
 // sessionHasWritten is whether every key the last write put in the file is one
 // the running session took as it was staged, so the sentence that the session
-// keeps the settings it started on would be untrue of it: a flow's model is
-// read at the flow's next call (flowOverrides), and nothing else the screen
-// writes is. A screen with no session behind it took nothing.
+// keeps the settings it started on would be untrue of it: the table says which
+// keys a session reads at a turn boundary (config.Live), and the session took
+// each of those as it was staged. A screen with no session behind it took
+// nothing.
 func (m *configModel) sessionHasWritten() bool {
 	if m.flows.env == nil || len(m.written) == 0 {
 		return false
 	}
 	for _, key := range m.written {
-		if !flowKey(key) {
+		if !config.Live(key) {
 			return false
 		}
 	}
@@ -658,7 +665,7 @@ func (m *configModel) apply(change components.ConfigChange) bool {
 		return false
 	}
 	m.staged[change.Key] = value
-	m.holdFlow(change.Key, value)
+	m.hold(change.Key, value)
 	if change.Reset {
 		m.screen.Notice = change.Key + " is back to its default"
 	}
@@ -666,27 +673,63 @@ func (m *configModel) apply(change components.ConfigChange) bool {
 	return true
 }
 
-// holdFlow has the running session take a flow's model as it is staged, so
-// a row's "unwritten" means "this session only"
-// (docs/capabilities/configuration.md#a-session-can-hold-a-value-no-file-does).
-// A key that is no flow's, and a screen with no session, hold nothing.
-func (m *configModel) holdFlow(key, value string) {
-	env := m.flows.env
-	if env == nil || !flowKey(key) {
+// hold has the running session take a key it reads at a turn boundary as
+// the key is staged, so a row's "unwritten" means "this session only"
+// (docs/interface/surfaces.md#the-settings-screen). A key read at the call
+// is held where its readers ask (holdFlow); every other live key is handed
+// to the session with the next answer (take). A key the session wires when
+// it opens, and a screen with no session, hold nothing.
+func (m *configModel) hold(key, value string) {
+	if m.flows.env == nil || !config.Live(key) {
 		return
 	}
+	if heldKey(key) {
+		m.holdFlow(key, value)
+		return
+	}
+	m.moved[key] = value
+}
+
+// holdFlow has the running session take a value its readers ask for at the
+// call — a flow's model, the readings' cadence — as it is staged
+// (docs/capabilities/configuration.md#a-session-can-hold-a-value-no-file-does),
+// and tells the record, which states what the rest of the session is asked
+// on.
+func (m *configModel) holdFlow(key, value string) {
+	env := m.flows.env
 	env.flows.set(key, value)
 	if env.flowsMoved != nil {
 		env.flowsMoved()
 	}
 }
 
+// take is the session's half of hold: it moves onto w every value the last
+// answer had the session take, read the way the session read it when it
+// opened (liveTakers), and reports whether there was any. The session takes
+// what moved at its next turn boundary (chat.ConfigSession).
+func (m *configModel) take(w *chat.Wiring) bool {
+	if len(m.moved) == 0 {
+		return false
+	}
+	for key, value := range m.moved {
+		c := m.base
+		if err := config.Set(&c, key, value); err != nil {
+			continue
+		}
+		if t := liveTakers[key]; t != nil {
+			t(c, m.flows.env, w)
+		}
+	}
+	clear(m.moved)
+	return true
+}
+
 // discard is the way out over staged work: the session goes back to what the
-// file holds for every flow key that was staged, so a model it took for the
+// file holds for every live key that was staged, so a value it took for the
 // time the change stood does not outlive the change.
 func (m *configModel) discard() {
 	for key := range m.staged {
-		m.holdFlow(key, configLoaded(m.base, key))
+		m.hold(key, configLoaded(m.base, key))
 	}
 	clear(m.staged)
 }
@@ -773,7 +816,11 @@ func (m configModel) edits() []config.Edit {
 // refresh rebuilds every row from the staged config and recounts what is
 // standing against the file.
 func (m *configModel) refresh() {
-	m.screen.Rows = append(m.flowRows(), configRowsTo(m.cfg, m.base, m.proj, m.toProject)...)
+	rows := configRowsTo(m.cfg, m.base, m.proj, m.toProject)
+	if m.flows.env != nil {
+		nextSession(rows)
+	}
+	m.screen.Rows = append(m.flowRows(), rows...)
 	changed := 0
 	for _, s := range configSettings(m.cfg, m.base) {
 		staged, _ := config.Value(m.cfg, s.Key)
@@ -782,6 +829,18 @@ func (m *configModel) refresh() {
 		}
 	}
 	m.screen.Changed = changed
+}
+
+// nextSession marks every staged row a running session cannot take: a key
+// it wires when it opens says so beside `unwritten`, because a session that
+// stays as it is after the change is otherwise a screen that seems not to
+// have worked (docs/interface/surfaces.md#the-settings-screen).
+func nextSession(rows []components.ConfigRow) {
+	for i, row := range rows {
+		if strings.HasPrefix(row.Source, "unwritten") && !config.Live(row.Key) {
+			rows[i].Source += " · next session"
+		}
+	}
 }
 
 // configSetting is one row of the settings table with the screen's own

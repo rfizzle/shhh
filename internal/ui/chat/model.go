@@ -1302,8 +1302,12 @@ type Model struct {
 	// turnOpen marks a turn the user started and that has not yet closed, so
 	// the close rows are appended once, for a real turn; turnOutcome
 	// is how it ended.
-	turnOpen      bool
-	turnOutcome   components.TurnState
+	turnOpen    bool
+	turnOutcome components.TurnState
+	// taken is what the settings screen had the session take while a turn
+	// was running, held for the next turn's start (takeStaged). Nil is
+	// nothing waiting.
+	taken         *heldTake
 	turnTokensIn  int64
 	turnTokensOut int64
 	// contextTokens is what the provider last reported the request carrying,
@@ -2058,6 +2062,9 @@ func (m *Model) openTurn(shown string) {
 	m.turnStarted, m.turnEnded = clock(), time.Time{}
 	m.turnOpen, m.turnOutcome = true, components.TurnDone
 	m.turnTokensIn, m.turnTokensOut = 0, 0
+	// What the settings screen staged while the last turn ran is taken
+	// here, before the ceiling below is read back, so this turn runs on it.
+	m.takeHeld()
 	m.vitals.startTurn()
 	// A fresh user turn clears the notice rail's denial alert;
 	// lastDenial stays for /permissions why.
