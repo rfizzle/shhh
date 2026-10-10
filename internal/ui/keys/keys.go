@@ -489,9 +489,10 @@ var Reading = ReadingKeys{
 	Expand:     bind("enter", "expand", "enter"),
 	// Copy is the one copy every surface spells [c]: the fenced block under
 	// the cursor where the reply has one, and the whole row where it does
-	// not. It shares the letter with a dropped stream's "continue from here"
-	// (RowKeys): the two are offered on different rows — a drop row is never
-	// a reply with a block — and the dispatch asks the row first.
+	// not. A dropped stream's partial reply is a row like any other and
+	// copies the same way; its way on is Row.Resume, on a letter of its own.
+	// A context failure's "compact now" is still Row.Continue's [c], offered
+	// on a row that holds nothing to copy.
 	Copy: bind("c", "copy", "c"),
 	// Search is the slash every pager in the terminal opens a query with, and
 	// it is free here for the reason the bare letters are: nothing else on
@@ -863,10 +864,12 @@ type RowKeys struct {
 	// asks again, a dropped stream asks again *from scratch*. Same key, same
 	// dispatch, and the words belong to the row.
 	Retry Binding
-	// Continue is `[c]`: continue from a partial answer on a drop row, and
-	// compact-then-retry on a context failure. It is [c] rather than the
-	// artboard's [enter] because enter belongs to the draft.
+	// Continue is `[c]`: compact-then-retry on a context failure. It is [c]
+	// rather than the artboard's [enter] because enter belongs to the draft.
 	Continue Binding
+	// Resume is `[g]`: go on from a partial answer on a drop row. It is not
+	// [c], which is the one copy everywhere and copies the partial here.
+	Resume Binding
 	// Key is `[e]` rather than the artboard's `[k]`, because k is reading mode's
 	// own.
 	Key      Binding
@@ -884,6 +887,7 @@ var Row = RowKeys{
 
 	Retry:    bind("r", "try again", "r"),
 	Continue: bind("c", "continue from here", "c"),
+	Resume:   bind("g", "continue from here", "g"),
 	Key:      bind("e", "enter a new key", "e"),
 	Provider: bind("p", "switch provider", "p"),
 
@@ -1662,7 +1666,7 @@ func (k RewindKeys) All() []Binding { return []Binding{k.Both, k.Code, k.Talk, k
 
 var Rewind = RewindKeys{
 	Both: bind("b", "both", "b"),
-	Code: bind("c", "code only", "c"),
+	Code: bind("o", "code only", "o"),
 	Talk: bind("t", "talk only", "t"),
 	// The words say what is still standing rather than "cancel": nothing was
 	// restored, nothing left the window, and the picker is still there

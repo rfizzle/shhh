@@ -121,6 +121,13 @@ func (m Model) entryCopyText(e entry) (text, what string) {
 		return e.text, "compaction summary"
 	case entryThink:
 		return e.text, "thinking"
+	case entryStreamDrop:
+		// The partial reply a drop kept, which is what the row offers to go
+		// on from and so what a reader may want to keep.
+		if e.resume == nil {
+			return "", ""
+		}
+		return e.resume.text, "partial reply"
 	case entrySummary:
 		// The reading, not the row: the verdict and the instruction under it
 		// are furniture this transcript drew, and what somebody pastes into a
@@ -166,6 +173,8 @@ func (m Model) focusedCopyable() bool {
 	switch e.kind {
 	case entryAssistant, entryCompactSummary, entryThink:
 		return strings.TrimSpace(e.text) != ""
+	case entryStreamDrop:
+		return e.resume != nil && strings.TrimSpace(e.resume.text) != ""
 	case entrySummary:
 		return e.reading != nil && strings.TrimSpace(e.reading.verdict.Text) != ""
 	case entryCommand:

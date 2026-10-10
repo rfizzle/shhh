@@ -891,6 +891,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `row.withdraw` | `u` | take the steer back | yes |
 | `row.retry` | `r` | try again | yes |
 | `row.continue` | `c` | continue from here | yes |
+| `row.resume` | `g` | continue from here | yes |
 | `row.key` | `e` | enter a new key | yes |
 | `row.provider` | `p` | switch provider | yes |
 | `row.rounds` | `+` | more rounds | yes |
@@ -944,7 +945,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `commit.override` | `!` | commit with the secret | yes |
 | `commit.cancel` | `esc` | back | yes |
 | `rewind.both` | `b` | both | yes |
-| `rewind.code` | `c` | code only | yes |
+| `rewind.code` | `o` | code only | yes |
 | `rewind.talk` | `t` | talk only | yes |
 | `rewind.cancel` | `esc` | back | yes |
 | `rewind.diff` | `v` | what the turns after it changed | yes |

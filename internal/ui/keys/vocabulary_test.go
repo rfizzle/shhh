@@ -85,9 +85,10 @@ var acts = map[string]string{
 	"screen.copy": "copy", "screen.delete": "delete",
 	"screen.rename": "rename", "screen.again": "retry",
 	"oneshot.edit": "edit", "oneshot.copy": "copy", "oneshot.save": "write", "oneshot.quit": "back",
-	"plan.save":     "write",
-	"decision.full": "open",
-	"rewind.cancel": "back",
+	"plan.save":        "write",
+	"decision.full":    "open",
+	"rewind.cancel":    "back",
+	"wait.new_session": "new",
 }
 
 // apart are the blocks the vocabulary does not speak for. The draft spends
@@ -122,10 +123,8 @@ var shared = map[string]string{
 // the list only ever shrinks, and the test fails if an entry is fixed
 // without being taken off it.
 var owed = map[string]string{
-	"oneshot.revise":   "r",
-	"oneshot.explain":  "x",
-	"rewind.code":      "c",
-	"wait.new_session": "n",
+	"oneshot.revise":  "r",
+	"oneshot.explain": "x",
 }
 
 // over is every surface carrying more than three letters of its own, with

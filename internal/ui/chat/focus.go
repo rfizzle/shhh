@@ -462,11 +462,11 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// back to the draft as what they are.
 		return m.returnToInput(msg)
 	case keys.Is(pressed, keys.Reading.Copy):
-		// [c] shares its letter with a dropped stream's "continue from
-		// here", which answers on its own row first. Elsewhere it is the one
-		// copy: a reply's fenced block where the row has one (copyblock.go),
-		// and the row itself, type-aware, where it does not (copyrow.go). A
-		// row with nothing to copy hands the letter back to the draft.
+		// [c] is the one copy: a reply's fenced block where the row has one
+		// (copyblock.go), and the row itself, type-aware, where it does not
+		// (copyrow.go). A context failure's "compact now" answers on its own
+		// row first. A row with nothing to copy hands the letter back to the
+		// draft.
 		if next, cmd, claimed := m.rowLetter(pressed); claimed {
 			return next, cmd
 		}
@@ -481,7 +481,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// the scroll to wherever it was standing.
 		m.halfPageFocus(pressed)
 		return m, nil
-	case keys.Is(pressed, keys.Row.Retry, keys.Row.Continue, keys.Row.Key, keys.Row.Provider):
+	case keys.Is(pressed, keys.Row.Retry, keys.Row.Continue, keys.Row.Resume, keys.Row.Key, keys.Row.Provider):
 		// A provider failure's own offers and a dropped stream's. Every one
 		// is answered on the row under the cursor, so the input keeps all
 		// four letters for typing.

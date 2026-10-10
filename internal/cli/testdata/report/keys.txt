@@ -101,6 +101,7 @@
   · withdraw  u · take the steer back  [shipped]
   · retry     r · try again  [shipped]
   · continue  c · continue from here  [shipped]
+  · resume    g · continue from here  [shipped]
   · key       e · enter a new key  [shipped]
   · provider  p · switch provider  [shipped]
   · rounds    + · more rounds  [shipped]
@@ -175,7 +176,7 @@
   REWIND
 
   · both    b · both  [shipped]
-  · code    c · code only  [shipped]
+  · code    o · code only  [shipped]
   · talk    t · talk only  [shipped]
   · cancel  esc · back  [shipped]
   · diff    v · what the turns after it changed  [shipped]
@@ -337,4 +338,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  238 keys · 1 moved
+  239 keys · 1 moved

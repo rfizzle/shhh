@@ -36,7 +36,7 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// The keys a stream-drop row offers are keys.Row.Continue and keys.Row.Retry.
+// The keys a stream-drop row offers are keys.Row.Resume and keys.Row.Retry.
 // They live in focus mode on the row, like every other recovery key (
 // a failure row), so the input keeps both letters for typing — which is the
 // whole reason a failure row's `[enter] continue from here` becomes `[c]`
@@ -328,7 +328,7 @@ func (m Model) dropKeys(res *streamResume) []components.KeyOffer {
 		return nil
 	}
 	offers := []components.KeyOffer{
-		rowOffer(keys.Row.Continue, keys.Words(keys.Row.Continue)),
+		rowOffer(keys.Row.Resume, keys.Words(keys.Row.Resume)),
 	}
 	if res.truncated {
 		// Asking again is not on offer here. The reply is in the
@@ -362,7 +362,7 @@ func (m Model) dropKey(key string) (tea.Model, tea.Cmd, bool) {
 		return m, nil, false
 	}
 	switch key {
-	case keys.Shown(keys.Row.Continue):
+	case keys.Shown(keys.Row.Resume):
 		next, cmd := m.continueStream(e.resume)
 		return next, cmd, true
 	case keys.Shown(keys.Row.Retry):

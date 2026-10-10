@@ -80,7 +80,7 @@ func TestStreamDrop_KeepsThePartialAndOffersBothWaysOn(t *testing.T) {
 	view := stripANSI(next.dropRow(e).View(110))
 	for _, want := range []string{
 		"stream", "dropped mid-reply", "tokens kept", "partial",
-		"…so I'll thread the sentinel", "[c]", "continue from here",
+		"…so I'll thread the sentinel", "[g]", "continue from here",
 		"[r]", "ask again from scratch", "the partial reply stays",
 	} {
 		if !strings.Contains(view, want) {
@@ -110,9 +110,9 @@ func TestStreamDrop_ContinueSendsThePartialBackAsContext(t *testing.T) {
 
 	before := len(next.agent.Messages())
 	next.focusIdx = indexOfKind(t, next, entryStreamDrop)
-	resumed, cmd, claimed := next.dropKey(keys.Shown(keys.Row.Continue))
+	resumed, cmd, claimed := next.dropKey(keys.Shown(keys.Row.Resume))
 	if !claimed {
-		t.Fatal("[c] should be claimed by the focused drop row")
+		t.Fatal("[g] should be claimed by the focused drop row")
 	}
 	after := resumed.(Model)
 	if cmd == nil {
@@ -134,7 +134,7 @@ func TestStreamDrop_ContinueSendsThePartialBackAsContext(t *testing.T) {
 		t.Errorf("the instruction to carry on should follow it, got %+v", last)
 	}
 	// Taking the offer spends it: the same partial cannot be sent twice.
-	if _, _, claimed := after.dropKey(keys.Shown(keys.Row.Continue)); claimed {
+	if _, _, claimed := after.dropKey(keys.Shown(keys.Row.Resume)); claimed {
 		t.Error("a spent offer should stop claiming its key")
 	}
 	if keys := after.dropKeys(dropEntry(t, after).resume); len(keys) != 0 {
@@ -157,9 +157,9 @@ func TestStreamDrop_ContinueWithToolCallsResumesTheRound(t *testing.T) {
 	}
 
 	next.focusIdx = indexOfKind(t, next, entryStreamDrop)
-	resumed, _, claimed := next.dropKey(keys.Shown(keys.Row.Continue))
+	resumed, _, claimed := next.dropKey(keys.Shown(keys.Row.Resume))
 	if !claimed {
-		t.Fatal("[c] should be claimed with tool calls too")
+		t.Fatal("[g] should be claimed with tool calls too")
 	}
 	after := resumed.(Model)
 	msgs := after.agent.Messages()
@@ -520,7 +520,7 @@ func TestCeilingStop_KeepsTheReplyAndOffersToFinishIt(t *testing.T) {
 	view := stripANSI(next.dropRow(e).View(110))
 	for _, want := range []string{
 		"stream", "cut at the output ceiling", "tokens written", "partial",
-		"[c]", "continue from here", "the reply is in the conversation",
+		"[g]", "continue from here", "the reply is in the conversation",
 	} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the row should say %q, got:\n%s", want, view)
@@ -563,9 +563,9 @@ func TestCeilingStop_ContinueAsksForTheRestWithoutRepeatingIt(t *testing.T) {
 
 	before := len(next.agent.Messages())
 	next.focusIdx = indexOfKind(t, next, entryStreamDrop)
-	resumed, cmd, claimed := next.dropKey(keys.Shown(keys.Row.Continue))
+	resumed, cmd, claimed := next.dropKey(keys.Shown(keys.Row.Resume))
 	if !claimed {
-		t.Fatal("[c] should be claimed by the focused row")
+		t.Fatal("[g] should be claimed by the focused row")
 	}
 	if cmd == nil {
 		t.Fatal("continuing should ask the model")

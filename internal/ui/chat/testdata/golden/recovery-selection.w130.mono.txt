@@ -56,7 +56,7 @@
 
    ⚠ stream  dropped mid-reply · ~14 tokens kept               partial   4.0s
     …so I'll thread the sentinel through runRound and then
-    [c] continue from here · [r] retry the last failure
+    [g] continue from here · [r] retry the last failure
     [ctrl+space/ctrl+y] to use them
     the partial reply stays
 
@@ -108,7 +108,7 @@
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mstream␛[m  ␛[38;5;254mdropped mid-reply␛[m␛[38;5;244m · ~14 tokens kept␛[m               ␛[38;5;254mpartial␛[m   ␛[38;5;244m4.0s␛[m
     ␛[38;5;244m…so I'll thread the sentinel through runRound and then␛[m
-    ␛[38;5;244m[c]␛[m␛[38;5;244m continue from here␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r]␛[m␛[38;5;244m retry the last failure␛[m
+    ␛[38;5;244m[g]␛[m␛[38;5;244m continue from here␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r]␛[m␛[38;5;244m retry the last failure␛[m
     ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
     ␛[38;5;244mthe partial reply stays␛[m
 

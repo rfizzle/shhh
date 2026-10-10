@@ -652,8 +652,9 @@ through the handover. While the draft holds the keyboard a letter offered on
 the row is a letter of the sentence being typed, so the row draws its letters
 grey beside the key that hands it the keyboard; the handover gives the
 selected row the keyboard, as it gives a waiting decision the keyboard, and
-the letters are live from then on — `r` tries again, `c` continues, `e` takes
-a new key, `p` switches provider, `+` grants more rounds, `!` lets the turn
+the letters are live from then on — `r` tries again, `g` goes on from a dropped
+stream's partial reply (`c` there is the one copy, and `c` on a context
+failure compacts), `e` takes a new key, `p` switches provider, `+` grants more rounds, `!` lets the turn
 run. Answering the row gives the keyboard back to the draft, sentence intact,
 and so does esc. Under reading mode's cursor the letters are live already.
 There is no second spelling of any of them
@@ -2892,8 +2893,8 @@ one word — the files a run of turns wrote, and the turns themselves — and th
 card states them apart, in the same field block an approval states a blast
 radius in: what comes back on disk and where it comes from, what leaves the
 window and what the window costs afterwards, and whether the act can be taken
-back. The three answers are on one row under the rule, both leading, because
-both is the usual reading of "go back"; code only is *the approach was wrong,
+back. The three answers are on one row under the rule, both leading (`[b]`, `[o]`,
+`[t]`), because both is the usual reading of "go back"; code only is *the approach was wrong,
 keep the knowledge* and talk only is *the model went down a bad path, keep the
 files*. Esc is the safe answer in the fullest sense the product has — nothing
 restored, no turn out of the window, and the picker still there.

@@ -293,7 +293,7 @@ func register() [surfaceCount]Surface {
 			Position: Beside,
 			Reached:  Shown(Draft.Answer) + " on a selected recovery or round-limit row, or " + Shown(Draft.Reading) + " and the cursor on the row",
 			Bindings: []Binding{
-				Row.Withdraw, Row.Retry, Row.Continue,
+				Row.Withdraw, Row.Retry, Row.Continue, Row.Resume,
 				Row.Key, Row.Provider, Row.Rounds, Row.Uncap,
 			},
 		},

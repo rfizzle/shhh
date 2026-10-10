@@ -17,7 +17,7 @@
 │ talk      turns 6–7 leave the window — ctx 62% → 41% · kept as a branch, /branches to switch back          │
 │ undo      yes — a rewind is a turn, and /undo takes it back                                                │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [b] both — the usual meaning of going back · [c] code only · [t] talk only · [?] keys                      │
+│ [b] both — the usual meaning of going back · [o] code only · [t] talk only · [?] keys                      │
 │ [esc] back — back to the picker, nothing restored                                                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -28,7 +28,7 @@
 │ talk      turn 7 leaves the window — ctx 62% → 58% · kept as a branch, /branches to switch back            │
 │ undo      yes — a rewind is a turn, and /undo takes it back                                                │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [b] both — the usual meaning of going back · [c] code only · [t] talk only · [?] keys                      │
+│ [b] both — the usual meaning of going back · [o] code only · [t] talk only · [?] keys                      │
 │ [esc] back — back to the picker, nothing restored                                                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -40,7 +40,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mtalk      ␛[m␛[38;5;254mturns 6–7 leave the window␛[m␛[38;5;244m — ctx 62% → 41% · kept as a branch, /branches to switch back␛[m          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254myes␛[m␛[38;5;244m — a rewind is a turn, and /undo takes it back␛[m                                                ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[b]␛[m ␛[38;5;254mboth — the usual meaning of going back␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m ␛[38;5;254mcode only␛[m␛[38;5;244m · ␛[m␛[38;5;254m[t]␛[m ␛[38;5;254mtalk only␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[b]␛[m ␛[38;5;254mboth — the usual meaning of going back␛[m␛[38;5;244m · ␛[m␛[38;5;254m[o]␛[m ␛[38;5;254mcode only␛[m␛[38;5;244m · ␛[m␛[38;5;254m[t]␛[m ␛[38;5;254mtalk only␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] back — back to the picker, nothing restored␛[m                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -51,6 +51,6 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mtalk      ␛[m␛[38;5;254mturn 7 leaves the window␛[m␛[38;5;244m — ctx 62% → 58% · kept as a branch, /branches to switch back␛[m            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254myes␛[m␛[38;5;244m — a rewind is a turn, and /undo takes it back␛[m                                                ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[b]␛[m ␛[38;5;254mboth — the usual meaning of going back␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m ␛[38;5;254mcode only␛[m␛[38;5;244m · ␛[m␛[38;5;254m[t]␛[m ␛[38;5;254mtalk only␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[b]␛[m ␛[38;5;254mboth — the usual meaning of going back␛[m␛[38;5;244m · ␛[m␛[38;5;254m[o]␛[m ␛[38;5;254mcode only␛[m␛[38;5;244m · ␛[m␛[38;5;254m[t]␛[m ␛[38;5;254mtalk only␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] back — back to the picker, nothing restored␛[m                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
