@@ -814,15 +814,20 @@ tries the same act sideways, which the repeat detector then has to catch a
 round later. Most denials mean *not like that*, and *like what* is the one
 thing the model cannot find out on its own.
 
-So the card's no has a second spelling that opens a note, and the sentence
-the reader writes is what the model receives in place of the fixed one. It is
+So the card's no carries a note, and the sentence the reader writes is what
+the model receives in place of the fixed one. The note is the draft: what
+the reader was writing when they answered goes with the answer, so saying
+why costs no key and no field of its own — a card that lands on a sentence
+waits for it, and a reader who wants to say why types it before answering.
+An empty draft is the plain answer, and the model cannot tell the two paths
+apart. It is
 still the reader's denial: the row draws it in the reader's colour and word,
 distinct from a rule's, with the note folded under it. A rule that only
 matched carries no note there, because it has nothing to say beyond which rule
 it was; the one rule that judged folds its own sentence into the same place
 ([above](#a-judged-denial-carries-its-reason)).
 
-The yes has the same second spelling. A note beside an allow is steering: the
+The yes carries one the same way. A note beside an allow is steering: the
 act runs, and the sentence joins the conversation before the next round, the
 way a message typed while the turn works already does
 ([`../interface/surfaces.md`](../interface/surfaces.md#the-input-frame)). It

@@ -186,8 +186,8 @@ func bare(t *testing.T, what, text string, phrases ...string) {
 // The offers a command card makes, and an edit card, before anything is
 // pressed.
 const (
-	commandOffers = "[y] run it once · [Y] run with a note · [n] deny · [N] deny with a note"
-	editOffers    = "[y] apply the change · [Y] apply with a note · [n] deny · [N] deny with a note"
+	commandOffers = "[y] run it once · [n] deny"
+	editOffers    = "[y] apply the change · [n] deny"
 )
 
 const (
@@ -420,13 +420,17 @@ func TestApprovalRouteBeyondAllowDeny(t *testing.T) {
 		}
 	})
 
+	// The note is the draft: esc gives the keyboard back with the request
+	// waiting, the sentence is typed where every sentence is, and the answer
+	// takes it.
 	t.Run("a note on a no is the whole of what the model is told", func(t *testing.T) {
 		d := (approvalRig{command: first}).start(t)
 		send(d.tm, "go")
 		waitForText(t, d.tm, "$ "+first)
-		d.raised("N")
+		programPress(t, d.tm, "esc")
 		d.tm.Type("use make test instead")
-		programPress(t, d.tm, "enter")
+		waitForText(t, d.tm, "use make test instead")
+		d.raised("n")
 		got := d.finish("")
 		if len(got.ran) != 0 || got.told != "error: use make test instead" {
 			t.Fatalf("ran %v, told %q", got.ran, got.told)
@@ -438,9 +442,10 @@ func TestApprovalRouteBeyondAllowDeny(t *testing.T) {
 		d := (approvalRig{command: first}).start(t)
 		send(d.tm, "go")
 		waitForText(t, d.tm, "$ "+first)
-		d.raised("Y")
+		programPress(t, d.tm, "esc")
 		d.tm.Type("and keep the output short")
-		programPress(t, d.tm, "enter")
+		waitForText(t, d.tm, "and keep the output short")
+		d.raised("y")
 		got := d.finish("")
 		if len(got.ran) != 1 || got.ran[0] != first {
 			t.Fatalf("ran %v", got.ran)
@@ -491,10 +496,10 @@ func TestApprovalRouteBeyondAllowDeny(t *testing.T) {
 		send(d.tm, "go")
 		waitForText(t, d.tm, "$ "+risky)
 		d.tm.Send(programHandover)
-		waitForText(t, d.tm, "[x] explain — what this command does")
-		programPress(t, d.tm, "x")
+		waitForText(t, d.tm, "[enter] full view, and what it does")
+		programPress(t, d.tm, "enter")
 		waitForText(t, d.tm, paragraph)
-		wants(t, "the explanation's screen", *d.tm.frame.Load(), "explain — "+risky,
+		wants(t, "the full view", *d.tm.frame.Load(), "Approve command", risky,
 			"Nothing on this screen was sent to the model waiting on your answer.")
 		if n := d.requests(); n != 1 {
 			t.Fatalf("the model was asked %d times while the explanation was read", n)

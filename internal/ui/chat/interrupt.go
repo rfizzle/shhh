@@ -196,11 +196,10 @@ func (m Model) graceShowing() bool {
 	return now.Sub(m.interrupt.graceFrom) < graceMax && now.Sub(m.lastKeypress) < graceQuiet
 }
 
-// graceDiscards reports whether the window swallows this key: the keys that
-// would answer the decision, the two that answer it with a sentence included
-// — a shifted letter from the tail of a buffered burst is the reflex this
-// window exists for, and a field opened by one is a mode the reader did not
-// ask for. Three keys the run prints stay out of it. The
+// graceDiscards reports whether the window swallows this key: the two keys
+// that would answer the decision — a letter from the tail of a buffered
+// burst is the reflex this window exists for. Three keys the run prints
+// stay out of it. The
 // chords no sentence can produce stay live — ctrl+c still stops the turn, the
 // handover still gates — and esc keeps its way back to the draft, because
 // the safe answer has to stay reachable for esc to be it
@@ -217,8 +216,7 @@ func (m Model) graceDiscards(pressed string) bool {
 		// message has in flight.
 		return keys.Is(pressed, keys.Select.Take) || keys.Is(pressed, keys.Confirm.Yes)
 	}
-	return keys.Is(pressed, keys.Decision.Allow) || keys.Is(pressed, keys.Decision.Deny) ||
-		keys.Is(pressed, keys.Decision.AllowNoted) || keys.Is(pressed, keys.Decision.DenyNoted)
+	return keys.Is(pressed, keys.Decision.Allow) || keys.Is(pressed, keys.Decision.Deny)
 }
 
 // graceTickMsg repaints the card when the window expires between keys; the
@@ -406,14 +404,14 @@ func (m Model) escLeavesWaiting() bool {
 		// decision waiting — so esc is not the way back to the draft while
 		// one is up. Two surfaces cannot both have the key, and the nearer
 		// one wins: a reader escaping out of a field they opened means the
-		// field. Both of the card's fields count: the note (approval.go)
-		// and the command itself (amend.go). So do its two lists, which are
+		// field. The card's field counts: the command itself (amend.go).
+		// So do its two lists, which are
 		// not fields but stand in the same relation to the card — the reader
 		// is inside something they opened, and esc is the way back out of
 		// it: the queue (queue.go), and the grants the always-allow key
 		// offers, where esc closes the list, grants nothing and leaves the
 		// decision waiting (grant.go).
-		return m.memoryAsk == nil && m.approval.note == nil && m.approval.edit == nil &&
+		return m.memoryAsk == nil && m.approval.edit == nil &&
 			m.approval.list == nil && m.approval.grant == nil
 	case statePlanApprove:
 		return false

@@ -119,7 +119,7 @@ func TestInterrupt_TheCardOffersOnlyTheKeyThatIsLive(t *testing.T) {
 
 	m = handover(t, m)
 	view = ansi.Strip(m.View().Content)
-	for _, back := range []string{"[y]", "[n]", "[v]"} {
+	for _, back := range []string{"[y]", "[n]", "[enter]"} {
 		if !strings.Contains(view, back) {
 			t.Fatalf("a gated card's keys are ordinary keys, %s is missing:\n%s", back, view)
 		}
@@ -153,17 +153,30 @@ func TestInterrupt_TheDraftSurvivesTheWholeRoundTrip(t *testing.T) {
 		t.Fatalf("the held draft should still show every character:\n%s", view)
 	}
 
-	// Answer it. The keyboard comes back to the draft, at the same character.
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
-	m = updated.(Model)
-	if m.interrupt.held {
+	// Leave it. The keyboard comes back to the draft, at the same character.
+	left := press(t, m, "esc")
+	if left.interrupt.held {
+		t.Fatal("esc hands the keyboard back to the draft")
+	}
+	if got := left.input.Value(); got != draft {
+		t.Fatalf("leaving must not clear or submit the draft, got %q", got)
+	}
+	if got := left.draftCursor(); got != before {
+		t.Fatalf("leaving must not move the cursor to the end, %d → %d", before, got)
+	}
+
+	// Answer it instead, and the sentence is the answer's note: it goes with
+	// the answer and the keyboard comes back to an empty box
+	// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
+	answered := press(t, m, "n")
+	if answered.interrupt.held {
 		t.Fatal("answering hands the keyboard back to the draft")
 	}
-	if got := m.input.Value(); got != draft {
-		t.Fatalf("answering must not clear or submit the draft, got %q", got)
+	if got := answered.input.Value(); got != "" {
+		t.Fatalf("the sentence went with the answer, got %q left in the draft", got)
 	}
-	if got := m.draftCursor(); got != before {
-		t.Fatalf("answering must not move the cursor to the end, %d → %d", before, got)
+	if row := answered.transcript[len(answered.transcript)-1]; row.denyNote != draft {
+		t.Fatalf("the sentence should be the denial's note, got %q", row.denyNote)
 	}
 }
 
@@ -186,7 +199,7 @@ func TestInterrupt_EscLeavesTheDecisionWaitingRatherThanDenyingIt(t *testing.T) 
 	// And the card says so while it holds the keyboard, because the safe
 	// answer here is not obvious (invariant 3).
 	gatedView := ansi.Strip(handover(t, m).View().Content)
-	if !strings.Contains(gatedView, "[esc] leave it waiting, nothing is denied") {
+	if !strings.Contains(gatedView, "[esc] leave it waiting") && !strings.Contains(gatedView, "[esc] wait") {
 		t.Fatalf("the gated card should state what esc does:\n%s", gatedView)
 	}
 	// Saying no is still [n].
@@ -574,7 +587,7 @@ func TestArrival_TheKeysASentenceCouldHaveMeantWaitForTheHandover(t *testing.T) 
 	// card, and the card says where it went.
 	m := interruptedModel(t, "")
 	view := ansi.Strip(m.View().Content)
-	for _, want := range []string{"[y] apply the change", "[Y] ", "[n] deny", "[N] "} {
+	for _, want := range []string{"[y] apply the change", "[n] deny"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("an arrival-held card offers %q:\n%s", want, view)
 		}

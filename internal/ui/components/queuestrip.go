@@ -19,7 +19,7 @@ import (
 // queueMarkKey is the mark a batchable row carries: the key that would answer
 // it, written where the row is, so membership is a fact on the row rather
 // than a count on the card.
-var queueMarkKey = keys.Bracket(keys.Decision.Batch)
+var queueMarkKey = keys.Bracket(keys.Decision.Always)
 
 // QueueItem is one pending decision as the strip lists it.
 type QueueItem struct {
@@ -35,7 +35,7 @@ type QueueItem struct {
 	Detail string
 	// Severity is the item's rating, printed as a word like everywhere else.
 	Severity Severity
-	// Batch marks an item [A] would answer along with the current one.
+	// Batch marks an item the queue row under [a] would answer along with the current one.
 	Batch bool
 }
 
@@ -45,7 +45,7 @@ type QueueStrip struct {
 	// Items are the pending decisions in the order they will be asked. The
 	// first is the one the card below is showing.
 	Items []QueueItem
-	// Note rides the header beside the count, e.g. "[A] answers the 3
+	// Note rides the header beside the count, e.g. "[a] lists the 3
 	// marked". It is what states the batch's membership before it applies.
 	Note string
 	// MaxRows bounds the item rows; what does not fit is counted on a final
@@ -110,7 +110,7 @@ func overflowRow(hidden []QueueItem) string {
 const queueIndent = "  "
 
 // header is the dot run — one per decision still waiting, the current one
-// filled — the count in words, and the note that names what [A] covers.
+// filled — the count in words, and the note that names what [a] covers.
 //
 // The filled dot is del and the rest dim. A queue is a run of decisions
 // nobody has taken yet, and the one at its head is the one holding the turn
@@ -149,7 +149,7 @@ func (item QueueItem) render(width int, current bool) string {
 	return queueIndent + pointer + sty.dim.Render(number) + style.Render(label) + pad + "  " + right
 }
 
-// right is the item's detail and rating and, when [A] would answer it, the
+// right is the item's detail and rating and, when [a] would answer it, the
 // key that would. All three are words: a row's membership is never a hue.
 func (item QueueItem) right(current bool) string {
 	var b strings.Builder

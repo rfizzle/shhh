@@ -940,6 +940,11 @@ var Commit = CommitKeys{
 // live only once Draft.Answer has handed the keyboard over, or on a card that
 // landed on a draft nobody was typing into.
 type DecisionKeys struct {
+	// Allow and Deny are the card's two answers, and each carries the
+	// draft's sentence when there is one: what the reader typed before
+	// handing the card the keyboard is the note the answer goes out with,
+	// so a note costs no key and no field of its own
+	// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
 	Allow Binding
 	Deny  Binding
 
@@ -955,43 +960,19 @@ type DecisionKeys struct {
 	// described the old act would be the one place the rule it exists to
 	// enforce could not be checked: one surface, one keystroke, one act, and
 	// the label is how the act is named.
+	//
+	// The queue behind the card is a row of that list rather than a key of
+	// its own: a grant and the queue are both "answer more than this one",
+	// and one key listing every way of saying it is a key learned once
+	// (docs/interface/surfaces.md#the-approval-card).
 	Always Binding
 
-	// Batch opens the queue behind the card as a list the reader checks and
-	// unchecks, rather than answering a set they cannot see. The keystroke is
-	// the one it always was and only the act behind it changed: a reader who
-	// learned it as "answer the rest like this one" presses it, sees the rest,
-	// and enter is still that answer
-	// (docs/interface/surfaces.md#the-approval-card).
-	Batch Binding
-	Diff  Binding
-
-	// AllowNoted and DenyNoted are the same two answers with a sentence
-	// attached: the key opens a one-line field under the card, and what is
-	// written there travels with the answer
-	// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
-	//
-	// They are the shifted spellings of the answers they carry, which is a
-	// choice about legibility and not about scarcity: `e`, `x` and every
-	// unshifted letter but `y`, `n`, `a`, `v` and `t` are unclaimed on this
-	// surface. A shifted letter says "the same answer, more of it" without
-	// asking the reader to learn a second alphabet, and the pairing is
-	// visible in the run the card prints.
-	//
-	// The cost is that Allow and Deny give the shifted letters up: a surface
-	// answers one keystroke once (register.go), so `Y` and `N` could not go
-	// on staying second spellings of `y` and `n` here. What a reader who has
-	// been pressing `N` for a year gets is the field, open, with the denial
-	// still waiting behind it — and enter on an empty field is the denial
-	// they meant, byte for byte. One extra keystroke for a reflex, and the
-	// thing the reflex was reaching for is still what it lands on.
-	//
-	// On the cards that offer no note — a /run the reader typed, a child's
-	// routed ask — the shifted letters answer nothing at all, and neither is
-	// drawn there: a card offers exactly the keys it answers, so there is
-	// nothing on those cards for a reflex to land on and be surprised by.
-	AllowNoted Binding
-	DenyNoted  Binding
+	// Full opens the card whole: an edit's full diff, a command's facts
+	// unclipped and, where a model is configured to give one, the
+	// explanation of what the command does. It is enter — open — the key
+	// every list opens what it points at with, and never an answer: a card
+	// is not allowed by the key a sentence ends on.
+	Full Binding
 
 	// DryRun is the command card's offer to find out what the command would
 	// do without doing it, where the command has a form that can be asked
@@ -1002,22 +983,6 @@ type DecisionKeys struct {
 	// It is [t] — try it — and the card's own words say what it would try.
 	DryRun Binding
 
-	// Explain is the command card's other question about the command rather
-	// than about the decision: a cheap model says what the thing in front of
-	// the reader does, on the screen the dry run opens on, and the decision
-	// is still waiting behind it
-	// (docs/interface/surfaces.md#the-approval-card).
-	//
-	// It is [x] because the one-shot's action bar already spends [x] on
-	// explaining a command (OneShot.Explain), and a reader who learned the
-	// letter there is looking at the same question here. That is an argument
-	// for the letter and not a claim to it — the two surfaces are never up
-	// at once, so nothing would have stopped a different one. What settles
-	// it is that [x] is unclaimed on this card: [e] would have to be taken
-	// from nothing and mean explain on one surface and edit on the other,
-	// which is the cost this register exists to make visible.
-	Explain Binding
-
 	// Amend is the command card's offer to run the line as the reader would
 	// have written it: the command opens in a field, prefilled, and what
 	// runs is what they left there
@@ -1025,11 +990,7 @@ type DecisionKeys struct {
 	//
 	// It is [e] — edit — the letter the one-shot's action bar already spends
 	// on the same act (OneShot.Edit), and it is unclaimed here: this card
-	// spends `y Y n N a A v V t x g` and the draft's own editor is a chord.
-
-	// So this is a declaration rather than a move, and the one argument that
-	// could have taken the letter first — the explain key wanting a
-	// mnemonic — was settled the other way when it was made (Explain).
+	// spends `y n a t g` and the draft's own editor is a chord.
 	Amend Binding
 
 	// Revise is the drafted-file card's offer to change the file before it
@@ -1044,19 +1005,16 @@ type DecisionKeys struct {
 	// Accept and Refuse are Allow and Deny on a card the reader summoned
 	// rather than was handed.
 	//
-	// Deny folds esc and ctrl+c into the answer, which is right for a card
-	// that arrived on its own: there is nothing to go back to, so leaving
-	// and declining are the same act. On a summoned card they are not — esc
-	// is the way back to a screen the reader chose to leave — and a decline
-	// that outlives the session is exactly the consequence esc may never
-	// carry (docs/interface/principles.md#esc-is-always-the-safe-answer).
-	// So the answer is the letter alone and the way out is Select.Cancel.
+	// Neither card takes esc as its no: on both, esc is the way back and the
+	// question is still there afterwards, and a decline that outlives the
+	// session is exactly the consequence esc may never carry
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer). So the
+	// answer is the letter alone and the way out is Select.Cancel.
 	//
-	// Accept exists for the other half of the same difference. A summoned
-	// card has no sentence to attach to its yes — nothing is waiting on the
-	// answer to read one — so the shifted letter is unspent there and stays
-	// the second spelling of yes it has always been, rather than being taken
-	// away from that surface by a field it does not offer.
+	// Accept keeps the two spellings the handed card gave up. A summoned
+	// card was opened by the reader and has nothing behind it to open, so
+	// enter is still its yes; and its yes carries no sentence, so the
+	// shifted letter stays the second spelling of yes it has always been.
 	Accept Binding
 	Refuse Binding
 
@@ -1083,19 +1041,15 @@ type DecisionKeys struct {
 const AlwaysRouted = "allow this command for every agent, this turn"
 
 var Decision = DecisionKeys{
-	Allow:      bind("y", "allow", "y", "enter"),
-	Deny:       bind("n", "deny", "n"),
-	AllowNoted: bind("Y", "allow with a note", "Y"),
-	DenyNoted:  bind("N", "deny with a note", "N"),
-	Always:     bind("a", "allow without asking — choose how long", "a"),
-	Batch:      bind("A", "open the queue", "A"),
-	Diff:       bind("v", "full diff", "v", "V"),
-	DryRun:     bind("t", "dry run", "t"),
-	Explain:    bind("x", "explain what the command does", "x"),
-	Amend:      bind("e", "edit the command before it runs", "e"),
-	Revise:     bind("e", "edit the file before it is written", "e"),
-	Accept:     bind("y", "yes", "y", "Y", "enter"),
-	Refuse:     bind("n", "no, and stop offering", "n", "N"),
+	Allow:  bind("y", "allow", "y"),
+	Deny:   bind("n", "deny", "n"),
+	Always: bind("a", "allow without asking, or the queue", "a"),
+	Full:   bind("enter", "open the full view", "enter"),
+	DryRun: bind("t", "dry run", "t"),
+	Amend:  bind("e", "edit the command before it runs", "e"),
+	Revise: bind("e", "edit the file before it is written", "e"),
+	Accept: bind("y", "yes", "y", "Y", "enter"),
+	Refuse: bind("n", "no, and stop offering", "n", "N"),
 
 	ScrollUp:   bind("shift+↑", "scroll the card up", "shift+up"),
 	ScrollDown: bind("shift+↓", "scroll the card", "shift+down"),
@@ -1159,9 +1113,9 @@ type SelectKeys struct {
 	// second column, and the full view is where a card already sends what
 	// will not fit (docs/interface/surfaces.md#the-approval-card).
 	//
-	// It is `v`, which is the letter the approval card's full diff already
-	// spends on the same act: take what is under the pointer to the screen
-	// the whole product reads long things on.
+	// It is `v` — view it — the letter the rewind picker spends on the same
+	// act: take what is under the pointer to the screen the whole product
+	// reads long things on.
 	Long Binding
 	// Delete and Rename are the saved-chat picker's housekeeping keys,
 	// answered on the focused row: the first arms an inline confirm, the
@@ -1686,9 +1640,9 @@ type RewindKeys struct {
 
 	// Diff is the picker's own key rather than the card's: the change a
 	// rewind to the row under the pointer would take back, read full screen
-	// before the row is taken. It is `v` — view it — the letter the
-	// approval card's full diff spends, and like every letter on a card that
-	// opens as a search it is live once the query row is closed.
+	// before the row is taken. It is `v` — view it — and like every letter
+	// on a card that opens as a search it is live once the query row is
+	// closed.
 	Diff Binding
 }
 

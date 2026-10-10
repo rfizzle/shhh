@@ -19,8 +19,7 @@
 │ stages    this session's files only                                      │
 │ push      no                                                             │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ [y] allow it · [Y] allow with a note · [n] deny · [N] deny with a note   │
-│ [?] keys · [esc] leave it waiting, nothing is denied                     │
+│ [y] allow it · [n] deny · [?] keys · [esc] leave it waiting              │
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft           │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
@@ -35,8 +34,7 @@
 │ hooks     run                                                            │
 │ undo      git revert — /undo does not reach history                      │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ [y] allow it · [Y] allow with a note · [n] deny · [N] deny with a note   │
-│ [?] keys · [esc] leave it waiting, nothing is denied                     │
+│ [y] allow it · [n] deny · [?] keys · [esc] leave it waiting              │
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft           │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
@@ -51,8 +49,7 @@
 │ hooks     pre-commit and commit-msg skipped                              │
 │ undo      git revert — /undo does not reach history                      │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ [y] allow it · [Y] allow with a note · [n] deny · [N] deny with a note   │
-│ [?] keys · [esc] leave it waiting, nothing is denied                     │
+│ [y] allow it · [n] deny · [?] keys · [esc] leave it waiting              │
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft           │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
@@ -66,8 +63,7 @@
 │ push      no                                                             │
 │ undo      git branch -d                                                  │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ [y] allow it · [Y] allow with a note · [n] deny · [N] deny with a note   │
-│ [?] keys · [esc] leave it waiting, nothing is denied                     │
+│ [y] allow it · [n] deny · [?] keys · [esc] leave it waiting              │
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft           │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
@@ -81,8 +77,7 @@
 │ push      no                                                             │
 │ undo      git switch -                                                   │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ [y] allow it · [Y] allow with a note · [n] deny · [N] deny with a note   │
-│ [?] keys · [esc] leave it waiting, nothing is denied                     │
+│ [y] allow it · [n] deny · [?] keys · [esc] leave it waiting              │
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft           │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
@@ -96,8 +91,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mstages    ␛[m␛[38;5;252mthis session's files only␛[m                                      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[38;5;252mno␛[m                                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mallow it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[Y]␛[m ␛[38;5;252mallow with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[38;5;103m[N]␛[m ␛[38;5;252mdeny with a note␛[m   ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mallow it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting␛[m              ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m[ctrl+space/ctrl+y] answer it · other keys type into the draft␛[m           ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -112,8 +106,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mrun␛[m                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[38;5;252mgit revert␛[m␛[38;5;245m — /undo does not reach history␛[m                      ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mallow it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[Y]␛[m ␛[38;5;252mallow with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[38;5;103m[N]␛[m ␛[38;5;252mdeny with a note␛[m   ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mallow it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting␛[m              ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m[ctrl+space/ctrl+y] answer it · other keys type into the draft␛[m           ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -128,8 +121,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit and commit-msg skipped␛[m                              ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[38;5;252mgit revert␛[m␛[38;5;245m — /undo does not reach history␛[m                      ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mallow it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[Y]␛[m ␛[38;5;252mallow with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[38;5;103m[N]␛[m ␛[38;5;252mdeny with a note␛[m   ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mallow it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting␛[m              ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m[ctrl+space/ctrl+y] answer it · other keys type into the draft␛[m           ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -143,8 +135,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[38;5;252mno␛[m                                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[38;5;252mgit branch -d␛[m                                                  ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mallow it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[Y]␛[m ␛[38;5;252mallow with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[38;5;103m[N]␛[m ␛[38;5;252mdeny with a note␛[m   ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mallow it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting␛[m              ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m[ctrl+space/ctrl+y] answer it · other keys type into the draft␛[m           ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -158,7 +149,6 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[38;5;252mno␛[m                                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[38;5;252mgit switch -␛[m                                                   ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mallow it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[Y]␛[m ␛[38;5;252mallow with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[38;5;103m[N]␛[m ␛[38;5;252mdeny with a note␛[m   ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mallow it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting␛[m              ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m[ctrl+space/ctrl+y] answer it · other keys type into the draft␛[m           ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────╯␛[m

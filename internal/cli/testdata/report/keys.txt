@@ -108,15 +108,11 @@
 
   DECISION
 
-  · allow        y enter · allow  [shipped]
+  · allow        y · allow  [shipped]
   · deny         n · deny  [shipped]
-  · always       a · allow without asking — choose how long  [shipped]
-  · batch        A · open the queue  [shipped]
-  · diff         v V · full diff  [shipped]
-  · allow_noted  Y · allow with a note  [shipped]
-  · deny_noted   N · deny with a note  [shipped]
+  · always       a · allow without asking, or the queue  [shipped]
+  · full         enter · open the full view  [shipped]
   · dry_run      t · dry run  [shipped]
-  · explain      x · explain what the command does  [shipped]
   · amend        e · edit the command before it runs  [shipped]
   · revise       e · edit the file before it is written  [shipped]
   · accept       y Y enter · yes  [shipped]
@@ -345,4 +341,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  246 keys · 1 moved
+  242 keys · 1 moved

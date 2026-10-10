@@ -86,6 +86,7 @@ var acts = map[string]string{
 	"screen.rename": "rename", "screen.again": "retry",
 	"oneshot.edit": "edit", "oneshot.copy": "copy", "oneshot.save": "write", "oneshot.quit": "back",
 	"plan.save":     "write",
+	"decision.full": "open",
 	"rewind.cancel": "back",
 }
 
@@ -98,7 +99,7 @@ var apart = []string{"draft.", "search.older", "search.keep", "row."}
 // answers are a card's own y, n and e — the answer to the question the card
 // asks, not a key of the screen — and the inline confirm's.
 var answers = []string{
-	"decision.allow", "decision.deny", "decision.allow_noted", "decision.deny_noted",
+	"decision.allow", "decision.deny",
 	"decision.accept", "decision.refuse", "decision.amend", "decision.revise",
 	"confirm.yes", "confirm.no", "confirm.force", "agent.kill",
 	"proposal.write", "proposal.later", "proposal.never",
@@ -123,7 +124,6 @@ var shared = map[string]string{
 var owed = map[string]string{
 	"oneshot.revise":   "r",
 	"oneshot.explain":  "x",
-	"decision.explain": "x",
 	"rewind.code":      "c",
 	"wait.new_session": "n",
 }
@@ -131,9 +131,8 @@ var owed = map[string]string{
 // over is every surface carrying more than three letters of its own, with
 // those letters. Like owed it only shrinks.
 var over = map[string]string{
-	"the approval card and the /run confirm": "A V a g t v x",
-	"the one-shot's action bar":              "a p r t u x",
-	"the profile draft":                      "R m",
+	"the one-shot's action bar": "a p r t u x",
+	"the profile draft":         "R m",
 }
 
 func isApart(name string, list []string) bool {

@@ -203,6 +203,28 @@ func TestCancelTurn_SyntheticResultsWhileExecuting(t *testing.T) {
 	}
 }
 
+// A round whose every call waits on a decision is not executing, and a stop
+// over the card still abandons its calls: each gets the synthetic result, so
+// the conversation stays well-formed.
+func TestCancelTurn_SyntheticResultsWhileEveryCallWaits(t *testing.T) {
+	a := newTestAgent()
+	calls := []provider.ToolCall{{ID: "c1", Name: "execute_command"}}
+	a.BeginToolRound("", calls, func(provider.ToolCall) bool { return true })
+	if a.Executing() {
+		t.Fatal("the fixture should have nothing executing")
+	}
+	if cancelled := a.CancelTurn(); len(cancelled) != 1 || cancelled[0].ID != "c1" {
+		t.Fatalf("the waiting call should be cancelled, got %v", cancelled)
+	}
+	msgs := a.Messages()
+	if last := msgs[len(msgs)-1]; last.Role != provider.RoleTool || last.ToolCallID != "c1" || last.Content != CancelledResult {
+		t.Fatalf("expected a synthetic result for c1, got %+v", last)
+	}
+	if a.QueuedApprovals() != 0 {
+		t.Fatal("cancel should clear the queue")
+	}
+}
+
 func TestCancelTurn_NoSyntheticsWhenIdle(t *testing.T) {
 	a := newTestAgent()
 	before := len(a.Messages())

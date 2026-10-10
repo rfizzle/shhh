@@ -2012,32 +2012,22 @@ func TestGolden_Interrupt(t *testing.T) {
 	})
 }
 
-// TestGolden_DecisionNote captures the card with its note field open: the
-// decision run drawn dead because the field has the keyboard, the ┄ label
-// naming what the key that opened it asked for, and the two keys that close
-// it (docs/interface/surfaces.md#the-approval-card).
-//
-// It records the cursor, which is the whole reason it is a capture of the
-// panel rather than of the card: the field is the card's and the caret is the
-// host's, and where the two meet is the one thing neither of them can be
-// asked about on its own.
+// TestGolden_DecisionNote captures the card handed the keyboard over a
+// sentence: the run of nine keys, and the draft undressed under it holding
+// the words its answer will carry as the note
+// (docs/interface/surfaces.md#the-approval-card).
 func TestGolden_DecisionNote(t *testing.T) {
-	// One width below the card's own frame threshold, where the rows are
-	// drawn bare and the rules are dropped: the field's place is counted
-	// differently there, and that is the arithmetic worth a fixture.
-	captureCursorGolden(t, "decision-note", "the approval card's note field", append([]int{14}, goldenWidths...),
-		func(width int) (golden.Panel, *golden.Cursor) {
-			m := interruptedModel(t, "")
+	captureGolden(t, "decision-note", "the approval card over the draft that is its note", goldenWidths,
+		func(width int) []golden.Panel {
+			m := interruptedModel(t, "not that file")
 			m.width, m.height = width, 40
 			m.syncInputWidth()
 			m = handover(t, m)
-			m = typeInto(t, press(t, m, "N"), "not that file")
 			m.syncViewport()
-			return golden.Panel{
-					Label: "the field open, and every letter going into it",
-					View:  strings.Join(m.confirmPanelLines(), "\n"),
-				},
-				goldenCursor(m.confirmCursor(m.contentWidth()))
+			return []golden.Panel{{
+				Label: "the card holding the keyboard, the sentence under it",
+				View:  interruptSurface(m),
+			}}
 		})
 }
 
@@ -2205,9 +2195,9 @@ func TestGolden_GrantList(t *testing.T) {
 		})
 }
 
-// TestGolden_ExplainView captures the screen the command card's explain key
-// opens on, in both the states it has: the paragraph with the footer that
-// names who said it and what asking took, and the reading that did not happen
+// TestGolden_ExplainView captures the explanation on the command card's full
+// view, in both the states it has: the paragraph with the footer that names
+// who said it and what asking took, and the reading that did not happen
 // (docs/interface/surfaces.md#the-approval-card).
 //
 // Both panels are here because the failure is the half that has no other
@@ -2215,6 +2205,12 @@ func TestGolden_GrantList(t *testing.T) {
 // a screen whose model had nothing to say, and at sixty columns the footer is
 // where the difference would be lost.
 func TestGolden_ExplainView(t *testing.T) {
+	// The full view as the card opens it: the command, then what it does.
+	explainView := func(msg explainDoneMsg) *components.OutputView {
+		req := &approvalRequest{kind: approvalExec, command: msg.command, explained: &msg}
+		lines := append([]string{msg.command, ""}, explainLines(req)...)
+		return &components.OutputView{Title: "Approve command", Lines: lines, Wrap: true}
+	}
 	captureGolden(t, "explain-view", "the command card's explanation", goldenWidths,
 		func(width int) []golden.Panel {
 			read := explainView(explainDoneMsg{

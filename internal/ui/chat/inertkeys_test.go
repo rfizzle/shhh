@@ -68,7 +68,7 @@ func register(t *testing.T) []keyedSurface {
 			// The shifted pair is on this list for the reason the rest of it
 			// is: a capital is a bare key too, and "Y" is how a sentence
 			// about YAML starts.
-			keys: []string{"y", "n", "Y", "N", "a", "v", "A"},
+			keys: []string{"a", "y", "n", "Y", "N", "v", "A"},
 			open: func(t *testing.T) Model { return interruptedModel(t, draftLead) },
 			hold: handover,
 		},

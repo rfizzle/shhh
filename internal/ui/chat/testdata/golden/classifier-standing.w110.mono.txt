@@ -21,7 +21,7 @@
 │ receives  page text, kept whole; the first 16 KB into the conversation                                 │
 │ standing  listed host (urlhaus) — the classifier would have allowed it; the lists put it to you        │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] fetch it · [Y] fetch with a note · [n] deny · [N] deny with a note · [?] keys · [esc] wait         │
+│ [y] fetch it · [n] deny · [?] keys · [esc] leave it waiting, nothing is denied                         │
 │ [a] always — not offered: the lists warn about it                                                      │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -37,6 +37,6 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mreceives  ␛[m␛[38;5;254mpage text, kept whole; the first 16 KB into the conversation␛[m                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mstanding  ␛[m␛[38;5;254mlisted host (urlhaus)␛[m␛[38;5;244m — the classifier would have allowed it; the lists put it to you␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mfetch it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[Y]␛[m ␛[38;5;254mfetch with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m ␛[38;5;254mdeny with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] wait␛[m         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mfetch it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: the lists warn about it␛[m                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

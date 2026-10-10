@@ -37,35 +37,25 @@ const (
 	// the done flag would otherwise read a press of any letter as an
 	// approval.
 	approvalWaiting ApprovalDecision = iota
-	// ApprovalApprove runs the pending action (y / enter).
+	// ApprovalApprove runs the pending action (y).
 	ApprovalApprove
 	// ApprovalDeny declines it (n) — esc never destroys.
 	ApprovalDeny
-	// ApprovalAlways approves and auto-allows the category for the session
-	// (a, only when AllowAlways is set).
+	// ApprovalAlways asks the host for the list of grants the card can make,
+	// with the queue behind the card as a row of it (a, only when
+	// AllowAlways or Batch is set). It settles nothing, which is why the
+	// card hands it back rather than deciding on it.
 	ApprovalAlways
-	// ApprovalFullDiff opens the full-screen diff view (d, only when
-	// FullDiff is set); the host returns to the card afterwards.
+	// ApprovalFullDiff opens the card's full view — an edit's diff, a
+	// command's facts and its explanation (enter, only when FullDiff is
+	// set); the host returns to the card afterwards.
 	ApprovalFullDiff
-	// ApprovalBatch asks the host for the queue behind the card as a list:
-	// this action and every queued action the session would classify the same
-	// way, checked and unchecked rather than answered together (A, only when
-	// Batch is set). It settles nothing, which is why the card hands it back
-	// rather than deciding on it.
-	ApprovalBatch
 	// ApprovalRelease hands the keyboard back to the draft and asks the host
 	// to deliver the keystroke there. Only a card holding the keyboard by
 	// arrival returns it (HeldOnArrival): the reader never took the keyboard,
 	// so a key the card has no answer for is the start of a sentence rather
 	// than a mispress.
 	ApprovalRelease
-	// ApprovalApproveNoted and ApprovalDenyNoted are the same two answers
-	// with a sentence to come (Y / N, only when Noted is set). They settle
-	// nothing on their own: the host opens the field, and the answer is given
-	// when the field is confirmed
-	// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
-	ApprovalApproveNoted
-	ApprovalDenyNoted
 )
 
 // Severity is how much the pending action could cost, led with as a word
@@ -395,7 +385,7 @@ type ApprovalCard struct {
 	// Hunks is the edit variant's diff body; Syntax highlights its lines.
 	Hunks  []diff.Hunk
 	Syntax Syntax
-	// FullDiff offers [d] to open the diff full screen.
+	// FullDiff offers [enter] to open the card's full view.
 	FullDiff bool
 	// Reversibility rides the edit variant's stats line: whether the
 	// change can be taken back, stated where it costs the diff no rows.
@@ -417,39 +407,25 @@ type ApprovalCard struct {
 	// Never is the words for the second no a proposal card offers — the one
 	// written down so the proposal is not made again — and offering it puts
 	// the proposal's pair in the run where the plain no was: [n] under
-	// Decline, then [N] under these words. Empty is every other card.
+	// Decline, then the shifted letter under these words. Empty is every other card.
 	Never string
 	// AllowAlways offers [a], and AlwaysHint is the imperative it is offered
 	// under — `allow "go test" without asking`. The scope is in the words
 	// because a key whose reach is not stated is a key pressed on a guess.
 	AllowAlways bool
 	AlwaysHint  string
-	// Batch offers [A]: this action and every queued action the session
-	// would classify the same way, opened as the list that answers them.
-	// BatchHint is its imperative and states the count, because a key that
+	// Batch says there is a queue behind the card that one list could
+	// answer: this action and every queued action the session would
+	// classify the same way. It is a row of the list [a] opens rather than a
+	// key of its own, so it offers [a] too, and BatchHint is the clause the
+	// key is offered under for it — it states the count, because a key that
 	// answers an unstated number of decisions is not an offer.
 	Batch     bool
 	BatchHint string
-	// Noted offers the two answers that carry a sentence — [Y] and [N] —
-	// beside the two that do not
-	// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
-	// It is off wherever there is nothing waiting to read the sentence: a
-	// /run the reader typed has no model to correct, and a child's routed
-	// request answers over a channel that carries a boolean.
-	Noted bool
-	// NoteOpen is the field open under the card, holding the keyboard.
-	// NoteAllow says which of the two answers it will carry, and NoteField
-	// is the field as its host rendered it — the card draws the field but
-	// does not own it, because what is typed there survives a frame and the
-	// card does not (the host rebuilds one every frame).
-	NoteOpen  bool
-	NoteAllow bool
-	NoteField string
 	// AmendOpen is the command itself open in a field, holding the keyboard,
-	// and AmendField is that field as its host rendered it — the same
-	// division of labour the note field is under, and the same rows: only
-	// one of the two is ever open, because only one thing can hold a
-	// keyboard.
+	// and AmendField is that field as its host rendered it — the card draws
+	// the field but does not own it, because what is typed there survives a
+	// frame and the card does not (the host rebuilds one every frame).
 	//
 	// AmendRefused is the rule that turned the last confirm away, drawn red
 	// above the field with the line still in it. The field stays open
@@ -500,8 +476,8 @@ type ApprovalCard struct {
 	// write or install on a card its reader had not read; the host answers
 	// the same key (keys.Proposal.Write). A card with a Never has it already.
 	LetterOnly bool
-	// FullLabel is what [d] opens, where "full diff" is not it — the command
-	// card's full view. Empty keeps the register's own words.
+	// FullLabel is what [enter] opens — `full diff` on an edit, `full view`
+	// on a command. Empty keeps the register's own words.
 	FullLabel string
 	// MaxLines bounds the card's total height, frame included; a body that
 	// does not fit scrolls behind counted tails rather than clipping
@@ -537,7 +513,7 @@ type ApprovalCard struct {
 	// nobody was typing into, rather than by a handover the reader asked for
 	//. It claims less than a card that was handed the keyboard:
 	// the two answers and the two ways out, and nothing whose consequence a
-	// reader could not undo — [a] and [d] still want the handover, because
+	// reader could not undo — [a] and [enter] still want the handover, because
 	// `always` and `always` are not what someone typing `also` meant. `?`
 	// is claimed too, where KeyList offers it: it shows the keys and answers
 	// nothing. Every other key releases the keyboard and goes into the draft.
@@ -558,10 +534,6 @@ func (c *ApprovalCard) arrivalKey(pressed string) (ApprovalDecision, bool) {
 		return ApprovalApprove, true
 	case keys.Is(pressed, keys.Decision.Deny):
 		return ApprovalDeny, true
-	case c.Noted && keys.Is(pressed, keys.Decision.AllowNoted):
-		return ApprovalApproveNoted, true
-	case c.Noted && keys.Is(pressed, keys.Decision.DenyNoted):
-		return ApprovalDenyNoted, true
 	}
 	return approvalWaiting, false
 }
@@ -590,37 +562,20 @@ func (c *ApprovalCard) Update(msg tea.KeyPressMsg) (done bool, result ApprovalDe
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Decision.Allow):
 		return true, ApprovalApprove
+	// [a] opens one list for every way of answering more than this card:
+	// the grants, and the queue behind it where there is one.
 	case keys.Is(pressed, keys.Decision.Always):
-		if c.AllowAlways {
+		if c.AllowAlways || c.Batch {
 			return true, ApprovalAlways
 		}
-	// [A] is the queue's key when there is a queue behind the card, and
-	// otherwise stays the shifted spelling of [a] it has always been.
-	case keys.Is(pressed, keys.Decision.Batch):
-		if c.Batch {
-			return true, ApprovalBatch
-		}
-		if c.AllowAlways {
-			return true, ApprovalAlways
-		}
-	case keys.Is(pressed, keys.Decision.Diff):
+	// Enter opens, here as on every list, and never answers: the key a
+	// sentence ends on is not a key that may run a command.
+	case keys.Is(pressed, keys.Decision.Full):
 		if c.FullDiff {
 			return true, ApprovalFullDiff
 		}
 	case keys.Is(pressed, keys.Decision.Deny):
 		return true, ApprovalDeny
-	// The two answers that carry a sentence. They are read after the plain
-	// pair rather than before it because nothing distinguishes them but the
-	// shift, and a card without the offer must go on reading the shifted
-	// letter as whatever it read it as before.
-	case keys.Is(pressed, keys.Decision.AllowNoted):
-		if c.Noted {
-			return true, ApprovalApproveNoted
-		}
-	case keys.Is(pressed, keys.Decision.DenyNoted):
-		if c.Noted {
-			return true, ApprovalDenyNoted
-		}
 	}
 	return false, approvalWaiting
 }
@@ -930,8 +885,6 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 	switch {
 	case c.NotYetLive:
 		return notYetLiveRows(c.Handover, width)
-	case c.NoteOpen:
-		return append(typingRows(dead(), width), c.noteRows(width, inner)...)
 	case c.AmendOpen:
 		return append(typingRows(dead(), width), c.amendRows(width, inner)...)
 	case c.GrantOpen:
@@ -1209,10 +1162,9 @@ type cardKey struct {
 func (k cardKey) mark() string { return "[" + k.shown + "]" }
 
 // KeyRun is the decision keys in the order the card draws them, each with the
-// words it is offered under. [a] appears only where a session grant is
-// allowed, [A] only where there is a queue behind the card and [d] only where
-// there is something to open, so the run is always exactly what the card will
-// answer to.
+// words it is offered under. [a] appears only where a grant is allowed or
+// there is a queue behind the card, and [enter] only where there is something
+// to open, so the run is always exactly what the card will answer to.
 //
 // paintedRun draws this list and KeyAt walks it across the row it was drawn
 // on, so the run a reader sees, the keys the card answers and the cells a
@@ -1233,45 +1185,38 @@ func (c *ApprovalCard) KeyRun() []cardKey {
 		allow = keys.Proposal.Write
 	}
 	run := []cardKey{offer(allow, c.Answer)}
-	// The shifted pair sits beside the answer it carries rather than at the
-	// end of the run: they are the same two answers with a sentence, and the
-	// pairing is what the run has to make legible.
-	//
-	// Their words are the act and what goes with it — `run with a note`,
-	// `deny with a note` — in the second person with one verb each, and the
-	// yes takes its verb off the card's own answer, so an edit card offers
-	// `apply with a note` and a spawn card `start with a note`. They are
-	// shorter than the register's own pair on purpose: on an eighty-column
-	// card that pair pushes the run onto a third row, which comes off the
-	// diff the card exists to show.
-	if c.Noted {
-		run = append(run, offer(keys.Decision.AllowNoted, c.answerVerb()+" with a note"))
-	}
 	if c.Never != "" {
 		// A proposal's no comes in two, and the run says which is which
 		// (keys.ProposalKeys).
 		return append(run, offer(keys.Proposal.Later, c.Decline), offer(keys.Proposal.Never, c.Never))
 	}
 	run = append(run, offer(keys.Decision.Deny, c.Decline))
-	if c.Noted {
-		run = append(run, offer(keys.Decision.DenyNoted, "deny with a note"))
-	}
 	if c.HeldOnArrival {
 		// The card has the keyboard but nobody gave it: it answers what it
 		// was walked up to be asked, and the rest of the run would be keys a
 		// reader who came to type a message never meant to press.
 		return run
 	}
-	if c.AllowAlways {
-		run = append(run, offer(keys.Decision.Always, c.AlwaysHint))
-	}
-	if c.Batch {
-		run = append(run, offer(keys.Decision.Batch, c.BatchHint))
+	if c.AllowAlways || c.Batch {
+		run = append(run, offer(keys.Decision.Always, c.alwaysWords()))
 	}
 	if c.FullDiff {
-		run = append(run, offer(keys.Decision.Diff, c.fullWords()))
+		run = append(run, offer(keys.Decision.Full, c.fullWords()))
 	}
 	return run
+}
+
+// alwaysWords is what [a] is offered under: the grant it leads to, the queue
+// it leads to, or both joined, because the one list the key opens holds both
+// and a key whose reach is not stated is a key pressed on a guess.
+func (c *ApprovalCard) alwaysWords() string {
+	switch {
+	case c.AllowAlways && c.Batch:
+		return c.AlwaysHint + ", or " + c.BatchHint
+	case c.Batch:
+		return c.BatchHint
+	}
+	return c.AlwaysHint
 }
 
 // paintedRun is the run as the card draws it.
@@ -1382,51 +1327,20 @@ func (c *ApprovalCard) handoverNote() []string {
 // which is why it is the field the row drops.
 const arrivalDraftWords = "other keys type into the draft"
 
-// fullWords is what [d] is said to open: the register's own words unless the
-// card means something more specific — the command card's full view.
+// fullWords is what [enter] is said to open: the register's own words unless
+// the card means something more specific — an edit's full diff, a command's
+// full view.
 func (c *ApprovalCard) fullWords() string {
 	if c.FullLabel != "" {
 		return c.FullLabel
 	}
-	return keys.Words(keys.Decision.Diff)
+	return keys.Words(keys.Decision.Full)
 }
-
-// answerVerb is the verb of the card's own yes — `run` off `run it once`,
-// `apply` off `apply the change`, `start` off `start all 3` — which is what
-// the noted yes is offered under, so the pair reads as one act said twice.
-// A card with no answer of its own says the register's.
-func (c *ApprovalCard) answerVerb() string {
-	answer := c.Answer
-	if answer == "" {
-		answer = keys.Words(keys.Decision.Allow)
-	}
-	if verb, _, _ := strings.Cut(answer, " "); verb != "" {
-		return strings.TrimSuffix(verb, ",")
-	}
-	return "allow"
-}
-
-// The labels the two note fields carry: what the reader is asked to write
-// once the noted yes or the noted no has opened one. The keys that open them
-// say the act; the field says what goes in it.
-const (
-	noteWhatNext = "what next"
-	noteWhyNot   = "why not"
-)
 
 // noteIndent is how far the field sits in from the card's own left edge,
 // under the ┄ label that names it. Two columns, the note selector's, because
 // it is the same field under the same label.
 const noteIndent = 2
-
-// noteLabel is what the open field asks for, which is the half of the pair
-// the key that opened it stands for.
-func (c *ApprovalCard) noteLabel() string {
-	if c.NoteAllow {
-		return noteWhatNext
-	}
-	return noteWhyNot
-}
 
 // FieldWidth is how wide the host should draw whichever field it has open:
 // the card's inner width, less the indent the ┄ label puts it in by and the
@@ -1473,23 +1387,9 @@ func (c *ApprovalCard) fieldRows(label, view, refused, take, back string, width,
 	}, width)...)
 }
 
-// noteRows are the note field, open under the card.
-func (c *ApprovalCard) noteRows(width, inner int) []string {
-	send := "deny with this"
-	if c.NoteAllow {
-		send = "allow, and send this"
-	}
-	return c.fieldRows(c.noteLabel(), c.NoteField, "", send,
-		"back to the card — nothing is answered", width, inner)
-}
-
 // amendRows are the command itself, open under the card for the reader to
-// change before it runs.
-//
-// What esc leaves behind is worth spelling out separately from the note
-// field's: there the answer the key stood for is still waiting, and here the
-// line the call carried is what comes back — which is the difference between
-// abandoning a sentence and abandoning an edit.
+// change before it runs. What esc leaves behind is spelled out: the line the
+// call carried is what comes back.
 func (c *ApprovalCard) amendRows(width, inner int) []string {
 	return c.fieldRows(amendWords, c.AmendField, c.AmendRefused, "run this line",
 		"back to the card with the original", width, inner)
@@ -1523,9 +1423,15 @@ func (c *ApprovalCard) grantRows(width, inner int) []string {
 	// "cancel": the whole offer is that a grant is read before it is made,
 	// and a reader who cannot see that leaving grants nothing has to guess
 	// at what they have just done (docs/interface/principles.md#fold-never-hide).
+	// A list that holds the queue says take rather than grant: that row
+	// grants nothing and runs nothing, it opens the queue.
+	take := "grant it, and run"
+	if c.Batch {
+		take = "take it"
+	}
 	return append(rows, hintRows([]KeyOffer{
 		keyOfferAs(keys.Select.MoveJK, "choose"),
-		keyOfferAs(keys.Select.Take, "grant it, and run"),
+		keyOfferAs(keys.Select.Take, take),
 		keyOfferAs(keys.Select.Cancel, "back to the card — nothing is granted"),
 	}, width)...)
 }
@@ -1539,7 +1445,7 @@ func (c *ApprovalCard) grantRows(width, inner int) []string {
 // out of the rendered row: a position that agreed with the layout only by
 // upkeep is one that drifts a column the first time a row is added.
 func (c *ApprovalCard) FieldOrigin(width int) (x, y int, ok bool) {
-	if !c.NoteOpen && !c.AmendOpen {
+	if !c.AmendOpen {
 		return 0, 0, false
 	}
 	body, hints := c.buildRows(width)

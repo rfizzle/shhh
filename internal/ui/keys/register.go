@@ -109,7 +109,6 @@ const (
 	OnRewindScope
 	OnCommitMessage
 	OnApprovalCard
-	OnApprovalNote
 	OnApprovalCommand
 	OnApprovalQueue
 	OnApprovalGrant
@@ -338,37 +337,18 @@ func register() [surfaceCount]Surface {
 			Position: Beside,
 			Reached:  Shown(Draft.Answer),
 			Bindings: []Binding{
-				Decision.Allow, Decision.Deny,
-				Decision.AllowNoted, Decision.DenyNoted,
-				Decision.Always,
-				Decision.Batch, Decision.Diff, Decision.DryRun,
-				Decision.Explain, Decision.Amend, Agent.Go,
+				Decision.Allow, Decision.Deny, Decision.Amend,
+				Decision.Always, Decision.DryRun, Decision.Full, Agent.Go,
 				Decision.ScrollUp, Decision.ScrollDown,
 				Decision.PanLeft, Decision.PanRight, Screen.List,
 			},
 		},
-		OnApprovalNote: {
-			// A row of its own for the reason the transcript search has one:
-			// a surface being typed into keeps every letter as text, so none
-			// of the card's answers are live while the field is up and the
-			// two keys that are not letters are the whole of what it
-			// answers. The words are the field's rather than the selector's
-			// — enter sends the sentence with the answer it was opened for,
-			// and esc closes the field with that answer still waiting.
-			Name:     "the approval card's note field",
-			Section:  "docs/interface/surfaces.md#the-approval-card",
-			Position: Takeover,
-			Reached:  Bracket(Decision.AllowNoted) + " or " + Bracket(Decision.DenyNoted) + " on the card",
-			Bindings: []Binding{Select.Take, Select.Cancel},
-		},
 		OnApprovalCommand: {
 			// The command itself, open in a field for the reader to change
-			// before it runs. It is a row of its own for the reason the note
-			// field's is — a surface being typed into keeps every letter as
-			// text — and it is a second row rather than the same one because
-			// the two answer the same two keys to different ends: enter here
-			// runs a command, and enter there sends a sentence with an
-			// answer that was already chosen.
+			// before it runs. It is a row of its own because a surface being
+			// typed into keeps every letter as text, so none of the card's
+			// answers are live while the field is up and the two keys that
+			// are not letters are the whole of what it answers.
 			Name:     "the approval card's command field",
 			Section:  "docs/interface/surfaces.md#the-approval-card",
 			Position: Takeover,
@@ -386,7 +366,7 @@ func register() [surfaceCount]Surface {
 			Name:     "the approval card's queue list",
 			Section:  "docs/interface/surfaces.md#the-approval-card, docs/interface/surfaces.md#selectors",
 			Position: Takeover,
-			Reached:  Bracket(Decision.Batch) + " on a card with a queue behind it",
+			Reached:  "the queue row under " + Bracket(Decision.Always) + ", on a card with a queue behind it",
 			Bindings: []Binding{
 				Select.MoveJK, Select.Toggle, Select.All, Select.Jump,
 				Select.Take, Select.Cancel, Screen.List,
@@ -403,7 +383,7 @@ func register() [surfaceCount]Surface {
 			Name:     "the approval card's grant list",
 			Section:  "docs/interface/surfaces.md#the-approval-card, docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends",
 			Position: Takeover,
-			Reached:  Bracket(Decision.Always) + " on a card that offers a grant",
+			Reached:  Bracket(Decision.Always) + " on a card that offers a grant or has a queue behind it",
 			Bindings: []Binding{Select.MoveJK, Select.Take, Select.Jump, Select.Cancel, Screen.List},
 		},
 		OnPlanCard: {

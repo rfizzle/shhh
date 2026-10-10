@@ -257,7 +257,7 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 		{
 			Weight: 370,
 			Key:    "[y/n/a]",
-			Help:   `approval prompts: allow / deny / always allow this session. A card taller than its panel counts what is cut and scrolls on shift+↑/↓ (shift+←/→ pan a wide body); d opens an edit's full diff, or a command card's full view; t runs the harmless form of a command that has one, and answers nothing`,
+			Help:   `approval prompts: allow / deny / allow without asking, chosen from a list that also holds the queue. What the draft holds when you answer goes with the answer as its note. A card taller than its panel counts what is cut and scrolls on shift+↑/↓ (shift+←/→ pan a wide body); enter opens an edit's full diff, or a command card's full view with its explanation; t runs the harmless form of a command that has one, and answers nothing; esc leaves the request waiting`,
 		},
 	}
 }

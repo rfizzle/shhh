@@ -15,7 +15,7 @@ keys "write down what we settled on" Enter
 # At 60 columns the held card's esc ends the offers row, cut to the bare key
 # rather than given a row of its own
 # (docs/interface/surfaces.md#the-approval-card).
-narrow 61 snap 02-card "notes.md" "[N] deny with a note · [?] keys · [esc]"
+narrow 61 snap 02-card "notes.md" "[n] deny · [?] keys · [esc]"
 wide 61 snap 02-card "notes.md"
 # A card that has just landed holds its keys for a beat, so the typing waits
 # for the grace window rather than racing it. The sentence carries a bare y:
@@ -31,11 +31,12 @@ snap 03-draft-keeps-the-keyboard "and say y" "[ctrl+space/ctrl+y] answer it" "�
 keys C-y
 snap 04-card-holds-the-keyboard "[y] apply" "notes.md"
 keys y
-# Answered, the keyboard goes back to the draft, which still holds every
-# character typed into it while the card waited.
+# Answered, the sentence typed while the card waited goes with the answer as
+# its note — the transcript carries it as the reader's own steer — and the
+# keyboard comes back to an empty draft
+# (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
 snap 05-answered "The note is written" "and say y"
-keys C-c
-sleep 0.5
+# The draft is empty, so the first press arms the quit rather than clearing.
 keys C-c
 snap 06-quit-armed "again quits"
 keys C-c

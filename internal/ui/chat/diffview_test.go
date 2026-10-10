@@ -194,14 +194,14 @@ func TestApprovalFullDiff_RoundTrips(t *testing.T) {
 			Arguments: fmt.Sprintf(`{"path":%q,"content":"package main\n"}`, path)},
 	}})
 	m = handover(t, updated.(Model))
-	if !strings.Contains(ansi.Strip(m.View().Content), "[v] full diff") {
+	if !strings.Contains(ansi.Strip(m.View().Content), "[enter] full diff") {
 		t.Fatal("edit approval should hint the full-diff key")
 	}
 
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'v', Text: "v"})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state != stateDiffFull || m.fullDiff == nil {
-		t.Fatalf("d should open the pending edit full screen, got state %d", m.state)
+		t.Fatalf("enter should open the pending edit full screen, got state %d", m.state)
 	}
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})

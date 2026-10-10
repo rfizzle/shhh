@@ -1,13 +1,12 @@
 package chat
 
-// The explanation at the command card (run.go): one key puts a paragraph
-// about the command on the screen, and the decision is still waiting behind
-// it (docs/interface/surfaces.md#the-approval-card).
+// The explanation at the command card (run.go): the full view carries a
+// paragraph about the command, and the decision is still waiting behind it
+// (docs/interface/surfaces.md#the-approval-card).
 
 import (
 	"context"
 	"errors"
-	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -17,7 +16,6 @@ import (
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // paragraphProvider answers every request with a scripted paragraph, or with
@@ -76,11 +74,16 @@ func explainerModel(t *testing.T, p provider.Provider, cfg agent.ExplainConfig) 
 	return m
 }
 
-// offersExplain reports whether the card is advertising the explain key.
+// offersExplain reports whether the card says its full view explains.
 func offersExplain(card *components.ApprovalCard) bool {
-	return slices.ContainsFunc(card.ExtraHints, func(o components.KeyOffer) bool {
-		return o.Key == keys.Bracket(keys.Decision.Explain)
-	})
+	return strings.Contains(card.FullLabel, explainHeading)
+}
+
+// openFull presses enter on the card: the full view, and the reading.
+func openFull(t *testing.T, m Model) (Model, tea.Cmd) {
+	t.Helper()
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	return updated.(Model), cmd
 }
 
 func drainExplain(t *testing.T, cmd tea.Cmd) explainDoneMsg {
@@ -90,36 +93,38 @@ func drainExplain(t *testing.T, cmd tea.Cmd) explainDoneMsg {
 			return msg
 		}
 	}
-	t.Fatal("expected an explainDoneMsg from the explain key")
+	t.Fatal("expected an explainDoneMsg from the full view")
 	return explainDoneMsg{}
 }
 
-func TestApprovalCard_ExplainOpensTheParagraphAndDecidesNothing(t *testing.T) {
+func TestApprovalCard_TheFullViewExplainsAndDecidesNothing(t *testing.T) {
 	p := &paragraphProvider{text: "rsync copies src/ into dst/ and deletes anything in dst/ that is not in src/."}
 	m := explainerModel(t, p, agent.ExplainConfig{Model: "small", Prompt: explainWording})
 	m = execApproval(t, m, "rsync -a --delete src/ dst/")
 	if card := m.approvalCard(); !offersExplain(card) {
-		t.Fatalf("a command card in a session with an explainer should offer the key:\n%s", m.View().Content)
+		t.Fatalf("a command card in a session with an explainer should say its full view explains:\n%s", m.View().Content)
 	}
 
-	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'x', Text: "x"})
-	m = updated.(Model)
-	// The decision is exactly where it was while the reading is in flight,
-	// and the card says the answer is on its way.
-	if m.state != stateConfirmRun || m.approval.request == nil {
-		t.Fatalf("the card should still be waiting, got state %d pending %v", m.state, m.approval.request)
+	m, cmd := openFull(t, m)
+	// The full view opens at once, with the decision exactly where it was
+	// behind it, and says the answer is on its way.
+	if m.state != stateOutputFull || m.approval.request == nil {
+		t.Fatalf("the full view should open over the waiting card, got state %d pending %v", m.state, m.approval.request)
 	}
-	if !strings.Contains(m.View().Content, "explain — asking") {
-		t.Fatalf("the card should say the explanation is being read:\n%s", m.View().Content)
+	if !strings.Contains(m.View().Content, explainHeading+" — asking") {
+		t.Fatalf("the full view should say the explanation is being read:\n%s", m.View().Content)
 	}
 	done := drainExplain(t, cmd)
 
-	updated, _ = m.Update(done)
+	updated, _ := m.Update(done)
 	m = updated.(Model)
 	if m.state != stateOutputFull {
-		t.Fatalf("the paragraph should open on the screen, got state %d", m.state)
+		t.Fatalf("the paragraph should land on the open full view, got state %d", m.state)
 	}
 	view := m.View().Content
+	if !strings.Contains(view, "rsync -a --delete src/ dst/") {
+		t.Fatalf("the full view keeps the command it explains:\n%s", view)
+	}
 	if !strings.Contains(view, "deletes anything in dst/") {
 		t.Fatalf("the screen should carry the paragraph:\n%s", view)
 	}
@@ -152,6 +157,19 @@ func TestApprovalCard_ExplainOpensTheParagraphAndDecidesNothing(t *testing.T) {
 	if p.calls != 1 {
 		t.Fatalf("one press should be one request, got %d", p.calls)
 	}
+	// A second look reads the paragraph the first one brought back, and
+	// asks nothing.
+	again, cmd := openFull(t, m)
+	if cmd != nil {
+		for _, c := range unwrapBatch(cmd) {
+			if _, ok := c().(explainDoneMsg); ok {
+				t.Fatal("a second enter must not ask again")
+			}
+		}
+	}
+	if !strings.Contains(again.View().Content, "deletes anything in dst/") {
+		t.Fatalf("the second full view should carry the paragraph:\n%s", again.View().Content)
+	}
 	// The command travelled as evidence rather than as an instruction.
 	last := p.seen[len(p.seen)-1]
 	if last.Role != provider.RoleUser || !strings.Contains(last.Content, "UNTRUSTED COMMAND") {
@@ -164,9 +182,8 @@ func TestApprovalCard_ExplainIsBilledUnderItsOwnSource(t *testing.T) {
 	m := explainerModel(t, p, agent.ExplainConfig{Model: "small", Prompt: explainWording})
 	m = execApproval(t, m, "rsync -a --delete src/ dst/")
 
-	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'x', Text: "x"})
-	m = updated.(Model)
-	updated, _ = m.Update(drainExplain(t, cmd))
+	m, cmd := openFull(t, m)
+	updated, _ := m.Update(drainExplain(t, cmd))
 	m = updated.(Model)
 
 	// The spend is a line in /cost of its own, so a keystroke that costs
@@ -217,13 +234,12 @@ func TestApprovalCard_AFailedExplanationSaysSoAndReturns(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			m := explainerModel(t, tc.p, tc.cfg)
 			m = execApproval(t, m, "rsync -a --delete src/ dst/")
-			updated, cmd := m.Update(tea.KeyPressMsg{Code: 'x', Text: "x"})
-			m = updated.(Model)
+			m, cmd := openFull(t, m)
 			done := drainExplain(t, cmd)
 			if !done.verdict.Failed {
 				t.Fatalf("the reading should have failed, got %+v", done.verdict)
 			}
-			updated, _ = m.Update(done)
+			updated, _ := m.Update(done)
 			m = updated.(Model)
 			if m.state != stateOutputFull {
 				t.Fatalf("a failure is still an answer to the press, got state %d", m.state)
@@ -242,9 +258,9 @@ func TestApprovalCard_AFailedExplanationSaysSoAndReturns(t *testing.T) {
 					t.Fatalf("a failed explanation must never answer the call: %+v", msg)
 				}
 			}
-			// And the offer is back, rather than stuck saying "asking".
-			if !strings.Contains(m.View().Content, "explain — what this command does") {
-				t.Fatalf("the key should be offered again:\n%s", m.View().Content)
+			// And the card is not stuck asking.
+			if m.approval.request.explaining {
+				t.Fatal("a failed reading should not leave the card asking")
 			}
 		})
 	}
@@ -267,25 +283,31 @@ func TestApprovalCard_ExplainNotOfferedWithoutAModel(t *testing.T) {
 			m := explainerModel(t, p, tc.cfg)
 			m = execApproval(t, m, "rsync -a --delete src/ dst/")
 			if card := m.approvalCard(); offersExplain(card) {
-				t.Fatalf("a session that cannot answer must not offer the key:\n%s", m.View().Content)
+				t.Fatalf("a session that cannot answer must not promise an explanation:\n%s", m.View().Content)
 			}
-			// And the key is not secretly live.
-			updated, cmd := m.Update(tea.KeyPressMsg{Code: 'x', Text: "x"})
-			m = updated.(Model)
+			// And the full view does not secretly ask.
+			m, cmd := openFull(t, m)
 			if cmd != nil {
-				t.Fatal("the key should start nothing where there is nothing to ask")
+				for _, c := range unwrapBatch(cmd) {
+					if _, ok := c().(explainDoneMsg); ok {
+						t.Fatal("the full view should ask nothing where there is nothing to ask")
+					}
+				}
 			}
 			if p.calls != 0 {
 				t.Fatalf("nothing should have been asked, got %d requests", p.calls)
 			}
-			if m.state != stateConfirmRun || m.approval.request == nil {
-				t.Fatalf("the card should still be waiting, got state %d pending %v", m.state, m.approval.request)
+			if strings.Contains(m.View().Content, explainHeading) {
+				t.Fatalf("the full view should carry no explanation:\n%s", m.View().Content)
+			}
+			if m.approval.request == nil {
+				t.Fatal("the card should still be waiting")
 			}
 		})
 	}
 }
 
-// It is the command card's key and not every card's: a diff is already the
+// It is the command card's and not every card's: a diff is already the
 // explanation of an edit, and the full view already shows it whole.
 func TestApprovalCard_ExplainIsNotOfferedOnAnEdit(t *testing.T) {
 	p := &paragraphProvider{text: "unused"}
@@ -301,5 +323,22 @@ func TestApprovalCard_ExplainIsNotOfferedOnAnEdit(t *testing.T) {
 	}
 	if p.calls != 0 {
 		t.Fatalf("nothing should have been asked, got %d requests", p.calls)
+	}
+}
+
+// A reading of a line the reader has since amended is dropped whole: it
+// neither lands on the new line's view nor ends the asking about it.
+func TestApprovalCard_AnAmendedLinesReadingIsNotTheOldOnes(t *testing.T) {
+	p := &paragraphProvider{text: "it copies src/ into dst/."}
+	m := explainerModel(t, p, agent.ExplainConfig{Model: "small", Prompt: explainWording})
+	m = execApproval(t, m, "rsync -a --delete src/ dst/")
+	m, cmd := openFull(t, m)
+	old := drainExplain(t, cmd)
+	req := m.approval.request
+	req.command, req.explaining, req.explained = "rsync -a src/ dst/", true, nil
+	updated, _ := m.Update(old)
+	m = updated.(Model)
+	if !m.approval.request.explaining || m.approval.request.explained != nil {
+		t.Fatalf("the old line's reading should leave the new line asking, got %+v", m.approval.request.explained)
 	}
 }

@@ -181,7 +181,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 			Row.Key, Row.Provider, Row.Rounds, Row.Uncap}},
 		{"Commit", Commit.All()},
 		{"Decision", []Binding{Decision.Allow, Decision.Deny, Decision.Refuse,
-			Decision.Always, Decision.Batch, Decision.Diff,
+			Decision.Always, Decision.Full,
 			Decision.ScrollUp, Decision.ScrollDown,
 			Decision.PanLeft, Decision.PanRight}},
 		{"Confirm", []Binding{Confirm.Yes, Confirm.No, Confirm.Force}},

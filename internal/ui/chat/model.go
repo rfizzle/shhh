@@ -73,11 +73,11 @@ const (
 	stateFocus
 	// stateDiffFull: a diff is showing full screen (
 	// docs/interface/surfaces.md#the-diff-view) — from a transcript edit
-	// row, an approval's [v], or /diff.
+	// row, an approval's [enter], or /diff.
 	stateDiffFull
 	// stateOutputFull: a row's whole output is showing full screen (
 	// docs/interface/surfaces.md#the-activity-row) — the depth past the
-	// in-place body, from reading mode's [enter] or a command card's [v].
+	// in-place body, from reading mode's [enter] or a command card's [enter].
 	stateOutputFull
 	// statePick: a generic slash-command picker (/model, /permissions) is
 	// showing.

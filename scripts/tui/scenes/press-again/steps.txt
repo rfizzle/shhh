@@ -8,8 +8,10 @@
 # golden: the idle rail offers it as a quit, a draft turns the offer into a
 # clear, the first press arms and the second quits; and over a card waiting
 # in a running turn the first press stops the turn and arms nothing, so the
-# session is still open after a different key. ctrl+d is not pressed
-# anywhere: it quits nowhere.
+# session is still open after a different key. The call the card was asking
+# about goes with the turn: its row reads stopped, not denied, because nobody
+# answered it (docs/interface/surfaces.md#the-approval-card). ctrl+d is not
+# pressed anywhere: it quits nowhere.
 snap 01-idle "Some things worth doing first" "[ctrl+c] ×2 quit"
 keys "half a thought"
 snap 02-draft "half a thought" "[ctrl+c] clear"
@@ -19,7 +21,7 @@ keys "run the checks" Enter
 snap 04-card "[y] run it once"
 sleep 1
 keys C-c
-snap 05-over-a-card "⊘" "[ctrl+c] ×2 quit"
+snap 05-over-a-card "⊘" "stopped" "[ctrl+c] ×2 quit"
 
 keys x
 snap 06-still-open "the session never closed" "x"

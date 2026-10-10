@@ -11,7 +11,7 @@ import "github.com/rfizzle/shhh/internal/ui/components"
 //
 // It is a value, held by value on the Model and copied with it every frame
 // like the rest of the Model, so it takes no pointer of its own: the pointer
-// fields below (request, list, note, edit, grant) were pointers on the Model
+// fields below (request, list, edit, grant) were pointers on the Model
 // before they were gathered here, and nothing keys a memo on their identity.
 //
 // What a new card must not inherit from the last one is cleared in one place:
@@ -36,8 +36,8 @@ type approvalState struct {
 	// nothing.
 	scope scopeReach
 	// The approval queue made visible: strip is the strip above the card,
-	// batch the queued call IDs [A] would put on the list with the current
-	// one, and batchAnswered how that list answered them — allowed or
+	// batch the queued call IDs the queue row under [a] would put on the
+	// list with the current one, and batchAnswered how that list answered them — allowed or
 	// denied — for calls that have not reached the head yet, so each is
 	// carried out when its turn comes instead of asking again. list is the
 	// list itself while it is open, and nil the rest of the time (queue.go).
@@ -60,23 +60,23 @@ type approvalState struct {
 	// whenever the card changes (clear).
 	scroll int
 	pan    int
-	// note is the one-line field a decision card's shifted answer opened,
-	// and the answer it will carry
-	// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
-	// It lives here for the reason the scroll does — the card is rebuilt
-	// every frame and what is typed has to outlive one — and it is cleared
-	// wherever the card changes (clear).
-	note *decisionNote
-	// edit is the command card's other field: the command itself, open for
-	// the reader to change before it runs (amend.go). It lives here for the
-	// same reason and is cleared in the same place; only one of the two is
-	// ever open, because only one thing can hold a keyboard.
+	// edit is the command card's field: the command itself, open for the
+	// reader to change before it runs (amend.go). It lives here for the
+	// reason the scroll does — the card is rebuilt every frame and what is
+	// typed has to outlive one — and it is cleared wherever the card
+	// changes (clear).
 	edit *commandEdit
-	// grant is the third surface the card can open under itself: the grants
-	// the always-allow key offers, each with what it covers and when it ends
-	// (grant.go). It lives here and is cleared where the other two are, and
-	// only one of the three is ever open.
+	// grant is the other surface the card can open under itself: the grants
+	// the always-allow key offers, each with what it covers and when it ends,
+	// and the queue (grant.go). It lives here and is cleared where the field
+	// is, and only one of the two is ever open.
 	grant *grantChoice
+	// full is the command card's full view while it is the screen, so an
+	// explanation that arrives while it is being read can be put on it
+	// rather than on a screen of its own (run.go). Matched by identity
+	// against the screen that is up, so a view the reader has left is never
+	// rewritten.
+	full *components.OutputView
 }
 
 // clear drops what a card must not carry onto the next one: its scroll, and
@@ -87,16 +87,13 @@ func (a *approvalState) clear() {
 	// body that has just been replaced, and a stale pan would blank the new
 	// card's rows outright.
 	a.scroll, a.pan = 0, 0
-	// Nor the last one's half-written note: the sentence was about the call
-	// that has just been answered, and carrying it onto the next card would
-	// attach the reader's words to a decision they were written about
-	// something else (approval.go).
-	a.note = nil
-	// Nor a half-written amendment, and for a sharper version of the same
-	// reason: a line left over from the last card would be a command the
-	// reader wrote about a different call, one enter away from running
-	// (amend.go).
+	// Nor a half-written amendment: a line left over from the last card
+	// would be a command the reader wrote about a different call, one enter
+	// away from running (amend.go).
 	a.edit = nil
+	// Nor the last card's full view, which an explanation of a different
+	// command must not be written onto.
+	a.full = nil
 	// Nor a grant list left open over a card that has just been answered:
 	// its rows name the command, the directory or the host that belonged to
 	// that decision, and a row taken now would grant something the card in

@@ -943,6 +943,9 @@ _Filed 2026-09-08 · closes by a decision_
 label reading `EXPLAIN` above the paragraph. The binary draws it on the same
 full-screen viewer the dry run and the card's own facts already open on,
 whose title rail is one line — the act, an em dash, and what it was about.
+Since the explanation moved into the card's full view it is a section of
+that screen under the card's title, headed *what it does*, rather than a
+screen of its own; the rail label is no more wanted there than it was.
 
 The reason is the surface it borrows. The whole point of this screen is that
 it is the one the reader already knows how to leave: it takes the screen, it

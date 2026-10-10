@@ -20,7 +20,7 @@ var questionMark = tea.KeyPressMsg{Code: '?', Text: "?"}
 // still waiting on it
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func TestKeyList_ACardAnswersQuestionMarkWithItsRegister(t *testing.T) {
-	m := notedCardModel(t)
+	m := handover(t, draftedCardModel(t, noRun(t), ""))
 	if !m.decisionGated() && !m.interrupt.held {
 		t.Fatal("the fixture's card does not hold the keyboard")
 	}
@@ -45,16 +45,17 @@ func TestKeyList_ACardAnswersQuestionMarkWithItsRegister(t *testing.T) {
 
 // While a field on the card has the keyboard, `?` is a character in it.
 func TestKeyList_AFieldOnTheCardKeepsQuestionMarkAsText(t *testing.T) {
-	m := pressOn(t, notedCardModel(t), tea.KeyPressMsg{Code: 'N', Text: "N"})
-	if m.approval.note == nil {
-		t.Fatal("the shifted deny should open the note field")
+	var ran []string
+	m := press(t, amendModel(t, "npm test", &ran), keys.Shown(keys.Decision.Amend))
+	if m.approval.edit == nil {
+		t.Fatal("the amend key should open the command field")
 	}
 	m = pressOn(t, m, questionMark)
 	if m.keyList != nil {
-		t.Fatal("? opened the key list from inside the note field")
+		t.Fatal("? opened the key list from inside the command field")
 	}
-	if !strings.Contains(m.approval.note.field.Value(), "?") {
-		t.Errorf("? did not land in the note: %q", m.approval.note.field.Value())
+	if !strings.Contains(m.approval.edit.field.Value(), "?") {
+		t.Errorf("? did not land in the field: %q", m.approval.edit.field.Value())
 	}
 }
 

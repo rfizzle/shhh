@@ -635,7 +635,7 @@ func routedModel(t *testing.T, ask *subagent.Ask) Model {
 
 // A patch is the one child request that writes the reader's own files, so its
 // card says the four things the session's own card says about an edit: where
-// it lands, what it touches, whether it can be taken back, and [v] into the
+// it lands, what it touches, whether it can be taken back, and enter into the
 // whole of it.
 func TestChildAskPatchCardCarriesWhatTheSessionsCardCarries(t *testing.T) {
 	dir := t.TempDir()
@@ -657,7 +657,7 @@ func TestChildAskPatchCardCarriesWhatTheSessionsCardCarries(t *testing.T) {
 		t.Fatalf("Reversibility = %q, want %q", card.Reversibility, want)
 	}
 	if !card.FullDiff {
-		t.Fatal("a patch with hunks offers [v] into the whole of it")
+		t.Fatal("a patch with hunks offers enter into the whole of it")
 	}
 }
 
@@ -750,15 +750,15 @@ func TestChildAskScrollsItsBoundedBody(t *testing.T) {
 	}
 }
 
-// [v] opens the child's change full screen with the request still waiting
+// Enter opens the child's change full screen with the request still waiting
 // behind it; esc comes back to the card, which kept the keyboard.
 func TestChildAskDiffKeyOpensTheWholeChange(t *testing.T) {
 	ask := longPatchAsk(t.TempDir())
 	m := routedModel(t, ask)
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'v', Text: "v"})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state != stateDiffFull || m.fullDiff == nil {
-		t.Fatalf("[v] should open the full-screen diff, state %v", m.state)
+		t.Fatalf("enter should open the full-screen diff, state %v", m.state)
 	}
 	if _, answered := ask.Answered(); answered {
 		t.Fatal("opening the diff must not answer the request")
@@ -798,7 +798,7 @@ func TestChildAskHeldOnArrivalOffersNoExtraKeys(t *testing.T) {
 
 // A key the card offers and the surface routes elsewhere must not reach the
 // answer on its way: every result that is not an approval is a decline, so
-// [v] pressed to read a patch before deciding would have declined it by
+// Enter pressed to read a patch before deciding would have declined it by
 // asking to read it — and the child would have been told so.
 func TestChildAskDiffFromTheListDoesNotAnswer(t *testing.T) {
 	ask := longPatchAsk(t.TempDir())
@@ -811,13 +811,13 @@ func TestChildAskDiffFromTheListDoesNotAnswer(t *testing.T) {
 	opened, _ := m.openAgentList()
 	m = opened.(Model)
 
-	updated, _ = m.updateListAnswer(tea.KeyPressMsg{Code: 'v', Text: "v"}, ask)
+	updated, _ = m.updateListAnswer(tea.KeyPressMsg{Code: tea.KeyEnter}, ask)
 	m = updated.(Model)
 	if _, answered := ask.Answered(); answered {
-		t.Fatal("[v] must open the diff, not answer the request")
+		t.Fatal("enter must open the diff, not answer the request")
 	}
 	if m.state != stateDiffFull {
-		t.Fatalf("[v] over the list should open the full-screen diff, state %v", m.state)
+		t.Fatalf("enter over the list should open the full-screen diff, state %v", m.state)
 	}
 	if len(m.childAsks) != 1 {
 		t.Fatalf("the request stays queued while its diff is open, %d left", len(m.childAsks))
@@ -1254,7 +1254,7 @@ func TestKillConfirmSaysAPatchIsKeptOnlyWhereThereIsOne(t *testing.T) {
 	}
 }
 
-// enter on a row holding a kept patch opens the patch on the surface [v] opens
+// enter on a row holding a kept patch opens the patch on the surface enter opens
 // from a live card, headed with whose it is, and the card behind it is the
 // patch card with its two answers: apply lands the change the way a finishing
 // writer's does, and the row stops offering it.

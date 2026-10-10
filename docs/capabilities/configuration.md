@@ -895,15 +895,11 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `row.provider` | `p` | switch provider | yes |
 | `row.rounds` | `+` | more rounds | yes |
 | `row.uncap` | `!` | let it run | yes |
-| `decision.allow` | `y`, `enter` | allow | yes |
+| `decision.allow` | `y` | allow | yes |
 | `decision.deny` | `n` | deny | yes |
-| `decision.always` | `a` | allow without asking — choose how long | yes |
-| `decision.batch` | `A` | open the queue | yes |
-| `decision.diff` | `v`, `V` | full diff | yes |
-| `decision.allow_noted` | `Y` | allow with a note | yes |
-| `decision.deny_noted` | `N` | deny with a note | yes |
+| `decision.always` | `a` | allow without asking, or the queue | yes |
+| `decision.full` | `enter` | open the full view | yes |
 | `decision.dry_run` | `t` | dry run | yes |
-| `decision.explain` | `x` | explain what the command does | yes |
 | `decision.amend` | `e` | edit the command before it runs | yes |
 | `decision.revise` | `e` | edit the file before it is written | yes |
 | `decision.accept` | `y`, `Y`, `enter` | yes | yes |

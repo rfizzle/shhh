@@ -16,14 +16,10 @@ keys · the approval card and the /run confirm                                  
 
 [y] allow
 [n] deny
-[Y] allow with a note
-[N] deny with a note
-[a] allow without asking — choose how long
-[A] open the queue
-[v] full diff
-[t] dry run
-[x] explain what the command does
 [e] edit the command before it runs
+[a] allow without asking, or the queue
+[t] dry run
+[enter] open the full view
 [g] go to the agent that asked
 [shift+↑] scroll the card up
 [shift+↓] scroll the card
@@ -159,14 +155,10 @@ keys · [esc] back to reading mode
 
 ␛[38;5;254m[y]␛[m␛[38;5;244m allow␛[m
 ␛[38;5;254m[n]␛[m␛[38;5;244m deny␛[m
-␛[38;5;254m[Y]␛[m␛[38;5;244m allow with a note␛[m
-␛[38;5;254m[N]␛[m␛[38;5;244m deny with a note␛[m
-␛[38;5;254m[a]␛[m␛[38;5;244m allow without asking — choose how long␛[m
-␛[38;5;254m[A]␛[m␛[38;5;244m open the queue␛[m
-␛[38;5;254m[v]␛[m␛[38;5;244m full diff␛[m
-␛[38;5;254m[t]␛[m␛[38;5;244m dry run␛[m
-␛[38;5;254m[x]␛[m␛[38;5;244m explain what the command does␛[m
 ␛[38;5;254m[e]␛[m␛[38;5;244m edit the command before it runs␛[m
+␛[38;5;254m[a]␛[m␛[38;5;244m allow without asking, or the queue␛[m
+␛[38;5;254m[t]␛[m␛[38;5;244m dry run␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m open the full view␛[m
 ␛[38;5;254m[g]␛[m␛[38;5;244m go to the agent that asked␛[m
 ␛[38;5;254m[shift+↑]␛[m␛[38;5;244m scroll the card up␛[m
 ␛[38;5;254m[shift+↓]␛[m␛[38;5;244m scroll the card␛[m

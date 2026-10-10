@@ -123,6 +123,8 @@ var retired = []string{
 	"backlog.priority", "backlog.kind", "backlog.ready", "backlog.depends",
 	"backlog.block", "backlog.reopen", "backlog.archive", "backlog.groom",
 	"agent.cancel", "agent.kill_all", "agent.review", "agent.migrate",
+	"decision.allow_noted", "decision.deny_noted", "decision.batch",
+	"decision.diff", "decision.explain",
 }
 
 // isRetired reports that a name from a file is one of retired, read the way

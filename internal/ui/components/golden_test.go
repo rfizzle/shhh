@@ -948,7 +948,7 @@ func TestGolden_QueueStrip(t *testing.T) {
 			{Number: 5, Label: "write docs/loop.md", Detail: "+12 −0", Severity: SeverityMedium},
 		}
 		strip := func(mut func(*QueueStrip)) string {
-			q := QueueStrip{Items: append([]QueueItem(nil), items...), Note: "[A] answers the 3 marked"}
+			q := QueueStrip{Items: append([]QueueItem(nil), items...), Note: "[a] lists the 3 marked"}
 			mut(&q)
 			return strings.Join(q.View(width), "\n")
 		}

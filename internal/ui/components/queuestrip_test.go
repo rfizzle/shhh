@@ -19,7 +19,7 @@ func stripFixture() QueueStrip {
 			{Number: 4, Label: "rm -rf ./dist", Severity: SeverityHigh},
 			{Number: 5, Label: "write docs/loop.md", Detail: "+12 −0", Severity: SeverityMedium},
 		},
-		Note: "[A] answers the 2 marked",
+		Note: "[a] lists the 2 marked",
 	}
 }
 
@@ -36,7 +36,7 @@ func TestQueueStrip_ListsTheStackInOrder(t *testing.T) {
 	if len(rows) != 6 {
 		t.Fatalf("expected a header and five items, got %d rows:\n%s", len(rows), strings.Join(rows, "\n"))
 	}
-	if !strings.Contains(rows[0], "5 pending") || !strings.Contains(rows[0], "[A] answers the 2 marked") {
+	if !strings.Contains(rows[0], "5 pending") || !strings.Contains(rows[0], "[a] lists the 2 marked") {
 		t.Fatalf("header should count the queue and name the batch, got %q", rows[0])
 	}
 	// One filled dot for the current decision, one hollow for each behind it.
@@ -52,11 +52,11 @@ func TestQueueStrip_ListsTheStackInOrder(t *testing.T) {
 		}
 	}
 	// Membership is a mark on the row, not a colour.
-	if !strings.Contains(rows[1], "[A]") || !strings.Contains(rows[2], "[A]") {
+	if !strings.Contains(rows[1], "[a]") || !strings.Contains(rows[2], "[a]") {
 		t.Fatal("batch members should be marked with the key that answers them")
 	}
 	for _, row := range rows[3:] {
-		if strings.Contains(row, "[A]") {
+		if strings.Contains(row, "[a]") {
 			t.Fatalf("non-members must carry no batch mark, got %q", row)
 		}
 	}
@@ -109,39 +109,5 @@ func TestQueueStrip_StaysInsideItsWidth(t *testing.T) {
 				t.Fatalf("row overflows width %d by %d: %q", width, w-width, ansi.Strip(row))
 			}
 		}
-	}
-}
-
-func TestApprovalCard_BatchKey(t *testing.T) {
-	c := &ApprovalCard{
-		Variant: ApprovalCommand,
-		Title:   "Approve command",
-		Act:     "go test ./...",
-		Answer:  "run it once",
-	}
-	// Without a queue behind it, [A] stays the shifted spelling of [a].
-	c.AllowAlways = true
-	if done, result := c.Update(key("A")); !done || result != ApprovalAlways {
-		t.Fatalf("[A] without a batch should take the session grant, got %v %v", done, result)
-	}
-
-	c.Batch, c.BatchHint = true, "answer all 3 in one list"
-	view := c.View(80)
-	if !strings.Contains(ansi.Strip(view), "[A] answer all 3 in one list") {
-		t.Fatalf("a batch should offer [A] under the count it answers:\n%s", view)
-	}
-	if done, result := c.Update(key("A")); !done || result != ApprovalBatch {
-		t.Fatalf("[A] with a batch should answer the batch, got %v %v", done, result)
-	}
-	// The lower-case key keeps its own meaning.
-	if done, result := c.Update(key("a")); !done || result != ApprovalAlways {
-		t.Fatalf("[a] should still take the session grant, got %v %v", done, result)
-	}
-
-	// A card with a batch but no session grant offers the batch alone.
-	c.AllowAlways = false
-	view = ansi.Strip(c.View(80))
-	if !strings.Contains(view, "[A]") || strings.Contains(view, "[a]") {
-		t.Fatalf("a batch without a session grant should offer [A] and not [a]:\n%s", view)
 	}
 }

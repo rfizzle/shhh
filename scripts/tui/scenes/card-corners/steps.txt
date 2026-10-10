@@ -22,11 +22,9 @@ keys C-Space
 snap 04-card-holds-the-keyboard "notes.md" "[y] apply the change"
 keys y
 snap 05-answered "The note is written"
-# The draft is still holding the sentence typed at the card, and the first
-# cancel is spent emptying it — the chord only arms once there is nothing
-# left for it to take back.
-keys C-c
-sleep 0.5
+# The sentence typed at the card went with the answer as its note
+# (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next),
+# so the draft is empty and the first cancel arms the quit.
 keys C-c
 snap 06-quit-armed "again quits"
 keys C-c

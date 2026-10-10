@@ -20,8 +20,8 @@
 │ undo      unknown — shhh could not resolve what this writes                                                                │
 │ network   open                                                                                                             │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [Y] run with a note · [n] deny · [N] deny with a note · [a] allow "npm test" without asking              │
-│ [v] full view · [e] edit the command · [?] keys · [esc] leave it waiting, nothing is denied                                │
+│ [y] run it once · [n] deny · [a] allow "npm test" without asking · [enter] full view · [e] edit the command · [?] keys     │
+│ [esc] leave it waiting, nothing is denied                                                                                  │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the line the reader wrote, read again
@@ -35,8 +35,7 @@
 │ undo      none                                                                                                             │
 │ network   open                                                                                                             │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [Y] run with a note · [n] deny · [N] deny with a note · [v] full view · [e] edit the command · [?] keys  │
-│ [esc] not now — it keeps waiting                                                                                           │
+│ [y] run it once · [n] deny · [enter] full view · [e] edit the command · [?] keys · [esc] not now — it keeps waiting        │
 │ [a] always — not offered: shhh flagged this command                                                                        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -51,8 +50,8 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[91munknown␛[m␛[38;5;245m — shhh could not resolve what this writes␛[m                                                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m                                                                                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[38;5;103m[Y]␛[m ␛[38;5;252mrun with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[38;5;103m[N]␛[m ␛[38;5;252mdeny with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m ␛[38;5;252mallow "npm test" without asking␛[m              ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[v]␛[m ␛[38;5;252mfull view␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the command␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m                                ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m ␛[38;5;252mallow "npm test" without asking␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m ␛[38;5;252mfull view␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the command␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[92m[esc] leave it waiting, nothing is denied␛[m                                                                                  ␛[38;5;214m│␛[m
 ␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the line the reader wrote, read again
@@ -66,7 +65,6 @@
 ␛[91m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m                                                                                                             ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m                                                                                                             ␛[91m│␛[m
 ␛[91m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[91m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[38;5;103m[Y]␛[m ␛[38;5;252mrun with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[38;5;103m[N]␛[m ␛[38;5;252mdeny with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[v]␛[m ␛[38;5;252mfull view␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the command␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m  ␛[91m│␛[m
-␛[91m│␛[m ␛[92m[esc] not now — it keeps waiting␛[m                                                                                           ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m ␛[38;5;252mfull view␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the command␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] not now — it keeps waiting␛[m        ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241m[a] always — not offered: shhh flagged this command␛[m                                                                        ␛[91m│␛[m
 ␛[91m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

@@ -57,6 +57,13 @@ type grantOffer struct {
 	// line rather than every command starting with its leading words, this
 	// file rather than its directory.
 	exact bool
+	// queue is the row that grants nothing: the queue behind the card,
+	// opened as the list that answers it (queue.go). It is a row of this
+	// list rather than a key of its own because both are ways of answering
+	// more than the card in front of the reader, and one key that lists
+	// every such way is a key learned once
+	// (docs/interface/surfaces.md#the-approval-card).
+	queue bool
 }
 
 // reason is the code the record files this grant under. The length leads: a
@@ -168,7 +175,21 @@ func (m Model) grantOffers(req *approvalRequest) ([]grantOffer, []components.Sel
 // permission would be a key nobody could afford to press
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
 func (m Model) openGrantChoice() (tea.Model, tea.Cmd) {
-	offers, options := m.grantOffers(m.approval.request)
+	// The grants are the ones the card offered and no others: a flagged or
+	// judged card offers none, and the list must not hand out what the card
+	// withheld because the queue opened it.
+	card := m.buildApprovalCard()
+	var offers []grantOffer
+	var options []components.SelectOption
+	if card.AllowAlways {
+		offers, options = m.grantOffers(m.approval.request)
+	}
+	if card.Batch {
+		offers = append(offers, grantOffer{queue: true})
+		options = append(options, components.SelectOption{
+			Label: "the queue", Desc: card.BatchHint, Meta: "nothing is granted",
+		})
+	}
 	if len(offers) == 0 {
 		return m, nil
 	}
@@ -215,6 +236,14 @@ func (m Model) updateGrantChoice(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 func (m Model) takeGrant(o grantOffer) (tea.Model, tea.Cmd) {
 	req := m.approval.request
 	m.approval.grant = nil
+	if o.queue {
+		// The queue opens as the list that answers it, in the place this
+		// list stood. It settles nothing on its own — the answer is given
+		// when that list is confirmed, and esc leaves the queue as it was.
+		// Membership was on the strip before the key opened it, and a
+		// flagged action was never in it.
+		return m.openQueueList()
+	}
 	if req == nil {
 		m.syncViewport()
 		return m, nil
@@ -292,7 +321,7 @@ func grantNote(covers string, length grantLength) string {
 // where the pointer is standing is not.
 func (m Model) applyGrantChoice(card *components.ApprovalCard) {
 	c := m.approval.grant
-	if c == nil || !card.AllowAlways {
+	if c == nil || (!card.AllowAlways && !card.Batch) {
 		return
 	}
 	card.GrantOpen, card.GrantRows, card.GrantFocus = true, c.options, c.focus

@@ -16,11 +16,11 @@
 │ $ npm test --watch                                                       │
 │ ⚠ medium · shhh can't tell what it changes                               │
 │                                                                          │
-│ … 3 more lines · [shift+↓]                                               │
+│ touches   unknown — shhh cannot tell what npm writes                     │
+│ … 2 more lines · [shift+↓]                                               │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [Y] run with a note · [n] deny · [N] deny with a note  │
-│ [a] allow "npm test" without asking · [v] full view                      │
-│ the list below has the keyboard                                          │
+│ [y] run it once · [n] deny · [a] allow "npm test" without asking         │
+│ [enter] full view                        the list below has the keyboard │
 │ ┄ allow without asking                                                   │
 │ ❯ this turn only   npm test …                       until this turn ends │
 │   this session     npm test …                        until you revoke it │
@@ -35,11 +35,11 @@
 │ $ npm test --watch                                                       │
 │ ⚠ medium · shhh can't tell what it changes                               │
 │                                                                          │
-│ … 3 more lines · [shift+↓]                                               │
+│ touches   unknown — shhh cannot tell what npm writes                     │
+│ … 2 more lines · [shift+↓]                                               │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [Y] run with a note · [n] deny · [N] deny with a note  │
-│ [a] allow "npm test" without asking · [v] full view                      │
-│ the list below has the keyboard                                          │
+│ [y] run it once · [n] deny · [a] allow "npm test" without asking         │
+│ [enter] full view                        the list below has the keyboard │
 │ ┄ allow without asking                                                   │
 │   this turn only   npm test …                       until this turn ends │
 │ ❯ this session     npm test …                        until you revoke it │
@@ -55,11 +55,11 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mnpm test --watch␛[m                                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · shhh can't tell what it changes␛[m                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m… 3 more lines · [shift+↓]␛[m                                               ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what npm writes␛[m                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m… 2 more lines · [shift+↓]␛[m                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[y] run it once␛[m␛[38;5;244m · ␛[m␛[38;5;244m[Y] run with a note␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[N] deny with a note␛[m  ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[a] allow "npm test" without asking␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v] full view␛[m                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mthe list below has the keyboard␛[m                                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[y] run it once␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[a] allow "npm test" without asking␛[m         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[enter] full view␛[m                        ␛[38;5;244mthe list below has the keyboard␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ allow without asking␛[m                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mthis turn only   npm test …                       until this turn ends␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254mthis session␛[m     ␛[38;5;244mnpm test …␛[m                        ␛[38;5;254muntil you revoke it␛[m ␛[38;5;254m│␛[m
@@ -74,11 +74,11 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mnpm test --watch␛[m                                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · shhh can't tell what it changes␛[m                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m… 3 more lines · [shift+↓]␛[m                                               ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what npm writes␛[m                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m… 2 more lines · [shift+↓]␛[m                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[y] run it once␛[m␛[38;5;244m · ␛[m␛[38;5;244m[Y] run with a note␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[N] deny with a note␛[m  ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[a] allow "npm test" without asking␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v] full view␛[m                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mthe list below has the keyboard␛[m                                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[y] run it once␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[a] allow "npm test" without asking␛[m         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[enter] full view␛[m                        ␛[38;5;244mthe list below has the keyboard␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ allow without asking␛[m                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254mthis turn only␛[m   ␛[38;5;244mnpm test …␛[m                       ␛[38;5;254muntil this turn ends␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mthis session     npm test …                        until you revoke it␛[m ␛[38;5;254m│␛[m

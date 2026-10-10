@@ -254,16 +254,20 @@ func TestActivityKinds_ServerCallsDrawByTheUsersWord(t *testing.T) {
 	}
 }
 
-// TestActivityRow_CancelledReadsAsYourRefusal: a call abandoned by ctrl+c
-// never ran, so it renders ⊘ rather than ✗.
-func TestActivityRow_CancelledReadsAsYourRefusal(t *testing.T) {
+// TestActivityRow_CancelledReadsAsStopped: a call abandoned by ctrl+c never
+// ran, so it renders ⊘ rather than ✗ — and stopped rather than denied,
+// because nobody answered it.
+func TestActivityRow_CancelledReadsAsStopped(t *testing.T) {
 	m := activityModel(t)
 	view := stripANSI(m.renderEntry(entry{kind: entryTool, toolName: "write_file",
 		toolArgs: `{"path":"a.go"}`, toolResult: cancelledToolResult}, 80))
-	for _, want := range []string{"⊘", "denied · you", "—"} {
+	for _, want := range []string{"⊘", "stopped", "—"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("a cancelled call should read %q:\n%s", want, view)
 		}
+	}
+	if strings.Contains(view, "denied") {
+		t.Fatalf("a cancelled call was not denied:\n%s", view)
 	}
 	if strings.Contains(view, cancelledToolResult) {
 		t.Fatalf("the synthetic result is not output to show:\n%s", view)

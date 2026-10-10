@@ -2,7 +2,7 @@ package chat
 
 // Rich diff rendering (docs/interface/surfaces.md#the-diff-view): the
 // full-screen diff state shared by transcript edit rows, the approval card's
-// [v], and the /diff session diff.
+// [enter], and the /diff session diff.
 
 import (
 	"fmt"

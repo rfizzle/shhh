@@ -1,10 +1,14 @@
 package chat
 
-// The two answers that carry a sentence
+// The approval card's register: two answers, the field, the list, the try,
+// the full view, the way out and the key list, and nothing else
+// (docs/interface/surfaces.md#the-approval-card). And the note each answer
+// carries, which is the draft
 // (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 
@@ -14,23 +18,38 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// notedCardModel is a session holding a gated edit whose card has the
-// keyboard: an arrival takes it, the handover buys the rest of the run.
-func notedCardModel(t *testing.T) Model {
+// draftedCardModel is a session whose gated edit landed on a sentence in the
+// draft, handed the keyboard: the reader was writing, the card arrived, and
+// they gave it the keyboard to answer it. An empty draft is the card that
+// took the keyboard by arriving.
+func draftedCardModel(t *testing.T, executor ToolExecutor, draft string) Model {
 	t.Helper()
-	executor := func(name string, args json.RawMessage) (string, error) {
-		t.Fatalf("no tool may run without an answer, but %s did", name)
-		return "", nil
-	}
 	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
 		"write_file": writeFilePreview("line one\n"),
 	})
+	m.input.SetValue(draft)
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: `{"path":"main.go","content":"line one\nline two\n"}`},
 	}})
-	return handover(t, updated.(Model))
+	m = updated.(Model)
+	if m.state != stateConfirmRun {
+		t.Fatalf("the gated call should have raised a decision, got %d", m.state)
+	}
+	if draft == "" {
+		return m
+	}
+	return handover(t, m)
+}
+
+// noRun is the executor of a card that must not run.
+func noRun(t *testing.T) ToolExecutor {
+	return func(name string, _ json.RawMessage) (string, error) {
+		t.Fatalf("no tool may run without an answer, but %s did", name)
+		return "", nil
+	}
 }
 
 func lastToolMessage(t *testing.T, m Model) provider.Message {
@@ -45,280 +64,231 @@ func lastToolMessage(t *testing.T, m Model) provider.Message {
 	return provider.Message{}
 }
 
-// The whole of the story: the model is told what the reader was thinking
-// instead of being told only no, and the transcript keeps the same sentence
-// where the reader can read it back.
-func TestDenyNoted_TheSentenceIsWhatTheModelIsToldAndWhatTheRowKeeps(t *testing.T) {
+// The register is the nine: y, n, e, a, t, enter, esc, ? and the four
+// scroll chords. The card's row of the register holds the keys the card
+// answers itself — esc is the decision's way back to the draft and is
+// answered before the card sees it — and g, which only a child's routed
+// card offers, to go to the agent that asked. None of the old spellings is
+// live: Y and N, the shifted queue, the full diff's v and V, the explain x.
+func TestApproval_TheRegisterIsNineKeys(t *testing.T) {
+	var got []string
+	for _, b := range keys.OnApprovalCard.Surface().Bindings {
+		got = append(got, b.Keys()...)
+	}
+	slices.Sort(got)
+	want := []string{"?", "a", "e", "enter", "g", "n", "shift+down", "shift+left", "shift+right", "shift+up", "t", "y"}
+	if strings.Join(got, " ") != strings.Join(want, " ") {
+		t.Fatalf("the card's register is %v, want %v", got, want)
+	}
+	// The card draws the way out with the rest, so the ninth key is on it.
+	m := draftedCardModel(t, noRun(t), "")
+	m = handover(t, m)
+	if view := ansi.Strip(m.View().Content); !strings.Contains(view, "[esc]") || !strings.Contains(view, "[enter] full diff") {
+		t.Fatalf("the gated card should offer esc and the full view:\n%s", view)
+	}
+	// Every retired spelling is inert on a live card: nothing answered,
+	// nothing opened, no field.
+	for _, k := range []string{"Y", "N", "A", "v", "V", "x"} {
+		live := draftedCardModel(t, noRun(t), "")
+		live = handover(t, live)
+		after := press(t, live, k)
+		if after.state != stateConfirmRun || after.approval.request == nil ||
+			after.approval.grant != nil || after.approval.list != nil || after.approval.edit != nil {
+			t.Errorf("%q should do nothing on the card, got state %d", k, after.state)
+		}
+	}
+	// Enter opens the full view and answers nothing.
+	opened := press(t, handover(t, draftedCardModel(t, noRun(t), "")), "enter")
+	if opened.state != stateDiffFull || opened.approval.request == nil {
+		t.Fatalf("enter should open the full diff with the decision waiting, got state %d", opened.state)
+	}
+}
+
+// The note is the draft. What the reader was writing when they answered goes
+// out with the answer and leaves the box: in place of the fixed refusal on a
+// no, as their own steer on a yes. An empty draft is the plain answer, byte
+// for byte.
+func TestApproval_TheDraftIsTheNote(t *testing.T) {
 	const why = "not that file — the generated one is written by make"
 
-	var decisions [][2]string
-	m := notedCardModel(t)
-	m.wiring.Observer = observe.Observer{
-		Decision: func(_ observe.Pos, decision, reason string) {
-			decisions = append(decisions, [2]string{decision, reason})
-		},
-	}
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'N', Text: "N"})
-	m = updated.(Model)
-	if m.approval.note == nil || m.approval.note.allow {
-		t.Fatal("the shifted deny should open the field on the deny side")
-	}
-	if m.approval.request == nil {
-		t.Fatal("opening the field must settle nothing")
-	}
-	m = typeInto(t, m, why)
-	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = updated.(Model)
-
-	if got := lastToolMessage(t, m).Content; got != "error: "+why {
-		t.Fatalf("the model should be told the reader's sentence and nothing else, got %q", got)
-	}
-	for _, boilerplate := range []string{"declined this tool call", "declined to run this command"} {
-		if strings.Contains(lastToolMessage(t, m).Content, boilerplate) {
-			t.Fatalf("a noted denial must not also carry %q", boilerplate)
+	t.Run("a no says why", func(t *testing.T) {
+		var decisions [][2]string
+		m := draftedCardModel(t, noRun(t), why)
+		m.wiring.Observer = observe.Observer{
+			Decision: func(_ observe.Pos, decision, reason string) {
+				decisions = append(decisions, [2]string{decision, reason})
+			},
 		}
-	}
-
-	// It is still the reader's denial, drawn as one, with the sentence folded
-	// under the row rather than clipped into the outcome column.
-	row := m.transcript[len(m.transcript)-1]
-	if row.kind != entryTool || row.deniedBy != decidedByYou || row.denyRule != "" {
-		t.Fatalf("a noted denial is still yours and not a rule's, got %+v", row)
-	}
-	// And the record says so too: a sentence does not turn the reader's
-	// denial into a rule's (approvals-and-safety.md#denials-are-two-different-facts).
-	if want := [2]string{observe.DecisionDeny, observe.ReasonUser}; len(decisions) != 1 || decisions[0] != want {
-		t.Fatalf("the record should hold one %v, got %v", want, decisions)
-	}
-	if row.denyNote != why {
-		t.Fatalf("the row should keep the sentence verbatim, got %q", row.denyNote)
-	}
-	detail := m.activityRowDetail(row, false, m.contentWidth())
-	if strings.Contains(detail.Outcome, why) {
-		t.Fatalf("the sentence belongs under the row, not in its outcome: %q", detail.Outcome)
-	}
-	if len(detail.Detail) != 1 || detail.Detail[0] != why {
-		t.Fatalf("the row's expansion should carry the sentence verbatim, got %q", detail.Detail)
-	}
-
-	row.expanded = true
-	if view := m.activityRowDetail(row, false, m.contentWidth()).View(m.contentWidth()); !strings.Contains(ansi.Strip(view), why) {
-		t.Fatalf("the expanded row should show the sentence:\n%s", view)
-	}
-}
-
-// The reflex path: a reader who has been pressing the shifted letter for a
-// year presses it and presses enter, and the model reads exactly what it read
-// before this existed. Byte for byte, for each of the sentences a decline can
-// carry.
-func TestDenyNoted_AnEmptyNoteIsTodaysDenialByteForByte(t *testing.T) {
-	edit := func(t *testing.T) Model {
-		t.Helper()
-		return notedCardModel(t)
-	}
-	command := func(t *testing.T) Model {
-		t.Helper()
-		var bare, contained []string
-		return runExecApproval(t, containedModel(t, &bare, &contained, "contained: bwrap"))
-	}
-	for _, tc := range []struct {
-		name string
-		open func(*testing.T) Model
-		want string
-	}{
-		{"a tool call", edit, "error: the user declined this tool call"},
-		{"a command", command, "error: the user declined to run this command"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			plain := press(t, tc.open(t), "n")
-			if got := lastToolMessage(t, plain).Content; got != tc.want {
-				t.Fatalf("the plain denial changed: %q", got)
-			}
-			noted := press(t, press(t, tc.open(t), "N"), "enter")
-			if got := lastToolMessage(t, noted).Content; got != tc.want {
-				t.Fatalf("an empty note should be the plain denial, got %q", got)
-			}
-			row := noted.transcript[len(noted.transcript)-1]
-			if row.denyNote != "" {
-				t.Fatalf("an empty note is not a note, got %q", row.denyNote)
-			}
-			// And a sentence replaces the fixed one rather than joining it,
-			// on this variant as on the other: the command card is the one
-			// that would otherwise say no a second way.
-			told := press(t, typeInto(t, press(t, tc.open(t), "N"), "wrong directory"), "enter")
-			if got := lastToolMessage(t, told).Content; got != "error: wrong directory" {
-				t.Fatalf("the sentence should be the whole of it, got %q", got)
-			}
-		})
-	}
-
-	// The third sentence belongs to a proposal answered on its own surface,
-	// which offers no note at all — so it is the one variant this story can
-	// only leave alone, and the test says so rather than leaving it untested.
-	m, _ := memoryModel(t, agent.ModeManual)
-	updated, _ := m.Update(rememberCall())
-	m = press(t, handover(t, updated.(Model)), "esc")
-	const want = "error: the user declined to save this memory; do not re-propose it this session"
-	if got := lastToolMessage(t, m).Content; got != want {
-		t.Fatalf("the memory decline changed: %q", got)
-	}
-}
-
-// The allow side reaches the same round the reader had the thought in, as
-// their own words rather than the session's.
-func TestAllowNoted_TheSentenceGoesOutAsYourOwnSteer(t *testing.T) {
-	const next = "use the staging bucket for the next one"
-	var ran []string
-	executor := func(name string, args json.RawMessage) (string, error) {
-		ran = append(ran, name)
-		return "wrote 2 lines", nil
-	}
-	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
-		"write_file": writeFilePreview("line one\n"),
+		m = press(t, m, "n")
+		if got := lastToolMessage(t, m).Content; got != "error: "+why {
+			t.Fatalf("the model should be told the reader's sentence and nothing else, got %q", got)
+		}
+		if m.input.Value() != "" {
+			t.Fatalf("the sentence went with the answer and should leave the draft, got %q", m.input.Value())
+		}
+		row := m.transcript[len(m.transcript)-1]
+		if row.kind != entryTool || row.deniedBy != decidedByYou || row.denyRule != "" || row.denyNote != why {
+			t.Fatalf("a noted denial is still yours, with the sentence under it, got %+v", row)
+		}
+		if want := [2]string{observe.DecisionDeny, observe.ReasonUser}; len(decisions) != 1 || decisions[0] != want {
+			t.Fatalf("the record should hold one %v, got %v", want, decisions)
+		}
+		detail := m.activityRowDetail(row, false, m.contentWidth())
+		if strings.Contains(detail.Outcome, why) || len(detail.Detail) != 1 || detail.Detail[0] != why {
+			t.Fatalf("the sentence belongs under the row, verbatim: %+v", detail)
+		}
 	})
-	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
-		{ID: "call_w", Name: "write_file", Arguments: `{"path":"main.go","content":"line one\nline two\n"}`},
-	}})
-	m = handover(t, updated.(Model))
 
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'Y', Text: "Y"})
-	m = updated.(Model)
-	if m.approval.note == nil || !m.approval.note.allow {
-		t.Fatal("the shifted allow should open the field on the allow side")
-	}
-	if m.state != stateConfirmRun {
-		t.Fatalf("opening the field must not run the act, got state %d", m.state)
-	}
-	m = typeInto(t, m, next)
-	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = updated.(Model)
-	for _, c := range unwrapBatch(cmd) {
-		c()
-	}
+	t.Run("a yes says what next", func(t *testing.T) {
+		const next = "use the staging bucket for the next one"
+		var ran []string
+		executor := func(name string, _ json.RawMessage) (string, error) {
+			ran = append(ran, name)
+			return "wrote 2 lines", nil
+		}
+		m := draftedCardModel(t, executor, next)
+		updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+		m = updated.(Model)
+		for _, c := range unwrapBatch(cmd) {
+			c()
+		}
+		if len(ran) != 1 {
+			t.Fatalf("the act should have run, got %v", ran)
+		}
+		if len(m.steering) != 1 || m.steering[0].text != next || m.steering[0].machine ||
+			m.steering[0].kind != queuedNote || m.steering[0].id == 0 {
+			t.Fatalf("the sentence should be one steer of the reader's own, got %+v", m.steering)
+		}
+		if m.input.Value() != "" {
+			t.Fatalf("the sentence went with the answer and should leave the draft, got %q", m.input.Value())
+		}
+	})
 
-	if len(ran) != 1 {
-		t.Fatalf("the act should have run, got %v", ran)
-	}
-	if len(m.steering) != 1 {
-		t.Fatalf("the sentence should be one steer, got %d", len(m.steering))
-	}
-	if m.steering[0].text != next {
-		t.Fatalf("the steer should be the sentence verbatim, got %q", m.steering[0].text)
-	}
-	if m.steering[0].machine {
-		t.Fatal("the reader wrote it, so it is not a machine-authored steer")
-	}
-	if m.steering[0].kind != queuedNote || m.steering[0].id == 0 {
-		t.Fatalf("the queue should list it as a note with an id, got %+v", m.steering[0])
-	}
+	t.Run("an empty draft is the plain answer", func(t *testing.T) {
+		m := press(t, draftedCardModel(t, noRun(t), ""), "n")
+		if got := lastToolMessage(t, m).Content; got != "error: the user declined this tool call" {
+			t.Fatalf("the plain denial changed: %q", got)
+		}
+		var bare, contained []string
+		c := press(t, runExecApproval(t, containedModel(t, &bare, &contained, "contained: bwrap")), "n")
+		if got := lastToolMessage(t, c).Content; got != "error: the user declined to run this command" {
+			t.Fatalf("the plain command denial changed: %q", got)
+		}
+		if row := c.transcript[len(c.transcript)-1]; row.denyNote != "" {
+			t.Fatalf("an empty draft is not a note, got %q", row.denyNote)
+		}
+	})
 
-	// An allow with nothing written is the plain allow: no steer, and the
-	// next round is not handed an empty sentence.
-	ran = nil
-	m2 := notedCardModel(t)
-	m2 = press(t, press(t, m2, "Y"), "enter")
-	if len(m2.steering) != 0 {
-		t.Fatalf("an empty note is not a steer, got %v", m2.steering)
-	}
+	// Attached to a child, what is typed is that child's steer, so the
+	// session's answer leaves it where it is.
+	t.Run("an attached draft is the child's", func(t *testing.T) {
+		m := draftedCardModel(t, noRun(t), why)
+		m.attachedTo = "reader-1"
+		if note := m.takeDraftNote(); note != "" || m.input.Value() != why {
+			t.Fatalf("an attached draft should stay the child's, took %q and left %q", note, m.input.Value())
+		}
+	})
+
+	// A memory proposal answers on its own surface and carries no note, so
+	// its refusal is the one this rule leaves alone.
+	t.Run("a memory proposal keeps its sentence", func(t *testing.T) {
+		m, _ := memoryModel(t, agent.ModeManual)
+		updated, _ := m.Update(rememberCall())
+		m = press(t, handover(t, updated.(Model)), "esc")
+		const want = "error: the user declined to save this memory; do not re-propose it this session"
+		if got := lastToolMessage(t, m).Content; got != want {
+			t.Fatalf("the memory decline changed: %q", got)
+		}
+	})
 }
 
-// While the field holds the keyboard every letter is text. The keys in the
-// table are the ones that answer this card when it does not: the digits the
-// queue answers, and the three letters the run and its qualifiers print.
-func TestDecisionNote_EveryLetterIsTextWhileTheFieldIsOpen(t *testing.T) {
-	for _, key := range []string{"1", "2", "9", "v", "t", "a", "y", "n", "A"} {
-		t.Run(key, func(t *testing.T) {
-			m := press(t, notedCardModel(t), "N")
-			before := m.state
-			m = press(t, m, key)
-			if m.approval.note == nil {
-				t.Fatalf("%q closed the field", key)
-			}
-			if m.state != before {
-				t.Fatalf("%q moved the session from state %d to %d", key, before, m.state)
-			}
-			if m.approval.request == nil {
-				t.Fatalf("%q answered the decision", key)
-			}
-			if got := m.approval.note.field.Value(); got != key {
-				t.Fatalf("%q should be text in the field, got %q", key, got)
-			}
-
-			// Esc closes the field, and the decision is exactly where it was
-			// — so the letter is a key again.
-			m = press(t, m, "esc")
-			if m.approval.note != nil {
-				t.Fatalf("esc should close the field")
-			}
-			if m.approval.request == nil || m.state != before {
-				t.Fatal("esc must leave the decision waiting")
-			}
-			live := press(t, m, key)
-			// The card's other surfaces count as movement too: [a] opens the
-			// grants it can make and [A] the queue, and neither settles the
-			// decision or moves the scroll (grant.go, queue.go).
-			if live.state == before && live.approval.request != nil && live.approval.note == nil &&
-				live.approval.grant == nil && live.approval.list == nil &&
-				live.approval.scroll == m.approval.scroll {
-				// Nothing moved: the key is inert now, which is only right
-				// for the keys this card does not offer.
-				if card := m.approvalCard(); offeredKey(card, key) {
-					t.Fatalf("%q is on the card and did nothing once the field closed", key)
-				}
-			}
-		})
-	}
-}
-
-// A sentence longer than the row it is typed on scrolls inside the field, and
-// the caret stays inside the card: a cursor drawn past the frame is a cursor
-// in the transcript, pointing at a row nobody is typing into.
-func TestDecisionNote_TheCaretStaysInsideTheCard(t *testing.T) {
-	// The second width is under the card's own frame threshold, where the
-	// rows are drawn bare and the field has almost no room: that is where a
-	// field sized to a floor rather than to the room it has would put the
-	// caret outside the card altogether.
-	for _, width := range []int{80, 14} {
-		m := notedCardModel(t)
-		m.width, m.height = width, 40
-		m.syncInputWidth()
-		m = typeInto(t, press(t, m, "N"), strings.Repeat("no. ", 60))
-		cur := m.confirmCursor(m.contentWidth())
-		if cur == nil {
-			t.Fatalf("w%d: an open field places the cursor", width)
+// Esc is never a denial. On a card handed the keyboard it gives the keyboard
+// back to the draft, the sentence still in it, and the request waits — no
+// tool result, no record of an answer, no row.
+func TestApproval_EscLeavesTheRequestWaiting(t *testing.T) {
+	for _, draft := range []string{"", "half a thought"} {
+		var decisions []string
+		m := draftedCardModel(t, noRun(t), draft)
+		m.wiring.Observer = observe.Observer{
+			Decision: func(_ observe.Pos, decision, _ string) { decisions = append(decisions, decision) },
 		}
-		rows := m.confirmPanelLines()
-		if cur.Y < 0 || cur.Y >= len(rows) {
-			t.Fatalf("w%d: the caret is on row %d of a %d-row panel", width, cur.Y, len(rows))
+		rows := len(m.transcript)
+		m = press(t, m, "esc")
+		if m.state != stateConfirmRun || m.approval.request == nil {
+			t.Fatalf("draft %q: esc should leave the request waiting, got state %d", draft, m.state)
 		}
-		if got := ansi.StringWidth(ansi.Strip(rows[cur.Y])); cur.X >= got {
-			t.Fatalf("w%d: the caret is at column %d of a %d-column row", width, cur.X, got)
+		if !m.decisionUngated() {
+			t.Fatalf("draft %q: esc should hand the keyboard back to the draft", draft)
+		}
+		if m.input.Value() != draft {
+			t.Fatalf("draft %q: esc should leave the sentence where it was, got %q", draft, m.input.Value())
+		}
+		for _, msg := range m.Messages() {
+			if msg.Role == provider.RoleTool {
+				t.Fatalf("draft %q: esc must not answer the call: %+v", draft, msg)
+			}
+		}
+		if len(decisions) != 0 || len(m.transcript) != rows {
+			t.Fatalf("draft %q: esc should record nothing, got %v and %d new rows", draft, decisions, len(m.transcript)-rows)
 		}
 	}
 }
 
-// offeredKey reports whether the card advertises this keystroke in its run.
-func offeredKey(card *components.ApprovalCard, key string) bool {
-	for _, k := range card.KeyRun() {
-		if k.Key == key {
-			return true
+// Ctrl+C with a card up stops the run, as it does everywhere: the turn ends
+// and the call goes with it, abandoned by the stop rather than denied — the
+// row reads stopped, the model is told the turn was cancelled, and the record
+// holds no denial.
+func TestApproval_CtrlCStopsTheRunNotTheRequest(t *testing.T) {
+	for _, draft := range []string{"", "half a thought"} {
+		var decisions []string
+		m := draftedCardModel(t, noRun(t), draft)
+		stopped := false
+		m.cancel = func() { stopped = true }
+		m.wiring.Observer = observe.Observer{
+			Decision: func(_ observe.Pos, decision, _ string) { decisions = append(decisions, decision) },
+		}
+		m, _ = pressKey(t, m, ctrlC)
+		if !stopped {
+			t.Fatalf("draft %q: ctrl+c over a card should stop the turn", draft)
+		}
+		if m.state == stateConfirmRun || m.approval.request != nil {
+			t.Fatalf("draft %q: the stop should take the card with the turn, got state %d", draft, m.state)
+		}
+		if got := lastToolMessage(t, m).Content; got != agent.CancelledResult {
+			t.Fatalf("draft %q: the model should be told the call was cancelled, got %q", draft, got)
+		}
+		if slices.Contains(decisions, observe.DecisionDeny) {
+			t.Fatalf("draft %q: a stop is not a denial, but the record says %v", draft, decisions)
+		}
+		var row *entry
+		for i := range m.transcript {
+			if e := &m.transcript[i]; e.kind == entryTool && e.toolName == "write_file" {
+				row = e
+			}
+		}
+		if row == nil || row.toolResult != cancelledToolResult || row.deniedBy != "" {
+			t.Fatalf("draft %q: the call should be abandoned by the stop, got %+v", draft, row)
+		}
+		detail := m.activityRowDetail(*row, false, m.contentWidth())
+		if detail.Outcome != components.OutcomeStopped {
+			t.Fatalf("draft %q: the row should read stopped, got %q", draft, detail.Outcome)
+		}
+		if m.pressed.openOn(armQuit, quitChord()) || m.armed.openOn(armQuit, quitChord()) {
+			t.Fatalf("draft %q: the stop arms nothing", draft)
 		}
 	}
-	return false
 }
 
-// The grace window swallows the shifted letters alongside the plain ones: a
-// capital from the tail of a buffered burst is the reflex the window is for,
-// and a field it opened would be a mode nobody asked for.
-func TestGrace_TheNotedAnswersAreDiscardedToo(t *testing.T) {
-	for _, key := range []string{"y", "n", "Y", "N"} {
+// The grace window swallows the two answers and nothing else the run prints.
+func TestGrace_TheAnswersAreDiscarded(t *testing.T) {
+	for _, key := range []string{"y", "n"} {
 		if !(Model{}).graceDiscards(key) {
 			t.Errorf("%q should be discarded while the grace window is open", key)
 		}
 	}
-	for _, key := range []string{"esc", "ctrl+c"} {
+	for _, key := range []string{"esc", "ctrl+c", "Y", "N"} {
 		if (Model{}).graceDiscards(key) {
-			t.Errorf("%q must stay live: the safe answer has to stay reachable", key)
+			t.Errorf("%q must not be discarded", key)
 		}
 	}
 }
@@ -326,8 +296,8 @@ func TestGrace_TheNotedAnswersAreDiscardedToo(t *testing.T) {
 // Every key the card printed resolves to itself, on whichever row the run
 // wrapped it onto: the geometry is read out of the render, so a run too wide
 // for the panel is clickable where it actually landed.
-func TestNotedRun_ClicksLandOnTheKeyUnderThem(t *testing.T) {
-	m := notedCardModel(t)
+func TestApprovalRun_ClicksLandOnTheKeyUnderThem(t *testing.T) {
+	m := handover(t, draftedCardModel(t, noRun(t), ""))
 	card := m.approvalCard()
 	seen := map[string]bool{}
 	for _, row := range strings.Split(card.View(m.contentWidth()), "\n") {

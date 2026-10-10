@@ -136,7 +136,7 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 	}
 	// The card landed on a draft nobody was typing into, so it holds the
 	// keyboard and offers the two answers; [a] waits behind the handover.
-	for _, want := range []string{"[y] apply the change", "[Y] ", "[n] deny", "[N] "} {
+	for _, want := range []string{"[y] apply the change", "[n] deny"} {
 		if !strings.Contains(ansi.Strip(view), want) {
 			t.Fatalf("a card holding the keyboard by arrival offers %q:\n%s", want, view)
 		}
@@ -1167,7 +1167,7 @@ func TestSpawnCard_ARoundIsOneDecision(t *testing.T) {
 		"reads only — a researcher changes nothing",
 		"[y] start all 3",
 		"[n] deny all 3",
-		"[A] pick which of the 3 to start",
+		"[a] allow researchers for this session, or pick which of the 3 to start",
 	} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the fan-out card does not say %q:\n%s", want, view)

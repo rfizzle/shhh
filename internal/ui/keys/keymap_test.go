@@ -214,24 +214,23 @@ func TestLoad_RefusesTwoActsOnOneKeystrokeOnOneSurface(t *testing.T) {
 	}
 }
 
-// The same rule on the decision card, which is the surface where a pair of
-// answers and their noted spellings sit one shift apart: a file that moved
-// one of them onto the other's letter would be a card whose no ran the
-// command, and the first case of a switch would decide which.
-func TestLoad_RefusesANotedAnswerOnItsPlainAnswersKey(t *testing.T) {
+// The same rule on the decision card, where the two answers sit side by
+// side: a file that moved the no onto the yes's letter would be a card whose
+// no ran the command, and the first case of a switch would decide which.
+func TestLoad_RefusesTheCardsNoOnItsYes(t *testing.T) {
 	restoreRegister(t)
-	path := keymapFile(t, "[decision]\ndeny_noted = \"y\"\n")
+	path := keymapFile(t, "[decision]\ndeny = \"y\"\n")
 	err := Load(path)
 	if err == nil {
-		t.Fatal("a noted answer bound to the other answer's key should be refused")
+		t.Fatal("the no bound to the yes's key should be refused")
 	}
 	for _, want := range []string{"the approval card", "\"y\"", "allow"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("the refusal does not name %s: %v", want, err)
 		}
 	}
-	if !Is("N", Decision.DenyNoted) || Is("y", Decision.DenyNoted) {
-		t.Errorf("a refused file left the register at %v", Decision.DenyNoted.Keys())
+	if !Is("n", Decision.Deny) || Is("y", Decision.Deny) {
+		t.Errorf("a refused file left the register at %v", Decision.Deny.Keys())
 	}
 }
 

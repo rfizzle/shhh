@@ -8,9 +8,9 @@ package keys
 // (docs/capabilities/sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project).
 //
 // They are Refuse split in two, so the pair keeps Refuse's spelling: the
-// letter is the no, and the shifted letter is the same no, more of it — the
-// way the approval card's [N] is its [n] with a sentence. The yes is
-// Write below, and esc is Select.Cancel, the way out that answers nothing.
+// letter is the no, and the shifted letter is the same no, more of it. The
+// yes is Write below, and esc is Select.Cancel, the way out that answers
+// nothing.
 //
 // The yes is the letter alone. The card is opened with enter on a row of
 // /patterns, so a second enter from the same double tap would write a line

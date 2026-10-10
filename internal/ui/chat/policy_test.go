@@ -138,7 +138,7 @@ func TestPolicy_FlaggedCommandAlwaysPrompts(t *testing.T) {
 	if strings.Contains(ansi.Strip(view), "[a] allow") {
 		t.Fatal("flagged command must not offer the always-allow option")
 	}
-	for _, want := range []string{"[y] run it once", "[Y] ", "[n] deny", "[N] "} {
+	for _, want := range []string{"[y] run it once", "[n] deny"} {
 		if !strings.Contains(ansi.Strip(view), want) {
 			t.Fatalf("flagged command should offer %q:\n%s", want, view)
 		}
@@ -165,10 +165,10 @@ func TestPolicy_AlwaysAllowCommandsViaKey(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("first command should prompt, got state %d", m.state)
 	}
-	// The second queued command puts a batch behind the card, so [A] joins
-	// the keys.
+	// The second queued command puts a batch behind the card, so the queue
+	// joins what [a] offers.
 	m = handover(t, m)
-	for _, want := range []string{"[y] ", "[Y] ", "[n] ", "[N] ", "[a] ", "[A] "} {
+	for _, want := range []string{"[y] ", "[n] ", "[a] ", "or answer all 2 in one list"} {
 		if !strings.Contains(ansi.Strip(m.View().Content), want) {
 			t.Fatalf("a queue behind the card should offer %q:\n%s", want, m.View().Content)
 		}
@@ -273,7 +273,7 @@ func TestPolicy_GenericGatedToolAlwaysPrompts(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("generic gated tool must always prompt, got state %d", m.state)
 	}
-	for _, want := range []string{"[y] allow it", "[Y] ", "[n] deny", "[N] "} {
+	for _, want := range []string{"[y] allow it", "[n] deny"} {
 		if !strings.Contains(ansi.Strip(m.View().Content), want) {
 			t.Fatalf("generic approval keeps %q:\n%s", want, m.View().Content)
 		}

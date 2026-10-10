@@ -11,7 +11,10 @@
 
 ── layout ──────────────────────────────────────────────────
 · the paragraph, and what asking it cost
- explain — rsync -a --delete src/ dst/                                                                 6 lines
+ Approve command                                                                                       9 lines
+rsync -a --delete src/ dst/
+
+what it does
 Copies the contents of src/ into dst/, preserving permissions, timestamps and symlinks, and deletes anything
 already in dst/ that is not in src/.
 
@@ -27,13 +30,13 @@ Nothing on this screen was sent to the model waiting on your answer.
 
 
 
-
-
-
 output · [↑↓/jk] move · [pgup] page up · [pgdn] page down · [esc] back
 
 · a reading that did not happen
- explain — rsync -a --delete src/ dst/                                                                 6 lines
+ Approve command                                                                                       9 lines
+rsync -a --delete src/ dst/
+
+what it does
 The explanation could not be read.
 
 the explanation could not be read: context deadline exceeded
@@ -43,14 +46,14 @@ Nothing on this screen was sent to the model waiting on your answer.
 
 
 
-
-
-
 output · [↑↓/jk] move · [pgup] page up · [pgdn] page down · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · the paragraph, and what asking it cost
- explain — rsync -a --delete src/ dst/                                                                 ␛[38;5;244m6 lines␛[m
+ Approve command                                                                                       ␛[38;5;244m9 lines␛[m
+␛[38;5;244mrsync -a --delete src/ dst/␛[m
+␛[38;5;244m␛[m
+␛[38;5;244mwhat it does␛[m
 ␛[38;5;244mCopies the contents of src/ into dst/, preserving permissions, timestamps and symlinks, and deletes anything␛[m
 ␛[38;5;244malready in dst/ that is not in src/.␛[m
 ␛[38;5;244m␛[m
@@ -66,22 +69,19 @@ output · [↑↓/jk] move · [pgup] page up · [pgdn] page down · [esc] back
 
 
 
-
-
-
 ␛[38;5;244moutput · ␛[m␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[pgup]␛[m␛[38;5;244m page up␛[m␛[38;5;244m · ␛[m␛[38;5;254m[pgdn]␛[m␛[38;5;244m page down␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · a reading that did not happen
- explain — rsync -a --delete src/ dst/                                                                 ␛[38;5;244m6 lines␛[m
+ Approve command                                                                                       ␛[38;5;244m9 lines␛[m
+␛[38;5;244mrsync -a --delete src/ dst/␛[m
+␛[38;5;244m␛[m
+␛[38;5;244mwhat it does␛[m
 ␛[38;5;244mThe explanation could not be read.␛[m
 ␛[38;5;244m␛[m
 ␛[38;5;244mthe explanation could not be read: context deadline exceeded␛[m
 ␛[38;5;244m␛[m
 ␛[38;5;244masked claude-haiku-4-5␛[m
 ␛[38;5;244mNothing on this screen was sent to the model waiting on your answer.␛[m
-
-
-
 
 
 

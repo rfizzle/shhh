@@ -2174,7 +2174,7 @@ work that never reached your checkout says `patch kept · [enter] review` in the
 outcome field, where a blocked child says `⚠ needs you`: the lead column
 already says how it ended, so the field spends itself on the one thing left to
 do. `enter` on the row opens the patch full screen, headed `writer-1's patch` — the view
-`[v]` opens from a live card — and esc from it lands on the patch card over
+a live card's enter opens — and esc from it lands on the patch card over
 the list, apply or decline, the card a finishing writer's patch is put on. The
 rail's line under the same child carries the same words and, like its
 `handoff kept · [r] retry`, names the manager's key rather than acting on it
@@ -2403,10 +2403,13 @@ brings them — and a body wider than the panel pans by columns, a line still
 running past the edge ending in a marker that says the rest is one press
 away. The decision run and the stated way out never move, because a decision
 whose keys can scroll off is not one. The scroll describes one card's body
-and starts over with the next card. The full view is one key on a command
-card too, not only an edit's diff: the whole command, its warnings and its
-blast radius take the screen the diff already knows how to take, and give it
-back with the decision still waiting.
+and starts over with the next card. The full view is enter, the key every
+surface opens what it points at with, and it is a command card's too, not
+only an edit's diff: the whole command, its warnings and its blast radius
+take the screen the diff already knows how to take, and give it back with
+the decision still waiting. Enter is never an answer here. The key a
+sentence ends on is the one a reflex sends into a card that arrived a moment
+earlier, so it opens the card rather than running what is on it.
 
 A command that can be asked what it would do rather than told to do it is
 asked here. Where a harmless form of the command in front of the reader can
@@ -2423,23 +2426,26 @@ key and the card says nothing about a dry run, because a key that ran the
 real command while the card called it a dry run is the one mistake this offer
 must never make.
 
-A command the reader does not recognise can also be asked about rather than
-run. One key puts a paragraph on the screen the dry run opens on: what the
-command in front of them does, written by the same inexpensive model the
-permission classifier is configured with, in the words the one-shot explains a
-command in — one rule for what an explanation says, not two that drift. It is
-the dry run's shape with a model where the subprocess was, and it keeps the
+A command the reader does not recognise is explained in its full view. Under
+the command's facts the view says what the command in front of them does,
+written by the same inexpensive model the permission classifier is configured
+with, in the words the one-shot explains a command in — one rule for what an
+explanation says, not two that drift. It is asked for when the view is
+opened, not before, and once for each line: the view opens at once saying the
+reading is on its way, the paragraph lands on it when it arrives, and a second
+look reads the same paragraph rather than paying for another. It keeps the
 dry run's promise: the request is bounded, the decision is still waiting
 behind the screen, and nothing on it reaches the conversation, because the
 model asked to run this command and is still waiting for the answer to that.
-The screen names the model that answered and what asking took, since an
+The view names the model that answered and what asking took, since an
 explanation is a claim and a reader about to act on it is owed who made it;
 the spend is a line of its own in the session's cost, because a keystroke
 that costs money is one the reader can see. A request that fails or runs out
-of time says so there and gives the screen back — never a blank paragraph,
-and never an answer. The offer is absent where no model is configured to
-answer it, and it is the command card's alone: a diff is already the
-explanation of an edit, and the full view already shows it whole.
+of time says so there — never a blank paragraph, and never an answer — and
+the next look asks again. The card's enter says *full view, and what it does*
+only where a model is configured to answer, and the explanation is the
+command card's alone: a diff is already the explanation of an edit, and the
+full view already shows it whole.
 
 Almost every card arrives unasked, and the rest of this section is about that
 one. The exception is a card the reader summoned — the offer to write
@@ -2546,17 +2552,35 @@ context pressure, the spend — before the position the sentence is being held
 at. Those are the fields the [frame's](#the-input-frame) drop order never
 sheds, and a decision is the moment they are being read for.
 
-The decision run has two answers, and each has a spelling that says more.
-Beside *allow* and *deny* sit *run with a note* and *deny with a note* — the
-yes taking the card's own verb, so an edit card says *apply with a note* and a
-spawn card *start with a note* — each opening the note field under the card,
-which asks *what next* or *why not*; the note travels with
-the answer, and what it does to the model is the capability's to say
+The card answers on nine keys and no more: `[y]` allows, `[n]` denies, `[e]`
+amends a command or revises a drafted file, `[a]` opens the one list of ways
+to answer more than this card, `[t]` tries a command dry, enter opens the
+full view, esc hands the keyboard back, `?` lists the keys, and the four
+scroll chords move a body too big for the panel. A card that offered eight
+ways of saying yes or no — shifted letters, enter, the chord that stops a
+turn — asked the reader to remember which was which at the moment they had
+least attention for it.
+
+The two answers each carry a note, and the note is the draft. What the
+reader was writing when they answered goes with the answer and leaves the
+box: a card that lands on a sentence waits for the handover, so the sentence
+under it is the one they were writing when the question arrived, and a
+reader who wants to say why types it, hands the keyboard over and answers.
+On a no it is what the model is told in place of the fixed refusal; on a yes
+it is a steer the next round reads; what it does to the model is the
+capability's to say
 ([`../capabilities/approvals-and-safety.md`](../capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next)).
-The plain key stays one press, because most answers are one press and a
-reader working a queue must not be made to type past a field. Which letters
-the spellings take is the register's decision; the pairing is what the card
-promises.
+An empty draft is the plain answer. Only the session's own decisions take
+the note — a `/run` the reader typed has no model to correct and a child's
+routed request answers over a channel that carries a yes or a no, so there
+the draft is left alone — and a draft with something staged on it is a
+message rather than a note, and stays.
+
+Esc is never a denial, on any card. It hands the keyboard back with the
+request waiting and the sentence where it was. The chord that stops a turn
+stops it here as it does everywhere: the turn ends and the request goes with
+it, and its row reads *stopped* rather than *denied*, because nobody
+answered it.
 
 A command card offers to be amended. The key puts the command in the text
 input, prefilled, and enter runs the line as it now reads — after the card
@@ -2565,21 +2589,20 @@ has resolved it again, because it is a different command
 A heavier line draws the heavier card, with the line the call carried printed
 under the act row and a chip on the title rail saying whose line this is.
 Esc from the field puts the original back, and the decision is still waiting.
-While the field has the keyboard the card's own keys are letters, the way
-they are while the note field has it. A command of more than one line is not
+While the field has the keyboard the card's own keys are letters. A command
+of more than one line is not
 offered the key at all: the field is one line, and one that quietly joined a
 heredoc into a single line would run something nobody wrote.
-
-A command card can also explain itself. The key puts a paragraph on what the
-command does, from the same inexpensive model the classifier uses, on the
-screen the full view uses, and answers nothing. The one-shot mode's rule holds
-here: explained on request, never by default.
 
 *Allow without asking* is no longer one press. The key opens a list that
 spells out each grant before it is made — this turn, this session, and the
 narrow one: this exact line, this file alone — with the pattern the grant
 would match on the row and, in its short field, when it ends
 ([`../capabilities/approvals-and-safety.md`](../capabilities/approvals-and-safety.md#a-grant-says-when-it-ends)).
+Where several cards are waiting the same list ends on the queue, a row that
+grants nothing, so the key that answers more than this card is one key
+whichever way the reader means it; a card with a queue and no grant to
+offer opens the list on that row alone.
 A grant the reader could not see the end of is one they will forget they
 made. The prefix row wears an ellipsis and the narrow one does not, which is
 the difference between the two widths said in one character on a row too
@@ -2587,8 +2610,8 @@ narrow for a clause. A fetch card's list is the two lengths and no third row:
 the host it would grant is already the narrowest a host grant gets. Esc leaves
 the list with nothing granted and the card still waiting.
 
-Where several cards are waiting, the queue strip already counts them; one key
-renders the queue as the pick-several list, each row carrying the card's
+Where several cards are waiting, the queue strip already counts them, and the
+queue row of that list renders them as the pick-several list, each row carrying the card's
 title, its target and its severity chip, and a submit that allows the checked
 rows and denies the rest. Each denial is the reader's, drawn as one. The list
 opens with every row checked, because that is the answer the key used to give
@@ -2617,7 +2640,7 @@ several put each scope under its own row instead, because the block has one
 slot per question and three children have three answers to the first of them.
 
 The children of one round are one decision. `[y]` starts the set and `[n]`
-refuses it, and the key over the queue picks that set down to the rows wanted
+refuses it, and the queue row under `[a]` picks that set down to the rows wanted
 — the same list every other queue is answered on. A card that is the whole of
 what is waiting carries neither the strip above it nor a position in its
 title: both would count the same children a second time inside the one panel a

@@ -538,7 +538,10 @@ func (a *Agent) ResolveApproval(content string) json.RawMessage {
 func (a *Agent) CancelTurn() []provider.ToolCall {
 	a.runID++
 	var cancelled []provider.ToolCall
-	if a.executing {
+	// A round whose every call waits on a decision is not executing, and
+	// its calls are just as outstanding: a stop over the card abandons them
+	// with the turn, and the conversation has to say so for each.
+	if a.executing || len(a.pending) > 0 {
 		for _, tc := range a.pending {
 			a.Append(provider.Message{
 				Role:       provider.RoleTool,

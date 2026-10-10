@@ -314,18 +314,19 @@ func TestApprovalCard_FullDiffKey(t *testing.T) {
 		Answer:   "apply the change",
 		FullDiff: true,
 	}
-	if !strings.Contains(ansi.Strip(c.View(80)), "[v] full diff") {
-		t.Fatal("card should hint the full-diff key when FullDiff is set")
+	if !strings.Contains(ansi.Strip(c.View(80)), "[enter] open the full view") {
+		t.Fatal("card should hint the full-view key when FullDiff is set")
 	}
-	done, result := c.Update(tea.KeyPressMsg{Code: 'v', Text: "v"})
+	done, result := c.Update(key("enter"))
 	if !done || result != ApprovalFullDiff {
-		t.Fatalf("v should request the full diff, got done=%v result=%v", done, result)
+		t.Fatalf("enter should request the full diff, got done=%v result=%v", done, result)
 	}
 
-	// Without FullDiff, v is unrecognized and the card keeps waiting.
+	// Without FullDiff, enter is unrecognized and the card keeps waiting:
+	// it is never a yes.
 	c.FullDiff = false
-	if done, _ := c.Update(tea.KeyPressMsg{Code: 'v', Text: "v"}); done {
-		t.Fatal("v should be ignored when FullDiff is off")
+	if done, _ := c.Update(key("enter")); done {
+		t.Fatal("enter should be ignored when FullDiff is off")
 	}
 }
 
@@ -511,7 +512,7 @@ func TestApprovalCard_Keys(t *testing.T) {
 		result ApprovalDecision
 	}{
 		{"y", true, ApprovalApprove},
-		{"enter", true, ApprovalApprove},
+		{"enter", false, approvalWaiting}, // enter opens; it never allows
 		{"n", true, ApprovalDeny},
 		{"esc", false, approvalWaiting},    // esc backs out; it never denies
 		{"ctrl+c", false, approvalWaiting}, // only the draft answers ctrl+c
@@ -556,10 +557,10 @@ func TestApprovalCard_TheRunIsBracketedOffers(t *testing.T) {
 		AlwaysHint: `allow "go test" without asking`,
 		FullDiff:   true, FullLabel: "full view",
 	}
-	view := ansi.Strip(c.View(110))
+	view := ansi.Strip(c.View(130))
 	for _, want := range []string{
 		"[y] run it once", "[n] deny", `[a] allow "go test" without asking`,
-		"[v] full view", "[esc] leave it waiting",
+		"[enter] full view", "[esc] leave it waiting",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the run should offer %q:\n%s", want, view)
@@ -672,111 +673,95 @@ func TestApprovalCard_AKeyOwnsItsWords(t *testing.T) {
 	}
 }
 
-// notedCard is the card as the session's own decisions draw it: the two
-// answers, and the two that carry a sentence.
-func notedCard() *ApprovalCard {
+// commandCard is the card as the session's own decisions draw it.
+func commandCard() *ApprovalCard {
 	return &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",
 		Act:    "go test ./...",
-		Answer: "run it once", Noted: true,
+		Answer: "run it once",
 	}
 }
 
-// The shifted pair sits beside the answer it carries, and each of the four
-// resolves to the key the run drew.
-func TestApprovalCard_TheNotedRunPairsEachAnswerWithItsSentence(t *testing.T) {
-	c := notedCard()
+// The card's register is its answers and the keys that open what is behind
+// them, and nothing else: the shifted letters answer nothing, and enter is
+// the full view rather than a third spelling of yes.
+func TestApprovalCard_EnterOpensAndTheShiftedLettersAnswerNothing(t *testing.T) {
+	c := commandCard()
+	c.FullDiff, c.FullLabel = true, "full view"
 	view := ansi.Strip(c.View(110))
-	for _, want := range []string{"[y] run it once", "[Y] ", "[n] deny", "[N] "} {
+	for _, want := range []string{"[y] run it once", "[n] deny", "[enter] full view"} {
 		if !strings.Contains(view, want) {
-			t.Fatalf("a noted card draws both spellings of both answers, missing %q:\n%s", want, view)
+			t.Fatalf("the card should offer %q:\n%s", want, view)
+		}
+	}
+	for _, absent := range []string{"[Y]", "[N]", "[A]", "[v]", "[x]"} {
+		if strings.Contains(view, absent) {
+			t.Fatalf("the card should not offer %q:\n%s", absent, view)
 		}
 	}
 	for _, tc := range []struct {
 		key  string
+		done bool
 		want ApprovalDecision
 	}{
-		{"y", ApprovalApprove}, {"Y", ApprovalApproveNoted},
-		{"n", ApprovalDeny}, {"N", ApprovalDenyNoted},
+		{"y", true, ApprovalApprove}, {"n", true, ApprovalDeny},
+		{"enter", true, ApprovalFullDiff},
+		{"Y", false, approvalWaiting}, {"N", false, approvalWaiting},
+		{"A", false, approvalWaiting}, {"v", false, approvalWaiting},
+		{"x", false, approvalWaiting},
 	} {
-		if done, got := notedCard().Update(key(tc.key)); !done || got != tc.want {
-			t.Errorf("%q should answer %v, got %v/%v", tc.key, tc.want, done, got)
+		c := commandCard()
+		c.FullDiff = true
+		if done, got := c.Update(key(tc.key)); done != tc.done || got != tc.want {
+			t.Errorf("%q should answer %v/%v, got %v/%v", tc.key, tc.done, tc.want, done, got)
 		}
 	}
 }
 
-// A card with nothing waiting to read a sentence offers neither shifted key,
-// and answers neither.
-func TestApprovalCard_WithoutTheOfferTheShiftedKeysAreNotDrawn(t *testing.T) {
-	c := notedCard()
-	c.Noted = false
-	if view := ansi.Strip(c.View(110)); strings.Contains(view, "[Y]") || strings.Contains(view, "[N]") {
-		t.Fatalf("a card with no note offer draws neither shifted key:\n%s", view)
+// The queue behind the card is a row of the list [a] opens: a card with a
+// queue and no grant still offers [a], under the queue's words, and one with
+// both says both.
+func TestApprovalCard_TheQueueIsUnderTheAlwaysKey(t *testing.T) {
+	c := commandCard()
+	c.Batch, c.BatchHint = true, "answer all 3 in one list"
+	if view := ansi.Strip(c.View(110)); !strings.Contains(view, "[a] answer all 3 in one list") {
+		t.Fatalf("a queue alone is offered under [a]:\n%s", view)
 	}
-	for _, k := range []string{"Y", "N"} {
-		if done, got := c.Update(key(k)); done && (got == ApprovalApproveNoted || got == ApprovalDenyNoted) {
-			t.Errorf("%q must not open a field on a card that offers none, got %v", k, got)
-		}
+	if done, got := c.Update(key("a")); !done || got != ApprovalAlways {
+		t.Fatalf("[a] over a queue opens the list, got %v/%v", done, got)
 	}
-}
-
-// A noted card that took the keyboard by arrival claims all four answers —
-// none of them settles anything a reader could not take back with esc — and
-// still nothing whose consequence outlives the call.
-func TestApprovalCard_ANotedArrivalClaimsAllFourAnswers(t *testing.T) {
-	c := notedCard()
-	c.HeldOnArrival, c.Handover = true, "ctrl+space"
 	c.AllowAlways, c.AlwaysHint = true, `allow "go test" without asking`
-	c.FullDiff = true
-	var got []string
-	for _, k := range c.KeyRun() {
-		got = append(got, k.Key)
-	}
-	if strings.Join(got, "") != "yYnN" {
-		t.Fatalf("an arrival card should draw the four answers alone, got %v", got)
-	}
-	row := runRow(t, c, 80, "[y] run it once")
-	for _, absent := range []string{"a", "v"} {
-		for col := range ansi.StringWidth(ansi.Strip(row)) {
-			if k, ok := c.KeyAt(row, col); ok && k == absent {
-				t.Fatalf("an arrival card must offer no cell for %q", absent)
-			}
-		}
+	if view := ansi.Strip(c.View(160)); !strings.Contains(view, `[a] allow "go test" without asking, or answer all 3 in one list`) {
+		t.Fatalf("a grant and a queue are offered under one [a]:\n%s", view)
 	}
 }
 
 // The open field: the run is drawn dead and says why, the label names what
-// the key that opened it asked for, and the field the host handed over is
-// under it.
+// the field asks for, and the field the host handed over is under it.
 func TestApprovalCard_TheOpenFieldDrawsTheRunDead(t *testing.T) {
-	for _, tc := range []struct {
-		allow bool
-		label string
-	}{{false, noteWhyNot}, {true, noteWhatNext}} {
-		c := notedCard()
-		c.NoteOpen, c.NoteAllow, c.NoteField = true, tc.allow, "not that file"
-		view := ansi.Strip(c.View(80))
-		for _, want := range []string{typingWords, "┄ " + tc.label, "not that file", "[esc]", "[enter]"} {
-			if !strings.Contains(view, want) {
-				t.Fatalf("the open field should carry %q:\n%s", want, view)
-			}
+	c := commandCard()
+	c.AmendOpen, c.AmendField = true, "not that file"
+	view := ansi.Strip(c.View(80))
+	for _, want := range []string{typingWords, "┄ " + amendWords, "not that file", "[esc]", "[enter]"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the open field should carry %q:\n%s", want, view)
 		}
-		// The card's own way out is the field's while the field has the
-		// keyboard, so the card does not state a second one.
-		if strings.Contains(view, waitingWords) {
-			t.Fatalf("a card whose field holds the keyboard states no esc of its own:\n%s", view)
-		}
-		x, y, ok := c.FieldOrigin(80)
-		if !ok {
-			t.Fatal("an open field has a place on the card")
-		}
-		rows := strings.Split(view, "\n")
-		if y < 0 || y >= len(rows) || !strings.Contains(rows[y], "not that file") {
-			t.Fatalf("FieldOrigin points at row %d, which is %q", y, rows[min(y, len(rows)-1)])
-		}
-		if at := ansi.StringWidth(rows[y][:strings.Index(rows[y], "not that file")]); at != x {
-			t.Fatalf("FieldOrigin says column %d, the field starts at %d in %q", x, at, rows[y])
-		}
+	}
+	// The card's own way out is the field's while the field has the
+	// keyboard, so the card does not state a second one.
+	if strings.Contains(view, waitingWords) {
+		t.Fatalf("a card whose field holds the keyboard states no esc of its own:\n%s", view)
+	}
+	x, y, ok := c.FieldOrigin(80)
+	if !ok {
+		t.Fatal("an open field has a place on the card")
+	}
+	rows := strings.Split(view, "\n")
+	if y < 0 || y >= len(rows) || !strings.Contains(rows[y], "not that file") {
+		t.Fatalf("FieldOrigin points at row %d, which is %q", y, rows[min(y, len(rows)-1)])
+	}
+	if at := ansi.StringWidth(rows[y][:strings.Index(rows[y], "not that file")]); at != x {
+		t.Fatalf("FieldOrigin says column %d, the field starts at %d in %q", x, at, rows[y])
 	}
 }
 
@@ -784,8 +769,8 @@ func TestApprovalCard_TheOpenFieldDrawsTheRunDead(t *testing.T) {
 // field's place is counted in the rows that are left, or the caret would sit
 // two rows and two columns off the row it belongs to.
 func TestApprovalCard_TheFieldsPlaceSurvivesTheBareCard(t *testing.T) {
-	c := notedCard()
-	c.NoteOpen, c.NoteField = true, "not that file"
+	c := commandCard()
+	c.AmendOpen, c.AmendField = true, "not that file"
 	const narrow = minCardWidth - 1
 	x, y, ok := c.FieldOrigin(narrow)
 	if !ok {
@@ -820,7 +805,8 @@ func TestApprovalCard_ARowWithoutTheRunHasNoKeys(t *testing.T) {
 }
 
 // A card holding the keyboard by arrival claims two keys, so those are the
-// only two cells a pointer can land on — [a] and [v] still want the handover.
+// only two cells a pointer can land on — [a] and [enter] still want the
+// handover.
 func TestApprovalCard_HeldOnArrivalOffersOnlyItsTwoKeys(t *testing.T) {
 	c := &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",
@@ -834,7 +820,7 @@ func TestApprovalCard_HeldOnArrivalOffersOnlyItsTwoKeys(t *testing.T) {
 		t.Fatalf("an arrival card should draw y and n alone, got %+v", run)
 	}
 	row := runRow(t, c, 80, "[y] run it once")
-	for _, absent := range []string{"a", "v"} {
+	for _, absent := range []string{"a", "enter"} {
 		for col := range ansi.StringWidth(ansi.Strip(row)) {
 			if k, ok := c.KeyAt(row, col); ok && k == absent {
 				t.Fatalf("an arrival card must offer no cell for %q", absent)
@@ -870,7 +856,7 @@ func TestApprovalCard_TheKeysAreOneRunAndOneFootnote(t *testing.T) {
 	held := func() *ApprovalCard {
 		return &ApprovalCard{
 			Variant: ApprovalCommand, Title: "Approve command",
-			Act: "go test ./...", Answer: "run it once", Noted: true,
+			Act: "go test ./...", Answer: "run it once",
 			AllowAlways: true, AlwaysHint: `allow "go test" without asking`,
 			HeldOnArrival: true, Handover: "ctrl+space",
 		}
@@ -886,7 +872,7 @@ func TestApprovalCard_TheKeysAreOneRunAndOneFootnote(t *testing.T) {
 
 	rows := keyBlock(held(), 120)
 	want := []string{
-		"[y] run it once · [Y] run with a note · [n] deny · [N] deny with a note · [esc] " + waitingWords,
+		"[y] run it once · [n] deny · [esc] " + waitingWords,
 		"[ctrl+space] answer it · " + arrivalDraftWords,
 	}
 	if strings.Join(rows, "\n") != strings.Join(want, "\n") {
@@ -919,7 +905,7 @@ func TestApprovalCard_TheKeysAreOneRunAndOneFootnote(t *testing.T) {
 				t.Fatalf("a held card's esc took a row of its own at 60 columns (grace %v): %q", grace, keyBlock(c, 60))
 			}
 		}
-		if rows := keyBlock(c, 60); !strings.Contains(rows[1], " · [esc] ") {
+		if rows := keyBlock(c, 60); !strings.Contains(rows[0], " · [esc] ") {
 			t.Fatalf("a held card's esc should end the offers row at 60 columns (grace %v): %q", grace, rows)
 		}
 	}
@@ -932,7 +918,6 @@ func TestApprovalCard_TheKeysAreOneRunAndOneFootnote(t *testing.T) {
 	} {
 		c = held()
 		c.AlwaysHint = tc.hint
-		c.Noted = false
 		c.HeldOnArrival, c.Handover = false, ""
 		rows = keyBlock(c, 60)
 		if last := rows[len(rows)-1]; !strings.HasSuffix(last, tc.tail) {

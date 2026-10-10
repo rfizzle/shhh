@@ -63,15 +63,9 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		next, act := o.Update(m, msg)
 		return next, act.run
 	}
-	// The card's own note field, if one is open. It is answered above
+	// The card's own field, the command itself. It is answered above
 	// everything below it because it holds the keyboard: while it is up the
-	// card's letters, its digits and its chords are all text
-	// (approval.go).
-	if m.approval.note != nil {
-		return m.updateDecisionNote(msg)
-	}
-	// And the card's other field, the command itself, for exactly the same
-	// reason: while it is up every letter is text (amend.go).
+	// card's letters, its digits and its chords are all text (amend.go).
 	if m.approval.edit != nil {
 		return m.updateCommandEdit(msg)
 	}
@@ -83,9 +77,9 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.updateQueueList(msg)
 	}
 	// And the grants the always-allow key offers — the third surface the card
-	// holds under itself, after its two fields — answered here for the reason
-	// they are: it holds the keyboard, so the card's own letters, digits and
-	// chords are inert until it is closed (grant.go).
+	// holds under itself, after its field and the queue — answered here for
+	// the reason they are: it holds the keyboard, so the card's own letters,
+	// digits and chords are inert until it is closed (grant.go).
 	if m.approval.grant != nil {
 		return m.updateGrantChoice(msg)
 	}
@@ -102,11 +96,6 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if next, cmd, ok := m.dryRunKey(msg); ok {
 		return next, cmd
 	}
-	// The explanation, for the same reason and in the same place: it settles
-	// nothing, and the card would read the letter as the start of a sentence.
-	if next, cmd, ok := m.explainKey(msg); ok {
-		return next, cmd
-	}
 	// The amendment, in the same place and for the same reason — it settles
 	// nothing, it opens a field (amend.go).
 	if next, cmd, ok := m.amendKey(msg); ok {
@@ -119,18 +108,13 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch result {
 	case components.ApprovalApprove:
 		// A fan-out card asked about every child of the round, so the plain
-		// answer answers all of them (queue.go).
+		// answer answers all of them (queue.go). The draft's sentence, if
+		// there is one, goes with the answer as its note
+		// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
 		m.answerSpawnSet(true)
-		return m.approvePending("")
-	// The two answers that carry a sentence settle nothing yet: the key opens
-	// the field, and the answer is given when the field is confirmed
-	// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
-	case components.ApprovalApproveNoted:
-		return m.openDecisionNote(true)
-	case components.ApprovalDenyNoted:
-		return m.openDecisionNote(false)
+		return m.approvePending(m.takeDraftNote())
 	case components.ApprovalFullDiff:
-		// [v] opens the pending edit full screen; esc returns here
+		// Enter opens the pending edit full screen; esc returns here
 		// with the approval still pending.
 		if req := m.approval.request; req != nil && req.kind == approvalDiff {
 			return m.openDiffFull(&components.DiffView{
@@ -140,26 +124,21 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				Syntax: diffSyntax(req.path),
 			}, stateConfirmRun)
 		}
-		// A command card's [v] opens its own facts the same way: the whole
-		// command, the warnings and the blast radius, unclipped, with the
+		// A command card's enter opens its own facts the same way: the whole
+		// command, the warnings and the blast radius, unclipped, and what
+		// the command does where a model is configured to say — with the
 		// decision still pending behind it.
 		if req := m.approval.request; req == nil || req.kind == approvalExec {
-			return m.openOutputFull(m.commandCardView(), noOutputEntry, stateConfirmRun)
+			return m.openCommandFull()
 		}
-	case components.ApprovalBatch:
-		// [A] renders this decision and every queued decision the session
-		// would classify the same way as the list that answers them. It
-		// settles nothing on its own — the answer is given when the list is
-		// confirmed, and esc leaves the queue as it was (queue.go).
-		// Membership was on the strip before the key opened it, and a flagged
-		// action was never in it.
-		return m.openQueueList()
 	case components.ApprovalAlways:
 		// The key settles nothing on its own: it opens the list of grants
-		// the card can make, each row naming what it covers and when it ends
-		// (grant.go). Taking a row grants and runs, which is what the key
-		// did before the list stood in front of it; esc leaves with nothing
-		// granted and the decision still waiting.
+		// the card can make, each row naming what it covers and when it ends,
+		// and the queue behind the card as the last row (grant.go). Taking a
+		// grant grants and runs, which is what the key did before the list
+		// stood in front of it; taking the queue opens it as the list that
+		// answers it; esc leaves with nothing granted and the decision still
+		// waiting.
 		//
 		// The grant is scoped to what the card showed — this command's
 		// leading words or the line itself, this file's directory or the
@@ -179,7 +158,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case components.ApprovalDeny:
 		if m.approval.request != nil {
 			m.answerSpawnSet(false)
-			return m.declineApproval()
+			return m.declineApprovalWith(m.takeDraftNote())
 		}
 		m.pendingRun = ""
 		m.pendingRunLocal = false
@@ -484,53 +463,63 @@ func dryRunView(msg dryRunDoneMsg, out string, row components.ActivityRow) *comp
 // and nothing ran here — a reading is not an act, which is why the summary
 // and the session's title leave no row either.
 
-// explainOffer is the key the command card advertises beside its decision
-// run, and nothing at all where nothing is configured to answer it: a key
-// that could not be answered is not an offer.
+// The explanation (docs/interface/surfaces.md#the-approval-card): a cheap
+// model says what the command in front of the reader does, on the command
+// card's full view, and the decision is still waiting behind it.
+//
+// It is asked for by opening the full view — enter, the key every surface
+// opens with — rather than by a key of its own. The full view is where a
+// reader goes to read the command whole, and what the command does is the
+// half of reading it the card has no room for; a second key for the second
+// half was a letter the card spent on a question the first key already
+// answers. It is still on request and never by default: nothing is asked
+// until the reader opens the view, and a call is asked about once — a second
+// enter reads the paragraph the first one brought back.
 //
 // It is an assistant's command and not a /run the reader typed. A person who
 // typed the line knows what it does, and a card with no request behind it has
-// nothing to explain — which is the same reason the offer is off on an edit,
+// nothing to explain — which is the same reason there is none on an edit,
 // where the diff is already the explanation.
-//
-// While the reading is in flight the key stays where it was drawn with the
-// words changed, for the reason the dry run's does — the answer to the press
-// is already on its way, and taking the row away mid-wait would read as the
-// offer having been withdrawn.
-func (m Model) explainOffer(req *approvalRequest) []components.KeyOffer {
-	if req == nil || req.kind != approvalExec || !m.wiring.Explainer.Enabled() {
-		return nil
-	}
-	label := "explain — what this command does"
-	if req.explaining {
-		label = "explain — asking"
-	}
-	return []components.KeyOffer{{Key: keys.Bracket(keys.Decision.Explain), Label: label}}
+
+// openCommandFull opens a command card's full view, asking for the
+// explanation on the way where a model is configured to give one and nobody
+// has asked about this line yet.
+func (m Model) openCommandFull() (tea.Model, tea.Cmd) {
+	ask := m.askExplain()
+	view := m.commandCardView()
+	m.approval.full = view
+	next, open := m.openOutputFull(view, noOutputEntry, stateConfirmRun)
+	return next, tea.Batch(ask, open)
 }
 
-// explainKey answers the card's explain key: a paragraph is read, and the
-// decision stays exactly where it was. handled is false for every key this is
-// not, and for a card that took the keyboard by arriving — that card claims
-// its answers and nothing else, and this letter is the reader's sentence
-// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-func (m Model) explainKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
-	if !keys.Match(msg, keys.Decision.Explain) || m.interrupt.heldOnArrival {
-		return m, nil, false
-	}
+// explains reports whether the command card's full view carries an
+// explanation: an assistant's command, with a model configured to give one.
+func (m Model) explains(req *approvalRequest) bool {
+	return req != nil && req.kind == approvalExec && m.wiring.Explainer.Enabled()
+}
+
+// askExplain sends the line to the explainer, or nothing where it is being
+// asked now or has already answered about this line. A reading that failed
+// is asked again on the next look: the failure was said where it happened,
+// and a view that went on saying it would be a key that stopped working.
+func (m Model) askExplain() tea.Cmd {
 	req := m.approval.request
-	if req == nil || req.kind != approvalExec || req.explaining || !m.wiring.Explainer.Enabled() {
-		return m, nil, false
+	if !m.explains(req) || req.explaining {
+		return nil
+	}
+	if e := req.explained; e != nil && e.command == req.command && !e.verdict.Failed {
+		return nil
 	}
 	req.explaining = true
 	explainer := m.wiring.Explainer
 	command, call, runID := req.command, req.call.ID, m.agent.RunID()
-	return m, func() tea.Msg {
+	return func() tea.Msg {
 		// The explainer bounds its own request, the way the classifier and
 		// the titler do: the deadline is a fact about the reading rather than
 		// about the surface that asked for it.
 		v := explainer.Explain(context.Background(), agent.ExplainRequest{Command: command})
 		return explainDoneMsg{runID: runID, call: call, command: command, verdict: v}
-	}, true
+	}
 }
 
 // explainDoneMsg is the paragraph, or the sentence saying there is none. It
@@ -543,67 +532,67 @@ type explainDoneMsg struct {
 	verdict agent.ExplainVerdict
 }
 
-// finishExplain puts the paragraph on the screen.
+// finishExplain keeps the paragraph on the request it was asked about and,
+// where that card's full view is the screen, puts it there.
 //
-// The screen only opens if the decision it was asked about is still the one
-// being asked, and the card is still what is on it: a reader who opened the
-// card's full view meanwhile is reading something they asked for, and taking
-// that away would be one answer cancelling another. It opens the way the full
-// view opens and comes back the same way, with the decision still unanswered,
-// which is the whole point of the key: nothing here approves anything.
-//
-// A failed reading opens the screen too. It is the same press being answered,
-// and a key that silently did nothing when the request timed out would be
-// indistinguishable from a key that is not wired up.
+// The command as well as the call, for the reason the dry run reads both: a
+// paragraph about the line the reader has just replaced is not an explanation
+// of the card in front of them (amend.go). The view is replaced rather than
+// written through its pointer, because the model is a value every update
+// hands back a copy of and the last frame was drawn from the old one.
 func (m Model) finishExplain(msg explainDoneMsg) (tea.Model, tea.Cmd) {
 	if msg.runID != m.agent.RunID() {
 		return m, nil
 	}
 	req := m.approval.request
-	// The command as well as the call, for the reason the dry run reads
-	// both: a paragraph about the line the reader has just replaced is not
-	// an explanation of the card in front of them (amend.go).
-	pending := req != nil && req.call.ID == msg.call &&
-		req.command == msg.command && m.state == stateConfirmRun
-	if req != nil && req.call.ID == msg.call {
-		req.explaining = false
-	}
-	if !pending {
+	// A reading of a line the reader has since replaced is dropped whole,
+	// and leaves alone whatever is being asked about the new one.
+	if req == nil || req.call.ID != msg.call || req.command != msg.command {
 		return m, nil
 	}
-	return m.openOutputFull(explainView(msg), noOutputEntry, stateConfirmRun)
+	req.explaining = false
+	req.explained = &msg
+	if m.state == stateOutputFull && m.approval.full != nil && m.fullOutput == m.approval.full {
+		v := *m.fullOutput
+		v.Lines = m.commandCardView().Lines
+		m.fullOutput, m.approval.full = &v, &v
+	}
+	return m, nil
 }
 
-// explainView is the full screen the answer opens on: what was asked about,
-// what came back, and a footer naming who said it and what it cost — because
-// an explanation is a claim, and a reader about to decide on it is owed who
-// made it and what asking took.
+// explainLines are the explanation as the full view draws it, under the
+// card's facts: what came back, and a footer naming who said it and what it
+// cost — because an explanation is a claim, and a reader about to decide on
+// it is owed who made it and what asking took.
 //
 // The last line of the footer is the one thing the screen has to say that is
 // not about the command: nothing here reached the model that is waiting for
 // the decision. It asked to run this command, and it is still waiting for the
 // answer to that.
 //
-// It is the full view the dry run opens on, title rail and body tone
-// included, rather than a screen of its own: the three uses make one promise
-// about leaving, and a label or a fainter paragraph on one of them would say
-// they differ
-// (docs/interface/departures.md#the-explanations-screen-wears-the-full-views-title-not-a-rail-label).
-func explainView(msg explainDoneMsg) *components.OutputView {
-	v := msg.verdict
-	title := "explain — " + firstLine(msg.command)
-	var lines []string
+// A failed reading says so in the same place. It is the same press being
+// answered, and a view that silently showed nothing when the request timed
+// out would be indistinguishable from one that is not wired up — never an
+// empty paragraph, and never an answer.
+func explainLines(req *approvalRequest) []string {
+	e := req.explained
+	if req.explaining || e == nil || e.command != req.command {
+		return []string{explainHeading + " — asking"}
+	}
+	v := e.verdict
+	lines := []string{explainHeading}
 	if v.Failed {
-		// Never an empty paragraph: a blank screen is not an answer to a
-		// question somebody pressed a key to ask.
-		lines = []string{"The explanation could not be read.", "", v.Err}
+		lines = append(lines, "The explanation could not be read.", "", v.Err)
 	} else {
-		lines = strings.Split(v.Text, "\n")
+		lines = append(lines, strings.Split(v.Text, "\n")...)
 	}
 	footer := "asked " + v.Model
 	if u := v.Usage; u.PromptTokens > 0 || u.CompletionTokens > 0 {
 		footer += fmt.Sprintf(" · ↑%d ↓%d", u.PromptTokens, u.CompletionTokens)
 	}
-	lines = append(lines, "", footer, "Nothing on this screen was sent to the model waiting on your answer.")
-	return &components.OutputView{Title: title, Lines: lines, Wrap: true}
+	return append(lines, "", footer, "Nothing on this screen was sent to the model waiting on your answer.")
 }
+
+// explainHeading opens the explanation on the full view, and is what the
+// card's enter is offered under beside the full view where there is one.
+const explainHeading = "what it does"

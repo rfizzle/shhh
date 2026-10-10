@@ -125,7 +125,7 @@ const (
 // ("auto mode", "allowlist", "session grant"), which the row prints as it
 // comes.
 const (
-	// batchRule is one [A] answering the decisions behind the one it was
+	// batchRule is one queue list answering the decisions behind the one it was
 	// pressed on. It says "batch" rather than "you" because the reader
 	// answered a shape of call and not this call, which is the whole
 	// difference between the two keys.
@@ -517,10 +517,14 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 			// (docs/interface/surfaces.md#the-step).
 			result = ""
 		case result == cancelledToolResult:
-			// Ctrl+C during a turn: you stopped it, so it reads as your
-			// refusal rather than as a break.
+			// Ctrl+C during a turn: you stopped it, so it reads as quietly as
+			// your refusal rather than as a break — but in the stop's own
+			// word, because nobody answered it. A call waiting on its card
+			// when the turn was stopped was abandoned with the turn and not
+			// denied, and the row says which of the two happened
+			// (docs/interface/principles.md#two-denials-are-not-one-denial).
 			row.State = components.ActivityDenied
-			row.Outcome = components.OutcomeBy(components.OutcomeDenied, decidedByYou)
+			row.Outcome = components.OutcomeStopped
 			row.Duration = components.NoDuration
 			result = ""
 		case rc.Failed():

@@ -242,10 +242,10 @@ func TestApprovalCard_FullViewForCommands(t *testing.T) {
 	m.state = stateStreaming
 	m = runExecApproval(t, m)
 
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'v', Text: "v"})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state != stateOutputFull || m.fullOutput == nil {
-		t.Fatalf("[v] on a command card should open the full view, got state %d", m.state)
+		t.Fatalf("enter on a command card should open the full view, got state %d", m.state)
 	}
 	if view := ansi.Strip(m.View().Content); !strings.Contains(view, "echo hi") {
 		t.Fatalf("the full view should carry the command text:\n%s", view)

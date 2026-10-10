@@ -27,8 +27,9 @@ import (
 // of what, and the field it is being rewritten in.
 //
 // The field is bubbles' own one-line input rather than a component of its
-// own, for the reason the note field beside it is (components/input.go):
-// what is shared is how a field is built and repainted, not what it is.
+// own, for the reason every other field in the product is
+// (components/input.go): what is shared is how a field is built and
+// repainted, not what it is.
 type commandEdit struct {
 	// original is the line the model asked about, which is what the card
 	// goes back to when the field is abandoned. It survives a second
@@ -45,10 +46,9 @@ type commandEdit struct {
 // leaves it and repainted from the palette as it stands now (input.go).
 //
 // Both the render and the cursor go through here rather than one of them
-// reading the stored field, for the reason the note field's copy does: the
-// field's own caret is clamped to its width, so asking an unsized copy where
-// the caret is puts it past the card's right edge the moment the line
-// outgrows the row.
+// reading the stored field: the field's own caret is clamped to its width,
+// so asking an unsized copy where the caret is puts it past the card's right
+// edge the moment the line outgrows the row.
 func (e commandEdit) drawn(width int) textinput.Model {
 	field := e.field
 	field.SetWidth(components.FieldWidth(width))
@@ -118,8 +118,8 @@ func (m Model) amendKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 // updateCommandEdit routes a key while the field holds the keyboard. Two keys
 // are the whole of what it answers and every other key is text — the digits,
 // the card's own letters and its scroll chords included — because a surface
-// being typed into keeps every letter as text, the way the note field beside
-// it and the selector's query row already do
+// being typed into keeps every letter as text, the way the selector's query
+// row already does
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) updateCommandEdit(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	open := *m.approval.edit
@@ -203,6 +203,9 @@ func (m Model) confirmCommandEdit(line string) (tea.Model, tea.Cmd) {
 	// through, and the line it waved through is not this one — and a
 	// classifier's no was about the line it read, not the reader's.
 	amended.autoRule, amended.autoCost, amended.judged, amended.scratch = "", 0, "", false
+	// Nor does a reading of the old line explain this one, or one still
+	// being asked for: the next look at the full view asks about this line.
+	amended.explaining, amended.explained = false, nil
 	reach := m.scopeReachFor(&amended)
 
 	if why := m.amendRefusal(&amended, reach); why != "" {

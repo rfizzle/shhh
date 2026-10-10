@@ -20,8 +20,8 @@
 │ undo      unknown — shhh could not resolve what this writes                                            │
 │ network   open                                                                                         │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [Y] run with a note · [n] deny · [N] deny with a note                                │
-│ [a] allow "npm test" without asking · [v] full view                    these letters go into the field │
+│ [y] run it once · [n] deny · [a] allow "npm test" without asking · [enter] full view                   │
+│ these letters go into the field                                                                        │
 │ ┄ edit the command                                                                                     │
 │   npm test -- --runInBand                                                                              │
 │ [enter] run this line · [esc] back to the card with the original                                       │
@@ -38,8 +38,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[y] run it once␛[m␛[38;5;244m · ␛[m␛[38;5;244m[Y] run with a note␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[N] deny with a note␛[m                                ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[a] allow "npm test" without asking␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v] full view␛[m                    ␛[38;5;244mthese letters go into the field␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[y] run it once␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[a] allow "npm test" without asking␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter] full view␛[m                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mthese letters go into the field␛[m                                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ edit the command␛[m                                                                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m␛[m␛[38;5;254mnpm test -- --runInBand␛[m ␛[38;5;254m                                                                            ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m run this line␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the card with the original␛[m                                       ␛[38;5;254m│␛[m

@@ -33,8 +33,8 @@
 │ ⚠ low · changes no files                                 │
 ├──────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                               │
-│ [a] allow commands without asking this session           │
-│ [A] answer all 3 in one list · [esc] leave it waiting    │
+│ [a] allow commands without asking this session, or       │
+│     answer all 3 in one list · [esc] leave it waiting    │
 ╰──────────────────────────────────────────────────────────╯
 
 · variant · command, a quiet card · values alone
@@ -136,7 +136,8 @@
 │   143      }                                             │
 │ +2 −1 · 1 hunk · undo yes — recorded, and git has this … │
 ├──────────────────────────────────────────────────────────┤
-│ [y] apply the change · [n] deny · [v] full diff · [esc]  │
+│ [y] apply the change · [n] deny                          │
+│ [enter] open the full view · [esc] leave it waiting      │
 ╰──────────────────────────────────────────────────────────╯
 
 · variant · edit, adds a secret
@@ -154,7 +155,8 @@
 │   143      }                                             │
 │ +2 −1 · 1 hunk · undo yes — recorded, and it needs no g… │
 ├──────────────────────────────────────────────────────────┤
-│ [y] apply the change · [n] deny · [v] full diff · [esc]  │
+│ [y] apply the change · [n] deny                          │
+│ [enter] open the full view · [esc] leave it waiting      │
 ╰──────────────────────────────────────────────────────────╯
 
 · state · not yet live, beside a draft that has the keyboard
@@ -222,8 +224,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ low␛[m␛[38;5;244m · changes no files␛[m                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow commands without asking this session␛[m           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[A]␛[m ␛[38;5;254manswer all 3 in one list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m    ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow commands without asking this session, or␛[m       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m     ␛[38;5;254m␛[m␛[38;5;254manswer all 3 in one list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m    ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, a quiet card · values alone
@@ -325,7 +327,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244m  143  ␛[m␛[38;5;244m    }␛[m                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m+2 −1 · 1 hunk · undo yes — recorded, and git has this ␛[m␛[38;5;244m…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mapply the change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m ␛[38;5;254mfull diff␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mapply the change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mopen the full view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · edit, adds a secret
@@ -343,7 +346,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244m  143  ␛[m␛[38;5;244m    }␛[m                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m+2 −1 · 1 hunk · undo yes — recorded, and it needs no g␛[m␛[38;5;244m…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mapply the change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m ␛[38;5;254mfull diff␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mapply the change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mopen the full view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · state · not yet live, beside a draft that has the keyboard

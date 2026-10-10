@@ -152,7 +152,7 @@ func (m Model) renderKeyListHint() string {
 // under it.
 func (m Model) confirmKeyList() (keys.SurfaceID, bool) {
 	switch {
-	case m.askOverlay() != nil, m.approval.note != nil, m.approval.edit != nil:
+	case m.askOverlay() != nil, m.approval.edit != nil:
 		return 0, false
 	case m.approval.list != nil:
 		return keys.OnApprovalQueue, true

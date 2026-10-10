@@ -25,17 +25,26 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
-// keyA presses the batch key.
-func keyA() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 'A', Text: "A"} }
+// keyA presses the key whose list ends on the queue.
+func keyA() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 'a', Text: "a"} }
 
 // keyN presses the decline key.
 func keyN() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 'n', Text: "n"} }
 
-// openQueue presses the queue key and asserts the list came up.
+// openQueue opens [a]'s list, takes its last row — the queue — and asserts
+// the queue came up as a list.
 func openQueue(t *testing.T, m Model) Model {
 	t.Helper()
 	updated, _ := m.Update(keyA())
 	m = updated.(Model)
+	if g := m.approval.grant; g != nil {
+		g.focus = len(g.options) - 1
+		if !g.offers[g.focus].queue {
+			t.Fatal("the list [a] opens should end on the queue")
+		}
+		updated, _ = m.Update(keyEnter)
+		m = updated.(Model)
+	}
 	if m.approval.list == nil {
 		t.Fatal("the queue key should have opened the queue as a list")
 	}
@@ -156,17 +165,17 @@ func TestBatch_MembershipSpansOnlyTheSameCategory(t *testing.T) {
 		t.Fatalf("batch should hold only the other command, got %v", got)
 	}
 	view := strings.Join(m.confirmLines(), "\n")
-	if !strings.Contains(ansi.Strip(view), "[A] answer all 2 in one list") {
+	if !strings.Contains(ansi.Strip(view), "or answer all 2 in one list") {
 		t.Fatalf("the key should state how many it answers, got:\n%s", view)
 	}
-	if !strings.Contains(ansi.Strip(view), "[A] lists the 2 marked") {
+	if !strings.Contains(ansi.Strip(view), "[a] lists the 2 marked") {
 		t.Fatalf("the strip should state the batch before it applies, got:\n%s", view)
 	}
 	lines := m.confirmLines()
-	if !strings.Contains(lines[1], "[A]") || !strings.Contains(lines[3], "[A]") {
+	if !strings.Contains(lines[1], "[a]") || !strings.Contains(lines[3], "[a]") {
 		t.Fatal("both commands should be marked as batch members")
 	}
-	if strings.Contains(lines[2], "[A]") {
+	if strings.Contains(lines[2], "[a]") {
 		t.Fatalf("the queued edit should not be marked, got %q", lines[2])
 	}
 }
@@ -187,7 +196,7 @@ func TestBatch_ExcludesFlaggedActions(t *testing.T) {
 		t.Fatalf("a safety-flagged command must be left out of the batch, got %v", got)
 	}
 	lines := m.confirmLines()
-	if strings.Contains(lines[2], "[A]") {
+	if strings.Contains(lines[2], "[a]") {
 		t.Fatalf("the flagged command should carry no batch mark, got %q", lines[2])
 	}
 	if !strings.Contains(lines[2], "HIGH") {
@@ -232,7 +241,7 @@ func TestBatch_ApprovesEveryMemberWithoutAskingAgain(t *testing.T) {
 	// The list is not a session grant: it answers these three and nothing
 	// the model asks for later.
 	if m.policy.allCommands {
-		t.Fatal("[A] must not promote the category to a session grant")
+		t.Fatal("the queue must not promote the category to a session grant")
 	}
 	for i := 0; i < 3; i++ {
 		if m.state != stateRunningCmd {
@@ -330,8 +339,8 @@ func TestBatch_KeyIsAbsentWithoutAQueue(t *testing.T) {
 	m = updated.(Model)
 	m = handover(t, m)
 
-	// The only other item is flagged, so there is no batch and no key for one
-	// — but [A] keeps its old meaning as the shifted spelling of [a].
+	// The only other item is flagged, so there is no batch and no row for
+	// one — but [a] still opens the grants the card can make.
 	if len(m.approval.batch) != 0 {
 		t.Fatalf("no batch should be offered, got %v", m.approval.batch)
 	}
@@ -341,12 +350,10 @@ func TestBatch_KeyIsAbsentWithoutAQueue(t *testing.T) {
 	updated, _ = m.Update(keyA())
 	m = updated.(Model)
 	if m.approval.list != nil {
-		t.Fatal("[A] with nothing to list should not open a list")
+		t.Fatal("[a] with no queue should not open the queue")
 	}
-	// It keeps its old meaning as the shifted spelling of [a], which is now
-	// the grants the card can make rather than one of them (grant.go).
-	if m.approval.grant == nil {
-		t.Fatal("[A] without a queue should still reach the grant list")
+	if g := m.approval.grant; g == nil || slices.ContainsFunc(g.offers, func(o grantOffer) bool { return o.queue }) {
+		t.Fatal("[a] without a queue should reach the grant list, and no queue row")
 	}
 }
 

@@ -112,7 +112,7 @@ func (m Model) resolveQueue(cur *approvalRequest) (components.QueueStrip, []stri
 	strip := components.QueueStrip{Items: items, MaxRows: m.stripRows()}
 	if len(batch) > 0 {
 		strip.Note = fmt.Sprintf("%s lists the %d marked",
-			keys.Bracket(keys.Decision.Batch), len(batch)+1)
+			keys.Bracket(keys.Decision.Always), len(batch)+1)
 	}
 	return strip, batch
 }
@@ -417,12 +417,12 @@ func nameSharedSiblings(rows []components.SpawnRow, calls []provider.ToolCall) {
 }
 
 // batchCategory is the class a session grant ([a]) would cover, which is
-// exactly the question [A] asks of the queue — so both read it from here. A
+// exactly the question the queue list asks of the queue — so both read it from here. A
 // flagged action, and anything the grants do not cover, belongs to no batch.
 func (m Model) batchCategory(req *approvalRequest) (agent.ActionKind, bool) {
 	act := m.approvalAction(req)
 	// A decision that leaves the working scope is never swept into a
-	// batch: [A] answers the calls the session would classify the same way,
+	// batch: the queue list answers the calls the session would classify the same way,
 	// and a directory nobody has put in scope is the one thing on the card
 	// the reader has not already answered for.
 	// A fetch is out for a reason of its own: two fetches in one queue are

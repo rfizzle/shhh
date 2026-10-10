@@ -186,10 +186,13 @@ type approvalRequest struct {
 	// model's. Empty on every request nobody amended.
 	amendedFrom string
 	// explaining is whether a paragraph about this command is being read
-	// right now (run.go). It rides the request for the reason the dry run's
-	// two fields do: the answer is about this call, and one left behind on
-	// the model would be advertised over the next decision in the queue.
+	// right now, and explained is the paragraph once it is back, with the
+	// line it was asked about (run.go). They ride the request for the reason
+	// the dry run's two fields do: the answer is about this call, and one
+	// left behind on the model would be shown over the next decision in the
+	// queue.
 	explaining bool
+	explained  *explainDoneMsg
 }
 
 // approvedToolDoneMsg carries the executor result of an approved non-exec
@@ -485,7 +488,7 @@ func (m Model) admitApproval(tc provider.ToolCall) (tea.Model, tea.Cmd) {
 	}
 	// A command the deny list names is answered here too, and for the same
 	// reason: the list is the user's standing answer, so there is no card to
-	// draw, no earlier [A] that reaches it and no classifier round to spend.
+	// draw, no earlier queue list that reaches it and no classifier round to spend.
 	// The row is the rule-denial row rather than a notice, because a denial
 	// is a moment that mattered and the reader's next act depends on knowing
 	// a rule and not a person refused it.
@@ -871,88 +874,36 @@ func (m *Model) applyScopeGrant() {
 	}
 }
 
-// decisionNote is the note field a decision card's shifted answer opened: the
-// answer it will carry, and the field it is being written in
-// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
+// takeDraftNote is the note an answer goes out with: whatever the draft
+// holds at the moment of the key, which is then the answer's and leaves the
+// box (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
 //
-// The field is bubbles' own one-line input rather than a component of its
-// own, for the reason every other field in the product is (components/input.go):
-// what is shared is how a field is built and repainted, not what it is.
-type decisionNote struct {
-	// allow is which of the two answers the sentence goes out with.
-	allow bool
-	field textinput.Model
-}
-
-// drawn is the field as the card will draw it: sized to the room the card
-// leaves it and repainted from the palette as it stands now (input.go).
+// The note costs no key and no field of its own. A card that lands on a
+// sentence waits for the handover, so the sentence under it is the one the
+// reader was writing when the question arrived — usually about the very act
+// it asks about — and the answer they give next is what it was for. A reader
+// who wants to say why without having been typing types it, hands the
+// keyboard over, and answers.
 //
-// Both the render and the cursor go through here rather than one of them
-// reading the stored field: the field's own caret is clamped to its width, so
-// asking an unsized copy where the caret is puts it past the card's right
-// edge the moment the sentence outgrows the row.
-func (n decisionNote) drawn(width int) textinput.Model {
-	field := n.field
-	field.SetWidth(components.FieldWidth(width))
-	components.StyleTextInput(&field)
-	return field
-}
-
-// openDecisionNote opens the field under the card. Nothing is decided by
-// opening it: the answer the key stands for is given when the field is
-// confirmed, and esc closes it with the decision still waiting, because a key
-// that turned a hesitation into an answer would be a key nobody could afford
-// to press (docs/interface/principles.md#esc-is-always-the-safe-answer).
-func (m Model) openDecisionNote(allow bool) (tea.Model, tea.Cmd) {
-	field := components.NewTextInput()
-	field.Prompt = ""
-	// The terminal's own cursor rather than a painted one: this session
-	// places a real cursor wherever it is being typed into (confirmCursor),
-	// and a field painting a second one would draw two.
-	field.SetVirtualCursor(false)
-	cmd := field.Focus()
-	m.approval.note = &decisionNote{allow: allow, field: field}
-	m.syncViewport()
-	return m, cmd
-}
-
-// updateDecisionNote routes a key while the field holds the keyboard. Two keys
-// are the whole of what it answers and every other key is text — the digits,
-// the card's own letters and its scroll chords included — because a surface
-// being typed into keeps every letter as text, the way the selector's query
-// row and the transcript search already do
-// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-func (m Model) updateDecisionNote(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	open := *m.approval.note
-	switch {
-	case keys.Match(msg, keys.Select.Cancel):
-		// Back to the card with the decision exactly where it was. The
-		// sentence goes with the field: a draft nobody sent is not an answer,
-		// and keeping it would put words the reader abandoned on the next
-		// answer they give.
-		m.approval.note = nil
-		m.syncViewport()
-		return m, nil
-	case keys.Match(msg, keys.Select.Take):
-		note := strings.TrimSpace(open.field.Value())
-		m.approval.note = nil
-		// The sentence is said once and the answer under it is the card's,
-		// which on a fan-out card is the answer to every child on it
-		// (queue.go).
-		m.answerSpawnSet(open.allow)
-		if open.allow {
-			return m.approvePending(note)
-		}
-		return m.declineApprovalWith(note)
+// It is the session's own decision only. A /run the reader typed has no model
+// to correct, a memory proposal answers on its own surface, and a child's
+// routed request answers over a channel that carries a boolean; on all three
+// the draft is left alone. So is the draft while the reader is attached to
+// a child, where what is typed is that child's steer and not the session's
+// note. And so is a draft with something staged on it — an image or a folded
+// paste is a message, and a note is a sentence the model reads in place of a
+// refusal, so taking the words without what they fold would send half of it
+// and drop the rest.
+func (m *Model) takeDraftNote() string {
+	if m.approval.request == nil || m.memoryAsk != nil || m.attachedTo != "" || len(m.attachments) > 0 {
+		return ""
 	}
-	// The field is replaced rather than written through the pointer: the
-	// model is a value every update hands back a copy of, and a shared field
-	// would put this keystroke into the copy the last frame was drawn from.
-	var cmd tea.Cmd
-	open.field, cmd = open.field.Update(msg)
-	m.approval.note = &open
-	m.syncViewport()
-	return m, cmd
+	note := strings.TrimSpace(m.input.Value())
+	if note == "" {
+		return ""
+	}
+	m.clearDraft()
+	return note
 }
 
 // approvePending is the allow, with the reader's sentence if they wrote one.
@@ -993,8 +944,8 @@ func (m Model) declineApproval() (tea.Model, tea.Cmd) { return m.declineApproval
 // is still a refusal on the wire and not output the call produced.
 //
 // An empty sentence is not a sentence, and takes the fixed one unchanged: a
-// reader who pressed the shifted letter and pressed enter meant the plain
-// answer, and the model must not be able to tell the two paths apart.
+// reader who answered over an empty draft meant the plain answer, and the
+// model must not be able to tell the two paths apart.
 func (m Model) declineApprovalWith(note string) (tea.Model, tea.Cmd) {
 	m.recordDecision(observe.DecisionDeny, observe.ReasonUser)
 	req := m.approval.request
@@ -1252,7 +1203,6 @@ func (m Model) approvalCard() *components.ApprovalCard {
 	// Whether the card's keys are live at all is not the card's to decide
 	// (invariant 5): it depends on which surface holds the keyboard.
 	m.applyNotYetLive(card)
-	m.applyDecisionNote(card)
 	m.applyCommandEdit(card)
 	m.applyGrantChoice(card)
 	// The card offers `?` wherever the register row answers it (keylist.go).
@@ -1261,8 +1211,8 @@ func (m Model) approvalCard() *components.ApprovalCard {
 }
 
 // applyCommandEdit puts the open command field on the card. The field is the
-// model's for the reason the note field is: the card is rebuilt every frame
-// and what is being typed is not (amend.go).
+// model's because the card is rebuilt every frame and what is being typed is
+// not (amend.go).
 func (m Model) applyCommandEdit(card *components.ApprovalCard) {
 	e := m.approval.edit
 	if e == nil {
@@ -1270,21 +1220,6 @@ func (m Model) applyCommandEdit(card *components.ApprovalCard) {
 	}
 	card.AmendOpen, card.AmendRefused = true, e.refused
 	card.AmendField = e.drawn(m.contentWidth()).View()
-}
-
-// applyDecisionNote puts the open note field on the card. The offer itself is
-// the card's own reading of what is waiting on the answer — there is nothing
-// for a sentence to reach on a /run the reader typed, and a memory proposal
-// answers on its own surface — and the field is the model's, because the card
-// is rebuilt every frame and what is being typed is not.
-func (m Model) applyDecisionNote(card *components.ApprovalCard) {
-	card.Noted = m.approval.request != nil && m.memoryAsk == nil
-	n := m.approval.note
-	if n == nil || !card.Noted {
-		return
-	}
-	card.NoteOpen, card.NoteAllow = true, n.allow
-	card.NoteField = n.drawn(m.contentWidth()).View()
 }
 
 // actGlyph is the glyph a card's first body row opens with: the one the
@@ -1315,8 +1250,8 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		PanOffset:  m.approval.pan,
 	}
 	req := m.approval.request
-	// Where this decision sits in the round, and the key that answers the
-	// rest of its category along with it.
+	// Where this decision sits in the round, and the row of [a]'s list that
+	// answers the rest of its category along with it.
 	card.QueuePos = m.queuePosition()
 	if card.Batch = len(m.approval.batch) > 0; card.Batch {
 		card.BatchHint = fmt.Sprintf("answer all %d in one list", len(m.approval.batch)+1)
@@ -1335,11 +1270,15 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		card.Variant = components.ApprovalCommand
 		card.Title = "Approve command"
 		card.Answer = "run it once"
-		// [v] opens the command card's own full view — the whole command,
-		// the warnings and the blast radius, unclipped — the way it opens an
-		// edit's diff (docs/interface/surfaces.md#the-approval-card).
+		// Enter opens the command card's own full view — the whole command,
+		// the warnings and the blast radius, unclipped, and what it does
+		// where a model is configured to say — the way it opens an edit's
+		// diff (docs/interface/surfaces.md#the-approval-card).
 		card.FullDiff = true
 		card.FullLabel = "full view"
+		if m.explains(req) {
+			card.FullLabel += ", and " + explainHeading
+		}
 		// The line, and the `$` that says it is a line. Who asked for it is
 		// not on the row: a card the model raised and a card `/run` raised
 		// are the same decision about the same command, and the reader is
@@ -1376,8 +1315,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 				}
 			}
 		}
-		card.ExtraHints = append(dryRunOffer(req), m.explainOffer(req)...)
-		card.ExtraHints = append(card.ExtraHints, amendOffer(req)...)
+		card.ExtraHints = append(dryRunOffer(req), amendOffer(req)...)
 		return card
 	}
 
@@ -1392,6 +1330,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		card.Hunks = req.hunks
 		card.Syntax = diffSyntax(req.path)
 		card.FullDiff = len(req.hunks) > 0
+		card.FullLabel = "full diff"
 		card.Answer = "apply the change"
 		// No grant of any length on a flagged card, here as on the command
 		// card above: "only for a minute" is still blanket, and a flagged
@@ -1608,7 +1547,7 @@ func (m Model) scrollCard(msg tea.KeyPressMsg, card *components.ApprovalCard) (t
 	return m, nil
 }
 
-// commandCardView is the command card's [v]: the whole command, the warnings
+// commandCardView is the command card's [enter]: the whole command, the warnings
 // and the blast radius as one full-screen page, wrapped rather than clipped
 // — the card's body clips wide lines behind the pan; this view is where the
 // whole of a long command is read before it is answered.
@@ -1637,6 +1576,9 @@ func (m Model) commandCardView() *components.OutputView {
 			lines = append(lines, row)
 		}
 	}
+	if req := m.approval.request; m.explains(req) {
+		lines = append(append(lines, ""), explainLines(req)...)
+	}
 	return &components.OutputView{Title: card.Title, Lines: lines, Wrap: true}
 }
 
@@ -1660,7 +1602,7 @@ func (m Model) confirmLines() []string {
 }
 
 // confirmCursor is where the terminal's cursor stands in the confirm panel:
-// inside whichever of the card's two fields is open, and nowhere otherwise —
+// inside the card's field when it is open, and nowhere otherwise —
 // a card that is read rather than written into places none, and the terminal
 // hides its cursor over it (the register's cursor column, overlay.go).
 //
@@ -1677,8 +1619,6 @@ func (m Model) confirmCursor(int) *tea.Cursor {
 	width := m.contentWidth()
 	var field textinput.Model
 	switch {
-	case m.approval.note != nil:
-		field = m.approval.note.drawn(width)
 	case m.approval.edit != nil:
 		field = m.approval.edit.drawn(width)
 	default:

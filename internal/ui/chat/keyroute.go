@@ -128,7 +128,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		m.closeHistorySearch(true)
 	}
 	// The full-screen viewers answer before the handover chord and the
-	// grace window below: two of them are where a decision card's own [v]
+	// grace window below: two of them are where a decision card's own [enter]
 	// goes, so the reader is inside the card's detail and a chord that would
 	// gate the card behind it is not what the key means there
 	// (the register's aboveDecision, overlay.go).
