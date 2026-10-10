@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -147,6 +148,14 @@ type Ledger struct {
 	entries []Entry
 	budget  Budget
 	warned  bool
+	// caches is each endpoint's cache reading, and lease the lease the
+	// session's requests ask for (cache.go). They outlive Reset: a reading
+	// is about the endpoint, and /clear starts the accounting over, not
+	// what has been learned about where it is sent.
+	caches []CacheReading
+	lease  string
+	// now is the clock a reading is stamped with; nil is time.Now.
+	now func() time.Time
 }
 
 func New(prices *pricing.Table) *Ledger { return &Ledger{prices: prices} }
