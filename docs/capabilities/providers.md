@@ -328,7 +328,9 @@ policy refuses structured outputs on models the floor says take them. The
 key only narrows: there is no `true`, and a profile that writes one is
 refused at load, for the reason above — a schema sent to a model that cannot
 take one is a refused request, while a tool sent to a model that could have
-taken a schema is free. A refused schema is not retried as the tools; what a
+taken a schema is free. An unknown key is refused the same way, naming the
+key and its line, so a typo such as `structured_output` is not a setting that
+looks in effect and does nothing. A refused schema is not retried as the tools; what a
 model takes is declared, and a retry would hide a real fault behind a second
 request.
 

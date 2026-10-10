@@ -515,17 +515,22 @@ func exists(path string) bool {
 // [[provider]] blocks, or a single profile written at the top level.
 func LoadFile(path string) ([]Profile, error) {
 	var single Profile
-	if _, err := toml.DecodeFile(path, &single); err != nil {
+	singleMeta, err := toml.DecodeFile(path, &single)
+	if err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
 	var multi struct {
 		Providers []Profile `toml:"provider"`
 	}
-	if _, err := toml.DecodeFile(path, &multi); err != nil {
+	multiMeta, err := toml.DecodeFile(path, &multi)
+	if err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
 
 	if len(multi.Providers) == 0 {
+		if err := refuseUnknown(path, singleMeta); err != nil {
+			return nil, err
+		}
 		single.Path = path
 		if single.Name == "" {
 			// A nameless profile takes the file's name, so gateway.toml is
@@ -540,6 +545,9 @@ func LoadFile(path string) ([]Profile, error) {
 	}
 	if single.declaresProvider() {
 		return nil, fmt.Errorf("%s: set [[provider]] blocks or one top-level provider, not both", path)
+	}
+	if err := refuseUnknown(path, multiMeta); err != nil {
+		return nil, err
 	}
 
 	out := make([]Profile, 0, len(multi.Providers))
@@ -560,6 +568,38 @@ func LoadFile(path string) ([]Profile, error) {
 		out = append(out, p)
 	}
 	return out, nil
+}
+
+// refuseUnknown refuses the first key the decoder read and no field took.
+// The decoder ignores such a key, so `structured_output = false` would be a
+// setting that is written, looks in effect and does nothing. The sentence
+// names the key and its line, the way a profile of agents refuses one.
+func refuseUnknown(path string, meta toml.MetaData) error {
+	left := meta.Undecoded()
+	if len(left) == 0 {
+		return nil
+	}
+	data, _ := os.ReadFile(path)
+	key := left[0]
+	if n := keyLine(string(data), key[len(key)-1]); n > 0 {
+		return fmt.Errorf("%s:%d: unknown key %q", path, n, key.String())
+	}
+	return fmt.Errorf("%s: unknown key %q", path, key.String())
+}
+
+// keyLine is the 1-based line a key is first written on, as a key or a table
+// header, passing over comments; 0 when no line is found.
+func keyLine(text, name string) int {
+	for i, line := range strings.Split(text, "\n") {
+		rest, ok := strings.CutPrefix(strings.TrimLeft(line, " \t[\""), name)
+		if !ok {
+			continue
+		}
+		if rest = strings.TrimLeft(rest, "\" \t"); strings.HasPrefix(rest, "=") || strings.HasPrefix(rest, "]") {
+			return i + 1
+		}
+	}
+	return 0
 }
 
 // declaresProvider reports whether anything was written at the top level of
