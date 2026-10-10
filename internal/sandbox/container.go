@@ -118,6 +118,20 @@ func (s ContainerSpec) withDefaults() (ContainerSpec, error) {
 type Container struct {
 	Record Record
 	Engine Engine
+	// gitHeld is a workspace repository whose program paths the container
+	// holds read-only (containerGit).
+	gitHeld bool
+}
+
+// GitStoreWords is what every report says of the workspace repository's
+// program paths in this container: the words the host's mechanisms use
+// where the container holds them read-only, "" where it holds none.
+// See docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only.
+func (c Container) GitStoreWords() string {
+	if !c.gitHeld {
+		return ""
+	}
+	return gitStoreWords
 }
 
 // createArgv builds the engine invocation for a sandbox container: detached
@@ -213,6 +227,118 @@ func (c Container) ExecArgv(command string, env ...string) []string {
 	return append(argv, c.Record.Name, "/bin/sh", "-c", command)
 }
 
+// HelperExec is how one program is started in the container through the
+// command helper (ExecArg). The zero value is a command: no terminal, the
+// workspace root, /dev/null for the child's stdin and a hang-up that stops
+// it.
+type HelperExec struct {
+	// Dir is the host directory the program runs in, translated to its place
+	// under the workspace mount; "" is the workspace itself.
+	Dir string
+	// TTY gives the exec a terminal, for a process that asked for one.
+	TTY bool
+	// Secrets name variables carried in from the engine client's own
+	// environment — the session's declared secrets — and Env is a start's
+	// own NAME=value pairs. The container was created with no host
+	// environment, so nothing else crosses.
+	// See docs/capabilities/secrets.md#a-secret-is-an-environment-variable.
+	Secrets []string
+	Env     []string
+	// Inherit hands the child the stream as its stdin, for a process whose
+	// input is written to it; a command's child reads /dev/null.
+	Inherit bool
+	// IgnoreHangup leaves the program running when the stream hangs up, for
+	// a caller that closes its stdin once it has written what it had to,
+	// and Timeout is then the ceiling the helper holds it to itself.
+	IgnoreHangup bool
+	Timeout      time.Duration
+}
+
+// HelperArgv is the engine argv that runs argv in the container under the
+// helper: `exec -i`, a terminal only where asked, the working directory, the
+// variables that cross, the helper and its flags, then `--` and the argv.
+// The stream `-i` keeps open is what a cancel travels on, so every exec has
+// it whether or not the program reads anything.
+//
+// A directory outside the workspace is refused rather than run somewhere
+// else: the workspace is the container's one mount, and a command told it
+// was in one place and run in another is worse than one that never ran.
+func (c Container) HelperArgv(e HelperExec, argv []string) ([]string, error) {
+	if len(argv) == 0 {
+		return nil, errors.New("nothing to run in the sandbox")
+	}
+	workdir, err := c.workdir(e.Dir)
+	if err != nil {
+		return nil, err
+	}
+	out := []string{c.Engine.Path, "exec", "-i"}
+	if e.TTY {
+		out = append(out, "-t")
+	}
+	out = append(out, "--workdir", workdir)
+	for _, name := range e.Secrets {
+		out = append(out, "--env", name)
+	}
+	for _, pair := range e.Env {
+		out = append(out, "--env", pair)
+	}
+	stdin, hangup := stdinNull, hangupStop
+	if e.Inherit {
+		stdin = stdinInherit
+	}
+	if e.IgnoreHangup {
+		hangup = hangupIgnore
+	}
+	out = append(out, c.Record.Name, HelperPath, ExecArg, "--stdin="+stdin, "--hangup="+hangup)
+	if e.Timeout > 0 {
+		out = append(out, "--timeout="+e.Timeout.String())
+	}
+	out = append(out, "--")
+	return append(out, argv...), nil
+}
+
+// HelperCommand is HelperArgv for a command line. The text rides as one
+// argv element after `sh -c` — never parsed or re-quoted — as it does under
+// every other mechanism.
+func (c Container) HelperCommand(e HelperExec, command string) ([]string, error) {
+	return c.HelperArgv(e, []string{"/bin/sh", "-c", command})
+}
+
+// workdir is dir's place under the workspace mount.
+func (c Container) workdir(dir string) (string, error) {
+	if dir == "" {
+		return workspaceMount, nil
+	}
+	resolved, err := resolvePath(dir)
+	if err != nil {
+		return "", fmt.Errorf("cannot resolve %s for the sandbox: %w", dir, err)
+	}
+	rel, err := filepath.Rel(c.Record.Workspace, resolved)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return "", fmt.Errorf("%s is outside the sandbox's workspace %s, the one directory its container can see", dir, c.Record.Workspace)
+	}
+	if rel == "." {
+		return workspaceMount, nil
+	}
+	return workspaceMount + "/" + filepath.ToSlash(rel), nil
+}
+
+// ProbeHelper asks the container's helper which protocol it speaks, and
+// fails where there is no helper to ask or it speaks another. It is asked
+// once, before anything runs, because a container without one runs a
+// command whose cancel never reaches it.
+func (c Container) ProbeHelper(ctx context.Context) error {
+	out, err := runEngine(ctx, []string{c.Engine.Path, "exec", c.Record.Name, HelperPath, ExecArg, "--version"})
+	if err != nil {
+		return fmt.Errorf("it has no command helper at %s (%s)", HelperPath, probeLine(out))
+	}
+	got := strings.TrimSpace(string(out))
+	if got != helperBanner+HelperVersion {
+		return fmt.Errorf("its command helper at %s answers %q, and this shhh speaks %s", HelperPath, probeLine(out), helperBanner+HelperVersion)
+	}
+	return nil
+}
+
 // CreateContainer validates the spec, starts the container, and records
 // ownership durably before returning. A record that cannot be written
 // destroys the container again — shhh never leaves a sandbox it does not
@@ -266,7 +392,7 @@ func CreateContainer(ctx context.Context, eng Engine, s ContainerSpec, allowlist
 		_, _ = runEngine(ctx, destroyArgv(eng.Path, name))
 		return Container{}, fmt.Errorf("cannot record sandbox ownership: %w", err)
 	}
-	return Container{Record: rec, Engine: eng}, nil
+	return Container{Record: rec, Engine: eng, gitHeld: len(s.git.gitReadOnly) > 0}, nil
 }
 
 // DestroyContainer force-removes the container and, only once the engine no
