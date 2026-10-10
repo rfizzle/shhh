@@ -677,14 +677,14 @@ printed them all ran to three rows under the list while the header offered
 every time the screen is open — move, read, filter, edit, a new item and the
 way out — and the filters, the tabs and the other verbs are behind `[?]`.
 Where even those do not fit, whole offers give ground: the way out first,
-because the header's `[q] back` states it at every width, then the new item
+because the header's `[esc] back` states it at every width, then the new item
 and the editor. The pointer's keys never go, since no other list teaches that
 this one moves on the arrows alone. While a turn runs, the keys that change a
 file leave the row and are drawn grey under the sentence saying why — that
 block is a reading of the screen's state, not the foot's offers, so it keeps
-every such key. `[q] back` is drawn once, on the header: the frame's row under
-the screen says `backlog` and offers nothing, and reading an item offers
-`[esc]` rather than a second `[q]`.
+every such key. `[esc] back` is drawn once, on the header: the frame's row
+under the screen says `backlog` and offers nothing.
+
 
 **The row's field order, and which field gives ground.** The name and the two
 grade letters are kept, the state clips, and the title goes first. The pane

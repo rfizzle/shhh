@@ -856,7 +856,7 @@ The bar is the strip's own — open, drop, and esc back to the draft — and the
 draft and its cursor are what they were when the mode opened. What the strip
 opens onto is [a staged attachment](#a-staged-attachment).
 
-One key copies the row under the cursor, shaped by what the row is: a message
+`[c]` copies the row under the cursor, shaped by what the row is: a message
 as its markdown source, a command as the command over its output, an edit as
 the unified diff, a read as what the read returned, a card call by call. What a program painted is stripped on the way — the escape codes are
 this terminal's, not part of what was said — and the copy rides the same
@@ -865,16 +865,16 @@ what was caught and how far it ran, until the next key says the reader has
 moved on. Copy is why a message is an addressable row here at all: it expands
 nothing, and it holds the one thing most worth carrying away.
 
-Beside it, on a reply that holds a fenced code block, a second key copies one
-block rather than the whole message, because what a reader pastes is almost
+On a reply that holds a fenced code block the same key copies one block
+rather than the whole message, because what a reader pastes is almost
 always one block and seldom every block of the answer. One block is copied at
 once; several open the numbered card `/run` opens over several blocks, scoped
 to that reply's blocks rather than the last reply's, and the row taken is
 copied alone. What is copied is the block as the message wrote it — no
 indent, no fold, tabs kept, no fence lines and no language tag — and the rail
-captions which block was caught, its language and its lines. The key is
-offered only while the cursor is on such a reply and is silent everywhere
-else, as the row copy is on a row with nothing to copy. `/copy code` reaches
+captions which block was caught, its language and its lines. The bar says
+which of the two copies the key will make, and on a row with nothing to copy
+it is not offered at all. `/copy code` reaches
 the same blocks from the draft, by number or from the same card.
 
 A click on a block's heading in a reply is the pointer twin of that key, by
@@ -889,9 +889,10 @@ reading mode the cursor moves to the reply first, so the bar under it offers
 the key for the next time. A heading in a message the reader sent is drawn
 the same and is not a target, because no key copies a block from one.
 
-Half-page keys move the cursor through a long transcript at a pace that keeps
-context — half the pane per press, with the cursor following the pane rather
-than staying lit on a row nobody can see.
+`ctrl+u` and `ctrl+d`, the pager's half-page pair, move the cursor through a
+long transcript at a pace that keeps context — half the pane per press, with
+the cursor following the pane rather than staying lit on a row nobody can
+see.
 
 The transcript can also be searched. The slash every pager opens a query with
 opens one here: a single row where the key bar was, typed into from the first
@@ -1559,9 +1560,12 @@ second press of the same chord inside the window quits (`[ctrl+c] ×2 quit`);
 a window that expires costs nothing and says nothing. Cancel first, then
 quit: a stop or a clear is a first step and opens no window, so the next
 press after one is a new first press. The window is keyed by the chord that
-opened it, so no other chord completes a quit. Over a card or a picker the
-first press does what it has always done there — backs out, or denies on an
-approval card — and opens the window, so a second `ctrl+c` inside it quits. Esc means go back and is never an interrupt: a key that backs out of a
+opened it, so no other chord completes a quit. Over a card, a picker or any
+surface that holds the keyboard the chord is the same chord: it never backs
+out and never denies a card — esc backs out, and a card's no is its own
+letter — so its first press stops a turn that is still going, a decision it
+waits on included, and otherwise leaves the surface as it was and opens the
+window, so a second `ctrl+c` inside it quits. Esc means go back and is never an interrupt: a key that backs out of a
 diff, a menu and a selection cannot also be the one that stops a turn.
 `ctrl+d` quits nowhere: it is end of input in a shell and a tmux chord, and
 the register reserves it
@@ -2150,7 +2154,7 @@ work that never reached your checkout says `patch kept · [p] review` in the
 outcome field, where a blocked child says `⚠ needs you`: the lead column
 already says how it ended, so the field spends itself on the one thing left to
 do. `[p]` opens the patch full screen, headed `writer-1's patch` — the view
-`[d]` opens from a live card — and esc from it lands on the patch card over
+`[v]` opens from a live card — and esc from it lands on the patch card over
 the list, apply or decline, the card a finishing writer's patch is put on. The
 rail's line under the same child carries the same words and, like its
 `handoff kept · [r] retry`, names the manager's key rather than acting on it
@@ -2433,8 +2437,9 @@ still takes the keyboard, and for a grace window its decision keys are
 discarded rather than answered; the run draws dimmed and says the keys are a
 moment away. The window ends when the keyboard has been quiet for a beat, and
 at a hard cap however the typing goes, so the decision is never locked away.
-Three keys stay out of it: the chords no sentence can produce keep denying and
-gating, and esc keeps its way back to the draft, because the safe answer must
+Three keys stay out of it: the chords no sentence can produce keep stopping
+the turn and gating, and esc keeps its way back to the draft, because the safe answer must
+
 stay reachable to be one. A card replacing one just answered gets no window at
 all — that keystroke was an answer, not typing, and a reader working through a
 queue is never made to wait between questions.
@@ -2752,11 +2757,12 @@ cursor itself, and a filter row with no cursor at all would say nothing about
 where the next character goes.
 
 While the query row is open every bare letter is text, so for as long as a
-card is being typed into it has no letter keys of its own. Clearing a filter
-that is already empty closes the row and hands them back — the model card's
-[d], the saved chats' [x] and [r] — without leaving the card, and the key row
-names that reading rather than offering to clear a query that is already
-clear. Esc still leaves outright: a filter you have to escape twice is a mode.
+card is being typed into it has no letter keys of its own. Esc backs out of
+the row one level a press: it clears what was typed, and on a filter that is
+already empty it closes the row and hands the letters back — the model
+card's [m], the saved chats' [d] and [e] — without leaving the card; the key
+row names the level esc is on. A card with nothing behind its row leaves on
+the press that finds the query empty.
 
 ### The inline confirm
 
@@ -2819,7 +2825,7 @@ whose records were dropped to stay inside the changeset store's size limit, or
 a conversation that came back from the store without them at all.
 
 The picker has one key of its own, and it is a reading rather than an act:
-`[d]` opens what a rewind to the row under the pointer would take back — every
+`[v]` opens what a rewind to the row under the pointer would take back — every
 turn after it, one net change per file, the same reading the card's code field
 states in figures — full screen, and esc comes back to the picker as it was
 left. A row is picked by what its turns changed, and the diffstat is the
@@ -3121,9 +3127,9 @@ them: it was reading all of them side by side.
 
 They say the way out in one voice, and each of them says it twice because a
 key row and a header are read at different moments — not because there are two
-facts. The header ends with the register's key and then the letter, with the
-act in one word: `quit` where the screen was opened from a command line,
-`back` where it was opened from a session. The foot ends with the same act
+facts. The header ends with the register's key and then esc, with the act in
+its one word, `back`, wherever the screen was opened from. The foot ends with the same act
+
 under the key a reader reaches for without thinking, and there it is a phrase:
 **back to the shell** on doctor, metrics, history, snippets and the saved-chat
 browser, **back to the prompt** on the context reading, the sources ledger, the
@@ -3169,7 +3175,7 @@ so a second model on the bill is answered by looking. In a session a flow's
 row opens the list the session's own model picker offers, and its key row
 names three places the choice can go: `[enter]` **this session** — the model
 answers that flow for the rest of the process and reaches no file, and the
-row says `session` in its source column from then on; `[d]` **my settings**;
+row says `session` in its source column from then on; `[m]` **my settings**;
 and `[g]` **this checkout**, offered where the screen stands in one and
 refused with the writer's own sentence where the checkout is not trusted or
 may not decide the key. The two files are written at once for that one key,
@@ -3459,8 +3465,8 @@ to say about the keys just written and the sentence that the running session
 keeps the settings it started on. The screen stays up and nothing is left
 staged. A write that cannot land says `could not write <path>: <reason>` the
 same two ways and keeps every change staged, so the key can be pressed again
-once the reason is gone. The model picker's `[d]`, which writes `provider.model`
-at once behind `[ctrl+u]`, answers with the same line, and the profile
+once the reason is gone. The model picker's `[m]`, which writes `provider.model`
+at once once esc has closed its search row, answers with the same line, and the profile
 drafter's `[ctrl+s]` writes its draft through the card's first row and says
 `wrote <role> to <path>`.
 
@@ -3524,12 +3530,10 @@ draft.
 modified one it asks on the foot row — `leave without saving? [y] discard the
 change · [ctrl+s] save and leave · [esc] keep editing`, `leave unsaved? [y]
 discard · [esc] keep editing` narrow — and the typing stops until it is
-answered. `ctrl+c` backs out the way esc does, asking first; over a modified
-buffer that is the whole of it. The press that asks opens no quit window, and
-a second `ctrl+c` while the question is up answers it as `keep editing`, so
-no run of presses leaves with the change unsaved: quit needs the buffer saved
-with `[ctrl+s]` or discarded with `[y]` first, after which `ctrl+c` twice
-quits as it does anywhere. A path outside
+answered. `ctrl+c` is not a way back: over a modified buffer it does nothing
+and opens no quit window, so no run of presses leaves with the change
+unsaved: quit needs the buffer saved with `[ctrl+s]` or discarded with `[y]`
+first, after which `ctrl+c` twice quits as it does anywhere. A path outside
 the working scope is refused with the scope's own sentence and the `/add-dir`
 that brings it in; a directory, a missing file, a file that is not text and
 one past a megabyte are refused by name.

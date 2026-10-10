@@ -58,6 +58,11 @@ transcript until the eye stops looking for the accent at all.
 Wherever the safe answer is not obvious, the surface says what Esc will do —
 `[esc] leave review, change nothing`.
 
+Esc backs out one level and never destroys: it closes what is open, clears a
+query, then leaves, asking first over staged work. Ctrl+c is the one
+destructive chord: on every surface it stops the run, and pressed twice it
+quits.
+
 This is what makes the product safe to explore. A user who knows one key
 always backs out without consequence will try things; one who has to read
 carefully before every keystroke will not, and will eventually approve
