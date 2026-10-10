@@ -20,6 +20,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The image carries shhh as its command helper. The binary is built
+      # here, before the image, and without the image's digest: the helper
+      # never starts a container, so it never needs to know which one it is in.
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build the sandbox helper
+        run: |
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=linux GOARCH=$arch go build -trimpath -ldflags="-s -w" \
+              -o docker/sandbox/bin/linux-$arch/shhh ./cmd/shhh
+          done
+
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
