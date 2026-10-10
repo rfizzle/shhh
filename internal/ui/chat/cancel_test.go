@@ -89,19 +89,19 @@ func TestCancel_EscOnAnEmptyStreamingDraftIsInert(t *testing.T) {
 	}
 }
 
-func TestCancel_EscWithDraftClearsItFirst(t *testing.T) {
+func TestCancel_EscWithDraftKeepsIt(t *testing.T) {
 	m := streamingCancelModel(t)
 	m.input.SetValue("foo")
 
 	m, _ = pressKey(t, m, escK)
-	if m.input.Value() != "" {
-		t.Fatalf("esc with a draft must clear it, got %q", m.input.Value())
+	if m.input.Value() != "foo" {
+		t.Fatalf("esc with a draft must keep it, got %q", m.input.Value())
 	}
 	if m.state != stateStreaming {
 		t.Fatal("esc spent on the draft must not touch the turn")
 	}
 	if _, ok := m.armedHint(); ok {
-		t.Fatal("clearing the draft must not arm the quit")
+		t.Fatal("esc on a draft must not arm the quit")
 	}
 }
 

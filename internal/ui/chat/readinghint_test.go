@@ -545,19 +545,19 @@ func TestEscFold_LeavesWhatTheVerbosityOpenedAndNamesIt(t *testing.T) {
 	}
 }
 
-func TestEscFold_ADraftWithTextIsClearedAndNoRowMoves(t *testing.T) {
+func TestEscFold_ADraftWithTextIsKeptAndNoRowMoves(t *testing.T) {
 	m := typeChars(t, escFoldModel(t), "half a thought")
 
 	m, _ = pressKey(t, m, escK)
 
-	if m.input.Value() != "" {
-		t.Fatal("esc with a draft must clear it")
+	if m.input.Value() != "half a thought" {
+		t.Fatal("esc with a draft must keep it")
 	}
 	if got := openRowCount(m); got != 4 {
-		t.Errorf("clearing the draft folded rows: %d of 4 left open", got)
+		t.Errorf("esc over a draft folded rows: %d of 4 left open", got)
 	}
 	if m.pointer.foldNotice != "" {
-		t.Errorf("clearing the draft said %q about folding", m.pointer.foldNotice)
+		t.Errorf("esc over a draft said %q about folding", m.pointer.foldNotice)
 	}
 }
 

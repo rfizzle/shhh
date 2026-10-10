@@ -232,7 +232,11 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			return next, cmd, true
 		}
 		if strings.TrimSpace(m.input.Value()) != "" {
-
+			// The one chord that clears a sentence keeps it first: the
+			// draft goes into the history the up arrow walks, so a press
+			// that was a reflex costs one keystroke to undo
+			// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+			m.recordInput(m.input.Value())
 			m.clearDraft()
 			return m, nil, true
 		}
@@ -443,9 +447,8 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			m.syncViewport()
 			return m, nil, true
 		}
-		// The input is live in every non-confirm state, so esc
-		// clears the draft; attached with an empty draft it pops one
-		// breadcrumb level.
+		// Attached with an empty draft esc pops one breadcrumb level; a
+		// draft with text in it is never cleared by esc.
 		if m.attachedTo != "" && strings.TrimSpace(m.input.Value()) == "" {
 			m.detachOne()
 			return m, nil, true
@@ -528,7 +531,13 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			}
 			return m, m.armPressFor(armRewind, keys.Shown(keys.Draft.Clear), rewindPressWindow), true
 		}
-		m.clearDraft()
+		// Esc never clears a sentence: what is typed stays exactly as it
+		// was, and ctrl+c is the chord that clears it (after recording it).
+		// An empty draft has nothing to keep; it only settles the history
+		// walk and the viewport.
+		if strings.TrimSpace(m.input.Value()) == "" {
+			m.clearDraft()
+		}
 		return m, nil, true
 	case keys.Is(pressed, keys.Draft.Complete):
 		// Tab writes the focused completion into the input. A file

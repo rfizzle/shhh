@@ -2,7 +2,7 @@ package chat
 
 // ctrl+c is the one quit, and it escalates one step per press
 // (docs/interface/surfaces.md#the-input-frame): while a turn works the first
-// press stops the run; idle with a draft it clears the draft; idle with an
+// press stops the run; idle with a draft it records the draft in the history and clears it; idle with an
 // empty draft the first press arms a short window and a second press of the
 // same chord inside it quits. Over a card, a picker or any surface it is the
 // same chord and never a way back — esc is that: it stops a turn still going,

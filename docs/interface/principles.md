@@ -67,9 +67,11 @@ Wherever the safe answer is not obvious, the surface says what Esc will do —
 `[esc] leave review, change nothing`.
 
 Esc backs out one level and never destroys: it closes what is open, clears a
-query, then leaves, asking first over staged work. Ctrl+c is the one
-destructive chord: on every surface it stops the run, and pressed twice it
-quits.
+query, then leaves, asking first over staged work. On the draft it leaves the
+text exactly as it is, however many times it is pressed. Ctrl+c is the one
+destructive chord: on every surface it stops the run; over a sentence it
+records the sentence in the draft history, so the up arrow brings it back, and
+then clears it; and pressed twice on an empty draft it quits.
 
 This is what makes the product safe to explore. A user who knows one key
 always backs out without consequence will try things; one who has to read

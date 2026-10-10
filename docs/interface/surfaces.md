@@ -1583,8 +1583,9 @@ rather than an idle prompt with an unanswered round in front of it.
 Quit is one rule, and the rule is `ctrl+c`: the chord everyone already knows
 as cancel-and-exit, escalating one step per press. While a turn works the
 first press stops the run and the foot row says `[ctrl+c] stop the run`;
-what the turn already did is kept. Idle with a draft it clears the draft
-(`[ctrl+c] clear`). Idle with an empty draft the first press arms and a
+what the turn already did is kept. Idle with a draft it records the draft in the
+history the up arrow walks and clears it (`[ctrl+c] clear`); esc never clears
+a draft. Idle with an empty draft the first press arms and a
 second press of the same chord inside the window quits (`[ctrl+c] ×2 quit`);
 a window that expires costs nothing and says nothing. Cancel first, then
 quit: a stop or a clear is a first step and opens no window, so the next

@@ -225,7 +225,7 @@ func TestInterrupt_TheDraftKeepsItsOwnKeysWhileTheCardWaits(t *testing.T) {
 	if got := m.input.Value(); got != "" {
 		t.Fatalf("a queued sentence leaves the draft, got %q", got)
 	}
-	// Esc on the draft is still the draft's esc: it clears what was typed and
+	// Esc on the draft is still the draft's esc: it keeps what was typed and
 	// leaves the decision alone.
 	m.input.SetValue("scratch that")
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
@@ -233,8 +233,8 @@ func TestInterrupt_TheDraftKeepsItsOwnKeysWhileTheCardWaits(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("esc on the draft must not reach the card, state is now %d", m.state)
 	}
-	if got := m.input.Value(); got != "" {
-		t.Fatalf("esc clears the draft it belongs to, got %q", got)
+	if got := m.input.Value(); got != "scratch that" {
+		t.Fatalf("esc keeps the draft it belongs to, got %q", got)
 	}
 }
 

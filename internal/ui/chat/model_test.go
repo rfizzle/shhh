@@ -1528,7 +1528,7 @@ func TestInputHistory_UpIgnoredWhenDraftPresent(t *testing.T) {
 	}
 }
 
-func TestEsc_ClearsInput(t *testing.T) {
+func TestEsc_KeepsInput(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream, Wiring{})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
@@ -1537,8 +1537,8 @@ func TestEsc_ClearsInput(t *testing.T) {
 	m.input.SetValue("half-typed thought")
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
-	if m.input.Value() != "" {
-		t.Fatalf("Esc should clear input, got %q", m.input.Value())
+	if m.input.Value() != "half-typed thought" {
+		t.Fatalf("Esc should keep input, got %q", m.input.Value())
 	}
 }
 

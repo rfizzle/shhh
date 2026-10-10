@@ -33,8 +33,8 @@
   · suspend          ctrl+z · suspend shhh (idle only)  [shipped]
   · redraw           ctrl+l · redraw the screen  [shipped]
   · answer           ctrl+space ctrl+y · answer it  [shipped]
-  · clear            esc · clear the input, or fold what is open  [shipped]
-  · cancel           ctrl+c · stop the run, else clear the input, el…  [shipped]
+  · clear            esc · back out one level, or fold what is open  [shipped]
+  · cancel           ctrl+c · stop the run, else clear the input (ke…  [shipped]
 
   SEARCH
 

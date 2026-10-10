@@ -424,15 +424,15 @@ var Draft = DraftKeys{
 	// deliberately leaves to the line editor (see DraftKeys).
 	Answer: bind("ctrl+space/ctrl+y", "answer it", "ctrl+space", "ctrl+y"),
 
-	// Esc goes back and never stops anything. It clears the draft, drops a
-	// selection, dismisses the completion menu, detaches a level, folds every
+	// Esc goes back and never stops anything or destroys anything. It leaves
+	// the draft as it is, drops a selection, dismisses the completion menu, detaches a level, folds every
 	// row the reader opened, leaves a waiting decision waiting — and on an
 	// empty draft under a running turn it does nothing else at all, because
 	// the reflex that closes a diff must not abandon minutes of work when the
 	// box happens to be empty. Interrupting is the cancel chord's alone
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-	Clear:  bind("esc", "clear the input, or fold what is open", "esc"),
-	Cancel: bind("ctrl+c", "stop the run, else clear the input, else quit (press twice)", "ctrl+c"),
+	Clear:  bind("esc", "back out one level, or fold what is open", "esc"),
+	Cancel: bind("ctrl+c", "stop the run, else clear the input (kept in history), else quit (press twice)", "ctrl+c"),
 }
 
 // SearchKeys are the input history search's: the incremental reverse search

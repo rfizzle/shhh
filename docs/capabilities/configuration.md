@@ -863,8 +863,8 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `draft.suspend` | `ctrl+z` | suspend shhh (idle only) | yes |
 | `draft.redraw` | `ctrl+l` | redraw the screen | yes |
 | `draft.answer` | `ctrl+space`, `ctrl+y` | answer it | yes |
-| `draft.clear` | `esc` | clear the input, or fold what is open | yes |
-| `draft.cancel` | `ctrl+c` | stop the run, else clear the input, else quit (press twice) | yes |
+| `draft.clear` | `esc` | back out one level, or fold what is open | yes |
+| `draft.cancel` | `ctrl+c` | stop the run, else clear the input (kept in history), else quit (press twice) | yes |
 | `search.older` | `ctrl+r` | an older match | yes |
 | `search.keep` | `enter` | keep it in the draft | yes |
 | `search.cancel` | `esc` | back | yes |

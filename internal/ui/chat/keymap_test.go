@@ -158,18 +158,22 @@ func TestRewind_TheGestureWindowExpires(t *testing.T) {
 	}
 }
 
-func TestRewind_EscWithADraftClearsItFirst(t *testing.T) {
+func TestRewind_EscWithADraftKeepsItAndCtrlCClearsIt(t *testing.T) {
 	m := typeChars(t, readyModel(t), "half a thought")
 	m.checkpoints = []checkpoint{{index: 1, preview: "make it fast"}}
 
 	m, _ = pressKey(t, m, escK)
+	if m.input.Value() != "half a thought" || m.state != stateInput {
+		t.Fatal("esc with a draft must keep it and do nothing else")
+	}
+	m, _ = pressKey(t, m, ctrlC)
 	if m.input.Value() != "" || m.state != stateInput {
-		t.Fatal("esc with a draft must clear it and nothing else")
+		t.Fatal("ctrl+c with a draft must clear it and nothing else")
 	}
 	m, _ = pressKey(t, m, escK)
 	m, _ = pressKey(t, m, escK)
 	if m.state != statePick {
-		t.Fatal("the two presses after the clearing one did not open the picker")
+		t.Fatal("the two esc presses after the clearing one did not open the picker")
 	}
 }
 

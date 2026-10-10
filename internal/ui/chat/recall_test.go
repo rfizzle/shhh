@@ -434,7 +434,7 @@ func TestHistorySearch_EscStagesNothing(t *testing.T) {
 	}
 }
 
-// Clearing the draft is a fold leaving it, so the paste it stood for leaves
+// Clearing the draft (ctrl+c) is a fold leaving it, so the paste it stood for leaves
 // too — otherwise the next message carries bytes it never mentions. A file
 // the reader attached by hand has no fold in the sentence and stays.
 func TestClearKey_DropsThePastesTheDraftFolded(t *testing.T) {
@@ -449,9 +449,9 @@ func TestClearKey_DropsThePastesTheDraftFolded(t *testing.T) {
 		t.Fatalf("the paste should be staged beside the file, got %v", attachment.Names(m.attachments))
 	}
 
-	m, _ = pressKey(t, m, escK)
+	m, _ = pressKey(t, m, ctrlC)
 	if m.input.Value() != "" {
-		t.Fatalf("esc should clear the draft, got %q", m.input.Value())
+		t.Fatalf("ctrl+c should clear the draft, got %q", m.input.Value())
 	}
 	if len(m.attachments) != 1 || m.attachments[0].Name != "notes.md" {
 		t.Fatalf("the cleared fold's paste should go and the hand-attached file stay, got %v",

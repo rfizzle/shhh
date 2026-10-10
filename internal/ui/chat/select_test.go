@@ -694,10 +694,10 @@ func TestSelection_EscCancelsAndLeavesTheDraftAlone(t *testing.T) {
 	if m.pointer.selNotice != "" {
 		t.Fatalf("the copy notice should go with it, got %q", m.pointer.selNotice)
 	}
-	// A second esc means what esc always meant.
+	// A second esc still leaves the sentence alone.
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
-	if got := updated.(Model).input.Value(); got != "" {
-		t.Fatalf("esc with nothing selected should clear the draft, got %q", got)
+	if got := updated.(Model).input.Value(); got != "half a sentence" {
+		t.Fatalf("esc with nothing selected should keep the draft, got %q", got)
 	}
 }
 
