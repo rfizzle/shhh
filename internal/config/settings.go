@@ -130,6 +130,51 @@ type Setting struct {
 	// (docs/capabilities/configuration.md#two-files-one-resolution-order).
 	Env  string
 	Flag string
+	// Taken is when a running session takes a new value for the key: at its
+	// next turn, for a key the session reads where a turn begins or a call is
+	// made, or from the next session, for a key it wires when it opens. It
+	// is what the settings screen reads to take a staged value for the
+	// session as it is staged, and to say of a staged value it cannot take
+	// that it reaches the next session instead
+	// (docs/interface/surfaces.md#the-settings-screen). Every key states it;
+	// the zero value is no answer, and a test refuses it.
+	Taken Taken
+}
+
+// Taken is when a running session takes a key's new value.
+type Taken int
+
+// The zero Taken is a key that has not said, which no key may be.
+const (
+	// AtStart is a key a session wires when it opens — a provider built, a
+	// sandbox wrapped, a server started — so a new value reaches the next
+	// session and not this one.
+	AtStart Taken = iota + 1
+	// AtTurn is a key a running session reads at a turn boundary or at the
+	// call it decides, so a new value is taken at the next one.
+	AtTurn
+)
+
+// String is the reference column's words for it.
+func (t Taken) String() string {
+	switch t {
+	case AtTurn:
+		return "next turn"
+	case AtStart:
+		return "next session"
+	}
+	return "unsaid"
+}
+
+// Live reports whether a running session takes the key's new value at its
+// next turn.
+func (s Setting) Live() bool { return s.Taken == AtTurn }
+
+// Live reports whether a running session takes a new value for key at its
+// next turn. A key no setting reads is not.
+func Live(key string) bool {
+	s, ok := Lookup(key)
+	return ok && s.Live()
 }
 
 // Group is the file table the key sits in — `provider`, `behavior`,
@@ -197,516 +242,516 @@ func (s Setting) shown() string {
 // who has scrolled one has scrolled the other.
 var settings = []Setting{
 	{
-		Key: "provider.default", Kind: KindString, Default: "openai-responses",
+		Key: "provider.default", Kind: KindString, Taken: AtStart, Default: "openai-responses",
 		Env: "SHHH_PROVIDER", Flag: "--provider",
 		Desc: "Which provider a request goes to: a built-in one, or a gateway profile from `shhh providers`.",
 	}, {
-		Key: "provider.model", Kind: KindString, Default: "(the provider's own default)",
+		Key: "provider.model", Kind: KindString, Taken: AtTurn, Default: "(the provider's own default)",
 		Env: "SHHH_MODEL", Flag: "--model",
 		Desc: "The model every surface runs on where its own key — `cmd_model`, `chat_model` or `code_model` — names none.",
 	}, {
-		Key: "provider.cmd_model", Kind: KindString, Default: "(provider.model)",
+		Key: "provider.cmd_model", Kind: KindString, Taken: AtStart, Default: "(provider.model)",
 		Env: "SHHH_MODEL", Flag: "--model",
 		Desc: "The model `shhh cmd` and the shell hotkey generate a command on, read ahead of `provider.model`.",
 	}, {
-		Key: "provider.chat_model", Kind: KindString, Default: "(provider.model)",
+		Key: "provider.chat_model", Kind: KindString, Taken: AtStart, Default: "(provider.model)",
 		Env: "SHHH_MODEL", Flag: "--model",
 		Desc: "The model `shhh chat` runs on, a `--print` conversation and the stages of a backlog run that only reads included, read ahead of `provider.model`.",
 	}, {
-		Key: "provider.code_model", Kind: KindString, Default: "(provider.model)",
+		Key: "provider.code_model", Kind: KindString, Taken: AtStart, Default: "(provider.model)",
 		Env: "SHHH_MODEL", Flag: "--model",
 		Desc: "The model `shhh code` runs on — a `--print` run, `shhh serve`, `shhh eval` and the stages of a backlog run that writes included — read ahead of `provider.model`.",
 	}, {
-		Key: "provider.cheap_model", Kind: KindString, Default: "(the provider's small model, or the session's own)",
+		Key: "provider.cheap_model", Kind: KindString, Taken: AtStart, Default: "(the provider's small model, or the session's own)",
 		Desc: "The model every bounded call — the classifier, the readings, the title, the standing account, the explanation, the description, the backlog's drafts, the profile drafter — falls back to when its own key is unset.",
 	}, {
-		Key: "provider.api_key", Kind: KindString, Default: "(from the environment)", Secret: true,
+		Key: "provider.api_key", Kind: KindString, Taken: AtStart, Default: "(from the environment)", Secret: true,
 		Env: "SHHH_API_KEY", Flag: "--api-key",
 		Desc: "The provider key itself, which puts a copy of it in every copy of this file; `api_key_env` is the form to prefer.",
 	}, {
-		Key: "provider.api_key_env", Kind: KindEnvVar, Default: "(the provider's own variable)",
+		Key: "provider.api_key_env", Kind: KindEnvVar, Taken: AtStart, Default: "(the provider's own variable)",
 		Desc: "The environment variable the provider key is read from at start, so the file names the key instead of holding it. It is read ahead of `api_key`.",
 	}, {
-		Key: "provider.base_url", Kind: KindString, Default: "(the provider's own)",
+		Key: "provider.base_url", Kind: KindString, Taken: AtStart, Default: "(the provider's own)",
 		Env:  "SHHH_BASE_URL",
 		Desc: "Where the provider's API is, for a gateway or a self-hosted endpoint.",
 	}, {
-		Key: "provider.name", Kind: KindString, Default: "(the provider's own)",
+		Key: "provider.name", Kind: KindString, Taken: AtStart, Default: "(the provider's own)",
 		Desc: "What the provider is called on screen, for a gateway that fronts several.",
 	}, {
-		Key: "provider.reasoning", Kind: KindEnum, Default: "medium",
+		Key: "provider.reasoning", Kind: KindEnum, Taken: AtTurn, Default: "medium",
 		Values: []string{"off", "low", "medium", "high", "xhigh", "max"},
 		Env:    "SHHH_REASONING", Flag: "--reasoning",
 		Desc: "How hard the model thinks before it answers; the level is fitted to each model, so a rung it lacks lowers to the one it has.",
 	}, {
-		Key: "provider.cache_ttl", Kind: KindEnum, Default: "1h",
+		Key: "provider.cache_ttl", Kind: KindEnum, Taken: AtStart, Default: "1h",
 		Values: []string{"5m", "1h"},
 		Desc:   "How long the opening a session repeats every round stays cached between rounds.",
 	}, {
-		Key: "provider.cost_warning_cents", Kind: KindInt, Default: "0 (off)", Literal: "0",
+		Key: "provider.cost_warning_cents", Kind: KindInt, Taken: AtStart, Default: "0 (off)", Literal: "0",
 		Desc: "Priced session spend, in cents, at which the live spend rail warns once.",
 	}, {
-		Key: "provider.cost_cap_cents", Kind: KindInt, Default: "0 (off)", Literal: "0",
+		Key: "provider.cost_cap_cents", Kind: KindInt, Taken: AtStart, Default: "0 (off)", Literal: "0",
 		Desc: "Priced session spend, in cents, after which later model requests are refused.",
 	}, {
-		Key: "provider.stream_idle_seconds", Kind: KindInt, Signed: true,
+		Key: "provider.stream_idle_seconds", Kind: KindInt, Taken: AtStart, Signed: true,
 		Default: "120 seconds", Literal: "120",
 		Desc: "How long a turn's stream may go without an event before the request is abandoned and retried; a negative removes the deadline.",
 	},
 
 	{
-		Key: "behavior.silent_mode", Kind: KindBool, Default: "off",
+		Key: "behavior.silent_mode", Kind: KindBool, Taken: AtStart, Default: "off",
 		Desc: "Print the generated command and nothing else, for a shell that pipes it somewhere.",
 	}, {
-		Key: "behavior.shell", Kind: KindString, Default: "(your login shell)",
+		Key: "behavior.shell", Kind: KindString, Taken: AtStart, Default: "(your login shell)",
 		Desc: "The shell commands are run through.",
 	}, {
-		Key: "behavior.context_max_tokens", Kind: KindInt, Default: "8000 tokens", Literal: "8000",
+		Key: "behavior.context_max_tokens", Kind: KindInt, Taken: AtStart, Default: "8000 tokens", Literal: "8000",
 		Desc: "The token budget for the shell context a generated command is written against.",
 	}, {
-		Key: "behavior.max_tool_rounds", Kind: KindInt, Signed: true, Default: "150",
+		Key: "behavior.max_tool_rounds", Kind: KindInt, Taken: AtTurn, Signed: true, Default: "150",
 		Desc: "How many consecutive tool rounds one turn may take; a negative removes the cap for every run in scope.",
 	}, {
-		Key: "behavior.tree_check", Kind: KindBool, Default: "on",
+		Key: "behavior.tree_check", Kind: KindBool, Taken: AtStart, Default: "on",
 		Desc: "Tell a turn when the working tree moved in a way its own edits do not explain.",
 	}, {
-		Key: "behavior.command_timeout_seconds", Kind: KindInt, Signed: true, Default: "600",
+		Key: "behavior.command_timeout_seconds", Kind: KindInt, Taken: AtStart, Signed: true, Default: "600",
 		Desc: "How long one command the assistant runs may take before it is cancelled; a negative removes the ceiling.",
 	}, {
-		Key: "behavior.safety_warnings", Kind: KindBool, Default: "on",
+		Key: "behavior.safety_warnings", Kind: KindBool, Taken: AtStart, Default: "on",
 		Desc: "Say what a destructive command will do before it is approved.",
 	}, {
-		Key: "behavior.system_prompt_extra", Kind: KindString, Default: "(nothing)",
+		Key: "behavior.system_prompt_extra", Kind: KindString, Taken: AtStart, Default: "(nothing)",
 		Desc: "Text appended to every system prompt.",
 	}, {
-		Key: "behavior.command_allowlist", Kind: KindList, Default: "(empty — every command asks)",
+		Key: "behavior.command_allowlist", Kind: KindList, Taken: AtStart, Default: "(empty — every command asks)",
 		Desc: "Command prefixes that auto-approve in a session; a safety-flagged command always asks anyway.",
 	}, {
-		Key: "behavior.command_denylist", Kind: KindList, Default: "(empty — nothing is refused in advance)",
+		Key: "behavior.command_denylist", Kind: KindList, Taken: AtStart, Default: "(empty — nothing is refused in advance)",
 		Desc: "Command prefixes refused in every mode; read before the allowlist, and no approval can allow one.",
 	}, {
-		Key: "behavior.read_only_commands", Kind: KindList, Default: "(the built-in inspection list alone)",
+		Key: "behavior.read_only_commands", Kind: KindList, Taken: AtStart, Default: "(the built-in inspection list alone)",
 		Desc: "Commands added to the built-in inspection list that runs without asking; entries skip the built-in flag guards.",
 	}, {
-		Key: "behavior.read_only_auto", Kind: KindBool, Default: "on",
+		Key: "behavior.read_only_auto", Kind: KindBool, Taken: AtStart, Default: "on",
 		Desc: "Run the built-in inspection list without asking; off makes a read prompt like anything else.",
 	}, {
-		Key: "behavior.scope_dirs", Kind: KindList, Default: "(the directory the session opened in)",
+		Key: "behavior.scope_dirs", Kind: KindList, Taken: AtStart, Default: "(the directory the session opened in)",
 		Desc: "Directories added to a session's working scope at start, beside the one it was opened in.",
 	}, {
-		Key: "behavior.default_mode", Kind: KindEnum, Default: "manual",
+		Key: "behavior.default_mode", Kind: KindEnum, Taken: AtTurn, Default: "manual",
 		Values: []string{"manual", "accept-edits", "auto", "read-only", "plan"},
 		Desc:   "The permission mode a session starts in.",
 	}, {
-		Key: "behavior.mode_cycle", Kind: KindList, Default: "manual, accept-edits, auto, read-only, plan", Literal: "manual, accept-edits, auto, read-only, plan",
+		Key: "behavior.mode_cycle", Kind: KindList, Taken: AtStart, Default: "manual, accept-edits, auto, read-only, plan", Literal: "manual, accept-edits, auto, read-only, plan",
 		Values: []string{"manual", "accept-edits", "auto", "read-only", "plan"},
 		Desc:   "The order the mode key walks the permission modes in.",
 	}, {
-		Key: "behavior.classifier_model", Kind: KindString, Default: "(provider.cheap_model)",
+		Key: "behavior.classifier_model", Kind: KindString, Taken: AtTurn, Default: "(provider.cheap_model)",
 		Desc: "The model auto mode's permission classifier runs on.",
 	}, {
-		Key: "behavior.classifier_timeout_seconds", Kind: KindInt, Default: "30",
+		Key: "behavior.classifier_timeout_seconds", Kind: KindInt, Taken: AtStart, Default: "30",
 		Desc: "How long one classifier request may take.",
 	}, {
-		Key: "behavior.classifier_max_tokens", Kind: KindInt, Default: "8192",
+		Key: "behavior.classifier_max_tokens", Kind: KindInt, Taken: AtStart, Default: "8192",
 		Desc: "The ceiling on a classifier response, the reasoning it does before answering included.",
 	}, {
-		Key: "behavior.classifier_retries", Kind: KindInt, Default: "1",
+		Key: "behavior.classifier_retries", Kind: KindInt, Taken: AtStart, Default: "1",
 		Desc: "How many extra attempts an invalid or failed classifier response gets before it fails closed.",
 	}, {
-		Key: "behavior.classifier_backend", Kind: KindEnum, Default: "completion",
+		Key: "behavior.classifier_backend", Kind: KindEnum, Taken: AtStart, Default: "completion",
 		Values: []string{"completion", "decisions"},
 		Desc:   "How the classifier is asked: for a verdict in words, or, on a model that offers the Decisions API, for the probability that a call may run.",
 	}, {
-		Key: "behavior.classifier_threshold", Kind: KindInt, Default: "80",
+		Key: "behavior.classifier_threshold", Kind: KindInt, Taken: AtStart, Default: "80",
 		Desc: "The percentage that probability must reach for the decisions backend to let a call run unasked; below it the classifier says no.",
 	}, {
-		Key: "behavior.explainer_model", Kind: KindString, Default: "(the classifier's model)",
+		Key: "behavior.explainer_model", Kind: KindString, Taken: AtTurn, Default: "(the classifier's model)",
 		Desc: "The model an approval card's explanation of a command is asked of.",
 	}, {
-		Key: "behavior.description_model", Kind: KindString, Default: "(provider.cheap_model)",
+		Key: "behavior.description_model", Kind: KindString, Taken: AtTurn, Default: "(provider.cheap_model)",
 		Desc: "The model that writes the one-line description a command saved from `shhh cmd` is listed under.",
 	}, {
-		Key: "behavior.suggestions", Kind: KindBool, Default: "on",
+		Key: "behavior.suggestions", Kind: KindBool, Taken: AtTurn, Default: "on",
 		Desc: "Offer a next step, drawn dim in the empty draft after a turn closes, that the right arrow takes into the draft, and let a cheap model write the start screen's read-only offers at session open; off asks for neither.",
 	}, {
-		Key: "behavior.suggestion_model", Kind: KindString, Default: "(provider.cheap_model)",
+		Key: "behavior.suggestion_model", Kind: KindString, Taken: AtTurn, Default: "(provider.cheap_model)",
 		Desc: "The model the next step offered in an empty draft is asked of.",
 	}, {
-		Key: "behavior.start_offers_model", Kind: KindString, Default: "(provider.cheap_model)",
+		Key: "behavior.start_offers_model", Kind: KindString, Taken: AtTurn, Default: "(provider.cheap_model)",
 		Desc: "The model the start screen's read-only offers are written by, read once at session open.",
 	}, {
-		Key: "behavior.patterns_model", Kind: KindString, Default: "(provider.cheap_model)",
+		Key: "behavior.patterns_model", Kind: KindString, Taken: AtTurn, Default: "(provider.cheap_model)",
 		Desc: "The model that words a memory or a skill proposed from what repeats across sessions, asked when you open one in /patterns.",
 	}, {
-		Key: "behavior.memory_disabled", Kind: KindBool, Default: "off",
+		Key: "behavior.memory_disabled", Kind: KindBool, Taken: AtStart, Default: "off",
 		Desc: "Turn durable memory off: nothing is injected and the remember tool is not registered.",
 	}, {
-		Key: "behavior.memory_max_entries", Kind: KindInt, Default: "20",
+		Key: "behavior.memory_max_entries", Kind: KindInt, Taken: AtStart, Default: "20",
 		Desc: "How many memories are injected into one session's system prompt.",
 	}, {
-		Key: "behavior.memory_max_tokens", Kind: KindInt, Default: "1200",
+		Key: "behavior.memory_max_tokens", Kind: KindInt, Taken: AtStart, Default: "1200",
 		Desc: "The token budget for the injected memory block.",
 	}, {
-		Key: "behavior.check_in_interval_rounds", Kind: KindInt, Signed: true, Default: "40 rounds", Literal: "40",
+		Key: "behavior.check_in_interval_rounds", Kind: KindInt, Taken: AtTurn, Signed: true, Default: "40 rounds", Literal: "40",
 		Desc: "How many tool rounds pass before a turn is asked to take stock.",
 	}, {
-		Key: "behavior.check_in_max_doublings", Kind: KindInt, Signed: true, Default: "2 doublings", Literal: "2",
+		Key: "behavior.check_in_max_doublings", Kind: KindInt, Taken: AtTurn, Signed: true, Default: "2 doublings", Literal: "2",
 		Desc: "How far that interval widens over one turn; a negative fixes it, so a long turn is asked at the same rate throughout.",
 	}, {
-		Key: "behavior.progress_interval_calls", Kind: KindInt, Signed: true, Default: "12 calls", Literal: "12",
+		Key: "behavior.progress_interval_calls", Kind: KindInt, Taken: AtTurn, Signed: true, Default: "12 calls", Literal: "12",
 		Desc: "How many tool calls without assistant prose earn a public progress checkpoint.",
 	}, {
-		Key: "behavior.progress_interval_seconds", Kind: KindInt, Signed: true, Default: "90 seconds", Literal: "90",
+		Key: "behavior.progress_interval_seconds", Kind: KindInt, Taken: AtTurn, Signed: true, Default: "90 seconds", Literal: "90",
 		Desc: "How long a tool run may stay silent before it earns a public progress checkpoint.",
 	}, {
-		Key: "behavior.provider_retries", Kind: KindInt, Default: "3 attempts", Literal: "3",
+		Key: "behavior.provider_retries", Kind: KindInt, Taken: AtStart, Default: "3 attempts", Literal: "3",
 		Desc: "How many times one stall — a rate limit, an overloaded provider, a connection that died before a token — is asked again before the failure stands; zero is a machine that would rather see the failure than sit out a wait.",
 	}, {
-		Key: "behavior.flake_alert_count", Kind: KindInt, Default: "3 flakes", Literal: "3",
+		Key: "behavior.flake_alert_count", Kind: KindInt, Taken: AtStart, Default: "3 flakes", Literal: "3",
 		Desc: "How many times a quality check must have flaked in this checkout before the rail's ALERTS block stands it as an alert.",
 	}, {
-		Key: "behavior.flake_alert_days", Kind: KindInt, Default: "7 days", Literal: "7",
+		Key: "behavior.flake_alert_days", Kind: KindInt, Taken: AtStart, Default: "7 days", Literal: "7",
 		Desc: "How long that alert stands after the check's latest flake; it settles once this many days pass without another.",
 	},
 
 	{
-		Key: "sandbox.require", Kind: KindBool, Default: "off",
+		Key: "sandbox.require", Kind: KindBool, Taken: AtStart, Default: "off",
 		Flag: "--require-sandbox",
 		Desc: "Refuse an assistant command where no containment mechanism is in force, rather than running it unconfined.",
 	}, {
-		Key: "sandbox.profile", Kind: KindEnum, Default: "workspace",
+		Key: "sandbox.profile", Kind: KindEnum, Taken: AtStart, Default: "workspace",
 		Values: []string{"workspace", "workspace-netless"},
 		Desc:   "What a contained command may reach: the workspace with the network untouched, or the same with the network closed.",
 	}, {
-		Key: "sandbox.allow_hosts", Kind: KindList, Default: "(empty — the profile's own answer)",
+		Key: "sandbox.allow_hosts", Kind: KindList, Taken: AtStart, Default: "(empty — the profile's own answer)",
 		Desc: "The only hosts a contained command reaches under the `workspace` profile, through a proxy on loopback; an exact host, never a suffix. The netless profile does not read it.",
 	}, {
-		Key: "sandbox.deny_extra", Kind: KindList, Default: "(the built-in deny mask alone)",
+		Key: "sandbox.deny_extra", Kind: KindList, Taken: AtStart, Default: "(the built-in deny mask alone)",
 		Desc: "Paths added to the built-in deny mask; a contained command sees them as empty.",
 	}, {
-		Key: "sandbox.write_extra", Kind: KindList, Default: "(the workspace, the session's own tmpdir and the toolchain caches)",
+		Key: "sandbox.write_extra", Kind: KindList, Taken: AtStart, Default: "(the workspace, the session's own tmpdir and the toolchain caches)",
 		Desc: "Paths writable inside containment, beside the workspace.",
 	}, {
-		Key: "sandbox.container_engine", Kind: KindEnum, Default: "(auto-detected, a rootless engine first)",
+		Key: "sandbox.container_engine", Kind: KindEnum, Taken: AtStart, Default: "(auto-detected, a rootless engine first)",
 		Values: []string{"podman", "docker"},
 		Desc:   "Which engine runs a container sandbox.",
 	}, {
-		Key: "sandbox.container_image", Kind: KindString, Default: "(the image released with this shhh)",
+		Key: "sandbox.container_image", Kind: KindString, Taken: AtStart, Default: "(the image released with this shhh)",
 		Desc: "The digest-pinned image (name@sha256:…) a sandbox container runs, in place of the one released with this shhh.",
 	}, {
-		Key: "sandbox.image_allowlist", Kind: KindList, Default: "(any digest-pinned image)",
+		Key: "sandbox.image_allowlist", Kind: KindList, Taken: AtStart, Default: "(any digest-pinned image)",
 		Desc: "The only sandbox images that may run, as digest-pinned references.",
 	}, {
-		Key: "sandbox.container_memory", Kind: KindString, Default: "2g",
+		Key: "sandbox.container_memory", Kind: KindString, Taken: AtStart, Default: "2g",
 		Desc: "The memory ceiling on a sandbox container.",
 	}, {
-		Key: "sandbox.container_cpus", Kind: KindString, Default: "2",
+		Key: "sandbox.container_cpus", Kind: KindString, Taken: AtStart, Default: "2",
 		Desc: "The CPU ceiling on a sandbox container.",
 	}, {
-		Key: "sandbox.container_pids", Kind: KindInt, Default: "256",
+		Key: "sandbox.container_pids", Kind: KindInt, Taken: AtStart, Default: "256",
 		Desc: "The process ceiling inside a sandbox container.",
 	}, {
-		Key: "sandbox.container_ttl_hours", Kind: KindInt, Default: "24",
+		Key: "sandbox.container_ttl_hours", Kind: KindInt, Taken: AtStart, Default: "24",
 		Desc: "How long a sandbox container may live before startup reconciliation reaps it.",
 	}, {
-		Key: "sandbox.require_isolation", Kind: KindEnum, Default: "(none required)",
+		Key: "sandbox.require_isolation", Kind: KindEnum, Taken: AtStart, Default: "(none required)",
 		Values: []string{"process", "container", "vm"},
 		Desc:   "Refuse to create a sandbox below this verified level; a requirement that cannot be verified fails rather than downgrading.",
 	},
 
 	{
-		Key: "web.allow_private", Kind: KindBool, Default: "off",
+		Key: "web.allow_private", Kind: KindBool, Taken: AtStart, Default: "off",
 		Desc: "Let a fetch reach private, loopback, link-local and CGNAT addresses, and lift the 80/443 port list; cloud metadata stays blocked either way.",
 	}, {
-		Key: "web.fetch_max_bytes", Kind: KindInt, Default: "2 MiB", Literal: "2097152",
+		Key: "web.fetch_max_bytes", Kind: KindInt, Taken: AtStart, Default: "2 MiB", Literal: "2097152",
 		Desc: "The download ceiling on one fetch.",
 	}, {
-		Key: "web.inline_bytes", Kind: KindInt, Default: "16 KiB with an evidence store, 48 KiB without", Literal: "16384",
+		Key: "web.inline_bytes", Kind: KindInt, Taken: AtStart, Default: "16 KiB with an evidence store, 48 KiB without", Literal: "16384",
 		Desc: "How much of a fetched page's text one tool result carries; with a store the rest is kept whole and the result says how to read on from the cut.",
 	}, {
-		Key: "web.fetch_timeout_seconds", Kind: KindInt, Default: "30",
+		Key: "web.fetch_timeout_seconds", Kind: KindInt, Taken: AtStart, Default: "30",
 		Desc: "How long one request may take, redirects and the body read included. A wait a host asked for is not charged to it.",
 	}, {
-		Key: "web.cache_ttl_minutes", Kind: KindInt, Default: "60",
+		Key: "web.cache_ttl_minutes", Kind: KindInt, Taken: AtStart, Default: "60",
 		Desc: "How long a cached response stays fresh.",
 	}, {
-		Key: "web.allow_hosts", Kind: KindList, Default: "(empty — every host asks the first time)",
+		Key: "web.allow_hosts", Kind: KindList, Taken: AtStart, Default: "(empty — every host asks the first time)",
 		Desc: "Hosts a fetch reaches without asking, in every session; an exact host, never a suffix, so `docs.python.org` does not cover `python.org`.",
 	}, {
-		Key: "web.deny_hosts", Kind: KindList, Default: "(empty — nothing is refused in advance)",
+		Key: "web.deny_hosts", Kind: KindList, Taken: AtStart, Default: "(empty — nothing is refused in advance)",
 		Desc: "Hosts no fetch reaches; read before the allow list, before a session grant and before the classifier, and no approval can allow one.",
 	}, {
-		Key: "web.reputation_off", Kind: KindList, Default: "(empty — every list is read)",
+		Key: "web.reputation_off", Kind: KindList, Taken: AtStart, Default: "(empty — every list is read)",
 		Values: []string{"builtin", "tranco", "nrd", "disposable", "urlhaus", "stevenblack"},
 		Desc:   "Host lists a fetch is not read against: `builtin` is shhh's own short list, `tranco` the popularity ranking, `nrd` newly registered domains, `disposable` throwaway domains, `urlhaus` and `stevenblack` malware and blocking lists. A reading only advises auto mode, and never outranks `allow_hosts` or `deny_hosts`.",
 	}, {
-		Key: "web.search_provider", Kind: KindEnum, Default: "brave",
+		Key: "web.search_provider", Kind: KindEnum, Taken: AtStart, Default: "brave",
 		Values: []string{"brave", "searxng"},
 		Desc:   "Which backend the web_search tool asks: `brave`, which takes a key, or `searxng`, a self-hosted instance at `search_url`, which takes none.",
 	}, {
-		Key: "web.search_url", Kind: KindString, Default: "(unset — the searxng backend is not registered)",
+		Key: "web.search_url", Kind: KindString, Taken: AtStart, Default: "(unset — the searxng backend is not registered)",
 		Desc: "The SearXNG instance the web_search tool asks when `search_provider` is `searxng`; a URL with no path of its own is read as the instance's root and asked at /search. The instance must list `json` under `search.formats` in its own settings.",
 	}, {
-		Key: "web.search_api_key", Kind: KindString, Default: "(unset — web_search is not registered)", Secret: true,
+		Key: "web.search_api_key", Kind: KindString, Taken: AtStart, Default: "(unset — web_search is not registered)", Secret: true,
 		Desc: "The search backend's key itself, which puts a copy of it in every copy of this file; `search_api_key_env` is the form to prefer.",
 	}, {
-		Key: "web.search_api_key_env", Kind: KindEnvVar, Default: "(unset — web_search is not registered)",
+		Key: "web.search_api_key_env", Kind: KindEnvVar, Taken: AtStart, Default: "(unset — web_search is not registered)",
 		Desc: "The environment variable the search backend's key is read from at start, so the file names the key instead of holding it. It is read ahead of `search_api_key`.",
 	},
 
 	{
-		Key: "lsp.disabled", Kind: KindBool, Default: "off",
+		Key: "lsp.disabled", Kind: KindBool, Taken: AtStart, Default: "off",
 		Desc: "Turn the language-server integration off: no servers, no navigation tools, no diagnostics.",
 	}, {
-		Key: "lsp.request_timeout_seconds", Kind: KindInt, Default: "15",
+		Key: "lsp.request_timeout_seconds", Kind: KindInt, Taken: AtStart, Default: "15",
 		Desc: "How long one language-server request may take, the initialize handshake included.",
 	}, {
-		Key: "lsp.diagnostics_timeout_seconds", Kind: KindInt, Default: "3",
+		Key: "lsp.diagnostics_timeout_seconds", Kind: KindInt, Taken: AtStart, Default: "3",
 		Desc: "How long an applied edit waits for the server to re-check the file; a check that lands later rides with the next tool result rather than being dropped.",
 	},
 
 	{
-		Key: "appearance.accent_color", Kind: KindString, Default: "(the palette's own)",
+		Key: "appearance.accent_color", Kind: KindString, Taken: AtStart, Default: "(the palette's own)",
 		Desc: "The accent the surfaces are painted with.",
 	}, {
-		Key: "appearance.theme", Kind: KindEnum, Default: "auto",
+		Key: "appearance.theme", Kind: KindEnum, Taken: AtTurn, Default: "auto",
 		Values: []string{"auto", "dark", "light", "charm"},
 		Desc:   "Which colour table every surface draws with: `auto` asks the terminal what its own background is and takes the table chosen for that ground, or name one.",
 	}, {
-		Key: "appearance.verbosity", Kind: KindEnum, Default: "normal",
+		Key: "appearance.verbosity", Kind: KindEnum, Taken: AtTurn, Default: "normal",
 		Values: []string{"low", "normal", "high"},
 		Desc:   "How much the screen explains, one rung for every surface: `low` draws what you act on and little else, `normal` adds the readings, `high` every gloss, hint and field.",
 	}, {
-		Key: "appearance.mouse", Kind: KindBool, Default: "on",
+		Key: "appearance.mouse", Kind: KindBool, Taken: AtTurn, Default: "on",
 		Desc: "Terminal mouse reporting: the wheel scrolls the transcript and shhh selects text itself. Off leaves the terminal its native click-drag selection.",
 	}, {
-		Key: "appearance.notify", Kind: KindBool, Default: "on",
+		Key: "appearance.notify", Kind: KindBool, Taken: AtTurn, Default: "on",
 		Desc: "Raise a desktop notification when a turn stops while the window is not the one in front.",
 	}, {
-		Key: "appearance.window_title", Kind: KindBool, Default: "on",
+		Key: "appearance.window_title", Kind: KindBool, Taken: AtTurn, Default: "on",
 		Desc: "Name the terminal's own tab after the session.",
 	}, {
-		Key: "appearance.paste_lines", Kind: KindInt, Signed: true, Default: "10 lines", Literal: "10",
+		Key: "appearance.paste_lines", Kind: KindInt, Taken: AtTurn, Signed: true, Default: "10 lines", Literal: "10",
 		Desc: "The height past which a paste is staged as an attachment instead of typed into the draft; a negative turns that half of the test off.",
 	}, {
-		Key: "appearance.paste_columns", Kind: KindInt, Signed: true, Default: "1000 columns", Literal: "1000",
+		Key: "appearance.paste_columns", Kind: KindInt, Taken: AtTurn, Signed: true, Default: "1000 columns", Literal: "1000",
 		Desc: "The width past which a paste is staged as an attachment; a negative turns that half of the test off.",
 	}, {
-		Key: "appearance.rail_width", Kind: KindString, Default: "auto",
+		Key: "appearance.rail_width", Kind: KindString, Taken: AtTurn, Default: "auto",
 		Desc: "How many columns the inspector rail takes: `auto`, which widens the rail with the terminal, or a column count for a pane you chose the size of.",
 	},
 
 	{
-		Key: "history.retention_days", Kind: KindInt, Default: "90 days", Literal: "90",
+		Key: "history.retention_days", Kind: KindInt, Taken: AtStart, Default: "90 days", Literal: "90",
 		Desc: "How long a recorded session is kept before startup prunes it.",
 	},
 
 	{
-		Key: "chats.retention_days", Kind: KindInt, Signed: true, Default: "180 days", Literal: "180",
+		Key: "chats.retention_days", Kind: KindInt, Taken: AtStart, Signed: true, Default: "180 days", Literal: "180",
 		Desc: "How long a saved conversation nobody has written to is kept before startup prunes it, with a chat's branches going when it does; it matches the record's window because a record row names a conversation, and a negative keeps every conversation for good.",
 	},
 
 	{
-		Key: "sessions.inbound", Kind: KindEnum, Default: "(hold under auto, accept otherwise)",
+		Key: "sessions.inbound", Kind: KindEnum, Taken: AtStart, Default: "(hold under auto, accept otherwise)",
 		Values: []string{"accept", "hold", "refuse"},
 		Desc:   "What becomes of a line another session sends with `shhh send`: `accept` hands it to the turn as a steer, `hold` puts it on a card to pass on or drop, `refuse` takes nothing. It is never an approval or a command.",
 	},
 
 	{
-		Key: "reports.retention_days", Kind: KindInt, Default: "90 days", Literal: "90",
+		Key: "reports.retention_days", Kind: KindInt, Taken: AtStart, Default: "90 days", Literal: "90",
 		Desc: "How long a generated report page is kept.",
 	},
 
 	{
-		Key: "observe.retention_days", Kind: KindInt, Default: "180 days", Literal: "180",
+		Key: "observe.retention_days", Kind: KindInt, Taken: AtStart, Default: "180 days", Literal: "180",
 		Desc: "How long a session's record and its events are kept before startup prunes them; longer than history's window because a comparison reads back across a change made a quarter ago.",
 	},
 
 	{
-		Key: "otel.endpoint", Kind: KindString, Default: "(off — the record stays on this machine)",
+		Key: "otel.endpoint", Kind: KindString, Taken: AtStart, Default: "(off — the record stays on this machine)",
 		Desc: "Where an OTLP collector listens, as a URL with its scheme; each session is sent to it as one span when the session ends.",
 	},
 
 	{
-		Key: "logs.level", Kind: KindEnum, Default: "info",
+		Key: "logs.level", Kind: KindEnum, Taken: AtStart, Default: "info",
 		Values: []string{"debug", "info", "warn", "error"},
 		Desc:   "How much reaches the diagnostic log: `info` is every mechanism that failed quietly, every call a policy refused and every context trim; `warn` narrows it to what a person has to act on.",
 	},
 
 	{
-		Key: "agents.model", Kind: KindString, Default: "inherit",
+		Key: "agents.model", Kind: KindString, Taken: AtStart, Default: "inherit",
 		Desc: "The model every sub-agent runs, unless its role says otherwise; `inherit` is the session's own.",
 	}, {
-		Key: "agents.drafter_model", Kind: KindString, Default: "(provider.cheap_model)",
+		Key: "agents.drafter_model", Kind: KindString, Taken: AtTurn, Default: "(provider.cheap_model)",
 		Desc: "The model `/agents new` drafts a profile on, and `/toolchain` drafts a toolchain declaration on.",
 	}, {
-		Key: "agents.profiles." + RoleWildcard + ".model", Kind: KindString, Wild: WildRole,
+		Key: "agents.profiles." + RoleWildcard + ".model", Kind: KindString, Taken: AtStart, Wild: WildRole,
 		Default: "(the sub-agent model)",
 		Desc:    "The model one role runs — the role is the key's own segment, so any role a spawn names can have one.",
 	}, {
-		Key: "agents.depth." + RoleWildcard + ".model", Kind: KindString, Wild: WildDepth,
+		Key: "agents.depth." + RoleWildcard + ".model", Kind: KindString, Taken: AtStart, Wild: WildDepth,
 		Default: "(the sub-agent model)",
 		Desc:    "The model one level of delegation runs — `2` is a child of this session, `3` a child of that. A role that names its own model outranks it.",
 	}, {
-		Key: "agents.max_concurrent", Kind: KindInt, Default: "3",
+		Key: "agents.max_concurrent", Kind: KindInt, Taken: AtStart, Default: "3",
 		Desc: "How many children may run at once at one level of delegation; further spawns queue.",
 	}, {
-		Key: "agents.max_depth", Kind: KindInt, Default: "3",
+		Key: "agents.max_depth", Kind: KindInt, Taken: AtStart, Default: "3",
 		Desc: "How deep delegation may go, counting this session as 1: `3` is this session, its children and theirs.",
 	}, {
-		Key: "agents.max_children", Kind: KindInt, Default: "32",
+		Key: "agents.max_children", Kind: KindInt, Taken: AtStart, Default: "32",
 		Desc: "How many children this session may start in all, wherever in the tree the spawn happened; a finished child keeps its slot.",
 	}, {
-		Key: "agents.check_slots", Kind: KindInt, Default: "2",
+		Key: "agents.check_slots", Kind: KindInt, Taken: AtStart, Default: "2",
 		Desc: "How many checks may run at once across this session — a child's build or test run, a child's quality gate run, and your own gate each take one; the rest wait their turn.",
 	}, {
-		Key: "agents.delegation", Kind: KindEnum, Default: "explicit",
+		Key: "agents.delegation", Kind: KindEnum, Taken: AtStart, Default: "explicit",
 		Values: []string{"off", "explicit", "proactive"},
 		Desc:   "When the model starts sub-agents: `off` offers it no orchestration tools, `explicit` delegates when asked to, `proactive` divides work that splits into independent parts. The spawn card is drawn under all three.",
 	}, {
-		Key: "agents.require_sandbox", Kind: KindBool, Default: "on",
+		Key: "agents.require_sandbox", Kind: KindBool, Taken: AtStart, Default: "on",
 		Desc: "Run a writer's commands contained, and refuse them where no containment mechanism is in force rather than running them unconfined. Off, a writer follows sandbox.require as the session's own commands do.",
 	},
 
 	{
-		Key: "summary.model", Kind: KindString, Default: "(provider.cheap_model)",
+		Key: "summary.model", Kind: KindString, Taken: AtTurn, Default: "(provider.cheap_model)",
 		Desc: "The model that takes the periodic reading of the session.",
 	}, {
-		Key: "summary.interval_rounds", Kind: KindInt, Default: "10",
+		Key: "summary.interval_rounds", Kind: KindInt, Taken: AtTurn, Default: "10",
 		Desc: "How many tool rounds pass between two readings; higher is cheaper and staler.",
 	}, {
-		Key: "summary.min_gap_seconds", Kind: KindInt, Default: "20",
+		Key: "summary.min_gap_seconds", Kind: KindInt, Taken: AtTurn, Default: "20",
 		Desc: "The floor on wall-clock time between two readings, so a burst of fast rounds cannot rewrite the block repeatedly.",
 	}, {
-		Key: "summary.timeout_seconds", Kind: KindInt, Default: "20",
+		Key: "summary.timeout_seconds", Kind: KindInt, Taken: AtStart, Default: "20",
 		Desc: "How long one reading may take.",
 	}, {
-		Key: "summary.max_tokens", Kind: KindInt, Default: "8192",
+		Key: "summary.max_tokens", Kind: KindInt, Taken: AtStart, Default: "8192",
 		Desc: "The ceiling on a reading's response, the reasoning it does before answering included.",
 	}, {
-		Key: "summary.disabled", Kind: KindBool, Default: "off",
+		Key: "summary.disabled", Kind: KindBool, Taken: AtStart, Default: "off",
 		Desc: "Turn the reading off entirely: no requests are made and the rail draws no summary block.",
 	}, {
-		Key: "summary.headless", Kind: KindBool, Default: "on",
+		Key: "summary.headless", Kind: KindBool, Taken: AtStart, Default: "on",
 		Desc: "Take readings in a non-interactive run, which is the surface with nobody in front of it.",
 	}, {
-		Key: "summary.subagents", Kind: KindBool, Default: "on",
+		Key: "summary.subagents", Kind: KindBool, Taken: AtStart, Default: "on",
 		Desc: "Take readings in each spawned child, which has nobody in front of it; turning it off saves a reading per interval per child and leaves a child that has wandered unnoticed until its report.",
 	}, {
-		Key: "summary.intervene_cooldown_intervals", Kind: KindInt, Signed: true, Default: "2 readings", Literal: "2",
+		Key: "summary.intervene_cooldown_intervals", Kind: KindInt, Taken: AtStart, Signed: true, Default: "2 readings", Literal: "2",
 		Desc: "How many reading intervals pass between two verdict-driven interventions.",
 	}, {
-		Key: "summary.steer_target_chars", Kind: KindInt, Signed: true, Default: "400 characters", Literal: "400",
+		Key: "summary.steer_target_chars", Kind: KindInt, Taken: AtStart, Signed: true, Default: "400 characters", Literal: "400",
 		Desc: "How much of the instruction a steer quotes back to a drifting turn; a negative quotes it whole.",
 	}, {
-		Key: "summary.title", Kind: KindBool, Default: "on",
+		Key: "summary.title", Kind: KindBool, Taken: AtStart, Default: "on",
 		Desc: "Ask the summary model to name an unnamed session after its first turn, for the saved-chat listings.",
 	}, {
-		Key: "summary.resume_interval_turns", Kind: KindInt, Signed: true, Default: "3",
+		Key: "summary.resume_interval_turns", Kind: KindInt, Taken: AtStart, Signed: true, Default: "3",
 		Desc: "How many turns pass between two revisions of the session's standing account, the two sentences the saved-chat listings show under the title; a negative turns it off.",
 	},
 
 	{
-		Key: "secrets.env", Kind: KindList, Default: "(nothing declared)",
+		Key: "secrets.env", Kind: KindList, Taken: AtStart, Default: "(nothing declared)",
 		Desc: "Environment variables to declare as secrets in every session: the model may use the value and never sees it.",
 	}, {
-		Key: "secrets.env_mask", Kind: KindBool, Default: "on",
+		Key: "secrets.env_mask", Kind: KindBool, Taken: AtStart, Default: "on",
 		Desc: "Keep variables whose names end in _KEY, _SECRET or _TOKEN out of the environment of the commands the assistant runs, unless secrets.env declares one.",
 	},
 
 	{
-		Key: "mcp.disabled", Kind: KindBool, Default: "off",
+		Key: "mcp.disabled", Kind: KindBool, Taken: AtStart, Default: "off",
 		Desc: "Start no MCP server and register no MCP tool, whatever the file defines.",
 	}, {
-		Key: "mcp.startup_timeout_seconds", Kind: KindInt, Default: "20",
+		Key: "mcp.startup_timeout_seconds", Kind: KindInt, Taken: AtStart, Default: "20",
 		Desc: "How long each MCP server has to connect and list its tools; one that has not answered is reported and left out.",
 	}, {
-		Key: "mcp.call_timeout_seconds", Kind: KindInt, Default: "120",
+		Key: "mcp.call_timeout_seconds", Kind: KindInt, Taken: AtStart, Default: "120",
 		Desc: "How long one MCP tool call or resource read has to answer before the session gives it up; a server may override it with its own call_timeout_seconds.",
 	}, {
-		Key: "mcp.env_mask", Kind: KindBool, Default: "on",
+		Key: "mcp.env_mask", Kind: KindBool, Taken: AtStart, Default: "on",
 		Desc: "Keep variables whose names end in _KEY, _SECRET or _TOKEN out of the environment a stdio MCP server is started with, unless its own env declares one.",
 	},
 
 	{
-		Key: "prompts.steer", Kind: KindPath, Default: "(the built-in wording)",
+		Key: "prompts.steer", Kind: KindPath, Taken: AtStart, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the message a drifting turn is given; it may place `{{target}}`, `{{reason}}` and `{{count}}`, how many times this turn the check has said so.",
 	}, {
-		Key: "prompts.session_steer", Kind: KindPath, Default: "(the built-in wording)",
+		Key: "prompts.session_steer", Kind: KindPath, Taken: AtStart, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the words a line another session sent is framed in; it may place `{{source}}`, the sending session, and the line follows it.",
 	}, {
-		Key: "prompts.check_in", Kind: KindPath, Default: "(the built-in wording)",
+		Key: "prompts.check_in", Kind: KindPath, Taken: AtStart, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the message a turn that has reached its interval is given; it may place `{{rounds}}` and `{{finished}}`.",
 	}, {
-		Key: "prompts.summary", Kind: KindPath, Default: "(the built-in wording)",
+		Key: "prompts.summary", Kind: KindPath, Taken: AtStart, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the reading instruction the summarizing model is sent.",
 	}, {
-		Key: "prompts.classifier", Kind: KindPath, Default: "(the built-in wording)",
+		Key: "prompts.classifier", Kind: KindPath, Taken: AtStart, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the instruction auto mode's permission classifier is sent.",
 	}, {
-		Key: "prompts.account", Kind: KindPath, Default: "(the built-in wording)",
+		Key: "prompts.account", Kind: KindPath, Taken: AtStart, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the instruction the session's standing account is asked with.",
 	}, {
-		Key: "prompts.suggestion", Kind: KindPath, Default: "(the built-in wording)",
+		Key: "prompts.suggestion", Kind: KindPath, Taken: AtStart, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the instruction the next step offered in an empty draft is asked with.",
 	}, {
-		Key: "prompts.todo_standards", Kind: KindPath, Default: "(the built-in wording)",
+		Key: "prompts.todo_standards", Kind: KindPath, Taken: AtStart, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the sentence every step of a backlog run that changes the tree carries.",
 	}, {
-		Key: "prompts.todo_research", Kind: KindPath, Default: "(the built-in wording)",
+		Key: "prompts.todo_research", Kind: KindPath, Taken: AtStart, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace what a backlog run's research step is told; it may place `{{item}}` and `{{answers}}`.",
 	}, {
-		Key: "prompts.todo_implement", Kind: KindPath, Default: "(the built-in wording)",
+		Key: "prompts.todo_implement", Kind: KindPath, Taken: AtStart, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace what a backlog run's implement step is told; it may place `{{item}}`, `{{plan}}` and `{{answers}}`.",
 	}, {
-		Key: "prompts.todo_review", Kind: KindPath, Default: "(the built-in wording)",
+		Key: "prompts.todo_review", Kind: KindPath, Taken: AtStart, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace what a backlog run's review step is told; it may place `{{item}}`, `{{plan}}` and `{{diff}}`.",
 	}, {
-		Key: "prompts.todo_review_task", Kind: KindPath, Default: "(the built-in wording)",
+		Key: "prompts.todo_review_task", Kind: KindPath, Taken: AtStart, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace what the reviewer sub-agent is asked; it may place `{{item}}`, `{{plan}}` and `{{diff}}`.",
 	}, {
-		Key: "prompts.todo_remediate", Kind: KindPath, Default: "(the built-in wording)",
+		Key: "prompts.todo_remediate", Kind: KindPath, Taken: AtStart, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace what a backlog run's remediate step is told; it may place `{{item}}` and `{{findings}}`.",
 	}, {
-		Key: "prompts.todo_commit", Kind: KindPath, Default: "(the built-in wording)",
+		Key: "prompts.todo_commit", Kind: KindPath, Taken: AtStart, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace what a backlog run's commit step is told; it may place `{{item}}`.",
 	},
 
 	{
-		Key: "hooks.disabled", Kind: KindBool, Default: "off",
+		Key: "hooks.disabled", Kind: KindBool, Taken: AtStart, Default: "off",
 		Desc: "Fire no hook at any seam, whatever the files define.",
 	}, {
-		Key: "hooks.timeout_seconds", Kind: KindInt, Default: "30",
+		Key: "hooks.timeout_seconds", Kind: KindInt, Taken: AtStart, Default: "30",
 		Desc: "The longest any hook may take, and the cap on a hook's own timeout; it can be raised no higher than the command timeout, and there is no way to turn it off.",
 	},
 
 	{
-		Key: "todo.root", Kind: KindPath, Default: "(the project you are in, else the global backlog)",
+		Key: "todo.root", Kind: KindPath, Taken: AtStart, Default: "(the project you are in, else the global backlog)",
 		Desc: "Where the backlog lives when the working directory is part of no project; a session inside a project always reads that project's backlog.",
 	}, {
-		Key: "todo.profile", Kind: KindString, Default: "code",
+		Key: "todo.profile", Kind: KindString, Taken: AtStart, Default: "code",
 		Desc: "The profile this project's backlog is written in and worked under: what an item is called, which fields it carries, and which steps a run takes; it is looked for in this checkout, then beside your settings, then among the ones built in.",
 	}, {
-		Key: "todo.model", Kind: KindString, Default: "(provider.cheap_model)",
+		Key: "todo.model", Kind: KindString, Taken: AtTurn, Default: "(provider.cheap_model)",
 		Desc: "The model `/todo add` reads a session into items with and `/todo new` drafts an item on; grooming and sprint planning are turns of the session and run on its model.",
 	}, {
-		Key: "todo.commit", Kind: KindBool, Default: "on",
+		Key: "todo.commit", Kind: KindBool, Taken: AtStart, Default: "on",
 		Desc: "End a backlog run in a commit; off leaves the change in the working tree, which is the answer for a directory that is not a repository.",
 	}, {
-		Key: "todo.item_timeout_minutes", Kind: KindInt, Default: "0 (no cap)", Literal: "0",
+		Key: "todo.item_timeout_minutes", Kind: KindInt, Taken: AtStart, Default: "0 (no cap)", Literal: "0",
 		Desc: "How long one item of a sprint may take before it is blocked and the sprint stops; zero leaves it uncapped.",
 	}, {
-		Key: "todo.sprint_cost_cap_cents", Kind: KindInt, Default: "0 (off)", Literal: "0",
+		Key: "todo.sprint_cost_cap_cents", Kind: KindInt, Taken: AtStart, Default: "0 (off)", Literal: "0",
 		Flag: "--cost-cap",
 		Desc: "Priced spend, in cents, across a whole sprint after which it starts no further item; provider.cost_cap_cents still bounds each item's own session.",
 	}, {
-		Key: "todo.groom_stale_commits", Kind: KindInt, Default: "the profile's own", Literal: "0",
+		Key: "todo.groom_stale_commits", Kind: KindInt, Taken: AtStart, Default: "the profile's own", Literal: "0",
 		Desc: "How far an item's last reading may fall behind — in whatever the profile measures staleness by — before the backlog says so; unset keeps the profile's own threshold, and a negative number turns the warning off.",
 	},
 
 	{
-		Key: "commit.secret_ignore", Kind: KindList, Default: "(empty — every file is read)",
+		Key: "commit.secret_ignore", Kind: KindList, Taken: AtStart, Default: "(empty — every file is read)",
 		Desc: "Path globs of the files whose credential shapes are there on purpose, such as test fixtures; a commit that adds a shape anywhere else is refused, and one in a file named here is drawn dim on the card and committed.",
 	},
 }

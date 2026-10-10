@@ -164,6 +164,24 @@ func TestSettings_EveryEntryStatesItsDefaultAndItsPurpose(t *testing.T) {
 	}
 }
 
+// Every setting says whether a running session takes a new value at its next
+// turn or only the next session does: the settings screen takes a staged
+// value by it and the receipt words a write by it, so a key that said nothing
+// would be one the screen could neither take nor honestly decline.
+func TestSettings_EveryKeySaysWhetherItIsLive(t *testing.T) {
+	for _, s := range settings {
+		if s.Taken != AtStart && s.Taken != AtTurn {
+			t.Errorf("%s does not say whether a running session takes it", s.Key)
+		}
+	}
+	if !Live("behavior.max_tool_rounds") || Live("sandbox.profile") || Live("no.such_key") {
+		t.Error("Live does not read the table")
+	}
+	if Live("agents.profiles.reviewer.model") {
+		t.Error("a role's model is wired when the session opens")
+	}
+}
+
 // The wildcard is the whole of the per-role story: any role name resolves, a
 // role nobody named is untouched, and the pattern itself is not a key.
 func TestSettings_RoleWildcard(t *testing.T) {

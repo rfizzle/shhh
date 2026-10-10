@@ -1097,6 +1097,14 @@ brackets in that column has no value of its own until something else decides
 it. Unless a row says otherwise, a key is a file or the default: there is
 no flag and no environment variable for it.
 
+The fourth column is when a running session takes a new value. `next turn`
+is a key the session reads where a turn begins or a call is made, so the
+settings screen in a session takes it as it is staged, and a served session
+reads the loop's keys from the file again at each turn's start; `next
+session` is a key wired when the session opens — a provider built, a sandbox
+wrapped, a server started — which only a session started after the write
+runs on.
+
 Two tables are not here because a key is the wrong shape for them.
 `[mcp.servers]` is a definition per server and `shhh mcp` is the surface that
 knows it; the profiles under `[agents]` are one key per role, which the
@@ -1111,256 +1119,256 @@ own file could hold.
 
 **`[provider]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `default` | text | `openai-responses` | Which provider a request goes to: a built-in one, or a gateway profile from `shhh providers`. `--provider` and `SHHH_PROVIDER` are read ahead of the file. |
-| `model` | text | (the provider's own default) | The model every surface runs on where its own key — `cmd_model`, `chat_model` or `code_model` — names none. `--model` and `SHHH_MODEL` are read ahead of the file. |
-| `cmd_model` | text | (provider.model) | The model `shhh cmd` and the shell hotkey generate a command on, read ahead of `provider.model`. `--model` and `SHHH_MODEL` are read ahead of the file. |
-| `chat_model` | text | (provider.model) | The model `shhh chat` runs on, a `--print` conversation and the stages of a backlog run that only reads included, read ahead of `provider.model`. `--model` and `SHHH_MODEL` are read ahead of the file. |
-| `code_model` | text | (provider.model) | The model `shhh code` runs on — a `--print` run, `shhh serve`, `shhh eval` and the stages of a backlog run that writes included — read ahead of `provider.model`. `--model` and `SHHH_MODEL` are read ahead of the file. |
-| `cheap_model` | text | (the provider's small model, or the session's own) | The model every bounded call — the classifier, the readings, the title, the standing account, the explanation, the description, the backlog's drafts, the profile drafter — falls back to when its own key is unset. |
-| `api_key` | text | (from the environment) | The provider key itself, which puts a copy of it in every copy of this file; `api_key_env` is the form to prefer. `--api-key` and `SHHH_API_KEY` are read ahead of the file. It is a credential: the listing says whether it is set, never what it is. |
-| `api_key_env` | variable | (the provider's own variable) | The environment variable the provider key is read from at start, so the file names the key instead of holding it. It is read ahead of `api_key`. |
-| `base_url` | text | (the provider's own) | Where the provider's API is, for a gateway or a self-hosted endpoint. `SHHH_BASE_URL` is read ahead of the file. |
-| `name` | text | (the provider's own) | What the provider is called on screen, for a gateway that fronts several. |
-| `reasoning` | word: `off`, `low`, `medium`, `high`, `xhigh`, `max` | `medium` | How hard the model thinks before it answers; the level is fitted to each model, so a rung it lacks lowers to the one it has. `--reasoning` and `SHHH_REASONING` are read ahead of the file. |
-| `cache_ttl` | word: `5m`, `1h` | `1h` | How long the opening a session repeats every round stays cached between rounds. |
-| `cost_warning_cents` | number | 0 (off) | Priced session spend, in cents, at which the live spend rail warns once. |
-| `cost_cap_cents` | number | 0 (off) | Priced session spend, in cents, after which later model requests are refused. |
-| `stream_idle_seconds` | number | 120 seconds | How long a turn's stream may go without an event before the request is abandoned and retried; a negative removes the deadline. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `default` | text | `openai-responses` | next session | Which provider a request goes to: a built-in one, or a gateway profile from `shhh providers`. `--provider` and `SHHH_PROVIDER` are read ahead of the file. |
+| `model` | text | (the provider's own default) | next turn | The model every surface runs on where its own key — `cmd_model`, `chat_model` or `code_model` — names none. `--model` and `SHHH_MODEL` are read ahead of the file. |
+| `cmd_model` | text | (provider.model) | next session | The model `shhh cmd` and the shell hotkey generate a command on, read ahead of `provider.model`. `--model` and `SHHH_MODEL` are read ahead of the file. |
+| `chat_model` | text | (provider.model) | next session | The model `shhh chat` runs on, a `--print` conversation and the stages of a backlog run that only reads included, read ahead of `provider.model`. `--model` and `SHHH_MODEL` are read ahead of the file. |
+| `code_model` | text | (provider.model) | next session | The model `shhh code` runs on — a `--print` run, `shhh serve`, `shhh eval` and the stages of a backlog run that writes included — read ahead of `provider.model`. `--model` and `SHHH_MODEL` are read ahead of the file. |
+| `cheap_model` | text | (the provider's small model, or the session's own) | next session | The model every bounded call — the classifier, the readings, the title, the standing account, the explanation, the description, the backlog's drafts, the profile drafter — falls back to when its own key is unset. |
+| `api_key` | text | (from the environment) | next session | The provider key itself, which puts a copy of it in every copy of this file; `api_key_env` is the form to prefer. `--api-key` and `SHHH_API_KEY` are read ahead of the file. It is a credential: the listing says whether it is set, never what it is. |
+| `api_key_env` | variable | (the provider's own variable) | next session | The environment variable the provider key is read from at start, so the file names the key instead of holding it. It is read ahead of `api_key`. |
+| `base_url` | text | (the provider's own) | next session | Where the provider's API is, for a gateway or a self-hosted endpoint. `SHHH_BASE_URL` is read ahead of the file. |
+| `name` | text | (the provider's own) | next session | What the provider is called on screen, for a gateway that fronts several. |
+| `reasoning` | word: `off`, `low`, `medium`, `high`, `xhigh`, `max` | `medium` | next turn | How hard the model thinks before it answers; the level is fitted to each model, so a rung it lacks lowers to the one it has. `--reasoning` and `SHHH_REASONING` are read ahead of the file. |
+| `cache_ttl` | word: `5m`, `1h` | `1h` | next session | How long the opening a session repeats every round stays cached between rounds. |
+| `cost_warning_cents` | number | 0 (off) | next session | Priced session spend, in cents, at which the live spend rail warns once. |
+| `cost_cap_cents` | number | 0 (off) | next session | Priced session spend, in cents, after which later model requests are refused. |
+| `stream_idle_seconds` | number | 120 seconds | next session | How long a turn's stream may go without an event before the request is abandoned and retried; a negative removes the deadline. |
 
 **`[behavior]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `silent_mode` | true/false | `off` | Print the generated command and nothing else, for a shell that pipes it somewhere. |
-| `shell` | text | (your login shell) | The shell commands are run through. |
-| `context_max_tokens` | number | 8000 tokens | The token budget for the shell context a generated command is written against. |
-| `max_tool_rounds` | number | `150` | How many consecutive tool rounds one turn may take; a negative removes the cap for every run in scope. |
-| `tree_check` | true/false | `on` | Tell a turn when the working tree moved in a way its own edits do not explain. |
-| `command_timeout_seconds` | number | `600` | How long one command the assistant runs may take before it is cancelled; a negative removes the ceiling. |
-| `safety_warnings` | true/false | `on` | Say what a destructive command will do before it is approved. |
-| `system_prompt_extra` | text | (nothing) | Text appended to every system prompt. |
-| `command_allowlist` | list | (empty — every command asks) | Command prefixes that auto-approve in a session; a safety-flagged command always asks anyway. |
-| `command_denylist` | list | (empty — nothing is refused in advance) | Command prefixes refused in every mode; read before the allowlist, and no approval can allow one. |
-| `read_only_commands` | list | (the built-in inspection list alone) | Commands added to the built-in inspection list that runs without asking; entries skip the built-in flag guards. |
-| `read_only_auto` | true/false | `on` | Run the built-in inspection list without asking; off makes a read prompt like anything else. |
-| `scope_dirs` | list | (the directory the session opened in) | Directories added to a session's working scope at start, beside the one it was opened in. |
-| `default_mode` | word: `manual`, `accept-edits`, `auto`, `read-only`, `plan` | `manual` | The permission mode a session starts in. |
-| `mode_cycle` | list: `manual`, `accept-edits`, `auto`, `read-only`, `plan` | manual, accept-edits, auto, read-only, plan | The order the mode key walks the permission modes in. |
-| `classifier_model` | text | (provider.cheap_model) | The model auto mode's permission classifier runs on. |
-| `classifier_timeout_seconds` | number | `30` | How long one classifier request may take. |
-| `classifier_max_tokens` | number | `8192` | The ceiling on a classifier response, the reasoning it does before answering included. |
-| `classifier_retries` | number | `1` | How many extra attempts an invalid or failed classifier response gets before it fails closed. |
-| `classifier_backend` | word: `completion`, `decisions` | `completion` | How the classifier is asked: for a verdict in words, or, on a model that offers the Decisions API, for the probability that a call may run. |
-| `classifier_threshold` | number | `80` | The percentage that probability must reach for the decisions backend to let a call run unasked; below it the classifier says no. |
-| `explainer_model` | text | (the classifier's model) | The model an approval card's explanation of a command is asked of. |
-| `description_model` | text | (provider.cheap_model) | The model that writes the one-line description a command saved from `shhh cmd` is listed under. |
-| `suggestions` | true/false | `on` | Offer a next step, drawn dim in the empty draft after a turn closes, that the right arrow takes into the draft, and let a cheap model write the start screen's read-only offers at session open; off asks for neither. |
-| `suggestion_model` | text | (provider.cheap_model) | The model the next step offered in an empty draft is asked of. |
-| `start_offers_model` | text | (provider.cheap_model) | The model the start screen's read-only offers are written by, read once at session open. |
-| `patterns_model` | text | (provider.cheap_model) | The model that words a memory or a skill proposed from what repeats across sessions, asked when you open one in /patterns. |
-| `memory_disabled` | true/false | `off` | Turn durable memory off: nothing is injected and the remember tool is not registered. |
-| `memory_max_entries` | number | `20` | How many memories are injected into one session's system prompt. |
-| `memory_max_tokens` | number | `1200` | The token budget for the injected memory block. |
-| `check_in_interval_rounds` | number | 40 rounds | How many tool rounds pass before a turn is asked to take stock. |
-| `check_in_max_doublings` | number | 2 doublings | How far that interval widens over one turn; a negative fixes it, so a long turn is asked at the same rate throughout. |
-| `progress_interval_calls` | number | 12 calls | How many tool calls without assistant prose earn a public progress checkpoint. |
-| `progress_interval_seconds` | number | 90 seconds | How long a tool run may stay silent before it earns a public progress checkpoint. |
-| `provider_retries` | number | 3 attempts | How many times one stall — a rate limit, an overloaded provider, a connection that died before a token — is asked again before the failure stands; zero is a machine that would rather see the failure than sit out a wait. |
-| `flake_alert_count` | number | 3 flakes | How many times a quality check must have flaked in this checkout before the rail's ALERTS block stands it as an alert. |
-| `flake_alert_days` | number | 7 days | How long that alert stands after the check's latest flake; it settles once this many days pass without another. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `silent_mode` | true/false | `off` | next session | Print the generated command and nothing else, for a shell that pipes it somewhere. |
+| `shell` | text | (your login shell) | next session | The shell commands are run through. |
+| `context_max_tokens` | number | 8000 tokens | next session | The token budget for the shell context a generated command is written against. |
+| `max_tool_rounds` | number | `150` | next turn | How many consecutive tool rounds one turn may take; a negative removes the cap for every run in scope. |
+| `tree_check` | true/false | `on` | next session | Tell a turn when the working tree moved in a way its own edits do not explain. |
+| `command_timeout_seconds` | number | `600` | next session | How long one command the assistant runs may take before it is cancelled; a negative removes the ceiling. |
+| `safety_warnings` | true/false | `on` | next session | Say what a destructive command will do before it is approved. |
+| `system_prompt_extra` | text | (nothing) | next session | Text appended to every system prompt. |
+| `command_allowlist` | list | (empty — every command asks) | next session | Command prefixes that auto-approve in a session; a safety-flagged command always asks anyway. |
+| `command_denylist` | list | (empty — nothing is refused in advance) | next session | Command prefixes refused in every mode; read before the allowlist, and no approval can allow one. |
+| `read_only_commands` | list | (the built-in inspection list alone) | next session | Commands added to the built-in inspection list that runs without asking; entries skip the built-in flag guards. |
+| `read_only_auto` | true/false | `on` | next session | Run the built-in inspection list without asking; off makes a read prompt like anything else. |
+| `scope_dirs` | list | (the directory the session opened in) | next session | Directories added to a session's working scope at start, beside the one it was opened in. |
+| `default_mode` | word: `manual`, `accept-edits`, `auto`, `read-only`, `plan` | `manual` | next turn | The permission mode a session starts in. |
+| `mode_cycle` | list: `manual`, `accept-edits`, `auto`, `read-only`, `plan` | manual, accept-edits, auto, read-only, plan | next session | The order the mode key walks the permission modes in. |
+| `classifier_model` | text | (provider.cheap_model) | next turn | The model auto mode's permission classifier runs on. |
+| `classifier_timeout_seconds` | number | `30` | next session | How long one classifier request may take. |
+| `classifier_max_tokens` | number | `8192` | next session | The ceiling on a classifier response, the reasoning it does before answering included. |
+| `classifier_retries` | number | `1` | next session | How many extra attempts an invalid or failed classifier response gets before it fails closed. |
+| `classifier_backend` | word: `completion`, `decisions` | `completion` | next session | How the classifier is asked: for a verdict in words, or, on a model that offers the Decisions API, for the probability that a call may run. |
+| `classifier_threshold` | number | `80` | next session | The percentage that probability must reach for the decisions backend to let a call run unasked; below it the classifier says no. |
+| `explainer_model` | text | (the classifier's model) | next turn | The model an approval card's explanation of a command is asked of. |
+| `description_model` | text | (provider.cheap_model) | next turn | The model that writes the one-line description a command saved from `shhh cmd` is listed under. |
+| `suggestions` | true/false | `on` | next turn | Offer a next step, drawn dim in the empty draft after a turn closes, that the right arrow takes into the draft, and let a cheap model write the start screen's read-only offers at session open; off asks for neither. |
+| `suggestion_model` | text | (provider.cheap_model) | next turn | The model the next step offered in an empty draft is asked of. |
+| `start_offers_model` | text | (provider.cheap_model) | next turn | The model the start screen's read-only offers are written by, read once at session open. |
+| `patterns_model` | text | (provider.cheap_model) | next turn | The model that words a memory or a skill proposed from what repeats across sessions, asked when you open one in /patterns. |
+| `memory_disabled` | true/false | `off` | next session | Turn durable memory off: nothing is injected and the remember tool is not registered. |
+| `memory_max_entries` | number | `20` | next session | How many memories are injected into one session's system prompt. |
+| `memory_max_tokens` | number | `1200` | next session | The token budget for the injected memory block. |
+| `check_in_interval_rounds` | number | 40 rounds | next turn | How many tool rounds pass before a turn is asked to take stock. |
+| `check_in_max_doublings` | number | 2 doublings | next turn | How far that interval widens over one turn; a negative fixes it, so a long turn is asked at the same rate throughout. |
+| `progress_interval_calls` | number | 12 calls | next turn | How many tool calls without assistant prose earn a public progress checkpoint. |
+| `progress_interval_seconds` | number | 90 seconds | next turn | How long a tool run may stay silent before it earns a public progress checkpoint. |
+| `provider_retries` | number | 3 attempts | next session | How many times one stall — a rate limit, an overloaded provider, a connection that died before a token — is asked again before the failure stands; zero is a machine that would rather see the failure than sit out a wait. |
+| `flake_alert_count` | number | 3 flakes | next session | How many times a quality check must have flaked in this checkout before the rail's ALERTS block stands it as an alert. |
+| `flake_alert_days` | number | 7 days | next session | How long that alert stands after the check's latest flake; it settles once this many days pass without another. |
 
 **`[sandbox]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `require` | true/false | `off` | Refuse an assistant command where no containment mechanism is in force, rather than running it unconfined. `--require-sandbox` is read ahead of the file. |
-| `profile` | word: `workspace`, `workspace-netless` | `workspace` | What a contained command may reach: the workspace with the network untouched, or the same with the network closed. |
-| `allow_hosts` | list | (empty — the profile's own answer) | The only hosts a contained command reaches under the `workspace` profile, through a proxy on loopback; an exact host, never a suffix. The netless profile does not read it. |
-| `deny_extra` | list | (the built-in deny mask alone) | Paths added to the built-in deny mask; a contained command sees them as empty. |
-| `write_extra` | list | (the workspace, the session's own tmpdir and the toolchain caches) | Paths writable inside containment, beside the workspace. |
-| `container_engine` | word: `podman`, `docker` | (auto-detected, a rootless engine first) | Which engine runs a container sandbox. |
-| `container_image` | text | (the image released with this shhh) | The digest-pinned image (name@sha256:…) a sandbox container runs, in place of the one released with this shhh. |
-| `image_allowlist` | list | (any digest-pinned image) | The only sandbox images that may run, as digest-pinned references. |
-| `container_memory` | text | `2g` | The memory ceiling on a sandbox container. |
-| `container_cpus` | text | `2` | The CPU ceiling on a sandbox container. |
-| `container_pids` | number | `256` | The process ceiling inside a sandbox container. |
-| `container_ttl_hours` | number | `24` | How long a sandbox container may live before startup reconciliation reaps it. |
-| `require_isolation` | word: `process`, `container`, `vm` | (none required) | Refuse to create a sandbox below this verified level; a requirement that cannot be verified fails rather than downgrading. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `require` | true/false | `off` | next session | Refuse an assistant command where no containment mechanism is in force, rather than running it unconfined. `--require-sandbox` is read ahead of the file. |
+| `profile` | word: `workspace`, `workspace-netless` | `workspace` | next session | What a contained command may reach: the workspace with the network untouched, or the same with the network closed. |
+| `allow_hosts` | list | (empty — the profile's own answer) | next session | The only hosts a contained command reaches under the `workspace` profile, through a proxy on loopback; an exact host, never a suffix. The netless profile does not read it. |
+| `deny_extra` | list | (the built-in deny mask alone) | next session | Paths added to the built-in deny mask; a contained command sees them as empty. |
+| `write_extra` | list | (the workspace, the session's own tmpdir and the toolchain caches) | next session | Paths writable inside containment, beside the workspace. |
+| `container_engine` | word: `podman`, `docker` | (auto-detected, a rootless engine first) | next session | Which engine runs a container sandbox. |
+| `container_image` | text | (the image released with this shhh) | next session | The digest-pinned image (name@sha256:…) a sandbox container runs, in place of the one released with this shhh. |
+| `image_allowlist` | list | (any digest-pinned image) | next session | The only sandbox images that may run, as digest-pinned references. |
+| `container_memory` | text | `2g` | next session | The memory ceiling on a sandbox container. |
+| `container_cpus` | text | `2` | next session | The CPU ceiling on a sandbox container. |
+| `container_pids` | number | `256` | next session | The process ceiling inside a sandbox container. |
+| `container_ttl_hours` | number | `24` | next session | How long a sandbox container may live before startup reconciliation reaps it. |
+| `require_isolation` | word: `process`, `container`, `vm` | (none required) | next session | Refuse to create a sandbox below this verified level; a requirement that cannot be verified fails rather than downgrading. |
 
 **`[web]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `allow_private` | true/false | `off` | Let a fetch reach private, loopback, link-local and CGNAT addresses, and lift the 80/443 port list; cloud metadata stays blocked either way. |
-| `fetch_max_bytes` | number | 2 MiB | The download ceiling on one fetch. |
-| `inline_bytes` | number | 16 KiB with an evidence store, 48 KiB without | How much of a fetched page's text one tool result carries; with a store the rest is kept whole and the result says how to read on from the cut. |
-| `fetch_timeout_seconds` | number | `30` | How long one request may take, redirects and the body read included. A wait a host asked for is not charged to it. |
-| `cache_ttl_minutes` | number | `60` | How long a cached response stays fresh. |
-| `allow_hosts` | list | (empty — every host asks the first time) | Hosts a fetch reaches without asking, in every session; an exact host, never a suffix, so `docs.python.org` does not cover `python.org`. |
-| `deny_hosts` | list | (empty — nothing is refused in advance) | Hosts no fetch reaches; read before the allow list, before a session grant and before the classifier, and no approval can allow one. |
-| `reputation_off` | list: `builtin`, `tranco`, `nrd`, `disposable`, `urlhaus`, `stevenblack` | (empty — every list is read) | Host lists a fetch is not read against: `builtin` is shhh's own short list, `tranco` the popularity ranking, `nrd` newly registered domains, `disposable` throwaway domains, `urlhaus` and `stevenblack` malware and blocking lists. A reading only advises auto mode, and never outranks `allow_hosts` or `deny_hosts`. |
-| `search_provider` | word: `brave`, `searxng` | `brave` | Which backend the web_search tool asks: `brave`, which takes a key, or `searxng`, a self-hosted instance at `search_url`, which takes none. |
-| `search_url` | text | (unset — the searxng backend is not registered) | The SearXNG instance the web_search tool asks when `search_provider` is `searxng`; a URL with no path of its own is read as the instance's root and asked at /search. The instance must list `json` under `search.formats` in its own settings. |
-| `search_api_key` | text | (unset — web_search is not registered) | The search backend's key itself, which puts a copy of it in every copy of this file; `search_api_key_env` is the form to prefer. It is a credential: the listing says whether it is set, never what it is. |
-| `search_api_key_env` | variable | (unset — web_search is not registered) | The environment variable the search backend's key is read from at start, so the file names the key instead of holding it. It is read ahead of `search_api_key`. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `allow_private` | true/false | `off` | next session | Let a fetch reach private, loopback, link-local and CGNAT addresses, and lift the 80/443 port list; cloud metadata stays blocked either way. |
+| `fetch_max_bytes` | number | 2 MiB | next session | The download ceiling on one fetch. |
+| `inline_bytes` | number | 16 KiB with an evidence store, 48 KiB without | next session | How much of a fetched page's text one tool result carries; with a store the rest is kept whole and the result says how to read on from the cut. |
+| `fetch_timeout_seconds` | number | `30` | next session | How long one request may take, redirects and the body read included. A wait a host asked for is not charged to it. |
+| `cache_ttl_minutes` | number | `60` | next session | How long a cached response stays fresh. |
+| `allow_hosts` | list | (empty — every host asks the first time) | next session | Hosts a fetch reaches without asking, in every session; an exact host, never a suffix, so `docs.python.org` does not cover `python.org`. |
+| `deny_hosts` | list | (empty — nothing is refused in advance) | next session | Hosts no fetch reaches; read before the allow list, before a session grant and before the classifier, and no approval can allow one. |
+| `reputation_off` | list: `builtin`, `tranco`, `nrd`, `disposable`, `urlhaus`, `stevenblack` | (empty — every list is read) | next session | Host lists a fetch is not read against: `builtin` is shhh's own short list, `tranco` the popularity ranking, `nrd` newly registered domains, `disposable` throwaway domains, `urlhaus` and `stevenblack` malware and blocking lists. A reading only advises auto mode, and never outranks `allow_hosts` or `deny_hosts`. |
+| `search_provider` | word: `brave`, `searxng` | `brave` | next session | Which backend the web_search tool asks: `brave`, which takes a key, or `searxng`, a self-hosted instance at `search_url`, which takes none. |
+| `search_url` | text | (unset — the searxng backend is not registered) | next session | The SearXNG instance the web_search tool asks when `search_provider` is `searxng`; a URL with no path of its own is read as the instance's root and asked at /search. The instance must list `json` under `search.formats` in its own settings. |
+| `search_api_key` | text | (unset — web_search is not registered) | next session | The search backend's key itself, which puts a copy of it in every copy of this file; `search_api_key_env` is the form to prefer. It is a credential: the listing says whether it is set, never what it is. |
+| `search_api_key_env` | variable | (unset — web_search is not registered) | next session | The environment variable the search backend's key is read from at start, so the file names the key instead of holding it. It is read ahead of `search_api_key`. |
 
 **`[lsp]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `disabled` | true/false | `off` | Turn the language-server integration off: no servers, no navigation tools, no diagnostics. |
-| `request_timeout_seconds` | number | `15` | How long one language-server request may take, the initialize handshake included. |
-| `diagnostics_timeout_seconds` | number | `3` | How long an applied edit waits for the server to re-check the file; a check that lands later rides with the next tool result rather than being dropped. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `disabled` | true/false | `off` | next session | Turn the language-server integration off: no servers, no navigation tools, no diagnostics. |
+| `request_timeout_seconds` | number | `15` | next session | How long one language-server request may take, the initialize handshake included. |
+| `diagnostics_timeout_seconds` | number | `3` | next session | How long an applied edit waits for the server to re-check the file; a check that lands later rides with the next tool result rather than being dropped. |
 
 **`[appearance]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `accent_color` | text | (the palette's own) | The accent the surfaces are painted with. |
-| `theme` | word: `auto`, `dark`, `light`, `charm` | `auto` | Which colour table every surface draws with: `auto` asks the terminal what its own background is and takes the table chosen for that ground, or name one. |
-| `verbosity` | word: `low`, `normal`, `high` | `normal` | How much the screen explains, one rung for every surface: `low` draws what you act on and little else, `normal` adds the readings, `high` every gloss, hint and field. |
-| `mouse` | true/false | `on` | Terminal mouse reporting: the wheel scrolls the transcript and shhh selects text itself. Off leaves the terminal its native click-drag selection. |
-| `notify` | true/false | `on` | Raise a desktop notification when a turn stops while the window is not the one in front. |
-| `window_title` | true/false | `on` | Name the terminal's own tab after the session. |
-| `paste_lines` | number | 10 lines | The height past which a paste is staged as an attachment instead of typed into the draft; a negative turns that half of the test off. |
-| `paste_columns` | number | 1000 columns | The width past which a paste is staged as an attachment; a negative turns that half of the test off. |
-| `rail_width` | text | `auto` | How many columns the inspector rail takes: `auto`, which widens the rail with the terminal, or a column count for a pane you chose the size of. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `accent_color` | text | (the palette's own) | next session | The accent the surfaces are painted with. |
+| `theme` | word: `auto`, `dark`, `light`, `charm` | `auto` | next turn | Which colour table every surface draws with: `auto` asks the terminal what its own background is and takes the table chosen for that ground, or name one. |
+| `verbosity` | word: `low`, `normal`, `high` | `normal` | next turn | How much the screen explains, one rung for every surface: `low` draws what you act on and little else, `normal` adds the readings, `high` every gloss, hint and field. |
+| `mouse` | true/false | `on` | next turn | Terminal mouse reporting: the wheel scrolls the transcript and shhh selects text itself. Off leaves the terminal its native click-drag selection. |
+| `notify` | true/false | `on` | next turn | Raise a desktop notification when a turn stops while the window is not the one in front. |
+| `window_title` | true/false | `on` | next turn | Name the terminal's own tab after the session. |
+| `paste_lines` | number | 10 lines | next turn | The height past which a paste is staged as an attachment instead of typed into the draft; a negative turns that half of the test off. |
+| `paste_columns` | number | 1000 columns | next turn | The width past which a paste is staged as an attachment; a negative turns that half of the test off. |
+| `rail_width` | text | `auto` | next turn | How many columns the inspector rail takes: `auto`, which widens the rail with the terminal, or a column count for a pane you chose the size of. |
 
 **`[history]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `retention_days` | number | 90 days | How long a recorded session is kept before startup prunes it. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `retention_days` | number | 90 days | next session | How long a recorded session is kept before startup prunes it. |
 
 **`[chats]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `retention_days` | number | 180 days | How long a saved conversation nobody has written to is kept before startup prunes it, with a chat's branches going when it does; it matches the record's window because a record row names a conversation, and a negative keeps every conversation for good. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `retention_days` | number | 180 days | next session | How long a saved conversation nobody has written to is kept before startup prunes it, with a chat's branches going when it does; it matches the record's window because a record row names a conversation, and a negative keeps every conversation for good. |
 
 **`[sessions]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `inbound` | word: `accept`, `hold`, `refuse` | (hold under auto, accept otherwise) | What becomes of a line another session sends with `shhh send`: `accept` hands it to the turn as a steer, `hold` puts it on a card to pass on or drop, `refuse` takes nothing. It is never an approval or a command. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `inbound` | word: `accept`, `hold`, `refuse` | (hold under auto, accept otherwise) | next session | What becomes of a line another session sends with `shhh send`: `accept` hands it to the turn as a steer, `hold` puts it on a card to pass on or drop, `refuse` takes nothing. It is never an approval or a command. |
 
 **`[reports]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `retention_days` | number | 90 days | How long a generated report page is kept. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `retention_days` | number | 90 days | next session | How long a generated report page is kept. |
 
 **`[observe]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `retention_days` | number | 180 days | How long a session's record and its events are kept before startup prunes them; longer than history's window because a comparison reads back across a change made a quarter ago. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `retention_days` | number | 180 days | next session | How long a session's record and its events are kept before startup prunes them; longer than history's window because a comparison reads back across a change made a quarter ago. |
 
 **`[otel]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `endpoint` | text | (off — the record stays on this machine) | Where an OTLP collector listens, as a URL with its scheme; each session is sent to it as one span when the session ends. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `endpoint` | text | (off — the record stays on this machine) | next session | Where an OTLP collector listens, as a URL with its scheme; each session is sent to it as one span when the session ends. |
 
 **`[logs]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `level` | word: `debug`, `info`, `warn`, `error` | `info` | How much reaches the diagnostic log: `info` is every mechanism that failed quietly, every call a policy refused and every context trim; `warn` narrows it to what a person has to act on. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `level` | word: `debug`, `info`, `warn`, `error` | `info` | next session | How much reaches the diagnostic log: `info` is every mechanism that failed quietly, every call a policy refused and every context trim; `warn` narrows it to what a person has to act on. |
 
 **`[agents]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `model` | text | `inherit` | The model every sub-agent runs, unless its role says otherwise; `inherit` is the session's own. |
-| `drafter_model` | text | (provider.cheap_model) | The model `/agents new` drafts a profile on, and `/toolchain` drafts a toolchain declaration on. |
-| `profiles.<role>.model` | text | (the sub-agent model) | The model one role runs — the role is the key's own segment, so any role a spawn names can have one. |
-| `depth.<depth>.model` | text | (the sub-agent model) | The model one level of delegation runs — `2` is a child of this session, `3` a child of that. A role that names its own model outranks it. |
-| `max_concurrent` | number | `3` | How many children may run at once at one level of delegation; further spawns queue. |
-| `max_depth` | number | `3` | How deep delegation may go, counting this session as 1: `3` is this session, its children and theirs. |
-| `max_children` | number | `32` | How many children this session may start in all, wherever in the tree the spawn happened; a finished child keeps its slot. |
-| `check_slots` | number | `2` | How many checks may run at once across this session — a child's build or test run, a child's quality gate run, and your own gate each take one; the rest wait their turn. |
-| `delegation` | word: `off`, `explicit`, `proactive` | `explicit` | When the model starts sub-agents: `off` offers it no orchestration tools, `explicit` delegates when asked to, `proactive` divides work that splits into independent parts. The spawn card is drawn under all three. |
-| `require_sandbox` | true/false | `on` | Run a writer's commands contained, and refuse them where no containment mechanism is in force rather than running them unconfined. Off, a writer follows sandbox.require as the session's own commands do. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `model` | text | `inherit` | next session | The model every sub-agent runs, unless its role says otherwise; `inherit` is the session's own. |
+| `drafter_model` | text | (provider.cheap_model) | next turn | The model `/agents new` drafts a profile on, and `/toolchain` drafts a toolchain declaration on. |
+| `profiles.<role>.model` | text | (the sub-agent model) | next session | The model one role runs — the role is the key's own segment, so any role a spawn names can have one. |
+| `depth.<depth>.model` | text | (the sub-agent model) | next session | The model one level of delegation runs — `2` is a child of this session, `3` a child of that. A role that names its own model outranks it. |
+| `max_concurrent` | number | `3` | next session | How many children may run at once at one level of delegation; further spawns queue. |
+| `max_depth` | number | `3` | next session | How deep delegation may go, counting this session as 1: `3` is this session, its children and theirs. |
+| `max_children` | number | `32` | next session | How many children this session may start in all, wherever in the tree the spawn happened; a finished child keeps its slot. |
+| `check_slots` | number | `2` | next session | How many checks may run at once across this session — a child's build or test run, a child's quality gate run, and your own gate each take one; the rest wait their turn. |
+| `delegation` | word: `off`, `explicit`, `proactive` | `explicit` | next session | When the model starts sub-agents: `off` offers it no orchestration tools, `explicit` delegates when asked to, `proactive` divides work that splits into independent parts. The spawn card is drawn under all three. |
+| `require_sandbox` | true/false | `on` | next session | Run a writer's commands contained, and refuse them where no containment mechanism is in force rather than running them unconfined. Off, a writer follows sandbox.require as the session's own commands do. |
 
 **`[summary]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `model` | text | (provider.cheap_model) | The model that takes the periodic reading of the session. |
-| `interval_rounds` | number | `10` | How many tool rounds pass between two readings; higher is cheaper and staler. |
-| `min_gap_seconds` | number | `20` | The floor on wall-clock time between two readings, so a burst of fast rounds cannot rewrite the block repeatedly. |
-| `timeout_seconds` | number | `20` | How long one reading may take. |
-| `max_tokens` | number | `8192` | The ceiling on a reading's response, the reasoning it does before answering included. |
-| `disabled` | true/false | `off` | Turn the reading off entirely: no requests are made and the rail draws no summary block. |
-| `headless` | true/false | `on` | Take readings in a non-interactive run, which is the surface with nobody in front of it. |
-| `subagents` | true/false | `on` | Take readings in each spawned child, which has nobody in front of it; turning it off saves a reading per interval per child and leaves a child that has wandered unnoticed until its report. |
-| `intervene_cooldown_intervals` | number | 2 readings | How many reading intervals pass between two verdict-driven interventions. |
-| `steer_target_chars` | number | 400 characters | How much of the instruction a steer quotes back to a drifting turn; a negative quotes it whole. |
-| `title` | true/false | `on` | Ask the summary model to name an unnamed session after its first turn, for the saved-chat listings. |
-| `resume_interval_turns` | number | `3` | How many turns pass between two revisions of the session's standing account, the two sentences the saved-chat listings show under the title; a negative turns it off. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `model` | text | (provider.cheap_model) | next turn | The model that takes the periodic reading of the session. |
+| `interval_rounds` | number | `10` | next turn | How many tool rounds pass between two readings; higher is cheaper and staler. |
+| `min_gap_seconds` | number | `20` | next turn | The floor on wall-clock time between two readings, so a burst of fast rounds cannot rewrite the block repeatedly. |
+| `timeout_seconds` | number | `20` | next session | How long one reading may take. |
+| `max_tokens` | number | `8192` | next session | The ceiling on a reading's response, the reasoning it does before answering included. |
+| `disabled` | true/false | `off` | next session | Turn the reading off entirely: no requests are made and the rail draws no summary block. |
+| `headless` | true/false | `on` | next session | Take readings in a non-interactive run, which is the surface with nobody in front of it. |
+| `subagents` | true/false | `on` | next session | Take readings in each spawned child, which has nobody in front of it; turning it off saves a reading per interval per child and leaves a child that has wandered unnoticed until its report. |
+| `intervene_cooldown_intervals` | number | 2 readings | next session | How many reading intervals pass between two verdict-driven interventions. |
+| `steer_target_chars` | number | 400 characters | next session | How much of the instruction a steer quotes back to a drifting turn; a negative quotes it whole. |
+| `title` | true/false | `on` | next session | Ask the summary model to name an unnamed session after its first turn, for the saved-chat listings. |
+| `resume_interval_turns` | number | `3` | next session | How many turns pass between two revisions of the session's standing account, the two sentences the saved-chat listings show under the title; a negative turns it off. |
 
 **`[secrets]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `env` | list | (nothing declared) | Environment variables to declare as secrets in every session: the model may use the value and never sees it. |
-| `env_mask` | true/false | `on` | Keep variables whose names end in _KEY, _SECRET or _TOKEN out of the environment of the commands the assistant runs, unless secrets.env declares one. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `env` | list | (nothing declared) | next session | Environment variables to declare as secrets in every session: the model may use the value and never sees it. |
+| `env_mask` | true/false | `on` | next session | Keep variables whose names end in _KEY, _SECRET or _TOKEN out of the environment of the commands the assistant runs, unless secrets.env declares one. |
 
 **`[mcp]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `disabled` | true/false | `off` | Start no MCP server and register no MCP tool, whatever the file defines. |
-| `startup_timeout_seconds` | number | `20` | How long each MCP server has to connect and list its tools; one that has not answered is reported and left out. |
-| `call_timeout_seconds` | number | `120` | How long one MCP tool call or resource read has to answer before the session gives it up; a server may override it with its own call_timeout_seconds. |
-| `env_mask` | true/false | `on` | Keep variables whose names end in _KEY, _SECRET or _TOKEN out of the environment a stdio MCP server is started with, unless its own env declares one. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `disabled` | true/false | `off` | next session | Start no MCP server and register no MCP tool, whatever the file defines. |
+| `startup_timeout_seconds` | number | `20` | next session | How long each MCP server has to connect and list its tools; one that has not answered is reported and left out. |
+| `call_timeout_seconds` | number | `120` | next session | How long one MCP tool call or resource read has to answer before the session gives it up; a server may override it with its own call_timeout_seconds. |
+| `env_mask` | true/false | `on` | next session | Keep variables whose names end in _KEY, _SECRET or _TOKEN out of the environment a stdio MCP server is started with, unless its own env declares one. |
 
 **`[prompts]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `steer` | path | (the built-in wording) | A file whose contents replace the message a drifting turn is given; it may place `{{target}}`, `{{reason}}` and `{{count}}`, how many times this turn the check has said so. |
-| `session_steer` | path | (the built-in wording) | A file whose contents replace the words a line another session sent is framed in; it may place `{{source}}`, the sending session, and the line follows it. |
-| `check_in` | path | (the built-in wording) | A file whose contents replace the message a turn that has reached its interval is given; it may place `{{rounds}}` and `{{finished}}`. |
-| `summary` | path | (the built-in wording) | A file whose contents replace the reading instruction the summarizing model is sent. |
-| `classifier` | path | (the built-in wording) | A file whose contents replace the instruction auto mode's permission classifier is sent. |
-| `account` | path | (the built-in wording) | A file whose contents replace the instruction the session's standing account is asked with. |
-| `suggestion` | path | (the built-in wording) | A file whose contents replace the instruction the next step offered in an empty draft is asked with. |
-| `todo_standards` | path | (the built-in wording) | A file whose contents replace the sentence every step of a backlog run that changes the tree carries. |
-| `todo_research` | path | (the built-in wording) | A file whose contents replace what a backlog run's research step is told; it may place `{{item}}` and `{{answers}}`. |
-| `todo_implement` | path | (the built-in wording) | A file whose contents replace what a backlog run's implement step is told; it may place `{{item}}`, `{{plan}}` and `{{answers}}`. |
-| `todo_review` | path | (the built-in wording) | A file whose contents replace what a backlog run's review step is told; it may place `{{item}}`, `{{plan}}` and `{{diff}}`. |
-| `todo_review_task` | path | (the built-in wording) | A file whose contents replace what the reviewer sub-agent is asked; it may place `{{item}}`, `{{plan}}` and `{{diff}}`. |
-| `todo_remediate` | path | (the built-in wording) | A file whose contents replace what a backlog run's remediate step is told; it may place `{{item}}` and `{{findings}}`. |
-| `todo_commit` | path | (the built-in wording) | A file whose contents replace what a backlog run's commit step is told; it may place `{{item}}`. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `steer` | path | (the built-in wording) | next session | A file whose contents replace the message a drifting turn is given; it may place `{{target}}`, `{{reason}}` and `{{count}}`, how many times this turn the check has said so. |
+| `session_steer` | path | (the built-in wording) | next session | A file whose contents replace the words a line another session sent is framed in; it may place `{{source}}`, the sending session, and the line follows it. |
+| `check_in` | path | (the built-in wording) | next session | A file whose contents replace the message a turn that has reached its interval is given; it may place `{{rounds}}` and `{{finished}}`. |
+| `summary` | path | (the built-in wording) | next session | A file whose contents replace the reading instruction the summarizing model is sent. |
+| `classifier` | path | (the built-in wording) | next session | A file whose contents replace the instruction auto mode's permission classifier is sent. |
+| `account` | path | (the built-in wording) | next session | A file whose contents replace the instruction the session's standing account is asked with. |
+| `suggestion` | path | (the built-in wording) | next session | A file whose contents replace the instruction the next step offered in an empty draft is asked with. |
+| `todo_standards` | path | (the built-in wording) | next session | A file whose contents replace the sentence every step of a backlog run that changes the tree carries. |
+| `todo_research` | path | (the built-in wording) | next session | A file whose contents replace what a backlog run's research step is told; it may place `{{item}}` and `{{answers}}`. |
+| `todo_implement` | path | (the built-in wording) | next session | A file whose contents replace what a backlog run's implement step is told; it may place `{{item}}`, `{{plan}}` and `{{answers}}`. |
+| `todo_review` | path | (the built-in wording) | next session | A file whose contents replace what a backlog run's review step is told; it may place `{{item}}`, `{{plan}}` and `{{diff}}`. |
+| `todo_review_task` | path | (the built-in wording) | next session | A file whose contents replace what the reviewer sub-agent is asked; it may place `{{item}}`, `{{plan}}` and `{{diff}}`. |
+| `todo_remediate` | path | (the built-in wording) | next session | A file whose contents replace what a backlog run's remediate step is told; it may place `{{item}}` and `{{findings}}`. |
+| `todo_commit` | path | (the built-in wording) | next session | A file whose contents replace what a backlog run's commit step is told; it may place `{{item}}`. |
 
 **`[hooks]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `disabled` | true/false | `off` | Fire no hook at any seam, whatever the files define. |
-| `timeout_seconds` | number | `30` | The longest any hook may take, and the cap on a hook's own timeout; it can be raised no higher than the command timeout, and there is no way to turn it off. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `disabled` | true/false | `off` | next session | Fire no hook at any seam, whatever the files define. |
+| `timeout_seconds` | number | `30` | next session | The longest any hook may take, and the cap on a hook's own timeout; it can be raised no higher than the command timeout, and there is no way to turn it off. |
 
 **`[todo]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `root` | path | (the project you are in, else the global backlog) | Where the backlog lives when the working directory is part of no project; a session inside a project always reads that project's backlog. |
-| `profile` | text | `code` | The profile this project's backlog is written in and worked under: what an item is called, which fields it carries, and which steps a run takes; it is looked for in this checkout, then beside your settings, then among the ones built in. |
-| `model` | text | (provider.cheap_model) | The model `/todo add` reads a session into items with and `/todo new` drafts an item on; grooming and sprint planning are turns of the session and run on its model. |
-| `commit` | true/false | `on` | End a backlog run in a commit; off leaves the change in the working tree, which is the answer for a directory that is not a repository. |
-| `item_timeout_minutes` | number | 0 (no cap) | How long one item of a sprint may take before it is blocked and the sprint stops; zero leaves it uncapped. |
-| `sprint_cost_cap_cents` | number | 0 (off) | Priced spend, in cents, across a whole sprint after which it starts no further item; provider.cost_cap_cents still bounds each item's own session. `--cost-cap` is read ahead of the file. |
-| `groom_stale_commits` | number | the profile's own | How far an item's last reading may fall behind — in whatever the profile measures staleness by — before the backlog says so; unset keeps the profile's own threshold, and a negative number turns the warning off. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `root` | path | (the project you are in, else the global backlog) | next session | Where the backlog lives when the working directory is part of no project; a session inside a project always reads that project's backlog. |
+| `profile` | text | `code` | next session | The profile this project's backlog is written in and worked under: what an item is called, which fields it carries, and which steps a run takes; it is looked for in this checkout, then beside your settings, then among the ones built in. |
+| `model` | text | (provider.cheap_model) | next turn | The model `/todo add` reads a session into items with and `/todo new` drafts an item on; grooming and sprint planning are turns of the session and run on its model. |
+| `commit` | true/false | `on` | next session | End a backlog run in a commit; off leaves the change in the working tree, which is the answer for a directory that is not a repository. |
+| `item_timeout_minutes` | number | 0 (no cap) | next session | How long one item of a sprint may take before it is blocked and the sprint stops; zero leaves it uncapped. |
+| `sprint_cost_cap_cents` | number | 0 (off) | next session | Priced spend, in cents, across a whole sprint after which it starts no further item; provider.cost_cap_cents still bounds each item's own session. `--cost-cap` is read ahead of the file. |
+| `groom_stale_commits` | number | the profile's own | next session | How far an item's last reading may fall behind — in whatever the profile measures staleness by — before the backlog says so; unset keeps the profile's own threshold, and a negative number turns the warning off. |
 
 **`[commit]`**
 
-| Key | Takes | Default | What it decides |
-|---|---|---|---|
-| `secret_ignore` | list | (empty — every file is read) | Path globs of the files whose credential shapes are there on purpose, such as test fixtures; a commit that adds a shape anywhere else is refused, and one in a file named here is drawn dim on the card and committed. |
+| Key | Takes | Default | A session takes it | What it decides |
+|---|---|---|---|---|
+| `secret_ignore` | list | (empty — every file is read) | next session | Path globs of the files whose credential shapes are there on purpose, such as test fixtures; a commit that adds a shape anywhere else is refused, and one in a file named here is drawn dim on the card and committed. |
 
 <!-- END generated settings reference -->
 

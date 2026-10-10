@@ -29,7 +29,7 @@ const (
 
 // Reference is the settings reference: one table per section of the file, in
 // the file's own order, with what each key takes, what stands when nothing
-// sets it, and what it decides.
+// sets it, when a running session takes a new value, and what it decides.
 func Reference() string {
 	var b strings.Builder
 	b.WriteString(referenceBegin + "\n")
@@ -38,14 +38,14 @@ func Reference() string {
 		if g := s.Group(); g != group {
 			group = g
 			fmt.Fprintf(&b, "\n**`[%s]`**\n\n", group)
-			b.WriteString("| Key | Takes | Default | What it decides |\n")
-			b.WriteString("|---|---|---|---|\n")
+			b.WriteString("| Key | Takes | Default | A session takes it | What it decides |\n")
+			b.WriteString("|---|---|---|---|---|\n")
 		}
 		// The wildcard is `*` in the table because that is what a key match
 		// is against; in a document it is the word a person writes there.
 		key := strings.TrimPrefix(s.shown(), group+".")
-		fmt.Fprintf(&b, "| `%s` | %s | %s | %s |\n",
-			key, cell(takes(s)), cell(quoteDefault(s.Default)), cell(decides(s)))
+		fmt.Fprintf(&b, "| `%s` | %s | %s | %s | %s |\n",
+			key, cell(takes(s)), cell(quoteDefault(s.Default)), s.Taken, cell(decides(s)))
 	}
 	b.WriteString("\n" + referenceEnd)
 	return b.String()
