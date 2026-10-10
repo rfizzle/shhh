@@ -54,6 +54,8 @@ is prose in `docs/capabilities/`, cited from the comment beside it
 | Format | `make fmt` |
 | Loopback contracts / containment | `make test-contract` / `make test-integration` |
 | CI pipeline | `make ci` (the gate plus `cross` and `tui-check`) |
+| Everything CI runs that this host can run, on CI's Go | `make prepush` |
+| Install the opt-in pre-push hook | `make hooks` |
 | Update goldens (rewrites every golden in those packages, deletes orphans) | `go test ./internal/ui ./internal/ui/components ./internal/ui/chat -update-golden` |
 | Capture one new golden | `go test ./internal/ui/<pkg> -update-golden -run '<TestName>$'` |
 | Capture a TUI scene | `make tui-shot SCENE=<name> COLS=110 ROWS=40` |
@@ -76,6 +78,16 @@ is prose in `docs/capabilities/`, cited from the comment beside it
 - **Goldens**: `golden.Run(m)` deletes every golden no test touched, so add
   or remove a case with `-update-golden`; never hand-write one. Anything the
   screen draws reads the held `clock()`, never `time.Now`.
+
+### Before a push
+
+Agents run the quality gate. The orchestrator (or the sprint's checkpoint)
+runs `make prepush` at every checkpoint and before a push: it runs every CI
+check this host can run under `GOTOOLCHAIN` set to go.mod's version, prints
+the tiers it skipped because the host lacks them, and fails only on a check
+that ran. Two tiers only CI runs: the macOS seatbelt containment job and the
+docker sandbox-session job. `make hooks` installs a pre-push hook that runs
+`make prepush`; it is opt-in, and `git push --no-verify` skips it.
 
 ### Driving the binary
 

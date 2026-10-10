@@ -1,0 +1,6 @@
+#!/bin/sh
+# Runs make prepush before a push and refuses the push when a check that ran
+# failed. Opt-in: `make hooks` points core.hooksPath at this directory.
+# `git push --no-verify` skips it.
+root="$(git rev-parse --show-toplevel)" || exit 1
+cd "$root" && exec make prepush

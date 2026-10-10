@@ -55,7 +55,7 @@ else
 	RESET   :=
 endif
 
-.PHONY: all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data host-lists host-lists-check tui-shot tui-check tui-longpath design help
+.PHONY: prepush prepush-skips prepush-go hooks ci-container all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data host-lists host-lists-check tui-shot tui-check tui-longpath design help
 
 all: help
 
@@ -175,6 +175,58 @@ cross: ## Check every released platform still compiles
 # (.shhh/quality.json) is the first five; cross, the driven scenes and the host-snapshot age check are what
 # CI adds, because a scene wants a terminal a contained session has not got.
 ci: cross fmt-check docs-check test vet lint host-lists-check tui-check ## Run the CI pipeline
+
+# Everything CI runs that this host can run, on CI's Go. The pin is the version
+# go.mod names: a `toolchain` line equal to the `go` line is refused under
+# -mod=readonly and a toolchain line is only a minimum, so the host's own newer
+# Go cannot be pinned down by go.mod. GOTOOLCHAIN does it, and it is what makes
+# a golden captured here byte-equal to the one CI compares. CI resolves the same
+# version through go-version-file: go.mod.
+PREPUSH_GO=go$(shell awk '$$1=="toolchain"{t=$$2; sub(/^go/,"",t)} $$1=="go"{g=$$2} END{print (t!=""?t:g)}' go.mod)
+
+# Which tiers this host cannot run, one "skip" line each. A tier that is not
+# run is named, never reported green: test-integration needs bubblewrap that
+# works or macOS seatbelt, tui-check needs tmux and python3, and the container
+# form and the sandbox-session job need an engine. Only a check that ran can
+# fail the target.
+define prepush_skips
+mech=none; \
+if command -v bwrap >/dev/null 2>&1 && bwrap --unshare-user --ro-bind / / true >/dev/null 2>&1; then mech=bwrap; fi; \
+if [ -x /usr/bin/sandbox-exec ]; then mech=seatbelt; fi; \
+if [ "$$mech" = none ]; then echo "skip test-integration: no working bubblewrap and no seatbelt on this host"; fi; \
+if ! command -v tmux >/dev/null 2>&1 || ! command -v python3 >/dev/null 2>&1; then echo "skip tui-check: tmux or python3 is missing"; fi; \
+if ! command -v docker >/dev/null 2>&1 && ! command -v podman >/dev/null 2>&1; then echo "skip ci-container: no docker or podman engine"; fi; \
+echo "ci-only: the macOS seatbelt tier and the sandbox-session job (docker) run in CI alone"
+endef
+
+prepush-go: ## Print the Go version prepush pins (go.mod's)
+	@echo $(PREPUSH_GO)
+
+prepush-skips: ## Say which tiers this host cannot run
+	@$(prepush_skips)
+
+prepush: ## Run every CI check this host can run, on CI's Go, naming what it skipped
+	@export GOTOOLCHAIN=$(PREPUSH_GO); \
+	echo "${MAGENTA}prepush under $$GOTOOLCHAIN${RESET}"; \
+	skips="$$($(prepush_skips))"; \
+	failed=""; \
+	for t in cross fmt-check docs-check test vet lint host-lists-check tui-check test-contract test-integration; do \
+		if printf '%s\n' "$$skips" | grep -q "^skip $$t:"; then echo "${YELLOW}skipped $$t${RESET}"; continue; fi; \
+		$(MAKE) --no-print-directory $$t || failed="$$failed $$t"; \
+	done; \
+	echo ""; echo "$$skips"; \
+	if [ -n "$$failed" ]; then echo "${RED}prepush failed:$$failed${RESET}"; exit 1; fi; \
+	echo "${GREEN}prepush passed every check that ran${RESET}"
+
+# Opt-in: nothing installs this on its own. core.hooksPath is shared by every
+# worktree of the clone; remove it with `git config --unset core.hooksPath`.
+hooks: ## Install the pre-push hook that runs make prepush (opt-in)
+	@cur="$$(git config --get core.hooksPath || true)"; \
+	if [ -n "$$cur" ] && [ "$$cur" != scripts/git ]; then \
+		echo "${RED}core.hooksPath is already $$cur; not replacing it${RESET}"; exit 1; \
+	fi; \
+	git config core.hooksPath scripts/git; \
+	echo "${MAGENTA}pre-push hook installed (git push --no-verify skips it)${RESET}"
 
 ## Live:
 # Costs real requests: ten of the fourteen cases put a task or a question to
