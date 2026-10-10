@@ -615,3 +615,16 @@ func TestCloseGate_AStalePassIsRetried(t *testing.T) {
 		})
 	}
 }
+
+// A /gate run started by hand has no turn to abandon, so the quit is the only
+// thing that can stop it; a session that left without asking would leave the
+// build running with nobody to see it end.
+func TestGate_RunStopsOnQuit(t *testing.T) {
+	stopped := 0
+	m := gatedModel(t, nil, nil)
+	m.wiring.Gate = Gate{Manage: func([]string) string { return "" }, Stop: func() { stopped++ }}
+	m.quitNow()
+	if stopped != 1 {
+		t.Fatalf("the quit stopped the gate run %d times, want once", stopped)
+	}
+}

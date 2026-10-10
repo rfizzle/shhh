@@ -1119,3 +1119,22 @@ func TestConfig_CommandsAreEveryChecksLine(t *testing.T) {
 		t.Fatalf("commands = %v, want %v", got, want)
 	}
 }
+
+// Stop kills the checks of a run /gate run started, so a leaving session does
+// not leave the suite running behind it.
+func TestStop_CancelsABackgroundRun(t *testing.T) {
+	ws := t.TempDir()
+	marker := filepath.Join(ws, "survived")
+	writeConfig(t, ws, shSuite("sleep 3; touch "+marker))
+	r := &Runner{Workspace: ws}
+	r.Start("")
+	time.Sleep(300 * time.Millisecond)
+	r.Stop()
+	if got := r.Status(); strings.Contains(got, "in progress") {
+		t.Fatalf("Stop returned with the run still going: %q", got)
+	}
+	time.Sleep(3500 * time.Millisecond)
+	if _, err := os.Stat(marker); err == nil {
+		t.Fatal("the check ran on after Stop")
+	}
+}

@@ -138,6 +138,11 @@ func (m *Model) quitNow() tea.Cmd {
 	// A suite is a subprocess and minutes of one; a session that is leaving
 	// must not go on spending a build on the way out (gate.go).
 	m.cancelCloseGate()
+	// So is a /gate run started by hand: it has no turn to abandon, and its
+	// checks are killed here for the reason the drain below is.
+	if m.wiring.Gate.Stop != nil {
+		m.wiring.Gate.Stop()
+	}
 	m.stopSideJobs()
 	// Cancelling a command only asks it to stop; the kill that would follow
 	// is a timer inside this process, and quitting takes the process with it.

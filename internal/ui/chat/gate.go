@@ -33,6 +33,10 @@ type Gate struct {
 	// runner's verify stage and the on-close run use it. Nil when the
 	// project has no gate.
 	Run func(ctx context.Context, suite string) (*quality.Result, error)
+	// Stop cancels the background run /gate run started and waits for its
+	// checks to be killed; the quit calls it, so a leaving session does not
+	// leave a build running. Nil where there is nothing to stop.
+	Stop func()
 	// Flakes reads the checkout's flake ledger, which /gate flakes opens
 	// as a screen; nil where the session has no store to read it from.
 	Flakes func() ([]storage.Flake, error)

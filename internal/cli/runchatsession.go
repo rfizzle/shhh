@@ -657,7 +657,7 @@ func (b *screenBuild) wireSurfaces(w *chat.Wiring) {
 		w.MutationHook = mutation
 	}
 	if gate := ts.gate; gate != nil {
-		w.Gate = chat.Gate{Manage: gateManager(gate), Run: gate.Run, Flakes: gateFlakes(gate),
+		w.Gate = chat.Gate{Manage: gateManager(gate), Run: gate.Run, Stop: gate.Stop, Flakes: gateFlakes(gate),
 			FlakeAlertCount: cfg.EffectiveFlakeAlertCount(), FlakeAlertDays: cfg.EffectiveFlakeAlertDays()}
 	}
 	if procSup := ts.proc; procSup != nil {

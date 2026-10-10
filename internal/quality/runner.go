@@ -232,6 +232,11 @@ type Runner struct {
 	scrub   func(string) string
 	running string // suite of the in-flight run, "" when idle
 	last    *Result
+	// stop and landed belong to the background run Start launched: stop
+	// cancels it, and landed is closed once its result is kept. Both are nil
+	// when no such run is in flight.
+	stop   context.CancelFunc
+	landed chan struct{}
 }
 
 // SetScrub installs the rewrite a check's captured output goes through
@@ -277,10 +282,44 @@ func (r *Runner) Start(suite string) string {
 	if err := r.begin(suite); err != nil {
 		return "Error: " + err.Error()
 	}
+	ctx, cancel := context.WithCancel(context.Background())
+	landed := make(chan struct{})
+	r.mu.Lock()
+	r.stop, r.landed = cancel, landed
+	r.mu.Unlock()
 	go func() {
-		r.finish(r.execute(context.Background(), suite))
+		defer close(landed)
+		defer cancel()
+		r.finish(r.execute(ctx, suite))
 	}()
 	return fmt.Sprintf("Running quality gate suite %q in the background — check /gate result for the verdict.", suite)
+}
+
+// stopGrace bounds how long Stop waits for a cancelled run to land: its
+// checks' process groups are killed outright, so this is the wait for the
+// kill, never for the suite.
+const stopGrace = 5 * time.Second
+
+// Stop cancels the background run /gate run started and waits, bounded by
+// stopGrace, for its checks to be killed. A session that is leaving calls it:
+// the process exits right after, and a cancel that was only asked for would
+// leave the build running on with nobody to see it end. Idle, it does
+// nothing. Safe on a nil Runner.
+func (r *Runner) Stop() {
+	if r == nil {
+		return
+	}
+	r.mu.Lock()
+	stop, landed := r.stop, r.landed
+	r.mu.Unlock()
+	if stop == nil {
+		return
+	}
+	stop()
+	select {
+	case <-landed:
+	case <-time.After(stopGrace):
+	}
 }
 
 // Status reports the in-flight run or the latest result, re-fingerprinting
