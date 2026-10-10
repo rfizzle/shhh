@@ -42,9 +42,10 @@ func PromptBlock(info Info) string {
 	switch {
 	case !surveyed:
 	case !info.Repo:
-		// Worth a line of its own: it is the fact that makes an edit
-		// unrecoverable, and the agent is the one being asked to make edits.
-		lines = append(lines, "- Not a git repository — there is nothing to restore a file from, so be correspondingly careful with overwrites and deletions.")
+		// Worth a line of its own: it is the fact that makes a command's
+		// writes unrecoverable (an edit still has /undo, which reads shhh's own
+		// records, not git), and the agent is the one being asked to make both.
+		lines = append(lines, "- Not a git repository — git cannot restore a file here, but /undo still puts back what your edits changed, from shhh's own records rather than git. A command's effects are not recorded, so be careful with what one overwrites or deletes.")
 	case info.Detached:
 		lines = append(lines, "- Git: detached HEAD — a commit here belongs to no branch. Say so before making one.")
 	case info.Branch != "":

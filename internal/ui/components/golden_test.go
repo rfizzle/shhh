@@ -682,7 +682,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Warnings = []string{"deletes files recursively (rm -rf)"}
 				c.Fields = []CardField{
 					{Label: "touches", Value: "./build", Detail: "412 files, 84.0 MB; shhh cannot tell what npm writes"},
-					{Label: "undo", Value: "none", Detail: "nothing it writes is tracked in git", Tone: ToneRisk},
+					{Label: "undo", Value: "none", Detail: "nothing it writes is tracked in git, and /undo does not record commands", Tone: ToneRisk},
 					{Label: "network", Value: "open", Detail: "the workspace profile allows network access", Tone: ToneOpen},
 					// The containment in force is a row under the three, not
 					// a chip on the rail: a chip is shed the moment the
@@ -700,7 +700,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Severity, c.SeverityReason = SeverityLow, "writes inside the workspace"
 				c.Fields = []CardField{
 					{Label: "touches", Value: "./node_modules", Detail: "shhh cannot tell what npm writes"},
-					{Label: "undo", Value: "none", Detail: "nothing it writes is tracked in git", Tone: ToneRisk},
+					{Label: "undo", Value: "none", Detail: "nothing it writes is tracked in git, and /undo does not record commands", Tone: ToneRisk},
 					{Label: "network", Value: "2 hosts", Detail: "only registry.npmjs.org, proxy.golang.org; every other host is refused", Tone: ToneNeutral},
 					{Label: "sandbox", Value: "bwrap · workspace", Tone: ToneChrome},
 				}
@@ -730,7 +730,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 						c.MaxLines, c.BodyOffset = 10, offset
 						c.Fields = []CardField{
 							{Label: "touches", Value: "./dist", Detail: "the script rewrites the release tree", Tone: ToneRisk},
-							{Label: "undo", Value: "none", Detail: "nothing it writes is tracked in git", Tone: ToneRisk},
+							{Label: "undo", Value: "none", Detail: "nothing it writes is tracked in git, and /undo does not record commands", Tone: ToneRisk},
 							{Label: "network", Value: "open", Detail: "it pushes the artefacts it builds", Tone: ToneOpen},
 							{Label: "sandbox", Value: "bwrap", Detail: "workspace profile"},
 						}

@@ -89,17 +89,18 @@ func readGitState(ctx context.Context, dir string) doctorGitState {
 	return state
 }
 
-// doctorGit reads the workspace. What hangs on it is undo: `[u] undo turn`
-// restores from what the changeset recorded, and outside a repository there
-// is nothing to compare an edit against — so a directory that is not a work
-// tree is a warning rather than a pass, and it says which key is affected.
+// doctorGit reads the workspace. What hangs on it is what git can restore: /undo
+// reads shhh's own records and works in any directory, so it is not what a
+// missing repository costs — a command's writes are, because only git could
+// put those back. A directory that is not a work tree is a warning rather
+// than a pass, and it says which of the two is affected.
 func doctorGit(state doctorGitState) doctorFinding {
 	switch {
 	case state.Err != nil && !state.Repo:
 		return doctorFinding{
 			Subject: "git did not answer", Detail: state.Err.Error(),
 			Outcome: "unknown", State: components.DoctorWarned,
-			Consequence: "shhh cannot tell a tracked file from an untracked one, so every edit reads as unrecoverable",
+			Consequence: "shhh cannot tell a tracked file from an untracked one, so a command's writes cannot be called recoverable; /undo still puts back an edit from shhh's own records",
 			FixLabel:    "show what is missing",
 			Fix:         []string{"install git and re-run: shhh doctor"},
 		}
@@ -107,7 +108,7 @@ func doctorGit(state doctorGitState) doctorFinding {
 		return doctorFinding{
 			Subject: shortPath(state.Dir), Detail: "not a git work tree",
 			Outcome: "no repo", State: components.DoctorWarned,
-			Consequence: "every edit here will say it cannot be undone, because there is nothing to restore from",
+			Consequence: "git cannot restore a file here, but /undo still puts back an edit from shhh's own records; a command's effects are not recorded",
 			FixLabel:    "show the one command",
 			Fix:         []string{"git init                 or start the agent inside a repository"},
 		}

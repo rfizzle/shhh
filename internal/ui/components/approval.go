@@ -201,10 +201,10 @@ var standingGlosses = map[[2]string][]string{
 	// The command card.
 	{"touches", "nothing"}:      {"the command resolved to reads only"},
 	{"undo", "nothing to undo"}: {"no workspace file is modified"},
-	{"undo", "git"}:             {"every path it writes is tracked, so git can restore them"},
+	{"undo", "git"}:             {"every path it writes is tracked, so git can restore them (not /undo)"},
 	{"undo", "none"}: {
-		"this is not a git work tree and shhh does not record commands",
-		"nothing it writes is tracked in git",
+		"this is not a git work tree, and /undo does not record commands",
+		"nothing it writes is tracked in git, and /undo does not record commands",
 	},
 	{"network", "open"}: {
 		"nothing contains this command, so nothing limits what it reaches",

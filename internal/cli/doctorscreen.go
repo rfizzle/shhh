@@ -113,7 +113,7 @@ func doctorQueuedSubject(name string) string {
 	case "image":
 		return "the image a container sandbox starts from"
 	case "git":
-		return "the workspace, and whether an edit can be undone"
+		return "the workspace, and whether git can restore a file"
 	case "project":
 		return "the instruction files a session here reads"
 	case "trust":

@@ -158,7 +158,7 @@ func (m Model) commandRadiusIn(in radiusIn, command string, reach scopeReach, co
 	return b
 }
 
-// undoField is the reversibility line for a command. shhh cannot undo a
+// undoField is the reversibility line for a command. /undo cannot put back a
 // command — it records file edits, not processes — so the honest answer is
 // what git could do about the paths it resolved, and "unknown" whenever the
 // paths themselves are.
@@ -189,13 +189,13 @@ func undoField(tracker *changeset.Tracker, res radius.Command) components.CardFi
 	}
 	switch {
 	case !tracker.Repo():
-		f.Value, f.Detail = "none", "this is not a git work tree and shhh does not record commands"
+		f.Value, f.Detail = "none", "this is not a git work tree, and /undo does not record commands"
 		f.Tone = components.ToneRisk
 	case untracked == 0 && tracked == len(res.Writes):
-		f.Value, f.Detail = "git", "every path it writes is tracked, so git can restore them"
+		f.Value, f.Detail = "git", "every path it writes is tracked, so git can restore them (not /undo)"
 		f.Tone = components.ToneSafe
 	case tracked == 0:
-		f.Value, f.Detail = "none", "nothing it writes is tracked in git"
+		f.Value, f.Detail = "none", "nothing it writes is tracked in git, and /undo does not record commands"
 		f.Tone = components.ToneRisk
 	default:
 		f.Value = "partial"

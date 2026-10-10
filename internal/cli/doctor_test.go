@@ -474,7 +474,7 @@ func TestDoctorGit(t *testing.T) {
 	if none.State != components.DoctorWarned {
 		t.Fatalf("a directory that is not a repository did not warn: %+v", none)
 	}
-	if !strings.Contains(none.Consequence, "undone") {
+	if !strings.Contains(none.Consequence, "/undo") {
 		t.Fatalf("the consequence does not name what it costs: %q", none.Consequence)
 	}
 
