@@ -122,6 +122,7 @@ var retired = []string{
 	"diff.leave", "output.leave", "preview.leave", "paste.leave",
 	"backlog.priority", "backlog.kind", "backlog.ready", "backlog.depends",
 	"backlog.block", "backlog.reopen", "backlog.archive", "backlog.groom",
+	"agent.cancel", "agent.kill_all", "agent.review", "agent.migrate",
 }
 
 // isRetired reports that a name from a file is one of retired, read the way
@@ -361,7 +362,7 @@ var movement = []string{
 // "gone" is a judgement this file makes once.
 func destructive() []Binding {
 	return []Binding{
-		Agent.Cancel, Agent.Kill, Agent.KillAll,
+		Agent.Stop,
 		Select.Delete, Screen.Delete,
 		Notes.Drop, Backlog.Drop, Profile.Clear,
 		Queue.Cancel,

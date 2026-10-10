@@ -947,14 +947,16 @@ func TestKillConfirmCountsTheSubtree(t *testing.T) {
 		return ok && st.State == subagent.StateRunning
 	})
 
-	if got := m.killPrompt("reader"); !strings.HasPrefix(got, "Kill reader? Its turn stops") {
+	leaf, _ := m.stopAsk("reader")
+	if got := leaf.Prompt; !strings.HasPrefix(got, "Stop reader? Kill discards its workspace") {
 		t.Errorf("a leaf's confirm is %q, and there is nothing under it to count", got)
 	}
-	got := m.killPrompt("researcher-1")
-	if !strings.HasPrefix(got, "Kill researcher-1 and 1 agent under it? ") {
+	group, _ := m.stopAsk("researcher-1")
+	got := group.Prompt
+	if !strings.HasPrefix(got, "Stop researcher-1 and 1 agent under it? ") {
 		t.Errorf("the confirm over a subtree is %q, and never says how many go with it", got)
 	}
-	if !strings.Contains(got, "the transcripts stay and the other agents keep running") {
+	if !strings.Contains(got, "Kill discards every workspace") {
 		t.Errorf("the confirm over a subtree is %q, and never says what survives", got)
 	}
 }
@@ -1232,8 +1234,9 @@ func TestKillConfirmSaysAPatchIsKeptOnlyWhereThereIsOne(t *testing.T) {
 	spawnChild(t, sup, subagent.RoleWriter, "writer-1")
 	waitFor(t, func() bool { return sup.PatchToKeep("writer-1") })
 
-	want := "Kill writer-1? Its patch is kept. Its turn stops and its isolated workspace is discarded; "
-	if got := m.killPrompt("writer-1"); !strings.HasPrefix(got, want) {
+	want := "Stop writer-1? A kill keeps its patch. Kill discards "
+	writer, _ := m.stopAsk("writer-1")
+	if got := writer.Prompt; !strings.HasPrefix(got, want) {
 		t.Errorf("the confirm over a writer with work is %q, want it to open %q", got, want)
 	}
 	// The confirm is one line cut at the pane's width, so the sentence the
@@ -1241,17 +1244,17 @@ func TestKillConfirmSaysAPatchIsKeptOnlyWhereThereIsOne(t *testing.T) {
 	// (docs/interface/surfaces.md#the-inline-confirm).
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 40})
 	narrow := updated.(Model)
-	confirm := &components.Confirm{Prompt: narrow.killPrompt("writer-1")}
-	if got := ansi.Strip(confirm.View(narrow.contentWidth())); !strings.Contains(got, "Kill writer-1? Its patch is kept. ") {
-		t.Errorf("at 80 columns the kill confirm reads %q, and the kept patch is not whole on it", got)
+	confirm, _ := narrow.stopAsk("writer-1")
+	if got := ansi.Strip(confirm.View(narrow.contentWidth())); !strings.Contains(got, "Stop writer-1? A kill keeps its patch. ") || !strings.Contains(got, "[y] cancel · [k] kill") {
+		t.Errorf("at 80 columns the stop confirm reads %q, and the kept patch or the answers are not whole on it", got)
 	}
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
-	if got := m.killPrompt("researcher-1"); strings.Contains(got, "patch") {
-		t.Errorf("the confirm over a child with nothing to keep promises a patch: %q", got)
+	if none, _ := m.stopAsk("researcher-1"); strings.Contains(none.Prompt, "patch") {
+		t.Errorf("the confirm over a child with nothing to keep promises a patch: %q", none.Prompt)
 	}
 }
 
-// [p] on a row holding a kept patch opens the patch on the surface [v] opens
+// enter on a row holding a kept patch opens the patch on the surface [v] opens
 // from a live card, headed with whose it is, and the card behind it is the
 // patch card with its two answers: apply lands the change the way a finishing
 // writer's does, and the row stops offering it.
@@ -1294,9 +1297,9 @@ func TestAKeptPatchIsReviewedFromTheManager(t *testing.T) {
 		t.Fatalf("the writer's row should offer its kept patch, got %+v", rows)
 	}
 	m.agentList.Focus = 1
-	m = press(t, m, "p")
+	m = press(t, m, "enter")
 	if m.state != stateDiffFull || m.fullDiff == nil || m.fullDiff.Path != "writer-1's patch" {
-		t.Fatalf("[p] should open the patch full screen, headed with whose it is; state %v, diff %+v", m.state, m.fullDiff)
+		t.Fatalf("enter should open the patch full screen, headed with whose it is; state %v, diff %+v", m.state, m.fullDiff)
 	}
 	ask := m.listAnswerAsk()
 	if ask == nil || ask.Kind != subagent.AskPatch {

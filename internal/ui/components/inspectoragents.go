@@ -600,7 +600,7 @@ func (a InspectorAgent) detailRow(width int) string {
 		// it is not the part a narrow rail gives up. Its key is split from
 		// it so that the key can go first.
 		parts = append(parts, detailField{text: sty.dimmer.Render("patch kept")},
-			detailField{text: sty.hint.Render(keys.Bracket(keys.Agent.Review) + " " + keys.Words(keys.Agent.Review)),
+			detailField{text: sty.hint.Render(keys.Bracket(keys.Agent.Attach) + " review"),
 				drop: dropReviewKey})
 	}
 	if a.Steers >= inspectorSteersWorthSaying {

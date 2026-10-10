@@ -516,6 +516,8 @@ func TestProgram_AnOlderProfileIsMigratedFromTheManager(t *testing.T) {
 	tm.Send(programEnter)
 	waitForText(t, tm, "◆ older shape")
 	tm.Send(tea.KeyPressMsg{Code: tea.KeyDown})
+	tm.Send(programEnter)
+	waitForText(t, tm, "Purpose")
 	tm.Send(tea.KeyPressMsg{Code: 'm', Text: "m"})
 	waitForText(t, tm, "Purpose · migrated")
 	for range 3 {

@@ -44,9 +44,9 @@
 │   ◇ writer-3 · docs/loop.md                                                    ▰▱▱▱▱ 1/5 · 6 tools · $0.02 │
 │   ◇ writer-4 · internal/agent tests                                            ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
 │   ◇ writer-5 · survey internal/ui                                              ▰▰▰▱▱ 3/5 · 6 tools · $0.02 │
-│ ↓ 5 more                                                                                                   │
-│ [enter] attach · [a] answer without attaching · [d] cancel · [X] kill · [K] kill all · every level         │
-│ [esc] back to the turn                                                                                     │
+│   ◇ writer-6 · apply patch                                                     ▰▰▰▰▱ 4/5 · 6 tools · $0.02 │
+│ ↓ 4 more                                                                                                   │
+│ [enter] attach · [a] answer without attaching · [d] stop every agent · [esc] back to the turn              │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the manager · the pointer at the foot, the blocked child still on the card
@@ -54,12 +54,12 @@
 │   ● orchestrator · this session                                                round 7 · streaming…  $0.12 │
 │   ⚠ runner-2 · go test ./...                                                 ⚠ needs you · 3 tools · $0.01 │
 │     waiting approval: run go test ./internal/agent/...                                                     │
-│ ↑ 5 more                                                                                                   │
+│ ↑ 4 more                                                                                                   │
+│   ◇ writer-7 · internal/tools tests                                            ▰▰▰▰▰ 5/5 · 6 tools · $0.02 │
 │   ◇ writer-8 · README examples                                                 ▰▱▱▱▱ 1/5 · 6 tools · $0.02 │
 │   ◇ writer-9 · golden captures                                                 ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
 │ ❯ ◇ writer-10 · config schema                                                  ▰▰▰▱▱ 3/5 · 6 tools · $0.02 │
-│ [enter] attach · [a] answer without attaching · [s] steer · [d] cancel · [X] kill                          │
-│ [K] kill all · every level · [esc] back to the turn                                                        │
+│ [enter] attach · [a] answer without attaching · [s] steer · [d] stop · [esc] back to the turn              │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -97,9 +97,9 @@
 ␛[94m│␛[m   ␛[94m◇␛[m writer-3␛[38;5;245m · docs/loop.md␛[m                                                    ␛[94m▰␛[m␛[38;5;241m▱▱▱▱␛[m ␛[38;5;241m1/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[94m◇␛[m writer-4␛[38;5;245m · internal/agent tests␛[m                                            ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[38;5;241m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[94m◇␛[m writer-5␛[38;5;245m · survey internal/ui␛[m                                              ␛[94m▰▰▰␛[m␛[38;5;241m▱▱␛[m ␛[38;5;241m3/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m↓ 5 more␛[m                                                                                                   ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m␛[38;5;241m · ␛[m␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m         ␛[94m│␛[m
-␛[94m│␛[m ␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m                                                                                     ␛[94m│␛[m
+␛[94m│␛[m   ␛[94m◇␛[m writer-6␛[38;5;245m · apply patch␛[m                                                     ␛[94m▰▰▰▰␛[m␛[38;5;241m▱␛[m ␛[38;5;241m4/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241m↓ 4 more␛[m                                                                                                   ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m stop every agent␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m              ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the manager · the pointer at the foot, the blocked child still on the card
@@ -107,10 +107,10 @@
 ␛[94m│␛[m   ␛[1;94m●␛[m orchestrator␛[38;5;245m · this session␛[m                                                ␛[38;5;241mround 7 · streaming…␛[m  ␛[38;5;243m$0.12␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[91m⚠␛[m runner-2␛[38;5;245m · go test ./...␛[m                                                 ␛[91m⚠ needs you␛[m␛[38;5;241m · ␛[m␛[38;5;245m3 tools · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mwaiting approval: run go test ./internal/agent/...␛[m                                                     ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m↑ 5 more␛[m                                                                                                   ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241m↑ 4 more␛[m                                                                                                   ␛[94m│␛[m
+␛[94m│␛[m   ␛[94m◇␛[m writer-7␛[38;5;245m · internal/tools tests␛[m                                            ␛[94m▰▰▰▰▰␛[m ␛[38;5;241m5/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[94m◇␛[m writer-8␛[38;5;245m · README examples␛[m                                                 ␛[94m▰␛[m␛[38;5;241m▱▱▱▱␛[m ␛[38;5;241m1/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[94m◇␛[m writer-9␛[38;5;245m · golden captures␛[m                                                 ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[38;5;241m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
 ␛[94m│␛[m ␛[94m❯␛[m ␛[94m␛[m␛[38;5;245m␛[m␛[94m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[94m◇␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mwriter-10 · config schema                                                  ▰▰▰▱▱ 3/5 · 6 tools · $0.02␛[m␛[m ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m␛[38;5;241m · ␛[m␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[38;5;103m[X]␛[m␛[38;5;241m kill␛[m                          ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m                                                        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m answer without attaching␛[m␛[38;5;241m · ␛[m␛[38;5;103m[s]␛[m␛[38;5;241m steer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m stop␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m              ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

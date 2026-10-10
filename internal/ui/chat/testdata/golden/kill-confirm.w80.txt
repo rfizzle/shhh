@@ -11,14 +11,14 @@
 
 ── layout ──────────────────────────────────────────────────
 · a writer holding a patch
-Kill writer-1? Its patch is kept. Its turn stops and its isolated workspace…
+Stop writer-1? A kill keeps its patch. Kill discards…  [y] cancel · [k] kill
 
 · a child with nothing to keep
-Kill researcher-1? Its turn stops and its isolated workspace is discarded; …
+Stop researcher-1? Kill discards its workspace.  [y] cancel · [k] kill
 
 ── ansi ────────────────────────────────────────────────────
 · a writer holding a patch
-␛[38;5;252mKill writer-1? Its patch is kept. Its turn stops and its isolated workspace…␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[1;97m␛[m␛[38;5;241m␛[m
+␛[38;5;252mStop writer-1? A kill keeps its patch. Kill discards…␛[m  ␛[38;5;241m[y] ␛[mcancel␛[38;5;241m · [k] ␛[mkill
 
 · a child with nothing to keep
-␛[38;5;252mKill researcher-1? Its turn stops and its isolated workspace is discarded; …␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[1;97m␛[m␛[38;5;241m␛[m
+␛[38;5;252mStop researcher-1? Kill discards its workspace.␛[m  ␛[38;5;241m[y] ␛[mcancel␛[38;5;241m · [k] ␛[mkill

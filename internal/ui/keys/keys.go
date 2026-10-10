@@ -1249,43 +1249,35 @@ type AgentKeys struct {
 	// (docs/interface/surfaces.md#the-agent-manager).
 	Steer Binding
 	Retry Binding
-	// Review puts a stopped writer's kept patch on the card a finishing
-	// writer's patch is put on, with the diff open over it
-	// (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
-	Review Binding
-	// Migrate sends a role written before the five sections to the drafter
-	// to be moved into them, and Edit opens a role's file in the editor now
-	// that enter opens it on the drafter. Both are a role row's, live only
-	// over a row with a file, and Migrate only over one in the older shape
-	// (docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten).
-	Migrate Binding
-	Edit    Binding
-	Cancel  Binding
-	Kill    Binding
-	// KillAll ends every child at once, and it is the capital of Kill's own
-	// letter for the reason Kill is a capital at all: an act nobody can undo
-	// may not sit under a keystroke a reader presses without reading the row
-	// (keymap.go's destructive list).
-	KillAll Binding
-	Back    Binding
-	Detach  Binding
+	// Edit opens a role's file in the editor. It is a role row's, live only
+	// over a row with a file. Moving an older role into the five sections is
+	// the drafter's own key (Profile.Migrate), reached through enter.
+	Edit Binding
+	// Stop is the one key that ends something: it asks, and the answers are
+	// the confirm's yes, drawn as "cancel" (the turn stops, the agent
+	// stays), and Kill (the agent goes and its workspace with it). Over a row
+	// with agents under it, or the session's own row, it stops every one of
+	// them. The answers are a one-row confirm like the quit confirm's, not a
+	// surface of their own, and esc on it stops nothing (keymap.go's
+	// destructive list).
+	Stop   Binding
+	Kill   Binding
+	Back   Binding
+	Detach Binding
 }
 
 var Agent = AgentKeys{
-	Move:    bind(MoveShown, "move", "up", "down", "k", "j"),
-	Attach:  bind("enter", "attach", "enter"),
-	Go:      bind("g", "go to the agent that asked", "g"),
-	Answer:  bind("a", "answer", "a"),
-	Steer:   bind("s", "steer", "s"),
-	Retry:   bind("r", "retry", "r"),
-	Review:  bind("p", "review", "p"),
-	Migrate: bind("m", "move it into sections", "m"),
-	Edit:    bind("e", "edit", "e"),
-	Cancel:  bind("d", "cancel", "d"),
-	Kill:    bind("X", "kill", "X"),
-	KillAll: bind("K", "kill all", "K"),
-	Back:    bind("esc", "back", "esc"),
-	Detach:  bind("esc", "back", "esc"),
+	Move:   bind(MoveShown, "move", "up", "down", "k", "j"),
+	Attach: bind("enter", "attach", "enter"),
+	Go:     bind("g", "go to the agent that asked", "g"),
+	Answer: bind("a", "answer", "a"),
+	Steer:  bind("s", "steer", "s"),
+	Retry:  bind("r", "retry", "r"),
+	Edit:   bind("e", "edit", "e"),
+	Stop:   bind("d", "stop", "d"),
+	Kill:   bind("k", "kill", "k"),
+	Back:   bind("esc", "back", "esc"),
+	Detach: bind("esc", "back", "esc"),
 }
 
 // ProfileKeys are the profile drafter's. The surface is a flow rather than a

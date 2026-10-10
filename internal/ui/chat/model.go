@@ -1121,15 +1121,15 @@ type Model struct {
 	// surface on a child ("" = orchestrator); childViews holds each child's
 	// mirrored transcript and scroll state so attach/detach loses nothing;
 	// agentList is the open agent manager, killConfirm/killTargets its armed
-	// inline kill confirmation — one child for [X] and every live one for
-	// [K], which is why the names are a list rather than a name — and
+	// stop confirmation — the names a kill is handed, which are a list
+	// because a stop over a group row reaches every child under it — and
 	// answerAgent the row whose approval is being answered over the list
 	// rather than inside the child.
 	attachedTo  string
 	childViews  map[string]*childView
 	parentView  viewState
 	agentList   *components.AgentList
-	killConfirm *components.Confirm
+	killConfirm *components.StopConfirm
 	killTargets []string
 	answerAgent string
 	// Session branching and rewind: checkpoints mark each user turn's

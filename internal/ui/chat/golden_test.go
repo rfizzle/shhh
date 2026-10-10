@@ -2624,7 +2624,7 @@ func TestGolden_KeyEntry(t *testing.T) {
 	})
 }
 
-// TestGolden_KillConfirm captures the agent manager's kill confirm, which is
+// TestGolden_KillConfirm captures the agent manager's stop confirm, which is
 // one line cut at the pane's width: over a writer holding a patch the kept
 // patch is the sentence straight after the question, so the narrow widths cut
 // the workspace clause and never that one, and over a child with nothing to
@@ -2641,7 +2641,8 @@ func TestGolden_KillConfirm(t *testing.T) {
 		m.wiring.Subagents = sup
 		m.adoptChildren()
 		view := func(name string) string {
-			return (&components.Confirm{Prompt: m.killPrompt(name)}).View(m.contentWidth())
+			confirm, _ := m.stopAsk(name)
+			return confirm.View(m.contentWidth())
 		}
 		return []golden.Panel{
 			{Label: "a writer holding a patch", View: view("writer-1")},

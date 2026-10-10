@@ -692,8 +692,7 @@ func (m Model) agentListLines() []string {
 }
 
 // updateAgentList routes keys while the agent list is open: enter attaches,
-// x cancels the focused agent's turn, X arms the inline kill confirm, esc
-// dismisses the list.
+// d arms the stop confirm (cancel or kill), esc dismisses the list.
 func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// An answer in progress owns the keys: the card is over the list, and
 	// answering it (either way) hands the list back.
@@ -701,14 +700,17 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.updateListAnswer(msg, ask)
 	}
 	if m.killConfirm != nil {
-		done, yes := m.killConfirm.Update(msg)
+		done, answer := m.killConfirm.Update(msg)
 		if !done {
 			return m, nil
 		}
-		targets := m.killTargets
+		turns, targets := m.killConfirm.Turns, m.killTargets
 		m.killConfirm = nil
 		m.killTargets = nil
-		if yes {
+		switch answer {
+		case components.StopCancel:
+			m.cancelChildren(turns)
+		case components.StopKill:
 			m.killChildren(targets)
 		}
 		m.syncViewport()
@@ -740,23 +742,19 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.syncViewport()
 		return m, nil
 	}
-	// The one action that is about the list and not about a row, so it is
-	// answered before the index is read: it carries none.
-	if res.Action == components.AgentKillAll {
-		return m.armKillAll()
-	}
 	if res.Index < 0 || res.Index >= len(names) {
 		return m, nil
 	}
 	name := names[res.Index]
 	switch res.Action {
-	case components.AgentOpenRole, components.AgentMigrate:
+	case components.AgentOpenRole:
 		// The profile opens on the drafter's draft step, the way a draft is
-		// edited; m opens it and sends it to be moved into the sections.
+		// edited; an older one is moved into the sections from there, on the
+		// drafter's own key.
 		m.agentList = nil
 		m.answerAgent = ""
 		m.syncViewport()
-		return m.openPersonaProfile(name, res.Action == components.AgentMigrate)
+		return m.openPersonaProfile(name)
 	case components.AgentEditRole:
 		// The editor takes the terminal, so the list goes first: coming back
 		// to a takeover that was drawn before the file was edited is coming
@@ -773,23 +771,8 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		m.attach(name)
 		return m, nil
-	case components.AgentCancel:
-		if name == "" {
-			// The orchestrator's turn: same semantics as Ctrl+C.
-			if m.state == stateStreaming {
-				m.cancelStreaming()
-				m.viewport.SetLines(m.renderHistoryLines())
-				m.viewport.GotoBottom()
-				return m, m.autosaveCmd()
-			}
-			return m, nil
-		}
-		if err := m.wiring.Subagents.CancelTurn(name); err != nil {
-			m.noteChild(name, err.Error())
-		} else {
-			m.purgeChildAsks(name)
-		}
-		return m, nil
+	case components.AgentStop:
+		return m.armStop(name)
 	case components.AgentAnswer:
 		// The card renders over the list and comes back to it: opening
 		// the manager because something needs you should not then send you
@@ -833,19 +816,11 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		return m.reviewKeptPatch(name)
-	case components.AgentKill:
-		if name == "" {
-			return m, nil // the orchestrator is quit with Ctrl+D, never killed from here
-		}
-		m.killConfirm = &components.Confirm{Prompt: m.killPrompt(name)}
-		m.killTargets = []string{name}
-		m.syncViewport()
-		return m, nil
 	}
 	return m, nil
 }
 
-// reviewKeptPatch is [p] on a row holding a kept patch: the patch opens full
+// reviewKeptPatch is enter on a row holding a kept patch: the patch opens full
 // screen on the surface [v] opens from a live card, headed with whose it is,
 // and the card behind it is the one a finishing writer's patch is put on —
 // apply and decline, over the list, the way [a] answers a blocked child from
@@ -1014,7 +989,7 @@ func (m Model) attachedCommand(parts []string) (tea.Model, tea.Cmd) {
 		// quits the whole session everywhere else in the product — so a
 		// reader who typed it to leave a child's surface ended the child
 		// instead (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
-		m.noteChild(name, "ending an agent is "+keys.Bracket(keys.Agent.Kill)+
+		m.noteChild(name, "ending an agent is "+keys.Bracket(keys.Agent.Stop)+
 			" in the agent manager ("+keys.Shown(keys.Draft.Agents)+
 			"). Esc detaches without ending anything")
 	case "/stats":
@@ -1032,7 +1007,7 @@ func (m Model) attachedCommand(parts []string) (tea.Model, tea.Cmd) {
 	case "/detach":
 		m.detachOne()
 	default:
-		m.noteChild(name, "commands while attached: /stats, /diff, /permissions [name], /agents, /attach <name>, /detach. Plain text steers the agent; esc detaches. Ending it is "+keys.Bracket(keys.Agent.Kill)+" in the agent manager")
+		m.noteChild(name, "commands while attached: /stats, /diff, /permissions [name], /agents, /attach <name>, /detach. Plain text steers the agent; esc detaches. Stopping it is "+keys.Bracket(keys.Agent.Stop)+" in the agent manager")
 	}
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()

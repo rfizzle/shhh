@@ -5,11 +5,13 @@ package components
 // and offers [a] and [r] only where they do something.
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 func agentKey(s string) tea.KeyPressMsg {
@@ -101,29 +103,22 @@ func TestAgentList_AnOlderProfileIsMarked(t *testing.T) {
 	}
 }
 
-// [m] is offered and live only on an older role with a file; over a current
-// role, a shipped one or an agent it is silent and not drawn.
-func TestAgentList_MigrateIsOfferedOnlyOnAnOlderProfile(t *testing.T) {
+// Moving an older role into the sections is the drafter's own key: the
+// manager offers no [m], and enter opens the older role on the drafter like
+// any other role with a file.
+func TestAgentList_MigrateIsTheDraftersKeyNotTheManagers(t *testing.T) {
 	rows := append(managerRows(),
-		AgentRow{State: AgentRole, Name: "critic", Task: "reads a diff", Status: "project", Editable: true, Migratable: true},
-		AgentRow{State: AgentRole, Name: "reviewer", Task: "reads a change", Status: "project", Editable: true},
-		AgentRow{State: AgentRole, Name: "researcher", Task: "read-only tools", Status: "built-in", Migratable: true})
-	older := len(rows) - 3
+		AgentRow{State: AgentRole, Name: "critic", Task: "reads a diff", Status: "project", Editable: true, Migratable: true})
+	older := len(rows) - 1
 	l := &AgentList{Rows: rows, Focus: older}
-	if view := ansi.Strip(l.View(110)); !strings.Contains(view, "[m] move it into sections") {
-		t.Fatalf("the older role should offer [m]:\n%s", view)
+	if view := ansi.Strip(l.View(110)); strings.Contains(view, "[m]") {
+		t.Fatalf("the manager should not offer [m]:\n%s", view)
 	}
-	if done, res := l.Update(agentKey("m")); !done || res.Action != AgentMigrate || res.Index != older {
-		t.Fatalf("m on the older role = %#v (done=%v)", res, done)
+	if done, res := l.Update(agentKey("m")); done || res.Action != AgentNone {
+		t.Fatalf("m on the older role = %#v (done=%v), want nothing", res, done)
 	}
-	for _, focus := range []int{0, older + 1, older + 2} {
-		l := &AgentList{Rows: rows, Focus: focus}
-		if view := ansi.Strip(l.View(110)); strings.Contains(view, "[m]") {
-			t.Fatalf("row %d should not offer [m]:\n%s", focus, view)
-		}
-		if done, res := l.Update(agentKey("m")); done || res.Action != AgentNone {
-			t.Fatalf("m on row %d = %#v (done=%v), want nothing", focus, res, done)
-		}
+	if done, res := l.Update(agentKey("enter")); !done || res.Action != AgentOpenRole || res.Index != older {
+		t.Fatalf("enter on the older role = %#v (done=%v), want the drafter", res, done)
 	}
 }
 
@@ -153,7 +148,7 @@ func TestAgentList_EnterOpensTheProfileAndItsFileIsAKeyAway(t *testing.T) {
 func TestAgentListIgnoresAgentKeysOverARoleRow(t *testing.T) {
 	rows := append(managerRows(), roleRows()...)
 	l := &AgentList{Rows: rows, Focus: len(rows) - 1}
-	for _, pressed := range []string{"x", "X", "s", "r"} {
+	for _, pressed := range []string{"d", "s", "r"} {
 		if done, res := l.Update(agentKey(pressed)); done || res.Action != AgentNone {
 			t.Fatalf("[%s] over a role row = %#v (done=%v), want nothing", pressed, res, done)
 		}
@@ -162,7 +157,7 @@ func TestAgentListIgnoresAgentKeysOverARoleRow(t *testing.T) {
 		t.Fatal("[s] over a role row must not open the redirect field")
 	}
 	view := ansi.Strip(l.View(96))
-	for _, gone := range []string{"[d] cancel", "[X] kill agent", "[s] steer", "[r] retry"} {
+	for _, gone := range []string{"[d] stop", "[s] steer", "[r] retry"} {
 		if strings.Contains(view, gone) {
 			t.Fatalf("a role row must not offer %q:\n%s", gone, view)
 		}
@@ -197,8 +192,7 @@ func TestAgentListStatesWhatARowIsWaitingOnAndDiedOf(t *testing.T) {
 	}
 }
 
-// TestAgentListOffersWhatTheListCanDo: answering in place and killing every
-// child are offers about the list, so they stand wherever the pointer is
+// TestAgentListOffersWhatTheListCanDo: answering in place is an offer about the list, so it stands wherever the pointer is
 // standing — an offer a reader has to go hunting for with the pointer is
 // indistinguishable from an offer that is not there. Retry is the row's, and
 // stays with it.
@@ -206,13 +200,13 @@ func TestAgentListOffersWhatTheListCanDo(t *testing.T) {
 	rows := append(managerRows(), AgentRow{State: AgentOffer, Name: "draft a new profile"})
 	for focus := range rows {
 		view := ansi.Strip((&AgentList{Rows: rows, Focus: focus}).View(96))
-		for _, want := range []string{"[a] answer without attaching", "[K] kill all", "[esc] back to the turn"} {
+		for _, want := range []string{"[a] answer without attaching", "[esc] back to the turn"} {
 			if !strings.Contains(view, want) {
 				t.Fatalf("focus %d missing %q:\n%s", focus, want, view)
 			}
 		}
-		if got := strings.Contains(view, "[d] cancel"); got != (focus != 4) {
-			t.Fatalf("focus %d offers cancel=%v, want %v:\n%s", focus, got, focus != 4, view)
+		if got := strings.Contains(view, "[d] stop"); got != (focus != 4) {
+			t.Fatalf("focus %d offers stop=%v, want %v:\n%s", focus, got, focus != 4, view)
 		}
 		if got := strings.Contains(view, "[r] retry"); got != (focus == 3) {
 			t.Fatalf("focus %d offers retry=%v, want %v:\n%s", focus, got, focus == 3, view)
@@ -233,13 +227,13 @@ func TestAgentListDropsTheOffersTheListCannotMake(t *testing.T) {
 			Progress: p(AgentProgress{State: FanoutDone})},
 	}
 	view := ansi.Strip((&AgentList{Rows: rows, Focus: 1}).View(96))
-	for _, gone := range []string{"[a] answer", "[K] kill all"} {
+	for _, gone := range []string{"[a] answer", "stop every agent"} {
 		if strings.Contains(view, gone) {
 			t.Fatalf("one running child and nothing blocked must not offer %q:\n%s", gone, view)
 		}
 	}
-	if _, res := (&AgentList{Rows: rows, Focus: 1}).Update(agentKey("K")); res.Action != AgentNone {
-		t.Fatalf("[K] with one live child = %#v, want nothing", res)
+	if _, res := (&AgentList{Rows: rows, Focus: 0}).Update(agentKey("d")); res.Action != AgentStop {
+		t.Fatalf("[d] over the session's row with a live child = %#v, want AgentStop", res)
 	}
 }
 
@@ -327,16 +321,16 @@ func TestAgentListSteersTheRowThePointerIsOn(t *testing.T) {
 func TestAgentListSteerFieldTakesEveryLetter(t *testing.T) {
 	l := &AgentList{Rows: managerRows(), Focus: 2}
 	l.Update(agentKey("s"))
-	for _, k := range []string{"x", "X", "a", "r", "K", "j"} {
+	for _, k := range []string{"x", "d", "a", "r", "K", "j"} {
 		if done, result := l.Update(agentKey(k)); done || result.Action != AgentNone {
 			t.Fatalf("%q while the field is open = %#v (done=%v), want a character", k, result, done)
 		}
 	}
 	view := ansi.Strip(l.View(110))
-	if !strings.Contains(view, "xXarKj") {
+	if !strings.Contains(view, "xdarKj") {
 		t.Fatalf("every letter should have gone into the field:\n%s", view)
 	}
-	if strings.Contains(view, "[X] kill") {
+	if strings.Contains(view, "[d] stop") {
 		t.Fatalf("the list's own keys are not live while the field is:\n%s", view)
 	}
 }
@@ -351,7 +345,7 @@ func TestAgentListSteerIsAbandonedByEsc(t *testing.T) {
 		t.Fatalf("esc over the field = %#v (done=%v), want the field closed and the list kept", result, done)
 	}
 	view := ansi.Strip(l.View(110))
-	if strings.Contains(view, "never mind") || !strings.Contains(view, "[X] kill") {
+	if strings.Contains(view, "never mind") || !strings.Contains(view, "[d] stop") {
 		t.Fatalf("the list should be back with nothing sent:\n%s", view)
 	}
 }
@@ -432,26 +426,30 @@ func TestAgentListSteerGoesWithTheRowThatLeaves(t *testing.T) {
 	l.Update(agentKey("s"))
 	typeIntoAgentList(l, "check the exit")
 	l.Rows = []AgentRow{rows[0], rows[1], rows[3]} // writer-1 is gone
-	if done, result := l.Update(agentKey("X")); done || result.Action != AgentNone {
+	if done, result := l.Update(agentKey("d")); done || result.Action != AgentNone {
 		t.Fatalf("the keystroke after the row left = %#v (done=%v), want nothing", result, done)
 	}
 	view := ansi.Strip(l.View(110))
 	if strings.Contains(view, "┄ steer") {
 		t.Fatalf("the field should have gone with its row:\n%s", view)
 	}
-	if !strings.Contains(view, "[X] kill") {
+	if !strings.Contains(view, "[d] stop") {
 		t.Fatalf("the list should have the keyboard back:\n%s", view)
 	}
 }
 
-// [K] is about the list, so it carries no row: a host reading an index off it
-// would kill whichever child the pointer happened to rest on as well as all
-// of them.
-func TestAgentListKillAllCarriesNoRow(t *testing.T) {
-	l := &AgentList{Rows: managerRows(), Focus: 2}
-	done, result := l.Update(agentKey("K"))
-	if done || result.Action != AgentKillAll || result.Index != -1 {
-		t.Fatalf("[K] = %#v (done=%v), want AgentKillAll with no index and the list open", result, done)
+// [d] over the session's own row is about the list, and it stays silent where
+// no child is live: the session's own turn is stopped where it is stopped
+// everywhere else.
+func TestAgentListStopOverTheSessionRowNeedsALiveChild(t *testing.T) {
+	l := &AgentList{Rows: managerRows(), Focus: 0}
+	if done, result := l.Update(agentKey("d")); done || result.Action != AgentStop || result.Index != 0 {
+		t.Fatalf("[d] = %#v (done=%v), want AgentStop on row 0 and the list open", result, done)
+	}
+	settled := []AgentRow{managerRows()[0],
+		{State: AgentDone, Name: "reader-3", Progress: &AgentProgress{State: FanoutDone}}}
+	if _, result := (&AgentList{Rows: settled}).Update(agentKey("d")); result.Action != AgentNone {
+		t.Fatalf("[d] with nothing live = %#v, want nothing", result)
 	}
 }
 
@@ -461,11 +459,8 @@ func TestAgentListKeepsTodaysSemantics(t *testing.T) {
 	if done, result := l.Update(agentKey("enter")); !done || result.Action != AgentAttach {
 		t.Fatalf("enter = %#v (done=%v), want AgentAttach", result, done)
 	}
-	if done, result := l.Update(agentKey("d")); done || result.Action != AgentCancel {
-		t.Fatalf("d = %#v (done=%v), want AgentCancel with the list open", result, done)
-	}
-	if done, result := l.Update(agentKey("X")); done || result.Action != AgentKill {
-		t.Fatalf("X = %#v (done=%v), want AgentKill with the list open", result, done)
+	if done, result := l.Update(agentKey("d")); done || result.Action != AgentStop {
+		t.Fatalf("d = %#v (done=%v), want AgentStop with the list open", result, done)
 	}
 	if done, result := l.Update(tea.KeyPressMsg{Code: tea.KeyEscape}); !done || result.Action != AgentBack {
 		t.Fatalf("esc = %#v (done=%v), want AgentBack", result, done)
@@ -608,5 +603,39 @@ func TestAgentListNamesTheHandoffUnderTheRow(t *testing.T) {
 	row.Note = ""
 	if got := row.noteLine(); got != "handoff handoff-7" {
 		t.Fatalf("a row with no reason should still name the handle: %q", got)
+	}
+}
+
+// The manager's register is nine keys: move, enter, a, s, r, e, d, ? and esc.
+// What used to be a key of its own — x, X, K, p, g, m — is not one, and q was
+// never the way out.
+func TestManager_TheRegisterIsNineKeys(t *testing.T) {
+	var shown []string
+	for _, b := range keys.OnAgentManager.Surface().Bindings {
+		shown = append(shown, keys.Shown(b))
+	}
+	want := []string{keys.MoveShown, "enter", "a", "s", "r", "e", "d", "esc", "?"}
+	slices.Sort(shown)
+	slices.Sort(want)
+	if !slices.Equal(shown, want) {
+		t.Fatalf("the manager's register is %v, want %v", shown, want)
+	}
+
+	rows := append(managerRows(), AgentRow{State: AgentFailed, Name: "writer-5", Retryable: true, PatchKept: true,
+		Progress: &AgentProgress{State: FanoutFailed}})
+	for _, retired := range []string{"x", "X", "K", "p", "g", "m", "q"} {
+		for focus := range rows {
+			l := &AgentList{Rows: rows, Focus: focus}
+			if done, res := l.Update(agentKey(retired)); done || res.Action != AgentNone {
+				t.Fatalf("%q on row %d = %#v (done=%v), want nothing", retired, focus, res, done)
+			}
+		}
+	}
+
+	// enter on a stopped writer's row opens the kept patch instead of
+	// attaching, and the list stays open under it.
+	l := &AgentList{Rows: rows, Focus: len(rows) - 1}
+	if done, res := l.Update(agentKey("enter")); done || res.Action != AgentReview {
+		t.Fatalf("enter on a kept patch = %#v (done=%v), want AgentReview with the list open", res, done)
 	}
 }

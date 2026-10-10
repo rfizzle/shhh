@@ -709,7 +709,7 @@ three levels deep is reading one session and not three.
   their lane says whose kill they went with.
 - **What kill-all means.** Every live agent at every depth — which is what it
   already does, since it walks the flat list of every agent the session has —
-  and the manager's key row says so (`[K] kill all · every level`).
+  and the manager's key row says so (`[d] stop · every level` over a row with agents under it, `[d] stop every agent` over the session's own).
 - **Whose card a grandchild's request is.** The person's, like every other
   child's, with the lineage in the title (`writer-1 ▸ reviewer-1a ▸ Approve
   command`); a blocked grandchild floats to directly under its own parent's
@@ -1397,11 +1397,11 @@ patch, or the patch would not apply: in each case the patch is kept in the
 session's evidence store — through the same secrets scrub as every copy that
 outlives a turn — under an opaque handle, before its isolated copy is removed.
 The copy goes either way; the patch is what is kept. The agent manager's row
-and the rail's line under that writer say `patch kept · [p] review`, and `[p]`
-opens the patch full screen with the card a finishing writer's patch is put on
+and the rail's line under that writer say `patch kept · [enter] review`, and `enter`
+on the manager's row opens the patch full screen with the card a finishing writer's patch is put on
 behind it: apply or decline, with the same overlap warning and the same record
-of which agent's patch changed which file. Declining it leaves it kept. A kill
-confirm says the patch will be kept when there is one to keep.
+of which agent's patch changed which file. Declining it leaves it kept. A stop
+confirm says a kill keeps the patch when there is one to keep.
 
 The handoff names that handle rather than carrying the patch a second time, and
 the patch stays outside the replacement instruction: a valid handle is all a

@@ -287,13 +287,11 @@ arrows, the page keys, `home` and `end`, and esc — never a letter, because
 every letter it is sent is its filter's. A takeover spends bare letters
 because nothing else is listening: the profile drafter's draft step spends
 `R` for `profile.refine_all`, one note for every section, a capital beside
-`profile.refine` on enter the way the agent manager's `K` widens a kill to
-all of them. The manager spends `m` for `agent.migrate`, which moves a role
-written before the prompt's sections into them and is live only over such a
-row, and `e` for `agent.edit`, which opens a role's file now that enter opens
-it on the drafter — `e` is the letter `backlog.edit` and `profile.edit` spend
-on the editor. The drafter's draft step spends the same `m` for
-`profile.migrate` over a profile opened in that shape. `m` is
+`profile.refine` on enter. The manager spends `e` for `agent.edit`, which
+opens a role's file now that enter opens it on the drafter — `e` is the letter
+`backlog.edit` and `profile.edit` spend on the editor. The drafter's draft step
+spends `m` for `profile.migrate` over a profile opened in the older shape; the
+manager has no `m`. `m` is
 `wait.fallback`'s on the retry countdown, a takeover never up at the same time
 as either. Reading mode spends `c` for `reading.copy_block`, one code block of
 the reply under the cursor; `row.continue` answers the same letter on a

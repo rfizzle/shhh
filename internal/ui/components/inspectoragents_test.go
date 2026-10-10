@@ -270,7 +270,7 @@ func TestInspectorRail_AgentsMapDropsClausesWholeKeepingBothKept(t *testing.T) {
 		want  string
 	}{
 		{InspectorWidth, "cancelled · patch kept · handoff kept"},
-		{InspectorMaxWidth, "cancelled · patch kept · [p] review · handoff kept · [r] retry"},
+		{InspectorMaxWidth, "cancelled · patch kept · [enter] review · handoff kept · [r] retry"},
 	} {
 		view := stripANSI(r.View(tc.width, 0))
 		if !strings.Contains(view, tc.want) || strings.Contains(view, "…") {

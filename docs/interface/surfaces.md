@@ -2147,25 +2147,33 @@ card's header gives its glyph and verb, and a name longer than the slot takes
 the room it needs
 ([the slot is the list's](departures.md#a-fan-out-lane-sets-its-name-in-a-slot)).
 
+**The manager has nine keys.** `↑↓/jk` move, `enter` attaches, `a` answers a
+blocked child without attaching, `s` steers, `r` runs a failed child again,
+`e` opens a role's file, `d` stops, `?` lists them and `esc` goes back to the
+turn. Two of the nine are the register's own spellings of a shared act —
+`d` is the stop where every other screen's `d` is the delete, and `e` and `r`
+are the edit and the retry — so the manager spends two letters of its own,
+`a` and `s`. There is no `q`, no `x` and no `ctrl+c`: esc is the way out, and
+a stop is `d`.
+
 **The key row states what the list can do, and not what the pointer is on.**
-Answering a blocked child in place is offered whenever any child is blocked;
-killing every child is offered whenever more than one is still running, and
-that key says how far it reaches — `[K] kill all · every level` — because the
-rows in front of the reader are one level of a tree it walks the whole of. An
-offer a reader has to go hunting for with the pointer is indistinguishable
+Answering a blocked child in place is offered whenever any child is blocked.
+An offer a reader has to go hunting for with the pointer is indistinguishable
 from an offer that is not there, which is the whole reason the manager is
 opened. Answering takes the child under the pointer where that is the one
 waiting, and otherwise the first one that is — blocked children sort to the
 top, so that is the child the manager was opened for. The keys aimed at one
-child — steering it, cancelling, killing, and running a failed one again —
-stay with the row the pointer is on, because their target is the one thing
-that must never be guessed.
+child — steering it, stopping it, and running a failed one again — stay with
+the row the pointer is on, because their target is the one thing that must
+never be guessed. `enter` is the one key whose act depends on the row: it
+attaches to a child, opens a role on the drafter, and over a stopped writer
+holding a kept patch it opens the patch.
 
 **A writer's kept patch is offered from its row.** A writer that stopped with
-work that never reached your checkout says `patch kept · [p] review` in the
+work that never reached your checkout says `patch kept · [enter] review` in the
 outcome field, where a blocked child says `⚠ needs you`: the lead column
 already says how it ended, so the field spends itself on the one thing left to
-do. `[p]` opens the patch full screen, headed `writer-1's patch` — the view
+do. `enter` on the row opens the patch full screen, headed `writer-1's patch` — the view
 `[v]` opens from a live card — and esc from it lands on the patch card over
 the list, apply or decline, the card a finishing writer's patch is put on. The
 rail's line under the same child carries the same words and, like its
@@ -2180,7 +2188,7 @@ reader who has watched the lane expects the writer's own lines and would
 otherwise be reading an unexplained difference. Approving it when the
 checkout has moved again since lands nothing: the card comes back with
 the merge redone. A patch whose changes meet yours on the same lines is
-not put on a card at all; it is kept, and its row offers `[p] review`
+not put on a card at all; it is kept, and its row offers `[enter] review`
 ([a writer starts from your tree](../capabilities/subagents.md#a-writer-starts-from-your-tree)).
 
 **A redirect is typed on the row, not in the child's session.** Over a child
@@ -2204,8 +2212,16 @@ conversation it already holds, and its row goes from `done` back to running
 with that question's first words under it
 ([a finished child can be spoken to again](../capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it)).
 
-**Ending a child has one name, and it is here.** `[X]` on the row, with the
-confirm that counts what goes with it. Attached, `/exit` used to be a second
+**Ending a child has one name, and it is here.** `[d]` on the row asks, in
+one row like the quit confirm, `[y] cancel · [k] kill`: cancel ends the turn
+and leaves the child in the list, kill ends the child and discards its
+workspace, and the question counts what goes with it and says the patch of a
+writer is kept. `esc` backs out and stops nothing. On a row with agents under
+it, and on the session's own row, which every child is under, the one question
+reaches all of them — there is no second key for stopping everything, and the
+session's own turn keeps going. The session's row with nothing live under it
+offers no stop, because its turn is stopped where it is stopped everywhere
+else. Attached, `/exit` used to be a second
 name for the same act — and it is the word that quits the whole session
 everywhere else in the product, so a reader who typed it to leave a child's
 surface ended the child instead. It no longer ends anything: it says where
@@ -2289,13 +2305,14 @@ are silent over every row in this section.
 A role whose file was written before the prompt's five sections says so after
 where it lives — `project · ◆ older shape`, the glyph and the words together so
 a terminal without colour still says it — and a current row draws as it always
-has, so the mark sits on what needs doing. Over that row, and no other, `[m]`
-moves it into the sections: the profile opens on the drafter and is sent to be
-moved at once, with the wait on the surface and stoppable like any drafting
-turn ([an older profile is moved into sections, not
+has, so the mark sits on what needs doing. Moving it into the
+sections is the drafter's own key and not the manager's: `enter` opens the
+profile on the drafter, which offers `[m]` over an older one, with the wait on
+the surface and stoppable like any drafting turn ([an older profile is moved
+into sections, not
 rewritten](../capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten)).
-Enter on the same row opens it without moving it, because moving it spends a
-request and enter elsewhere on the list only opens.
+Opening it spends nothing, because moving it spends a request and enter
+elsewhere on the list only opens.
 
 ## Cards
 

@@ -186,20 +186,17 @@
 
   AGENT
 
-  · move      up down k j · move  [shipped]
-  · attach    enter · attach  [shipped]
-  · go        g · go to the agent that asked  [shipped]
-  · answer    a · answer  [shipped]
-  · steer     s · steer  [shipped]
-  · retry     r · retry  [shipped]
-  · review    p · review  [shipped]
-  · migrate   m · move it into sections  [shipped]
-  · edit      e · edit  [shipped]
-  · cancel    d · cancel  [shipped]
-  · kill      X · kill  [shipped]
-  · kill_all  K · kill all  [shipped]
-  · back      esc · back  [shipped]
-  · detach    esc · back  [shipped]
+  · move    up down k j · move  [shipped]
+  · attach  enter · attach  [shipped]
+  · go      g · go to the agent that asked  [shipped]
+  · answer  a · answer  [shipped]
+  · steer   s · steer  [shipped]
+  · retry   r · retry  [shipped]
+  · edit    e · edit  [shipped]
+  · stop    d · stop  [shipped]
+  · kill    k · kill  [shipped]
+  · back    esc · back  [shipped]
+  · detach  esc · back  [shipped]
 
   PROFILE
 
@@ -348,4 +345,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  249 keys · 1 moved
+  246 keys · 1 moved

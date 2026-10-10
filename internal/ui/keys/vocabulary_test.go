@@ -35,6 +35,7 @@ var vocabulary = map[string]actSpelling{
 	"write":  {SaveChord, []string{SaveChord}, "write"},
 	"reset":  {"ctrl+r", []string{"ctrl+r"}, "reset"},
 	"delete": {"d", []string{"d"}, "delete"},
+	"stop":   {"d", []string{"d"}, "stop"},
 	"copy":   {"c", []string{"c"}, "copy"},
 	"edit":   {"e", []string{"e"}, "edit"},
 	"rename": {"e", []string{"e"}, "rename"},
@@ -70,7 +71,7 @@ var acts = map[string]string{
 	"select.toggle": "toggle", "select.delete": "delete", "select.rename": "rename",
 	"select.cancel":    "back",
 	"review.move_file": "move", "review.move_hunk": "match", "review.back": "back",
-	"agent.move": "move", "agent.edit": "edit", "agent.retry": "retry",
+	"agent.move": "move", "agent.edit": "edit", "agent.retry": "retry", "agent.stop": "stop",
 	"agent.back": "back", "agent.detach": "back",
 	"profile.move": "move↑↓", "profile.edit": "edit", "profile.clear": "delete",
 	"profile.back": "back", "profile.save": "write",
@@ -99,7 +100,7 @@ var apart = []string{"draft.", "search.older", "search.keep", "row."}
 var answers = []string{
 	"decision.allow", "decision.deny", "decision.allow_noted", "decision.deny_noted",
 	"decision.accept", "decision.refuse", "decision.amend", "decision.revise",
-	"confirm.yes", "confirm.no", "confirm.force",
+	"confirm.yes", "confirm.no", "confirm.force", "agent.kill",
 	"proposal.write", "proposal.later", "proposal.never",
 	"screen.worked", "screen.failed", "screen.skip", "editor.discard", "oneshot.confirm",
 }
@@ -120,7 +121,6 @@ var shared = map[string]string{
 // the list only ever shrinks, and the test fails if an entry is fixed
 // without being taken off it.
 var owed = map[string]string{
-	"agent.cancel":     "d",
 	"oneshot.revise":   "r",
 	"oneshot.explain":  "x",
 	"decision.explain": "x",
@@ -131,7 +131,6 @@ var owed = map[string]string{
 // over is every surface carrying more than three letters of its own, with
 // those letters. Like owed it only shrinks.
 var over = map[string]string{
-	"the agent manager":                      "K X a d m p s",
 	"the approval card and the /run confirm": "A V a g t v x",
 	"the one-shot's action bar":              "a p r t u x",
 	"the profile draft":                      "R m",

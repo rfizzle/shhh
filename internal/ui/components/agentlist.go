@@ -77,12 +77,13 @@ type AgentRow struct {
 	Editable   bool
 	// Migratable marks a role row whose file is in the older shape, written
 	// before the five sections: the row says so after where the file lives,
-	// in a word, and it is the one row [m] moves into the sections. A current
-	// row draws as it always has, so the mark sits on what needs doing
+	// in a word, and it is the one row the drafter opens ready to move into
+	// the sections. A current row draws as it always has, so the mark sits on
+	// what needs doing
 	// (docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten).
 	Migratable bool
 	// PatchKept marks a stopped writer holding a change that never reached
-	// the checkout. It gates [p], and it takes the outcome field the way a
+	// the checkout. It turns enter into the review, and it takes the outcome field the way a
 	// blocked child's `⚠ needs you` does, because it is the one thing left
 	// to do about the row
 	// (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
@@ -135,16 +136,13 @@ const (
 	// so there is no nil left to mean this.
 	AgentNone     agentAction = iota
 	AgentAttach               // enter — attach to the agent's surface
-	AgentCancel               // x — cancel its current turn
-	AgentKill                 // X — kill the agent
-	AgentKillAll              // K — kill every child still running
+	AgentStop                 // d — ask to cancel or kill it, and everything under it
 	AgentAnswer               // a — answer its pending approval in place
 	AgentSteer                // s — redirect it with the note typed on its row
 	AgentRetry                // r — run a failed agent again on its task
-	AgentReview               // p — review a stopped writer's kept patch
+	AgentReview               // enter on a kept patch — review a stopped writer's patch
 	AgentDraft                // enter on the offer row — draft a profile
 	AgentOpenRole             // enter on a role row — open it on the drafter
-	AgentMigrate              // m on an older role row — move it into sections
 	AgentEditRole             // e on a role row — open its file in the editor
 	AgentBack                 // esc — dismiss the list
 )
@@ -276,7 +274,21 @@ func (l *AgentList) answerable() int {
 	return -1
 }
 
-// liveChildren counts the children that can still be killed. A child is a row
+// hasLiveUnder reports a live child somewhere under the row at i: the rows
+// after it that sit deeper than it does.
+func (l *AgentList) hasLiveUnder(i int) bool {
+	for _, r := range l.Rows[i+1:] {
+		if r.Depth <= l.Rows[i].Depth {
+			break
+		}
+		if r.Progress != nil && !r.Progress.State.settled() {
+			return true
+		}
+	}
+	return false
+}
+
+// liveChildren counts the children that can still be stopped. A child is a row
 // with progress of its own — the orchestrator has none and is not killed from
 // here — and it is live until its own state has settled.
 func (l *AgentList) liveChildren() int {
@@ -289,11 +301,11 @@ func (l *AgentList) liveChildren() int {
 	return n
 }
 
-// Update handles list keys. Cancel, kill, answer and retry resolve with
-// done=false so the list stays open over the live view (the host performs the
-// action and comes back); attach and esc dismiss it. [r] is silent on a row
-// that does not offer it rather than reporting a failure the row already
-// predicted, and [a] and [K] are silent when the list holds nothing for them.
+// Update handles list keys. Stop, answer and retry resolve with done=false so
+// the list stays open over the live view (the host performs the action and
+// comes back); attach and esc dismiss it. [r] is silent on a row that does
+// not offer it rather than reporting a failure the row already predicted,
+// and [a] and [d] are silent when the list holds nothing for them.
 func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result agentListResult) {
 	if l.steer != nil {
 		if l.settleSteer(); l.steer == nil {
@@ -317,18 +329,17 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result agentListResu
 				return true, agentListResult{Action: AgentOpenRole, Index: l.Focus}
 			}
 		default:
+			if row.PatchKept {
+				// A stopped writer's row opens its kept patch: the work is
+				// the one thing left to do about it, and the list stays
+				// under the card it is put on.
+				return false, agentListResult{Action: AgentReview, Index: l.Focus}
+			}
 			return true, agentListResult{Action: AgentAttach, Index: l.Focus}
 		}
 	case keys.Is(pressed, keys.Agent.Answer):
 		if i := l.answerable(); i >= 0 {
 			return false, agentListResult{Action: AgentAnswer, Index: i}
-		}
-	case keys.Is(pressed, keys.Agent.KillAll):
-		// The list rather than a row, so the index says so: a host that read
-		// one off this action would be killing whichever child the pointer
-		// happened to be resting on as well as all of them.
-		if l.liveChildren() > 1 {
-			return false, agentListResult{Action: AgentKillAll, Index: -1}
 		}
 	case keys.Is(pressed, keys.Agent.Steer):
 		if l.focused().steerable() {
@@ -338,31 +349,21 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result agentListResu
 		if l.focused().Retryable {
 			return false, agentListResult{Action: AgentRetry, Index: l.Focus}
 		}
-	case keys.Is(pressed, keys.Agent.Review):
-		if l.focused().PatchKept {
-			return false, agentListResult{Action: AgentReview, Index: l.Focus}
-		}
-	case keys.Is(pressed, keys.Agent.Migrate):
-		if row := l.focused(); row.State == AgentRole && row.Editable && row.Migratable {
-			return true, agentListResult{Action: AgentMigrate, Index: l.Focus}
-		}
 	case keys.Is(pressed, keys.Agent.Edit):
 		if row := l.focused(); row.State == AgentRole && row.Editable {
 			return true, agentListResult{Action: AgentEditRole, Index: l.Focus}
 		}
-	case keys.Is(pressed, keys.Agent.Cancel):
-		// A role row and the offer row are not agents, so the keys that act
-		// on one are silent over them the way [a] and [r] are silent over a
-		// row that cannot take them (invariant 5).
-		if !l.focused().isAgent() {
+	case keys.Is(pressed, keys.Agent.Stop):
+		// A role row and the offer row are not agents, so the key is silent
+		// over them the way [a] and [r] are silent over a row that cannot
+		// take them (invariant 5). The session's own row stops its children
+		// and nothing if it has none: its own turn is stopped where it is
+		// stopped everywhere else.
+		row := l.focused()
+		if !row.isAgent() || (row.Progress == nil && l.liveChildren() == 0) {
 			break
 		}
-		return false, agentListResult{Action: AgentCancel, Index: l.Focus}
-	case keys.Is(pressed, keys.Agent.Kill):
-		if !l.focused().isAgent() {
-			break
-		}
-		return false, agentListResult{Action: AgentKill, Index: l.Focus}
+		return false, agentListResult{Action: AgentStop, Index: l.Focus}
 	case keys.Is(pressed, keys.Agent.Back):
 		return true, agentListResult{Action: AgentBack, Index: -1}
 	}
@@ -561,11 +562,11 @@ func keptPatchField(p AgentProgress) string {
 	return field
 }
 
-// keptPatchOffer is `patch kept · [p] review`, one spelling for the manager's
+// keptPatchOffer is `patch kept · [enter] review`, one spelling for the manager's
 // row and the rail's line under the same child.
 func keptPatchOffer() string {
 	return sty.dimmer.Render("patch kept") + sty.dimmer.Render(detailSep) +
-		sty.hint.Render(keys.Bracket(keys.Agent.Review)+" "+keys.Words(keys.Agent.Review))
+		sty.hint.Render(keys.Bracket(keys.Agent.Attach)+" review")
 }
 
 // render lays one row out across the card's inner width, with its note (if
@@ -684,15 +685,14 @@ func (l *AgentList) hints() []KeyOffer {
 	agent := focus.isAgent()
 	var segments []KeyOffer
 	switch {
+	case agent && focus.PatchKept:
+		segments = append(segments, keyOfferAs(keys.Agent.Attach, "review the kept patch"))
 	case agent:
 		segments = append(segments, keyOffer(keys.Agent.Attach))
 	case focus.State == AgentOffer:
 		segments = append(segments, keyOfferAs(keys.Agent.Attach, "draft a profile"))
 	case focus.Editable:
 		segments = append(segments, keyOfferAs(keys.Agent.Attach, "open it"))
-		if focus.Migratable {
-			segments = append(segments, keyOffer(keys.Agent.Migrate))
-		}
 		segments = append(segments, keyOffer(keys.Agent.Edit))
 	}
 	if l.answerable() >= 0 {
@@ -707,19 +707,18 @@ func (l *AgentList) hints() []KeyOffer {
 	if agent && focus.Retryable {
 		segments = append(segments, keyOffer(keys.Agent.Retry))
 	}
-	if agent && focus.PatchKept {
-		segments = append(segments, keyOffer(keys.Agent.Review))
-	}
-	if agent {
-		segments = append(segments, keyOffer(keys.Agent.Cancel), keyOffer(keys.Agent.Kill))
-	}
-	if l.liveChildren() > 1 {
-		// What it reaches, on the key itself: kill-all walks the whole tree,
-		// and a reader counting the rows in front of them would otherwise be
-		// counting one level of it
+	switch {
+	case agent && focus.Progress == nil && l.liveChildren() > 0:
+		// What it reaches, on the key itself: over the session's own row the
+		// stop walks the whole tree, and a reader counting the rows in front
+		// of them would otherwise be counting one level of it
 		// (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
-		segments = append(segments, keyOfferAs(keys.Agent.KillAll,
-			keys.Words(keys.Agent.KillAll)+detailSep+"every level"))
+		segments = append(segments, keyOfferAs(keys.Agent.Stop, "stop every agent"))
+	case agent && focus.Progress != nil && l.hasLiveUnder(l.Focus):
+		segments = append(segments, keyOfferAs(keys.Agent.Stop,
+			keys.Words(keys.Agent.Stop)+detailSep+"every level"))
+	case agent && focus.Progress != nil:
+		segments = append(segments, keyOffer(keys.Agent.Stop))
 	}
 	return append(segments, keyOfferAs(keys.Agent.Back, managerWayOut))
 }

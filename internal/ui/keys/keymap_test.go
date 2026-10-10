@@ -125,18 +125,18 @@ MoveJK = ["up", "down", "j", "k"]
 // worst kind of false offer, and a file may not take it back.
 func TestLoad_RefusesADestructiveActOnAMovementKey(t *testing.T) {
 	restoreRegister(t)
-	path := keymapFile(t, "[agent]\nkill = \"k\"\n")
+	path := keymapFile(t, "[agent]\nstop = \"k\"\n")
 	err := Load(path)
 	if err == nil {
-		t.Fatal("a movement key bound to kill should be refused")
+		t.Fatal("a movement key bound to stop should be refused")
 	}
-	for _, want := range []string{"\"k\"", "kill"} {
+	for _, want := range []string{"\"k\"", "stop"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("the refusal does not name %s: %v", want, err)
 		}
 	}
-	if !Is("X", Agent.Kill) || Is("k", Agent.Kill) {
-		t.Errorf("a refused file left the register at %v", Agent.Kill.Keys())
+	if !Is("d", Agent.Stop) || Is("k", Agent.Stop) {
+		t.Errorf("a refused file left the register at %v", Agent.Stop.Keys())
 	}
 }
 
@@ -240,7 +240,7 @@ func TestLoad_RefusesANotedAnswerOnItsPlainAnswersKey(t *testing.T) {
 // a document that describes neither their file nor the register.
 func TestLoad_RefusesTheWholeFileNotTheBadLine(t *testing.T) {
 	restoreRegister(t)
-	path := keymapFile(t, "[reading]\ncopy = \"x\"\n\n[agent]\nkill = \"j\"\n")
+	path := keymapFile(t, "[reading]\ncopy = \"x\"\n\n[agent]\nstop = \"j\"\n")
 	if err := Load(path); err == nil {
 		t.Fatal("the file should be refused")
 	}

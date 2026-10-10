@@ -90,14 +90,15 @@ snap 06-blocked "waiting approval"
 keys F12
 snap 07-manager "⚠ writer-3 · Say where the loop" "⚠ writer-2 · Say where the round" "[enter] attach"
 keys j
-keys X
-# The confirm is one line cut at the width, and the sentence about the patch
-# comes straight after the question so that the cut never takes it: one snap
-# holds for every width the scene is driven at.
-snap 08-kill-asks "Kill writer-1? Its patch is kept."
-keys y
+keys d
+# The confirm is one line: the answers are drawn whole and the sentence about
+# the patch comes straight after the question, so that the cut takes the rest
+# of the prompt and never either: one snap holds for every width the scene is
+# driven at. Stopping asks, and kill is the second answer.
+snap 08-stop-asks "Stop writer-1? A kill keeps its patch." "[y] cancel · [k] kill"
+keys k
 sleep 1
-snap 09-killed "[p] review"
+snap 09-killed "patch kept · [enter] review"
 # Attaching to a session that is not the one asking is what puts the rail back
 # with the map whole: the block floated to the top, the failure under it, the
 # grandchild indented under its own parent, and the trailer naming the way

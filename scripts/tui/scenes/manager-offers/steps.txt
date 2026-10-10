@@ -8,10 +8,10 @@
 # working, one finished, one waiting on an answer
 # (docs/interface/surfaces.md#the-agent-manager).
 #
-# What the capture is for is the key row. Two of its offers are about the list
-# and not about the row the pointer is on: answering a blocked child in place
-# stands wherever the pointer is standing, and killing every child stands
-# while more than one is still running. So the manager is opened with the
+# What the capture is for is the key row. Answering a blocked child in place
+# is about the list and not about the row the pointer is on, so it stands
+# wherever the pointer is standing; the stop over the session's own row
+# reaches every child, and says so. So the manager is opened with the
 # pointer on the orchestrator — the row that can do none of it — and the
 # offers are read there before the pointer is moved anywhere.
 #
@@ -64,11 +64,11 @@ snap 04-three-states "blocked · "
 # each saying where it lives, and the offer to draft another under them.
 keys F12
 sleep 2
-snap 05-manager "kill all" "[a] answer without attaching" "[esc] back to the turn"
+snap 05-manager "[d] stop every agent" "[a] answer without attaching" "[esc] back to the turn"
 # The pointer on the blocked child. The offers do not change, because they
 # were never the pointer's.
 keys j
-snap 06-blocked-row "answer without attaching" "[K] kill all"
+snap 06-blocked-row "answer without attaching" "[d] stop"
 # And the way out leaves what it says it leaves: the turn, with the decision
 # that was standing over it still standing.
 keys Escape

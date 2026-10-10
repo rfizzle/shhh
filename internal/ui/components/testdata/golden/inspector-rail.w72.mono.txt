@@ -53,7 +53,7 @@
   ◇ writer-1                                                       $0.02
     ▸ docs/loop.md · 4 tools                                            
   ✗ writer-3                                               killed  $0.03
-    cancelled · patch kept · [p] review · handoff kept · [r] retry      
+    cancelled · patch kept · [enter] review · handoff kept · [r] retry  
   f12 agents · shift+f8 next · click to attach                          
 
   TOOLS                                                        2 of 3 up
@@ -339,12 +339,12 @@
     ▸ internal/agent/loop.go · 5 tools                                  
   f12 agents · shift+f8 next · click to attach                          
 
-· a killed writer · its patch is kept, and [p] reviews it
+· a killed writer · its patch is kept, and enter reviews it
   AGENTS                                                       1 running
 ❯ ◇ orchestrator                                                   $0.21
     ▸ round 6 · streaming…                                              
   ✗ writer-1                                               failed  $0.03
-    cancelled · patch kept · [p] review · handoff kept · [r] retry      
+    cancelled · patch kept · [enter] review · handoff kept · [r] retry  
   ◇ writer-2                                                       $0.02
     ▸ internal/agent/round.go · 3 tools                                 
   f12 agents · shift+f8 next · click to attach                          
@@ -474,7 +474,7 @@
   ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m                                                       ␛[38;5;244m$0.02␛[m
     ␛[38;5;254m▸ docs/loop.md␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools␛[m                                            
   ␛[38;5;254m✗␛[m ␛[38;5;254mwriter-3␛[m                                               ␛[38;5;254mkilled␛[m  ␛[38;5;244m$0.03␛[m
-    ␛[38;5;244mcancelled␛[m␛[38;5;244m · ␛[m␛[38;5;244mpatch kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p] review␛[m␛[38;5;244m · ␛[m␛[38;5;244mhandoff kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r] retry␛[m      
+    ␛[38;5;244mcancelled␛[m␛[38;5;244m · ␛[m␛[38;5;244mpatch kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter] review␛[m␛[38;5;244m · ␛[m␛[38;5;244mhandoff kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r] retry␛[m  
   ␛[38;5;244mf12 agents · shift+f8 next · click to attach␛[m                          
 
   ␛[1;38;5;254mTOOLS␛[m                                                        ␛[38;5;244m2 of 3 up␛[m
@@ -760,12 +760,12 @@
     ␛[38;5;254m▸ internal/agent/loop.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m5 tools␛[m                                  
   ␛[38;5;244mf12 agents · shift+f8 next · click to attach␛[m                          
 
-· a killed writer · its patch is kept, and [p] reviews it
+· a killed writer · its patch is kept, and enter reviews it
   ␛[1;38;5;254mAGENTS␛[m                                                       ␛[38;5;244m1 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                                                   $0.21␛[m␛[m
     ␛[38;5;254m▸ round 6 · streaming…␛[m                                              
   ␛[38;5;254m✗␛[m ␛[38;5;254mwriter-1␛[m                                               ␛[38;5;254mfailed␛[m  ␛[38;5;244m$0.03␛[m
-    ␛[38;5;244mcancelled␛[m␛[38;5;244m · ␛[m␛[38;5;244mpatch kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p] review␛[m␛[38;5;244m · ␛[m␛[38;5;244mhandoff kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r] retry␛[m      
+    ␛[38;5;244mcancelled␛[m␛[38;5;244m · ␛[m␛[38;5;244mpatch kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter] review␛[m␛[38;5;244m · ␛[m␛[38;5;244mhandoff kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r] retry␛[m  
   ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-2␛[m                                                       ␛[38;5;244m$0.02␛[m
     ␛[38;5;254m▸ internal/agent/round.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools␛[m                                 
   ␛[38;5;244mf12 agents · shift+f8 next · click to attach␛[m                          

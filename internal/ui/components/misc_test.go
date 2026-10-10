@@ -70,7 +70,8 @@ func TestCockpit_DropsTrailingSegmentsWhenNarrow(t *testing.T) {
 func TestAgentList_ViewAndKeys(t *testing.T) {
 	l := &AgentList{Rows: []AgentRow{
 		{State: AgentCurrent, Name: "orchestrator", Status: "round 7", Spend: "$0.14"},
-		{State: AgentRunning, Name: "researcher-1", Task: "auth flow survey", Status: "running…", Spend: "$0.02"},
+		{State: AgentRunning, Name: "researcher-1", Task: "auth flow survey", Status: "running…", Spend: "$0.02",
+			Progress: &AgentProgress{State: FanoutRunning}},
 		{State: AgentBlocked, Name: "writer-1", Status: "waiting approval", Spend: "$0.05"},
 		{State: AgentDone, Name: "researcher-2", Status: "done · 14 tools"},
 		{State: AgentFailed, Name: "writer-2", Status: "failed · round limit"},
@@ -87,11 +88,8 @@ func TestAgentList_ViewAndKeys(t *testing.T) {
 	if l.Focus != 2 {
 		t.Fatalf("j should move focus, got %d", l.Focus)
 	}
-	if done, result := l.Update(key("d")); done || result.Action != AgentCancel {
-		t.Fatal("d should request cancel and keep the list open")
-	}
-	if done, result := l.Update(key("X")); done || result.Action != AgentKill {
-		t.Fatal("X should request kill and keep the list open")
+	if done, result := l.Update(key("d")); done || result.Action != AgentStop {
+		t.Fatal("d should request the stop confirm and keep the list open")
 	}
 	done, result := l.Update(key("enter"))
 	if !done || result != (agentListResult{Action: AgentAttach, Index: 2}) {

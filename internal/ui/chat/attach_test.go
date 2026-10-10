@@ -440,12 +440,12 @@ func TestKillFromListWithInlineConfirm(t *testing.T) {
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
-	updated, _ = m.Update(key('X'))
+	updated, _ = m.Update(key('d'))
 	m = updated.(Model)
 	if m.killConfirm == nil || len(m.killTargets) != 1 || m.killTargets[0] != "researcher-1" {
-		t.Fatalf("X must arm the inline kill confirm (targets %q)", m.killTargets)
+		t.Fatalf("d must arm the stop confirm (targets %q)", m.killTargets)
 	}
-	if !strings.Contains(m.View().Content, "Kill researcher-1?") {
+	if !strings.Contains(m.View().Content, "Stop researcher-1?") {
 		t.Fatalf("kill confirm not rendered:\n%s", m.View().Content)
 	}
 	// n declines: nothing happens.
@@ -457,10 +457,10 @@ func TestKillFromListWithInlineConfirm(t *testing.T) {
 	if st, _ := sup.Get("researcher-1"); st.State != subagent.StateRunning {
 		t.Fatalf("declined kill must leave the child running, got %s", st.State)
 	}
-	// y confirms: the child dies.
-	updated, _ = m.Update(key('X'))
+	// k kills: the child dies.
+	updated, _ = m.Update(key('d'))
 	m = updated.(Model)
-	updated, _ = m.Update(key('y'))
+	updated, _ = m.Update(key('k'))
 	m = updated.(Model)
 	waitFor(t, func() bool {
 		st, ok := sup.Get("researcher-1")
@@ -468,9 +468,9 @@ func TestKillFromListWithInlineConfirm(t *testing.T) {
 	})
 }
 
-// [K] arms one confirm over every child that is still going, and taking it
-// kills them all. The manager's two kill keys differ in how many names they
-// hand over and in nothing else
+// [d] over the session's own row arms one confirm over every child that is
+// still going, and the kill answer takes them all. One stop key differs in how
+// many names it hands over and in nothing else
 // (docs/interface/surfaces.md#the-agent-manager).
 func TestKillAllFromListWithOneConfirm(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
@@ -481,15 +481,15 @@ func TestKillAllFromListWithOneConfirm(t *testing.T) {
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF12})
 	m = updated.(Model)
-	updated, _ = m.Update(key('K'))
+	updated, _ = m.Update(key('d'))
 	m = updated.(Model)
 	if len(m.killTargets) != 2 {
-		t.Fatalf("K must arm the confirm over both children, got %q", m.killTargets)
+		t.Fatalf("d must arm the confirm over both children, got %q", m.killTargets)
 	}
-	if !strings.Contains(m.View().Content, "Kill all 2 agents?") {
+	if !strings.Contains(m.View().Content, "Stop 2 agents?") {
 		t.Fatalf("the confirm should name the count:\n%s", m.View().Content)
 	}
-	updated, _ = m.Update(key('y'))
+	updated, _ = m.Update(key('k'))
 	m = updated.(Model)
 	for _, name := range []string{"researcher-1", "researcher-2"} {
 		waitFor(t, func() bool {
@@ -497,14 +497,14 @@ func TestKillAllFromListWithOneConfirm(t *testing.T) {
 			return ok && st.State == subagent.StateFailed
 		})
 	}
-	// One child left running is not two, so the key is not offered at all.
+	// With no child to stop the key is not offered at all.
 	if _, res := (&components.AgentList{Rows: []components.AgentRow{{State: components.AgentCurrent, Name: "orchestrator"}}}).
-		Update(key('K')); res.Action != components.AgentNone {
-		t.Fatalf("[K] with no children = %#v, want nothing", res)
+		Update(key('d')); res.Action != components.AgentNone {
+		t.Fatalf("[d] with no children = %#v, want nothing", res)
 	}
 }
 
-// [K] over a parent and the agent it spawned names the parent alone and lets
+// [d] over the session's row, with a parent and the agent it spawned names the parent alone and lets
 // the kill's cascade take the child, so the child ends once, as the parent's
 // casualty, while the confirm still counts both
 // (docs/capabilities/subagents.md#what-nesting-does-to-the-rest-of-it).
@@ -524,15 +524,15 @@ func TestKillAllHandsTheCascadeItsRoots(t *testing.T) {
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF12})
 	m = updated.(Model)
-	updated, _ = m.Update(key('K'))
+	updated, _ = m.Update(key('d'))
 	m = updated.(Model)
 	if got := strings.Join(m.killTargets, ","); got != "researcher-1" {
-		t.Fatalf("K must name the root alone, got %q", got)
+		t.Fatalf("d must name the root alone, got %q", got)
 	}
-	if !strings.Contains(m.View().Content, "Kill all 2 agents?") {
+	if !strings.Contains(m.View().Content, "Stop 2 agents?") {
 		t.Fatalf("the confirm should count the whole roster:\n%s", m.View().Content)
 	}
-	updated, _ = m.Update(key('y'))
+	updated, _ = m.Update(key('k'))
 	_ = updated.(Model)
 	waitFor(t, func() bool {
 		st, ok := sup.Get("researcher-2")
@@ -1285,5 +1285,58 @@ func TestAgentsFromReadingModeOpensTheManager(t *testing.T) {
 	}
 	if m.state == stateFocus {
 		t.Fatal("the manager opens once reading mode is left, not under it")
+	}
+}
+
+// d is the manager's one key for stopping, and it asks: the answers are
+// `[y] cancel · [k] kill`, esc backs out and stops nothing, and the keys that
+// used to stop (x, X, K) are not keys of the manager. Over the session's own
+// row it reaches every child.
+func TestManager_DStopsAndTheConfirmOffersKill(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnBlockedChild(t, sup)
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF12})
+	m = updated.(Model)
+	for _, retired := range []rune{'x', 'X', 'K'} {
+		updated, _ = m.Update(key(retired))
+		m = updated.(Model)
+		if m.killConfirm != nil {
+			t.Fatalf("%q is not a key of the manager and armed a confirm", retired)
+		}
+	}
+
+	// On the session's own row it is the group: every live child.
+	m = press(t, m, "d")
+	if m.killConfirm == nil || len(m.killConfirm.Turns) != 1 || m.killConfirm.Turns[0] != "researcher-1" {
+		t.Fatalf("d over the session's row should reach every live child, got %+v", m.killConfirm)
+	}
+	if !strings.Contains(m.killConfirm.Prompt, "Stop 1 agent?") {
+		t.Fatalf("the group's question is %q", m.killConfirm.Prompt)
+	}
+	m = press(t, m, "esc")
+	if m.killConfirm != nil || m.agentList == nil {
+		t.Fatal("esc on the confirm backs out of it and leaves the manager open")
+	}
+
+	// On a child's row it is that child, and the confirm offers both answers.
+	m = press(t, m, "j")
+	m = press(t, m, "d")
+	if m.killConfirm == nil || len(m.killTargets) != 1 || m.killTargets[0] != "researcher-1" {
+		t.Fatalf("d over a child's row should arm its stop (targets %q)", m.killTargets)
+	}
+	if view := ansi.Strip(m.View().Content); !strings.Contains(view, "[y] cancel · [k] kill") {
+		t.Fatalf("the confirm does not offer cancel and kill:\n%s", view)
+	}
+	m = press(t, m, "esc")
+	if st, _ := sup.Get("researcher-1"); st.State != subagent.StateRunning {
+		t.Fatalf("esc stopped the child: %s", st.State)
+	}
+	m = press(t, m, "d")
+	m = press(t, m, "y")
+	if m.killConfirm != nil {
+		t.Fatal("y answers the confirm")
 	}
 }

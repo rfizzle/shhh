@@ -1133,13 +1133,13 @@ func TestPersona_AnOpenedProfileIsEditedLikeADraft(t *testing.T) {
 	}
 }
 
-// m sends the older profile to be moved into the sections and the answer
+// The drafter's m sends the older profile, opened with enter, to be moved into the sections and the answer
 // lands on the draft step to be reviewed: the moved sections marked, the gap
 // marked empty, the file's prompt beside them. Nothing is written, and esc
 // on the unrevised migration drops it.
 func TestPersona_AMigrationWritesNothingUntilSaved(t *testing.T) {
 	m, reqs, saved := openedModel(t)
-	updated, cmd := managerOn(t, m, "critic").Update(tea.KeyPressMsg{Code: 'm', Text: "m"})
+	updated, cmd := pressOn(t, managerOn(t, m, "critic"), tea.KeyPressMsg{Code: tea.KeyEnter}).Update(tea.KeyPressMsg{Code: 'm', Text: "m"})
 	m = updated.(Model)
 	if waiting := personaView(m); !strings.Contains(waiting, "moving critic into sections") ||
 		!strings.Contains(waiting, "[esc] stop · the profile stays as the file has it") {
@@ -1174,7 +1174,7 @@ func TestPersona_AMigratedSectionIsRevisedLikeADraftsSection(t *testing.T) {
 	method := criticMigrated(src)
 	method.SetSection(config.SectionMethod, "Read the diff, then the files it touches.")
 	m, reqs, saved := openedModel(t, persona.Outcome{Draft: criticMigrated(src)}, persona.Outcome{Draft: method})
-	m = pressOn(t, managerOn(t, m, "critic"), tea.KeyPressMsg{Code: 'm', Text: "m"})
+	m = pressOn(t, pressOn(t, managerOn(t, m, "critic"), tea.KeyPressMsg{Code: tea.KeyEnter}), tea.KeyPressMsg{Code: 'm', Text: "m"})
 	for range 3 {
 		m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyDown})
 	}
@@ -1214,7 +1214,7 @@ func TestPersona_ARefusedSaveOfAnOpenedProfileKeepsTheDraft(t *testing.T) {
 	m.wiring.Personas.SaveOpened = func(s *persona.Source, _ persona.Draft) (string, error) {
 		return s.Path, fmt.Errorf("%s changed on disk since it was opened; nothing was written", s.Path)
 	}
-	m = pressOn(t, managerOn(t, m, "critic"), tea.KeyPressMsg{Code: 'm', Text: "m"})
+	m = pressOn(t, pressOn(t, managerOn(t, m, "critic"), tea.KeyPressMsg{Code: tea.KeyEnter}), tea.KeyPressMsg{Code: 'm', Text: "m"})
 	m = pressOn(t, pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyTab}), tea.KeyPressMsg{Code: tea.KeyEnter})
 	view := personaView(m)
 	if m.state != statePersona || !strings.Contains(view, "critic.toml changed on disk since it was opened") ||

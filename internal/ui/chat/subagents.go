@@ -547,9 +547,8 @@ func (m *Model) cancelSubagents() {
 }
 
 // killChildren ends the named children and drops whatever each was waiting on
-// an answer for. It is one function for [X] and [K] because a kill is a kill:
-// the manager's two keys differ in how many names they hand over and in
-// nothing else.
+// an answer for. A kill is a kill: the stop confirm's kill hands over as many
+// names as the row it was asked on reaches and nothing else differs.
 func (m *Model) killChildren(names []string) {
 	if m.wiring.Subagents == nil {
 		return
@@ -563,26 +562,84 @@ func (m *Model) killChildren(names []string) {
 	}
 }
 
-// killPrompt is what the confirm asks before one agent is killed. It states
-// what survives as well as what does not — a kill that only names its
-// casualties reads as bigger than it is — and it counts the subtree, because
-// a kill takes the agents under the one named with it and a person answering
-// "yes" to one name would not otherwise know how many that was
-// (docs/capabilities/subagents.md#what-nesting-does-to-the-rest-of-it).
-func (m Model) killPrompt(name string) string {
-	var under []string
-	if m.wiring.Subagents != nil {
-		under = m.wiring.Subagents.Under(name)
+// cancelChildren stops the turn of each named child and drops whatever it was
+// waiting on an answer for. The children stay in the list, and the workspace
+// of each stays with it.
+func (m *Model) cancelChildren(names []string) {
+	if m.wiring.Subagents == nil {
+		return
 	}
-	if len(under) == 0 {
-		return "Kill " + name + "? " + m.keptClause("Its patch is kept. ", name) +
-			"Its turn stops and its isolated workspace is discarded; " +
-			"its transcript stays and the other agents keep running."
+	for _, name := range names {
+		if err := m.wiring.Subagents.CancelTurn(name); err != nil {
+			m.noteChild(name, err.Error())
+			continue
+		}
+		m.purgeChildAsks(name)
 	}
-	return "Kill " + name + " and " + plural(len(under), "agent") + " under it? " +
-		m.keptClause("Their patches are kept. ", append(under, name)...) +
-		"Every turn stops and every isolated workspace is discarded; " +
-		"the transcripts stay and the other agents keep running."
+}
+
+// armStop is [d] on the manager: one question over the row the pointer is on,
+// answered `[y] cancel · [k] kill`. Over a row with agents under it, and over
+// the session's own row, which every child is under, it reaches all of them.
+//
+// It states what survives as well as what does not — a stop that only names
+// its casualties reads as bigger than it is — and counts the group, because a
+// kill takes the agents under the one named with it and a person answering
+// for one name would not otherwise know how many that was
+// (docs/capabilities/subagents.md#what-nesting-does-to-the-rest-of-it). The
+// question comes first and the kept-work clause straight after it, because
+// the inline confirm is one line cut at the pane's width and whether a
+// writer's work survives is the fact the answer turns on.
+//
+// What a kill is handed is the roots alone, because it takes the subtree and
+// naming the agents under a root as well would kill each a second time.
+func (m Model) armStop(name string) (tea.Model, tea.Cmd) {
+	confirm, roots := m.stopAsk(name)
+	if confirm == nil {
+		return m, nil
+	}
+	m.killConfirm = confirm
+	m.killTargets = roots
+	m.syncViewport()
+	return m, nil
+}
+
+// stopAsk is the question [d] asks over a row and the names a kill of it is
+// handed; nil where there is nothing to stop.
+func (m Model) stopAsk(name string) (*components.StopConfirm, []string) {
+	if m.wiring.Subagents == nil {
+		return nil, nil
+	}
+	var turns, roots []string
+	live := m.liveChildNames()
+	if name == "" {
+		turns, roots = live, m.liveRootNames()
+	} else {
+		turns, roots = []string{name}, []string{name}
+		isLive := make(map[string]bool, len(live))
+		for _, n := range live {
+			isLive[n] = true
+		}
+		for _, n := range m.wiring.Subagents.Under(name) {
+			if isLive[n] {
+				turns = append(turns, n)
+			}
+		}
+	}
+	if len(turns) == 0 {
+		return nil, nil
+	}
+	prompt := "Stop " + name + "? " + m.keptClause("A kill keeps its patch. ", turns...) +
+		"Kill discards its workspace."
+	if len(turns) > 1 || name == "" {
+		scope := "Stop " + plural(len(turns), "agent")
+		if name != "" {
+			scope = "Stop " + name + " and " + plural(len(turns)-1, "agent") + " under it"
+		}
+		prompt = scope + "? " + m.keptClause("A kill keeps their patches. ", turns...) +
+			"Kill discards every workspace."
+	}
+	return &components.StopConfirm{Prompt: prompt, Turns: turns}, roots
 }
 
 // keptClause is what a kill confirm adds about the work that survives it: a
@@ -605,36 +662,6 @@ func (m Model) keptClause(clause string, names ...string) string {
 		}
 	}
 	return ""
-}
-
-// armKillAll is [K] on the manager: the same inline confirm one child gets,
-// over every child that is still going. It names the count rather than the
-// children, because a prompt that listed nine names would be a prompt nobody
-// reads to the end, and it states what survives for the reason the single
-// kill's does — a kill that only names its casualties reads as bigger than it
-// is (docs/interface/surfaces.md#the-agent-manager).
-//
-// What it hands the kill is the roots alone — the live agents with no live
-// agent above them — because a kill takes the subtree, and naming the agents
-// under a root as well would kill each of them a second time
-// (docs/capabilities/subagents.md#what-nesting-does-to-the-rest-of-it). The
-// count is still the whole roster: the roots and everything under them.
-func (m Model) armKillAll() (tea.Model, tea.Cmd) {
-	roots := m.liveRootNames()
-	if len(roots) == 0 {
-		return m, nil
-	}
-	all := append([]string(nil), roots...)
-	for _, name := range roots {
-		all = append(all, m.wiring.Subagents.Under(name)...)
-	}
-	m.killConfirm = &components.Confirm{Prompt: "Kill all " + plural(len(all), "agent") +
-		"? " + m.keptClause("Their patches are kept. ", all...) +
-		"Every turn stops and every isolated workspace is discarded; " +
-		"the transcripts stay and your own turn keeps going."}
-	m.killTargets = roots
-	m.syncViewport()
-	return m, nil
 }
 
 // liveRootNames are the live children whose parent is not itself live: the

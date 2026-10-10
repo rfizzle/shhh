@@ -522,11 +522,11 @@ func register() [surfaceCount]Surface {
 			Bindings: []Binding{Proposal.Write, Proposal.Later, Proposal.Never, Select.Cancel, Screen.List},
 		},
 		OnConfirm: {
-			Name:     "the inline confirm and the undo confirm",
+			Name:     "the inline confirm, the undo confirm and the stop confirm",
 			Section:  "docs/interface/surfaces.md#the-inline-confirm",
 			Position: Takeover,
 			Reached:  "the key that opens it",
-			Bindings: []Binding{Confirm.Yes, Confirm.Force, Confirm.No, Screen.List},
+			Bindings: []Binding{Confirm.Yes, Confirm.Force, Agent.Kill, Confirm.No, Screen.List},
 		},
 		OnHeldLine: {
 			// A line from another session has no default answer: passing a
@@ -618,8 +618,8 @@ func register() [surfaceCount]Surface {
 			Reached:  Shown(Draft.Agents) + ", /agents",
 			Bindings: []Binding{
 				Agent.Move, Agent.Attach, Agent.Answer, Agent.Steer,
-				Agent.Retry, Agent.Review, Agent.Migrate, Agent.Edit, Agent.Cancel, Agent.Kill,
-				Agent.KillAll, Agent.Back, Screen.List,
+				Agent.Retry, Agent.Edit, Agent.Stop,
+				Agent.Back, Screen.List,
 			},
 		},
 		OnProfileDrafter: {

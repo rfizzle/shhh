@@ -228,7 +228,7 @@ func heldChildren(t *testing.T, open bool) (*program, func()) {
 }
 
 // The manager opens over the running children; a lane's steer is typed in
-// place and delivered, and the kill asks before it stops a child.
+// place and delivered, and the stop asks before it stops a child.
 func TestProgram_TheManagerSteersAndKillsAChild(t *testing.T) {
 	tm, _ := heldChildren(t, false)
 
@@ -239,9 +239,9 @@ func TestProgram_TheManagerSteersAndKillsAChild(t *testing.T) {
 	tm.Send(tea.PasteMsg{Content: "read the exit condition too"})
 	programPress(t, tm, "enter")
 	waitForText(t, tm, "steered from lane")
-	programPress(t, tm, "j", "X")
-	waitForText(t, tm, "Its turn stops")
-	programPress(t, tm, "y")
+	programPress(t, tm, "j", "d")
+	waitForText(t, tm, "[y] cancel · [k] kill")
+	programPress(t, tm, "k")
 	waitForText(t, tm, "cancelled")
 
 	frameHas(t, finalFrame(t, tm), "reader-2", "cancelled")

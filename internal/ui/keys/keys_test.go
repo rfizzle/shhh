@@ -194,7 +194,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		{"Profile", []Binding{Profile.Move, Profile.Take, Profile.Note,
 			Profile.ScrollUp, Profile.ScrollDown, Profile.Back}},
 		{"Agent", []Binding{Agent.Move, Agent.Go, Agent.Attach, Agent.Answer,
-			Agent.Steer, Agent.Retry, Agent.Review, Agent.Cancel, Agent.Kill, Agent.KillAll,
+			Agent.Steer, Agent.Retry, Agent.Edit, Agent.Stop, Agent.Kill,
 			Agent.Back}},
 		{"Plan", []Binding{Plan.Jump, Plan.Save, Plan.Implement}},
 		{"Query", []Binding{Query.Rub}},

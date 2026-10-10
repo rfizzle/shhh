@@ -4,7 +4,7 @@
 # manager (docs/capabilities/subagents.md#an-older-profile-is-moved-into-sections-not-rewritten).
 #
 # What the capture is for: the manager marks the older role after where its
-# file lives and offers [m] on it alone; m opens it on the drafter and the
+# file lives; enter opens it on the drafter, which offers [m] over it, and the
 # answer lands with each moved section marked, Method marked empty as the
 # file's gap, and the file's own prompt beside the sections; a note fills
 # Method; the card's second row shows the file's diff, with the mode, the
@@ -15,7 +15,11 @@ setup printf '%s\n' '# critic — argues against a diff; kept read-only on purpo
 snap 01-start "Some things worth doing first"
 keys "/agents" Enter
 keys Down
-snap 02-manager "◆ older shape" "[m] move it into sections" "[e] edit"
+snap 02-manager "◆ older shape" "[enter] open it" "[e] edit"
+# Moving it is the drafter's key, not the manager's: enter opens the profile
+# on the drafter, which offers the move over a profile in the older shape.
+keys Enter
+snap 02b-opened "◆ older shape" "[m] move it into sections"
 keys m
 snap 03-migrated "Purpose · migrated" "Method ⚠ empty · the file says nothing about it" "Report · migrated"
 wide 100 snap 03-original "as the file wrote it" "│ You are a critic. Read the diff"

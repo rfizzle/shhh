@@ -958,12 +958,9 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `agent.answer` | `a` | answer | yes |
 | `agent.steer` | `s` | steer | yes |
 | `agent.retry` | `r` | retry | yes |
-| `agent.review` | `p` | review | yes |
-| `agent.migrate` | `m` | move it into sections | yes |
 | `agent.edit` | `e` | edit | yes |
-| `agent.cancel` | `d` | cancel | yes |
-| `agent.kill` | `X` | kill | yes |
-| `agent.kill_all` | `K` | kill all | yes |
+| `agent.stop` | `d` | stop | yes |
+| `agent.kill` | `k` | kill | yes |
 | `agent.back` | `esc` | back | yes |
 | `agent.detach` | `esc` | back | yes |
 | `profile.move` | `up`, `down` | move | yes |

@@ -1299,10 +1299,10 @@ func (m Model) savePersona(index int) (tea.Model, tea.Cmd) {
 
 // openPersonaProfile opens a role's file on the drafter's draft step, the
 // way a draft is edited: its sections from the file, its tiers and tools on
-// the selector, every field it sets on the Model block. With migrate set the
-// profile is sent to be moved into the sections at once, the manager's m.
+// the selector, every field it sets on the Model block. An older profile is
+// moved into the sections from there, on the drafter's own key.
 // See docs/interface/surfaces.md#the-profile-drafter.
-func (m Model) openPersonaProfile(name string, migrate bool) (tea.Model, tea.Cmd) {
+func (m Model) openPersonaProfile(name string) (tea.Model, tea.Cmd) {
 	var role SpawnableRole
 	for _, r := range m.spawnableRoles() {
 		if r.Name == name {
@@ -1334,9 +1334,6 @@ func (m Model) openPersonaProfile(name string, migrate bool) (tea.Model, tea.Cmd
 	m.personaScreen = screen
 	m.enterSurface(statePersona)
 	m.openPersonaCard()
-	if migrate && m.personaScreen.Migratable {
-		return m.migratePersona()
-	}
 	m.syncViewport()
 	return m, nil
 }
