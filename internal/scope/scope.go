@@ -36,7 +36,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rfizzle/shhh/internal/sandbox"
+	"github.com/rfizzle/shhh/internal/scope/mask"
 )
 
 // Scope is one session's working scope. It is shared by the surfaces that
@@ -310,11 +310,19 @@ func Classify(dir string) (Class, string) {
 			resolved = filepath.Clean(dir)
 		}
 	}
+	// With no mask registered nothing says what containment hides, so the
+	// directory is not cleared: a person answers for it, as for any other
+	// sensitive one. A binary that links the scope without the sandbox gets
+	// the question asked, never a grant it cannot vouch for.
+	masked := mask.Current()
+	if masked == nil {
+		return Sensitive, "containment is not loaded, so what it masks cannot be checked"
+	}
 	// The mask's own entries are resolved strictly: a deny path that does not
 	// exist masks nothing, and resolving it loosely would hand back its
 	// parent — which is how "no ~/.ssh here" turns into "the home directory
 	// is masked".
-	for _, denied := range sandbox.DenyPaths() {
+	for _, denied := range masked.DenyPaths() {
 		d, err := resolveExact(denied)
 		if err != nil {
 			continue
@@ -323,7 +331,7 @@ func Classify(dir string) (Class, string) {
 			return Refused, "contained commands mask " + d + ", and the mask cannot be disabled"
 		}
 	}
-	for _, own := range sandbox.ShhhPaths() {
+	for _, own := range masked.ShhhPaths() {
 		d, err := resolveExact(own)
 		if err != nil {
 			continue
@@ -337,7 +345,7 @@ func Classify(dir string) (Class, string) {
 			return Sensitive, "granting " + exact + " puts everything under it in scope"
 		}
 	}
-	for _, s := range credentialPaths() {
+	for _, s := range masked.CredentialPaths() {
 		c, err := resolveExact(s)
 		if err != nil {
 			continue
@@ -360,7 +368,7 @@ func Classify(dir string) (Class, string) {
 	// grant only a person may make: a mode or the classifier that widened
 	// into one would be handing the next commit a program nobody approved.
 	// See docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only.
-	if store, ok := sandbox.GitStoreOf(resolved); ok {
+	if store, ok := masked.GitStoreOf(resolved); ok {
 		return Sensitive, "granting " + resolved + " lets contained commands write " + store + "'s hooks and config, which git runs on the host outside containment"
 	}
 	return Ordinary, ""
@@ -393,19 +401,6 @@ func sensitivePaths() []string {
 	}
 	return uniq
 }
-
-// credentialPaths are the credential stores a contained command may read only
-// while this scope holds them — a kubeconfig, a registry login, a cloud SDK's
-// cached token. They are the sandbox's own list rather than a second one
-// beside it: what makes them sensitive here is precisely that containment
-// masks them until they are granted, and two lists that had to agree would
-// eventually disagree — silently, in the direction of granting a directory
-// the mask still hides.
-//
-// The stores nothing legitimate writes to are not here at all. Those are in
-// the deny mask, so Classify has already refused them by the time this is
-// reached.
-func credentialPaths() []string { return sandbox.CredentialPaths() }
 
 // Describe is how a scope reads in a status line: the root, and what has been
 // added to it.
