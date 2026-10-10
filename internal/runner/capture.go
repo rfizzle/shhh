@@ -26,6 +26,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -234,8 +235,23 @@ func capture(ctx context.Context, dir, command string, argv []string, kind spawn
 	cmd := g.cmd
 	w := newCaptureWriter(onLine)
 	cmd.Stdout, cmd.Stderr = w, w
+	var held *os.File
+	if kind == spawnAttached {
+		var err error
+		if held, err = holdStdin(g); err != nil {
+			cancel()
+			return startFailure(dir, kind, err)
+		}
+	}
 	started := time.Now()
-	if err := g.start(); err != nil {
+	err := g.start()
+	if held != nil {
+		// The child has its own copy now; this one would keep the stream
+		// open from this end after the write end is closed.
+		_ = held.Close()
+	}
+	if err != nil {
+		g.hangUp()
 		cancel()
 		// Nothing was spawned, so what failed is the machine and not the
 		// command: it is classified here, where what was being attempted is

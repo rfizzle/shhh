@@ -47,6 +47,10 @@ const (
 	// spawnWrapped is a pre-built argv, which in this codebase is a command
 	// with a containment mechanism in front of it.
 	spawnWrapped
+	// spawnAttached is a pre-built argv whose program reaches the command
+	// through a stream — an engine's exec into a sandbox container — and is
+	// handed a held-open stdin as that stream (attached.go).
+	spawnAttached
 )
 
 // startFailure is the result of a command that never became a process: the
@@ -188,7 +192,7 @@ func classifyStart(dir string, kind spawnKind, err error) tools.ExecPrereq {
 	case errors.Is(err, exec.ErrNotFound), errors.Is(err, fs.ErrNotExist):
 		// The program itself is not there. Which program that is, is the
 		// caller's answer and not this function's.
-		if kind == spawnWrapped {
+		if kind != spawnShell {
 			return tools.PrereqContainment
 		}
 		return tools.PrereqShell

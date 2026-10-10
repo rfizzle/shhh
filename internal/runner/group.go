@@ -33,6 +33,7 @@ package runner
 // See docs/capabilities/containment.md#a-cancelled-command-takes-its-children-with-it.
 
 import (
+	"os"
 	"os/exec"
 	"sync"
 	"time"
@@ -66,6 +67,21 @@ type group struct {
 	// error — stays a refusal rather than becoming a panic on a closed
 	// channel.
 	once sync.Once
+	// stdin is the write end of an attached command's held-open stdin, nil
+	// for every other command (attached.go). hung closes it once.
+	stdin *os.File
+	hung  sync.Once
+}
+
+// hangUp closes an attached command's stdin, which is how the far end of
+// the stream learns the command is to stop. It comes before any signal, so
+// the stop starts at the far end as soon as it starts here; it is a no-op
+// for a command with no stdin of its own.
+func (g *group) hangUp() {
+	if g.stdin == nil {
+		return
+	}
+	g.hung.Do(func() { _ = g.stdin.Close() })
 }
 
 // live is every captured command that has started and not yet been waited on.
@@ -88,7 +104,10 @@ func prepare(cmd *exec.Cmd, dir string) *group {
 	cmd.Env = Environ()
 	cmd.SysProcAttr = sysProcAttr()
 	cmd.WaitDelay = waitDelay
-	cmd.Cancel = func() error { return stopGroup(g) }
+	cmd.Cancel = func() error {
+		g.hangUp()
+		return stopGroup(g)
+	}
 	return g
 }
 
@@ -112,6 +131,7 @@ func (g *group) start() error {
 func (g *group) wait() error {
 	err := g.cmd.Wait()
 	g.once.Do(func() { close(g.exited) })
+	g.hangUp()
 	g.release()
 	return err
 }
@@ -147,6 +167,7 @@ func StopCaptured() {
 		return
 	}
 	for _, g := range groups {
+		g.hangUp()
 		interruptGroup(g)
 	}
 	awaitGroups(groups, killGrace-reapGrace)
