@@ -174,6 +174,17 @@ $  a shell command
 ⊘  refused: dim by you, red by a rule
 [?] hide the keys
 
+· the theme file · refused whole with the reason, then read
+shhh doctor · 2 checks                                                            0.2s · [?] keys · [esc] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+❯  ⚠ theme   ~/.config/shhh/theme.toml · auto → dark                                            refused       
+    the default theme runs instead of this file
+    [enter] fix the file
+   ✓ theme   ~/.config/shhh/theme.toml · charm                                                       ok
+
+  ⚠ 1 warning · 1 passed                             [c] copy the report · [r] retry · [esc] back to the shell
+
 · a clean run · no pointer, no fix key, and nothing to act on
 shhh doctor · 3 checks                                                            0.9s · [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -348,6 +359,17 @@ shhh doctor · 3 checks                                                         
 ␛[38;5;254m✗␛[m  ␛[38;5;244mfailed␛[m
 ␛[38;5;244m⊘␛[m  ␛[38;5;244mrefused: dim by you, red by a rule␛[m
 ␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
+
+· the theme file · refused whole with the reason, then read
+␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 2 checks␛[m                                                            ␛[38;5;244m0.2s␛[m␛[38;5;244m · [?] keys · [esc] back␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m⚠␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mtheme   ~/.config/shhh/theme.toml · auto → dark                                            refused       ␛[m␛[m
+    ␛[38;5;244mthe default theme runs instead of this file␛[m
+    ␛[38;5;254m[enter]␛[m␛[38;5;244m fix the file␛[m
+   ␛[38;5;254m✓␛[m ␛[38;5;254mtheme␛[m   ␛[38;5;254m~/.config/shhh/theme.toml␛[m␛[38;5;244m · charm␛[m                                                       ␛[38;5;244mok␛[m
+
+  ␛[38;5;254m⚠␛[m ␛[38;5;254m1 warning␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 passed␛[m                             ␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · a clean run · no pointer, no fix key, and nothing to act on
 ␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 3 checks␛[m                                                            ␛[38;5;244m0.9s␛[m␛[38;5;244m · [?] keys · [esc] back␛[m

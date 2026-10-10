@@ -1,0 +1,16 @@
+# program test: none — the doctor's host is the command package's screen
+#   model; the row's words are held by TestDoctorTheme_NamesTheFileTheTableAndTheRefusal
+#   and drawn in the doctor-screen golden's theme panel
+#
+# The theme file, refused and then good. The launch line writes a theme.toml
+# naming a table that does not exist and opens the doctor: the theme row is a
+# warning, `refused`, naming the file and saying the default runs instead.
+# Leaving the doctor rewrites the file with a name that exists and opens it
+# again: the row is ok and names the table in effect. What the capture is for:
+# the .txt is read against the golden's layout block for the row, and the
+# picture for the warning against the ok. Driven at 110 by `make tui-shot
+# SCENE=theme-file COLS=110`; written here, not driven.
+snap 01-refused "theme" "refused"
+keys Escape
+snap 02-read "theme" "charm"
+keys Escape

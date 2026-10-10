@@ -123,6 +123,7 @@ var projectRefusals = []projectRefusal{
 	{"mcp.servers", "a server is a program to start, and a checkout names its servers in " + project.StateDir + "/mcp.json instead"},
 	{"hooks.entries", "a hook is a command to run, and a checkout names its hooks in " + project.StateDir + "/hooks.json instead"},
 	{"prompts", "it points at a file anywhere on the machine and replaces what a session is told"},
+	{ThemeKey, "the colours under your eyes are yours to choose, not the repository's"},
 	{"todo.root", "it names a directory on the machine, and a session standing in this checkout reads this checkout's backlog whatever it says"},
 }
 
@@ -253,7 +254,12 @@ func refusedKeys(path string, meta toml.MetaData) error {
 	if len(keys) == 0 {
 		return nil
 	}
-	return &ProjectKeyError{Path: path, Keys: keys, User: WritePath()}
+	user := WritePath()
+	if len(keys) == 1 && keys[0].Key == ThemeKey {
+		// The theme has a file of its own, and that is where it belongs.
+		user = themeFileBeside(user)
+	}
+	return &ProjectKeyError{Path: path, Keys: keys, User: user}
 }
 
 // layerKey copies one key's value out of the checkout's config and into the

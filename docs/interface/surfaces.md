@@ -3614,6 +3614,13 @@ register lists it under flow control so the keymap file moves the act
 ([the chords the keyboard spends
 anyway](reserved-keys.md#kept-on-purpose)).
 
+One row is listed here and lives somewhere else. The theme is chosen in a file
+of its own, `theme.toml` beside the settings file, so its row reads
+`theme.toml` where the others read `user`, and a write of it goes to that file
+and leaves the settings file as it was. The screen stands in a checkout and
+still shows the row, but a checkout never decides it
+([the theme file](../capabilities/configuration.md#the-theme-file)).
+
 ### The editor pane
 
 `/edit <path>` in `shhh code` opens a file in a pane over the feed, for the

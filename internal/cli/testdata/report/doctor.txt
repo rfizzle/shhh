@@ -1,4 +1,4 @@
-  shhh doctor — 10 checks
+  shhh doctor — 13 checks
 
   ✓ binary    shhh 0.9.4 · linux/amd64  [ok]
   ⚠ keymap    /home/dev/.config/shhh/keybindings.toml  [refused]
@@ -13,6 +13,12 @@
       a line naming a key shhh no longer has is read and does nothing
         row.commit, rowchord.undo name keys shhh no longer has; those lines do
         nothing
+  ⚠ theme     /home/dev/.config/shhh/theme.toml · auto → dark  [refused]
+      the default theme runs instead of this file
+        name "solarized" is not a theme (auto, dark, light, charm)
+        it takes one key, name, one of auto, dark, light, charm
+  ✓ theme     /home/dev/.config/shhh/theme.toml · auto → dark  [ok]
+  ✓ theme     no theme.toml · light · set in config.toml, move it  [ok]
   ⚠ otel      the collector endpoint is not a URL · the endpoint ne…  [unusable]
       sessions are recorded locally and nothing is exported
         shhh config set --global otel.endpoint http://localhost:4318
@@ -38,4 +44,4 @@
         summary — config prompts.summary
         todo_commit — ~/.config/shhh/prompts/todo_commit.md
 
-  1 failed · 6 warnings · 2 passed · 1 not checked
+  1 failed · 7 warnings · 4 passed · 1 not checked

@@ -376,6 +376,16 @@ $  a shell command
 ⊘  refused: dim by you, red by a rule
 [?] hide the keys
 
+· the theme row · its value is the theme file's, and a write goes there
+shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] back
+────────────────────────────────────────────────────────────────────────────────
+
+  APPEARANCE
+  ❯ theme      charm                                                  theme.toml
+    verbosity  normal                                                    default
+
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [esc] leave
+
 · the flows section · each row says which link of the chain answered, or that the session holds it
 /config · project file · .shhh/config.toml                 [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────────
@@ -790,6 +800,16 @@ $  a shell command
 ␛[38;5;254m✗␛[m  ␛[38;5;244mfailed␛[m
 ␛[38;5;244m⊘␛[m  ␛[38;5;244mrefused: dim by you, red by a rule␛[m
 ␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
+
+· the theme row · its value is the theme file's, and a write goes there
+␛[1;38;5;254mshhh config␛[m␛[38;5;244m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[1;38;5;254mAPPEARANCE␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mtheme      charm                                                  theme.toml␛[m
+    ␛[38;5;254mverbosity␛[m  ␛[38;5;254mnormal␛[m                                                    ␛[38;5;254mdefault␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m
 
 · the flows section · each row says which link of the chain answered, or that the session holds it
 ␛[1;38;5;254m/config␛[m␛[38;5;244m · project file␛[m␛[38;5;244m · .shhh/config.toml␛[m                 ␛[38;5;244m[?] keys · [esc] back␛[m

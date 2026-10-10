@@ -170,6 +170,18 @@ func goldenChecks() []components.DoctorCheck {
 		// refused, with the lines that do nothing named.
 		doctorCheck("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 1, 0,
 			[]string{"row.commit", "rowchord.undo"}, nil), 0),
+		// The theme file: refused whole, then read, then absent with the
+		// setting still in config.toml waiting to move.
+		doctorCheck("theme", doctorTheme(config.ThemeState{
+			Path: "/home/dev/.config/shhh/theme.toml", Name: "auto",
+			Err: errors.New(`/home/dev/.config/shhh/theme.toml: name "solarized" is not a theme (auto, dark, light, charm)`),
+		}, "auto", "dark"), 0),
+		doctorCheck("theme", doctorTheme(config.ThemeState{
+			Path: "/home/dev/.config/shhh/theme.toml", Name: "auto",
+		}, "auto", "dark"), 0),
+		doctorCheck("theme", doctorTheme(config.ThemeState{
+			Name: "light", Source: config.ThemeFromConfig, Migrate: true,
+		}, "light", "light"), 0),
 		// Built from the check itself, so the fixture carries one of the
 		// `shhh config set --global` fix lines word for word: each names a
 		// key about this machine, and the flag is what keeps it out of a

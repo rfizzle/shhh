@@ -70,6 +70,7 @@ clone of it, or one that reaches past the tree onto the machine:
 | `[mcp.servers]` | a server is a program to start, and a checkout names its servers in .shhh/mcp.json instead |
 | `[hooks.entries]` | a hook is a command to run, and a checkout names its hooks in .shhh/hooks.json instead |
 | `[prompts]` | it points at a file anywhere on the machine and replaces what a session is told |
+| `appearance.theme` | the colours under your eyes are yours to choose, not the repository's |
 | `todo.root` | it names a directory on the machine, and a session standing in this checkout reads this checkout's backlog whatever it says |
 
 <!-- END generated refused keys -->
@@ -1069,6 +1070,45 @@ rules above are what refuse a move, not a list of keys held back from it.
 
 <!-- END generated keymap reference -->
 
+## The theme file
+
+Which colour table every surface draws with is chosen in a file of its own,
+`theme.toml`, beside `config.toml` and `keybindings.toml`. It has one key to
+begin with, `name`: `auto`, which takes the table chosen for the background
+the terminal reports, or one of the tables shhh ships by name. A file with no
+`name`, and a machine with no file, is `auto`.
+
+```toml
+name = "charm"
+```
+
+It is a file of its own for the keymap's reason and one more. It is read once,
+as the process starts, because every surface draws from the table and a table
+swapped under a screen is a screen half in one set of colours. And the colours
+are a thing that can grow — a table a person defines, a second key beside the
+name — without the settings growing a nested section nobody scrolls to.
+
+It is the user's file and a checkout does not layer one. A repository that
+could choose the colours would be a repository deciding what is under
+someone's eyes, which for a reader who picked a table because they can see it
+is not a matter of taste. So a checkout's `.shhh/theme.toml` is never read,
+and a checkout's settings that set `appearance.theme` are refused, named in
+the same note as the other keys a checkout may not decide.
+
+**The file is applied whole or refused whole**, as the keymap file is. A parse
+error, a key a theme file does not have, or a name no table answers to refuses
+all of it: the refusal is said on stderr as the process starts and on the
+doctor's `theme` row, and `auto` runs. A typo does not become a line that does
+nothing.
+
+The setting `appearance.theme` is still listed, so the settings screen shows
+it, but its row says it lives in the theme file and a write of it — `shhh
+config set appearance.theme`, the screen, `/ui theme` — goes to `theme.toml`
+and leaves `config.toml` alone. A `config.toml` that still sets it is read as
+the answer when the theme file has no `name`, and the doctor says the value
+belongs in the file now; where both name one, the file wins. A change is taken
+at once: `/ui theme` and the screen swap the table in the running session.
+
 ## Which search a session has
 
 `web.search_provider` names the backend the `web_search` tool asks, and each
@@ -1239,7 +1279,7 @@ own file could hold.
 
 | Key | Takes | Default | A session takes it | What it decides |
 |---|---|---|---|---|
-| `theme` | word: `auto`, `dark`, `light`, `charm` | `auto` | next turn | Which colour table every surface draws with: `auto` asks the terminal what its own background is and takes the table chosen for that ground, or name one. |
+| `theme` | word: `auto`, `dark`, `light`, `charm` | `auto` | next turn | Which colour table every surface draws with: `auto` asks the terminal what its own background is and takes the table chosen for that ground, or name one. It lives in its own file, theme.toml beside this one, and a write goes there. |
 | `verbosity` | word: `low`, `normal`, `high` | `normal` | next turn | How much the screen explains, one rung for every surface: `low` draws what you act on and little else, `normal` adds the readings, `high` every gloss, hint and field. |
 | `mouse` | true/false | `on` | next turn | Terminal mouse reporting: the wheel scrolls the transcript and shhh selects text itself. Off leaves the terminal its native click-drag selection. |
 | `notify` | true/false | `on` | next turn | Raise a desktop notification when a turn stops while the window is not the one in front. |

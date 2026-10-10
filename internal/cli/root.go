@@ -210,6 +210,7 @@ func NewRootCmd() *cobra.Command {
 			// one-shot generate surface all read the same one. A name no
 			// table answers to is refused on the same terms a key no setting
 			// reads is, and for the same reason.
+			sayThemeRefusal()
 			if err := components.SetTheme(cfg.Appearance.Theme); err != nil && cmd.Annotations[ownsConfigError] == "" {
 				return err
 			}

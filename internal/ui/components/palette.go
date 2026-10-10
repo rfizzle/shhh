@@ -377,6 +377,10 @@ const (
 // ThemeName is the theme that was asked for, by name.
 func ThemeName() string { return themeName }
 
+// ResolvedTheme is the table that is drawn for it: the name itself, or for
+// auto the table the ground chose.
+func ResolvedTheme() string { return resolveTheme(themeName) }
+
 // SetTheme swaps the table every surface draws with, through the same door
 // SetMono uses. An unknown name is refused and nothing changes: a themes
 // table that silently fell back would leave the reader looking at the old

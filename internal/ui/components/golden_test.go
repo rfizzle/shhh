@@ -3019,6 +3019,15 @@ func TestGolden_ConfigScreen(t *testing.T) {
 				c.Update(key("?"))
 				return c.View(width)
 			}()},
+			{Label: "the theme row · its value is the theme file's, and a write goes there", View: (&ConfigScreen{
+				Path: "~/.config/shhh/config.toml", maxLines: 12,
+				Rows: []ConfigRow{
+					{Group: "APPEARANCE", Key: "appearance.theme", Label: "theme", Value: "charm",
+						Source: "theme.toml", Options: []SelectOption{{Label: "auto"}, {Label: "dark"}, {Label: "light"}, {Label: "charm"}}},
+					{Group: "APPEARANCE", Key: "appearance.verbosity", Label: "verbosity", Value: "normal", Source: "default",
+						Options: []SelectOption{{Label: "low"}, {Label: "normal"}, {Label: "high"}}},
+				},
+			}).View(width)},
 			{Label: "the flows section · each row says which link of the chain answered, or that the session holds it",
 				View: flowsScreen(nil).View(width)},
 			{Label: "a flow's picker · the choice has three destinations on the key row", View: func() string {
@@ -3686,6 +3695,18 @@ func TestGolden_DoctorScreen(t *testing.T) {
 					d.Update(key("?"))
 					return d.View(width)
 				}()},
+			{Label: "the theme file · refused whole with the reason, then read",
+				View: (&DoctorScreen{Elapsed: "0.2s", Checks: []DoctorCheck{
+					{Name: "theme", Subject: "~/.config/shhh/theme.toml", Detail: "auto → dark",
+						Outcome: "refused", State: DoctorWarned,
+						Consequence: "the default theme runs instead of this file",
+						FixLabel:    "fix the file",
+						Fix: []string{
+							`name "solarized" is not a theme (auto, dark, light, charm)`,
+							"it takes one key, name, one of auto, dark, light, charm",
+						}},
+					{Name: "theme", Subject: "~/.config/shhh/theme.toml", Detail: "charm", Outcome: "ok"},
+				}}).View(width)},
 			{Label: "a clean run · no pointer, no fix key, and nothing to act on",
 				View: (&DoctorScreen{Elapsed: "0.9s", Checks: []DoctorCheck{
 					{Name: "binary", Subject: "shhh 0.9.4", Detail: "darwin/arm64", Outcome: "ok"},

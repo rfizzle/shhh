@@ -35,8 +35,29 @@ type Edit struct {
 // does not exist is created holding only what was written. A file that will
 // not parse is refused untouched: editing text the parser cannot read would
 // land the key somewhere nobody meant.
+//
+// The theme is the one setting that is not in this file: an edit of
+// appearance.theme goes to the theme file beside it, by the same line edit
+// (docs/capabilities/configuration.md#the-theme-file).
 func Write(path string, edits ...Edit) error {
-	return rewrite(path, func(doc *document) error { return applyEdits(doc, edits) })
+	var rest []Edit
+	var theme *Edit
+	for i, e := range edits {
+		if e.Key == ThemeKey {
+			theme = &edits[i]
+			continue
+		}
+		rest = append(rest, e)
+	}
+	if len(rest) > 0 || theme == nil {
+		if err := rewrite(path, func(doc *document) error { return applyEdits(doc, rest) }); err != nil {
+			return err
+		}
+	}
+	if theme != nil {
+		return writeTheme(path, strings.TrimSpace(theme.Value))
+	}
+	return nil
 }
 
 // WriteServer writes one `[mcp.servers.<name>]` table, replacing the

@@ -84,6 +84,8 @@ func doctorQueuedSubject(name string) string {
 		return "whether the terminal delivers every chord the keyboard offers"
 	case "keymap":
 		return "the keybindings file and whether it was applied"
+	case "theme":
+		return "the theme file and the table in effect"
 	case "config":
 		return "the config file and what it sets"
 	case "migrate":

@@ -373,6 +373,16 @@ $  a shell command
 ⊘  refused: dim by you, red by a rule
 [?] hide the keys
 
+· the theme row · its value is the theme file's, and a write goes there
+shhh config · ~/.config/shhh/config.toml                                                                     [?] keys · [esc] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  APPEARANCE
+  ❯ theme      charm                                                                                                    theme.toml
+    verbosity  normal                                                                                                      default
+
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [esc] leave                                               2 settings
+
 · the flows section · each row says which link of the chain answered, or that the session holds it
 /config · project file · .shhh/config.toml                                                                   [?] keys · [esc] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -784,6 +794,16 @@ $  a shell command
 ␛[91m✗␛[m  ␛[38;5;245mfailed␛[m
 ␛[38;5;245m⊘␛[m  ␛[38;5;245mrefused: dim by you, red by a rule␛[m
 ␛[38;5;103m[?]␛[m␛[38;5;245m hide the keys␛[m
+
+· the theme row · its value is the theme file's, and a write goes there
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                                                                     ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[1;94mAPPEARANCE␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mtheme      charm                                                                                                    theme.toml␛[m
+    ␛[38;5;252mverbosity␛[m  ␛[38;5;252mnormal␛[m                                                                                                      ␛[38;5;252mdefault␛[m
+
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m                                               ␛[38;5;245m2 settings␛[m
 
 · the flows section · each row says which link of the chain answered, or that the session holds it
 ␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;245m · .shhh/config.toml␛[m                                                                   ␛[38;5;245m[?] keys · [esc] back␛[m

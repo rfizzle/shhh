@@ -215,7 +215,9 @@ func loadLayeredConfig(dir string) (config.Config, config.Project, error) {
 	if err != nil {
 		return cfg, config.Project{}, err
 	}
-	return layerProjectConfig(cfg, dir)
+	// The theme is chosen in a file of its own, read before a checkout's
+	// layer is put over the rest so the checkout cannot reach it.
+	return layerProjectConfig(withThemeFile(cfg), dir)
 }
 
 // layerProjectConfig is the second half of that load, which the doctor makes
@@ -987,6 +989,10 @@ func configRowsTo(cfg, base config.Config, proj config.Project, toProject bool) 
 		}
 		loaded, _ := config.Value(base, s.Key)
 		row.Source, row.SourceTone = configSource(raw, loaded, proj.Sets(s.Key), toProject)
+		if s.Key == config.ThemeKey && row.Source == "user" {
+			// Its value is the theme file's, and a write goes there.
+			row.Source = "theme.toml"
+		}
 		if s.Key == "provider.model" {
 			if n := len(row.Options); n > 0 {
 				row.Source += fmt.Sprintf(" · %d available", n)

@@ -1,0 +1,2 @@
+# The doctor twice over one theme file: refused first, then rewritten and read.
+mkdir -p "$XDG_CONFIG_HOME/shhh"; printf 'name = "solarized"\n' > "$XDG_CONFIG_HOME/shhh/theme.toml"; "$SHHH_BIN" doctor; printf 'name = "charm"\n' > "$XDG_CONFIG_HOME/shhh/theme.toml"; "$SHHH_BIN" doctor

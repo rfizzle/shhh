@@ -210,6 +210,7 @@ func doctorProbes() []doctorProbe {
 		{name: "binary", run: probeBinary},
 		{name: "keys", run: probeOptionKey},
 		{name: "keymap", run: probeKeymap},
+		{name: "theme", run: probeTheme},
 		{name: "config", run: probeConfig},
 		{name: "migrate", run: probeMigrate},
 		{name: "model", run: probeModel},
