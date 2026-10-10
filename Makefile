@@ -218,6 +218,36 @@ prepush: ## Run every CI check this host can run, on CI's Go, naming what it ski
 	if [ -n "$$failed" ]; then echo "${RED}prepush failed:$$failed${RESET}"; exit 1; fi; \
 	echo "${GREEN}prepush passed every check that ran${RESET}"
 
+# The CI job's own environment: docker/ci/Dockerfile installs what test.yml
+# installs, the tree is mounted at the same path (and the repository's git
+# directory too, because a worktree's .git file names it by absolute path), and
+# make ci, make test-contract and make test-integration run inside. The
+# sandbox-session job needs docker inside the container and is skipped here; the
+# macOS seatbelt job cannot run in a container at all. The security options are
+# bubblewrap's needs under Docker, explained in the Dockerfile. The image tag
+# carries the Go and golangci-lint versions the Dockerfile pins, so a bump
+# builds a new image.
+CI_ENGINE ?= $(shell command -v docker 2>/dev/null || command -v podman 2>/dev/null)
+CI_GO=$(shell sed -n 's/^ARG GO_VERSION=//p' docker/ci/Dockerfile)
+CI_LINT=$(shell sed -n 's/^ARG GOLANGCI_LINT_VERSION=//p' docker/ci/Dockerfile)
+CI_IMAGE=shhh-ci:go$(CI_GO)-golangci$(CI_LINT)
+CI_GITDIR=$(shell cd "$$(git rev-parse --git-common-dir)" && pwd)
+
+ci-container: ## Run make ci, test-contract and test-integration in a replica of CI's image (needs docker or podman)
+	@if [ -z "$(CI_ENGINE)" ]; then \
+		echo "${RED}No container engine (docker or podman) on this host.${RESET}"; \
+		echo "Run ${YELLOW}make prepush${RESET} instead: it runs what this host can on CI's Go and names what it skipped."; \
+		exit 1; \
+	fi
+	@echo "${MAGENTA}Building $(CI_IMAGE)...${RESET}"
+	@$(CI_ENGINE) build -t $(CI_IMAGE) docker/ci
+	@echo "${YELLOW}skipped: the sandbox-session job (needs docker inside the container) and the macOS seatbelt job run in CI alone${RESET}"
+	@$(CI_ENGINE) run --rm \
+		--security-opt seccomp=unconfined --security-opt systempaths=unconfined --security-opt apparmor=unconfined \
+		--user "$$(id -u):$$(id -g)" -e HOME=/tmp/ci-home -e GOCACHE=/tmp/ci-home/go-build -e GOMODCACHE=/tmp/ci-home/mod -e GOFLAGS=-buildvcs=false \
+		-v "$(CURDIR):$(CURDIR)" -v "$(CI_GITDIR):$(CI_GITDIR)" -w "$(CURDIR)" \
+		$(CI_IMAGE) sh -c 'mkdir -p $$HOME && make ci && make test-contract && make test-integration'
+
 # Opt-in: nothing installs this on its own. core.hooksPath is shared by every
 # worktree of the clone; remove it with `git config --unset core.hooksPath`.
 hooks: ## Install the pre-push hook that runs make prepush (opt-in)

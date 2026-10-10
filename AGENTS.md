@@ -56,6 +56,7 @@ is prose in `docs/capabilities/`, cited from the comment beside it
 | CI pipeline | `make ci` (the gate plus `cross` and `tui-check`) |
 | Everything CI runs that this host can run, on CI's Go | `make prepush` |
 | Install the opt-in pre-push hook | `make hooks` |
+| CI's job in its own image (needs docker or podman) | `make ci-container` |
 | Update goldens (rewrites every golden in those packages, deletes orphans) | `go test ./internal/ui ./internal/ui/components ./internal/ui/chat -update-golden` |
 | Capture one new golden | `go test ./internal/ui/<pkg> -update-golden -run '<TestName>$'` |
 | Capture a TUI scene | `make tui-shot SCENE=<name> COLS=110 ROWS=40` |
