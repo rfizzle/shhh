@@ -81,10 +81,54 @@ func encodeModels(b *strings.Builder, indent, table string, models []Model) {
 		writeString(b, indent, "id", m.ID)
 		writeInt(b, indent, "context_window", m.ContextWindow)
 		writeInt(b, indent, "max_tokens", m.MaxTokens)
-		if cost := encodeCost(m.Cost); cost != "" {
-			fmt.Fprintf(b, "%s%s = %s\n", indent, "cost", cost)
+		for _, d := range modelDeclarations {
+			if v := d(m); v != "" {
+				fmt.Fprintf(b, "%s%s", indent, v)
+			}
 		}
 	}
+}
+
+// modelDeclarations are the lines a model writes after its id and sizes, one
+// function each, in the order they are written. A field a model can declare
+// is added here and nowhere else in the encoder; a function returns "" when
+// the model left its field out, and a whole line with its newline otherwise.
+var modelDeclarations = []func(Model) string{
+	func(m Model) string {
+		if cost := encodeCost(m.Cost); cost != "" {
+			return "cost = " + cost + "\n"
+		}
+		return ""
+	},
+	func(m Model) string {
+		if !m.Reasoning.Declared() {
+			return ""
+		}
+		parts := []string{"kind = " + quote(m.Reasoning.Kind)}
+		if len(m.Reasoning.Levels) > 0 {
+			q := make([]string, len(m.Reasoning.Levels))
+			for i, l := range m.Reasoning.Levels {
+				q[i] = quote(l)
+			}
+			parts = append(parts, "levels = ["+strings.Join(q, ", ")+"]")
+		}
+		if m.Reasoning.AlwaysOn {
+			parts = append(parts, "always_on = true")
+		}
+		return "reasoning = { " + strings.Join(parts, ", ") + " }\n"
+	},
+	func(m Model) string {
+		if m.Decisions {
+			return "decisions = true\n"
+		}
+		return ""
+	},
+	func(m Model) string {
+		if m.StructuredOutputs != nil {
+			return "structured_outputs = " + strconv.FormatBool(*m.StructuredOutputs) + "\n"
+		}
+		return ""
+	},
 }
 
 // encodeCost writes the inline table model cards are quoted in, omitting the
