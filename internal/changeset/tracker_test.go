@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/project"
 )
 
 func TestTracker_TrackedUntrackedAndOutsideARepository(t *testing.T) {
@@ -56,5 +58,23 @@ func TestTracker_TrackedUntrackedAndOutsideARepository(t *testing.T) {
 	var nilTracker *Tracker
 	if got := nilTracker.Track("anything.go"); got != TrackUnknown || nilTracker.Repo() {
 		t.Fatalf("a nil tracker answers unknown, got %v", got)
+	}
+}
+
+// A tracker built from the session's reading of its checkout answers what
+// that reading found, and asks git nothing to find it.
+func TestTracker_FromTheCheckoutTheSessionRead(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not installed")
+	}
+	dir := t.TempDir()
+	if out, err := exec.Command("git", "-C", dir, "init", "-q").CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v: %s", err, out)
+	}
+	if !NewTrackerFrom(dir, project.ReadCheckout(dir)).Repo() {
+		t.Fatal("the reading found a work tree and the tracker did not")
+	}
+	if NewTrackerFrom(t.TempDir(), project.Checkout{}).Repo() {
+		t.Fatal("a reading outside a work tree made a tracker that found one")
 	}
 }

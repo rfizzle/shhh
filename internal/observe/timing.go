@@ -37,6 +37,10 @@ const (
 	PhaseMCP = "mcp"
 	// PhaseLSP: the language servers looked for on this machine.
 	PhaseLSP = "lsp"
+	// PhaseCheckout: the checkout read once — its root, its commit, its
+	// branch and every changed path — for every reader of the tree the
+	// session opens with.
+	PhaseCheckout = "checkout"
 	// PhaseFirstPaint: the first prompt drawn, measured from the process
 	// starting rather than from the phase before it, so it is the whole of
 	// what the person waited.

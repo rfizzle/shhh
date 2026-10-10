@@ -946,8 +946,13 @@ then a guess at a cause. The record now holds where that time went.
 
 **Startup is a row per phase.** Reading the configuration and the keymap;
 opening the store, catching it up on its migrations and scheduling its prune;
-each MCP server's connect; looking for the language servers; and the first
-prompt drawn. Each row has its duration. The first prompt's is measured from
+reading the checkout; each MCP server's connect; looking for the language
+servers; and the first prompt drawn. The checkout is read once — its root,
+its commit, its branch and its changed paths — and the start screen, the
+prompt, the reading that tells a turn the tree moved and the record of what
+the session changed all start from that one reading rather than each asking
+git a moment apart; it was most of what a start spent before the first
+request. Each row has its duration. The first prompt's is measured from
 the process starting rather than from the phase before it, so it is the whole
 of what the person waited, and the phases before it say what that was made
 of. The phases run before the session's record exists — the configuration is

@@ -604,8 +604,12 @@ func (b *screenBuild) wireCoding(w *chat.Wiring) {
 	w.CommandTimeout = cfg.CommandTimeout()
 	w.ReadOnlyCommands, w.ReadOnlyOff = cfg.Behavior.ReadOnlyCommands, !cfg.ReadOnlyAutoEnabled()
 	w.GitSnapshots = gitSnapshot
-	w.Changeset, w.Tracker = b.changes, changeset.NewTracker(".")
-	w.TreeCheck = withSibling(treeCheck(cfg), session.sibling)
+	// The tracker and the tree reading start from the checkout the survey
+	// read, the reading the start screen and the prompt state, rather than
+	// each asking git about the same tree a moment later.
+	opened := env.survey.Checkout
+	w.Changeset, w.Tracker = b.changes, changeset.NewTrackerFrom(".", opened)
+	w.TreeCheck = withCheckout(withSibling(treeCheck(cfg), session.sibling), opened)
 	// First contact: the empty session's start screen, surveyed
 	// once here rather than assembled per frame.
 	start := withPatternsCount(buildStartInfo(env.survey, db, b.asm.ts.gate != nil, chatTrust(db), b.proj,

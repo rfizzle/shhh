@@ -59,6 +59,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/hostgit"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -117,6 +118,14 @@ type TreeCheck struct {
 	// it would explain is the one that comes after that. Nil answers no,
 	// which is the honest answer for a surface with nothing to ask.
 	Sibling func() bool
+	// Checkout, when set, is the reading of the tree the session opened on,
+	// and the reading starts from it rather than asking git again: its root
+	// is the one this reading runs at and its status the first baseline. The
+	// prompt states the tree as that reading found it, so a change made
+	// after it is news to the model even if it landed before this reading
+	// was turned on. It is the opening's alone — a restart takes the tree
+	// as it stands then. Nil asks git.
+	Checkout *project.Checkout
 }
 
 // TreeSnapshot is the tree at one moment: the commit, the branch, and every
@@ -240,25 +249,28 @@ type treeState struct {
 // repository leaves it off: there is no status to read, and a reading that
 // shells out on every round to be told so would be paying for nothing.
 func (a *Agent) SetTreeCheck(c TreeCheck) {
-	top, err := gitOut(c.Dir, "rev-parse", "--show-toplevel")
-	if err != nil {
+	opened := c.Checkout
+	// The opening's reading is taken once: kept on the config, a restart
+	// would compare the next session's tree with the first one's.
+	c.Checkout = nil
+	if opened == nil {
+		read := project.ReadCheckout(c.Dir)
+		opened = &read
+	}
+	if !opened.Repo() {
 		a.tree = nil
 		return
 	}
 	if c.Budget <= 0 {
 		c.Budget = DefaultTreeBudget
 	}
-	top = strings.TrimSpace(top)
-	if resolved, err := filepath.EvalSymlinks(top); err == nil {
-		top = resolved
-	}
-	t := &treeState{cfg: c, top: top}
+	t := &treeState{cfg: c, top: opened.Top}
 	// A repository whose status will not read — a broken index — keeps the
 	// reading on with no baseline, so the first boundary says why through
 	// unavailable rather than the check being off from the first round with
 	// nothing to show for it.
-	if snap, err := TakeTreeSnapshot(t.top); err == nil {
-		t.last, t.based = snap, true
+	if opened.Read() {
+		t.last, t.based = snapshotOf(*opened), true
 	}
 	t.instructions = map[string]bool{}
 	for _, p := range c.Instructions {
@@ -906,67 +918,25 @@ func branchName(s TreeSnapshot) string {
 	return s.Branch
 }
 
-// TakeTreeSnapshot reads the tree in one git call: porcelain v2 with the
-// branch header, NUL-terminated so a path is never quoted. Paths come back
-// relative to the directory git ran in, which is why it is run at the root.
-//
-// The untracked mode is asked for rather than left to the checkout. A person
-// who set `status.showUntrackedFiles=all` for their own reading of a tree has
-// said nothing about this one, and the setting is not a small difference: git
-// names every file under a new directory where the default names the
-// directory once, which is how one notice came to count 5,825 cache files one
-// by one. What the model is told is the same reading in every checkout.
+// TakeTreeSnapshot reads the tree at top in one git call. It is the
+// checkout's own reading (project.ReadStatus), so the snapshot a boundary
+// compares and the one the session opened on are read the same way.
 func TakeTreeSnapshot(top string) (TreeSnapshot, error) {
-	out, err := gitOut(top, "status", "--porcelain=v2", "--branch", "--untracked-files=normal", "-z")
+	c, err := project.ReadStatus(top)
 	if err != nil {
 		return TreeSnapshot{}, err
 	}
-	return parseStatusV2(out), nil
+	return snapshotOf(c), nil
 }
 
-// parseStatusV2 reads `git status --porcelain=v2 --branch -z`. Entry kinds:
-// `1` ordinary, `2` renamed or copied (the original path follows as its own
-// field), `u` unmerged, `?` untracked, `!` ignored; `#` lines are headers.
+// parseStatusV2 reads `git status --porcelain=v2 --branch -z` as a snapshot.
 func parseStatusV2(out string) TreeSnapshot {
-	snap := TreeSnapshot{Status: map[string]string{}}
-	fields := strings.Split(strings.TrimRight(out, "\x00"), "\x00")
-	for i := 0; i < len(fields); i++ {
-		f := fields[i]
-		if f == "" {
-			continue
-		}
-		switch {
-		case strings.HasPrefix(f, "# branch.oid "):
-			if oid := strings.TrimPrefix(f, "# branch.oid "); oid != "(initial)" {
-				snap.Head = oid
-			}
-		case strings.HasPrefix(f, "# branch.head "):
-			if name := strings.TrimPrefix(f, "# branch.head "); name == "(detached)" {
-				snap.Detached = true
-			} else {
-				snap.Branch = name
-			}
-		case strings.HasPrefix(f, "# "):
-		case strings.HasPrefix(f, "1 "):
-			if parts := strings.SplitN(f, " ", 9); len(parts) == 9 {
-				snap.Status[parts[8]] = parts[1]
-			}
-		case strings.HasPrefix(f, "2 "):
-			if parts := strings.SplitN(f, " ", 10); len(parts) == 10 {
-				snap.Status[parts[9]] = parts[1]
-			}
-			i++ // the original path rides in the next field
-		case strings.HasPrefix(f, "u "):
-			if parts := strings.SplitN(f, " ", 11); len(parts) == 11 {
-				snap.Status[parts[10]] = parts[1]
-			}
-		case strings.HasPrefix(f, "? "):
-			snap.Status[f[2:]] = "??"
-			// `!` (ignored) entries are not shown unless asked for, and are
-			// not workspace changes when they are.
-		}
-	}
-	return snap
+	return snapshotOf(project.ParseStatus(out))
+}
+
+// snapshotOf is a reading of the checkout as the snapshot this file compares.
+func snapshotOf(c project.Checkout) TreeSnapshot {
+	return TreeSnapshot{Head: c.Head, Branch: c.Branch, Detached: c.Detached, Status: c.Status}
 }
 
 // gitOut runs git and returns its standard output. A failure carries git's

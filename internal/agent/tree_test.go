@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/hostgit/hostgittest"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -113,6 +114,46 @@ func TestTree_RestartTakesTheBaselineAgain(t *testing.T) {
 	write(t, ws, "c.txt", "later\n")
 	if _, ok := a.NextTreeNotice(true); !ok {
 		t.Fatal("a change after the new baseline is still reported")
+	}
+}
+
+// A session that already read its checkout hands that reading over, and the
+// reading starts from it: a path written after it is news, because the
+// prompt stated the tree as that reading found it. A restart does not go
+// back to it — the next conversation starts from the tree as it stands.
+func TestTree_TheOpeningReadingIsTheBaselineOnce(t *testing.T) {
+	ws, _ := treeFixture(t)
+	opened := project.ReadCheckout(ws)
+	if !opened.Read() {
+		t.Fatalf("the fixture did not read: %+v", opened)
+	}
+	write(t, ws, "b.txt", "after the opening\n")
+
+	a := New(nil, nil)
+	a.SetTreeCheck(TreeCheck{Dir: ws, Checkout: &opened})
+	if !a.TreeChecking() {
+		t.Fatal("the reading should be on in the checkout the session read")
+	}
+	n, ok := a.NextTreeNotice(true)
+	if !ok || !strings.Contains(n.Message, "b.txt") {
+		t.Fatalf("a path written after the opening reading is reported, got ok=%v:\n%s", ok, n.Message)
+	}
+
+	write(t, ws, "c.txt", "before the restart\n")
+	a.RestartTreeCheck()
+	if n, ok := a.NextTreeNotice(true); ok {
+		t.Fatalf("a restart reads the tree as it stands, not the opening's reading, got:\n%s", n.Message)
+	}
+}
+
+// A reading handed over from outside a work tree leaves the reading off, the
+// way asking git there would.
+func TestTree_AnOpeningOutsideARepositoryLeavesTheReadingOff(t *testing.T) {
+	a := New(nil, nil)
+	outside := project.ReadCheckout(t.TempDir())
+	a.SetTreeCheck(TreeCheck{Dir: ".", Checkout: &outside})
+	if a.TreeChecking() {
+		t.Fatal("no repository in the opening's reading, no reading")
 	}
 }
 

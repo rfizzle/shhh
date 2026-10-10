@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -350,7 +352,7 @@ func TestStartOffersEvidence_NamesAndSubjectsOnly(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "cache.go"), []byte("package cache // the secret body\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	req := startOffersEvidence(project.Info{Dir: dir, Repo: true})(context.Background())
+	req := startOffersEvidence(project.Survey(dir))(context.Background())
 	if len(req.Dirty) != 1 || req.Dirty[0] != "cache.go" {
 		t.Fatalf("dirty = %q, want the one name", req.Dirty)
 	}
@@ -359,6 +361,72 @@ func TestStartOffersEvidence_NamesAndSubjectsOnly(t *testing.T) {
 	}
 	if strings.Contains(strings.Join(append(req.Dirty, req.Commits...), " "), "secret body") {
 		t.Fatal("a file's contents reached the reading")
+	}
+}
+
+// A coding session opening reads the tree once. The start screen's survey,
+// the changeset's tracker and the reading that tells a turn the tree moved
+// all start from that one reading, and so does the start screen's own
+// reading once the screen has drawn: git is asked for the tree's status one
+// time, and every reader states the same root and the same changed set.
+//
+// It is assembled where the test runs, this checkout, with git on PATH
+// replaced by a shim that writes down every call before running the real
+// one.
+func TestStart_ReadsTheTreeOnce(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the shim is a shell script")
+	}
+	realGit, err := exec.LookPath("git")
+	if err != nil {
+		t.Skip("git is not on PATH")
+	}
+	if !project.ReadCheckout(".").Read() {
+		t.Skip("the test is not running inside a readable checkout")
+	}
+	shim := t.TempDir()
+	calls := filepath.Join(shim, "calls")
+	script := "#!/bin/sh\nprintf '%s\\n' \"$*\" >> '" + calls + "'\nexec '" + realGit + "' \"$@\"\n"
+	if err := os.WriteFile(filepath.Join(shim, "git"), []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", shim+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	w := buildSession(t, "code")
+	if w.StartOffersGather == nil {
+		t.Fatal("a coding session was assembled without the start screen's reading")
+	}
+	w.StartOffersGather(context.Background())
+
+	logged, err := os.ReadFile(calls)
+	if err != nil {
+		t.Fatalf("no git call was written down: %v", err)
+	}
+	var reads []string
+	for _, line := range strings.Split(strings.TrimSpace(string(logged)), "\n") {
+		if slices.Contains(strings.Fields(line), "status") {
+			reads = append(reads, line)
+		}
+	}
+	if len(reads) != 1 {
+		t.Fatalf("the tree was read %d times opening the session, want once:\n%s", len(reads), strings.Join(reads, "\n"))
+	}
+
+	opened := w.Start.Project.Checkout
+	if !opened.Read() {
+		t.Fatalf("the start screen's survey holds no reading of the checkout: %+v", opened)
+	}
+	if w.Start.Project.Dirty != len(opened.Status) {
+		t.Errorf("the screen counts %d changed paths, the reading holds %d", w.Start.Project.Dirty, len(opened.Status))
+	}
+	if !w.Tracker.Repo() {
+		t.Error("the tracker found no repository the survey read")
+	}
+	if w.TreeCheck == nil || w.TreeCheck.Checkout == nil {
+		t.Fatal("the tree reading was not handed the checkout the session opened on")
+	}
+	if got := w.TreeCheck.Checkout.Top; got != opened.Top {
+		t.Errorf("the tree reading starts at %q, the survey read %q", got, opened.Top)
 	}
 }
 

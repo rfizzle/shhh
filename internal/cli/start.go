@@ -16,7 +16,9 @@ package cli
 
 import (
 	"context"
+	"maps"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -79,6 +81,17 @@ func withSibling(c *agent.TreeCheck, sib sessionSibling) *agent.TreeCheck {
 		return c
 	}
 	c.Sibling = sib.live
+	return c
+}
+
+// withCheckout hands the tree reading the checkout the session opened on, so
+// its root and its first baseline are that reading's rather than a second
+// call's. A reading that is off gains nothing.
+func withCheckout(c *agent.TreeCheck, opened project.Checkout) *agent.TreeCheck {
+	if c == nil {
+		return c
+	}
+	c.Checkout = &opened
 	return c
 }
 
@@ -286,13 +299,10 @@ func startOffersEvidence(survey project.Info) func(context.Context) agent.StartO
 	return func(ctx context.Context) agent.StartOffersRequest {
 		var req agent.StartOffersRequest
 		if survey.Repo {
-			if out, err := hostgit.Output(ctx, dir, "status", "--porcelain"); err == nil {
-				for _, line := range strings.Split(out, "\n") {
-					if len(line) > 3 {
-						req.Dirty = append(req.Dirty, strings.TrimSpace(line[3:]))
-					}
-				}
-			}
+			// The changed files are the ones the screen counted, from the
+			// checkout the survey read, so the reading never names a set the
+			// screen's own count disagrees with.
+			req.Dirty = slices.Sorted(maps.Keys(survey.Checkout.Status))
 			if out, err := hostgit.Output(ctx, dir, "log", "-10", "--format=%s"); err == nil {
 				for _, line := range strings.Split(out, "\n") {
 					if line = strings.TrimSpace(line); line != "" {

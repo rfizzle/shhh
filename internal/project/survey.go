@@ -113,6 +113,12 @@ type Info struct {
 	// is working in a directory — so it is filled in by whoever can ask,
 	// and every reader of the survey states the same answer.
 	Sibling time.Time
+	// Checkout is the reading of the tree the git half above was stated
+	// from. It rides on the survey so the session's other readers of the
+	// tree — the reading that tells a turn the tree moved, the changeset's
+	// tracker — start from the tree this survey stated rather than each
+	// asking git again a moment later.
+	Checkout Checkout
 }
 
 // Survey gathers everything the start screen states about dir. It never
@@ -130,10 +136,7 @@ func Survey(dir string) Info {
 	info := Info{Dir: dir, Display: Abbreviate(dir)}
 	info.Language, info.Toolchain, info.Unit = detectLanguage(dir)
 	info.Packages, info.Partial = countPackages(dir, info.Language)
-	info.Repo, info.Branch, info.Detached, info.Dirty = surveyGit(dir)
-	if info.Repo {
-		info.Head = Head(dir)
-	}
+	info = withCheckout(info, ReadCheckout(dir))
 	// Read from dir, not from the process: a survey of somewhere else that
 	// reported the context files of here would be describing two directories
 	// at once. The user's own instructions file is not this project's, so it
@@ -162,11 +165,7 @@ func RereadGit(info Info) Info {
 	if info.Dir == "" {
 		return info
 	}
-	info.Repo, info.Branch, info.Detached, info.Dirty = surveyGit(info.Dir)
-	info.Head = ""
-	if info.Repo {
-		info.Head = Head(info.Dir)
-	}
+	info = withCheckout(info, ReadCheckout(info.Dir))
 	info.Reread = time.Now()
 	return info
 }
@@ -312,27 +311,22 @@ func depth(root, path string) int {
 	return len(strings.Split(filepath.ToSlash(rel), "/"))
 }
 
-// surveyGit asks git for the branch and the dirty count. Every failure — no
-// repository, no git binary, no commit yet — leaves Repo false, which the
-// screen states as "not a git repository" rather than as a clean tree.
-func surveyGit(dir string) (repo bool, branch string, detached bool, dirty int) {
-	head, err := hostgit.Output(context.Background(), dir, "rev-parse", "--abbrev-ref", "HEAD")
-	if err != nil {
-		return false, "", false, 0
+// withCheckout states a reading of the tree as the survey's git half: the
+// branch, whether HEAD is detached, the dirty count and the commit. Every
+// failure — no repository, no git binary, no commit yet — leaves Repo false,
+// which the screen states as "not a git repository" rather than as a clean
+// tree: a checkout with no commit has no branch the survey can name and no
+// commit a resumed conversation can be compared with. One whose status would
+// not read is a repository with nothing counted.
+func withCheckout(info Info, co Checkout) Info {
+	info.Checkout = co
+	info.Repo, info.Branch, info.Detached, info.Dirty, info.Head = false, "", false, 0, ""
+	if !co.Repo() || co.Head == "" {
+		return info
 	}
-	head = strings.TrimSpace(head)
-	if head == "HEAD" {
-		detached = true
-		head = ""
-	}
-	status, err := hostgit.Output(context.Background(), dir, "status", "--porcelain")
-	if err != nil {
-		return true, head, detached, 0
-	}
-	if s := strings.TrimRight(status, "\n"); s != "" {
-		dirty = strings.Count(s, "\n") + 1
-	}
-	return true, head, detached, dirty
+	info.Repo, info.Branch, info.Detached, info.Head = true, co.Branch, co.Detached, co.Head
+	info.Dirty = len(co.Status)
+	return info
 }
 
 // Head is the commit HEAD points at in dir, or empty where there is no

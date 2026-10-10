@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -261,6 +262,10 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	resolved.Provider, resolved.Model = req.Provider, req.Model
 
 	sysPrompt, projectTokens, survey := session.systemPrompt(cfg.Behavior.SystemPromptExtra)
+	// The checkout is read once, by the survey, and every reader of the tree
+	// the session opens with starts from that reading; what it cost is a
+	// phase of the start like any other.
+	notePhase(startupFrom(cmd.Context()), observe.PhaseCheckout, survey.Checkout.Took)
 
 	// Before anything is built on them: a named wording that cannot be read
 	// stops the session here rather than letting it run on the built-in one.

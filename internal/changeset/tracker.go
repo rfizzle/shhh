@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/rfizzle/shhh/internal/hostgit"
+	"github.com/rfizzle/shhh/internal/project"
 )
 
 // Tracker answers whether git knew about a file when it was edited. It is the
@@ -32,6 +33,17 @@ func NewTracker(dir string) *Tracker {
 	out, err := t.git("rev-parse", "--is-inside-work-tree")
 	t.repo = err == nil && strings.TrimSpace(out) == "true"
 	return t
+}
+
+// NewTrackerFrom is NewTracker for a session that has already read its
+// checkout: whether dir is in a work tree is that reading's answer, so the
+// tracker and the start screen cannot disagree about whether there is a
+// repository, and the session's opening asks git one question fewer.
+func NewTrackerFrom(dir string, co project.Checkout) *Tracker {
+	if dir == "" {
+		dir = "."
+	}
+	return &Tracker{dir: dir, repo: co.Repo()}
 }
 
 // Track reports whether path is tracked right now. It is called just before

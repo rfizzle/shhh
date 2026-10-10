@@ -43,6 +43,7 @@ func TestObserveStartup_RanksServersAndNamesTheTimeoutKey(t *testing.T) {
 		seedTimingSession(t, db,
 			startupEvent(observe.PhaseConfig, "", "", 10),
 			startupEvent(observe.PhaseStore, "", "", tooks[0]),
+			startupEvent(observe.PhaseCheckout, "", "", 45),
 			startupEvent(observe.PhaseMCP, "slow", outcome, tooks[1]),
 			startupEvent(observe.PhaseMCP, "quick", observe.ServerConnected, 80),
 		)
@@ -55,6 +56,7 @@ func TestObserveStartup_RanksServersAndNamesTheTimeoutKey(t *testing.T) {
 
 	for _, want := range []string{
 		"store", "median 400ms · worst 500ms",
+		"checkout", "median 45ms · worst 45ms",
 		"slow", "median 12.0s · worst 20.0s", "2 connected, 1 timeout",
 		"mcp.startup_timeout_seconds", "[mcp.servers.slow]", "timeout_seconds",
 	} {

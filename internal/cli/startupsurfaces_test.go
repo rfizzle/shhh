@@ -127,13 +127,13 @@ func startupSurface(t *testing.T, kind, input string, args ...string) map[string
 
 // A served session and a one-shot pay for their start the way a chat does,
 // and the record says what each paid for: the configuration and the store
-// for both, and for the served session its server's connect and the
-// language-server lookup as well. A one-shot connects no servers and looks
+// for both, and for the served session the checkout's reading, its server's
+// connect and the language-server lookup as well. A one-shot connects no servers and looks
 // for no language servers, so it has no row for either.
 func TestStartup_ServeAndCmdWriteTheirPhases(t *testing.T) {
 	t.Run("serve", func(t *testing.T) {
 		got := startupSurface(t, "serve", `{"jsonrpc":"2.0","id":1,"method":"session/start","params":{}}`+"\n", "serve", "--stdio")
-		for _, phase := range []string{observe.PhaseConfig, observe.PhaseStore, observe.PhaseMCP, observe.PhaseLSP} {
+		for _, phase := range []string{observe.PhaseConfig, observe.PhaseStore, observe.PhaseCheckout, observe.PhaseMCP, observe.PhaseLSP} {
 			if got[phase] != 1 {
 				t.Errorf("%s: %d rows, want 1 (all: %v)", phase, got[phase], got)
 			}
