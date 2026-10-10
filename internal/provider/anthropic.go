@@ -261,18 +261,7 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 			return
 		}
 
-		// InputTokens here counts only what was read fresh — this dialect
-		// reports the cached parts beside it rather than inside it. Usage
-		// promises a prompt count that already contains them, so the sum is
-		// made here and not left to every reader of the ledger.
-		cached := int(accumulated.Usage.CacheReadInputTokens)
-		created := int(accumulated.Usage.CacheCreationInputTokens)
-		usage := &Usage{
-			PromptTokens:        int(accumulated.Usage.InputTokens) + cached + created,
-			CompletionTokens:    int(accumulated.Usage.OutputTokens),
-			CachedTokens:        cached,
-			CacheCreationTokens: created,
-		}
+		usage := anthropicUsage(accumulated.Usage)
 
 		stop := anthropicStop(accumulated.StopReason)
 		calls := anthropicToolCalls(accumulated)
@@ -292,6 +281,40 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 	}()
 
 	return ch, nil
+}
+
+// anthropicUsage is the round's usage in Usage's terms. InputTokens here
+// counts only what was read fresh — this dialect reports the cached parts
+// beside it rather than inside it. Usage promises a prompt count that already
+// contains them, so the sum is made here and not left to every reader of the
+// ledger.
+//
+// The write's split by lifetime arrives with the message's opening and is
+// never revised by the deltas after it, so it is read off the accumulated
+// message as it stands. Which fields were present is read off the decoder's
+// own record of the body, because a zero the provider sent and a field it
+// left out are different answers about the cache.
+func anthropicUsage(u anthropic.Usage) *Usage {
+	cached := int(u.CacheReadInputTokens)
+	created := int(u.CacheCreationInputTokens)
+	usage := &Usage{
+		PromptTokens:        int(u.InputTokens) + cached + created,
+		CompletionTokens:    int(u.OutputTokens),
+		CachedTokens:        cached,
+		CacheCreationTokens: created,
+		CacheCreation5m:     int(u.CacheCreation.Ephemeral5mInputTokens),
+		CacheCreation1h:     int(u.CacheCreation.Ephemeral1hInputTokens),
+	}
+	if u.JSON.CacheReadInputTokens.Valid() || cached > 0 {
+		usage.Reports |= FieldCacheRead
+	}
+	if u.JSON.CacheCreationInputTokens.Valid() || created > 0 {
+		usage.Reports |= FieldCacheCreation
+	}
+	if u.JSON.CacheCreation.Valid() || usage.CacheCreation5m+usage.CacheCreation1h > 0 {
+		usage.Reports |= FieldCacheLease
+	}
+	return usage
 }
 
 // anthropicStop maps this dialect's stop reason onto shhh's closed set. The

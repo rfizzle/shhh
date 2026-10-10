@@ -95,7 +95,7 @@ func TestOpenAIResponses_StreamsText(t *testing.T) {
 	if len(calls) != 0 {
 		t.Fatalf("expected no tool calls, got %v", calls)
 	}
-	if usage == nil || usage.PromptTokens != 11 || usage.CompletionTokens != 3 || usage.CachedTokens != 7 {
+	if usage == nil || usage.PromptTokens != 11 || usage.CompletionTokens != 3 || usage.CachedTokens != 7 || usage.Reports != FieldCachedTokens {
 		t.Fatalf("unexpected usage: %+v", usage)
 	}
 }

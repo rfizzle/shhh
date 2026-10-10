@@ -114,6 +114,14 @@ func CacheTTLCycle() []CacheTTL {
 	return []CacheTTL{CacheTTL5m, CacheTTL1h}
 }
 
+// TakesCacheLease reports whether a request for model goes out with a lease
+// on its marks: a model the Messages API answers, named directly or through
+// a gateway that routes it there. A response that reports the lease it wrote
+// says the same thing more surely, and the reading takes that too.
+func TakesCacheLease(model string) bool {
+	return anthropicRouted(model) || strings.HasPrefix(strings.ToLower(strings.TrimSpace(model)), "claude-")
+}
+
 // cacheTTLOrDefault is the lifetime to go out with, given whatever the
 // session was configured with. Nothing it cannot read reaches the wire: an
 // unset value is the default, and so is a value that is neither lifetime,

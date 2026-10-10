@@ -141,6 +141,75 @@ type Usage struct {
 	// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
 	CachedTokens        int
 	CacheCreationTokens int
+	// CacheCreation5m and CacheCreation1h split CacheCreationTokens by the
+	// lifetime the provider says it wrote them for. Only the Messages API
+	// reports the split, and it is the one evidence that a request asking
+	// for an hour was honoured as an hour: a gateway that rewrites the mark
+	// to five minutes bills the dearer write for the shorter cache, and
+	// nothing else in the response says so. Zero everywhere else.
+	CacheCreation5m int
+	CacheCreation1h int
+	// Reports is the cache fields the response carried, whatever their
+	// values. A gateway that strips them answers with none, and that is a
+	// different fact from a cache that missed: one reports a zero, the other
+	// reports nothing at all.
+	Reports CacheFields
+}
+
+// CacheFields is a set of the cache fields a response can carry, named as
+// the wire names them. It is a set of bits rather than a list of strings so
+// that a Usage stays a value two readings can be compared by.
+type CacheFields uint8
+
+const (
+	// FieldCacheRead and FieldCacheCreation are the Messages API's read and
+	// write totals, which a gateway forwarding it may also send.
+	FieldCacheRead CacheFields = 1 << iota
+	FieldCacheCreation
+	// FieldCacheLease is the Messages API's per-lifetime breakdown of the
+	// write.
+	FieldCacheLease
+	// FieldCachedTokens is the OpenAI dialects' read, under the prompt's or
+	// the input's details.
+	FieldCachedTokens
+	// FieldCachedContent is Gemini's read.
+	FieldCachedContent
+)
+
+var cacheFieldNames = []struct {
+	field CacheFields
+	name  string
+}{
+	{FieldCacheRead, "cache_read_input_tokens"},
+	{FieldCacheCreation, "cache_creation_input_tokens"},
+	{FieldCacheLease, "cache_creation"},
+	{FieldCachedTokens, "cached_tokens"},
+	{FieldCachedContent, "cachedContentTokenCount"},
+}
+
+// Names is the set as the wire spells it, in a fixed order.
+func (f CacheFields) Names() []string {
+	var out []string
+	for _, n := range cacheFieldNames {
+		if f&n.field != 0 {
+			out = append(out, n.name)
+		}
+	}
+	return out
+}
+
+// CacheFieldsNamed is the set the names spell; a name it does not know is
+// passed over.
+func CacheFieldsNamed(names []string) CacheFields {
+	var f CacheFields
+	for _, name := range names {
+		for _, n := range cacheFieldNames {
+			if n.name == name {
+				f |= n.field
+			}
+		}
+	}
+	return f
 }
 
 type StreamEvent struct {

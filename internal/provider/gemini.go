@@ -58,6 +58,21 @@ func NewGemini(opts ResolveOpts) (*Gemini, error) {
 
 func (g *Gemini) Name() string { return "gemini" }
 
+// geminiUsage is a chunk's usage in Usage's terms. The cached count is left
+// out of the response when it is zero, so only a read says the field was
+// there.
+func geminiUsage(u *genai.GenerateContentResponseUsageMetadata) *Usage {
+	usage := &Usage{
+		PromptTokens:     int(u.PromptTokenCount),
+		CompletionTokens: int(u.CandidatesTokenCount),
+		CachedTokens:     int(u.CachedContentTokenCount),
+	}
+	if usage.CachedTokens > 0 {
+		usage.Reports = FieldCachedContent
+	}
+	return usage
+}
+
 func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts CompletionOpts) (<-chan StreamEvent, error) {
 	model := g.model
 	if opts.Model != "" {
@@ -115,11 +130,7 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 				continue
 			}
 			if resp.UsageMetadata != nil {
-				usage = &Usage{
-					PromptTokens:     int(resp.UsageMetadata.PromptTokenCount),
-					CompletionTokens: int(resp.UsageMetadata.CandidatesTokenCount),
-					CachedTokens:     int(resp.UsageMetadata.CachedContentTokenCount),
-				}
+				usage = geminiUsage(resp.UsageMetadata)
 			}
 			if len(resp.Candidates) > 0 {
 				candidate := resp.Candidates[0]

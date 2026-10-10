@@ -81,11 +81,23 @@ type responseOutputItem struct {
 }
 
 type responseUsage struct {
-	InputTokens        int `json:"input_tokens"`
-	OutputTokens       int `json:"output_tokens"`
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
+	// CachedTokens is a pointer because a read the response sent as zero
+	// and one it left out are different answers about the cache.
 	InputTokensDetails struct {
-		CachedTokens int `json:"cached_tokens"`
+		CachedTokens *int `json:"cached_tokens"`
 	} `json:"input_tokens_details"`
+}
+
+// usage is the response's usage in Usage's terms.
+func (u *responseUsage) usage() *Usage {
+	out := &Usage{PromptTokens: u.InputTokens, CompletionTokens: u.OutputTokens}
+	if c := u.InputTokensDetails.CachedTokens; c != nil {
+		out.CachedTokens = *c
+		out.Reports = FieldCachedTokens
+	}
+	return out
 }
 
 type responseIncomplete struct {
@@ -176,11 +188,7 @@ func streamResponses(body io.ReadCloser, classify func(error) error, watch *idle
 
 			case eventCompleted, eventIncomplete:
 				if ev.Response.Usage != nil {
-					usage = &Usage{
-						PromptTokens:     ev.Response.Usage.InputTokens,
-						CompletionTokens: ev.Response.Usage.OutputTokens,
-						CachedTokens:     ev.Response.Usage.InputTokensDetails.CachedTokens,
-					}
+					usage = ev.Response.Usage.usage()
 				}
 				calls := toolCallsFromOutput(ev.Response.Output)
 				if len(calls) == 0 {
