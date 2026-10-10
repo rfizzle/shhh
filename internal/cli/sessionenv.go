@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"sync"
@@ -46,9 +47,13 @@ type sessionEnv struct {
 	// It is here rather than at either of its readers because a conversation
 	// rebuilt by a compaction and a child spawned an hour in are describing
 	// the same tree, and two readings taken separately would be two answers.
-	workspace   func() string
-	messages    []provider.Message
-	stream      agent.StreamFunc
+	workspace func() string
+	messages  []provider.Message
+	stream    agent.StreamFunc
+	// keepAlive sends the refresh that keeps the prompt cache warm: the
+	// session's own request with the output capped at one token, billed to
+	// the agent, its answer discarded.
+	keepAlive   func(ctx context.Context, msgs []provider.Message) (provider.Usage, error)
 	switchModel func(string)
 	// model reads the session's model as it is now, which /model and a
 	// provider switch move; modelName is the one it opened on.
@@ -368,6 +373,42 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		return ev, cancel, nil
 	}
 
+	keepAlive := func(ctx context.Context, msgs []provider.Message) (provider.Usage, error) {
+		opts := compOpts
+		sessionMu.Lock()
+		opts.Model = currentModel
+		opts.Tools = currentTools
+		opts.Effort = currentEffort
+		active := p
+		sessionMu.Unlock()
+		// A thinking budget the one-token cap leaves no room for is dropped
+		// from the request, and a request that thinks differently reads none
+		// of the conversation's cache: the refresh would write it again at
+		// the dear rate. Adaptive thinking is sent as it was.
+		if caps := provider.CapabilitiesFor(opts.Model); opts.Effort.Fit(caps).On() && !caps.Adaptive && caps.Known {
+			return provider.Usage{}, errors.New("this model's thinking budget cannot be kept at one token")
+		}
+		opts.ToolChoice = provider.ToolChoiceNone
+		opts.MaxTokens = 1
+		opts.Tools = session.requestTools(opts.Tools)
+		msgs = session.vault.ScrubMessages(msgs)
+		events, err := ledger.For(active, meter.SourceAgent).StreamCompletion(ctx, msgs, opts)
+		if err != nil {
+			return provider.Usage{}, err
+		}
+		var usage provider.Usage
+		var failed error
+		for ev := range events {
+			if ev.Usage != nil {
+				usage = *ev.Usage
+			}
+			if ev.Err != nil {
+				failed = ev.Err
+			}
+		}
+		return usage, failed
+	}
+
 	// The launch survey with its git half asked again, and whoever else is in
 	// the checkout asked again with it. Everything else it holds is the tree
 	// walk, which is the expensive question and the one that does not go
@@ -390,6 +431,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		projectTokens: projectTokens,
 		messages:      messages,
 		stream:        stream,
+		keepAlive:     keepAlive,
 		switchModel: func(name string) {
 			sessionMu.Lock()
 			currentModel = name

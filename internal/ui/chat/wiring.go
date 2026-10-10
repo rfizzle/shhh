@@ -170,6 +170,12 @@ type Wiring struct {
 	// IdleCompact is the three settings behind compacting while the person is
 	// away (idlecompact.go); the zero value is off.
 	IdleCompact IdleCompact
+	// KeepAliveMax is how many refreshes of the warm prefix one pause may
+	// send, and KeepAliveSend sends one: the conversation and a one-word turn
+	// to the provider, the usage read back, the answer discarded
+	// (keepalive.go). Zero, or no sender, is off.
+	KeepAliveMax  int
+	KeepAliveSend func(ctx context.Context, msgs []provider.Message) (provider.Usage, error)
 	// ProgressCalls and ProgressElapsed are the two public-status clocks;
 	// zero keeps each one's default.
 	ProgressCalls   int

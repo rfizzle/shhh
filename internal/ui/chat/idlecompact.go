@@ -43,6 +43,11 @@ type idleCompactMsg struct{ gen int }
 type idleState struct {
 	gen int
 	own bool
+	// refreshed is how many refreshes this pause has sent, and cold whether
+	// one found the cache gone or failed; both start over at the next close
+	// (keepalive.go).
+	refreshed int
+	cold      bool
 }
 
 // idleCompactCmd is derived from the model before against the model after,
@@ -56,11 +61,12 @@ func (m *Model) idleCompactCmd(prev Model) tea.Cmd {
 		return nil
 	}
 	m.idle.gen++
+	m.idle.refreshed, m.idle.cold = 0, false
 	if m.idle.own {
 		m.idle.own = false
 		return nil
 	}
-	if !m.wiring.IdleCompact.On {
+	if !m.wiring.IdleCompact.On && m.wiring.KeepAliveMax <= 0 {
 		return nil
 	}
 	wait, ok := m.idleNextFire(clock())
@@ -122,8 +128,20 @@ func (m Model) idleFireAt(r meter.CacheReading) (time.Time, bool) {
 // says whether the session should fold now. Nothing it reads was decided when
 // the tick was scheduled.
 func (m Model) idleCompactDue(now time.Time) bool {
+	if !m.wiring.IdleCompact.On || !m.idleWindowOpen(now) {
+		return false
+	}
+	// Under the floor a fold gives back too little to pay for what it loses.
+	return m.contextPercent() > m.wiring.IdleCompact.Floor
+}
+
+// idleWindowOpen is the part of the rule that is about the moment and not
+// about what is done in it, shared by whatever acts in the window before the
+// cache expires: there is a conversation, the cache works and is ahead of its
+// expiry, and nobody is here.
+func (m Model) idleWindowOpen(now time.Time) bool {
 	w := m.wiring.IdleCompact
-	if !w.On || m.agent == nil || len(m.agent.Messages()) <= 1 {
+	if m.agent == nil || len(m.agent.Messages()) <= 1 {
 		return false
 	}
 	// The cache is worth the trouble only where it works, and only until it
@@ -134,10 +152,6 @@ func (m Model) idleCompactDue(now time.Time) bool {
 	}
 	at, ok := m.idleFireAt(r)
 	if !ok || now.Add(idleSlack).Before(at) || !now.Before(at.Add(w.Margin)) {
-		return false
-	}
-	// Under the floor a fold gives back too little to pay for what it loses.
-	if m.contextPercent() <= w.Floor {
 		return false
 	}
 	// Somebody is here, or something is under way: a turn, a compaction, a
@@ -152,11 +166,21 @@ func (m Model) idleCompactDue(now time.Time) bool {
 // fireIdleCompact answers the tick. A tick from an earlier generation is
 // somebody else's; one that fires into a rule that no longer holds does
 // nothing and is not retried, since the close of the next turn schedules the
-// next cycle.
+// next cycle. Where the fold is due it wins over a refresh: it makes the
+// next write small for good, and a refresh only puts the same write off. The
+// refresh is for the pause the fold declines, a window under its floor or a
+// fold that is off.
 func (m Model) fireIdleCompact(msg idleCompactMsg) (tea.Model, tea.Cmd) {
-	if msg.gen != m.idle.gen || !m.idleCompactDue(clock()) {
+	if msg.gen != m.idle.gen {
 		return m, nil
 	}
-	m.idle.own = true
-	return m.startCompactFor(true)
+	now := clock()
+	if m.idleCompactDue(now) {
+		m.idle.own = true
+		return m.startCompactFor(true)
+	}
+	if m.keepAliveDue(now) {
+		return m, m.keepAliveCmd(msg.gen)
+	}
+	return m, nil
 }

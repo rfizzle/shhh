@@ -850,6 +850,41 @@ what the other lease would have. The other figure is "about", priced by the
 published multipliers rather than anything billed. The model is told none of
 this.
 
+## A bounded refresh keeps the cache warm
+
+A request that reads the whole prefix and asks for one token costs a tenth of
+writing the prefix again and moves the expiry an hour on, so for a long
+pause a few of them cost less than the write they put off, and lose
+nothing the way a compaction does. They are also requests nobody asked for,
+sent with nobody there, so they are off until the person sets
+`behavior.cache_keep_alive_max` to the number one pause may send (three
+covers a four-hour absence), and the setting is taken at the next turn.
+
+The refresh goes only to Anthropic's own endpoint, or to a gateway whose
+cache reading is `works` on a Claude model, and only on the hour's lease: on a
+five-minute lease it would be thirteen requests an hour. A gateway cannot
+confirm the lease it honoured, so there the configured lease stands in for
+it, unless the cache has been seen written for five minutes. If the guess is
+wrong the first refresh finds the cache gone and writes the whole prefix at
+the dear rate, once, and the run ends there; on a gateway each refresh is also
+a logged, rate-limited request. It fires at the point
+an idle compaction would, the lifetime less the margin, with the same
+conditions: nobody typing, no turn, no screen of anybody else's. Where the
+compaction is due it wins, because it makes the next write small for good and
+the refresh only puts the same write off; the refresh is for the pause the
+compaction declines, a window under its floor or compacting switched off. A
+refresh that reads nothing found the cache already gone, so it ends the run
+and the receipt says what that paid; so does a refresh that fails, and a
+model whose thinking budget the one-token cap would change, since a request
+that thinks differently reads none of the conversation. The count starts
+over at the next turn.
+
+The request is the conversation as it stands with one fixed word after it,
+capped at one token, billed to the agent with the rest of the session, and
+the answer is not read. The word and the answer never join the conversation,
+are never shown as a turn, and no hook sees them. The model is told nothing.
+Each refresh leaves one receipt, `kept the cache warm · 100k read · $0.03`.
+
 ## Failures are classified before they are surfaced
 
 Every provider error is mapped into a closed set — unauthorised, rate limited,

@@ -210,6 +210,9 @@ func (m *Model) takeSettings(from, to Wiring) {
 	if to.IdleCompact != from.IdleCompact {
 		m.wiring.IdleCompact = to.IdleCompact
 	}
+	if to.KeepAliveMax != from.KeepAliveMax {
+		m.wiring.KeepAliveMax = to.KeepAliveMax
+	}
 	if to.Suggestions != from.Suggestions {
 		m.suggest.on = to.Suggestions
 	}

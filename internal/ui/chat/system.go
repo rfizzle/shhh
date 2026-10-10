@@ -168,6 +168,12 @@ func (m Model) updateSystem(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		next, cmd := m.fireIdleCompact(msg)
 		return next, cmd, true
 
+	case keepAliveMsg:
+		// A refresh's answer: the receipt, and the next one's tick
+		// (keepalive.go).
+		next, cmd := m.finishKeepAlive(msg)
+		return next, cmd, true
+
 	case progressClearedMsg:
 		// The tab's red has been up long enough (terminal.go). A stale tick —
 		// another turn has started or broken since — matches nothing and

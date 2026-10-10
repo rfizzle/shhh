@@ -751,6 +751,11 @@ type BehaviorConfig struct {
 	// (IdleCompactMargin, IdleCompactFloor).
 	CompactWhenIdleMarginMinutes int `toml:"compact_when_idle_margin_minutes"`
 	CompactWhenIdleFloorPercent  int `toml:"compact_when_idle_floor_percent"`
+	// CacheKeepAliveMax bounds the refreshes a session may send in one pause
+	// to keep the prompt cache warm: a request nobody asked for, so zero, the
+	// default, sends none
+	// (docs/capabilities/providers.md#a-bounded-refresh-keeps-the-cache-warm).
+	CacheKeepAliveMax int `toml:"cache_keep_alive_max"`
 	// ProviderRetries bounds how many times one stall — a rate limit, an
 	// overloaded provider, a connection that died before a token — is asked
 	// again before the failure stands. Unset keeps the built-in bound; zero

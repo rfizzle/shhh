@@ -74,6 +74,9 @@ var liveTakers = map[string]liveTaker{
 	"behavior.compact_when_idle_floor_percent": func(c config.Config, _ *sessionEnv, w *chat.Wiring) {
 		w.IdleCompact.Floor = c.IdleCompactFloor()
 	},
+	"behavior.cache_keep_alive_max": func(c config.Config, _ *sessionEnv, w *chat.Wiring) {
+		w.KeepAliveMax = max(c.Behavior.CacheKeepAliveMax, 0)
+	},
 	"behavior.suggestions": func(c config.Config, _ *sessionEnv, w *chat.Wiring) {
 		w.Suggestions = c.SuggestionsEnabled()
 	},

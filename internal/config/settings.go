@@ -414,6 +414,9 @@ var settings = []Setting{
 		Key: "behavior.compact_when_idle_floor_percent", Kind: KindInt, Taken: AtTurn, Default: "30 percent", Literal: "30",
 		Desc: "The window occupancy below which an idle compaction never fires, because folding a small window saves too little to pay for what it loses.",
 	}, {
+		Key: "behavior.cache_keep_alive_max", Kind: KindInt, Taken: AtTurn, Default: "off", Literal: "0",
+		Desc: "How many one-word refreshes the session may send, per pause, to keep a one-hour Anthropic prompt cache warm when an idle compaction is off or the window is under its floor; each reads the whole prefix at a tenth of the price, and it stops at the first refresh that finds the cache gone. Zero sends none.",
+	}, {
 		Key: "behavior.provider_retries", Kind: KindInt, Taken: AtStart, Default: "3 attempts", Literal: "3",
 		Desc: "How many times one stall — a rate limit, an overloaded provider, a connection that died before a token — is asked again before the failure stands; zero is a machine that would rather see the failure than sit out a wait.",
 	}, {
