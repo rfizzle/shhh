@@ -94,7 +94,8 @@ func TestContextGridIsOneMeterCutIntoRows(t *testing.T) {
 		for i := range c.shares {
 			screen.Categories[i].Share = c.shares[i]
 		}
-		got := strings.Count(stripANSI(strings.Join(screen.gridRows(), "")), "▰")
+		grid := stripANSI(strings.Join(screen.gridRows(), ""))
+		got := len([]rune(grid)) - strings.Count(grid, "▱")
 		if got != c.filled {
 			t.Errorf("%s: filled %d cells, want %d", c.name, got, c.filled)
 		}
@@ -299,5 +300,52 @@ func TestContextKeysListSwapsInPlace(t *testing.T) {
 	}
 	if out := stripANSI(screen.View(130)); !strings.Contains(out, "hide the keys") {
 		t.Errorf("the open list does not offer the key that closes it:\n%s", out)
+	}
+}
+
+// TestContextScreen_CategoriesReadWithoutHue: with the colours stripped, every
+// category still has a cell of its own in the grid, and the legend row for it
+// leads with the same glyph.
+func TestContextScreen_CategoriesReadWithoutHue(t *testing.T) {
+	screen := goldenContextScreen()
+	seen := map[string]ContextTone{}
+	for _, tone := range []ContextTone{ContextPrompt, ContextProject, ContextTools, ContextMessages, ContextOutput, ContextFree} {
+		g := tone.glyph()
+		if other, dup := seen[g]; dup {
+			t.Errorf("tones %d and %d share the glyph %q", other, tone, g)
+		}
+		seen[g] = tone
+	}
+	grid := stripANSI(strings.Join(screen.gridRows(), ""))
+	legend := map[ContextTone]string{}
+	for _, cat := range screen.Categories {
+		row := stripANSI(screen.categoryRow(cat))
+		if !strings.HasPrefix(row, cat.Tone.glyph()+" "+cat.Label) {
+			t.Errorf("the %q legend row should lead with its grid glyph %q: %q", cat.Label, cat.Tone.glyph(), row)
+		}
+		legend[cat.Tone] = row
+		if !strings.Contains(grid, cat.Tone.glyph()) {
+			t.Errorf("the grid draws nothing in %q's glyph %q", cat.Label, cat.Tone.glyph())
+		}
+	}
+	if len(legend) != len(screen.Categories) {
+		t.Errorf("the legend names %d tones for %d categories", len(legend), len(screen.Categories))
+	}
+}
+
+// TestContextScreen_TheOccupancyNamesItsLevel: past the warn rung the
+// occupancy sentence says so in a word as well as in its colour.
+func TestContextScreen_TheOccupancyNamesItsLevel(t *testing.T) {
+	screen := goldenContextScreen()
+	if got := stripANSI(screen.occupancyRow()); strings.Contains(got, "high") || strings.Contains(got, "critical") {
+		t.Errorf("31%% is healthy and says nothing more: %q", got)
+	}
+	screen.Pct = 72
+	if got := stripANSI(screen.occupancyRow()); !strings.Contains(got, "72% full · high") {
+		t.Errorf("72%% is past the warn rung (60): %q", got)
+	}
+	screen.Pct = 91
+	if got := stripANSI(screen.occupancyRow()); !strings.Contains(got, "91% full · critical") {
+		t.Errorf("91%% is past the alert rung (80): %q", got)
 	}
 }

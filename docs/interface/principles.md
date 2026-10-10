@@ -21,6 +21,14 @@ states have become indistinguishable, the surface is wrong. It holds outside
 the TUI too — help output and error blocks label themselves in words for the
 same reason.
 
+Two surfaces that once leaned on hue hold it now. The context meter's number
+takes a word from the warn threshold up, `high` and then `critical`, so the
+rung is readable with the fill's colour stripped. The occupancy grid draws
+each category in a density of its own, from solid to faint, and the legend
+leads each row with the same glyph. A meter's in-flight cells wear the
+running triangle where the finished ones wear the block, and a planned delete
+says `delete` where an edit wears the pencil.
+
 Where a surface leads with severity, it says the severity three ways at once —
 the border, the title, and the word. That looks redundant and is the reason
 the surface survives contact with a terminal we did not anticipate.

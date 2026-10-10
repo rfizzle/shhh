@@ -221,7 +221,8 @@ func (c PressureCard) chip() string {
 	if c.Estimated {
 		tokens = "~" + tokens
 	}
-	return fmt.Sprintf("%d%% · %s / %s", min(max(c.Pct, 0), 100), tokens, formatTokens(c.Window))
+	pct := min(max(c.Pct, 0), 100)
+	return join(fmt.Sprintf("%d%% · %s / %s", pct, tokens, formatTokens(c.Window)), ctxLevel(pct, c.Warn, c.Alert))
 }
 
 // countField is the width the token counts are right-aligned in, measured

@@ -38,7 +38,10 @@ func TestMeterStatesItsValueBesideTheBar(t *testing.T) {
 		if !strings.HasPrefix(view, "ctx ▰") && !strings.HasPrefix(view, "ctx ▱") {
 			t.Fatalf("the label leads the bar at %d%%: %q", pct, view)
 		}
-		if !strings.HasSuffix(view, strconv.Itoa(pct)+"%") {
+		// The pressure tone adds its level word past the warn rung; the number
+		// still leads it.
+		bare := strings.TrimSuffix(strings.TrimSuffix(view, " critical"), " high")
+		if !strings.HasSuffix(bare, strconv.Itoa(pct)+"%") {
 			t.Fatalf("a bar never carries its value alone, %d%% rendered %q", pct, view)
 		}
 	}
@@ -259,5 +262,43 @@ func TestSpinnerNamesWhatIsRunning(t *testing.T) {
 	}
 	if m.Spinner.FPS != SpinnerInterval || SpinnerInterval != 80*time.Millisecond {
 		t.Fatalf("the cadence is 80ms a frame, got %s", m.Spinner.FPS)
+	}
+}
+
+// TestMeters_TheContextLevelReadsWithoutHue strips every colour and reads the
+// three rungs: the number is bare below the warn threshold, and a word stands
+// beside it from there.
+func TestMeters_TheContextLevelReadsWithoutHue(t *testing.T) {
+	for _, c := range []struct {
+		pct  int
+		want string
+	}{{40, "ctx 40% ▰▰▰▱▱▱▱▱"}, {62, "ctx 62% high ▰▰▰▰▱▱▱▱"}, {95, "ctx 95% critical ▰▰▰▰▰▰▰▱"}} {
+		got := stripANSI(CtxMeter("", c.pct, 60, 80))
+		if got != c.want {
+			t.Errorf("at %d%% the vitals meter reads %q, want %q", c.pct, got, c.want)
+		}
+	}
+	// The default thresholds draw the same words at 70 and 90.
+	for pct, want := range map[int]string{69: "", 70: "high", 89: "high", 90: "critical"} {
+		if got := ctxLevel(pct, 0, 0); got != want {
+			t.Errorf("the default ladder at %d%% says %q, want %q", pct, got, want)
+		}
+	}
+}
+
+// TestMeters_InFlightReadsWithoutHue: the cells of the step in flight are a
+// glyph of their own, so a progress bar with the colours stripped still shows
+// which part is done and which is moving.
+func TestMeters_InFlightReadsWithoutHue(t *testing.T) {
+	m, ok := stepMeter(3, 5, 10, true)
+	if !ok {
+		t.Fatal("a declared total draws a meter")
+	}
+	if got := stripANSI(m.bar()); got != "▰▰▰▰▸▸▱▱▱▱" {
+		t.Errorf("a running step's bar reads %q, want finished cells then in-flight ones", got)
+	}
+	still, _ := stepMeter(3, 5, 10, false)
+	if got := stripANSI(still.bar()); strings.Contains(got, "▸") {
+		t.Errorf("a step that is not running has no in-flight cell: %q", got)
 	}
 }

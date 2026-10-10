@@ -232,18 +232,22 @@ func (s PlannedStep) mark() string {
 	if !s.Writes {
 		return sty.dim.Render(s.Does)
 	}
-	tone := sty.accent
+	// A delete says "delete" and not the pencil: the word is the whole of the
+	// difference between a step that rewrites a file and one that removes it,
+	// and it survives with the red stripped
+	// (docs/interface/principles.md#colour-never-carries-meaning-alone).
+	tone, mark := sty.accent, "✎"
 	if s.Delete {
-		tone = sty.del
+		tone, mark = sty.del, "delete"
 	}
 	file := s.File
 	if s.More > 0 {
 		file += fmt.Sprintf(" +%d", s.More)
 	}
 	if file == "" {
-		return tone.Render("✎")
+		return tone.Render(mark)
 	}
-	return tone.Render("✎") + sty.dim.Render(" "+file)
+	return tone.Render(mark) + sty.dim.Render(" "+file)
 }
 
 // PlanTick is a step of an approved plan the run finished, as the flat line

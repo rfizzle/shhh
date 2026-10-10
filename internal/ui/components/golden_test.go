@@ -1674,7 +1674,7 @@ func TestGolden_PlannedCard(t *testing.T) {
 		open.Open, low.Low = true, true
 		return []golden.Panel{
 			{Label: "a plan of seven mid-run · the rows around the step in flight, the rest counted", View: seven.View(width)},
-			{Label: "a plan of four · every step, one failed, a delete in del", View: four.View(width)},
+			{Label: "a plan of four · every step, one failed, a delete says delete, in del", View: four.View(width)},
 			{Label: "opened · every step of the seven", View: open.View(width)},
 			{Label: "at low · the header alone on one inset band row", View: low.View(width)},
 			{Label: "a step ticked · the flat line under its card", View: PlanTick{Number: 3, Of: 7,

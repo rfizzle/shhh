@@ -122,6 +122,28 @@ func (t ContextTone) style() lipgloss.Style {
 	}
 }
 
+// glyph is the cell a category is drawn in: a density of its own, so the grid
+// is told apart by shape when every tint collapses into two shades. Free
+// space keeps the empty cell every meter's track uses, and the five used
+// categories run from the solid cell down to the faintest, in legend order.
+// See docs/interface/principles.md#colour-never-carries-meaning-alone.
+func (t ContextTone) glyph() string {
+	switch t {
+	case ContextProject:
+		return "▓"
+	case ContextTools:
+		return "▒"
+	case ContextMessages:
+		return "▰"
+	case ContextOutput:
+		return "░"
+	case ContextFree:
+		return "▱"
+	default:
+		return "█"
+	}
+}
+
 // ContextCategory is one row of the legend: a share of the window, already
 // formatted, and the run of cells in the grid that is the same share drawn.
 type ContextCategory struct {
@@ -435,11 +457,7 @@ func paintRun(cells []ContextTone) string {
 		for j < len(cells) && cells[j] == cells[i] {
 			j++
 		}
-		glyph := "▰"
-		if cells[i] == ContextFree {
-			glyph = "▱"
-		}
-		b.WriteString(cells[i].style().Render(strings.Repeat(glyph, j-i)))
+		b.WriteString(cells[i].style().Render(strings.Repeat(cells[i].glyph(), j-i)))
 		i = j
 	}
 	return b.String()
@@ -482,6 +500,9 @@ func (c *ContextScreen) legendRows() []string {
 func (c *ContextScreen) occupancyRow() string {
 	row := sty.body.Render(c.Tokens) + sty.dim.Render(" of "+c.Window+" · ")
 	row += c.pctStyle().Render(fmt.Sprintf("%d%%", min(max(c.Pct, 0), 100))) + sty.dim.Render(" full")
+	if level := ctxLevel(c.Pct, c.Warn, c.Alert); level != "" {
+		row += sty.dim.Render(" · ") + c.pctStyle().Render(level)
+	}
 	if c.Source != "" {
 		row += sty.dim.Render(" · " + c.Source)
 	}
@@ -503,14 +524,11 @@ func (c *ContextScreen) cacheRow() string {
 // and the two right-aligned numbers. The swatch and the label carry the same
 // tone, which is the pairing invariant 1 asks for — the colour in the grid is
 // never the only thing saying which category a run belongs to, because the
-// word is right here in the same colour.
+// swatch is the same glyph the grid draws the run in, and the word is right
+// beside it.
 func (c *ContextScreen) categoryRow(cat ContextCategory) string {
-	glyph := "▰"
-	if cat.Tone == ContextFree {
-		glyph = "▱"
-	}
 	style := cat.Tone.style()
-	return style.Render(glyph+" ") +
+	return style.Render(cat.Tone.glyph()+" ") +
 		style.Render(padRight(cat.Label, contextLabelWidth)) +
 		style.Render(padLeft(cat.Tokens, contextTokensWidth)) +
 		sty.dim.Render(padLeft(cat.Pct, contextPctWidth))

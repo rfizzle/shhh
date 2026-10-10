@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · 94% · a plan and a changeset to keep
-╭─ Context is nearly full ───────────── 94% · 188k / 200k ─╮
+╭─ Context is nearly full ──── 94% · 188k / 200k critical ─╮
 │ ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱                                   │
 │                                                          │
 │ 88k  tool output — 6 results                             │
@@ -32,7 +32,7 @@
 ╰──────────────────────────────────────────────────────────╯
 
 · an estimated total · nothing to keep but the turns
-╭─ Context is nearly full ──────────── 94% · ~188k / 200k ─╮
+╭─ Context is nearly full ─── 94% · ~188k / 200k critical ─╮
 │ ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱                                   │
 │                                                          │
 │ 88k  tool output — 6 results                             │
@@ -53,7 +53,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · 94% · a plan and a changeset to keep
-␛[1;38;5;254m╭─ ␛[m␛[1;38;5;254mContext is nearly full ␛[m␛[1;38;5;254m───────────── 94% · 188k / 200k ─╮␛[m
+␛[1;38;5;254m╭─ ␛[m␛[1;38;5;254mContext is nearly full ␛[m␛[1;38;5;254m──── 94% · 188k / 200k critical ─╮␛[m
 ␛[1;38;5;254m│␛[m ␛[1;38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱␛[m                                   ␛[1;38;5;254m│␛[m
 ␛[1;38;5;254m│␛[m                                                          ␛[1;38;5;254m│␛[m
 ␛[1;38;5;254m│␛[m ␛[38;5;244m88k␛[m  ␛[38;5;254mtool output␛[m␛[38;5;244m — 6 results␛[m                             ␛[1;38;5;254m│␛[m
@@ -74,7 +74,7 @@
 ␛[1;38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · an estimated total · nothing to keep but the turns
-␛[1;38;5;254m╭─ ␛[m␛[1;38;5;254mContext is nearly full ␛[m␛[1;38;5;254m──────────── 94% · ~188k / 200k ─╮␛[m
+␛[1;38;5;254m╭─ ␛[m␛[1;38;5;254mContext is nearly full ␛[m␛[1;38;5;254m─── 94% · ~188k / 200k critical ─╮␛[m
 ␛[1;38;5;254m│␛[m ␛[1;38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱␛[m                                   ␛[1;38;5;254m│␛[m
 ␛[1;38;5;254m│␛[m                                                          ␛[1;38;5;254m│␛[m
 ␛[1;38;5;254m│␛[m ␛[38;5;244m88k␛[m  ␛[38;5;254mtool output␛[m␛[38;5;244m — 6 results␛[m                             ␛[1;38;5;254m│␛[m

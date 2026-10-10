@@ -45,7 +45,7 @@ func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
 		warn: c.WarnPct, alert: c.AlertPct}
 	style := meter.style()
 	b := railBlock{heading: railHeading("CONTEXT",
-		style.Render(fmt.Sprintf("%d%% of %s", pct, formatTokens(c.Window))), style, width)}
+		style.Render(join(fmt.Sprintf("%d%% of %s", pct, formatTokens(c.Window)), ctxLevel(pct, c.WarnPct, c.AlertPct))), style, width)}
 	count := formatTokens(c.Tokens)
 	if c.Estimated {
 		count = "~" + count

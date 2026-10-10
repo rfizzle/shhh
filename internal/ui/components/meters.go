@@ -230,8 +230,11 @@ func (m Meter) bar() string {
 	}
 	// The only two-colour fill: the run in flight is motion, and motion is
 	// never the same colour as what is already done.
+	// It is also a glyph of its own: `▸` is what a running step wears in every
+	// list, so the cells in flight differ from the finished ones by shape and
+	// not by hue alone.
 	spin := min(max(m.running, 0), filled)
-	return meterRun(sty.add, "▰", filled-spin) + meterRun(sty.spinText, "▰", spin) + track
+	return meterRun(sty.add, "▰", filled-spin) + meterRun(sty.spinText, "▸", spin) + track
 }
 
 func (m Meter) cells() int {
@@ -246,10 +249,14 @@ func (m Meter) pct() int { return min(max(m.pctValue, 0), 100) }
 // text is what the meter states beside its bar — the host's own count, or the
 // percent when it gave none.
 func (m Meter) text() string {
-	if m.Text != "" {
-		return m.Text
+	text := m.Text
+	if text == "" {
+		text = fmt.Sprintf("%d%%", m.pct())
 	}
-	return fmt.Sprintf("%d%%", m.pct())
+	if m.tone == meterPressure {
+		return join(text, ctxLevel(m.pct(), m.warn, m.alert))
+	}
+	return text
 }
 
 // join spaces the present fields of a meter row.
@@ -303,6 +310,28 @@ func ctxStyle(pct, warn, alert int) lipgloss.Style {
 		return sty.accent
 	default:
 		return sty.add
+	}
+}
+
+// ctxLevel is the word beside a context number once the window is worth
+// acting on: "high" from the warn threshold, "critical" from the alert one,
+// and nothing below. The fill and the number change colour at the same two
+// thresholds, so a reader without the hue still learns which rung they are on
+// (docs/interface/principles.md#colour-never-carries-meaning-alone).
+func ctxLevel(pct, warn, alert int) string {
+	if warn <= 0 {
+		warn = ctxWarnPct
+	}
+	if alert <= 0 {
+		alert = ctxAlertPct
+	}
+	switch {
+	case pct >= alert:
+		return "critical"
+	case pct >= warn:
+		return "high"
+	default:
+		return ""
 	}
 }
 

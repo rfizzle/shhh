@@ -22,14 +22,14 @@
          … 3 more, none of them write
 
 
-· a plan of four · every step, one failed, a delete in del
+· a plan of four · every step, one failed, a delete says delete, in del
 
   ▸ planned 4 steps · 3 files                     partly reversible · 3 writes
     make the round limit recoverable
     ✓ 1  Locate the round accounting                                 read only
     ✗ 2  Add a RoundsExhausted sentinel                            ✎ errors.go
     · 3  Return it from runRound                                  ✎ loop.go +1
-    · 4  Drop the old round shim                                     ✎ shim.go
+    · 4  Drop the old round shim                                delete shim.go
 
 
 · opened · every step of the seven
@@ -68,14 +68,14 @@
          ␛[38;5;244m… 3 more, none of them write␛[m
 
 
-· a plan of four · every step, one failed, a delete in del
+· a plan of four · every step, one failed, a delete says delete, in del
 
   ␛[38;5;244m▸␛[m ␛[38;5;254mplanned␛[m␛[38;5;244m 4 steps · 3 files␛[m                     ␛[38;5;254mpartly reversible␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 writes␛[m
     ␛[38;5;254mmake the round limit recoverable␛[m
     ␛[38;5;254m✓␛[m ␛[38;5;244m1  ␛[m␛[38;5;254mLocate the round accounting␛[m                                 ␛[38;5;244mread only␛[m
     ␛[38;5;254m✗␛[m ␛[38;5;244m2  ␛[m␛[38;5;254mAdd a RoundsExhausted sentinel␛[m                            ␛[38;5;254m✎␛[m␛[38;5;244m errors.go␛[m
     ␛[38;5;244m·␛[m ␛[38;5;244m3  ␛[m␛[38;5;244mReturn it from runRound␛[m                                  ␛[38;5;254m✎␛[m␛[38;5;244m loop.go +1␛[m
-    ␛[38;5;244m·␛[m ␛[38;5;244m4  ␛[m␛[38;5;244mDrop the old round shim␛[m                                     ␛[38;5;254m✎␛[m␛[38;5;244m shim.go␛[m
+    ␛[38;5;244m·␛[m ␛[38;5;244m4  ␛[m␛[38;5;244mDrop the old round shim␛[m                                ␛[38;5;254mdelete␛[m␛[38;5;244m shim.go␛[m
 
 
 · opened · every step of the seven
