@@ -31,6 +31,8 @@ func sandboxContainment() Containment {
 		Mechanism: "container sandbox",
 		Profile:   "workspace-netless",
 		GitStore:  "read-only git hooks and config",
+		Engine:    "docker",
+		Image:     "sha256:ab12cd34ef56…",
 		Detail:    "docker (rootless) at /usr/bin/docker · image ghcr.io/rfizzle/shhh-sandbox@sha256:0123456789ab…",
 		Writers:   "a writer's commands: " + sandboxWriterCommands + " — " + sandboxWriterDetail,
 		Toolchain: Toolchain{
@@ -91,4 +93,73 @@ func TestGolden_SandboxWriterSpawnCard(t *testing.T) {
 			{Label: "one writer · its commands in a container of its own", View: view},
 		}
 	})
+}
+
+// TestGolden_SandboxIndicator captures the indicator a sandbox session wears
+// where the reader always looks: the chip that ends the title rail, which
+// keeps its word after the rail has shed the model's, and the start screen's
+// row between the gate and the tools. Both are read from the containment in
+// force.
+func TestGolden_SandboxIndicator(t *testing.T) {
+	captureGolden(t, "sandbox-indicator", "the title rail and the start screen in a sandbox session", goldenWidths, func(width int) []golden.Panel {
+		m := frameModelWith(t, width, 40, Wiring{Containment: sandboxContainment(), Title: "shhh code"})
+		m.modelName = "scripted-model"
+		m.start = new(startFixture())
+		return []golden.Panel{
+			{Label: "the title rail · the chip is a word with a glyph, and the last to go", View: m.headerRow(width)},
+			{Label: "the start screen · the sandbox row between the gate and the tools", View: m.renderHistory()},
+		}
+	})
+}
+
+// TestSandboxIndicator_ReadsTheContainmentInForce holds that the chip and the
+// row are drawn from the containment the host filled in and from nothing
+// else: an unconfined session, and a session whose container was never made,
+// draw neither; the network reads as it is; and the rail sheds the model's
+// words before the chip.
+func TestSandboxIndicator_ReadsTheContainmentInForce(t *testing.T) {
+	m := frameModelWith(t, 120, 40, Wiring{Containment: sandboxContainment(), Title: "shhh code"})
+	m.modelName = "scripted-model"
+	m.start = new(startFixture())
+	if row := stripANSI(m.headerRow(120)); !strings.HasSuffix(row, "· "+sandboxChip) {
+		t.Errorf("rail = %q, want it to end in the chip", row)
+	}
+	note, ok := m.sandboxNote()
+	if want := "container · workspace-netless · no network · docker, image sha256:ab12cd34ef56…"; !ok || note.Value != want {
+		t.Errorf("row = %q (%v), want %q", note.Value, ok, want)
+	}
+	for _, width := range []int{80, 60, 40} {
+		row := stripANSI(m.headerRow(width))
+		if !strings.Contains(row, sandboxChip) {
+			t.Errorf("width %d: rail %q lost the chip", width, row)
+		}
+	}
+	if row := stripANSI(m.headerRow(30)); strings.Contains(row, "scripted-model") {
+		t.Errorf("rail %q kept the model ahead of the chip", row)
+	}
+
+	open := sandboxContainment()
+	open.Network = true
+	opened := frameModelWith(t, 120, 40, Wiring{Containment: open})
+	if note, _ := opened.sandboxNote(); !strings.Contains(note.Value, "network open") {
+		t.Errorf("row = %q, want the open network said", note.Value)
+	}
+
+	for name, c := range map[string]Containment{
+		"unconfined":     {Status: "unconfined — no engine", Detail: "no engine"},
+		"never made":     {Status: "contained: container sandbox (workspace-netless profile)", Profile: "workspace-netless"},
+		"another wall":   {Status: "contained: landlock", Mechanism: "landlock", Profile: "workspace-netless"},
+		"nothing wired":  {},
+		"engine, no box": {Engine: "docker", Image: "sha256:ab12cd34ef56…"},
+	} {
+		other := frameModelWith(t, 120, 40, Wiring{Containment: c, Title: "shhh code"})
+		other.modelName = "scripted-model"
+		other.start = new(startFixture())
+		if _, ok := other.sandboxNote(); ok {
+			t.Errorf("%s: drew the sandbox row", name)
+		}
+		if strings.Contains(stripANSI(other.headerRow(120)), "sandbox") {
+			t.Errorf("%s: drew the chip", name)
+		}
+	}
 }

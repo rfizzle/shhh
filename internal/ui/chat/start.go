@@ -298,6 +298,7 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 	if note, ok := m.toolchainNote(); ok {
 		notes = append(notes, note)
 	}
+	notes = m.withSandboxNote(notes)
 	return components.StartScreen{
 		Facts:       startFacts(info.Project),
 		Notes:       notes,
@@ -342,6 +343,23 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 			components.OfferAs(keys.Draft.Mouse, "mouse on/off"),
 		},
 	}, actions
+}
+
+// withSandboxNote puts the sandbox row after the gate and before the tools
+// line, where the session's other containment facts sit; a session not in a
+// sandbox gets the notes back unchanged.
+func (m Model) withSandboxNote(notes []components.StartNote) []components.StartNote {
+	row, ok := m.sandboxNote()
+	if !ok {
+		return notes
+	}
+	at := len(notes)
+	for i, n := range notes {
+		if n.Label == "gate" {
+			at = i + 1
+		}
+	}
+	return slices.Insert(notes, at, row)
 }
 
 // startFirstRun is the block a machine's first session opens with: how to

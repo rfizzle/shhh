@@ -1,5 +1,11 @@
 package chat
 
+import (
+	"strings"
+
+	"github.com/rfizzle/shhh/internal/ui/components"
+)
+
 // ContainerSandbox is the Mechanism of a sandbox session, whose commands run
 // in a disposable container. The host that fills a Containment and the model
 // that reads one agree on this word, because it is also what decides whose
@@ -57,6 +63,14 @@ type Containment struct {
 	// and a reader deciding on a command is owed whether it can plant one.
 	// See docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only.
 	GitStore string
+	// Engine and Image are what the sandbox container runs on and from: the
+	// engine's name and the image's short digest, as the host read them from
+	// the container it made. They are set only where a container is in
+	// force, so the indicator on the title rail, the start screen's row and
+	// /status can never name an engine or an image nothing is running.
+	// See docs/capabilities/containment.md#what-is-reported-is-what-is-in-force.
+	Engine string
+	Image  string
 	// Required says the session was told to contain the assistant's
 	// commands rather than to prefer it, which is what the chip reports: a
 	// mechanism that is in force and a mechanism that had to be are
@@ -151,7 +165,66 @@ func (m Model) sessionContainmentStatus() string {
 		}
 		return "Containment\nunconfined — " + uncontainedDetail(m.containment.Detail)
 	}
-	return "Containment\n" + m.containmentWords(m.containment.Mechanism)
+	words := m.containmentWords(m.containment.Mechanism)
+	if m.inSandbox() {
+		// The container and the image it was made from, after the words a
+		// card's chip shares: a reader asking what is containing the work is
+		// owed which container.
+		if w := m.sandboxEngineWords(); w != "" {
+			words += " · " + w
+		}
+	}
+	return "Containment\n" + words
+}
+
+// sandboxChip is the word the title rail ends in while the session's commands
+// run in a container: a glyph and a word, so a terminal with no colour and a
+// reader who cannot tell the colours apart read the same fact.
+// See docs/interface/principles.md#colour-never-carries-meaning-alone.
+const sandboxChip = "⛨ sandbox"
+
+// inSandbox says the containment in force is a container sandbox. It reads
+// the mechanism the host filled in once a container was made, never the flag
+// that asked for one, so a session whose container could not be made cannot
+// draw the indicator.
+// See docs/capabilities/containment.md#what-is-reported-is-what-is-in-force.
+func (m Model) inSandbox() bool {
+	return m.containment.Mechanism == ContainerSandbox
+}
+
+// sandboxEngineWords is the engine and the image's short digest in one clause,
+// leaving out whichever the host did not name.
+func (m Model) sandboxEngineWords() string {
+	var parts []string
+	if m.containment.Engine != "" {
+		parts = append(parts, m.containment.Engine)
+	}
+	if m.containment.Image != "" {
+		parts = append(parts, "image "+m.containment.Image)
+	}
+	return strings.Join(parts, ", ")
+}
+
+// sandboxNote is the start screen's row for a session in a container: the
+// mechanism, the profile, whether the network is open, then the engine and
+// the image. It is false for a session not in one, which draws no row.
+func (m Model) sandboxNote() (components.StartNote, bool) {
+	if !m.inSandbox() {
+		return components.StartNote{}, false
+	}
+	net := "no network"
+	if m.containment.Network {
+		net = "network open"
+	}
+	parts := []string{"container"}
+	if m.containment.Profile != "" {
+		parts = append(parts, m.containment.Profile)
+	}
+	parts = append(parts, net)
+	if w := m.sandboxEngineWords(); w != "" {
+		parts = append(parts, w)
+	}
+	return components.StartNote{Label: "sandbox", Value: strings.Join(parts, " · ")}, true
 }
 
 // containmentWords is the mechanism and the profile in one clause, with the

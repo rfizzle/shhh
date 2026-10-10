@@ -1155,6 +1155,17 @@ opened. The header sheds them from the right as the terminal narrows, except
 the model, which goes last: a reader checking mid-session which model is
 answering looks up, not down.
 
+A session whose commands run in a sandbox container ends the header with one
+more chip, `⛨ sandbox`: a glyph and a word, so it reads the same with no
+colour at all
+([principles.md](principles.md#colour-never-carries-meaning-alone)). It is the
+last thing the header sheds, after the model's name, because a reader can ask
+which model is answering and cannot ask, mid-glance, whether their commands
+are running on this machine. It is drawn from the containment the session
+found in force, never from the flag that asked for one, so a session whose
+container could not be made does not wear it
+([containment.md](../capabilities/containment.md#what-is-reported-is-what-is-in-force)).
+
 The fields a rail may shed when it runs out of columns leave in one order:
 the round counter first, then the extras; attached, the child's name goes
 first. Context pressure, spend, blocked or failed state and the
@@ -3043,6 +3054,12 @@ Two things that govern what happens next are stated without being asked for:
 what was read into the system prompt, and which check suite is in effect. A
 suite that is not configured names the file it looked for; one that exists and
 will not load says so, because a broken gate is not an absent one.
+
+A session in a sandbox container gets one more row between the gate and the
+tools: `sandbox`, then `container`, the profile, whether the network is open,
+and the engine with the image's short digest. It reads the same containment
+the header's chip does, and a session not in a sandbox draws no row. `/status`
+names the same engine and image after its containment line.
 
 A trust row follows them only when there is something to say about the
 checkout's answer

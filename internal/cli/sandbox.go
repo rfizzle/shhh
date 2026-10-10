@@ -434,6 +434,8 @@ func sandboxContainment(ctx context.Context, cfg config.Config, workspace string
 		Network:   spec.Network,
 		Required:  cfg.Sandbox.Require,
 		GitStore:  c.GitStoreWords(),
+		Engine:    eng.Name,
+		Image:     imageDigestWords(spec.Image),
 		Detail:    joinDetail(eng.Detail, "image "+shortImage(spec.Image)),
 		Manage:    sandboxManage(cfg, sc, sup),
 		Writers:   writers.words.line(),

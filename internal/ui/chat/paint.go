@@ -167,6 +167,10 @@ func (m Model) headerRow(width int) string {
 type headerFact struct {
 	text  string
 	model bool
+	// chip is the sandbox indicator, the last fact to go: what the session
+	// runs in outranks the model's name, because a reader who has lost it
+	// can ask /model and cannot ask whether their commands are on this machine.
+	chip bool
 }
 
 // headerFacts is what the header states after the title, in reading order.
@@ -188,6 +192,9 @@ func (m Model) headerFacts() []headerFact {
 	}
 	if level := m.reasoningSegment(); level != "" {
 		facts = append(facts, headerFact{text: level})
+	}
+	if m.inSandbox() {
+		facts = append(facts, headerFact{text: sandboxChip, chip: true})
 	}
 	return facts
 }
@@ -236,15 +243,21 @@ func (m *Model) noteBranchSwitch(tool, args string) {
 	}
 }
 
-// shedHeaderFact drops the rightmost fact that is not the model, and the
-// model only once nothing else is left.
+// shedHeaderFact drops the rightmost fact that is neither the model nor the
+// sandbox chip; then the model, and the chip only once nothing else is left.
 func shedHeaderFact(facts []headerFact) []headerFact {
-	for i := len(facts) - 1; i >= 0; i-- {
-		if !facts[i].model {
-			return append(facts[:i:i], facts[i+1:]...)
+	for _, keep := range []func(headerFact) bool{
+		func(f headerFact) bool { return !f.model && !f.chip },
+		func(f headerFact) bool { return !f.chip },
+		func(headerFact) bool { return true },
+	} {
+		for i := len(facts) - 1; i >= 0; i-- {
+			if keep(facts[i]) {
+				return append(facts[:i:i], facts[i+1:]...)
+			}
 		}
 	}
-	return facts[:len(facts)-1]
+	return facts
 }
 
 // paneView is what the transcript pane's rows hold: whichever overlay takes

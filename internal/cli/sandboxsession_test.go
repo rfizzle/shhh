@@ -113,6 +113,9 @@ func TestSandboxContainmentValues(t *testing.T) {
 	if c.Mechanism != "container sandbox" || c.Profile != "workspace-netless" || c.Network || len(c.Hosts) != 0 {
 		t.Errorf("mechanism %q, profile %q, network %v, hosts %v", c.Mechanism, c.Profile, c.Network, c.Hosts)
 	}
+	if c.Engine != "docker" || c.Image != "sha256:aaaaaaaaaaaa…" {
+		t.Errorf("engine %q, image %q, want the engine and the image's short digest", c.Engine, c.Image)
+	}
 	if c.Wrap == nil {
 		t.Error("a sandbox session leaves a hook on the host")
 	}

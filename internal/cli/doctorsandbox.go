@@ -285,3 +285,15 @@ func shortImage(image string) string {
 	}
 	return name + "@sha256:" + digest[:12] + "…"
 }
+
+// imageDigestWords is an image's digest cut to its first twelve characters,
+// with the name left off: what the screen names a container's image by, since
+// the registry path is the config's to say and the digest is what was pinned.
+// An image with no digest is named whole.
+func imageDigestWords(image string) string {
+	_, digest, found := strings.Cut(image, "@sha256:")
+	if !found || len(digest) <= 12 {
+		return image
+	}
+	return "sha256:" + digest[:12] + "…"
+}
