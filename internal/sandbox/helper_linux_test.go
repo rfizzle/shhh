@@ -241,9 +241,19 @@ func TestHelperRecordsItsGroup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, err := readRecord("tok1")
-	if err != nil {
-		t.Fatalf("no record while the command runs: %v", err)
+	// The record is written once the child has started, and the child's
+	// first line can reach the pipe before the rename lands, so the read
+	// waits for it inside a bound rather than taking the first answer.
+	var r groupRecord
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if r, err = readRecord("tok1"); err == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("no record while the command runs: %v", err)
+		}
+		time.Sleep(20 * time.Millisecond)
 	}
 	if r.pgid != pid || r.start == "" || r.start != procStart(pid) {
 		t.Errorf("record = %+v, want group %d started at %s", r, pid, procStart(pid))
