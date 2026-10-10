@@ -4025,11 +4025,25 @@ func withTheme(t *testing.T, name string) {
 // file that draws the same token. Capturing the catalog twice would double
 // the review surface to restate one column.
 func TestGolden_LightTable(t *testing.T) {
+	captureTable(t, ThemeLight, "light-table", []int{60, 110},
+		"the light ground's column, on the surfaces that spend it")
+}
+
+// TestGolden_HighContrastTable is the same three surfaces through the
+// high-contrast table, at every width the set holds: the ramp on the rows, the
+// tints and verdicts on the diff, the border and keys on the card.
+func TestGolden_HighContrastTable(t *testing.T) {
+	captureTable(t, ThemeHighContrast, "high-contrast-table", goldenWidths,
+		"the high-contrast column, on the surfaces that spend it")
+}
+
+func captureTable(t *testing.T, theme, name string, widths []int, surface string) {
+	t.Helper()
 	withColorProfile(t, colorprofile.ANSI256)
-	withTheme(t, ThemeLight)
-	for _, width := range []int{60, 110} {
-		golden.Assert(t, widthName("light-table", width), golden.Case{
-			Surface: "the light ground's column, on the surfaces that spend it",
+	withTheme(t, theme)
+	for _, width := range widths {
+		golden.Assert(t, widthName(name, width), golden.Case{
+			Surface: surface,
 			Width:   width,
 			Panels: []golden.Panel{
 				{Label: "rows · the chrome greys, a failure, a denial and the reading cursor", View: strings.Join([]string{

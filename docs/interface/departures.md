@@ -28,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 26 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 27 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -207,6 +207,36 @@ the pairing is worth offering, and it is the one table where the five tokens
 that normally defer to the terminal's own theme do not: a named palette that
 handed its green back to whatever the user's config says would not be that
 palette.
+
+## A high-contrast table, for a reader who needs more light than the floor
+
+_Filed 2026-10-10 · closes by the binary_
+
+The design system's one palette clears 4.5:1 everywhere it writes text, which
+is the floor for most readers and not enough for a reader with low vision, who
+would otherwise turn the screen's brightness up or the colours off and lose
+what the colours say. A third table, `high-contrast`, is for that reader: the
+same jobs on a pure-black ground (`#000000`, 16, painted by default like the
+dark one and handed back by `/ui ground off`), every text token at 7:1 or more
+on the ground and on the band, the chrome greys included. Dim is `#a8a8a8`
+(248) at 8.83:1 on the ground and 7.17:1 on the band, Status `#b2b2b2` (249),
+Dimmer `#bcbcbc` (250), Subtle `#d0d0d0` (252), Body `#e4e4e4` (254) and
+Bright `#ffffff` (231); the signal inks are the pale rungs of their hues, so
+Del is `#ff8787` (210) and Info `#5fafff` (75), and none of the signal inks
+is under 7.35:1 on the band. The selected row's ground is `#5f00d7` (56): dark enough to carry
+Bright at 8.5:1, and 2.47:1 off black, so the lit row is found by light as
+well as by its bold.
+
+Three things were chosen against. The ramp is not flattened: a table that
+lifted every grey to white would pass the ratio and lose the hierarchy that
+tells chrome from content from the answer, so each rung is still further from
+the ground than the last and the order of the dark table holds. The tints are
+not told apart by hue alone: the addition's ground and the deletion's differ
+by 1.77:1 in light, and the lines drawn over them by 1.84:1, so a reader who
+cannot tell green from red still sees which is which. And the table is not an
+accessibility fix for the rest of the interface: the `+` and `-` gutter and
+the glyphs beside each state carry the meaning as they do on every table, and
+this one only makes the colour a second cue that is easier to read.
 
 ## The chrome greys clear 4.5:1, and CharmTone's do not
 

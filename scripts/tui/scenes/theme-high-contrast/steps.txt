@@ -1,0 +1,24 @@
+# program test: none — the table is held by TestPalette_HighContrastClearsAAA
+#   and TestPalette_HighContrastTintsDifferInLight, and drawn in the
+#   high-contrast-table and screen-high-contrast goldens
+#
+# The high-contrast theme under a live session. The launch line writes a
+# theme.toml naming the table, so the session opens on pure black with every
+# text token at 7:1 or more. A gated edit gives the approval card, then the
+# applied edit's row, and the transcript around them. What the capture is for:
+# the .txt is read against the goldens' layout blocks, and the picture for
+# what a layout cannot say: the ground is black rather than the terminal's
+# own, the chrome greys (hints, counts, the key legend) read plainly rather
+# than faintly, and the added and removed lines differ in light as well as in
+# colour. Driven at 110 by `make tui-shot SCENE=theme-high-contrast COLS=110`;
+# written here, not driven.
+setup printf 'package agent\n\nconst limit = 25\n\nfunc round(a *Agent) error {\n    if a.round >= limit {\n        return ErrRoundLimit\n    }\n    a.round++\n    return nil\n}\n' > loop.go
+setup printf 'The cap is read from one place.\n' > notes.md
+snap 01-start "Some things worth doing first"
+keys "raise the round cap" Enter
+snap 02-card "RoundsExhausted" "run it once"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+snap 03-applied "The cap is where the file says it is" "+1 −1"

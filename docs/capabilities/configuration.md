@@ -1279,7 +1279,7 @@ own file could hold.
 
 | Key | Takes | Default | A session takes it | What it decides |
 |---|---|---|---|---|
-| `theme` | word: `auto`, `dark`, `light`, `charm` | `auto` | next turn | Which colour table every surface draws with: `auto` asks the terminal what its own background is and takes the table chosen for that ground, or name one. It lives in its own file, theme.toml beside this one, and a write goes there. |
+| `theme` | word: `auto`, `dark`, `light`, `charm`, `high-contrast` | `auto` | next turn | Which colour table every surface draws with: `auto` asks the terminal what its own background is and takes the table chosen for that ground, or name one. It lives in its own file, theme.toml beside this one, and a write goes there. |
 | `verbosity` | word: `low`, `normal`, `high` | `normal` | next turn | How much the screen explains, one rung for every surface: `low` draws what you act on and little else, `normal` adds the readings, `high` every gloss, hint and field. |
 | `mouse` | true/false | `on` | next turn | Terminal mouse reporting: the wheel scrolls the transcript and shhh selects text itself. Off leaves the terminal its native click-drag selection. |
 | `notify` | true/false | `on` | next turn | Raise a desktop notification when a turn stops while the window is not the one in front. |

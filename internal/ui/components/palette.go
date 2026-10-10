@@ -224,7 +224,7 @@ var LightPalette = ColorTokens{
 // a theme that only shifted the greys would be a preference, and this one is
 // a different set of colours doing the same jobs.
 //
-// The five that defer to the terminal on the other two tables do not defer
+// The five that defer to the terminal on the other tables do not defer
 // here. A named palette that handed its green back to whatever the user's
 // config says is not that palette, so every token carries a real 256 index
 // and the sixteen-colour rung is the only place the terminal's own theme is
@@ -248,6 +248,43 @@ var charmPalette = ColorTokens{
 	Body:    tone(charmtone.Ash, "253", "7"),
 	Code:    tone(charmtone.Cumin, "137", "3"),
 	Key:     tone(charmtone.Hazy, "105", "12"),
+}
+
+// highContrastPalette is the same jobs on a pure-black ground, for a reader
+// who needs more light between the text and what it is written on and would
+// otherwise turn the screen's brightness up or the colours off. Every text
+// token clears 7:1 on the ground and on the band, the chrome greys included;
+// the selected row's ground is dark enough to carry Bright at 7:1 and still
+// stands off black by a factor of two, so the row is told apart by light and
+// not by its hue.
+//
+// It is not the dark table with the greys lifted. The ramp keeps its order —
+// dim, status, dimmer, subtle, body, bright, each further from the ground
+// than the last — and the whole of it moves up, so the hierarchy a reader has
+// learned survives. Every hex is exactly the 256 index beside it, and every
+// token carries a real index and a sixteen-colour rung of its own, as the
+// CharmTone table does. The two tints are told apart by luminance as well as
+// hue, because a pair that only differs in hue is no pair to a reader who
+// cannot see it.
+var highContrastPalette = ColorTokens{
+	Add:     token("#87ff87", "120", "10"),
+	Del:     token("#ff8787", "210", "9"),
+	addBg:   token("#005f00", "22", "2"),
+	delBg:   token("#5f0000", "52", "1"),
+	Hunk:    token("#5fffff", "87", "14"),
+	Accent:  token("#ffaf00", "214", "11"),
+	Info:    token("#5fafff", "75", "12"),
+	FocusBg: token("#5f00d7", "56", "4"),
+	band:    band("#1c1c1c", "234"),
+	Dim:     token("#a8a8a8", "248", "8"),
+	Dimmer:  token("#bcbcbc", "250", "8"),
+	Spin:    token("#ff87d7", "212", "13"),
+	Status:  token("#b2b2b2", "249", "8"),
+	Bright:  token("#ffffff", "231", "15"),
+	Subtle:  token("#d0d0d0", "252", "7"),
+	Body:    token("#e4e4e4", "254", "7"),
+	Code:    token("#d7af87", "180", "3"),
+	Key:     token("#afafd7", "146", "12"),
 }
 
 // band writes the band's row: a grey one step off the table's ground, and no
@@ -307,6 +344,9 @@ const (
 	ThemeDark  = "dark"
 	ThemeLight = "light"
 	ThemeCharm = "charm"
+	// ThemeHighContrast is the one word with a hyphen in it, which is why a
+	// name in theme.toml is a quoted string.
+	ThemeHighContrast = "high-contrast"
 )
 
 // theme is one shipped table and the ground it was chosen against. The table
@@ -326,6 +366,8 @@ var themes = map[string]theme{
 	ThemeDark:  {fullPalette, darkGround},
 	ThemeLight: {LightPalette, token("#ffffff", "231", "15")},
 	ThemeCharm: {charmPalette, tone(charmtone.Pepper, "235", "0")},
+
+	ThemeHighContrast: {highContrastPalette, highContrastGround},
 }
 
 // darkGround is the design system's screen, #0f1117, and 233 for it at 256
@@ -342,10 +384,19 @@ var darkGround = Token{
 	ansi:      lipgloss.NoColor{},
 }
 
+// highContrastGround is black, #000000 and 16, painted by default like the
+// dark ground and for the same reason: its band is half of a pair. It has no
+// sixteen-colour rung, for the dark ground's reason.
+var highContrastGround = Token{
+	trueColor: lipgloss.Color("#000000"),
+	ansi256:   lipgloss.Color("16"),
+	ansi:      lipgloss.NoColor{},
+}
+
 // ThemeNames is the words a reader may choose between, auto first because it
 // is the default and the one that needs no decision.
 func ThemeNames() []string {
-	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm}
+	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast}
 }
 
 var (
@@ -456,14 +507,22 @@ func GroundPainted() bool {
 }
 
 // groundPaintedByDefault is the theme's own answer: the dark table paints
-// its ground, and the other two leave the terminal's. See GroundColor.
-func groundPaintedByDefault() bool { return resolveTheme(themeName) == ThemeDark }
+// its ground, as does the high-contrast one, and the rest leave the
+// terminal's. See GroundColor.
+func groundPaintedByDefault() bool {
+	switch resolveTheme(themeName) {
+	case ThemeDark, ThemeHighContrast:
+		return true
+	}
+	return false
+}
 
 // GroundColor is the colour the whole screen is painted with, or nil for the
 // terminal's own.
 //
-// The dark table paints its ground unless the reader turns it off, because
-// its band is half of a pair: the design draws a card's band #1c1c1c on the
+// The dark table, and the high-contrast one on pure black, paint their
+// ground unless the reader turns it off, because the band is half of a
+// pair: the design draws a card's band #1c1c1c on the
 // screen #0f1117, and a band laid on a ground the binary does not control is
 // whatever that ground makes of it — the band's own grey on a terminal whose
 // background is #1c1c1c, which is no card at all. A step off the ground would

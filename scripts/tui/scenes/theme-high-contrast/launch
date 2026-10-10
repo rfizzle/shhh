@@ -1,0 +1,2 @@
+# A session under the high-contrast theme: the launch line writes a theme.toml naming the table and opens the session, so every surface the scene reaches is drawn through it.
+mkdir -p "$XDG_CONFIG_HOME/shhh"; printf 'name = "high-contrast"\n' > "$XDG_CONFIG_HOME/shhh/theme.toml"; exec "$SHHH_BIN" code

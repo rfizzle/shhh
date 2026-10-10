@@ -801,3 +801,93 @@ func TestPalette_ChromeIsFainterThanContentIsFainterThanBody(t *testing.T) {
 		}
 	}
 }
+
+// highContrastFloor is WCAG's 7:1 for running text at the AAA level, which is
+// what the high-contrast table is for.
+const highContrastFloor = 7.0
+
+// Every text token is held to 7:1 on the pure-black ground and on the band,
+// the chrome greys among them, and the selected row's ground has to carry the
+// focused row's text at the same bar. The ramp keeps its order: each rung is
+// further from the ground than the last.
+func TestPalette_HighContrastClearsAAA(t *testing.T) {
+	th := themes[ThemeHighContrast]
+	if got := th.ground.trueColor; sgr(got) != sgr(lipgloss.Color("#000000")) {
+		t.Fatalf("the ground is %s, want pure black", sgr(got))
+	}
+	inks := []string{"dim", "dimmer", "status", "subtle", "body", "bright",
+		"add", "del", "hunk", "accent", "info", "spin", "code", "key"}
+	grounds := []struct {
+		name string
+		g    Token
+	}{{"ground", th.ground}, {"band", th.tokens.band}}
+	for _, ink := range inks {
+		for _, g := range grounds {
+			got := contrast(t, tokenNamed(th.tokens, ink), g.g)
+			t.Logf("%-7s on %-6s %.2f:1", ink, g.name, got)
+			if got < highContrastFloor {
+				t.Errorf("%s on the %s is %.2f:1, under %.1f:1", ink, g.name, got, highContrastFloor)
+			}
+		}
+	}
+	if got := contrast(t, th.tokens.Bright, th.tokens.FocusBg); got < highContrastFloor {
+		t.Errorf("bright on the selected row is %.2f:1, under %.1f:1", got, highContrastFloor)
+	}
+	order := []string{"dim", "status", "dimmer", "subtle", "body", "bright"}
+	for i := 1; i < len(order); i++ {
+		lo := contrast(t, tokenNamed(th.tokens, order[i-1]), th.ground)
+		hi := contrast(t, tokenNamed(th.tokens, order[i]), th.ground)
+		if lo >= hi {
+			t.Errorf("%s (%.2f) is not fainter than %s (%.2f)", order[i-1], lo, order[i], hi)
+		}
+	}
+}
+
+// The selected row and the two intraline tints are told apart without hue:
+// the row's ground stands off black by light, the tints by light between
+// themselves, and the lines drawn over them likewise. The text on a tint is
+// held to the AA floor.
+func TestPalette_HighContrastTintsDifferInLight(t *testing.T) {
+	th := themes[ThemeHighContrast]
+	p := th.tokens
+	for _, c := range []struct {
+		what string
+		a, b Token
+		min  float64
+	}{
+		{"addBg and delBg", p.addBg, p.delBg, 1.5},
+		{"add and del", p.Add, p.Del, 1.5},
+		{"the selected row and the ground", p.FocusBg, th.ground, 2},
+	} {
+		got := contrast(t, c.a, c.b)
+		t.Logf("%s: %.2f:1", c.what, got)
+		if got < c.min {
+			t.Errorf("%s differ by %.2f:1 in light, under %.1f:1", c.what, got, c.min)
+		}
+	}
+	if got := contrast(t, p.Add, p.addBg); got < aaFloor {
+		t.Errorf("add on its tint is %.2f:1, under %.1f:1", got, aaFloor)
+	}
+	if got := contrast(t, p.Del, p.delBg); got < aaFloor {
+		t.Errorf("del on its tint is %.2f:1, under %.1f:1", got, aaFloor)
+	}
+}
+
+// The high-contrast ground paints by default like the dark one, and the
+// switch hands the terminal's own back.
+func TestPalette_HighContrastPaintsItsGroundByDefault(t *testing.T) {
+	themeRestore(t)
+	withColorProfile(t, colorprofile.ANSI256)
+	// No answer from the reader: the theme's own default is under test.
+	paintGround = groundDefault
+	if err := SetTheme(ThemeHighContrast); err != nil {
+		t.Fatal(err)
+	}
+	if !GroundPainted() || !sameColor(GroundColor(), lipgloss.Color("16")) {
+		t.Errorf("the ground is %v, want black painted by default", GroundColor())
+	}
+	PaintGround(false)
+	if GroundColor() != nil {
+		t.Error("ground off still paints")
+	}
+}

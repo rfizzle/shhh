@@ -145,13 +145,24 @@ func relativeLuminance(t *testing.T, c color.Color) float64 {
 // assignment and not the arrangement — the arrangement is held by the two
 // whole-screen captures beside it, and the table cannot move a column.
 func TestGolden_LightScreen(t *testing.T) {
+	captureScreen(t, components.ThemeLight, "screen-light", "the whole surface on a light ground")
+}
+
+// TestGolden_HighContrastScreen is the same state through the high-contrast
+// table, on its pure-black ground.
+func TestGolden_HighContrastScreen(t *testing.T) {
+	captureScreen(t, components.ThemeHighContrast, "screen-high-contrast", "the whole surface on the high-contrast table")
+}
+
+func captureScreen(t *testing.T, theme, name, surface string) {
+	t.Helper()
 	holdClock(t)
 	themeRestore(t)
 	was := components.Profile()
 	components.SetProfile(colorprofile.ANSI256)
 	t.Cleanup(func() { components.SetProfile(was) })
 	components.SetMono(false)
-	if err := components.SetTheme(components.ThemeLight); err != nil {
+	if err := components.SetTheme(theme); err != nil {
 		t.Fatal(err)
 	}
 
@@ -162,8 +173,8 @@ func TestGolden_LightScreen(t *testing.T) {
 		m.syncViewport()
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
-		golden.Assert(t, "screen-light.w"+strconv.Itoa(width), golden.Case{
-			Surface: "the whole surface on a light ground",
+		golden.Assert(t, name+".w"+strconv.Itoa(width), golden.Case{
+			Surface: surface,
 			Width:   width,
 			Panels:  []golden.Panel{{Label: "idle · the draft has the keyboard", View: m.View().Content}},
 		})
