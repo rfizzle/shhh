@@ -150,6 +150,7 @@ func (e *Explainer) Explain(ctx context.Context, req ExplainRequest) ExplainVerd
 		{Role: provider.RoleUser, Content: "UNTRUSTED COMMAND:\n" + command},
 	}, provider.CompletionOpts{
 		Model:     v.Model,
+		Flow:      provider.FlowExplanation,
 		MaxTokens: e.cfg.maxTokens(),
 		// A shallow thought is the right amount for reading a command line,
 		// and asking for it is the only way to bound one on a model that

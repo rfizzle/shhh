@@ -293,6 +293,10 @@ type CompletionOpts struct {
 	// SchemaFor for what happens when a caller sends both, and why.
 	// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
 	ResponseSchema *ResponseSchema
+	// Flow is the bounded call this request is, set by the code that builds
+	// it and never by a wrapper. Empty is the main agent and its children.
+	// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
+	Flow Flow
 }
 
 // ResponseSchema is a JSON Schema the answer is validated against before it

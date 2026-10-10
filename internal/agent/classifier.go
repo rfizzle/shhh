@@ -523,6 +523,7 @@ func (c *Classifier) completeOnce(ctx context.Context, model, instructions, evid
 		{Role: provider.RoleUser, Content: evidence},
 	}, provider.CompletionOpts{
 		Model:     model,
+		Flow:      provider.FlowClassifier,
 		MaxTokens: c.cfg.maxTokens(),
 		// A judgement over assembled evidence wants a shallow thought, and
 		// on a model that thinks by default this is the only way to ask for

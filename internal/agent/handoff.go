@@ -249,6 +249,7 @@ func (w *HandoffWriter) Write(ctx context.Context, req HandoffRequest) HandoffVe
 		{Role: provider.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
 	}, provider.CompletionOpts{
 		Model:     v.Model,
+		Flow:      provider.FlowReading,
 		MaxTokens: maxTokens,
 		Effort:    provider.EffortLow,
 		Tools: []provider.Tool{{

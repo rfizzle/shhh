@@ -64,6 +64,7 @@ func generateDescription(ctx context.Context, p provider.Provider, model, config
 	// See docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model.
 	events, err := p.StreamCompletion(ctx, msgs, provider.CompletionOpts{
 		Model:     modelOr(configured, smallModel(p.Name(), model)),
+		Flow:      provider.FlowDescription,
 		MaxTokens: descriptionMaxTokens,
 		Effort:    provider.EffortLow,
 	})

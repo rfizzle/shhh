@@ -224,6 +224,7 @@ func (d toolchainDrafter) ask(ctx context.Context, msgs []provider.Message) (str
 	defer cancel()
 	events, err := d.prov.StreamCompletion(ctx, msgs, provider.CompletionOpts{
 		Model:      d.model(),
+		Flow:       provider.FlowToolchainDrafter,
 		MaxTokens:  toolchainDraftMaxTokens,
 		Tools:      []provider.Tool{toolchainDraftTool()},
 		ToolChoice: provider.ToolChoiceAuto,

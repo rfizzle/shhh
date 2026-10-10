@@ -1251,6 +1251,7 @@ func summaryModelStream(ctx context.Context, env *sessionEnv, ledger *meter.Ledg
 		reqCtx, cancel := context.WithCancel(ctx)
 		events, err := ledger.For(env.prov, meter.SourceSummary).StreamCompletion(reqCtx, msgs, provider.CompletionOpts{
 			Model:      model,
+			Flow:       provider.FlowCompaction,
 			Tools:      defs,
 			ToolChoice: choice,
 			// A shallow thought over a conversation that is already written.

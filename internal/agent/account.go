@@ -204,6 +204,7 @@ func (a *Accountant) Account(ctx context.Context, req AccountRequest) AccountVer
 		{Role: provider.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
 	}, provider.CompletionOpts{
 		Model:     v.Model,
+		Flow:      provider.FlowAccount,
 		MaxTokens: a.cfg.maxTokens(),
 		// A shallow thought is the right amount for two sentences, for the
 		// reason the titler asks for one.

@@ -230,6 +230,7 @@ func (d *Drafter) Draft(ctx context.Context, req Request) Outcome {
 		{Role: provider.RoleUser, Content: user},
 	}, provider.CompletionOpts{
 		Model:      model,
+		Flow:       provider.FlowProfileDrafter,
 		MaxTokens:  d.cfg.maxTokens(),
 		Tools:      []provider.Tool{DraftTool()},
 		ToolChoice: "auto",

@@ -447,6 +447,7 @@ func readProposals(ctx context.Context, p provider.Provider, cfg ExtractConfig, 
 		{Role: provider.RoleUser, Content: digest},
 	}, provider.CompletionOpts{
 		Model:     cfg.Model,
+		Flow:      provider.FlowBacklog,
 		MaxTokens: cfg.maxTokens(),
 		// A shallow thought over evidence the session already assembled;
 		// off would leave the depth to the model, and the ceiling is shared

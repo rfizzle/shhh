@@ -9,6 +9,7 @@ package cli
 // (docs/capabilities/configuration.md#a-session-can-hold-a-value-no-file-does).
 
 import (
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 
@@ -24,7 +25,7 @@ func modelFlowTargets(env *sessionEnv) []chat.FlowTarget {
 	}
 	var out []chat.FlowTarget
 	for _, a := range resolveFlows(env.flows.over(cfg), env.provName, env.modelName) {
-		if a.flow.sessionless || a.flow.name == flowToolchain.name {
+		if a.flow.sessionless || a.flow.flow == provider.FlowToolchainDrafter {
 			continue
 		}
 		out = append(out, chat.FlowTarget{Key: a.flow.keys[0], Name: a.flow.name, Model: a.model})

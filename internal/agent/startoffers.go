@@ -184,6 +184,7 @@ func (s *StartOfferer) Offer(ctx context.Context, req StartOffersRequest) StartO
 		{Role: provider.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
 	}, provider.CompletionOpts{
 		Model:      v.Model,
+		Flow:       provider.FlowStartOffers,
 		MaxTokens:  s.cfg.maxTokens(),
 		Effort:     provider.EffortLow,
 		ToolChoice: provider.ToolChoiceNone,

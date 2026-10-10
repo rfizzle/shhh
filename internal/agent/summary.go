@@ -475,6 +475,7 @@ func (s *Summarizer) readOnce(ctx context.Context, model, instructions, digest s
 		{Role: provider.RoleUser, Content: digest},
 	}, provider.CompletionOpts{
 		Model:     model,
+		Flow:      provider.FlowReading,
 		MaxTokens: s.cfg.maxTokens(),
 		// A shallow thought over a digest that is already assembled. Off
 		// would be the model's own depth, which is what emptied the block.

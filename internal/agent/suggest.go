@@ -166,6 +166,7 @@ func (s *Suggester) Suggest(ctx context.Context, req SuggestRequest) SuggestVerd
 		{Role: provider.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
 	}, provider.CompletionOpts{
 		Model:     v.Model,
+		Flow:      provider.FlowSuggestion,
 		MaxTokens: s.cfg.maxTokens(),
 		// A shallow thought is the right amount for one sentence, for the
 		// reason the titler asks for one.

@@ -148,6 +148,7 @@ func (t *Titler) Title(ctx context.Context, req TitleRequest) TitleVerdict {
 		{Role: provider.RoleUser, Content: "UNTRUSTED EXCHANGE:\n" + string(evidence)},
 	}, provider.CompletionOpts{
 		Model:     v.Model,
+		Flow:      provider.FlowTitle,
 		MaxTokens: t.cfg.maxTokens(),
 		// A shallow thought is the right amount for naming an exchange, and
 		// asking for it is the only way to bound one on a model that thinks

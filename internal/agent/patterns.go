@@ -155,6 +155,7 @@ func (w *PatternWriter) Word(ctx context.Context, req PatternRequest) PatternVer
 		{Role: provider.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
 	}, provider.CompletionOpts{
 		Model:      v.Model,
+		Flow:       provider.FlowPatterns,
 		MaxTokens:  w.cfg.maxTokens(),
 		Effort:     provider.EffortLow,
 		ToolChoice: provider.ToolChoiceNone,
