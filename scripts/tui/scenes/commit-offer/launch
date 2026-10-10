@@ -1,0 +1,3 @@
+# The harness writes this run's config; the project's trailer is appended as
+# a table of its own, so the card's message row has a line shhh adds to read.
+printf '\n[commit]\ntrailers = ["Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"]\n' >> $XDG_CONFIG_HOME/shhh/config.toml && $SHHH_BIN code

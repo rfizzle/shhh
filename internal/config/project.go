@@ -210,6 +210,9 @@ func LayerProject(cfg Config, path string) (Config, Project, error) {
 	if err := refusedKeys(path, meta); err != nil {
 		return cfg, Project{}, err
 	}
+	if err := checkTrailers(path, over); err != nil {
+		return cfg, Project{}, err
+	}
 	root := filepath.Dir(filepath.Dir(path))
 	proj := Project{Path: path, Display: relativeToRoot(root, path)}
 	for _, k := range meta.Keys() {

@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/hostgit"
@@ -103,7 +104,7 @@ func Commit(root string, paths []string, message, without string, hooks bool, se
 		return nil, err
 	}
 	defer func() { _ = os.Remove(f.Name()) }()
-	if _, err := f.WriteString(message + "\n"); err != nil {
+	if _, err := f.WriteString(WithTrailers(message, secrets.Trailers) + "\n"); err != nil {
 		f.Close()
 		return nil, err
 	}
@@ -118,8 +119,63 @@ func Commit(root string, paths []string, message, without string, hooks bool, se
 	return paths, nil
 }
 
-// Secrets is what a commit is told about the credential shapes in it.
+// WithTrailers is message with the project's commit.trailers on its end: each
+// line once, after a blank line, or straight after the trailer block the
+// message already ends with. A line the message already ends with is not
+// added again, so a model that wrote one anyway does not get it twice, and
+// the card shows exactly the message the commit will carry.
+// See docs/capabilities/todo.md#a-run-is-turns-with-gates-between-them.
+func WithTrailers(message string, trailers []string) string {
+	message = strings.TrimRight(message, " \t\r\n")
+	add := TrailersAdded(message, trailers)
+	if len(add) == 0 {
+		return message
+	}
+	paras := strings.Split(message, "\n\n")
+	last := strings.Split(paras[len(paras)-1], "\n")
+	sep := "\n\n"
+	if len(paras) > 1 && trailerBlock(last) {
+		sep = "\n"
+	}
+	return message + sep + strings.Join(add, "\n")
+}
+
+// TrailersAdded is the trailers WithTrailers would put on message: the ones
+// its last paragraph does not already hold, each once. The card draws these
+// and no others, so a trailer the message carries is not shown twice.
+func TrailersAdded(message string, trailers []string) []string {
+	message = strings.TrimRight(message, " \t\r\n")
+	if message == "" {
+		return nil
+	}
+	paras := strings.Split(message, "\n\n")
+	last := strings.Split(paras[len(paras)-1], "\n")
+	var add []string
+	for _, t := range trailers {
+		if !slices.Contains(last, t) && !slices.Contains(add, t) {
+			add = append(add, t)
+		}
+	}
+	return add
+}
+
+// trailerBlock reports whether every line is a `Key: value` line, which is
+// what makes a last paragraph a trailer block rather than prose.
+func trailerBlock(lines []string) bool {
+	for _, l := range lines {
+		k, v, ok := strings.Cut(l, ": ")
+		if !ok || k == "" || strings.TrimSpace(v) == "" || strings.ContainsAny(k, " \t") {
+			return false
+		}
+	}
+	return true
+}
+
+// Secrets is what a commit is told about this checkout's rules for what it
+// may carry: the credential shapes in it, and the trailers it ends with.
 type Secrets struct {
+	// Trailers is commit.trailers, appended once by Commit.
+	Trailers []string
 	// Ignore is commit.secret_ignore, the checkout's fixtures.
 	Ignore []string
 	// Allow is the person's own say on the card that this commit carries

@@ -168,6 +168,7 @@ func (m *Model) seedPolicy() {
 	p.timeout = w.CommandTimeout
 	p.readOnlyExtra, p.readOnlyDisabled = w.ReadOnlyCommands, w.ReadOnlyOff
 	p.secretIgnore = w.CommitSecretIgnore
+	p.trailers = w.CommitTrailers
 	if len(w.Cycle) > 0 {
 		p.cycle = w.Cycle
 	}

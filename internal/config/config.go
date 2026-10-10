@@ -6,8 +6,10 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -138,6 +140,28 @@ type CommitConfig struct {
 	// checkout's key because what is a fixture is a fact about the tree.
 	// See docs/capabilities/secrets.md#a-secret-does-not-get-committed.
 	SecretIgnore []string `toml:"secret_ignore"`
+	// Trailers are the `Key: value` lines shhh appends to every commit it
+	// makes, once, after a blank line: the person's rule about what a commit
+	// ends with, kept by the program rather than guessed by the model from
+	// history. A line that is not a key and a value is refused at load.
+	// See docs/capabilities/todo.md#a-run-is-turns-with-gates-between-them.
+	Trailers []string `toml:"trailers"`
+}
+
+// trailerLine is what a trailer is: a token key, a colon, a space and a
+// value, the shape a commit trailer is read in.
+var trailerLine = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9-]*: \S.*$`)
+
+// checkTrailers refuses a commit.trailers line that is not `Key: value`,
+// naming it. A malformed line would otherwise be appended to a commit as
+// prose, in a place nothing reads it back.
+func checkTrailers(path string, c Config) error {
+	for _, l := range c.Commit.Trailers {
+		if !trailerLine.MatchString(l) {
+			return fmt.Errorf("config %s: commit.trailers: %q is not a \"Key: value\" line", path, l)
+		}
+	}
+	return nil
 }
 
 // PromptsConfig names files whose contents replace shhh's own wordings. The
@@ -1432,6 +1456,9 @@ func LoadFrom(paths ...string) (Config, error) {
 			return Config{}, err
 		}
 		if err := unknownKeys(p, UpdateUser, meta.Undecoded()); err != nil {
+			return Config{}, err
+		}
+		if err := checkTrailers(p, cfg); err != nil {
 			return Config{}, err
 		}
 		return cfg, nil

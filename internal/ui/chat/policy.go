@@ -512,6 +512,9 @@ type policyState struct {
 	// this session may carry a credential shape in (commit.go). It is no
 	// grant either: it is the checkout's word on which files are fixtures.
 	secretIgnore []string
+	// trailers is commit.trailers, the lines a commit made from this screen
+	// ends with and the card shows on its message row.
+	trailers []string
 	// timeout bounds one assistant-run command; zero means no ceiling.
 	timeout time.Duration
 	// The blanket grants: every edit, every command, until revoked. They are

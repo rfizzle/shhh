@@ -122,7 +122,7 @@ func (d *todoDriver) commit(st *run.State) ([]string, error) {
 		projectTrust().RunsOwnPrograms(),
 		// Nobody is here to say yes to a secret, so there is no override:
 		// the item blocks on the refusal.
-		run.Secrets{Ignore: d.secretIgnore})
+		run.Secrets{Ignore: d.secretIgnore, Trailers: d.trailers})
 }
 
 // paths is what the run may stage, in the definition both surfaces share

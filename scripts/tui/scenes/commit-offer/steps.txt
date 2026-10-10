@@ -14,6 +14,9 @@
 # `secrets` row and its refusal are read for
 # (docs/capabilities/secrets.md#a-secret-does-not-get-committed).
 #
+# The scene's launch sets commit.trailers, so the card draws the line shhh adds
+# under the subject, and the commit asked of the model carries it once.
+#
 # The identity is repository-local because the pane runs under a home of its
 # own, so there is no global one for the commit to find.
 setup printf 'package agent\n\nconst limit = 25\n' > loop.go
@@ -53,7 +56,7 @@ keys S-Up
 snap 04-selected "[enter] review turn" "[ctrl+space/ctrl+y] commit"
 # The handover opens the card with the sentence still in the box behind it.
 keys C-Space
-snap 05-card "Commit this turn" "README.md changed by you, never staged" "[s] read the hunks" "1 github token · config/dev.env:12" "[!] commit with the secret — it stays in history"
+snap 05-card "Commit this turn" "README.md changed by you, never staged" "[s] read the hunks" "1 github token · config/dev.env:12" "[!] commit with the secret — it stays in history" "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 # The token the turn wrote is named by kind, file and line, and enter is
 # refused while it stands: nothing is staged, and the card says what to do.
 sleep 0.5

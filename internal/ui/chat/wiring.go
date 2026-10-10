@@ -132,6 +132,9 @@ type Wiring struct {
 	// CommitSecretIgnore is commit.secret_ignore: the fixtures a commit made
 	// from this session may carry a credential shape in.
 	CommitSecretIgnore []string
+	// CommitTrailers is commit.trailers: the lines a commit made from this
+	// session ends with.
+	CommitTrailers []string
 	// GatedTools are the tools that must be approved before they run through
 	// the executor, each with the card's preview of its call; they never run
 	// on the auto-run path. GatedChecks are the refusals that stand in front

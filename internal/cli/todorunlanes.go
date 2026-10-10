@@ -429,7 +429,7 @@ func (l *todoLane) landCommit(d *todoDriver, st *run.State) ([]string, error) {
 	}
 	committed, err := run.Commit(d.root, l.set.fromTop(files), st.Message,
 		"--no-commit runs an item without one, or todo.commit = false makes that the default",
-		projectTrust().RunsOwnPrograms(), run.Secrets{Ignore: d.secretIgnore})
+		projectTrust().RunsOwnPrograms(), run.Secrets{Ignore: d.secretIgnore, Trailers: d.trailers})
 	if err != nil {
 		return nil, fmt.Errorf("%w — the lane's patch is on the checkout, uncommitted", err)
 	}

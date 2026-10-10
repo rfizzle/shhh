@@ -453,6 +453,11 @@ func TestGolden_CommitCard(t *testing.T) {
 		}
 		return []golden.Panel{
 			{Label: "the offer · five fields and four keys", View: card(func(*CommitCard) {})},
+			// The project's trailer is shhh's to add, so the card draws it
+			// under the subject: the message row names the whole message.
+			{Label: "a trailer · added for the message, drawn under it", View: card(func(c *CommitCard) {
+				c.Trailers = []string{"Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"}
+			})},
 			// Nothing of the reader's is in the way, which is the answer the
 			// leaves row exists to be able to give.
 			{Label: "a clean tree · nothing is being left behind", View: card(func(c *CommitCard) {

@@ -573,6 +573,7 @@ func (b *screenBuild) wiring() chat.Wiring {
 		Sources:         session.sources,
 
 		CommitSecretIgnore: cfg.Commit.SecretIgnore,
+		CommitTrailers:     cfg.Commit.Trailers,
 	}
 	b.wireCoding(&w)
 	b.wireSurfaces(&w)

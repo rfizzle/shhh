@@ -43,6 +43,9 @@ type CommitCard struct {
 	// Message is the proposed subject line, read from the changeset and the
 	// turn's own title by the host.
 	Message string
+	// Trailers are the lines shhh will add to the message on its own, from
+	// commit.trailers, drawn under it so the row reads as the whole message.
+	Trailers []string
 	// Files, Added and Removed are what will be staged — this turn's own
 	// changeset and nothing else.
 	Files          int
@@ -79,7 +82,11 @@ const overrideWords = " — it stays in history"
 // View renders the card at the given width.
 func (c CommitCard) View(width int) string {
 	inner := Card{}.Inner(width)
-	rows := []string{c.messageRow(inner), ""}
+	rows := []string{c.messageRow(inner)}
+	for _, t := range c.Trailers {
+		rows = append(rows, sty.dim.Render("  "+Clip(t, max(inner-2, 1))))
+	}
+	rows = append(rows, "")
 	rows = append(rows, c.stagesRow(inner))
 	for _, f := range c.Fields {
 		rows = append(rows, f.render(inner))

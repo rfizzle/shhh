@@ -226,3 +226,47 @@ func TestFileNote_TheWriteUpCarriesTheSourcesItWasHanded(t *testing.T) {
 		t.Errorf("the archived item carries no sources block:\n%s", archived)
 	}
 }
+
+// The project's trailers are shhh's to append: once, after a blank line,
+// and never a second time when the message already ends with the line.
+func TestCommit_TrailersAreAppendedOnce(t *testing.T) {
+	trailer := "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+	for _, tc := range []struct{ name, message, want string }{
+		{"subject only", "feat(a): do the thing", "feat(a): do the thing\n\n" + trailer},
+		{"subject and body", "feat(a): do the thing\n\nBecause.", "feat(a): do the thing\n\nBecause.\n\n" + trailer},
+		{"already ends with it", "feat(a): do the thing\n\n" + trailer, "feat(a): do the thing\n\n" + trailer},
+		{"another trailer above", "feat(a): x\n\nSigned-off-by: T <t@example.com>", "feat(a): x\n\nSigned-off-by: T <t@example.com>\n" + trailer},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := WithTrailers(tc.message, []string{trailer}); got != tc.want {
+				t.Errorf("WithTrailers = %q, want %q", got, tc.want)
+			}
+		})
+	}
+	if got := WithTrailers("feat(a): x", nil); got != "feat(a): x" {
+		t.Errorf("no trailers should leave the message, got %q", got)
+	}
+
+	root := gitRepo(t)
+	write(t, root, "a.go", "package a\n")
+	secrets := Secrets{Trailers: []string{trailer}}
+	// The model wrote the line itself; the commit still carries it once.
+	if _, err := Commit(root, []string{"a.go"}, "feat(a): do the thing\n\n"+trailer, "x", true, secrets); err != nil {
+		t.Fatalf("commit: %v", err)
+	}
+	out, code := Git(root, "log", "-1", "--format=%B")
+	if code != 0 {
+		t.Fatalf("git log: %s", out)
+	}
+	if n := strings.Count(out, trailer); n != 1 {
+		t.Errorf("the trailer should be on the commit once, found %d:\n%s", n, out)
+	}
+	write(t, root, "b.go", "package b\n")
+	if _, err := Commit(root, []string{"b.go"}, "feat(b): another", "x", true, secrets); err != nil {
+		t.Fatalf("commit: %v", err)
+	}
+	out, _ = Git(root, "log", "-1", "--format=%B")
+	if !strings.Contains(out, "feat(b): another\n\n"+trailer) {
+		t.Errorf("the trailer should follow a blank line:\n%s", out)
+	}
+}

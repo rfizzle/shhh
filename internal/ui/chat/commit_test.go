@@ -684,3 +684,25 @@ func TestCommitKeys_AreTheRegistersOwn(t *testing.T) {
 		}
 	}
 }
+
+// The trailer is shhh's: the card shows it under the subject, and the commit
+// carries it exactly once.
+func TestCommitCard_TrailersAreAppended(t *testing.T) {
+	trailer := "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+	m, root, _ := commitRepo(t)
+	m.policy.trailers = []string{trailer}
+	m = focusLastClose(t, m)
+	m, _ = handOverRow(t, m)
+	if view := ansi.Strip(m.commitCard().View(120)); !strings.Contains(view, trailer) {
+		t.Fatalf("the card should show the trailer, got:\n%s", view)
+	}
+	next, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = settle(t, next.(Model), cmd)
+	out, code := run.Git(root, "log", "-1", "--format=%B")
+	if code != 0 {
+		t.Fatalf("git log: %s", out)
+	}
+	if n := strings.Count(out, trailer); n != 1 {
+		t.Fatalf("the commit should end with the trailer once, found %d:\n%s", n, out)
+	}
+}

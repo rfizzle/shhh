@@ -666,6 +666,13 @@ changed are staged, by name, and never a backlog file; a tree that already
 holds staged changes the run did not make stops the run instead of
 committing a stranger.
 
+The trailers are shhh's too. A project that ends its commits with a line such
+as `Co-Authored-By:` sets them once in `commit.trailers`, and shhh appends each
+to the message after a blank line, whichever surface makes the commit and
+however the message was written: a line the message already ends with is not
+added twice, a line that is not `Key: value` stops the load naming it, and the
+commit stage is told they are added for it so it does not write them.
+
 **What "the run itself changed" means is one definition, on every surface.**
 It is the run's own writes — what the session's changeset recorded, or what
 an unattended run's stage processes reported writing — together with

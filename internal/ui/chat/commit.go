@@ -264,9 +264,12 @@ func (m Model) commitCard() components.CommitCard {
 	}
 	return components.CommitCard{
 		Message: st.message,
-		Files:   len(st.staging),
-		Added:   st.added,
-		Removed: st.removed,
+		// The trailers are drawn under the subject because they are what
+		// the commit will end with: the card names the whole message.
+		Trailers: run.TrailersAdded(st.message, m.policy.trailers),
+		Files:    len(st.staging),
+		Added:    st.added,
+		Removed:  st.removed,
 		// The counts are the staging's own rather than the turn's, so the
 		// row says what will be committed and not what was written. They are
 		// the same number until something is left out of the commit, and the
@@ -691,7 +694,7 @@ func (m Model) makeCommit() (tea.Model, tea.Cmd) {
 	m.commit = &st
 	root, turn := m.wiring.Workspace, st.turn
 	staging, message, hooks := st.staging, st.message, st.hooks
-	secrets := run.Secrets{Ignore: m.policy.secretIgnore, Allow: st.override}
+	secrets := run.Secrets{Ignore: m.policy.secretIgnore, Allow: st.override, Trailers: m.policy.trailers}
 	carried := 0
 	if st.override {
 		carried = len(st.liveSecrets())

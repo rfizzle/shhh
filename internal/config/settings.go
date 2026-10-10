@@ -754,6 +754,10 @@ var settings = []Setting{
 		Key: "commit.secret_ignore", Kind: KindList, Taken: AtStart, Default: "(empty — every file is read)",
 		Desc: "Path globs of the files whose credential shapes are there on purpose, such as test fixtures; a commit that adds a shape anywhere else is refused, and one in a file named here is drawn dim on the card and committed.",
 	},
+	{
+		Key: "commit.trailers", Kind: KindList, Taken: AtStart, Default: "(empty — a commit ends with its message)",
+		Desc: "`Key: value` lines shhh appends once to every commit it makes, after a blank line, such as a Co-Authored-By line; the commit stage's model is told they are added for it and does not write them, and a line that is not a key and a value is refused at load.",
+	},
 }
 
 // Settings is every key the file holds, in the order the file's tables run.

@@ -1428,3 +1428,27 @@ func TestAgentDelegation_ReadsAnythingElseAsExplicit(t *testing.T) {
 		}
 	}
 }
+
+func TestConfig_ATrailerMustBeAKeyAndAValue(t *testing.T) {
+	good := filepath.Join(t.TempDir(), "config.toml")
+	line := "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+	if err := os.WriteFile(good, []byte("[commit]\ntrailers = [\""+line+"\"]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadFrom(good)
+	if err != nil || len(cfg.Commit.Trailers) != 1 || cfg.Commit.Trailers[0] != line {
+		t.Fatalf("a Key: value line should load, got %v, %v", cfg.Commit.Trailers, err)
+	}
+	for _, bad := range []string{"just some words", "Key:value", ": no key", "Key: "} {
+		path := filepath.Join(t.TempDir(), "config.toml")
+		if err := os.WriteFile(path, []byte("[commit]\ntrailers = [\""+bad+"\"]\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := LoadFrom(path); err == nil || !strings.Contains(err.Error(), bad) {
+			t.Errorf("%q should be refused by name at load, got %v", bad, err)
+		}
+		if _, _, err := LayerProject(Config{}, path); err == nil || !strings.Contains(err.Error(), bad) {
+			t.Errorf("%q should be refused by name from a checkout's file, got %v", bad, err)
+		}
+	}
+}

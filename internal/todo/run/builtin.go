@@ -66,7 +66,7 @@ const builtinRemediate = `REMEDIATE stage. Fix exactly what the findings list, a
 
 ` + PlaceholderFindings
 
-const builtinCommit = `COMMIT stage. The change is verified and reviewed. Do not change any file now.
+const builtinCommit = `COMMIT stage. The change is verified and reviewed. Do not change any file now. The trailer lines the project configures, such as a Co-Authored-By line, are added to your message for you; do not write them.
 
 ` + PlaceholderItem
 
