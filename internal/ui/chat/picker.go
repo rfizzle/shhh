@@ -207,6 +207,9 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if model, cmd, handled := m.updateRewindPick(msg); handled {
 		return model, cmd
 	}
+	if m.stepModelTarget(msg) {
+		return m, nil
+	}
 	done, sel := m.picker.card.Update(msg)
 	if m.picker.card.QueryChanged() {
 		m.refilterPicker()
@@ -271,16 +274,21 @@ func (m Model) pickerLines() []string {
 
 // modelPickChoices is the /model picker's option list: the curated catalog
 // with the session's current model merged in (first when it isn't listed).
-func (m Model) modelPickChoices() []string {
+func (m Model) modelPickChoices() []string { return m.choicesWith(m.modelName) }
+
+// choicesWith is the catalog with current merged in, first when the catalog
+// does not list it: the picker has to be able to show the model a target is
+// on, whether or not the endpoint names it.
+func (m Model) choicesWith(current string) []string {
 	for _, name := range m.picker.models.options {
-		if name == m.modelName {
+		if name == current {
 			return m.picker.models.options
 		}
 	}
-	if m.modelName == "" {
+	if current == "" {
 		return m.picker.models.options
 	}
-	return append([]string{m.modelName}, m.picker.models.options...)
+	return append([]string{current}, m.picker.models.options...)
 }
 
 // canPickModel reports whether bare /model should open the picker rather
@@ -355,17 +363,36 @@ func (m Model) finishModelList(msg modelListMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// openModelPick opens the interactive /model picker, focused on the current
-// model, with per-model pricing when the table knows it.
-func (m Model) openModelPick() (tea.Model, tea.Cmd) {
-	choices := m.modelPickChoices()
-	opts := make([]components.SelectOption, len(choices))
-	focus := 0
+// modelPick is the /model picker's card for one target: what it is titled,
+// the rows, where the pointer starts, the second reading of a choice, what
+// esc leaves and what a choice does.
+type modelPick struct {
+	title  string
+	opts   []components.SelectOption
+	focus  int
+	alt    pickerAlt
+	keep   string
+	target components.KeyOffer
+	apply  func(*Model, int, bool) (string, tea.Cmd)
+}
+
+// modelPickFor builds the picker's card aimed at the session or, from the
+// host's list, at a flow. The session's is the card /model has always had;
+// a flow's holds the choice for the running session and writes nothing, so
+// it has no second reading.
+func (m Model) modelPickFor(t modelTarget) modelPick {
+	flow, forFlow := t.flow()
+	current := m.modelName
+	if forFlow {
+		current = flow.Model
+	}
+	choices := m.choicesWith(current)
+	pick := modelPick{opts: make([]components.SelectOption, len(choices)), keep: current}
 	for i, name := range choices {
 		label := name
-		if name == m.modelName {
+		if name == current {
 			label += "  (current)"
-			focus = i
+			pick.focus = i
 		}
 		desc := ""
 		if m.wiring.Prices != nil {
@@ -373,7 +400,35 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 				desc = fmt.Sprintf("$%.2f in / $%.2f out per Mtok", in, out)
 			}
 		}
-		opts[i] = components.SelectOption{Label: label, Desc: desc}
+		pick.opts[i] = components.SelectOption{Label: label, Desc: desc}
+	}
+	// The title names what chose the current model in the words the text
+	// answer uses, so the two paths `/model` takes tell one story. A picker
+	// that can aim at a flow also says what it is aimed at.
+	pick.title = "Switch model"
+	switch {
+	case forFlow:
+		pick.title += " · for the " + flow.Name
+	case len(t.flows) > 0:
+		pick.title += " · for the session"
+	}
+	if by := m.modelChosenBy(); by != "" && !forFlow {
+		pick.title += " · current" + by
+	}
+	if len(t.flows) > 0 {
+		label := "for a flow"
+		if forFlow {
+			label = "next flow"
+		}
+		pick.target = components.OfferAs(keys.Select.Flow, label)
+	}
+	if forFlow {
+		pick.apply = func(m *Model, idx int, _ bool) (string, tea.Cmd) {
+			name := choices[idx]
+			m.wiring.HoldFlow(flow.Key, name)
+			return fmt.Sprintf("%s now on %s · this session", flow.Name, name), nil
+		}
+		return pick
 	}
 	// The picker is where a model gets chosen, so it is where the choice has
 	// to be able to stick. Enter switches the session, as it always
@@ -381,21 +436,11 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 	// read off a list does not have to be typed back to `/model default`. The
 	// card opens as a search, so [m] is a letter until esc closes the
 	// query row — which is what the key row offers while it is open.
-	alt := pickerAlt{Key: keys.Shown(keys.Select.Alt), Label: "and make it default", Enter: "this session"}
+	pick.alt = pickerAlt{Key: keys.Shown(keys.Select.Alt), Label: "and make it default", Enter: "this session"}
 	if m.wiring.ConfigWriter == nil {
-		alt = pickerAlt{}
+		pick.alt = pickerAlt{}
 	}
-	// What esc leaves is the model the session is already on, which is the
-	// one thing the word `cancel` cannot say
-	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-	keep := m.modelName
-	// The title names what chose the current model in the words the text
-	// answer uses, so the two paths `/model` takes tell one story.
-	title := "Switch model"
-	if by := m.modelChosenBy(); by != "" {
-		title += " · current" + by
-	}
-	updated, cmd := m.openPickerWith(title, opts, focus, alt, true, func(m *Model, idx int, makeDefault bool) (string, tea.Cmd) {
+	pick.apply = func(m *Model, idx int, makeDefault bool) (string, tea.Cmd) {
 		name := choices[idx]
 		switched := name != m.modelName
 		if switched {
@@ -418,10 +463,54 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 			return saved, nil
 		}
 		return fmt.Sprintf("switched to %s. %s", name, saved), nil
-	})
+	}
+	return pick
+}
+
+// openModelPick opens the interactive /model picker, aimed at the session and
+// focused on the current model, with per-model pricing when the table knows
+// it. A host that lists flows lets shift+tab aim it at one of them.
+func (m Model) openModelPick() (tea.Model, tea.Cmd) {
+	target := modelTarget{}
+	if m.wiring.ModelFlows != nil && m.wiring.HoldFlow != nil {
+		target.flows = m.wiring.ModelFlows()
+	}
+	pick := m.modelPickFor(target)
+	updated, cmd := m.openPickerWith(pick.title, pick.opts, pick.focus, pick.alt, true, pick.apply)
 	next := updated.(Model)
-	next.picker.card.CancelLabel = "keep " + keep
+	next.picker.target = target
+	next.picker.card.Target = pick.target
+	// What esc leaves is the model the target is already on, which is the
+	// one thing the word `cancel` cannot say
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	next.picker.card.CancelLabel = "keep " + pick.keep
 	return next, cmd
+}
+
+// stepModelTarget aims the /model picker at the next flow (shift+tab) or the
+// previous (tab), round the session and the flows, and draws the card again
+// for the new target. The query the reader typed stays, so a half-typed name
+// is looked for among the new target's rows. It reports false for a key that
+// is not the target's, or on a picker that has no flows to aim at.
+func (m *Model) stepModelTarget(msg tea.KeyPressMsg) bool {
+	t := &m.picker.target
+	if m.picker.card == nil || len(t.flows) == 0 || !keys.Match(msg, keys.Select.Flow) {
+		return false
+	}
+	n := len(t.flows) + 1
+	t.at = ((t.at+keys.Step(msg.String(), keys.Select.Flow)+n)%n + n) % n
+	pick := m.modelPickFor(*t)
+	card := m.picker.card
+	card.Title, card.Total = pick.title, selectableOptions(pick.opts)
+	card.AltKey, card.AltLabel, card.EnterLabel = pick.alt.Key, pick.alt.Label, pick.alt.Enter
+	card.Target, card.CancelLabel = pick.target, "keep "+pick.keep
+	m.picker.all, m.picker.apply = pick.opts, pick.apply
+	m.refilterPicker()
+	if card.Query == "" {
+		card.Focus = pick.focus
+	}
+	m.syncViewport()
+	return true
 }
 
 // openModePick opens the interactive /permissions picker over the session's

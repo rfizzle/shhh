@@ -240,7 +240,9 @@ Naming the model explicitly still wins. A session that puts a model in a
 flow's own setting gets that model, which is what a person reaches for when
 the small one is judging badly — and a person who wants all of the machinery
 on one model names it once, in `provider.cheap_model`, rather than once per
-flow.
+flow. The settings screen's flow rows are one way to hold a flow's model for
+the running session alone; the `/model` picker is a second, aimed at a flow
+with `shift+tab`, and both write no file.
 
 The compaction summary keeps a rule of its own over the chain. A model other
 than the conversation's is taken only when its window is at least the

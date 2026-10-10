@@ -289,6 +289,12 @@ type Wiring struct {
 	ModelOptions []string
 	ModelLister  func(context.Context) ([]string, error)
 	SwitchModel  func(string)
+	// ModelFlows lists the flows the /model picker can point at, and
+	// HoldFlow has the session take a model for one of them, written to no
+	// file (FlowTarget). Either nil leaves the picker with the session as its
+	// only target.
+	ModelFlows func() []FlowTarget
+	HoldFlow   func(key, model string)
 	// Effort is the reasoning level the session starts on and SwitchEffort
 	// makes a change reach the next request (nil is display-only);
 	// EffortDefault and EffortOutranked are the persisted level and whatever

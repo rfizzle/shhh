@@ -519,6 +519,8 @@ func (b *screenBuild) wiring() chat.Wiring {
 		MaxToolRounds:        maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet),
 		ConfigWriter:         configWriter(proj),
 		ConfigScreen:         configSessionOpener(env),
+		ModelFlows:           func() []chat.FlowTarget { return modelFlowTargets(env) },
+		HoldFlow:             func(key, model string) { holdFlowModel(env, key, model) },
 		MouseOff:             !cfg.MouseEnabled(),
 		Verbosity:            cfg.Appearance.Verbosity,
 		PasteLines:           cfg.Appearance.PasteLines,

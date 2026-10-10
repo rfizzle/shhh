@@ -1125,8 +1125,16 @@ type SelectKeys struct {
 	// answered on the focused row: the first arms an inline confirm, the
 	// second opens a rename row. Bare letters, so like Alt they are text
 	// while the query line is open.
-	Delete  Binding
-	Rename  Binding
+	Delete Binding
+	Rename Binding
+	// Flow steps the /model picker's target: shift+tab on to the next flow
+	// and tab back, the vocabulary's "move between tabs, sections or scopes"
+	// (docs/interface/surfaces.md#selectors). It is a pair, back first, so
+	// the picker reads the direction from the keystroke (Step). The picker
+	// is a surface of its own in the register because `tab` is the note on
+	// the rest of this family, and one keystroke answers one act on one
+	// surface.
+	Flow    Binding
 	Cancel  Binding
 	Palette PaletteKeys
 }
@@ -1157,6 +1165,7 @@ var Select = SelectKeys{
 	Long:   bind("v", "the full answer", "v"),
 	Delete: bind("d", "delete", "d"),
 	Rename: bind("e", "rename", "e"),
+	Flow:   bind("shift+tab", "for a flow", "tab", "shift+tab"),
 	Cancel: bind("esc", "back", "esc"),
 	Palette: PaletteKeys{
 		Prev:  bind("↑", "move", "up", "ctrl+p"),

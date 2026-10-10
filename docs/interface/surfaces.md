@@ -2834,6 +2834,20 @@ card's [m], the saved chats' [d] and [e] — without leaving the card; the key
 row names the level esc is on. A card with nothing behind its row leaves on
 the press that finds the query empty.
 
+The model picker has a target: the session, which is where it always opens,
+or one of the flows the settings screen lists. `shift+tab` points it at the
+next flow and `tab` back, round the session and the flows in the settings
+screen's order, and the title says which one it is aimed at — `Switch model ·
+for the session`, `Switch model · for the classifier` — with the current row
+marking that target's model. Both keys work with the query row open, since a
+chord is not text, and what was typed stays to be looked for among the new
+target's rows. Enter on a flow holds its model for the running session, the
+way the settings screen's flow row does: the settings screen shows the row as
+`session` and counts it among the changes not yet written, nothing reaches a
+file, and the receipt names the flow — `classifier now on scripted-fast · this
+session`. `[m]`, which writes `provider.model`, belongs to the session target
+and is not offered on a flow.
+
 ### The inline confirm
 
 A one-line question for a decision that does not need a card. Anything that

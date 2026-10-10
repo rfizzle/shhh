@@ -1,0 +1,23 @@
+# program test: none — the route is the picker's own keys, held by
+#   TestModelPicker_ShiftTabCyclesTheTarget and
+#   TestModelPicker_AFlowChoiceIsHeldForTheSession, and the settings screen
+#   reading the held model is the command package's, which the chat program
+#   test does not build: TestModelFlows_AHeldChoiceReadsSessionOnConfig
+#
+# /model at 110 columns, aimed at a flow. The picker opens on the session;
+# shift+tab (BTab) points it at the classifier, the title says so and the
+# key row offers the next flow. Searching "fast" and taking it holds that
+# model for the classifier on this session alone and the receipt names the
+# flow. /config then reads the classifier row as `session`: the same hold the
+# settings screen makes, with no file written.
+snap 01-start "Some things worth doing first"
+keys "/model" Enter
+snap 02-session "Switch model" "for the session" "[shift+tab] for a flow"
+keys BTab
+snap 03-classifier "for the classifier" "[shift+tab] next flow"
+keys "fast" Enter
+snap 04-receipt "classifier now on scripted-fast"
+keys "/config" Enter
+snap 05-config "FLOWS" "classifier" "scripted-fast" "session"
+keys Escape
+sleep 0.5

@@ -150,6 +150,7 @@
   · long           v · the full answer  [shipped]
   · delete         d · delete  [shipped]
   · rename         e · rename  [shipped]
+  · flow           tab shift+tab · for a flow  [shipped]
   · cancel         esc · back  [shipped]
   · palette.prev   up ctrl+p · move  [shipped]
   · palette.next   down ctrl+n · move  [shipped]
@@ -333,4 +334,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  234 keys · 1 moved
+  235 keys · 1 moved

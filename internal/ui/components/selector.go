@@ -214,6 +214,12 @@ type Select struct {
 	// that opens as a search that is ctrl+u away, and the key row says so.
 	AltKey   string
 	AltLabel string
+	// Target is the offer for a card whose host points it at one of several
+	// things — the /model picker's session or flow — and answers the key
+	// itself (keys.Select.Flow). The card only offers it on its key row,
+	// where it is never dropped and is up with the query line open too,
+	// because the chord is not text. Empty offers nothing.
+	Target KeyOffer
 	// CancelLabel is what esc leaves, in the surface's own words — `keep
 	// gpt-5.2` on the model picker, `back to the draft — the question waits`
 	// on a question. Empty takes the family's, which says none of the rows
@@ -626,15 +632,15 @@ func (s *Select) hintSegments(width int) []KeyOffer {
 		if s.Query != "" {
 			clear := keyOfferAs(keys.Select.Cancel, "clear")
 			if s.selectable() == 0 {
-				return []KeyOffer{clear}
+				return presentSegments([]KeyOffer{s.Target, clear})
 			}
-			return []KeyOffer{keyOffer(keys.Select.Move), keyOffer(keys.Select.Take), clear}
+			return presentSegments([]KeyOffer{keyOffer(keys.Select.Move), keyOffer(keys.Select.Take), s.Target, clear})
 		}
 		back := s.cancelOffer()
 		if s.hasRowKeys() {
 			back = keyOfferAs(keys.Select.Cancel, "row keys")
 		}
-		return []KeyOffer{keyOffer(keys.Select.Move), keyOffer(keys.Select.Take), back}
+		return presentSegments([]KeyOffer{keyOffer(keys.Select.Move), keyOffer(keys.Select.Take), s.Target, back})
 	}
 	move := keyOffer(keys.Select.MoveJK)
 	// A card whose rows are fields offers the key that changes one. It is an
@@ -673,9 +679,9 @@ func (s *Select) hintSegments(width int) []KeyOffer {
 		actions = append(actions, keyOffer(b))
 	}
 	rungs := [][]KeyOffer{
-		rung([]KeyOffer{move, change, take, alt}, actions, []KeyOffer{jump, filter, s.cancelOffer()}),
-		rung([]KeyOffer{move, change, take, alt}, actions, []KeyOffer{filter, s.cancelOffer()}),
-		rung([]KeyOffer{keyOffer(keys.Select.Move), change, take, alt}, actions, []KeyOffer{filter, s.cancelOffer()}),
+		rung([]KeyOffer{move, change, take, alt, s.Target}, actions, []KeyOffer{jump, filter, s.cancelOffer()}),
+		rung([]KeyOffer{move, change, take, alt, s.Target}, actions, []KeyOffer{filter, s.cancelOffer()}),
+		rung([]KeyOffer{keyOffer(keys.Select.Move), change, take, alt, s.Target}, actions, []KeyOffer{filter, s.cancelOffer()}),
 	}
 	for _, rung := range rungs {
 		segs := presentSegments(rung)

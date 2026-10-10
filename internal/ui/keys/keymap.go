@@ -308,7 +308,7 @@ func pairs() []Binding {
 		Reading.Move, Reading.Match, Reading.Half,
 		Context.Move, Sources.Move, Notes.Move,
 		Backlog.Move, Backlog.Page, Sprint.Move,
-		Select.Move, Select.MoveJK, Select.Tab, Staged.Pick, Queue.Move,
+		Select.Move, Select.MoveJK, Select.Tab, Select.Flow, Staged.Pick, Queue.Move,
 		KeyList.Move, KeyList.Page, KeyList.Ends,
 		Review.MoveFile, Review.MoveHunk,
 		Agent.Move, Profile.Move,

@@ -663,10 +663,30 @@ func TestGolden_ModelPicker(t *testing.T) {
 			opened, _ := m.openModelPick()
 			return strings.Join(opened.(Model).pickerLines(), "\n")
 		}
+		// A host that lists flows lets shift+tab aim the picker at one: the
+		// title and the key row follow the target.
+		aimed := func(steps int) string {
+			m := frameModel(t, width, 40)
+			m.wiring.SwitchModel = func(string) {}
+			m.wiring.ModelFlows = func() []FlowTarget {
+				return []FlowTarget{{Key: "behavior.classifier_model", Name: "classifier", Model: "gpt-5"}}
+			}
+			m.wiring.HoldFlow = func(string, string) {}
+			m.picker.models.options = []string{"o3", "gpt-5"}
+			m.modelName = "o3"
+			opened, _ := m.openModelPick()
+			m = opened.(Model)
+			for range steps {
+				m.stepModelTarget(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
+			}
+			return strings.Join(m.pickerLines(), "\n")
+		}
 		return []golden.Panel{
 			{Label: "chosen by a key the checkout's file set", View: open("o3", "provider.code_model in .shhh/config.toml")},
 			{Label: "chosen by the person's own key", View: open("o3", "provider.code_model")},
 			{Label: "switched here, so chosen by no key", View: open("gpt-5", "provider.code_model")},
+			{Label: "for the session, with flows to point at", View: aimed(0)},
+			{Label: "for a flow, after shift+tab", View: aimed(1)},
 		}
 	})
 }

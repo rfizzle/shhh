@@ -699,9 +699,12 @@ func (m *configModel) release(key string) bool {
 	}
 	file := configLoaded(m.base, key)
 	if heldKey(key) {
-		if !env.flows.holds(key) || configLoaded(m.cfg, key) != file {
+		if !env.flows.holds(key) || (configLoaded(m.cfg, key) != file && !m.resumed(key)) {
 			return false
 		}
+		_ = config.Set(&m.cfg, key, file)
+		delete(m.staged, key)
+		delete(m.opened, key)
 		env.flows.drop(key)
 		if env.flowsMoved != nil {
 			env.flowsMoved()
@@ -729,8 +732,14 @@ func (m *configModel) resume() {
 	if env == nil {
 		return
 	}
-	for _, key := range env.live.names() {
-		value, _ := env.live.value(key)
+	// A flow's model held for the session is kept by the readers that ask
+	// for it (flows), and by the picker that chose it as much as by the
+	// screen, so it comes back the same way.
+	for _, key := range slices.Concat(env.live.names(), env.flows.names()) {
+		value, ok := env.live.value(key)
+		if !ok {
+			value, _ = env.flows.value(key)
+		}
 		if value == configLoaded(m.base, key) || config.Set(&m.cfg, key, value) != nil {
 			// The file has caught up with the session, or the key is gone.
 			env.live.drop(key)
@@ -738,6 +747,13 @@ func (m *configModel) resume() {
 		}
 		m.staged[key], m.opened[key] = value, value
 	}
+}
+
+// resumed reports that the session held key when the screen opened and the
+// reader has not changed it since.
+func (m *configModel) resumed(key string) bool {
+	held, ok := m.opened[key]
+	return ok && m.staged[key] == held
 }
 
 // hold has the running session take a key it reads at a turn boundary as
@@ -825,7 +841,8 @@ func (m *configModel) flowRows() []components.ConfigRow {
 	}
 	rows := make([]components.ConfigRow, 0, len(answers))
 	for i, a := range answers {
-		held := env != nil && !a.flow.sessionless && a.key != "" && env.flows.holds(a.key) && a.model != files[i].model
+		held := env != nil && !a.flow.sessionless && a.key != "" && env.flows.holds(a.key) &&
+			(a.model != files[i].model || m.resumed(a.key))
 		if a.flow.sessionless {
 			// No session sends it, so what a session holds is not its answer.
 			a = files[i]

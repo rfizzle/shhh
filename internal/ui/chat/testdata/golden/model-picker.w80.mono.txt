@@ -34,6 +34,22 @@
 │ [↑↓] move · [enter] select · [esc] row keys                              │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
+· for the session, with flows to point at
+╭─ Switch model · for the session ─────────────────────────── 2 available ─╮
+│ ▸   type to filter                                          2 of 2 match │
+│ ❯ 1. o3  (current)                                                       │
+│   2. gpt-5                                                               │
+│ [↑↓] move · [enter] select · [shift+tab] for a flow · [esc] row keys     │
+╰──────────────────────────────────────────────────────────────────────────╯
+
+· for a flow, after shift+tab
+╭─ Switch model · for the classifier ──────────────────────── 2 available ─╮
+│ ▸   type to filter                                          2 of 2 match │
+│   1. o3                                                                  │
+│ ❯ 2. gpt-5  (current)                                                    │
+│ [↑↓] move · [enter] select · [shift+tab] next flow · [esc] row keys      │
+╰──────────────────────────────────────────────────────────────────────────╯
+
 ── ansi ────────────────────────────────────────────────────
 · chosen by a key the checkout's file set
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mSwitch model · current (chosen by provider.code_model in .shhh/config.t…␛[m␛[38;5;244m╮␛[m
@@ -57,4 +73,20 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mo3␛[m                                                                  ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m2. gpt-5  (current)                                                   ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m row keys␛[m                              ␛[38;5;244m│␛[m
+␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────╯␛[m
+
+· for the session, with flows to point at
+␛[38;5;244m╭─ ␛[m␛[1;38;5;254mSwitch model · for the session ␛[m␛[38;5;244m─────────────────────────── 2 available ─╮␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254m ␛[m␛[38;5;244m type to filter␛[m                                          ␛[38;5;244m2 of 2 match␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. o3  (current)                                                      ␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mgpt-5␛[m                                                               ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[shift+tab]␛[m␛[38;5;244m for a flow␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m row keys␛[m     ␛[38;5;244m│␛[m
+␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────╯␛[m
+
+· for a flow, after shift+tab
+␛[38;5;244m╭─ ␛[m␛[1;38;5;254mSwitch model · for the classifier ␛[m␛[38;5;244m──────────────────────── 2 available ─╮␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254m ␛[m␛[38;5;244m type to filter␛[m                                          ␛[38;5;244m2 of 2 match␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mo3␛[m                                                                  ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m2. gpt-5  (current)                                                   ␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[shift+tab]␛[m␛[38;5;244m next flow␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m row keys␛[m      ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────╯␛[m

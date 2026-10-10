@@ -937,6 +937,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `select.long` | `v` | the full answer | yes |
 | `select.delete` | `d` | delete | yes |
 | `select.rename` | `e` | rename | yes |
+| `select.flow` | `tab`, `shift+tab` | for a flow | yes |
 | `select.cancel` | `esc` | back | yes |
 | `select.palette.prev` | `up`, `ctrl+p` | move | yes |
 | `select.palette.next` | `down`, `ctrl+n` | move | yes |

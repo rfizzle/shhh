@@ -538,10 +538,14 @@ func TestEveryPairIsDeclaredBackFirst(t *testing.T) {
 	back := map[string]bool{
 		"up": true, "k": true, "N": true, "ctrl+u": true,
 		"pgup": true, "left": true, "h": true, "home": true,
+		// The model picker's target: shift+tab is the way on and tab the way
+		// back, the reverse of a tab strip, as the person asked for it.
+		"tab": true,
 	}
 	on := map[string]bool{
 		"down": true, "j": true, "n": true, "ctrl+d": true,
 		"pgdown": true, "right": true, "l": true, "end": true,
+		"shift+tab": true,
 	}
 	for _, b := range pairs() {
 		ks := b.Keys()

@@ -125,6 +125,7 @@ const (
 	OnSelector
 	OnChatPicker
 	OnRewindPicker
+	OnModelPicker
 	OnSelectorQuery
 	OnPalette
 	OnWholeKeyList
@@ -546,6 +547,21 @@ func register() [surfaceCount]Surface {
 			Position: Takeover,
 			Reached:  "/rewind",
 			Bindings: []Binding{Rewind.Diff},
+		},
+		OnModelPicker: {
+			// The /model picker has a target, the session or one flow, which
+			// shift+tab and tab walk. It is a row of its own because `tab`
+			// is the note on the family's row above, and because it opens
+			// with the query line up, where the chord is the one key that
+			// is not text.
+			Name:     "the model picker",
+			Section:  "docs/interface/surfaces.md#selectors",
+			Position: Takeover,
+			Reached:  "/model",
+			Bindings: []Binding{
+				Select.MoveJK, Select.Take, Select.Alt, Select.Flow,
+				Select.Filter, Select.Jump, Select.Cancel,
+			},
 		},
 		OnSelectorQuery: {
 			// The same family with the query line open, which is why it is

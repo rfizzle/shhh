@@ -41,8 +41,36 @@ type pickerState struct {
 	// or not: the reader asked from a row they were standing on, and the
 	// cursor is still on it.
 	fromReading bool
+	// target is what the /model picker is choosing for: the session, or one
+	// of the flows.
+	target modelTarget
 	// models is the /model picker's catalog and its live discovery.
 	models modelList
+}
+
+// FlowTarget is one flow the /model picker can choose a model for: the
+// setting that names its model, what the settings screen calls it, and the
+// model it runs on now. The host owns which flows there are and how one is
+// resolved; the picker owns only the choosing.
+type FlowTarget struct {
+	Key, Name, Model string
+}
+
+// modelTarget is the /model picker's aim. at is 0 for the session and n for
+// flows[n-1]; flows is empty when the host offers none, and the picker then
+// has the session alone. It is read when the card opens, so the picker opens
+// on the session every time.
+type modelTarget struct {
+	flows []FlowTarget
+	at    int
+}
+
+// flow is the flow the picker is aimed at, if it is aimed at one.
+func (t modelTarget) flow() (FlowTarget, bool) {
+	if t.at <= 0 || t.at > len(t.flows) {
+		return FlowTarget{}, false
+	}
+	return t.flows[t.at-1], true
 }
 
 // modelList is the /model picker's catalog: the curated list, or what the
@@ -74,4 +102,5 @@ func (p *pickerState) clear() {
 	p.apply = nil
 	p.all = nil
 	p.index = nil
+	p.target = modelTarget{}
 }
