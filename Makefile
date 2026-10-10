@@ -23,6 +23,11 @@ TIER_TAGS=contract,integration,hostlists
 GOFMT ?= $(shell command -v gofmt 2>/dev/null || echo "$$(go env GOROOT)/bin/gofmt")
 GOIMPORTS=goimports
 GOLANGCI_LINT=golangci-lint
+# Pinned the way golangci-lint is (test.yml spells its version out): a scan whose
+# own version floats reports a different set on the same tree. Install it with
+# `go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)`.
+GOVULNCHECK_VERSION=v1.8.0
+GOVULNCHECK=govulncheck
 # `make fmt` rewrites files, so its list is a find rather than the index: a Go
 # file that has been written but not yet added still has to be formatted. It
 # skips dotted directories because a checkout can hold whole working trees
@@ -55,7 +60,7 @@ else
 	RESET   :=
 endif
 
-.PHONY: prepush prepush-skips prepush-go hooks ci-container all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data host-lists host-lists-check tui-shot tui-check tui-longpath design help
+.PHONY: vulncheck prepush prepush-skips prepush-go hooks ci-container all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data host-lists host-lists-check tui-shot tui-check tui-longpath design help
 
 all: help
 
@@ -109,6 +114,10 @@ vet: ## Run go vet over every tier's files
 lint: ## Run golangci-lint
 	@echo "${MAGENTA}Running golangci-lint...${RESET}"
 	@$(HERMETIC_ENV) $(GOLANGCI_LINT) run --modules-download-mode=readonly
+
+vulncheck: ## Fail on a known vulnerability the binary reaches (needs govulncheck and the network)
+	@echo "${MAGENTA}Running govulncheck $(GOVULNCHECK_VERSION)...${RESET}"
+	@$(GOVULNCHECK) ./...
 
 ## Test:
 # The run stays cacheable on purpose: nothing here adds -count=1, and a test
@@ -196,6 +205,7 @@ if [ -x /usr/bin/sandbox-exec ]; then mech=seatbelt; fi; \
 if [ "$$mech" = none ]; then echo "skip test-integration: no working bubblewrap and no seatbelt on this host"; fi; \
 if ! command -v tmux >/dev/null 2>&1 || ! command -v python3 >/dev/null 2>&1; then echo "skip tui-check: tmux or python3 is missing"; fi; \
 if ! command -v docker >/dev/null 2>&1 && ! command -v podman >/dev/null 2>&1; then echo "skip ci-container: no docker or podman engine"; fi; \
+if ! command -v $(GOVULNCHECK) >/dev/null 2>&1; then echo "skip vulncheck: govulncheck is not installed (go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION))"; fi; \
 echo "ci-only: the macOS seatbelt tier and the sandbox-session job (docker) run in CI alone"
 endef
 

@@ -86,7 +86,9 @@ Agents run the quality gate. The orchestrator (or the sprint's checkpoint)
 runs `make prepush` at every checkpoint and before a push: it runs every CI
 check this host can run under `GOTOOLCHAIN` set to go.mod's version, prints
 the tiers it skipped because the host lacks them, and fails only on a check
-that ran. Two tiers only CI runs: the macOS seatbelt containment job and the
+that ran. It includes `govulncheck ./...` (pinned in the Makefile; skipped by
+name where the tool is absent), which fails on an advisory the binary reaches.
+Two tiers only CI runs: the macOS seatbelt containment job and the
 docker sandbox-session job. `make hooks` installs a pre-push hook that runs
 `make prepush`; it is opt-in, and `git push --no-verify` skips it.
 
