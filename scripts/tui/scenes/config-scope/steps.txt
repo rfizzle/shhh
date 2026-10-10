@@ -1,39 +1,45 @@
 # program test: none — the screen's host is the command package's config
 #   model, which the chat program test does not build; the scope key is held
 #   by TestConfigScreen_TheScopeKeyMovesTheWrite, and the flows section by
-#   TestConfigScreen_FlowsSayWhichStepAnswered and
+#   TestConfigScreen_FlowsSayWhichStepAnswered,
+#   TestConfigScreen_AFlowStagesLikeEveryOtherRow and
 #   TestConfigScreen_AFlowTakenForTheSessionReachesItsReader
 #
 # /config in a session standing in a checkout, at 110 columns. The scene's
 # directory is a fresh repository, so the screen opens writing the
 # checkout's own .shhh/config.toml and says whose file that is in the header,
-# with the key that moves the write offered on the key row. Pressing it moves
-# the write to the person's own file: the header names it, and the key row
-# now offers the way back. That is what lets a key the checkout may not
-# decide — an api key, sandbox.require — be written from inside a session
-# rather than by leaving it for a flag the screen cannot pass.
+# with the key that moves the write offered on the key row. Pressing it
+# (shift+tab, the screen's own while it is up) moves the write to the
+# person's own file: the header names it, and the key row now offers the way
+# back. That is what lets a key the checkout may not decide — an api key,
+# sandbox.require — be written from inside a session rather than by leaving
+# it for a flag the screen cannot pass.
 #
 # The flows section heads the screen: every bounded call and the model the
 # chain gives it, with the link that answered in the source column. The
 # classifier's row opens the same list the session's /model picker offers,
 # which is why /model is asked first — the scripted endpoint's models are
-# what it lists — and its key row names the three places the choice can go.
-# Taken for this session, the row is redrawn with `session` as its source and
-# nothing is written.
+# what it lists — and its one answer is enter, as on every other row. The
+# choice is staged: the header counts it and the source column reads
+# `<link> · unwritten`, which in a session means this session only. ctrl+s
+# writes it to the file the header names.
 snap 01-start "Some things worth doing first"
 keys "/model" Enter
 snap 02-models "scripted-mini" "(current)"
 keys Escape
 sleep 0.5
 keys "/config" Enter
-snap 03-checkout "/config · the checkout's file · .shhh/config.toml" "[g] write yours" "FLOWS"
-keys g
-snap 04-yours "/config · your file" "[g] write the checkout's"
-keys g
-snap 05-back "/config · the checkout's file" "[g] write yours"
+snap 03-checkout "/config · the checkout's file · .shhh/config.toml" "[shift+tab] write yours" "FLOWS"
+keys BTab
+snap 04-yours "/config · your file" "[shift+tab] write the checkout's"
+keys BTab
+snap 05-back "/config · the checkout's file" "[shift+tab] write yours"
 keys Enter
-snap 06-flow-picker "[enter] this session" "[m] my settings" "[g] this checkout"
-keys Up Enter
-snap 07-session "this session only, written to no file" "for the rest of this session"
+snap 06-flow-picker "[enter] take it" "[esc] keep"
+keys "/"
+keys "fast" Enter
+snap 07-staged "1 change unwritten" "· unwritten" "[ctrl+s] write 1 change"
+keys C-s
+snap 08-written "wrote 1 change to .shhh/config.toml"
 keys Escape
 sleep 0.5

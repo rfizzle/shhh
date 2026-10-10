@@ -1532,7 +1532,12 @@ type ScreenKeys struct {
 	Keep  Binding
 	// Scope moves the config screen's write between the checkout's own file
 	// and the person's, where the screen stands in a checkout and so has
-	// two to choose from. It is the screen's `--global`, as a toggle.
+	// two to choose from. It is the screen's `--global`, as a toggle. It is
+	// the chat's mode cycle (Draft.Mode) and Reset the chat's history search
+	// (Draft.HistorySearch): the screen holds the keyboard while it is up, so
+	// neither reaches the session, and the register's rule against two
+	// bindings per surface is kept because no surface holds both
+	// (docs/interface/reserved-keys.md#the-settings-screen-borrows-two-chords).
 	Scope Binding
 
 	Copy    Binding
@@ -1569,7 +1574,7 @@ var Screen = ScreenKeys{
 	Reset: bind("ctrl+r", "reset", "ctrl+r"),
 	Write: Save("write"),
 	Keep:  bind("esc", "back", "esc"),
-	Scope: bind("g", "switch the file", "g"),
+	Scope: bind("shift+tab", "switch the file", "shift+tab"),
 
 	Copy:    bind("c", "copy", "c"),
 	Rerun:   bind("enter", "re-run it", "enter"),

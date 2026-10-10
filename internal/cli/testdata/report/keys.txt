@@ -265,7 +265,7 @@
   · reset    ctrl+r · reset  [shipped]
   · write    ctrl+s · write  [shipped]
   · keep     esc · back  [shipped]
-  · scope    g · switch the file  [shipped]
+  · scope    shift+tab · switch the file  [shipped]
   · copy     c · copy  [shipped]
   · rerun    enter · re-run it  [shipped]
   · snippet  ctrl+s · write it as a snippet  [shipped]

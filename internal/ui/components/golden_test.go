@@ -2840,22 +2840,20 @@ func goldenFlowRows() []ConfigRow {
 		{Label: "gpt-5.2"}, {Label: "gpt-5.2-mini"}, {Label: "claude-haiku-4.5"},
 		{Label: "claude-sonnet-4.6"}, {Label: "gemini-3-flash"},
 	}
-	all := []ConfigTake{TakeSession, TakeMine, TakeCheckout}
 	return []ConfigRow{
 		{Group: "FLOWS", Key: "behavior.classifier_model", Label: "classifier",
 			Value: "gemini-3-flash", Detail: "this session only, written to no file",
-			Source: "session", SourceTone: ToneOpen, Options: models, Takes: all},
+			Source: "session", SourceTone: ToneOpen, Options: models},
 		{Group: "FLOWS", Key: "behavior.explainer_model", Label: "explanation",
 			Value: "claude-sonnet-4.6", Detail: "behavior.explainer_model", Source: "flow key",
-			Options: models, Takes: all},
+			Options: models},
 		{Group: "FLOWS", Key: "summary.model", Label: "reading",
 			Value: "gpt-5.2-mini", Detail: "provider.cheap_model", Source: "cheap key",
-			Options: models, Takes: all},
+			Options: models},
 		{Group: "FLOWS", Key: "todo.model", Label: "backlog",
-			Value: "claude-haiku-4.5", Source: "provider small model", Options: models, Takes: all},
+			Value: "claude-haiku-4.5", Source: "provider small model", Options: models},
 		{Group: "FLOWS", Key: "summary.model", Label: "compaction",
-			Value: "gpt-5.2", Source: "session model", Options: models,
-			Takes: []ConfigTake{TakeMine, TakeCheckout}},
+			Value: "gpt-5.2", Source: "session model", Options: models},
 	}
 }
 
@@ -3034,17 +3032,17 @@ func TestGolden_ConfigScreenScope(t *testing.T) {
 			return c
 		}
 		return []golden.Panel{
-			{Label: "the checkout's file · [g] offers yours", View: screen(false).View(width)},
-			{Label: "your file · [g] offers the checkout's", View: screen(true).View(width)},
+			{Label: "the checkout's file · [shift+tab] offers yours", View: screen(false).View(width)},
+			{Label: "your file · [shift+tab] offers the checkout's", View: screen(true).View(width)},
 			{Label: "your file behind the table · one word beside the path, outliving it", View: func() string {
 				c := screen(true)
 				c.Behind = true
 				return c.View(width)
 			}()},
-			{Label: "a key the checkout may not decide · refused naming [g]", View: func() string {
+			{Label: "a key the checkout may not decide · refused naming [shift+tab]", View: func() string {
 				c := screen(false)
 				c.Notice = "config key provider.api_key is not read from a checkout's file — " +
-					"a credential is yours, not the repository's; [g] moves the write to ~/.config/shhh/config.toml"
+					"a credential is yours, not the repository's; [shift+tab] moves the write to ~/.config/shhh/config.toml"
 				return c.View(width)
 			}()},
 			{Label: "[?] · the switch is in the register", View: func() string {

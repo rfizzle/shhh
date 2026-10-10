@@ -65,6 +65,19 @@ readline chords are: the draft is a readline-shaped editor and those keys
 reach it, so binding one takes a shell user's muscle memory to open something
 they did not ask for.
 
+## The settings screen borrows two chords
+
+`ctrl+r` and `shift+tab` are the draft's history search and mode cycle, and
+the settings screen spends them as its reset and its switch between your file
+and the checkout's. They are the screen's own while it is up and nobody's
+while it is not: a screen that takes the whole terminal holds the keyboard,
+so neither reaches the session underneath, and a key is inert until its
+surface holds it ([a key is inert until its surface holds the
+keyboard](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
+The register's rule of one binding per act and one act per binding holds on
+each surface; it does not reach across two that never hold the keyboard
+together.
+
 ## One keyboard on every platform
 
 On Linux and Windows the terminal sends the escape prefix for alt and an alt

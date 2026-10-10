@@ -3152,9 +3152,9 @@ way: the same rows in the same order, the same account of where each value
 came from, the same staging, and the same write key. In a session it takes the
 transcript the way the context reading does, so the turn underneath goes on
 running, and what a write leaves behind is a row in that transcript saying
-what reached the file — and that the running session keeps the settings it
-started on, because a screen that changed the file is not a screen that
-changed the conversation. Two words differ and they are the two that say where
+what reached the file — and, for every setting the session cannot take as it
+is staged, that the running session keeps the settings it started on, because
+a screen that changed the file is not a screen that changed the conversation. Two words differ and they are the two that say where
 the reader is: what the screen calls itself, and the one word its header ends
 with. The four settings that made this worth having are the ones a person
 reaches for in the middle of the work rather than before it — how often the
@@ -3172,21 +3172,19 @@ out as settings, read from the same chain the calls are sent with
 ([a bounded call runs on the small
 model](../capabilities/providers.md#a-bounded-call-runs-on-the-small-model)),
 so a second model on the bill is answered by looking. In a session a flow's
-row opens the list the session's own model picker offers, and its key row
-names three places the choice can go: `[enter]` **this session** — the model
-answers that flow for the rest of the process and reaches no file, and the
-row says `session` in its source column from then on; `[m]` **my settings**;
-and `[g]` **this checkout**, offered where the screen stands in one and
-refused with the writer's own sentence where the checkout is not trusted or
-may not decide the key. The two files are written at once for that one key,
-because the key already said which file the question was about, and the
-session takes the model too, the way the model picker's own key switches the
-session as it makes the default. These are the one exception to the session
-keeping the settings it started on, and they are an exception by being asked
-for by name. A flow no session sends — the one-shot's description, and the
-compaction an unattended run makes — offers only the files. `shhh config`
-has no session, so its flows rows stage like every other row, and `[g]` and
-`[ctrl+s]` reach either file.
+row opens the list the session's own model picker offers, and `[enter]`
+answers it the way it answers every other row: the choice is staged, the
+header counts it, and the source column reads `<link> · unwritten`. The
+session takes a staged flow model as it is staged, so the model answers that
+flow from its next call, and `unwritten` means one thing here: this session
+only. `[ctrl+s]` writes it to the file the header names, and the session
+stays on it; leaving over it asks the question every staged change asks, and
+discarding puts the session back on what the file holds. These are the one
+exception to the session keeping the settings it started on, and the receipt
+leaves the sentence off a write that carried flow models alone. A flow no
+session sends — the one-shot's description, and the compaction an unattended
+run makes — stages and writes the same way and changes nothing in the
+session. `shhh config` has no session, so its flows rows only stage.
 
 Neither row repeats the other. The header carries the register's key and the
 letter; the foot carries what the screen can do and, last, the way out. A
@@ -3444,6 +3442,21 @@ proof that it carried nothing, and it was a material no artboard draws.
 
 ### The settings screen
 
+The keyboard is seven keys. `↑↓` (and `jk`) move; `[enter]` opens the row
+under the pointer and takes what is in it; `[esc]` closes what is open, clears
+the filter, and then leaves, asking first over anything staged; `[/]` filters;
+`[ctrl+s]` writes every staged change; `[ctrl+r]` resets the row under the
+pointer to its default; and `[shift+tab]` switches the write between your file
+and the checkout's, where the screen stands in one. `[?]` is there because
+every screen has it. A change always means the same thing: it stands as this
+session's until `[ctrl+s]` writes it to the file the header names. A value in
+a field or a picker that `[enter]` has not taken yet is taken by `[ctrl+s]`
+first and then written, so the chord is never swallowed by what is being
+typed; `[esc]` in a field closes it and stages nothing. `[ctrl+r]` and
+`[shift+tab]` are the chat's history search and mode cycle, and the screen
+holds the keyboard while it is up, so neither reaches the session
+([the screen's two borrowed chords](reserved-keys.md#the-settings-screen-borrows-two-chords)).
+
 Staging and writing are two acts, and the write is one chord. Edits stage as
 they are made, the header counts them (`2 changes unwritten`), and `[ctrl+s]`
 writes every staged change to the file in the header at once. It is the
@@ -3461,8 +3474,9 @@ A write answers with a receipt, so it is never silent. The foot row, under the
 keys, reads `wrote 2 changes to .shhh/config.toml · provider.model,
 behavior.command_timeout_seconds` until the next key, and in a session the
 transcript gets the same line under the `·` mark, with what the checkout had
-to say about the keys just written and the sentence that the running session
-keeps the settings it started on. The screen stays up and nothing is left
+to say about the keys just written and, unless the write carried flow models
+alone, the sentence that the running session keeps the settings it started
+on. The screen stays up and nothing is left
 staged. A write that cannot land says `could not write <path>: <reason>` the
 same two ways and keeps every change staged, so the key can be pressed again
 once the reason is gone. The model picker's `[m]`, which writes `provider.model`

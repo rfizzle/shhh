@@ -175,20 +175,20 @@ func TestConfigScreen_WriteIsOfferedOnlyWhenSomethingIsStaged(t *testing.T) {
 // itself: the screen owns no idea of which file is which.
 func TestConfigScreen_TheScopeKeyIsOfferedOnlyInACheckout(t *testing.T) {
 	c := configFixture()
-	if strings.Contains(c.View(110), "[g]") {
+	if strings.Contains(c.View(110), "[shift+tab]") {
 		t.Fatalf("a screen with one file to write offers a switch:\n%s", c.View(110))
 	}
-	if _, result := c.Update(key("g")); result.Scope {
-		t.Fatal("g switched the write on a screen with one file")
+	if _, result := c.Update(key("shift+tab")); result.Scope {
+		t.Fatal("shift+tab switched the write on a screen with one file")
 	}
 
 	c.Scoped = true
 	view := c.View(110)
-	if !strings.Contains(view, "the checkout's file") || !strings.Contains(view, "[g] write yours") {
+	if !strings.Contains(view, "the checkout's file") || !strings.Contains(view, "[shift+tab] write yours") {
 		t.Fatalf("a screen in a checkout names whose file it writes and offers the other:\n%s", view)
 	}
-	if _, result := c.Update(key("g")); !result.Scope {
-		t.Fatal("g did not ask the host to switch the write")
+	if _, result := c.Update(key("shift+tab")); !result.Scope {
+		t.Fatal("shift+tab did not ask the host to switch the write")
 	}
 }
 
@@ -430,37 +430,78 @@ func TestConfigScreen_IsATakeoverNotACard(t *testing.T) {
 	}
 }
 
-// A row with destinations answers its picker on three keys — enter for the
-// first, then one each for the others — and says so on the key row. Those
-// two are letters, so while the picker's query row is open they are text.
-func TestConfigScreen_AFlowsPickerSendsTheChoiceWhereItsKeySays(t *testing.T) {
-	flows := func() *ConfigScreen {
+// The screen's keyboard is seven keys: move, enter, esc, /, ctrl+s, ctrl+r
+// and shift+tab, with ? for the list every screen has. Every other key is a
+// letter, in the list and in a picker, and nothing in the register offers it.
+func TestConfigScreen_TheRegisterIsSevenKeys(t *testing.T) {
+	c := configFixture()
+	c.Scoped = true
+	c.Update(key("?"))
+	view := ansi.Strip(c.View(130))
+	for _, want := range []string{"[↑↓/jk]", "[enter]", "[/]", "[ctrl+s]", "[ctrl+r]", "[shift+tab]", "[esc]"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the register lacks %s:\n%s", want, view)
+		}
+	}
+	for _, gone := range []string{"[r]", "[g]", "[d]", "[m]", "[q]", "ctrl+u", "editor"} {
+		if strings.Contains(view, gone) {
+			t.Errorf("the register still offers %s:\n%s", gone, view)
+		}
+	}
+	for _, letter := range []string{"r", "g", "d", "m", "q", "ctrl+u"} {
 		c := configFixture()
-		c.Rows = append([]ConfigRow{{
-			Group: "FLOWS", Key: "behavior.classifier_model", Label: "classifier",
-			Value: "gpt-5.2", Source: "flow key",
-			Options: []SelectOption{{Label: "gpt-5.2"}, {Label: "gpt-5.2-mini"}},
-			Takes:   []ConfigTake{TakeSession, TakeMine, TakeCheckout},
-		}}, c.Rows...)
-		c.Update(key("enter"))
+		c.Scoped = true
+		if done, result := c.Update(key(letter)); done || result != (ConfigResult{}) {
+			t.Errorf("%s did something on the list: done=%v result=%#v", letter, done, result)
+		}
+	}
+	// A picker is move, enter, /, esc and the write chord: m and g are letters
+	// there, and nothing but enter takes the option under the pointer.
+	for _, letter := range []string{"m", "g", "d", "r"} {
+		c := configFixture()
+		c.Scoped = true
 		c.Update(key("down"))
-		return c
-	}
-	foot := ansi.Strip(flows().View(130))
-	for _, want := range []string{"[enter] this session", "[m] my settings", "[g] this checkout"} {
-		if !strings.Contains(foot, want) {
-			t.Errorf("the picker's key row does not offer %q:\n%s", want, foot)
+		c.Update(key("down"))
+		c.Update(key("down"))
+		c.Update(key("enter"))
+		if c.picker == nil {
+			t.Fatal("enter on the model row did not open its picker")
+		}
+		if _, result := c.Update(key(letter)); result.Change != nil || result.Scope {
+			t.Errorf("%s answered the picker: %#v", letter, result)
 		}
 	}
-	for pressed, want := range map[string]ConfigTake{"enter": TakeSession, "m": TakeMine, "g": TakeCheckout} {
-		_, result := flows().Update(key(pressed))
-		if result.Change == nil || result.Change.Take != want || result.Change.Value != "gpt-5.2-mini" {
-			t.Errorf("[%s] answered %+v, want %v with the option under the pointer", pressed, result.Change, want)
-		}
+}
+
+// ctrl+s with a field or a picker open takes what is in it as the staged
+// value and then writes, instead of being swallowed by the field; esc inside
+// a field still closes it without staging.
+func TestSettings_CtrlSInsideAFieldStagesThenWrites(t *testing.T) {
+	c := configFixture()
+	c.Update(key("down"))
+	c.Update(key("enter"))
+	c.Update(key("backspace"))
+	c.Update(key("backspace"))
+	typeInto(c, "40")
+	done, result := c.Update(key("ctrl+s"))
+	if done || !result.Write || result.Change == nil ||
+		result.Change.Key != "behavior.max_tool_rounds" || result.Change.Value != "40" {
+		t.Fatalf("ctrl+s in a field stages what was typed and writes: done=%v result=%#v", done, result)
 	}
-	c := flows()
-	c.Update(key("/"))
-	if _, result := c.Update(key("m")); result.Change != nil {
-		t.Errorf("an m typed into the picker's query took the choice: %+v", result.Change)
+
+	p := configFixture()
+	p.Update(key("enter"))
+	p.Update(key("down"))
+	_, result = p.Update(key("ctrl+s"))
+	if !result.Write || result.Change == nil || result.Change.Value != "auto" {
+		t.Fatalf("ctrl+s in a picker stages the option under the pointer and writes: %#v", result)
+	}
+
+	e := configFixture()
+	e.Update(key("down"))
+	e.Update(key("enter"))
+	typeInto(e, "9")
+	if _, result := e.Update(key("esc")); result.Change != nil || result.Write {
+		t.Fatalf("esc in a field stages nothing: %#v", result)
 	}
 }

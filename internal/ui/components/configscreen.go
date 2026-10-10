@@ -25,7 +25,6 @@ package components
 // `⏵⏵ auto` without knowing what a permission mode is.
 
 import (
-	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -51,8 +50,8 @@ type ConfigRow struct {
 	// them and the markers do not count them. A row whose Group differs from
 	// the row before it opens a new rail.
 	Group string
-	// Key is the config key `[ctrl+s]` would write and `[r]` would clear. The screen
-	// only carries it back to the host.
+	// Key is the config key `[ctrl+s]` would write and `[ctrl+r]` would clear. The
+	// screen only carries it back to the host.
 	Key string
 	// Label is the setting's name, in the left column.
 	Label string
@@ -83,49 +82,14 @@ type ConfigRow struct {
 	// Secret marks a value that must never be echoed: `[enter]` opens the masked
 	// entry rather than a field showing what is already there.
 	Secret bool
-	// Takes are where the row's answer can go instead of being staged, in
-	// the order its picker offers them: `[enter]` takes the first, and the
-	// rest have keys of their own. A flow's model is the row that has them —
-	// taken for this session alone, or written to a file at once
-	// (docs/interface/surfaces.md#the-supporting-screens). Empty is a row
-	// whose answer is staged like every other.
-	Takes []ConfigTake
-}
-
-// ConfigTake is one place a row's answer can go other than the staged edits.
-type ConfigTake int
-
-const (
-	// TakeSession holds the value for the rest of this session and writes
-	// it nowhere.
-	TakeSession ConfigTake = iota + 1
-	// TakeMine writes it to the person's own settings file.
-	TakeMine
-	// TakeCheckout writes it to the checkout's file.
-	TakeCheckout
-)
-
-// word is the destination as the picker's key row names it.
-func (t ConfigTake) word() string {
-	switch t {
-	case TakeSession:
-		return "this session"
-	case TakeMine:
-		return "my settings"
-	case TakeCheckout:
-		return "this checkout"
-	}
-	return ""
 }
 
 // ConfigChange is one staged edit, resolved to the host as it is made. Reset
-// is `[r]`: the key goes back to its default rather than to a value. Take is
-// where a row with destinations sent it; zero is an edit to stage.
+// is `[ctrl+r]`: the key goes back to its default rather than to a value.
 type ConfigChange struct {
 	Key   string
 	Value string
 	Reset bool
-	Take  ConfigTake
 }
 
 // ConfigResult is what a key answered with: how the screen closed — left or
@@ -248,8 +212,8 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	case keys.Is(pressed, keys.Screen.Write):
 		return c.write()
 	}
-	// With the query line open the query line is the surface, so g is a
-	// letter rather than a key — the same reading every picker in the product
+	// With the query line open the query line is the surface, so a letter is
+	// text rather than a key — the same reading every picker in the product
 	// makes — and esc backs out of the line before it leaves the screen: it
 	// clears what was typed, then closes the line.
 	if c.list.Filtering {
@@ -372,19 +336,13 @@ func (c *ConfigScreen) updatePicker(msg tea.KeyPressMsg) (bool, ConfigResult) {
 		}
 		return false, ConfigResult{}
 	case keys.Is(pressed, keys.Screen.Take):
-		return c.takeChosen(c.firstTake())
+		return false, c.takeChosen()
+	case keys.Is(pressed, keys.Screen.Write):
+		// The write takes what is in the picker first, so the choice under the
+		// pointer is staged and then written rather than swallowed.
+		return false, c.writing(c.takeChosen())
 	}
 	pressed := msg.String()
-	// A row with destinations answers the other two with keys of their own.
-	// They are letters while the query row is open, like every letter on a
-	// picker being typed into.
-	if !c.picker.Filtering {
-		for _, t := range c.otherTakes() {
-			if keys.Is(pressed, takeKey(t)) {
-				return c.takeChosen(t)
-			}
-		}
-	}
 	if c.picker.moved(pressed) {
 		return false, ConfigResult{}
 	}
@@ -401,48 +359,26 @@ func (c *ConfigScreen) updatePicker(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	return false, ConfigResult{}
 }
 
-// takeChosen answers the picker with the option under its pointer, sent
-// where take says — zero stages it.
-func (c *ConfigScreen) takeChosen(take ConfigTake) (bool, ConfigResult) {
+// takeChosen answers the picker with the option under its pointer, staged.
+func (c *ConfigScreen) takeChosen() ConfigResult {
 	opts := c.picker.Options
 	if len(opts) == 0 {
-		return false, ConfigResult{}
+		return ConfigResult{}
 	}
 	chosen := opts[min(max(c.picker.Focus, 0), len(opts)-1)]
 	c.picker = nil
 	if row := c.rowAt(c.editRow); row != nil {
-		return false, ConfigResult{Change: &ConfigChange{Key: row.Key, Value: chosen.Label, Take: take}}
+		return ConfigResult{Change: &ConfigChange{Key: row.Key, Value: chosen.Label}}
 	}
-	return false, ConfigResult{}
+	return ConfigResult{}
 }
 
-// firstTake is where `[enter]` sends the row being changed: its first
-// destination, or nowhere but the staged edits.
-func (c *ConfigScreen) firstTake() ConfigTake {
-	if row := c.rowAt(c.editRow); row != nil && len(row.Takes) > 0 {
-		return row.Takes[0]
-	}
-	return 0
-}
-
-// otherTakes are the row's destinations past the first, each on its own key.
-func (c *ConfigScreen) otherTakes() []ConfigTake {
-	if row := c.rowAt(c.editRow); row != nil && len(row.Takes) > 1 {
-		return row.Takes[1:]
-	}
-	return nil
-}
-
-// takeKey is the key a destination past the first answers on. Your own file
-// is the key the model picker in a session makes a choice the default with,
-// and the checkout's is the key this screen already moves the write between
-// the two files with, so neither is a key the reader meets here for the
-// first time.
-func takeKey(t ConfigTake) keys.Binding {
-	if t == TakeCheckout {
-		return keys.Screen.Scope
-	}
-	return keys.Select.Alt
+// writing is a result that also asks for the write, for the save chord pressed
+// with a field or a picker open: what is in it is staged first, so the write
+// has it to write.
+func (c *ConfigScreen) writing(r ConfigResult) ConfigResult {
+	r.Write = true
+	return r
 }
 
 func (c *ConfigScreen) updateEdit(msg tea.KeyPressMsg) (bool, ConfigResult) {
@@ -451,15 +387,22 @@ func (c *ConfigScreen) updateEdit(msg tea.KeyPressMsg) (bool, ConfigResult) {
 		c.edit = nil
 		return false, ConfigResult{}
 	case keys.Is(pressed, keys.Screen.Take):
-		value := strings.TrimSpace(string(c.edit.value))
-		c.edit = nil
-		if row := c.rowAt(c.editRow); row != nil {
-			return false, ConfigResult{Change: &ConfigChange{Key: row.Key, Value: value, Take: c.firstTake()}}
-		}
-		return false, ConfigResult{}
+		return false, c.takeTyped()
+	case keys.Is(pressed, keys.Screen.Write):
+		return false, c.writing(c.takeTyped())
 	}
 	c.edit.update(msg)
 	return false, ConfigResult{}
+}
+
+// takeTyped closes the field and answers with what was typed into it, staged.
+func (c *ConfigScreen) takeTyped() ConfigResult {
+	value := strings.TrimSpace(string(c.edit.value))
+	c.edit = nil
+	if row := c.rowAt(c.editRow); row != nil {
+		return ConfigResult{Change: &ConfigChange{Key: row.Key, Value: value}}
+	}
+	return ConfigResult{}
 }
 
 func (c *ConfigScreen) updateSecret(msg tea.KeyPressMsg) (bool, ConfigResult) {
@@ -674,18 +617,6 @@ func (c *ConfigScreen) offers() []KeyOffer {
 		} else {
 			offers = append(offers, keyOffer(keys.Screen.Filter))
 		}
-		// A row with destinations says where each key sends the choice. The
-		// ones past the first are letters, so they are offered only while
-		// the query row is closed and a letter is a key.
-		if first := c.firstTake(); first != 0 {
-			offers = append(offers, keyOfferAs(keys.Screen.Take, first.word()))
-			if !c.picker.Filtering {
-				for _, t := range c.otherTakes() {
-					offers = append(offers, keyOfferAs(takeKey(t), t.word()))
-				}
-			}
-			return append(offers, keep)
-		}
 		return append(offers, keyOffer(keys.Screen.Take), keep)
 	case c.secret != nil:
 		return []KeyOffer{
@@ -693,12 +624,8 @@ func (c *ConfigScreen) offers() []KeyOffer {
 			keyOffer(keys.Wait.KeepKey),
 		}
 	case c.edit != nil:
-		set := "set it"
-		if first := c.firstTake(); first != 0 {
-			set = first.word()
-		}
 		return []KeyOffer{
-			keyOfferAs(keys.Screen.Take, set),
+			keyOfferAs(keys.Screen.Take, "set it"),
 			keep,
 		}
 	}
@@ -736,35 +663,16 @@ func (c *ConfigScreen) keyList() []KeyOffer {
 	}
 	list := []KeyOffer{
 		keyOfferAs(keys.Screen.Move, "move between settings"),
-		keyOfferAs(keys.Screen.Take, "change the setting under the pointer"),
+		keyOfferAs(keys.Screen.Take, "open the setting under the pointer, and take what is in it"),
 		keyOfferAs(keys.Screen.Filter, "filter the settings by name"),
 		keyOfferAs(keys.Query.Rub, "delete a character from the filter or the field being typed into"),
 		keyOfferAs(keys.Screen.Reset, "reset this setting to its default"),
 		keyOfferAs(keys.Screen.Write, "write every staged change to "+c.owner()+c.Path),
 	}
-	mine, checkout := c.offersTake(TakeMine), c.offersTake(TakeCheckout)
-	if mine {
-		list = append(list, keyOfferAs(keys.Select.Alt, "in a flow's picker, write the model to your settings file"))
-	}
-	switch {
-	case c.Scoped && checkout:
-		list = append(list, keyOfferAs(keys.Screen.Scope,
-			"switch the write between the checkout's file and yours — in a flow's picker, write the model to the checkout's"))
-	case c.Scoped:
+	if c.Scoped {
 		list = append(list, keyOfferAs(keys.Screen.Scope, "switch the write between the checkout's file and yours"))
 	}
 	return append(list, keyOfferAs(keys.Screen.Keep, "clear the filter, then close it; "+out), keyOfferAs(keys.Screen.Quit, quit))
-}
-
-// offersTake reports whether any row sends its answer to t on a key of its
-// own, which is what puts that key in the register.
-func (c *ConfigScreen) offersTake(t ConfigTake) bool {
-	for _, row := range c.Rows {
-		if len(row.Takes) > 1 && slices.Contains(row.Takes[1:], t) {
-			return true
-		}
-	}
-	return false
 }
 
 // footField annotates the key row. It is the count of settings until

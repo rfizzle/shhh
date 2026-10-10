@@ -179,9 +179,15 @@ settings screen in a session can take a flow's model for **this session**
 alone, the way `/model` switches the session's own model without writing
 anything.
 
-A value held that way is written nowhere. It is not staged against a file,
-it is not in either file afterwards, and it dies with the process: the next
-session starts on what the files say. It takes the rank above the files for
+The screen has no separate act for it. A flow's model is staged like every
+other row's, and the session takes it as it is staged: until it is written,
+`unwritten` on the row means this session only. Writing it to the file the
+header names does not move the session, which is already on it; discarding it
+puts the session back on what the file holds.
+
+A value held before it is written is written nowhere. It is staged against a
+file, it is in neither file yet, and it dies with the process unless the
+write follows: the next session starts on what the files say. It takes the rank above the files for
 the session that holds it, because it is a choice made for that one run —
 the rank a flag has, given from the chair instead of the command line — and
 the screen says so on the row, with `session` where the file's source would
@@ -197,11 +203,10 @@ the moment one moves, and every row a session boundary opens after that
 carries it too, because a comparison split on the classifier's model is
 asking which model judged the calls.
 
-The same picker writes either file at once when that is what was asked for,
-and the session takes the value too. What is not offered is a session value
-for a flow no session sends: the one-shot's description belongs to `shhh
-cmd`, and the compaction the chain describes is an unattended run's, since
-a session compacts on its own model.
+A flow no session sends changes nothing in the session: the one-shot's
+description belongs to `shhh cmd`, and the compaction the chain describes is
+an unattended run's, since a session compacts on its own model. Staging and
+writing them is the same as any other row.
 
 ## One layout everywhere
 
@@ -286,7 +291,8 @@ provider.model, behavior.command_timeout_seconds`), on the screen's foot row
 and in the transcript, and a write that fails names the path and the reason
 and leaves the changes staged
 ([the settings screen](../interface/surfaces.md#the-settings-screen)). A
-written setting reaches the model only as the next session's configuration.
+written setting reaches the model only as the next session's configuration,
+except a flow's model, which the session took when it was staged.
 
 The allowlist line `/patterns` proposes is one of these writers. Where you
 were asked about the same command and allowed it every time in session after
@@ -1004,7 +1010,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `screen.reset` | `ctrl+r` | reset | yes |
 | `screen.write` | `ctrl+s` | write | yes |
 | `screen.keep` | `esc` | back | yes |
-| `screen.scope` | `g` | switch the file | yes |
+| `screen.scope` | `shift+tab` | switch the file | yes |
 | `screen.copy` | `c` | copy | yes |
 | `screen.rerun` | `enter` | re-run it | yes |
 | `screen.snippet` | `ctrl+s` | write it as a snippet | yes |

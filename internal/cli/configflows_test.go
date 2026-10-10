@@ -2,14 +2,12 @@ package cli
 
 import (
 	"os"
-	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -82,118 +80,121 @@ func TestConfigScreen_FlowsSayWhichStepAnswered(t *testing.T) {
 	}
 }
 
-// Inside a session a flow's picker offers the three destinations, and a flow
-// no session sends offers only the files; `shhh config` offers none, since
-// there is no session and its own staging reaches both files.
-func TestConfigScreen_AFlowsPickerOffersWhereTheModelCanGo(t *testing.T) {
+// stagedFlowScreen is `/config` opened from env, the way a session opens it,
+// over a user file holding fileText.
+func stagedFlowScreen(t *testing.T, fileText string, env *sessionEnv) (path string, session chat.ConfigSession) {
+	t.Helper()
+	path = pointConfigAt(t, fileText)
+	session, err := configSessionOpener(env)([]string{"model-a", "model-b", "reader-model"})
+	must(t, err)
+	return path, session
+}
+
+// A flow's row stages like every other row: the header counts it, the source
+// column reads `<link> · unwritten`, and the write chord puts it in the file
+// the header names, receipt and all. The sentence that the session keeps the
+// settings it started on is not said of a write that only wrote flow keys,
+// because the session took them as they were staged.
+func TestConfigScreen_AFlowStagesLikeEveryOtherRow(t *testing.T) {
 	env := &sessionEnv{provName: "anthropic", modelName: "session-model"}
-	m := flowScreen(config.Config{}, env)
-	if got := flowRow(t, m.screen.Rows, "classifier").Takes; !slices.Equal(got,
-		[]components.ConfigTake{components.TakeSession, components.TakeMine}) {
-		t.Errorf("the classifier offers %v outside a checkout", got)
+	path, session := stagedFlowScreen(t, "", env)
+	screen := session.Screen
+
+	session.Answer(false, components.ConfigResult{Change: &components.ConfigChange{
+		Key: "summary.model", Value: "reader-model",
+	}})
+	if screen.Changed != 1 {
+		t.Fatalf("the header counts %d changes after a flow was staged, want 1", screen.Changed)
 	}
-	if got := flowRow(t, m.screen.Rows, "description").Takes; !slices.Equal(got,
-		[]components.ConfigTake{components.TakeMine}) {
-		t.Errorf("the one-shot's description offers %v in a session that never sends it", got)
+	row := flowRow(t, screen.Rows, "reading")
+	if row.Value != "reader-model" || !strings.HasSuffix(row.Source, " · unwritten") {
+		t.Errorf("the staged row reads %q · %q, want the model and `<link> · unwritten`", row.Value, row.Source)
 	}
-	m.dir = t.TempDir()
-	m.refresh()
-	if got := flowRow(t, m.screen.Rows, "reading").Takes; !slices.Contains(got, components.TakeCheckout) {
-		t.Errorf("in a checkout the reading offers %v", got)
+	if got, err := os.ReadFile(path); err == nil && strings.Contains(string(got), "reader-model") {
+		t.Fatalf("staging reached the file:\n%s", got)
 	}
-	if got := flowRow(t, flowScreen(config.Config{}, nil).screen.Rows, "classifier").Takes; got != nil {
-		t.Errorf("`shhh config` offered %v", got)
+
+	// The write chord pressed inside the picker arrives with the choice it took.
+	note := session.Answer(false, components.ConfigResult{Write: true})
+	got, err := os.ReadFile(path)
+	if err != nil || !strings.Contains(string(got), `model = "reader-model"`) {
+		t.Fatalf("the write did not land in %s: %v\n%s", path, err, got)
+	}
+	if !strings.HasPrefix(note, "wrote 1 change to "+screen.Path+" · summary.model") {
+		t.Errorf("the receipt reads %q", note)
+	}
+	if strings.Contains(note, "keeps the settings it started on") {
+		t.Errorf("a write of a flow key alone says the session did not take it: %q", note)
+	}
+	if screen.Changed != 0 {
+		t.Errorf("%d changes still standing after the write", screen.Changed)
+	}
+	if row := flowRow(t, screen.Rows, "reading"); row.Value != "reader-model" || strings.Contains(row.Source, "unwritten") {
+		t.Errorf("the written row reads %q · %q", row.Value, row.Source)
+	}
+	if !env.flows.holds("summary.model") {
+		t.Error("the session let go of the model once it was written")
+	}
+
+	// A write that carries a key the session cannot take live keeps the sentence.
+	session.Answer(false, components.ConfigResult{Change: &components.ConfigChange{Key: "summary.model", Value: "model-a"}})
+	session.Answer(false, components.ConfigResult{Change: &components.ConfigChange{Key: "behavior.command_timeout_seconds", Value: "90"}})
+	if note := session.Answer(false, components.ConfigResult{Write: true}); !strings.HasSuffix(note,
+		"This session keeps the settings it started on; the next one starts on these.") {
+		t.Errorf("a mixed write lost the sentence: %q", note)
 	}
 }
 
-// A model taken for this session is written to no file, reaches the flow's
-// reader at its next call, and is what the record is stamped with.
+// A staged flow model is taken by the session as it is staged: the flow's
+// reader asks the new model at its next call, the record is told and stamped
+// with it, and nothing reaches a file until the write.
 func TestConfigScreen_AFlowTakenForTheSessionReachesItsReader(t *testing.T) {
-	userPath := pointConfigAt(t, "")
 	env := &sessionEnv{provName: "anthropic", modelName: "session-model"}
 	moved := 0
 	env.flowsMoved = func() { moved++ }
-	cfg := config.Config{}
-	classifier := env.flowModelAt(cfg, flowClassifier)
+	classifier := env.flowModelAt(config.Config{}, flowClassifier)
 	before := classifier()
 
-	m := flowScreen(cfg, env)
-	m.apply(components.ConfigChange{Key: "behavior.classifier_model", Value: "held-model", Take: components.TakeSession})
+	path, session := stagedFlowScreen(t, "", env)
+	session.Answer(false, components.ConfigResult{Change: &components.ConfigChange{
+		Key: "behavior.classifier_model", Value: "held-model",
+	}})
 	if got := classifier(); got != "held-model" || before == got {
-		t.Fatalf("the classifier's reader asks %q after the take (was %q)", got, before)
+		t.Fatalf("the classifier's reader asks %q after the staging (was %q)", got, before)
 	}
 	if moved != 1 {
 		t.Errorf("the record was told %d times", moved)
 	}
-	if row := flowRow(t, m.screen.Rows, "classifier"); row.Source != "session" {
-		t.Errorf("the row reads %q after the take", row.Source)
+	if got, err := os.ReadFile(path); err == nil && strings.Contains(string(got), "held-model") {
+		t.Fatalf("staging reached the file:\n%s", got)
 	}
-	if m.screen.Changed != 0 {
-		t.Errorf("a session take staged %d edits against the file", m.screen.Changed)
-	}
-	if got, err := os.ReadFile(userPath); err == nil && strings.Contains(string(got), "held-model") {
-		t.Fatalf("a session take reached the file:\n%s", got)
-	}
-	in := env.flows.over(cfg)
+	in := env.flows.over(config.Config{})
 	stamp := sessionSettings(in, runSettings{summary: true, classifier: true, model: auxiliaryModel(in, env.provName, env.modelName)})
 	if stamp.ClassifierModel != "held-model" {
 		t.Errorf("the record would stamp the classifier as %q", stamp.ClassifierModel)
 	}
 }
 
-// My settings writes the one key to the person's file at once, and the
-// session takes it too; the row then reads the file's answer rather than
-// `session`, because the file holds it.
-func TestConfigScreen_AFlowWrittenToMySettingsLandsAndTheSessionTakesIt(t *testing.T) {
-	userPath := pointConfigAt(t, "")
+// Discarding staged changes puts the session back on what the file holds, so
+// `unwritten` is always this session only.
+func TestConfigScreen_ADiscardedFlowGoesBackToTheFile(t *testing.T) {
 	env := &sessionEnv{provName: "anthropic", modelName: "session-model"}
-	m := flowScreen(config.Config{}, env)
-	m.apply(components.ConfigChange{Key: "summary.model", Value: "reader-model", Take: components.TakeMine})
-	got, err := os.ReadFile(userPath)
-	if err != nil || !strings.Contains(string(got), `model = "reader-model"`) {
-		t.Fatalf("my settings did not land in %s: %v\n%s", userPath, err, got)
-	}
-	if held := resolveFlow(env.flows.over(config.Config{}), flowReading, env.provName, env.modelName).model; held != "reader-model" {
-		t.Errorf("the session reads on %q after the write", held)
-	}
-	row := flowRow(t, m.screen.Rows, "reading")
-	if row.Value != "reader-model" || row.Source != "flow key" {
-		t.Errorf("the row reads %q · %q after the write", row.Value, row.Source)
-	}
-	if m.screen.Changed != 0 {
-		t.Errorf("the written key is still counted as an edit: %d", m.screen.Changed)
-	}
-}
+	moved := 0
+	env.flowsMoved = func() { moved++ }
+	_, session := stagedFlowScreen(t, "[summary]\nmodel = \"file-model\"\n", env)
+	cfg := config.Config{}
+	cfg.Summary.Model = "file-model"
+	reader := env.flowModelAt(cfg, flowReading)
 
-// This checkout writes the checkout's own file where it is trusted, and is
-// refused with the writer's own sentence where it is not.
-func TestConfigScreen_AFlowForThisCheckoutNeedsATrustedCheckout(t *testing.T) {
-	_, checkout := scopeFixture(t, scopeCases[0])
-	path := filepath.Join(checkout, filepath.FromSlash(project.ConfigFile))
-	env := &sessionEnv{provName: "anthropic", modelName: "session-model"}
-	take := func() *components.ConfigScreen {
-		session, err := configSessionOpener(env)([]string{"model-a", "model-b"})
-		must(t, err)
-		session.Answer(false, components.ConfigResult{Change: &components.ConfigChange{
-			Key: "todo.model", Value: "model-b", Take: components.TakeCheckout,
-		}})
-		return session.Screen
+	session.Answer(false, components.ConfigResult{Change: &components.ConfigChange{Key: "summary.model", Value: "reader-model"}})
+	if got := reader(); got != "reader-model" {
+		t.Fatalf("the reader asks %q while the change stands", got)
 	}
-
-	trusting(t, checkout, false)
-	if screen := take(); screen.Notice != projectTrustNote() || exists(path) {
-		t.Fatalf("an untrusted checkout was written, or refused in other words: %q", screen.Notice)
+	session.Answer(true, components.ConfigResult{Canceled: true})
+	if got := reader(); got != "file-model" {
+		t.Errorf("the reader asks %q after the discard, want the file's", got)
 	}
-	if env.flows.holds("todo.model") {
-		t.Error("a refused take moved the session")
-	}
-
-	trusting(t, checkout, true)
-	screen := take()
-	if got, err := os.ReadFile(path); err != nil || !strings.Contains(string(got), `model = "model-b"`) {
-		t.Fatalf("this checkout did not land in %s: %v %s", path, err, got)
-	}
-	if row := flowRow(t, screen.Rows, "backlog"); row.Value != "model-b" || len(row.Options) != 2 {
-		t.Errorf("the backlog row reads %q with %d options", row.Value, len(row.Options))
+	if moved != 2 {
+		t.Errorf("the record was told %d times, want once for the take and once for the discard", moved)
 	}
 }

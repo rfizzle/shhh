@@ -19,9 +19,9 @@ snap 02-open "/config" "FLOWS"
 keys "/"
 keys "round limit"
 keys Enter
-keys C-u
+keys BSpace BSpace
 keys "40" Enter
-snap 03-staged "1 change unwritten" "[ctrl+s] write 1 change" "nothing is written until [ctrl+s]"
+snap 03-staged "1 change unwritten" "write 1 change" "nothing is written until [ctrl+s]"
 keys C-s
 snap 04-receipt "wrote 1 change to .shhh/config.toml" "behavior.max_tool_rounds"
 keys C-s

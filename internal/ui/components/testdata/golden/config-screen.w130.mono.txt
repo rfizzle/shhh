@@ -252,7 +252,7 @@ shhh config · ~/.config/shhh/config.toml                                       
   ↓ 13 more
 
 [↑↓/jk] move between settings
-[enter] change the setting under the pointer
+[enter] open the setting under the pointer, and take what is in it
 [/] filter the settings by name
 [backspace] delete a character from the filter or the field being typed into
 [ctrl+r] reset this setting to its default
@@ -299,7 +299,7 @@ $  a shell command
     model              gpt-5.2                                                                                  user · 6 available
   ↓ 8 more
 
-[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [g] write yours · [esc] leave                            19 settings
+[↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset · [shift+tab] write yours · [esc] leave                    19 settings
 
 · a flow's picker · the choice has three destinations on the key row
 /config · the checkout's file · .shhh/config.toml                                                            [?] keys · [esc] back
@@ -323,7 +323,7 @@ $  a shell command
     context budget     8000 tokens                                                                                         default
   ↓ 11 more
 
-[↑↓] move · [/] filter · [enter] this session · [m] my settings · [g] this checkout · [esc] keep claude-sonnet-4.6
+[↑↓] move · [/] filter · [enter] take it · [esc] keep claude-sonnet-4.6
 
 ── ansi ────────────────────────────────────────────────────
 · the list · every row states where its value came from
@@ -568,7 +568,7 @@ $  a shell command
   ␛[38;5;244m↓ 13 more␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move between settings␛[m
-␛[38;5;254m[enter]␛[m␛[38;5;244m change the setting under the pointer␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m open the setting under the pointer, and take what is in it␛[m
 ␛[38;5;254m[/]␛[m␛[38;5;244m filter the settings by name␛[m
 ␛[38;5;254m[backspace]␛[m␛[38;5;244m delete a character from the filter or the field being typed into␛[m
 ␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset this setting to its default␛[m
@@ -615,7 +615,7 @@ $  a shell command
     ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                                                                  ␛[38;5;254muser · 6 available␛[m
   ␛[38;5;244m↓ 8 more␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m write yours␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m                            ␛[38;5;244m19 settings␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m␛[38;5;244m · ␛[m␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write yours␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m                    ␛[38;5;244m19 settings␛[m
 
 · a flow's picker · the choice has three destinations on the key row
 ␛[1;38;5;254m/config␛[m␛[38;5;244m · the checkout's file␛[m␛[38;5;244m · .shhh/config.toml␛[m                                                            ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -639,4 +639,4 @@ $  a shell command
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
   ␛[38;5;244m↓ 11 more␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m this session␛[m␛[38;5;244m · ␛[m␛[38;5;254m[m]␛[m␛[38;5;244m my settings␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m this checkout␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep claude-sonnet-4.6␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m take it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep claude-sonnet-4.6␛[m

@@ -253,7 +253,8 @@ shhh config                            [?] keys · [esc] back
   ↓ 13 more
 
 [↑↓/jk] move between settings
-[enter] change the setting under the pointer
+[enter] open the setting under the pointer, and take what is
+in it
 [/] filter the settings by name
 [backspace] delete a character from the filter or the field
 being typed into
@@ -303,7 +304,7 @@ $  a shell command
   ↓ 9 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
-[g] write yours · [esc] leave
+[shift+tab] write yours · [esc] leave
 
 · a flow's picker · the choice has three destinations on the key row
 /config · the checkout's file          [?] keys · [esc] back
@@ -323,10 +324,10 @@ $  a shell command
 
   SESSION
     permission mode    ⏵⏵ auto — edits apply; allowli…  user
-  ↓ 13 more
+    round limit        25                            default
+  ↓ 12 more
 
-[↑↓] move · [/] filter · [enter] this session
-[m] my settings · [g] this checkout
+[↑↓] move · [/] filter · [enter] take it
 [esc] keep claude-sonnet-4.6
 
 ── ansi ────────────────────────────────────────────────────
@@ -573,7 +574,8 @@ $  a shell command
   ␛[38;5;241m↓ 13 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move between settings␛[m
-␛[38;5;103m[enter]␛[m␛[38;5;241m change the setting under the pointer␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m open the setting under the pointer, and take what is␛[m
+␛[38;5;241min it␛[m
 ␛[38;5;103m[/]␛[m␛[38;5;241m filter the settings by name␛[m
 ␛[38;5;103m[backspace]␛[m␛[38;5;241m delete a character from the filter or the field␛[m
 ␛[38;5;241mbeing typed into␛[m
@@ -623,7 +625,7 @@ $  a shell command
   ␛[38;5;241m↓ 9 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;241m reset␛[m
-␛[38;5;103m[g]␛[m␛[38;5;241m write yours␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave␛[m
+␛[38;5;103m[shift+tab]␛[m␛[38;5;241m write yours␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave␛[m
 
 · a flow's picker · the choice has three destinations on the key row
 ␛[1;97m/config␛[m␛[38;5;241m · the checkout's file␛[m          ␛[38;5;241m[?] keys · [esc] back␛[m
@@ -643,8 +645,8 @@ $  a shell command
 
   ␛[1;94mSESSION␛[m
     ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
-  ␛[38;5;241m↓ 13 more␛[m
+    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
+  ␛[38;5;241m↓ 12 more␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m this session␛[m
-␛[38;5;103m[m]␛[m␛[38;5;241m my settings␛[m␛[38;5;241m · ␛[m␛[38;5;103m[g]␛[m␛[38;5;241m this checkout␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m take it␛[m
 ␛[92m[esc]␛[m␛[38;5;241m keep claude-sonnet-4.6␛[m

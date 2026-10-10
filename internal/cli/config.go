@@ -369,6 +369,9 @@ type configModel struct {
 	// which is what the write needs: a row's read is the screen's rendering
 	// of the value and is not what goes in the file.
 	staged map[string]string
+	// written is the keys the last write put in the file, which is what the
+	// receipt reads to say whether a running session already has them.
+	written []string
 	// flows is what the flows section is resolved against, and — inside a
 	// session — the session a flow's model can be taken for.
 	flows configFlows
@@ -480,11 +483,17 @@ func (m *configModel) answer(done bool, result components.ConfigResult) tea.Cmd 
 }
 
 // handle is one key's result carried out: the edit it staged, the file it
-// switched to, the write it asked for. It returns the receipt of a write and
-// the checkout's word about it, both empty when nothing was written.
+// switched to, the write it asked for, the staged work it threw away. It
+// returns the receipt of a write and the checkout's word about it, both empty
+// when nothing was written.
 func (m *configModel) handle(result components.ConfigResult) (receipt, note string) {
-	if result.Change != nil {
-		m.apply(*result.Change)
+	if result.Change != nil && !m.apply(*result.Change) {
+		// A value the screen refused is not staged, and a write chord that
+		// carried it has nothing it asked to write: the refusal is the answer.
+		return "", ""
+	}
+	if result.Canceled {
+		m.discard()
 	}
 	if result.Scope {
 		m.switchScope()
@@ -526,6 +535,7 @@ func (m *configModel) write() (receipt, note string) {
 		changed[i] = e.Key
 	}
 	m.landed(edits)
+	m.written = changed
 	receipt = components.WriteReceipt(components.Changes(len(edits)), m.screen.Path, changed...)
 	m.screen.Notice = receipt
 	return receipt, note
@@ -598,23 +608,39 @@ func (m *configModel) answered(done bool, result components.ConfigResult) string
 	if note != "" {
 		receipt += "\n" + note
 	}
+	if m.sessionHasWritten() {
+		return receipt
+	}
 	return receipt + "\nThis session keeps the settings it started on; the next one starts on these."
+}
+
+// sessionHasWritten is whether every key the last write put in the file is one
+// the running session took as it was staged, so the sentence that the session
+// keeps the settings it started on would be untrue of it: a flow's model is
+// read at the flow's next call (flowOverrides), and nothing else the screen
+// writes is. A screen with no session behind it took nothing.
+func (m *configModel) sessionHasWritten() bool {
+	if m.flows.env == nil || len(m.written) == 0 {
+		return false
+	}
+	for _, key := range m.written {
+		if !flowKey(key) {
+			return false
+		}
+	}
+	return true
 }
 
 // apply stages one edit and rebuilds the rows, so the screen redraws from the
 // config rather than from what it thinks it changed.
-func (m *configModel) apply(change components.ConfigChange) {
-	if change.Take != 0 {
-		m.takeFlow(change)
-		return
-	}
+func (m *configModel) apply(change components.ConfigChange) bool {
 	value := change.Value
 	if change.Reset {
 		value = ""
 	}
 	if err := checkConfigValue(change.Key, value); err != nil {
 		m.screen.Notice = err.Error()
-		return
+		return false
 	}
 	if m.toProject {
 		// Refused as it is staged rather than at [ctrl+s], so the screen never
@@ -624,92 +650,45 @@ func (m *configModel) apply(change components.ConfigChange) {
 			m.screen.Notice = fmt.Sprintf("config key %s is not read from a checkout's file — %s; "+
 				"%s moves the write to %s", change.Key, reason, keys.Bracket(keys.Screen.Scope),
 				shortPath(config.WritePath()))
-			return
+			return false
 		}
 	}
 	if err := config.Set(&m.cfg, change.Key, value); err != nil {
 		m.screen.Notice = err.Error()
-		return
+		return false
 	}
 	m.staged[change.Key] = value
+	m.holdFlow(change.Key, value)
 	if change.Reset {
 		m.screen.Notice = change.Key + " is back to its default"
 	}
 	m.refresh()
+	return true
 }
 
-// takeFlow sends a flow's model where its picker's key said
-// (docs/interface/surfaces.md#the-supporting-screens). This session holds it
-// and writes it nowhere; my settings and this checkout write that one key at
-// once — the destination is the question [ctrl+s] would ask, already answered —
-// and the session takes it too, the way the model picker's own key switches
-// the session as it writes the default. Nothing else that is staged moves.
-func (m *configModel) takeFlow(change components.ConfigChange) {
-	key, value := change.Key, strings.TrimSpace(change.Value)
-	if err := checkConfigValue(key, value); err != nil {
-		m.screen.Notice = err.Error()
+// holdFlow has the running session take a flow's model as it is staged, so
+// a row's "unwritten" means "this session only"
+// (docs/capabilities/configuration.md#a-session-can-hold-a-value-no-file-does).
+// A key that is no flow's, and a screen with no session, hold nothing.
+func (m *configModel) holdFlow(key, value string) {
+	env := m.flows.env
+	if env == nil || !flowKey(key) {
 		return
 	}
-	edit := config.Edit{Key: key, Value: value}
-	switch change.Take {
-	case components.TakeSession:
-		m.screen.Notice = fmt.Sprintf("%s is %s for the rest of this session — written to no file", key, value)
-	case components.TakeMine:
-		path := config.WritePath()
-		note, err := writeConfigEdits(m.proj, path, edit)
-		if err != nil {
-			m.screen.Notice = "could not write " + shortPath(path) + ": " + err.Error()
-			return
-		}
-		if !m.proj.Sets(key) {
-			_ = config.Set(&m.base, key, value)
-		}
-		m.screen.Notice = joinNotice(fmt.Sprintf("wrote %s = %s to %s", key, value, shortPath(path)), note)
-	case components.TakeCheckout:
-		if reason := config.RefusedInProject(key); reason != "" {
-			m.screen.Notice = fmt.Sprintf("config key %s is not read from a checkout's file — %s", key, reason)
-			return
-		}
-		if !projectTrust().Allows() {
-			m.screen.Notice = projectTrustNote()
-			return
-		}
-		if _, err := writeConfigEdits(config.Project{}, config.ProjectPath(m.dir), edit); err != nil {
-			m.screen.Notice = "could not write " + project.ConfigFile + ": " + err.Error()
-			return
-		}
-		_ = config.Set(&m.base, key, value)
-		if !m.proj.Sets(key) {
-			m.proj.Keys = append(slices.Clone(m.proj.Keys), key)
-		}
-		m.screen.Notice = fmt.Sprintf("wrote %s = %s to %s", key, value, project.ConfigFile)
-	default:
-		return
+	env.flows.set(key, value)
+	if env.flowsMoved != nil {
+		env.flowsMoved()
 	}
-	// What the file now holds is what the screen compares against, so the
-	// key the destination just decided is no longer an edit standing
-	// against the file.
-	delete(m.staged, key)
-	loaded, _ := config.Value(m.base, key)
-	_ = config.Set(&m.cfg, key, loaded)
-	if env := m.flows.env; env != nil {
-		env.flows.set(key, value)
-		if change.Take != components.TakeSession {
-			m.screen.Notice += "; this session takes it too"
-		}
-		if env.flowsMoved != nil {
-			env.flowsMoved()
-		}
-	}
-	m.refresh()
 }
 
-// joinNotice puts what the writer had to add after what was written.
-func joinNotice(done, note string) string {
-	if note == "" {
-		return done
+// discard is the way out over staged work: the session goes back to what the
+// file holds for every flow key that was staged, so a model it took for the
+// time the change stood does not outlive the change.
+func (m *configModel) discard() {
+	for key := range m.staged {
+		m.holdFlow(key, configLoaded(m.base, key))
 	}
-	return done + " — " + note
+	clear(m.staged)
 }
 
 // flowRows are the flows section: every bounded call outside the main agent,
@@ -719,10 +698,11 @@ func joinNotice(done, note string) string {
 // flows row cannot disagree
 // (docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model).
 //
-// Inside a session a row answered by a model the session holds says
-// `session`, and its picker offers the three destinations; `shhh config` has
-// no session, so its rows stage like any other and [g] and [ctrl+s] are the way
-// to either file.
+// A flow's model stages like every other row's. Inside a session the session
+// takes it as it is staged, so the row reads `<link> · unwritten` and means
+// this session only until [ctrl+s] writes it; a row answered by a model the
+// session holds that no staged edit explains says `session`. `shhh config`
+// has no session, so its rows only stage.
 func (m *configModel) flowRows() []components.ConfigRow {
 	f, env := m.flows, m.flows.env
 	in := m.cfg
@@ -758,15 +738,6 @@ func (m *configModel) flowRows() []components.ConfigRow {
 			row.Detail = "this session only, written to no file"
 		case a.key != "" && staged != configLoaded(m.base, a.key):
 			row.Source, row.SourceTone = row.Source+" · unwritten", components.ToneOpen
-		}
-		if env != nil {
-			if !a.flow.sessionless {
-				row.Takes = append(row.Takes, components.TakeSession)
-			}
-			row.Takes = append(row.Takes, components.TakeMine)
-			if m.dir != "" {
-				row.Takes = append(row.Takes, components.TakeCheckout)
-			}
 		}
 		rows = append(rows, row)
 	}
