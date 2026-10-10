@@ -1,6 +1,7 @@
 package scope
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -47,7 +48,7 @@ func TestAddReportsAlreadyInScope(t *testing.T) {
 	if _, err := s.Add(side); err != nil {
 		t.Fatalf("Add = %v", err)
 	}
-	if _, err := s.Add(side); err != ErrAlreadyInScope {
+	if _, err := s.Add(side); !errors.Is(err, ErrAlreadyInScope) {
 		t.Fatalf("adding a granted directory twice = %v, want ErrAlreadyInScope", err)
 	}
 	if got := len(s.Dirs()); got != 1 {
@@ -75,7 +76,7 @@ func TestAddRecordsTheRootForWritersWithoutWideningTheSession(t *testing.T) {
 		if !s.InRoot(got) {
 			t.Errorf("InRoot(%q) = false", got)
 		}
-		if _, err := s.Add(dir); err != ErrAlreadyInScope {
+		if _, err := s.Add(dir); !errors.Is(err, ErrAlreadyInScope) {
 			t.Fatalf("adding %q twice = %v, want ErrAlreadyInScope", dir, err)
 		}
 	}
@@ -100,7 +101,7 @@ func TestAddRecordsTheRootForWritersWithoutWideningTheSession(t *testing.T) {
 		t.Fatal(err)
 	}
 	enclosed := newScope(t, inner, base)
-	if _, err := enclosed.Add(inner); err != ErrAlreadyInScope {
+	if _, err := enclosed.Add(inner); !errors.Is(err, ErrAlreadyInScope) {
 		t.Fatalf("adding a root an added directory holds = %v, want ErrAlreadyInScope", err)
 	}
 	if got := enclosed.Beyond(); len(got) != 1 || got[0] != enclosed.Dirs()[0] {

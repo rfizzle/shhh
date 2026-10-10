@@ -11,6 +11,7 @@
 package process
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -639,7 +640,8 @@ func (s *Supervisor) reap(p *proc, wait func() error) {
 	code := 0
 	if err != nil {
 		code = -1
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			code = exitErr.ExitCode()
 		}
 	}

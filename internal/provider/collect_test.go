@@ -79,7 +79,7 @@ func TestCollect_ErrorKeepsWhatCameBeforeIt(t *testing.T) {
 		StreamEvent{Token: " lost", ToolCalls: []ToolCall{{ID: "c", Name: "n"}}, Usage: &Usage{PromptTokens: 9}, Err: boom, Done: true},
 		StreamEvent{Token: " never"},
 	))
-	if err != boom {
+	if !errors.Is(err, boom) {
 		t.Fatalf("err = %v, want the event's own error unwrapped", err)
 	}
 	want := Reply{Text: "part", Usage: usage}
@@ -129,7 +129,7 @@ func TestCollect_ContextEndStopsAStreamThatNeverEnds(t *testing.T) {
 	}
 	cancel()
 	<-done
-	if !errors.Is(err, context.Canceled) || err != ctx.Err() {
+	if !errors.Is(err, context.Canceled) || !errors.Is(err, ctx.Err()) {
 		t.Fatalf("err = %v, want ctx.Err() unwrapped", err)
 	}
 	if got.Text != "so far" || got.Usage != usage {

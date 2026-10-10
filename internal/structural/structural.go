@@ -506,10 +506,10 @@ func (t *Toolset) spawn(name string, argv []string, limit int) (string, bool, er
 			detail = strings.TrimSpace(stdout.buf.String())
 		}
 		if detail == "" {
-			return "", false, fmt.Errorf("%s failed: %v", name, err)
+			return "", false, fmt.Errorf("%s failed: %w", name, err)
 		}
 		detail, _ = tools.TruncateOutput(detail, MaxStderrBytes)
-		return "", false, fmt.Errorf("%s failed: %v: %s", name, err, detail)
+		return "", false, fmt.Errorf("%s failed: %w: %s", name, err, detail)
 	}
 	return stdout.buf.String(), false, nil
 }

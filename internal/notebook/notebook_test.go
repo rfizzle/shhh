@@ -236,7 +236,7 @@ func TestNoAgentCanDelete(t *testing.T) {
 	next := func(string, json.RawMessage) (string, error) { return "", errNotMine }
 	child := s.WrapExecutor("writer-1", next)
 	for _, name := range []string{"delete_note", "drop_note", "notebook_delete"} {
-		if _, err := child(name, json.RawMessage(`{"id":1}`)); err != errNotMine {
+		if _, err := child(name, json.RawMessage(`{"id":1}`)); !errors.Is(err, errNotMine) {
 			t.Errorf("%s was answered by the notebook rather than passed on", name)
 		}
 	}

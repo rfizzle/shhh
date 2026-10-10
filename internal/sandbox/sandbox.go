@@ -637,7 +637,7 @@ func resolvePolicy(p Policy, mechanism string) (spec, error) {
 		s.network = true
 		hosts, err := ParseHosts(p.AllowHosts)
 		if err != nil {
-			return spec{}, fmt.Errorf("wrap unsupported: sandbox.allow_hosts: %v", err)
+			return spec{}, fmt.Errorf("wrap unsupported: sandbox.allow_hosts: %w", err)
 		}
 		// A list is held only where the mechanism can hold one; elsewhere
 		// the profile's switch is what runs, and NetworkWords says so.
@@ -655,13 +655,13 @@ func resolvePolicy(p Policy, mechanism string) (spec, error) {
 	}
 	ws, err := resolvePath(p.Workspace)
 	if err != nil {
-		return spec{}, fmt.Errorf("wrap unsupported: cannot resolve workspace %s: %v", p.Workspace, err)
+		return spec{}, fmt.Errorf("wrap unsupported: cannot resolve workspace %s: %w", p.Workspace, err)
 	}
 	s.workspace = ws
 	if p.Cwd != "" {
 		cwd, err := resolvePath(p.Cwd)
 		if err != nil {
-			return spec{}, fmt.Errorf("wrap unsupported: cannot resolve cwd %s: %v", p.Cwd, err)
+			return spec{}, fmt.Errorf("wrap unsupported: cannot resolve cwd %s: %w", p.Cwd, err)
 		}
 		s.cwd = cwd
 	} else if cwd, err := os.Getwd(); err == nil {
@@ -772,7 +772,7 @@ func (s *spec) privatiseTmp(mechanism string) error {
 	case "sandbox-exec":
 		dir, err := sessionTmpDir()
 		if err != nil {
-			return fmt.Errorf("wrap unsupported: cannot make a private tmpdir: %v", err)
+			return fmt.Errorf("wrap unsupported: cannot make a private tmpdir: %w", err)
 		}
 		s.tmpdir = dir
 	}
@@ -826,7 +826,7 @@ func (s *spec) attachProxy(mechanism string) error {
 			found, err = resolvePath(found)
 		}
 		if err != nil {
-			return fmt.Errorf("wrap unsupported: sandbox.allow_hosts needs the shhh program to bridge the namespace: %v", err)
+			return fmt.Errorf("wrap unsupported: sandbox.allow_hosts needs the shhh program to bridge the namespace: %w", err)
 		}
 		exe = found
 	}

@@ -8,6 +8,10 @@
 # value leaves the zero, which is what an unparsable value means. Anything
 # outside that list is still checked.
 #
+# errorlint on top of that: an error is compared with errors.Is, taken apart
+# with errors.As and wrapped with %w, because a sentinel or a type that was
+# wrapped on the way up is no longer == or a bare assertion.
+#
 # Two size gates on top. gocognit at 50 fails a function a reader can no
 # longer hold in their head: well past the linter's default of 30, so a long
 # but flat switch still lands, and low enough that a function heading for
@@ -25,6 +29,7 @@ version: "2"
 linters:
   default: standard
   enable:
+    - errorlint
     - gocognit
     - nestif
   settings:

@@ -19,6 +19,7 @@ package chat
 // promise something the sandbox would go on refusing.
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -138,7 +139,7 @@ func (m *Model) scopeCommand(parts []string) string {
 	}
 	dir, err := m.wiring.Scope.Add(parts[1])
 	switch {
-	case err == scope.ErrAlreadyInScope:
+	case errors.Is(err, scope.ErrAlreadyInScope):
 		return dir + " is already in the working scope"
 	case err != nil:
 		return failed("add-dir", err.Error())

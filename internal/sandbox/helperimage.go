@@ -42,7 +42,7 @@ func ImageHelper(ctx context.Context, eng Engine, image string) (string, error) 
 		if isMissingImage(stderr.Bytes()) {
 			return HelperUnpulled, nil
 		}
-		return "", fmt.Errorf("inspect %s: %v: %s", image, err, probeLine(stderr.Bytes()))
+		return "", fmt.Errorf("inspect %s: %w: %s", image, err, probeLine(stderr.Bytes()))
 	}
 	var images []struct {
 		Config struct {
@@ -50,7 +50,7 @@ func ImageHelper(ctx context.Context, eng Engine, image string) (string, error) 
 		} `json:"Config"`
 	}
 	if err := json.Unmarshal(stdout.Bytes(), &images); err != nil || len(images) == 0 {
-		return "", fmt.Errorf("reading image inspect for %s: %v", image, err)
+		return "", fmt.Errorf("reading image inspect for %s: %w", image, err)
 	}
 	if images[0].Config.Labels[HelperLabel] == HelperVersion {
 		return HelperCarried, nil

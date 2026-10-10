@@ -476,11 +476,7 @@ func mustItem(t *testing.T, root, slug string) todo.Item {
 
 // asExitError is errors.As without the import ceremony at each call.
 func asExitError(err error, target *exitError) bool {
-	e, ok := err.(exitError)
-	if ok {
-		*target = e
-	}
-	return ok
+	return errors.As(err, target)
 }
 
 // The stage's own process finishes a reply the ceiling cut, once, and says

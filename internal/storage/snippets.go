@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -20,7 +21,7 @@ func (db *DB) SaveSnippet(name, command string) error {
 
 	var id int64
 	err := db.sql.QueryRow(`SELECT id FROM snippets WHERE name = ?`, name).Scan(&id)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		_, err = db.sql.Exec(
 			`INSERT INTO snippets (name, command, created_at, updated_at) VALUES (?, ?, ?, ?)`,
 			name, command, now, now,

@@ -115,7 +115,7 @@ func LookupPrepared(ctx context.Context, eng Engine, base, declaration string) (
 		if isMissingImage(stderr.Bytes()) {
 			return "", false, nil
 		}
-		return "", false, fmt.Errorf("inspect %s: %v: %s", preparedRef(key), err, probeLine(stderr.Bytes()))
+		return "", false, fmt.Errorf("inspect %s: %w: %s", preparedRef(key), err, probeLine(stderr.Bytes()))
 	}
 	return readInspect(stdout.Bytes(), key)
 }
@@ -182,7 +182,7 @@ func PrepareImage(ctx context.Context, eng Engine, s ContainerSpec, tc project.T
 	}
 	name := "shhh-prep-" + id
 	if out, err := runEngine(ctx, prepareArgv(eng, name, s)); err != nil {
-		return "", fmt.Errorf("%s create failed for the setup container: %v: %s", eng.Name, err, probeLine(out))
+		return "", fmt.Errorf("%s create failed for the setup container: %w: %s", eng.Name, err, probeLine(out))
 	}
 	now := time.Now().UTC()
 	rec := Record{ID: id, Name: name, Engine: eng.Name, Image: s.Image, CreatedAt: now, ExpiresAt: now.Add(prepareTTL)}
@@ -208,7 +208,7 @@ func PrepareImage(ctx context.Context, eng Engine, s ContainerSpec, tc project.T
 	key := PreparedKey(s.Image, tc.Digest)
 	commit := commitArgv(eng, name, key, s.Image)
 	if out, err := exec.CommandContext(ctx, commit[0], commit[1:]...).CombinedOutput(); err != nil {
-		return "", fmt.Errorf("%s commit of the prepared image failed: %v: %s", eng.Name, err, probeLine(out))
+		return "", fmt.Errorf("%s commit of the prepared image failed: %w: %s", eng.Name, err, probeLine(out))
 	}
 	image, found, err := LookupPrepared(ctx, eng, s.Image, tc.Digest)
 	if err != nil {

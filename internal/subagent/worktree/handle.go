@@ -120,7 +120,7 @@ func (w *Worktree) land(plain bool) (string, error) {
 			m, err := MergeWorktree(w.h.Dir, w.h.RepoTop, generated)
 			switch {
 			case err != nil:
-				return "", fmt.Errorf("%w; merging it over the checkout: %v", applyErr, err)
+				return "", fmt.Errorf("%w; merging it over the checkout: %w", applyErr, err)
 			case len(m.Conflicts) > 0:
 				return "", &MergeConflict{Files: m.Conflicts}
 			}

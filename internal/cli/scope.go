@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -30,12 +31,12 @@ func sessionScope(cfg config.Config, flagged []string) (*scope.Scope, error) {
 		return nil, problems[0]
 	}
 	for _, dir := range cfg.Behavior.ScopeDirs {
-		if _, err := sc.Add(dir); err != nil && err != scope.ErrAlreadyInScope {
+		if _, err := sc.Add(dir); err != nil && !errors.Is(err, scope.ErrAlreadyInScope) {
 			fmt.Fprintf(os.Stderr, "warning: behavior.scope_dirs: %v\n", err)
 		}
 	}
 	for _, dir := range flagged {
-		if _, err := sc.Add(dir); err != nil && err != scope.ErrAlreadyInScope {
+		if _, err := sc.Add(dir); err != nil && !errors.Is(err, scope.ErrAlreadyInScope) {
 			return nil, fmt.Errorf("--add-dir: %w", err)
 		}
 	}
@@ -81,7 +82,7 @@ func headlessScopeCheck(sc *scope.Scope, yes bool, paths []string) (deny string,
 			reached[0].Dir + ", or --yes to let the run add ordinary directories itself)", false
 	}
 	for _, r := range reached {
-		if _, err := sc.Add(r.Dir); err != nil && err != scope.ErrAlreadyInScope {
+		if _, err := sc.Add(r.Dir); err != nil && !errors.Is(err, scope.ErrAlreadyInScope) {
 			return "error: " + err.Error(), false
 		}
 	}

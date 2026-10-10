@@ -509,7 +509,7 @@ func storedChatSeq(tx *sql.Tx, sessionID int64) (int, error) {
 func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 	var sessionID int64
 	err := db.sql.QueryRow(`SELECT id FROM chat_sessions WHERE name = ?`, name).Scan(&sessionID)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ChatNotFoundError{Name: name}
 	}
 	if err != nil {
@@ -554,7 +554,7 @@ func (db *DB) SaveChatFolded(name string, folded []provider.Message) error {
 
 		var sessionID int64
 		err = tx.QueryRow(`SELECT id FROM chat_sessions WHERE name = ?`, name).Scan(&sessionID)
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil
 		}
 		if err != nil {

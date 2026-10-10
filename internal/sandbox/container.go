@@ -375,7 +375,7 @@ func CreateContainer(ctx context.Context, eng Engine, s ContainerSpec, allowlist
 
 	out, err := runEngine(ctx, createArgv(eng, name, s))
 	if err != nil {
-		return Container{}, fmt.Errorf("%s create failed: %v: %s", eng.Name, err, probeLine(out))
+		return Container{}, fmt.Errorf("%s create failed: %w: %s", eng.Name, err, probeLine(out))
 	}
 
 	now := time.Now().UTC()
@@ -400,7 +400,7 @@ func CreateContainer(ctx context.Context, eng Engine, s ContainerSpec, allowlist
 func DestroyContainer(ctx context.Context, enginePath string, store *Store, rec Record) error {
 	out, err := runEngine(ctx, destroyArgv(enginePath, rec.Name))
 	if err != nil && !isMissingContainer(out) {
-		return fmt.Errorf("destroy %s: %v: %s", rec.Name, err, probeLine(out))
+		return fmt.Errorf("destroy %s: %w: %s", rec.Name, err, probeLine(out))
 	}
 	return store.Remove(rec.ID)
 }
@@ -414,7 +414,7 @@ func ContainerState(ctx context.Context, enginePath, name string) (state string,
 		if isMissingContainer(out) {
 			return "", true, nil
 		}
-		return "", false, fmt.Errorf("inspect %s: %v: %s", name, err, probeLine(out))
+		return "", false, fmt.Errorf("inspect %s: %w: %s", name, err, probeLine(out))
 	}
 	return strings.TrimSpace(string(out)), false, nil
 }

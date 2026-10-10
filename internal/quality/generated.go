@@ -52,7 +52,7 @@ func (g Generator) validate() error {
 				continue
 			}
 			if _, err := path.Match(seg, ""); err != nil {
-				return fmt.Errorf("generator %q: path %q: %v", g.Name, p, err)
+				return fmt.Errorf("generator %q: path %q: %w", g.Name, p, err)
 			}
 		}
 	}
@@ -178,12 +178,12 @@ func (r *Runner) Regenerate(ctx context.Context, dir string, paths []string) ([]
 		command := strings.Join(append([]string{check.Exe}, check.Args...), " ")
 		exe, err := resolveExe(dir, check.Exe)
 		if err != nil {
-			return ran, fmt.Errorf("%s did not run: %v", command, err)
+			return ran, fmt.Errorf("%s did not run: %w", command, err)
 		}
 		argv := append([]string{exe}, check.Args...)
 		if r.WrapIn != nil {
 			if argv, err = r.WrapIn(dir, argv); err != nil {
-				return ran, fmt.Errorf("%s did not run: containment failed: %v", command, err)
+				return ran, fmt.Errorf("%s did not run: containment failed: %w", command, err)
 			}
 		}
 		timeout := DefaultCheckTimeout

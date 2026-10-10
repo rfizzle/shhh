@@ -95,9 +95,9 @@ func pdfToText(ctx context.Context, bin string, body []byte, max int) (text stri
 	if runErr != nil {
 		detail := strings.TrimSpace(stderr.buf.String())
 		if detail == "" {
-			return "", false, fmt.Errorf("%s failed: %v", PDFTextBinary, runErr)
+			return "", false, fmt.Errorf("%s failed: %w", PDFTextBinary, runErr)
 		}
-		return "", false, fmt.Errorf("%s failed: %v: %s", PDFTextBinary, runErr, detail)
+		return "", false, fmt.Errorf("%s failed: %w: %s", PDFTextBinary, runErr, detail)
 	}
 	return stdout.buf.String(), false, nil
 }

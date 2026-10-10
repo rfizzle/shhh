@@ -233,7 +233,7 @@ func compileQuery(expr string) (*gojq.Code, error) {
 			if col < 1 {
 				col = 1
 			}
-			return nil, fmt.Errorf("invalid expression at column %d: %v\n  %s\n  %s^", col, err, expr, strings.Repeat(" ", col-1))
+			return nil, fmt.Errorf("invalid expression at column %d: %w\n  %s\n  %s^", col, err, expr, strings.Repeat(" ", col-1))
 		}
 		return nil, fmt.Errorf("invalid expression: %w", err)
 	}
@@ -535,10 +535,10 @@ func queryBound(ctx context.Context, path string, err error) error {
 	if errors.As(err, &values) {
 		return values
 	}
-	switch context.Cause(ctx) {
-	case errQueryDecodeMemory:
+	switch cause := context.Cause(ctx); {
+	case errors.Is(cause, errQueryDecodeMemory):
 		return &queryMemoryError{path: path}
-	case errQueryExpressionMemory:
+	case errors.Is(cause, errQueryExpressionMemory):
 		return &queryMemoryError{path: path, expression: true}
 	}
 	return err
@@ -1049,7 +1049,7 @@ func decodeYAML(path string, r io.Reader, each func(any) error) error {
 			keepYAMLDates(&doc)
 			err = doc.Decode(&v)
 		}
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return nil
 		}
 		if err != nil {
@@ -1134,7 +1134,7 @@ func decodeXML(path string, r io.Reader, each func(any) error) error {
 	}
 	for {
 		tok, err := dec.RawToken()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

@@ -9,6 +9,7 @@ package cli
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -209,11 +210,13 @@ func newChatsCmd() *cobra.Command {
 // (docs/interface/surfaces.md#outside-the-tui): a name that is not there
 // points at the list, a name that is taken points at another name.
 func chatError(err error) error {
-	switch e := err.(type) {
-	case storage.ChatNotFoundError:
-		return fmt.Errorf("chat %q not found — `shhh chats list` shows what is saved", e.Name)
-	case storage.ChatExistsError:
-		return fmt.Errorf("a chat named %q already exists — choose another name", e.Name)
+	var missing storage.ChatNotFoundError
+	var taken storage.ChatExistsError
+	switch {
+	case errors.As(err, &missing):
+		return fmt.Errorf("chat %q not found — `shhh chats list` shows what is saved", missing.Name)
+	case errors.As(err, &taken):
+		return fmt.Errorf("a chat named %q already exists — choose another name", taken.Name)
 	}
 	return err
 }

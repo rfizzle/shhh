@@ -284,7 +284,7 @@ func proxyFor(mechanism string, hosts []string) (*hostProxy, error) {
 		return nil, fmt.Errorf("wrap unsupported: %s cannot hold a host list", mechanism)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("wrap unsupported: cannot start the proxy for sandbox.allow_hosts: %v", err)
+		return nil, fmt.Errorf("wrap unsupported: cannot start the proxy for sandbox.allow_hosts: %w", err)
 	}
 	p.addr = ln.Addr().String()
 	go p.serve(ln)
