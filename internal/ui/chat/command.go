@@ -657,6 +657,7 @@ revoke [commands|edits|hosts|agents]   take the grants back`},
 						{components.ThemeLight, fmt.Sprintf("The same %d jobs, on a light ground", components.PaletteSize)},
 						{components.ThemeCharm, fmt.Sprintf("The same %d jobs in CharmTone", components.PaletteSize)},
 						{components.ThemeHighContrast, "The same jobs on pure black, every text colour at 7:1 or more"},
+						{components.ThemeColorblind, "Blue and orange for add and remove, apart under every common colour blindness"},
 					}},
 					{after: []string{"ground"}, options: []argOption{
 						{"on", "paint the background the theme was drawn against"},

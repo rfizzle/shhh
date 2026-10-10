@@ -1,0 +1,24 @@
+# program test: none — the table is held by TestPalette_ColorblindClearsAA and
+#   TestPalette_ColorblindPairsStayApart, and drawn in the colorblind-table
+#   goldens
+#
+# The colour-blind theme under a live session. The launch line writes a
+# theme.toml naming the table, so the session opens on the dark ground with its
+# signal colours on the Okabe-Ito set. A gated edit gives the approval card,
+# then the applied edit's row, and the transcript around them. What the
+# capture is for: the .txt is read against the goldens' layout blocks, and the
+# .ansi for the one thing a layout cannot say: the added line is drawn in blue
+# (256 index 69) and the removed line in orange (209), never green against red,
+# so the two are told apart by a reader who cannot tell those two apart.
+# Driven at 110 by `make tui-shot SCENE=theme-colorblind COLS=110`; written
+# here, not driven.
+setup printf 'package agent\n\nconst limit = 25\n\nfunc round(a *Agent) error {\n    if a.round >= limit {\n        return ErrRoundLimit\n    }\n    a.round++\n    return nil\n}\n' > loop.go
+setup printf 'The cap is read from one place.\n' > notes.md
+snap 01-start "Some things worth doing first"
+keys "raise the round cap" Enter
+snap 02-card "RoundsExhausted" "apply the change"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+snap 03-applied "The cap is where the file says it is" "+1 −1"

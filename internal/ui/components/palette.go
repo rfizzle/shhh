@@ -287,6 +287,48 @@ var highContrastPalette = ColorTokens{
 	Key:     token("#afafd7", "146", "12"),
 }
 
+// colorblindPalette is the same jobs with the signal colours moved onto the
+// Okabe-Ito set, which was chosen so that its members stay apart for a reader
+// with any of the common colour deficiencies: blue for an addition, orange for
+// a removal, yellow for the accent, a violet for work in motion, sky blue for
+// information and a pale lime for the hunk header. The set's own blue,
+// vermilion and bluish green are too dark for text on the dark ground, so each
+// is lifted until it clears 4.5:1 on the band, and the pairs that must not be
+// confused were checked after the lifting, under deuteranopia, protanopia and
+// tritanopia (TestPalette_ColorblindPairsStayApart).
+//
+// Nothing here is red against green: the dark table's pair is the one a
+// reader with the commonest deficiency cannot tell apart, and the tints
+// beneath the diff's lines are blue and brown for the same reason. The
+// greys, the selected row, Code and Key are the dark table's, which already
+// clear the floor, so the ramp and the ground are the ones a reader knows. The
+// ground is the dark table's and paints by default, for the band's sake.
+//
+// A hex that is not exactly its 256 index is beside the nearest cube entry,
+// and the sixteen-colour rung is chosen by hue family: there is no orange in
+// sixteen colours, so the removal takes bright red there, and the tints take
+// blue and yellow so that they stay apart.
+var colorblindPalette = ColorTokens{
+	Add:     token("#5b94ff", "69", "12"),
+	Del:     token("#ff7a3d", "209", "9"),
+	addBg:   token("#00005f", "17", "4"),
+	delBg:   token("#5a2300", "52", "3"),
+	Hunk:    token("#c4ec6a", "191", "10"),
+	Accent:  token("#f0e442", "221", "11"),
+	Info:    token("#56b4e9", "74", "14"),
+	FocusBg: token("#5f5faf", "61", "12"),
+	band:    band("#1c1c1c", "234"),
+	Dim:     token("#8a8a8a", "245", "8"),
+	Dimmer:  token("#a8a8a8", "248", "8"),
+	Spin:    token("#c77dff", "177", "13"),
+	Status:  token("#949494", "246", "8"),
+	Bright:  token("#eaeaea", "15", "15"),
+	Subtle:  token("#bcbcbc", "250", "7"),
+	Body:    token("#d0d0d0", "252", "7"),
+	Code:    token("#d7af87", "180", "3"),
+	Key:     token("#8787af", "103", "12"),
+}
+
 // band writes the band's row: a grey one step off the table's ground, and no
 // sixteen-colour rung. Sixteen colours has only bright-black between the
 // ground and the chrome grey, so a band there would read as chrome, and a card
@@ -347,6 +389,7 @@ const (
 	// ThemeHighContrast is the one word with a hyphen in it, which is why a
 	// name in theme.toml is a quoted string.
 	ThemeHighContrast = "high-contrast"
+	ThemeColorblind   = "colorblind"
 )
 
 // theme is one shipped table and the ground it was chosen against. The table
@@ -368,6 +411,7 @@ var themes = map[string]theme{
 	ThemeCharm: {charmPalette, tone(charmtone.Pepper, "235", "0")},
 
 	ThemeHighContrast: {highContrastPalette, highContrastGround},
+	ThemeColorblind:   {colorblindPalette, darkGround},
 }
 
 // darkGround is the design system's screen, #0f1117, and 233 for it at 256
@@ -396,7 +440,7 @@ var highContrastGround = Token{
 // ThemeNames is the words a reader may choose between, auto first because it
 // is the default and the one that needs no decision.
 func ThemeNames() []string {
-	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast}
+	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm, ThemeHighContrast, ThemeColorblind}
 }
 
 var (
@@ -511,7 +555,7 @@ func GroundPainted() bool {
 // terminal's. See GroundColor.
 func groundPaintedByDefault() bool {
 	switch resolveTheme(themeName) {
-	case ThemeDark, ThemeHighContrast:
+	case ThemeDark, ThemeHighContrast, ThemeColorblind:
 		return true
 	}
 	return false

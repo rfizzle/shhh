@@ -28,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 27 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 28 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -237,6 +237,43 @@ cannot tell green from red still sees which is which. And the table is not an
 accessibility fix for the rest of the interface: the `+` and `-` gutter and
 the glyphs beside each state carry the meaning as they do on every table, and
 this one only makes the colour a second cue that is easier to read.
+
+## A colour-blind table, for a reader whose add and remove were one colour
+
+_Filed 2026-10-10 · closes by the binary_
+
+The dark table's addition is green (`#5fd75f`) and its removal red
+(`#ff5f5f`), the pair a reader with red-green colour blindness cannot tell
+apart, and its warning amber sits close enough to the green that the two merge
+as well. A fourth table, `colorblind`, moves the signal colours onto the
+Okabe-Ito set, which was chosen for being told apart under every common
+deficiency: Add is blue `#5b94ff` (69), Del is orange `#ff7a3d` (209), Accent
+is yellow `#f0e442` (221), Spin is violet `#c77dff` (177), Info is sky blue
+`#56b4e9` (74) and Hunk is a pale lime `#c4ec6a` (191). The set's own blue and
+vermilion are too dark to read on the dark ground, so each is lifted until it
+clears 4.5:1 on the band, and then the pairs were measured again. The tints
+under the diff's lines are blue (`#00005f`, 17) and brown (`#5a2300`, 52), not
+green and red. The greys, the selected row, Code and Key, and the ground, are
+the dark table's, which paints by default.
+
+It was checked against three simulated deficiencies, deuteranopia, protanopia
+and tritanopia, by the model of Machado, Oliveira and Fernandes (2009) at
+severity 1.0, written in the test and without a dependency
+(`TestPalette_ColorblindPairsStayApart`). Add and del, del and spin, accent
+and add, info and hunk, and add and hunk each stay at least 30 apart in
+CIELAB under all three; the closest is info and hunk under tritanopia at 38.
+The dark table falls short on five of those fifteen measures, and the test
+holds the count rather than failing on it.
+
+The invariant is [colour never carries meaning
+alone](principles.md#colour-never-carries-meaning-alone), and it is the
+reason a second table is a preference and not a fix. A state that only a
+colour told would be wrong on every table, and this one's colours are no
+cure for it: the `+` and `-` gutter, the `✓` and `✗` marks and the words
+beside each state carry the meaning here as they do everywhere, and the table
+only makes the second cue real for a reader who has to lean on it. The places
+where a colour still stands alone are filed as their own stories, not
+repaired here.
 
 ## The chrome greys clear 4.5:1, and CharmTone's do not
 

@@ -1,10 +1,12 @@
 package components
 
 import (
+	"fmt"
 	"image/color"
 	"math"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 
 	"charm.land/lipgloss/v2"
@@ -889,5 +891,159 @@ func TestPalette_HighContrastPaintsItsGroundByDefault(t *testing.T) {
 	PaintGround(false)
 	if GroundColor() != nil {
 		t.Error("ground off still paints")
+	}
+}
+
+// Every text token on the colour-blind table clears the AA floor on the ground
+// and on the band, the signal inks included: they are what the table is for,
+// and an ink that is told apart from its neighbour but cannot be read is no
+// gain. Each token carries all three rungs, and the lines drawn over the
+// tints read on them.
+func TestPalette_ColorblindClearsAA(t *testing.T) {
+	th := themes[ThemeColorblind]
+	inks := []string{"dim", "dimmer", "status", "subtle", "body", "bright",
+		"add", "del", "hunk", "accent", "info", "spin", "code", "key"}
+	for _, ink := range inks {
+		for _, g := range []struct {
+			name string
+			g    Token
+		}{{"ground", th.ground}, {"band", th.tokens.band}} {
+			got := contrast(t, tokenNamed(th.tokens, ink), g.g)
+			t.Logf("%-7s on %-6s %.2f:1", ink, g.name, got)
+			if got < aaFloor {
+				t.Errorf("%s on the %s is %.2f:1, under %.1f:1", ink, g.name, got, aaFloor)
+			}
+		}
+	}
+	for _, c := range []struct {
+		what    string
+		ink, bg Token
+	}{
+		{"add on its tint", th.tokens.Add, th.tokens.addBg},
+		{"del on its tint", th.tokens.Del, th.tokens.delBg},
+		{"bright on the selected row", th.tokens.Bright, th.tokens.FocusBg},
+	} {
+		if got := contrast(t, c.ink, c.bg); got < aaFloor {
+			t.Errorf("%s is %.2f:1, under %.1f:1", c.what, got, aaFloor)
+		}
+	}
+	for _, name := range append(inks, "addBg", "delBg", "focusBg") {
+		tk := tokenNamed(th.tokens, name)
+		if tk.trueColor == nil || tk.ansi256 == nil || tk.ansi == nil {
+			t.Errorf("%s is missing a rung: %+v", name, tk)
+		}
+		if _, none := tk.ansi.(lipgloss.NoColor); none {
+			t.Errorf("%s has no sixteen-colour rung of its own", name)
+		}
+	}
+}
+
+// The deficiency model is Machado, Oliveira and Fernandes (2009) at severity
+// 1.0, applied to linear RGB: the three matrices below, no dependency. A pair
+// is told apart when its two inks, after the model, are at least
+// colorblindDistance apart in CIELAB (the 1976 distance, D65), the measure
+// that holds for hues of equal luminance, which a luminance ratio does not.
+// The luminance ratio is logged beside it because a reader who loses the hue
+// still has the light.
+var colorblindModels = []struct {
+	name string
+	m    [3][3]float64
+}{
+	{"deuteranopia", [3][3]float64{{0.367322, 0.860646, -0.227968}, {0.280085, 0.672501, 0.047413}, {-0.011820, 0.042940, 0.968881}}},
+	{"protanopia", [3][3]float64{{0.152286, 1.052583, -0.204868}, {0.114503, 0.786281, 0.099216}, {-0.003882, -0.048116, 1.051998}}},
+	{"tritanopia", [3][3]float64{{1.255528, -0.076749, -0.178779}, {-0.078411, 0.930809, 0.147602}, {0.004733, 0.691367, 0.303900}}},
+}
+
+const colorblindDistance = 30.0
+
+// colorblindPairs are the pairs of signal inks that name different things at
+// the same moment on one screen.
+var colorblindPairs = [][2]string{
+	{"add", "del"}, {"del", "spin"}, {"accent", "add"}, {"info", "hunk"}, {"add", "hunk"},
+}
+
+// seen is what the model leaves of an ink: its linear RGB, clamped, and the
+// luminance and CIELAB of that.
+func seen(c Token, m [3][3]float64) (y float64, lab [3]float64) {
+	r, g, b, _ := c.trueColor.RGBA()
+	lin := func(v uint32) float64 {
+		x := float64(v>>8) / 255
+		if x <= 0.03928 {
+			return x / 12.92
+		}
+		return math.Pow((x+0.055)/1.055, 2.4)
+	}
+	in := [3]float64{lin(r), lin(g), lin(b)}
+	var o [3]float64
+	for i := range o {
+		for j := range in {
+			o[i] += m[i][j] * in[j]
+		}
+		o[i] = math.Min(1, math.Max(0, o[i]))
+	}
+	y = 0.2126*o[0] + 0.7152*o[1] + 0.0722*o[2]
+	x := 0.4124*o[0] + 0.3576*o[1] + 0.1805*o[2]
+	z := 0.0193*o[0] + 0.1192*o[1] + 0.9505*o[2]
+	f := func(v float64) float64 {
+		if v > 0.008856 {
+			return math.Cbrt(v)
+		}
+		return 7.787*v + 16.0/116
+	}
+	fx, fy, fz := f(x/0.95047), f(y), f(z/1.08883)
+	return y, [3]float64{116*fy - 16, 500 * (fx - fy), 200 * (fy - fz)}
+}
+
+// pairShortfalls measures every pair under every model and returns every line
+// and the ones under the bar, as text a failure can print.
+func pairShortfalls(p ColorTokens) (all, short []string) {
+	for _, pair := range colorblindPairs {
+		a, b := tokenNamed(p, pair[0]), tokenNamed(p, pair[1])
+		for _, md := range colorblindModels {
+			ya, la := seen(a, md.m)
+			yb, lb := seen(b, md.m)
+			d0, d1, d2 := la[0]-lb[0], la[1]-lb[1], la[2]-lb[2]
+			d := math.Sqrt(d0*d0 + d1*d1 + d2*d2)
+			ratio := (math.Max(ya, yb) + 0.05) / (math.Min(ya, yb) + 0.05)
+			line := fmt.Sprintf("%s/%s under %s: CIELAB %.0f, light %.2f:1", pair[0], pair[1], md.name, d, ratio)
+			all = append(all, line)
+			if d < colorblindDistance {
+				short = append(short, line)
+			}
+		}
+	}
+	return all, short
+}
+
+// darkShortfalls is how many of dark's fifteen measures fall under the bar.
+const darkShortfalls = 5
+
+// The colour-blind table keeps its five pairs apart under all three models.
+// The same measure over dark records today's shortfall and does not fail on
+// it. Dark's pairs under the bar of 30 (CIELAB distance, light ratio):
+//
+//	add/del    deuteranopia  10  1.32:1
+//	del/spin   tritanopia    15  1.13:1
+//	accent/add protanopia    18  1.21:1
+//	info/hunk  tritanopia    28  1.79:1
+//	add/hunk   tritanopia    11  1.10:1
+//
+// Ten of its fifteen measures clear the bar; the five above do not, and the
+// test fails when that count stops being five so the list cannot rot.
+func TestPalette_ColorblindPairsStayApart(t *testing.T) {
+	all, short := pairShortfalls(themes[ThemeColorblind].tokens)
+	for _, l := range all {
+		t.Log(l)
+	}
+	if len(short) > 0 {
+		t.Errorf("pairs under %.0f in CIELAB on the colourblind table:\n  %s", colorblindDistance, strings.Join(short, "\n  "))
+	}
+
+	darkAll, darkShort := pairShortfalls(themes[ThemeDark].tokens)
+	t.Logf("dark falls short on %d of %d (recorded, not failing):\n  %s",
+		len(darkShort), len(darkAll), strings.Join(darkAll, "\n  "))
+	if len(darkShort) != darkShortfalls {
+		t.Errorf("dark falls short on %d measures, the comment records %d; update it:\n  %s",
+			len(darkShort), darkShortfalls, strings.Join(darkShort, "\n  "))
 	}
 }

@@ -1,0 +1,9 @@
+# One reply per request. The last line repeats once these run out.
+# One turn that reads a file and edits it, so the transcript is left holding
+# an applied edit with its diff, under the approval card that gated it.
+tool:read_file:{"path":"loop.go"}
+tool:edit_file:{"path":"loop.go","old_text":"        return ErrRoundLimit","new_text":"        return &RoundsExhausted{Round: a.round, Max: limit}"}
+# The session asks the model on its own account over a turn this long, to
+# title the conversation; a spare read costs a row and no more.
+tool:read_file:{"path":"notes.md"}
+The cap is where the file says it is.

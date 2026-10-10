@@ -4037,6 +4037,47 @@ func TestGolden_HighContrastTable(t *testing.T) {
 		"the high-contrast column, on the surfaces that spend it")
 }
 
+// TestGolden_ColorblindTable is the colour-blind table on the three surfaces
+// that spend its signal inks: the diff, where blue and orange tell the added
+// line from the removed one; the approval card; and the step card in the
+// states that tone its glyph, outcome and strip. The .ansi block is the
+// record to read: the added and removed lines carry different colours that
+// stay apart under the three simulated deficiencies.
+func TestGolden_ColorblindTable(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	withTheme(t, ThemeColorblind)
+	for _, width := range goldenWidths {
+		running := StepCard{Kind: ActivityCommand, State: ActivityRunning, Rail: true, Verb: "ran",
+			Subject: "go test ./internal/ui/...", Duration: "42s", Tail: "--- FAIL: TestReplyGolden (0.42s)",
+			Body: "Running the suite once to see which golden moved."}
+		write := StepCard{Kind: ActivityEdit, Rail: true, Verb: "wrote", Subject: ".plan/BACKLOG.md",
+			Outcome: "+41", Duration: "1m04s", Body: "Writing the epic and two stories now, appended after the last one.",
+			Evidence: "+ ## A Code Block Is Copied by Itself", EvidenceRight: "≡ on target · 2 stories"}
+		golden.Assert(t, widthName("colorblind-table", width), golden.Case{
+			Surface: "the colour-blind column, on the surfaces that spend the signal inks",
+			Width:   width,
+			Panels: []golden.Panel{
+				{Label: "diff · the two verdicts and the hunk heading", View: (&DiffView{
+					Path: "internal/agent/loop.go", Verb: "edit",
+					Hunks: goldenHunks(), Mode: DiffExpanded, Height: 14, MaxLines: 12,
+				}).View(width)},
+				{Label: "card · the border, the question and the keys", View: (&ApprovalCard{
+					Variant:     ApprovalCommand,
+					Title:       "Approve command",
+					ActGlyph:    "$",
+					Act:         "go test ./internal/agent/...",
+					Answer:      "run it once",
+					AllowAlways: true,
+					AlwaysHint:  "allow commands without asking this session",
+				}).View(width)},
+				{Label: "step card · a failed step with its strip", View: largeStep().View(width)},
+				{Label: "step card · a command running, its tail", View: running.View(width)},
+				{Label: "step card · a write", View: write.View(width)},
+			},
+		})
+	}
+}
+
 func captureTable(t *testing.T, theme, name string, widths []int, surface string) {
 	t.Helper()
 	withColorProfile(t, colorprofile.ANSI256)
