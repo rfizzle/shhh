@@ -346,7 +346,7 @@ func (c *ChatScreen) offers() []KeyOffer {
 	if c.rename != nil {
 		return []KeyOffer{
 			keyOfferAs(keys.Screen.Take, "rename it"),
-			keyOfferAs(keys.Screen.Keep, "keep the name"),
+			keyOfferAs(keys.Screen.Quit, "keep the name"),
 		}
 	}
 	offers := []KeyOffer{keyOffer(keys.Screen.Move)}
@@ -375,7 +375,7 @@ func (c *ChatScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Delete, "delete it and its branches, after confirming it"),
 		keyOfferAs(keys.Screen.Filter, "filter by name or by what it was about"),
 		keyOfferAs(keys.Query.Rub, "delete a character from the filter or the rename row"),
-		keyOfferAs(keys.Screen.Keep, "keep the name; clear the filter, then close it"),
+		keyOfferAs(keys.Screen.Quit, "keep the name; clear the filter, then close it"),
 		keyOfferAs(keys.Screen.Quit, backToShell),
 	}
 }

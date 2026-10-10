@@ -16,7 +16,7 @@ shhh doctor · 10 checks         1.4s · [?] keys · [esc] back
 
 ❯  ✗ model   anthropic · claude-opus-5 · no …  no key       
     no session will start until a key is found — every one …
-    [f] show the four places shhh looks
+    [enter] show the four places shhh looks
   ↓ 9 more · binary · config · store · sandbox · engine · g…
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
@@ -246,7 +246,7 @@ linear                                                 error
 
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel   anthropic · claude-opus-5 · no …  no key       ␛[m␛[m
     ␛[38;5;244mno session will start until a key is found — every one …␛[m
-    ␛[38;5;254m[f]␛[m␛[38;5;244m show the four places shhh looks␛[m
+    ␛[38;5;254m[enter]␛[m␛[38;5;244m show the four places shhh looks␛[m
   ␛[38;5;244m↓ 9 more · binary · config · store · sandbox · engine · g…␛[m
 
   ␛[38;5;254m✗␛[m ␛[38;5;254m2 failed␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 warnings␛[m␛[38;5;244m · ␛[m␛[38;5;254m5 passed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 not checked␛[m

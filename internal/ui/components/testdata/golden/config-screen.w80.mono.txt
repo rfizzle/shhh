@@ -56,7 +56,7 @@ shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] ba
     api key            ···4f9c                                              user
   ↓ 7 more
 
-[↑↓] move · [/] filter · [enter] take it · [esc] keep gpt-5.2
+[↑↓] move · [/] filter · [enter] set it · [esc] keep gpt-5.2
 
 · the picker filtered · the query row carries both counts
 shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] back
@@ -80,7 +80,7 @@ shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] ba
 
   ↓ 5 more
 
-[↑↓] move · [enter] take it · [esc] clear the filter, then close it
+[↑↓] move · [enter] set it · [esc] clear the filter, then close it
 
 · a setting with no answers to choose · a field under the row
 shhh config · ~/.config/shhh/config.toml                   [?] keys · [esc] back
@@ -324,7 +324,7 @@ $  a shell command
     context budget     8000 tokens                                       default
   ↓ 11 more
 
-[↑↓] move · [/] filter · [enter] take it · [esc] keep claude-sonnet-4.6
+[↑↓] move · [/] filter · [enter] set it · [esc] keep claude-sonnet-4.6
 
 ── ansi ────────────────────────────────────────────────────
 · the list · every row states where its value came from
@@ -373,7 +373,7 @@ $  a shell command
     ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                              ␛[38;5;254muser␛[m
   ␛[38;5;244m↓ 7 more␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m take it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep gpt-5.2␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m set it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep gpt-5.2␛[m
 
 · the picker filtered · the query row carries both counts
 ␛[1;38;5;254mshhh config␛[m␛[38;5;244m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -397,7 +397,7 @@ $  a shell command
 
   ␛[38;5;244m↓ 5 more␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m take it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m clear the filter, then close it␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m set it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m clear the filter, then close it␛[m
 
 · a setting with no answers to choose · a field under the row
 ␛[1;38;5;254mshhh config␛[m␛[38;5;244m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;244m[?] keys · [esc] back␛[m
@@ -641,4 +641,4 @@ $  a shell command
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                       ␛[38;5;254mdefault␛[m
   ␛[38;5;244m↓ 11 more␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m take it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep claude-sonnet-4.6␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m set it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep claude-sonnet-4.6␛[m

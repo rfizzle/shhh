@@ -16,10 +16,10 @@ shhh doctor · 10 checks                                                        
 
 ❯  ✗ model   anthropic · claude-opus-5 · no key in any of the four places                                            no key       
     no session will start until a key is found — every one exits on "no provider"
-    [f] show the four places shhh looks
+    [enter] show the four places shhh looks
    ✗ sandbox no containment mechanism · sandbox-exec not found                                                  uncontained   0.1s
     every approval will show ⚠ UNCONTAINED, and an approved command runs as you
-    [f] show the fix for this host
+    [enter] show the fix for this host
   ↓ 8 more · binary · config · store · engine · git · tools · memory · update
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked      [↑↓/jk] move · [c] copy the report · [r] retry · [esc] back to the shell
@@ -245,10 +245,10 @@ definitions not loaded                                   │   costs     its too
 
 ␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[91m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[91m✗␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62mmodel   anthropic · claude-opus-5 · no key in any of the four places                                            no key       ␛[m␛[m
     ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[m
-    ␛[38;5;103m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+    ␛[38;5;103m[enter]␛[m␛[38;5;241m show the four places shhh looks␛[m
    ␛[91m✗␛[m ␛[38;5;252msandbox␛[m ␛[38;5;252mno containment mechanism␛[m␛[38;5;241m · sandbox-exec not found␛[m                                                  ␛[91muncontained␛[m   ␛[38;5;241m0.1s␛[m
     ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved command runs as you␛[m
-    ␛[38;5;245m[f]␛[m␛[38;5;241m show the fix for this host␛[m
+    ␛[38;5;245m[enter]␛[m␛[38;5;241m show the fix for this host␛[m
   ␛[38;5;241m↓ 8 more · binary · config · store · engine · git · tools · memory · update␛[m
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m      ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m retry␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m

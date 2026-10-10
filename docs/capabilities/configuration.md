@@ -995,20 +995,16 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `preview.remove` | `d` | delete | yes |
 | `preview.back` | `esc` | back | yes |
 | `screen.move` | `up`, `down`, `k`, `j` | move | yes |
-| `screen.take` | `enter` | take it | yes |
+| `screen.take` | `enter` | open | yes |
 | `screen.filter` | `/` | filter | yes |
 | `screen.list` | `?` | keys | yes |
 | `screen.quit` | `esc` | back | yes |
 | `screen.reset` | `ctrl+r` | reset | yes |
 | `screen.write` | `ctrl+s` | write | yes |
-| `screen.keep` | `esc` | back | yes |
 | `screen.scope` | `shift+tab` | switch the file | yes |
 | `screen.copy` | `c` | copy | yes |
-| `screen.rerun` | `enter` | re-run it | yes |
-| `screen.snippet` | `ctrl+s` | write it as a snippet | yes |
 | `screen.delete` | `d` | delete | yes |
 | `screen.rename` | `e` | rename | yes |
-| `screen.fix` | `f` | show the fix | yes |
 | `screen.again` | `r` | retry | yes |
 | `screen.apply` | `a` | apply it | yes |
 | `screen.worked` | `y` | worked | yes |

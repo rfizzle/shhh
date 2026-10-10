@@ -189,7 +189,7 @@ func TestDoctorScreen_TheFixIsOfferedOnTheRow(t *testing.T) {
 	if line == "" {
 		t.Fatal("the row with a fix does not offer it")
 	}
-	if !strings.Contains(line, "[f]") {
+	if !strings.Contains(line, "[enter]") {
 		t.Fatalf("the offer is not a bracketed key: %q", line)
 	}
 	if got := doctorIndent(line); got != detailIndent {
@@ -203,29 +203,29 @@ func TestDoctorScreen_ACheckWithNoFixOffersNoKey(t *testing.T) {
 	d := &DoctorScreen{Checks: []DoctorCheck{
 		{Name: "engine", Subject: "no container engine", Outcome: "not available", State: DoctorSkipped},
 	}}
-	if strings.Contains(doctorPlain(d, 110), "[f]") {
+	if strings.Contains(doctorPlain(d, 110), "[enter]") {
 		t.Fatalf("a check with no fix offered one:\n%s", doctorPlain(d, 110))
 	}
 }
 
-// `[f]` opens the fix under the row it belongs to, one indent past the
+// `[enter]` opens the fix under the row it belongs to, one indent past the
 // consequence, and says how to close it again.
-func TestDoctorScreen_FShowsTheFixAndThenHidesIt(t *testing.T) {
+func TestDoctorScreen_EnterShowsTheFixAndThenHidesIt(t *testing.T) {
 	d := doctorScreen()
-	d.Update(key("f"))
+	d.Update(key("enter"))
 	line := doctorRowFor(d, 110, "env       ANTHROPIC_API_KEY — unset")
 	if line == "" {
-		t.Fatalf("[f] did not open the fix:\n%s", doctorPlain(d, 110))
+		t.Fatalf("[enter] did not open the fix:\n%s", doctorPlain(d, 110))
 	}
 	if got := doctorIndent(line); got != doctorFixIndent {
 		t.Fatalf("the fix sits at indent %d, not %d", got, doctorFixIndent)
 	}
-	if doctorRowFor(d, 110, "[f] hide it") == "" {
+	if doctorRowFor(d, 110, "[enter] hide it") == "" {
 		t.Fatal("an open fix does not offer to close itself")
 	}
-	d.Update(key("f"))
+	d.Update(key("enter"))
 	if strings.Contains(doctorPlain(d, 110), "ANTHROPIC_API_KEY") {
-		t.Fatal("[f] did not close the fix again")
+		t.Fatal("[enter] did not close the fix again")
 	}
 }
 
@@ -282,10 +282,10 @@ func TestDoctorScreen_AnUnpointedFixKeyIsNotAnOffer(t *testing.T) {
 	if live == "" || inert == "" {
 		t.Fatalf("expected one live and one waiting fix key:\n%s", ansi.Strip(d.View(110)))
 	}
-	if !strings.Contains(live, sty.key.Render("[f]")) {
+	if !strings.Contains(live, sty.key.Render("[enter]")) {
 		t.Fatalf("the pointed row's key is not offered in the key colour: %q", live)
 	}
-	if strings.Contains(inert, sty.key.Render("[f]")) {
+	if strings.Contains(inert, sty.key.Render("[enter]")) {
 		t.Fatalf("a waiting row's key reads as an offer: %q", inert)
 	}
 }
@@ -358,7 +358,7 @@ func TestDoctorScreen_OnlyEscCloses(t *testing.T) {
 	if done, _ := doctorScreen().Update(key("esc")); !done {
 		t.Fatal("esc did not close the screen")
 	}
-	for _, k := range []string{"q", "ctrl+c", "f", "c", "r", "?", "down", "enter", "/"} {
+	for _, k := range []string{"q", "ctrl+c", "f", "c", "r", "?", "down", "/"} {
 		if done, _ := doctorScreen().Update(key(k)); done {
 			t.Fatalf("%s closed the screen", k)
 		}
@@ -370,7 +370,7 @@ func TestDoctorScreen_QuestionMarkListsEveryKey(t *testing.T) {
 	d := doctorScreen()
 	d.Update(key("?"))
 	out := doctorPlain(d, 110)
-	for _, want := range []string{"[↑↓/jk]", "[f]", "[c]", "[r]", "[esc]", "hide the keys"} {
+	for _, want := range []string{"[↑↓/jk]", "[enter]", "[c]", "[r]", "[esc]", "hide the keys"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("the key list does not offer %q:\n%s", want, out)
 		}
@@ -509,7 +509,7 @@ func migrationCheck() DoctorCheck {
 	}
 }
 
-// The offer is on the row, beside `[f]`, the same way every other thing you
+// The offer is on the row, beside `[enter]`, the same way every other thing you
 // can do on this screen is offered where it applies rather than in a footer.
 func TestDoctorScreen_OffersTheActionOnItsOwnRow(t *testing.T) {
 	d := &DoctorScreen{Checks: []DoctorCheck{migrationCheck()}}

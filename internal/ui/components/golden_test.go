@@ -3624,7 +3624,7 @@ func TestGolden_DoctorScreen(t *testing.T) {
 			{Label: "the fix open · under the row it belongs to, one indent past the consequence",
 				View: func() string {
 					d := screen(nil)
-					d.Update(key("f"))
+					d.Update(key("enter"))
 					return d.View(width)
 				}()},
 			{Label: "the pointer moved · the next check that needs something takes the live key",

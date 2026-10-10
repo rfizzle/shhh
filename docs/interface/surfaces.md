@@ -3465,6 +3465,22 @@ Rating is the one of them that asks rather than reports, and it is drawn as
 the thing it is: one card, the answers as keys on it, and no list to walk,
 because the answer is what moves.
 
+Their keyboard is one block, read by every program, and a screen that adds to
+it adds at most three letters of its own. The block is `↑↓/jk` move, `[enter]`
+open, `[/]` filter, `[ctrl+s]` write, `[ctrl+r]` reset, `[shift+tab]` scope,
+`[?]` and `[esc]`; each program reads the ones it has a use for and says in its
+own words what `[enter]` and `[ctrl+s]` do there, so the act has one key and
+the screen has one word for it. On doctor `[enter]` shows the fix under the
+row, and its letters are `[a]` apply the fix, `[r]` run the checks again and
+`[c]` copy the report. On snippets `[enter]` runs the snippet and the letters
+are `[c]` copy, `[e]` rename and `[d]` delete. On history `[enter]` runs the
+entry again, `[ctrl+s]` writes it as a snippet, and the letters are `[c]` copy
+and `[d]` delete. Rating keeps `[y]`, `[n]` and `[s]` as the answers on its
+card. None of them answers `q`: `[esc]` is the way out, and the program's host
+answers `ctrl+c` (twice within two seconds) for the person who wants out at
+once ([esc is always the safe
+answer](principles.md#esc-is-always-the-safe-answer)).
+
 Two rules they share are worth stating: none of them changes how your machine
 behaves without a card, and doctor in particular names fixes rather than
 applying them — the screen that changes settings is the one that asks first.

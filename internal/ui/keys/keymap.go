@@ -125,6 +125,7 @@ var retired = []string{
 	"agent.cancel", "agent.kill_all", "agent.review", "agent.migrate",
 	"decision.allow_noted", "decision.deny_noted", "decision.batch",
 	"decision.diff", "decision.explain",
+	"screen.keep", "screen.rerun", "screen.snippet", "screen.fix",
 }
 
 // isRetired reports that a name from a file is one of retired, read the way

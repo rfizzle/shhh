@@ -138,7 +138,7 @@ func (s *SnippetScreen) Update(msg tea.KeyPressMsg) (done bool, result SnippetRe
 	switch {
 	case s.walked(pressed):
 		return false, SnippetResult{}
-	case keys.Is(pressed, keys.Screen.Rerun):
+	case keys.Is(pressed, keys.Screen.Take):
 		// The one key that leaves the screen with something to do. A list the
 		// filter emptied has nothing for it to take (invariant 5).
 		if row := s.currentShown(s.Rows); row != nil {
@@ -309,13 +309,13 @@ func (s *SnippetScreen) offers(width int, field string) []KeyOffer {
 	if s.rename != nil {
 		return []KeyOffer{
 			keyOfferAs(keys.Screen.Take, "rename it"),
-			keyOfferAs(keys.Screen.Keep, "keep the name"),
+			keyOfferAs(keys.Screen.Quit, "keep the name"),
 		}
 	}
 	move := keyOffer(keys.Screen.Move)
 	var acts []KeyOffer
 	if s.currentShown(s.Rows) != nil {
-		acts = append(acts, keyOfferAs(keys.Screen.Rerun, "run it"))
+		acts = append(acts, keyOfferAs(keys.Screen.Take, "run it"))
 	}
 	if s.list.Filtering {
 		acts = append(acts, keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"))
@@ -340,13 +340,13 @@ func (s *SnippetScreen) offers(width int, field string) []KeyOffer {
 func (s *SnippetScreen) keyList() []KeyOffer {
 	return []KeyOffer{
 		keyOfferAs(keys.Screen.Move, "move between snippets"),
-		keyOfferAs(keys.Screen.Rerun, "run the snippet under the pointer"),
+		keyOfferAs(keys.Screen.Take, "run the snippet under the pointer"),
 		keyOfferAs(keys.Screen.Copy, "copy its command to the clipboard"),
 		keyOfferAs(keys.Screen.Rename, "rename it, in a row under the list"),
 		keyOfferAs(keys.Screen.Delete, "delete it, after confirming it"),
 		keyOfferAs(keys.Screen.Filter, "filter by name or by what the command is"),
 		keyOfferAs(keys.Query.Rub, "delete a character from the filter or the rename row"),
-		keyOfferAs(keys.Screen.Keep, "keep the name; clear the filter, then close it"),
+		keyOfferAs(keys.Screen.Quit, "keep the name; clear the filter, then close it"),
 		keyOfferAs(keys.Screen.Quit, backToShell),
 	}
 }
@@ -357,7 +357,7 @@ func (s *SnippetScreen) footField() string {
 	if s.currentShown(s.Rows) == nil || s.rename != nil {
 		return ""
 	}
-	return "nothing is run until " + keys.Bracket(keys.Screen.Rerun)
+	return "nothing is run until " + keys.Bracket(keys.Screen.Take)
 }
 
 // sync rebuilds the list from Rows. It runs before every Update and every

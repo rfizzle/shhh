@@ -249,26 +249,22 @@
 
   SCREEN
 
-  · move     up down k j · move  [shipped]
-  · take     enter · take it  [shipped]
-  · filter   / · filter  [shipped]
-  · list     ? · keys  [shipped]
-  · quit     esc · back  [shipped]
-  · reset    ctrl+r · reset  [shipped]
-  · write    ctrl+s · write  [shipped]
-  · keep     esc · back  [shipped]
-  · scope    shift+tab · switch the file  [shipped]
-  · copy     c · copy  [shipped]
-  · rerun    enter · re-run it  [shipped]
-  · snippet  ctrl+s · write it as a snippet  [shipped]
-  · delete   d · delete  [shipped]
-  · rename   e · rename  [shipped]
-  · fix      f · show the fix  [shipped]
-  · again    r · retry  [shipped]
-  · apply    a · apply it  [shipped]
-  · worked   y · worked  [shipped]
-  · failed   n · did not  [shipped]
-  · skip     s · skip  [shipped]
+  · move    up down k j · move  [shipped]
+  · take    enter · open  [shipped]
+  · filter  / · filter  [shipped]
+  · list    ? · keys  [shipped]
+  · quit    esc · back  [shipped]
+  · reset   ctrl+r · reset  [shipped]
+  · write   ctrl+s · write  [shipped]
+  · scope   shift+tab · switch the file  [shipped]
+  · copy    c · copy  [shipped]
+  · delete  d · delete  [shipped]
+  · rename  e · rename  [shipped]
+  · again   r · retry  [shipped]
+  · apply   a · apply it  [shipped]
+  · worked  y · worked  [shipped]
+  · failed  n · did not  [shipped]
+  · skip    s · skip  [shipped]
 
   SOURCES
 
@@ -341,4 +337,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  242 keys · 1 moved
+  238 keys · 1 moved

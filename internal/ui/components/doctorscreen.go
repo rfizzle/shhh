@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	// doctorFixIndent is where the lines behind `[f]` sit: the grid's nested
+	// doctorFixIndent is where the lines behind `[enter]` sit: the grid's nested
 	// detail, one step in from the consequence and the key row that frame them.
 	doctorFixIndent = 6
 )
@@ -91,10 +91,10 @@ type DoctorCheck struct {
 	// failure that does not say what it costs is a failure the reader has to go
 	// and find out about.
 	Consequence string
-	// Fix are the lines `[f]` reveals — the commands, the config keys, the order
+	// Fix are the lines `[enter]` reveals — the commands, the config keys, the order
 	// to do them in. A check with none of them offers no key.
 	Fix []string
-	// FixLabel names what `[f]` opens, so the offer says how much is behind it:
+	// FixLabel names what `[enter]` opens, so the offer says how much is behind it:
 	// `show the 3-line fix`.
 	FixLabel string
 	// Action is what `[a]` would do to this machine, in the host's words —
@@ -112,7 +112,7 @@ type DoctorCheck struct {
 	State DoctorState
 }
 
-// hasFix reports whether the check has anything behind `[f]`.
+// hasFix reports whether the check has anything behind `[enter]`.
 func (c DoctorCheck) hasFix() bool { return len(c.Fix) > 0 }
 
 // hasAction reports whether the check offers `[a]`.
@@ -189,7 +189,7 @@ type DoctorScreen struct {
 	// MaxLines bounds the screen height; everything pinned around the checks
 	// comes off their budget before any of them is drawn. 0 is unbounded.
 	MaxLines int
-	// focus is an index into Checks: the row whose `[f]` is live. It survives
+	// focus is an index into Checks: the row whose `[enter]` is live. It survives
 	// the host replacing Checks, and lands on a row worth standing on.
 	focus int
 
@@ -216,8 +216,8 @@ func (d *DoctorScreen) Update(msg tea.KeyPressMsg) (done bool, result DoctorResu
 	}
 	switch pressed := msg.String(); {
 	case d.moved(pressed):
-	case keys.Is(pressed, keys.Screen.Fix):
-		// A row with nothing behind `[f]` does not offer it, so pressing it there
+	case keys.Is(pressed, keys.Screen.Take):
+		// A row with nothing behind `[enter]` does not offer it, so pressing it there
 		// is not a refusal to report — there is simply no key.
 		if d.stops() > 0 && d.Checks[d.focus].hasFix() {
 			d.fix[d.focus] = !d.fix[d.focus]
@@ -369,7 +369,7 @@ func (d *DoctorScreen) droppedRow(dropped []int, width int) string {
 }
 
 // checkRows is one check: its row on the grid, the consequence under a check
-// that did not pass, the fix behind `[f]` while it is open, and the key row
+// that did not pass, the fix behind `[enter]` while it is open, and the key row
 // that offers it.
 func (d *DoctorScreen) checkRows(i, width int) []string {
 	check := d.Checks[i]
@@ -404,7 +404,7 @@ func fixLine(line string) string {
 	return sty.status.Render(word) + gap + sty.body.Render(value)
 }
 
-// fixKeyRow is the offer under a check that has something to do on it: `[f]`
+// fixKeyRow is the offer under a check that has something to do on it: `[enter]`
 // to read the fix, and on a migration `[a]` to make the change. The row under
 // the pointer offers them live; the others carry the same keys grey, because
 // a key is inert until the surface that offers it holds the keyboard and on
@@ -425,7 +425,7 @@ func (d *DoctorScreen) fixKeyRow(i, width int) string {
 		if d.fix[i] {
 			label = "hide it"
 		}
-		offers = append(offers, keyOfferAs(keys.Screen.Fix, label))
+		offers = append(offers, keyOfferAs(keys.Screen.Take, label))
 	}
 	if check.hasAction() {
 		offers = append(offers, keyOfferAs(keys.Screen.Apply, check.Action))
@@ -632,7 +632,7 @@ func (d *DoctorScreen) keyList() []TurnKey {
 	if d.stops() > 0 {
 		list = append(list,
 			keyOfferAs(keys.Screen.Move, "move between the checks that need something"),
-			keyOfferAs(keys.Screen.Fix, "show the fix for the check under the pointer"))
+			keyOfferAs(keys.Screen.Take, "show the fix for the check under the pointer"))
 	}
 	if d.anyAction() {
 		list = append(list,

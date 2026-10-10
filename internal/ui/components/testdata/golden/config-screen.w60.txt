@@ -53,10 +53,10 @@ shhh config                            [?] keys · [esc] back
       claude-sonnet-4.6  better diffs · 200k ctx    $3 / $15
       gemini-3-flash     1M ctx                $0.30 / $2.50
       ⊘ deepseek-r2      local via ollama    not usable here
-  ↓ 8 more
+    api key            ···4f9c                          user
+  ↓ 7 more
 
-[↑↓] move · [/] filter · [enter] take it
-[esc] keep gpt-5.2
+[↑↓] move · [/] filter · [enter] set it · [esc] keep gpt-5.2
 
 · the picker filtered · the query row carries both counts
 shhh config                            [?] keys · [esc] back
@@ -79,7 +79,7 @@ shhh config                            [?] keys · [esc] back
     sub-agent model    inherit                       default
   ↓ 5 more
 
-[↑↓] move · [enter] take it
+[↑↓] move · [enter] set it
 [esc] clear the filter, then close it
 
 · a setting with no answers to choose · a field under the row
@@ -327,7 +327,7 @@ $  a shell command
     round limit        25                            default
   ↓ 12 more
 
-[↑↓] move · [/] filter · [enter] take it
+[↑↓] move · [/] filter · [enter] set it
 [esc] keep claude-sonnet-4.6
 
 ── ansi ────────────────────────────────────────────────────
@@ -374,10 +374,10 @@ $  a shell command
       ␛[38;5;252mclaude-sonnet-4.6␛[m  ␛[38;5;241mbetter diffs · 200k ctx␛[m    ␛[38;5;252m$3 / $15␛[m
       ␛[38;5;252mgemini-3-flash␛[m     ␛[38;5;241m1M ctx␛[m                ␛[38;5;252m$0.30 / $2.50␛[m
       ␛[38;5;245m⊘ deepseek-r2␛[m      ␛[38;5;245mlocal via ollama␛[m    ␛[38;5;245mnot usable here␛[m
-  ␛[38;5;241m↓ 8 more␛[m
+    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
+  ␛[38;5;241m↓ 7 more␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m take it␛[m
-␛[92m[esc]␛[m␛[38;5;241m keep gpt-5.2␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m set it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m keep gpt-5.2␛[m
 
 · the picker filtered · the query row carries both counts
 ␛[1;97mshhh config␛[m                            ␛[38;5;241m[?] keys · [esc] back␛[m
@@ -400,7 +400,7 @@ $  a shell command
     ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
   ␛[38;5;241m↓ 5 more␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m take it␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m set it␛[m
 ␛[92m[esc]␛[m␛[38;5;241m clear the filter, then close it␛[m
 
 · a setting with no answers to choose · a field under the row
@@ -648,5 +648,5 @@ $  a shell command
     ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
   ␛[38;5;241m↓ 12 more␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m take it␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m set it␛[m
 ␛[92m[esc]␛[m␛[38;5;241m keep claude-sonnet-4.6␛[m

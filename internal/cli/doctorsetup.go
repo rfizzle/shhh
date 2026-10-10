@@ -460,7 +460,7 @@ func migrateConsequence(pending []migrate.Pending) string {
 	return strings.Join(lines, "; ")
 }
 
-// migrateFix is the lines behind `[f]`: every migration named, then its steps
+// migrateFix is the lines behind `[enter]`: every migration named, then its steps
 // under it. A migration shhh will not make itself says so on its own line,
 // because otherwise the reader would sit waiting for a key that never comes.
 func migrateFix(pending []migrate.Pending) []string {

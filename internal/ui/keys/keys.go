@@ -1440,13 +1440,23 @@ var Paste = PasteKeys{
 }
 
 // ScreenKeys are the supporting TUIs': `shhh config`, `shhh history`,
-// `shhh metrics`, `shhh doctor`, `shhh snippets` and the saved-chat browser.
-// They are where `?` was invented — the compact key row swapped for the whole
-// list, in place — which is the idiom reading mode borrows. List is also the
-// `?` every card that holds the keyboard answers, and the profile drafter's:
-// one key, the same answer on every surface.
+// `shhh metrics`, `shhh doctor`, `shhh snippets`, `shhh rate` and the
+// saved-chat browser. They are where `?` was invented — the compact key row
+// swapped for the whole list, in place — which is the idiom reading mode
+// borrows. List is also the `?` every card that holds the keyboard answers,
+// and the profile drafter's: one key, the same answer on every surface.
+//
+// The block is one register read by every program. The first group is the
+// shared block, one binding per act: a program reads the ones it has a use
+// for and spells what enter or ctrl+s does there in its own words
+// (keyOfferAs), never as a second binding. The second group is the letters a
+// program may add, at most three apiece
+// (TestScreen_EveryProgramSharesTheRegister).
 type ScreenKeys struct {
-	Move   Binding
+	Move Binding
+	// Take is enter: it opens the setting, the saved chat or the check under
+	// the pointer, runs the snippet and runs the history entry again. The
+	// program says which, in its own words.
 	Take   Binding
 	Filter Binding
 	List   Binding
@@ -1457,8 +1467,9 @@ type ScreenKeys struct {
 	Quit Binding
 
 	Reset Binding
+	// Write is ctrl+s: the config screen writes its staged changes, and the
+	// history screen writes the entry as a snippet.
 	Write Binding
-	Keep  Binding
 	// Scope moves the config screen's write between the checkout's own file
 	// and the person's, where the screen stands in a checkout and so has
 	// two to choose from. It is the screen's `--global`, as a toggle. It is
@@ -1469,19 +1480,21 @@ type ScreenKeys struct {
 	// (docs/interface/reserved-keys.md#the-settings-screen-borrows-two-chords).
 	Scope Binding
 
-	Copy    Binding
-	Rerun   Binding
-	Snippet Binding
-	Delete  Binding
+	// What follows are the programs' own letters, at most three on any one.
+	Copy   Binding
+	Delete Binding
 	// Rename opens the one-line rename row over the item under the pointer.
 	// It is the screens' half of the key the picker inside a session answers
 	// on the same act (Select.Rename), which is why the two are spelled the
 	// same and declared apart: one belongs to a card beside a live draft and
 	// this one to a surface that holds the whole keyboard.
 	Rename Binding
-	Fix    Binding
 	Again  Binding
-	Apply  Binding
+	// Apply is the one key on a supporting screen that changes the machine
+	// rather than reporting on it, and it is why doctor grew a confirm: none
+	// of these screens writes without asking first
+	// (docs/interface/surfaces.md#the-supporting-screens).
+	Apply Binding
 
 	// Worked, Failed and Skip are `shhh rate`'s three answers. They are
 	// bare letters on a takeover, like every other key in this group, and
@@ -1493,30 +1506,28 @@ type ScreenKeys struct {
 	Skip   Binding
 }
 
+// Shared is the block every program reads: the acts a person learns once on
+// the settings screen.
+func (k ScreenKeys) Shared() []Binding {
+	return []Binding{k.Move, k.Take, k.Filter, k.List, k.Quit, k.Reset, k.Write, k.Scope}
+}
+
 var Screen = ScreenKeys{
 	Move:   bind(MoveShown, "move", "up", "down", "k", "j"),
-	Take:   bind("enter", "take it", "enter"),
+	Take:   bind("enter", "open", "enter"),
 	Filter: bind("/", "filter", "/"),
 	List:   bind("?", "keys", "?"),
 	Quit:   bind("esc", "back", "esc"),
 
 	Reset: bind("ctrl+r", "reset", "ctrl+r"),
 	Write: Save("write"),
-	Keep:  bind("esc", "back", "esc"),
 	Scope: bind("shift+tab", "switch the file", "shift+tab"),
 
-	Copy:    bind("c", "copy", "c"),
-	Rerun:   bind("enter", "re-run it", "enter"),
-	Snippet: Save("write it as a snippet"),
-	Delete:  bind("d", "delete", "d"),
-	Rename:  bind("e", "rename", "e"),
-	Fix:     bind("f", "show the fix", "f"),
-	Again:   bind("r", "retry", "r"),
-	// Apply is the one key on a supporting screen that changes the machine
-	// rather than reporting on it, and it is why doctor grew a confirm: none
-	// of these screens writes without asking first
-	// (docs/interface/surfaces.md#the-supporting-screens).
-	Apply: bind("a", "apply it", "a"),
+	Copy:   bind("c", "copy", "c"),
+	Delete: bind("d", "delete", "d"),
+	Rename: bind("e", "rename", "e"),
+	Again:  bind("r", "retry", "r"),
+	Apply:  bind("a", "apply it", "a"),
 
 	Worked: bind("y", "worked", "y"),
 	Failed: bind("n", "did not", "n"),

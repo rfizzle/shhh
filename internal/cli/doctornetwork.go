@@ -390,7 +390,7 @@ func doctorModelFinding(providerName, model string, survey resolve.Survey) docto
 	return f
 }
 
-// doctorKeyPlaces is the fix behind `[f]` on a provider with no key: the same
+// doctorKeyPlaces is the fix behind `[enter]` on a provider with no key: the same
 // four places, each with what was there. It is the card's own body
 // written as lines, because a fix that only said "set an API key" would be
 // telling the reader something they already knew.

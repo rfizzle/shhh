@@ -737,7 +737,7 @@ func Programs() []Surface {
 			Reached:  Bracket(Screen.Take) + " on a setting",
 			Bindings: []Binding{
 				Select.Move, Screen.Take, Screen.Filter, Query.Rub,
-				Select.Alt, Screen.Scope, Screen.Keep,
+				Select.Alt, Screen.Scope, Screen.Quit,
 			},
 		},
 		{
@@ -746,7 +746,7 @@ func Programs() []Surface {
 			Position: Takeover,
 			Reached:  "shhh history",
 			Bindings: []Binding{
-				Screen.Move, Screen.Rerun, Screen.Copy, Screen.Snippet,
+				Screen.Move, Screen.Take, Screen.Copy, Screen.Write,
 				Screen.Delete, Screen.Filter, Query.Rub,
 				Screen.List, Screen.Quit,
 			},
@@ -757,7 +757,7 @@ func Programs() []Surface {
 			Position: Takeover,
 			Reached:  "shhh doctor",
 			Bindings: []Binding{
-				Screen.Move, Screen.Fix, Screen.Copy, Screen.Again,
+				Screen.Move, Screen.Take, Screen.Apply, Screen.Copy, Screen.Again,
 				Screen.List, Screen.Quit,
 			},
 		},
@@ -805,7 +805,7 @@ func Programs() []Surface {
 			Position: Takeover,
 			Reached:  "shhh snippets",
 			Bindings: []Binding{
-				Screen.Move, Screen.Rerun, Screen.Copy, Screen.Rename,
+				Screen.Move, Screen.Take, Screen.Copy, Screen.Rename,
 				Screen.Delete, Screen.Filter, Query.Rub,
 				Screen.List, Screen.Quit,
 			},
@@ -830,7 +830,7 @@ func Programs() []Surface {
 			Section:  "docs/interface/surfaces.md#the-supporting-screens",
 			Position: Takeover,
 			Reached:  Bracket(Screen.Rename) + " on a snippet or a saved chat",
-			Bindings: []Binding{Screen.Take, Query.Rub, Screen.Keep},
+			Bindings: []Binding{Screen.Take, Query.Rub, Screen.Quit},
 		},
 	}
 }

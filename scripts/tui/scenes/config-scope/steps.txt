@@ -37,7 +37,7 @@ snap 04-yours "/config · your file" "[shift+tab] write the checkout's"
 keys BTab
 snap 05-back "/config · the checkout's file" "[shift+tab] write yours"
 keys Enter
-snap 06-flow-picker "[enter] take it" "[esc] keep"
+snap 06-flow-picker "[enter] set it" "[esc] keep"
 keys "/"
 keys "fast" Enter
 snap 07-staged "1 change unwritten" "· unwritten" "[ctrl+s] write 1 change"

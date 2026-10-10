@@ -603,7 +603,7 @@ func (c *ConfigScreen) footer(width int) keyFooter {
 
 // offers is the key row for whichever surface holds the keyboard.
 func (c *ConfigScreen) offers() []KeyOffer {
-	keep := keyOffer(keys.Screen.Keep)
+	keep := keyOffer(keys.Screen.Quit)
 	if row := c.rowAt(c.editRow); row != nil && row.Value != "" && !row.Secret {
 		keep.Label = "keep " + row.Value
 	}
@@ -613,11 +613,11 @@ func (c *ConfigScreen) offers() []KeyOffer {
 		if c.picker.Filtering {
 			// esc steps out of the row before it keeps the value, so while
 			// the row is open that is what it offers.
-			keep = keyOfferAs(keys.Screen.Keep, "clear the filter, then close it")
+			keep = keyOfferAs(keys.Screen.Quit, "clear the filter, then close it")
 		} else {
 			offers = append(offers, keyOffer(keys.Screen.Filter))
 		}
-		return append(offers, keyOffer(keys.Screen.Take), keep)
+		return append(offers, keyOfferAs(keys.Screen.Take, "set it"), keep)
 	case c.secret != nil:
 		return []KeyOffer{
 			keyOfferAs(keys.Wait.UseKey, "use it"),
@@ -672,7 +672,7 @@ func (c *ConfigScreen) keyList() []KeyOffer {
 	if c.Scoped {
 		list = append(list, keyOfferAs(keys.Screen.Scope, "switch the write between the checkout's file and yours"))
 	}
-	return append(list, keyOfferAs(keys.Screen.Keep, "clear the filter, then close it; "+out), keyOfferAs(keys.Screen.Quit, quit))
+	return append(list, keyOfferAs(keys.Screen.Quit, "clear the filter, then close it; "+out), keyOfferAs(keys.Screen.Quit, quit))
 }
 
 // footField annotates the key row. It is the count of settings until

@@ -18,19 +18,19 @@ shhh doctor · 10 checks         1.4s · [?] keys · [esc] back
    ✓ config  ~/.config/shhh/config.toml · 6 sett…  ok
 ❯  ✗ model   anthropic · claude-opus-5 · no …  no key       
     no session will start until a key is found — every one …
-    [f] show the four places shhh looks
+    [enter] show the four places shhh looks
    ✓ store   ~/.local/share/shhh/shhh.db · opene…  ok
    ✗ sandbox no containment mechanism ·…  uncontained   0.1s
     every approval will show ⚠ UNCONTAINED, and an approved…
-    [f] show the fix for this host
+    [enter] show the fix for this host
    ⚠ engine  podman · no sandbox image con…  no image
     the engine is there, so only the image stands between t…
-    [f] show the 1-line fix
+    [enter] show the 1-line fix
    ✓ git     ~/src/shhh · 3 files changed, all t…  ok   0.2s
    ✓ tools   fd, ast-grep · no sd/tokei · gopls    ok
    ⊘ memory  nothing remembered yet · ~/src/s…  empty
    ⚠ update  shhh 0.9.5 is out · this m…  out of date
-    [f] show how to upgrade
+    [enter] show how to upgrade
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
 [↑↓/jk] move · [c] copy the report · [r] retry
@@ -48,19 +48,19 @@ shhh doctor · 10 checks         1.4s · [?] keys · [esc] back
       config    ~/.config/shhh/config.toml — no provider ap…
       profiles  no .toml in ~/.config/shhh/providers
       local     localhost:11434 — nothing listening
-    [f] hide it
+    [enter] hide it
    ✓ store   ~/.local/share/shhh/shhh.db · opene…  ok
    ✗ sandbox no containment mechanism ·…  uncontained   0.1s
     every approval will show ⚠ UNCONTAINED, and an approved…
-    [f] show the fix for this host
+    [enter] show the fix for this host
    ⚠ engine  podman · no sandbox image con…  no image
     the engine is there, so only the image stands between t…
-    [f] show the 1-line fix
+    [enter] show the 1-line fix
    ✓ git     ~/src/shhh · 3 files changed, all t…  ok   0.2s
    ✓ tools   fd, ast-grep · no sd/tokei · gopls    ok
    ⊘ memory  nothing remembered yet · ~/src/s…  empty
    ⚠ update  shhh 0.9.5 is out · this m…  out of date
-    [f] show how to upgrade
+    [enter] show how to upgrade
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
 [↑↓/jk] move · [c] copy the report · [r] retry
@@ -74,19 +74,19 @@ shhh doctor · 10 checks         1.4s · [?] keys · [esc] back
    ✓ config  ~/.config/shhh/config.toml · 6 sett…  ok
    ✗ model   anthropic · claude-opus-5 · no …  no key
     no session will start until a key is found — every one …
-    [f] show the four places shhh looks
+    [enter] show the four places shhh looks
    ✓ store   ~/.local/share/shhh/shhh.db · opene…  ok
 ❯  ✗ sandbox no containment mechanism ·…  uncontained   0.1s
     every approval will show ⚠ UNCONTAINED, and an approved…
-    [f] show the fix for this host
+    [enter] show the fix for this host
    ⚠ engine  podman · no sandbox image con…  no image
     the engine is there, so only the image stands between t…
-    [f] show the 1-line fix
+    [enter] show the 1-line fix
    ✓ git     ~/src/shhh · 3 files changed, all t…  ok   0.2s
    ✓ tools   fd, ast-grep · no sd/tokei · gopls    ok
    ⊘ memory  nothing remembered yet · ~/src/s…  empty
    ⚠ update  shhh 0.9.5 is out · this m…  out of date
-    [f] show how to upgrade
+    [enter] show how to upgrade
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
 [↑↓/jk] move · [c] copy the report · [r] retry
@@ -100,7 +100,7 @@ shhh doctor · ▸ running         0.3s · [?] keys · [esc] back
    ✓ config  ~/.config/shhh/config.toml · 6 sett…  ok
 ❯  ✗ model   anthropic · claude-opus-5 · no …  no key       
     no session will start until a key is found — every one …
-    [f] show the four places shhh looks
+    [enter] show the four places shhh looks
    ▸ store   the local store                 running…
    · sandbox not started                       queued      —
    · engine  not started                       queued      —
@@ -118,13 +118,13 @@ shhh doctor · 10 checks         1.4s · [?] keys · [esc] back
 
 ❯  ✗ model   anthropic · claude-opus-5 · no …  no key       
     no session will start until a key is found — every one …
-    [f] show the four places shhh looks
+    [enter] show the four places shhh looks
    ✗ sandbox no containment mechanism ·…  uncontained   0.1s
     every approval will show ⚠ UNCONTAINED, and an approved…
-    [f] show the fix for this host
+    [enter] show the fix for this host
    ⚠ engine  podman · no sandbox image con…  no image
     the engine is there, so only the image stands between t…
-    [f] show the 1-line fix
+    [enter] show the 1-line fix
   ↓ 7 more · binary · config · store · git · tools · memory…
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
@@ -139,22 +139,22 @@ shhh doctor · 10 checks         1.4s · [?] keys · [esc] back
    ✓ config  ~/.config/shhh/config.toml · 6 sett…  ok
 ❯  ✗ model   anthropic · claude-opus-5 · no …  no key       
     no session will start until a key is found — every one …
-    [f] show the four places shhh looks
+    [enter] show the four places shhh looks
    ✓ store   ~/.local/share/shhh/shhh.db · opene…  ok
    ✗ sandbox no containment mechanism ·…  uncontained   0.1s
     every approval will show ⚠ UNCONTAINED, and an approved…
-    [f] show the fix for this host
+    [enter] show the fix for this host
    ⚠ engine  podman · no sandbox image con…  no image
     the engine is there, so only the image stands between t…
-    [f] show the 1-line fix
+    [enter] show the 1-line fix
    ✓ git     ~/src/shhh · 3 files changed, all t…  ok   0.2s
    ✓ tools   fd, ast-grep · no sd/tokei · gopls    ok
    ⊘ memory  nothing remembered yet · ~/src/s…  empty
    ⚠ update  shhh 0.9.5 is out · this m…  out of date
-    [f] show how to upgrade
+    [enter] show how to upgrade
 
 [↑↓/jk] move between the checks that need something
-[f] show the fix for the check under the pointer
+[enter] show the fix for the check under the pointer
 [c] copy the whole report as text
 [r] run every check again
 [esc] back to the shell
@@ -197,19 +197,19 @@ shhh doctor · 3 checks          0.9s · [?] keys · [esc] back
    ␛[92m✓␛[m ␛[38;5;252mconfig␛[m  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 sett…␛[m  ␛[38;5;241mok␛[m
 ␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[91m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[91m✗␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62mmodel   anthropic · claude-opus-5 · no …  no key       ␛[m␛[m
     ␛[38;5;245mno session will start until a key is found — every one …␛[m
-    ␛[38;5;103m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+    ␛[38;5;103m[enter]␛[m␛[38;5;241m show the four places shhh looks␛[m
    ␛[92m✓␛[m ␛[38;5;252mstore␛[m   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[m␛[38;5;241m · opene…␛[m  ␛[38;5;241mok␛[m
    ␛[91m✗␛[m ␛[38;5;252msandbox␛[m ␛[38;5;252mno containment mechanism␛[m␛[38;5;241m ·…␛[m  ␛[91muncontained␛[m   ␛[38;5;241m0.1s␛[m
     ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
-    ␛[38;5;245m[f]␛[m␛[38;5;241m show the fix for this host␛[m
+    ␛[38;5;245m[enter]␛[m␛[38;5;241m show the fix for this host␛[m
    ␛[38;5;214m⚠␛[m ␛[38;5;252mengine␛[m  ␛[38;5;252mpodman␛[m␛[38;5;241m · no sandbox image con…␛[m  ␛[38;5;214mno image␛[m
     ␛[38;5;245mthe engine is there, so only the image stands between t…␛[m
-    ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
+    ␛[38;5;245m[enter]␛[m␛[38;5;241m show the 1-line fix␛[m
    ␛[92m✓␛[m ␛[38;5;252mgit␛[m     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · 3 files changed, all t…␛[m  ␛[38;5;241mok␛[m   ␛[38;5;241m0.2s␛[m
    ␛[92m✓␛[m ␛[38;5;252mtools␛[m   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei · gopls␛[m    ␛[38;5;241mok␛[m
    ␛[38;5;241m⊘␛[m ␛[38;5;252mmemory␛[m  ␛[38;5;252mnothing remembered yet␛[m␛[38;5;241m · ~/src/s…␛[m  ␛[38;5;241mempty␛[m
    ␛[38;5;214m⚠␛[m ␛[38;5;252mupdate␛[m  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this m…␛[m  ␛[38;5;214mout of date␛[m
-    ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
+    ␛[38;5;245m[enter]␛[m␛[38;5;241m show how to upgrade␛[m
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m retry␛[m
@@ -227,19 +227,19 @@ shhh doctor · 3 checks          0.9s · [?] keys · [esc] back
       ␛[38;5;243mconfig␛[m    ␛[38;5;252m~/.config/shhh/config.toml — no provider ap…␛[m
       ␛[38;5;243mprofiles␛[m  ␛[38;5;252mno .toml in ~/.config/shhh/providers␛[m
       ␛[38;5;243mlocal␛[m     ␛[38;5;252mlocalhost:11434 — nothing listening␛[m
-    ␛[38;5;103m[f]␛[m␛[38;5;241m hide it␛[m
+    ␛[38;5;103m[enter]␛[m␛[38;5;241m hide it␛[m
    ␛[92m✓␛[m ␛[38;5;252mstore␛[m   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[m␛[38;5;241m · opene…␛[m  ␛[38;5;241mok␛[m
    ␛[91m✗␛[m ␛[38;5;252msandbox␛[m ␛[38;5;252mno containment mechanism␛[m␛[38;5;241m ·…␛[m  ␛[91muncontained␛[m   ␛[38;5;241m0.1s␛[m
     ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
-    ␛[38;5;245m[f]␛[m␛[38;5;241m show the fix for this host␛[m
+    ␛[38;5;245m[enter]␛[m␛[38;5;241m show the fix for this host␛[m
    ␛[38;5;214m⚠␛[m ␛[38;5;252mengine␛[m  ␛[38;5;252mpodman␛[m␛[38;5;241m · no sandbox image con…␛[m  ␛[38;5;214mno image␛[m
     ␛[38;5;245mthe engine is there, so only the image stands between t…␛[m
-    ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
+    ␛[38;5;245m[enter]␛[m␛[38;5;241m show the 1-line fix␛[m
    ␛[92m✓␛[m ␛[38;5;252mgit␛[m     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · 3 files changed, all t…␛[m  ␛[38;5;241mok␛[m   ␛[38;5;241m0.2s␛[m
    ␛[92m✓␛[m ␛[38;5;252mtools␛[m   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei · gopls␛[m    ␛[38;5;241mok␛[m
    ␛[38;5;241m⊘␛[m ␛[38;5;252mmemory␛[m  ␛[38;5;252mnothing remembered yet␛[m␛[38;5;241m · ~/src/s…␛[m  ␛[38;5;241mempty␛[m
    ␛[38;5;214m⚠␛[m ␛[38;5;252mupdate␛[m  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this m…␛[m  ␛[38;5;214mout of date␛[m
-    ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
+    ␛[38;5;245m[enter]␛[m␛[38;5;241m show how to upgrade␛[m
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m retry␛[m
@@ -253,19 +253,19 @@ shhh doctor · 3 checks          0.9s · [?] keys · [esc] back
    ␛[92m✓␛[m ␛[38;5;252mconfig␛[m  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 sett…␛[m  ␛[38;5;241mok␛[m
    ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252manthropic␛[m␛[38;5;241m · claude-opus-5 · no …␛[m  ␛[91mno key␛[m
     ␛[38;5;245mno session will start until a key is found — every one …␛[m
-    ␛[38;5;245m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+    ␛[38;5;245m[enter]␛[m␛[38;5;241m show the four places shhh looks␛[m
    ␛[92m✓␛[m ␛[38;5;252mstore␛[m   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[m␛[38;5;241m · opene…␛[m  ␛[38;5;241mok␛[m
 ␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[91m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[91m✗␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62msandbox no containment mechanism ·…  uncontained   0.1s␛[m␛[m
     ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
-    ␛[38;5;103m[f]␛[m␛[38;5;241m show the fix for this host␛[m
+    ␛[38;5;103m[enter]␛[m␛[38;5;241m show the fix for this host␛[m
    ␛[38;5;214m⚠␛[m ␛[38;5;252mengine␛[m  ␛[38;5;252mpodman␛[m␛[38;5;241m · no sandbox image con…␛[m  ␛[38;5;214mno image␛[m
     ␛[38;5;245mthe engine is there, so only the image stands between t…␛[m
-    ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
+    ␛[38;5;245m[enter]␛[m␛[38;5;241m show the 1-line fix␛[m
    ␛[92m✓␛[m ␛[38;5;252mgit␛[m     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · 3 files changed, all t…␛[m  ␛[38;5;241mok␛[m   ␛[38;5;241m0.2s␛[m
    ␛[92m✓␛[m ␛[38;5;252mtools␛[m   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei · gopls␛[m    ␛[38;5;241mok␛[m
    ␛[38;5;241m⊘␛[m ␛[38;5;252mmemory␛[m  ␛[38;5;252mnothing remembered yet␛[m␛[38;5;241m · ~/src/s…␛[m  ␛[38;5;241mempty␛[m
    ␛[38;5;214m⚠␛[m ␛[38;5;252mupdate␛[m  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this m…␛[m  ␛[38;5;214mout of date␛[m
-    ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
+    ␛[38;5;245m[enter]␛[m␛[38;5;241m show how to upgrade␛[m
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m retry␛[m
@@ -279,7 +279,7 @@ shhh doctor · 3 checks          0.9s · [?] keys · [esc] back
    ␛[92m✓␛[m ␛[38;5;252mconfig␛[m  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 sett…␛[m  ␛[38;5;241mok␛[m
 ␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[91m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[91m✗␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62mmodel   anthropic · claude-opus-5 · no …  no key       ␛[m␛[m
     ␛[38;5;245mno session will start until a key is found — every one …␛[m
-    ␛[38;5;103m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+    ␛[38;5;103m[enter]␛[m␛[38;5;241m show the four places shhh looks␛[m
    ␛[38;5;205m▸␛[m ␛[38;5;252mstore␛[m   ␛[38;5;252mthe local store␛[m␛[38;5;241m␛[m                 ␛[38;5;205mrunning…␛[m
    ␛[38;5;241m·␛[m ␛[38;5;252msandbox␛[m ␛[38;5;252mnot started␛[m␛[38;5;241m␛[m                       ␛[38;5;241mqueued␛[m      ␛[38;5;241m—␛[m
    ␛[38;5;241m·␛[m ␛[38;5;252mengine␛[m  ␛[38;5;252mnot started␛[m␛[38;5;241m␛[m                       ␛[38;5;241mqueued␛[m      ␛[38;5;241m—␛[m
@@ -297,13 +297,13 @@ shhh doctor · 3 checks          0.9s · [?] keys · [esc] back
 
 ␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[91m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[91m✗␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62mmodel   anthropic · claude-opus-5 · no …  no key       ␛[m␛[m
     ␛[38;5;245mno session will start until a key is found — every one …␛[m
-    ␛[38;5;103m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+    ␛[38;5;103m[enter]␛[m␛[38;5;241m show the four places shhh looks␛[m
    ␛[91m✗␛[m ␛[38;5;252msandbox␛[m ␛[38;5;252mno containment mechanism␛[m␛[38;5;241m ·…␛[m  ␛[91muncontained␛[m   ␛[38;5;241m0.1s␛[m
     ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
-    ␛[38;5;245m[f]␛[m␛[38;5;241m show the fix for this host␛[m
+    ␛[38;5;245m[enter]␛[m␛[38;5;241m show the fix for this host␛[m
    ␛[38;5;214m⚠␛[m ␛[38;5;252mengine␛[m  ␛[38;5;252mpodman␛[m␛[38;5;241m · no sandbox image con…␛[m  ␛[38;5;214mno image␛[m
     ␛[38;5;245mthe engine is there, so only the image stands between t…␛[m
-    ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
+    ␛[38;5;245m[enter]␛[m␛[38;5;241m show the 1-line fix␛[m
   ␛[38;5;241m↓ 7 more · binary · config · store · git · tools · memory…␛[m
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
@@ -318,22 +318,22 @@ shhh doctor · 3 checks          0.9s · [?] keys · [esc] back
    ␛[92m✓␛[m ␛[38;5;252mconfig␛[m  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 sett…␛[m  ␛[38;5;241mok␛[m
 ␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[91m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[91m✗␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62mmodel   anthropic · claude-opus-5 · no …  no key       ␛[m␛[m
     ␛[38;5;245mno session will start until a key is found — every one …␛[m
-    ␛[38;5;103m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+    ␛[38;5;103m[enter]␛[m␛[38;5;241m show the four places shhh looks␛[m
    ␛[92m✓␛[m ␛[38;5;252mstore␛[m   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[m␛[38;5;241m · opene…␛[m  ␛[38;5;241mok␛[m
    ␛[91m✗␛[m ␛[38;5;252msandbox␛[m ␛[38;5;252mno containment mechanism␛[m␛[38;5;241m ·…␛[m  ␛[91muncontained␛[m   ␛[38;5;241m0.1s␛[m
     ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
-    ␛[38;5;245m[f]␛[m␛[38;5;241m show the fix for this host␛[m
+    ␛[38;5;245m[enter]␛[m␛[38;5;241m show the fix for this host␛[m
    ␛[38;5;214m⚠␛[m ␛[38;5;252mengine␛[m  ␛[38;5;252mpodman␛[m␛[38;5;241m · no sandbox image con…␛[m  ␛[38;5;214mno image␛[m
     ␛[38;5;245mthe engine is there, so only the image stands between t…␛[m
-    ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
+    ␛[38;5;245m[enter]␛[m␛[38;5;241m show the 1-line fix␛[m
    ␛[92m✓␛[m ␛[38;5;252mgit␛[m     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · 3 files changed, all t…␛[m  ␛[38;5;241mok␛[m   ␛[38;5;241m0.2s␛[m
    ␛[92m✓␛[m ␛[38;5;252mtools␛[m   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei · gopls␛[m    ␛[38;5;241mok␛[m
    ␛[38;5;241m⊘␛[m ␛[38;5;252mmemory␛[m  ␛[38;5;252mnothing remembered yet␛[m␛[38;5;241m · ~/src/s…␛[m  ␛[38;5;241mempty␛[m
    ␛[38;5;214m⚠␛[m ␛[38;5;252mupdate␛[m  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this m…␛[m  ␛[38;5;214mout of date␛[m
-    ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
+    ␛[38;5;245m[enter]␛[m␛[38;5;241m show how to upgrade␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move between the checks that need something␛[m
-␛[38;5;103m[f]␛[m␛[38;5;241m show the fix for the check under the pointer␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;241m show the fix for the check under the pointer␛[m
 ␛[38;5;103m[c]␛[m␛[38;5;241m copy the whole report as text␛[m
 ␛[38;5;103m[r]␛[m␛[38;5;241m run every check again␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m

@@ -169,7 +169,7 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result HistoryRe
 	switch {
 	case h.walked(pressed):
 		return false, HistoryResult{}
-	case keys.Is(pressed, keys.Screen.Rerun):
+	case keys.Is(pressed, keys.Screen.Take):
 		// The one key that leaves the screen with something to do. A list the
 		// filter emptied has nothing for it to take (invariant 5).
 		if row := h.currentShown(h.Rows); row != nil {
@@ -199,7 +199,7 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result HistoryRe
 		if row := h.currentShown(h.Rows); row != nil {
 			return false, HistoryResult{Do: &HistoryCommand{Act: HistoryCopy, ID: row.ID}}
 		}
-	case keys.Is(pressed, keys.Screen.Snippet):
+	case keys.Is(pressed, keys.Screen.Write):
 		if row := h.currentShown(h.Rows); row != nil {
 			return false, HistoryResult{Do: &HistoryCommand{Act: HistorySave, ID: row.ID}}
 		}
@@ -469,7 +469,7 @@ func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
 	move := keyOffer(keys.Screen.Move)
 	var acts []KeyOffer
 	if h.currentShown(h.Rows) != nil {
-		acts = append(acts, keyOffer(keys.Screen.Rerun))
+		acts = append(acts, keyOfferAs(keys.Screen.Take, "re-run it"))
 	}
 	if h.list.Filtering {
 		acts = append(acts, keyOfferAs(keys.Screen.Quit, "clear the filter, then close it"))
@@ -477,7 +477,7 @@ func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
 		if h.currentShown(h.Rows) != nil {
 			acts = append(acts,
 				keyOffer(keys.Screen.Copy),
-				keyOffer(keys.Screen.Snippet),
+				keyOfferAs(keys.Screen.Write, "write it as a snippet"),
 				keyOffer(keys.Screen.Delete))
 		}
 		acts = append(acts, keyOffer(keys.Screen.Filter), wayOut(backToShell))
@@ -492,8 +492,8 @@ func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
 	return fitRungs(field, width,
 		append([]KeyOffer{move}, acts...),
 		acts,
-		without(acts, keys.Bracket(keys.Screen.Snippet)),
-		without(acts, keys.Bracket(keys.Screen.Snippet), keys.Bracket(keys.Screen.Filter)))
+		without(acts, keys.Bracket(keys.Screen.Write)),
+		without(acts, keys.Bracket(keys.Screen.Write), keys.Bracket(keys.Screen.Filter)))
 }
 
 // without is a rung with some offers shed. Shedding is whole-segment: nothing
@@ -516,9 +516,9 @@ func without(offers []KeyOffer, shed ...string) []KeyOffer {
 func (h *HistoryScreen) keyList() []KeyOffer {
 	return []KeyOffer{
 		keyOfferAs(keys.Screen.Move, "move between entries"),
-		keyOfferAs(keys.Screen.Rerun, "run the command under the pointer again"),
+		keyOfferAs(keys.Screen.Take, "run the command under the pointer again"),
 		keyOfferAs(keys.Screen.Copy, "copy the command to the clipboard"),
-		keyOfferAs(keys.Screen.Snippet, "save the command as a snippet"),
+		keyOfferAs(keys.Screen.Write, "save the command as a snippet"),
 		keyOfferAs(keys.Screen.Delete, "delete the entry, after confirming it"),
 		keyOfferAs(keys.Screen.Filter, "filter by what was asked or by what came back"),
 		keyOfferAs(keys.Query.Rub, "delete a character from the filter"),
