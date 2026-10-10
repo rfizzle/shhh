@@ -10,7 +10,7 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· the safe default
+· the bar
 $ find ~/src -name node_modules -type d -prune -exec rm -rf 
 {} +                                                        
   -prune stops find from descending into a directory it just
@@ -19,11 +19,10 @@ $ find ~/src -name node_modules -type d -prune -exec rm -rf
   irrecoverably                                             
   ⛨ no sudo                                                 
                                                             
-[enter] show what it would affect  [y] run it  [p] dry run  
-[e] edit  [r] revise  [x] explain  [c] copy  [ctrl+s] write 
-[esc] back                                                  
+[enter] show what it would affect  [y] run it  [e] edit     
+[r] retry with a note  [c] copy  [ctrl+s] write  [esc] back 
 
-· what enter buys
+· what enter shows
 $ find ~/src -name node_modules -type d -prune -exec rm -rf 
 {} +                                                        
   -prune stops find from descending into a directory it just
@@ -34,11 +33,13 @@ $ find ~/src -name node_modules -type d -prune -exec rm -rf
   would affect                                              
     shhh cannot tell what find writes                       
                                                             
-[y] run it  [p] dry run  [e] edit  [r] revise  [x] explain  
-[c] copy  [ctrl+s] write  [esc] back                        
+╭─ From here ──────────────────────────────────────────────╮
+│ ❯ dry run  find ~/src -name node_modules -type d -prune… │
+│ [↑↓] move · [enter] choose · [esc] back                  │
+╰──────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
-· the safe default
+· the bar
 ␛[38;5;254m$ ␛[m␛[1;38;5;254mfind ~/src -name node_modules -type d -prune -exec rm -rf 
 {} +␛[m                                                        
   ␛[38;5;254m-prune stops find from descending into a directory it just␛[m
@@ -47,11 +48,10 @@ $ find ~/src -name node_modules -type d -prune -exec rm -rf
   ␛[38;5;254mirrecoverably␛[m                                             
   ␛[38;5;244m⛨ no sudo␛[m                                                 
                                                             
-␛[38;5;254m[enter]␛[m␛[38;5;244m show what it would affect␛[m␛[38;5;244m  ␛[m␛[38;5;254m[y]␛[m␛[38;5;244m run it␛[m␛[38;5;244m  ␛[m␛[38;5;254m[p]␛[m␛[38;5;244m dry run␛[m  
-␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m  ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m revise␛[m␛[38;5;244m  ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m explain␛[m␛[38;5;244m  ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m␛[38;5;244m  ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write␛[m 
-␛[38;5;244m[esc]␛[m␛[38;5;244m back␛[m                                                  
+␛[38;5;254m[enter]␛[m␛[38;5;244m show what it would affect␛[m␛[38;5;244m  ␛[m␛[38;5;254m[y]␛[m␛[38;5;244m run it␛[m␛[38;5;244m  ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m     
+␛[38;5;254m[r]␛[m␛[38;5;244m retry with a note␛[m␛[38;5;244m  ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m␛[38;5;244m  ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write␛[m␛[38;5;244m  ␛[m␛[38;5;244m[esc]␛[m␛[38;5;244m back␛[m 
 
-· what enter buys
+· what enter shows
 ␛[38;5;254m$ ␛[m␛[1;38;5;254mfind ~/src -name node_modules -type d -prune -exec rm -rf 
 {} +␛[m                                                        
   ␛[38;5;254m-prune stops find from descending into a directory it just␛[m
@@ -62,5 +62,7 @@ $ find ~/src -name node_modules -type d -prune -exec rm -rf
   ␛[38;5;244mwould affect␛[m                                              
     ␛[38;5;254mshhh cannot tell what find writes␛[m                       
                                                             
-␛[38;5;254m[y]␛[m␛[38;5;244m run it␛[m␛[38;5;244m  ␛[m␛[38;5;254m[p]␛[m␛[38;5;244m dry run␛[m␛[38;5;244m  ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m  ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m revise␛[m␛[38;5;244m  ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m explain␛[m  
-␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m␛[38;5;244m  ␛[m␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write␛[m␛[38;5;244m  ␛[m␛[38;5;244m[esc]␛[m␛[38;5;244m back␛[m                        
+␛[38;5;244m╭─ ␛[m␛[1;38;5;254mFrom here ␛[m␛[38;5;244m──────────────────────────────────────────────╮␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mdry run  find ~/src -name node_modules -type d -prune…␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m                  ␛[38;5;244m│␛[m
+␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m

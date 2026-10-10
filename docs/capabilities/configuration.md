@@ -1043,15 +1043,10 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `plan.save` | `ctrl+s` | write | yes |
 | `plan.implement` | `i` | implement in a new session | yes |
 | `query.rub` | `backspace` | delete a character | yes |
-| `oneshot.run` | `enter` | run | yes |
+| `oneshot.show` | `enter` | show what it would affect | yes |
 | `oneshot.confirm` | `y` | run it | yes |
-| `oneshot.step` | `t` | step by step | yes |
-| `oneshot.dry_run` | `p` | dry run | yes |
 | `oneshot.edit` | `e` | edit | yes |
-| `oneshot.revise` | `r` | revise | yes |
-| `oneshot.back` | `u` | back | yes |
-| `oneshot.alternatives` | `a` | the other commands | yes |
-| `oneshot.explain` | `x` | explain | yes |
+| `oneshot.revise` | `r` | retry with a note | yes |
 | `oneshot.copy` | `c` | copy | yes |
 | `oneshot.save` | `ctrl+s` | write | yes |
 | `oneshot.quit` | `esc` | back | yes |

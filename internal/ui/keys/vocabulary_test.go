@@ -84,7 +84,7 @@ var acts = map[string]string{
 	"screen.reset": "reset", "screen.write": "write",
 	"screen.copy": "copy", "screen.delete": "delete",
 	"screen.rename": "rename", "screen.again": "retry",
-	"oneshot.edit": "edit", "oneshot.copy": "copy", "oneshot.save": "write", "oneshot.quit": "back",
+	"oneshot.edit": "edit", "oneshot.revise": "retry", "oneshot.copy": "copy", "oneshot.save": "write", "oneshot.quit": "back",
 	"plan.save":        "write",
 	"decision.full":    "open",
 	"rewind.cancel":    "back",
@@ -122,16 +122,12 @@ var shared = map[string]string{
 // everywhere else. Each is a screen whose own set of verbs is to be folded;
 // the list only ever shrinks, and the test fails if an entry is fixed
 // without being taken off it.
-var owed = map[string]string{
-	"oneshot.revise":  "r",
-	"oneshot.explain": "x",
-}
+var owed = map[string]string{}
 
 // over is every surface carrying more than three letters of its own, with
 // those letters. Like owed it only shrinks.
 var over = map[string]string{
-	"the one-shot's action bar": "a p r t u x",
-	"the profile draft":         "R m",
+	"the profile draft": "R m",
 }
 
 func isApart(name string, list []string) bool {

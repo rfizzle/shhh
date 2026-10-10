@@ -1540,39 +1540,34 @@ var Screen = ScreenKeys{
 
 // OneShotKeys are the action bar's: the row under a generated command,
 // which is the one surface in the product where a bare letter is live beside
-// no input at all.
+// no input at all. It has seven keys and spends no letter of its own: y, e,
+// r and c are the register's, and what the bar used to spend letters on —
+// the explanation, the other commands, the dry run, stepping through several
+// commands, going back a revise — is a row of the view enter opens.
 type OneShotKeys struct {
-	// Run is enter, whose words depend on the command's rating: it runs a
-	// safe one and shows what a dangerous one would touch. One key,
-	// two readings — the words are the bar's, the key is the register's.
-	Run          Binding
-	Confirm      Binding
-	Step         Binding
-	DryRun       Binding
-	Edit         Binding
-	Revise       Binding
-	Back         Binding
-	Alternatives Binding
-	Explain      Binding
-	Copy         Binding
-	Save         Binding
-	Quit         Binding
+	// Show is enter, which opens the view: what the command would affect, the
+	// long explanation, the other commands and the dry run. It never runs
+	// anything, so one key has one reading whatever the command is rated; the
+	// run is Confirm.
+	Show    Binding
+	Confirm Binding
+	Edit    Binding
+	// Revise asks again with a note, which is the vocabulary's retry.
+	Revise Binding
+	Copy   Binding
+	Save   Binding
+	// Quit is esc, which leaves; from the view it goes back to the bar first.
+	Quit Binding
 }
 
 var OneShot = OneShotKeys{
-	Run:     bind("enter", "run", "enter"),
+	Show:    bind("enter", "show what it would affect", "enter"),
 	Confirm: bind("y", "run it", "y"),
-	Step:    bind("t", "step by step", "t"),
-	// DryRun is [p] — preview it — because [d] is the register's delete.
-	DryRun:       bind("p", "dry run", "p"),
-	Edit:         bind("e", "edit", "e"),
-	Revise:       bind("r", "revise", "r"),
-	Back:         bind("u", "back", "u"),
-	Alternatives: bind("a", "the other commands", "a"),
-	Explain:      bind("x", "explain", "x"),
-	Copy:         bind("c", "copy", "c"),
-	Save:         Save("write"),
-	Quit:         bind("esc", "back", "esc"),
+	Edit:    bind("e", "edit", "e"),
+	Revise:  bind("r", "retry with a note", "r"),
+	Copy:    bind("c", "copy", "c"),
+	Save:    Save("write"),
+	Quit:    bind("esc", "back", "esc"),
 }
 
 // PlanKeys are the plan-approval card's own three: the five rows are the

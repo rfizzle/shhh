@@ -787,9 +787,8 @@ func Programs() []Surface {
 			Position: Takeover,
 			Reached:  "shhh cmd <prompt>",
 			Bindings: []Binding{
-				OneShot.Run, OneShot.Confirm, OneShot.Step, OneShot.DryRun, OneShot.Edit,
-				OneShot.Revise, OneShot.Back, OneShot.Alternatives,
-				OneShot.Explain, OneShot.Copy, OneShot.Save, OneShot.Quit,
+				OneShot.Show, OneShot.Confirm, OneShot.Edit, OneShot.Revise,
+				OneShot.Copy, OneShot.Save, OneShot.Quit,
 			},
 		},
 		{

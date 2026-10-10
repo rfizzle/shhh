@@ -68,18 +68,18 @@ func waitForFrame(t *testing.T, frame *atomic.Pointer[string], want string) {
 	t.Fatalf("the one-shot never drew %q; the last frame was:\n%s", want, last)
 }
 
-// The answer arrives as a command with its explanation and the count of the
-// others, and [a] opens the list of those others.
+// The answer arrives as a command with its explanation, and enter opens the
+// view whose rows are the others.
 func TestProgram_TheOneShotOpensItsAlternatives(t *testing.T) {
 	tm, frame := runOneShot(t,
 		"lsof -nP -iTCP -sTCP:LISTEN | awk '$9 ~ /:[89][0-9]{3}$/'\n"+
 			"--- explanation\nlsof lists listening TCP sockets without resolving names.\n"+
 			"--- alternatives\nss -lntp 'sport > :8000'\n# linux only\nnetstat -anv -p tcp\n# everywhere",
-		"2 others")
+		"lsof lists listening TCP sockets")
 
-	tm.Send(tea.KeyPressMsg{Code: 'a', Text: "a"})
+	tm.Send(tea.KeyPressMsg{Code: tea.KeyEnter})
 	waitForFrame(t, frame, "netstat -anv -p tcp")
-	oneShotEndsOn(t, tm, "Alternatives", "netstat -anv -p tcp")
+	oneShotEndsOn(t, tm, "From here", "netstat -anv -p tcp")
 }
 
 // A command the safe default moves for says why before anything runs.

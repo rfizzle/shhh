@@ -319,18 +319,13 @@
 
   ONESHOT
 
-  · run           enter · run  [shipped]
-  · confirm       y · run it  [shipped]
-  · step          t · step by step  [shipped]
-  · dry_run       p · dry run  [shipped]
-  · edit          e · edit  [shipped]
-  · revise        r · revise  [shipped]
-  · back          u · back  [shipped]
-  · alternatives  a · the other commands  [shipped]
-  · explain       x · explain  [shipped]
-  · copy          c · copy  [shipped]
-  · save          ctrl+s · write  [shipped]
-  · quit          esc · back  [shipped]
+  · show     enter · show what it would affect  [shipped]
+  · confirm  y · run it  [shipped]
+  · edit     e · edit  [shipped]
+  · revise   r · retry with a note  [shipped]
+  · copy     c · copy  [shipped]
+  · save     ctrl+s · write  [shipped]
+  · quit     esc · back  [shipped]
 
   SETUP
 
@@ -338,4 +333,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  239 keys · 1 moved
+  234 keys · 1 moved

@@ -4039,13 +4039,47 @@ through is two things to learn about one file.
 ### The one-shot result
 
 `shhh cmd`'s whole interface. The command, one line of what it does, and
-the keys. Where the command is flagged as dangerous, the *default key moves* —
-the safe key states the blast radius and a second key runs it — so the
-decision is taken once, on screen, rather than as an afterthought prompt.
+the keys. The keys are seven, the same seven whatever the command is rated:
+
+| key | does |
+|---|---|
+| `enter` | opens the view: what the command would affect, the long explanation, the other commands and the dry run |
+| `y` | runs it |
+| `e` | edits the command |
+| `r` | retries with a note: asks again, and the answer replaces the command with the old one kept above it |
+| `c` | copies it |
+| `ctrl+s` | saves it as a snippet |
+| `esc` | leaves |
+
+No key of the row runs anything but `y`, so a command flagged as dangerous
+does not move a key: it tints the `y` and puts the warning above it, and the
+decision is taken once, on screen, by pressing the one key that says it. The
+bar spends no letter of its own — `y`, `e`, `r` and `c` are the register's —
+so what the row used to offer as letters (explain, the other commands, the
+dry run, one at a time, step back) are rows of the view, and `q` and `u` are
+gone.
+
+**The view is one level down.** `enter` shows what the command would affect
+in the words the containment line uses, the long form of the explanation
+(asked for here, where the bar's sentence is the cheap default), and a card of
+the rows that take the surface elsewhere: each of the other commands the
+generator considered with its tradeoff, the one on screen marked; the dry
+run, where the command has a no-op form; running several one at a time; and
+going back a revision. A row appears only where something is behind it. `esc`
+from the view goes back to the bar, and the second `esc` leaves. Taking an
+alternative makes it the command on screen and returns to the bar with it
+armed as the first was; it does not run.
+
+**`ctrl+c` is the draft's chord and the bar does not bind it.** The first press
+stops what the surface is running from the view — a dry run, an explanation
+still arriving. A press with nothing to stop opens the window the quit takes
+and the foot says `[ctrl+c] again quits`; a second press within two seconds
+leaves, as on every surface, where `esc` is the one-press way out. Leaving
+destroys nothing: the command has not been run, and once it has the terminal is
+the shell's.
 
 The bar spells the enter key `[enter]`, as every session surface and the
-alternatives card beside it do: one key, one spelling, so `[enter] run` and
-`[enter] send` do not read as two keys.
+view's card do: one key, one spelling.
 
 **And the ones it did not pick.** A generator that can only say one thing has
 already chosen for you: asked to find what is listening on a port, the model
@@ -4053,9 +4087,8 @@ weighs three utilities, picks one, and throws the reasoning away — and the one
 it kept is the portable one when you wanted the fast one about as often as
 not. The alternatives were free the whole time; only the surface was missing.
 
-The key says how many there are, because whether there is anything behind it
-is the one thing worth knowing before pressing it. Nothing is drawn when the
-generation offered none, which is most of the time.
+The view lists them, and nothing is drawn when the generation offered none,
+which is most of the time.
 
 The response is command-first rather than structured. JSON is the obvious
 envelope and the wrong one: the command streams onto the screen as it arrives,

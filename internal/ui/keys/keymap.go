@@ -126,6 +126,8 @@ var retired = []string{
 	"decision.allow_noted", "decision.deny_noted", "decision.batch",
 	"decision.diff", "decision.explain",
 	"screen.keep", "screen.rerun", "screen.snippet", "screen.fix",
+	"oneshot.run", "oneshot.step", "oneshot.dry_run", "oneshot.back",
+	"oneshot.alternatives", "oneshot.explain",
 }
 
 // isRetired reports that a name from a file is one of retired, read the way

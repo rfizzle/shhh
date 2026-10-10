@@ -55,7 +55,9 @@ const (
 	phaseExplain
 	phaseSave
 	phaseDryRun
-	phasePick
+	// phaseView is the view enter opens: what the command would affect, the
+	// long explanation and the rows that take the surface elsewhere.
+	phaseView
 	phaseDone
 )
 
@@ -82,7 +84,7 @@ type ExplainStreamFunc func(command string, long bool) (<-chan provider.StreamEv
 // DryRunFunc runs a command that has already been rewritten into its no-op
 // form and reports what it said. It is a field rather than a call so the
 // tests never reach the shell.
-type DryRunFunc func(command string) (output string, exitCode int)
+type DryRunFunc func(ctx context.Context, command string) (output string, exitCode int)
 
 const maxPreflightRetries = 2
 
@@ -161,10 +163,30 @@ type GenerateModel struct {
 	choices []proposal.Choice
 	// chosen is which of them the surface is showing.
 	chosen int
-	// pick is the alternatives picker while it is open — the same select card
-	// the session pickers use.
+	// pick is the view's rows while it is open — the same select card the
+	// session pickers use — and rows is what each of its options does.
 	pick *components.Select
+	rows []viewRow
+	// stopDry stops the dry run that is out, which is the one command this
+	// surface runs itself.
+	stopDry context.CancelFunc
+	// armed is when the first ctrl+c with nothing to stop was pressed, which
+	// opens the window the second completes: the quit is two presses of the
+	// chord on every surface (internal/cli/screen.go, the chat).
+	armed time.Time
 }
+
+// pressAgain is how long the first ctrl+c waits for its second, the chat's
+// own window.
+const pressAgain = 2 * time.Second
+
+// oneShotNow is the clock the window is read against, a variable so a test
+// can move it.
+var oneShotNow = time.Now
+
+// disarmMsg closes the window opened at `at`, and only that one: a window
+// re-armed since is a different window.
+type disarmMsg struct{ at time.Time }
 
 // pastCommand is one rung of the revise ladder — the command that was on
 // screen, the feedback that replaced it, and enough of the conversation to
@@ -241,7 +263,7 @@ func (m GenerateModel) WithExplain(mode ExplainMode) GenerateModel {
 	return m
 }
 
-// WithDryRun replaces how `[p]` executes a no-op form.
+// WithDryRun replaces how the view's dry run row executes a no-op form.
 func (m GenerateModel) WithDryRun(f DryRunFunc) GenerateModel {
 	m.runDry = f
 	return m
@@ -260,6 +282,23 @@ func (m GenerateModel) Init() tea.Cmd {
 }
 
 func (m GenerateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if k, ok := msg.(tea.KeyPressMsg); ok {
+		if keys.Is(k.String(), keys.Draft.Cancel) {
+			if next, cmd, handled := m.interrupt(); handled {
+				return next, cmd
+			}
+		} else {
+			// Any other key shuts the window: the quit is two presses of the
+			// chord in a row.
+			m.armed = time.Time{}
+		}
+	}
+	if d, ok := msg.(disarmMsg); ok {
+		if m.armed.Equal(d.at) {
+			m.armed = time.Time{}
+		}
+		return m, nil
+	}
 	// A stream that has finished opening is answered wherever the surface
 	// has got to, not only in the phase that asked: the whole point of not
 	// waiting is that the screen was free to move. The terminal's size is
@@ -292,8 +331,8 @@ func (m GenerateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateExplain(msg)
 	case phaseDryRun:
 		return m.updateDryRun(msg)
-	case phasePick:
-		return m.updatePick(msg)
+	case phaseView:
+		return m.updateView(msg)
 	}
 	return m, nil
 }
@@ -462,13 +501,10 @@ func (m GenerateModel) arm(output, explanation string) (GenerateModel, tea.Cmd) 
 	m.actionBar = m.actionBar.
 		SetMulti(IsMultiCommand(output)).
 		SetDanger(m.danger).
-		SetDryRun(m.dryAvailable).
-		SetAffected(false).
 		SetRevision(len(m.past)).
-		SetAlternatives(m.others()).
 		Reset()
 	m.phase = phaseAction
-	m.pick = nil
+	m.pick, m.rows = nil, nil
 
 	if m.explainMode == ExplainNone {
 		return m, nil
@@ -522,6 +558,11 @@ func (m GenerateModel) explainReady(msg explainReadyMsg) (GenerateModel, tea.Cmd
 		// A surface that cannot explain itself still has to be usable; the
 		// keys are what the reader came for.
 		m.explaining = false
+		if msg.long && m.phase == phaseView {
+			m.shown = ExplainNone
+			m.explainStream = StreamModel{}
+			return m, nil
+		}
 		if msg.long {
 			m.explainStream = m.explainStream.WithOutput("✗ explain  " + msg.err.Error())
 			m.explainStream.done = true
@@ -573,34 +614,9 @@ func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.actionBar, cmd = m.actionBar.Update(msg)
 
 	switch m.actionBar.Selected() {
-	case ActionAffected:
-		m.affected = true
-		m.actionBar = m.actionBar.SetAffected(true).Reset()
-		return m, nil
-
-	case ActionDryRun:
-		if !m.dryAvailable || m.runDry == nil {
-			m.actionBar = m.actionBar.Reset()
-			return m, nil
-		}
+	case ActionShow:
 		m.actionBar = m.actionBar.Reset()
-		m.phase = phaseDryRun
-		return m, m.dryRunCmd()
-
-	case ActionBack:
-		if len(m.past) == 0 {
-			m.actionBar = m.actionBar.Reset()
-			return m, nil
-		}
-		return m.stepBack()
-
-	case ActionAlternatives:
-		m.actionBar = m.actionBar.Reset()
-		if m.others() == 0 {
-			return m, nil
-		}
-		m = m.hushExplain()
-		return m.openAlternatives()
+		return m.openView()
 
 	case ActionEdit:
 		m = m.hushExplain()
@@ -610,19 +626,6 @@ func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 		blink := m.editInput.Focus()
 		m.actionBar = m.actionBar.Reset()
 		return m, blink
-
-	case ActionExplain:
-		m = m.hushExplain()
-		m.actionBar = m.actionBar.Reset()
-		if m.newExplain == nil {
-			return m, nil
-		}
-		m.gen++
-		m.explainStream = pendingStream()
-		m.shown = ExplainLong
-		m.phase = phaseExplain
-		m.opening = true
-		return m, tea.Batch(m.explainStream.spinner.Tick, openExplain(m.newExplain, m.stream.Output(), true, m.gen))
 
 	case ActionSave:
 		m = m.hushExplain()
@@ -642,17 +645,16 @@ func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	sel := m.actionBar.Selected()
-	if sel == ActionRun || sel == ActionRunAll || sel == ActionRunStep ||
-		sel == ActionCopy || sel == ActionCancel {
+	if sel == ActionRun || sel == ActionRunAll || sel == ActionCopy || sel == ActionCancel {
 		m = m.hushExplain()
 		m.phase = phaseDone
 		m.result = GenerateResult{
 			Command:     m.stream.Output(),
 			Action:      sel,
 			Explanation: m.brief(),
-			// In danger mode enter is spent on the radius, so a run is a run
-			// only because `y` was pressed. Step-by-step comes from `[t]`,
-			// which asked nothing, and keeps the caller's own prompt.
+			// `y` is the only key that runs, so a destructive command is run
+			// only because it was pressed. Step-by-step comes from a row of
+			// the view, which asked nothing, and keeps the caller's own prompt.
 			Confirmed: m.danger && (sel == ActionRun || sel == ActionRunAll),
 		}
 		return m, tea.Quit
@@ -711,45 +713,59 @@ func (m GenerateModel) stepBack() (GenerateModel, tea.Cmd) {
 	m.actionBar = m.actionBar.
 		SetMulti(IsMultiCommand(last.command)).
 		SetDanger(m.danger).
-		SetDryRun(m.dryAvailable).
-		SetAffected(false).
 		SetRevision(len(m.past)).
-		SetAlternatives(m.others()).
 		Reset()
 	m.phase = phaseAction
-	m.pick = nil
+	m.pick, m.rows = nil, nil
 	return m, nil
 }
 
-// others is how many commands are on offer beside the one showing.
-func (m GenerateModel) others() int {
-	if len(m.choices) < 2 {
-		return 0
-	}
-	return len(m.choices) - 1
-}
-
-// alternativesWidth is the widest the picker is drawn, and the terminal is
+// alternativesWidth is the widest the rows card is drawn, and the terminal is
 // the other bound: a card is as wide as it wants to be or as wide as there is
 // room for, whichever is less. It is a card rather than a column of the
 // surface, so what it does with the room it gets — where a tradeoff clips —
 // is the card's own rule and not this one's.
 const alternativesWidth = 88
 
-// openAlternatives shows every command this generation offered, the one on
-// screen marked. It is the generic select card rather than a list
-// this surface draws itself, so moving, choosing and backing out are the keys
-// they are everywhere else.
-func (m GenerateModel) openAlternatives() (GenerateModel, tea.Cmd) {
-	opts := make([]components.SelectOption, 0, len(m.choices))
+// viewRow is what one option of the view's card does.
+type viewRow struct {
+	kind  viewRowKind
+	index int
+}
+
+type viewRowKind int
+
+const (
+	rowAlternative viewRowKind = iota
+	rowDryRun
+	rowStep
+	rowBack
+)
+
+// openView is enter: the radius block, the long explanation, and a card of
+// the rows that used to be keys of the bar — the other commands the
+// generator considered, the dry run, running several one at a time and going
+// back a revise. Each row appears only where there is something behind it,
+// so a key that cannot be honoured is not offered. The card is the generic
+// select, so moving, taking and backing out are the keys they are
+// everywhere else.
+func (m GenerateModel) openView() (GenerateModel, tea.Cmd) {
+	m = m.hushExplain()
+	m.affected = true
+	var (
+		opts []components.SelectOption
+		rows []viewRow
+	)
 	for i, c := range m.choices {
+		if len(m.choices) < 2 {
+			break
+		}
 		label := "  " + oneLine(c.Command)
 		if i == m.chosen {
 			// The mark is a glyph in the label, not the focus bar: the reader
 			// has to be able to find the current command without moving the
 			// pointer onto it (invariant 1). It is ● — the mark the drafter's
 			// rail and the agent manager already use for "the one you are on"
-			// — rather than a shape of this card's own
 			// (docs/interface/departures.md#the-current-one-is-marked-and-four-other-marks-the-pages-do-not-list).
 			label = "● " + oneLine(c.Command)
 		}
@@ -758,52 +774,162 @@ func (m GenerateModel) openAlternatives() (GenerateModel, tea.Cmd) {
 			desc = "the command on screen"
 		}
 		opts = append(opts, components.SelectOption{Label: label, Desc: desc})
+		rows = append(rows, viewRow{kind: rowAlternative, index: i})
 	}
-	m.pick = &components.Select{
-		Title: "Alternatives",
-		// Numbers would be a third way to say the same thing on a list of
-		// three rows, and the artboard's row is ↑↓ and enter.
-		Unnumbered: true,
-		Options:    opts,
-		Focus:      m.chosen,
-		// The row is the register's, bracketed like every other live key, and
-		// worded for what this card does: enter takes an alternative back to
-		// the key row rather than running it, and esc is going back rather
-		// than cancelling anything
-		// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-		HintKeys: []components.KeyOffer{
-			components.OfferAs(keys.Select.Move, "move"),
-			components.OfferAs(keys.Select.Take, "choose"),
-			components.OfferAs(keys.Select.Cancel, "back"),
-		},
+	if m.dryAvailable && m.runDry != nil {
+		opts = append(opts, components.SelectOption{Label: "dry run", Desc: m.dryCommand})
+		rows = append(rows, viewRow{kind: rowDryRun})
 	}
-	m.phase = phasePick
-	return m, nil
+	if IsMultiCommand(m.stream.Output()) {
+		opts = append(opts, components.SelectOption{Label: "run one at a time", Desc: "asks before each command"})
+		rows = append(rows, viewRow{kind: rowStep})
+	}
+	if len(m.past) > 0 {
+		last := m.past[len(m.past)-1]
+		opts = append(opts, components.SelectOption{Label: "back a revision", Desc: oneLine(last.command)})
+		rows = append(rows, viewRow{kind: rowBack})
+	}
+	m.pick, m.rows = nil, rows
+	if len(opts) > 0 {
+		m.pick = &components.Select{
+			Title: "From here",
+			// Numbers would be a third way to say the same thing on a short
+			// list, and the artboard's row is ↑↓ and enter.
+			Unnumbered: true,
+			Options:    opts,
+			// The row is the register's, bracketed like every other live key:
+			// enter takes a row back to the key row rather than running it,
+			// and esc is going back rather than cancelling anything
+			// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+			HintKeys: []components.KeyOffer{
+				components.OfferAs(keys.Select.Move, "move"),
+				components.OfferAs(keys.Select.Take, "choose"),
+				components.OfferAs(keys.Select.Cancel, "back"),
+			},
+		}
+	}
+	m.phase = phaseView
+	if m.shown == ExplainLong || m.newExplain == nil {
+		return m, nil
+	}
+	// The long form is asked for here and not before: the bar's sentence is
+	// the cheap default, and the paragraph is the view's.
+	m.gen++
+	m.explainStream = pendingStream()
+	m.shown = ExplainLong
+	m.opening = true
+	return m, tea.Batch(m.explainStream.spinner.Tick, openExplain(m.newExplain, m.stream.Output(), true, m.gen))
 }
 
-// updatePick routes keys while the alternatives are showing. Choosing one
-// makes it the command on screen and hands the surface back to the key row —
-// it does not run: an alternative deserves the same explanation, containment
+// closeView is esc: back to the key row, with what the view added put away.
+// An explanation still arriving is stopped, not left to answer into a
+// surface that has moved on.
+func (m GenerateModel) closeView() GenerateModel {
+	if m.shown == ExplainLong && !m.explainStream.Done() {
+		if m.explainStream.cancel != nil {
+			m.explainStream.cancel()
+		}
+		m.gen++
+		m.opening = false
+		m.shown = ExplainNone
+		m.explainStream = StreamModel{}
+	}
+	m.affected = false
+	m.dryOutput, m.dryFailed = "", false
+	m.pick, m.rows = nil, nil
+	m.phase = phaseAction
+	return m
+}
+
+// interrupt is ctrl+c on a surface that is not streaming. The first press
+// stops what is running from here — a dry run, an explanation still
+// arriving. With nothing to stop it opens the window the quit takes, and the
+// second press inside it leaves: two presses of the chord, as on every
+// surface, where esc is the one-press way out. The bar does not bind it; it
+// is the draft's chord, answered once for the surface.
+func (m GenerateModel) interrupt() (GenerateModel, tea.Cmd, bool) {
+	switch m.phase {
+	case phaseDryRun:
+		if m.stopDry != nil {
+			m.stopDry()
+			m.stopDry = nil
+		}
+		m.dryOutput, m.dryFailed = "stopped — the dry run was cancelled before it finished", true
+		m.phase = phaseView
+		return m, nil, true
+	case phaseAction, phaseView:
+		if m.explaining || (m.phase == phaseView && m.shown == ExplainLong && !m.explainStream.Done()) {
+			if m.explainStream.cancel != nil {
+				m.explainStream.cancel()
+			}
+			m.gen++
+			m.opening, m.explaining = false, false
+			m.shown = ExplainNone
+			m.explainStream = StreamModel{}
+			return m, nil, true
+		}
+		now := oneShotNow()
+		if !m.armed.IsZero() && now.Sub(m.armed) < pressAgain {
+			m = m.hushExplain()
+			m.phase = phaseDone
+			m.result = GenerateResult{Command: m.stream.Output(), Action: ActionCancel}
+			return m, tea.Quit, true
+		}
+		m.armed = now
+		return m, tea.Tick(pressAgain, func(time.Time) tea.Msg { return disarmMsg{at: now} }), true
+	}
+	return m, nil, false
+}
+
+// updateView routes keys while the view is open. Taking an alternative makes
+// it the command on screen and hands the surface back to the key row — it
+// does not run: an alternative deserves the same explanation, containment
 // line and default the primary got.
-func (m GenerateModel) updatePick(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m GenerateModel) updateView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	key, ok := msg.(tea.KeyPressMsg)
-	if !ok || m.pick == nil {
+	if !ok {
+		// The long explanation arriving.
+		var cmd tea.Cmd
+		m.explainStream, cmd = m.explainStream.Update(msg)
+		return m, cmd
+	}
+	if m.pick == nil {
+		if keys.Is(key.String(), keys.OneShot.Quit) {
+			return m.closeView(), nil
+		}
 		return m, nil
 	}
 	done, sel := m.pick.Update(key)
 	if !done {
 		return m, nil
 	}
-	m.pick = nil
-	if sel.Canceled || sel.Index < 0 || sel.Index >= len(m.choices) {
-		m.phase = phaseAction
-		return m, nil
+	if sel.Canceled || sel.Index < 0 || sel.Index >= len(m.rows) {
+		return m.closeView(), nil
 	}
-	if sel.Index == m.chosen {
-		m.phase = phaseAction
-		return m, nil
+	row := m.rows[sel.Index]
+	switch row.kind {
+	case rowDryRun:
+		// The card stays up; the run reports under the command and the card
+		// comes back live.
+		ctx, cancel := context.WithTimeout(context.Background(), dryRunTimeout)
+		m.stopDry = cancel
+		m.phase = phaseDryRun
+		return m, m.dryRunCmd(ctx)
+	case rowStep:
+		m = m.hushExplain()
+		m.phase = phaseDone
+		m.result = GenerateResult{Command: m.stream.Output(), Action: ActionRunStep, Explanation: m.brief()}
+		return m, tea.Quit
+	case rowBack:
+		if len(m.past) == 0 {
+			return m.closeView(), nil
+		}
+		return m.stepBack()
 	}
-	m.chosen = sel.Index
+	if row.index == m.chosen {
+		return m.closeView(), nil
+	}
+	m.chosen = row.index
 	command := m.choices[m.chosen].Command
 	m.stream = m.stream.WithOutput(command)
 	// The conversation follows the screen: a revise from here is a revise of
@@ -891,35 +1017,37 @@ type dryRunDoneMsg struct {
 }
 
 // dryRunCmd runs the derived no-op form off the UI goroutine.
-func (m GenerateModel) dryRunCmd() tea.Cmd {
+func (m GenerateModel) dryRunCmd(ctx context.Context) tea.Cmd {
 	run, command := m.runDry, m.dryCommand
 	return func() tea.Msg {
-		out, code := run(command)
+		out, code := run(ctx, command)
 		return dryRunDoneMsg{output: out, code: code}
 	}
 }
 
 // shellDryRun is the default execution of a no-op form: the user's own shell,
 // output captured rather than inherited, bounded in time.
-func shellDryRun(command string) (string, int) {
-	ctx, cancel := context.WithTimeout(context.Background(), dryRunTimeout)
-	defer cancel()
+func shellDryRun(ctx context.Context, command string) (string, int) {
 	return runner.RunCapture(ctx, command)
 }
 
 func (m GenerateModel) updateDryRun(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case dryRunDoneMsg:
+		if m.stopDry != nil {
+			m.stopDry()
+			m.stopDry = nil
+		}
 		m.dryOutput = strings.TrimRight(msg.output, "\n")
 		m.dryFailed = msg.code != 0
 		if strings.TrimSpace(m.dryOutput) == "" {
 			m.dryOutput = "it reported nothing — the dry run found no work to do"
 		}
-		m.phase = phaseAction
+		m.phase = phaseView
 		return m, nil
 	case tea.KeyPressMsg:
-		// The dry run is already running as its own process; esc only stops
-		// waiting for it on screen once it lands.
+		// The dry run is already running as its own process; ctrl+c stops it
+		// (interrupt), and every other key waits for it.
 		return m, nil
 	}
 	return m, nil
@@ -1142,7 +1270,7 @@ func (m GenerateModel) reachView() string {
 	return b.String()
 }
 
-// affectedView is what enter buys on a destructive command: the paths the
+// affectedView is what the view shows of the command's reach: the paths the
 // resolver found, described as the filesystem holds them now. A command whose
 // paths it could not resolve says that instead of showing an empty list.
 func (m GenerateModel) affectedView() string {
@@ -1169,7 +1297,7 @@ func (m GenerateModel) affectedView() string {
 	return b.String()
 }
 
-// dryRunView is what `[p]` came back with, bounded and counted.
+// dryRunView is what the dry run row came back with, bounded and counted.
 func (m GenerateModel) dryRunView() string {
 	if m.phase == phaseDryRun {
 		return "\n" + indent(sty.Dim.Render("▸ dry run — "+m.dryCommand))
@@ -1332,12 +1460,9 @@ func (m GenerateModel) screen() string {
 	switch m.phase {
 	case phaseStreaming:
 		return m.streamingView()
-	case phasePick:
-		if m.pick == nil {
-			return m.stream.View()
-		}
-		return m.pick.View(min(alternativesWidth, m.width))
-	case phaseAction, phaseDryRun:
+	case phaseView, phaseDryRun:
+		return m.viewScreen()
+	case phaseAction:
 		// The blank row above the keys is the artboard's, and it is drawn
 		// here rather than carried as a margin on the bar's own style: a
 		// margin renders as a padded line of its block's width, which
@@ -1345,8 +1470,7 @@ func (m GenerateModel) screen() string {
 		// whitespace on that line and no gap at all.
 		return m.pastView() + m.commandView() +
 			m.explanationView() + m.reachView() +
-			m.affectedView() + m.dryRunView() +
-			"\n\n" + m.actionBar.View(m.width)
+			"\n\n" + m.actionBar.View(m.width) + m.armedFoot()
 	case phaseEdit:
 		return sty.Label.Render("edit: ") + fieldView(m.editInput)
 	case phaseSave:
@@ -1364,4 +1488,27 @@ func (m GenerateModel) screen() string {
 	default:
 		return m.stream.View()
 	}
+}
+
+// viewScreen is the command and everything known about it, with the rows
+// that take the surface elsewhere under it.
+func (m GenerateModel) viewScreen() string {
+	body := m.pastView() + m.commandView() + m.explanationView()
+	if m.shown == ExplainLong && strings.TrimSpace(m.explainStream.Output()) == "" && !m.explainStream.Done() {
+		body += "\n" + sty.Label.Render("explanation:") + " " + m.explainStream.spinner.View()
+	}
+	body += m.reachView() + m.affectedView() + m.dryRunView() + "\n\n"
+	if m.pick == nil {
+		return body + keyStyle(toneOffer).Render("["+keys.Shown(keys.OneShot.Quit)+"]") + sty.KeyLabel.Render(" back") + m.armedFoot()
+	}
+	return body + m.pick.View(min(alternativesWidth, m.width)) + m.armedFoot()
+}
+
+// armedFoot is the row under the keys while the quit's window is open: the
+// chord that armed it, printed back, and what a second press does.
+func (m GenerateModel) armedFoot() string {
+	if m.armed.IsZero() {
+		return ""
+	}
+	return "\n" + keyStyle(toneOffer).Render("["+keys.Shown(keys.Draft.Cancel)+"]") + sty.KeyLabel.Render(" again quits")
 }

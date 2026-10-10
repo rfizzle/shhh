@@ -5,8 +5,7 @@
 # The one-shot scene is the surface's own test, with the piped run and the
 # destructive command beside it; this one is the picture and nothing else.
 #
-# The key row is the surface's own and says how many other commands the
-# generation offered, so it is what the wait is on.
-snap 01-result "2 others" "[enter] run" "⛨ no sudo" "awk keeps the rows"
+# The key row is the register's seven, so the wait is on its own words.
+snap 01-result "[enter] show what it would affect" "[y] run it" "⛨ no sudo" "awk keeps the rows"
 keys Escape
 snap 02-quit

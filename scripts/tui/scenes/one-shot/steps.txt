@@ -29,25 +29,25 @@ setup mkdir -p .tools && printf '#!/bin/sh\nexit 0\n' > .tools/lsof && chmod +x 
 # shell on stdout, no spinner, no keys, no colour. It stays on screen above
 # everything that follows, which is what lets one capture hold both.
 snap 01-piped "lsof -nP -iTCP -sTCP:LISTEN"
-# The result surface. The key row is the surface's own and says how many other
-# commands the generation offered, so it is what the wait is on.
-snap 02-result "2 others" "[enter] run" "[ctrl+s] write" "⛨ no sudo"
-# The ways it was not taken, the one on screen marked. The wait is on a
-# command only this card carries: a tradeoff is clipped to its column and the
+# The result surface. The key row is the register's seven and nothing else; the
+# other commands are behind enter, so the wait is on the row's own words.
+snap 02-result "[enter] show what it would affect" "[y] run it" "[ctrl+s] write" "⛨ no sudo"
+# The view enter opens, with the ways it was not taken as rows and the one on
+# screen marked. The wait is on a command only this card carries: a tradeoff is clipped to its column and the
 # column itself goes when the card is narrow, so waiting for one of those
 # waits for a string the row may not be holding whole at every width.
-keys a
-snap 03-alternatives "netstat -anv -p tcp"
-# Back out of the picker, then out of the run: the first escape leaves the
-# alternatives, the second quits. Two escapes written into the pty together
+keys Enter
+snap 03-view "netstat -anv -p tcp"
+# Back out of the view, then out of the run: the first escape returns to the
+# bar, the second quits. Two escapes written into the pty together
 # arrive as one sequence, so the sleep is the terminal's rather than the
 # product's.
 keys Escape
 sleep 0.5
 keys Escape
-# The third run, on a command the safety check flags. Enter is spent on saying
-# what would be affected and running takes a deliberate `y` — the scene reads
-# the offer and presses neither.
+# The third run, on a command the safety check flags. The row is the same seven
+# keys, enter opens what would be affected and running takes a deliberate `y` —
+# the scene reads the offer and presses neither.
 snap 04-destructive "recursive forced deletion" "[y] run it"
 keys Escape
 snap 05-quit

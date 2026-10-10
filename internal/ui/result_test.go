@@ -135,27 +135,35 @@ func TestResult_RiskIsStatedAboveTheContainmentLine(t *testing.T) {
 	}
 }
 
-func TestResult_OrdinaryCommandRunsOnEnter(t *testing.T) {
-	m := press(t, armed(t, "ls -la", nil), "enter")
+func TestResult_OrdinaryCommandRunsOnY(t *testing.T) {
+	m := press(t, armed(t, "ls -la", nil), "y")
 	if m.Result().Action != ActionRun {
-		t.Errorf("enter on an ordinary command did %v, want ActionRun", m.Result().Action)
+		t.Errorf("y on an ordinary command did %v, want ActionRun", m.Result().Action)
 	}
 	if m.Result().Confirmed {
 		t.Error("an ordinary command was reported as already confirmed")
 	}
 }
 
-func TestResult_DestructiveCommandSpendsEnterOnTheRadius(t *testing.T) {
+func TestResult_EnterShowsTheRadiusOfAnyCommandAndEscComesBack(t *testing.T) {
 	m := armed(t, "rm -rf build", nil)
 	m = press(t, m, "enter")
 	if m.Result().Action == ActionRun {
 		t.Fatal("enter ran a destructive command")
 	}
-	if m.Phase() != phaseAction {
-		t.Fatalf("expected to stay on the result surface, got phase %v", m.Phase())
+	if m.Phase() != phaseView {
+		t.Fatalf("expected the view, got phase %v", m.Phase())
 	}
-	if !strings.Contains(m.View().Content, "would affect") {
+	if !m.affected || !strings.Contains(m.View().Content, "\n  would affect") {
 		t.Errorf("enter did not say what would be affected:\n%s", m.View().Content)
+	}
+	// The first esc goes back to the bar; the second leaves.
+	m = press(t, m, "esc")
+	if m.Phase() != phaseAction || m.affected {
+		t.Fatalf("esc from the view did not go back to the bar: phase %v", m.Phase())
+	}
+	if again := press(t, m, "esc"); again.Phase() != phaseDone || again.Result().Action != ActionCancel {
+		t.Errorf("esc from the bar did not leave: phase %v", again.Phase())
 	}
 
 	m = press(t, m, "y")
@@ -204,25 +212,26 @@ func TestResult_DryRunRunsTheDerivedForm(t *testing.T) {
 	var ran string
 	m := NewGenerateModel(makeEvents("find . -name '*.tmp' -delete"), noopCancel, nil, nil, nil, "").
 		WithExplain(ExplainNone).
-		WithDryRun(func(command string) (string, int) {
+		WithDryRun(func(_ context.Context, command string) (string, int) {
 			ran = command
 			return "./a.tmp\n./b.tmp", 0
 		})
 	m = drainStream(m, 2)
 
-	if !strings.Contains(m.View().Content, "[p] dry run") {
-		t.Fatalf("a command with a dry run was not offered one:\n%s", m.View().Content)
+	m = press(t, m, "enter")
+	if !strings.Contains(m.View().Content, "dry run") {
+		t.Fatalf("a command with a dry run was not offered one in the view:\n%s", m.View().Content)
 	}
-	m = press(t, m, "p")
+	m = press(t, m, "enter")
 	if m.Phase() != phaseDryRun {
 		t.Fatalf("expected phaseDryRun, got %v", m.Phase())
 	}
-	m = step(m, m.dryRunCmd()())
+	m = step(m, m.dryRunCmd(context.Background())())
 
 	if ran != "find . -name '*.tmp' -print" {
 		t.Errorf("the dry run executed %q, not the derived no-op form", ran)
 	}
-	if m.Phase() != phaseAction {
+	if m.Phase() != phaseView {
 		t.Errorf("the surface did not come back: phase %v", m.Phase())
 	}
 	view := m.View().Content
@@ -232,13 +241,9 @@ func TestResult_DryRunRunsTheDerivedForm(t *testing.T) {
 }
 
 func TestResult_DryRunNotOfferedWithoutOne(t *testing.T) {
-	m := armed(t, "rm -rf build", nil)
+	m := press(t, armed(t, "rm -rf build", nil), "enter")
 	if strings.Contains(m.View().Content, "dry run") {
 		t.Errorf("rm was offered a dry run it does not have:\n%s", m.View().Content)
-	}
-	m = press(t, m, "p")
-	if m.Phase() != phaseAction {
-		t.Errorf("[p] did something on a command with no dry run: phase %v", m.Phase())
 	}
 }
 
@@ -253,8 +258,8 @@ func TestResult_ReviseKeepsThePreviousCommandAndCountsRevisions(t *testing.T) {
 	if !strings.Contains(view, "revision 1") {
 		t.Errorf("no revision counter:\n%s", view)
 	}
-	if !strings.Contains(view, "[u] back") {
-		t.Errorf("no way back:\n%s", view)
+	if !strings.Contains(press(t, reviseOnce(t), "enter").View().Content, "back a revision") {
+		t.Errorf("no way back in the view:\n%s", view)
 	}
 }
 
@@ -283,16 +288,16 @@ func TestResult_ThePreviousRungIsUnderTheBodyAndOverTheChrome(t *testing.T) {
 }
 
 func TestResult_BackStepsToThePreviousCommand(t *testing.T) {
-	m := press(t, reviseOnce(t), "u")
+	m := press(t, press(t, reviseOnce(t), "enter"), "enter")
 	if got := m.stream.Output(); got != "ls" {
-		t.Errorf("[u] left %q on screen, want the command from before the revise", got)
+		t.Errorf("the back row left %q on screen, want the command from before the revise", got)
 	}
 	view := m.View().Content
 	if strings.Contains(view, "revision 1") {
 		t.Errorf("the counter did not come back down:\n%s", view)
 	}
-	if strings.Contains(view, "[u] back") {
-		t.Error("[u] is still offered with nothing left to step back to")
+	if strings.Contains(press(t, m, "enter").View().Content, "back a revision") {
+		t.Error("the back row is still offered with nothing left to step back to")
 	}
 	if len(m.Messages()) != 1 {
 		t.Errorf("stepping back left %d messages, want the one the first answer added", len(m.Messages()))
@@ -360,14 +365,14 @@ func TestResult_AStaleStreamMessageIsIgnored(t *testing.T) {
 }
 
 func TestResult_StepByStepIsNotAConfirmation(t *testing.T) {
-	// `[t]` asked nothing, so the caller's own per-step prompt and its safety
+	// The view's one-at-a-time row asked nothing, so the caller's own per-step prompt and its safety
 	// warning both still stand.
 	m := NewGenerateModel(makeEvents("rm -rf a\nrm -rf b"), noopCancel, nil, nil, nil, "").
 		WithExplain(ExplainNone)
 	m = drainStream(m, 2)
-	m = press(t, m, "t")
+	m = press(t, press(t, m, "enter"), "enter")
 	if m.Result().Action != ActionRunStep {
-		t.Fatalf("[t] did %v, want ActionRunStep", m.Result().Action)
+		t.Fatalf("the one-at-a-time row did %v, want ActionRunStep", m.Result().Action)
 	}
 	if m.Result().Confirmed {
 		t.Error("step-by-step was reported as a deliberate confirmation")
@@ -399,7 +404,7 @@ func TestResult_TheKeysAreOnScreenBeforeTheExplanationIsAskedFor(t *testing.T) {
 		t.Error("the surface does not know it is waiting on a stream")
 	}
 	view := m.View().Content
-	if !strings.Contains(view, "[enter] run") {
+	if !strings.Contains(view, "[enter] show") {
 		t.Errorf("the keys are not on screen while the explanation is being asked for:\n%s", view)
 	}
 	if !strings.Contains(view, "ls -la") {
@@ -516,7 +521,7 @@ func TestResult_TheCommandIsUsableWhileItIsChecked(t *testing.T) {
 	if !strings.Contains(view, "ls -la") {
 		t.Errorf("the command is not on screen while it is being checked:\n%s", view)
 	}
-	if !strings.Contains(view, "[enter] run") {
+	if !strings.Contains(view, "[enter] show") {
 		t.Errorf("the keys are not live while the command is being checked:\n%s", view)
 	}
 }
@@ -581,7 +586,7 @@ func TestResult_TheBundledExplanationNeedsNoSecondRequest(t *testing.T) {
 	if strings.Contains(view, "explanation:") {
 		t.Errorf("the one-liner rendered as the long form's block:\n%s", view)
 	}
-	if !strings.Contains(view, "[enter] run") {
+	if !strings.Contains(view, "[enter] show") {
 		t.Errorf("the keys are not on screen with it:\n%s", view)
 	}
 }
@@ -614,13 +619,13 @@ func TestResult_TheLongFormOnDemandStillOpensAStream(t *testing.T) {
 	}
 	m := NewGenerateModel(makeEvents(bundled), noopCancel, nil, nil, explain, "")
 	m = drainStream(m, 2)
-	m = press(t, m, "x")
+	m = press(t, m, "enter")
 
 	if asked != 1 || !askedLong {
-		t.Errorf("`x` asked for %d explanations, long=%v", asked, askedLong)
+		t.Errorf("the view asked for %d explanations, long=%v", asked, askedLong)
 	}
-	if m.Phase() != phaseExplain {
-		t.Errorf("`x` did not open the long form: phase %v", m.Phase())
+	if m.Phase() != phaseView {
+		t.Errorf("enter did not open the view: phase %v", m.Phase())
 	}
 }
 
@@ -632,7 +637,7 @@ func TestResult_SilentModeIgnoresASentenceItDidNotAskFor(t *testing.T) {
 	if strings.Contains(m.View().Content, bundledSentence) {
 		t.Errorf("silent mode showed the sentence anyway:\n%s", m.View().Content)
 	}
-	if got := press(t, m, "enter").Result().Explanation; got != "" {
+	if got := press(t, m, "y").Result().Explanation; got != "" {
 		t.Errorf("silent mode handed the caller %q", got)
 	}
 }
@@ -660,14 +665,14 @@ func TestResult_TheStreamNeverShowsTheSentence(t *testing.T) {
 
 func TestResult_TheSentenceReachesTheCaller(t *testing.T) {
 	m := drainStream(NewGenerateModel(makeEvents(bundled), noopCancel, nil, nil, nil, ""), 2)
-	if got := press(t, m, "enter").Result().Explanation; got != bundledSentence {
+	if got := press(t, m, "y").Result().Explanation; got != bundledSentence {
 		t.Errorf("the result carries %q", got)
 	}
 
 	// One that was asked for separately is the same sentence and reaches the
 	// caller the same way.
 	streamed := drainExplainStream(armed(t, "ls -la", mockExplainStream("lists the directory")), 2)
-	if got := press(t, streamed, "enter").Result().Explanation; got != "lists the directory" {
+	if got := press(t, streamed, "y").Result().Explanation; got != "lists the directory" {
 		t.Errorf("a streamed sentence reached the caller as %q", got)
 	}
 
@@ -675,7 +680,7 @@ func TestResult_TheSentenceReachesTheCaller(t *testing.T) {
 	long := NewGenerateModel(makeEvents(bundled), noopCancel, nil, nil,
 		mockExplainStream("lists the directory, breaking down each flag"), "").WithExplain(ExplainLong)
 	long = drainExplainStream(drainStream(long, 2), 2)
-	if got := press(t, long, "enter").Result().Explanation; got != "" {
+	if got := press(t, long, "y").Result().Explanation; got != "" {
 		t.Errorf("the long form was handed on as a sentence: %q", got)
 	}
 }
@@ -757,7 +762,7 @@ func TestResult_SteppingBackRestoresTheSentenceWithTheCommand(t *testing.T) {
 	if !strings.Contains(m.View().Content, "Lists names only.") {
 		t.Fatalf("the revised command did not bring its own sentence:\n%s", m.View().Content)
 	}
-	m = press(t, m, "u")
+	m = press(t, press(t, m, "enter"), "enter")
 	if !strings.Contains(m.View().Content, bundledSentence) {
 		t.Errorf("stepping back did not bring the sentence back with the command:\n%s", m.View().Content)
 	}

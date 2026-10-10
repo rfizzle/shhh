@@ -8,11 +8,12 @@ package ui
 // where a key hint is not the key. It is now one row of bracketed keys,
 // pressed directly, like every hint run in the session UI.
 //
-// The row is also where the safe default lives. On an ordinary command enter
-// runs; on a destructive one enter spends itself on saying what would be
-// affected, and running takes a deliberate `y` — the same keys either way, so
-// nothing has to be re-learned, with the default doing the safe half of the
-// job when the job has a dangerous half.
+// The row has seven keys and the same seven whatever the command is rated:
+// enter opens the view of what the command would affect, and running takes a
+// deliberate `y`. Nothing has to be re-learned for a dangerous command,
+// because no key on the row runs anything but the one that says so. What the
+// bar used to spend letters on — the explanation, the other commands, the dry
+// run, stepping through several, going back a revise — is a row of the view.
 
 import (
 	"strconv"
@@ -32,20 +33,13 @@ const (
 	ActionRevise
 	ActionCancel
 	ActionEdit
-	ActionExplain
 	ActionRunAll
+	// ActionRunStep is a row of the view, not a key of the bar: run several
+	// commands one at a time.
 	ActionRunStep
 	ActionSave
-	// ActionAffected is enter on a destructive command: state what the
-	// command would reach, and leave running to `y`.
-	ActionAffected
-	// ActionDryRun is `[p]` — run the command's own no-op form.
-	ActionDryRun
-	// ActionBack is `[u]` — step back to the command before the last revise.
-	ActionBack
-	// ActionAlternatives is `[a]` — the other commands the generator
-	// considered.
-	ActionAlternatives
+	// ActionShow is enter: open the view of what the command would affect.
+	ActionShow
 )
 
 type ActionSelectedMsg struct {
@@ -87,18 +81,11 @@ const (
 type ActionBarModel struct {
 	selected Action
 	multi    bool
-	// danger moves the safe default: enter states the radius, `y` runs.
+	// danger tints the run, so a destructive command's `y` reads as the
+	// deliberate key it is. It moves no key.
 	danger bool
-	// dryRun is whether the command has a no-op form to offer (internal/dryrun).
-	dryRun bool
-	// affected is whether the radius block is already on screen, which is
-	// what spends enter on a destructive command.
-	affected bool
-	// revision counts revises so far; above zero, `[u]` steps back.
+	// revision counts revises so far; above zero, the row leads with it.
 	revision int
-	// others counts the alternatives on offer beside the command showing;
-	// above zero, `[a]` opens the picker.
-	others int
 }
 
 func NewActionBarModel() ActionBarModel {
@@ -112,38 +99,15 @@ func (m ActionBarModel) SetMulti(multi bool) ActionBarModel {
 	return m
 }
 
-// SetDanger moves the safe default. It is set from the resolved radius, not
-// from the words in the command, so the bar and the containment line above it
-// cannot disagree about what the command is.
+// SetDanger is set from the resolved radius, not from the words in the
+// command, so the bar and the containment line above it cannot disagree.
 func (m ActionBarModel) SetDanger(danger bool) ActionBarModel {
 	m.danger = danger
 	return m
 }
 
-// SetDryRun offers `[p]` only where a dry run exists. A key that cannot be
-// honoured is not offered (docs/interface/surfaces.md#the-recovery-row), and
-// here the cost of offering one that is not there is running the real
-// command.
-func (m ActionBarModel) SetDryRun(available bool) ActionBarModel {
-	m.dryRun = available
-	return m
-}
-
-func (m ActionBarModel) SetAffected(shown bool) ActionBarModel {
-	m.affected = shown
-	return m
-}
-
 func (m ActionBarModel) SetRevision(n int) ActionBarModel {
 	m.revision = n
-	return m
-}
-
-// SetAlternatives states how many other commands are on offer. Zero is the
-// answer for every provider that cannot produce them and for every request
-// with one sensible answer, and the row is then exactly what it was.
-func (m ActionBarModel) SetAlternatives(n int) ActionBarModel {
-	m.others = n
 	return m
 }
 
@@ -155,57 +119,27 @@ func (m ActionBarModel) runAction() Action {
 	return ActionRun
 }
 
-// keys builds the row. Order is fixed: the default first, then the keys that
-// change the command, then the ones that take it elsewhere, then the way out.
+// keys builds the row: the way in to the view first, then the run, then the
+// keys that change the command, then the ones that take it elsewhere, then
+// the way out. The row is the register's seven and nothing else.
 func (m ActionBarModel) keys() []key {
-	var out []key
-	if m.danger {
-		if m.affected {
-			out = append(out, bar(keys.OneShot.Confirm, "", m.runAction(), toneDanger))
-		} else {
-			out = append(out,
-				bar(keys.OneShot.Run, "show what it would affect", ActionAffected, tonePrimary),
-				bar(keys.OneShot.Confirm, "", m.runAction(), toneDanger),
-			)
-		}
-	} else {
-		label := "run"
-		if m.multi {
-			label = "run all"
-		}
-		out = append(out, bar(keys.OneShot.Run, label, m.runAction(), tonePrimary))
-	}
+	run := "run it"
 	if m.multi {
-		out = append(out, bar(keys.OneShot.Step, "", ActionRunStep, toneOffer))
+		run = "run them all"
 	}
-	if m.dryRun {
-		out = append(out, bar(keys.OneShot.DryRun, "", ActionDryRun, toneOffer))
+	tone := toneOffer
+	if m.danger {
+		tone = toneDanger
 	}
-	out = append(out,
+	return []key{
+		bar(keys.OneShot.Show, "", ActionShow, tonePrimary),
+		bar(keys.OneShot.Confirm, run, m.runAction(), tone),
 		bar(keys.OneShot.Edit, "", ActionEdit, toneOffer),
 		bar(keys.OneShot.Revise, "", ActionRevise, toneOffer),
-	)
-	if m.revision > 0 {
-		out = append(out, bar(keys.OneShot.Back, "", ActionBack, toneOffer))
-	}
-	if m.others > 0 {
-		// The count is the label rather than the key: what the reader wants
-		// to know before pressing is how many there are, and `[a]` is what
-		// the key row promises everywhere else — the key printed is the key
-		// pressed.
-		label := strconv.Itoa(m.others) + " others"
-		if m.others == 1 {
-			label = "1 other"
-		}
-		out = append(out, bar(keys.OneShot.Alternatives, label, ActionAlternatives, toneOffer))
-	}
-	out = append(out,
-		bar(keys.OneShot.Explain, "", ActionExplain, toneOffer),
 		bar(keys.OneShot.Copy, "", ActionCopy, toneOffer),
 		bar(keys.OneShot.Save, "", ActionSave, toneOffer),
 		bar(keys.OneShot.Quit, "", ActionCancel, toneQuiet),
-	)
-	return out
+	}
 }
 
 func (m ActionBarModel) Reset() ActionBarModel {

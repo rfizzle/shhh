@@ -113,7 +113,7 @@ func TestGenerate_ActionBarAppearsInView(t *testing.T) {
 	m = drainStream(m, 2)
 
 	view := m.View().Content
-	if !strings.Contains(view, "[enter] run") {
+	if !strings.Contains(view, "[enter] show") {
 		t.Error("expected action bar visible after stream completes")
 	}
 	if !strings.Contains(view, "echo hello") {
@@ -235,7 +235,7 @@ func TestGenerate_StripsMarkdownBeforeActionBar(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Command should be stripped by the time action bar appears
-	m = step(m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = step(m, tea.KeyPressMsg{Code: 'y', Text: "y"})
 
 	if m.Result().Command != "find . -name '*.log'" {
 		t.Errorf("expected stripped command, got %q", m.Result().Command)
@@ -247,12 +247,12 @@ func TestGenerate_ArrowsAreNotNavigation(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "")
 	m = drainStream(m, 2)
 
-	// The bar has no cursor: an arrow changes nothing, and enter still runs.
+	// The bar has no cursor: an arrow changes nothing, and y still runs.
 	m = step(m, tea.KeyPressMsg{Code: tea.KeyRight})
-	m = step(m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = step(m, tea.KeyPressMsg{Code: 'y', Text: "y"})
 
 	if m.Result().Action != ActionRun {
-		t.Errorf("expected ActionRun after arrow+enter, got %v", m.Result().Action)
+		t.Errorf("expected ActionRun after arrow+y, got %v", m.Result().Action)
 	}
 }
 
@@ -527,7 +527,7 @@ func TestGenerate_ReviseUpdatesCommandInResult(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Now select Run — result should have the NEW command
-	m = step(m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = step(m, tea.KeyPressMsg{Code: 'y', Text: "y"})
 
 	if m.Result().Command != "ls -la" {
 		t.Errorf("expected revised command 'ls -la', got %q", m.Result().Command)
@@ -582,7 +582,7 @@ func TestGenerate_ReviseActionBarReappearsAfterRestream(t *testing.T) {
 	m = drainStream(m, 2)
 
 	view := m.View().Content
-	if !strings.Contains(view, "[enter] run") {
+	if !strings.Contains(view, "[enter] show") {
 		t.Error("expected action bar visible after re-stream")
 	}
 	if !strings.Contains(view, "ls -la") {
@@ -734,7 +734,7 @@ func TestGenerate_EditedCommandFlowsToResult(t *testing.T) {
 	m = step(m, tea.KeyPressMsg{Code: tea.KeyEnter})
 
 	// Now select Run — result should have the edited command
-	m = step(m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = step(m, tea.KeyPressMsg{Code: 'y', Text: "y"})
 
 	if m.Result().Command != "ls -la" {
 		t.Errorf("expected 'ls -la' in result, got %q", m.Result().Command)
@@ -805,7 +805,7 @@ func TestGenerate_MultipleRevisionsWork(t *testing.T) {
 	}
 
 	// Enter runs — should get final command
-	m = step(m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = step(m, tea.KeyPressMsg{Code: 'y', Text: "y"})
 	if m.Result().Command != "ls -la" {
 		t.Errorf("expected final command 'ls -la', got %q", m.Result().Command)
 	}
@@ -831,10 +831,10 @@ func TestGenerate_ExplainOpensExplainPhase(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files"), "")
 	m = drainStream(m, 2)
 
-	m = step(m, tea.KeyPressMsg{Code: 'x', Text: "x"})
+	m = step(m, tea.KeyPressMsg{Code: tea.KeyEnter})
 
-	if m.Phase() != phaseExplain {
-		t.Errorf("expected phaseExplain, got %v", m.Phase())
+	if m.Phase() != phaseView {
+		t.Errorf("expected phaseView, got %v", m.Phase())
 	}
 }
 
@@ -843,13 +843,13 @@ func TestGenerate_ExplainStreamsAndReturnsToAction(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files in detail"), "")
 	m = drainStream(m, 2)
 
-	m = step(m, tea.KeyPressMsg{Code: 'x', Text: "x"})
+	m = step(m, tea.KeyPressMsg{Code: tea.KeyEnter})
 
 	// Drain explain stream (token + done)
 	m = drainExplainStream(m, 2)
 
-	if m.Phase() != phaseAction {
-		t.Errorf("expected phaseAction after explain completes, got %v", m.Phase())
+	if m.Phase() != phaseView {
+		t.Errorf("expected the view to stay up after the explanation completes, got %v", m.Phase())
 	}
 }
 
@@ -858,7 +858,7 @@ func TestGenerate_ExplainViewShowsExplanation(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files"), "")
 	m = drainStream(m, 2)
 
-	m = step(m, tea.KeyPressMsg{Code: 'x', Text: "x"})
+	m = step(m, tea.KeyPressMsg{Code: tea.KeyEnter})
 
 	// Receive token
 	cmd := m.explainStream.waitForEvent()
@@ -878,15 +878,16 @@ func TestGenerate_ExplainPersistsAfterReturn(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files in detail"), "")
 	m = drainStream(m, 2)
 
-	m = step(m, tea.KeyPressMsg{Code: 'x', Text: "x"})
+	m = step(m, tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = drainExplainStream(m, 2)
 
-	// Now in phaseAction — explanation should still be visible
+	// Back on the bar, the explanation is still visible
+	m = step(m, tea.KeyPressMsg{Code: tea.KeyEscape})
 	view := m.View().Content
 	if !strings.Contains(view, "lists files in detail") {
 		t.Error("expected explanation to persist in action bar view")
 	}
-	if !strings.Contains(view, "[enter] run") {
+	if !strings.Contains(view, "[enter] show") {
 		t.Error("expected action bar visible after explain")
 	}
 }
@@ -896,11 +897,11 @@ func TestGenerate_ExplainNilFuncIgnored(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "")
 	m = drainStream(m, 2)
 
-	m = step(m, tea.KeyPressMsg{Code: 'x', Text: "x"})
+	m = step(m, tea.KeyPressMsg{Code: tea.KeyEnter})
 
-	// Should stay in phaseAction since no explain func
-	if m.Phase() != phaseAction {
-		t.Errorf("expected phaseAction when explain func is nil, got %v", m.Phase())
+	// The view opens all the same; it just has no long explanation to ask for
+	if m.Phase() != phaseView {
+		t.Errorf("expected phaseView when explain func is nil, got %v", m.Phase())
 	}
 }
 
@@ -910,11 +911,12 @@ func TestGenerate_ExplainDoesNotAffectResult(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Explain
-	m = step(m, tea.KeyPressMsg{Code: 'x', Text: "x"})
+	m = step(m, tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = drainExplainStream(m, 2)
 
-	// Now run
-	m = step(m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	// Now back to the bar, and run
+	m = step(m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = step(m, tea.KeyPressMsg{Code: 'y', Text: "y"})
 
 	if m.Result().Command != "docker ps" {
 		t.Errorf("expected 'docker ps', got %q", m.Result().Command)
@@ -998,7 +1000,7 @@ func TestGenerate_ACorrectionLeavesNoKeysOverAnEmptyCommand(t *testing.T) {
 	if m.Phase() != phaseStreaming {
 		t.Fatalf("the surface kept the action phase while the correction opened: %v", m.Phase())
 	}
-	if strings.Contains(m.View().Content, "[enter] run") {
+	if strings.Contains(m.View().Content, "[enter] show") {
 		t.Errorf("the keys were offered over a command that is not there yet:\n%s", m.View().Content)
 	}
 }
@@ -1117,7 +1119,7 @@ func TestGenerate_LongExplainStreamsThenShowsActionBar(t *testing.T) {
 	if !strings.Contains(view, "lists files in detail") {
 		t.Error("expected explanation text to persist in action view")
 	}
-	if !strings.Contains(view, "[enter] run") {
+	if !strings.Contains(view, "[enter] show") {
 		t.Error("expected action bar visible after auto-explain")
 	}
 }
@@ -1179,9 +1181,9 @@ func TestInlineFrames_ANarrowerFrameLeavesNoneOfTheWiderOne(t *testing.T) {
 				return frame{m.screen(), m.View()}
 			},
 			narrow: func(t *testing.T) frame {
-				m := press(t, sized(withAlternatives(t, twoOthers), width), "a")
-				if m.Phase() != phasePick {
-					t.Fatalf("`a` did not open the picker: phase %v", m.Phase())
+				m := press(t, sized(withAlternatives(t, twoOthers), width), "enter")
+				if m.Phase() != phaseView {
+					t.Fatalf("enter did not open the view: phase %v", m.Phase())
 				}
 				return frame{m.screen(), m.View()}
 			},
@@ -1218,9 +1220,9 @@ func TestInlineFrames_ANarrowerFrameLeavesNoneOfTheWiderOne(t *testing.T) {
 // frames do: no row of it ends in a space.
 func TestInlineFrames_TheLastFrameLeavesTheScrollbackClean(t *testing.T) {
 	const width = 100
-	oneShot := press(t, sized(armed(t, "ls -la", nil), width), "enter")
+	oneShot := press(t, sized(armed(t, "ls -la", nil), width), "y")
 	if oneShot.Phase() != phaseDone {
-		t.Fatalf("enter on the result did not end the one-shot: phase %v", oneShot.Phase())
+		t.Fatalf("y on the result did not end the one-shot: phase %v", oneShot.Phase())
 	}
 	var setup tea.Model = NewProviderSetup(resolve.Survey{Provider: "openai"}, []string{"openai"})
 	setup, _ = setup.Update(tea.WindowSizeMsg{Width: width, Height: 24})

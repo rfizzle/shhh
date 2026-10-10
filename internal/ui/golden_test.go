@@ -133,8 +133,8 @@ func TestGolden_Result(t *testing.T) {
 		})
 }
 
-// The destructive command: the same keys, with enter spent on saying what
-// would be affected and the run behind a deliberate `y`. The warning is on the
+// The destructive command: the same seven keys as any other, with enter
+// opening the view of what would be affected and the run behind a deliberate `y`. The warning is on the
 // top rung of the ladder, which is the one place the one-shot shouts.
 func TestGolden_Destructive(t *testing.T) {
 	captureGolden(t, "one-shot-destructive", "the one-shot result on a destructive command",
@@ -142,8 +142,8 @@ func TestGolden_Destructive(t *testing.T) {
 			m := goldenArmed(t, goldenDestructive, width)
 			affected, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 			return []golden.Panel{
-				{Label: "the safe default", View: m.View().Content},
-				{Label: "what enter buys", View: settle(affected.(GenerateModel), cmd).View().Content},
+				{Label: "the bar", View: m.View().Content},
+				{Label: "what enter shows", View: settle(affected.(GenerateModel), cmd).View().Content},
 			}
 		})
 }
@@ -159,10 +159,10 @@ func TestGolden_Revise(t *testing.T) {
 
 // The alternatives the generation offered, the one on screen marked.
 func TestGolden_Alternatives(t *testing.T) {
-	captureGolden(t, "one-shot-alternatives", "the one-shot alternatives picker",
+	captureGolden(t, "one-shot-alternatives", "the one-shot view, with the alternatives the generation offered",
 		func(width int) []golden.Panel {
 			m := goldenArmed(t, goldenGeneration, width)
-			m, _ = m.openAlternatives()
+			m, _ = m.openView()
 			return []golden.Panel{{View: m.View().Content}}
 		})
 }
