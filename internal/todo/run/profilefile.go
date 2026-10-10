@@ -90,6 +90,10 @@ type valueFile struct {
 	Name  string `toml:"name"`
 	Gloss string `toml:"gloss"`
 	Glyph string `toml:"glyph"`
+	// Model and ReviewModel are read on the grade field only: the model the
+	// item's working stages run on at that grade and the one its reader does.
+	Model       string `toml:"model"`
+	ReviewModel string `toml:"review_model"`
 }
 
 // stepFile is one step of the run.
@@ -273,6 +277,19 @@ func (f profileFile) profile(src source) (todo.Profile, error) {
 			return todo.Profile{}, src.at("grade", "profile %q grades on %q, which is not one of its fields", p.Name, p.Grade)
 		}
 	}
+	// A model is spent against a grade, so a word on any other field naming
+	// one would be read by nothing and look as if it were working.
+	for _, field := range p.Fields {
+		if field.Name == p.Grade {
+			continue
+		}
+		for _, v := range field.Values {
+			if v.Model != "" || v.ReviewModel != "" {
+				return todo.Profile{}, src.at(v.Name,
+					"profile %q names a model on %q of its field %q; a model is named on the values of the field it grades on (%q)", p.Name, v.Name, field.Name, p.Grade)
+			}
+		}
+	}
 	if _, err := p.Reserved(); err != nil {
 		return todo.Profile{}, src.at("slug_refuse",
 			"profile %q reserves slugs matching a pattern that will not compile, so it would reserve none: %v", p.Name, err)
@@ -345,7 +362,8 @@ func (ff fieldFile) field(src source, profile string) (todo.Field, error) {
 		if v.Name == "" {
 			return todo.Field{}, src.at(ff.Name, "profile %q gives the field %q a value with no name", profile, ff.Name)
 		}
-		field.Values = append(field.Values, todo.Value{Name: v.Name, Gloss: v.Gloss, Glyph: v.Glyph})
+		field.Values = append(field.Values, todo.Value{Name: v.Name, Gloss: v.Gloss, Glyph: v.Glyph,
+			Model: strings.TrimSpace(v.Model), ReviewModel: strings.TrimSpace(v.ReviewModel)})
 	}
 	if ff.Default != "" {
 		// Kept in the field's own spelling rather than the file's: a header

@@ -146,6 +146,12 @@ type Value struct {
 	// read at sixty columns, so a profile says which of its fields is
 	// worth one.
 	Glyph string
+	// Model and ReviewModel are the models a run spends on an item at this
+	// grade: the one its working stages run on and the one its reader runs
+	// on. They mean something only on the grade field, and empty is the
+	// provider's own default.
+	Model       string
+	ReviewModel string
 }
 
 // priorityValues are the words priority may say, with the letter a row
@@ -266,6 +272,26 @@ func (p Profile) GradeRank(value string) int {
 		return 0
 	}
 	return f.Rank(value)
+}
+
+// GradeModels are the models an item at this grade is worked on, and empty
+// for a grade that names none, a word the profile does not rank, or a
+// profile that does not grade.
+func (p Profile) GradeModels(grade string) (model, review string) {
+	f, ok := p.GradeField()
+	if !ok {
+		return "", ""
+	}
+	canon, ok := f.Canonical(grade)
+	if !ok {
+		return "", ""
+	}
+	for _, v := range f.Values {
+		if v.Name == canon {
+			return v.Model, v.ReviewModel
+		}
+	}
+	return "", ""
 }
 
 // Grades is how many grades the scale has, and zero for a profile that does

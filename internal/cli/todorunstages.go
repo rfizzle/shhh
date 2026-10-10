@@ -129,6 +129,7 @@ func (d *todoDriver) work(ctx context.Context, it todo.Item, sp *run.Sprint) *ru
 			}
 		}
 		d.lane.boundary(d, st)
+		step.Model = st.ModelFor(step)
 		d.say(st, step)
 		if st.Over() {
 			break
@@ -333,9 +334,13 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 
 // say prints one transition, in the words the stage gave it.
 func (d *todoDriver) say(st *run.State, step run.Step) {
+	note := ""
+	if step.Action == run.ActionPrompt || step.Action == run.ActionReview || step.Action == run.ActionFanOut {
+		note = st.ModelNote(step)
+	}
 	if step.Shown != "" {
-		fmt.Fprintln(d.out, step.Shown)
+		fmt.Fprintln(d.out, step.Shown+note)
 		return
 	}
-	fmt.Fprintf(d.out, "▸ todo run %s · %s\n", st.Slug, step.Name())
+	fmt.Fprintf(d.out, "▸ todo run %s · %s%s\n", st.Slug, step.Name(), note)
 }

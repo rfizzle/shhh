@@ -508,3 +508,24 @@ func TestBuiltinProfile_TheReadingStepNamesItsReader(t *testing.T) {
 		t.Fatal("the reading step names no reader, so a conversation cannot send it to one")
 	}
 }
+
+// A grade may name the models its item is worked on, and the other fields of
+// the profile may not: nothing would read them.
+func TestLoadProfile_AGradeMayNameItsModels(t *testing.T) {
+	head := "name = \"x\"\nnoun = \"item\"\ngrade = \"size\"\n[[field]]\nname = \"priority\"\n"
+	good := head + "[[field]]\nname = \"size\"\nvalues = [{ name = \"S\" }, { name = \"L\", model = \"big\", review_model = \"bigger\" }]\n"
+	words, _, err := LoadProfile(writeProfile(t, good, nil))
+	if err != nil {
+		t.Fatalf("a grade naming models should load: %v", err)
+	}
+	if m, r := words.GradeModels("l"); m != "big" || r != "bigger" {
+		t.Errorf("L reads (%q, %q), want (big, bigger)", m, r)
+	}
+	if m, r := words.GradeModels("S"); m != "" || r != "" {
+		t.Errorf("S names none, read (%q, %q)", m, r)
+	}
+	bad := head + "[[field]]\nname = \"size\"\nvalues = [{ name = \"S\" }]\n[[field]]\nname = \"kind\"\nvalues = [{ name = \"bug\", model = \"big\" }]\n"
+	if _, _, err := LoadProfile(writeProfile(t, bad, nil)); err == nil || !strings.Contains(err.Error(), "names a model") {
+		t.Errorf("a model off the grade field should be refused, got %v", err)
+	}
+}

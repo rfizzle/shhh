@@ -35,7 +35,7 @@ func (d *todoDriver) review(ctx context.Context, deadline time.Time, st *run.Sta
 		return st.SelfReview(it)
 	}
 	t, err := d.spendTurn(ctx, deadline, d.tree,
-		run.Step{Action: run.ActionPrompt, Stage: step.Stage, Mode: step.Mode, Prompt: task})
+		run.Step{Action: run.ActionPrompt, Stage: step.Stage, Mode: step.Mode, Prompt: task, Model: step.Model})
 	d.keepChat(t)
 	d.spent(t)
 	readSources(st, t.sources)
@@ -151,7 +151,7 @@ func (d *todoDriver) fanOut(ctx context.Context, deadline time.Time, st *run.Sta
 	steps := make([]run.Step, len(lanes))
 	for i, lane := range lanes {
 		steps[i] = run.Step{Action: run.ActionPrompt, Stage: st.Stage, Mode: step.Mode,
-			Prompt: st.LaneTask(it, lane)}
+			Prompt: st.LaneTask(it, lane), Model: step.Model}
 	}
 	turns := make([]todoTurn, len(lanes))
 	errs := make([]error, len(lanes))

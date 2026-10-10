@@ -33,7 +33,7 @@ import (
 // is a whole one, because the status cannot: a turn that ended at the model's
 // output ceiling ended the way turns end.
 func (d *todoDriver) ask(ctx context.Context, deadline time.Time, dir string, step run.Step) (todoTurn, error) {
-	args := append(todoStageArgs(d.steps().Writes(), step.Mode), step.Prompt)
+	args := append(todoStageArgs(d.steps().Writes(), step.Mode, step.Model), step.Prompt)
 	if !deadline.IsZero() {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithDeadline(ctx, deadline)
@@ -268,14 +268,22 @@ func todoWritten(root string, paths []string) []string {
 // made — the diff a review is of, the history a commit message is written
 // into — and reading it takes tools a conversation does not have.
 // See docs/capabilities/headless.md#the-backlog-worked-without-you.
-func todoStageArgs(writes bool, mode run.Mode) []string {
-	if mode == run.ModeAuto {
-		return []string{"code", "--print", "--output", "json", "--yes"}
+//
+// model is the one place the model a stage runs on is chosen for its process:
+// the grade's, read off the profile as the step starts, and empty for the
+// provider's own default, in which case no flag is passed.
+func todoStageArgs(writes bool, mode run.Mode, model string) []string {
+	args := []string{"chat", "--print", "--output", "json"}
+	switch {
+	case mode == run.ModeAuto:
+		args = []string{"code", "--print", "--output", "json", "--yes"}
+	case writes:
+		args = []string{"code", "--print", "--output", "json"}
 	}
-	if writes {
-		return []string{"code", "--print", "--output", "json"}
+	if model != "" {
+		args = append(args, "--model", model)
 	}
-	return []string{"chat", "--print", "--output", "json"}
+	return args
 }
 
 // todoFirstProblem is the first of the places a failed stage says why, in the

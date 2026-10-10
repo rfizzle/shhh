@@ -576,7 +576,7 @@ func TestTodoRunHeadless_AReadingRunIsSpentInConversations(t *testing.T) {
 	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
 		// The argv the stage's own process would be started with, which is
 		// the whole of what the choice of process is.
-		argv = append(argv, todoStageArgs(d.steps().Writes(), step.Mode))
+		argv = append(argv, todoStageArgs(d.steps().Writes(), step.Mode, step.Model))
 		return todoTurn{text: readingAnswers(step), code: exitDone}, nil
 	}
 
@@ -613,7 +613,7 @@ func TestTodoRunHeadless_AReadingIsReviewedWithNoChangeToPointAt(t *testing.T) {
 	d, out := headlessDriver(t, root, nil)
 	var argv [][]string
 	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
-		argv = append(argv, todoStageArgs(d.steps().Writes(), step.Mode))
+		argv = append(argv, todoStageArgs(d.steps().Writes(), step.Mode, step.Model))
 		if step.Stage == "check" {
 			return todoTurn{text: "verdict: clean", code: exitDone}, nil
 		}
@@ -1571,11 +1571,120 @@ func TestTodoRunHeadless_TheDriverRowNamesNoModel(t *testing.T) {
 		writes bool
 		want   string
 	}{{true, "code-model"}, {false, "chat-model"}} {
-		surface := todoStageArgs(c.writes, run.ModePlan)[0]
+		surface := todoStageArgs(c.writes, run.ModePlan, "")[0]
 		var flags resolve.Opts
 		fillConfigHalf(&flags, cfg, surface)
 		if got := resolve.Resolve(flags).Model; got != c.want {
 			t.Errorf("a stage that writes=%v runs as %s on %q, want %q", c.writes, surface, got, c.want)
 		}
+	}
+}
+
+// aModelledCodeProfile is the shipped code profile with a model named at two
+// of its grades, so a run over it can be watched choosing between them.
+func aModelledCodeProfile(t *testing.T) todo.Profile {
+	t.Helper()
+	words, pipeline, err := run.BuiltinProfile("code")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, _ := words.Field("size")
+	for i := range f.Values {
+		switch f.Values[i].Name {
+		case "S":
+			f.Values[i].Model, f.Values[i].ReviewModel = "small-model", "small-reader"
+		case "L":
+			f.Values[i].Model, f.Values[i].ReviewModel = "large-model", "large-reader"
+		}
+	}
+	for i := range words.Fields {
+		if words.Fields[i].Name == "size" {
+			words.Fields[i] = f
+		}
+	}
+	withBacklogProfile(t, words, pipeline)
+	return words
+}
+
+// modelled is the item as the modelled profile reads it.
+func modelled(t *testing.T, words todo.Profile, root string) todo.Item {
+	t.Helper()
+	it, ok := todo.Load(words, root).Find("a-one")
+	if !ok {
+		t.Fatal("no item a-one")
+	}
+	return it
+}
+
+// The model is the process's own flag, passed when the grade names one and
+// left out when it does not, so unset stays the provider's default.
+func TestTodoStageArgs_AGradeNamesItsModel(t *testing.T) {
+	for _, mode := range []run.Mode{run.ModeAuto, run.ModePlan} {
+		for _, writes := range []bool{true, false} {
+			if got := strings.Join(todoStageArgs(writes, mode, ""), " "); strings.Contains(got, "--model") {
+				t.Errorf("a grade that names no model should pass none, got %q", got)
+			}
+			args := todoStageArgs(writes, mode, "big-one")
+			if n := len(args); n < 2 || args[n-2] != "--model" || args[n-1] != "big-one" {
+				t.Errorf("writes=%v mode=%v should end in --model big-one, got %v", writes, mode, args)
+			}
+		}
+	}
+}
+
+// The reader is a process of its own and runs on the review model of the
+// grade, where every working stage runs on the model.
+func TestTodoRun_TheReviewRunsOnTheReviewModel(t *testing.T) {
+	words := aModelledCodeProfile(t)
+	root := todoRepo(t, "a-one")
+	d, out := headlessDriver(t, root, nil)
+	models := map[run.Stage]string{}
+	answers := stageAnswers(root)
+	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
+		models[step.Stage] = step.Model
+		return todoTurn{text: answers(step), code: exitDone}, nil
+	}
+	st := d.work(context.Background(), modelled(t, words, root), nil)
+	if st.Stage != run.StageDone {
+		t.Fatalf("the run stopped at %s (%s):\n%s", st.Stage, st.Blocked, out.String())
+	}
+	for stage, want := range map[run.Stage]string{
+		run.StageResearch: "small-model", run.StageImplement: "small-model", run.StageReview: "small-reader",
+	} {
+		if models[stage] != want {
+			t.Errorf("%s ran on %q, want %q", stage, models[stage], want)
+		}
+	}
+}
+
+// A grade the reading moved is the grade the later stages are spent at, and
+// the row of the first of them says which model it moved to.
+func TestTodoRun_AReGradeMovesTheModel(t *testing.T) {
+	words := aModelledCodeProfile(t)
+	root := todoRepo(t, "a-one")
+	path := filepath.Join(todo.Dir(root), "a-one.md")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(strings.Replace(string(raw), "size: S", "size: L", 1)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	d, out := headlessDriver(t, root, nil)
+	models := map[run.Stage]string{}
+	answers := stageAnswers(root) // the plan grades the item S, down from L
+	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
+		models[step.Stage] = step.Model
+		return todoTurn{text: answers(step), code: exitDone}, nil
+	}
+	st := d.work(context.Background(), modelled(t, words, root), nil)
+	if st.Stage != run.StageDone {
+		t.Fatalf("the run stopped at %s (%s):\n%s", st.Stage, st.Blocked, out.String())
+	}
+	if models[run.StageResearch] != "large-model" || models[run.StageImplement] != "small-model" || models[run.StageReview] != "small-reader" {
+		t.Errorf("research should run at the grade the item came in at and the rest at the new one: %v", models)
+	}
+	if want := "implement · model small-model (graded S, was L)"; !strings.Contains(out.String(), want) {
+		t.Errorf("the row should say the model moved, want %q in:\n%s", want, out.String())
 	}
 }

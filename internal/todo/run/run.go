@@ -141,6 +141,10 @@ type Step struct {
 	// Shown is the one-line label the transcript shows in place of the
 	// prompt, so a step reads as a step rather than as a wall of text.
 	Shown string
+	// Model is the model this step's process is asked to run on, and empty
+	// for the provider's default. It is read off the item's grade as the
+	// step starts (State.ModelFor), so a re-grade moves the stages after it.
+	Model string
 }
 
 // Name is the one word for what a step is, and the only vocabulary either
@@ -803,6 +807,45 @@ func (s *State) alwaysPauses() string {
 // rank is where this run's grade sits on the profile's scale, and zero for
 // an ungraded item.
 func (s *State) rank() int { return s.Profile.GradeRank(s.Grade) }
+
+// ModelFor is the model a step is spent on at the grade the item is now
+// worked at: the grade's review model for the reader, its model for every
+// other process, and empty where the profile names none.
+func (s *State) ModelFor(step Step) string { return s.modelAt(s.Grade, step) }
+
+func (s *State) modelAt(grade string, step Step) string {
+	model, review := s.Profile.GradeModels(grade)
+	switch step.Action {
+	case ActionReview:
+		return review
+	case ActionPrompt:
+		// A grade that reads its own work (Solo) spends the reading as a
+		// turn of the working process, and it is still the reading.
+		if ps, ok := s.readingStep(); ok && step.Stage == ps.Stage() {
+			return review
+		}
+		return model
+	case ActionFanOut:
+		return model
+	}
+	return ""
+}
+
+// ModelNote is what a step's row adds to say which model it runs on, and
+// empty where the grade names none and never did. A step whose model is not
+// the one the grade the item started at would have named says so, which is
+// how a re-grade at research is seen to have moved the stages after it.
+func (s *State) ModelNote(step Step) string {
+	was := s.modelAt(s.GradeBefore, step)
+	if step.Model == "" && was == "" {
+		return ""
+	}
+	note := " · model " + orDash(step.Model)
+	if s.Grade != s.GradeBefore && step.Model != was {
+		note += fmt.Sprintf(" (graded %s, was %s)", s.Grade, orDash(s.GradeBefore))
+	}
+	return note
+}
 
 // largest reports the item graded at the top of the scale — the grade that
 // buys a division into lanes and a gate before anything is built.

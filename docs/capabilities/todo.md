@@ -303,6 +303,20 @@ the headers, and a profile that could rename or reorder priority would make
 two projects' backlogs sort differently under what reads as one rule. The
 file says only where priority's column goes.
 
+**A grade may name the models its item is worked on.** A value of the field
+the profile grades on takes two optional keys, `model` and `review_model`:
+`{ name = "L", model = "…", review_model = "…" }`. An unattended run passes
+`model` to the process of every working stage of an item at that grade, and
+runs the reader on `review_model`, so a sprint can spend a cheap model on
+small items and the strong one on large ones, and a different reader than
+writer where it matters. A key left out is the provider's own default, and a
+profile that names none behaves as it always has. Naming a model on any other
+field is refused when the profile is read, because nothing would use it. The
+grade is the one the item is worked at, so a re-grade at the first stage moves
+every stage after it, and the row of the first stage that moves says so:
+`implement · model small (graded S, was L)`. Each stage's own record row
+already carries the model it ran on.
+
 **Three places hold a profile, most specific first.** The checkout's own, at
 `.shhh/todo/profile/`; then a directory of your own, at `todo/<name>/` beside
 your settings; then the profiles built into the binary. A name nothing
