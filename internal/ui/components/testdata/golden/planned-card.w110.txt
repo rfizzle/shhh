@@ -56,43 +56,43 @@
 ── ansi ────────────────────────────────────────────────────
 · a plan of seven mid-run · the rows around the step in flight, the rest counted
 ␛[48;5;234m                                                                                                              ␛[m
-␛[48;5;234m  ␛[38;5;241m▸␛[m␛[48;5;234m ␛[38;5;252mplanned␛[m␛[48;5;234m␛[38;5;241m 7 steps · 5 files␛[m␛[48;5;234m                                                          ␛[92mreversible␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m3 writes␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;245m▸␛[m␛[48;5;234m ␛[38;5;252mplanned␛[m␛[48;5;234m␛[38;5;245m 7 steps · 5 files␛[m␛[48;5;234m                                                          ␛[92mreversible␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m3 writes␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mHere is the order I will take. The three edits stop for you; everything else is read-only.␛[m␛[48;5;234m                ␛[m
-␛[48;5;234m    ␛[92m✓␛[m␛[48;5;234m ␛[38;5;241m1  ␛[m␛[48;5;234m␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                                                               ␛[38;5;241mread only␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[92m✓␛[m␛[48;5;234m ␛[38;5;241m2  ␛[m␛[48;5;234m␛[38;5;252mAdd a RoundsExhausted sentinel␛[m␛[48;5;234m                                                          ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;241m errors.go␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[38;5;205m▸␛[m␛[48;5;234m ␛[38;5;241m3  ␛[m␛[48;5;234m␛[97mReturn it from runRound and handle it in Run␛[m␛[48;5;234m                                              ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;241m loop.go␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[38;5;241m·␛[m␛[48;5;234m ␛[38;5;241m4  ␛[m␛[48;5;234m␛[38;5;241mThread the sentinel through the loop␛[m␛[48;5;234m                                                      ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;241m loop.go␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m         ␛[38;5;241m… 3 more, none of them write␛[m␛[48;5;234m                                                                         ␛[m
+␛[48;5;234m    ␛[92m✓␛[m␛[48;5;234m ␛[38;5;245m1  ␛[m␛[48;5;234m␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                                                               ␛[38;5;245mread only␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[92m✓␛[m␛[48;5;234m ␛[38;5;245m2  ␛[m␛[48;5;234m␛[38;5;252mAdd a RoundsExhausted sentinel␛[m␛[48;5;234m                                                          ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;245m errors.go␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;205m▸␛[m␛[48;5;234m ␛[38;5;245m3  ␛[m␛[48;5;234m␛[97mReturn it from runRound and handle it in Run␛[m␛[48;5;234m                                              ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;245m loop.go␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245m·␛[m␛[48;5;234m ␛[38;5;245m4  ␛[m␛[48;5;234m␛[38;5;245mThread the sentinel through the loop␛[m␛[48;5;234m                                                      ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;245m loop.go␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m         ␛[38;5;245m… 3 more, none of them write␛[m␛[48;5;234m                                                                         ␛[m
 ␛[48;5;234m                                                                                                              ␛[m
 
 · a plan of four · every step, one failed, a delete in del
 ␛[48;5;234m                                                                                                              ␛[m
-␛[48;5;234m  ␛[38;5;241m▸␛[m␛[48;5;234m ␛[38;5;252mplanned␛[m␛[48;5;234m␛[38;5;241m 4 steps · 3 files␛[m␛[48;5;234m                                                   ␛[38;5;252mpartly reversible␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m3 writes␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;245m▸␛[m␛[48;5;234m ␛[38;5;252mplanned␛[m␛[48;5;234m␛[38;5;245m 4 steps · 3 files␛[m␛[48;5;234m                                                   ␛[38;5;252mpartly reversible␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m3 writes␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mmake the round limit recoverable␛[m␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m    ␛[92m✓␛[m␛[48;5;234m ␛[38;5;241m1  ␛[m␛[48;5;234m␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                                                               ␛[38;5;241mread only␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[91m✗␛[m␛[48;5;234m ␛[38;5;241m2  ␛[m␛[48;5;234m␛[38;5;252mAdd a RoundsExhausted sentinel␛[m␛[48;5;234m                                                          ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;241m errors.go␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[38;5;241m·␛[m␛[48;5;234m ␛[38;5;241m3  ␛[m␛[48;5;234m␛[38;5;241mReturn it from runRound␛[m␛[48;5;234m                                                                ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;241m loop.go +1␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[38;5;241m·␛[m␛[48;5;234m ␛[38;5;241m4  ␛[m␛[48;5;234m␛[38;5;241mDrop the old round shim␛[m␛[48;5;234m                                                                   ␛[91m✎␛[m␛[48;5;234m␛[38;5;241m shim.go␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[92m✓␛[m␛[48;5;234m ␛[38;5;245m1  ␛[m␛[48;5;234m␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                                                               ␛[38;5;245mread only␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[91m✗␛[m␛[48;5;234m ␛[38;5;245m2  ␛[m␛[48;5;234m␛[38;5;252mAdd a RoundsExhausted sentinel␛[m␛[48;5;234m                                                          ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;245m errors.go␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245m·␛[m␛[48;5;234m ␛[38;5;245m3  ␛[m␛[48;5;234m␛[38;5;245mReturn it from runRound␛[m␛[48;5;234m                                                                ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;245m loop.go +1␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245m·␛[m␛[48;5;234m ␛[38;5;245m4  ␛[m␛[48;5;234m␛[38;5;245mDrop the old round shim␛[m␛[48;5;234m                                                                   ␛[91m✎␛[m␛[48;5;234m␛[38;5;245m shim.go␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                              ␛[m
 
 · opened · every step of the seven
 ␛[48;5;234m                                                                                                              ␛[m
-␛[48;5;234m  ␛[38;5;241m▸␛[m␛[48;5;234m ␛[38;5;252mplanned␛[m␛[48;5;234m␛[38;5;241m 7 steps · 5 files␛[m␛[48;5;234m                                                          ␛[92mreversible␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m3 writes␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;245m▸␛[m␛[48;5;234m ␛[38;5;252mplanned␛[m␛[48;5;234m␛[38;5;245m 7 steps · 5 files␛[m␛[48;5;234m                                                          ␛[92mreversible␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m3 writes␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mHere is the order I will take. The three edits stop for you; everything else is read-only.␛[m␛[48;5;234m                ␛[m
-␛[48;5;234m    ␛[92m✓␛[m␛[48;5;234m ␛[38;5;241m1  ␛[m␛[48;5;234m␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                                                               ␛[38;5;241mread only␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[92m✓␛[m␛[48;5;234m ␛[38;5;241m2  ␛[m␛[48;5;234m␛[38;5;252mAdd a RoundsExhausted sentinel␛[m␛[48;5;234m                                                          ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;241m errors.go␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[38;5;205m▸␛[m␛[48;5;234m ␛[38;5;241m3  ␛[m␛[48;5;234m␛[97mReturn it from runRound and handle it in Run␛[m␛[48;5;234m                                              ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;241m loop.go␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[38;5;241m·␛[m␛[48;5;234m ␛[38;5;241m4  ␛[m␛[48;5;234m␛[38;5;241mThread the sentinel through the loop␛[m␛[48;5;234m                                                      ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;241m loop.go␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[38;5;241m·␛[m␛[48;5;234m ␛[38;5;241m5  ␛[m␛[48;5;234m␛[38;5;241mSurvey the callers␛[m␛[48;5;234m                                                                        ␛[38;5;241mread only␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[38;5;241m·␛[m␛[48;5;234m ␛[38;5;241m6  ␛[m␛[48;5;234m␛[38;5;241mRun the agent tests␛[m␛[48;5;234m                                                                          ␛[38;5;241m$ runs␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[38;5;241m·␛[m␛[48;5;234m ␛[38;5;241m7  ␛[m␛[48;5;234m␛[38;5;241mRead the result back␛[m␛[48;5;234m                                                                      ␛[38;5;241mread only␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[92m✓␛[m␛[48;5;234m ␛[38;5;245m1  ␛[m␛[48;5;234m␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                                                               ␛[38;5;245mread only␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[92m✓␛[m␛[48;5;234m ␛[38;5;245m2  ␛[m␛[48;5;234m␛[38;5;252mAdd a RoundsExhausted sentinel␛[m␛[48;5;234m                                                          ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;245m errors.go␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;205m▸␛[m␛[48;5;234m ␛[38;5;245m3  ␛[m␛[48;5;234m␛[97mReturn it from runRound and handle it in Run␛[m␛[48;5;234m                                              ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;245m loop.go␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245m·␛[m␛[48;5;234m ␛[38;5;245m4  ␛[m␛[48;5;234m␛[38;5;245mThread the sentinel through the loop␛[m␛[48;5;234m                                                      ␛[38;5;214m✎␛[m␛[48;5;234m␛[38;5;245m loop.go␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245m·␛[m␛[48;5;234m ␛[38;5;245m5  ␛[m␛[48;5;234m␛[38;5;245mSurvey the callers␛[m␛[48;5;234m                                                                        ␛[38;5;245mread only␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245m·␛[m␛[48;5;234m ␛[38;5;245m6  ␛[m␛[48;5;234m␛[38;5;245mRun the agent tests␛[m␛[48;5;234m                                                                          ␛[38;5;245m$ runs␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245m·␛[m␛[48;5;234m ␛[38;5;245m7  ␛[m␛[48;5;234m␛[38;5;245mRead the result back␛[m␛[48;5;234m                                                                      ␛[38;5;245mread only␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                              ␛[m
 
 · at low · the header alone on one inset band row
-␛[48;5;234m  ␛[38;5;241m▸␛[m␛[48;5;234m ␛[38;5;252mplanned␛[m␛[48;5;234m␛[38;5;241m 7 steps · 5 files␛[m␛[48;5;234m                                                          ␛[92mreversible␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m3 writes␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;245m▸␛[m␛[48;5;234m ␛[38;5;252mplanned␛[m␛[48;5;234m␛[38;5;245m 7 steps · 5 files␛[m␛[48;5;234m                                                          ␛[92mreversible␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m3 writes␛[m␛[48;5;234m  ␛[m
 
 · a step ticked · the flat line under its card
-  ␛[92m✓␛[m ␛[38;5;241mplan · 3 of 7 · Return it from runRound and handle it in Run · 2 writes left␛[m
+  ␛[92m✓␛[m ␛[38;5;245mplan · 3 of 7 · Return it from runRound and handle it in Run · 2 writes left␛[m
 
 · a step that broke · the same line, its mark in del
-  ␛[91m✗␛[m ␛[38;5;241mplan · 2 of 4 · Add a RoundsExhausted sentinel · 1 write left␛[m
+  ␛[91m✗␛[m ␛[38;5;245mplan · 2 of 4 · Add a RoundsExhausted sentinel · 1 write left␛[m

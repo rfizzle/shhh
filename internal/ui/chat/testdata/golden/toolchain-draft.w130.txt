@@ -93,80 +93,80 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ── ansi ────────────────────────────────────────────────────
 · the start screen · the draft in the read-only slot
 ␛[1;97m▄▀▀▀ █    █    █␛[m
-␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
+␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;245m · ·  ·   ·     ·␛[m
 ␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
 
-␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
+␛[38;5;252mgo 1.24␛[m␛[38;5;245m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;245m · ␛[m␛[38;5;252m41 packages␛[m
 
-␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
-␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
+␛[38;5;246mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;245m — in the system prompt␛[m
+␛[38;5;246mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;245m — vet, test · runs without asking␛[m
 
-␛[38;5;241mSome things worth doing first:␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                        ␛[m
-  ␛[38;5;214m⚙␛[m ␛[38;5;252mdraft this checkout's toolchain declaration␛[m␛[38;5;241m — reads only, then asks␛[m
+␛[38;5;245mSome things worth doing first:␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                        ␛[m
+  ␛[38;5;214m⚙␛[m ␛[38;5;252mdraft this checkout's toolchain declaration␛[m␛[38;5;245m — reads only, then asks␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
-    ␛[38;5;241mone approval, then it reports back␛[m
+    ␛[38;5;245mone approval, then it reports back␛[m
 
-␛[38;5;241mor just type what you want␛[m␛[38;5;241m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;241m keys␛[m
-␛[38;5;103m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;241m select rows␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;241m commands␛[m
-␛[38;5;103m[ctrl+x]␛[m␛[38;5;241m mouse on/off␛[m
+␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;245m keys␛[m
+␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m
+␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
 
 · the card · a new file
-␛[94m╭─ ␛[m␛[1;97mApprove toolchain declaration ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
+␛[94m╭─ ␛[m␛[1;97mApprove toolchain declaration ␛[m␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
 ␛[94m│␛[m ␛[38;5;214m✎␛[m ␛[97mwrite .shhh/toolchain.toml␛[m                                                                                               ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243minstall   ␛[m␛[38;5;252mgo install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0␛[m                                         ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243m          ␛[m␛[38;5;243mprovides golangci-lint␛[m                                                                                           ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mreaches   ␛[m␛[38;5;252mproxy.golang.org, sum.golang.org␛[m␛[38;5;245m — the only hosts an install on this machine may reach␛[m                           ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mchecks    ␛[m␛[38;5;252mgolangci-lint␛[m␛[38;5;245m — looked for on PATH when a session starts␛[m                                                         ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246minstall   ␛[m␛[38;5;252mgo install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0␛[m                                         ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246m          ␛[m␛[38;5;246mprovides golangci-lint␛[m                                                                                           ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mreaches   ␛[m␛[38;5;252mproxy.golang.org, sum.golang.org␛[m␛[38;5;248m — the only hosts an install on this machine may reach␛[m                           ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mchecks    ␛[m␛[38;5;252mgolangci-lint␛[m␛[38;5;248m — looked for on PATH when a session starts␛[m                                                         ␛[94m│␛[m
 ␛[94m│␛[m ␛[96m@@ -0,0 +1,5 @@␛[m                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[92m+␛[m␛[38;5;241m 1  ␛[m␛[92minstall␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m                                                                                                           ␛[94m│␛[m
-␛[94m│␛[m ␛[92m+␛[m␛[38;5;241m 2  ␛[m␛[92m  ␛[m␛[38;5;214m"go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0"␛[m␛[92m,␛[m                                         ␛[94m│␛[m
-␛[94m│␛[m ␛[92m+␛[m␛[38;5;241m 3  ␛[m␛[92m]␛[m                                                                                                                     ␛[94m│␛[m
-␛[94m│␛[m ␛[92m+␛[m␛[38;5;241m 4  ␛[m␛[92mhosts␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m␛[38;5;214m"proxy.golang.org"␛[m␛[92m,␛[m␛[92m ␛[m␛[38;5;214m"sum.golang.org"␛[m␛[92m]␛[m                                                                        ␛[94m│␛[m
-␛[94m│␛[m ␛[92m+␛[m␛[38;5;241m 5  ␛[m␛[92mcheck␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m␛[38;5;214m"golangci-lint"␛[m␛[92m]␛[m                                                                                             ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m+5 −0 · 1 hunk␛[m                                                                                                             ␛[94m│␛[m
+␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 1  ␛[m␛[92minstall␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m                                                                                                           ␛[94m│␛[m
+␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 2  ␛[m␛[92m  ␛[m␛[38;5;214m"go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0"␛[m␛[92m,␛[m                                         ␛[94m│␛[m
+␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 3  ␛[m␛[92m]␛[m                                                                                                                     ␛[94m│␛[m
+␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 4  ␛[m␛[92mhosts␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m␛[38;5;214m"proxy.golang.org"␛[m␛[92m,␛[m␛[92m ␛[m␛[38;5;214m"sum.golang.org"␛[m␛[92m]␛[m                                                                        ␛[94m│␛[m
+␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 5  ␛[m␛[92mcheck␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m␛[38;5;214m"golangci-lint"␛[m␛[92m]␛[m                                                                                             ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m+5 −0 · 1 hunk␛[m                                                                                                             ␛[94m│␛[m
 ␛[94m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mwrite it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnothing written␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit first␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave — nothing written, and the draft waits␛[m        ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241menter opened this card and writes nothing — only [y] does␛[m                                                                  ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mwrite it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnothing written␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit first␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;245m · ␛[m␛[92m[esc] leave — nothing written, and the draft waits␛[m        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245menter opened this card and writes nothing — only [y] does␛[m                                                                  ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the card · an untrusted checkout
-␛[94m╭─ ␛[m␛[1;97mApprove toolchain declaration ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
+␛[94m╭─ ␛[m␛[1;97mApprove toolchain declaration ␛[m␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
 ␛[94m│␛[m ␛[38;5;214m✎␛[m ␛[97mwrite .shhh/toolchain.toml␛[m                                                                                               ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243minstall   ␛[m␛[38;5;252mgo install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0␛[m                                         ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243m          ␛[m␛[38;5;243mprovides golangci-lint␛[m                                                                                           ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mreaches   ␛[m␛[38;5;252mproxy.golang.org, sum.golang.org␛[m␛[38;5;245m — the only hosts an install on this machine may reach␛[m                           ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mchecks    ␛[m␛[38;5;252mgolangci-lint␛[m␛[38;5;245m — looked for on PATH when a session starts␛[m                                                         ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mloads     ␛[m␛[38;5;214monce trusted: shhh trust␛[m␛[38;5;245m — this checkout is not trusted, so no session reads the file until then␛[m                 ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246minstall   ␛[m␛[38;5;252mgo install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0␛[m                                         ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246m          ␛[m␛[38;5;246mprovides golangci-lint␛[m                                                                                           ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mreaches   ␛[m␛[38;5;252mproxy.golang.org, sum.golang.org␛[m␛[38;5;248m — the only hosts an install on this machine may reach␛[m                           ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mchecks    ␛[m␛[38;5;252mgolangci-lint␛[m␛[38;5;248m — looked for on PATH when a session starts␛[m                                                         ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mloads     ␛[m␛[38;5;214monce trusted: shhh trust␛[m␛[38;5;248m — this checkout is not trusted, so no session reads the file until then␛[m                 ␛[94m│␛[m
 ␛[94m│␛[m ␛[96m@@ -0,0 +1,5 @@␛[m                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[92m+␛[m␛[38;5;241m 1  ␛[m␛[92minstall␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m                                                                                                           ␛[94m│␛[m
-␛[94m│␛[m ␛[92m+␛[m␛[38;5;241m 2  ␛[m␛[92m  ␛[m␛[38;5;214m"go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0"␛[m␛[92m,␛[m                                         ␛[94m│␛[m
-␛[94m│␛[m ␛[92m+␛[m␛[38;5;241m 3  ␛[m␛[92m]␛[m                                                                                                                     ␛[94m│␛[m
-␛[94m│␛[m ␛[92m+␛[m␛[38;5;241m 4  ␛[m␛[92mhosts␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m␛[38;5;214m"proxy.golang.org"␛[m␛[92m,␛[m␛[92m ␛[m␛[38;5;214m"sum.golang.org"␛[m␛[92m]␛[m                                                                        ␛[94m│␛[m
-␛[94m│␛[m ␛[92m+␛[m␛[38;5;241m 5  ␛[m␛[92mcheck␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m␛[38;5;214m"golangci-lint"␛[m␛[92m]␛[m                                                                                             ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m+5 −0 · 1 hunk␛[m                                                                                                             ␛[94m│␛[m
+␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 1  ␛[m␛[92minstall␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m                                                                                                           ␛[94m│␛[m
+␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 2  ␛[m␛[92m  ␛[m␛[38;5;214m"go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0"␛[m␛[92m,␛[m                                         ␛[94m│␛[m
+␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 3  ␛[m␛[92m]␛[m                                                                                                                     ␛[94m│␛[m
+␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 4  ␛[m␛[92mhosts␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m␛[38;5;214m"proxy.golang.org"␛[m␛[92m,␛[m␛[92m ␛[m␛[38;5;214m"sum.golang.org"␛[m␛[92m]␛[m                                                                        ␛[94m│␛[m
+␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 5  ␛[m␛[92mcheck␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m␛[38;5;214m"golangci-lint"␛[m␛[92m]␛[m                                                                                             ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m+5 −0 · 1 hunk␛[m                                                                                                             ␛[94m│␛[m
 ␛[94m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mwrite it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnothing written␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit first␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave — nothing written, and the draft waits␛[m        ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241menter opened this card and writes nothing — only [y] does␛[m                                                                  ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mwrite it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnothing written␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit first␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;245m · ␛[m␛[92m[esc] leave — nothing written, and the draft waits␛[m        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245menter opened this card and writes nothing — only [y] does␛[m                                                                  ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the card · a review
-␛[94m╭─ ␛[m␛[1;97mApprove toolchain declaration ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
+␛[94m╭─ ␛[m␛[1;97mApprove toolchain declaration ␛[m␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
 ␛[94m│␛[m ␛[38;5;214m✎␛[m ␛[97mrewrite .shhh/toolchain.toml␛[m                                                                                             ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243minstall   ␛[m␛[38;5;252mgo install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0␛[m                                         ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243m          ␛[m␛[38;5;243mprovides golangci-lint␛[m                                                                                           ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mreaches   ␛[m␛[38;5;252mproxy.golang.org, sum.golang.org␛[m␛[38;5;245m — the only hosts an install on this machine may reach␛[m                           ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mchecks    ␛[m␛[38;5;252mgolangci-lint␛[m␛[38;5;245m — looked for on PATH when a session starts␛[m                                                         ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mchange    ␛[m␛[38;5;252minstall golangci-lint at v2.5.0␛[m                                                                                  ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mbecause   ␛[m␛[38;5;243mthe Makefile's lint target runs it␛[m                                                                               ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246minstall   ␛[m␛[38;5;252mgo install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0␛[m                                         ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246m          ␛[m␛[38;5;246mprovides golangci-lint␛[m                                                                                           ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mreaches   ␛[m␛[38;5;252mproxy.golang.org, sum.golang.org␛[m␛[38;5;248m — the only hosts an install on this machine may reach␛[m                           ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mchecks    ␛[m␛[38;5;252mgolangci-lint␛[m␛[38;5;248m — looked for on PATH when a session starts␛[m                                                         ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mchange    ␛[m␛[38;5;252minstall golangci-lint at v2.5.0␛[m                                                                                  ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mbecause   ␛[m␛[38;5;246mthe Makefile's lint target runs it␛[m                                                                               ␛[94m│␛[m
 ␛[94m│␛[m ␛[96m@@ -1,1 +1,5 @@␛[m                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[92m+␛[m␛[38;5;241m 1  ␛[m␛[92minstall␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m                                                                                                           ␛[94m│␛[m
-␛[94m│␛[m ␛[92m+␛[m␛[38;5;241m 2  ␛[m␛[92m  ␛[m␛[38;5;214m"go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0"␛[m␛[92m,␛[m                                         ␛[94m│␛[m
-␛[94m│␛[m ␛[92m+␛[m␛[38;5;241m 3  ␛[m␛[92m]␛[m                                                                                                                     ␛[94m│␛[m
-␛[94m│␛[m ␛[92m+␛[m␛[38;5;241m 4  ␛[m␛[92mhosts␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m␛[38;5;214m"proxy.golang.org"␛[m␛[92m,␛[m␛[92m ␛[m␛[38;5;214m"sum.golang.org"␛[m␛[92m]␛[m                                                                        ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m  5  ␛[m␛[38;5;252mcheck␛[m␛[38;5;252m ␛[m␛[38;5;245m=␛[m␛[38;5;252m ␛[m␛[38;5;245m[␛[m␛[38;5;214m"golangci-lint"␛[m␛[38;5;245m]␛[m                                                                                             ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m+4 −0 · 1 hunk␛[m                                                                                                             ␛[94m│␛[m
+␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 1  ␛[m␛[92minstall␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m                                                                                                           ␛[94m│␛[m
+␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 2  ␛[m␛[92m  ␛[m␛[38;5;214m"go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0"␛[m␛[92m,␛[m                                         ␛[94m│␛[m
+␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 3  ␛[m␛[92m]␛[m                                                                                                                     ␛[94m│␛[m
+␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 4  ␛[m␛[92mhosts␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m␛[38;5;214m"proxy.golang.org"␛[m␛[92m,␛[m␛[92m ␛[m␛[38;5;214m"sum.golang.org"␛[m␛[92m]␛[m                                                                        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m  5  ␛[m␛[38;5;252mcheck␛[m␛[38;5;252m ␛[m␛[38;5;248m=␛[m␛[38;5;252m ␛[m␛[38;5;248m[␛[m␛[38;5;214m"golangci-lint"␛[m␛[38;5;248m]␛[m                                                                                             ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m+4 −0 · 1 hunk␛[m                                                                                                             ␛[94m│␛[m
 ␛[94m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mwrite it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnothing written␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit first␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave — nothing written, and the draft waits␛[m        ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241menter opened this card and writes nothing — only [y] does␛[m                                                                  ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mwrite it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnothing written␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit first␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;245m · ␛[m␛[92m[esc] leave — nothing written, and the draft waits␛[m        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245menter opened this card and writes nothing — only [y] does␛[m                                                                  ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

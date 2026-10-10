@@ -52,41 +52,41 @@ no check has flaked in this checkout
 
 ── ansi ────────────────────────────────────────────────────
 · a check that keeps flaking · its count, its dates and the code it failed with
-␛[1;97m/gate flakes␛[m␛[38;5;241m · 3 checks · 13 flakes␛[m    ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[1;97m/gate flakes␛[m␛[38;5;245m · 3 checks · 13 flakes␛[m    ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;97;48;5;62mtest · default · 9 times                            2h ago␛[m
-  ␛[38;5;252mlint␛[m␛[38;5;241m · ␛[m␛[38;5;241mdefault␛[m␛[38;5;252m · 1 time␛[m                             ␛[38;5;241m1d ago␛[m
-  ␛[38;5;252mvet␛[m␛[38;5;241m · ␛[m␛[38;5;241mfast␛[m␛[38;5;252m · 3 times␛[m                                ␛[38;5;241m4d ago␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[1;97mtest␛[m                                                 ␛[38;5;241mdefault␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mtest · default · 9 times                            2h ago␛[m
+  ␛[38;5;252mlint␛[m␛[38;5;245m · ␛[m␛[38;5;245mdefault␛[m␛[38;5;252m · 1 time␛[m                             ␛[38;5;245m1d ago␛[m
+  ␛[38;5;252mvet␛[m␛[38;5;245m · ␛[m␛[38;5;245mfast␛[m␛[38;5;252m · 3 times␛[m                                ␛[38;5;245m4d ago␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
+␛[1;97mtest␛[m                                                 ␛[38;5;245mdefault␛[m
 
 ␛[38;5;252mflaked 9 times in this checkout␛[m
-␛[38;5;241mlast 2h ago · first 6d ago␛[m
-␛[38;5;241m… (+4 more rows)␛[m
+␛[38;5;245mlast 2h ago · first 6d ago␛[m
+␛[38;5;245m… (+4 more rows)␛[m
 
-␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m    ␛[38;5;241mfailed, then passed on the rerun␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m    ␛[38;5;245mfailed, then passed on the rerun␛[m
 
 · a first flake · one date, the command wrapped dim
-␛[1;97m/gate flakes␛[m␛[38;5;241m · 3 checks · 13 flakes␛[m    ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[1;97m/gate flakes␛[m␛[38;5;245m · 3 checks · 13 flakes␛[m    ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252mtest␛[m␛[38;5;241m · ␛[m␛[38;5;241mdefault␛[m␛[38;5;252m · 9 times␛[m                            ␛[38;5;241m2h ago␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62mlint · default · 1 time                             1d ago␛[m
-  ␛[38;5;252mvet␛[m␛[38;5;241m · ␛[m␛[38;5;241mfast␛[m␛[38;5;252m · 3 times␛[m                                ␛[38;5;241m4d ago␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[1;97mlint␛[m                                                 ␛[38;5;241mdefault␛[m
+  ␛[38;5;252mtest␛[m␛[38;5;245m · ␛[m␛[38;5;245mdefault␛[m␛[38;5;252m · 9 times␛[m                            ␛[38;5;245m2h ago␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mlint · default · 1 time                             1d ago␛[m
+  ␛[38;5;252mvet␛[m␛[38;5;245m · ␛[m␛[38;5;245mfast␛[m␛[38;5;252m · 3 times␛[m                                ␛[38;5;245m4d ago␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
+␛[1;97mlint␛[m                                                 ␛[38;5;245mdefault␛[m
 
 ␛[38;5;252mflaked 1 time in this checkout␛[m
-␛[38;5;241mlast 1d ago␛[m
-␛[38;5;241m… (+4 more rows)␛[m
+␛[38;5;245mlast 1d ago␛[m
+␛[38;5;245m… (+4 more rows)␛[m
 
-␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m    ␛[38;5;241mfailed, then passed on the rerun␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m    ␛[38;5;245mfailed, then passed on the rerun␛[m
 
 · nothing has flaked · the list says so
-␛[1;97m/gate flakes␛[m                           ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[1;97m/gate flakes␛[m                           ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241mno check has flaked in this checkout␛[m
+␛[38;5;245mno check has flaked in this checkout␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m

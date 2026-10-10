@@ -188,177 +188,177 @@ $  a shell command
 
 ── ansi ────────────────────────────────────────────────────
 · the list · every row says what became of the command
-␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m       ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh history␛[m␛[38;5;245m · 6 entries · 2 run␛[m       ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;97;48;5;62m$ delete every log file older than a week  exit 0     1.4s␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m$ delete every log file older than a week  exit 0     1.4s␛[m
   ␛[38;5;252m$ show the ten biggest files in this dire…␛[m  ␛[92mcopied␛[m    ␛[38;5;252m0.9s␛[m
-  ␛[38;5;252m✗ rebase onto main and force push␛[m  ␛[91mexit 128␛[m ␛[38;5;241m· tue␛[m     ␛[38;5;252m2.1s␛[m
+  ␛[38;5;252m✗ rebase onto main and force push␛[m  ␛[91mexit 128␛[m ␛[38;5;245m· tue␛[m     ␛[38;5;252m2.1s␛[m
   ␛[38;5;252m$ find every reference to ErrRoundLimit u…␛[m  ␛[92msaved␛[m     ␛[38;5;252m1.1s␛[m
-  ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;241m· mon␛[m
-  ␛[38;5;252m· count the log lines by level␛[m  ␛[38;5;252mnot run␛[m ␛[38;5;241m· Aug 14␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[1;97m4m ago␛[m␛[38;5;241m · openai/gpt-5.2␛[m                                  ␛[38;5;241mrun␛[m
-  ␛[38;5;241mdelete every log file older than a week␛[m
+  ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;245m· mon␛[m
+  ␛[38;5;252m· count the log lines by level␛[m  ␛[38;5;252mnot run␛[m ␛[38;5;245m· Aug 14␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
+␛[1;97m4m ago␛[m␛[38;5;245m · openai/gpt-5.2␛[m                                  ␛[38;5;245mrun␛[m
+  ␛[38;5;245mdelete every log file older than a week␛[m
 
-  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7␛[m    ␛[92mexit 0␛[m   ␛[38;5;241m1.4s␛[m
-    ␛[38;5;245m-delete␛[m
-  ␛[38;5;245m↑ 412 · ↓ 38 tokens␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7␛[m    ␛[92mexit 0␛[m   ␛[38;5;245m1.4s␛[m
+    ␛[38;5;248m-delete␛[m
+  ␛[38;5;248m↑ 412 · ↓ 38 tokens␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy␛[m
-␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write it as a snippet␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m delete␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m
-␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m re-run it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy␛[m
+␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write it as a snippet␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
 
 · the pointer moved · the preview follows, and has no cursor of its own
-␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m       ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh history␛[m␛[38;5;245m · 6 entries · 2 run␛[m       ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252m$ delete every log file older than a week␛[m  ␛[92mexit 0␛[m     ␛[38;5;252m1.4s␛[m
   ␛[38;5;252m$ show the ten biggest files in this dire…␛[m  ␛[92mcopied␛[m    ␛[38;5;252m0.9s␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m✗ rebase onto main and force push  exit 128 · tue     2.1s␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m✗ rebase onto main and force push  exit 128 · tue     2.1s␛[m
   ␛[38;5;252m$ find every reference to ErrRoundLimit u…␛[m  ␛[92msaved␛[m     ␛[38;5;252m1.1s␛[m
-  ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;241m· mon␛[m
-  ␛[38;5;252m· count the log lines by level␛[m  ␛[38;5;252mnot run␛[m ␛[38;5;241m· Aug 14␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[1;97mtue␛[m␛[38;5;241m · anthropic/claude-sonnet-4.6␛[m                        ␛[38;5;241mrun␛[m
-  ␛[38;5;241mrebase onto main and force push␛[m
+  ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;245m· mon␛[m
+  ␛[38;5;252m· count the log lines by level␛[m  ␛[38;5;252mnot run␛[m ␛[38;5;245m· Aug 14␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
+␛[1;97mtue␛[m␛[38;5;245m · anthropic/claude-sonnet-4.6␛[m                        ␛[38;5;245mrun␛[m
+  ␛[38;5;245mrebase onto main and force push␛[m
 
-  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgit rebase main && git push␛[m     ␛[91mexit 128␛[m   ␛[38;5;241m2.1s␛[m
-    ␛[38;5;245m--force-with-lease␛[m
-  ␛[38;5;245m↑ 502 · ↓ 41 tokens␛[m
+  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgit rebase main && git push␛[m     ␛[91mexit 128␛[m   ␛[38;5;245m2.1s␛[m
+    ␛[38;5;248m--force-with-lease␛[m
+  ␛[38;5;248m↑ 502 · ↓ 41 tokens␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy␛[m
-␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write it as a snippet␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m delete␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m
-␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m re-run it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy␛[m
+␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write it as a snippet␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
 
 · a long command · continued under the row, never clipped away
-␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m       ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh history␛[m␛[38;5;245m · 6 entries · 2 run␛[m       ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252m$ delete every log file older than a week␛[m  ␛[92mexit 0␛[m     ␛[38;5;252m1.4s␛[m
   ␛[38;5;252m$ show the ten biggest files in this dire…␛[m  ␛[92mcopied␛[m    ␛[38;5;252m0.9s␛[m
-  ␛[38;5;252m✗ rebase onto main and force push␛[m  ␛[91mexit 128␛[m ␛[38;5;241m· tue␛[m     ␛[38;5;252m2.1s␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m$ find every reference to ErrRoundLimit u…  saved     1.1s␛[m
-  ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;241m· mon␛[m
-  ␛[38;5;252m· count the log lines by level␛[m  ␛[38;5;252mnot run␛[m ␛[38;5;241m· Aug 14␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[1;97mmon␛[m␛[38;5;241m · openai/gpt-5.2␛[m                                    ␛[38;5;241msave␛[m
-  ␛[38;5;241mfind every reference to ErrRoundLimit under internal␛[m
+  ␛[38;5;252m✗ rebase onto main and force push␛[m  ␛[91mexit 128␛[m ␛[38;5;245m· tue␛[m     ␛[38;5;252m2.1s␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m$ find every reference to ErrRoundLimit u…  saved     1.1s␛[m
+  ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;245m· mon␛[m
+  ␛[38;5;252m· count the log lines by level␛[m  ␛[38;5;252mnot run␛[m ␛[38;5;245m· Aug 14␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
+␛[1;97mmon␛[m␛[38;5;245m · openai/gpt-5.2␛[m                                    ␛[38;5;245msave␛[m
+  ␛[38;5;245mfind every reference to ErrRoundLimit under internal␛[m
 
-  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mrg --hidden --glob '!.git'␛[m         ␛[92msaved␛[m   ␛[38;5;241m1.1s␛[m
-    ␛[38;5;245m--line-number 'ErrRoundLimit'␛[m
-␛[38;5;241m… (+3 more rows)␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mrg --hidden --glob '!.git'␛[m         ␛[92msaved␛[m   ␛[38;5;245m1.1s␛[m
+    ␛[38;5;248m--line-number 'ErrRoundLimit'␛[m
+␛[38;5;245m… (+3 more rows)␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy␛[m
-␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write it as a snippet␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m delete␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m
-␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m re-run it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy␛[m
+␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write it as a snippet␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
 
 · filtered · both counts on the query row, and what it hid under the list
-␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m       ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh history␛[m␛[38;5;245m · 6 entries · 2 run␛[m       ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
-␛[94m▸ ␛[m␛[97mlog█␛[m                                          ␛[38;5;241m2 of 6 match␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m$ delete every log file older than a week  exit 0     1.4s␛[m
-  ␛[38;5;252m· count the ␛[m␛[1;38;5;252mlog␛[m␛[38;5;252m lines by level␛[m  ␛[38;5;252mnot run␛[m ␛[38;5;241m· Aug 14␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[38;5;241m4 entries hidden by the filter · ␛[m␛[38;5;103m[esc]␛[m␛[38;5;241m clear it␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[1;97m4m ago␛[m␛[38;5;241m · openai/gpt-5.2␛[m                                  ␛[38;5;241mrun␛[m
-  ␛[38;5;241mdelete every log file older than a week␛[m
+␛[94m▸ ␛[m␛[97mlog█␛[m                                          ␛[38;5;245m2 of 6 match␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m$ delete every log file older than a week  exit 0     1.4s␛[m
+  ␛[38;5;252m· count the ␛[m␛[1;38;5;252mlog␛[m␛[38;5;252m lines by level␛[m  ␛[38;5;252mnot run␛[m ␛[38;5;245m· Aug 14␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
+␛[38;5;245m4 entries hidden by the filter · ␛[m␛[38;5;103m[esc]␛[m␛[38;5;245m clear it␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
+␛[1;97m4m ago␛[m␛[38;5;245m · openai/gpt-5.2␛[m                                  ␛[38;5;245mrun␛[m
+  ␛[38;5;245mdelete every log file older than a week␛[m
 
-  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7␛[m    ␛[92mexit 0␛[m   ␛[38;5;241m1.4s␛[m
-    ␛[38;5;245m-delete␛[m
-  ␛[38;5;245m↑ 412 · ↓ 38 tokens␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7␛[m    ␛[92mexit 0␛[m   ␛[38;5;245m1.4s␛[m
+    ␛[38;5;248m-delete␛[m
+  ␛[38;5;248m↑ 412 · ↓ 38 tokens␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m re-run it␛[m
-␛[92m[esc]␛[m␛[38;5;241m clear the filter, then close it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m re-run it␛[m
+␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it␛[m
 
 · a filter that matched nothing · a row, not an empty pane
-␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m       ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh history␛[m␛[38;5;245m · 6 entries · 2 run␛[m       ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
-␛[94m▸ ␛[m␛[97mkubectl█␛[m                                      ␛[38;5;241m0 of 6 match␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[38;5;241m  no match for "kubectl"␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[38;5;241m6 entries hidden by the filter · ␛[m␛[38;5;103m[esc]␛[m␛[38;5;241m clear it␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[38;5;241mno entry selected␛[m
+␛[94m▸ ␛[m␛[97mkubectl█␛[m                                      ␛[38;5;245m0 of 6 match␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
+␛[38;5;245m  no match for "kubectl"␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
+␛[38;5;245m6 entries hidden by the filter · ␛[m␛[38;5;103m[esc]␛[m␛[38;5;245m clear it␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
+␛[38;5;245mno entry selected␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m clear the filter, then close it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it␛[m
 
 · [d] · the inline confirm, naming what it would take, defaulting to no
-␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m       ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh history␛[m␛[38;5;245m · 6 entries · 2 run␛[m       ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;97;48;5;62m$ delete every log file older than a week  exit 0     1.4s␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m$ delete every log file older than a week  exit 0     1.4s␛[m
   ␛[38;5;252m$ show the ten biggest files in this dire…␛[m  ␛[92mcopied␛[m    ␛[38;5;252m0.9s␛[m
-  ␛[38;5;252m✗ rebase onto main and force push␛[m  ␛[91mexit 128␛[m ␛[38;5;241m· tue␛[m     ␛[38;5;252m2.1s␛[m
+  ␛[38;5;252m✗ rebase onto main and force push␛[m  ␛[91mexit 128␛[m ␛[38;5;245m· tue␛[m     ␛[38;5;252m2.1s␛[m
   ␛[38;5;252m$ find every reference to ErrRoundLimit u…␛[m  ␛[92msaved␛[m     ␛[38;5;252m1.1s␛[m
-  ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;241m· mon␛[m
-  ␛[38;5;252m· count the log lines by level␛[m  ␛[38;5;252mnot run␛[m ␛[38;5;241m· Aug 14␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[1;97m4m ago␛[m␛[38;5;241m · openai/gpt-5.2␛[m                                  ␛[38;5;241mrun␛[m
-  ␛[38;5;241mdelete every log file older than a week␛[m
+  ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;245m· mon␛[m
+  ␛[38;5;252m· count the log lines by level␛[m  ␛[38;5;252mnot run␛[m ␛[38;5;245m· Aug 14␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
+␛[1;97m4m ago␛[m␛[38;5;245m · openai/gpt-5.2␛[m                                  ␛[38;5;245mrun␛[m
+  ␛[38;5;245mdelete every log file older than a week␛[m
 
-  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7␛[m    ␛[92mexit 0␛[m   ␛[38;5;241m1.4s␛[m
-    ␛[38;5;245m-delete␛[m
-  ␛[38;5;245m↑ 412 · ↓ 38 tokens␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7␛[m    ␛[92mexit 0␛[m   ␛[38;5;245m1.4s␛[m
+    ␛[38;5;248m-delete␛[m
+  ␛[38;5;248m↑ 412 · ↓ 38 tokens␛[m
 
-␛[38;5;252m␛[38;5;252mDelete the entry for "delete every log file older than a we…␛[m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[1;97m␛[m␛[38;5;241m␛[m
+␛[38;5;252m␛[38;5;252mDelete the entry for "delete every log file older than a we…␛[m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[1;97m␛[m␛[38;5;245m␛[m
 
 · a command carried out · the notice the host left behind
-␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m       ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh history␛[m␛[38;5;245m · 6 entries · 2 run␛[m       ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252m$ delete every log file older than a week␛[m  ␛[92mexit 0␛[m     ␛[38;5;252m1.4s␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m$ show the ten biggest files in this dire…  copied    0.9s␛[m
-  ␛[38;5;252m✗ rebase onto main and force push␛[m  ␛[91mexit 128␛[m ␛[38;5;241m· tue␛[m     ␛[38;5;252m2.1s␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m$ show the ten biggest files in this dire…  copied    0.9s␛[m
+  ␛[38;5;252m✗ rebase onto main and force push␛[m  ␛[91mexit 128␛[m ␛[38;5;245m· tue␛[m     ␛[38;5;252m2.1s␛[m
   ␛[38;5;252m$ find every reference to ErrRoundLimit u…␛[m  ␛[92msaved␛[m     ␛[38;5;252m1.1s␛[m
-  ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;241m· mon␛[m
-  ␛[38;5;252m· count the log lines by level␛[m  ␛[38;5;252mnot run␛[m ␛[38;5;241m· Aug 14␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[1;97myesterday␛[m␛[38;5;241m · openai/gpt-5.2␛[m                              ␛[38;5;241mcopy␛[m
-  ␛[38;5;241mshow the ten biggest files in this directory␛[m
+  ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;245m· mon␛[m
+  ␛[38;5;252m· count the log lines by level␛[m  ␛[38;5;252mnot run␛[m ␛[38;5;245m· Aug 14␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
+␛[1;97myesterday␛[m␛[38;5;245m · openai/gpt-5.2␛[m                              ␛[38;5;245mcopy␛[m
+  ␛[38;5;245mshow the ten biggest files in this directory␛[m
 
-  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mdu -ah . | sort -rh | head -10␛[m    ␛[92mcopied␛[m   ␛[38;5;241m0.9s␛[m
-  ␛[38;5;245m↑ 388 · ↓ 24 tokens␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mdu -ah . | sort -rh | head -10␛[m    ␛[92mcopied␛[m   ␛[38;5;245m0.9s␛[m
+  ␛[38;5;248m↑ 388 · ↓ 24 tokens␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy␛[m
-␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write it as a snippet␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m delete␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m
-␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
-␛[38;5;241mcopied the command to the clipboard␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m re-run it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy␛[m
+␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write it as a snippet␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
+␛[38;5;245mcopied the command to the clipboard␛[m
 
 · [?] · every key the screen has, including the ones the row sheds
-␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m       ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh history␛[m␛[38;5;245m · 6 entries · 2 run␛[m       ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;97;48;5;62m$ delete every log file older than a week  exit 0     1.4s␛[m
-␛[38;5;241m… (+1 more rows)␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m$ delete every log file older than a week  exit 0     1.4s␛[m
+␛[38;5;245m… (+1 more rows)␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move between entries␛[m
-␛[38;5;103m[enter]␛[m␛[38;5;241m run the command under the pointer again␛[m
-␛[38;5;103m[c]␛[m␛[38;5;241m copy the command to the clipboard␛[m
-␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save the command as a snippet␛[m
-␛[38;5;103m[d]␛[m␛[38;5;241m delete the entry, after confirming it␛[m
-␛[38;5;103m[/]␛[m␛[38;5;241m filter by what was asked or by what came back␛[m
-␛[38;5;103m[backspace]␛[m␛[38;5;241m delete a character from the filter␛[m
-␛[92m[esc]␛[m␛[38;5;241m clear the filter, close it, then back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move between entries␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m run the command under the pointer again␛[m
+␛[38;5;103m[c]␛[m␛[38;5;245m copy the command to the clipboard␛[m
+␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m save the command as a snippet␛[m
+␛[38;5;103m[d]␛[m␛[38;5;245m delete the entry, after confirming it␛[m
+␛[38;5;103m[/]␛[m␛[38;5;245m filter by what was asked or by what came back␛[m
+␛[38;5;103m[backspace]␛[m␛[38;5;245m delete a character from the filter␛[m
+␛[92m[esc]␛[m␛[38;5;245m clear the filter, close it, then back to the shell␛[m
 
-␛[38;5;241mglyphs␛[m
-␛[38;5;241m⚙␛[m  ␛[38;5;241ma read: a file, a search, a listing␛[m
-␛[38;5;214m$␛[m  ␛[38;5;241ma shell command␛[m
-␛[38;5;214m✎␛[m  ␛[38;5;241man edit, a write, a patch or a memory␛[m
-␛[94m◇␛[m  ␛[38;5;241ma sub-agent␛[m
-␛[38;5;214m⇄␛[m  ␛[38;5;241ma call to a server not marked read-only␛[m
-␛[38;5;241m✻␛[m  ␛[38;5;241mthe model writing its calls, counted as they arrive␛[m
-␛[38;5;241m⛁␛[m  ␛[38;5;241ma published report page␛[m
-␛[38;5;241m≡␛[m  ␛[38;5;241ma reading of the session␛[m
-␛[92m✓␛[m  ␛[38;5;241ma compaction that brought the window back␛[m
-␛[38;5;241m·␛[m  ␛[38;5;241maccepted, not started␛[m
-␛[38;5;205m▸␛[m  ␛[38;5;241mrunning␛[m
-␛[38;5;205m✦␛[m  ␛[38;5;241mthe classifier is deciding␛[m
-␛[91m✗␛[m  ␛[38;5;241mfailed␛[m
-␛[38;5;241m⊘␛[m  ␛[38;5;241mrefused: dim by you, red by a rule␛[m
-␛[38;5;103m[?]␛[m␛[38;5;241m hide the keys␛[m
+␛[38;5;245mglyphs␛[m
+␛[38;5;245m⚙␛[m  ␛[38;5;245ma read: a file, a search, a listing␛[m
+␛[38;5;214m$␛[m  ␛[38;5;245ma shell command␛[m
+␛[38;5;214m✎␛[m  ␛[38;5;245man edit, a write, a patch or a memory␛[m
+␛[94m◇␛[m  ␛[38;5;245ma sub-agent␛[m
+␛[38;5;214m⇄␛[m  ␛[38;5;245ma call to a server not marked read-only␛[m
+␛[38;5;245m✻␛[m  ␛[38;5;245mthe model writing its calls, counted as they arrive␛[m
+␛[38;5;245m⛁␛[m  ␛[38;5;245ma published report page␛[m
+␛[38;5;245m≡␛[m  ␛[38;5;245ma reading of the session␛[m
+␛[92m✓␛[m  ␛[38;5;245ma compaction that brought the window back␛[m
+␛[38;5;245m·␛[m  ␛[38;5;245maccepted, not started␛[m
+␛[38;5;205m▸␛[m  ␛[38;5;245mrunning␛[m
+␛[38;5;205m✦␛[m  ␛[38;5;245mthe classifier is deciding␛[m
+␛[91m✗␛[m  ␛[38;5;245mfailed␛[m
+␛[38;5;245m⊘␛[m  ␛[38;5;245mrefused: dim by you, red by a rule␛[m
+␛[38;5;103m[?]␛[m␛[38;5;245m hide the keys␛[m

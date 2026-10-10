@@ -50,18 +50,18 @@ output · [↑↓/jk] move · [pgup] page up · [pgdn] page down · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · the paragraph, and what asking it cost
- Approve command                                                         ␛[38;5;241m9 lines␛[m
-␛[38;5;245mrsync -a --delete src/ dst/␛[m
-␛[38;5;245m␛[m
-␛[38;5;245mwhat it does␛[m
-␛[38;5;245mCopies the contents of src/ into dst/, preserving permissions, timestamps and␛[m
-␛[38;5;245msymlinks, and deletes anything already in dst/ that is not in src/.␛[m
-␛[38;5;245m␛[m
-␛[38;5;245mThe deletion is the part worth reading twice: dst/ is made to match src/ rather␛[m
-␛[38;5;245mthan added to.␛[m
-␛[38;5;245m␛[m
-␛[38;5;245masked claude-haiku-4-5 · ↑214 ↓96␛[m
-␛[38;5;245mNothing on this screen was sent to the model waiting on your answer.␛[m
+ Approve command                                                         ␛[38;5;245m9 lines␛[m
+␛[38;5;248mrsync -a --delete src/ dst/␛[m
+␛[38;5;248m␛[m
+␛[38;5;248mwhat it does␛[m
+␛[38;5;248mCopies the contents of src/ into dst/, preserving permissions, timestamps and␛[m
+␛[38;5;248msymlinks, and deletes anything already in dst/ that is not in src/.␛[m
+␛[38;5;248m␛[m
+␛[38;5;248mThe deletion is the part worth reading twice: dst/ is made to match src/ rather␛[m
+␛[38;5;248mthan added to.␛[m
+␛[38;5;248m␛[m
+␛[38;5;248masked claude-haiku-4-5 · ↑214 ↓96␛[m
+␛[38;5;248mNothing on this screen was sent to the model waiting on your answer.␛[m
 
 
 
@@ -69,20 +69,20 @@ output · [↑↓/jk] move · [pgup] page up · [pgdn] page down · [esc] back
 
 
 
-␛[38;5;241moutput · ␛[m␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[pgup]␛[m␛[38;5;241m page up␛[m␛[38;5;241m · ␛[m␛[38;5;103m[pgdn]␛[m␛[38;5;241m page down␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;245moutput · ␛[m␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[pgup]␛[m␛[38;5;245m page up␛[m␛[38;5;245m · ␛[m␛[38;5;103m[pgdn]␛[m␛[38;5;245m page down␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a reading that did not happen
- Approve command                                                         ␛[38;5;241m9 lines␛[m
-␛[38;5;245mrsync -a --delete src/ dst/␛[m
-␛[38;5;245m␛[m
-␛[38;5;245mwhat it does␛[m
-␛[38;5;245mThe explanation could not be read.␛[m
-␛[38;5;245m␛[m
-␛[38;5;245mthe explanation could not be read: context deadline exceeded␛[m
-␛[38;5;245m␛[m
-␛[38;5;245masked claude-haiku-4-5␛[m
-␛[38;5;245mNothing on this screen was sent to the model waiting on your answer.␛[m
+ Approve command                                                         ␛[38;5;245m9 lines␛[m
+␛[38;5;248mrsync -a --delete src/ dst/␛[m
+␛[38;5;248m␛[m
+␛[38;5;248mwhat it does␛[m
+␛[38;5;248mThe explanation could not be read.␛[m
+␛[38;5;248m␛[m
+␛[38;5;248mthe explanation could not be read: context deadline exceeded␛[m
+␛[38;5;248m␛[m
+␛[38;5;248masked claude-haiku-4-5␛[m
+␛[38;5;248mNothing on this screen was sent to the model waiting on your answer.␛[m
 
 
 
-␛[38;5;241moutput · ␛[m␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[pgup]␛[m␛[38;5;241m page up␛[m␛[38;5;241m · ␛[m␛[38;5;103m[pgdn]␛[m␛[38;5;241m page down␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;245moutput · ␛[m␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[pgup]␛[m␛[38;5;245m page up␛[m␛[38;5;245m · ␛[m␛[38;5;103m[pgdn]␛[m␛[38;5;245m page down␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m

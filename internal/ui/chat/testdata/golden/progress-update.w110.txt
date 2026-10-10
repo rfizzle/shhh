@@ -86,73 +86,73 @@
 ── ansi ────────────────────────────────────────────────────
 · the status before the folded group of calls it introduces
 ␛[94m❯␛[m ␛[97mtrace the checkpoint␛[m
-␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-    ␛[3;38;5;245mThe objective is where the tool-round ceiling is read. The evidence is that the counter moves in the␛[m
-    ␛[3;38;5;245magent while the ceiling is the session's, so a raise for one turn never reaches the agent. Next I␛[m
-    ␛[3;38;5;245mwill read the pause row and the offer beside it.␛[m
+    ␛[3;38;5;248mThe objective is where the tool-round ceiling is read. The evidence is that the counter moves in the␛[m
+    ␛[3;38;5;248magent while the ceiling is the session's, so a raise for one turn never reaches the agent. Next I␛[m
+    ␛[3;38;5;248mwill read the pause row and the offer beside it.␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252msearched␛[m␛[48;5;234m ␛[38;5;245mresumeToolLoop␛[m␛[48;5;234m␛[38;5;241m · read 2 files␛[m␛[48;5;234m                                                        ␛[38;5;241m1.0s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252msearched␛[m␛[48;5;234m ␛[38;5;248mresumeToolLoop␛[m␛[48;5;234m␛[38;5;245m · read 2 files␛[m␛[48;5;234m                                                        ␛[38;5;245m1.0s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 
 · the same status opened onto every line it was holding
 ␛[94m❯␛[m ␛[97mtrace the checkpoint␛[m
-␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-    ␛[3;38;5;245mThe objective is where the tool-round ceiling is read. The evidence is that the counter moves in the␛[m
-    ␛[3;38;5;245magent while the ceiling is the session's, so a raise for one turn never reaches the agent. Next I␛[m
-    ␛[3;38;5;245mwill read the pause row and the offer beside it.␛[m
+    ␛[3;38;5;248mThe objective is where the tool-round ceiling is read. The evidence is that the counter moves in the␛[m
+    ␛[3;38;5;248magent while the ceiling is the session's, so a raise for one turn never reaches the agent. Next I␛[m
+    ␛[3;38;5;248mwill read the pause row and the offer beside it.␛[m
 
 
 · beside a command that is still running
 ␛[94m❯␛[m ␛[97mtrace the checkpoint␛[m
-␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-    ␛[3;38;5;245mThe objective is where the tool-round ceiling is read. The evidence is that the counter moves in the␛[m
-    ␛[3;38;5;245magent while the ceiling is the session's, so a raise for one turn never reaches the agent. Next I␛[m
-    ␛[3;38;5;245mwill read the pause row and the offer beside it.␛[m
+    ␛[3;38;5;248mThe objective is where the tool-round ceiling is read. The evidence is that the counter moves in the␛[m
+    ␛[3;38;5;248magent while the ceiling is the session's, so a raise for one turn never reaches the agent. Next I␛[m
+    ␛[3;38;5;248mwill read the pause row and the offer beside it.␛[m
 
   ␛[38;5;214m▎␛[m␛[38;5;205m▸␛[m ␛[97mrun␛[m     ␛[97mgo test ./internal/agent/... -run TestRoundLimit␛[m                                  ␛[38;5;205mrunning…␛[m
-  ␛[38;5;245mok  github.com/rfizzle/shhh/internal/agent  0.412s␛[m
+  ␛[38;5;248mok  github.com/rfizzle/shhh/internal/agent  0.412s␛[m
 
 · a second status, and the one it replaced folded to its first line
 ␛[94m❯␛[m ␛[97mtrace the checkpoint␛[m
-␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-    ␛[3;38;5;245mThe objective is where the tool-round ceiling is read. The evidence is that the counter moves in the␛[m
-      ␛[38;5;241m… 2 more lines␛[m
+    ␛[3;38;5;248mThe objective is where the tool-round ceiling is read. The evidence is that the counter moves in the␛[m
+      ␛[38;5;245m… 2 more lines␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252msearched␛[m␛[48;5;234m ␛[38;5;245mresumeToolLoop␛[m␛[48;5;234m␛[38;5;241m · read internal/ui/chat/stream.go␛[m␛[48;5;234m                                     ␛[38;5;241m0.7s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252msearched␛[m␛[48;5;234m ␛[38;5;248mresumeToolLoop␛[m␛[48;5;234m␛[38;5;245m · read internal/ui/chat/stream.go␛[m␛[48;5;234m                                     ␛[38;5;245m0.7s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
-    ␛[3;38;5;245mThe objective is unchanged and the pause row is now the evidence: it carries the grant and spends it␛[m
-    ␛[3;38;5;245mwhere it is drawn. Next I will run the round tests.␛[m
+    ␛[3;38;5;248mThe objective is unchanged and the pause row is now the evidence: it carries the grant and spends it␛[m
+    ␛[3;38;5;248mwhere it is drawn. Next I will run the round tests.␛[m
 
 
 · a status short enough to title the calls under it is the step's header
 ␛[94m❯␛[m ␛[97mtrace the checkpoint␛[m
-␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252msearched␛[m␛[48;5;234m ␛[38;5;245mresumeToolLoop␛[m␛[48;5;234m␛[38;5;241m · read 2 files␛[m␛[48;5;234m                                                        ␛[38;5;241m1.0s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252msearched␛[m␛[48;5;234m ␛[38;5;248mresumeToolLoop␛[m␛[48;5;234m␛[38;5;245m · read 2 files␛[m␛[48;5;234m                                                        ␛[38;5;245m1.0s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mThe round boundary is the seam; next I will trace its callers.␛[m␛[48;5;234m                                      ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 
 · the same run reopened · the notes come back as notes
 ␛[94m❯␛[m ␛[97mtrace the checkpoint␛[m
-␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-    ␛[3;38;5;245mThe objective is where the tool-round ceiling is read. The evidence is that the counter moves in the␛[m
-      ␛[38;5;241m… 2 more lines␛[m
+    ␛[3;38;5;248mThe objective is where the tool-round ceiling is read. The evidence is that the counter moves in the␛[m
+      ␛[38;5;245m… 2 more lines␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/ui/chat/stream.go␛[m␛[48;5;234m                                                                     ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;248minternal/ui/chat/stream.go␛[m␛[48;5;234m                                                                     ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
-    ␛[3;38;5;245mThe objective is unchanged and the pause row is now the evidence: it carries the grant and spends it␛[m
-    ␛[3;38;5;245mwhere it is drawn. Next I will run the round tests.␛[m
+    ␛[3;38;5;248mThe objective is unchanged and the pause row is now the evidence: it carries the grant and spends it␛[m
+    ␛[3;38;5;248mwhere it is drawn. Next I will run the round tests.␛[m
 

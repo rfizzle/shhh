@@ -204,193 +204,193 @@ Reads as a minor release.
 
 ── ansi ────────────────────────────────────────────────────
 · the set being worked · the goal, the meter, and the stage of the one in flight
-␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m␛[38;5;241m · the cockpit sprint␛[m                                                              ␛[38;5;241m5 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · sprint␛[m␛[38;5;245m · the cockpit sprint␛[m                                                              ␛[38;5;245m5 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241mPut the backlog, the run and the sprint on screen, so watching a night's work is a glance rather than a scroll.␛[m
-␛[92m▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[92m1 of 4 done␛[m␛[38;5;241m  ·  9 turns · $1.42␛[m
-␛[38;5;241mnext · ␛[m␛[38;5;252mprose-renderer␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m✓␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mkeys-are-declared-once  HM  done  Every key is …␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
-  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  implement  The backlog blo…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mEvery key is declared once␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mchore · high · size M · done · written 2026-08-20 · in the cockpit sprint␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for eve…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────␛[m
-  ␛[91m!␛[m ␛[38;5;252mcache-warm␛[m  ␛[38;5;241m--␛[m␛[38;5;241m  dropped from the backlog␛[m        ␛[38;5;241m │ ␛[m
-                                                    ␛[38;5;241m │ ␛[m␛[38;5;241mSixty-eight literals came out of twenty files.␛[m
+␛[38;5;245mPut the backlog, the run and the sprint on screen, so watching a night's work is a glance rather than a scroll.␛[m
+␛[92m▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[92m1 of 4 done␛[m␛[38;5;245m  ·  9 turns · $1.42␛[m
+␛[38;5;245mnext · ␛[m␛[38;5;252mprose-renderer␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[92m✓␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mkeys-are-declared-once  HM  done  Every key is …␛[m␛[m␛[38;5;245m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
+  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;245mHM␛[m␛[38;5;245m  implement  The backlog blo…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mEvery key is declared once␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mscreen-over-items␛[m  ␛[38;5;245mHL␛[m␛[38;5;245m  waits on rail-todo-block…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mchore · high · size M · done · written 2026-08-20 · in the cockpit sprint␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;245mMS␛[m␛[38;5;245m  ready  One renderer for eve…␛[m␛[38;5;245m │ ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────────────────␛[m
+  ␛[91m!␛[m ␛[38;5;252mcache-warm␛[m  ␛[38;5;245m--␛[m␛[38;5;245m  dropped from the backlog␛[m        ␛[38;5;245m │ ␛[m
+                                                    ␛[38;5;245m │ ␛[m␛[38;5;245mSixty-eight literals came out of twenty files.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m new␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · under a spend ceiling · the spend said against it, under the meter where the row is too narrow
-␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m␛[38;5;241m · the cockpit sprint␛[m                                                              ␛[38;5;241m5 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · sprint␛[m␛[38;5;245m · the cockpit sprint␛[m                                                              ␛[38;5;245m5 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241mPut the backlog, the run and the sprint on screen, so watching a night's work is a glance rather than a scroll.␛[m
-␛[92m▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[92m1 of 4 done␛[m␛[38;5;241m  ·  9 turns · spend $4.10 of $20␛[m
-␛[38;5;241mnext · ␛[m␛[38;5;252mprose-renderer␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m✓␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mkeys-are-declared-once  HM  done  Every key is …␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
-  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  implement  The backlog blo…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mEvery key is declared once␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mchore · high · size M · done · written 2026-08-20 · in the cockpit sprint␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for eve…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────␛[m
-  ␛[91m!␛[m ␛[38;5;252mcache-warm␛[m  ␛[38;5;241m--␛[m␛[38;5;241m  dropped from the backlog␛[m        ␛[38;5;241m │ ␛[m
-                                                    ␛[38;5;241m │ ␛[m␛[38;5;241mSixty-eight literals came out of twenty files.␛[m
+␛[38;5;245mPut the backlog, the run and the sprint on screen, so watching a night's work is a glance rather than a scroll.␛[m
+␛[92m▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[92m1 of 4 done␛[m␛[38;5;245m  ·  9 turns · spend $4.10 of $20␛[m
+␛[38;5;245mnext · ␛[m␛[38;5;252mprose-renderer␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[92m✓␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mkeys-are-declared-once  HM  done  Every key is …␛[m␛[m␛[38;5;245m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
+  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;245mHM␛[m␛[38;5;245m  implement  The backlog blo…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mEvery key is declared once␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mscreen-over-items␛[m  ␛[38;5;245mHL␛[m␛[38;5;245m  waits on rail-todo-block…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mchore · high · size M · done · written 2026-08-20 · in the cockpit sprint␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;245mMS␛[m␛[38;5;245m  ready  One renderer for eve…␛[m␛[38;5;245m │ ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────────────────␛[m
+  ␛[91m!␛[m ␛[38;5;252mcache-warm␛[m  ␛[38;5;245m--␛[m␛[38;5;245m  dropped from the backlog␛[m        ␛[38;5;245m │ ␛[m
+                                                    ␛[38;5;245m │ ␛[m␛[38;5;245mSixty-eight literals came out of twenty files.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m new␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · one lane · the head counts it and the row names it, with the step it is at
-␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m␛[38;5;241m · the cockpit sprint␛[m                                                              ␛[38;5;241m5 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · sprint␛[m␛[38;5;245m · the cockpit sprint␛[m                                                              ␛[38;5;245m5 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241mPut the backlog, the run and the sprint on screen, so watching a night's work is a glance rather than a scroll.␛[m
-␛[92m▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[92m1 of 4 done␛[m␛[38;5;241m  ·  9 turns · $1.42␛[m
-␛[38;5;241mworking · 1 at once␛[m
-␛[38;5;241mnext · ␛[m␛[38;5;252mprose-renderer␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m✓␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mkeys-are-declared-once  HM  done  Every key is …␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
-  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  implement  The backlog blo…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mEvery key is declared once␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mchore · high · size M · done · written 2026-08-20 · in the cockpit sprint␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for eve…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────␛[m
-  ␛[91m!␛[m ␛[38;5;252mcache-warm␛[m  ␛[38;5;241m--␛[m␛[38;5;241m  dropped from the backlog␛[m        ␛[38;5;241m │ ␛[m
-                                                    ␛[38;5;241m │ ␛[m␛[38;5;241mSixty-eight literals came out of twenty files.␛[m
+␛[38;5;245mPut the backlog, the run and the sprint on screen, so watching a night's work is a glance rather than a scroll.␛[m
+␛[92m▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[92m1 of 4 done␛[m␛[38;5;245m  ·  9 turns · $1.42␛[m
+␛[38;5;245mworking · 1 at once␛[m
+␛[38;5;245mnext · ␛[m␛[38;5;252mprose-renderer␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[92m✓␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mkeys-are-declared-once  HM  done  Every key is …␛[m␛[m␛[38;5;245m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
+  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;245mHM␛[m␛[38;5;245m  implement  The backlog blo…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mEvery key is declared once␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mscreen-over-items␛[m  ␛[38;5;245mHL␛[m␛[38;5;245m  waits on rail-todo-block…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mchore · high · size M · done · written 2026-08-20 · in the cockpit sprint␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;245mMS␛[m␛[38;5;245m  ready  One renderer for eve…␛[m␛[38;5;245m │ ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────────────────␛[m
+  ␛[91m!␛[m ␛[38;5;252mcache-warm␛[m  ␛[38;5;245m--␛[m␛[38;5;245m  dropped from the backlog␛[m        ␛[38;5;245m │ ␛[m
+                                                    ␛[38;5;245m │ ␛[m␛[38;5;245mSixty-eight literals came out of twenty files.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m new␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · three lanes at once · the head counts them and each row names its step
-␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m␛[38;5;241m · the cockpit sprint␛[m                                                              ␛[38;5;241m5 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · sprint␛[m␛[38;5;245m · the cockpit sprint␛[m                                                              ␛[38;5;245m5 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241mPut the backlog, the run and the sprint on screen, so watching a night's work is a glance rather than a scroll.␛[m
-␛[92m▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[92m1 of 4 done␛[m␛[38;5;241m  ·  9 turns · $1.42␛[m
-␛[38;5;241mworking · 3 at once␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m✓␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mkeys-are-declared-once  HM  done  Every key is …␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
-  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  implement  The backlog blo…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mEvery key is declared once␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  verify  A screen over th…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mchore · high · size M · done · written 2026-08-20 · in the cockpit sprint␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  research  One renderer for …␛[m␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────␛[m
-  ␛[91m!␛[m ␛[38;5;252mcache-warm␛[m  ␛[38;5;241m--␛[m␛[38;5;241m  dropped from the backlog␛[m        ␛[38;5;241m │ ␛[m
-                                                    ␛[38;5;241m │ ␛[m␛[38;5;241mSixty-eight literals came out of twenty files.␛[m
+␛[38;5;245mPut the backlog, the run and the sprint on screen, so watching a night's work is a glance rather than a scroll.␛[m
+␛[92m▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[92m1 of 4 done␛[m␛[38;5;245m  ·  9 turns · $1.42␛[m
+␛[38;5;245mworking · 3 at once␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[92m✓␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mkeys-are-declared-once  HM  done  Every key is …␛[m␛[m␛[38;5;245m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
+  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;245mHM␛[m␛[38;5;245m  implement  The backlog blo…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mEvery key is declared once␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mscreen-over-items␛[m  ␛[38;5;245mHL␛[m␛[38;5;245m  verify  A screen over th…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mchore · high · size M · done · written 2026-08-20 · in the cockpit sprint␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;245mMS␛[m␛[38;5;245m  research  One renderer for …␛[m␛[38;5;245m │ ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────────────────␛[m
+  ␛[91m!␛[m ␛[38;5;252mcache-warm␛[m  ␛[38;5;245m--␛[m␛[38;5;245m  dropped from the backlog␛[m        ␛[38;5;245m │ ␛[m
+                                                    ␛[38;5;245m │ ␛[m␛[38;5;245mSixty-eight literals came out of twenty files.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m new␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a checkpoint passed · the suite's name and its count, under the meter
-␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m␛[38;5;241m · the cockpit sprint␛[m                                                              ␛[38;5;241m5 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · sprint␛[m␛[38;5;245m · the cockpit sprint␛[m                                                              ␛[38;5;245m5 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241mPut the backlog, the run and the sprint on screen, so watching a night's work is a glance rather than a scroll.␛[m
-␛[92m▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[92m1 of 4 done␛[m␛[38;5;241m  ·  9 turns · $1.42␛[m
-␛[38;5;241mcheckpoint · tui · 94/94␛[m
-␛[38;5;241mnext · ␛[m␛[38;5;252mprose-renderer␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m✓␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mkeys-are-declared-once  HM  done  Every key is …␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
-  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  implement  The backlog blo…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mEvery key is declared once␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mchore · high · size M · done · written 2026-08-20 · in the cockpit sprint␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for eve…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────␛[m
-  ␛[91m!␛[m ␛[38;5;252mcache-warm␛[m  ␛[38;5;241m--␛[m␛[38;5;241m  dropped from the backlog␛[m        ␛[38;5;241m │ ␛[m
-                                                    ␛[38;5;241m │ ␛[m␛[38;5;241mSixty-eight literals came out of twenty files.␛[m
+␛[38;5;245mPut the backlog, the run and the sprint on screen, so watching a night's work is a glance rather than a scroll.␛[m
+␛[92m▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[92m1 of 4 done␛[m␛[38;5;245m  ·  9 turns · $1.42␛[m
+␛[38;5;245mcheckpoint · tui · 94/94␛[m
+␛[38;5;245mnext · ␛[m␛[38;5;252mprose-renderer␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[92m✓␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mkeys-are-declared-once  HM  done  Every key is …␛[m␛[m␛[38;5;245m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
+  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;245mHM␛[m␛[38;5;245m  implement  The backlog blo…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mEvery key is declared once␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mscreen-over-items␛[m  ␛[38;5;245mHL␛[m␛[38;5;245m  waits on rail-todo-block…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mchore · high · size M · done · written 2026-08-20 · in the cockpit sprint␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;245mMS␛[m␛[38;5;245m  ready  One renderer for eve…␛[m␛[38;5;245m │ ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────────────────␛[m
+  ␛[91m!␛[m ␛[38;5;252mcache-warm␛[m  ␛[38;5;245m--␛[m␛[38;5;245m  dropped from the backlog␛[m        ␛[38;5;245m │ ␛[m
+                                                    ␛[38;5;245m │ ␛[m␛[38;5;245mSixty-eight literals came out of twenty files.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m new␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · lanes over the ready list · no file, so no name, goal or meter; the lanes and their items
-␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m                                                                                   ␛[38;5;241m3 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · sprint␛[m                                                                                   ␛[38;5;245m3 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241m6 turns · $1.20␛[m
-␛[38;5;241mworking · 3 at once␛[m
-␛[38;5;241mnext · ␛[m␛[38;5;252mkeys-are-declared-once␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;205m▸␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mrail-todo-block  HM  implement  The backlog blo…␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mrail-todo-block␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  verify  A screen over th…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mThe backlog block on the inspector rail␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  research  One renderer for …␛[m␛[38;5;241m │ ␛[m␛[38;5;241mstory · high · size M · in progress · written 2026-08-28 · in ␛[m
-                                                    ␛[38;5;241m │ ␛[m␛[38;5;241m1 item waits on this: screen-over-items␛[m
-                                                    ␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────␛[m
-                                                    ␛[38;5;241m │ ␛[m
-                                                    ␛[38;5;241m │ ␛[m␛[38;5;241m**As a** reader, **I want** the queue beside the turn.␛[m
-                                                    ␛[38;5;241m │ ␛[m
-                                                    ␛[38;5;241m │ ␛[m␛[38;5;241m## Acceptance criteria␛[m
-                                                    ␛[38;5;241m │ ␛[m
-                                                    ␛[38;5;241m │ ␛[m␛[38;5;241m- [x] four rows and a count␛[m
-                                                    ␛[38;5;241m │ ␛[m␛[38;5;241m- [ ] the running item first␛[m
+␛[38;5;245m6 turns · $1.20␛[m
+␛[38;5;245mworking · 3 at once␛[m
+␛[38;5;245mnext · ␛[m␛[38;5;252mkeys-are-declared-once␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;205m▸␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mrail-todo-block  HM  implement  The backlog blo…␛[m␛[m␛[38;5;245m │ ␛[m␛[1;97mrail-todo-block␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mscreen-over-items␛[m  ␛[38;5;245mHL␛[m␛[38;5;245m  verify  A screen over th…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mThe backlog block on the inspector rail␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;245mMS␛[m␛[38;5;245m  research  One renderer for …␛[m␛[38;5;245m │ ␛[m␛[38;5;245mstory · high · size M · in progress · written 2026-08-28 · in ␛[m
+                                                    ␛[38;5;245m │ ␛[m␛[38;5;245m1 item waits on this: screen-over-items␛[m
+                                                    ␛[38;5;245m │ ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────────────────␛[m
+                                                    ␛[38;5;245m │ ␛[m
+                                                    ␛[38;5;245m │ ␛[m␛[38;5;245m**As a** reader, **I want** the queue beside the turn.␛[m
+                                                    ␛[38;5;245m │ ␛[m
+                                                    ␛[38;5;245m │ ␛[m␛[38;5;245m## Acceptance criteria␛[m
+                                                    ␛[38;5;245m │ ␛[m
+                                                    ␛[38;5;245m │ ␛[m␛[38;5;245m- [x] four rows and a count␛[m
+                                                    ␛[38;5;245m │ ␛[m␛[38;5;245m- [ ] the running item first␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m new␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · stopped on a block · the block on the board with the item that wrote it
-␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m␛[38;5;241m · the cockpit sprint␛[m                                                              ␛[38;5;241m5 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · sprint␛[m␛[38;5;245m · the cockpit sprint␛[m                                                              ␛[38;5;245m5 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241mPut the backlog, the run and the sprint on screen, so watching a night's work is a glance rather than a scroll.␛[m
-␛[92m▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[92m1 of 4 done␛[m␛[38;5;241m  ·  9 turns · $1.42␛[m
+␛[38;5;245mPut the backlog, the run and the sprint on screen, so watching a night's work is a glance rather than a scroll.␛[m
+␛[92m▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[92m1 of 4 done␛[m␛[38;5;245m  ·  9 turns · $1.42␛[m
 ␛[91m⚠ sprint-file blocked — waiting on a decision about where the file lives␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m✓␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mkeys-are-declared-once  HM  done  Every key is …␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
-  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  implement  The backlog blo…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mEvery key is declared once␛[m
-  ␛[91m!␛[m ␛[38;5;252mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  blocked  A screen over t…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mchore · high · size M · done · written 2026-08-20 · in the cockpit sprint␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for eve…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────␛[m
-  ␛[91m!␛[m ␛[38;5;252mcache-warm␛[m  ␛[38;5;241m--␛[m␛[38;5;241m  dropped from the backlog␛[m        ␛[38;5;241m │ ␛[m
-                                                    ␛[38;5;241m │ ␛[m␛[38;5;241mSixty-eight literals came out of twenty files.␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[92m✓␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mkeys-are-declared-once  HM  done  Every key is …␛[m␛[m␛[38;5;245m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
+  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;245mHM␛[m␛[38;5;245m  implement  The backlog blo…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mEvery key is declared once␛[m
+  ␛[91m!␛[m ␛[38;5;252mscreen-over-items␛[m  ␛[38;5;245mHL␛[m␛[38;5;245m  blocked  A screen over t…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mchore · high · size M · done · written 2026-08-20 · in the cockpit sprint␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;245mMS␛[m␛[38;5;245m  ready  One renderer for eve…␛[m␛[38;5;245m │ ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────────────────␛[m
+  ␛[91m!␛[m ␛[38;5;252mcache-warm␛[m  ␛[38;5;245m--␛[m␛[38;5;245m  dropped from the backlog␛[m        ␛[38;5;245m │ ␛[m
+                                                    ␛[38;5;245m │ ␛[m␛[38;5;245mSixty-eight literals came out of twenty files.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m new␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · closed · the record, with the page it wrote as the last row
-␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m␛[38;5;241m · the cockpit sprint␛[m                                                              ␛[38;5;241m0 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · sprint␛[m␛[38;5;245m · the cockpit sprint␛[m                                                              ␛[38;5;245m0 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241mPut the backlog, the run and the sprint on screen, so watching a night's work is a glance rather than a scroll.␛[m
+␛[38;5;245mPut the backlog, the run and the sprint on screen, so watching a night's work is a glance rather than a scroll.␛[m
 ␛[94m→ http://127.0.0.1:8731/r/rp-4c1d90ab77e25f30␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;241mthis sprint is closed; its items are in the backlog…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mno item selected␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;245mthis sprint is closed; its items are in the backlog…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mno item selected␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m new␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · planning · the proposal with the budget in the header
-␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m␛[38;5;241m · S=2 M=1␛[m                                                             ␛[38;5;241m3 of 3 items kept␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · planning␛[m␛[38;5;245m · S=2 M=1␛[m                                                             ␛[38;5;245m3 of 3 items kept␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241mnothing is written until ␛[m␛[38;5;103m[ctrl+s]␛[m
-␛[38;5;241mMake every piece of prose on screen come out of one renderer.␛[m
-␛[38;5;241mReads as a minor release.␛[m
+␛[38;5;245mnothing is written until ␛[m␛[38;5;103m[ctrl+s]␛[m
+␛[38;5;245mMake every piece of prose on screen come out of one renderer.␛[m
+␛[38;5;245mReads as a minor release.␛[m
 
-  ␛[94mgoal␛[m␛[38;5;241m  rewrite what the set is for␛[m
-␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mprose-renderer  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…␛[m␛[m
-  ␛[92m[x]␛[m ␛[1;97mdrop-loses-the-file␛[m␛[38;5;241m  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today␛[m
-  ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;241m  A screen over the whole backlog  ·  the surface the first two are for; it lands last␛[m
+  ␛[94mgoal␛[m␛[38;5;245m  rewrite what the set is for␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[92m[x]␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mprose-renderer  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…␛[m␛[m
+  ␛[92m[x]␛[m ␛[1;97mdrop-loses-the-file␛[m␛[38;5;245m  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today␛[m
+  ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;245m  A screen over the whole backlog  ·  the surface the first two are for; it lands last␛[m
 
-␛[38;5;241m3 items left out · 1 waits, 1 too big, 1 unrelated␛[m ␛[38;5;103m[o]␛[m
+␛[38;5;245m3 items left out · 1 waits, 1 too big, 1 unrelated␛[m ␛[38;5;103m[o]␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[38;5;103m[o]␛[m␛[38;5;241m what was left out, and why␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[space]␛[m␛[38;5;245m toggle␛[m␛[38;5;245m · ␛[m␛[38;5;103m[o]␛[m␛[38;5;245m what was left out, and why␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write the sprint␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a row dropped · it keeps its place and loses its tick
-␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m␛[38;5;241m · S=2 M=1␛[m                                                             ␛[38;5;241m2 of 3 items kept␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · planning␛[m␛[38;5;245m · S=2 M=1␛[m                                                             ␛[38;5;245m2 of 3 items kept␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241mnothing is written until ␛[m␛[38;5;103m[ctrl+s]␛[m
-␛[38;5;241mMake every piece of prose on screen come out of one renderer.␛[m
-␛[38;5;241mReads as a minor release.␛[m
+␛[38;5;245mnothing is written until ␛[m␛[38;5;103m[ctrl+s]␛[m
+␛[38;5;245mMake every piece of prose on screen come out of one renderer.␛[m
+␛[38;5;245mReads as a minor release.␛[m
 
-  ␛[94mgoal␛[m␛[38;5;241m  rewrite what the set is for␛[m
-  ␛[92m[x]␛[m ␛[1;97mprose-renderer␛[m␛[38;5;241m  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…␛[m
-␛[94m❯ ␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m[ ]␛[m␛[48;5;62m ␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mdrop-loses-the-file  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today    ␛[m␛[m
-  ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;241m  A screen over the whole backlog  ·  the surface the first two are for; it lands last␛[m
+  ␛[94mgoal␛[m␛[38;5;245m  rewrite what the set is for␛[m
+  ␛[92m[x]␛[m ␛[1;97mprose-renderer␛[m␛[38;5;245m  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…␛[m
+␛[94m❯ ␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m[ ]␛[m␛[48;5;61m ␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mdrop-loses-the-file  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today    ␛[m␛[m
+  ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;245m  A screen over the whole backlog  ·  the surface the first two are for; it lands last␛[m
 
-␛[38;5;241m3 items left out · 1 waits, 1 too big, 1 unrelated␛[m ␛[38;5;103m[o]␛[m
+␛[38;5;245m3 items left out · 1 waits, 1 too big, 1 unrelated␛[m ␛[38;5;103m[o]␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[38;5;103m[o]␛[m␛[38;5;241m what was left out, and why␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[space]␛[m␛[38;5;245m toggle␛[m␛[38;5;245m · ␛[m␛[38;5;103m[o]␛[m␛[38;5;245m what was left out, and why␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write the sprint␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · what was left out · folded under the set until the key opens it
-␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m␛[38;5;241m · S=2 M=1␛[m                                                             ␛[38;5;241m3 of 3 items kept␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · planning␛[m␛[38;5;245m · S=2 M=1␛[m                                                             ␛[38;5;245m3 of 3 items kept␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241mnothing is written until ␛[m␛[38;5;103m[ctrl+s]␛[m
-␛[38;5;241mMake every piece of prose on screen come out of one renderer.␛[m
-␛[38;5;241mReads as a minor release.␛[m
+␛[38;5;245mnothing is written until ␛[m␛[38;5;103m[ctrl+s]␛[m
+␛[38;5;245mMake every piece of prose on screen come out of one renderer.␛[m
+␛[38;5;245mReads as a minor release.␛[m
 
-  ␛[94mgoal␛[m␛[38;5;241m  rewrite what the set is for␛[m
-␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mprose-renderer  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…␛[m␛[m
-  ␛[92m[x]␛[m ␛[1;97mdrop-loses-the-file␛[m␛[38;5;241m  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today␛[m
-  ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;241m  A screen over the whole backlog  ·  the surface the first two are for; it lands last␛[m
+  ␛[94mgoal␛[m␛[38;5;245m  rewrite what the set is for␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[92m[x]␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mprose-renderer  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…␛[m␛[m
+  ␛[92m[x]␛[m ␛[1;97mdrop-loses-the-file␛[m␛[38;5;245m  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today␛[m
+  ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;245m  A screen over the whole backlog  ·  the surface the first two are for; it lands last␛[m
 
-␛[38;5;241m3 items left out␛[m ␛[38;5;103m[o]␛[m
-␛[38;5;241m  waits      sprint-file  A sprint is a file that names its items␛[m
-␛[38;5;241m  too big    rewrite-the-store  One store for every surface␛[m
-␛[38;5;241m  unrelated  mcp-forwarders  Forwarders carry the credential␛[m
+␛[38;5;245m3 items left out␛[m ␛[38;5;103m[o]␛[m
+␛[38;5;245m  waits      sprint-file  A sprint is a file that names its items␛[m
+␛[38;5;245m  too big    rewrite-the-store  One store for every surface␛[m
+␛[38;5;245m  unrelated  mcp-forwarders  Forwarders carry the credential␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[38;5;103m[o]␛[m␛[38;5;241m what was left out, and why␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[space]␛[m␛[38;5;245m toggle␛[m␛[38;5;245m · ␛[m␛[38;5;103m[o]␛[m␛[38;5;245m what was left out, and why␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write the sprint␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m

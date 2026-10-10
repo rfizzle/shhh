@@ -39,26 +39,26 @@
 ── ansi ────────────────────────────────────────────────────
 · applying an approved change
 ␛[94m❯␛[m ␛[97mmake the round limit recoverable␛[m
-␛[38;5;243m──────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m·␛[m ␛[38;5;241mApplying changes…␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mApplying changes…␛[m
 
 · listing the provider's models
 ␛[94m❯␛[m ␛[97mmake the round limit recoverable␛[m
-␛[38;5;243m──────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m·␛[m ␛[38;5;241mListing models…␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mListing models…␛[m
 
 · running the quality gate the turn owes
 ␛[94m❯␛[m ␛[97mmake the round limit recoverable␛[m
-␛[38;5;243m──────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m·␛[m ␛[38;5;241mRunning the quality gate…␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mRunning the quality gate…␛[m
 
 · compacting · the transcript's notice and nothing under it
 ␛[94m❯␛[m ␛[97mmake the round limit recoverable␛[m
-␛[38;5;243m──────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m·␛[m ␛[38;5;241mCompacting conversation…␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mCompacting conversation…␛[m
 
 

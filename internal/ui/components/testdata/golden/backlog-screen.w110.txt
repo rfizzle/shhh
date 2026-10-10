@@ -227,216 +227,216 @@ $  a shell command
 
 ── ansi ────────────────────────────────────────────────────
 · the list · slug, grade, state and title, with the item beside it
-␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m                                                   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                                                   ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;205m▸␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mrail-todo-block  HM  in progress        ␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mrail-todo-block␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-to…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mThe backlog block on the inspector rail␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mstory · high · size M · in progress · written 2026-08-28 · in …␛[m
-  ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;241mMM␛[m␛[38;5;241m  blocked  The sprint is…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m1 item waits on this: screen-over-items␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;241mL-␛[m␛[38;5;241m  ready␛[m          ␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────␛[m
-  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;241m  will not load␛[m             ␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m**As a** reader, **I want** the queue beside the turn.␛[m
-                                            ␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m## Acceptance criteria␛[m
-                                            ␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m- [x] four rows and a count␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m- [ ] the running item first␛[m
+␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;205m▸␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mrail-todo-block  HM  in progress        ␛[m␛[m␛[38;5;245m │ ␛[m␛[1;97mrail-todo-block␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mscreen-over-items␛[m  ␛[38;5;245mHL␛[m␛[38;5;245m  waits on rail-to…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mThe backlog block on the inspector rail␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;245mMS␛[m␛[38;5;245m  ready  One renderer…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mstory · high · size M · in progress · written 2026-08-28 · in …␛[m
+  ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;245mMM␛[m␛[38;5;245m  blocked  The sprint is…␛[m␛[38;5;245m │ ␛[m␛[38;5;245m1 item waits on this: screen-over-items␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;245mL-␛[m␛[38;5;245m  ready␛[m          ␛[38;5;245m │ ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────␛[m
+  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;245m  will not load␛[m             ␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m**As a** reader, **I want** the queue beside the turn.␛[m
+                                            ␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m## Acceptance criteria␛[m
+                                            ␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m- [x] four rows and a count␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m- [ ] the running item first␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m new␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a waiting item · both ends of the edge on its header row
-␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m                                                   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                                                   ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress␛[m        ␛[38;5;241m │ ␛[m␛[1;97mscreen-over-items␛[m
-␛[94m❯ ␛[m␛[38;5;241m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m·␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mscreen-over-items  HL  waits on rail-to…␛[m␛[m␛[38;5;241m │ ␛[m␛[38;5;241mA screen over the whole backlog, with the body beside the list␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mstory · high · size L · open · written 2026-08-30␛[m
-  ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;241mMM␛[m␛[38;5;241m  blocked  The sprint is…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mwaits on rail-todo-block, prose-renderer␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;241mL-␛[m␛[38;5;241m  ready␛[m          ␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────␛[m
-  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;241m  will not load␛[m             ␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m## Acceptance criteria␛[m
-                                            ␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m- [ ] the list on the left␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m- [ ] the body on the right␛[m
+  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;245mHM␛[m␛[38;5;245m  in progress␛[m        ␛[38;5;245m │ ␛[m␛[1;97mscreen-over-items␛[m
+␛[94m❯ ␛[m␛[38;5;245m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m·␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mscreen-over-items  HL  waits on rail-to…␛[m␛[m␛[38;5;245m │ ␛[m␛[38;5;245mA screen over the whole backlog, with the body beside the list␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;245mMS␛[m␛[38;5;245m  ready  One renderer…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mstory · high · size L · open · written 2026-08-30␛[m
+  ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;245mMM␛[m␛[38;5;245m  blocked  The sprint is…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mwaits on rail-todo-block, prose-renderer␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;245mL-␛[m␛[38;5;245m  ready␛[m          ␛[38;5;245m │ ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────␛[m
+  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;245m  will not load␛[m             ␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m## Acceptance criteria␛[m
+                                            ␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m- [ ] the list on the left␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m- [ ] the body on the right␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m new␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · a file that will not parse · a row in warning tone, the reason as its body
-␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m                                                   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                                                   ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress␛[m        ␛[38;5;241m │ ␛[m␛[1;97mhalf-written␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-to…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer…␛[m␛[38;5;241m │ ␛[m
-  ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;241mMM␛[m␛[38;5;241m  blocked  The sprint is…␛[m␛[38;5;241m │ ␛[m␛[91mno title in the header␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;241mL-␛[m␛[38;5;241m  ready␛[m          ␛[38;5;241m │ ␛[m␛[38;5;241m.shhh/todo/half-written.md is still on disk; [e] opens it␛[m
-␛[94m❯ ␛[m␛[91m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[91m⚠␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mhalf-written  will not load             ␛[m␛[m␛[38;5;241m │ ␛[m
+  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;245mHM␛[m␛[38;5;245m  in progress␛[m        ␛[38;5;245m │ ␛[m␛[1;97mhalf-written␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mscreen-over-items␛[m  ␛[38;5;245mHL␛[m␛[38;5;245m  waits on rail-to…␛[m␛[38;5;245m │ ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;245mMS␛[m␛[38;5;245m  ready  One renderer…␛[m␛[38;5;245m │ ␛[m
+  ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;245mMM␛[m␛[38;5;245m  blocked  The sprint is…␛[m␛[38;5;245m │ ␛[m␛[91mno title in the header␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;245mL-␛[m␛[38;5;245m  ready␛[m          ␛[38;5;245m │ ␛[m␛[38;5;245m.shhh/todo/half-written.md is still on disk; [e] opens it␛[m
+␛[94m❯ ␛[m␛[91m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[91m⚠␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mhalf-written  will not load             ␛[m␛[m␛[38;5;245m │ ␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m fix the header␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m fix the header␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m new␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · [/] · the query row, with the header saying what it left
-␛[1;97mbacklog␛[m␛[38;5;241m · matching sprint␛[m␛[38;5;241m · the cockpit sprint␛[m                            ␛[38;5;241m1 of 6 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · matching sprint␛[m␛[38;5;245m · the cockpit sprint␛[m                            ␛[38;5;245m1 of 6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m▸ ␛[m␛[97msprint█␛[m                                   ␛[38;5;241m │ ␛[m␛[1;97msprint-file␛[m
-␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[38;5;241mThe sprint is a file that names its items␛[m
-␛[94m❯ ␛[m␛[91m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[91m!␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62msprint-file  MM  blocked  The sprint is…␛[m␛[m␛[38;5;241m │ ␛[m␛[38;5;241mstory · medium · size M · blocked · written 2026-09-01 · in th…␛[m
-␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────␛[m
-␛[38;5;241m5 hidden␛[m␛[38;5;241m · ␛[m␛[38;5;103m[esc]␛[m␛[38;5;241m clear it␛[m                   ␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m## Blocked␛[m
-                                            ␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241mWaiting on a decision about where the file lives.␛[m
+␛[94m▸ ␛[m␛[97msprint█␛[m                                   ␛[38;5;245m │ ␛[m␛[1;97msprint-file␛[m
+␛[38;5;245m────────────────────────────────────────────␛[m␛[38;5;245m │ ␛[m␛[38;5;245mThe sprint is a file that names its items␛[m
+␛[94m❯ ␛[m␛[91m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[91m!␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61msprint-file  MM  blocked  The sprint is…␛[m␛[m␛[38;5;245m │ ␛[m␛[38;5;245mstory · medium · size M · blocked · written 2026-09-01 · in th…␛[m
+␛[38;5;245m────────────────────────────────────────────␛[m␛[38;5;245m │ ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────␛[m
+␛[38;5;245m5 hidden␛[m␛[38;5;245m · ␛[m␛[38;5;103m[esc]␛[m␛[38;5;245m clear it␛[m                   ␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m## Blocked␛[m
+                                            ␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245mWaiting on a decision about where the file lives.␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m keep it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m clear the filter, then close it␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m keep it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it␛[m
 
 · [/] ready p:low [enter] · the words held over the list, and what they hid under it
-␛[1;97mbacklog␛[m␛[38;5;241m · matching ready p:low␛[m␛[38;5;241m · the cockpit sprint␛[m                       ␛[38;5;241m2 of 6 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · matching ready p:low␛[m␛[38;5;245m · the cockpit sprint␛[m                       ␛[38;5;245m2 of 6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯ ␛[m␛[38;5;241m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m·␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mdrop-loses-the-file  L-  ready          ␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mdrop-loses-the-file␛[m
-  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;241m  will not load␛[m             ␛[38;5;241m │ ␛[m␛[38;5;241mDropping an item says what it loses␛[m
-␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[38;5;241mbug · low · ungraded · open␛[m
-␛[38;5;241m4 hidden␛[m                                    ␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────␛[m
-                                            ␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241mThe verb deletes the file and the sentence should say so.␛[m
+␛[94m❯ ␛[m␛[38;5;245m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m·␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mdrop-loses-the-file  L-  ready          ␛[m␛[m␛[38;5;245m │ ␛[m␛[1;97mdrop-loses-the-file␛[m
+  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;245m  will not load␛[m             ␛[38;5;245m │ ␛[m␛[38;5;245mDropping an item says what it loses␛[m
+␛[38;5;245m────────────────────────────────────────────␛[m␛[38;5;245m │ ␛[m␛[38;5;245mbug · low · ungraded · open␛[m
+␛[38;5;245m4 hidden␛[m                                    ␛[38;5;245m │ ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────␛[m
+                                            ␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245mThe verb deletes the file and the sentence should say so.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m clear the filter␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m new␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m clear the filter␛[m
 
 · [s] · the status picker beside the list, where the item stands now marked
-␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m                                                   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                                                   ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress␛[m        ␛[38;5;241m │ ␛[m␛[1;97mset the status of sprint-file␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-to…␛[m␛[38;5;241m │ ␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer…␛[m␛[38;5;241m │ ␛[m␛[94m❯␛[m ␛[1;97;48;5;62m1. open     back in the queue                                ␛[m
-␛[94m❯ ␛[m␛[91m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[91m!␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62msprint-file  MM  blocked  The sprint is…␛[m␛[m␛[38;5;241m │ ␛[m  ␛[38;5;241m2. ␛[m␛[38;5;252mblocked␛[m  ␛[38;5;241msay why, in the draft␛[m                         ␛[38;5;252mnow␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;241mL-␛[m␛[38;5;241m  ready␛[m          ␛[38;5;241m │ ␛[m  ␛[38;5;241m3. ␛[m␛[38;5;252mdone␛[m     ␛[38;5;241marchive it␛[m
-  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;241m  will not load␛[m             ␛[38;5;241m │ ␛[m
+  ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;245mHM␛[m␛[38;5;245m  in progress␛[m        ␛[38;5;245m │ ␛[m␛[1;97mset the status of sprint-file␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mscreen-over-items␛[m  ␛[38;5;245mHL␛[m␛[38;5;245m  waits on rail-to…␛[m␛[38;5;245m │ ␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;245mMS␛[m␛[38;5;245m  ready  One renderer…␛[m␛[38;5;245m │ ␛[m␛[94m❯␛[m ␛[1;97;48;5;61m1. open     back in the queue                                ␛[m
+␛[94m❯ ␛[m␛[91m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[91m!␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61msprint-file  MM  blocked  The sprint is…␛[m␛[m␛[38;5;245m │ ␛[m  ␛[38;5;245m2. ␛[m␛[38;5;252mblocked␛[m  ␛[38;5;245msay why, in the draft␛[m                         ␛[38;5;252mnow␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;245mL-␛[m␛[38;5;245m  ready␛[m          ␛[38;5;245m │ ␛[m  ␛[38;5;245m3. ␛[m␛[38;5;252mdone␛[m     ␛[38;5;245marchive it␛[m
+  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;245m  will not load␛[m             ␛[38;5;245m │ ␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[38;5;103m[1–3]␛[m␛[38;5;241m jump␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the list␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m select␛[m␛[38;5;245m · ␛[m␛[38;5;103m[1–3]␛[m␛[38;5;245m jump␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the list␛[m
 
 · [r] · the run picker: run it, or groom it
-␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m                                                   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                                                   ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;205m▸␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mrail-todo-block  HM  in progress        ␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mrun rail-todo-block␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-to…␛[m␛[38;5;241m │ ␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer…␛[m␛[38;5;241m │ ␛[m␛[94m❯␛[m ␛[1;97;48;5;62m1. run it    work it through to a commit                     ␛[m
-  ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;241mMM␛[m␛[38;5;241m  blocked  The sprint is…␛[m␛[38;5;241m │ ␛[m  ␛[38;5;241m2. ␛[m␛[38;5;252mgroom it␛[m  ␛[38;5;241mread it against the tree␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;241mL-␛[m␛[38;5;241m  ready␛[m          ␛[38;5;241m │ ␛[m
-  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;241m  will not load␛[m             ␛[38;5;241m │ ␛[m
+␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;205m▸␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mrail-todo-block  HM  in progress        ␛[m␛[m␛[38;5;245m │ ␛[m␛[1;97mrun rail-todo-block␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mscreen-over-items␛[m  ␛[38;5;245mHL␛[m␛[38;5;245m  waits on rail-to…␛[m␛[38;5;245m │ ␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;245mMS␛[m␛[38;5;245m  ready  One renderer…␛[m␛[38;5;245m │ ␛[m␛[94m❯␛[m ␛[1;97;48;5;61m1. run it    work it through to a commit                     ␛[m
+  ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;245mMM␛[m␛[38;5;245m  blocked  The sprint is…␛[m␛[38;5;245m │ ␛[m  ␛[38;5;245m2. ␛[m␛[38;5;252mgroom it␛[m  ␛[38;5;245mread it against the tree␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;245mL-␛[m␛[38;5;245m  ready␛[m          ␛[38;5;245m │ ␛[m
+  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;245m  will not load␛[m             ␛[38;5;245m │ ␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[38;5;103m[1–2]␛[m␛[38;5;241m jump␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the list␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m select␛[m␛[38;5;245m · ␛[m␛[38;5;103m[1–2]␛[m␛[38;5;245m jump␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the list␛[m
 
 · [enter] · the body with the surface to itself
-␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m                                                   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                                                   ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;97mrail-todo-block␛[m
-␛[38;5;241mThe backlog block on the inspector rail␛[m
-␛[38;5;241mstory · high · size M · in progress · written 2026-08-28 · in the cockpit sprint␛[m
-␛[38;5;241m1 item waits on this: screen-over-items␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;245mThe backlog block on the inspector rail␛[m
+␛[38;5;245mstory · high · size M · in progress · written 2026-08-28 · in the cockpit sprint␛[m
+␛[38;5;245m1 item waits on this: screen-over-items␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241m**As a** reader, **I want** the queue beside the turn.␛[m
+␛[38;5;245m**As a** reader, **I want** the queue beside the turn.␛[m
 
-␛[38;5;241m## Acceptance criteria␛[m
+␛[38;5;245m## Acceptance criteria␛[m
 
-␛[38;5;241m- [x] four rows and a count␛[m
-␛[38;5;241m- [ ] the running item first␛[m
+␛[38;5;245m- [x] four rows and a count␛[m
+␛[38;5;245m- [ ] the running item first␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[38;5;103m[pgup/pgdn]␛[m␛[38;5;241m page the body␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the list␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[pgup/pgdn]␛[m␛[38;5;245m page the body␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the list␛[m
 
 · [tab] · the archive, each item's report as its body
-␛[1;97mbacklog␛[m␛[38;5;241m · done␛[m                                                                 ␛[38;5;241m2 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · done␛[m                                                                 ␛[38;5;245m2 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m✓␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mkeys-are-declared-once  HM  done        ␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
-  ␛[92m✓␛[m ␛[38;5;241mwindowed-list␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  done  One windowed l…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mEvery key is declared once␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241mchore · high · size M · done · written 2026-08-20␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────␛[m
-                                            ␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241mSixty-eight literals came out of twenty files; the register is␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241mthe one place a key is written down.␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[92m✓␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mkeys-are-declared-once  HM  done        ␛[m␛[m␛[38;5;245m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
+  ␛[92m✓␛[m ␛[38;5;245mwindowed-list␛[m  ␛[38;5;245mMS␛[m␛[38;5;245m  done  One windowed l…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mEvery key is declared once␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245mchore · high · size M · done · written 2026-08-20␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────␛[m
+                                            ␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245mSixty-eight literals came out of twenty files; the register is␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245mthe one place a key is written down.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[s]␛[m␛[38;5;241m put it back in the backlog␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[s]␛[m␛[38;5;245m put it back in the backlog␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m new␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · [d] · the one confirm that names what it loses
-␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m                                                   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                                                   ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;205m▸␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mrail-todo-block  HM  in progress        ␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mrail-todo-block␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-to…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mThe backlog block on the inspector rail␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mstory · high · size M · in progress · written 2026-08-28 · in …␛[m
-  ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;241mMM␛[m␛[38;5;241m  blocked  The sprint is…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m1 item waits on this: screen-over-items␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;241mL-␛[m␛[38;5;241m  ready␛[m          ␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────␛[m
-  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;241m  will not load␛[m             ␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m**As a** reader, **I want** the queue beside the turn.␛[m
-                                            ␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m## Acceptance criteria␛[m
-                                            ␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m- [x] four rows and a count␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m- [ ] the running item first␛[m
+␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;205m▸␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mrail-todo-block  HM  in progress        ␛[m␛[m␛[38;5;245m │ ␛[m␛[1;97mrail-todo-block␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mscreen-over-items␛[m  ␛[38;5;245mHL␛[m␛[38;5;245m  waits on rail-to…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mThe backlog block on the inspector rail␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;245mMS␛[m␛[38;5;245m  ready  One renderer…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mstory · high · size M · in progress · written 2026-08-28 · in …␛[m
+  ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;245mMM␛[m␛[38;5;245m  blocked  The sprint is…␛[m␛[38;5;245m │ ␛[m␛[38;5;245m1 item waits on this: screen-over-items␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;245mL-␛[m␛[38;5;245m  ready␛[m          ␛[38;5;245m │ ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────␛[m
+  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;245m  will not load␛[m             ␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m**As a** reader, **I want** the queue beside the turn.␛[m
+                                            ␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m## Acceptance criteria␛[m
+                                            ␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m- [x] four rows and a count␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m- [ ] the running item first␛[m
 
-␛[38;5;252m␛[38;5;252mDrop rail-todo-block? The file is deleted, not archived.␛[m␛[m  ␛[38;5;241m[␛[m␛[38;5;241my␛[m␛[38;5;241m/␛[m␛[1;97mN␛[m␛[38;5;241m]␛[m
+␛[38;5;252m␛[38;5;252mDrop rail-todo-block? The file is deleted, not archived.␛[m␛[m  ␛[38;5;245m[␛[m␛[38;5;245my␛[m␛[38;5;245m/␛[m␛[1;97mN␛[m␛[38;5;245m]␛[m
 
 · a turn is running · the keys that change a file are grey, and the row says why
-␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m                                                   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                                                   ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;205m▸␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mrail-todo-block  HM  in progress        ␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mrail-todo-block␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-to…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mThe backlog block on the inspector rail␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mstory · high · size M · in progress · written 2026-08-28 · in …␛[m
-  ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;241mMM␛[m␛[38;5;241m  blocked  The sprint is…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m1 item waits on this: screen-over-items␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;241mL-␛[m␛[38;5;241m  ready␛[m          ␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────␛[m
-  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;241m  will not load␛[m             ␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m**As a** reader, **I want** the queue beside the turn.␛[m
-                                            ␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m## Acceptance criteria␛[m
-                                            ␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m- [x] four rows and a count␛[m
-                                            ␛[38;5;241m │ ␛[m␛[38;5;241m- [ ] the running item first␛[m
+␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;205m▸␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mrail-todo-block  HM  in progress        ␛[m␛[m␛[38;5;245m │ ␛[m␛[1;97mrail-todo-block␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mscreen-over-items␛[m  ␛[38;5;245mHL␛[m␛[38;5;245m  waits on rail-to…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mThe backlog block on the inspector rail␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;245mMS␛[m␛[38;5;245m  ready  One renderer…␛[m␛[38;5;245m │ ␛[m␛[38;5;245mstory · high · size M · in progress · written 2026-08-28 · in …␛[m
+  ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;245mMM␛[m␛[38;5;245m  blocked  The sprint is…␛[m␛[38;5;245m │ ␛[m␛[38;5;245m1 item waits on this: screen-over-items␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;245mL-␛[m␛[38;5;245m  ready␛[m          ␛[38;5;245m │ ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────␛[m
+  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;245m  will not load␛[m             ␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m**As a** reader, **I want** the queue beside the turn.␛[m
+                                            ␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m## Acceptance criteria␛[m
+                                            ␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m- [x] four rows and a count␛[m
+                                            ␛[38;5;245m │ ␛[m␛[38;5;245m- [ ] the running item first␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
-␛[38;5;241mthe turn is running; these change the files it may be working from␛[m
-␛[38;5;245m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[38;5;245m[r]␛[m␛[38;5;241m run it␛[m␛[38;5;241m · ␛[m␛[38;5;245m[s]␛[m␛[38;5;241m set its status␛[m␛[38;5;241m · ␛[m␛[38;5;245m[d]␛[m␛[38;5;241m delete␛[m␛[38;5;241m · ␛[m␛[38;5;245m[space]␛[m␛[38;5;241m drop it from the cockpit sprint␛[m
-␛[38;5;245m[n]␛[m␛[38;5;241m new item␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m read␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;245mthe turn is running; these change the files it may be working from␛[m
+␛[38;5;248m[e]␛[m␛[38;5;245m edit␛[m␛[38;5;245m · ␛[m␛[38;5;248m[r]␛[m␛[38;5;245m run it␛[m␛[38;5;245m · ␛[m␛[38;5;248m[s]␛[m␛[38;5;245m set its status␛[m␛[38;5;245m · ␛[m␛[38;5;248m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;248m[space]␛[m␛[38;5;245m drop it from the cockpit sprint␛[m
+␛[38;5;248m[n]␛[m␛[38;5;245m new item␛[m
 
 · [?] · every key the screen has
-␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m                                          ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] hide the keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mbacklog␛[m␛[38;5;245m · the cockpit sprint␛[m                                          ␛[38;5;245m6 items␛[m␛[38;5;245m · [?] hide the keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;205m▸␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mrail-todo-block  HM  in progress        ␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mrail-todo-block␛[m
+␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;205m▸␛[m␛[48;5;61m ␛[1;97m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mrail-todo-block  HM  in progress        ␛[m␛[m␛[38;5;245m │ ␛[m␛[1;97mrail-todo-block␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m
-␛[38;5;103m[enter]␛[m␛[38;5;241m open␛[m
-␛[38;5;103m[pgup/pgdn]␛[m␛[38;5;241m page the body␛[m
-␛[38;5;103m[tab]␛[m␛[38;5;241m the backlog, the sprint, or what shipped␛[m
-␛[38;5;103m[/]␛[m␛[38;5;241m filter by ready, blocked, done, priority:high, kind:story, size:S, or a title␛[m
-␛[38;5;103m[backspace]␛[m␛[38;5;241m delete a character from the filter␛[m
-␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m
-␛[38;5;103m[n]␛[m␛[38;5;241m new item␛[m
-␛[38;5;103m[d]␛[m␛[38;5;241m delete␛[m
-␛[38;5;103m[s]␛[m␛[38;5;241m set its status␛[m
-␛[38;5;103m[space]␛[m␛[38;5;241m toggle it in the sprint␛[m
-␛[38;5;103m[r]␛[m␛[38;5;241m run it␛[m
-␛[92m[esc]␛[m␛[38;5;241m back␛[m
-␛[38;5;241mletters  priority H high · M medium · L low — size S M L — - unset␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m
+␛[38;5;103m[pgup/pgdn]␛[m␛[38;5;245m page the body␛[m
+␛[38;5;103m[tab]␛[m␛[38;5;245m the backlog, the sprint, or what shipped␛[m
+␛[38;5;103m[/]␛[m␛[38;5;245m filter by ready, blocked, done, priority:high, kind:story, size:S, or a title␛[m
+␛[38;5;103m[backspace]␛[m␛[38;5;245m delete a character from the filter␛[m
+␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m
+␛[38;5;103m[n]␛[m␛[38;5;245m new item␛[m
+␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m
+␛[38;5;103m[s]␛[m␛[38;5;245m set its status␛[m
+␛[38;5;103m[space]␛[m␛[38;5;245m toggle it in the sprint␛[m
+␛[38;5;103m[r]␛[m␛[38;5;245m run it␛[m
+␛[92m[esc]␛[m␛[38;5;245m back␛[m
+␛[38;5;245mletters  priority H high · M medium · L low — size S M L — - unset␛[m
 
-␛[38;5;241mglyphs␛[m
-␛[38;5;241m⚙␛[m  ␛[38;5;241ma read: a file, a search, a listing␛[m
-␛[38;5;214m$␛[m  ␛[38;5;241ma shell command␛[m
-␛[38;5;214m✎␛[m  ␛[38;5;241man edit, a write, a patch or a memory␛[m
-␛[94m◇␛[m  ␛[38;5;241ma sub-agent␛[m
-␛[38;5;214m⇄␛[m  ␛[38;5;241ma call to a server not marked read-only␛[m
-␛[38;5;241m✻␛[m  ␛[38;5;241mthe model writing its calls, counted as they arrive␛[m
-␛[38;5;241m⛁␛[m  ␛[38;5;241ma published report page␛[m
-␛[38;5;241m≡␛[m  ␛[38;5;241ma reading of the session␛[m
-␛[92m✓␛[m  ␛[38;5;241ma compaction that brought the window back␛[m
-␛[38;5;241m·␛[m  ␛[38;5;241maccepted, not started␛[m
-␛[38;5;205m▸␛[m  ␛[38;5;241mrunning␛[m
-␛[38;5;205m✦␛[m  ␛[38;5;241mthe classifier is deciding␛[m
-␛[91m✗␛[m  ␛[38;5;241mfailed␛[m
-␛[38;5;241m⊘␛[m  ␛[38;5;241mrefused: dim by you, red by a rule␛[m
-␛[38;5;103m[?]␛[m␛[38;5;241m hide the keys␛[m
+␛[38;5;245mglyphs␛[m
+␛[38;5;245m⚙␛[m  ␛[38;5;245ma read: a file, a search, a listing␛[m
+␛[38;5;214m$␛[m  ␛[38;5;245ma shell command␛[m
+␛[38;5;214m✎␛[m  ␛[38;5;245man edit, a write, a patch or a memory␛[m
+␛[94m◇␛[m  ␛[38;5;245ma sub-agent␛[m
+␛[38;5;214m⇄␛[m  ␛[38;5;245ma call to a server not marked read-only␛[m
+␛[38;5;245m✻␛[m  ␛[38;5;245mthe model writing its calls, counted as they arrive␛[m
+␛[38;5;245m⛁␛[m  ␛[38;5;245ma published report page␛[m
+␛[38;5;245m≡␛[m  ␛[38;5;245ma reading of the session␛[m
+␛[92m✓␛[m  ␛[38;5;245ma compaction that brought the window back␛[m
+␛[38;5;245m·␛[m  ␛[38;5;245maccepted, not started␛[m
+␛[38;5;205m▸␛[m  ␛[38;5;245mrunning␛[m
+␛[38;5;205m✦␛[m  ␛[38;5;245mthe classifier is deciding␛[m
+␛[91m✗␛[m  ␛[38;5;245mfailed␛[m
+␛[38;5;245m⊘␛[m  ␛[38;5;245mrefused: dim by you, red by a rule␛[m
+␛[38;5;103m[?]␛[m␛[38;5;245m hide the keys␛[m

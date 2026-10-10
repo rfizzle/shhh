@@ -63,52 +63,52 @@
 
 ── ansi ────────────────────────────────────────────────────
 · the step being worked · its paths and the calls that carried it out
-␛[1;97m/plan␛[m␛[38;5;241m · make the round limit recoverable · 2 of 4 done␛[m     ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/plan␛[m␛[38;5;245m · make the round limit recoverable · 2 of 4 done␛[m     ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m          ␛[92mdone␛[m                          ␛[38;5;252m1 tool␛[m
-  ␛[38;5;241m2. ␛[m␛[38;5;252m✗ Add a RoundsExhausted sentinel␛[m       ␛[91mfailed␛[m                        ␛[38;5;252m1 tool␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m3. ▸ Return it from runRound              running                       1 tool␛[m
-  ␛[38;5;241m4. ␛[m␛[38;5;252m· Offer more rounds in the chat model␛[m                           ␛[38;5;241mnot started␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
-␛[1;97m3. Return it from runRound␛[m                                               ␛[38;5;241mrunning␛[m
+  ␛[38;5;245m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m          ␛[92mdone␛[m                          ␛[38;5;252m1 tool␛[m
+  ␛[38;5;245m2. ␛[m␛[38;5;252m✗ Add a RoundsExhausted sentinel␛[m       ␛[91mfailed␛[m                        ␛[38;5;252m1 tool␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m3. ▸ Return it from runRound              running                       1 tool␛[m
+  ␛[38;5;245m4. ␛[m␛[38;5;252m· Offer more rounds in the chat model␛[m                           ␛[38;5;245mnot started␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m3. Return it from runRound␛[m                                               ␛[38;5;245mrunning␛[m
 
-  ␛[38;5;243mtouches ␛[m␛[38;5;252minternal/agent/loop.go␛[m
+  ␛[38;5;246mtouches ␛[m␛[38;5;252minternal/agent/loop.go␛[m
 
-␛[38;5;241m… (+2 more rows)␛[m
+␛[38;5;245m… (+2 more rows)␛[m
 
-␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
 
 · a failed step · finished, and not cleanly
-␛[1;97m/plan␛[m␛[38;5;241m · make the round limit recoverable · 2 of 4 done␛[m     ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/plan␛[m␛[38;5;245m · make the round limit recoverable · 2 of 4 done␛[m     ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m          ␛[92mdone␛[m                          ␛[38;5;252m1 tool␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m2. ✗ Add a RoundsExhausted sentinel       failed                        1 tool␛[m
-  ␛[38;5;241m3. ␛[m␛[38;5;252m▸ Return it from runRound␛[m              ␛[38;5;252mrunning␛[m                       ␛[38;5;252m1 tool␛[m
-  ␛[38;5;241m4. ␛[m␛[38;5;252m· Offer more rounds in the chat model␛[m                           ␛[38;5;241mnot started␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
-␛[1;97m2. Add a RoundsExhausted sentinel␛[m                                         ␛[38;5;241mfailed␛[m
+  ␛[38;5;245m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m          ␛[92mdone␛[m                          ␛[38;5;252m1 tool␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m2. ✗ Add a RoundsExhausted sentinel       failed                        1 tool␛[m
+  ␛[38;5;245m3. ␛[m␛[38;5;252m▸ Return it from runRound␛[m              ␛[38;5;252mrunning␛[m                       ␛[38;5;252m1 tool␛[m
+  ␛[38;5;245m4. ␛[m␛[38;5;252m· Offer more rounds in the chat model␛[m                           ␛[38;5;245mnot started␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m2. Add a RoundsExhausted sentinel␛[m                                         ␛[38;5;245mfailed␛[m
 
-  ␛[38;5;243mtouches ␛[m␛[38;5;252minternal/agent/errors.go␛[m
+  ␛[38;5;246mtouches ␛[m␛[38;5;252minternal/agent/errors.go␛[m
 
-␛[38;5;241m… (+2 more rows)␛[m
+␛[38;5;245m… (+2 more rows)␛[m
 
-␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m
 
 · a step not reached · with what the run did that the plan did not say
-␛[1;97m/plan␛[m␛[38;5;241m · make the round limit recoverable · 2 of 4 done␛[m     ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/plan␛[m␛[38;5;245m · make the round limit recoverable · 2 of 4 done␛[m     ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m          ␛[92mdone␛[m                          ␛[38;5;252m1 tool␛[m
-  ␛[38;5;241m2. ␛[m␛[38;5;252m✗ Add a RoundsExhausted sentinel␛[m       ␛[91mfailed␛[m                        ␛[38;5;252m1 tool␛[m
-  ␛[38;5;241m3. ␛[m␛[38;5;252m▸ Return it from runRound␛[m              ␛[38;5;252mrunning␛[m                       ␛[38;5;252m1 tool␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m4. · Offer more rounds in the chat model                           not started␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
-␛[1;97m4. Offer more rounds in the chat model␛[m                                    ␛[38;5;241mqueued␛[m
+  ␛[38;5;245m1. ␛[m␛[38;5;252m✓ Locate the round accounting␛[m          ␛[92mdone␛[m                          ␛[38;5;252m1 tool␛[m
+  ␛[38;5;245m2. ␛[m␛[38;5;252m✗ Add a RoundsExhausted sentinel␛[m       ␛[91mfailed␛[m                        ␛[38;5;252m1 tool␛[m
+  ␛[38;5;245m3. ␛[m␛[38;5;252m▸ Return it from runRound␛[m              ␛[38;5;252mrunning␛[m                       ␛[38;5;252m1 tool␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m4. · Offer more rounds in the chat model                           not started␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m4. Offer more rounds in the chat model␛[m                                    ␛[38;5;245mqueued␛[m
 
-  ␛[38;5;243mtouches ␛[m␛[38;5;252minternal/ui/chat/model.go␛[m
+  ␛[38;5;246mtouches ␛[m␛[38;5;252minternal/ui/chat/model.go␛[m
 
-␛[38;5;241m  not started · nothing in the transcript has carried it out␛[m
+␛[38;5;245m  not started · nothing in the transcript has carried it out␛[m
 
-␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m

@@ -67,56 +67,56 @@ nothing this session ran has come back broken                  │ no alert sele
 
 ── ansi ────────────────────────────────────────────────────
 · standing · the suite still failing, nothing has answered it
-␛[1;97m/alerts␛[m␛[38;5;241m · 2 standing␛[m␛[38;5;241m · 2 superseded␛[m                                                                          ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/alerts␛[m␛[38;5;245m · 2 standing␛[m␛[38;5;245m · 2 superseded␛[m                                                                          ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;97;48;5;62m✗ make test  standing · exit 2 · 3 runs         since turn 3␛[m␛[38;5;241m │ ␛[m␛[1;97mmake test␛[m                                                ␛[38;5;241mstanding␛[m
-  ␛[38;5;252m✗ gofmt␛[m  ␛[91mstanding␛[m␛[38;5;241m · ␛[m␛[38;5;241mexit 1␛[m                            ␛[38;5;241mturn 5␛[m␛[38;5;241m │ ␛[m
-  ␛[38;5;252m✓ golangci-lint run␛[m  ␛[38;5;241msuperseded␛[m␛[38;5;241m · ␛[m␛[38;5;241mexit 1 · 2 runs␛[m     ␛[38;5;241mturn 2␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mlast run  ␛[m␛[38;5;252mexit 2␛[m
-  ␛[38;5;252m✓ go build␛[m  ␛[38;5;241msuperseded␛[m␛[38;5;241m · ␛[m␛[38;5;241mexit 1␛[m                       ␛[38;5;241mturn 1␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mruns      ␛[m␛[38;5;252m3, in 2 turns␛[m
-                                                              ␛[38;5;241m │ ␛[m  ␛[38;5;243mbroke     ␛[m␛[38;5;252mturn 3␛[m
-                                                              ␛[38;5;241m │ ␛[m  ␛[38;5;243manswered  ␛[m␛[91mnot yet␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m✗ make test  standing · exit 2 · 3 runs         since turn 3␛[m␛[38;5;245m │ ␛[m␛[1;97mmake test␛[m                                                ␛[38;5;245mstanding␛[m
+  ␛[38;5;252m✗ gofmt␛[m  ␛[91mstanding␛[m␛[38;5;245m · ␛[m␛[38;5;245mexit 1␛[m                            ␛[38;5;245mturn 5␛[m␛[38;5;245m │ ␛[m
+  ␛[38;5;252m✓ golangci-lint run␛[m  ␛[38;5;245msuperseded␛[m␛[38;5;245m · ␛[m␛[38;5;245mexit 1 · 2 runs␛[m     ␛[38;5;245mturn 2␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mlast run  ␛[m␛[38;5;252mexit 2␛[m
+  ␛[38;5;252m✓ go build␛[m  ␛[38;5;245msuperseded␛[m␛[38;5;245m · ␛[m␛[38;5;245mexit 1␛[m                       ␛[38;5;245mturn 1␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mruns      ␛[m␛[38;5;252m3, in 2 turns␛[m
+                                                              ␛[38;5;245m │ ␛[m  ␛[38;5;246mbroke     ␛[m␛[38;5;252mturn 3␛[m
+                                                              ␛[38;5;245m │ ␛[m  ␛[38;5;246manswered  ␛[m␛[91mnot yet␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m show each run␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mevery command this session broke, as the rail reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m show each run␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m             ␛[38;5;245mevery command this session broke, as the rail reads it␛[m
 
 · superseded · the linter the quality gate answered, and the turn it did
-␛[1;97m/alerts␛[m␛[38;5;241m · 2 standing␛[m␛[38;5;241m · 2 superseded␛[m                                                                          ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/alerts␛[m␛[38;5;245m · 2 standing␛[m␛[38;5;245m · 2 superseded␛[m                                                                          ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252m✗ make test␛[m  ␛[91mstanding␛[m␛[38;5;241m · ␛[m␛[38;5;241mexit 2 · 3 runs␛[m         ␛[38;5;241msince turn 3␛[m␛[38;5;241m │ ␛[m␛[1;97mgolangci-lint run␛[m                                      ␛[38;5;241msuperseded␛[m
-  ␛[38;5;252m✗ gofmt␛[m  ␛[91mstanding␛[m␛[38;5;241m · ␛[m␛[38;5;241mexit 1␛[m                            ␛[38;5;241mturn 5␛[m␛[38;5;241m │ ␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m✓ golangci-lint run  superseded · exit 1 · 2 runs     turn 2␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mlast run  ␛[m␛[38;5;252mexit 1␛[m
-  ␛[38;5;252m✓ go build␛[m  ␛[38;5;241msuperseded␛[m␛[38;5;241m · ␛[m␛[38;5;241mexit 1␛[m                       ␛[38;5;241mturn 1␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mruns      ␛[m␛[38;5;252m2␛[m
-                                                              ␛[38;5;241m │ ␛[m  ␛[38;5;243mbroke     ␛[m␛[38;5;252mturn 2␛[m
-                                                              ␛[38;5;241m │ ␛[m  ␛[38;5;243manswered  ␛[m␛[38;5;252mquality gate default passed · turn 4␛[m
+  ␛[38;5;252m✗ make test␛[m  ␛[91mstanding␛[m␛[38;5;245m · ␛[m␛[38;5;245mexit 2 · 3 runs␛[m         ␛[38;5;245msince turn 3␛[m␛[38;5;245m │ ␛[m␛[1;97mgolangci-lint run␛[m                                      ␛[38;5;245msuperseded␛[m
+  ␛[38;5;252m✗ gofmt␛[m  ␛[91mstanding␛[m␛[38;5;245m · ␛[m␛[38;5;245mexit 1␛[m                            ␛[38;5;245mturn 5␛[m␛[38;5;245m │ ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m✓ golangci-lint run  superseded · exit 1 · 2 runs     turn 2␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mlast run  ␛[m␛[38;5;252mexit 1␛[m
+  ␛[38;5;252m✓ go build␛[m  ␛[38;5;245msuperseded␛[m␛[38;5;245m · ␛[m␛[38;5;245mexit 1␛[m                       ␛[38;5;245mturn 1␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mruns      ␛[m␛[38;5;252m2␛[m
+                                                              ␛[38;5;245m │ ␛[m  ␛[38;5;246mbroke     ␛[m␛[38;5;252mturn 2␛[m
+                                                              ␛[38;5;245m │ ␛[m  ␛[38;5;246manswered  ␛[m␛[38;5;252mquality gate default passed · turn 4␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m show each run␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mevery command this session broke, as the rail reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m show each run␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m             ␛[38;5;245mevery command this session broke, as the rail reads it␛[m
 
 · one episode opened · each run, its ending, its time and the evidence id its output was kept under
-␛[1;97m/alerts␛[m␛[38;5;241m · 2 standing␛[m␛[38;5;241m · 2 superseded␛[m                                                                          ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/alerts␛[m␛[38;5;245m · 2 standing␛[m␛[38;5;245m · 2 superseded␛[m                                                                          ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;97;48;5;62m✗ make test  standing · exit 2 · 3 runs         since turn 3␛[m␛[38;5;241m │ ␛[m␛[1;97mmake test␛[m                                                ␛[38;5;241mstanding␛[m
-  ␛[38;5;252m✗ gofmt␛[m  ␛[91mstanding␛[m␛[38;5;241m · ␛[m␛[38;5;241mexit 1␛[m                            ␛[38;5;241mturn 5␛[m␛[38;5;241m │ ␛[m
-  ␛[38;5;252m✓ golangci-lint run␛[m  ␛[38;5;241msuperseded␛[m␛[38;5;241m · ␛[m␛[38;5;241mexit 1 · 2 runs␛[m     ␛[38;5;241mturn 2␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mlast run  ␛[m␛[38;5;252mexit 2␛[m
-  ␛[38;5;252m✓ go build␛[m  ␛[38;5;241msuperseded␛[m␛[38;5;241m · ␛[m␛[38;5;241mexit 1␛[m                       ␛[38;5;241mturn 1␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mruns      ␛[m␛[38;5;252m3, in 2 turns␛[m
-                                                              ␛[38;5;241m │ ␛[m  ␛[38;5;243mbroke     ␛[m␛[38;5;252mturn 3␛[m
-                                                              ␛[38;5;241m │ ␛[m  ␛[38;5;243manswered  ␛[m␛[91mnot yet␛[m
-                                                              ␛[38;5;241m │ ␛[m
-                                                              ␛[38;5;241m │ ␛[m  ␛[38;5;243meach run␛[m
-                                                              ␛[38;5;241m │ ␛[m␛[94m❯␛[m ␛[91m✗␛[m ␛[38;5;252mturn 3 · exit 2 · 4.2s␛[m                    ␛[38;5;241mev-0f3a9c1d2e4b5a67␛[m
-                                                              ␛[38;5;241m │ ␛[m    ␛[38;5;245mmake test␛[m
-                                                              ␛[38;5;241m │ ␛[m  ␛[91m✗␛[m ␛[38;5;252mturn 3 · exit 2 · 3.9s␛[m
-                                                              ␛[38;5;241m │ ␛[m    ␛[38;5;245mmake test␛[m
-                                                              ␛[38;5;241m │ ␛[m  ␛[91m✗␛[m ␛[38;5;252mturn 5 · killed · signal 9 · 30s␛[m          ␛[38;5;241mev-7b21c0de9f8a3e44␛[m
-                                                              ␛[38;5;241m │ ␛[m    ␛[38;5;245mmake test␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m✗ make test  standing · exit 2 · 3 runs         since turn 3␛[m␛[38;5;245m │ ␛[m␛[1;97mmake test␛[m                                                ␛[38;5;245mstanding␛[m
+  ␛[38;5;252m✗ gofmt␛[m  ␛[91mstanding␛[m␛[38;5;245m · ␛[m␛[38;5;245mexit 1␛[m                            ␛[38;5;245mturn 5␛[m␛[38;5;245m │ ␛[m
+  ␛[38;5;252m✓ golangci-lint run␛[m  ␛[38;5;245msuperseded␛[m␛[38;5;245m · ␛[m␛[38;5;245mexit 1 · 2 runs␛[m     ␛[38;5;245mturn 2␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mlast run  ␛[m␛[38;5;252mexit 2␛[m
+  ␛[38;5;252m✓ go build␛[m  ␛[38;5;245msuperseded␛[m␛[38;5;245m · ␛[m␛[38;5;245mexit 1␛[m                       ␛[38;5;245mturn 1␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mruns      ␛[m␛[38;5;252m3, in 2 turns␛[m
+                                                              ␛[38;5;245m │ ␛[m  ␛[38;5;246mbroke     ␛[m␛[38;5;252mturn 3␛[m
+                                                              ␛[38;5;245m │ ␛[m  ␛[38;5;246manswered  ␛[m␛[91mnot yet␛[m
+                                                              ␛[38;5;245m │ ␛[m
+                                                              ␛[38;5;245m │ ␛[m  ␛[38;5;246meach run␛[m
+                                                              ␛[38;5;245m │ ␛[m␛[94m❯␛[m ␛[91m✗␛[m ␛[38;5;252mturn 3 · exit 2 · 4.2s␛[m                    ␛[38;5;245mev-0f3a9c1d2e4b5a67␛[m
+                                                              ␛[38;5;245m │ ␛[m    ␛[38;5;248mmake test␛[m
+                                                              ␛[38;5;245m │ ␛[m  ␛[91m✗␛[m ␛[38;5;252mturn 3 · exit 2 · 3.9s␛[m
+                                                              ␛[38;5;245m │ ␛[m    ␛[38;5;248mmake test␛[m
+                                                              ␛[38;5;245m │ ␛[m  ␛[91m✗␛[m ␛[38;5;252mturn 5 · killed · signal 9 · 30s␛[m          ␛[38;5;245mev-7b21c0de9f8a3e44␛[m
+                                                              ␛[38;5;245m │ ␛[m    ␛[38;5;248mmake test␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open its output␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m           ␛[38;5;241mevery command this session broke, as the rail reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open its output␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m           ␛[38;5;245mevery command this session broke, as the rail reads it␛[m
 
 · empty · a session that has broken nothing
-␛[1;97m/alerts␛[m                                                                                                      ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/alerts␛[m                                                                                                      ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241mnothing this session ran has come back broken␛[m                 ␛[38;5;241m │ ␛[m␛[38;5;241mno alert selected␛[m
+␛[38;5;245mnothing this session ran has come back broken␛[m                 ␛[38;5;245m │ ␛[m␛[38;5;245mno alert selected␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m

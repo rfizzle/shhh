@@ -1,0 +1,24 @@
+# program test: TestProgram_TheQuitChordArmsThenLeaves
+#
+# The faint greys, read on the real screen. The palette test computes the
+# ratios from the hex; this is the picture of what they are for: the start
+# screen's hints, a finished tool row, and the key legend under the draft, the
+# three places the dimmest text on the screen sits
+# (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
+#
+# What the capture is for: the .txt is read against the golden's layout block
+# and must match it cell for cell, since the lift moved colour and no layout;
+# the picture is looked at for the one thing cells cannot carry, which is that
+# the hints and the legend are readable at a glance and still the quietest
+# thing on the screen, below the answer. Driven at 110 by `make tui-shot
+# SCENE=ramp-contrast COLS=110` and at the scene's own 130.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+snap 01-start "Some things worth doing first"
+keys "where is the round counter read" Enter
+snap 02-tool-row "The counter is read at the top of the loop."
+snap 03-idle "[enter] send"
+keys C-c
+snap 04-quit-armed "again quits"
+sleep 2.5
+press 0.3 C-c C-c
+snap 05-exit "that is everything the screen was holding"

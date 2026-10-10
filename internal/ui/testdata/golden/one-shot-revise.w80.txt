@@ -24,7 +24,7 @@ revision 1  [enter] show what it would affect  [y] run it  [e] edit
 ␛[38;5;250m❯ only ones owned by me, and show the pid␛[m                                       
 ␛[38;5;214m$ ␛[m␛[1;97mlsof -nP -iTCP -sTCP:LISTEN -u $(id -un) -Fpcn␛[m                                
   ␛[38;5;252m-u filters to your uid; -F prints pid, command and name as parseable fields.␛[m  
-  ␛[38;5;243m⛨ no sudo␛[m                                                                     
+  ␛[38;5;246m⛨ no sudo␛[m                                                                     
                                                                                 
-␛[38;5;241mrevision 1  ␛[m␛[92m[enter]␛[m␛[38;5;241m show what it would affect␛[m␛[38;5;241m  ␛[m␛[38;5;103m[y]␛[m␛[38;5;241m run it␛[m␛[38;5;241m  ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m             
-␛[38;5;103m[r]␛[m␛[38;5;241m retry with a note␛[m␛[38;5;241m  ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy␛[m␛[38;5;241m  ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write␛[m␛[38;5;241m  ␛[m␛[38;5;241m[esc]␛[m␛[38;5;241m back␛[m                     
+␛[38;5;245mrevision 1  ␛[m␛[92m[enter]␛[m␛[38;5;245m show what it would affect␛[m␛[38;5;245m  ␛[m␛[38;5;103m[y]␛[m␛[38;5;245m run it␛[m␛[38;5;245m  ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m             
+␛[38;5;103m[r]␛[m␛[38;5;245m retry with a note␛[m␛[38;5;245m  ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy␛[m␛[38;5;245m  ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write␛[m␛[38;5;245m  ␛[m␛[38;5;245m[esc]␛[m␛[38;5;245m back␛[m                     

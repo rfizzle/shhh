@@ -22,11 +22,11 @@
 
 ── ansi ────────────────────────────────────────────────────
 · feed · the command, its outcome, its clock and its last line out
-  ␛[38;5;214m▎␛[m␛[38;5;205m▸␛[m ␛[97mrun␛[m     ␛[97mgo test ./internal/agent/... ./internal/ui/chat/... -run TestRoundLimitPause -c…␛[m  ␛[38;5;205mrunning…␛[m    ␛[38;5;241m42s␛[m
-  ␛[38;5;245m--- FAIL: TestRoundLimitPause/the ceiling holds the turn open (0.42s)␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;205m▸␛[m ␛[97mrun␛[m     ␛[97mgo test ./internal/agent/... ./internal/ui/chat/... -run TestRoundLimitPause -c…␛[m  ␛[38;5;205mrunning…␛[m    ␛[38;5;245m42s␛[m
+  ␛[38;5;248m--- FAIL: TestRoundLimitPause/the ceiling holds the turn open (0.42s)␛[m
 
 · frame · the phase and the turn's clock, and no second copy
-␛[38;5;241m╭─␛[m ␛[38;5;205m⠋ acting…␛[38;5;241m · turn 1m 04s␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;241m│␛[m ␛[38;5;205;1m▸␛[m ␛[38;5;252m                                                                                                    ␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mcontext 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;241m╰─␛[m ␛[38;5;103m[ctrl+p]␛[38;5;241m hold · ␛[38;5;103m[ctrl+c]␛[38;5;241m stop the run · ␛[38;5;103m[enter]␛[38;5;241m add to this turn · ␛[38;5;103m[shift+tab]␛[38;5;241m mode␛[m ␛[38;5;241m──────────────────╯␛[m
+␛[38;5;245m╭─␛[m ␛[38;5;205m⠋ acting…␛[38;5;245m · turn 1m 04s␛[m ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────╮␛[m
+␛[38;5;245m│␛[m ␛[38;5;205;1m▸␛[m ␛[38;5;252m                                                                                                    ␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;246m · ␛[92mcontext 32%␛[m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51␛[m ␛[38;5;245m──────────────────────────────────────────────────────────────┤␛[m
+␛[38;5;245m╰─␛[m ␛[38;5;103m[ctrl+p]␛[38;5;245m hold · ␛[38;5;103m[ctrl+c]␛[38;5;245m stop the run · ␛[38;5;103m[enter]␛[38;5;245m add to this turn · ␛[38;5;103m[shift+tab]␛[38;5;245m mode␛[m ␛[38;5;245m──────────────────╯␛[m

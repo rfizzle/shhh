@@ -28,7 +28,7 @@ seen.
 
 <!-- BEGIN generated departure counts — written by `make docs` from each section's filed line; edit those, not this. -->
 
-**48 open gaps · 25 open disagreements · 11 closed or withdrawn**
+**48 open gaps · 26 open disagreements · 11 closed or withdrawn**
 
 <!-- END generated departure counts -->
 
@@ -207,6 +207,35 @@ the pairing is worth offering, and it is the one table where the five tokens
 that normally defer to the terminal's own theme do not: a named palette that
 handed its green back to whatever the user's config says would not be that
 palette.
+
+## The chrome greys clear 4.5:1, and CharmTone's do not
+
+_Filed 2026-10-10 · closes by the binary_
+
+The first column of the design system's colours set the faintest grey at
+`#626262`, 3.09:1 on the painted ground and 2.79:1 on the band, and the status
+grey at `#767676`. Both carry instructions — the hints, the key legend, the
+counts, the status line — so the binary holds every grey it writes text in to
+the 4.5:1 floor on its table's ground and on its band
+([the rule](principles.md#a-colour-is-three-values-and-a-ground)), and the
+rungs moved to do it: on the dark table Dim is `#8a8a8a` (245) at 5.47:1 on
+the ground and 4.94:1 on the band, Status `#949494` (246), Dimmer `#a8a8a8`
+(248); on the light table Dim is `#626262` (241) at 6.10:1 on white and 4.80:1
+on its band, Status `#585858` (240), Dimmer `#4e4e4e` (239) and Subtle
+`#444444` (238), pushed down a rung each so the ladder still ascends. The
+selected row's ground on the dark table is `#5f5faf` (61) rather than
+`#5f5fd7`, because Bright is the terminal's own white at 256 and cannot move:
+Bright on the row is 4.66:1 where it was 4.25:1. The order is kept — faint
+rules and empty cells are still Dim, still the faintest text on the screen,
+and no louder than the words.
+
+CharmTone is the exception, and it is recorded rather than fixed. Its chrome
+greys are the published set's own faint tones, Iron, Oyster and Squid, which
+stand 1.93:1, 2.60:1 and 4.40:1 off its ground; lifting them would make the
+table something other than that palette. Its body, subtle and bright clear the
+bar, and the test pins the six shortfalls so that any other grey falling short,
+or one of these coming up, fails it. Bright on its selected row, Charple, is
+4.35:1 and is left the same way.
 
 ## The band's light and CharmTone values were chosen in the binary
 

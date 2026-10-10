@@ -37,20 +37,20 @@ $ find ~/src -name node_modules -type d -prune -exec rm -rf {} +
 ␛[38;5;214m$ ␛[m␛[1;97mfind ~/src -name node_modules -type d -prune -exec rm -rf {} +␛[m                
   ␛[38;5;252m-prune stops find from descending into a directory it just deleted.␛[m           
   ␛[91m⚠ recursive forced deletion — may destroy files irrecoverably␛[m                 
-  ␛[38;5;243m⛨ no sudo␛[m                                                                     
+  ␛[38;5;246m⛨ no sudo␛[m                                                                     
                                                                                 
-␛[92m[enter]␛[m␛[38;5;241m show what it would affect␛[m␛[38;5;241m  ␛[m␛[91m[y]␛[m␛[38;5;241m run it␛[m␛[38;5;241m  ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m  ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m retry with a note␛[m  
-␛[38;5;103m[c]␛[m␛[38;5;241m copy␛[m␛[38;5;241m  ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write␛[m␛[38;5;241m  ␛[m␛[38;5;241m[esc]␛[m␛[38;5;241m back␛[m                                            
+␛[92m[enter]␛[m␛[38;5;245m show what it would affect␛[m␛[38;5;245m  ␛[m␛[91m[y]␛[m␛[38;5;245m run it␛[m␛[38;5;245m  ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m␛[38;5;245m  ␛[m␛[38;5;103m[r]␛[m␛[38;5;245m retry with a note␛[m  
+␛[38;5;103m[c]␛[m␛[38;5;245m copy␛[m␛[38;5;245m  ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write␛[m␛[38;5;245m  ␛[m␛[38;5;245m[esc]␛[m␛[38;5;245m back␛[m                                            
 
 · what enter shows
 ␛[38;5;214m$ ␛[m␛[1;97mfind ~/src -name node_modules -type d -prune -exec rm -rf {} +␛[m                
   ␛[38;5;252m-prune stops find from descending into a directory it just deleted.␛[m           
   ␛[91m⚠ recursive forced deletion — may destroy files irrecoverably␛[m                 
-  ␛[38;5;243m⛨ no sudo␛[m                                                                     
-  ␛[38;5;241mwould affect␛[m                                                                  
+  ␛[38;5;246m⛨ no sudo␛[m                                                                     
+  ␛[38;5;245mwould affect␛[m                                                                  
     ␛[91mshhh cannot tell what find writes␛[m                                           
                                                                                 
-␛[38;5;241m╭─ ␛[m␛[1;97mFrom here ␛[m␛[38;5;241m──────────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
-␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62mdry run  find ~/src -name node_modules -type d -prune -print              ␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m                                      ␛[38;5;241m│␛[m
-␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
+␛[38;5;245m╭─ ␛[m␛[1;97mFrom here ␛[m␛[38;5;245m──────────────────────────────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
+␛[38;5;245m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;61mdry run  find ~/src -name node_modules -type d -prune -print              ␛[m ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;103m[↑↓]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m                                      ␛[38;5;245m│␛[m
+␛[38;5;245m╰──────────────────────────────────────────────────────────────────────────────╯␛[m

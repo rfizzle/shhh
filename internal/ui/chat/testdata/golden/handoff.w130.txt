@@ -73,60 +73,60 @@ Write a handoff first? Changes are uncommitted.  [y/N] · [?] keys
 ── ansi ────────────────────────────────────────────────────
 · the start screen · the resume offer names the handoff
 ␛[1;97m▄▀▀▀ █    █    █␛[m
-␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
+␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;245m · ·  ·   ·     ·␛[m
 ␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
 
-␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
+␛[38;5;252mgo 1.24␛[m␛[38;5;245m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;245m · ␛[m␛[38;5;252m41 packages␛[m
 
-␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
-␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
+␛[38;5;246mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;245m — in the system prompt␛[m
+␛[38;5;246mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;245m — vet, test · runs without asking␛[m
 
-␛[38;5;241mSome things worth doing first:␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m▸ pick up retry-backoff — Retry backoff capped; the timer test still flakes␛[m
-  ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;241m — reads only, no writes␛[m
+␛[38;5;245mSome things worth doing first:␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m▸ pick up retry-backoff — Retry backoff capped; the timer test still flakes␛[m
+  ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
-    ␛[38;5;241mone approval, then it reports back␛[m
+    ␛[38;5;245mone approval, then it reports back␛[m
 
-␛[38;5;241mor just type what you want␛[m␛[38;5;241m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;241m keys␛[m
-␛[38;5;103m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;241m select rows␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;241m commands␛[m
-␛[38;5;103m[ctrl+x]␛[m␛[38;5;241m mouse on/off␛[m
+␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;245m keys␛[m
+␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m
+␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
 
 · the card · the session's draft, around the note
-␛[94m╭─ ␛[m␛[1;97mApprove handoff ␛[m␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
+␛[94m╭─ ␛[m␛[1;97mApprove handoff ␛[m␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
 ␛[94m│␛[m ␛[38;5;214m✎␛[m ␛[97mkeep this handoff on retry-backoff␛[m                                                                                       ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241mthe next sitting of this conversation opens on it␛[m                                                                          ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245mthe next sitting of this conversation opens on it␛[m                                                                          ␛[94m│␛[m
 ␛[94m│␛[m                                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243msummary   ␛[m␛[38;5;252mRetry backoff capped; the timer test still flakes␛[m                                                                ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mnote      ␛[m␛[38;5;252mpick up at the flake␛[m                                                                                             ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mdone      ␛[m␛[38;5;252mcapped the backoff at 30s, read from retry.max_wait and honoured on every provider␛[m                               ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mopen      ␛[m␛[38;5;252mthe timer test flakes under load␛[m                                                                                 ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mdecided   ␛[m␛[38;5;252mno jitter: the cap is enough␛[m                                                                                     ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mfiles     ␛[m␛[38;5;252minternal/agent/retry.go, internal/agent/retry_test.go␛[m                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mitem      ␛[m␛[38;5;252mretry-cap — Cap the retry backoff␛[m                                                                                ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246msummary   ␛[m␛[38;5;252mRetry backoff capped; the timer test still flakes␛[m                                                                ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mnote      ␛[m␛[38;5;252mpick up at the flake␛[m                                                                                             ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mdone      ␛[m␛[38;5;252mcapped the backoff at 30s, read from retry.max_wait and honoured on every provider␛[m                               ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mopen      ␛[m␛[38;5;252mthe timer test flakes under load␛[m                                                                                 ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mdecided   ␛[m␛[38;5;252mno jitter: the cap is enough␛[m                                                                                     ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mfiles     ␛[m␛[38;5;252minternal/agent/retry.go, internal/agent/retry_test.go␛[m                                                            ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mitem      ␛[m␛[38;5;252mretry-cap — Cap the retry backoff␛[m                                                                                ␛[94m│␛[m
 ␛[94m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mkeep it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnothing kept␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit first␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave — nothing kept, and the draft waits␛[m               ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241menter opened this card and keeps nothing — only [y] does␛[m                                                                   ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mkeep it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnothing kept␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit first␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;245m · ␛[m␛[92m[esc] leave — nothing kept, and the draft waits␛[m               ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245menter opened this card and keeps nothing — only [y] does␛[m                                                                   ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the quit · uncommitted work and no handoff
-␛[38;5;252mWrite a handoff first? Changes are uncommitted.␛[m  ␛[38;5;241m[␛[m␛[38;5;241my␛[m␛[38;5;241m/␛[m␛[1;97mN␛[m␛[38;5;241m]␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m
+␛[38;5;252mWrite a handoff first? Changes are uncommitted.␛[m  ␛[38;5;245m[␛[m␛[38;5;245my␛[m␛[38;5;245m/␛[m␛[1;97mN␛[m␛[38;5;245m]␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m
 
 
 
 · the resumed sitting · the handoff is the first row
 ␛[94m❯␛[m ␛[97mcap the retry backoff␛[m
-␛[38;5;243m─────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m─────────────────────────────────────────────────────────────────────────────␛[m
 
     ␛[38;5;252mcapped it at 30s; the timer test still flakes␛[m
 
-  ␛[38;5;241m·␛[m ␛[38;5;241myour handoff from the last sitting:␛[m
-    ␛[38;5;241mRetry backoff capped; the timer test still flakes␛[m
-    ␛[38;5;241mnote: pick up at the flake␛[m
-    ␛[38;5;241mdone: capped the backoff at 30s, read from retry.max_wait and honoured on␛[m
-    ␛[38;5;241mevery provider␛[m
-    ␛[38;5;241mopen: the timer test flakes under load␛[m
-    ␛[38;5;241mdecided: no jitter: the cap is enough␛[m
-    ␛[38;5;241mfiles: internal/agent/retry.go, internal/agent/retry_test.go␛[m
-    ␛[38;5;241mitem: retry-cap — Cap the retry backoff␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mresumed no git here␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245myour handoff from the last sitting:␛[m
+    ␛[38;5;245mRetry backoff capped; the timer test still flakes␛[m
+    ␛[38;5;245mnote: pick up at the flake␛[m
+    ␛[38;5;245mdone: capped the backoff at 30s, read from retry.max_wait and honoured on␛[m
+    ␛[38;5;245mevery provider␛[m
+    ␛[38;5;245mopen: the timer test flakes under load␛[m
+    ␛[38;5;245mdecided: no jitter: the cap is enough␛[m
+    ␛[38;5;245mfiles: internal/agent/retry.go, internal/agent/retry_test.go␛[m
+    ␛[38;5;245mitem: retry-cap — Cap the retry backoff␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mresumed no git here␛[m
 

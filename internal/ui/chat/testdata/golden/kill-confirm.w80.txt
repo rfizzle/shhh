@@ -18,7 +18,7 @@ Stop researcher-1? Kill discards its workspace.  [y] cancel · [k] kill
 
 ── ansi ────────────────────────────────────────────────────
 · a writer holding a patch
-␛[38;5;252mStop writer-1? A kill keeps its patch. Kill discards…␛[m  ␛[38;5;241m[y] ␛[mcancel␛[38;5;241m · [k] ␛[mkill
+␛[38;5;252mStop writer-1? A kill keeps its patch. Kill discards…␛[m  ␛[38;5;245m[y] ␛[mcancel␛[38;5;245m · [k] ␛[mkill
 
 · a child with nothing to keep
-␛[38;5;252mStop researcher-1? Kill discards its workspace.␛[m  ␛[38;5;241m[y] ␛[mcancel␛[38;5;241m · [k] ␛[mkill
+␛[38;5;252mStop researcher-1? Kill discards its workspace.␛[m  ␛[38;5;245m[y] ␛[mcancel␛[38;5;245m · [k] ␛[mkill

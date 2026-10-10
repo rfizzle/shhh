@@ -201,188 +201,188 @@
 ── ansi ────────────────────────────────────────────────────
 · verbosity · normal (each step a card, none folded on its own)
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
-␛[38;5;243m──────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 3 files · searched once␛[m␛[48;5;234m                      ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;245m 3 files · searched once␛[m␛[48;5;234m                      ␛[m
 ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                       ␛[m
 ␛[48;5;234m                                                      ␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m              ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;248minternal/agent/loop.go␛[m␛[48;5;234m              ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mThread the sentinel through the loop␛[m␛[48;5;234m              ␛[m
-␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                  ␛[38;5;241m1 line␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;248m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                  ␛[38;5;245m1 line␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
 
-  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 24.7s · 6 tools · $0.14␛[m
- ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · all tracked in git · /undo␛[m
-    ␛[38;5;241m1 takes it back␛[m
-  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 2…␛[m
+  ␛[38;5;245m∗␛[m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;245m · all tracked in git · /undo␛[m
+    ␛[38;5;245m1 takes it back␛[m
+  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;245m · exit 1 · 2…␛[m
 
 
 · verbosity · normal, step 1 opened by the reader (its groups under the body)
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
-␛[38;5;243m──────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 3 files · searched once␛[m␛[48;5;234m                      ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;245m 3 files · searched once␛[m␛[48;5;234m                      ␛[m
 ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                       ␛[m
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m    ␛[38;5;241m▾ read 3 files␛[m␛[48;5;234m                              ␛[38;5;241m0.9s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m      ␛[38;5;245minternal/agent/␛[m␛[48;5;234m ␛[38;5;241mloop.go · tools.go · … +1␛[m␛[48;5;234m       ␛[m
-␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245mErrRoundLimit␛[m␛[48;5;234m                      ␛[38;5;245m2 matches␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245m▾ read 3 files␛[m␛[48;5;234m                              ␛[38;5;245m0.9s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;248minternal/agent/␛[m␛[48;5;234m ␛[38;5;245mloop.go · tools.go · … +1␛[m␛[48;5;234m       ␛[m
+␛[48;5;234m      ␛[38;5;245m⚙␛[m␛[48;5;234m ␛[38;5;248mErrRoundLimit␛[m␛[48;5;234m                      ␛[38;5;248m2 matches␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m    ␛[38;5;241min order ␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m                            ␛[38;5;241m4 tools␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245min order ␛[m␛[48;5;234m␛[38;5;245m⚙␛[m␛[48;5;234m␛[38;5;245m⚙␛[m␛[48;5;234m␛[38;5;245m⚙␛[m␛[48;5;234m␛[38;5;245m⚙␛[m␛[48;5;234m                            ␛[38;5;245m4 tools␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m              ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;248minternal/agent/loop.go␛[m␛[48;5;234m              ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mThread the sentinel through the loop␛[m␛[48;5;234m              ␛[m
-␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                  ␛[38;5;241m1 line␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;248m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                  ␛[38;5;245m1 line␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
 
-  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 24.7s · 6 tools · $0.14␛[m
- ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · all tracked in git · /undo␛[m
-    ␛[38;5;241m1 takes it back␛[m
-  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 2…␛[m
+  ␛[38;5;245m∗␛[m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;245m · all tracked in git · /undo␛[m
+    ␛[38;5;245m1 takes it back␛[m
+  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;245m · exit 1 · 2…␛[m
 
 
 · /step · step 1's detail, the card open on its calls
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
-␛[38;5;243m──────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 3 files · searched once␛[m␛[48;5;234m                      ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;245m 3 files · searched once␛[m␛[48;5;234m                      ␛[m
 ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                       ␛[m
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m    ␛[38;5;241m▾ read 3 files␛[m␛[48;5;234m                              ␛[38;5;241m0.9s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m               ␛[38;5;245m3 lines␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245ma␛[m␛[48;5;234m                                             ␛[m
-␛[48;5;234m        ␛[38;5;245mb␛[m␛[48;5;234m                                             ␛[m
-␛[48;5;234m        ␛[38;5;245mc␛[m␛[48;5;234m                                             ␛[m
-␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245minternal/agent/tools.go␛[m␛[48;5;234m              ␛[38;5;245m2 lines␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245ma␛[m␛[48;5;234m                                             ␛[m
-␛[48;5;234m        ␛[38;5;245mb␛[m␛[48;5;234m                                             ␛[m
-␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245minternal/agent/context.go␛[m␛[48;5;234m             ␛[38;5;245m1 line␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245ma␛[m␛[48;5;234m                                             ␛[m
-␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245mErrRoundLimit␛[m␛[48;5;234m                      ␛[38;5;245m2 matches␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245minternal/agent/loop.go:88:         return Err…␛[m␛[48;5;234m␛[m
-␛[48;5;234m        ␛[38;5;245minternal/agent/agent.go:12: // ErrRoundLimi…␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245m▾ read 3 files␛[m␛[48;5;234m                              ␛[38;5;245m0.9s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;245m⚙␛[m␛[48;5;234m ␛[38;5;248minternal/agent/loop.go␛[m␛[48;5;234m               ␛[38;5;248m3 lines␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248ma␛[m␛[48;5;234m                                             ␛[m
+␛[48;5;234m        ␛[38;5;248mb␛[m␛[48;5;234m                                             ␛[m
+␛[48;5;234m        ␛[38;5;248mc␛[m␛[48;5;234m                                             ␛[m
+␛[48;5;234m      ␛[38;5;245m⚙␛[m␛[48;5;234m ␛[38;5;248minternal/agent/tools.go␛[m␛[48;5;234m              ␛[38;5;248m2 lines␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248ma␛[m␛[48;5;234m                                             ␛[m
+␛[48;5;234m        ␛[38;5;248mb␛[m␛[48;5;234m                                             ␛[m
+␛[48;5;234m      ␛[38;5;245m⚙␛[m␛[48;5;234m ␛[38;5;248minternal/agent/context.go␛[m␛[48;5;234m             ␛[38;5;248m1 line␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248ma␛[m␛[48;5;234m                                             ␛[m
+␛[48;5;234m      ␛[38;5;245m⚙␛[m␛[48;5;234m ␛[38;5;248mErrRoundLimit␛[m␛[48;5;234m                      ␛[38;5;248m2 matches␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248minternal/agent/loop.go:88:         return Err…␛[m␛[48;5;234m␛[m
+␛[48;5;234m        ␛[38;5;248minternal/agent/agent.go:12: // ErrRoundLimi…␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m    ␛[38;5;241min order ␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m                            ␛[38;5;241m4 tools␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245min order ␛[m␛[48;5;234m␛[38;5;245m⚙␛[m␛[48;5;234m␛[38;5;245m⚙␛[m␛[48;5;234m␛[38;5;245m⚙␛[m␛[48;5;234m␛[38;5;245m⚙␛[m␛[48;5;234m                            ␛[38;5;245m4 tools␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m              ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;248minternal/agent/loop.go␛[m␛[48;5;234m              ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mThread the sentinel through the loop␛[m␛[48;5;234m              ␛[m
-␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                  ␛[38;5;241m1 line␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;248m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                  ␛[38;5;245m1 line␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
 
-  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 24.7s · 6 tools · $0.14␛[m
- ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · all tracked in git · /undo␛[m
-    ␛[38;5;241m1 takes it back␛[m
-  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 2…␛[m
+  ␛[38;5;245m∗␛[m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;245m · all tracked in git · /undo␛[m
+    ␛[38;5;245m1 takes it back␛[m
+  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;245m · exit 1 · 2…␛[m
 
 
 · verbosity · high (every card open, every row with detail)
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
-␛[38;5;243m──────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 3 files · searched once␛[m␛[48;5;234m                      ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;245m 3 files · searched once␛[m␛[48;5;234m                      ␛[m
 ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                       ␛[m
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m    ␛[38;5;241m▾ read 3 files␛[m␛[48;5;234m                              ␛[38;5;241m0.9s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m               ␛[38;5;245m3 lines␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245ma␛[m␛[48;5;234m                                             ␛[m
-␛[48;5;234m        ␛[38;5;245mb␛[m␛[48;5;234m                                             ␛[m
-␛[48;5;234m        ␛[38;5;245mc␛[m␛[48;5;234m                                             ␛[m
-␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245minternal/agent/tools.go␛[m␛[48;5;234m              ␛[38;5;245m2 lines␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245ma␛[m␛[48;5;234m                                             ␛[m
-␛[48;5;234m        ␛[38;5;245mb␛[m␛[48;5;234m                                             ␛[m
-␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245minternal/agent/context.go␛[m␛[48;5;234m             ␛[38;5;245m1 line␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245ma␛[m␛[48;5;234m                                             ␛[m
-␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245mErrRoundLimit␛[m␛[48;5;234m                      ␛[38;5;245m2 matches␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245minternal/agent/loop.go:88:         return Err…␛[m␛[48;5;234m␛[m
-␛[48;5;234m        ␛[38;5;245minternal/agent/agent.go:12: // ErrRoundLimi…␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245m▾ read 3 files␛[m␛[48;5;234m                              ␛[38;5;245m0.9s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;245m⚙␛[m␛[48;5;234m ␛[38;5;248minternal/agent/loop.go␛[m␛[48;5;234m               ␛[38;5;248m3 lines␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248ma␛[m␛[48;5;234m                                             ␛[m
+␛[48;5;234m        ␛[38;5;248mb␛[m␛[48;5;234m                                             ␛[m
+␛[48;5;234m        ␛[38;5;248mc␛[m␛[48;5;234m                                             ␛[m
+␛[48;5;234m      ␛[38;5;245m⚙␛[m␛[48;5;234m ␛[38;5;248minternal/agent/tools.go␛[m␛[48;5;234m              ␛[38;5;248m2 lines␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248ma␛[m␛[48;5;234m                                             ␛[m
+␛[48;5;234m        ␛[38;5;248mb␛[m␛[48;5;234m                                             ␛[m
+␛[48;5;234m      ␛[38;5;245m⚙␛[m␛[48;5;234m ␛[38;5;248minternal/agent/context.go␛[m␛[48;5;234m             ␛[38;5;248m1 line␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248ma␛[m␛[48;5;234m                                             ␛[m
+␛[48;5;234m      ␛[38;5;245m⚙␛[m␛[48;5;234m ␛[38;5;248mErrRoundLimit␛[m␛[48;5;234m                      ␛[38;5;248m2 matches␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248minternal/agent/loop.go:88:         return Err…␛[m␛[48;5;234m␛[m
+␛[48;5;234m        ␛[38;5;248minternal/agent/agent.go:12: // ErrRoundLimi…␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m    ␛[38;5;241min order ␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m␛[38;5;241m⚙␛[m␛[48;5;234m                            ␛[38;5;241m4 tools␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245min order ␛[m␛[48;5;234m␛[38;5;245m⚙␛[m␛[48;5;234m␛[38;5;245m⚙␛[m␛[48;5;234m␛[38;5;245m⚙␛[m␛[48;5;234m␛[38;5;245m⚙␛[m␛[48;5;234m                            ␛[38;5;245m4 tools␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m              ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;248minternal/agent/loop.go␛[m␛[48;5;234m              ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mThread the sentinel through the loop␛[m␛[48;5;234m              ␛[m
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m✎␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m         ␛[38;5;245m1 line␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m1.1s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245medited␛[m␛[48;5;234m                                        ␛[m
-␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;245mgo test ./internal/agent/...␛[m␛[48;5;234m    ␛[91mexit 1␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m21s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                      ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m✎␛[m␛[48;5;234m ␛[38;5;248minternal/agent/loop.go␛[m␛[48;5;234m         ␛[38;5;248m1 line␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m1.1s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248medited␛[m␛[48;5;234m                                        ␛[m
+␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;248mgo test ./internal/agent/...␛[m␛[48;5;234m    ␛[91mexit 1␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m21s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                      ␛[m
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m    ␛[38;5;241min order ␛[m␛[48;5;234m␛[38;5;214m✎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m                              ␛[38;5;241m2 tools␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245min order ␛[m␛[48;5;234m␛[38;5;214m✎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m                              ␛[38;5;245m2 tools␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
 
-  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 24.7s · 6 tools · $0.14␛[m
- ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · all tracked in git · /undo␛[m
-    ␛[38;5;241m1 takes it back␛[m
-  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 2…␛[m
+  ␛[38;5;245m∗␛[m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;245m · all tracked in git · /undo␛[m
+    ␛[38;5;245m1 takes it back␛[m
+  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;245m · exit 1 · 2…␛[m
 
 
 · verbosity · low (each card its header alone)
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
-␛[38;5;243m──────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────␛[m
 
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 3 files · searched once␛[m␛[48;5;234m                      ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;245m 3 files · searched once␛[m␛[48;5;234m                      ␛[m
 
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m              ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;248minternal/agent/loop.go␛[m␛[48;5;234m              ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
 
-  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 24.7s · 6 tools · $0.14␛[m
- ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · all tracked in git · /undo␛[m
-    ␛[38;5;241m1 takes it back␛[m
-  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 2…␛[m
+  ␛[38;5;245m∗␛[m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;245m · all tracked in git · /undo␛[m
+    ␛[38;5;245m1 takes it back␛[m
+  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;245m · exit 1 · 2…␛[m
 
 
 · row by row · a notice, then a batch with no prose over it, in one live card
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
-␛[38;5;243m──────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 2 files · searched once␛[m␛[48;5;234m                      ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;245m 2 files · searched once␛[m␛[48;5;234m                      ␛[m
 ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                       ␛[m
 ␛[48;5;234m                                                      ␛[m
 
 
 · row by row · a thought mid-step (the card ends at it, the calls after it a card of their own)
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
-␛[38;5;243m──────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m                       ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;248minternal/agent/loop.go␛[m␛[48;5;234m                       ␛[m
 ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                       ␛[m
 ␛[48;5;234m                                                      ␛[m
 
-    ␛[3;38;5;245mThe cap is counted in the loop, so the sentinel␛[m
-    ␛[3;38;5;245mhas to come from there.␛[m
+    ␛[3;38;5;248mThe cap is counted in the loop, so the sentinel␛[m
+    ␛[3;38;5;248mhas to come from there.␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/round.go␛[m␛[48;5;234m␛[38;5;241m · searched once␛[m␛[48;5;234m      ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;248minternal/agent/round.go␛[m␛[48;5;234m␛[38;5;245m · searched once␛[m␛[48;5;234m      ␛[m
 ␛[48;5;234m                                                      ␛[m
 
 
 · row by row · a thought mid-step, the first card opened (the thought stays)
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
-␛[38;5;243m──────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m                       ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;248minternal/agent/loop.go␛[m␛[48;5;234m                       ␛[m
 ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                       ␛[m
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m      ␛[38;5;241m⚙␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m               ␛[38;5;245m3 lines␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m      ␛[38;5;245m⚙␛[m␛[48;5;234m ␛[38;5;248minternal/agent/loop.go␛[m␛[48;5;234m               ␛[38;5;248m3 lines␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
 
-    ␛[3;38;5;245mThe cap is counted in the loop, so the sentinel␛[m
-    ␛[3;38;5;245mhas to come from there.␛[m
+    ␛[3;38;5;248mThe cap is counted in the loop, so the sentinel␛[m
+    ␛[3;38;5;248mhas to come from there.␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/round.go␛[m␛[48;5;234m␛[38;5;241m · searched once␛[m␛[48;5;234m      ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;248minternal/agent/round.go␛[m␛[48;5;234m␛[38;5;245m · searched once␛[m␛[48;5;234m      ␛[m
 ␛[48;5;234m                                                      ␛[m
 

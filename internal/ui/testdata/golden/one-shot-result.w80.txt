@@ -22,7 +22,7 @@ $ lsof -nP -iTCP -sTCP:LISTEN | awk '$9 ~ /:[89][0-9]{3}$/'
 ␛[38;5;214m$ ␛[m␛[1;97mlsof -nP -iTCP -sTCP:LISTEN | awk '$9 ~ /:[89][0-9]{3}$/'␛[m                     
   ␛[38;5;252mlsof lists listening TCP sockets without resolving names; awk keeps the rows␛[m  
   ␛[38;5;252mwhose address ends in a port from 8000-9999.␛[m                                  
-  ␛[38;5;243m⛨ no sudo␛[m                                                                     
+  ␛[38;5;246m⛨ no sudo␛[m                                                                     
                                                                                 
-␛[92m[enter]␛[m␛[38;5;241m show what it would affect␛[m␛[38;5;241m  ␛[m␛[38;5;103m[y]␛[m␛[38;5;241m run it␛[m␛[38;5;241m  ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m  ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m retry with a note␛[m  
-␛[38;5;103m[c]␛[m␛[38;5;241m copy␛[m␛[38;5;241m  ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write␛[m␛[38;5;241m  ␛[m␛[38;5;241m[esc]␛[m␛[38;5;241m back␛[m                                            
+␛[92m[enter]␛[m␛[38;5;245m show what it would affect␛[m␛[38;5;245m  ␛[m␛[38;5;103m[y]␛[m␛[38;5;245m run it␛[m␛[38;5;245m  ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit␛[m␛[38;5;245m  ␛[m␛[38;5;103m[r]␛[m␛[38;5;245m retry with a note␛[m  
+␛[38;5;103m[c]␛[m␛[38;5;245m copy␛[m␛[38;5;245m  ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write␛[m␛[38;5;245m  ␛[m␛[38;5;245m[esc]␛[m␛[38;5;245m back␛[m                                            

@@ -1,0 +1,9 @@
+# One reply per request. The last line repeats once these run out.
+# A turn that reads one file and answers, so the transcript holds a finished
+# tool row and the answer under it. Reading is not gated, so no card stands
+# between the sentence and the row.
+tool:read_file:{"path":"loop.go"}
+The counter is read at the top of the loop.
+# The session asks the model on its own account over a turn this long, to
+# title the conversation; a prose line here is what that request takes.
+Reading the round counter

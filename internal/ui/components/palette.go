@@ -146,12 +146,12 @@ var fullPalette = ColorTokens{
 	Hunk:    token("#5fd7d7", "14", "14"),
 	Accent:  token("#ffaf00", "214", "11"),
 	Info:    token("#5f87ff", "12", "12"),
-	FocusBg: token("#5f5fd7", "62", "12"),
+	FocusBg: token("#5f5faf", "61", "12"),
 	band:    band("#1c1c1c", "234"),
-	Dim:     token("#626262", "241", "8"),
-	Dimmer:  token("#8a8a8a", "245", "8"),
+	Dim:     token("#8a8a8a", "245", "8"),
+	Dimmer:  token("#a8a8a8", "248", "8"),
 	Spin:    token("#ff5faf", "205", "13"),
-	Status:  token("#767676", "243", "8"),
+	Status:  token("#949494", "246", "8"),
 	Bright:  token("#eaeaea", "15", "15"),
 	// Subtle is the one token colors.css has no counterpart for, so its hex
 	// is the exact value of 250 rather than a colour chosen for it.
@@ -186,15 +186,15 @@ var fullPalette = ColorTokens{
 // One thing is deliberately inverted. Dim and Dimmer swap their relative
 // weight: Dim is chrome and Dimmer is content, so Dimmer is always the rung
 // with more contrast against the ground — which on a dark terminal makes it
-// the *lighter* grey and on a light one the *darker* one. #8a8a8a is Dimmer
-// in the table above and Dim here, and that is the swap rather than a
-// mistake. Reverse it and a tool's output on Dimmer goes fainter than the
-// rules around it on Dim, so the chrome of the pane reads as the loudest
-// thing in it.
+// the *lighter* grey and on a light one the *darker* one. Reverse it and a
+// tool's output on Dimmer goes fainter than the rules around it on Dim, so
+// the chrome of the pane reads as the loudest thing in it.
 //
-// The chrome grey stands off white by 3.45:1, which is what #626262 stands
-// off black by (3.44:1) — the faintest thing on the screen is equally faint
-// on both grounds, and the body is equally readable.
+// The chrome grey is the faintest text on the screen and it is still text:
+// Dim stands off white by 6.10:1 and off the band by 4.80:1, and the dark
+// table's stands off its ground by 5.47:1 and its band by 4.94:1. Both clear
+// the 4.5:1 floor on both of their grounds, which is what
+// TestPalette_EveryTextTokenClearsAA holds, and the body is equally readable.
 var LightPalette = ColorTokens{
 	Add:     token("#008700", "2", "2"),
 	Del:     token("#d70000", "1", "1"),
@@ -205,14 +205,14 @@ var LightPalette = ColorTokens{
 	Info:    token("#005fd7", "4", "4"),
 	FocusBg: token("#d7d7ff", "189", "7"),
 	band:    band("#e4e4e4", "254"),
-	Dim:     token("#8a8a8a", "245", "8"),
-	Dimmer:  token("#6c6c6c", "242", "8"),
+	Dim:     token("#626262", "241", "8"),
+	Dimmer:  token("#4e4e4e", "239", "8"),
 	Spin:    token("#af005f", "125", "5"),
-	Status:  token("#767676", "243", "8"),
+	Status:  token("#585858", "240", "8"),
 	Bright:  token("#121212", "0", "0"),
 	// Subtle has no counterpart to reconcile with on either ground, so its
-	// hex is the exact value of 239.
-	Subtle: token("#4e4e4e", "239", "8"),
+	// hex is the exact value of 238.
+	Subtle: token("#444444", "238", "8"),
 	Body:   token("#303030", "236", "0"),
 	Code:   token("#875f00", "94", "3"),
 	Key:    token("#5f5f87", "60", "4"),

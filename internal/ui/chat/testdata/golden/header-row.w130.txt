@@ -24,13 +24,13 @@
 
 ── ansi ────────────────────────────────────────────────────
 · a coding session · directory, branch, model, level
-␛[1;97m shhh chat␛[m␛[38;5;241m · ␛[m␛[38;5;241m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;241mmain␛[m␛[38;5;241m · ␛[m␛[38;5;241mclaude-sonnet-4-5␛[m␛[38;5;241m · ␛[m␛[38;5;241mthink medium␛[m
+␛[1;97m shhh chat␛[m␛[38;5;245m · ␛[m␛[38;5;245m~/src/shhh␛[m␛[38;5;245m · ␛[m␛[38;5;245mmain␛[m␛[38;5;245m · ␛[m␛[38;5;245mclaude-sonnet-4-5␛[m␛[38;5;245m · ␛[m␛[38;5;245mthink medium␛[m
 
 · outside a repository, asking for no reasoning
-␛[1;97m shhh chat␛[m␛[38;5;241m · ␛[m␛[38;5;241m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;241mclaude-sonnet-4-5␛[m
+␛[1;97m shhh chat␛[m␛[38;5;245m · ␛[m␛[38;5;245m~/src/shhh␛[m␛[38;5;245m · ␛[m␛[38;5;245mclaude-sonnet-4-5␛[m
 
 · a host with no survey of the checkout
-␛[1;97m shhh chat␛[m␛[38;5;241m · ␛[m␛[38;5;241mclaude-sonnet-4-5␛[m␛[38;5;241m · ␛[m␛[38;5;241mthink high␛[m
+␛[1;97m shhh chat␛[m␛[38;5;245m · ␛[m␛[38;5;245mclaude-sonnet-4-5␛[m␛[38;5;245m · ␛[m␛[38;5;245mthink high␛[m
 
 · a conversation · directory, branch, model, level
-␛[1;97m shhh chat␛[m␛[38;5;241m · ␛[m␛[38;5;241m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;241mmain␛[m␛[38;5;241m · ␛[m␛[38;5;241mclaude-sonnet-4-5␛[m␛[38;5;241m · ␛[m␛[38;5;241mthink high␛[m
+␛[1;97m shhh chat␛[m␛[38;5;245m · ␛[m␛[38;5;245m~/src/shhh␛[m␛[38;5;245m · ␛[m␛[38;5;245mmain␛[m␛[38;5;245m · ␛[m␛[38;5;245mclaude-sonnet-4-5␛[m␛[38;5;245m · ␛[m␛[38;5;245mthink high␛[m

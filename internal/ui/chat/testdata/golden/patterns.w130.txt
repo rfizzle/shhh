@@ -38,27 +38,27 @@
 
 ── ansi ────────────────────────────────────────────────────
 · the list as it opens
-␛[1;97m/patterns␛[m␛[38;5;241m · 3 proposals␛[m                                                                                  ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/patterns␛[m␛[38;5;245m · 3 proposals␛[m                                                                                  ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;97;48;5;62mmemory · internal/cli/session.go            4 sessions␛[m␛[38;5;241m │ ␛[m␛[1;97mmemory␛[m                                                   ␛[38;5;241m4 sessions␛[m
-  ␛[38;5;252mallowlist␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo test␛[m                         ␛[38;5;241m3 sessions␛[m␛[38;5;241m │ ␛[m
-  ␛[38;5;252mskill␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo vet → go build → go test␛[m         ␛[38;5;241m3 sessions␛[m␛[38;5;241m │ ␛[m␛[38;5;252minternal/cli/session.go␛[m
-                                                        ␛[38;5;241m │ ␛[m␛[38;5;241mread in 4 sessions␛[m
-                                                        ␛[38;5;241m │ ␛[m
-                                                        ␛[38;5;241m │ ␛[m␛[38;5;241mkeeps a convention memory every session here is told␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mmemory · internal/cli/session.go            4 sessions␛[m␛[38;5;245m │ ␛[m␛[1;97mmemory␛[m                                                   ␛[38;5;245m4 sessions␛[m
+  ␛[38;5;252mallowlist␛[m␛[38;5;245m · ␛[m␛[38;5;252mgo test␛[m                         ␛[38;5;245m3 sessions␛[m␛[38;5;245m │ ␛[m
+  ␛[38;5;252mskill␛[m␛[38;5;245m · ␛[m␛[38;5;252mgo vet → go build → go test␛[m         ␛[38;5;245m3 sessions␛[m␛[38;5;245m │ ␛[m␛[38;5;252minternal/cli/session.go␛[m
+                                                        ␛[38;5;245m │ ␛[m␛[38;5;245mread in 4 sessions␛[m
+                                                        ␛[38;5;245m │ ␛[m
+                                                        ␛[38;5;245m │ ␛[m␛[38;5;245mkeeps a convention memory every session here is told␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open its card␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                  ␛[38;5;241mfrom what this checkout's sessions kept doing␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open its card␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                  ␛[38;5;245mfrom what this checkout's sessions kept doing␛[m
 
 · the allowlist card · nothing written yet
-␛[94m╭─ ␛[m␛[1;97mApprove allowlist line ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
+␛[94m╭─ ␛[m␛[1;97mApprove allowlist line ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
 ␛[94m│␛[m ␛[38;5;214m✎␛[m ␛[97mlet "go test" run without asking in this checkout␛[m                                                                        ␛[94m│␛[m
 ␛[94m│␛[m ␛[96m@@ -1,2 +1,3 @@␛[m                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m  1  ␛[m␛[38;5;245m[␛[m␛[38;5;252mbehavior␛[m␛[38;5;245m]␛[m                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m  2  ␛[m␛[38;5;252mdefault_mode␛[m␛[38;5;252m ␛[m␛[38;5;245m=␛[m␛[38;5;252m ␛[m␛[38;5;214m"manual"␛[m                                                                                               ␛[94m│␛[m
-␛[94m│␛[m ␛[92m+␛[m␛[38;5;241m 3  ␛[m␛[92mcommand_allowlist␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m␛[38;5;214m"go test"␛[m␛[92m]␛[m                                                                                       ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m+1 −0 · 1 hunk␛[m                                                                                                             ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m  1  ␛[m␛[38;5;248m[␛[m␛[38;5;252mbehavior␛[m␛[38;5;248m]␛[m                                                                                                            ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m  2  ␛[m␛[38;5;252mdefault_mode␛[m␛[38;5;252m ␛[m␛[38;5;248m=␛[m␛[38;5;252m ␛[m␛[38;5;214m"manual"␛[m                                                                                               ␛[94m│␛[m
+␛[94m│␛[m ␛[92m+␛[m␛[38;5;245m 3  ␛[m␛[92mcommand_allowlist␛[m␛[92m ␛[m␛[92m=␛[m␛[92m ␛[m␛[92m[␛[m␛[38;5;214m"go test"␛[m␛[92m]␛[m                                                                                       ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m+1 −0 · 1 hunk␛[m                                                                                                             ␛[94m│␛[m
 ␛[94m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mwrite it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnot now␛[m␛[38;5;241m · ␛[m␛[38;5;103m[N]␛[m ␛[38;5;252mnever␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave — nothing written, and it is offered again␛[m                 ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241menter opened this card and writes nothing — only [y] does␛[m                                                                  ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mwrite it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mnot now␛[m␛[38;5;245m · ␛[m␛[38;5;103m[N]␛[m ␛[38;5;252mnever␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;245m · ␛[m␛[92m[esc] leave — nothing written, and it is offered again␛[m                 ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245menter opened this card and writes nothing — only [y] does␛[m                                                                  ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

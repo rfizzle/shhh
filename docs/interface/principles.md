@@ -413,6 +413,15 @@ painted as far as it reaches like every later one, or starting a session
 would flash from the terminal's colour to the ground. The switch is one
 switch for the same reason: turned off, no screen paints it.
 
+Every ink a table writes text in clears 4.5:1 against the table's ground and
+against its band: the hints, the key legend, the counts and the status line
+are instructions the interface gives, and the faintest grey on the screen is
+still text. The floor is under the hierarchy, not instead of it — chrome stays
+the faintest grey, content above it, body above that — and Bright clears it on
+the selected row's ground as well. A named palette whose published tones fall
+under it records the shortfall in the departures rather than leaving it
+unsaid.
+
 The exact rungs are the design system's. What is fixed here is that there are
 three of them, that five defer to the terminal, that the dark ground is
 painted and the others are asked for, and that no surface may reach for a

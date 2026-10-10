@@ -44,33 +44,33 @@ example.com                                                      │   read 8 KB
 
 ── ansi ────────────────────────────────────────────────────
 · a fetch · the fetcher's own read, under ⚙
-␛[1;97m/sources␛[m␛[38;5;241m · 2 pages · 1 via mcp · 2 hosts · 1 search␛[m                                                          ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/sources␛[m␛[38;5;245m · 2 pages · 1 via mcp · 2 hosts · 1 search␛[m                                                          ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[1;94msearches␛[m                                                        ␛[38;5;241m │ ␛[m␛[1;97mhttps://docs.rs/tokio/latest/tokio/␛[m                ␛[38;5;241morchestrator␛[m
-  ␛[38;5;252m⚙ tokio runtime␛[m                 ␛[92m3 results␛[m ␛[38;5;241m· orchestrator␛[m      ␛[38;5;241m │ ␛[m  ␛[38;5;241mtokio — Rust␛[m
-␛[1;94mdocs.rs␛[m                                                         ␛[38;5;241m │ ␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m⚙ /tokio/latest/tokio/          200 · orchestrator       60 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mkind ␛[m␛[38;5;252mfetch␛[m
-  ␛[38;5;252m⚙ /tokio/latest/tokio/runtime/␛[m  ␛[92m200 (cached)␛[m ␛[38;5;241m· web-res…␛[m  ␛[38;5;252m12 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243murl ␛[m␛[38;5;252mhttps://docs.rs/tokio/latest/tokio/␛[m
-␛[1;94mexample.com␛[m                                                     ␛[38;5;241m │ ␛[m  ␛[38;5;243masked for ␛[m␛[38;5;252mhttps://docs.rs/tokio␛[m
-  ␛[38;5;252m⇄ /guide␛[m                        ␛[38;5;214mvia mcp␛[m ␛[38;5;241m· orchestrator␛[m    ␛[38;5;252m8 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mstatus ␛[m␛[38;5;252m200␛[m
-                                                                ␛[38;5;241m │ ␛[m  ␛[38;5;243mread ␛[m␛[38;5;252m60 KB␛[m
-                                                                ␛[38;5;241m │ ␛[m  ␛[38;5;243mwhen ␛[m␛[38;5;252mturn 1␛[m
-                                                                ␛[38;5;241m │ ␛[m  ␛[38;5;243mkept as ␛[m␛[38;5;252mev-1␛[m
-                                                                ␛[38;5;241m │ ␛[m
+␛[1;94msearches␛[m                                                        ␛[38;5;245m │ ␛[m␛[1;97mhttps://docs.rs/tokio/latest/tokio/␛[m                ␛[38;5;245morchestrator␛[m
+  ␛[38;5;252m⚙ tokio runtime␛[m                 ␛[92m3 results␛[m ␛[38;5;245m· orchestrator␛[m      ␛[38;5;245m │ ␛[m  ␛[38;5;245mtokio — Rust␛[m
+␛[1;94mdocs.rs␛[m                                                         ␛[38;5;245m │ ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m⚙ /tokio/latest/tokio/          200 · orchestrator       60 KB␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mkind ␛[m␛[38;5;252mfetch␛[m
+  ␛[38;5;252m⚙ /tokio/latest/tokio/runtime/␛[m  ␛[92m200 (cached)␛[m ␛[38;5;245m· web-res…␛[m  ␛[38;5;252m12 KB␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246murl ␛[m␛[38;5;252mhttps://docs.rs/tokio/latest/tokio/␛[m
+␛[1;94mexample.com␛[m                                                     ␛[38;5;245m │ ␛[m  ␛[38;5;246masked for ␛[m␛[38;5;252mhttps://docs.rs/tokio␛[m
+  ␛[38;5;252m⇄ /guide␛[m                        ␛[38;5;214mvia mcp␛[m ␛[38;5;245m· orchestrator␛[m    ␛[38;5;252m8 KB␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mstatus ␛[m␛[38;5;252m200␛[m
+                                                                ␛[38;5;245m │ ␛[m  ␛[38;5;246mread ␛[m␛[38;5;252m60 KB␛[m
+                                                                ␛[38;5;245m │ ␛[m  ␛[38;5;246mwhen ␛[m␛[38;5;252mturn 1␛[m
+                                                                ␛[38;5;245m │ ␛[m  ␛[38;5;246mkept as ␛[m␛[38;5;252mev-1␛[m
+                                                                ␛[38;5;245m │ ␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                      ␛[38;5;241mrecorded by the tool, not by the model␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                                      ␛[38;5;245mrecorded by the tool, not by the model␛[m
 
 · a server's read · ⇄, and the way it came in place of a status
-␛[1;97m/sources␛[m␛[38;5;241m · 2 pages · 1 via mcp · 2 hosts · 1 search␛[m                                                          ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/sources␛[m␛[38;5;245m · 2 pages · 1 via mcp · 2 hosts · 1 search␛[m                                                          ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[1;94msearches␛[m                                                        ␛[38;5;241m │ ␛[m␛[1;97mhttps://example.com/guide␛[m                          ␛[38;5;241morchestrator␛[m
-  ␛[38;5;252m⚙ tokio runtime␛[m                 ␛[92m3 results␛[m ␛[38;5;241m· orchestrator␛[m      ␛[38;5;241m │ ␛[m
-␛[1;94mdocs.rs␛[m                                                         ␛[38;5;241m │ ␛[m  ␛[38;5;243mkind ␛[m␛[38;5;252mmcp␛[m
-  ␛[38;5;252m⚙ /tokio/latest/tokio/␛[m          ␛[92m200␛[m ␛[38;5;241m· orchestrator␛[m       ␛[38;5;252m60 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243murl ␛[m␛[38;5;252mhttps://example.com/guide␛[m
-  ␛[38;5;252m⚙ /tokio/latest/tokio/runtime/␛[m  ␛[92m200 (cached)␛[m ␛[38;5;241m· web-res…␛[m  ␛[38;5;252m12 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mstatus ␛[m␛[38;5;252mvia mcp␛[m
-␛[1;94mexample.com␛[m                                                     ␛[38;5;241m │ ␛[m  ␛[38;5;243mread ␛[m␛[38;5;252m8 KB␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m⇄ /guide                        via mcp · orchestrator    8 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mwhen ␛[m␛[38;5;252mturn 2␛[m
+␛[1;94msearches␛[m                                                        ␛[38;5;245m │ ␛[m␛[1;97mhttps://example.com/guide␛[m                          ␛[38;5;245morchestrator␛[m
+  ␛[38;5;252m⚙ tokio runtime␛[m                 ␛[92m3 results␛[m ␛[38;5;245m· orchestrator␛[m      ␛[38;5;245m │ ␛[m
+␛[1;94mdocs.rs␛[m                                                         ␛[38;5;245m │ ␛[m  ␛[38;5;246mkind ␛[m␛[38;5;252mmcp␛[m
+  ␛[38;5;252m⚙ /tokio/latest/tokio/␛[m          ␛[92m200␛[m ␛[38;5;245m· orchestrator␛[m       ␛[38;5;252m60 KB␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246murl ␛[m␛[38;5;252mhttps://example.com/guide␛[m
+  ␛[38;5;252m⚙ /tokio/latest/tokio/runtime/␛[m  ␛[92m200 (cached)␛[m ␛[38;5;245m· web-res…␛[m  ␛[38;5;252m12 KB␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mstatus ␛[m␛[38;5;252mvia mcp␛[m
+␛[1;94mexample.com␛[m                                                     ␛[38;5;245m │ ␛[m  ␛[38;5;246mread ␛[m␛[38;5;252m8 KB␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m⇄ /guide                        via mcp · orchestrator    8 KB␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mwhen ␛[m␛[38;5;252mturn 2␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                     ␛[38;5;241mrecorded by the tool, not by the model␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                                                     ␛[38;5;245mrecorded by the tool, not by the model␛[m

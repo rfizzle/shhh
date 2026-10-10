@@ -46,33 +46,33 @@
 ── ansi ────────────────────────────────────────────────────
 · the suite passed, and the turn closes on it
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mquality gate · fast · 2 checks␛[m␛[48;5;234m                                    ␛[m
-␛[48;5;234m    ␛[38;5;245mQuality gate "fast": PASS — 2/2 checks passed (1.7s)␛[m␛[48;5;234m         ␛[38;5;241m5 lines␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;248mquality gate · fast · 2 checks␛[m␛[48;5;234m                                    ␛[m
+␛[48;5;234m    ␛[38;5;248mQuality gate "fast": PASS — 2/2 checks passed (1.7s)␛[m␛[48;5;234m         ␛[38;5;245m5 lines␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
-  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 41.3s · 5 tools · $0.12␛[m
- ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m2 files changed ␛[m␛[92m+31␛[m ␛[91m−7␛[m␛[38;5;241m · all tracked in git␛[m
-  ␛[92m✓␛[m ␛[38;5;252mquality gate fast passing␛[m␛[38;5;241m · 2 of 2 checks · 1.7s␛[m
+  ␛[38;5;245m∗␛[m ␛[38;5;245mworked 41.3s · 5 tools · $0.12␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m2 files changed ␛[m␛[92m+31␛[m ␛[91m−7␛[m␛[38;5;245m · all tracked in git␛[m
+  ␛[92m✓␛[m ␛[38;5;252mquality gate fast passing␛[m␛[38;5;245m · 2 of 2 checks · 1.7s␛[m
 
 
 · the suite failed after its last hand-back
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mquality gate · fast · 2 checks␛[m␛[48;5;234m                                    ␛[m
-␛[48;5;234m    ␛[38;5;245mQuality gate "fast": FAIL — 1/2 checks passed (2.1s)␛[m␛[48;5;234m         ␛[38;5;241m6 lines␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;248mquality gate · fast · 2 checks␛[m␛[48;5;234m                                    ␛[m
+␛[48;5;234m    ␛[38;5;248mQuality gate "fast": FAIL — 1/2 checks passed (2.1s)␛[m␛[48;5;234m         ␛[38;5;245m6 lines␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
-  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 41.3s · 5 tools · $0.12␛[m
- ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m2 files changed ␛[m␛[92m+31␛[m ␛[91m−7␛[m␛[38;5;241m · all tracked in git␛[m
-  ␛[91m✗␛[m ␛[38;5;252mquality gate fast failing␛[m␛[38;5;241m · 1 of 2 checks · 2.1s␛[m
+  ␛[38;5;245m∗␛[m ␛[38;5;245mworked 41.3s · 5 tools · $0.12␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m2 files changed ␛[m␛[92m+31␛[m ␛[91m−7␛[m␛[38;5;245m · all tracked in git␛[m
+  ␛[91m✗␛[m ␛[38;5;252mquality gate fast failing␛[m␛[38;5;245m · 1 of 2 checks · 2.1s␛[m
 
 
 · a check failed and passed on its rerun, the pass says it flaked, and how often it has before
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mquality gate · fast · 4 checks␛[m␛[48;5;234m                                    ␛[m
-␛[48;5;234m    ␛[38;5;245mQuality gate "fast": PASS — 4/4 checks passed, 1 flaked (2.…␛[m␛[48;5;234m ␛[38;5;241m7 lines␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;248mquality gate · fast · 4 checks␛[m␛[48;5;234m                                    ␛[m
+␛[48;5;234m    ␛[38;5;248mQuality gate "fast": PASS — 4/4 checks passed, 1 flaked (2.…␛[m␛[48;5;234m ␛[38;5;245m7 lines␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
-  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 41.3s · 5 tools · $0.12␛[m
- ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m2 files changed ␛[m␛[92m+31␛[m ␛[91m−7␛[m␛[38;5;241m · all tracked in git␛[m
-  ␛[92m✓␛[m ␛[38;5;252mquality gate fast passing␛[m␛[38;5;241m · 4 of 4 checks · 1 flaked · 2.1s␛[m
+  ␛[38;5;245m∗␛[m ␛[38;5;245mworked 41.3s · 5 tools · $0.12␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m2 files changed ␛[m␛[92m+31␛[m ␛[91m−7␛[m␛[38;5;245m · all tracked in git␛[m
+  ␛[92m✓␛[m ␛[38;5;252mquality gate fast passing␛[m␛[38;5;245m · 4 of 4 checks · 1 flaked · 2.1s␛[m
 

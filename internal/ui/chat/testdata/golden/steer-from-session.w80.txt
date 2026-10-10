@@ -43,32 +43,32 @@
 
 ── ansi ────────────────────────────────────────────────────
 · the steer row · the sending slot, the line beneath
-  ␛[38;5;241m·␛[m ␛[38;5;241msteer from session 2026-09-23 10:41:07␛[m
-    ␛[38;5;245mmaster moved under you: 04150ee7 landed the sprint lanes. Rebase onto␛[m
-    ␛[38;5;245mit before your next commit.␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245msteer from session 2026-09-23 10:41:07␛[m
+    ␛[38;5;248mmaster moved under you: 04150ee7 landed the sprint lanes. Rebase onto␛[m
+    ␛[38;5;248mit before your next commit.␛[m
 
 
 · the steer row · a line no session sent
-  ␛[38;5;241m·␛[m ␛[38;5;241msteer from a command line␛[m
-    ␛[38;5;245mmaster moved under you: 04150ee7 landed the sprint lanes. Rebase onto␛[m
-    ␛[38;5;245mit before your next commit.␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245msteer from a command line␛[m
+    ␛[38;5;248mmaster moved under you: 04150ee7 landed the sprint lanes. Rebase onto␛[m
+    ␛[38;5;248mit before your next commit.␛[m
 
 
 · the held card · two keys, no default
-␛[94m╭─ ␛[m␛[1;97ma line from session 2026-09-23 10:41:07 ␛[m␛[38;5;241m─────────────────────────␛[m␛[94m held ─╮␛[m
+␛[94m╭─ ␛[m␛[1;97ma line from session 2026-09-23 10:41:07 ␛[m␛[38;5;245m─────────────────────────␛[m␛[94m held ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mmaster moved under you: 04150ee7 landed the sprint lanes. Rebase onto it␛[m ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;252mbefore your next commit.␛[m                                                 ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241mit joins the turn as a message; it grants nothing␛[m                        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245mit joins the turn as a message; it grants nothing␛[m                        ␛[94m│␛[m
 ␛[94m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[94m│␛[m ␛[38;5;103m[y]␛[m␛[38;5;241m pass it to the turn␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m drop it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;241m keys␛[m                         ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[y]␛[m␛[38;5;245m pass it to the turn␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m drop it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m                         ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the held card · with more lines behind it
-␛[94m╭─ ␛[m␛[1;97ma line from session 2026-09-23 10:41:07 ␛[m␛[38;5;241m─────────────────────────␛[m␛[94m held ─╮␛[m
+␛[94m╭─ ␛[m␛[1;97ma line from session 2026-09-23 10:41:07 ␛[m␛[38;5;245m─────────────────────────␛[m␛[94m held ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mmaster moved under you: 04150ee7 landed the sprint lanes. Rebase onto it␛[m ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;252mbefore your next commit.␛[m                                                 ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241mit joins the turn as a message; it grants nothing␛[m                        ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m2 more lines waiting behind it␛[m                                           ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245mit joins the turn as a message; it grants nothing␛[m                        ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m2 more lines waiting behind it␛[m                                           ␛[94m│␛[m
 ␛[94m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[94m│␛[m ␛[38;5;103m[y]␛[m␛[38;5;241m pass it to the turn␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m drop it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;241m keys␛[m                         ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[y]␛[m␛[38;5;245m pass it to the turn␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m drop it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m                         ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────╯␛[m

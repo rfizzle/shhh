@@ -426,11 +426,11 @@ $  a shell command
 
 ── ansi ────────────────────────────────────────────────────
 · the list · every row states where its value came from
-␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run      user␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run      user␛[m
     ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
@@ -444,66 +444,66 @@ $  a shell command
 
   ␛[1;94mWORKSPACE␛[m
     ␛[38;5;252msandbox␛[m            ␛[38;5;252m⛨ workspace-write␛[m                ␛[91munavailable on this host␛[m
-    ␛[38;5;252mnetwork␛[m            ␛[38;5;214mprivate hosts reachable␛[m ␛[38;5;241m— intranet and localhost f…␛[m  ␛[38;5;252muser␛[m
-  ␛[38;5;241m↓ 3 more␛[m
+    ␛[38;5;252mnetwork␛[m            ␛[38;5;214mprivate hosts reachable␛[m ␛[38;5;245m— intranet and localhost f…␛[m  ␛[38;5;252muser␛[m
+  ␛[38;5;245m↓ 3 more␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;241m reset␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m
 
 · changing one · the picker opens under the row, not over the screen
-␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
     ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
 
   ␛[1;94mMODEL␛[m
     ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252muser␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mmodel              gpt-5.2                                user · 6 available␛[m
-    ␛[94m❯␛[m ␛[1;97;48;5;62mgpt-5.2            current default                             $1.25 / $10␛[m
-      ␛[38;5;252mgpt-5.2-mini␛[m       ␛[38;5;241m⅕ the price␛[m                                  ␛[38;5;252m$0.25 / $2␛[m
-      ␛[38;5;252mclaude-opus-4.6␛[m    ␛[38;5;241mdeepest reasoning␛[m                             ␛[38;5;252m$15 / $75␛[m
-      ␛[38;5;252mclaude-sonnet-4.6␛[m  ␛[38;5;241mbetter diffs · 200k ctx␛[m                        ␛[38;5;252m$3 / $15␛[m
-      ␛[38;5;252mgemini-3-flash␛[m     ␛[38;5;241m1M ctx␛[m                                    ␛[38;5;252m$0.30 / $2.50␛[m
-      ␛[38;5;245m⊘ deepseek-r2␛[m      ␛[38;5;245mlocal via ollama␛[m                        ␛[38;5;245mnot usable here␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mmodel              gpt-5.2                                user · 6 available␛[m
+    ␛[94m❯␛[m ␛[1;97;48;5;61mgpt-5.2            current default                             $1.25 / $10␛[m
+      ␛[38;5;252mgpt-5.2-mini␛[m       ␛[38;5;245m⅕ the price␛[m                                  ␛[38;5;252m$0.25 / $2␛[m
+      ␛[38;5;252mclaude-opus-4.6␛[m    ␛[38;5;245mdeepest reasoning␛[m                             ␛[38;5;252m$15 / $75␛[m
+      ␛[38;5;252mclaude-sonnet-4.6␛[m  ␛[38;5;245mbetter diffs · 200k ctx␛[m                        ␛[38;5;252m$3 / $15␛[m
+      ␛[38;5;252mgemini-3-flash␛[m     ␛[38;5;245m1M ctx␛[m                                    ␛[38;5;252m$0.30 / $2.50␛[m
+      ␛[38;5;248m⊘ deepseek-r2␛[m      ␛[38;5;248mlocal via ollama␛[m                        ␛[38;5;248mnot usable here␛[m
     ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                              ␛[38;5;252muser␛[m
-  ␛[38;5;241m↓ 7 more␛[m
+  ␛[38;5;245m↓ 7 more␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m set it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m keep gpt-5.2␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m set it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m keep gpt-5.2␛[m
 
 · the picker filtered · the query row carries both counts
-␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
     ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
 
   ␛[1;94mMODEL␛[m
     ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252muser␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mmodel              gpt-5.2                                user · 6 available␛[m
-    ␛[94m▸ ␛[m␛[97mclaude█␛[m                                                       ␛[38;5;241m2 of 6 match␛[m
-    ␛[94m❯␛[m ␛[1;97;48;5;62mclaude-opus-4.6    deepest reasoning                             $15 / $75␛[m
-      ␛[1;38;5;252mclaude␛[m␛[38;5;252m-sonnet-4.6␛[m  ␛[38;5;241mbetter diffs · 200k ctx␛[m                        ␛[38;5;252m$3 / $15␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mmodel              gpt-5.2                                user · 6 available␛[m
+    ␛[94m▸ ␛[m␛[97mclaude█␛[m                                                       ␛[38;5;245m2 of 6 match␛[m
+    ␛[94m❯␛[m ␛[1;97;48;5;61mclaude-opus-4.6    deepest reasoning                             $15 / $75␛[m
+      ␛[1;38;5;252mclaude␛[m␛[38;5;252m-sonnet-4.6␛[m  ␛[38;5;245mbetter diffs · 200k ctx␛[m                        ␛[38;5;252m$3 / $15␛[m
     ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                              ␛[38;5;252muser␛[m
     ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                              ␛[38;5;252mdefault␛[m
     ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                           ␛[38;5;252mdefault␛[m
 
-  ␛[38;5;241m↓ 5 more␛[m
+  ␛[38;5;245m↓ 5 more␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m set it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m clear the filter, then close it␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m set it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it␛[m
 
 · a setting with no answers to choose · a field under the row
-␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mround limit        25                                                default␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mround limit        25                                                default␛[m
     ␛[94m▸ ␛[m␛[97m2540█␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
@@ -517,16 +517,16 @@ $  a shell command
 
   ␛[1;94mWORKSPACE␛[m
     ␛[38;5;252msandbox␛[m            ␛[38;5;252m⛨ workspace-write␛[m                ␛[91munavailable on this host␛[m
-  ␛[38;5;241m↓ 4 more␛[m
+  ␛[38;5;245m↓ 4 more␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;241m set it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m keep 25␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m set it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m keep 25␛[m
 
 · a secret · the mask, never the key
-␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
     ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
@@ -534,50 +534,50 @@ $  a shell command
   ␛[1;94mMODEL␛[m
     ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252muser␛[m
     ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                ␛[38;5;252muser · 6 available␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mapi key            ···4f9c                                              user␛[m
-    ␛[38;5;252mPaste a value for api key␛[m␛[38;5;241m · replacing ···4f9c␛[m
-    ␛[38;5;241m▸ ␛[m␛[38;5;214m●●●●●●●●●●●●␛[m␛[1;97;48;5;62m ␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mapi key            ···4f9c                                              user␛[m
+    ␛[38;5;252mPaste a value for api key␛[m␛[38;5;245m · replacing ···4f9c␛[m
+    ␛[38;5;245m▸ ␛[m␛[38;5;214m●●●●●●●●●●●●␛[m␛[1;97;48;5;61m ␛[m
     ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                              ␛[38;5;252mdefault␛[m
     ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                           ␛[38;5;252mdefault␛[m
 
   ␛[1;94mWORKSPACE␛[m
-  ␛[38;5;241m↓ 5 more␛[m
+  ␛[38;5;245m↓ 5 more␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;241m use it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m use it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back␛[m
 
 · staged · the header counts it and [ctrl+s] is offered
-␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m                          ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m                          ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
     ␛[38;5;252mround limit␛[m        ␛[38;5;252m40␛[m                                              ␛[38;5;214munwritten␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
 
   ␛[1;94mMODEL␛[m
     ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252muser␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mmodel              claude-sonnet-4.6                               unwritten␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mmodel              claude-sonnet-4.6                               unwritten␛[m
     ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                              ␛[38;5;252muser␛[m
     ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                              ␛[38;5;252mdefault␛[m
     ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                           ␛[38;5;252mdefault␛[m
 
   ␛[1;94mWORKSPACE␛[m
-  ␛[38;5;241m↓ 5 more␛[m
+  ␛[38;5;245m↓ 5 more␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;241m reset␛[m
-␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write 2 changes␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m discard, after asking␛[m
-␛[38;5;241mnothing is written until [ctrl+s]␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m
+␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write 2 changes␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m discard, after asking␛[m
+␛[38;5;245mnothing is written until [ctrl+s]␛[m
 
 · staged in a session · a key read at the open says the next session takes it
-␛[1;97m/config␛[m␛[38;5;241m · project file␛[m␛[38;5;214m · 2 changes unwritten␛[m               ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;214m · 2 changes unwritten␛[m               ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m↑ 4 more␛[m
+  ␛[38;5;245m↑ 4 more␛[m
     ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                     ␛[38;5;252msession model␛[m
 
   ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
     ␛[38;5;252mround limit␛[m        ␛[38;5;252m40␛[m                                              ␛[38;5;214munwritten␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
@@ -586,19 +586,19 @@ $  a shell command
     ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252muser␛[m
     ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                ␛[38;5;252muser · 6 available␛[m
     ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                              ␛[38;5;252muser␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mbase url           https://gateway.internal/v1      unwritten · next session␛[m
-  ␛[38;5;241m↓ 6 more␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mbase url           https://gateway.internal/v1      unwritten · next session␛[m
+  ␛[38;5;245m↓ 6 more␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;241m reset␛[m
-␛[38;5;103m[shift+tab]␛[m␛[38;5;241m write global␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write 2 changes␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave, after asking␛[m
-␛[38;5;241mnothing is written until [ctrl+s]␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m
+␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write 2 changes␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave, after asking␛[m
+␛[38;5;245mnothing is written until [ctrl+s]␛[m
 
 · after a write · the receipt on the foot row, nothing left staged
-␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run      user␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run      user␛[m
     ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
@@ -612,41 +612,41 @@ $  a shell command
 
   ␛[1;94mWORKSPACE␛[m
     ␛[38;5;252msandbox␛[m            ␛[38;5;252m⛨ workspace-write␛[m                ␛[91munavailable on this host␛[m
-  ␛[38;5;241m↓ 4 more␛[m
+  ␛[38;5;245m↓ 4 more␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;241m reset␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave␛[m
-␛[38;5;241mwrote 2 changes to .shhh/config.toml · provider.model, behavior.command_timeout…␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m
+␛[38;5;245mwrote 2 changes to .shhh/config.toml · provider.model, behavior.command_timeout…␛[m
 
 · after a failed write · why, and the changes still staged
-␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m                          ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m                          ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
     ␛[38;5;252mround limit␛[m        ␛[38;5;252m40␛[m                                              ␛[38;5;214munwritten␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
 
   ␛[1;94mMODEL␛[m
     ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252muser␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mmodel              claude-sonnet-4.6                               unwritten␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mmodel              claude-sonnet-4.6                               unwritten␛[m
     ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                                              ␛[38;5;252muser␛[m
     ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m                              ␛[38;5;252mdefault␛[m
     ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                                           ␛[38;5;252mdefault␛[m
 
-  ␛[38;5;241m↓ 5 more␛[m
+  ␛[38;5;245m↓ 5 more␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;241m reset␛[m
-␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write 2 changes␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m discard, after asking␛[m
-␛[38;5;241mnothing is written until [ctrl+s]␛[m
-␛[38;5;241mcould not write .shhh/config.toml: permission denied␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m
+␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write 2 changes␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m discard, after asking␛[m
+␛[38;5;245mnothing is written until [ctrl+s]␛[m
+␛[38;5;245mcould not write .shhh/config.toml: permission denied␛[m
 
 · the way out · the same question over the same count
-␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m                          ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m                          ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run      user␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run      user␛[m
     ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
@@ -660,48 +660,48 @@ $  a shell command
 
   ␛[1;94mWORKSPACE␛[m
     ␛[38;5;252msandbox␛[m            ␛[38;5;252m⛨ workspace-write␛[m                ␛[91munavailable on this host␛[m
-    ␛[38;5;252mnetwork␛[m            ␛[38;5;214mprivate hosts reachable␛[m ␛[38;5;241m— intranet and localhost f…␛[m  ␛[38;5;252muser␛[m
-  ␛[38;5;241m↓ 3 more␛[m
+    ␛[38;5;252mnetwork␛[m            ␛[38;5;214mprivate hosts reachable␛[m ␛[38;5;245m— intranet and localhost f…␛[m  ␛[38;5;252muser␛[m
+  ␛[38;5;245m↓ 3 more␛[m
 
-␛[38;5;252m␛[38;5;252mDiscard 2 changes?␛[m␛[m  ␛[38;5;241m[␛[m␛[38;5;241my␛[m␛[38;5;241m/␛[m␛[1;97mN␛[m␛[38;5;241m]␛[m
+␛[38;5;252m␛[38;5;252mDiscard 2 changes?␛[m␛[m  ␛[38;5;245m[␛[m␛[38;5;245my␛[m␛[38;5;245m/␛[m␛[1;97mN␛[m␛[38;5;245m]␛[m
 
 · reopened in the session · a value it holds reads `session`, and the header counts it unwritten
-␛[1;97m/config␛[m␛[38;5;241m · project file␛[m␛[38;5;214m · 1 change unwritten␛[m                ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;214m · 1 change unwritten␛[m                ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mFLOWS␛[m
-    ␛[38;5;252mclassifier␛[m         ␛[38;5;252mgemini-3-flash␛[m ␛[38;5;241m— this session only, written to …␛[m  ␛[38;5;214msession␛[m
-    ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;241m— behavior.explainer_model␛[m     ␛[38;5;252mflow key␛[m
-    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;241m— provider.cheap_model␛[m             ␛[38;5;252mcheap key␛[m
+    ␛[38;5;252mclassifier␛[m         ␛[38;5;252mgemini-3-flash␛[m ␛[38;5;245m— this session only, written to …␛[m  ␛[38;5;214msession␛[m
+    ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;245m— behavior.explainer_model␛[m     ␛[38;5;252mflow key␛[m
+    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m             ␛[38;5;252mcheap key␛[m
     ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                     ␛[38;5;252mprovider small model␛[m
     ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                     ␛[38;5;252msession model␛[m
 
   ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mround limit        40                                                session␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mround limit        40                                                session␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
 
-  ␛[38;5;241m↓ 10 more␛[m
+  ␛[38;5;245m↓ 10 more␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;241m reset␛[m
-␛[38;5;103m[shift+tab]␛[m␛[38;5;241m write global␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write 1 change␛[m
-␛[92m[esc]␛[m␛[38;5;241m keep on this session, after asking␛[m
-␛[38;5;241mnothing is written until [ctrl+s]␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m
+␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write 1 change␛[m
+␛[92m[esc]␛[m␛[38;5;245m keep on this session, after asking␛[m
+␛[38;5;245mnothing is written until [ctrl+s]␛[m
 
 · the way out in a session · the changes stay on it, and the question is where else they go
-␛[1;97m/config␛[m␛[38;5;241m · project file␛[m␛[38;5;214m · 2 changes unwritten␛[m               ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;214m · 2 changes unwritten␛[m               ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mFLOWS␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mclassifier         gemini-3-flash — this session only, written to …  session␛[m
-    ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;241m— behavior.explainer_model␛[m     ␛[38;5;252mflow key␛[m
-    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;241m— provider.cheap_model␛[m             ␛[38;5;252mcheap key␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mclassifier         gemini-3-flash — this session only, written to …  session␛[m
+    ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;245m— behavior.explainer_model␛[m     ␛[38;5;252mflow key␛[m
+    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m             ␛[38;5;252mcheap key␛[m
     ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                     ␛[38;5;252mprovider small model␛[m
     ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                     ␛[38;5;252msession model␛[m
 
   ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
     ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
@@ -709,24 +709,24 @@ $  a shell command
   ␛[1;94mMODEL␛[m
     ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252muser␛[m
     ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                ␛[38;5;252muser · 6 available␛[m
-  ␛[38;5;241m↓ 8 more␛[m
+  ␛[38;5;245m↓ 8 more␛[m
 
 ␛[38;5;252mLeave 2 changes on this session only?␛[m
-␛[38;5;241m[y] this session only  [ctrl+s] write first  [esc] stay␛[m
+␛[38;5;245m[y] this session only  [ctrl+s] write first  [esc] stay␛[m
 
 · the way out in a session · a change it cannot take is dropped, and the count says so
-␛[1;97m/config␛[m␛[38;5;241m · project file␛[m␛[38;5;214m · 3 changes unwritten␛[m               ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;214m · 3 changes unwritten␛[m               ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mFLOWS␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mclassifier         gemini-3-flash — this session only, written to …  session␛[m
-    ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;241m— behavior.explainer_model␛[m     ␛[38;5;252mflow key␛[m
-    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;241m— provider.cheap_model␛[m             ␛[38;5;252mcheap key␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mclassifier         gemini-3-flash — this session only, written to …  session␛[m
+    ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;245m— behavior.explainer_model␛[m     ␛[38;5;252mflow key␛[m
+    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m             ␛[38;5;252mcheap key␛[m
     ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                     ␛[38;5;252mprovider small model␛[m
     ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                     ␛[38;5;252msession model␛[m
 
   ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
     ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
@@ -734,107 +734,107 @@ $  a shell command
   ␛[1;94mMODEL␛[m
     ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252muser␛[m
     ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m                                ␛[38;5;252muser · 6 available␛[m
-  ␛[38;5;241m↓ 8 more␛[m
+  ␛[38;5;245m↓ 8 more␛[m
 
 ␛[38;5;252mLeave 2 changes on this session and drop 1 change?␛[m
-␛[38;5;241m[y] this session only  [ctrl+s] write first  [esc] stay␛[m
+␛[38;5;245m[y] this session only  [ctrl+s] write first  [esc] stay␛[m
 
 · the settings filtered · the list is the same window
-␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[94m▸ ␛[m␛[97mmo█␛[m                                                            ␛[38;5;241m4 of 14 match␛[m
+  ␛[94m▸ ␛[m␛[97mmo█␛[m                                                            ␛[38;5;245m4 of 14 match␛[m
   ␛[1;94mSESSION␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mpermission mode  ⏵⏵ auto — edits apply; allowlisted commands run        user␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mpermission mode  ⏵⏵ auto — edits apply; allowlisted commands run        user␛[m
 
   ␛[1;94mMODEL␛[m
     ␛[1;38;5;252mmo␛[m␛[38;5;252mdel␛[m            ␛[38;5;252mgpt-5.2␛[m                                  ␛[38;5;252muser · 6 available␛[m
     ␛[38;5;252msub-agent ␛[m␛[1;38;5;252mmo␛[m␛[38;5;252mdel␛[m  ␛[38;5;252minherit␛[m                                             ␛[38;5;252mdefault␛[m
 
   ␛[1;94mWORKSPACE␛[m
-    ␛[38;5;252mme␛[m␛[1;38;5;252mmo␛[m␛[38;5;252mry␛[m           ␛[38;5;252mon␛[m ␛[38;5;241m— 4 entries · .shhh/memory.md␛[m                    ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mme␛[m␛[1;38;5;252mmo␛[m␛[38;5;252mry␛[m           ␛[38;5;252mon␛[m ␛[38;5;245m— 4 entries · .shhh/memory.md␛[m                    ␛[38;5;252mdefault␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m clear the filter, then close it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it␛[m
 
 · [?] · every key the screen has, including the picker's
-␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m…␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run      user␛[m
-  ␛[38;5;241m↓ 13 more␛[m
+  ␛[38;5;245m…␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run      user␛[m
+  ␛[38;5;245m↓ 13 more␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move between settings␛[m
-␛[38;5;103m[enter]␛[m␛[38;5;241m open the setting under the pointer, and take what is in it␛[m
-␛[38;5;103m[/]␛[m␛[38;5;241m filter the settings by name␛[m
-␛[38;5;103m[backspace]␛[m␛[38;5;241m delete a character from the filter or the field being typed into␛[m
-␛[38;5;103m[ctrl+r]␛[m␛[38;5;241m reset this setting to its default␛[m
-␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write every staged change to ~/.config/shhh/config.toml␛[m
-␛[92m[esc]␛[m␛[38;5;241m clear the filter, then close it; leave the picker, or leave the screen␛[m
-␛[38;5;241mwriting nothing␛[m
-␛[92m[esc]␛[m␛[38;5;241m leave the screen writing nothing␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move between settings␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m open the setting under the pointer, and take what is in it␛[m
+␛[38;5;103m[/]␛[m␛[38;5;245m filter the settings by name␛[m
+␛[38;5;103m[backspace]␛[m␛[38;5;245m delete a character from the filter or the field being typed into␛[m
+␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset this setting to its default␛[m
+␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write every staged change to ~/.config/shhh/config.toml␛[m
+␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it; leave the picker, or leave the screen␛[m
+␛[38;5;245mwriting nothing␛[m
+␛[92m[esc]␛[m␛[38;5;245m leave the screen writing nothing␛[m
 
-␛[38;5;241mglyphs␛[m
-␛[38;5;241m⚙␛[m  ␛[38;5;241ma read: a file, a search, a listing␛[m
-␛[38;5;214m$␛[m  ␛[38;5;241ma shell command␛[m
-␛[38;5;214m✎␛[m  ␛[38;5;241man edit, a write, a patch or a memory␛[m
-␛[94m◇␛[m  ␛[38;5;241ma sub-agent␛[m
-␛[38;5;214m⇄␛[m  ␛[38;5;241ma call to a server not marked read-only␛[m
-␛[38;5;241m✻␛[m  ␛[38;5;241mthe model writing its calls, counted as they arrive␛[m
-␛[38;5;241m⛁␛[m  ␛[38;5;241ma published report page␛[m
-␛[38;5;241m≡␛[m  ␛[38;5;241ma reading of the session␛[m
-␛[92m✓␛[m  ␛[38;5;241ma compaction that brought the window back␛[m
-␛[38;5;241m·␛[m  ␛[38;5;241maccepted, not started␛[m
-␛[38;5;205m▸␛[m  ␛[38;5;241mrunning␛[m
-␛[38;5;205m✦␛[m  ␛[38;5;241mthe classifier is deciding␛[m
-␛[91m✗␛[m  ␛[38;5;241mfailed␛[m
-␛[38;5;241m⊘␛[m  ␛[38;5;241mrefused: dim by you, red by a rule␛[m
-␛[38;5;103m[?]␛[m␛[38;5;241m hide the keys␛[m
+␛[38;5;245mglyphs␛[m
+␛[38;5;245m⚙␛[m  ␛[38;5;245ma read: a file, a search, a listing␛[m
+␛[38;5;214m$␛[m  ␛[38;5;245ma shell command␛[m
+␛[38;5;214m✎␛[m  ␛[38;5;245man edit, a write, a patch or a memory␛[m
+␛[94m◇␛[m  ␛[38;5;245ma sub-agent␛[m
+␛[38;5;214m⇄␛[m  ␛[38;5;245ma call to a server not marked read-only␛[m
+␛[38;5;245m✻␛[m  ␛[38;5;245mthe model writing its calls, counted as they arrive␛[m
+␛[38;5;245m⛁␛[m  ␛[38;5;245ma published report page␛[m
+␛[38;5;245m≡␛[m  ␛[38;5;245ma reading of the session␛[m
+␛[92m✓␛[m  ␛[38;5;245ma compaction that brought the window back␛[m
+␛[38;5;245m·␛[m  ␛[38;5;245maccepted, not started␛[m
+␛[38;5;205m▸␛[m  ␛[38;5;245mrunning␛[m
+␛[38;5;205m✦␛[m  ␛[38;5;245mthe classifier is deciding␛[m
+␛[91m✗␛[m  ␛[38;5;245mfailed␛[m
+␛[38;5;245m⊘␛[m  ␛[38;5;245mrefused: dim by you, red by a rule␛[m
+␛[38;5;103m[?]␛[m␛[38;5;245m hide the keys␛[m
 
 · the flows section · each row says which link of the chain answered, or that the session holds it
-␛[1;97m/config␛[m␛[38;5;241m · project file␛[m␛[38;5;241m · .shhh/config.toml␛[m                 ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;245m · .shhh/config.toml␛[m                 ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mFLOWS␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mclassifier         gemini-3-flash — this session only, written to …  session␛[m
-    ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;241m— behavior.explainer_model␛[m     ␛[38;5;252mflow key␛[m
-    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;241m— provider.cheap_model␛[m             ␛[38;5;252mcheap key␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mclassifier         gemini-3-flash — this session only, written to …  session␛[m
+    ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;245m— behavior.explainer_model␛[m     ␛[38;5;252mflow key␛[m
+    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m             ␛[38;5;252mcheap key␛[m
     ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                     ␛[38;5;252mprovider small model␛[m
     ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                     ␛[38;5;252msession model␛[m
 
   ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
     ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
     ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                ␛[38;5;252mdefault␛[m
 
   ␛[1;94mMODEL␛[m
     ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                                               ␛[38;5;252muser␛[m
-  ␛[38;5;241m↓ 9 more␛[m
+  ␛[38;5;245m↓ 9 more␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;241m reset␛[m          ␛[38;5;241m19 settings␛[m
-␛[38;5;103m[shift+tab]␛[m␛[38;5;241m write global␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m          ␛[38;5;245m19 settings␛[m
+␛[38;5;103m[shift+tab]␛[m␛[38;5;245m write global␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave␛[m
 
 · a flow's picker · the choice has three destinations on the key row
-␛[1;97m/config␛[m␛[38;5;241m · project file␛[m␛[38;5;241m · .shhh/config.toml␛[m                 ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/config␛[m␛[38;5;245m · project file␛[m␛[38;5;245m · .shhh/config.toml␛[m                 ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mFLOWS␛[m
-    ␛[38;5;252mclassifier␛[m         ␛[38;5;252mgemini-3-flash␛[m ␛[38;5;241m— this session only, written to …␛[m  ␛[38;5;214msession␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mexplanation        claude-sonnet-4.6 — behavior.explainer_model     flow key␛[m
+    ␛[38;5;252mclassifier␛[m         ␛[38;5;252mgemini-3-flash␛[m ␛[38;5;245m— this session only, written to …␛[m  ␛[38;5;214msession␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mexplanation        claude-sonnet-4.6 — behavior.explainer_model     flow key␛[m
       ␛[38;5;252mgpt-5.2␛[m
       ␛[38;5;252mgpt-5.2-mini␛[m
       ␛[38;5;252mclaude-haiku-4.5␛[m
-    ␛[94m❯␛[m ␛[1;97;48;5;62mclaude-sonnet-4.6                                                         ␛[m
+    ␛[94m❯␛[m ␛[1;97;48;5;61mclaude-sonnet-4.6                                                         ␛[m
       ␛[38;5;252mgemini-3-flash␛[m
-    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;241m— provider.cheap_model␛[m             ␛[38;5;252mcheap key␛[m
+    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m             ␛[38;5;252mcheap key␛[m
     ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                     ␛[38;5;252mprovider small model␛[m
     ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                     ␛[38;5;252msession model␛[m
 
   ␛[1;94mSESSION␛[m
-    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;245m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
     ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                ␛[38;5;252mdefault␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                       ␛[38;5;252mdefault␛[m
-  ␛[38;5;241m↓ 11 more␛[m
+  ␛[38;5;245m↓ 11 more␛[m
 
-␛[38;5;103m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m set it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m keep claude-sonnet-4.6␛[m
+␛[38;5;103m[↑↓]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m set it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m keep claude-sonnet-4.6␛[m

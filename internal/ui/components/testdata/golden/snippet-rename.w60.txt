@@ -28,17 +28,17 @@ rename ▸ ports█
 
 ── ansi ────────────────────────────────────────────────────
 · the rename row under the panes, holding the name
-␛[1;97mshhh snippets␛[m␛[38;5;241m · 3 snippets␛[m             ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh snippets␛[m␛[38;5;245m · 3 snippets␛[m             ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;97;48;5;62mports      what is listening on this machine        4m ago␛[m
-  ␛[38;5;252mbig-files␛[m  ␛[38;5;241mthe ten biggest files here␛[m            ␛[38;5;252myesterday␛[m
-  ␛[38;5;252mprune␛[m      ␛[38;5;241mdrop every merged branch␛[m                    ␛[38;5;252mtue␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
-␛[1;97mports␛[m                                                 ␛[38;5;241m4m ago␛[m
-  ␛[38;5;241mwhat is listening on this machine␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mports      what is listening on this machine        4m ago␛[m
+  ␛[38;5;252mbig-files␛[m  ␛[38;5;245mthe ten biggest files here␛[m            ␛[38;5;252myesterday␛[m
+  ␛[38;5;252mprune␛[m      ␛[38;5;245mdrop every merged branch␛[m                    ␛[38;5;252mtue␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────␛[m
+␛[1;97mports␛[m                                                 ␛[38;5;245m4m ago␛[m
+  ␛[38;5;245mwhat is listening on this machine␛[m
 
   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mlsof -nP -iTCP -sTCP:LISTEN␛[m
-␛[38;5;241mrename ␛[m␛[94m▸ ␛[m␛[97mports█␛[m
+␛[38;5;245mrename ␛[m␛[94m▸ ␛[m␛[97mports█␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m keep the name␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m rename it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m keep the name␛[m

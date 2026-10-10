@@ -65,52 +65,52 @@
 ── ansi ────────────────────────────────────────────────────
 · the round said nothing · the reading is the card's body
 ␛[94m❯␛[m ␛[97mwrite the copy story␛[m
-␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245m.plan/BACKLOG.md␛[m␛[48;5;234m                                                           ␛[38;5;241m≡ on target␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m3.1s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m    ␛[3;38;5;245mBoth preconditions held up and nothing read so far contradicts the plan. Writing is next, no␛[m␛[48;5;234m        ␛[m
-␛[48;5;234m    ␛[3;38;5;245mdetours.␛[m␛[48;5;234m                                                                                            ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;248m.plan/BACKLOG.md␛[m␛[48;5;234m                                                           ␛[38;5;245m≡ on target␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m3.1s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[3;38;5;248mBoth preconditions held up and nothing read so far contradicts the plan. Writing is next, no␛[m␛[48;5;234m        ␛[m
+␛[48;5;234m    ␛[3;38;5;248mdetours.␛[m␛[48;5;234m                                                                                            ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 
 · the round said something · the reading is a row of its own
 ␛[94m❯␛[m ␛[97mwrite the copy story␛[m
-␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245m.plan/BACKLOG.md␛[m␛[48;5;234m                                                                         ␛[38;5;241m3.1s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;248m.plan/BACKLOG.md␛[m␛[48;5;234m                                                                         ␛[38;5;245m3.1s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mReading the backlog's format before writing.␛[m␛[48;5;234m                                                        ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
-  ␛[38;5;241m≡␛[m ␛[3;38;5;245mBoth preconditions held up and nothing read so far contradicts the plan. Writing is␛[m      ␛[38;5;241mon target␛[m
-    ␛[3;38;5;245mnext, no detours.␛[m
+  ␛[38;5;245m≡␛[m ␛[3;38;5;248mBoth preconditions held up and nothing read so far contradicts the plan. Writing is␛[m      ␛[38;5;245mon target␛[m
+    ␛[3;38;5;248mnext, no detours.␛[m
 
 
 · its own row, opened · the reason and what it was read against
 ␛[94m❯␛[m ␛[97mwrite the copy story␛[m
-␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245m.plan/BACKLOG.md␛[m␛[48;5;234m                                                                         ␛[38;5;241m3.1s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;248m.plan/BACKLOG.md␛[m␛[48;5;234m                                                                         ␛[38;5;245m3.1s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mReading the backlog's format before writing.␛[m␛[48;5;234m                                                        ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
-  ␛[38;5;241m≡␛[m ␛[3;38;5;245mBoth preconditions held up and nothing read so far contradicts the plan. Writing is␛[m     ␛[38;5;214moff target␛[m
-    ␛[3;38;5;245mnext, no detours.␛[m
-    ␛[38;5;241mthe plan never named these files␛[m
-    ␛[38;5;241mread against: write the copy story␛[m
+  ␛[38;5;245m≡␛[m ␛[3;38;5;248mBoth preconditions held up and nothing read so far contradicts the plan. Writing is␛[m     ␛[38;5;214moff target␛[m
+    ␛[3;38;5;248mnext, no detours.␛[m
+    ␛[38;5;245mthe plan never named these files␛[m
+    ␛[38;5;245mread against: write the copy story␛[m
 
 
 · unclear · the one reading that offers a key
 ␛[94m❯␛[m ␛[97mwrite the copy story␛[m
-␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245m.plan/BACKLOG.md␛[m␛[48;5;234m                                                                         ␛[38;5;241m3.1s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;248m.plan/BACKLOG.md␛[m␛[48;5;234m                                                                         ␛[38;5;245m3.1s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mReading the backlog's format before writing.␛[m␛[48;5;234m                                                        ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
-  ␛[38;5;241m≡␛[m ␛[3;38;5;245mBoth preconditions held up and nothing read so far contradicts the␛[m ␛[38;5;214munclear␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;241m reading mode␛[m
-    ␛[3;38;5;245mplan. Writing is next, no detours.␛[m
+  ␛[38;5;245m≡␛[m ␛[3;38;5;248mBoth preconditions held up and nothing read so far contradicts the␛[m ␛[38;5;214munclear␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m reading mode␛[m
+    ␛[3;38;5;248mplan. Writing is next, no detours.␛[m
 

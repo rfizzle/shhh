@@ -74,63 +74,63 @@
 
 ── ansi ────────────────────────────────────────────────────
 · a small run, researching
-␛[38;5;241m▸␛[m ␛[38;5;205m▸␛[m  ␛[97mtodo run cache-ttl · size M␛[m ␛[38;5;241m────────────────────────────␛[m ␛[38;5;241mresearch␛[m  ␛[38;5;241m4m12s␛[m
-    ␛[38;5;205m▸␛[m ␛[97mresearch␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mimplement␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mverify␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mreview␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mcommit␛[m
+␛[38;5;245m▸␛[m ␛[38;5;205m▸␛[m  ␛[97mtodo run cache-ttl · size M␛[m ␛[38;5;245m────────────────────────────␛[m ␛[38;5;245mresearch␛[m  ␛[38;5;245m4m12s␛[m
+    ␛[38;5;205m▸␛[m ␛[97mresearch␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mimplement␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mverify␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mreview␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mcommit␛[m
 
 
 · the same run building what research planned
-␛[38;5;241m▸␛[m ␛[38;5;205m▸␛[m  ␛[97mtodo run cache-ttl · size S (was M)␛[m ␛[38;5;241m───────────────────␛[m ␛[38;5;241mimplement␛[m  ␛[38;5;241m4m12s␛[m
-    ␛[92m✓␛[m ␛[38;5;252mresearch␛[m␛[38;5;241m · ␛[m␛[38;5;205m▸␛[m ␛[97mimplement␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mverify␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mreview␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mcommit␛[m
+␛[38;5;245m▸␛[m ␛[38;5;205m▸␛[m  ␛[97mtodo run cache-ttl · size S (was M)␛[m ␛[38;5;245m───────────────────␛[m ␛[38;5;245mimplement␛[m  ␛[38;5;245m4m12s␛[m
+    ␛[92m✓␛[m ␛[38;5;252mresearch␛[m␛[38;5;245m · ␛[m␛[38;5;205m▸␛[m ␛[97mimplement␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mverify␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mreview␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mcommit␛[m
 
 
 · a medium run spending a remediation round on a failed verify
-␛[38;5;241m▸␛[m ␛[38;5;205m▸␛[m  ␛[97mtodo run cache-ttl · size M␛[m ␛[38;5;241m───────────────────────────␛[m ␛[38;5;241mremediate␛[m  ␛[38;5;241m4m12s␛[m
-    ␛[92m✓␛[m ␛[38;5;252mresearch␛[m␛[38;5;241m · ␛[m␛[38;5;205m▸␛[m ␛[97mimplement␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mverify␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mreview␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mcommit␛[m
-    ␛[38;5;241mremediate  round 1 of 2␛[m
+␛[38;5;245m▸␛[m ␛[38;5;205m▸␛[m  ␛[97mtodo run cache-ttl · size M␛[m ␛[38;5;245m───────────────────────────␛[m ␛[38;5;245mremediate␛[m  ␛[38;5;245m4m12s␛[m
+    ␛[92m✓␛[m ␛[38;5;252mresearch␛[m␛[38;5;245m · ␛[m␛[38;5;205m▸␛[m ␛[97mimplement␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mverify␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mreview␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mcommit␛[m
+    ␛[38;5;245mremediate  round 1 of 2␛[m
 
 
 · reviewed, committed and done, opened to its answers
-␛[38;5;241m▾␛[m ␛[92m✓␛[m  ␛[38;5;252mtodo run cache-ttl · size M␛[m ␛[38;5;241m────────────────────────────────␛[m ␛[38;5;241mdone␛[m  ␛[38;5;241m4m12s␛[m
-    ␛[92m✓␛[m ␛[38;5;252mresearch␛[m␛[38;5;241m · ␛[m␛[92m✓␛[m ␛[38;5;252mimplement␛[m␛[38;5;241m · ␛[m␛[92m✓␛[m ␛[38;5;252mverify␛[m␛[38;5;241m · ␛[m␛[92m✓␛[m ␛[38;5;252mreview␛[m␛[38;5;241m · ␛[m␛[92m✓␛[m ␛[38;5;252mcommit␛[m
-    ␛[38;5;241mreview  clean␛[m
+␛[38;5;245m▾␛[m ␛[92m✓␛[m  ␛[38;5;252mtodo run cache-ttl · size M␛[m ␛[38;5;245m────────────────────────────────␛[m ␛[38;5;245mdone␛[m  ␛[38;5;245m4m12s␛[m
+    ␛[92m✓␛[m ␛[38;5;252mresearch␛[m␛[38;5;245m · ␛[m␛[92m✓␛[m ␛[38;5;252mimplement␛[m␛[38;5;245m · ␛[m␛[92m✓␛[m ␛[38;5;252mverify␛[m␛[38;5;245m · ␛[m␛[92m✓␛[m ␛[38;5;252mreview␛[m␛[38;5;245m · ␛[m␛[92m✓␛[m ␛[38;5;252mcommit␛[m
+    ␛[38;5;245mreview  clean␛[m
     ␛[38;5;252mplan␛[m
-      ␛[38;5;241m1. Read the cache's own tests␛[m
-      ␛[38;5;241m2. Give an entry a deadline␛[m
+      ␛[38;5;245m1. Read the cache's own tests␛[m
+      ␛[38;5;245m2. Give an entry a deadline␛[m
     ␛[38;5;252mreport␛[m
-      ␛[38;5;241mSummary: entries now expire.␛[m
+      ␛[38;5;245mSummary: entries now expire.␛[m
     ␛[38;5;252mfiles␛[m
-      ␛[38;5;241minternal/cache/cache.go · internal/cache/cache_test.go␛[m
+      ␛[38;5;245minternal/cache/cache.go · internal/cache/cache_test.go␛[m
 
 
 · the same run after the round it spent · what it cost stays on the row
-␛[38;5;241m▸␛[m ␛[92m✓␛[m  ␛[38;5;252mtodo run cache-ttl · size M␛[m ␛[38;5;241m────────────────────────────────␛[m ␛[38;5;241mdone␛[m  ␛[38;5;241m4m12s␛[m
-    ␛[92m✓␛[m ␛[38;5;252mresearch␛[m␛[38;5;241m · ␛[m␛[92m✓␛[m ␛[38;5;252mimplement␛[m␛[38;5;241m · ␛[m␛[92m✓␛[m ␛[38;5;252mverify␛[m␛[38;5;241m · ␛[m␛[92m✓␛[m ␛[38;5;252mreview␛[m␛[38;5;241m · ␛[m␛[92m✓␛[m ␛[38;5;252mcommit␛[m
-    ␛[38;5;241mremediate  1/2 rounds spent␛[m
-    ␛[38;5;241mreview  clean␛[m
+␛[38;5;245m▸␛[m ␛[92m✓␛[m  ␛[38;5;252mtodo run cache-ttl · size M␛[m ␛[38;5;245m────────────────────────────────␛[m ␛[38;5;245mdone␛[m  ␛[38;5;245m4m12s␛[m
+    ␛[92m✓␛[m ␛[38;5;252mresearch␛[m␛[38;5;245m · ␛[m␛[92m✓␛[m ␛[38;5;252mimplement␛[m␛[38;5;245m · ␛[m␛[92m✓␛[m ␛[38;5;252mverify␛[m␛[38;5;245m · ␛[m␛[92m✓␛[m ␛[38;5;252mreview␛[m␛[38;5;245m · ␛[m␛[92m✓␛[m ␛[38;5;252mcommit␛[m
+    ␛[38;5;245mremediate  1/2 rounds spent␛[m
+    ␛[38;5;245mreview  clean␛[m
 
 
 · a large run in three lanes, one landed
-␛[38;5;241m▸␛[m ␛[38;5;205m▸␛[m  ␛[97mtodo run cache-ttl · size L (was M)␛[m ␛[38;5;241m─────────────────────␛[m ␛[38;5;241mfan-out␛[m  ␛[38;5;241m4m12s␛[m
-    ␛[92m✓␛[m ␛[38;5;252mresearch␛[m␛[38;5;241m · ␛[m␛[38;5;205m▸␛[m ␛[97mimplement␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mverify␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mreview␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mcommit␛[m
-    ␛[38;5;241mimplement  ␛[m␛[94m▰␛[m␛[38;5;241m▱▱▱▱␛[m ␛[94m1/3 landed␛[m␛[38;5;241m  store · tests · bench␛[m
+␛[38;5;245m▸␛[m ␛[38;5;205m▸␛[m  ␛[97mtodo run cache-ttl · size L (was M)␛[m ␛[38;5;245m─────────────────────␛[m ␛[38;5;245mfan-out␛[m  ␛[38;5;245m4m12s␛[m
+    ␛[92m✓␛[m ␛[38;5;252mresearch␛[m␛[38;5;245m · ␛[m␛[38;5;205m▸␛[m ␛[97mimplement␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mverify␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mreview␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mcommit␛[m
+    ␛[38;5;245mimplement  ␛[m␛[94m▰␛[m␛[38;5;245m▱▱▱▱␛[m ␛[94m1/3 landed␛[m␛[38;5;245m  store · tests · bench␛[m
 
 
 · paused on a question research could not settle
-␛[38;5;241m▸␛[m ␛[38;5;241m·␛[m  ␛[97mtodo run cache-ttl · size M␛[m ␛[38;5;241m──────────────────────────────␛[m ␛[38;5;241mpaused␛[m  ␛[38;5;241m4m12s␛[m
-    ␛[38;5;205m▸␛[m ␛[97mresearch␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mimplement␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mverify␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mreview␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mcommit␛[m
-    ␛[38;5;241mpaused  research left questions␛[m
+␛[38;5;245m▸␛[m ␛[38;5;245m·␛[m  ␛[97mtodo run cache-ttl · size M␛[m ␛[38;5;245m──────────────────────────────␛[m ␛[38;5;245mpaused␛[m  ␛[38;5;245m4m12s␛[m
+    ␛[38;5;205m▸␛[m ␛[97mresearch␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mimplement␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mverify␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mreview␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mcommit␛[m
+    ␛[38;5;245mpaused  research left questions␛[m
 
 
 · blocked, with the follow-up it wrote and the key that reopens it
-␛[38;5;241m▸␛[m ␛[91m✗␛[m  ␛[38;5;252mtodo run cache-ttl · size M␛[m ␛[38;5;241m─────────────────────────────␛[m ␛[38;5;241mblocked␛[m  ␛[38;5;241m4m12s␛[m
-    ␛[91m✗␛[m ␛[38;5;252mresearch␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mimplement␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mverify␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mreview␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mcommit␛[m
-    ␛[38;5;241mblocked  research produced no numbered plan␛[m
-    ␛[38;5;241mfollow-up  cache-ttl-plan␛[m
-    ␛[38;5;241m/todo open cache-ttl puts the item back to open␛[m
+␛[38;5;245m▸␛[m ␛[91m✗␛[m  ␛[38;5;252mtodo run cache-ttl · size M␛[m ␛[38;5;245m─────────────────────────────␛[m ␛[38;5;245mblocked␛[m  ␛[38;5;245m4m12s␛[m
+    ␛[91m✗␛[m ␛[38;5;252mresearch␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mimplement␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mverify␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mreview␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mcommit␛[m
+    ␛[38;5;245mblocked  research produced no numbered plan␛[m
+    ␛[38;5;245mfollow-up  cache-ttl-plan␛[m
+    ␛[38;5;245m/todo open cache-ttl puts the item back to open␛[m
 
 
 · picked up from a checkpoint · the stages it skipped are restored, not passed
-␛[38;5;241m▸␛[m ␛[38;5;205m▸␛[m  ␛[97mtodo run cache-ttl · size M␛[m ␛[38;5;241m──────────────────────────────␛[m ␛[38;5;241mverify␛[m  ␛[38;5;241m4m12s␛[m
-    ␛[38;5;241m↺␛[m ␛[38;5;241mresearch␛[m␛[38;5;241m · ␛[m␛[38;5;241m↺␛[m ␛[38;5;241mimplement␛[m␛[38;5;241m · ␛[m␛[38;5;205m▸␛[m ␛[97mverify␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mreview␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mcommit␛[m
-    ␛[38;5;241mrestored from the checkpoint: research · implement␛[m
+␛[38;5;245m▸␛[m ␛[38;5;205m▸␛[m  ␛[97mtodo run cache-ttl · size M␛[m ␛[38;5;245m──────────────────────────────␛[m ␛[38;5;245mverify␛[m  ␛[38;5;245m4m12s␛[m
+    ␛[38;5;245m↺␛[m ␛[38;5;245mresearch␛[m␛[38;5;245m · ␛[m␛[38;5;245m↺␛[m ␛[38;5;245mimplement␛[m␛[38;5;245m · ␛[m␛[38;5;205m▸␛[m ␛[97mverify␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mreview␛[m␛[38;5;245m · ␛[m␛[38;5;245m·␛[m ␛[38;5;245mcommit␛[m
+    ␛[38;5;245mrestored from the checkpoint: research · implement␛[m
 

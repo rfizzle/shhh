@@ -163,7 +163,7 @@ func TestForeignText_ExplicitColoursArriveAsTokens(t *testing.T) {
 		{"an indexed red is del, like 31", "\x1b[38;5;196mwarn\x1b[0m", Palette.Del},
 		{"an indexed green is add", "\x1b[38;5;46mwarn\x1b[0m", Palette.Add},
 		{"the first sixteen go through the theme table", "\x1b[38;5;5mwarn\x1b[0m", Palette.Spin},
-		{"an indexed grey joins the ramp", "\x1b[38;5;250mwarn\x1b[0m", Palette.Body},
+		{"an indexed grey joins the ramp", "\x1b[38;5;252mwarn\x1b[0m", Palette.Body},
 		{"a truecolor amber is accent", "\x1b[38;2;255;170;0mwarn\x1b[0m", Palette.Accent},
 		{"a truecolor violet is info", "\x1b[38;2;122;19;219mwarn\x1b[0m", Palette.Info},
 		{"a truecolor near-black is dim", "\x1b[38;2;18;18;18mwarn\x1b[0m", Palette.Dim},

@@ -101,88 +101,88 @@
 ── ansi ────────────────────────────────────────────────────
 · success, exit status, signal, timeout, spawn failure and handoff
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m␛[38;5;241m 6 commands␛[m␛[48;5;234m                                                                ␛[91mdid not start␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m8.2s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m␛[38;5;245m 6 commands␛[m␛[48;5;234m                                                                ␛[91mdid not start␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m8.2s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m    ␛[38;5;241m▾ ran 6 commands␛[m␛[48;5;234m                                                                              ␛[38;5;241m8.2s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;245mgo test ./...␛[m␛[48;5;234m                                                               ␛[92mok␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;245m1 line␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m1.2s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;245mgo test ./...␛[m␛[48;5;234m                                                                    ␛[91mexit 1␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m2.0s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245mstderr: test failed␛[m␛[48;5;234m                                                                             ␛[m
-␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;245mbuild␛[m␛[48;5;234m                                                                 ␛[91mkilled␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241msignal 9␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m3.0s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245mcompiler stopped␛[m␛[48;5;234m                                                                                ␛[m
-␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;245mgo test ./...␛[m␛[48;5;234m                                                            ␛[91mtimed out␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m1s␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m1.0s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245mpartial output␛[m␛[48;5;234m                                                                                  ␛[m
-␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;245mmissing containment binary␛[m␛[48;5;234m                                                       ␛[91mdid not start␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245mfork/exec bwrap: no such file␛[m␛[48;5;234m                                                                   ␛[m
-␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;245mwatch␛[m␛[48;5;234m                                                                       ␛[92mok␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;245m1 line␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m1.0s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245m▾ ran 6 commands␛[m␛[48;5;234m                                                                              ␛[38;5;245m8.2s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;248mgo test ./...␛[m␛[48;5;234m                                                               ␛[92mok␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m1 line␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m1.2s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;248mgo test ./...␛[m␛[48;5;234m                                                                    ␛[91mexit 1␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m2.0s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248mstderr: test failed␛[m␛[48;5;234m                                                                             ␛[m
+␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;248mbuild␛[m␛[48;5;234m                                                                 ␛[91mkilled␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245msignal 9␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m3.0s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248mcompiler stopped␛[m␛[48;5;234m                                                                                ␛[m
+␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;248mgo test ./...␛[m␛[48;5;234m                                                            ␛[91mtimed out␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m1s␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m1.0s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248mpartial output␛[m␛[48;5;234m                                                                                  ␛[m
+␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;248mmissing containment binary␛[m␛[48;5;234m                                                       ␛[91mdid not start␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248mfork/exec bwrap: no such file␛[m␛[48;5;234m                                                                   ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;248mwatch␛[m␛[48;5;234m                                                                       ␛[92mok␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;248m1 line␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m1.0s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m    ␛[38;5;241min order ␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m                                                                            ␛[38;5;241m6 tools␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245min order ␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m                                                                            ␛[38;5;245m6 tools␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 
 · did not start · working-directory
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mgo test ./...␛[m␛[48;5;234m                                                      ␛[91mdid not start · working dir␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;248mgo test ./...␛[m␛[48;5;234m                                                      ␛[91mdid not start · working dir␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;245mgo test ./...␛[m␛[48;5;234m                                                      ␛[91mdid not start · working dir␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245mworking directory unavailable: /work/.claude/worktrees/gone — chdir /bin/bash: no such file or␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245mdirectory␛[m␛[48;5;234m                                                                                       ␛[m
-␛[48;5;234m        ␛[38;5;245mNothing ran: a command's working directory has to be there when it starts. Find out where it␛[m␛[48;5;234m    ␛[m
-␛[48;5;234m        ␛[38;5;245mwent — a worktree or checkout removed under a running session is the usual cause — and run the␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245mcommand somewhere that still exists.␛[m␛[48;5;234m                                                            ␛[m
+␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;248mgo test ./...␛[m␛[48;5;234m                                                      ␛[91mdid not start · working dir␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248mworking directory unavailable: /work/.claude/worktrees/gone — chdir /bin/bash: no such file or␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248mdirectory␛[m␛[48;5;234m                                                                                       ␛[m
+␛[48;5;234m        ␛[38;5;248mNothing ran: a command's working directory has to be there when it starts. Find out where it␛[m␛[48;5;234m    ␛[m
+␛[48;5;234m        ␛[38;5;248mwent — a worktree or checkout removed under a running session is the usual cause — and run the␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248mcommand somewhere that still exists.␛[m␛[48;5;234m                                                            ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 
 · did not start · execution-shell
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mgo test ./...␛[m␛[48;5;234m                                                  ␛[91mdid not start · execution shell␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;248mgo test ./...␛[m␛[48;5;234m                                                  ␛[91mdid not start · execution shell␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;245mgo test ./...␛[m␛[48;5;234m                                                  ␛[91mdid not start · execution shell␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245mexecution shell unavailable: fork/exec /usr/local/bin/bash: no such file or directory␛[m␛[48;5;234m           ␛[m
-␛[48;5;234m        ␛[38;5;245mNothing ran, and nothing will until that shell is back: every command here goes through it, so␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245manother spelling of the same command reaches the same missing program. Report it.␛[m␛[48;5;234m               ␛[m
+␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;248mgo test ./...␛[m␛[48;5;234m                                                  ␛[91mdid not start · execution shell␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248mexecution shell unavailable: fork/exec /usr/local/bin/bash: no such file or directory␛[m␛[48;5;234m           ␛[m
+␛[48;5;234m        ␛[38;5;248mNothing ran, and nothing will until that shell is back: every command here goes through it, so␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248manother spelling of the same command reaches the same missing program. Report it.␛[m␛[48;5;234m               ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 
 · did not start · containment
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mgo test ./...␛[m␛[48;5;234m                                                      ␛[91mdid not start · containment␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;248mgo test ./...␛[m␛[48;5;234m                                                      ␛[91mdid not start · containment␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;245mgo test ./...␛[m␛[48;5;234m                                                      ␛[91mdid not start · containment␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245mcontainment unavailable: fork/exec /usr/bin/bwrap: no such file or directory␛[m␛[48;5;234m                    ␛[m
-␛[48;5;234m        ␛[38;5;245mNothing ran, and it was not run uncontained — that is the one substitution this session will␛[m␛[48;5;234m    ␛[m
-␛[48;5;234m        ␛[38;5;245mnot make. Report the mechanism as missing; `shhh doctor` says what this host needs.␛[m␛[48;5;234m             ␛[m
+␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;248mgo test ./...␛[m␛[48;5;234m                                                      ␛[91mdid not start · containment␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248mcontainment unavailable: fork/exec /usr/bin/bwrap: no such file or directory␛[m␛[48;5;234m                    ␛[m
+␛[48;5;234m        ␛[38;5;248mNothing ran, and it was not run uncontained — that is the one substitution this session will␛[m␛[48;5;234m    ␛[m
+␛[48;5;234m        ␛[38;5;248mnot make. Report the mechanism as missing; `shhh doctor` says what this host needs.␛[m␛[48;5;234m             ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 
 · did not start · permission
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245m./deploy.sh␛[m␛[48;5;234m                                                         ␛[91mdid not start · permission␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;248m./deploy.sh␛[m␛[48;5;234m                                                         ␛[91mdid not start · permission␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;245m./deploy.sh␛[m␛[48;5;234m                                                         ␛[91mdid not start · permission␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245mpermission denied: fork/exec ./deploy.sh: permission denied␛[m␛[48;5;234m                                     ␛[m
-␛[48;5;234m        ␛[38;5;245mNothing ran. The refusal is the operating system's and not a decision this session made or can␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245mundo, so use a program and a path the current user is already allowed, or report what is␛[m␛[48;5;234m        ␛[m
-␛[48;5;234m        ␛[38;5;245mrefusing it.␛[m␛[48;5;234m                                                                                    ␛[m
+␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;248m./deploy.sh␛[m␛[48;5;234m                                                         ␛[91mdid not start · permission␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248mpermission denied: fork/exec ./deploy.sh: permission denied␛[m␛[48;5;234m                                     ␛[m
+␛[48;5;234m        ␛[38;5;248mNothing ran. The refusal is the operating system's and not a decision this session made or can␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248mundo, so use a program and a path the current user is already allowed, or report what is␛[m␛[48;5;234m        ␛[m
+␛[48;5;234m        ␛[38;5;248mrefusing it.␛[m␛[48;5;234m                                                                                    ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 
 · did not start · spawn
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mgo test ./...␛[m␛[48;5;234m                                                            ␛[91mdid not start · spawn␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;248mgo test ./...␛[m␛[48;5;234m                                                            ␛[91mdid not start · spawn␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;245mgo test ./...␛[m␛[48;5;234m                                                            ␛[91mdid not start · spawn␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245mspawn refused: fork/exec /bin/bash: resource temporarily unavailable␛[m␛[48;5;234m                            ␛[m
-␛[48;5;234m        ␛[38;5;245mNothing ran, and the reason above is the host's rather than the command's. Retry only if that␛[m␛[48;5;234m   ␛[m
-␛[48;5;234m        ␛[38;5;245mreason names something that has since changed; otherwise report it.␛[m␛[48;5;234m                             ␛[m
+␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;248mgo test ./...␛[m␛[48;5;234m                                                            ␛[91mdid not start · spawn␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248mspawn refused: fork/exec /bin/bash: resource temporarily unavailable␛[m␛[48;5;234m                            ␛[m
+␛[48;5;234m        ␛[38;5;248mNothing ran, and the reason above is the host's rather than the command's. Retry only if that␛[m␛[48;5;234m   ␛[m
+␛[48;5;234m        ␛[38;5;248mreason names something that has since changed; otherwise report it.␛[m␛[48;5;234m                             ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 
 · ran, and nobody could read how it ended
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mmake release␛[m␛[48;5;234m                                                           ␛[91mdid not complete␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m4.0s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;248mmake release␛[m␛[48;5;234m                                                           ␛[91mdid not complete␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m4.0s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;245mmake release␛[m␛[48;5;234m                                                           ␛[91mdid not complete␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m4.0s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245mpackaging…␛[m␛[48;5;234m                                                                                      ␛[m
-␛[48;5;234m        ␛[38;5;245mwait: read |0: file already closed␛[m␛[48;5;234m                                                              ␛[m
+␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;248mmake release␛[m␛[48;5;234m                                                           ␛[91mdid not complete␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m4.0s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248mpackaging…␛[m␛[48;5;234m                                                                                      ␛[m
+␛[48;5;234m        ␛[38;5;248mwait: read |0: file already closed␛[m␛[48;5;234m                                                              ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 

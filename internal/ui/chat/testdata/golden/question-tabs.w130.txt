@@ -64,53 +64,53 @@ Should the migration be reversible?  [y/N]
 
 ── ansi ────────────────────────────────────────────────────
 · three questions · the first tab has the keyboard and none is answered yet
-␛[1;97;48;5;62m▸ 1␛[m  ␛[38;5;241m· 2␛[m  ␛[38;5;241m· 3␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  1 of 3 · 3 unanswered will be sent as skipped␛[m
-␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 3 ─╮␛[m
+␛[1;97;48;5;61m▸ 1␛[m  ␛[38;5;245m· 2␛[m  ␛[38;5;245m· 3␛[m  ␛[38;5;245m· submit␛[m␛[38;5;245m  1 of 3 · 3 unanswered will be sent as skipped␛[m
+␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 3 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhich store should the cache use?␛[m                                                                                          ␛[94m│␛[m
 ␛[94m│␛[m                                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. SQLite            in the checkout already                                                       recommended · 3 files␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mPostgres␛[m          ␛[38;5;241mone more service to run␛[m                                                                     ␛[38;5;252m9 files␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mSomething else …␛[m  ␛[38;5;241manswer in your own words␛[m                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                                   ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m note or list␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;241m the full answer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[←→]␛[m␛[38;5;241m the next question␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;241m keys␛[m                             ␛[94m│␛[m
-␛[94m│␛[m ␛[92m[esc]␛[m␛[38;5;241m back to the draft — the question waits␛[m                                                                               ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;61m1. SQLite            in the checkout already                                                       recommended · 3 files␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m2. ␛[m␛[38;5;252mPostgres␛[m          ␛[38;5;245mone more service to run␛[m                                                                     ␛[38;5;252m9 files␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m3. ␛[m␛[38;5;252mSomething else …␛[m  ␛[38;5;245manswer in your own words␛[m                                                                            ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;248m(none)␛[m                                                                                                                   ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m note or list␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m confirm␛[m␛[38;5;245m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;245m the full answer␛[m␛[38;5;245m · ␛[m␛[38;5;103m[←→]␛[m␛[38;5;245m the next question␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m                             ␛[94m│␛[m
+␛[94m│␛[m ␛[92m[esc]␛[m␛[38;5;245m back to the draft — the question waits␛[m                                                                               ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · one answered · the mark turns and the tail counts what is still open
-␛[92m✓ 1 answered␛[m  ␛[1;97;48;5;62m▸ 2␛[m  ␛[38;5;241m· 3␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  2 of 3 · 2 unanswered will be sent as skipped␛[m
-␛[38;5;252mShould the migration be reversible?␛[m  ␛[38;5;241m[␛[m␛[38;5;241my␛[m␛[38;5;241m/␛[m␛[1;97mN␛[m␛[38;5;241m]␛[m
-␛[38;5;241m┄ note (optional)␛[m
-  ␛[38;5;245m(none)␛[m
-␛[38;5;103m[y]␛[m␛[38;5;241m yes␛[m␛[38;5;241m · ␛[m␛[38;5;103m[N]␛[m␛[38;5;241m no — the default␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[←→]␛[m␛[38;5;241m the next question␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;241m keys␛[m
+␛[92m✓ 1 answered␛[m  ␛[1;97;48;5;61m▸ 2␛[m  ␛[38;5;245m· 3␛[m  ␛[38;5;245m· submit␛[m␛[38;5;245m  2 of 3 · 2 unanswered will be sent as skipped␛[m
+␛[38;5;252mShould the migration be reversible?␛[m  ␛[38;5;245m[␛[m␛[38;5;245my␛[m␛[38;5;245m/␛[m␛[1;97mN␛[m␛[38;5;245m]␛[m
+␛[38;5;245m┄ note (optional)␛[m
+  ␛[38;5;248m(none)␛[m
+␛[38;5;103m[y]␛[m␛[38;5;245m yes␛[m␛[38;5;245m · ␛[m␛[38;5;103m[N]␛[m␛[38;5;245m no — the default␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m note␛[m␛[38;5;245m · ␛[m␛[38;5;103m[←→]␛[m␛[38;5;245m the next question␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
 
 · the free answer · its field is shut so the arrows stay the strip's
-␛[92m✓ 1 answered␛[m  ␛[92m✓ 2 answered␛[m  ␛[1;97;48;5;62m▸ 3␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  3 of 3 · 1 unanswered will be sent as skipped␛[m
-␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 3 of 3 ─╮␛[m
+␛[92m✓ 1 answered␛[m  ␛[92m✓ 2 answered␛[m  ␛[1;97;48;5;61m▸ 3␛[m  ␛[38;5;245m· submit␛[m␛[38;5;245m  3 of 3 · 1 unanswered will be sent as skipped␛[m
+␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 3 of 3 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhat should the flag be called?␛[m                                                                                            ␛[94m│␛[m
 ␛[94m│␛[m                                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m┄ note (required)␛[m                                                                                                          ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                                   ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m answer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[←→]␛[m␛[38;5;241m the next question␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;241m keys␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the draft — the question waits␛[m          ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m┄ note (required)␛[m                                                                                                          ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;248m(none)␛[m                                                                                                                   ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;245m confirm␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m answer␛[m␛[38;5;245m · ␛[m␛[38;5;103m[←→]␛[m␛[38;5;245m the next question␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the draft — the question waits␛[m          ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the tab that ends the set · what enter sends, and what leaving a tab open costs
-␛[92m✓ 1 answered␛[m  ␛[92m✓ 2 answered␛[m  ␛[38;5;241m· 3␛[m  ␛[1;97;48;5;62m▸ submit␛[m␛[38;5;241m  submit · 1 unanswered will be sent as skipped␛[m
-␛[38;5;241m╭─ ␛[m␛[1;97mthe answers ␛[m␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
-␛[38;5;241m│␛[m send 2 answers · 1 unanswered, sent as skipped                                                                             ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m send␛[m␛[38;5;241m · ␛[m␛[38;5;103m[←→]␛[m␛[38;5;241m the next question␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m answer in your own words␛[m                                                     ␛[38;5;241m│␛[m
-␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+␛[92m✓ 1 answered␛[m  ␛[92m✓ 2 answered␛[m  ␛[38;5;245m· 3␛[m  ␛[1;97;48;5;61m▸ submit␛[m␛[38;5;245m  submit · 1 unanswered will be sent as skipped␛[m
+␛[38;5;245m╭─ ␛[m␛[1;97mthe answers ␛[m␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
+␛[38;5;245m│␛[m send 2 answers · 1 unanswered, sent as skipped                                                                             ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;245m send␛[m␛[38;5;245m · ␛[m␛[38;5;103m[←→]␛[m␛[38;5;245m the next question␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m answer in your own words␛[m                                                     ␛[38;5;245m│␛[m
+␛[38;5;245m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · four questions · the most one call may carry, which is where the strip is tightest
-␛[92m✓ 1 answered␛[m  ␛[38;5;241m· 2␛[m  ␛[1;97;48;5;62m▸ 3␛[m  ␛[38;5;241m· 4␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  3 of 4 · 3 unanswered will be sent as skipped␛[m
-␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 3 of 4 ─╮␛[m
+␛[92m✓ 1 answered␛[m  ␛[38;5;245m· 2␛[m  ␛[1;97;48;5;61m▸ 3␛[m  ␛[38;5;245m· 4␛[m  ␛[38;5;245m· submit␛[m␛[38;5;245m  3 of 4 · 3 unanswered will be sent as skipped␛[m
+␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 3 of 4 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhich packages should the flag reach?␛[m                                                                                      ␛[94m│␛[m
 ␛[94m│␛[m                                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[94m❯␛[m ␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m[ ]␛[m␛[48;5;62m ␛[97;48;5;62minternal/agent                                                                                                      ␛[m␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m[ ]␛[m internal/cli                                                                                                         ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m[ ]␛[m Something else …                                                                                                     ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                                   ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m note or list␛[m␛[38;5;241m · ␛[m␛[38;5;103m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;241m the full answer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[←→]␛[m␛[38;5;241m the next question␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m choose (0)␛[m     ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[?]␛[m␛[38;5;241m keys␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the draft — the question waits␛[m                                                                    ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m[ ]␛[m␛[48;5;61m ␛[97;48;5;61minternal/agent                                                                                                      ␛[m␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m[ ]␛[m internal/cli                                                                                                         ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m[ ]␛[m Something else …                                                                                                     ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;248m(none)␛[m                                                                                                                   ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m note or list␛[m␛[38;5;245m · ␛[m␛[38;5;103m[space]␛[m␛[38;5;245m toggle␛[m␛[38;5;245m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;245m all/none␛[m␛[38;5;245m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;245m the full answer␛[m␛[38;5;245m · ␛[m␛[38;5;103m[←→]␛[m␛[38;5;245m the next question␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m choose (0)␛[m     ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the draft — the question waits␛[m                                                                    ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

@@ -46,35 +46,35 @@ $  a shell command
 
 ── ansi ────────────────────────────────────────────────────
 · the whole register open
-␛[1;97mshhh snippets␛[m␛[38;5;241m · 3 snippets␛[m                                 ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh snippets␛[m␛[38;5;245m · 3 snippets␛[m                                 ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;97;48;5;62mports      what is listening on this machine                            4m ago␛[m
-␛[38;5;241m… (+1 more rows)␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mports      what is listening on this machine                            4m ago␛[m
+␛[38;5;245m… (+1 more rows)␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move between snippets␛[m
-␛[38;5;103m[enter]␛[m␛[38;5;241m run the snippet under the pointer␛[m
-␛[38;5;103m[c]␛[m␛[38;5;241m copy its command to the clipboard␛[m
-␛[38;5;103m[e]␛[m␛[38;5;241m rename it, in a row under the list␛[m
-␛[38;5;103m[d]␛[m␛[38;5;241m delete it, after confirming it␛[m
-␛[38;5;103m[/]␛[m␛[38;5;241m filter by name or by what the command is␛[m
-␛[38;5;103m[backspace]␛[m␛[38;5;241m delete a character from the filter or the rename row␛[m
-␛[92m[esc]␛[m␛[38;5;241m keep the name; clear the filter, then close it␛[m
-␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move between snippets␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m run the snippet under the pointer␛[m
+␛[38;5;103m[c]␛[m␛[38;5;245m copy its command to the clipboard␛[m
+␛[38;5;103m[e]␛[m␛[38;5;245m rename it, in a row under the list␛[m
+␛[38;5;103m[d]␛[m␛[38;5;245m delete it, after confirming it␛[m
+␛[38;5;103m[/]␛[m␛[38;5;245m filter by name or by what the command is␛[m
+␛[38;5;103m[backspace]␛[m␛[38;5;245m delete a character from the filter or the rename row␛[m
+␛[92m[esc]␛[m␛[38;5;245m keep the name; clear the filter, then close it␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
 
-␛[38;5;241mglyphs␛[m
-␛[38;5;241m⚙␛[m  ␛[38;5;241ma read: a file, a search, a listing␛[m
-␛[38;5;214m$␛[m  ␛[38;5;241ma shell command␛[m
-␛[38;5;214m✎␛[m  ␛[38;5;241man edit, a write, a patch or a memory␛[m
-␛[94m◇␛[m  ␛[38;5;241ma sub-agent␛[m
-␛[38;5;214m⇄␛[m  ␛[38;5;241ma call to a server not marked read-only␛[m
-␛[38;5;241m✻␛[m  ␛[38;5;241mthe model writing its calls, counted as they arrive␛[m
-␛[38;5;241m⛁␛[m  ␛[38;5;241ma published report page␛[m
-␛[38;5;241m≡␛[m  ␛[38;5;241ma reading of the session␛[m
-␛[92m✓␛[m  ␛[38;5;241ma compaction that brought the window back␛[m
-␛[38;5;241m·␛[m  ␛[38;5;241maccepted, not started␛[m
-␛[38;5;205m▸␛[m  ␛[38;5;241mrunning␛[m
-␛[38;5;205m✦␛[m  ␛[38;5;241mthe classifier is deciding␛[m
-␛[91m✗␛[m  ␛[38;5;241mfailed␛[m
-␛[38;5;241m⊘␛[m  ␛[38;5;241mrefused: dim by you, red by a rule␛[m
-␛[38;5;103m[?]␛[m␛[38;5;241m hide the keys␛[m
+␛[38;5;245mglyphs␛[m
+␛[38;5;245m⚙␛[m  ␛[38;5;245ma read: a file, a search, a listing␛[m
+␛[38;5;214m$␛[m  ␛[38;5;245ma shell command␛[m
+␛[38;5;214m✎␛[m  ␛[38;5;245man edit, a write, a patch or a memory␛[m
+␛[94m◇␛[m  ␛[38;5;245ma sub-agent␛[m
+␛[38;5;214m⇄␛[m  ␛[38;5;245ma call to a server not marked read-only␛[m
+␛[38;5;245m✻␛[m  ␛[38;5;245mthe model writing its calls, counted as they arrive␛[m
+␛[38;5;245m⛁␛[m  ␛[38;5;245ma published report page␛[m
+␛[38;5;245m≡␛[m  ␛[38;5;245ma reading of the session␛[m
+␛[92m✓␛[m  ␛[38;5;245ma compaction that brought the window back␛[m
+␛[38;5;245m·␛[m  ␛[38;5;245maccepted, not started␛[m
+␛[38;5;205m▸␛[m  ␛[38;5;245mrunning␛[m
+␛[38;5;205m✦␛[m  ␛[38;5;245mthe classifier is deciding␛[m
+␛[91m✗␛[m  ␛[38;5;245mfailed␛[m
+␛[38;5;245m⊘␛[m  ␛[38;5;245mrefused: dim by you, red by a rule␛[m
+␛[38;5;103m[?]␛[m␛[38;5;245m hide the keys␛[m

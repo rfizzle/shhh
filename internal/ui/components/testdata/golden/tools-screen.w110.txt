@@ -119,108 +119,108 @@ web                                                     │
 
 ── ansi ────────────────────────────────────────────────────
 · a server still starting · what it costs until it answers, and how long it has
-␛[1;97m/mcp␛[m␛[38;5;241m · 3 servers␛[m␛[38;5;241m · 2 of 4 up␛[m                                                             ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/mcp␛[m␛[38;5;245m · 3 servers␛[m␛[38;5;245m · 2 of 4 up␛[m                                                             ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252m✓ built-in␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m14 tools␛[m                            ␛[38;5;241m │ ␛[m␛[1;97mlinear␛[m                                      ␛[38;5;241mstarting␛[m
-␛[1;94mmcp servers␛[m                                            ␛[38;5;241m │ ␛[m
-  ␛[38;5;252m✓ docs␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m2 tools, 1 prompt␛[m                       ␛[38;5;241m │ ␛[m  ␛[38;5;243mstate     ␛[m␛[38;5;252mstarting · 1m 04s␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m▸ linear  starting · 1m 04s                          ␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mreaches   ␛[m␛[38;5;252mnpx -y mcp-remote@latest␛[m
-  ␛[38;5;252m▸ tracker␛[m  ␛[38;5;241mstarting␛[m␛[38;5;241m · ␛[m␛[38;5;241m1m 04s␛[m                         ␛[38;5;241m │ ␛[m            ␛[38;5;252mhttps://mcp.linear.app/sse␛[m
-␛[1;94mweb␛[m                                                    ␛[38;5;241m │ ␛[m  ␛[38;5;243mcosts     ␛[m␛[38;5;252mits tools are not in this session yet;␛[m
-  ␛[38;5;252m✓ fetch␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 tool␛[m                                 ␛[38;5;241m │ ␛[m            ␛[38;5;252mthey join at the first turn after it␛[m
-  ␛[38;5;252m⊘ search␛[m  ␛[38;5;241moff␛[m␛[38;5;241m · ␛[m␛[38;5;241mno web search␛[m                        ␛[38;5;241m │ ␛[m            ␛[38;5;252manswers␛[m
-                                                       ␛[38;5;241m │ ␛[m
-                                                       ␛[38;5;241m │ ␛[m  ␛[38;5;243mwhat would move it␛[m
-                                                       ␛[38;5;241m │ ␛[m    ␛[38;5;241mnothing yet: it has until 1m 30s␛[m
-                                                       ␛[38;5;241m │ ␛[m    ␛[38;5;241m(timeout_seconds) to answer, and reads error if␛[m
-                                                       ␛[38;5;241m │ ␛[m    ␛[38;5;241mit does not␛[m
+  ␛[38;5;252m✓ built-in␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m14 tools␛[m                            ␛[38;5;245m │ ␛[m␛[1;97mlinear␛[m                                      ␛[38;5;245mstarting␛[m
+␛[1;94mmcp servers␛[m                                            ␛[38;5;245m │ ␛[m
+  ␛[38;5;252m✓ docs␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m2 tools, 1 prompt␛[m                       ␛[38;5;245m │ ␛[m  ␛[38;5;246mstate     ␛[m␛[38;5;252mstarting · 1m 04s␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m▸ linear  starting · 1m 04s                          ␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mreaches   ␛[m␛[38;5;252mnpx -y mcp-remote@latest␛[m
+  ␛[38;5;252m▸ tracker␛[m  ␛[38;5;245mstarting␛[m␛[38;5;245m · ␛[m␛[38;5;245m1m 04s␛[m                         ␛[38;5;245m │ ␛[m            ␛[38;5;252mhttps://mcp.linear.app/sse␛[m
+␛[1;94mweb␛[m                                                    ␛[38;5;245m │ ␛[m  ␛[38;5;246mcosts     ␛[m␛[38;5;252mits tools are not in this session yet;␛[m
+  ␛[38;5;252m✓ fetch␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 tool␛[m                                 ␛[38;5;245m │ ␛[m            ␛[38;5;252mthey join at the first turn after it␛[m
+  ␛[38;5;252m⊘ search␛[m  ␛[38;5;245moff␛[m␛[38;5;245m · ␛[m␛[38;5;245mno web search␛[m                        ␛[38;5;245m │ ␛[m            ␛[38;5;252manswers␛[m
+                                                       ␛[38;5;245m │ ␛[m
+                                                       ␛[38;5;245m │ ␛[m  ␛[38;5;246mwhat would move it␛[m
+                                                       ␛[38;5;245m │ ␛[m    ␛[38;5;245mnothing yet: it has until 1m 30s␛[m
+                                                       ␛[38;5;245m │ ␛[m    ␛[38;5;245m(timeout_seconds) to answer, and reads error if␛[m
+                                                       ␛[38;5;245m │ ␛[m    ␛[38;5;245mit does not␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m             ␛[38;5;245mwhere this session's tools came from, as the rail reads it␛[m
 
 · the built-in toolset · every tool it registered
-␛[1;97m/mcp␛[m␛[38;5;241m · 3 servers␛[m␛[38;5;241m · 2 of 4 up␛[m                                                             ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/mcp␛[m␛[38;5;245m · 3 servers␛[m␛[38;5;245m · 2 of 4 up␛[m                                                             ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;97;48;5;62m✓ built-in  up · 14 tools                            ␛[m␛[38;5;241m │ ␛[m␛[1;97mbuilt-in␛[m                                          ␛[38;5;241mup␛[m
-␛[1;94mmcp servers␛[m                                            ␛[38;5;241m │ ␛[m
-  ␛[38;5;252m✓ docs␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m2 tools, 1 prompt␛[m                       ␛[38;5;241m │ ␛[m  ␛[38;5;243mstate     ␛[m␛[38;5;252mup · 14 tools␛[m
-  ␛[38;5;252m⚠ tracker␛[m  ␛[38;5;252mblocked␛[m␛[38;5;241m · ␛[m␛[38;5;241muntrusted␛[m                       ␛[38;5;241m │ ␛[m  ␛[38;5;243mreaches   ␛[m␛[38;5;252mthe toolset shhh registers itself, with␛[m
-  ␛[38;5;252m✗ linear␛[m  ␛[91merror␛[m␛[38;5;241m · ␛[m␛[38;5;241mserver linear: connect: exec: "lin…␛[m␛[38;5;241m │ ␛[m            ␛[38;5;252mwhat it found on this machine␛[m
-␛[1;94mdefinitions not loaded␛[m                                 ␛[38;5;241m │ ␛[m
-  ␛[38;5;252m✗ definition␛[m  ␛[91merror␛[m␛[38;5;241m · ␛[m␛[38;5;241m.mcp.json: server Bad Name: no…␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243m14 tools␛[m
-␛[1;94mlanguage servers␛[m                                       ␛[38;5;241m │ ␛[m    ␛[38;5;252mread_file, list_directory, search, glob,␛[m
-  ␛[38;5;252m✓ gopls␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m5 tools · starts on the first file it …␛[m␛[38;5;241m │ ␛[m    ␛[38;5;252mwrite_file, edit_file, execute_command, process,␛[m
-␛[1;94mbinaries on PATH␛[m                                       ␛[38;5;241m │ ␛[m    ␛[38;5;252msteps, question, remember, evidence, report,␛[m
-  ␛[38;5;252m✓ fd␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 tool␛[m                                    ␛[38;5;241m │ ␛[m    ␛[38;5;252mquery␛[m
-  ␛[38;5;252m✓ git␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m2 tools␛[m                                  ␛[38;5;241m │ ␛[m
-  ␛[38;5;252m⊘ ast-grep, sd␛[m  ␛[38;5;241moff␛[m␛[38;5;241m · ␛[m␛[38;5;241mnot on PATH␛[m                    ␛[38;5;241m │ ␛[m
-␛[1;94mweb␛[m                                                    ␛[38;5;241m │ ␛[m
-  ␛[38;5;252m✓ fetch␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 tool␛[m                                 ␛[38;5;241m │ ␛[m
-  ␛[38;5;252m⊘ search␛[m  ␛[38;5;241moff␛[m␛[38;5;241m · ␛[m␛[38;5;241mno web search␛[m                        ␛[38;5;241m │ ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m✓ built-in  up · 14 tools                            ␛[m␛[38;5;245m │ ␛[m␛[1;97mbuilt-in␛[m                                          ␛[38;5;245mup␛[m
+␛[1;94mmcp servers␛[m                                            ␛[38;5;245m │ ␛[m
+  ␛[38;5;252m✓ docs␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m2 tools, 1 prompt␛[m                       ␛[38;5;245m │ ␛[m  ␛[38;5;246mstate     ␛[m␛[38;5;252mup · 14 tools␛[m
+  ␛[38;5;252m⚠ tracker␛[m  ␛[38;5;252mblocked␛[m␛[38;5;245m · ␛[m␛[38;5;245muntrusted␛[m                       ␛[38;5;245m │ ␛[m  ␛[38;5;246mreaches   ␛[m␛[38;5;252mthe toolset shhh registers itself, with␛[m
+  ␛[38;5;252m✗ linear␛[m  ␛[91merror␛[m␛[38;5;245m · ␛[m␛[38;5;245mserver linear: connect: exec: "lin…␛[m␛[38;5;245m │ ␛[m            ␛[38;5;252mwhat it found on this machine␛[m
+␛[1;94mdefinitions not loaded␛[m                                 ␛[38;5;245m │ ␛[m
+  ␛[38;5;252m✗ definition␛[m  ␛[91merror␛[m␛[38;5;245m · ␛[m␛[38;5;245m.mcp.json: server Bad Name: no…␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246m14 tools␛[m
+␛[1;94mlanguage servers␛[m                                       ␛[38;5;245m │ ␛[m    ␛[38;5;252mread_file, list_directory, search, glob,␛[m
+  ␛[38;5;252m✓ gopls␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m5 tools · starts on the first file it …␛[m␛[38;5;245m │ ␛[m    ␛[38;5;252mwrite_file, edit_file, execute_command, process,␛[m
+␛[1;94mbinaries on PATH␛[m                                       ␛[38;5;245m │ ␛[m    ␛[38;5;252msteps, question, remember, evidence, report,␛[m
+  ␛[38;5;252m✓ fd␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 tool␛[m                                    ␛[38;5;245m │ ␛[m    ␛[38;5;252mquery␛[m
+  ␛[38;5;252m✓ git␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m2 tools␛[m                                  ␛[38;5;245m │ ␛[m
+  ␛[38;5;252m⊘ ast-grep, sd␛[m  ␛[38;5;245moff␛[m␛[38;5;245m · ␛[m␛[38;5;245mnot on PATH␛[m                    ␛[38;5;245m │ ␛[m
+␛[1;94mweb␛[m                                                    ␛[38;5;245m │ ␛[m
+  ␛[38;5;252m✓ fetch␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 tool␛[m                                 ␛[38;5;245m │ ␛[m
+  ␛[38;5;252m⊘ search␛[m  ␛[38;5;245moff␛[m␛[38;5;245m · ␛[m␛[38;5;245mno web search␛[m                        ␛[38;5;245m │ ␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m             ␛[38;5;245mwhere this session's tools came from, as the rail reads it␛[m
 
 · a project server · waiting on the checkout, [a] answers after asking
-␛[1;97m/mcp␛[m␛[38;5;241m · 3 servers␛[m␛[38;5;241m · 2 of 4 up␛[m                                                             ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/mcp␛[m␛[38;5;245m · 3 servers␛[m␛[38;5;245m · 2 of 4 up␛[m                                                             ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252m✓ built-in␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m14 tools␛[m                            ␛[38;5;241m │ ␛[m␛[1;97mtracker␛[m                                      ␛[38;5;241mblocked␛[m
-␛[1;94mmcp servers␛[m                                            ␛[38;5;241m │ ␛[m
-  ␛[38;5;252m✓ docs␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m2 tools, 1 prompt␛[m                       ␛[38;5;241m │ ␛[m  ␛[38;5;243mstate     ␛[m␛[38;5;252mblocked · untrusted␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m⚠ tracker  blocked · untrusted                       ␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mreaches   ␛[m␛[38;5;252mnpx -y tracker-mcp · project␛[m
-  ␛[38;5;252m✗ linear␛[m  ␛[91merror␛[m␛[38;5;241m · ␛[m␛[38;5;241mserver linear: connect: exec: "lin…␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mcosts     ␛[m␛[38;5;252ma project server does not start until␛[m
-␛[1;94mdefinitions not loaded␛[m                                 ␛[38;5;241m │ ␛[m            ␛[38;5;252myou trust the checkout␛[m
-  ␛[38;5;252m✗ definition␛[m  ␛[91merror␛[m␛[38;5;241m · ␛[m␛[38;5;241m.mcp.json: server Bad Name: no…␛[m␛[38;5;241m │ ␛[m
-␛[1;94mlanguage servers␛[m                                       ␛[38;5;241m │ ␛[m  ␛[38;5;243mwhat would move it␛[m
-  ␛[38;5;252m✓ gopls␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m5 tools · starts on the first file it …␛[m␛[38;5;241m │ ␛[m    ␛[38;5;241mshhh mcp show tracker # what it is, before you␛[m
-␛[1;94mbinaries on PATH␛[m                                       ␛[38;5;241m │ ␛[m    ␛[38;5;241mtrust the checkout␛[m
-  ␛[38;5;252m✓ fd␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 tool␛[m                                    ␛[38;5;241m │ ␛[m    ␛[38;5;241mshhh trust   # or [a] on this row␛[m
-  ␛[38;5;252m✓ git␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m2 tools␛[m                                  ␛[38;5;241m │ ␛[m
-  ␛[38;5;252m⊘ ast-grep, sd␛[m  ␛[38;5;241moff␛[m␛[38;5;241m · ␛[m␛[38;5;241mnot on PATH␛[m                    ␛[38;5;241m │ ␛[m
-␛[1;94mweb␛[m                                                    ␛[38;5;241m │ ␛[m
-  ␛[38;5;252m✓ fetch␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 tool␛[m                                 ␛[38;5;241m │ ␛[m
-  ␛[38;5;252m⊘ search␛[m  ␛[38;5;241moff␛[m␛[38;5;241m · ␛[m␛[38;5;241mno web search␛[m                        ␛[38;5;241m │ ␛[m
+  ␛[38;5;252m✓ built-in␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m14 tools␛[m                            ␛[38;5;245m │ ␛[m␛[1;97mtracker␛[m                                      ␛[38;5;245mblocked␛[m
+␛[1;94mmcp servers␛[m                                            ␛[38;5;245m │ ␛[m
+  ␛[38;5;252m✓ docs␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m2 tools, 1 prompt␛[m                       ␛[38;5;245m │ ␛[m  ␛[38;5;246mstate     ␛[m␛[38;5;252mblocked · untrusted␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m⚠ tracker  blocked · untrusted                       ␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mreaches   ␛[m␛[38;5;252mnpx -y tracker-mcp · project␛[m
+  ␛[38;5;252m✗ linear␛[m  ␛[91merror␛[m␛[38;5;245m · ␛[m␛[38;5;245mserver linear: connect: exec: "lin…␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mcosts     ␛[m␛[38;5;252ma project server does not start until␛[m
+␛[1;94mdefinitions not loaded␛[m                                 ␛[38;5;245m │ ␛[m            ␛[38;5;252myou trust the checkout␛[m
+  ␛[38;5;252m✗ definition␛[m  ␛[91merror␛[m␛[38;5;245m · ␛[m␛[38;5;245m.mcp.json: server Bad Name: no…␛[m␛[38;5;245m │ ␛[m
+␛[1;94mlanguage servers␛[m                                       ␛[38;5;245m │ ␛[m  ␛[38;5;246mwhat would move it␛[m
+  ␛[38;5;252m✓ gopls␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m5 tools · starts on the first file it …␛[m␛[38;5;245m │ ␛[m    ␛[38;5;245mshhh mcp show tracker # what it is, before you␛[m
+␛[1;94mbinaries on PATH␛[m                                       ␛[38;5;245m │ ␛[m    ␛[38;5;245mtrust the checkout␛[m
+  ␛[38;5;252m✓ fd␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 tool␛[m                                    ␛[38;5;245m │ ␛[m    ␛[38;5;245mshhh trust   # or [a] on this row␛[m
+  ␛[38;5;252m✓ git␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m2 tools␛[m                                  ␛[38;5;245m │ ␛[m
+  ␛[38;5;252m⊘ ast-grep, sd␛[m  ␛[38;5;245moff␛[m␛[38;5;245m · ␛[m␛[38;5;245mnot on PATH␛[m                    ␛[38;5;245m │ ␛[m
+␛[1;94mweb␛[m                                                    ␛[38;5;245m │ ␛[m
+  ␛[38;5;252m✓ fetch␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 tool␛[m                                 ␛[38;5;245m │ ␛[m
+  ␛[38;5;252m⊘ search␛[m  ␛[38;5;245moff␛[m␛[38;5;245m · ␛[m␛[38;5;245mno web search␛[m                        ␛[38;5;245m │ ␛[m
 
-␛[38;5;103m[a]␛[m␛[38;5;241m trust this checkout␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m  ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m
+␛[38;5;103m[a]␛[m␛[38;5;245m trust this checkout␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m  ␛[38;5;245mwhere this session's tools came from, as the rail reads it␛[m
 
 · a server that did not start · what it costs, and /mcp's words for what would move it
-␛[1;97m/mcp␛[m␛[38;5;241m · 3 servers␛[m␛[38;5;241m · 2 of 4 up␛[m                                                             ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/mcp␛[m␛[38;5;245m · 3 servers␛[m␛[38;5;245m · 2 of 4 up␛[m                                                             ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252m✓ built-in␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m14 tools␛[m                            ␛[38;5;241m │ ␛[m␛[1;97mlinear␛[m                                         ␛[38;5;241merror␛[m
-␛[1;94mmcp servers␛[m                                            ␛[38;5;241m │ ␛[m
-  ␛[38;5;252m✓ docs␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m2 tools, 1 prompt␛[m                       ␛[38;5;241m │ ␛[m  ␛[38;5;243mstate     ␛[m␛[38;5;252merror · server linear: connect: exec:␛[m
-  ␛[38;5;252m⚠ tracker␛[m  ␛[38;5;252mblocked␛[m␛[38;5;241m · ␛[m␛[38;5;241muntrusted␛[m                       ␛[38;5;241m │ ␛[m            ␛[38;5;252m"linear-mcp": executable file not found␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m✗ linear  error · server linear: connect: exec: "lin…␛[m␛[38;5;241m │ ␛[m            ␛[38;5;252min $PATH␛[m
-␛[1;94mdefinitions not loaded␛[m                                 ␛[38;5;241m │ ␛[m  ␛[38;5;243mreaches   ␛[m␛[38;5;252mlinear-mcp␛[m
-  ␛[38;5;252m✗ definition␛[m  ␛[91merror␛[m␛[38;5;241m · ␛[m␛[38;5;241m.mcp.json: server Bad Name: no…␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mcosts     ␛[m␛[38;5;252mits tools are not in this session␛[m
-␛[1;94mlanguage servers␛[m                                       ␛[38;5;241m │ ␛[m
-  ␛[38;5;252m✓ gopls␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m5 tools · starts on the first file it …␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mwhat would move it␛[m
-␛[1;94mbinaries on PATH␛[m                                       ␛[38;5;241m │ ␛[m    ␛[38;5;241mserver linear: connect: exec: "linear-mcp":␛[m
-  ␛[38;5;252m✓ fd␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 tool␛[m                                    ␛[38;5;241m │ ␛[m    ␛[38;5;241mexecutable file not found in $PATH␛[m
-  ␛[38;5;252m✓ git␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m2 tools␛[m                                  ␛[38;5;241m │ ␛[m    ␛[38;5;241mthe server's own output is above; check the␛[m
-  ␛[38;5;252m⊘ ast-grep, sd␛[m  ␛[38;5;241moff␛[m␛[38;5;241m · ␛[m␛[38;5;241mnot on PATH␛[m                    ␛[38;5;241m │ ␛[m    ␛[38;5;241mcommand or the url␛[m
-␛[1;94mweb␛[m                                                    ␛[38;5;241m │ ␛[m    ␛[38;5;241mshhh mcp show linear connects it alone and␛[m
-  ␛[38;5;252m✓ fetch␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 tool␛[m                                 ␛[38;5;241m │ ␛[m    ␛[38;5;241mprints what it says␛[m
-  ␛[38;5;252m⊘ search␛[m  ␛[38;5;241moff␛[m␛[38;5;241m · ␛[m␛[38;5;241mno web search␛[m                        ␛[38;5;241m │ ␛[m
+  ␛[38;5;252m✓ built-in␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m14 tools␛[m                            ␛[38;5;245m │ ␛[m␛[1;97mlinear␛[m                                         ␛[38;5;245merror␛[m
+␛[1;94mmcp servers␛[m                                            ␛[38;5;245m │ ␛[m
+  ␛[38;5;252m✓ docs␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m2 tools, 1 prompt␛[m                       ␛[38;5;245m │ ␛[m  ␛[38;5;246mstate     ␛[m␛[38;5;252merror · server linear: connect: exec:␛[m
+  ␛[38;5;252m⚠ tracker␛[m  ␛[38;5;252mblocked␛[m␛[38;5;245m · ␛[m␛[38;5;245muntrusted␛[m                       ␛[38;5;245m │ ␛[m            ␛[38;5;252m"linear-mcp": executable file not found␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m✗ linear  error · server linear: connect: exec: "lin…␛[m␛[38;5;245m │ ␛[m            ␛[38;5;252min $PATH␛[m
+␛[1;94mdefinitions not loaded␛[m                                 ␛[38;5;245m │ ␛[m  ␛[38;5;246mreaches   ␛[m␛[38;5;252mlinear-mcp␛[m
+  ␛[38;5;252m✗ definition␛[m  ␛[91merror␛[m␛[38;5;245m · ␛[m␛[38;5;245m.mcp.json: server Bad Name: no…␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mcosts     ␛[m␛[38;5;252mits tools are not in this session␛[m
+␛[1;94mlanguage servers␛[m                                       ␛[38;5;245m │ ␛[m
+  ␛[38;5;252m✓ gopls␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m5 tools · starts on the first file it …␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mwhat would move it␛[m
+␛[1;94mbinaries on PATH␛[m                                       ␛[38;5;245m │ ␛[m    ␛[38;5;245mserver linear: connect: exec: "linear-mcp":␛[m
+  ␛[38;5;252m✓ fd␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 tool␛[m                                    ␛[38;5;245m │ ␛[m    ␛[38;5;245mexecutable file not found in $PATH␛[m
+  ␛[38;5;252m✓ git␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m2 tools␛[m                                  ␛[38;5;245m │ ␛[m    ␛[38;5;245mthe server's own output is above; check the␛[m
+  ␛[38;5;252m⊘ ast-grep, sd␛[m  ␛[38;5;245moff␛[m␛[38;5;245m · ␛[m␛[38;5;245mnot on PATH␛[m                    ␛[38;5;245m │ ␛[m    ␛[38;5;245mcommand or the url␛[m
+␛[1;94mweb␛[m                                                    ␛[38;5;245m │ ␛[m    ␛[38;5;245mshhh mcp show linear connects it alone and␛[m
+  ␛[38;5;252m✓ fetch␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 tool␛[m                                 ␛[38;5;245m │ ␛[m    ␛[38;5;245mprints what it says␛[m
+  ␛[38;5;252m⊘ search␛[m  ␛[38;5;245moff␛[m␛[38;5;245m · ␛[m␛[38;5;245mno web search␛[m                        ␛[38;5;245m │ ␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m             ␛[38;5;245mwhere this session's tools came from, as the rail reads it␛[m
 
 · nothing outside shhh · the session's own tools and the web
-␛[1;97m/mcp␛[m                                                                                     ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/mcp␛[m                                                                                     ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;97;48;5;62m✓ built-in  up · 14 tools                            ␛[m␛[38;5;241m │ ␛[m␛[1;97mbuilt-in␛[m                                          ␛[38;5;241mup␛[m
-␛[1;94mweb␛[m                                                    ␛[38;5;241m │ ␛[m
-  ␛[38;5;252m✓ fetch␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 tool␛[m                                 ␛[38;5;241m │ ␛[m  ␛[38;5;243mstate     ␛[m␛[38;5;252mup · 14 tools␛[m
-  ␛[38;5;252m⊘ search␛[m  ␛[38;5;241moff␛[m␛[38;5;241m · ␛[m␛[38;5;241mno web search␛[m                        ␛[38;5;241m │ ␛[m  ␛[38;5;243mreaches   ␛[m␛[38;5;252mthe toolset shhh registers itself, with␛[m
-                                                       ␛[38;5;241m │ ␛[m            ␛[38;5;252mwhat it found on this machine␛[m
-                                                       ␛[38;5;241m │ ␛[m
-                                                       ␛[38;5;241m │ ␛[m  ␛[38;5;243m14 tools␛[m
-                                                       ␛[38;5;241m │ ␛[m    ␛[38;5;252mread_file, list_directory, search, glob,␛[m
-                                                       ␛[38;5;241m │ ␛[m    ␛[38;5;252mwrite_file, edit_file, execute_command, process,␛[m
-                                                       ␛[38;5;241m │ ␛[m    ␛[38;5;252msteps, question, remember, evidence, report,␛[m
-                                                       ␛[38;5;241m │ ␛[m    ␛[38;5;252mquery␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m✓ built-in  up · 14 tools                            ␛[m␛[38;5;245m │ ␛[m␛[1;97mbuilt-in␛[m                                          ␛[38;5;245mup␛[m
+␛[1;94mweb␛[m                                                    ␛[38;5;245m │ ␛[m
+  ␛[38;5;252m✓ fetch␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 tool␛[m                                 ␛[38;5;245m │ ␛[m  ␛[38;5;246mstate     ␛[m␛[38;5;252mup · 14 tools␛[m
+  ␛[38;5;252m⊘ search␛[m  ␛[38;5;245moff␛[m␛[38;5;245m · ␛[m␛[38;5;245mno web search␛[m                        ␛[38;5;245m │ ␛[m  ␛[38;5;246mreaches   ␛[m␛[38;5;252mthe toolset shhh registers itself, with␛[m
+                                                       ␛[38;5;245m │ ␛[m            ␛[38;5;252mwhat it found on this machine␛[m
+                                                       ␛[38;5;245m │ ␛[m
+                                                       ␛[38;5;245m │ ␛[m  ␛[38;5;246m14 tools␛[m
+                                                       ␛[38;5;245m │ ␛[m    ␛[38;5;252mread_file, list_directory, search, glob,␛[m
+                                                       ␛[38;5;245m │ ␛[m    ␛[38;5;252mwrite_file, edit_file, execute_command, process,␛[m
+                                                       ␛[38;5;245m │ ␛[m    ␛[38;5;252msteps, question, remember, evidence, report,␛[m
+                                                       ␛[38;5;245m │ ␛[m    ␛[38;5;252mquery␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m             ␛[38;5;245mwhere this session's tools came from, as the rail reads it␛[m

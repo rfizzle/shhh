@@ -2,6 +2,7 @@ package components
 
 import (
 	"image/color"
+	"math"
 	"reflect"
 	"strconv"
 	"testing"
@@ -30,12 +31,12 @@ var paletteTable = []struct {
 	{"hunk", fullPalette.Hunk, "#5fd7d7", "14", "14"},
 	{"accent", fullPalette.Accent, "#ffaf00", "214", "11"},
 	{"info", fullPalette.Info, "#5f87ff", "12", "12"},
-	{"focusBg", fullPalette.FocusBg, "#5f5fd7", "62", "12"},
+	{"focusBg", fullPalette.FocusBg, "#5f5faf", "61", "12"},
 	{"band", fullPalette.band, "#1c1c1c", "234", noSixteen},
-	{"dim", fullPalette.Dim, "#626262", "241", "8"},
-	{"dimmer", fullPalette.Dimmer, "#8a8a8a", "245", "8"},
+	{"dim", fullPalette.Dim, "#8a8a8a", "245", "8"},
+	{"dimmer", fullPalette.Dimmer, "#a8a8a8", "248", "8"},
 	{"spin", fullPalette.Spin, "#ff5faf", "205", "13"},
-	{"status", fullPalette.Status, "#767676", "243", "8"},
+	{"status", fullPalette.Status, "#949494", "246", "8"},
 	{"bright", fullPalette.Bright, "#eaeaea", "15", "15"},
 	{"subtle", fullPalette.Subtle, "#bcbcbc", "250", "7"},
 	{"body", fullPalette.Body, "#d0d0d0", "252", "7"},
@@ -324,12 +325,12 @@ var lightTable = []struct {
 	{"info", LightPalette.Info, "#005fd7", "4", "4"},
 	{"focusBg", LightPalette.FocusBg, "#d7d7ff", "189", "7"},
 	{"band", LightPalette.band, "#e4e4e4", "254", noSixteen},
-	{"dim", LightPalette.Dim, "#8a8a8a", "245", "8"},
-	{"dimmer", LightPalette.Dimmer, "#6c6c6c", "242", "8"},
+	{"dim", LightPalette.Dim, "#626262", "241", "8"},
+	{"dimmer", LightPalette.Dimmer, "#4e4e4e", "239", "8"},
 	{"spin", LightPalette.Spin, "#af005f", "125", "5"},
-	{"status", LightPalette.Status, "#767676", "243", "8"},
+	{"status", LightPalette.Status, "#585858", "240", "8"},
 	{"bright", LightPalette.Bright, "#121212", "0", "0"},
-	{"subtle", LightPalette.Subtle, "#4e4e4e", "239", "8"},
+	{"subtle", LightPalette.Subtle, "#444444", "238", "8"},
 	{"body", LightPalette.Body, "#303030", "236", "0"},
 	{"code", LightPalette.Code, "#875f00", "94", "3"},
 	{"key", LightPalette.Key, "#5f5f87", "60", "4"},
@@ -690,5 +691,113 @@ func TestPalette_TheDarkGroundIsPaintedByDefault(t *testing.T) {
 	SetMono(true)
 	if GroundColor() != nil {
 		t.Error("mono has no ground to paint")
+	}
+}
+
+// contrast is the WCAG 2 ratio between two tokens' truecolor hexes: the
+// relative luminance of each, lighter over darker, each with 0.05 added.
+func contrast(t *testing.T, a, b Token) float64 {
+	t.Helper()
+	rel := func(c Token) float64 {
+		if c.trueColor == nil {
+			t.Fatalf("token %+v has no colour to measure", c)
+		}
+		r, g, bl, _ := c.trueColor.RGBA()
+		lin := func(v uint32) float64 {
+			x := float64(v>>8) / 255
+			if x <= 0.03928 {
+				return x / 12.92
+			}
+			return math.Pow((x+0.055)/1.055, 2.4)
+		}
+		return 0.2126*lin(r) + 0.7152*lin(g) + 0.0722*lin(bl)
+	}
+	hi, lo := rel(a), rel(b)
+	if hi < lo {
+		hi, lo = lo, hi
+	}
+	return (hi + 0.05) / (lo + 0.05)
+}
+
+// aaFloor is WCAG's 4.5:1 for running text. The hints, key legend, counts and
+// status line are instructions the interface gives, so every grey in a table is
+// held to it on the table's ground and on its band
+// (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
+const aaFloor = 4.5
+
+// charmShort is the shortfall charm records instead of fixing: its inks are
+// CharmTone's published tones, and the greys it takes for chrome (Iron,
+// Oyster, Squid) are the published set's own faint ones, so lifting them
+// would stop it being that palette (docs/interface/departures.md). Each entry
+// is the ink and the surface it falls short on; an ink not listed has to clear
+// the bar, and one that stops falling short has to leave the list.
+var charmShort = map[string]bool{
+	"dim:ground": true, "dim:band": true,
+	"dimmer:ground": true, "dimmer:band": true,
+	"status:ground": true, "status:band": true,
+}
+
+func TestPalette_EveryTextTokenClearsAA(t *testing.T) {
+	// The grey ladder: the words, hints, counts and status line. The signal
+	// inks (add, del, hunk, accent, info, spin, code, key) are marks beside a
+	// glyph or a word and are not held to the text bar here.
+	inks := []string{"dim", "dimmer", "status", "subtle", "body", "bright"}
+	for _, name := range ThemeNames() {
+		th, ok := themes[name]
+		if !ok {
+			continue // auto is not a table
+		}
+		t.Run(name, func(t *testing.T) {
+			grounds := map[string]Token{"ground": th.ground, "band": th.tokens.band}
+			for _, ink := range inks {
+				for gname, g := range grounds {
+					got := contrast(t, tokenNamed(th.tokens, ink), g)
+					short := name == ThemeCharm && charmShort[ink+":"+gname]
+					switch {
+					case got < aaFloor && !short:
+						t.Errorf("%s %s on its %s is %.2f:1, under %.1f:1", name, ink, gname, got, aaFloor)
+					case got >= aaFloor && short:
+						t.Errorf("charm %s on its %s is %.2f:1 and clears the bar; take it off charmShort", ink, gname, got)
+					}
+				}
+			}
+		})
+	}
+}
+
+// Bright is the ink on the selected row, so the row's ground has to carry it.
+func TestPalette_BrightClearsAAOnTheSelectedRow(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		p    ColorTokens
+	}{{"dark", fullPalette}, {"light", LightPalette}} {
+		if got := contrast(t, c.p.Bright, c.p.FocusBg); got < aaFloor {
+			t.Errorf("%s: bright on focusBg is %.2f:1, under %.1f:1", c.name, got, aaFloor)
+		}
+	}
+}
+
+// Mono has one ground, the terminal's own, and no band; its dim shade is
+// checked on the dark ground the product paints by default.
+func TestPalette_MonoDimClearsAAOnTheDarkGround(t *testing.T) {
+	if got := contrast(t, MonoDim, darkGround); got < aaFloor {
+		t.Errorf("mono dim on the dark ground is %.2f:1, under %.1f:1", got, aaFloor)
+	}
+}
+
+// The hierarchy is kept as contrast against the ground, whichever way up the
+// ground is: chrome (dim, status) is the faintest text, content (dimmer,
+// subtle) louder, body louder again. The grey ladder tests hold the same
+// order in luminance; this one holds it in what the reader sees.
+func TestPalette_ChromeIsFainterThanContentIsFainterThanBody(t *testing.T) {
+	for _, name := range []string{ThemeDark, ThemeLight} {
+		th := themes[name]
+		c := func(ink string) float64 { return contrast(t, tokenNamed(th.tokens, ink), th.ground) }
+		order := []string{"dim", "status", "dimmer", "subtle", "body"}
+		for i := 1; i < len(order); i++ {
+			if c(order[i-1]) >= c(order[i]) {
+				t.Errorf("%s: %s (%.2f) is not fainter than %s (%.2f)", name, order[i-1], c(order[i-1]), order[i], c(order[i]))
+			}
+		}
 	}
 }

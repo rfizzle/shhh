@@ -161,10 +161,10 @@ TOOLS
 
 ── ansi ────────────────────────────────────────────────────
 · every section in force · each ends on the command that changes it
-␛[1;97m/safety␛[m␛[38;5;241m · manual · sandbox-exec␛[m                                                          ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/safety␛[m␛[38;5;245m · manual · sandbox-exec␛[m                                                          ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;243mMODE AND POLICY␛[m
+␛[38;5;246mMODE AND POLICY␛[m
 ␛[38;5;252m  Mode: manual — every consequential call asks.␛[m
 ␛[38;5;252m␛[m
 ␛[38;5;252m  Grants:␛[m
@@ -172,9 +172,9 @@ TOOLS
 ␛[38;5;252m    config     2 command patterns from behavior.command_allowlist — not this session's to revoke␛[m
 ␛[38;5;252m    allowlist  go test, make lint␛[m
 ␛[38;5;252m    denylist   rm -rf␛[m
-␛[38;5;241m  changed with /permissions␛[m
+␛[38;5;245m  changed with /permissions␛[m
 
-␛[38;5;243mWHERE IT MAY WRITE␛[m
+␛[38;5;246mWHERE IT MAY WRITE␛[m
 ␛[38;5;252m  Working scope:␛[m
 ␛[38;5;252m    session    /work/shhh␛[m
 ␛[38;5;252m    added      /work/shared-assets␛[m
@@ -182,9 +182,9 @@ TOOLS
 ␛[38;5;252m    ~/.kube␛[m
 ␛[38;5;252m    ~/.config/shhh␛[m
 ␛[38;5;252m    /work/shhh/.git — the repository's store and hooks␛[m
-␛[38;5;241m  changed with /add-dir␛[m
+␛[38;5;245m  changed with /add-dir␛[m
 
-␛[38;5;243mCONTAINMENT␛[m
+␛[38;5;246mCONTAINMENT␛[m
 ␛[38;5;252m  Containment␛[m
 ␛[38;5;252m  sandbox-exec · workspace␛[m
 ␛[38;5;252m  sandbox.require is off␛[m
@@ -192,51 +192,51 @@ TOOLS
 ␛[38;5;252m  Command containment:␛[m
 ␛[38;5;252m    profile:   workspace (network: 1 host — proxy.golang.org)␛[m
 ␛[38;5;252m    masked:    ~/.ssh, ~/.aws, ~/.config/gh, ~/.netrc␛[m
-␛[38;5;241m  changed with /sandbox␛[m
+␛[38;5;245m  changed with /sandbox␛[m
 
-␛[38;5;243mWEB␛[m
+␛[38;5;246mWEB␛[m
 ␛[38;5;252m    allowed    docs.rs from web.allow_hosts — not this session's to revoke␛[m
 ␛[38;5;252m    granted    pkg.go.dev, that host alone — until you revoke it␛[m
 ␛[38;5;252m    refused    pastebin.com from web.deny_hosts — before anything can allow it␛[m
-␛[38;5;241m  changed with /permissions revoke hosts␛[m
+␛[38;5;245m  changed with /permissions revoke hosts␛[m
 
-␛[38;5;243mWHAT THE CHECKOUT WAS LET LOAD␛[m
+␛[38;5;246mWHAT THE CHECKOUT WAS LET LOAD␛[m
 ␛[38;5;252m  trusted — its skills, agent profiles, suites, hooks and servers load␛[m
-␛[38;5;241m  changed with /trust␛[m
+␛[38;5;245m  changed with /trust␛[m
 
-␛[38;5;243mMCP␛[m
+␛[38;5;246mMCP␛[m
 ␛[38;5;252m    docs — read-only, runs without asking · 3 tools␛[m
 ␛[38;5;252m    tracker — asks before acting · 12 tools␛[m
-␛[38;5;241m  changed with /mcp␛[m
+␛[38;5;245m  changed with /mcp␛[m
 
-␛[38;5;243mSECRETS␛[m
+␛[38;5;246mSECRETS␛[m
 ␛[38;5;252m    $DEPLOY_TOKEN — in every command, masked everywhere else␛[m
 ␛[38;5;252m  secrets.env_mask is on — an inherited *_KEY, *_SECRET or *_TOKEN never reaches a command␛[m
-␛[38;5;241m  changed with /secret␛[m
+␛[38;5;245m  changed with /secret␛[m
 
-␛[38;5;243mTOOLS␛[m
+␛[38;5;246mTOOLS␛[m
 ␛[38;5;252m    read-only  read_file, list_directory, search, glob_files␛[m
 ␛[38;5;252m    execute    execute_command, process␛[m
 ␛[38;5;252m    mutating   write_file, edit_file␛[m
 ␛[38;5;252m    asks       fetch, spawn_agent␛[m
-␛[38;5;241m  changed with /permissions, which decides which tiers ask␛[m
+␛[38;5;245m  changed with /permissions, which decides which tiers ask␛[m
 
-␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                   ␛[38;5;241ma reading · nothing here changes it␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                                                   ␛[38;5;245ma reading · nothing here changes it␛[m
 
 · a pane shorter than the reading · the ends name the sections they fold
-␛[1;97m/safety␛[m␛[38;5;241m · manual · sandbox-exec␛[m                                                          ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/safety␛[m␛[38;5;245m · manual · sandbox-exec␛[m                                                          ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241m↑ 2 more · mode and policy · where it may write␛[m
+␛[38;5;245m↑ 2 more · mode and policy · where it may write␛[m
 ␛[38;5;252m    session    /work/shhh␛[m
 ␛[38;5;252m    added      /work/shared-assets␛[m
 ␛[38;5;252m  Sensitive — asks whatever the mode, and only /add-dir grants it:␛[m
 ␛[38;5;252m    ~/.kube␛[m
 ␛[38;5;252m    ~/.config/shhh␛[m
 ␛[38;5;252m    /work/shhh/.git — the repository's store and hooks␛[m
-␛[38;5;241m  changed with /add-dir␛[m
+␛[38;5;245m  changed with /add-dir␛[m
 
-␛[38;5;243mCONTAINMENT␛[m
+␛[38;5;246mCONTAINMENT␛[m
 ␛[38;5;252m  Containment␛[m
 ␛[38;5;252m  sandbox-exec · workspace␛[m
 ␛[38;5;252m  sandbox.require is off␛[m
@@ -244,16 +244,16 @@ TOOLS
 ␛[38;5;252m  Command containment:␛[m
 ␛[38;5;252m    profile:   workspace (network: 1 host — proxy.golang.org)␛[m
 ␛[38;5;252m    masked:    ~/.ssh, ~/.aws, ~/.config/gh, ~/.netrc␛[m
-␛[38;5;241m  changed with /sandbox␛[m
-␛[38;5;241m↓ 5 more · web · what the checkout was let load · mcp · secrets · tools␛[m
+␛[38;5;245m  changed with /sandbox␛[m
+␛[38;5;245m↓ 5 more · web · what the checkout was let load · mcp · secrets · tools␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                  ␛[38;5;241ma reading · nothing here changes it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                                  ␛[38;5;245ma reading · nothing here changes it␛[m
 
 · containment unavailable, trust withheld, no servers · stated, not left out
-␛[1;97m/safety␛[m␛[38;5;241m · manual · unconfined␛[m                                                            ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/safety␛[m␛[38;5;245m · manual · unconfined␛[m                                                            ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;243mMODE AND POLICY␛[m
+␛[38;5;246mMODE AND POLICY␛[m
 ␛[38;5;252m  Mode: manual — every consequential call asks.␛[m
 ␛[38;5;252m␛[m
 ␛[38;5;252m  Grants:␛[m
@@ -261,50 +261,50 @@ TOOLS
 ␛[38;5;252m    config     2 command patterns from behavior.command_allowlist — not this session's to revoke␛[m
 ␛[38;5;252m    allowlist  go test, make lint␛[m
 ␛[38;5;252m    denylist   rm -rf␛[m
-␛[38;5;241m  changed with /permissions␛[m
+␛[38;5;245m  changed with /permissions␛[m
 
-␛[38;5;243mWHERE IT MAY WRITE␛[m
+␛[38;5;246mWHERE IT MAY WRITE␛[m
 ␛[38;5;252m  Working scope:␛[m
 ␛[38;5;252m    session    /work/shhh␛[m
 ␛[38;5;252m    added      /work/shared-assets␛[m
 ␛[38;5;252m  Sensitive — asks whatever the mode, and only /add-dir grants it:␛[m
 ␛[38;5;252m    ~/.kube␛[m
 ␛[38;5;252m    ~/.config/shhh␛[m
-␛[38;5;241m  changed with /add-dir␛[m
+␛[38;5;245m  changed with /add-dir␛[m
 
-␛[38;5;243mCONTAINMENT␛[m
-␛[38;5;241m  Containment␛[m
-␛[38;5;241m  unconfined — sandbox-exec not found at /usr/bin/sandbox-exec␛[m
-␛[38;5;241m  sandbox.require is off␛[m
-␛[38;5;241m  changed with /sandbox␛[m
+␛[38;5;246mCONTAINMENT␛[m
+␛[38;5;245m  Containment␛[m
+␛[38;5;245m  unconfined — sandbox-exec not found at /usr/bin/sandbox-exec␛[m
+␛[38;5;245m  sandbox.require is off␛[m
+␛[38;5;245m  changed with /sandbox␛[m
 
-␛[38;5;243mWEB␛[m
+␛[38;5;246mWEB␛[m
 ␛[38;5;252m    allowed    docs.rs from web.allow_hosts — not this session's to revoke␛[m
 ␛[38;5;252m    granted    pkg.go.dev, that host alone — until you revoke it␛[m
 ␛[38;5;252m    refused    pastebin.com from web.deny_hosts — before anything can allow it␛[m
-␛[38;5;241m  changed with /permissions revoke hosts␛[m
+␛[38;5;245m  changed with /permissions revoke hosts␛[m
 
-␛[38;5;243mWHAT THE CHECKOUT WAS LET LOAD␛[m
-␛[38;5;241m  not trusted␛[m
-␛[38;5;241m  Withheld␛[m
-␛[38;5;241m  This checkout is not trusted, so its skills and quality suites are not in this session.␛[m
-␛[38;5;241m  /trust loads them from the next session on.␛[m
-␛[38;5;241m  changed with /trust␛[m
+␛[38;5;246mWHAT THE CHECKOUT WAS LET LOAD␛[m
+␛[38;5;245m  not trusted␛[m
+␛[38;5;245m  Withheld␛[m
+␛[38;5;245m  This checkout is not trusted, so its skills and quality suites are not in this session.␛[m
+␛[38;5;245m  /trust loads them from the next session on.␛[m
+␛[38;5;245m  changed with /trust␛[m
 
-␛[38;5;243mMCP␛[m
-␛[38;5;241m  no MCP servers in this session␛[m
-␛[38;5;241m  changed with /mcp␛[m
+␛[38;5;246mMCP␛[m
+␛[38;5;245m  no MCP servers in this session␛[m
+␛[38;5;245m  changed with /mcp␛[m
 
-␛[38;5;243mSECRETS␛[m
+␛[38;5;246mSECRETS␛[m
 ␛[38;5;252m    $DEPLOY_TOKEN — in every command, masked everywhere else␛[m
 ␛[38;5;252m  secrets.env_mask is on — an inherited *_KEY, *_SECRET or *_TOKEN never reaches a command␛[m
-␛[38;5;241m  changed with /secret␛[m
+␛[38;5;245m  changed with /secret␛[m
 
-␛[38;5;243mTOOLS␛[m
+␛[38;5;246mTOOLS␛[m
 ␛[38;5;252m    read-only  read_file, list_directory, search, glob_files␛[m
 ␛[38;5;252m    execute    execute_command, process␛[m
 ␛[38;5;252m    mutating   write_file, edit_file␛[m
 ␛[38;5;252m    asks       fetch, spawn_agent␛[m
-␛[38;5;241m  changed with /permissions, which decides which tiers ask␛[m
+␛[38;5;245m  changed with /permissions, which decides which tiers ask␛[m
 
-␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                   ␛[38;5;241ma reading · nothing here changes it␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                                                   ␛[38;5;245ma reading · nothing here changes it␛[m

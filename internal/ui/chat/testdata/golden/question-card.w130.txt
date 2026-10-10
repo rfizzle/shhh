@@ -210,199 +210,199 @@ Should the migration be reversible?
 
 ── ansi ────────────────────────────────────────────────────
 · pick one · the recommendation leads and says so, and the ⊘ row says why not
-␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
+␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhich store should the cache use?␛[m                                                                                          ␛[94m│␛[m
 ␛[94m│␛[m                                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. SQLite            in the checkout already                                                       recommended · 3 files␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mPostgres␛[m          ␛[38;5;241mone more service to run␛[m                                                                     ␛[38;5;252m9 files␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;245m3. ␛[m␛[38;5;245m⊘ Redis␛[m                                                                                     ␛[38;5;245mno client in this project␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m4. ␛[m␛[38;5;252mSomething else …␛[m  ␛[38;5;241manswer in your own words␛[m                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                                   ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m note or list␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;241m the full answer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;241m keys␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the draft — the question waits␛[m       ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;61m1. SQLite            in the checkout already                                                       recommended · 3 files␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m2. ␛[m␛[38;5;252mPostgres␛[m          ␛[38;5;245mone more service to run␛[m                                                                     ␛[38;5;252m9 files␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;248m3. ␛[m␛[38;5;248m⊘ Redis␛[m                                                                                     ␛[38;5;248mno client in this project␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m4. ␛[m␛[38;5;252mSomething else …␛[m  ␛[38;5;245manswer in your own words␛[m                                                                            ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;248m(none)␛[m                                                                                                                   ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m note or list␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m confirm␛[m␛[38;5;245m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;245m the full answer␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the draft — the question waits␛[m       ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the note has the keyboard · the list's digits are text until tab hands it back
-␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
+␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhich store should the cache use?␛[m                                                                                          ␛[94m│␛[m
 ␛[94m│␛[m                                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. SQLite            in the checkout already                                                       recommended · 3 files␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mPostgres␛[m          ␛[38;5;241mone more service to run␛[m                                                                     ␛[38;5;252m9 files␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;245m3. ␛[m␛[38;5;245m⊘ Redis␛[m                                                                                     ␛[38;5;245mno client in this project␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m4. ␛[m␛[38;5;252mSomething else …␛[m  ␛[38;5;241manswer in your own words␛[m                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;62mn␛[m␛[m␛[38;5;252m␛[38;5;241mote (optional)␛[m␛[m␛[38;5;252m                                                                                                       ␛[m ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m note or list␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;241m the full answer␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the draft — the question waits␛[m                  ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;61m1. SQLite            in the checkout already                                                       recommended · 3 files␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m2. ␛[m␛[38;5;252mPostgres␛[m          ␛[38;5;245mone more service to run␛[m                                                                     ␛[38;5;252m9 files␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;248m3. ␛[m␛[38;5;248m⊘ Redis␛[m                                                                                     ␛[38;5;248mno client in this project␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m4. ␛[m␛[38;5;252mSomething else …␛[m  ␛[38;5;245manswer in your own words␛[m                                                                            ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;252m␛[38;5;245m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;61mn␛[m␛[m␛[38;5;252m␛[38;5;245mote (optional)␛[m␛[m␛[38;5;252m                                                                                                       ␛[m ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m note or list␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m confirm␛[m␛[38;5;245m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;245m the full answer␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the draft — the question waits␛[m                  ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · pick several · the boxes, with the same field under them
-␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
+␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhich packages should the flag reach?␛[m                                                                                      ␛[94m│␛[m
 ␛[94m│␛[m                                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[94m❯␛[m ␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m[ ]␛[m␛[48;5;62m ␛[97;48;5;62minternal/agent                                                                                                      ␛[m␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m[ ]␛[m internal/cli                                                                                                         ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m[ ]␛[m internal/ui/chat                                                                                                     ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m[ ]␛[m Something else …                                                                                                     ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                                   ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m note or list␛[m␛[38;5;241m · ␛[m␛[38;5;103m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;241m the full answer␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m choose (0)␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;241m keys␛[m                   ␛[94m│␛[m
-␛[94m│␛[m ␛[92m[esc]␛[m␛[38;5;241m back to the draft — the question waits␛[m                                                                               ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m[ ]␛[m␛[48;5;61m ␛[97;48;5;61minternal/agent                                                                                                      ␛[m␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m[ ]␛[m internal/cli                                                                                                         ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m[ ]␛[m internal/ui/chat                                                                                                     ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m[ ]␛[m Something else …                                                                                                     ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;248m(none)␛[m                                                                                                                   ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m note or list␛[m␛[38;5;245m · ␛[m␛[38;5;103m[space]␛[m␛[38;5;245m toggle␛[m␛[38;5;245m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;245m all/none␛[m␛[38;5;245m · ␛[m␛[38;5;103m[v]␛[m␛[38;5;245m the full answer␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m choose (0)␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m                   ␛[94m│␛[m
+␛[94m│␛[m ␛[92m[esc]␛[m␛[38;5;245m back to the draft — the question waits␛[m                                                                               ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a short answer in your own words · the field and no rows above it
-␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
+␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhat should the flag be called?␛[m                                                                                            ␛[94m│␛[m
 ␛[94m│␛[m                                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m┄ note (required)␛[m                                                                                                          ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;62mn␛[m␛[m␛[38;5;252m␛[38;5;241mote (required)␛[m␛[m␛[38;5;252m                                                                                                       ␛[m ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the draft — the question waits␛[m                                                             ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m┄ note (required)␛[m                                                                                                          ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;252m␛[38;5;245m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;61mn␛[m␛[m␛[38;5;252m␛[38;5;245mote (required)␛[m␛[m␛[38;5;252m                                                                                                       ␛[m ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[enter]␛[m␛[38;5;245m confirm␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the draft — the question waits␛[m                                                             ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · yes or no · the inline confirm, whose enter is the answer that changes nothing
-␛[38;5;252mShould the migration be reversible?␛[m  ␛[38;5;241m[␛[m␛[38;5;241my␛[m␛[38;5;241m/␛[m␛[1;97mN␛[m␛[38;5;241m]␛[m
-␛[38;5;241m┄ note (optional)␛[m
-  ␛[38;5;245m(none)␛[m
-␛[38;5;103m[y]␛[m␛[38;5;241m yes␛[m␛[38;5;241m · ␛[m␛[38;5;103m[N]␛[m␛[38;5;241m no — the default␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;241m keys␛[m
+␛[38;5;252mShould the migration be reversible?␛[m  ␛[38;5;245m[␛[m␛[38;5;245my␛[m␛[38;5;245m/␛[m␛[1;97mN␛[m␛[38;5;245m]␛[m
+␛[38;5;245m┄ note (optional)␛[m
+  ␛[38;5;248m(none)␛[m
+␛[38;5;103m[y]␛[m␛[38;5;245m yes␛[m␛[38;5;245m · ␛[m␛[38;5;103m[N]␛[m␛[38;5;245m no — the default␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m note␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m␛[38;5;245m keys␛[m
 
 · landing on a half-typed sentence · one key, and it is the handover
-␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
+␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhich store should the cache use?␛[m                                                                                          ␛[94m│␛[m
 ␛[94m│␛[m                                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. SQLite            in the checkout already                                                       recommended · 3 files␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mPostgres␛[m          ␛[38;5;241mone more service to run␛[m                                                                     ␛[38;5;252m9 files␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;245m3. ␛[m␛[38;5;245m⊘ Redis␛[m                                                                                     ␛[38;5;245mno client in this project␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m4. ␛[m␛[38;5;252mSomething else …␛[m  ␛[38;5;241manswer in your own words␛[m                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                                   ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[ctrl+space/ctrl+y]␛[m␛[38;5;252m answer it␛[m␛[38;5;241m · other keys type into the draft␛[m                                                             ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;61m1. SQLite            in the checkout already                                                       recommended · 3 files␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m2. ␛[m␛[38;5;252mPostgres␛[m          ␛[38;5;245mone more service to run␛[m                                                                     ␛[38;5;252m9 files␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;248m3. ␛[m␛[38;5;248m⊘ Redis␛[m                                                                                     ␛[38;5;248mno client in this project␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m4. ␛[m␛[38;5;252mSomething else …␛[m  ␛[38;5;245manswer in your own words␛[m                                                                            ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;248m(none)␛[m                                                                                                                   ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[ctrl+space/ctrl+y]␛[m␛[38;5;252m answer it␛[m␛[38;5;245m · other keys type into the draft␛[m                                                             ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the yes-or-no on the same sentence · the answer pair goes with the letters
 ␛[38;5;252mShould the migration be reversible?␛[m
-␛[38;5;241m┄ note (optional)␛[m
-  ␛[38;5;245m(none)␛[m
-␛[38;5;103m[ctrl+space/ctrl+y]␛[m␛[38;5;252m answer it␛[m␛[38;5;241m · other keys type into the draft␛[m
+␛[38;5;245m┄ note (optional)␛[m
+  ␛[38;5;248m(none)␛[m
+␛[38;5;103m[ctrl+space/ctrl+y]␛[m␛[38;5;252m answer it␛[m␛[38;5;245m · other keys type into the draft␛[m
 
 · the free answer on the same sentence · the field draws no cursor until the handover
-␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
+␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhat should the flag be called?␛[m                                                                                            ␛[94m│␛[m
 ␛[94m│␛[m                                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m┄ note (required)␛[m                                                                                                          ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                                   ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[ctrl+space/ctrl+y]␛[m␛[38;5;252m answer it␛[m␛[38;5;241m · other keys type into the draft␛[m                                                             ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m┄ note (required)␛[m                                                                                                          ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;248m(none)␛[m                                                                                                                   ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[ctrl+space/ctrl+y]␛[m␛[38;5;252m answer it␛[m␛[38;5;245m · other keys type into the draft␛[m                                                             ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · pick several with a required note on the same sentence · the field draws no cursor until the handover
-␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
+␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhich packages should the flag reach?␛[m                                                                                      ␛[94m│␛[m
 ␛[94m│␛[m                                                                                                                            ␛[94m│␛[m
-␛[94m│␛[m ␛[94m❯␛[m ␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m[ ]␛[m␛[48;5;62m ␛[97;48;5;62minternal/agent                                                                                                      ␛[m␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m[ ]␛[m internal/cli                                                                                                         ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m[ ]␛[m internal/ui/chat                                                                                                     ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m[ ]␛[m Something else …                                                                                                     ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m┄ note (required)␛[m                                                                                                          ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                                   ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[ctrl+space/ctrl+y]␛[m␛[38;5;252m answer it␛[m␛[38;5;241m · other keys type into the draft␛[m                                                             ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m[ ]␛[m␛[48;5;61m ␛[97;48;5;61minternal/agent                                                                                                      ␛[m␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m[ ]␛[m internal/cli                                                                                                         ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m[ ]␛[m internal/ui/chat                                                                                                     ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m[ ]␛[m Something else …                                                                                                     ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245m┄ note (required)␛[m                                                                                                          ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;248m(none)␛[m                                                                                                                   ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[ctrl+space/ctrl+y]␛[m␛[38;5;252m answer it␛[m␛[38;5;245m · other keys type into the draft␛[m                                                             ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · yes or no with a required note on the same sentence · the field draws no cursor until the handover
 ␛[38;5;252mShould the migration be reversible?␛[m
-␛[38;5;241m┄ note (required)␛[m
-  ␛[38;5;245m(none)␛[m
-␛[38;5;103m[ctrl+space/ctrl+y]␛[m␛[38;5;252m answer it␛[m␛[38;5;241m · other keys type into the draft␛[m
+␛[38;5;245m┄ note (required)␛[m
+  ␛[38;5;248m(none)␛[m
+␛[38;5;103m[ctrl+space/ctrl+y]␛[m␛[38;5;252m answer it␛[m␛[38;5;245m · other keys type into the draft␛[m
 
 · yes or no · the whole surface, which the card leaves standing
-␛[48;5;233m  ␛[97;1m shhh chat␛[38;5;241;22m · gpt-4o␛[39m                                                                                                             ␛[m
-␛[48;5;233m  ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
-␛[48;5;233m  ␛[94m❯␛[39m ␛[97mfix the round limit␛[39m                                                          ␛[38;5;241m│␛[39m  ␛[94;1mTHIS TURN␛[39;22m                             ␛[38;5;241mstep 2␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;243m─────────────────────────────────────────────────────────────────────────────␛[39m  ␛[38;5;241m│␛[39m  ␛[38;5;241m0 files this turn · 6 tools␛[39m                   ␛[m
-␛[48;5;233m                                                                                 ␛[38;5;241m│␛[39m                                                ␛[m
-␛[48;5;233m  ␛[48;5;234m                                                                             ␛[48;5;233m  ␛[38;5;241m│␛[39m  ␛[94;1mALERTS␛[39;22m                            ␛[91m1 standing␛[39m  ␛[m
-␛[48;5;233m  ␛[48;5;234m  ␛[38;5;214m⚙␛[39m ␛[38;5;252mread␛[38;5;241m 3 files in internal/agent/ · searched ErrRoundLimit␛[39m           ␛[38;5;241m1.2s␛[39m  ␛[48;5;233m  ␛[38;5;241m│␛[39m   ␛[91m✗␛[39m ␛[38;5;252mgo test␛[39m  ␛[38;5;241mexit 1␛[39m                            ␛[m
-␛[48;5;233m  ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[39m                                              ␛[48;5;233m  ␛[38;5;241m│␛[39m                                                ␛[m
-␛[48;5;233m  ␛[48;5;234m                                                                             ␛[48;5;233m  ␛[38;5;241m│␛[39m  ␛[94;1mCONTEXT␛[39;22m                          ␛[92m32% of 128k␛[39m  ␛[m
-␛[48;5;233m                                                                                 ␛[38;5;241m│␛[39m  ␛[92m▰▰▰▰▰▰▰␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[39m                  ␛[92m~41k␛[39m  ␛[m
-␛[48;5;233m  ␛[48;5;234m                                                                             ␛[48;5;233m  ␛[38;5;241m│␛[39m  ␛[38;5;241mestimated␛[39m                       ␛[38;5;241m↑41.2k ↓9.8k␛[39m  ␛[m
-␛[48;5;233m  ␛[48;5;234m ␛[91m▎✗␛[39m ␛[38;5;252mwrote␛[39m ␛[38;5;245minternal/agent/loop.go␛[38;5;241m · ran go test ./internal/agent/...␛[39m  ␛[91mexit 1␛[39m  ␛[48;5;233m  ␛[38;5;241m│␛[39m                                                ␛[m
-␛[48;5;233m  ␛[48;5;234m    ␛[38;5;252mThread the sentinel through the loop␛[39m                                     ␛[48;5;233m  ␛[38;5;241m│␛[39m  ␛[94;1mSPEND␛[39;22m                                  ␛[38;5;252m$0.51␛[39m  ␛[m
-␛[48;5;233m  ␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[39m                                         ␛[38;5;241m1 line␛[39m  ␛[48;5;233m  ␛[38;5;241m│␛[39m  ␛[38;5;241mgpt-4o · $0.51 main␛[39m                           ␛[m
-␛[48;5;233m  ␛[48;5;234m                                                                             ␛[48;5;233m  ␛[38;5;241m│␛[39m  ␛[38;5;241msession total · $0.51␛[39m                         ␛[m
-␛[48;5;233m                                                                                 ␛[38;5;241m│␛[39m                                                ␛[m
-␛[48;5;233m    ␛[38;5;241m∗␛[39m ␛[38;5;241mworked 24.7s · 6 tools · $0.14␛[39m                                             ␛[38;5;241m│␛[39m                                                ␛[m
-␛[48;5;233m   ␛[38;5;214m▎✎␛[39m ␛[38;5;252m1 file changed ␛[92m+12␛[39m ␛[91m−4␛[38;5;241m · all tracked in git · /undo 1 takes it back␛[39m         ␛[38;5;241m│␛[39m                                                ␛[m
-␛[48;5;233m    ␛[91m✗␛[39m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[39m                        ␛[38;5;241m│␛[39m                                                ␛[m
-␛[48;5;233m                                                                                 ␛[38;5;241m│␛[39m                                                ␛[m
-␛[48;5;233m                                                                                 ␛[38;5;241m│␛[39m                                                ␛[m
-␛[48;5;233m  ␛[38;5;252mShould the migration be reversible?␛[39m  ␛[38;5;241m[y/␛[97;1mN␛[38;5;241;22m]␛[39m                                                                                      ␛[m
-␛[48;5;233m  ␛[38;5;241m┄ note (optional)␛[39m                                                                                                               ␛[m
-␛[48;5;233m    ␛[38;5;245m(none)␛[39m                                                                                                                        ␛[m
-␛[48;5;233m  ␛[38;5;103m[y]␛[38;5;241m yes · ␛[38;5;103m[N]␛[38;5;241m no — the default · ␛[38;5;103m[tab]␛[38;5;241m note · ␛[38;5;103m[?]␛[38;5;241m keys␛[39m                                                                          ␛[m
-␛[48;5;233m  ␛[38;5;241m────␛[39m ␛[94;1mDECISION 1/1␛[39;22m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;241m╭─␛[39m ␛[38;5;214;1m⏸ 1 waiting␛[39;22m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;241m│␛[39m ␛[38;5;241m▸␛[39m ␛[38;5;252m                                                                                                                        ␛[39m ␛[38;5;241m│␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;241m├─␛[39m ␛[38;5;214m⏸ manual␛[38;5;243m · round 1 of 150 · ␛[92mcontext 32%␛[39m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[39m ␛[38;5;241m─────────────────────────────────────────────────────────────────┤␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;241m╰─␛[39m ␛[38;5;103m[?]␛[38;5;241m keys␛[39m ␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[39m  ␛[m
+␛[48;5;233m  ␛[97;1m shhh chat␛[38;5;245;22m · gpt-4o␛[39m                                                                                                             ␛[m
+␛[48;5;233m  ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
+␛[48;5;233m  ␛[94m❯␛[39m ␛[97mfix the round limit␛[39m                                                          ␛[38;5;245m│␛[39m  ␛[94;1mTHIS TURN␛[39;22m                             ␛[38;5;245mstep 2␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;246m─────────────────────────────────────────────────────────────────────────────␛[39m  ␛[38;5;245m│␛[39m  ␛[38;5;245m0 files this turn · 6 tools␛[39m                   ␛[m
+␛[48;5;233m                                                                                 ␛[38;5;245m│␛[39m                                                ␛[m
+␛[48;5;233m  ␛[48;5;234m                                                                             ␛[48;5;233m  ␛[38;5;245m│␛[39m  ␛[94;1mALERTS␛[39;22m                            ␛[91m1 standing␛[39m  ␛[m
+␛[48;5;233m  ␛[48;5;234m  ␛[38;5;214m⚙␛[39m ␛[38;5;252mread␛[38;5;245m 3 files in internal/agent/ · searched ErrRoundLimit␛[39m           ␛[38;5;245m1.2s␛[39m  ␛[48;5;233m  ␛[38;5;245m│␛[39m   ␛[91m✗␛[39m ␛[38;5;252mgo test␛[39m  ␛[38;5;245mexit 1␛[39m                            ␛[m
+␛[48;5;233m  ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[39m                                              ␛[48;5;233m  ␛[38;5;245m│␛[39m                                                ␛[m
+␛[48;5;233m  ␛[48;5;234m                                                                             ␛[48;5;233m  ␛[38;5;245m│␛[39m  ␛[94;1mCONTEXT␛[39;22m                          ␛[92m32% of 128k␛[39m  ␛[m
+␛[48;5;233m                                                                                 ␛[38;5;245m│␛[39m  ␛[92m▰▰▰▰▰▰▰␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[39m                  ␛[92m~41k␛[39m  ␛[m
+␛[48;5;233m  ␛[48;5;234m                                                                             ␛[48;5;233m  ␛[38;5;245m│␛[39m  ␛[38;5;245mestimated␛[39m                       ␛[38;5;245m↑41.2k ↓9.8k␛[39m  ␛[m
+␛[48;5;233m  ␛[48;5;234m ␛[91m▎✗␛[39m ␛[38;5;252mwrote␛[39m ␛[38;5;248minternal/agent/loop.go␛[38;5;245m · ran go test ./internal/agent/...␛[39m  ␛[91mexit 1␛[39m  ␛[48;5;233m  ␛[38;5;245m│␛[39m                                                ␛[m
+␛[48;5;233m  ␛[48;5;234m    ␛[38;5;252mThread the sentinel through the loop␛[39m                                     ␛[48;5;233m  ␛[38;5;245m│␛[39m  ␛[94;1mSPEND␛[39;22m                                  ␛[38;5;252m$0.51␛[39m  ␛[m
+␛[48;5;233m  ␛[48;5;234m    ␛[38;5;248m--- FAIL: TestRoundLimit␛[39m                                         ␛[38;5;245m1 line␛[39m  ␛[48;5;233m  ␛[38;5;245m│␛[39m  ␛[38;5;245mgpt-4o · $0.51 main␛[39m                           ␛[m
+␛[48;5;233m  ␛[48;5;234m                                                                             ␛[48;5;233m  ␛[38;5;245m│␛[39m  ␛[38;5;245msession total · $0.51␛[39m                         ␛[m
+␛[48;5;233m                                                                                 ␛[38;5;245m│␛[39m                                                ␛[m
+␛[48;5;233m    ␛[38;5;245m∗␛[39m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[39m                                             ␛[38;5;245m│␛[39m                                                ␛[m
+␛[48;5;233m   ␛[38;5;214m▎✎␛[39m ␛[38;5;252m1 file changed ␛[92m+12␛[39m ␛[91m−4␛[38;5;245m · all tracked in git · /undo 1 takes it back␛[39m         ␛[38;5;245m│␛[39m                                                ␛[m
+␛[48;5;233m    ␛[91m✗␛[39m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;245m · exit 1 · 21s␛[39m                        ␛[38;5;245m│␛[39m                                                ␛[m
+␛[48;5;233m                                                                                 ␛[38;5;245m│␛[39m                                                ␛[m
+␛[48;5;233m                                                                                 ␛[38;5;245m│␛[39m                                                ␛[m
+␛[48;5;233m  ␛[38;5;252mShould the migration be reversible?␛[39m  ␛[38;5;245m[y/␛[97;1mN␛[38;5;245;22m]␛[39m                                                                                      ␛[m
+␛[48;5;233m  ␛[38;5;245m┄ note (optional)␛[39m                                                                                                               ␛[m
+␛[48;5;233m    ␛[38;5;248m(none)␛[39m                                                                                                                        ␛[m
+␛[48;5;233m  ␛[38;5;103m[y]␛[38;5;245m yes · ␛[38;5;103m[N]␛[38;5;245m no — the default · ␛[38;5;103m[tab]␛[38;5;245m note · ␛[38;5;103m[?]␛[38;5;245m keys␛[39m                                                                          ␛[m
+␛[48;5;233m  ␛[38;5;245m────␛[39m ␛[94;1mDECISION 1/1␛[39;22m ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;245m╭─␛[39m ␛[38;5;214;1m⏸ 1 waiting␛[39;22m ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;245m│␛[39m ␛[38;5;245m▸␛[39m ␛[38;5;252m                                                                                                                        ␛[39m ␛[38;5;245m│␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;245m├─␛[39m ␛[38;5;214m⏸ manual␛[38;5;246m · round 1 of 150 · ␛[92mcontext 32%␛[39m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51␛[39m ␛[38;5;245m─────────────────────────────────────────────────────────────────┤␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;245m╰─␛[39m ␛[38;5;103m[?]␛[38;5;245m keys␛[39m ␛[38;5;245m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[39m  ␛[m
 
 · a free answer · the whole surface, which a one-line field leaves standing
-␛[48;5;233m  ␛[97;1m shhh chat␛[38;5;241;22m · gpt-4o␛[39m                                                                                                             ␛[m
-␛[48;5;233m  ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
-␛[48;5;233m                                                                                 ␛[38;5;241m│␛[39m  ␛[94;1mTHIS TURN␛[39;22m                             ␛[38;5;241mstep 2␛[39m  ␛[m
-␛[48;5;233m  ␛[48;5;234m                                                                             ␛[48;5;233m  ␛[38;5;241m│␛[39m  ␛[38;5;241m0 files this turn · 6 tools␛[39m                   ␛[m
-␛[48;5;233m  ␛[48;5;234m  ␛[38;5;214m⚙␛[39m ␛[38;5;252mread␛[38;5;241m 3 files in internal/agent/ · searched ErrRoundLimit␛[39m           ␛[38;5;241m1.2s␛[39m  ␛[38;5;241;48;5;233m┃␛[39m ␛[38;5;241m│␛[39m                                                ␛[m
-␛[48;5;233m  ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[39m                                              ␛[38;5;241;48;5;233m┃␛[39m ␛[38;5;241m│␛[39m  ␛[94;1mALERTS␛[39;22m                            ␛[91m1 standing␛[39m  ␛[m
-␛[48;5;233m  ␛[48;5;234m                                                                             ␛[38;5;241;48;5;233m┃␛[39m ␛[38;5;241m│␛[39m   ␛[91m✗␛[39m ␛[38;5;252mgo test␛[39m  ␛[38;5;241mexit 1␛[39m                            ␛[m
-␛[48;5;233m                                                                               ␛[38;5;241m┃␛[39m ␛[38;5;241m│␛[39m                                                ␛[m
-␛[48;5;233m  ␛[48;5;234m                                                                             ␛[38;5;241;48;5;233m┃␛[39m ␛[38;5;241m│␛[39m  ␛[94;1mCONTEXT␛[39;22m                          ␛[92m32% of 128k␛[39m  ␛[m
-␛[48;5;233m  ␛[48;5;234m ␛[91m▎✗␛[39m ␛[38;5;252mwrote␛[39m ␛[38;5;245minternal/agent/loop.go␛[38;5;241m · ran go test ./internal/agent/...␛[39m  ␛[91mexit 1␛[39m  ␛[38;5;241;48;5;233m┃␛[39m ␛[38;5;241m│␛[39m  ␛[92m▰▰▰▰▰▰▰␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[39m                  ␛[92m~41k␛[39m  ␛[m
-␛[48;5;233m  ␛[48;5;234m    ␛[38;5;252mThread the sentinel through the loop␛[39m                                     ␛[38;5;241;48;5;233m┃␛[39m ␛[38;5;241m│␛[39m  ␛[38;5;241mestimated␛[39m                       ␛[38;5;241m↑41.2k ↓9.8k␛[39m  ␛[m
-␛[48;5;233m  ␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[39m                                         ␛[38;5;241m1 line␛[39m  ␛[38;5;241;48;5;233m┃␛[39m ␛[38;5;241m│␛[39m                                                ␛[m
-␛[48;5;233m  ␛[48;5;234m                                                                             ␛[38;5;241;48;5;233m┃␛[39m ␛[38;5;241m│␛[39m  ␛[94;1mSPEND␛[39;22m                                  ␛[38;5;252m$0.51␛[39m  ␛[m
-␛[48;5;233m                                                                               ␛[38;5;241m┃␛[39m ␛[38;5;241m│␛[39m  ␛[38;5;241mgpt-4o · $0.51 main␛[39m                           ␛[m
-␛[48;5;233m    ␛[38;5;241m∗␛[39m ␛[38;5;241mworked 24.7s · 6 tools · $0.14␛[39m                                           ␛[38;5;241m┃␛[39m ␛[38;5;241m│␛[39m  ␛[38;5;241msession total · $0.51␛[39m                         ␛[m
-␛[48;5;233m   ␛[38;5;214m▎✎␛[39m ␛[38;5;252m1 file changed ␛[92m+12␛[39m ␛[91m−4␛[38;5;241m · all tracked in git · /undo 1 takes it back␛[39m       ␛[38;5;241m┃␛[39m ␛[38;5;241m│␛[39m                                                ␛[m
-␛[48;5;233m    ␛[91m✗␛[39m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[39m                      ␛[38;5;241m┃␛[39m ␛[38;5;241m│␛[39m                                                ␛[m
-␛[48;5;233m                                                                               ␛[38;5;241m┃␛[39m ␛[38;5;241m│␛[39m                                                ␛[m
-␛[48;5;233m  ␛[94m╭─ ␛[97;1mQuestion ␛[38;5;241;22m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[94m 1 of 1 ─╮␛[39m  ␛[m
+␛[48;5;233m  ␛[97;1m shhh chat␛[38;5;245;22m · gpt-4o␛[39m                                                                                                             ␛[m
+␛[48;5;233m  ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
+␛[48;5;233m                                                                                 ␛[38;5;245m│␛[39m  ␛[94;1mTHIS TURN␛[39;22m                             ␛[38;5;245mstep 2␛[39m  ␛[m
+␛[48;5;233m  ␛[48;5;234m                                                                             ␛[48;5;233m  ␛[38;5;245m│␛[39m  ␛[38;5;245m0 files this turn · 6 tools␛[39m                   ␛[m
+␛[48;5;233m  ␛[48;5;234m  ␛[38;5;214m⚙␛[39m ␛[38;5;252mread␛[38;5;245m 3 files in internal/agent/ · searched ErrRoundLimit␛[39m           ␛[38;5;245m1.2s␛[39m  ␛[38;5;245;48;5;233m┃␛[39m ␛[38;5;245m│␛[39m                                                ␛[m
+␛[48;5;233m  ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[39m                                              ␛[38;5;245;48;5;233m┃␛[39m ␛[38;5;245m│␛[39m  ␛[94;1mALERTS␛[39;22m                            ␛[91m1 standing␛[39m  ␛[m
+␛[48;5;233m  ␛[48;5;234m                                                                             ␛[38;5;245;48;5;233m┃␛[39m ␛[38;5;245m│␛[39m   ␛[91m✗␛[39m ␛[38;5;252mgo test␛[39m  ␛[38;5;245mexit 1␛[39m                            ␛[m
+␛[48;5;233m                                                                               ␛[38;5;245m┃␛[39m ␛[38;5;245m│␛[39m                                                ␛[m
+␛[48;5;233m  ␛[48;5;234m                                                                             ␛[38;5;245;48;5;233m┃␛[39m ␛[38;5;245m│␛[39m  ␛[94;1mCONTEXT␛[39;22m                          ␛[92m32% of 128k␛[39m  ␛[m
+␛[48;5;233m  ␛[48;5;234m ␛[91m▎✗␛[39m ␛[38;5;252mwrote␛[39m ␛[38;5;248minternal/agent/loop.go␛[38;5;245m · ran go test ./internal/agent/...␛[39m  ␛[91mexit 1␛[39m  ␛[38;5;245;48;5;233m┃␛[39m ␛[38;5;245m│␛[39m  ␛[92m▰▰▰▰▰▰▰␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[39m                  ␛[92m~41k␛[39m  ␛[m
+␛[48;5;233m  ␛[48;5;234m    ␛[38;5;252mThread the sentinel through the loop␛[39m                                     ␛[38;5;245;48;5;233m┃␛[39m ␛[38;5;245m│␛[39m  ␛[38;5;245mestimated␛[39m                       ␛[38;5;245m↑41.2k ↓9.8k␛[39m  ␛[m
+␛[48;5;233m  ␛[48;5;234m    ␛[38;5;248m--- FAIL: TestRoundLimit␛[39m                                         ␛[38;5;245m1 line␛[39m  ␛[38;5;245;48;5;233m┃␛[39m ␛[38;5;245m│␛[39m                                                ␛[m
+␛[48;5;233m  ␛[48;5;234m                                                                             ␛[38;5;245;48;5;233m┃␛[39m ␛[38;5;245m│␛[39m  ␛[94;1mSPEND␛[39;22m                                  ␛[38;5;252m$0.51␛[39m  ␛[m
+␛[48;5;233m                                                                               ␛[38;5;245m┃␛[39m ␛[38;5;245m│␛[39m  ␛[38;5;245mgpt-4o · $0.51 main␛[39m                           ␛[m
+␛[48;5;233m    ␛[38;5;245m∗␛[39m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[39m                                           ␛[38;5;245m┃␛[39m ␛[38;5;245m│␛[39m  ␛[38;5;245msession total · $0.51␛[39m                         ␛[m
+␛[48;5;233m   ␛[38;5;214m▎✎␛[39m ␛[38;5;252m1 file changed ␛[92m+12␛[39m ␛[91m−4␛[38;5;245m · all tracked in git · /undo 1 takes it back␛[39m       ␛[38;5;245m┃␛[39m ␛[38;5;245m│␛[39m                                                ␛[m
+␛[48;5;233m    ␛[91m✗␛[39m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;245m · exit 1 · 21s␛[39m                      ␛[38;5;245m┃␛[39m ␛[38;5;245m│␛[39m                                                ␛[m
+␛[48;5;233m                                                                               ␛[38;5;245m┃␛[39m ␛[38;5;245m│␛[39m                                                ␛[m
+␛[48;5;233m  ␛[94m╭─ ␛[97;1mQuestion ␛[38;5;245;22m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[94m 1 of 1 ─╮␛[39m  ␛[m
 ␛[48;5;233m  ␛[94m│␛[39m ␛[38;5;252mWhat should the flag be called?␛[39m                                                                                            ␛[94m│␛[39m  ␛[m
 ␛[48;5;233m  ␛[94m│␛[39m                                                                                                                            ␛[94m│␛[39m  ␛[m
-␛[48;5;233m  ␛[94m│␛[39m ␛[38;5;241m┄ note (required)␛[39m                                                                                                          ␛[94m│␛[39m  ␛[m
-␛[48;5;233m  ␛[94m│␛[39m   ␛[38;5;241m┃ ␛[38;5;62;7mn␛[38;5;241;27mote (required)␛[38;5;252m                                                                                                       ␛[39m ␛[94m│␛[39m  ␛[m
-␛[48;5;233m  ␛[94m│␛[39m ␛[38;5;103m[enter]␛[38;5;241m confirm · ␛[92m[esc]␛[38;5;241m back to the draft — the question waits␛[39m                                                             ␛[94m│␛[39m  ␛[m
+␛[48;5;233m  ␛[94m│␛[39m ␛[38;5;245m┄ note (required)␛[39m                                                                                                          ␛[94m│␛[39m  ␛[m
+␛[48;5;233m  ␛[94m│␛[39m   ␛[38;5;245m┃ ␛[38;5;61;7mn␛[38;5;245;27mote (required)␛[38;5;252m                                                                                                       ␛[39m ␛[94m│␛[39m  ␛[m
+␛[48;5;233m  ␛[94m│␛[39m ␛[38;5;103m[enter]␛[38;5;245m confirm · ␛[92m[esc]␛[38;5;245m back to the draft — the question waits␛[39m                                                             ␛[94m│␛[39m  ␛[m
 ␛[48;5;233m  ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;241m────␛[39m ␛[94;1mDECISION 1/1␛[39;22m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;241m╭─␛[39m ␛[38;5;214;1m⏸ 1 waiting␛[39;22m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;241m│␛[39m ␛[38;5;241m▸␛[39m ␛[38;5;252m                                                                                                                        ␛[39m ␛[38;5;241m│␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;241m├─␛[39m ␛[38;5;214m⏸ manual␛[38;5;243m · round 1 of 150 · ␛[92mcontext 32%␛[39m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[39m ␛[38;5;241m─────────────────────────────────────────────────────────────────┤␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;241m╰─␛[39m ␛[38;5;103m[?]␛[38;5;241m keys␛[39m ␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;245m────␛[39m ␛[94;1mDECISION 1/1␛[39;22m ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;245m╭─␛[39m ␛[38;5;214;1m⏸ 1 waiting␛[39;22m ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;245m│␛[39m ␛[38;5;245m▸␛[39m ␛[38;5;252m                                                                                                                        ␛[39m ␛[38;5;245m│␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;245m├─␛[39m ␛[38;5;214m⏸ manual␛[38;5;246m · round 1 of 150 · ␛[92mcontext 32%␛[39m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51␛[39m ␛[38;5;245m─────────────────────────────────────────────────────────────────┤␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;245m╰─␛[39m ␛[38;5;103m[?]␛[38;5;245m keys␛[39m ␛[38;5;245m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[39m  ␛[m
 
 · pick one · the same terminal, and the card has all of it
-␛[48;5;233m  ␛[97;1m shhh chat␛[38;5;241;22m · gpt-4o␛[39m                                                                                                             ␛[m
-␛[48;5;233m  ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
-␛[48;5;233m  ␛[48;5;234m  ␛[38;5;214m⚙␛[39m ␛[38;5;252mread␛[38;5;241m 3 files in internal/agent/ · searched ErrRoundLimit␛[39m                                                          ␛[38;5;241m1.2s␛[39m  ␛[48;5;233m    ␛[m
+␛[48;5;233m  ␛[97;1m shhh chat␛[38;5;245;22m · gpt-4o␛[39m                                                                                                             ␛[m
+␛[48;5;233m  ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
+␛[48;5;233m  ␛[48;5;234m  ␛[38;5;214m⚙␛[39m ␛[38;5;252mread␛[38;5;245m 3 files in internal/agent/ · searched ErrRoundLimit␛[39m                                                          ␛[38;5;245m1.2s␛[39m  ␛[48;5;233m    ␛[m
 ␛[48;5;233m  ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[39m                                                                                             ␛[48;5;233m    ␛[m
 ␛[48;5;233m  ␛[48;5;234m                                                                                                                            ␛[48;5;233m    ␛[m
 ␛[48;5;233m                                                                                                                                  ␛[m
-␛[48;5;233m  ␛[48;5;234m                                                                                                                            ␛[38;5;241;48;5;233m┃␛[39m   ␛[m
-␛[48;5;233m  ␛[48;5;234m ␛[91m▎✗␛[39m ␛[38;5;252mwrote␛[39m ␛[38;5;245minternal/agent/loop.go␛[38;5;241m · ran go test ./internal/agent/...␛[39m                                           ␛[91mexit 1␛[38;5;241m · 22s␛[39m  ␛[38;5;241;48;5;233m┃␛[39m   ␛[m
-␛[48;5;233m  ␛[48;5;234m    ␛[38;5;252mThread the sentinel through the loop␛[39m                                                                                    ␛[38;5;241;48;5;233m┃␛[39m   ␛[m
-␛[48;5;233m  ␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[39m                                                                                        ␛[38;5;241m1 line␛[39m  ␛[38;5;241;48;5;233m┃␛[39m   ␛[m
-␛[48;5;233m  ␛[48;5;234m                                                                                                                            ␛[38;5;241;48;5;233m┃␛[39m   ␛[m
-␛[48;5;233m                                                                                                                              ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m    ␛[38;5;241m∗␛[39m ␛[38;5;241mworked 24.7s · 6 tools · $0.14␛[39m                                                                                          ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m   ␛[38;5;214m▎✎␛[39m ␛[38;5;252m1 file changed ␛[92m+12␛[39m ␛[91m−4␛[38;5;241m · all tracked in git · /undo 1 takes it back␛[39m                                                      ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m    ␛[91m✗␛[39m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[39m                                                                     ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m                                                                                                                              ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m  ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;214m⏸ manual␛[38;5;243m · round 1 of 150 · ␛[92mcontext 32%␛[39m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[39m                                                                        ␛[m
-␛[48;5;233m  ␛[38;5;241m────␛[39m ␛[94;1mDECISION 1/1␛[39;22m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
-␛[48;5;233m  ␛[94m╭─ ␛[97;1mQuestion ␛[38;5;241;22m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[94m 1 of 1 ─╮␛[39m  ␛[m
+␛[48;5;233m  ␛[48;5;234m                                                                                                                            ␛[38;5;245;48;5;233m┃␛[39m   ␛[m
+␛[48;5;233m  ␛[48;5;234m ␛[91m▎✗␛[39m ␛[38;5;252mwrote␛[39m ␛[38;5;248minternal/agent/loop.go␛[38;5;245m · ran go test ./internal/agent/...␛[39m                                           ␛[91mexit 1␛[38;5;245m · 22s␛[39m  ␛[38;5;245;48;5;233m┃␛[39m   ␛[m
+␛[48;5;233m  ␛[48;5;234m    ␛[38;5;252mThread the sentinel through the loop␛[39m                                                                                    ␛[38;5;245;48;5;233m┃␛[39m   ␛[m
+␛[48;5;233m  ␛[48;5;234m    ␛[38;5;248m--- FAIL: TestRoundLimit␛[39m                                                                                        ␛[38;5;245m1 line␛[39m  ␛[38;5;245;48;5;233m┃␛[39m   ␛[m
+␛[48;5;233m  ␛[48;5;234m                                                                                                                            ␛[38;5;245;48;5;233m┃␛[39m   ␛[m
+␛[48;5;233m                                                                                                                              ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m    ␛[38;5;245m∗␛[39m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[39m                                                                                          ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m   ␛[38;5;214m▎✎␛[39m ␛[38;5;252m1 file changed ␛[92m+12␛[39m ␛[91m−4␛[38;5;245m · all tracked in git · /undo 1 takes it back␛[39m                                                      ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m    ␛[91m✗␛[39m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;245m · exit 1 · 21s␛[39m                                                                     ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m                                                                                                                              ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m  ␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;214m⏸ manual␛[38;5;246m · round 1 of 150 · ␛[92mcontext 32%␛[39m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51␛[39m                                                                        ␛[m
+␛[48;5;233m  ␛[38;5;245m────␛[39m ␛[94;1mDECISION 1/1␛[39;22m ␛[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[39m  ␛[m
+␛[48;5;233m  ␛[94m╭─ ␛[97;1mQuestion ␛[38;5;245;22m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[94m 1 of 1 ─╮␛[39m  ␛[m
 ␛[48;5;233m  ␛[94m│␛[39m ␛[38;5;252mWhich store should the cache use?␛[39m                                                                                          ␛[94m│␛[39m  ␛[m
 ␛[48;5;233m  ␛[94m│␛[39m                                                                                                                            ␛[94m│␛[39m  ␛[m
-␛[48;5;233m  ␛[94m│␛[39m ␛[94m❯␛[39m ␛[97;48;5;62;1m1. SQLite            in the checkout already                                                       recommended · 3 files␛[39;48;5;233;22m ␛[94m│␛[39m  ␛[m
-␛[48;5;233m  ␛[94m│␛[39m   ␛[38;5;241m2. ␛[38;5;252mPostgres␛[39m          ␛[38;5;241mone more service to run␛[39m                                                                     ␛[38;5;252m9 files␛[39m ␛[94m│␛[39m  ␛[m
-␛[48;5;233m  ␛[94m│␛[39m   ␛[38;5;245m3. ⊘ Redis␛[39m                                                                                     ␛[38;5;245mno client in this project␛[39m ␛[94m│␛[39m  ␛[m
-␛[48;5;233m  ␛[94m│␛[39m   ␛[38;5;241m4. ␛[38;5;252mSomething else …␛[39m  ␛[38;5;241manswer in your own words␛[39m                                                                            ␛[94m│␛[39m  ␛[m
-␛[48;5;233m  ␛[94m│␛[39m ␛[38;5;241m┄ note (optional)␛[39m                                                                                                          ␛[94m│␛[39m  ␛[m
-␛[48;5;233m  ␛[94m│␛[39m   ␛[38;5;245m(none)␛[39m                                                                                                                   ␛[94m│␛[39m  ␛[m
-␛[48;5;233m  ␛[94m│␛[39m ␛[38;5;103m[tab]␛[38;5;241m note or list · ␛[38;5;103m[enter]␛[38;5;241m confirm · ␛[38;5;103m[v]␛[38;5;241m the full answer · ␛[38;5;103m[?]␛[38;5;241m keys · ␛[92m[esc]␛[38;5;241m back to the draft — the question waits␛[39m       ␛[94m│␛[39m  ␛[m
+␛[48;5;233m  ␛[94m│␛[39m ␛[94m❯␛[39m ␛[97;48;5;61;1m1. SQLite            in the checkout already                                                       recommended · 3 files␛[39;48;5;233;22m ␛[94m│␛[39m  ␛[m
+␛[48;5;233m  ␛[94m│␛[39m   ␛[38;5;245m2. ␛[38;5;252mPostgres␛[39m          ␛[38;5;245mone more service to run␛[39m                                                                     ␛[38;5;252m9 files␛[39m ␛[94m│␛[39m  ␛[m
+␛[48;5;233m  ␛[94m│␛[39m   ␛[38;5;248m3. ⊘ Redis␛[39m                                                                                     ␛[38;5;248mno client in this project␛[39m ␛[94m│␛[39m  ␛[m
+␛[48;5;233m  ␛[94m│␛[39m   ␛[38;5;245m4. ␛[38;5;252mSomething else …␛[39m  ␛[38;5;245manswer in your own words␛[39m                                                                            ␛[94m│␛[39m  ␛[m
+␛[48;5;233m  ␛[94m│␛[39m ␛[38;5;245m┄ note (optional)␛[39m                                                                                                          ␛[94m│␛[39m  ␛[m
+␛[48;5;233m  ␛[94m│␛[39m   ␛[38;5;248m(none)␛[39m                                                                                                                   ␛[94m│␛[39m  ␛[m
+␛[48;5;233m  ␛[94m│␛[39m ␛[38;5;103m[tab]␛[38;5;245m note or list · ␛[38;5;103m[enter]␛[38;5;245m confirm · ␛[38;5;103m[v]␛[38;5;245m the full answer · ␛[38;5;103m[?]␛[38;5;245m keys · ␛[92m[esc]␛[38;5;245m back to the draft — the question waits␛[39m       ␛[94m│␛[39m  ␛[m
 ␛[48;5;233m  ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[39m  ␛[m

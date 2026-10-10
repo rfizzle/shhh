@@ -240,229 +240,229 @@ definitions not loaded                                   │   costs     its too
 
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
-␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                               ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh doctor␛[m␛[38;5;245m · 10 checks␛[m                                                                               ␛[38;5;248m1.4s␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[91m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[91m✗␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62mmodel   anthropic · claude-opus-5 · no key in any of the four places                                            no key       ␛[m␛[m
-    ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[m
-    ␛[38;5;103m[enter]␛[m␛[38;5;241m show the four places shhh looks␛[m
-   ␛[91m✗␛[m ␛[38;5;252msandbox␛[m ␛[38;5;252mno containment mechanism␛[m␛[38;5;241m · sandbox-exec not found␛[m                                                  ␛[91muncontained␛[m   ␛[38;5;241m0.1s␛[m
-    ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved command runs as you␛[m
-    ␛[38;5;245m[enter]␛[m␛[38;5;241m show the fix for this host␛[m
-  ␛[38;5;241m↓ 8 more · binary · config · store · engine · git · tools · memory · update␛[m
+␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[91m␛[m␛[48;5;61m␛[94m␛[m␛[48;5;61m ␛[91m✗␛[m␛[48;5;61m ␛[38;5;252m␛[m␛[48;5;61m␛[38;5;252m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[91m␛[m␛[48;5;61m␛[97;48;5;61mmodel   anthropic · claude-opus-5 · no key in any of the four places                                            no key       ␛[m␛[m
+    ␛[38;5;248mno session will start until a key is found — every one exits on "no provider"␛[m
+    ␛[38;5;103m[enter]␛[m␛[38;5;245m show the four places shhh looks␛[m
+   ␛[91m✗␛[m ␛[38;5;252msandbox␛[m ␛[38;5;252mno containment mechanism␛[m␛[38;5;245m · sandbox-exec not found␛[m                                                  ␛[91muncontained␛[m   ␛[38;5;245m0.1s␛[m
+    ␛[38;5;248mevery approval will show ⚠ UNCONTAINED, and an approved command runs as you␛[m
+    ␛[38;5;248m[enter]␛[m␛[38;5;245m show the fix for this host␛[m
+  ␛[38;5;245m↓ 8 more · binary · config · store · engine · git · tools · memory · update␛[m
 
-  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m      ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m retry␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;245m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;245m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 not checked␛[m      ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy the report␛[m␛[38;5;245m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;245m retry␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
 
 · metrics · the spend rides with the one key the screen has
-␛[1;97mshhh metrics␛[m␛[38;5;241m · last 30 days · 251 requests · 4 models␛[m                                               ␛[38;5;252m$18.42␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh metrics␛[m␛[38;5;245m · last 30 days · 251 requests · 4 models␛[m                                               ␛[38;5;252m$18.42␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d␛[m
-  ␛[38;5;252mgpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s␛[m  ␛[38;5;245m▃▄▄▅▆▅█␛[m
-  ␛[38;5;252mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms  2.1s␛[m  ␛[38;5;245m▂▃▆▄▃█▅␛[m
-  ␛[38;5;252mgemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s␛[m  ␛[38;5;245m▁▁▄▁▁▁█␛[m
-  ␛[38;5;252mhouse-model               9    42k     3k       —   1.2s     —␛[m  ␛[38;5;245m▁▁▁▁█▁▁␛[m
+  ␛[38;5;252mgpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s␛[m  ␛[38;5;248m▃▄▄▅▆▅█␛[m
+  ␛[38;5;252mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms  2.1s␛[m  ␛[38;5;248m▂▃▆▄▃█▅␛[m
+  ␛[38;5;252mgemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s␛[m  ␛[38;5;248m▁▁▄▁▁▁█␛[m
+  ␛[38;5;252mhouse-model               9    42k     3k       —   1.2s     —␛[m  ␛[38;5;248m▁▁▁▁█▁▁␛[m
 
-␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
 
 · config · the file, and what is standing against it, over the flows section
-␛[1;97m/config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m␛[38;5;214m · 2 changes unwritten␛[m                                                   ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/config␛[m␛[38;5;245m · ~/.config/shhh/config.toml␛[m␛[38;5;214m · 2 changes unwritten␛[m                                                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mFLOWS␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mclassifier         gemini-3-flash — this session only, written to no file                                              session␛[m
-    ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;241m— behavior.explainer_model␛[m                                                       ␛[38;5;252mflow key␛[m
-    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;241m— provider.cheap_model␛[m                                                               ␛[38;5;252mcheap key␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;61mclassifier         gemini-3-flash — this session only, written to no file                                              session␛[m
+    ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;245m— behavior.explainer_model␛[m                                                       ␛[38;5;252mflow key␛[m
+    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;245m— provider.cheap_model␛[m                                                               ␛[38;5;252mcheap key␛[m
     ␛[38;5;252mbacklog␛[m            ␛[38;5;252mclaude-haiku-4.5␛[m                                                                       ␛[38;5;252mprovider small model␛[m
-  ␛[38;5;241m↓ 15 more␛[m
+  ␛[38;5;245m↓ 15 more␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;241m reset␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write 2 changes␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m discard, after asking␛[m
-␛[38;5;241mnothing is written until [ctrl+s]␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m change␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;245m reset␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m write 2 changes␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m discard, after asking␛[m
+␛[38;5;245mnothing is written until [ctrl+s]␛[m
 
 · history · the subject, and a foot key row that states the way out
-␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m                                                                             ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh history␛[m␛[38;5;245m · 6 entries · 2 run␛[m                                                                             ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;97;48;5;62m$ delete every log file older than a week  exit 0         1.4s␛[m␛[38;5;241m │ ␛[m␛[1;97m4m ago␛[m␛[38;5;241m · openai/gpt-5.2␛[m                                     ␛[38;5;241mrun␛[m
-  ␛[38;5;252m$ show the ten biggest files in this directory␛[m  ␛[92mcopied␛[m    ␛[38;5;252m0.9s␛[m␛[38;5;241m │ ␛[m  ␛[38;5;241mdelete every log file older than a week␛[m
-  ␛[38;5;252m✗ rebase onto main and force push␛[m  ␛[91mexit 128␛[m ␛[38;5;241m· tue␛[m         ␛[38;5;252m2.1s␛[m␛[38;5;241m │ ␛[m
-  ␛[38;5;252m$ find every reference to ErrRoundLimit under…␛[m  ␛[92msaved␛[m     ␛[38;5;252m1.1s␛[m␛[38;5;241m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7␛[m       ␛[92mexit 0␛[m   ␛[38;5;241m1.4s␛[m
-  ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;241m· mon␛[m             ␛[38;5;241m │ ␛[m    ␛[38;5;245m-delete␛[m
-  ␛[38;5;252m· count the log lines by level␛[m    ␛[38;5;252mnot run␛[m ␛[38;5;241m· Aug 14␛[m            ␛[38;5;241m │ ␛[m  ␛[38;5;245m↑ 412 · ↓ 38 tokens␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m$ delete every log file older than a week  exit 0         1.4s␛[m␛[38;5;245m │ ␛[m␛[1;97m4m ago␛[m␛[38;5;245m · openai/gpt-5.2␛[m                                     ␛[38;5;245mrun␛[m
+  ␛[38;5;252m$ show the ten biggest files in this directory␛[m  ␛[92mcopied␛[m    ␛[38;5;252m0.9s␛[m␛[38;5;245m │ ␛[m  ␛[38;5;245mdelete every log file older than a week␛[m
+  ␛[38;5;252m✗ rebase onto main and force push␛[m  ␛[91mexit 128␛[m ␛[38;5;245m· tue␛[m         ␛[38;5;252m2.1s␛[m␛[38;5;245m │ ␛[m
+  ␛[38;5;252m$ find every reference to ErrRoundLimit under…␛[m  ␛[92msaved␛[m     ␛[38;5;252m1.1s␛[m␛[38;5;245m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7␛[m       ␛[92mexit 0␛[m   ␛[38;5;245m1.4s␛[m
+  ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;245m· mon␛[m             ␛[38;5;245m │ ␛[m    ␛[38;5;248m-delete␛[m
+  ␛[38;5;252m· count the log lines by level␛[m    ␛[38;5;252mnot run␛[m ␛[38;5;245m· Aug 14␛[m            ␛[38;5;245m │ ␛[m  ␛[38;5;248m↑ 412 · ↓ 38 tokens␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m delete␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m                   ␛[38;5;241mnothing is re-run until [enter]␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m re-run it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m                   ␛[38;5;245mnothing is re-run until [enter]␛[m
 
 · rate · the same header over one card
-␛[1;97mshhh rate␛[m␛[38;5;241m · 1 of 5␛[m                                                                                           ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh rate␛[m␛[38;5;245m · 1 of 5␛[m                                                                                           ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241m╭─ ␛[m␛[1;97m4m ago ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
-␛[38;5;241m│␛[m ␛[38;5;252mdelete every log file older than a week␛[m                                                                                        ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m                                                                                                                                ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7 -delete␛[m                                                              ␛[92mexit 0␛[m        ␛[38;5;241m│␛[m
-␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+␛[38;5;245m╭─ ␛[m␛[1;97m4m ago ␛[m␛[38;5;245m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
+␛[38;5;245m│␛[m ␛[38;5;252mdelete every log file older than a week␛[m                                                                                        ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m                                                                                                                                ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7 -delete␛[m                                                              ␛[92mexit 0␛[m        ␛[38;5;245m│␛[m
+␛[38;5;245m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[38;5;103m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[38;5;103m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m stop␛[m
+␛[38;5;103m[y]␛[m␛[38;5;245m worked␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m␛[38;5;245m did not␛[m␛[38;5;245m · ␛[m␛[38;5;103m[s]␛[m␛[38;5;245m skip␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m stop␛[m
 
 · context · the occupancy is the tally beside the keys
-␛[1;97m/context␛[m␛[38;5;241m · this session · 1m window␛[m                                                                ␛[92m~312.4k␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/context␛[m␛[38;5;245m · this session · 1m window␛[m                                                                ␛[92m~312.4k␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;243m▰␛[m␛[94m▰␛[m␛[38;5;214m▰▰▰␛[m␛[38;5;252m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m   ␛[1;97mclaude-opus-5[1m]␛[m
-  ␛[38;5;252m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m   ␛[38;5;241manthropic␛[m
-  ␛[38;5;252m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m   ␛[38;5;252m~312.4k␛[m␛[38;5;241m of 1m · ␛[m␛[92m31%␛[m␛[38;5;241m full␛[m␛[38;5;241m · provider-reported␛[m
-  ␛[38;5;252m▰▰␛[m␛[38;5;245m▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m   ␛[38;5;241mcache reads · ␛[m␛[38;5;252m298.1k␛[m␛[38;5;241m of 312.4k input · ␛[m␛[38;5;252m95%␛[m
-  ␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m
-  ␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m   ␛[1;94mOCCUPANCY BY CATEGORY␛[m
-  ␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m   ␛[38;5;243m▰ ␛[m␛[38;5;243msystem prompt     ␛[m␛[38;5;243m     3.8k␛[m␛[38;5;241m   0.4%␛[m
-  ␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m   ␛[94m▰ ␛[m␛[94mproject context   ␛[m␛[94m       61␛[m␛[38;5;241m   0.0%␛[m
-  ␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m   ␛[38;5;214m▰ ␛[m␛[38;5;214mtool definitions  ␛[m␛[38;5;214m    22.3k␛[m␛[38;5;241m   2.2%␛[m
+  ␛[38;5;246m▰␛[m␛[94m▰␛[m␛[38;5;214m▰▰▰␛[m␛[38;5;252m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m   ␛[1;97mclaude-opus-5[1m]␛[m
+  ␛[38;5;252m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m   ␛[38;5;245manthropic␛[m
+  ␛[38;5;252m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m   ␛[38;5;252m~312.4k␛[m␛[38;5;245m of 1m · ␛[m␛[92m31%␛[m␛[38;5;245m full␛[m␛[38;5;245m · provider-reported␛[m
+  ␛[38;5;252m▰▰␛[m␛[38;5;248m▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m   ␛[38;5;245mcache reads · ␛[m␛[38;5;252m298.1k␛[m␛[38;5;245m of 312.4k input · ␛[m␛[38;5;252m95%␛[m
+  ␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m
+  ␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m   ␛[1;94mOCCUPANCY BY CATEGORY␛[m
+  ␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m   ␛[38;5;246m▰ ␛[m␛[38;5;246msystem prompt     ␛[m␛[38;5;246m     3.8k␛[m␛[38;5;245m   0.4%␛[m
+  ␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m   ␛[94m▰ ␛[m␛[94mproject context   ␛[m␛[94m       61␛[m␛[38;5;245m   0.0%␛[m
+  ␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m   ␛[38;5;214m▰ ␛[m␛[38;5;214mtool definitions  ␛[m␛[38;5;214m    22.3k␛[m␛[38;5;245m   2.2%␛[m
 
 · the profile drafter · the way out is the whole right-hand run
-␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · reviewer tester␛[m                                                                         ␛[38;5;241m[esc] leave␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · reviewer tester␛[m                                                                         ␛[38;5;245m[esc] leave␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[94m● brief␛[m␛[38;5;245m   ␛[m␛[38;5;245m· questions␛[m␛[38;5;245m   ␛[m␛[38;5;245m· draft␛[m
+  ␛[94m● brief␛[m␛[38;5;248m   ␛[m␛[38;5;248m· questions␛[m␛[38;5;248m   ␛[m␛[38;5;248m· draft␛[m
 
   ␛[38;5;252mWhat should this agent do?␛[m
 
-  ␛[38;5;241m┄ in your own words␛[m
-    ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;62mw␛[m␛[m␛[38;5;252m␛[38;5;241mhat it is for␛[m␛[m␛[38;5;252m                                                                                                              ␛[m
+  ␛[38;5;245m┄ in your own words␛[m
+    ␛[38;5;252m␛[38;5;245m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;61mw␛[m␛[m␛[38;5;252m␛[38;5;245mhat it is for␛[m␛[m␛[38;5;252m                                                                                                              ␛[m
 
-  ␛[38;5;103m[enter]␛[m␛[38;5;241m draft from what you typed␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m nothing is drafted␛[m
+  ␛[38;5;103m[enter]␛[m␛[38;5;245m draft from what you typed␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m nothing is drafted␛[m
 
 · snippets · the list, the command it would run, and the promise that it will not
-␛[1;97mshhh snippets␛[m␛[38;5;241m · 3 snippets␛[m                                                                                   ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh snippets␛[m␛[38;5;245m · 3 snippets␛[m                                                                                   ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;97;48;5;62mports      what is listening on t…  4m ago␛[m␛[38;5;241m │ ␛[m␛[1;97mports␛[m                                                                        ␛[38;5;241m4m ago␛[m
-  ␛[38;5;252mbig-files␛[m  ␛[38;5;241mthe ten biggest fil…␛[m  ␛[38;5;252myesterday␛[m␛[38;5;241m │ ␛[m  ␛[38;5;241mwhat is listening on this machine␛[m
-  ␛[38;5;252mprune␛[m      ␛[38;5;241mdrop every merged branch␛[m    ␛[38;5;252mtue␛[m␛[38;5;241m │ ␛[m
-                                            ␛[38;5;241m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mlsof -nP -iTCP -sTCP:LISTEN␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mports      what is listening on t…  4m ago␛[m␛[38;5;245m │ ␛[m␛[1;97mports␛[m                                                                        ␛[38;5;245m4m ago␛[m
+  ␛[38;5;252mbig-files␛[m  ␛[38;5;245mthe ten biggest fil…␛[m  ␛[38;5;252myesterday␛[m␛[38;5;245m │ ␛[m  ␛[38;5;245mwhat is listening on this machine␛[m
+  ␛[38;5;252mprune␛[m      ␛[38;5;245mdrop every merged branch␛[m    ␛[38;5;252mtue␛[m␛[38;5;245m │ ␛[m
+                                            ␛[38;5;245m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mlsof -nP -iTCP -sTCP:LISTEN␛[m
 
-␛[38;5;103m[enter]␛[m␛[38;5;241m run it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;241m copy␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m rename␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m delete␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m            ␛[38;5;241mnothing is run until [enter]␛[m
+␛[38;5;103m[enter]␛[m␛[38;5;245m run it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[c]␛[m␛[38;5;245m copy␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m rename␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m            ␛[38;5;245mnothing is run until [enter]␛[m
 
 · the saved-chat browser · a row another session holds says so in a word
-␛[1;97mshhh chats␛[m␛[38;5;241m · 3 conversations␛[m                                                                                 ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh chats␛[m␛[38;5;245m · 3 conversations␛[m                                                                                 ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252mmorning-fix␛[m  ␛[38;5;241mthe retry backoff was doubling twice · 12 turns …␛[m␛[38;5;241m │ ␛[m␛[1;97mheld␛[m                                        ␛[38;5;241m2026-09-06 08:02:41␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62mheld         reading the sandbox pol…  open in another session␛[m␛[38;5;241m │ ␛[m  ␛[38;5;241mreading the sandbox policy␛[m
-  ␛[38;5;252mtuesday␛[m      ␛[38;5;241mnaming the report pages · 31 turns · Sep 3 17:40␛[m ␛[38;5;241m │ ␛[m
-                                                                ␛[38;5;241m │ ␛[m  ␛[38;5;252m4 turns␛[m
-                                                                ␛[38;5;241m │ ␛[m
-                                                                ␛[38;5;241m │ ␛[m  ␛[38;5;241m"held" is open in another session — its conversation is still␛[m
-                                                                ␛[38;5;241m │ ␛[m  ␛[38;5;241mbeing written there.␛[m
+  ␛[38;5;252mmorning-fix␛[m  ␛[38;5;245mthe retry backoff was doubling twice · 12 turns …␛[m␛[38;5;245m │ ␛[m␛[1;97mheld␛[m                                        ␛[38;5;245m2026-09-06 08:02:41␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mheld         reading the sandbox pol…  open in another session␛[m␛[38;5;245m │ ␛[m  ␛[38;5;245mreading the sandbox policy␛[m
+  ␛[38;5;252mtuesday␛[m      ␛[38;5;245mnaming the report pages · 31 turns · Sep 3 17:40␛[m ␛[38;5;245m │ ␛[m
+                                                                ␛[38;5;245m │ ␛[m  ␛[38;5;252m4 turns␛[m
+                                                                ␛[38;5;245m │ ␛[m
+                                                                ␛[38;5;245m │ ␛[m  ␛[38;5;245m"held" is open in another session — its conversation is still␛[m
+                                                                ␛[38;5;245m │ ␛[m  ␛[38;5;245mbeing written there.␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m rename␛[m␛[38;5;241m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;241m delete␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m                              ␛[38;5;241mopen in another session␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m rename␛[m␛[38;5;245m · ␛[m␛[38;5;103m[d]␛[m␛[38;5;245m delete␛[m␛[38;5;245m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;245m filter␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m                              ␛[38;5;245mopen in another session␛[m
 
 · sources · the list is grouped under the hosts it read
-␛[1;97m/sources␛[m␛[38;5;241m · 2 pages · 1 host · 1 search␛[m                                                                       ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/sources␛[m␛[38;5;245m · 2 pages · 1 host · 1 search␛[m                                                                       ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[1;94msearches␛[m                                                        ␛[38;5;241m │ ␛[m␛[1;97mhttps://docs.rs/tokio/latest/tokio/␛[m                ␛[38;5;241morchestrator␛[m
-  ␛[38;5;252m⚙ tokio runtime␛[m                 ␛[92m3 results␛[m ␛[38;5;241m· orchestrator␛[m      ␛[38;5;241m │ ␛[m  ␛[38;5;241mtokio — Rust␛[m
-␛[1;94mdocs.rs␛[m                                                         ␛[38;5;241m │ ␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m⚙ /tokio/latest/tokio/          200 · orchestrator       60 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mkind ␛[m␛[38;5;252mfetch␛[m
-  ␛[38;5;252m⚙ /tokio/latest/tokio/runtime/␛[m  ␛[92m200 (cached)␛[m ␛[38;5;241m· web-res…␛[m  ␛[38;5;252m12 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243murl ␛[m␛[38;5;252mhttps://docs.rs/tokio/latest/tokio/␛[m
-                                                                ␛[38;5;241m │ ␛[m  ␛[38;5;243masked for ␛[m␛[38;5;252mhttps://docs.rs/tokio␛[m
-                                                                ␛[38;5;241m │ ␛[m  ␛[38;5;243mstatus ␛[m␛[38;5;252m200␛[m
+␛[1;94msearches␛[m                                                        ␛[38;5;245m │ ␛[m␛[1;97mhttps://docs.rs/tokio/latest/tokio/␛[m                ␛[38;5;245morchestrator␛[m
+  ␛[38;5;252m⚙ tokio runtime␛[m                 ␛[92m3 results␛[m ␛[38;5;245m· orchestrator␛[m      ␛[38;5;245m │ ␛[m  ␛[38;5;245mtokio — Rust␛[m
+␛[1;94mdocs.rs␛[m                                                         ␛[38;5;245m │ ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m⚙ /tokio/latest/tokio/          200 · orchestrator       60 KB␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mkind ␛[m␛[38;5;252mfetch␛[m
+  ␛[38;5;252m⚙ /tokio/latest/tokio/runtime/␛[m  ␛[92m200 (cached)␛[m ␛[38;5;245m· web-res…␛[m  ␛[38;5;252m12 KB␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246murl ␛[m␛[38;5;252mhttps://docs.rs/tokio/latest/tokio/␛[m
+                                                                ␛[38;5;245m │ ␛[m  ␛[38;5;246masked for ␛[m␛[38;5;252mhttps://docs.rs/tokio␛[m
+                                                                ␛[38;5;245m │ ␛[m  ␛[38;5;246mstatus ␛[m␛[38;5;252m200␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m open␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                      ␛[38;5;241mrecorded by the tool, not by the model␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m open␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                                      ␛[38;5;245mrecorded by the tool, not by the model␛[m
 
 · safety · the reading, its subject beside the title and the way back on the right
-␛[1;97m/safety␛[m␛[38;5;241m · manual · sandbox-exec␛[m                                                                              ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/safety␛[m␛[38;5;245m · manual · sandbox-exec␛[m                                                                              ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;243mMODE AND POLICY␛[m
+␛[38;5;246mMODE AND POLICY␛[m
 ␛[38;5;252m  Mode: manual — every consequential call asks.␛[m
 ␛[38;5;252m␛[m
 ␛[38;5;252m  Grants:␛[m
 ␛[38;5;252m    commands   "go test", that line alone — until this turn ends␛[m
 ␛[38;5;252m    config     2 command patterns from behavior.command_allowlist — not this session's to revoke␛[m
-␛[38;5;241m↓ 7 more · where it may write · containment · web · what the checkout was let load · mcp · secrets · tools␛[m
+␛[38;5;245m↓ 7 more · where it may write · containment · web · what the checkout was let load · mcp · secrets · tools␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                      ␛[38;5;241ma reading · nothing here changes it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                                                      ␛[38;5;245ma reading · nothing here changes it␛[m
 
 · steps · the session's own list, the run the transcript titled for the step beside it
-␛[1;97m/steps␛[m␛[38;5;241m · 1 of 7␛[m                                                                                              ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/steps␛[m␛[38;5;245m · 1 of 7␛[m                                                                                              ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m1. ␛[m␛[38;5;252m✓ Read the loop␛[m               ␛[92mdone␛[m          ␛[38;5;252m2 tools␛[m␛[38;5;241m │ ␛[m␛[1;97m2. Patch the round limit␛[m                                        ␛[38;5;241mcurrent␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m2. ▸ Patch the round limit       current       2 tools␛[m␛[38;5;241m │ ␛[m
-  ␛[38;5;241m3. ␛[m␛[38;5;252m· Name the ceiling in the error␛[m         ␛[38;5;241mnot started␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mtouches ␛[m␛[38;5;252minternal/agent/round.go␛[m
-  ␛[38;5;241m4. ␛[m␛[38;5;252m· Read the headless driver␛[m                   ␛[38;5;252m1 tool␛[m␛[38;5;241m │ ␛[m          ␛[38;5;252minternal/agent/round_test.go␛[m
-  ␛[38;5;241m5. ␛[m␛[38;5;252m· Carry the cap into the child␛[m          ␛[38;5;241mnot started␛[m␛[38;5;241m │ ␛[m
-  ␛[38;5;241m6. ␛[m␛[38;5;252m· Run the whole suite␛[m                   ␛[38;5;241mnot started␛[m␛[38;5;241m │ ␛[m␛[38;5;245m  in the transcript · 2 tools · 4.1s␛[m
-  ␛[38;5;241m7. ␛[m␛[38;5;252m· Write the report␛[m                      ␛[38;5;241mnot started␛[m␛[38;5;241m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/round.go␛[m            ␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;245m · ␛[m␛[38;5;245m2 hunks␛[m   ␛[38;5;241m1.1s␛[m
+  ␛[38;5;245m1. ␛[m␛[38;5;252m✓ Read the loop␛[m               ␛[92mdone␛[m          ␛[38;5;252m2 tools␛[m␛[38;5;245m │ ␛[m␛[1;97m2. Patch the round limit␛[m                                        ␛[38;5;245mcurrent␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m2. ▸ Patch the round limit       current       2 tools␛[m␛[38;5;245m │ ␛[m
+  ␛[38;5;245m3. ␛[m␛[38;5;252m· Name the ceiling in the error␛[m         ␛[38;5;245mnot started␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mtouches ␛[m␛[38;5;252minternal/agent/round.go␛[m
+  ␛[38;5;245m4. ␛[m␛[38;5;252m· Read the headless driver␛[m                   ␛[38;5;252m1 tool␛[m␛[38;5;245m │ ␛[m          ␛[38;5;252minternal/agent/round_test.go␛[m
+  ␛[38;5;245m5. ␛[m␛[38;5;252m· Carry the cap into the child␛[m          ␛[38;5;245mnot started␛[m␛[38;5;245m │ ␛[m
+  ␛[38;5;245m6. ␛[m␛[38;5;252m· Run the whole suite␛[m                   ␛[38;5;245mnot started␛[m␛[38;5;245m │ ␛[m␛[38;5;248m  in the transcript · 2 tools · 4.1s␛[m
+  ␛[38;5;245m7. ␛[m␛[38;5;252m· Write the report␛[m                      ␛[38;5;245mnot started␛[m␛[38;5;245m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/round.go␛[m            ␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;248m · ␛[m␛[38;5;248m2 hunks␛[m   ␛[38;5;245m1.1s␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                           ␛[38;5;241mthe agent's own list, not a plan␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                                                           ␛[38;5;245mthe agent's own list, not a plan␛[m
 
 · readings · every reading the session took, the one under the pointer whole beside it
-␛[1;97m/readings␛[m␛[38;5;241m · 5 readings␛[m                                                                       ␛[38;5;241m$0.0142 spent␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/readings␛[m␛[38;5;245m · 5 readings␛[m                                                                       ␛[38;5;245m$0.0142 spent␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;97;48;5;62m⚠ r 11 · off target  withdrawn          turn 2␛[m␛[38;5;241m │ ␛[m␛[1;97mr 11 · off target␛[m                                                        ␛[38;5;241mturn 2␛[m
-  ␛[38;5;252m⚠ r 6 · off target␛[m   ␛[38;5;214msteered␛[m            ␛[38;5;241mturn 2␛[m␛[38;5;241m │ ␛[m
-  ␛[38;5;252m▸ r 3 · has enough␛[m                      ␛[38;5;241mturn 2␛[m␛[38;5;241m │ ␛[m   ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 11␛[m                              ␛[38;5;241m⚠ off target␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m
-  ␛[38;5;252m· r 9 · unclear␛[m                         ␛[38;5;241mturn 1␛[m␛[38;5;241m │ ␛[m    ␛[38;5;245mRewriting the README's install section after the exporter fix.␛[m
-  ␛[38;5;252m▸ r 3 · on target␛[m                       ␛[38;5;241mturn 1␛[m␛[38;5;241m │ ␛[m    ␛[38;5;245m⚠ off target␛[m
-                                                ␛[38;5;241m │ ␛[m    ␛[38;5;245m  the instruction was the exporter; docs were not asked for␛[m
-                                                ␛[38;5;241m │ ␛[m    ␛[38;5;245mread against: fix the CSV exporter's quoting␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m⚠ r 11 · off target  withdrawn          turn 2␛[m␛[38;5;245m │ ␛[m␛[1;97mr 11 · off target␛[m                                                        ␛[38;5;245mturn 2␛[m
+  ␛[38;5;252m⚠ r 6 · off target␛[m   ␛[38;5;214msteered␛[m            ␛[38;5;245mturn 2␛[m␛[38;5;245m │ ␛[m
+  ␛[38;5;252m▸ r 3 · has enough␛[m                      ␛[38;5;245mturn 2␛[m␛[38;5;245m │ ␛[m   ␛[38;5;245m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 11␛[m                              ␛[38;5;245m⚠ off target␛[m␛[38;5;245m · ␛[m␛[38;5;248m1 line␛[m
+  ␛[38;5;252m· r 9 · unclear␛[m                         ␛[38;5;245mturn 1␛[m␛[38;5;245m │ ␛[m    ␛[38;5;248mRewriting the README's install section after the exporter fix.␛[m
+  ␛[38;5;252m▸ r 3 · on target␛[m                       ␛[38;5;245mturn 1␛[m␛[38;5;245m │ ␛[m    ␛[38;5;248m⚠ off target␛[m
+                                                ␛[38;5;245m │ ␛[m    ␛[38;5;248m  the instruction was the exporter; docs were not asked for␛[m
+                                                ␛[38;5;245m │ ␛[m    ␛[38;5;248mread against: fix the CSV exporter's quoting␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                ␛[38;5;241ma reader's account of the run, newest first␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                                                ␛[38;5;245ma reader's account of the run, newest first␛[m
 
 · turns · every turn the session ran, the close of the one under the pointer beside it
-␛[1;97m/turns␛[m␛[38;5;241m · 6 turns␛[m␛[38;5;241m · 26 tools␛[m                                                                  ␛[38;5;241m$0.1580 spent␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/turns␛[m␛[38;5;245m · 6 turns␛[m␛[38;5;245m · 26 tools␛[m                                                                  ␛[38;5;245m$0.1580 spent␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252m▸ turn 6␛[m  ␛[38;5;214mrunning␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m1 file ␛[m␛[92m+4␛[m␛[38;5;241m ␛[m␛[91m−1␛[m                     ␛[38;5;241m │ ␛[m␛[1;97mturn 4␛[m                                                             ␛[38;5;241mdone␛[m
-  ␛[38;5;252m✓ turn 5␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;241mchanged no files␛[m              ␛[38;5;241m$0.0210␛[m␛[38;5;241m │ ␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m✓ turn 4  done · ▎2 files +18 −6               $0.0870␛[m␛[38;5;241m │ ␛[m  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 1m 04s · 9 tools · $0.0870␛[m
-  ␛[38;5;252m✓ turn 3␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m1 file ␛[m␛[92m+3␛[m␛[38;5;241m ␛[m␛[91m−3␛[m                 ␛[38;5;241m$0.0440␛[m␛[38;5;241m │ ␛[m ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m2 files changed ␛[m␛[92m+18␛[m ␛[91m−6␛[m
-  ␛[38;5;252m· turn 2␛[m  ␛[38;5;241mno figures kept␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m2 files ␛[m␛[92m+11␛[m␛[38;5;241m ␛[m␛[91m−1␛[m           ␛[38;5;241m │ ␛[m ␛[38;5;214m▎␛[m␛[92m✓␛[m ␛[38;5;252mcommitted a1b2c3d on main · raise the round cap␛[m
-  ␛[38;5;252m⊘ turn 1␛[m  ␛[38;5;241mcancelled␛[m                            ␛[38;5;241m$0.0060␛[m␛[38;5;241m │ ␛[m
-                                                        ␛[38;5;241m │ ␛[m  ␛[38;5;243mfiles ␛[m␛[38;5;252minternal/agent/loop.go␛[m ␛[92m+12␛[m ␛[91m−4␛[m
+  ␛[38;5;252m▸ turn 6␛[m  ␛[38;5;214mrunning␛[m␛[38;5;245m · ␛[m␛[38;5;214m▎␛[m␛[38;5;245m1 file ␛[m␛[92m+4␛[m␛[38;5;245m ␛[m␛[91m−1␛[m                     ␛[38;5;245m │ ␛[m␛[1;97mturn 4␛[m                                                             ␛[38;5;245mdone␛[m
+  ␛[38;5;252m✓ turn 5␛[m  ␛[92mdone␛[m␛[38;5;245m · ␛[m␛[38;5;245mchanged no files␛[m              ␛[38;5;245m$0.0210␛[m␛[38;5;245m │ ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m✓ turn 4  done · ▎2 files +18 −6               $0.0870␛[m␛[38;5;245m │ ␛[m  ␛[38;5;245m∗␛[m ␛[38;5;245mworked 1m 04s · 9 tools · $0.0870␛[m
+  ␛[38;5;252m✓ turn 3␛[m  ␛[92mdone␛[m␛[38;5;245m · ␛[m␛[38;5;214m▎␛[m␛[38;5;245m1 file ␛[m␛[92m+3␛[m␛[38;5;245m ␛[m␛[91m−3␛[m                 ␛[38;5;245m$0.0440␛[m␛[38;5;245m │ ␛[m ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m2 files changed ␛[m␛[92m+18␛[m ␛[91m−6␛[m
+  ␛[38;5;252m· turn 2␛[m  ␛[38;5;245mno figures kept␛[m␛[38;5;245m · ␛[m␛[38;5;214m▎␛[m␛[38;5;245m2 files ␛[m␛[92m+11␛[m␛[38;5;245m ␛[m␛[91m−1␛[m           ␛[38;5;245m │ ␛[m ␛[38;5;214m▎␛[m␛[92m✓␛[m ␛[38;5;252mcommitted a1b2c3d on main · raise the round cap␛[m
+  ␛[38;5;252m⊘ turn 1␛[m  ␛[38;5;245mcancelled␛[m                            ␛[38;5;245m$0.0060␛[m␛[38;5;245m │ ␛[m
+                                                        ␛[38;5;245m │ ␛[m  ␛[38;5;246mfiles ␛[m␛[38;5;252minternal/agent/loop.go␛[m ␛[92m+12␛[m ␛[91m−4␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m review turn 4␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                ␛[38;5;241meach turn as its close row reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m review turn 4␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                                ␛[38;5;245meach turn as its close row reads it␛[m
 
 · alerts · every command the session broke, standing first, the one under the pointer's account beside it
-␛[1;97m/alerts␛[m␛[38;5;241m · 2 standing␛[m␛[38;5;241m · 2 superseded␛[m                                                                          ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/alerts␛[m␛[38;5;245m · 2 standing␛[m␛[38;5;245m · 2 superseded␛[m                                                                          ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;97;48;5;62m✗ make test  standing · exit 2 · 3 runs         since turn 3␛[m␛[38;5;241m │ ␛[m␛[1;97mmake test␛[m                                                ␛[38;5;241mstanding␛[m
-  ␛[38;5;252m✗ gofmt␛[m  ␛[91mstanding␛[m␛[38;5;241m · ␛[m␛[38;5;241mexit 1␛[m                            ␛[38;5;241mturn 5␛[m␛[38;5;241m │ ␛[m
-  ␛[38;5;252m✓ golangci-lint run␛[m  ␛[38;5;241msuperseded␛[m␛[38;5;241m · ␛[m␛[38;5;241mexit 1 · 2 runs␛[m     ␛[38;5;241mturn 2␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mlast run  ␛[m␛[38;5;252mexit 2␛[m
-  ␛[38;5;252m✓ go build␛[m  ␛[38;5;241msuperseded␛[m␛[38;5;241m · ␛[m␛[38;5;241mexit 1␛[m                       ␛[38;5;241mturn 1␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mruns      ␛[m␛[38;5;252m3, in 2 turns␛[m
-                                                              ␛[38;5;241m │ ␛[m  ␛[38;5;243mbroke     ␛[m␛[38;5;252mturn 3␛[m
-                                                              ␛[38;5;241m │ ␛[m  ␛[38;5;243manswered  ␛[m␛[91mnot yet␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m✗ make test  standing · exit 2 · 3 runs         since turn 3␛[m␛[38;5;245m │ ␛[m␛[1;97mmake test␛[m                                                ␛[38;5;245mstanding␛[m
+  ␛[38;5;252m✗ gofmt␛[m  ␛[91mstanding␛[m␛[38;5;245m · ␛[m␛[38;5;245mexit 1␛[m                            ␛[38;5;245mturn 5␛[m␛[38;5;245m │ ␛[m
+  ␛[38;5;252m✓ golangci-lint run␛[m  ␛[38;5;245msuperseded␛[m␛[38;5;245m · ␛[m␛[38;5;245mexit 1 · 2 runs␛[m     ␛[38;5;245mturn 2␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mlast run  ␛[m␛[38;5;252mexit 2␛[m
+  ␛[38;5;252m✓ go build␛[m  ␛[38;5;245msuperseded␛[m␛[38;5;245m · ␛[m␛[38;5;245mexit 1␛[m                       ␛[38;5;245mturn 1␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mruns      ␛[m␛[38;5;252m3, in 2 turns␛[m
+                                                              ␛[38;5;245m │ ␛[m  ␛[38;5;246mbroke     ␛[m␛[38;5;252mturn 3␛[m
+                                                              ␛[38;5;245m │ ␛[m  ␛[38;5;246manswered  ␛[m␛[91mnot yet␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m show each run␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mevery command this session broke, as the rail reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m show each run␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m             ␛[38;5;245mevery command this session broke, as the rail reads it␛[m
 
 · spend · the session's bill by model, by child and by turn, the row under the pointer's account beside it
-␛[1;97m/stats␛[m␛[38;5;241m · 2 models␛[m␛[38;5;241m · 2 children␛[m␛[38;5;241m · 3 turns␛[m                                                     ␛[38;5;241m$0.4210 spent␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/stats␛[m␛[38;5;245m · 2 models␛[m␛[38;5;245m · 2 children␛[m␛[38;5;245m · 3 turns␛[m                                                     ␛[38;5;245m$0.4210 spent␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252msession total␛[m                                      ␛[38;5;241m$0.4210␛[m␛[38;5;241m │ ␛[m␛[1;97mclaude-opus-5-5␛[m                                               ␛[38;5;241mmodel␛[m
-␛[1;94mby model␛[m                                                    ␛[38;5;241m │ ␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62mclaude-opus-5-5 · main · classifier · $0.0520 ◇    $0.3650␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mspent        ␛[m␛[38;5;252m$0.3650␛[m
-  ␛[38;5;252mclaude-haiku-4-5␛[m␛[38;5;241m · ␛[m␛[38;5;241msummary␛[m␛[38;5;241m · ␛[m␛[38;5;241m$0.0030 ◇␛[m             ␛[38;5;241m$0.0010␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mtokens       ␛[m␛[38;5;252m↑152.2k ↓7.9k · 96.0k cached␛[m
-␛[1;94mby child␛[m                                                    ␛[38;5;241m │ ␛[m  ␛[38;5;243mrequests     ␛[m␛[38;5;252m18␛[m
-  ␛[38;5;252m◇ writer-1␛[m␛[38;5;241m · ␛[m␛[38;5;241mclaude-opus-5-5␛[m                       ␛[38;5;241m$0.0520␛[m␛[38;5;241m │ ␛[m
-␛[38;5;241m↓ 4 more␛[m                                                    ␛[38;5;241m │ ␛[m  ␛[38;5;243mby kind of request␛[m
+  ␛[38;5;252msession total␛[m                                      ␛[38;5;245m$0.4210␛[m␛[38;5;245m │ ␛[m␛[1;97mclaude-opus-5-5␛[m                                               ␛[38;5;245mmodel␛[m
+␛[1;94mby model␛[m                                                    ␛[38;5;245m │ ␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mclaude-opus-5-5 · main · classifier · $0.0520 ◇    $0.3650␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mspent        ␛[m␛[38;5;252m$0.3650␛[m
+  ␛[38;5;252mclaude-haiku-4-5␛[m␛[38;5;245m · ␛[m␛[38;5;245msummary␛[m␛[38;5;245m · ␛[m␛[38;5;245m$0.0030 ◇␛[m             ␛[38;5;245m$0.0010␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mtokens       ␛[m␛[38;5;252m↑152.2k ↓7.9k · 96.0k cached␛[m
+␛[1;94mby child␛[m                                                    ␛[38;5;245m │ ␛[m  ␛[38;5;246mrequests     ␛[m␛[38;5;252m18␛[m
+  ␛[38;5;252m◇ writer-1␛[m␛[38;5;245m · ␛[m␛[38;5;245mclaude-opus-5-5␛[m                       ␛[38;5;245m$0.0520␛[m␛[38;5;245m │ ␛[m
+␛[38;5;245m↓ 4 more␛[m                                                    ␛[38;5;245m │ ␛[m  ␛[38;5;246mby kind of request␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;245m[enter]␛[m␛[38;5;241m open the turn␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m             ␛[38;5;241mthe session's bill, as the rail's SPEND block reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;248m[enter]␛[m␛[38;5;245m open the turn␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m             ␛[38;5;245mthe session's bill, as the rail's SPEND block reads it␛[m
 
 · tools · where the session's tools came from, the source under the pointer's account beside it
-␛[1;97m/mcp␛[m␛[38;5;241m · 3 servers␛[m␛[38;5;241m · 2 of 4 up␛[m                                                                                 ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/mcp␛[m␛[38;5;245m · 3 servers␛[m␛[38;5;245m · 2 of 4 up␛[m                                                                                 ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;252m✓ built-in␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m14 tools␛[m                             ␛[38;5;241m │ ␛[m␛[1;97mlinear␛[m                                                            ␛[38;5;241merror␛[m
-␛[1;94mmcp servers␛[m                                             ␛[38;5;241m │ ␛[m
-  ␛[38;5;252m✓ docs␛[m  ␛[38;5;241mup␛[m␛[38;5;241m · ␛[m␛[38;5;241m2 tools, 1 prompt␛[m                        ␛[38;5;241m │ ␛[m  ␛[38;5;243mstate     ␛[m␛[38;5;252merror · server linear: connect: exec: "linear-mcp":␛[m
-  ␛[38;5;252m⚠ tracker␛[m  ␛[38;5;252mblocked␛[m␛[38;5;241m · ␛[m␛[38;5;241muntrusted␛[m                        ␛[38;5;241m │ ␛[m            ␛[38;5;252mexecutable file not found in $PATH␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m✗ linear  error · server linear: connect: exec: "line…␛[m␛[38;5;241m │ ␛[m  ␛[38;5;243mreaches   ␛[m␛[38;5;252mlinear-mcp␛[m
-␛[1;94mdefinitions not loaded␛[m                                  ␛[38;5;241m │ ␛[m  ␛[38;5;243mcosts     ␛[m␛[38;5;252mits tools are not in this session␛[m
-␛[38;5;241m↓ 7 more␛[m                                                ␛[38;5;241m │ ␛[m
+  ␛[38;5;252m✓ built-in␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m14 tools␛[m                             ␛[38;5;245m │ ␛[m␛[1;97mlinear␛[m                                                            ␛[38;5;245merror␛[m
+␛[1;94mmcp servers␛[m                                             ␛[38;5;245m │ ␛[m
+  ␛[38;5;252m✓ docs␛[m  ␛[38;5;245mup␛[m␛[38;5;245m · ␛[m␛[38;5;245m2 tools, 1 prompt␛[m                        ␛[38;5;245m │ ␛[m  ␛[38;5;246mstate     ␛[m␛[38;5;252merror · server linear: connect: exec: "linear-mcp":␛[m
+  ␛[38;5;252m⚠ tracker␛[m  ␛[38;5;252mblocked␛[m␛[38;5;245m · ␛[m␛[38;5;245muntrusted␛[m                        ␛[38;5;245m │ ␛[m            ␛[38;5;252mexecutable file not found in $PATH␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m✗ linear  error · server linear: connect: exec: "line…␛[m␛[38;5;245m │ ␛[m  ␛[38;5;246mreaches   ␛[m␛[38;5;252mlinear-mcp␛[m
+␛[1;94mdefinitions not loaded␛[m                                  ␛[38;5;245m │ ␛[m  ␛[38;5;246mcosts     ␛[m␛[38;5;252mits tools are not in this session␛[m
+␛[38;5;245m↓ 7 more␛[m                                                ␛[38;5;245m │ ␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                 ␛[38;5;241mwhere this session's tools came from, as the rail reads it␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m back to the prompt␛[m                                 ␛[38;5;245mwhere this session's tools came from, as the rail reads it␛[m

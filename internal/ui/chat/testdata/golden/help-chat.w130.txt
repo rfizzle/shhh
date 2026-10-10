@@ -210,199 +210,199 @@
 
 ── ansi ────────────────────────────────────────────────────
 · a conversation
-  ␛[38;5;243mcommands␛[m
-    ␛[38;5;252m/help␛[m          ␛[38;5;241mopen the key list: every key this session answers, grouped as a keybindings.toml names them and spelled the way␛[m
-                   ␛[38;5;241mthey are bound now — type to filter by key or words, [esc] or [ctrl+]] closes it, and the draft is as you left␛[m
-                   ␛[38;5;241mit. With words after it (/help keys), the whole sheet — the commands, what happens mid-turn, the keys and the␛[m
-                   ␛[38;5;241mapproval policy — is written to the transcript instead␛[m
-    ␛[38;5;252m/clear␛[m         ␛[38;5;241mend this session and start another (also /new)␛[m
-    ␛[38;5;252m/paste␛[m         ␛[38;5;241mattach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path>␛[m
-                   ␛[38;5;241mattaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle>␛[m
-                   ␛[38;5;241mtakes one back out — the handle is the one a chip leads with, Image#1, and its name works too — and /paste␛[m
-                   ␛[38;5;241mclear drops what is staged (ctrl+v). With a sentence half typed, reading mode (ctrl+o) keeps it and reaches the␛[m
-                   ␛[38;5;241mstrip of chips as its last row: ←→ picks a chip, enter opens it, x drops it, esc goes back to the sentence; a␛[m
-                   ␛[38;5;241mclick on a chip opens it too␛[m
-    ␛[38;5;252m/copy [code]␛[m   ␛[38;5;241mcopy the last response (or just its code blocks)␛[m
-    ␛[38;5;252m/model [name]␛[m  ␛[38;5;241mswitch the model (bare /model opens an interactive picker)␛[m
-                   ␛[38;5;241mdefault [name]   show or persist the default model for new sessions␛[m
-                   ␛[38;5;241magents [name]    show or persist the model sub-agents run on ("inherit" follows the session model)␛[m
-    ␛[38;5;252m/permissions␛[m   ␛[38;5;241mwhat runs without asking, and the permission mode that frames it (also /perms; was /mode)␛[m
-                   ␛[38;5;241m[name]   bare opens a picker over the five modes:␛[m
-                   ␛[38;5;241m         manual asks about every consequential call␛[m
-                   ␛[38;5;241m         accept-edits applies the edits and asks for the rest␛[m
-                   ␛[38;5;241m         auto adds the allowlist and lets the classifier judge␛[m
-                   ␛[38;5;241m         read-only writes nothing — a write is refused, not asked␛[m
-                   ␛[38;5;241m         plan is read-only, ending on a plan you can approve here or carry into a fresh session␛[m
-                   ␛[38;5;241mwhy      the latest auto-mode denial's reason␛[m
-                   ␛[38;5;241mgrants   what this session has stopped asking about␛[m
-                   ␛[38;5;241mallow <commands|edits>   grant a whole category␛[m
-                   ␛[38;5;241mrevoke [commands|edits|hosts|agents]   take the grants back␛[m
-    ␛[38;5;252m/reasoning␛[m     ␛[38;5;241mhow much thinking the model does before it answers: off (the default), low, medium, high, xhigh or max — ctrl+t␛[m
-                   ␛[38;5;241mcycles them␛[m
-                   ␛[38;5;241m[level]           set it for this session (also /think)␛[m
-                   ␛[38;5;241mdefault [level]   show or persist the level new sessions start on (provider.reasoning)␛[m
-    ␛[38;5;252m/context␛[m       ␛[38;5;241mthe window as a meter, by category, with the tools itemised␛[m
-    ␛[38;5;252m/stats␛[m         ␛[38;5;241mthe session's whole bill on one screen, as the rail's SPEND block reads it: the session total with the kinds of␛[m
-                   ␛[38;5;241mrequest that make it up, each model's share with its own kinds and what the children on it cost, each child's␛[m
-                   ␛[38;5;241mshare by name, and each turn's cost as its close row states it. [enter] on a turn opens it on the turns screen.␛[m
-                   ␛[38;5;241mWhat the context window is occupied by is /context. While attached to an agent, /stats is that agent's own. It␛[m
-                   ␛[38;5;241mreads and changes nothing␛[m
-    ␛[38;5;252m/readings␛[m      ␛[38;5;241mevery reading the session has taken of its own run on one screen, newest first: the round, the verdict, the␛[m
-                   ␛[38;5;241mwhole reading with its reason and the instruction it was judged against, and whether it steered the turn and␛[m
-                   ␛[38;5;241mwhether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing␛[m
-    ␛[38;5;252m/turns␛[m         ␛[38;5;241mevery turn the session has run on one screen, newest first: how it ended, its steps, tools, time and spend,␛[m
-                   ␛[38;5;241mwhat it changed, its commit and its checks' verdict — the figures its close row drew, beside the close itself —␛[m
-                   ␛[38;5;241mwith the turn in flight on top. [enter] opens a turn's review where it changed files. A turn from an ended␛[m
-                   ␛[38;5;241msitting shows its files and says its figures were not kept. It reads and changes nothing␛[m
-    ␛[38;5;252m/alerts␛[m        ␛[38;5;241mevery alert the session has had on one screen, standing first and then superseded, newest first: the command,␛[m
-                   ␛[38;5;241mits last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate␛[m
-                   ␛[38;5;241mpassing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id␛[m
-                   ␛[38;5;241mits output was kept under where it was cut. It reads the rail's own alerts and changes nothing␛[m
-    ␛[38;5;252m/step␛[m          ␛[38;5;241mopen the in-flight step's card onto its calls, every call with its output body, bounded; run it again to close␛[m
-                   ␛[38;5;241m(/ui verbosity high is the same thing for every card at once)␛[m
-    ␛[38;5;252m/status␛[m        ␛[38;5;241mwhere this session is: what it is working on, what it has spent, and whether the last few turns are still on␛[m
-                   ␛[38;5;241mthe target you set it␛[m
-    ␛[38;5;252m/sessions␛[m      ␛[38;5;241mthe sessions running on this machine: the conversation each saves to, its checkout and branch, and whether it␛[m
-                   ␛[38;5;241mis working␛[m
-    ␛[38;5;252m/trust␛[m         ␛[38;5;241mlet this checkout's own skills, agent profiles, wordings and quality suites load. A clone can carry␛[m
-                   ␛[38;5;241minstructions, so nothing of a checkout's runs until you say so; "off" withdraws it and the next session starts␛[m
-                   ␛[38;5;241mwithout them␛[m
-    ␛[38;5;252m/ui␛[m            ␛[38;5;241mscreen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui␛[m
-                   ␛[38;5;241mmouse <on|off>␛[m
-                   ␛[38;5;241mlow draws each step's card as its header alone and leaves thinking out, normal draws the header, the sentence␛[m
-                   ␛[38;5;241mand the evidence, high opens every card onto its calls; a card you opened or closed stays as you left it. The␛[m
-                   ␛[38;5;241mmouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, open␛[m
-                   ␛[38;5;241mor close a card by its header, or answer keys; off hands selection back to the terminal, and ctrl+x flips it␛[m
-                   ␛[38;5;241mand saves it␛[m
-                   ␛[38;5;241mterminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications,␛[m
-                   ␛[38;5;241m           focus events, cell size␛[m
-    ␛[38;5;252m/safety␛[m        ␛[38;5;241mthe session's whole boundary on one screen (also /security): the mode and grants, where it may write, what␛[m
-                   ␛[38;5;241mcontains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools —␛[m
-                   ␛[38;5;241meach section naming the command that changes it. It reads and changes nothing␛[m
-    ␛[38;5;252m/skills␛[m        ␛[38;5;241mthe skills this session loaded (SKILL.md directories), and why any did not␛[m
-    ␛[38;5;252m/mcp␛[m           ␛[38;5;241mevery place this session's tools came from on one screen, opened on the MCP servers: the built-in toolset, each␛[m
-                   ␛[38;5;241mserver, the language servers, the binaries found on PATH and the web tools, each up or not with the tools it␛[m
-                   ␛[38;5;241mregistered — and for one that is not up, what that costs and what would move it, in the words shhh mcp gives.␛[m
-                   ␛[38;5;241mOn a server the checkout declared, [a] trusts the checkout or withdraws that, after asking, as /trust does; it␛[m
-                   ␛[38;5;241mtakes effect in the next session. trust <name> and distrust <name> say where that answer is given␛[m
-    ␛[38;5;252m/notes␛[m         ␛[38;5;241mthe session's shared notebook — what the agents wrote for each other, and what a backlog run wrote up, listed␛[m
-                   ␛[38;5;241mby author. Dropping is yours alone: drop <n> removes one, clear empties it␛[m
-    ␛[38;5;252m/todo␛[m          ␛[38;5;241mthe project's backlog: bare opens a picker · show|edit <slug> · add (reads this session into proposed items you␛[m
-                   ␛[38;5;241maccept or drop) · add <text> · block <slug> [why] · open|done|drop <slug> · new <text> · groom <slug> (reads an␛[m
-                   ␛[38;5;241mitem against the tree and proposes the corrections) · run [slug|--next] works an item through its profile's run␛[m
-                   ␛[38;5;241m· sprint · status · stop␛[m
-    ␛[38;5;252m/compact␛[m       ␛[38;5;241mcontinue from a summary plus the most recent turns␛[m
-    ␛[38;5;252m/rewind [n]␛[m    ␛[38;5;241mrewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the abandoned tail is kept␛[m
-                   ␛[38;5;241mas a branch, and a card asks whether the files come back too␛[m
-    ␛[38;5;252m/suggest␛[m       ␛[38;5;241mask the suggestion model for a next step from what the last turn left (also /suggestion). The answer stands dim␛[m
-                   ␛[38;5;241min the empty draft and → takes it, as an offer after a turn does; it works whether /ui suggest is on or off,␛[m
-                   ␛[38;5;241mand a second ask replaces the first. /ui suggest <on|off> stays the switch for the offer after each turn␛[m
-    ␛[38;5;252m/exit␛[m          ␛[38;5;241mquit (also /quit, /q)␛[m
+  ␛[38;5;246mcommands␛[m
+    ␛[38;5;252m/help␛[m          ␛[38;5;245mopen the key list: every key this session answers, grouped as a keybindings.toml names them and spelled the way␛[m
+                   ␛[38;5;245mthey are bound now — type to filter by key or words, [esc] or [ctrl+]] closes it, and the draft is as you left␛[m
+                   ␛[38;5;245mit. With words after it (/help keys), the whole sheet — the commands, what happens mid-turn, the keys and the␛[m
+                   ␛[38;5;245mapproval policy — is written to the transcript instead␛[m
+    ␛[38;5;252m/clear␛[m         ␛[38;5;245mend this session and start another (also /new)␛[m
+    ␛[38;5;252m/paste␛[m         ␛[38;5;245mattach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path>␛[m
+                   ␛[38;5;245mattaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle>␛[m
+                   ␛[38;5;245mtakes one back out — the handle is the one a chip leads with, Image#1, and its name works too — and /paste␛[m
+                   ␛[38;5;245mclear drops what is staged (ctrl+v). With a sentence half typed, reading mode (ctrl+o) keeps it and reaches the␛[m
+                   ␛[38;5;245mstrip of chips as its last row: ←→ picks a chip, enter opens it, x drops it, esc goes back to the sentence; a␛[m
+                   ␛[38;5;245mclick on a chip opens it too␛[m
+    ␛[38;5;252m/copy [code]␛[m   ␛[38;5;245mcopy the last response (or just its code blocks)␛[m
+    ␛[38;5;252m/model [name]␛[m  ␛[38;5;245mswitch the model (bare /model opens an interactive picker)␛[m
+                   ␛[38;5;245mdefault [name]   show or persist the default model for new sessions␛[m
+                   ␛[38;5;245magents [name]    show or persist the model sub-agents run on ("inherit" follows the session model)␛[m
+    ␛[38;5;252m/permissions␛[m   ␛[38;5;245mwhat runs without asking, and the permission mode that frames it (also /perms; was /mode)␛[m
+                   ␛[38;5;245m[name]   bare opens a picker over the five modes:␛[m
+                   ␛[38;5;245m         manual asks about every consequential call␛[m
+                   ␛[38;5;245m         accept-edits applies the edits and asks for the rest␛[m
+                   ␛[38;5;245m         auto adds the allowlist and lets the classifier judge␛[m
+                   ␛[38;5;245m         read-only writes nothing — a write is refused, not asked␛[m
+                   ␛[38;5;245m         plan is read-only, ending on a plan you can approve here or carry into a fresh session␛[m
+                   ␛[38;5;245mwhy      the latest auto-mode denial's reason␛[m
+                   ␛[38;5;245mgrants   what this session has stopped asking about␛[m
+                   ␛[38;5;245mallow <commands|edits>   grant a whole category␛[m
+                   ␛[38;5;245mrevoke [commands|edits|hosts|agents]   take the grants back␛[m
+    ␛[38;5;252m/reasoning␛[m     ␛[38;5;245mhow much thinking the model does before it answers: off (the default), low, medium, high, xhigh or max — ctrl+t␛[m
+                   ␛[38;5;245mcycles them␛[m
+                   ␛[38;5;245m[level]           set it for this session (also /think)␛[m
+                   ␛[38;5;245mdefault [level]   show or persist the level new sessions start on (provider.reasoning)␛[m
+    ␛[38;5;252m/context␛[m       ␛[38;5;245mthe window as a meter, by category, with the tools itemised␛[m
+    ␛[38;5;252m/stats␛[m         ␛[38;5;245mthe session's whole bill on one screen, as the rail's SPEND block reads it: the session total with the kinds of␛[m
+                   ␛[38;5;245mrequest that make it up, each model's share with its own kinds and what the children on it cost, each child's␛[m
+                   ␛[38;5;245mshare by name, and each turn's cost as its close row states it. [enter] on a turn opens it on the turns screen.␛[m
+                   ␛[38;5;245mWhat the context window is occupied by is /context. While attached to an agent, /stats is that agent's own. It␛[m
+                   ␛[38;5;245mreads and changes nothing␛[m
+    ␛[38;5;252m/readings␛[m      ␛[38;5;245mevery reading the session has taken of its own run on one screen, newest first: the round, the verdict, the␛[m
+                   ␛[38;5;245mwhole reading with its reason and the instruction it was judged against, and whether it steered the turn and␛[m
+                   ␛[38;5;245mwhether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing␛[m
+    ␛[38;5;252m/turns␛[m         ␛[38;5;245mevery turn the session has run on one screen, newest first: how it ended, its steps, tools, time and spend,␛[m
+                   ␛[38;5;245mwhat it changed, its commit and its checks' verdict — the figures its close row drew, beside the close itself —␛[m
+                   ␛[38;5;245mwith the turn in flight on top. [enter] opens a turn's review where it changed files. A turn from an ended␛[m
+                   ␛[38;5;245msitting shows its files and says its figures were not kept. It reads and changes nothing␛[m
+    ␛[38;5;252m/alerts␛[m        ␛[38;5;245mevery alert the session has had on one screen, standing first and then superseded, newest first: the command,␛[m
+                   ␛[38;5;245mits last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate␛[m
+                   ␛[38;5;245mpassing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id␛[m
+                   ␛[38;5;245mits output was kept under where it was cut. It reads the rail's own alerts and changes nothing␛[m
+    ␛[38;5;252m/step␛[m          ␛[38;5;245mopen the in-flight step's card onto its calls, every call with its output body, bounded; run it again to close␛[m
+                   ␛[38;5;245m(/ui verbosity high is the same thing for every card at once)␛[m
+    ␛[38;5;252m/status␛[m        ␛[38;5;245mwhere this session is: what it is working on, what it has spent, and whether the last few turns are still on␛[m
+                   ␛[38;5;245mthe target you set it␛[m
+    ␛[38;5;252m/sessions␛[m      ␛[38;5;245mthe sessions running on this machine: the conversation each saves to, its checkout and branch, and whether it␛[m
+                   ␛[38;5;245mis working␛[m
+    ␛[38;5;252m/trust␛[m         ␛[38;5;245mlet this checkout's own skills, agent profiles, wordings and quality suites load. A clone can carry␛[m
+                   ␛[38;5;245minstructions, so nothing of a checkout's runs until you say so; "off" withdraws it and the next session starts␛[m
+                   ␛[38;5;245mwithout them␛[m
+    ␛[38;5;252m/ui␛[m            ␛[38;5;245mscreen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui␛[m
+                   ␛[38;5;245mmouse <on|off>␛[m
+                   ␛[38;5;245mlow draws each step's card as its header alone and leaves thinking out, normal draws the header, the sentence␛[m
+                   ␛[38;5;245mand the evidence, high opens every card onto its calls; a card you opened or closed stays as you left it. The␛[m
+                   ␛[38;5;245mmouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, open␛[m
+                   ␛[38;5;245mor close a card by its header, or answer keys; off hands selection back to the terminal, and ctrl+x flips it␛[m
+                   ␛[38;5;245mand saves it␛[m
+                   ␛[38;5;245mterminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications,␛[m
+                   ␛[38;5;245m           focus events, cell size␛[m
+    ␛[38;5;252m/safety␛[m        ␛[38;5;245mthe session's whole boundary on one screen (also /security): the mode and grants, where it may write, what␛[m
+                   ␛[38;5;245mcontains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools —␛[m
+                   ␛[38;5;245meach section naming the command that changes it. It reads and changes nothing␛[m
+    ␛[38;5;252m/skills␛[m        ␛[38;5;245mthe skills this session loaded (SKILL.md directories), and why any did not␛[m
+    ␛[38;5;252m/mcp␛[m           ␛[38;5;245mevery place this session's tools came from on one screen, opened on the MCP servers: the built-in toolset, each␛[m
+                   ␛[38;5;245mserver, the language servers, the binaries found on PATH and the web tools, each up or not with the tools it␛[m
+                   ␛[38;5;245mregistered — and for one that is not up, what that costs and what would move it, in the words shhh mcp gives.␛[m
+                   ␛[38;5;245mOn a server the checkout declared, [a] trusts the checkout or withdraws that, after asking, as /trust does; it␛[m
+                   ␛[38;5;245mtakes effect in the next session. trust <name> and distrust <name> say where that answer is given␛[m
+    ␛[38;5;252m/notes␛[m         ␛[38;5;245mthe session's shared notebook — what the agents wrote for each other, and what a backlog run wrote up, listed␛[m
+                   ␛[38;5;245mby author. Dropping is yours alone: drop <n> removes one, clear empties it␛[m
+    ␛[38;5;252m/todo␛[m          ␛[38;5;245mthe project's backlog: bare opens a picker · show|edit <slug> · add (reads this session into proposed items you␛[m
+                   ␛[38;5;245maccept or drop) · add <text> · block <slug> [why] · open|done|drop <slug> · new <text> · groom <slug> (reads an␛[m
+                   ␛[38;5;245mitem against the tree and proposes the corrections) · run [slug|--next] works an item through its profile's run␛[m
+                   ␛[38;5;245m· sprint · status · stop␛[m
+    ␛[38;5;252m/compact␛[m       ␛[38;5;245mcontinue from a summary plus the most recent turns␛[m
+    ␛[38;5;252m/rewind [n]␛[m    ␛[38;5;245mrewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the abandoned tail is kept␛[m
+                   ␛[38;5;245mas a branch, and a card asks whether the files come back too␛[m
+    ␛[38;5;252m/suggest␛[m       ␛[38;5;245mask the suggestion model for a next step from what the last turn left (also /suggestion). The answer stands dim␛[m
+                   ␛[38;5;245min the empty draft and → takes it, as an offer after a turn does; it works whether /ui suggest is on or off,␛[m
+                   ␛[38;5;245mand a second ask replaces the first. /ui suggest <on|off> stays the switch for the offer after each turn␛[m
+    ␛[38;5;252m/exit␛[m          ␛[38;5;245mquit (also /quit, /q)␛[m
 
 · a coding session
-  ␛[38;5;243mcommands␛[m
-    ␛[38;5;252m/help␛[m          ␛[38;5;241mopen the key list: every key this session answers, grouped as a keybindings.toml names them and spelled the way␛[m
-                   ␛[38;5;241mthey are bound now — type to filter by key or words, [esc] or [ctrl+]] closes it, and the draft is as you left␛[m
-                   ␛[38;5;241mit. With words after it (/help keys), the whole sheet — the commands, what happens mid-turn, the keys and the␛[m
-                   ␛[38;5;241mapproval policy — is written to the transcript instead␛[m
-    ␛[38;5;252m/clear␛[m         ␛[38;5;241mend this session and start another (also /new)␛[m
-    ␛[38;5;252m/paste␛[m         ␛[38;5;241mattach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path>␛[m
-                   ␛[38;5;241mattaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle>␛[m
-                   ␛[38;5;241mtakes one back out — the handle is the one a chip leads with, Image#1, and its name works too — and /paste␛[m
-                   ␛[38;5;241mclear drops what is staged (ctrl+v). With a sentence half typed, reading mode (ctrl+o) keeps it and reaches the␛[m
-                   ␛[38;5;241mstrip of chips as its last row: ←→ picks a chip, enter opens it, x drops it, esc goes back to the sentence; a␛[m
-                   ␛[38;5;241mclick on a chip opens it too␛[m
-    ␛[38;5;252m/copy [code]␛[m   ␛[38;5;241mcopy the last response (or just its code blocks)␛[m
-    ␛[38;5;252m/model [name]␛[m  ␛[38;5;241mswitch the model (bare /model opens an interactive picker)␛[m
-                   ␛[38;5;241mdefault [name]   show or persist the default model for new sessions␛[m
-                   ␛[38;5;241magents [name]    show or persist the model sub-agents run on ("inherit" follows the session model)␛[m
-    ␛[38;5;252m/permissions␛[m   ␛[38;5;241mwhat runs without asking, and the permission mode that frames it (also /perms; was /mode)␛[m
-                   ␛[38;5;241m[name]   bare opens a picker over the five modes:␛[m
-                   ␛[38;5;241m         manual asks about every consequential call␛[m
-                   ␛[38;5;241m         accept-edits applies the edits and asks for the rest␛[m
-                   ␛[38;5;241m         auto adds the allowlist and lets the classifier judge␛[m
-                   ␛[38;5;241m         read-only writes nothing — a write is refused, not asked␛[m
-                   ␛[38;5;241m         plan is read-only, ending on a plan you can approve here or carry into a fresh session␛[m
-                   ␛[38;5;241mwhy      the latest auto-mode denial's reason␛[m
-                   ␛[38;5;241mgrants   what this session has stopped asking about␛[m
-                   ␛[38;5;241mallow <commands|edits>   grant a whole category␛[m
-                   ␛[38;5;241mrevoke [commands|edits|hosts|agents]   take the grants back␛[m
-    ␛[38;5;252m/reasoning␛[m     ␛[38;5;241mhow much thinking the model does before it answers: off (the default), low, medium, high, xhigh or max — ctrl+t␛[m
-                   ␛[38;5;241mcycles them␛[m
-                   ␛[38;5;241m[level]           set it for this session (also /think)␛[m
-                   ␛[38;5;241mdefault [level]   show or persist the level new sessions start on (provider.reasoning)␛[m
-    ␛[38;5;252m/context␛[m       ␛[38;5;241mthe window as a meter, by category, with the tools itemised␛[m
-    ␛[38;5;252m/stats␛[m         ␛[38;5;241mthe session's whole bill on one screen, as the rail's SPEND block reads it: the session total with the kinds of␛[m
-                   ␛[38;5;241mrequest that make it up, each model's share with its own kinds and what the children on it cost, each child's␛[m
-                   ␛[38;5;241mshare by name, and each turn's cost as its close row states it. [enter] on a turn opens it on the turns screen.␛[m
-                   ␛[38;5;241mWhat the context window is occupied by is /context. While attached to an agent, /stats is that agent's own. It␛[m
-                   ␛[38;5;241mreads and changes nothing␛[m
-    ␛[38;5;252m/readings␛[m      ␛[38;5;241mevery reading the session has taken of its own run on one screen, newest first: the round, the verdict, the␛[m
-                   ␛[38;5;241mwhole reading with its reason and the instruction it was judged against, and whether it steered the turn and␛[m
-                   ␛[38;5;241mwhether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing␛[m
-    ␛[38;5;252m/turns␛[m         ␛[38;5;241mevery turn the session has run on one screen, newest first: how it ended, its steps, tools, time and spend,␛[m
-                   ␛[38;5;241mwhat it changed, its commit and its checks' verdict — the figures its close row drew, beside the close itself —␛[m
-                   ␛[38;5;241mwith the turn in flight on top. [enter] opens a turn's review where it changed files. A turn from an ended␛[m
-                   ␛[38;5;241msitting shows its files and says its figures were not kept. It reads and changes nothing␛[m
-    ␛[38;5;252m/alerts␛[m        ␛[38;5;241mevery alert the session has had on one screen, standing first and then superseded, newest first: the command,␛[m
-                   ␛[38;5;241mits last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate␛[m
-                   ␛[38;5;241mpassing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id␛[m
-                   ␛[38;5;241mits output was kept under where it was cut. It reads the rail's own alerts and changes nothing␛[m
-    ␛[38;5;252m/step␛[m          ␛[38;5;241mopen the in-flight step's card onto its calls, every call with its output body, bounded; run it again to close␛[m
-                   ␛[38;5;241m(/ui verbosity high is the same thing for every card at once)␛[m
-    ␛[38;5;252m/steps␛[m         ␛[38;5;241mthe session's own working list on one screen: every step it declared, the paths each said it would touch, which␛[m
-                   ␛[38;5;241mit has marked done and the one it is on — and beside each, the calls the transcript titled for it, or not␛[m
-                   ␛[38;5;241mstarted where there are none. It reads and changes nothing␛[m
-    ␛[38;5;252m/status␛[m        ␛[38;5;241mwhere this session is: what it is working on, what it has spent, and whether the last few turns are still on␛[m
-                   ␛[38;5;241mthe target you set it␛[m
-    ␛[38;5;252m/sessions␛[m      ␛[38;5;241mthe sessions running on this machine: the conversation each saves to, its checkout and branch, and whether it␛[m
-                   ␛[38;5;241mis working␛[m
-    ␛[38;5;252m/trust␛[m         ␛[38;5;241mlet this checkout's own skills, agent profiles, wordings and quality suites load. A clone can carry␛[m
-                   ␛[38;5;241minstructions, so nothing of a checkout's runs until you say so; "off" withdraws it and the next session starts␛[m
-                   ␛[38;5;241mwithout them␛[m
-    ␛[38;5;252m/ui␛[m            ␛[38;5;241mscreen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui␛[m
-                   ␛[38;5;241mmouse <on|off>␛[m
-                   ␛[38;5;241mlow draws each step's card as its header alone and leaves thinking out, normal draws the header, the sentence␛[m
-                   ␛[38;5;241mand the evidence, high opens every card onto its calls; a card you opened or closed stays as you left it. The␛[m
-                   ␛[38;5;241mmouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, open␛[m
-                   ␛[38;5;241mor close a card by its header, or answer keys; off hands selection back to the terminal, and ctrl+x flips it␛[m
-                   ␛[38;5;241mand saves it␛[m
-                   ␛[38;5;241mterminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications,␛[m
-                   ␛[38;5;241m           focus events, cell size␛[m
-    ␛[38;5;252m/sandbox␛[m       ␛[38;5;241mcontainment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)␛[m
-    ␛[38;5;252m/safety␛[m        ␛[38;5;241mthe session's whole boundary on one screen (also /security): the mode and grants, where it may write, what␛[m
-                   ␛[38;5;241mcontains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools —␛[m
-                   ␛[38;5;241meach section naming the command that changes it. It reads and changes nothing␛[m
-    ␛[38;5;252m/skills␛[m        ␛[38;5;241mthe skills this session loaded (SKILL.md directories), and why any did not␛[m
-    ␛[38;5;252m/mcp␛[m           ␛[38;5;241mevery place this session's tools came from on one screen, opened on the MCP servers: the built-in toolset, each␛[m
-                   ␛[38;5;241mserver, the language servers, the binaries found on PATH and the web tools, each up or not with the tools it␛[m
-                   ␛[38;5;241mregistered — and for one that is not up, what that costs and what would move it, in the words shhh mcp gives.␛[m
-                   ␛[38;5;241mOn a server the checkout declared, [a] trusts the checkout or withdraws that, after asking, as /trust does; it␛[m
-                   ␛[38;5;241mtakes effect in the next session. trust <name> and distrust <name> say where that answer is given␛[m
-    ␛[38;5;252m/notes␛[m         ␛[38;5;241mthe session's shared notebook — what the agents wrote for each other, and what a backlog run wrote up, listed␛[m
-                   ␛[38;5;241mby author. Dropping is yours alone: drop <n> removes one, clear empties it␛[m
-    ␛[38;5;252m/todo␛[m          ␛[38;5;241mthe project's backlog: bare opens a picker · show|edit <slug> · add (reads this session into proposed items you␛[m
-                   ␛[38;5;241maccept or drop) · add <text> · block <slug> [why] · open|done|drop <slug> · new <text> · groom <slug> (reads an␛[m
-                   ␛[38;5;241mitem against the tree and proposes the corrections) · run [slug|--next] works an item through its profile's run␛[m
-                   ␛[38;5;241m· sprint · status · stop␛[m
-    ␛[38;5;252m/plan␛[m          ␛[38;5;241mthe approved plan as a checklist on the steps screen — each step, the paths it named, its state and the calls␛[m
-                   ␛[38;5;241mthat carried it out — with anything that has departed from it · save [name] writes the last plan/response to␛[m
-                   ␛[38;5;241m.shhh/plans/ · drop forgets an approved plan␛[m
-    ␛[38;5;252m/edit <path>␛[m   ␛[38;5;241mopen a file in a pane over the feed and edit it yourself: every key types, [ctrl+s] saves through the same␛[m
-                   ␛[38;5;241mwrite the agent's edits take, so the turn's close counts it as changed by you and /undo reaches it, and [esc]␛[m
-                   ␛[38;5;241mgoes back to the prompt — asking first if the buffer differs from the disk. A file outside the working scope is␛[m
-                   ␛[38;5;241mrefused; /add-dir brings its directory in␛[m
-    ␛[38;5;252m/diff [path]␛[m   ␛[38;5;241mshow what this session changed, full screen, or one file's — read from the session's own changeset, so it works␛[m
-                   ␛[38;5;241moutside a git repository␛[m
-    ␛[38;5;252m/review [turn]␛[m ␛[38;5;241mreview what a turn changed: file list, hunks and the turn's verdict (bare reviews the last turn that changed␛[m
-                   ␛[38;5;241manything). Also a turn's changed-files row, clicked or selected and opened with enter. It reads and changes␛[m
-                   ␛[38;5;241mnothing; /undo takes a turn back␛[m
-    ␛[38;5;252m/undo [turn]␛[m   ␛[38;5;241mput back what a turn changed, from the session's own records (not git). Asks first, names anything that changed␛[m
-                   ␛[38;5;241msince, and is itself recorded as a turn␛[m
-    ␛[38;5;252m/compact␛[m       ␛[38;5;241mcontinue from a summary plus the most recent turns␛[m
-    ␛[38;5;252m/rewind [n]␛[m    ␛[38;5;241mrewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the abandoned tail is kept␛[m
-                   ␛[38;5;241mas a branch, and a card asks whether the files come back too␛[m
-    ␛[38;5;252m/suggest␛[m       ␛[38;5;241mask the suggestion model for a next step from what the last turn left (also /suggestion). The answer stands dim␛[m
-                   ␛[38;5;241min the empty draft and → takes it, as an offer after a turn does; it works whether /ui suggest is on or off,␛[m
-                   ␛[38;5;241mand a second ask replaces the first. /ui suggest <on|off> stays the switch for the offer after each turn␛[m
-    ␛[38;5;252m/exit␛[m          ␛[38;5;241mquit (also /quit, /q)␛[m
+  ␛[38;5;246mcommands␛[m
+    ␛[38;5;252m/help␛[m          ␛[38;5;245mopen the key list: every key this session answers, grouped as a keybindings.toml names them and spelled the way␛[m
+                   ␛[38;5;245mthey are bound now — type to filter by key or words, [esc] or [ctrl+]] closes it, and the draft is as you left␛[m
+                   ␛[38;5;245mit. With words after it (/help keys), the whole sheet — the commands, what happens mid-turn, the keys and the␛[m
+                   ␛[38;5;245mapproval policy — is written to the transcript instead␛[m
+    ␛[38;5;252m/clear␛[m         ␛[38;5;245mend this session and start another (also /new)␛[m
+    ␛[38;5;252m/paste␛[m         ␛[38;5;245mattach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path>␛[m
+                   ␛[38;5;245mattaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle>␛[m
+                   ␛[38;5;245mtakes one back out — the handle is the one a chip leads with, Image#1, and its name works too — and /paste␛[m
+                   ␛[38;5;245mclear drops what is staged (ctrl+v). With a sentence half typed, reading mode (ctrl+o) keeps it and reaches the␛[m
+                   ␛[38;5;245mstrip of chips as its last row: ←→ picks a chip, enter opens it, x drops it, esc goes back to the sentence; a␛[m
+                   ␛[38;5;245mclick on a chip opens it too␛[m
+    ␛[38;5;252m/copy [code]␛[m   ␛[38;5;245mcopy the last response (or just its code blocks)␛[m
+    ␛[38;5;252m/model [name]␛[m  ␛[38;5;245mswitch the model (bare /model opens an interactive picker)␛[m
+                   ␛[38;5;245mdefault [name]   show or persist the default model for new sessions␛[m
+                   ␛[38;5;245magents [name]    show or persist the model sub-agents run on ("inherit" follows the session model)␛[m
+    ␛[38;5;252m/permissions␛[m   ␛[38;5;245mwhat runs without asking, and the permission mode that frames it (also /perms; was /mode)␛[m
+                   ␛[38;5;245m[name]   bare opens a picker over the five modes:␛[m
+                   ␛[38;5;245m         manual asks about every consequential call␛[m
+                   ␛[38;5;245m         accept-edits applies the edits and asks for the rest␛[m
+                   ␛[38;5;245m         auto adds the allowlist and lets the classifier judge␛[m
+                   ␛[38;5;245m         read-only writes nothing — a write is refused, not asked␛[m
+                   ␛[38;5;245m         plan is read-only, ending on a plan you can approve here or carry into a fresh session␛[m
+                   ␛[38;5;245mwhy      the latest auto-mode denial's reason␛[m
+                   ␛[38;5;245mgrants   what this session has stopped asking about␛[m
+                   ␛[38;5;245mallow <commands|edits>   grant a whole category␛[m
+                   ␛[38;5;245mrevoke [commands|edits|hosts|agents]   take the grants back␛[m
+    ␛[38;5;252m/reasoning␛[m     ␛[38;5;245mhow much thinking the model does before it answers: off (the default), low, medium, high, xhigh or max — ctrl+t␛[m
+                   ␛[38;5;245mcycles them␛[m
+                   ␛[38;5;245m[level]           set it for this session (also /think)␛[m
+                   ␛[38;5;245mdefault [level]   show or persist the level new sessions start on (provider.reasoning)␛[m
+    ␛[38;5;252m/context␛[m       ␛[38;5;245mthe window as a meter, by category, with the tools itemised␛[m
+    ␛[38;5;252m/stats␛[m         ␛[38;5;245mthe session's whole bill on one screen, as the rail's SPEND block reads it: the session total with the kinds of␛[m
+                   ␛[38;5;245mrequest that make it up, each model's share with its own kinds and what the children on it cost, each child's␛[m
+                   ␛[38;5;245mshare by name, and each turn's cost as its close row states it. [enter] on a turn opens it on the turns screen.␛[m
+                   ␛[38;5;245mWhat the context window is occupied by is /context. While attached to an agent, /stats is that agent's own. It␛[m
+                   ␛[38;5;245mreads and changes nothing␛[m
+    ␛[38;5;252m/readings␛[m      ␛[38;5;245mevery reading the session has taken of its own run on one screen, newest first: the round, the verdict, the␛[m
+                   ␛[38;5;245mwhole reading with its reason and the instruction it was judged against, and whether it steered the turn and␛[m
+                   ␛[38;5;245mwhether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing␛[m
+    ␛[38;5;252m/turns␛[m         ␛[38;5;245mevery turn the session has run on one screen, newest first: how it ended, its steps, tools, time and spend,␛[m
+                   ␛[38;5;245mwhat it changed, its commit and its checks' verdict — the figures its close row drew, beside the close itself —␛[m
+                   ␛[38;5;245mwith the turn in flight on top. [enter] opens a turn's review where it changed files. A turn from an ended␛[m
+                   ␛[38;5;245msitting shows its files and says its figures were not kept. It reads and changes nothing␛[m
+    ␛[38;5;252m/alerts␛[m        ␛[38;5;245mevery alert the session has had on one screen, standing first and then superseded, newest first: the command,␛[m
+                   ␛[38;5;245mits last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate␛[m
+                   ␛[38;5;245mpassing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id␛[m
+                   ␛[38;5;245mits output was kept under where it was cut. It reads the rail's own alerts and changes nothing␛[m
+    ␛[38;5;252m/step␛[m          ␛[38;5;245mopen the in-flight step's card onto its calls, every call with its output body, bounded; run it again to close␛[m
+                   ␛[38;5;245m(/ui verbosity high is the same thing for every card at once)␛[m
+    ␛[38;5;252m/steps␛[m         ␛[38;5;245mthe session's own working list on one screen: every step it declared, the paths each said it would touch, which␛[m
+                   ␛[38;5;245mit has marked done and the one it is on — and beside each, the calls the transcript titled for it, or not␛[m
+                   ␛[38;5;245mstarted where there are none. It reads and changes nothing␛[m
+    ␛[38;5;252m/status␛[m        ␛[38;5;245mwhere this session is: what it is working on, what it has spent, and whether the last few turns are still on␛[m
+                   ␛[38;5;245mthe target you set it␛[m
+    ␛[38;5;252m/sessions␛[m      ␛[38;5;245mthe sessions running on this machine: the conversation each saves to, its checkout and branch, and whether it␛[m
+                   ␛[38;5;245mis working␛[m
+    ␛[38;5;252m/trust␛[m         ␛[38;5;245mlet this checkout's own skills, agent profiles, wordings and quality suites load. A clone can carry␛[m
+                   ␛[38;5;245minstructions, so nothing of a checkout's runs until you say so; "off" withdraws it and the next session starts␛[m
+                   ␛[38;5;245mwithout them␛[m
+    ␛[38;5;252m/ui␛[m            ␛[38;5;245mscreen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui␛[m
+                   ␛[38;5;245mmouse <on|off>␛[m
+                   ␛[38;5;245mlow draws each step's card as its header alone and leaves thinking out, normal draws the header, the sentence␛[m
+                   ␛[38;5;245mand the evidence, high opens every card onto its calls; a card you opened or closed stays as you left it. The␛[m
+                   ␛[38;5;245mmouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows, open␛[m
+                   ␛[38;5;245mor close a card by its header, or answer keys; off hands selection back to the terminal, and ctrl+x flips it␛[m
+                   ␛[38;5;245mand saves it␛[m
+                   ␛[38;5;245mterminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications,␛[m
+                   ␛[38;5;245m           focus events, cell size␛[m
+    ␛[38;5;252m/sandbox␛[m       ␛[38;5;245mcontainment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)␛[m
+    ␛[38;5;252m/safety␛[m        ␛[38;5;245mthe session's whole boundary on one screen (also /security): the mode and grants, where it may write, what␛[m
+                   ␛[38;5;245mcontains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools —␛[m
+                   ␛[38;5;245meach section naming the command that changes it. It reads and changes nothing␛[m
+    ␛[38;5;252m/skills␛[m        ␛[38;5;245mthe skills this session loaded (SKILL.md directories), and why any did not␛[m
+    ␛[38;5;252m/mcp␛[m           ␛[38;5;245mevery place this session's tools came from on one screen, opened on the MCP servers: the built-in toolset, each␛[m
+                   ␛[38;5;245mserver, the language servers, the binaries found on PATH and the web tools, each up or not with the tools it␛[m
+                   ␛[38;5;245mregistered — and for one that is not up, what that costs and what would move it, in the words shhh mcp gives.␛[m
+                   ␛[38;5;245mOn a server the checkout declared, [a] trusts the checkout or withdraws that, after asking, as /trust does; it␛[m
+                   ␛[38;5;245mtakes effect in the next session. trust <name> and distrust <name> say where that answer is given␛[m
+    ␛[38;5;252m/notes␛[m         ␛[38;5;245mthe session's shared notebook — what the agents wrote for each other, and what a backlog run wrote up, listed␛[m
+                   ␛[38;5;245mby author. Dropping is yours alone: drop <n> removes one, clear empties it␛[m
+    ␛[38;5;252m/todo␛[m          ␛[38;5;245mthe project's backlog: bare opens a picker · show|edit <slug> · add (reads this session into proposed items you␛[m
+                   ␛[38;5;245maccept or drop) · add <text> · block <slug> [why] · open|done|drop <slug> · new <text> · groom <slug> (reads an␛[m
+                   ␛[38;5;245mitem against the tree and proposes the corrections) · run [slug|--next] works an item through its profile's run␛[m
+                   ␛[38;5;245m· sprint · status · stop␛[m
+    ␛[38;5;252m/plan␛[m          ␛[38;5;245mthe approved plan as a checklist on the steps screen — each step, the paths it named, its state and the calls␛[m
+                   ␛[38;5;245mthat carried it out — with anything that has departed from it · save [name] writes the last plan/response to␛[m
+                   ␛[38;5;245m.shhh/plans/ · drop forgets an approved plan␛[m
+    ␛[38;5;252m/edit <path>␛[m   ␛[38;5;245mopen a file in a pane over the feed and edit it yourself: every key types, [ctrl+s] saves through the same␛[m
+                   ␛[38;5;245mwrite the agent's edits take, so the turn's close counts it as changed by you and /undo reaches it, and [esc]␛[m
+                   ␛[38;5;245mgoes back to the prompt — asking first if the buffer differs from the disk. A file outside the working scope is␛[m
+                   ␛[38;5;245mrefused; /add-dir brings its directory in␛[m
+    ␛[38;5;252m/diff [path]␛[m   ␛[38;5;245mshow what this session changed, full screen, or one file's — read from the session's own changeset, so it works␛[m
+                   ␛[38;5;245moutside a git repository␛[m
+    ␛[38;5;252m/review [turn]␛[m ␛[38;5;245mreview what a turn changed: file list, hunks and the turn's verdict (bare reviews the last turn that changed␛[m
+                   ␛[38;5;245manything). Also a turn's changed-files row, clicked or selected and opened with enter. It reads and changes␛[m
+                   ␛[38;5;245mnothing; /undo takes a turn back␛[m
+    ␛[38;5;252m/undo [turn]␛[m   ␛[38;5;245mput back what a turn changed, from the session's own records (not git). Asks first, names anything that changed␛[m
+                   ␛[38;5;245msince, and is itself recorded as a turn␛[m
+    ␛[38;5;252m/compact␛[m       ␛[38;5;245mcontinue from a summary plus the most recent turns␛[m
+    ␛[38;5;252m/rewind [n]␛[m    ␛[38;5;245mrewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the abandoned tail is kept␛[m
+                   ␛[38;5;245mas a branch, and a card asks whether the files come back too␛[m
+    ␛[38;5;252m/suggest␛[m       ␛[38;5;245mask the suggestion model for a next step from what the last turn left (also /suggestion). The answer stands dim␛[m
+                   ␛[38;5;245min the empty draft and → takes it, as an offer after a turn does; it works whether /ui suggest is on or off,␛[m
+                   ␛[38;5;245mand a second ask replaces the first. /ui suggest <on|off> stays the switch for the offer after each turn␛[m
+    ␛[38;5;252m/exit␛[m          ␛[38;5;245mquit (also /quit, /q)␛[m

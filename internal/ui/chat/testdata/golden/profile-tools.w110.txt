@@ -138,127 +138,127 @@
 
 ── ansi ────────────────────────────────────────────────────
 · a coding profile · the draft's grant ticked, the gate refused beside write
-␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                                              ␛[38;5;241m[esc] leave it as it is␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m                                              ␛[38;5;245m[esc] leave it as it is␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;241m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
+  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
   ␛[38;5;252mtest-writer — adds tests␛[m
 
-  ␛[38;5;241m⋮ 2 more sections above · [shift+↑] scroll up␛[m
+  ␛[38;5;245m⋮ 2 more sections above · [shift+↑] scroll up␛[m
   ␛[38;5;252mRestrictions␛[m
-    ␛[38;5;243mNever delete a test.␛[m
+    ␛[38;5;246mNever delete a test.␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;243mRead, then write.␛[m
+    ␛[38;5;246mRead, then write.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;243mThe cases added.␛[m
+    ␛[38;5;246mThe cases added.␛[m
 
 ␛[94m❯␛[m ␛[94mTools␛[m
-    ␛[91mread + write + execute␛[m␛[38;5;241m · it can change things, in its own copy of the tree␛[m
-  ␛[38;5;241m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
+    ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
+  ␛[38;5;245m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
-␛[94m╭─ ␛[m␛[1;97mWhat may test-writer do? ␛[m␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
-␛[94m│␛[m  ␛[38;5;241mtiers␛[m                                                                                                     ␛[94m│␛[m
-␛[94m│␛[m ␛[94m❯␛[m ␛[38;5;241m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m[x]␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mread     files, searches, listings, the notebook — every agent has this                             ␛[m␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mwrite  ␛[m  ␛[38;5;241medit files · it works in its own copy of the tree and hands back a patch␛[m                    ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mexecute␛[m  ␛[38;5;241mrun commands · in the same copy␛[m                                                             ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m[ ]␛[m ␛[38;5;252mweb    ␛[m  ␛[38;5;241mfetch pages and search␛[m                                                                      ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m▸ with write or execute, test-writer is a writer: it works in its own copy, its patch comes to a card␛[m    ␛[94m│␛[m
-␛[94m│␛[m  ␛[38;5;241mtools this session registered, by tier — it gets only what is ticked␛[m                                      ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mglob           ␛[m  ␛[38;5;252mread   ␛[m  ␛[38;5;241mpaths by pattern␛[m                                                           ␛[94m│␛[m
-␛[94m│␛[m       ␛[38;5;245mquality_gate   ␛[m  ␛[38;5;245mread   ␛[m  ␛[38;5;245m⊘ "quality_gate" is for a profile that changes nothing; one granting writ…␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mread_file      ␛[m  ␛[38;5;252mread   ␛[m  ␛[38;5;241mone file, or a run of its lines␛[m                                            ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252msearch         ␛[m  ␛[38;5;252mread   ␛[m  ␛[38;5;241mtext across the tree␛[m                                                       ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252medit_file      ␛[m  ␛[38;5;252mwrite  ␛[m  ␛[38;5;241ma change to part of a file␛[m                                                 ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mwrite_file     ␛[m  ␛[38;5;252mwrite  ␛[m  ␛[38;5;241ma new file, or one written whole␛[m                                           ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mexecute_command␛[m  ␛[38;5;252mexecute␛[m  ␛[38;5;241mone shell command␛[m                                                          ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m[ ]␛[m ␛[38;5;252mweb_fetch      ␛[m  ␛[38;5;252mweb    ␛[m  ␛[38;5;241mone page, read as text␛[m                                                     ␛[94m│␛[m
-␛[94m│␛[m       ␛[38;5;241malways         ␛[m           ␛[38;5;241mnavigation · notebook · skills — every child has these␛[m                     ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m select (9)␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                          ␛[94m│␛[m
+␛[94m╭─ ␛[m␛[1;97mWhat may test-writer do? ␛[m␛[38;5;245m─────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
+␛[94m│␛[m  ␛[38;5;245mtiers␛[m                                                                                                     ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[38;5;245m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m[x]␛[m␛[48;5;61m ␛[38;5;252m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mread     files, searches, listings, the notebook — every agent has this                             ␛[m␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mwrite  ␛[m  ␛[38;5;245medit files · it works in its own copy of the tree and hands back a patch␛[m                    ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mexecute␛[m  ␛[38;5;245mrun commands · in the same copy␛[m                                                             ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m[ ]␛[m ␛[38;5;252mweb    ␛[m  ␛[38;5;245mfetch pages and search␛[m                                                                      ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m▸ with write or execute, test-writer is a writer: it works in its own copy, its patch comes to a card␛[m    ␛[94m│␛[m
+␛[94m│␛[m  ␛[38;5;245mtools this session registered, by tier — it gets only what is ticked␛[m                                      ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mglob           ␛[m  ␛[38;5;252mread   ␛[m  ␛[38;5;245mpaths by pattern␛[m                                                           ␛[94m│␛[m
+␛[94m│␛[m       ␛[38;5;248mquality_gate   ␛[m  ␛[38;5;248mread   ␛[m  ␛[38;5;248m⊘ "quality_gate" is for a profile that changes nothing; one granting writ…␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mread_file      ␛[m  ␛[38;5;252mread   ␛[m  ␛[38;5;245mone file, or a run of its lines␛[m                                            ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252msearch         ␛[m  ␛[38;5;252mread   ␛[m  ␛[38;5;245mtext across the tree␛[m                                                       ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252medit_file      ␛[m  ␛[38;5;252mwrite  ␛[m  ␛[38;5;245ma change to part of a file␛[m                                                 ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mwrite_file     ␛[m  ␛[38;5;252mwrite  ␛[m  ␛[38;5;245ma new file, or one written whole␛[m                                           ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mexecute_command␛[m  ␛[38;5;252mexecute␛[m  ␛[38;5;245mone shell command␛[m                                                          ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m[ ]␛[m ␛[38;5;252mweb_fetch      ␛[m  ␛[38;5;252mweb    ␛[m  ␛[38;5;245mone page, read as text␛[m                                                     ␛[94m│␛[m
+␛[94m│␛[m       ␛[38;5;245malways         ␛[m           ␛[38;5;245mnavigation · notebook · skills — every child has these␛[m                     ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[space]␛[m␛[38;5;245m toggle␛[m␛[38;5;245m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;245m all/none␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m select (9)␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m cancel␛[m                                          ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a chat profile · no tier that writes on offer
-␛[1;97m/agents new␛[m␛[38;5;241m · a chat colleague · researcher␛[m                                            ␛[38;5;241m[esc] leave it as it is␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a chat colleague · researcher␛[m                                            ␛[38;5;245m[esc] leave it as it is␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;241m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
+  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
   ␛[38;5;252mtest-writer — adds tests␛[m
 
   ␛[38;5;252mPurpose␛[m
-    ␛[38;5;243mAdd tests.␛[m
+    ␛[38;5;246mAdd tests.␛[m
 
   ␛[38;5;252mScope␛[m
-    ␛[38;5;243mOne package.␛[m
+    ␛[38;5;246mOne package.␛[m
 
   ␛[38;5;252mRestrictions␛[m
-    ␛[38;5;243mNever delete a test.␛[m
+    ␛[38;5;246mNever delete a test.␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;243mRead, then write.␛[m
+    ␛[38;5;246mRead, then write.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;243mThe cases added.␛[m
+    ␛[38;5;246mThe cases added.␛[m
 
 ␛[94m❯␛[m ␛[94mTools␛[m
-    ␛[92mread + web␛[m␛[38;5;241m · it reads and reports␛[m
-  ␛[38;5;241m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
+    ␛[92mread + web␛[m␛[38;5;245m · it reads and reports␛[m
+  ␛[38;5;245m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
-␛[94m╭─ ␛[m␛[1;97mWhat may test-writer do? ␛[m␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
-␛[94m│␛[m  ␛[38;5;241mtiers␛[m                                                                                                     ␛[94m│␛[m
-␛[94m│␛[m ␛[94m❯␛[m ␛[38;5;241m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m[x]␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mread  files, searches, listings, the notebook — every agent has this                                ␛[m␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mweb ␛[m  ␛[38;5;241mfetch pages and search␛[m                                                                         ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241mwrite, execute — not on offer: a chat profile never acts␛[m                                                 ␛[94m│␛[m
-␛[94m│␛[m  ␛[38;5;241mtools this session registered, by tier — it gets only what is ticked␛[m                                      ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mglob        ␛[m  ␛[38;5;252mread␛[m  ␛[38;5;241mpaths by pattern␛[m                                                                 ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mquality_gate␛[m  ␛[38;5;252mread␛[m  ␛[38;5;241mthe project's own checks, by suite␛[m                                               ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mread_file   ␛[m  ␛[38;5;252mread␛[m  ␛[38;5;241mone file, or a run of its lines␛[m                                                  ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252msearch      ␛[m  ␛[38;5;252mread␛[m  ␛[38;5;241mtext across the tree␛[m                                                             ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mweb_fetch   ␛[m  ␛[38;5;252mweb ␛[m  ␛[38;5;241mone page, read as text␛[m                                                           ␛[94m│␛[m
-␛[94m│␛[m       ␛[38;5;241malways      ␛[m        ␛[38;5;241mnavigation · notebook · skills — every child has these␛[m                           ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m select (7)␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                          ␛[94m│␛[m
+␛[94m╭─ ␛[m␛[1;97mWhat may test-writer do? ␛[m␛[38;5;245m─────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
+␛[94m│␛[m  ␛[38;5;245mtiers␛[m                                                                                                     ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[38;5;245m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[38;5;245m[x]␛[m␛[48;5;61m ␛[38;5;252m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mread  files, searches, listings, the notebook — every agent has this                                ␛[m␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mweb ␛[m  ␛[38;5;245mfetch pages and search␛[m                                                                         ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245mwrite, execute — not on offer: a chat profile never acts␛[m                                                 ␛[94m│␛[m
+␛[94m│␛[m  ␛[38;5;245mtools this session registered, by tier — it gets only what is ticked␛[m                                      ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mglob        ␛[m  ␛[38;5;252mread␛[m  ␛[38;5;245mpaths by pattern␛[m                                                                 ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mquality_gate␛[m  ␛[38;5;252mread␛[m  ␛[38;5;245mthe project's own checks, by suite␛[m                                               ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mread_file   ␛[m  ␛[38;5;252mread␛[m  ␛[38;5;245mone file, or a run of its lines␛[m                                                  ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252msearch      ␛[m  ␛[38;5;252mread␛[m  ␛[38;5;245mtext across the tree␛[m                                                             ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mweb_fetch   ␛[m  ␛[38;5;252mweb ␛[m  ␛[38;5;245mone page, read as text␛[m                                                           ␛[94m│␛[m
+␛[94m│␛[m       ␛[38;5;245malways      ␛[m        ␛[38;5;245mnavigation · notebook · skills — every child has these␛[m                           ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[space]␛[m␛[38;5;245m toggle␛[m␛[38;5;245m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;245m all/none␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m select (7)␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m cancel␛[m                                          ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a refused pick · a tool ticked without its tier, the loader's sentence under the list
-␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                                              ␛[38;5;241m[esc] leave it as it is␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m                                              ␛[38;5;245m[esc] leave it as it is␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;241m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
+  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
   ␛[38;5;252mtest-writer — adds tests␛[m
 
-  ␛[38;5;241m⋮ 3 more sections above · [shift+↑] scroll up␛[m
-    ␛[38;5;243mNever delete a test.␛[m
+  ␛[38;5;245m⋮ 3 more sections above · [shift+↑] scroll up␛[m
+    ␛[38;5;246mNever delete a test.␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;243mRead, then write.␛[m
+    ␛[38;5;246mRead, then write.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;243mThe cases added.␛[m
+    ␛[38;5;246mThe cases added.␛[m
 
 ␛[94m❯␛[m ␛[94mTools␛[m
-    ␛[91mread + write + execute␛[m␛[38;5;241m · it can change things, in its own copy of the tree␛[m
-  ␛[38;5;241m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
+    ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
+  ␛[38;5;245m⋮ 2 more sections · [shift+↓] scroll the profile␛[m
 
-␛[94m╭─ ␛[m␛[1;97mWhat may test-writer do? ␛[m␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
-␛[94m│␛[m  ␛[38;5;241mtiers␛[m                                                                                                     ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m[x]␛[m ␛[38;5;252mread   ␛[m  ␛[38;5;241mfiles, searches, listings, the notebook — every agent has this␛[m                              ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mwrite  ␛[m  ␛[38;5;241medit files · it works in its own copy of the tree and hands back a patch␛[m                    ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mexecute␛[m  ␛[38;5;241mrun commands · in the same copy␛[m                                                             ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m[ ]␛[m ␛[38;5;252mweb    ␛[m  ␛[38;5;241mfetch pages and search␛[m                                                                      ␛[94m│␛[m
-␛[94m│␛[m   ␛[38;5;241m▸ with write or execute, test-writer is a writer: it works in its own copy, its patch comes to a card␛[m    ␛[94m│␛[m
-␛[94m│␛[m  ␛[38;5;241mtools this session registered, by tier — it gets only what is ticked␛[m                                      ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mglob           ␛[m  ␛[38;5;252mread   ␛[m  ␛[38;5;241mpaths by pattern␛[m                                                           ␛[94m│␛[m
-␛[94m│␛[m       ␛[38;5;245mquality_gate   ␛[m  ␛[38;5;245mread   ␛[m  ␛[38;5;245m⊘ "quality_gate" is for a profile that changes nothing; one granting writ…␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mread_file      ␛[m  ␛[38;5;252mread   ␛[m  ␛[38;5;241mone file, or a run of its lines␛[m                                            ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252msearch         ␛[m  ␛[38;5;252mread   ␛[m  ␛[38;5;241mtext across the tree␛[m                                                       ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252medit_file      ␛[m  ␛[38;5;252mwrite  ␛[m  ␛[38;5;241ma change to part of a file␛[m                                                 ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mwrite_file     ␛[m  ␛[38;5;252mwrite  ␛[m  ␛[38;5;241ma new file, or one written whole␛[m                                           ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mexecute_command␛[m  ␛[38;5;252mexecute␛[m  ␛[38;5;241mone shell command␛[m                                                          ␛[94m│␛[m
-␛[94m│␛[m ␛[94m❯␛[m ␛[92m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mweb_fetch        web      one page, read as text                                                    ␛[m␛[m ␛[94m│␛[m
-␛[94m│␛[m       ␛[38;5;241malways         ␛[m           ␛[38;5;241mnavigation · notebook · skills — every child has these␛[m                     ␛[94m│␛[m
+␛[94m╭─ ␛[m␛[1;97mWhat may test-writer do? ␛[m␛[38;5;245m─────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
+␛[94m│␛[m  ␛[38;5;245mtiers␛[m                                                                                                     ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m[x]␛[m ␛[38;5;252mread   ␛[m  ␛[38;5;245mfiles, searches, listings, the notebook — every agent has this␛[m                              ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mwrite  ␛[m  ␛[38;5;245medit files · it works in its own copy of the tree and hands back a patch␛[m                    ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mexecute␛[m  ␛[38;5;245mrun commands · in the same copy␛[m                                                             ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m[ ]␛[m ␛[38;5;252mweb    ␛[m  ␛[38;5;245mfetch pages and search␛[m                                                                      ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m▸ with write or execute, test-writer is a writer: it works in its own copy, its patch comes to a card␛[m    ␛[94m│␛[m
+␛[94m│␛[m  ␛[38;5;245mtools this session registered, by tier — it gets only what is ticked␛[m                                      ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mglob           ␛[m  ␛[38;5;252mread   ␛[m  ␛[38;5;245mpaths by pattern␛[m                                                           ␛[94m│␛[m
+␛[94m│␛[m       ␛[38;5;248mquality_gate   ␛[m  ␛[38;5;248mread   ␛[m  ␛[38;5;248m⊘ "quality_gate" is for a profile that changes nothing; one granting writ…␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mread_file      ␛[m  ␛[38;5;252mread   ␛[m  ␛[38;5;245mone file, or a run of its lines␛[m                                            ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252msearch         ␛[m  ␛[38;5;252mread   ␛[m  ␛[38;5;245mtext across the tree␛[m                                                       ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252medit_file      ␛[m  ␛[38;5;252mwrite  ␛[m  ␛[38;5;245ma change to part of a file␛[m                                                 ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mwrite_file     ␛[m  ␛[38;5;252mwrite  ␛[m  ␛[38;5;245ma new file, or one written whole␛[m                                           ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m[x]␛[m ␛[38;5;252mexecute_command␛[m  ␛[38;5;252mexecute␛[m  ␛[38;5;245mone shell command␛[m                                                          ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[92m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[48;5;61m␛[92m[x]␛[m␛[48;5;61m ␛[38;5;252m␛[m␛[48;5;61m␛[38;5;252m␛[m␛[48;5;61m␛[38;5;245m␛[m␛[48;5;61m␛[97;48;5;61mweb_fetch        web      one page, read as text                                                    ␛[m␛[m ␛[94m│␛[m
+␛[94m│␛[m       ␛[38;5;245malways         ␛[m           ␛[38;5;245mnavigation · notebook · skills — every child has these␛[m                     ␛[94m│␛[m
 ␛[94m│␛[m ␛[91m⚠ tools: "web_fetch" needs the "web" permission, which this profile does not grant␛[m                         ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;103m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m select (10)␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                         ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[space]␛[m␛[38;5;245m toggle␛[m␛[38;5;245m · ␛[m␛[38;5;103m[a]␛[m␛[38;5;245m all/none␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m select (10)␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m cancel␛[m                                         ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

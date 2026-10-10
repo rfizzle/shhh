@@ -43,32 +43,32 @@
 
 ── ansi ────────────────────────────────────────────────────
 · closed · the reapply reached from the draft
-   ␛[38;5;241m▸ turns 2–3 · rewound · 2 turns, 3 files' worth of work · ␛[m␛[38;5;103m[enter] read them␛[m
-   ␛[38;5;245m[r]␛[m␛[38;5;241m reapply — undo the rewind␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
+   ␛[38;5;245m▸ turns 2–3 · rewound · 2 turns, 3 files' worth of work · ␛[m␛[38;5;103m[enter] read them␛[m
+   ␛[38;5;248m[r]␛[m␛[38;5;245m reapply — undo the rewind␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
 
 · closed · reading mode's cursor on it
-   ␛[38;5;241m▸ turns 2–3 · rewound · 2 turns, 3 files' worth of work · ␛[m␛[38;5;103m[enter] read them␛[m␛[38;5;241m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;241m reapply — undo the rewind␛[m
+   ␛[38;5;245m▸ turns 2–3 · rewound · 2 turns, 3 files' worth of work · ␛[m␛[38;5;103m[enter] read them␛[m␛[38;5;245m · ␛[m␛[38;5;103m[r]␛[m␛[38;5;245m reapply — undo the rewind␛[m
 
 · open · the turns it holds, out of the window
-   ␛[38;5;241m▾ turns 2–3 · rewound · 2 turns, 3 files' worth of work · ␛[m␛[38;5;103m[enter] fold them back up␛[m
-   ␛[38;5;245m[r]␛[m␛[38;5;241m reapply — undo the rewind␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
+   ␛[38;5;245m▾ turns 2–3 · rewound · 2 turns, 3 files' worth of work · ␛[m␛[38;5;103m[enter] fold them back up␛[m
+   ␛[38;5;248m[r]␛[m␛[38;5;245m reapply — undo the rewind␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
 
 ␛[94m❯␛[m ␛[97msecond question␛[m
-␛[38;5;243m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
     ␛[38;5;252manswer two␛[m
 
-  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 0.0s · done 10:00 AM␛[m
+  ␛[38;5;245m∗␛[m ␛[38;5;245mworked 0.0s · done 10:00 AM␛[m
 
 ␛[94m❯␛[m ␛[97mthird question␛[m
-␛[38;5;243m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
     ␛[38;5;252manswer three␛[m
 
-  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 0.0s · done 10:00 AM␛[m
+  ␛[38;5;245m∗␛[m ␛[38;5;245mworked 0.0s · done 10:00 AM␛[m
 
 · spent · the session moved on, so nothing to put back
-   ␛[38;5;241m▸ turns 2–3 · rewound · 2 turns, 3 files' worth of work · ␛[m␛[38;5;103m[enter] read them␛[m
+   ␛[38;5;245m▸ turns 2–3 · rewound · 2 turns, 3 files' worth of work · ␛[m␛[38;5;103m[enter] read them␛[m
 
 · reapplied · the record left behind
-   ␛[38;5;241mturns 2–3 · rewound, then reapplied below␛[m
+   ␛[38;5;245mturns 2–3 · rewound, then reapplied below␛[m

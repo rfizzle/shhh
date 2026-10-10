@@ -118,103 +118,103 @@
 · the feed · every kind of entry on one left edge
 ␛[94m❯␛[m ␛[97mhold the round limit in one place and run the ␛[m    
   ␛[97mtests␛[m
-␛[38;5;243m──────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m               ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;248minternal/agent/loop.go␛[m␛[48;5;234m               ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mThe constant is declared in three files, so the␛[m␛[48;5;234m   ␛[m
 ␛[48;5;234m    ␛[38;5;252mloop is the only one of them that can own it.␛[m␛[48;5;234m     ␛[m
-␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                  ␛[38;5;241m1 line␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;248m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                  ␛[38;5;245m1 line␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
 
-    ␛[3;38;5;245mThe objective is one home for the round limit. The␛[m
-    ␛[3;38;5;245mevidence is the failure above, which reads the␛[m
-    ␛[3;38;5;245mconstant from the loop and not from the caller.␛[m
-      ␛[38;5;241m… 2 more lines␛[m
+    ␛[3;38;5;248mThe objective is one home for the round limit. The␛[m
+    ␛[3;38;5;248mevidence is the failure above, which reads the␛[m
+    ␛[3;38;5;248mconstant from the loop and not from the caller.␛[m
+      ␛[38;5;245m… 2 more lines␛[m
 
-  ␛[38;5;241m·␛[m ␛[38;5;241mCheck-in — 36 rounds used. Taking stock, then␛[m
-    ␛[38;5;241mcarrying on.␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mSteered — the reading says the edits have moved␛[m
-    ␛[38;5;241moutside the round loop. Say what you meant if that␛[m
-    ␛[38;5;241mis wrong.␛[m
-    ␛[38;5;245m[u]␛[m␛[38;5;241m take the steer back␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mtree moved — 14 paths changed outside this␛[m
-    ␛[38;5;241msession · 5,811 ignored␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mCheck-in — 36 rounds used. Taking stock, then␛[m
+    ␛[38;5;245mcarrying on.␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mSteered — the reading says the edits have moved␛[m
+    ␛[38;5;245moutside the round loop. Say what you meant if that␛[m
+    ␛[38;5;245mis wrong.␛[m
+    ␛[38;5;248m[u]␛[m␛[38;5;245m take the steer back␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mtree moved — 14 paths changed outside this␛[m
+    ␛[38;5;245msession · 5,811 ignored␛[m
   ␛[91m✗ the notebook is read-only, so nothing was written␛[m
   ␛[91mdown␛[m
-  ␛[38;5;241m≡␛[m ␛[3;38;5;245mThe constant has one home and the␛[m      ␛[38;5;241mon target␛[m
-    ␛[3;38;5;245mcaller no longer passes its own.␛[m
+  ␛[38;5;245m≡␛[m ␛[3;38;5;248mThe constant has one home and the␛[m      ␛[38;5;245mon target␛[m
+    ␛[3;38;5;248mcaller no longer passes its own.␛[m
 
-  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 24.7s · 6 tools · $0.14␛[m
- ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · all tracked in git␛[m
-  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 2…␛[m
+  ␛[38;5;245m∗␛[m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;245m · all tracked in git␛[m
+  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;245m · exit 1 · 2…␛[m
 
     ␛[38;5;252mRe-running the suite now that the constant has ␛[m 
     ␛[38;5;252mone home.␛[m
 
 · the whole surface · the same edge in the pane it sits in
-␛[48;5;233m  ␛[97;1m shhh chat␛[38;5;241;22m · gpt-4o␛[39m                                       ␛[m
-␛[48;5;233m  ␛[38;5;241m────────────────────────────────────────────────────────␛[39m  ␛[m
-␛[48;5;233m      ␛[38;5;245;3mThe objective is one home for the round limit. The␛[39;23m    ␛[m
-␛[48;5;233m      ␛[38;5;245;3mevidence is the failure above, which reads the␛[39;23m        ␛[m
-␛[48;5;233m      ␛[38;5;245;3mconstant from the loop and not from the caller.␛[39;23m       ␛[m
-␛[48;5;233m        ␛[38;5;241m… 2 more lines␛[39m                                      ␛[m
+␛[48;5;233m  ␛[97;1m shhh chat␛[38;5;245;22m · gpt-4o␛[39m                                       ␛[m
+␛[48;5;233m  ␛[38;5;245m────────────────────────────────────────────────────────␛[39m  ␛[m
+␛[48;5;233m      ␛[38;5;248;3mThe objective is one home for the round limit. The␛[39;23m    ␛[m
+␛[48;5;233m      ␛[38;5;248;3mevidence is the failure above, which reads the␛[39;23m        ␛[m
+␛[48;5;233m      ␛[38;5;248;3mconstant from the loop and not from the caller.␛[39;23m       ␛[m
+␛[48;5;233m        ␛[38;5;245m… 2 more lines␛[39m                                      ␛[m
 ␛[48;5;233m                                                            ␛[m
-␛[48;5;233m    ␛[38;5;241m·␛[39m ␛[38;5;241mCheck-in — 36 rounds used. Taking stock, then␛[39m         ␛[m
-␛[48;5;233m      ␛[38;5;241mcarrying on.␛[39m                                          ␛[m
-␛[48;5;233m    ␛[38;5;241m·␛[39m ␛[38;5;241mSteered — the reading says the edits have moved␛[39m       ␛[m
-␛[48;5;233m      ␛[38;5;241moutside the round loop. Say what you meant if that┃␛[39m   ␛[m
-␛[48;5;233m      ␛[38;5;241mis wrong.␛[39m                                         ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m      ␛[38;5;245m[u]␛[38;5;241m take the steer back · ␛[38;5;103m[ctrl+o]␛[38;5;252m to use them␛[39m    ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m    ␛[38;5;241m·␛[39m ␛[38;5;241mtree moved — 14 paths changed outside this␛[39m        ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m      ␛[38;5;241msession · 5,811 ignored␛[39m                           ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m    ␛[91m✗ the notebook is read-only, so nothing was written␛[39m ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m    ␛[91mdown␛[39m                                                ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m    ␛[38;5;241m≡␛[39m ␛[38;5;245;3mThe constant has one home and the␛[39;23m      ␛[38;5;241mon target␛[39m  ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m      ␛[38;5;245;3mcaller no longer passes its own.␛[39;23m                  ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m                                                        ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m    ␛[38;5;241m∗␛[39m ␛[38;5;241mworked 24.7s · 6 tools · $0.14␛[39m                    ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m   ␛[38;5;214m▎✎␛[39m ␛[38;5;252m1 file changed ␛[92m+12␛[39m ␛[91m−4␛[38;5;241m · all tracked in git␛[39m        ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m    ␛[91m✗␛[39m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 2…┃␛[39m   ␛[m
-␛[48;5;233m                                                        ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m      ␛[38;5;252mRe-running the suite now that the constant has ␛[39m   ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m      ␛[38;5;252mone home.␛[39m                                         ␛[38;5;241m┃␛[39m   ␛[m
-␛[48;5;233m  ␛[38;5;241m╭─␛[39m ␛[38;5;205m⠋ streaming…␛[39m ␛[38;5;241m───────────────────────────────────────╮␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;241m│␛[39m ␛[38;5;205;1m▸␛[39;22m ␛[38;5;252m                                                  ␛[39m ␛[38;5;241m│␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;241m├─␛[39m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[39m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[39m ␛[38;5;241m────────────────┤␛[39m  ␛[m
-␛[48;5;233m  ␛[38;5;241m╰─␛[39m ␛[38;5;103m[ctrl+p]␛[38;5;241m hold · ␛[38;5;103m[ctrl+c]␛[38;5;241m stop the run␛[39m ␛[38;5;241m──────────────╯␛[39m  ␛[m
+␛[48;5;233m    ␛[38;5;245m·␛[39m ␛[38;5;245mCheck-in — 36 rounds used. Taking stock, then␛[39m         ␛[m
+␛[48;5;233m      ␛[38;5;245mcarrying on.␛[39m                                          ␛[m
+␛[48;5;233m    ␛[38;5;245m·␛[39m ␛[38;5;245mSteered — the reading says the edits have moved␛[39m       ␛[m
+␛[48;5;233m      ␛[38;5;245moutside the round loop. Say what you meant if that┃␛[39m   ␛[m
+␛[48;5;233m      ␛[38;5;245mis wrong.␛[39m                                         ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m      ␛[38;5;248m[u]␛[38;5;245m take the steer back · ␛[38;5;103m[ctrl+o]␛[38;5;252m to use them␛[39m    ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m    ␛[38;5;245m·␛[39m ␛[38;5;245mtree moved — 14 paths changed outside this␛[39m        ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m      ␛[38;5;245msession · 5,811 ignored␛[39m                           ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m    ␛[91m✗ the notebook is read-only, so nothing was written␛[39m ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m    ␛[91mdown␛[39m                                                ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m    ␛[38;5;245m≡␛[39m ␛[38;5;248;3mThe constant has one home and the␛[39;23m      ␛[38;5;245mon target␛[39m  ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m      ␛[38;5;248;3mcaller no longer passes its own.␛[39;23m                  ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m                                                        ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m    ␛[38;5;245m∗␛[39m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[39m                    ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m   ␛[38;5;214m▎✎␛[39m ␛[38;5;252m1 file changed ␛[92m+12␛[39m ␛[91m−4␛[38;5;245m · all tracked in git␛[39m        ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m    ␛[91m✗␛[39m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;245m · exit 1 · 2…┃␛[39m   ␛[m
+␛[48;5;233m                                                        ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m      ␛[38;5;252mRe-running the suite now that the constant has ␛[39m   ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m      ␛[38;5;252mone home.␛[39m                                         ␛[38;5;245m┃␛[39m   ␛[m
+␛[48;5;233m  ␛[38;5;245m╭─␛[39m ␛[38;5;205m⠋ streaming…␛[39m ␛[38;5;245m───────────────────────────────────────╮␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;245m│␛[39m ␛[38;5;205;1m▸␛[39;22m ␛[38;5;252m                                                  ␛[39m ␛[38;5;245m│␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;245m├─␛[39m ␛[38;5;214m⏸ manual␛[38;5;246m · ␛[92mctx 32%␛[39m ␛[92m▰▰␛[38;5;245m▱▱▱▱▱▱␛[38;5;246m · $0.51␛[39m ␛[38;5;245m────────────────┤␛[39m  ␛[m
+␛[48;5;233m  ␛[38;5;245m╰─␛[39m ␛[38;5;103m[ctrl+p]␛[38;5;245m hold · ␛[38;5;103m[ctrl+c]␛[38;5;245m stop the run␛[39m ␛[38;5;245m──────────────╯␛[39m  ␛[m
 
 · reading mode · the cursor takes the gutter the steer held for it
 ␛[94m❯␛[m ␛[97mhold the round limit in one place and run the ␛[m    
   ␛[97mtests␛[m
-␛[38;5;243m──────────────────────────────────────────────────────␛[m
+␛[38;5;246m──────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                      ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m               ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m ␛[38;5;248minternal/agent/loop.go␛[m␛[48;5;234m               ␛[91mexit 1␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mThe constant is declared in three files, so the␛[m␛[48;5;234m   ␛[m
 ␛[48;5;234m    ␛[38;5;252mloop is the only one of them that can own it.␛[m␛[48;5;234m     ␛[m
-␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                  ␛[38;5;241m1 line␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;248m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                  ␛[38;5;245m1 line␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                      ␛[m
 
-    ␛[3;38;5;245mThe objective is one home for the round limit. The␛[m
-    ␛[3;38;5;245mevidence is the failure above, which reads the␛[m
-    ␛[3;38;5;245mconstant from the loop and not from the caller.␛[m
-      ␛[38;5;241m… 2 more lines␛[m
+    ␛[3;38;5;248mThe objective is one home for the round limit. The␛[m
+    ␛[3;38;5;248mevidence is the failure above, which reads the␛[m
+    ␛[3;38;5;248mconstant from the loop and not from the caller.␛[m
+      ␛[38;5;245m… 2 more lines␛[m
 
-  ␛[38;5;241m·␛[m ␛[38;5;241mCheck-in — 36 rounds used. Taking stock, then␛[m
-    ␛[38;5;241mcarrying on.␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mSteered — the reading says the edits have moved␛[m
-    ␛[38;5;241moutside the round loop. Say what you meant if that␛[m
-    ␛[38;5;241mis wrong.␛[m
-    ␛[38;5;245m[u]␛[m␛[38;5;241m take the steer back␛[m
-  ␛[38;5;241m·␛[m ␛[38;5;241mtree moved — 14 paths changed outside this␛[m
-    ␛[38;5;241msession · 5,811 ignored␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mCheck-in — 36 rounds used. Taking stock, then␛[m
+    ␛[38;5;245mcarrying on.␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mSteered — the reading says the edits have moved␛[m
+    ␛[38;5;245moutside the round loop. Say what you meant if that␛[m
+    ␛[38;5;245mis wrong.␛[m
+    ␛[38;5;248m[u]␛[m␛[38;5;245m take the steer back␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mtree moved — 14 paths changed outside this␛[m
+    ␛[38;5;245msession · 5,811 ignored␛[m
   ␛[91m✗ the notebook is read-only, so nothing was written␛[m
   ␛[91mdown␛[m
-  ␛[38;5;241m≡␛[m ␛[3;38;5;245mThe constant has one home and the␛[m      ␛[38;5;241mon target␛[m
-    ␛[3;38;5;245mcaller no longer passes its own.␛[m
+  ␛[38;5;245m≡␛[m ␛[3;38;5;248mThe constant has one home and the␛[m      ␛[38;5;245mon target␛[m
+    ␛[3;38;5;248mcaller no longer passes its own.␛[m
 
-  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 24.7s · 6 tools · $0.14␛[m
- ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · all tracked in git␛[m
-  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 2…␛[m
+  ␛[38;5;245m∗␛[m ␛[38;5;245mworked 24.7s · 6 tools · $0.14␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;245m · all tracked in git␛[m
+  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;245m · exit 1 · 2…␛[m
 

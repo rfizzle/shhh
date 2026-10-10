@@ -30,19 +30,19 @@
 
 ── ansi ────────────────────────────────────────────────────
 · one image · the mark, the handle, the name, the size
-␛[38;5;252m▣ Image#1 shot.png␛[m␛[38;5;241m 412 KB␛[m
+␛[38;5;252m▣ Image#1 shot.png␛[m␛[38;5;245m 412 KB␛[m
 
 · a staged paste · the height is the half a name cannot carry
-␛[38;5;252m≡ Paste#1 paste-1.txt␛[m␛[38;5;241m 4 KB␛[m␛[38;5;241m 178 lines␛[m
+␛[38;5;252m≡ Paste#1 paste-1.txt␛[m␛[38;5;245m 4 KB␛[m␛[38;5;245m 178 lines␛[m
 
 · three pictures and a file · the names go first, the handles last
-␛[38;5;252m▣ Image#1␛[m␛[38;5;241m 412 KB␛[m␛[38;5;241m · ␛[m␛[38;5;252m▣ Image#2␛[m␛[38;5;241m 380 KB␛[m␛[38;5;241m · +2 more␛[m
+␛[38;5;252m▣ Image#1␛[m␛[38;5;245m 412 KB␛[m␛[38;5;245m · ␛[m␛[38;5;252m▣ Image#2␛[m␛[38;5;245m 380 KB␛[m␛[38;5;245m · +2 more␛[m
 
 · one of each kind · only the text counts lines
-␛[38;5;252m▣ Image#1␛[m␛[38;5;241m 412 KB␛[m␛[38;5;241m · ␛[m␛[38;5;252m≡ File#1␛[m␛[38;5;241m 2 KB␛[m␛[38;5;241m 84 lines␛[m␛[38;5;241m · ␛[m␛[38;5;252m▤ File#2␛[m␛[38;5;241m 1.1 MB␛[m
+␛[38;5;252m▣ Image#1␛[m␛[38;5;245m 412 KB␛[m␛[38;5;245m · ␛[m␛[38;5;252m≡ File#1␛[m␛[38;5;245m 2 KB␛[m␛[38;5;245m 84 lines␛[m␛[38;5;245m · ␛[m␛[38;5;252m▤ File#2␛[m␛[38;5;245m 1.1 MB␛[m
 
 · more than the row can hold · names, then whole chips, then a count
-␛[38;5;252m▣ Image#1␛[m␛[38;5;241m 412 KB␛[m␛[38;5;241m · ␛[m␛[38;5;252m≡ File#1␛[m␛[38;5;241m 2 KB␛[m␛[38;5;241m 84 lines␛[m␛[38;5;241m · +5 more␛[m
+␛[38;5;252m▣ Image#1␛[m␛[38;5;245m 412 KB␛[m␛[38;5;245m · ␛[m␛[38;5;252m≡ File#1␛[m␛[38;5;245m 2 KB␛[m␛[38;5;245m 84 lines␛[m␛[38;5;245m · +5 more␛[m
 
 · a long name · clipped at the head, and the handle is never clipped
-␛[38;5;252m▣ Image#1␛[m␛[38;5;241m 412 KB␛[m␛[38;5;241m · ␛[m␛[38;5;252m≡ File#1␛[m␛[38;5;241m 2 KB␛[m␛[38;5;241m 84 lines␛[m
+␛[38;5;252m▣ Image#1␛[m␛[38;5;245m 412 KB␛[m␛[38;5;245m · ␛[m␛[38;5;252m≡ File#1␛[m␛[38;5;245m 2 KB␛[m␛[38;5;245m 84 lines␛[m

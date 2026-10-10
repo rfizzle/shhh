@@ -24,13 +24,13 @@ shhh snippets · 3 snippets · filtered by "xargs"                              
 
 ── ansi ────────────────────────────────────────────────────
 · a query that left one snippet, and the line counting what it hid
-␛[1;97mshhh snippets␛[m␛[38;5;241m · 3 snippets␛[m␛[38;5;241m · filtered by "xargs"␛[m                                                             ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh snippets␛[m␛[38;5;245m · 3 snippets␛[m␛[38;5;245m · filtered by "xargs"␛[m                                                             ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m▸ ␛[m␛[97mxargs█␛[m                        ␛[38;5;241m1 of 3 match␛[m␛[38;5;241m │ ␛[m␛[1;97mprune␛[m                                                                           ␛[38;5;241mtue␛[m
-␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m  ␛[38;5;241mdrop every merged branch␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62mprune  drop every merged branch        tue␛[m␛[38;5;241m │ ␛[m
-␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgit branch --merged | grep -v main | xargs git branch -d␛[m
-␛[38;5;241m2 snippets hidden by the filter · ␛[m␛[38;5;103m[esc]␛[m␛[38;5;241m cle…␛[m␛[38;5;241m │ ␛[m
+␛[94m▸ ␛[m␛[97mxargs█␛[m                        ␛[38;5;245m1 of 3 match␛[m␛[38;5;245m │ ␛[m␛[1;97mprune␛[m                                                                           ␛[38;5;245mtue␛[m
+␛[38;5;245m────────────────────────────────────────────␛[m␛[38;5;245m │ ␛[m  ␛[38;5;245mdrop every merged branch␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61mprune  drop every merged branch        tue␛[m␛[38;5;245m │ ␛[m
+␛[38;5;245m────────────────────────────────────────────␛[m␛[38;5;245m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgit branch --merged | grep -v main | xargs git branch -d␛[m
+␛[38;5;245m2 snippets hidden by the filter · ␛[m␛[38;5;103m[esc]␛[m␛[38;5;245m cle…␛[m␛[38;5;245m │ ␛[m
 
-␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m run it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m clear the filter, then close it␛[m                                 ␛[38;5;241mnothing is run until [enter]␛[m
+␛[38;5;103m[↑↓/jk]␛[m␛[38;5;245m move␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m run it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m clear the filter, then close it␛[m                                 ␛[38;5;245mnothing is run until [enter]␛[m

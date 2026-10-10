@@ -76,65 +76,65 @@
 
 ── ansi ────────────────────────────────────────────────────
 · the receipt, its fold open, and the turns it folded below
-  ␛[38;5;241m·␛[m ␛[38;5;241mcompacted turns 1–2 into a 5-line summary · 74k tokens · context 88% → 28% · $0.02 · 4.1s␛[m
-    ␛[3;38;5;245mRounds are counted in the round loop; the limit lived in three places and disagreed. The first three␛[m
-    ␛[3;38;5;245mturns established the loop as the owner, the fourth moved the constant, and the fifth's tests pass␛[m
-    ␛[3;38;5;245mexcept the one on the limit itself. The constant now lives beside the counter and nothing else␛[m
-    ␛[3;38;5;245mdeclares one. The caller no longer passes a limit of its own, and the two tests that asserted the␛[m
-    ␛[3;38;5;245mold constant were rewritten against the sentinel the loop returns.␛[m
-    ␛[38;5;241m· the 2 turns themselves are below, out of the window but still in the transcript ·␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mcompacted turns 1–2 into a 5-line summary · 74k tokens · context 88% → 28% · $0.02 · 4.1s␛[m
+    ␛[3;38;5;248mRounds are counted in the round loop; the limit lived in three places and disagreed. The first three␛[m
+    ␛[3;38;5;248mturns established the loop as the owner, the fourth moved the constant, and the fifth's tests pass␛[m
+    ␛[3;38;5;248mexcept the one on the limit itself. The constant now lives beside the counter and nothing else␛[m
+    ␛[3;38;5;248mdeclares one. The caller no longer passes a limit of its own, and the two tests that asserted the␛[m
+    ␛[3;38;5;248mold constant were rewritten against the sentinel the loop returns.␛[m
+    ␛[38;5;245m· the 2 turns themselves are below, out of the window but still in the transcript ·␛[m
 
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
-␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 3 files in internal/agent/ · searched ErrRoundLimit␛[m␛[48;5;234m                                      ␛[38;5;241m1.2s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;245m 3 files in internal/agent/ · searched ErrRoundLimit␛[m␛[48;5;234m                                      ␛[38;5;245m1.2s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                                                                         ␛[m
-␛[48;5;234m                                                                                     ␛[38;5;241mout of the window␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                                                     ␛[38;5;245mout of the window␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m␛[38;5;241m · ran go test ./internal/agent/...␛[m␛[48;5;234m                       ␛[91mexit 1␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m22s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;248minternal/agent/loop.go␛[m␛[48;5;234m␛[38;5;245m · ran go test ./internal/agent/...␛[m␛[48;5;234m                       ␛[91mexit 1␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m22s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mThread the sentinel through the loop␛[m␛[48;5;234m                                                                ␛[m
-␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                                                ␛[38;5;241m1 line␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241mout of the window␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;248m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                                                ␛[38;5;245m1 line␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245mout of the window␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 ␛[94m❯␛[m ␛[97mMove the round limit into the loop.␛[m
-␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
     ␛[38;5;252mMoved it, and the ␛[m␛[3;38;5;252mlimit␛[m␛[38;5;252m is read from one place now.␛[m
 
 
 · folded back up
-  ␛[38;5;241m·␛[m ␛[38;5;241mcompacted turns 1–2 into a 5-line summary · 74k tokens · context 88% → 28% · $0.02 · 4.1s␛[m
+  ␛[38;5;245m·␛[m ␛[38;5;245mcompacted turns 1–2 into a 5-line summary · 74k tokens · context 88% → 28% · $0.02 · 4.1s␛[m
 
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
-␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;241m 3 files in internal/agent/ · searched ErrRoundLimit␛[m␛[48;5;234m                                      ␛[38;5;241m1.2s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m  ␛[38;5;214m⚙␛[m␛[48;5;234m ␛[38;5;252mread␛[m␛[48;5;234m␛[38;5;245m 3 files in internal/agent/ · searched ErrRoundLimit␛[m␛[48;5;234m                                      ␛[38;5;245m1.2s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mLocate the round accounting␛[m␛[48;5;234m                                                                         ␛[m
-␛[48;5;234m                                                                                     ␛[38;5;241mout of the window␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m                                                                                     ␛[38;5;245mout of the window␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 ␛[48;5;234m                                                                                                        ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;245minternal/agent/loop.go␛[m␛[48;5;234m␛[38;5;241m · ran go test ./internal/agent/...␛[m␛[48;5;234m                       ␛[91mexit 1␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241m22s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mwrote␛[m␛[48;5;234m ␛[38;5;248minternal/agent/loop.go␛[m␛[48;5;234m␛[38;5;245m · ran go test ./internal/agent/...␛[m␛[48;5;234m                       ␛[91mexit 1␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245m22s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m    ␛[38;5;252mThread the sentinel through the loop␛[m␛[48;5;234m                                                                ␛[m
-␛[48;5;234m    ␛[38;5;245m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                                                ␛[38;5;241m1 line␛[m␛[48;5;234m␛[38;5;241m · ␛[m␛[48;5;234m␛[38;5;241mout of the window␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;248m--- FAIL: TestRoundLimit␛[m␛[48;5;234m                                                ␛[38;5;245m1 line␛[m␛[48;5;234m␛[38;5;245m · ␛[m␛[48;5;234m␛[38;5;245mout of the window␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                                                        ␛[m
 
 ␛[94m❯␛[m ␛[97mMove the round limit into the loop.␛[m
-␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
     ␛[38;5;252mMoved it, and the ␛[m␛[3;38;5;252mlimit␛[m␛[38;5;252m is read from one place now.␛[m
 
 
 · the floor: nothing left that a summary could stand in for
-  ␛[38;5;241m✗␛[m ␛[38;5;241mcompact freed 6% · what remains is the plan, the changeset and turns 6–7 — none of it foldable ·␛[m
-    ␛[38;5;241m3.2s␛[m
+  ␛[38;5;245m✗␛[m ␛[38;5;245mcompact freed 6% · what remains is the plan, the changeset and turns 6–7 — none of it foldable ·␛[m
+    ␛[38;5;245m3.2s␛[m
 
 ␛[94m❯␛[m ␛[97mMove the round limit into the loop.␛[m
-␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;246m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
     ␛[38;5;252mMoved it, and the ␛[m␛[3;38;5;252mlimit␛[m␛[38;5;252m is read from one place now.␛[m
 

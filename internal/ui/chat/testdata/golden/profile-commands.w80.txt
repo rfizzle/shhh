@@ -222,136 +222,136 @@
 
 ── ansi ────────────────────────────────────────────────────
 · Commands selected · what its commands are for and what it never runs, on one line
-␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m     ␛[38;5;241m[?] keys · [esc] discard the draft␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m     ␛[38;5;245m[?] keys · [esc] discard the draft␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;241m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
+  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
   ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
 
   ␛[38;5;252mPurpose␛[m
-    ␛[38;5;243mAdd table-driven tests for one package at a time.␛[m
+    ␛[38;5;246mAdd table-driven tests for one package at a time.␛[m
 
   ␛[38;5;252mScope␛[m
-    ␛[38;5;243mThe package you were pointed at and its _test.go files.␛[m
+    ␛[38;5;246mThe package you were pointed at and its _test.go files.␛[m
 
   ␛[38;5;252mRestrictions␛[m
-    ␛[38;5;243mNever change an expected value to make a case pass.␛[m
+    ␛[38;5;246mNever change an expected value to make a case pass.␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;243mRead the package, then its tests, then write the missing cases.␛[m
+    ␛[38;5;246mRead the package, then its tests, then write the missing cases.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;243mThe cases added, by function, and the test run's last line.␛[m
+    ␛[38;5;246mThe cases added, by function, and the test run's last line.␛[m
 
   ␛[38;5;252mTools␛[m
-    ␛[91mread + write + execute␛[m␛[38;5;241m · it can change things, in its own copy of the tree␛[m
+    ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
 
 ␛[94m❯␛[m ␛[94mCommands␛[m
-    ␛[38;5;252mfor: running the package's tests and the build␛[m␛[38;5;241m · never: git push, rm -rf␛[m
+    ␛[38;5;252mfor: running the package's tests and the build␛[m␛[38;5;245m · never: git push, rm -rf␛[m
 
   ␛[38;5;252mModel␛[m
     ␛[38;5;252minherited from this session␛[m
 
-  ␛[38;5;103m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m refine it with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit it yourself␛[m
-  ␛[38;5;103m[d]␛[m␛[38;5;241m clear it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m discard the draft␛[m
+  ␛[38;5;103m[↑↓]␛[m␛[38;5;245m section␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m refine it with a note␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit it yourself␛[m
+  ␛[38;5;103m[d]␛[m␛[38;5;245m clear it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;245m all␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m discard the draft␛[m
 
-␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m/repo/.shhh/agents␛[m                                ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                       ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · /repo/.shhh/agents␛[m                          ␛[38;5;241m│␛[m
-␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
+␛[38;5;245m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;245m──────────────────────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
+␛[38;5;245m│␛[m   ␛[38;5;245m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;245m/repo/.shhh/agents␛[m                                ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m   ␛[38;5;245m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;245m/home/x/.config/shhh/agents␛[m                       ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m   ␛[38;5;245m3. ␛[m␛[38;5;252mDiscard␛[m                                                                 ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m save · /repo/.shhh/agents␛[m                          ␛[38;5;245m│␛[m
+␛[38;5;245m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a note open under Commands · only its two fields are taken from the answer
-␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                ␛[38;5;241m[esc] leave it as it is␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m                ␛[38;5;245m[esc] leave it as it is␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;241m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
+  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
   ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
 
   ␛[38;5;252mPurpose␛[m
-    ␛[38;5;243mAdd table-driven tests for one package at a time.␛[m
+    ␛[38;5;246mAdd table-driven tests for one package at a time.␛[m
 
   ␛[38;5;252mScope␛[m
-    ␛[38;5;243mThe package you were pointed at and its _test.go files.␛[m
+    ␛[38;5;246mThe package you were pointed at and its _test.go files.␛[m
 
   ␛[38;5;252mRestrictions␛[m
-    ␛[38;5;243mNever change an expected value to make a case pass.␛[m
+    ␛[38;5;246mNever change an expected value to make a case pass.␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;243mRead the package, then its tests, then write the missing cases.␛[m
+    ␛[38;5;246mRead the package, then its tests, then write the missing cases.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;243mThe cases added, by function, and the test run's last line.␛[m
+    ␛[38;5;246mThe cases added, by function, and the test run's last line.␛[m
 
   ␛[38;5;252mTools␛[m
-    ␛[91mread + write + execute␛[m␛[38;5;241m · it can change things, in its own copy of the tree␛[m
+    ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
 
 ␛[94m❯␛[m ␛[94mCommands␛[m
-    ␛[38;5;252mfor: running the package's tests and the build␛[m␛[38;5;241m · never: git push, rm -rf␛[m
+    ␛[38;5;252mfor: running the package's tests and the build␛[m␛[38;5;245m · never: git push, rm -rf␛[m
 
-    ␛[38;5;241m┄ what to change in Commands — the other seven are sent as fixed context␛[m
-    ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252mit must never install anything␛[m␛[38;5;252m␛[7;38;5;62m ␛[m␛[m␛[38;5;252m␛[m␛[38;5;252m                                         ␛[m
-  ␛[38;5;241m⋮ 1 more section · [shift+↓] scroll the profile␛[m
+    ␛[38;5;245m┄ what to change in Commands — the other seven are sent as fixed context␛[m
+    ␛[38;5;252m␛[38;5;245m┃ ␛[m␛[m␛[38;5;252mit must never install anything␛[m␛[38;5;252m␛[7;38;5;61m ␛[m␛[m␛[38;5;252m␛[m␛[38;5;252m                                         ␛[m
+  ␛[38;5;245m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;103m[enter]␛[m␛[38;5;241m refine it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave it as it is␛[m
+  ␛[38;5;103m[enter]␛[m␛[38;5;245m refine it␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m leave it as it is␛[m
 
-␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m/repo/.shhh/agents␛[m                                ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                       ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · /repo/.shhh/agents␛[m                          ␛[38;5;241m│␛[m
-␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
+␛[38;5;245m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;245m──────────────────────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
+␛[38;5;245m│␛[m   ␛[38;5;245m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;245m/repo/.shhh/agents␛[m                                ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m   ␛[38;5;245m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;245m/home/x/.config/shhh/agents␛[m                       ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m   ␛[38;5;245m3. ␛[m␛[38;5;252mDiscard␛[m                                                                 ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m save · /repo/.shhh/agents␛[m                          ␛[38;5;245m│␛[m
+␛[38;5;245m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · written in the editor · marked as the person's own
-␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m     ␛[38;5;241m[?] keys · [esc] discard the draft␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m     ␛[38;5;245m[?] keys · [esc] discard the draft␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;241m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
+  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
   ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
 
   ␛[38;5;252mPurpose␛[m
-    ␛[38;5;243mAdd table-driven tests for one package at a time.␛[m
+    ␛[38;5;246mAdd table-driven tests for one package at a time.␛[m
 
   ␛[38;5;252mScope␛[m
-    ␛[38;5;243mThe package you were pointed at and its _test.go files.␛[m
+    ␛[38;5;246mThe package you were pointed at and its _test.go files.␛[m
 
   ␛[38;5;252mRestrictions␛[m
-    ␛[38;5;243mNever change an expected value to make a case pass.␛[m
+    ␛[38;5;246mNever change an expected value to make a case pass.␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;243mRead the package, then its tests, then write the missing cases.␛[m
+    ␛[38;5;246mRead the package, then its tests, then write the missing cases.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;243mThe cases added, by function, and the test run's last line.␛[m
+    ␛[38;5;246mThe cases added, by function, and the test run's last line.␛[m
 
   ␛[38;5;252mTools␛[m
-    ␛[91mread + write + execute␛[m␛[38;5;241m · it can change things, in its own copy of the tree␛[m
+    ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
 
 ␛[94m❯␛[m ␛[94mCommands␛[m ␛[92m· edited by you␛[m
-    ␛[38;5;252mfor: running the package's tests␛[m␛[38;5;241m · never: git push, go install␛[m
+    ␛[38;5;252mfor: running the package's tests␛[m␛[38;5;245m · never: git push, go install␛[m
 
-  ␛[38;5;241m⋮ 1 more section · [shift+↓] scroll the profile␛[m
+  ␛[38;5;245m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;103m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m refine it with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit it yourself␛[m
-  ␛[38;5;103m[d]␛[m␛[38;5;241m clear it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m
-  ␛[92m[esc]␛[m␛[38;5;241m take back its last revision␛[m
+  ␛[38;5;103m[↑↓]␛[m␛[38;5;245m section␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m refine it with a note␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit it yourself␛[m
+  ␛[38;5;103m[d]␛[m␛[38;5;245m clear it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;245m all␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m
+  ␛[92m[esc]␛[m␛[38;5;245m take back its last revision␛[m
 
-␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m/repo/.shhh/agents␛[m                                ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                       ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · /repo/.shhh/agents␛[m                          ␛[38;5;241m│␛[m
-␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
+␛[38;5;245m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;245m──────────────────────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
+␛[38;5;245m│␛[m   ␛[38;5;245m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;245m/repo/.shhh/agents␛[m                                ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m   ␛[38;5;245m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;245m/home/x/.config/shhh/agents␛[m                       ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m   ␛[38;5;245m3. ␛[m␛[38;5;252mDiscard␛[m                                                                 ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m save · /repo/.shhh/agents␛[m                          ␛[38;5;245m│␛[m
+␛[38;5;245m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · an allow line refused on the card · in the loader's words
-␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m     ␛[38;5;241m[?] keys · [esc] discard the draft␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m     ␛[38;5;245m[?] keys · [esc] discard the draft␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;241m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
+  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
   ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
 
@@ -360,73 +360,73 @@
   ␛[91m  your own settings or a card may; a profile can only add to what is refused,␛[m
   ␛[91m  with deny␛[m
 
-  ␛[38;5;241m⋮ 2 more sections above · [shift+↑] scroll up␛[m
+  ␛[38;5;245m⋮ 2 more sections above · [shift+↑] scroll up␛[m
 
   ␛[38;5;252mRestrictions␛[m
-    ␛[38;5;243mNever change an expected value to make a case pass.␛[m
+    ␛[38;5;246mNever change an expected value to make a case pass.␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;243mRead the package, then its tests, then write the missing cases.␛[m
+    ␛[38;5;246mRead the package, then its tests, then write the missing cases.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;243mThe cases added, by function, and the test run's last line.␛[m
+    ␛[38;5;246mThe cases added, by function, and the test run's last line.␛[m
 
   ␛[38;5;252mTools␛[m
-    ␛[91mread + write + execute␛[m␛[38;5;241m · it can change things, in its own copy of the tree␛[m
+    ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
 
 ␛[94m❯␛[m ␛[94mCommands␛[m ␛[92m· edited by you␛[m
-    ␛[38;5;252mfor: running the package's tests␛[m␛[38;5;241m · never: git push, go install␛[m
-  ␛[38;5;241m⋮ 1 more section · [shift+↓] scroll the profile␛[m
+    ␛[38;5;252mfor: running the package's tests␛[m␛[38;5;245m · never: git push, go install␛[m
+  ␛[38;5;245m⋮ 1 more section · [shift+↓] scroll the profile␛[m
 
-  ␛[38;5;103m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m refine it with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit it yourself␛[m
-  ␛[38;5;103m[d]␛[m␛[38;5;241m clear it␛[m␛[38;5;241m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m
-  ␛[92m[esc]␛[m␛[38;5;241m take back its last revision␛[m
+  ␛[38;5;103m[↑↓]␛[m␛[38;5;245m section␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m refine it with a note␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit it yourself␛[m
+  ␛[38;5;103m[d]␛[m␛[38;5;245m clear it␛[m␛[38;5;245m · ␛[m␛[38;5;103m[R]␛[m␛[38;5;245m all␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m
+  ␛[92m[esc]␛[m␛[38;5;245m take back its last revision␛[m
 
-␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m/repo/.shhh/agents␛[m                                ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                       ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · /repo/.shhh/agents␛[m                          ␛[38;5;241m│␛[m
-␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
+␛[38;5;245m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;245m──────────────────────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
+␛[38;5;245m│␛[m   ␛[38;5;245m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;245m/repo/.shhh/agents␛[m                                ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m   ␛[38;5;245m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;245m/home/x/.config/shhh/agents␛[m                       ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m   ␛[38;5;245m3. ␛[m␛[38;5;252mDiscard␛[m                                                                 ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m save · /repo/.shhh/agents␛[m                          ␛[38;5;245m│␛[m
+␛[38;5;245m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · cleared · the session's own command lists apply, and esc takes it back
-␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m     ␛[38;5;241m[?] keys · [esc] discard the draft␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97m/agents new␛[m␛[38;5;245m · a coding agent · researcher␛[m     ␛[38;5;245m[?] keys · [esc] discard the draft␛[m
+␛[38;5;245m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;241m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
+  ␛[38;5;245m✓ brief␛[m␛[38;5;248m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;248m   ␛[m␛[94m● draft␛[m
 
   ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
 
   ␛[38;5;252mPurpose␛[m
-    ␛[38;5;243mAdd table-driven tests for one package at a time.␛[m
+    ␛[38;5;246mAdd table-driven tests for one package at a time.␛[m
 
   ␛[38;5;252mScope␛[m
-    ␛[38;5;243mThe package you were pointed at and its _test.go files.␛[m
+    ␛[38;5;246mThe package you were pointed at and its _test.go files.␛[m
 
   ␛[38;5;252mRestrictions␛[m
-    ␛[38;5;243mNever change an expected value to make a case pass.␛[m
+    ␛[38;5;246mNever change an expected value to make a case pass.␛[m
 
   ␛[38;5;252mMethod␛[m
-    ␛[38;5;243mRead the package, then its tests, then write the missing cases.␛[m
+    ␛[38;5;246mRead the package, then its tests, then write the missing cases.␛[m
 
   ␛[38;5;252mReport␛[m
-    ␛[38;5;243mThe cases added, by function, and the test run's last line.␛[m
+    ␛[38;5;246mThe cases added, by function, and the test run's last line.␛[m
 
   ␛[38;5;252mTools␛[m
-    ␛[91mread + write + execute␛[m␛[38;5;241m · it can change things, in its own copy of the tree␛[m
+    ␛[91mread + write + execute␛[m␛[38;5;245m · it can change things, in its own copy of the tree␛[m
 
-␛[94m❯␛[m ␛[94mCommands␛[m ␛[38;5;241m· you cleared it␛[m
-    ␛[38;5;241mnone stated␛[m␛[38;5;241m · the session's own command lists apply␛[m
+␛[94m❯␛[m ␛[94mCommands␛[m ␛[38;5;245m· you cleared it␛[m
+    ␛[38;5;245mnone stated␛[m␛[38;5;245m · the session's own command lists apply␛[m
 
   ␛[38;5;252mModel␛[m
     ␛[38;5;252minherited from this session␛[m
 
-  ␛[38;5;103m[↑↓]␛[m␛[38;5;241m section␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m refine it with a note␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;241m edit it yourself␛[m
-  ␛[38;5;103m[R]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take back its last revision␛[m
+  ␛[38;5;103m[↑↓]␛[m␛[38;5;245m section␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m refine it with a note␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m␛[38;5;245m edit it yourself␛[m
+  ␛[38;5;103m[R]␛[m␛[38;5;245m all␛[m␛[38;5;245m · ␛[m␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m␛[38;5;245m · ␛[m␛[92m[esc]␛[m␛[38;5;245m take back its last revision␛[m
 
-␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;241m/repo/.shhh/agents␛[m                                ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                       ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mDiscard␛[m                                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;241m the card␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m save · /repo/.shhh/agents␛[m                          ␛[38;5;241m│␛[m
-␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
+␛[38;5;245m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;245m──────────────────────────────────────────────────────────␛[m␛[38;5;245m╮␛[m
+␛[38;5;245m│␛[m   ␛[38;5;245m1. ␛[m␛[38;5;252mSave to this project␛[m  ␛[38;5;245m/repo/.shhh/agents␛[m                                ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m   ␛[38;5;245m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;245m/home/x/.config/shhh/agents␛[m                       ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m   ␛[38;5;245m3. ␛[m␛[38;5;252mDiscard␛[m                                                                 ␛[38;5;245m│␛[m
+␛[38;5;245m│␛[m ␛[38;5;103m[tab]␛[m␛[38;5;245m the card␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;245m save · /repo/.shhh/agents␛[m                          ␛[38;5;245m│␛[m
+␛[38;5;245m╰──────────────────────────────────────────────────────────────────────────────╯␛[m

@@ -58,45 +58,45 @@
 ── ansi ────────────────────────────────────────────────────
 · the four verbs
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m␛[38;5;241m 4 commands␛[m␛[48;5;234m                                                  ␛[38;5;241m1.2s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m␛[38;5;245m 4 commands␛[m␛[48;5;234m                                                  ␛[38;5;245m1.2s␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m    ␛[38;5;241m▾ ran 4 commands␛[m␛[48;5;234m                                                ␛[38;5;241m1.2s␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;245madd internal/agent/loop.go +1␛[m␛[48;5;234m                     ␛[92mstaged 2 files␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;245mcommit feat(agent): cap …␛[m␛[48;5;234m ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;245mbranch topic␛[m␛[48;5;234m                                ␛[92mcreated branch topic␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;245mswitch master␛[m␛[48;5;234m                                 ␛[92mswitched to master␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245mreads dropped · the working tree changed under every prior read␛[m␛[48;5;234m   ␛[m
+␛[48;5;234m    ␛[38;5;245m▾ ran 4 commands␛[m␛[48;5;234m                                                ␛[38;5;245m1.2s␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;248madd internal/agent/loop.go +1␛[m␛[48;5;234m                     ␛[92mstaged 2 files␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;248mcommit feat(agent): cap …␛[m␛[48;5;234m ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;248mbranch topic␛[m␛[48;5;234m                                ␛[92mcreated branch topic␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;248mswitch master␛[m␛[48;5;234m                                 ␛[92mswitched to master␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248mreads dropped · the working tree changed under every prior read␛[m␛[48;5;234m   ␛[m
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m    ␛[38;5;241min order ␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m                                                ␛[38;5;241m4 tools␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m    ␛[38;5;245min order ␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m                                                ␛[38;5;245m4 tools␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
 
 · refused · a file the session did not change
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245madd README.md␛[m␛[48;5;234m                                              ␛[91merror␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;248madd README.md␛[m␛[48;5;234m                                              ␛[91merror␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;245madd README.md␛[m␛[48;5;234m                                              ␛[91merror␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245merror: README.md is not this session's work; commit it yourself␛[m␛[48;5;234m   ␛[m
+␛[48;5;234m     ␛[91m▎␛[m␛[48;5;234m␛[91m✗␛[m␛[48;5;234m ␛[38;5;248madd README.md␛[m␛[48;5;234m                                              ␛[91merror␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248merror: README.md is not this session's work; commit it yourself␛[m␛[48;5;234m   ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
 
 · committed on an untrusted checkout · the hooks that did not run
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mcommit feat(agent): cap …␛[m␛[48;5;234m ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;248mcommit feat(agent): cap …␛[m␛[48;5;234m ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;245mcommit feat(agent): cap …␛[m␛[48;5;234m ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m  ␛[m
-␛[48;5;234m        ␛[38;5;245mpre-commit and commit-msg skipped · not trusted — /trust to run…␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;248mcommit feat(agent): cap …␛[m␛[48;5;234m ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m        ␛[38;5;248mpre-commit and commit-msg skipped · not trusted — /trust to run…␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
 
 · the turn's close · the sha, and what undo does not reach
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;245mcommit feat(agent): cap …␛[m␛[48;5;234m ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;252mran␛[m␛[48;5;234m ␛[38;5;248mcommit feat(agent): cap …␛[m␛[48;5;234m ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
-␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;245mcommit feat(agent): cap …␛[m␛[48;5;234m ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m  ␛[m
+␛[48;5;234m     ␛[38;5;214m▎␛[m␛[48;5;234m␛[38;5;214m$␛[m␛[48;5;234m ␛[38;5;248mcommit feat(agent): cap …␛[m␛[48;5;234m ␛[92mcommitted 3 files as a41f2c9 on master␛[m␛[48;5;234m  ␛[m
 ␛[48;5;234m                                                                          ␛[m
 
-  ␛[38;5;241m∗␛[m ␛[38;5;241mworked 1m 04s · 18 tools · $0.14␛[m
- ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m␛[38;5;241m · all tracked in git␛[m
- ␛[38;5;214m▎␛[m␛[92m✓␛[m ␛[38;5;252mcommitted 3 files as a41f2c9 on master␛[m    ␛[38;5;241m/undo does not reach history␛[m
+  ␛[38;5;245m∗␛[m ␛[38;5;245mworked 1m 04s · 18 tools · $0.14␛[m
+ ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m␛[38;5;245m · all tracked in git␛[m
+ ␛[38;5;214m▎␛[m␛[92m✓␛[m ␛[38;5;252mcommitted 3 files as a41f2c9 on master␛[m    ␛[38;5;245m/undo does not reach history␛[m
 

@@ -62,49 +62,49 @@ or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
 ── ansi ────────────────────────────────────────────────────
 · the start screen · two declared tools not on PATH
 ␛[1;97m▄▀▀▀ █    █    █␛[m
-␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
+␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;245m · ·  ·   ·     ·␛[m
 ␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
 
-␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
+␛[38;5;252mgo 1.24␛[m␛[38;5;245m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;245m · ␛[m␛[38;5;252m41 packages␛[m
 
-␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
-␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
-␛[38;5;243mtools  ␛[m  ␛[38;5;252mgolangci-lint · gosec␛[m␛[38;5;241m — declared, not on PATH · /setup installs them␛[m
+␛[38;5;246mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;245m — in the system prompt␛[m
+␛[38;5;246mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;245m — vet, test · runs without asking␛[m
+␛[38;5;246mtools  ␛[m  ␛[38;5;252mgolangci-lint · gosec␛[m␛[38;5;245m — declared, not on PATH · /setup installs them␛[m
 
-␛[38;5;241mSome things worth doing first:␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   ␛[m
-  ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;241m — reads only, no writes␛[m
-  ␛[38;5;214m$␛[m ␛[38;5;252minstall the tools this checkout declares␛[m␛[38;5;241m — one approval␛[m
+␛[38;5;245mSome things worth doing first:␛[m
+␛[94m❯␛[m ␛[1;97;48;5;61m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                                                   ␛[m
+  ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;245m — reads only, no writes␛[m
+  ␛[38;5;214m$␛[m ␛[38;5;252minstall the tools this checkout declares␛[m␛[38;5;245m — one approval␛[m
 
-␛[38;5;241mor just type what you want␛[m␛[38;5;241m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;241m keys␛[m
-␛[38;5;103m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;241m select rows␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;241m commands␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;241m mouse on/off␛[m
+␛[38;5;245mor just type what you want␛[m␛[38;5;245m · ␛[m␛[38;5;103m[↑↓]␛[m␛[38;5;245m choose␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;245m start␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+]]␛[m␛[38;5;245m keys␛[m
+␛[38;5;103m[pgup]␛[m␛[38;5;245m scroll␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+o]␛[m␛[38;5;245m select rows␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+/]␛[m␛[38;5;245m commands␛[m␛[38;5;245m · ␛[m␛[38;5;103m[ctrl+x]␛[m␛[38;5;245m mouse on/off␛[m
 
 · the card · contained, the declaration's hosts held
-␛[94m╭─ ␛[m␛[1;97mApprove toolchain install ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
+␛[94m╭─ ␛[m␛[1;97mApprove toolchain install ␛[m␛[38;5;245m────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
 ␛[94m│␛[m ␛[38;5;214m$␛[m ␛[97minstall golangci-lint, gosec␛[m                                                                         ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241mthe lines run one at a time and stop at the first that fails␛[m                                           ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245mthe lines run one at a time and stop at the first that fails␛[m                                           ␛[94m│␛[m
 ␛[94m│␛[m                                                                                                        ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mruns      ␛[m␛[38;5;252mgo install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0␛[m                     ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mruns      ␛[m␛[38;5;252mgo install github.com/securego/gosec/v2/cmd/gosec@v2.21.4␛[m                                    ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mlands in  ␛[m␛[38;5;252m~/.cache/shhh/toolchain/bin␛[m␛[38;5;245m — shhh's own, on every command's PATH␛[m                            ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;252m2 hosts␛[m␛[38;5;245m — only proxy.golang.org, sum.golang.org; every other host is refused␛[m                 ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243mworkspace ␛[m␛[92mread-only␛[m                                                                                    ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;243msandbox   ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                            ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mruns      ␛[m␛[38;5;252mgo install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0␛[m                     ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mruns      ␛[m␛[38;5;252mgo install github.com/securego/gosec/v2/cmd/gosec@v2.21.4␛[m                                    ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mlands in  ␛[m␛[38;5;252m~/.cache/shhh/toolchain/bin␛[m␛[38;5;248m — shhh's own, on every command's PATH␛[m                            ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mnetwork   ␛[m␛[38;5;252m2 hosts␛[m␛[38;5;248m — only proxy.golang.org, sum.golang.org; every other host is refused␛[m                 ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246mworkspace ␛[m␛[92mread-only␛[m                                                                                    ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;246msandbox   ␛[m␛[38;5;246mbwrap · workspace␛[m                                                                            ␛[94m│␛[m
 ␛[94m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252minstall them␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mno — nothing installed␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave — nothing installed␛[m             ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241menter opened this card and installs nothing — only [y] does␛[m                                            ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252minstall them␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mno — nothing installed␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;245m · ␛[m␛[92m[esc] leave — nothing installed␛[m             ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;245menter opened this card and installs nothing — only [y] does␛[m                                            ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the card · nothing contains it
-␛[91m╭─ ␛[m␛[1;97mApprove toolchain install ␛[m␛[38;5;241m────────────────────────────────────────────────────────────␛[m␛[91m ⚠ UNCONTAINED ─╮␛[m
+␛[91m╭─ ␛[m␛[1;97mApprove toolchain install ␛[m␛[38;5;245m────────────────────────────────────────────────────────────␛[m␛[91m ⚠ UNCONTAINED ─╮␛[m
 ␛[91m│␛[m ␛[38;5;214m$␛[m ␛[97minstall golangci-lint, gosec␛[m                                                                         ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;241mthe lines run one at a time and stop at the first that fails␛[m                                           ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;245mthe lines run one at a time and stop at the first that fails␛[m                                           ␛[91m│␛[m
 ␛[91m│␛[m                                                                                                        ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;243mruns      ␛[m␛[38;5;252mgo install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0␛[m                     ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;243mruns      ␛[m␛[38;5;252mgo install github.com/securego/gosec/v2/cmd/gosec@v2.21.4␛[m                                    ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;243mlands in  ␛[m␛[38;5;252m~/.cache/shhh/toolchain/bin␛[m␛[38;5;245m — shhh's own, on every command's PATH␛[m                            ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m␛[38;5;245m — nothing contains the install, so nothing limits what it reaches␛[m                       ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;246mruns      ␛[m␛[38;5;252mgo install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0␛[m                     ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;246mruns      ␛[m␛[38;5;252mgo install github.com/securego/gosec/v2/cmd/gosec@v2.21.4␛[m                                    ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;246mlands in  ␛[m␛[38;5;252m~/.cache/shhh/toolchain/bin␛[m␛[38;5;248m — shhh's own, on every command's PATH␛[m                            ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;246mnetwork   ␛[m␛[38;5;214mopen␛[m␛[38;5;248m — nothing contains the install, so nothing limits what it reaches␛[m                       ␛[91m│␛[m
 ␛[91m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[91m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252minstall them␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mno — nothing installed␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave — nothing installed␛[m             ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;241menter opened this card and installs nothing — only [y] does␛[m                                            ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252minstall them␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mno — nothing installed␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;245m · ␛[m␛[92m[esc] leave — nothing installed␛[m             ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;245menter opened this card and installs nothing — only [y] does␛[m                                            ␛[91m│␛[m
 ␛[91m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

@@ -143,132 +143,132 @@ $  a shell command
 
 ── ansi ────────────────────────────────────────────────────
 · the surface · the table, the spend split, and the ratios under it
-␛[1;97mshhh metrics␛[m␛[38;5;241m · last 30 days · 251 requests · 4 models␛[m                                               ␛[38;5;252m$18.42␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh metrics␛[m␛[38;5;245m · last 30 days · 251 requests · 4 models␛[m                                               ␛[38;5;252m$18.42␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d␛[m
-  ␛[38;5;252mgpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s␛[m  ␛[38;5;245m▃▄▄▅▆▅█␛[m
-  ␛[38;5;252mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms  2.1s␛[m  ␛[38;5;245m▂▃▆▄▃█▅␛[m
-  ␛[38;5;252mgemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s␛[m  ␛[38;5;245m▁▁▄▁▁▁█␛[m
-  ␛[38;5;252mhouse-model               9    42k     3k       —   1.2s     —␛[m  ␛[38;5;245m▁▁▁▁█▁▁␛[m
+  ␛[38;5;252mgpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s␛[m  ␛[38;5;248m▃▄▄▅▆▅█␛[m
+  ␛[38;5;252mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms  2.1s␛[m  ␛[38;5;248m▂▃▆▄▃█▅␛[m
+  ␛[38;5;252mgemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s␛[m  ␛[38;5;248m▁▁▄▁▁▁█␛[m
+  ␛[38;5;252mhouse-model               9    42k     3k       —   1.2s     —␛[m  ␛[38;5;248m▁▁▁▁█▁▁␛[m
 
-  ␛[38;5;241mwhere the money went␛[m                                                                                                ␛[38;5;241mlast 30 days␛[m
-  ␛[38;5;241m$ run            ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m$9.94 · 54%␛[m                                                               ␛[38;5;252m203 requests␛[m
-  ␛[38;5;241mcopied           ␛[m  ␛[38;5;214m▰▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m$5.11 · 28%␛[m                                                                ␛[38;5;252m31 requests␛[m
-  ␛[38;5;241m⊘ dismissed      ␛[m  ␛[38;5;214m▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m$2.41 · 13%␛[m                                                                ␛[38;5;252m19 requests␛[m
-  ␛[38;5;241m✗ no answer      ␛[m  ␛[91m▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[91m$0.96 · 5%␛[m                                                                  ␛[91m9 requests␛[m
+  ␛[38;5;245mwhere the money went␛[m                                                                                                ␛[38;5;245mlast 30 days␛[m
+  ␛[38;5;245m$ run            ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m$9.94 · 54%␛[m                                                               ␛[38;5;252m203 requests␛[m
+  ␛[38;5;245mcopied           ␛[m  ␛[38;5;214m▰▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m$5.11 · 28%␛[m                                                                ␛[38;5;252m31 requests␛[m
+  ␛[38;5;245m⊘ dismissed      ␛[m  ␛[38;5;214m▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m$2.41 · 13%␛[m                                                                ␛[38;5;252m19 requests␛[m
+  ␛[38;5;245m✗ no answer      ␛[m  ␛[91m▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[91m$0.96 · 5%␛[m                                                                  ␛[91m9 requests␛[m
 
-  ␛[38;5;241mhow the answers came back␛[m                                                                                           ␛[38;5;241m251 requests␛[m
-  ␛[38;5;241mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;241m▱▱␛[m ␛[38;5;214m94% answered␛[m                                                                ␛[38;5;252m173 of 184␛[m
-  ␛[38;5;241mclaude-sonnet-4.6␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;214m100% answered␛[m                                                                 ␛[38;5;252m46 of 46␛[m
-  ␛[38;5;241mgemini-3-flash   ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱␛[m ␛[38;5;214m75% answered␛[m                                                                   ␛[38;5;252m9 of 12␛[m
-  ␛[38;5;241mhouse-model      ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;214m100% answered␛[m                                                                   ␛[38;5;252m9 of 9␛[m
+  ␛[38;5;245mhow the answers came back␛[m                                                                                           ␛[38;5;245m251 requests␛[m
+  ␛[38;5;245mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;245m▱▱␛[m ␛[38;5;214m94% answered␛[m                                                                ␛[38;5;252m173 of 184␛[m
+  ␛[38;5;245mclaude-sonnet-4.6␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;214m100% answered␛[m                                                                 ␛[38;5;252m46 of 46␛[m
+  ␛[38;5;245mgemini-3-flash   ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱␛[m ␛[38;5;214m75% answered␛[m                                                                   ␛[38;5;252m9 of 12␛[m
+  ␛[38;5;245mhouse-model      ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;214m100% answered␛[m                                                                   ␛[38;5;252m9 of 9␛[m
 
-  ␛[38;5;241mhow the commands ran␛[m                                                                                                    ␛[38;5;241m203 runs␛[m
-  ␛[38;5;241mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱␛[m ␛[38;5;214m81% exited 0␛[m                                                                ␛[38;5;252m164 of 203␛[m
+  ␛[38;5;245mhow the commands ran␛[m                                                                                                    ␛[38;5;245m203 runs␛[m
+  ␛[38;5;245mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱␛[m ␛[38;5;214m81% exited 0␛[m                                                                ␛[38;5;252m164 of 203␛[m
 
-␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
 
 · nothing priced · the split is over tokens and says so
-␛[1;97mshhh metrics␛[m␛[38;5;241m · last 30 days · 251 requests · 4 models␛[m                                                        ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh metrics␛[m␛[38;5;245m · last 30 days · 251 requests · 4 models␛[m                                                        ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mMODEL              REQUESTS  ↑ TOK  ↓ TOK  SPEND   TTFT   P95  TOK · 7d␛[m
-  ␛[38;5;252mgpt-5.2                 184   2.9M   318k      —  640ms  1.4s␛[m  ␛[38;5;245m▃▄▄▅▆▅█␛[m
-  ␛[38;5;252mclaude-sonnet-4.6        46   1.1M    96k      —  910ms  2.1s␛[m  ␛[38;5;245m▂▃▆▄▃█▅␛[m
-  ␛[38;5;252mgemini-3-flash           12    88k     7k      —  310ms  0.5s␛[m  ␛[38;5;245m▁▁▄▁▁▁█␛[m
-  ␛[38;5;252mhouse-model               9    42k     3k      —   1.2s     —␛[m  ␛[38;5;245m▁▁▁▁█▁▁␛[m
+  ␛[38;5;252mgpt-5.2                 184   2.9M   318k      —  640ms  1.4s␛[m  ␛[38;5;248m▃▄▄▅▆▅█␛[m
+  ␛[38;5;252mclaude-sonnet-4.6        46   1.1M    96k      —  910ms  2.1s␛[m  ␛[38;5;248m▂▃▆▄▃█▅␛[m
+  ␛[38;5;252mgemini-3-flash           12    88k     7k      —  310ms  0.5s␛[m  ␛[38;5;248m▁▁▄▁▁▁█␛[m
+  ␛[38;5;252mhouse-model               9    42k     3k      —   1.2s     —␛[m  ␛[38;5;248m▁▁▁▁█▁▁␛[m
 
-  ␛[38;5;241mwhere the tokens went␛[m                                                                                               ␛[38;5;241mlast 30 days␛[m
-  ␛[38;5;241m$ run            ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m2.1M · 54%␛[m                                                                ␛[38;5;252m203 requests␛[m
-  ␛[38;5;241mcopied           ␛[m  ␛[38;5;214m▰▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m1.1M · 28%␛[m                                                                 ␛[38;5;252m31 requests␛[m
-  ␛[38;5;241m⊘ dismissed      ␛[m  ␛[38;5;214m▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m504k · 13%␛[m                                                                 ␛[38;5;252m19 requests␛[m
-  ␛[38;5;241m✗ no answer      ␛[m  ␛[91m▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[91m194k · 5%␛[m                                                                   ␛[91m9 requests␛[m
+  ␛[38;5;245mwhere the tokens went␛[m                                                                                               ␛[38;5;245mlast 30 days␛[m
+  ␛[38;5;245m$ run            ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m2.1M · 54%␛[m                                                                ␛[38;5;252m203 requests␛[m
+  ␛[38;5;245mcopied           ␛[m  ␛[38;5;214m▰▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m1.1M · 28%␛[m                                                                 ␛[38;5;252m31 requests␛[m
+  ␛[38;5;245m⊘ dismissed      ␛[m  ␛[38;5;214m▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m504k · 13%␛[m                                                                 ␛[38;5;252m19 requests␛[m
+  ␛[38;5;245m✗ no answer      ␛[m  ␛[91m▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[91m194k · 5%␛[m                                                                   ␛[91m9 requests␛[m
 
-  ␛[38;5;241mhow the answers came back␛[m                                                                                           ␛[38;5;241m251 requests␛[m
-  ␛[38;5;241mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;241m▱▱␛[m ␛[38;5;214m94% answered␛[m                                                                ␛[38;5;252m173 of 184␛[m
-  ␛[38;5;241mclaude-sonnet-4.6␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;214m100% answered␛[m                                                                 ␛[38;5;252m46 of 46␛[m
-  ␛[38;5;241mgemini-3-flash   ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱␛[m ␛[38;5;214m75% answered␛[m                                                                   ␛[38;5;252m9 of 12␛[m
-  ␛[38;5;241mhouse-model      ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;214m100% answered␛[m                                                                   ␛[38;5;252m9 of 9␛[m
+  ␛[38;5;245mhow the answers came back␛[m                                                                                           ␛[38;5;245m251 requests␛[m
+  ␛[38;5;245mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;245m▱▱␛[m ␛[38;5;214m94% answered␛[m                                                                ␛[38;5;252m173 of 184␛[m
+  ␛[38;5;245mclaude-sonnet-4.6␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;214m100% answered␛[m                                                                 ␛[38;5;252m46 of 46␛[m
+  ␛[38;5;245mgemini-3-flash   ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱␛[m ␛[38;5;214m75% answered␛[m                                                                   ␛[38;5;252m9 of 12␛[m
+  ␛[38;5;245mhouse-model      ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;214m100% answered␛[m                                                                   ␛[38;5;252m9 of 9␛[m
 
-  ␛[38;5;241mhow the commands ran␛[m                                                                                                    ␛[38;5;241m203 runs␛[m
-  ␛[38;5;241mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱␛[m ␛[38;5;214m81% exited 0␛[m                                                                ␛[38;5;252m164 of 203␛[m
+  ␛[38;5;245mhow the commands ran␛[m                                                                                                    ␛[38;5;245m203 runs␛[m
+  ␛[38;5;245mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱␛[m ␛[38;5;214m81% exited 0␛[m                                                                ␛[38;5;252m164 of 203␛[m
 
-␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
 
 · a short terminal · what fits is drawn, what went is named
-␛[1;97mshhh metrics␛[m␛[38;5;241m · last 30 days · 251 requests · 4 models␛[m                                               ␛[38;5;252m$18.42␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh metrics␛[m␛[38;5;245m · last 30 days · 251 requests · 4 models␛[m                                               ␛[38;5;252m$18.42␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d␛[m
-  ␛[38;5;252mgpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s␛[m  ␛[38;5;245m▃▄▄▅▆▅█␛[m
-  ␛[38;5;252mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms  2.1s␛[m  ␛[38;5;245m▂▃▆▄▃█▅␛[m
-  ␛[38;5;252mgemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s␛[m  ␛[38;5;245m▁▁▄▁▁▁█␛[m
-  ␛[38;5;252mhouse-model               9    42k     3k       —   1.2s     —␛[m  ␛[38;5;245m▁▁▁▁█▁▁␛[m
-  ␛[38;5;241m↓ 3 more · where the money went · how the answers came back · how the commands ran␛[m
+  ␛[38;5;252mgpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s␛[m  ␛[38;5;248m▃▄▄▅▆▅█␛[m
+  ␛[38;5;252mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms  2.1s␛[m  ␛[38;5;248m▂▃▆▄▃█▅␛[m
+  ␛[38;5;252mgemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s␛[m  ␛[38;5;248m▁▁▄▁▁▁█␛[m
+  ␛[38;5;252mhouse-model               9    42k     3k       —   1.2s     —␛[m  ␛[38;5;248m▁▁▁▁█▁▁␛[m
+  ␛[38;5;245m↓ 3 more · where the money went · how the answers came back · how the commands ran␛[m
 
-␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
 
 · a shorter one · the table windows last and says what it holds back
-␛[1;97mshhh metrics␛[m␛[38;5;241m · last 30 days · 251 requests · 4 models␛[m                                               ␛[38;5;252m$18.42␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh metrics␛[m␛[38;5;245m · last 30 days · 251 requests · 4 models␛[m                                               ␛[38;5;252m$18.42␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d␛[m
-  ␛[38;5;252mgpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s␛[m  ␛[38;5;245m▃▄▄▅▆▅█␛[m
-  ␛[38;5;241m↓ 3 more models␛[m
-  ␛[38;5;241m↓ 3 more · where the money went · how the answers came back · how the commands ran␛[m
+  ␛[38;5;252mgpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s␛[m  ␛[38;5;248m▃▄▄▅▆▅█␛[m
+  ␛[38;5;245m↓ 3 more models␛[m
+  ␛[38;5;245m↓ 3 more · where the money went · how the answers came back · how the commands ran␛[m
 
-␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
 
 · nothing recorded · a heading over nothing says so
-␛[1;97mshhh metrics␛[m␛[38;5;241m · all time · 0 requests · 0 models␛[m                                                              ␛[38;5;241m[?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh metrics␛[m␛[38;5;245m · all time · 0 requests · 0 models␛[m                                                              ␛[38;5;245m[?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mMODEL  REQUESTS  ↑ TOK  ↓ TOK  SPEND  TTFT  P95  TOK · 7d␛[m
-  ␛[38;5;241mno models to show␛[m
+  ␛[38;5;245mno models to show␛[m
 
-␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
 
 · [?] · the screen's keys and the glyph legend in the foot
-␛[1;97mshhh metrics␛[m␛[38;5;241m · last 30 days · 251 requests · 4 models␛[m                                               ␛[38;5;252m$18.42␛[m␛[38;5;241m · [?] keys · [esc] back␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;97mshhh metrics␛[m␛[38;5;245m · last 30 days · 251 requests · 4 models␛[m                                               ␛[38;5;252m$18.42␛[m␛[38;5;245m · [?] keys · [esc] back␛[m
+␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d␛[m
-  ␛[38;5;252mgpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s␛[m  ␛[38;5;245m▃▄▄▅▆▅█␛[m
-  ␛[38;5;252mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms  2.1s␛[m  ␛[38;5;245m▂▃▆▄▃█▅␛[m
-  ␛[38;5;252mgemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s␛[m  ␛[38;5;245m▁▁▄▁▁▁█␛[m
-  ␛[38;5;252mhouse-model               9    42k     3k       —   1.2s     —␛[m  ␛[38;5;245m▁▁▁▁█▁▁␛[m
+  ␛[38;5;252mgpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s␛[m  ␛[38;5;248m▃▄▄▅▆▅█␛[m
+  ␛[38;5;252mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms  2.1s␛[m  ␛[38;5;248m▂▃▆▄▃█▅␛[m
+  ␛[38;5;252mgemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s␛[m  ␛[38;5;248m▁▁▄▁▁▁█␛[m
+  ␛[38;5;252mhouse-model               9    42k     3k       —   1.2s     —␛[m  ␛[38;5;248m▁▁▁▁█▁▁␛[m
 
-  ␛[38;5;241mwhere the money went␛[m                                                                                                ␛[38;5;241mlast 30 days␛[m
-  ␛[38;5;241m$ run            ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m$9.94 · 54%␛[m                                                               ␛[38;5;252m203 requests␛[m
-  ␛[38;5;241mcopied           ␛[m  ␛[38;5;214m▰▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m$5.11 · 28%␛[m                                                                ␛[38;5;252m31 requests␛[m
-  ␛[38;5;241m⊘ dismissed      ␛[m  ␛[38;5;214m▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m$2.41 · 13%␛[m                                                                ␛[38;5;252m19 requests␛[m
-  ␛[38;5;241m✗ no answer      ␛[m  ␛[91m▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[91m$0.96 · 5%␛[m                                                                  ␛[91m9 requests␛[m
+  ␛[38;5;245mwhere the money went␛[m                                                                                                ␛[38;5;245mlast 30 days␛[m
+  ␛[38;5;245m$ run            ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m$9.94 · 54%␛[m                                                               ␛[38;5;252m203 requests␛[m
+  ␛[38;5;245mcopied           ␛[m  ␛[38;5;214m▰▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m$5.11 · 28%␛[m                                                                ␛[38;5;252m31 requests␛[m
+  ␛[38;5;245m⊘ dismissed      ␛[m  ␛[38;5;214m▰▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;214m$2.41 · 13%␛[m                                                                ␛[38;5;252m19 requests␛[m
+  ␛[38;5;245m✗ no answer      ␛[m  ␛[91m▰␛[m␛[38;5;245m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[91m$0.96 · 5%␛[m                                                                  ␛[91m9 requests␛[m
 
-  ␛[38;5;241mhow the answers came back␛[m                                                                                           ␛[38;5;241m251 requests␛[m
-  ␛[38;5;241mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;241m▱▱␛[m ␛[38;5;214m94% answered␛[m                                                                ␛[38;5;252m173 of 184␛[m
-  ␛[38;5;241mclaude-sonnet-4.6␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;214m100% answered␛[m                                                                 ␛[38;5;252m46 of 46␛[m
-  ␛[38;5;241mgemini-3-flash   ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱␛[m ␛[38;5;214m75% answered␛[m                                                                   ␛[38;5;252m9 of 12␛[m
-  ␛[38;5;241mhouse-model      ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;214m100% answered␛[m                                                                   ␛[38;5;252m9 of 9␛[m
+  ␛[38;5;245mhow the answers came back␛[m                                                                                           ␛[38;5;245m251 requests␛[m
+  ␛[38;5;245mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;245m▱▱␛[m ␛[38;5;214m94% answered␛[m                                                                ␛[38;5;252m173 of 184␛[m
+  ␛[38;5;245mclaude-sonnet-4.6␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;214m100% answered␛[m                                                                 ␛[38;5;252m46 of 46␛[m
+  ␛[38;5;245mgemini-3-flash   ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱▱␛[m ␛[38;5;214m75% answered␛[m                                                                   ␛[38;5;252m9 of 12␛[m
+  ␛[38;5;245mhouse-model      ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;214m100% answered␛[m                                                                   ␛[38;5;252m9 of 9␛[m
 
-  ␛[38;5;241mhow the commands ran␛[m                                                                                                    ␛[38;5;241m203 runs␛[m
-  ␛[38;5;241mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱␛[m ␛[38;5;214m81% exited 0␛[m                                                                ␛[38;5;252m164 of 203␛[m
+  ␛[38;5;245mhow the commands ran␛[m                                                                                                    ␛[38;5;245m203 runs␛[m
+  ␛[38;5;245mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;245m▱▱▱▱▱␛[m ␛[38;5;214m81% exited 0␛[m                                                                ␛[38;5;252m164 of 203␛[m
 
-␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[92m[esc]␛[m␛[38;5;245m back to the shell␛[m
 
-␛[38;5;241mglyphs␛[m
-␛[38;5;241m⚙␛[m  ␛[38;5;241ma read: a file, a search, a listing␛[m
-␛[38;5;214m$␛[m  ␛[38;5;241ma shell command␛[m
-␛[38;5;214m✎␛[m  ␛[38;5;241man edit, a write, a patch or a memory␛[m
-␛[94m◇␛[m  ␛[38;5;241ma sub-agent␛[m
-␛[38;5;214m⇄␛[m  ␛[38;5;241ma call to a server not marked read-only␛[m
-␛[38;5;241m✻␛[m  ␛[38;5;241mthe model writing its calls, counted as they arrive␛[m
-␛[38;5;241m⛁␛[m  ␛[38;5;241ma published report page␛[m
-␛[38;5;241m≡␛[m  ␛[38;5;241ma reading of the session␛[m
-␛[92m✓␛[m  ␛[38;5;241ma compaction that brought the window back␛[m
-␛[38;5;241m·␛[m  ␛[38;5;241maccepted, not started␛[m
-␛[38;5;205m▸␛[m  ␛[38;5;241mrunning␛[m
-␛[38;5;205m✦␛[m  ␛[38;5;241mthe classifier is deciding␛[m
-␛[91m✗␛[m  ␛[38;5;241mfailed␛[m
-␛[38;5;241m⊘␛[m  ␛[38;5;241mrefused: dim by you, red by a rule␛[m
-␛[38;5;103m[?]␛[m␛[38;5;241m hide the keys␛[m
+␛[38;5;245mglyphs␛[m
+␛[38;5;245m⚙␛[m  ␛[38;5;245ma read: a file, a search, a listing␛[m
+␛[38;5;214m$␛[m  ␛[38;5;245ma shell command␛[m
+␛[38;5;214m✎␛[m  ␛[38;5;245man edit, a write, a patch or a memory␛[m
+␛[94m◇␛[m  ␛[38;5;245ma sub-agent␛[m
+␛[38;5;214m⇄␛[m  ␛[38;5;245ma call to a server not marked read-only␛[m
+␛[38;5;245m✻␛[m  ␛[38;5;245mthe model writing its calls, counted as they arrive␛[m
+␛[38;5;245m⛁␛[m  ␛[38;5;245ma published report page␛[m
+␛[38;5;245m≡␛[m  ␛[38;5;245ma reading of the session␛[m
+␛[92m✓␛[m  ␛[38;5;245ma compaction that brought the window back␛[m
+␛[38;5;245m·␛[m  ␛[38;5;245maccepted, not started␛[m
+␛[38;5;205m▸␛[m  ␛[38;5;245mrunning␛[m
+␛[38;5;205m✦␛[m  ␛[38;5;245mthe classifier is deciding␛[m
+␛[91m✗␛[m  ␛[38;5;245mfailed␛[m
+␛[38;5;245m⊘␛[m  ␛[38;5;245mrefused: dim by you, red by a rule␛[m
+␛[38;5;103m[?]␛[m␛[38;5;245m hide the keys␛[m

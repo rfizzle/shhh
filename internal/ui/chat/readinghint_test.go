@@ -95,10 +95,10 @@ func TestReadingRow_IsLitWithThePointerOutsideIt(t *testing.T) {
 	if strings.Contains(pointer, "48;5;") {
 		t.Fatalf("the pointer sits outside the highlight, got %q", pointer)
 	}
-	if !strings.Contains(rest, "48;5;62") {
+	if !strings.Contains(rest, "48;5;61") {
 		t.Fatalf("the row should carry the focus background, got %q", rest)
 	}
-	if !strings.Contains(rest, "97;48;5;62") {
+	if !strings.Contains(rest, "97;48;5;61") {
 		t.Fatalf("the row's words should be bright inside the highlight, got %q", rest)
 	}
 }
@@ -119,13 +119,13 @@ func TestReadingRow_KeepsTheMutationRailInsideTheHighlight(t *testing.T) {
 	// The rail keeps its own colour rather than being repainted bright with
 	// the words, and the background is armed before it: the highlight runs
 	// under the rail rather than starting after it.
-	bg, accent := strings.Index(line, "48;5;62"), strings.Index(line, "38;5;214m▎")
+	bg, accent := strings.Index(line, "48;5;61"), strings.Index(line, "38;5;214m▎")
 	if accent < 0 || bg < 0 || bg > accent {
 		t.Fatalf("the mutation rail should keep its accent inside the highlight, got %q", line)
 	}
 	// The glyph beside it keeps its accent too, and the background is put
 	// back after the rail's own reset rather than being punched through.
-	if !strings.Contains(line, "\x1b[48;5;62m\x1b[38;5;214m✎") {
+	if !strings.Contains(line, "\x1b[48;5;61m\x1b[38;5;214m✎") {
 		t.Fatalf("the kind glyph should stay accented inside the highlight, got %q", line)
 	}
 }
@@ -258,10 +258,10 @@ func TestReadingMode_OnlyOnePaneIsDressedAtATime(t *testing.T) {
 	if !strings.Contains(ansi.Strip(readingView), "READING") {
 		t.Fatal("the transcript has the keyboard, so the rail names it")
 	}
-	if strings.Contains(idleView, "48;5;62") {
+	if strings.Contains(idleView, "48;5;61") {
 		t.Fatal("no row is lit while the input has the keyboard")
 	}
-	if !strings.Contains(readingView, "48;5;62") {
+	if !strings.Contains(readingView, "48;5;61") {
 		t.Fatal("the row under the cursor is lit while the transcript has the keyboard")
 	}
 	// The frame is the input's own dressing, and reading mode replaces it

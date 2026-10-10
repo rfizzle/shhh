@@ -45,34 +45,34 @@
 
 ── ansi ────────────────────────────────────────────────────
 · the offer, beside the decision run
-␛[38;5;241m────␛[m ␛[1;94mDECISION 1/1␛[m ␛[38;5;241m──────────────────────────────────────␛[m
-␛[38;5;214m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m─────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
+␛[38;5;245m────␛[m ␛[1;94mDECISION 1/1␛[m ␛[38;5;245m──────────────────────────────────────␛[m
+␛[38;5;214m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;245m─────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97mnpm test␛[m                                           ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · shhh can't tell what it changes␛[m           ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;245m · shhh can't tell what it changes␛[m           ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                      ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[91munknown␛[m␛[38;5;245m — shhh cannot tell what npm writes␛[m ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[91munknown␛[m                                    ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m                                       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;246mtouches   ␛[m␛[91munknown␛[m␛[38;5;248m — shhh cannot tell what npm writes␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;246mundo      ␛[m␛[91munknown␛[m                                    ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;246mnetwork   ␛[m␛[38;5;214mopen␛[m                                       ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m                           ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m                           ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;103m[a]␛[m ␛[38;5;252mallow "npm test" without asking␛[m                  ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mfull view␛[m␛[38;5;241m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the command␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m  ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;103m[enter]␛[m ␛[38;5;252mfull view␛[m␛[38;5;245m · ␛[m␛[38;5;103m[e]␛[m ␛[38;5;252medit the command␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m  ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[92m[esc] leave it waiting, nothing is denied␛[m            ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────╯␛[m
 
 · the line the reader wrote, read again
-␛[38;5;241m────␛[m ␛[1;94mDECISION 1/1␛[m ␛[38;5;241m──────────────────────────────────────␛[m
-␛[91m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m───────────────␛[m␛[91m ✎ amended ─ ⚠ HIGH ─╮␛[m
+␛[38;5;245m────␛[m ␛[1;94mDECISION 1/1␛[m ␛[38;5;245m──────────────────────────────────────␛[m
+␛[91m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;245m───────────────␛[m␛[91m ✎ amended ─ ⚠ HIGH ─╮␛[m
 ␛[91m│␛[m ␛[38;5;214m$␛[m ␛[97mrm -rf ./build␛[m                                     ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;241mwas: echo hi␛[m                                         ␛[91m│␛[m
-␛[91m│␛[m ␛[91m⚠ HIGH␛[m␛[38;5;241m · recursive forced deletion — may destroy fi␛[m␛[38;5;241m…␛[m ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;245mwas: echo hi␛[m                                         ␛[91m│␛[m
+␛[91m│␛[m ␛[91m⚠ HIGH␛[m␛[38;5;245m · recursive forced deletion — may destroy fi␛[m␛[38;5;245m…␛[m ␛[91m│␛[m
 ␛[91m│␛[m                                                      ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;243mtouches   ␛[m␛[38;5;252m./build␛[m                                    ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m                                       ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m                                       ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;246mtouches   ␛[m␛[38;5;252m./build␛[m                                    ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;246mundo      ␛[m␛[91mnone␛[m                                       ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;246mnetwork   ␛[m␛[38;5;214mopen␛[m                                       ␛[91m│␛[m
 ␛[91m├──────────────────────────────────────────────────────┤␛[m
-␛[91m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m ␛[38;5;252mfull view␛[m       ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;103m[e]␛[m ␛[38;5;252medit the command␛[m␛[38;5;241m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                      ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;103m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;245m · ␛[m␛[38;5;103m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;245m · ␛[m␛[38;5;103m[enter]␛[m ␛[38;5;252mfull view␛[m       ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;103m[e]␛[m ␛[38;5;252medit the command␛[m␛[38;5;245m · ␛[m␛[38;5;103m[?]␛[m ␛[38;5;252mkeys␛[m                      ␛[91m│␛[m
 ␛[91m│␛[m ␛[92m[esc] not now — it keeps waiting␛[m                     ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;241m[a] always — not offered: shhh flagged this command␛[m  ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;245m[a] always — not offered: shhh flagged this command␛[m  ␛[91m│␛[m
 ␛[91m╰──────────────────────────────────────────────────────╯␛[m

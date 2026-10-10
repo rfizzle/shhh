@@ -53,15 +53,10 @@ func themeRestore(t *testing.T) {
 // is the product's own: caps reads the ground off the reply, the auto theme
 // takes the table chosen for that ground, and the frame is drawn with it.
 //
-// The thresholds are WCAG's, on the two readings the tokens are for. Body is
-// ordinary running text and takes the 4.5:1 that asks for; the two chrome
-// greys carry counts, hints and detail bodies beside a glyph or a word that
-// says the same thing
-// (docs/interface/principles.md#colour-never-carries-meaning-alone), so they
-// take the 3:1 that stands for everything that is not body text. #8a8a8a on
-// white clears it by the same margin #626262 clears it against black by,
-// which is the light table's claim to be the dark one's equal and not its
-// approximation.
+// The threshold is WCAG's 4.5:1 for running text on every ink asked about:
+// the two chrome greys carry counts, hints and detail bodies, which are
+// instructions rather than decoration, so they take the bar body takes
+// (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
 func TestTheme_ALightTerminalIsLegible(t *testing.T) {
 	themeRestore(t)
 	components.SetMono(false)
@@ -106,8 +101,8 @@ func TestTheme_ALightTerminalIsLegible(t *testing.T) {
 		least float64
 	}{
 		{"body", components.Palette.Body, 4.5},
-		{"dim", components.Palette.Dim, 3},
-		{"dimmer", components.Palette.Dimmer, 3},
+		{"dim", components.Palette.Dim, 4.5},
+		{"dimmer", components.Palette.Dimmer, 4.5},
 	} {
 		if got := contrast(t, c.token.Color(), white); got < c.least {
 			t.Errorf("%s is %.2f:1 against the background this terminal reported, and has to be at least %.1f:1",
