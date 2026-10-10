@@ -483,8 +483,8 @@ func sandboxToolchain(ctx context.Context, c sandbox.Container) chat.Toolchain {
 	}
 	t.Declared = tc.Check
 	t.Missing = containerMissing(ctx, c, tc.Check)
-	t.Refusal = "this session's commands run in its sandbox container, so nothing is installed on this machine for them: " +
-		"what the container lacks is installed by the declaration, which prepares the image the next sandbox session starts from"
+	t.Where = "in the sandbox image"
+	t.Refusal = "this session's commands run in its sandbox container, whose tools come from the image the declaration prepares"
 	t.Reread = func() chat.Toolchain { return t }
 	return t
 }

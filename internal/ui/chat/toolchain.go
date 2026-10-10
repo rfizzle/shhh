@@ -74,6 +74,11 @@ type Toolchain struct {
 	// Untrusted is a checkout whose declaration is not read until the
 	// person trusts it, which the draft's card says.
 	Untrusted bool
+	// Where is where Missing was judged, as the lines say it: empty is the
+	// PATH a command on this machine is handed, and a session whose commands
+	// run in a container names the container's image instead, since that is
+	// what was asked.
+	Where string
 	// Reread reads the declaration again, as the host built this value at
 	// session start; Moved counts the acts in this process that change what
 	// a reading would find — the checkout trusted or not, a declaration
@@ -89,6 +94,14 @@ type Toolchain struct {
 	// installing is a run under way, so a second /setup does not start a
 	// second run of the same lines into the same directory.
 	installing bool
+}
+
+// where is Where, or the PATH where it is empty.
+func (t Toolchain) where() string {
+	if t.Where == "" {
+		return "on PATH"
+	}
+	return t.Where
 }
 
 // toolchain is the declaration as this session holds it.
@@ -124,7 +137,7 @@ func (m Model) toolchainNote() (components.StartNote, bool) {
 	if len(tc.Missing) == 0 {
 		return components.StartNote{}, false
 	}
-	detail := "declared, not on PATH"
+	detail := "declared, not " + tc.where()
 	if m.setupRunnable() {
 		detail += " · " + setupCommandName + " installs them"
 	}
@@ -139,9 +152,9 @@ func (m Model) toolchainStatus() string {
 		return ""
 	}
 	if len(tc.Missing) == 0 {
-		return "Toolchain\n" + strings.Join(tc.Declared, " · ") + " — all on PATH"
+		return "Toolchain\n" + strings.Join(tc.Declared, " · ") + " — all " + tc.where()
 	}
-	line := "Toolchain\n" + strings.Join(tc.Missing, " · ") + " — declared, not on PATH"
+	line := "Toolchain\n" + strings.Join(tc.Missing, " · ") + " — declared, not " + tc.where()
 	if m.setupRunnable() {
 		line += " · " + setupCommandName + " installs them"
 	}
@@ -150,11 +163,14 @@ func (m Model) toolchainStatus() string {
 
 // setupCommand is /setup: the card, or the reason there is none.
 func (m Model) setupCommand() (tea.Model, tea.Cmd) {
+	// The refusal is said first where something is declared: a session
+	// whose tools come from its container has no lines to offer, and saying
+	// it declares nothing would be wrong about the checkout.
+	if refusal := m.toolchain().Refusal; refusal != "" && len(m.toolchain().Declared) > 0 {
+		return m.systemNotice("nothing can be installed here: " + refusal)
+	}
 	if !m.setupWired() {
 		return m.systemNotice("this checkout declares nothing to install here")
-	}
-	if refusal := m.toolchain().Refusal; refusal != "" {
-		return m.systemNotice("nothing can be installed here: " + refusal)
 	}
 	if m.toolchain().installing {
 		return m.systemNotice("the declared tools are being installed already")
