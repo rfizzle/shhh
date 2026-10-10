@@ -235,12 +235,25 @@ func (m Model) inputLive() bool {
 	return false
 }
 
+// updateStream answers a stream message under its run. One from a run that
+// has been cancelled since is dropped silently: it is not shown and it is not
+// folded into the turn now going, which a late tail of tokens would be.
+func (m Model) updateStream(msg streamMsg) (tea.Model, tea.Cmd, bool) {
+	if msg.runID != m.agent.RunID() {
+		return m, nil, true
+	}
+	return answered(m.update(msg.msg))
+}
+
 // updateTurn answers what the session's own turn reported: the stream's
 // tokens and its end, the tool calls and their results, and the background
 // work a turn starts and comes back from. handled is false for a message
 // this route does not own.
 func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 	switch msg := msg.(type) {
+	case streamMsg:
+		return m.updateStream(msg)
+
 	case initialPromptMsg:
 		text := m.initialPrompt
 		m.initialPrompt = ""

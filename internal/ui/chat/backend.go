@@ -57,22 +57,37 @@ type eventStream = <-chan provider.StreamEvent
 // screen always has.
 type inProcessBackend struct{ agent *agent.Agent }
 
+// streamMsg is a stream message under the run it was asked for. A cancel
+// moves the run on while a read may still be waiting on the channel, and
+// what that read brings back is the cancelled turn's, not the next one's:
+// the screen drops it unseen when the run is no longer the current one
+// (turn.go). The run is the loop's own identity for a turn's asynchronous
+// work, taken when the command was built and not when it ran.
+type streamMsg struct {
+	runID int
+	msg   tea.Msg
+}
+
 // Request starts a stream over an explicit message list (callers pass a
 // copy so in-flight requests are immune to later mutation) under an
 // explicit tool choice.
 func (b inProcessBackend) Request(msgs []provider.Message, choice string) tea.Cmd {
 	a := b.agent
+	runID := a.RunID()
 	return func() tea.Msg {
 		events, cancel, err := a.StreamWithChoice(msgs, choice)
 		if err != nil {
-			return streamErrMsg{err: err}
+			return streamMsg{runID: runID, msg: streamErrMsg{err: err}}
 		}
-		return streamStartedMsg{events: events, cancel: cancel}
+		return streamMsg{runID: runID, msg: streamStartedMsg{events: events, cancel: cancel}}
 	}
 }
 
 // Next reads the next batch of the stream.
-func (inProcessBackend) Next(events eventStream) tea.Cmd { return waitForEvent(events) }
+func (b inProcessBackend) Next(events eventStream) tea.Cmd {
+	runID, read := b.agent.RunID(), waitForEvent(events)
+	return func() tea.Msg { return streamMsg{runID: runID, msg: read()} }
+}
 
 // waitForEvent reads the next stream event. If it is a token, any further
 // tokens already buffered on the channel are drained into a single batch so

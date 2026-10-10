@@ -324,8 +324,10 @@ func driveCompact(t *testing.T, m Model) Model {
 	}
 	var started *streamStartedMsg
 	for _, c := range batch {
-		if msg, ok := c().(streamStartedMsg); ok {
-			started = &msg
+		if run, ok := c().(streamMsg); ok {
+			if msg, ok := run.msg.(streamStartedMsg); ok {
+				started = &msg
+			}
 		}
 	}
 	if started == nil {

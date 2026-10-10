@@ -642,6 +642,9 @@ func TestRequestStream_SendsFullConversation(t *testing.T) {
 	// Execute the cmd returned by requestStream
 	cmd := m.requestStream()
 	cmdMsg := cmd()
+	if run, ok := cmdMsg.(streamMsg); ok {
+		cmdMsg = run.msg
+	}
 
 	// The streamStartedMsg means it called our stream func
 	if _, ok := cmdMsg.(streamStartedMsg); !ok {
