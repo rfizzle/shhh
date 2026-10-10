@@ -159,6 +159,7 @@ type Ledger struct {
 	// lease counterfactual's running figures.
 	prev     map[Origin]prevRequest
 	expiries []CacheExpiry
+	taken    int
 	leases   map[string]*leaseCounter
 	// now is the clock a reading is stamped with; nil is time.Now.
 	now func() time.Time

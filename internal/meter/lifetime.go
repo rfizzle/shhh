@@ -331,6 +331,21 @@ func (l *Ledger) Expiries() []CacheExpiry {
 	return slices.Clone(l.expiries)
 }
 
+// TakeExpiries is the expiries seen since it was last called, each handed
+// out once: the surface that says so to the person calls it as responses
+// arrive, and a /clear that starts the accounting over does not bring the
+// old ones back.
+func (l *Ledger) TakeExpiries() []CacheExpiry {
+	if l == nil {
+		return nil
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	out := slices.Clone(l.expiries[l.taken:])
+	l.taken = len(l.expiries)
+	return out
+}
+
 // ExpiredUnderLease reports an expiry seen at a gap shorter than the lease
 // the requests asked for: the gateway is not honouring it.
 func (r CacheReading) ExpiredUnderLease() bool {

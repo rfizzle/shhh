@@ -131,6 +131,17 @@ func (l *Ledger) SetCacheLease(lease string) {
 	l.lease = lease
 }
 
+// SetClock replaces the clock readings and gaps are stamped with, for a test
+// or a replayed session that needs to say how long a pause was.
+func (l *Ledger) SetClock(now func() time.Time) {
+	if l == nil {
+		return
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.now = now
+}
+
 // ObserveCache folds one response's usage into its endpoint's reading.
 func (l *Ledger) ObserveCache(providerName, model string, u provider.Usage) {
 	if l == nil {
