@@ -211,6 +211,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	// would be a flag the other silently ignored (sandbox.go).
 	cfg := withRequiredContainment(ConfigFrom(cmd.Context()), session.requireSandbox)
 	ledger.SetBudget(spendBudget(cfg))
+	ledger.SetCacheLease(cfg.ProviderCacheTTL())
 
 	// What the checkout was not allowed to put into this session, or what
 	// changed in a checkout trusted before, said once before it starts. Both

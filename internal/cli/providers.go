@@ -24,6 +24,7 @@ import (
 	"github.com/rfizzle/shhh/internal/profile"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/spf13/cobra"
 )
 
@@ -54,7 +55,7 @@ func newProvidersCmd() *cobra.Command {
 			names := provider.Available()
 			sort.Strings(names)
 			r := providersReport(names, sourceRows(dirs, profiles, errs), profiles, prices,
-				profileWayOut(dirs))
+				profileWayOut(dirs), storedCacheReadings())
 			if plan := profile.Plan(dirs); plan.NeedsWork() {
 				r.Notes = append(r.Notes, report.Note{State: report.Warn, Text: fmt.Sprintf(
 					"beside %s, %s now redundant; `shhh providers migrate` folds them in",
@@ -72,8 +73,12 @@ func newProvidersCmd() *cobra.Command {
 // were looked for, and one section per profile. It is handed the resolvable
 // names and the source rows rather than reading them, so the listing can be
 // rendered against a machine other than this one.
+//
+// caches are the stored cache readings, which put a cache row under each
+// endpoint that has one: whether the endpoint's prompt cache has been seen to
+// work, from what its responses said.
 func providersReport(names []string, sources []report.Row, profiles []profile.Profile,
-	prices *pricing.Table, wayOut string) report.Report {
+	prices *pricing.Table, wayOut string, caches []storage.CacheReading) report.Report {
 	byName := map[string]profile.Profile{}
 	for _, p := range profiles {
 		byName[p.Name] = p
@@ -87,6 +92,7 @@ func providersReport(names []string, sources []report.Row, profiles []profile.Pr
 		}
 		builtIn++
 		rows = append(rows, builtinRow(name))
+		rows = append(rows, cacheRowsFor(caches, name, name)...)
 	}
 
 	r := report.Report{
@@ -98,7 +104,7 @@ func providersReport(names []string, sources []report.Row, profiles []profile.Pr
 		r.Sections = append(r.Sections, report.Section{Header: "SOURCES", Rows: sources})
 	}
 	for _, p := range profiles {
-		r.Sections = append(r.Sections, profileSections(p, prices)...)
+		r.Sections = append(r.Sections, profileSections(p, prices, caches)...)
 	}
 	if len(profiles) == 0 {
 		r.Sections = append(r.Sections, report.Section{Rows: []report.Row{
@@ -210,7 +216,7 @@ func splitProfileError(err error) (string, string) {
 // declares, and what it rewrites. Each is a section rather than an indented
 // sub-block because a mis-globbed route is exactly the quiet failure this
 // listing exists to catch, and it has to be findable.
-func profileSections(p profile.Profile, prices *pricing.Table) []report.Section {
+func profileSections(p profile.Profile, prices *pricing.Table, caches []storage.CacheReading) []report.Section {
 	routes := p.Routes()
 	head := report.Section{
 		Header: "PROFILE " + p.Name,
@@ -222,6 +228,7 @@ func profileSections(p profile.Profile, prices *pricing.Table) []report.Section 
 	}
 	for _, e := range routes {
 		head.Rows = append(head.Rows, endpointRow(e))
+		head.Rows = append(head.Rows, cacheRowsFor(caches, p.Name, e.Label)...)
 	}
 
 	models := modelRows(routes, prices)

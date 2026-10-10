@@ -37,6 +37,7 @@ type assembly struct {
 	scopeSaid string
 	prices    *pricing.Table
 	ledger    *meter.Ledger
+	caches    *cacheKeeper
 	env       *sessionEnv
 
 	// closers end what the assembly opened, in the reverse order it was
@@ -136,6 +137,12 @@ func assembleSession(cmd *cobra.Command, session *chatSession, opts assemblyOpts
 	// See docs/architecture.md#spend-is-counted-at-the-provider.
 	a.prices = loadPricing()
 	a.ledger = meter.New(a.prices)
+	// What the gate learns about each endpoint's prompt cache is written to
+	// the store at the session's end, after everything that sends a request
+	// has stopped and before the store closes; the screen writes it at each
+	// turn's close as well (cachereadings.go).
+	a.caches = newCacheKeeper(a.db, a.ledger)
+	a.closers = append(a.closers, a.caches.keep)
 
 	a.env, err = buildSessionEnv(cmd, *session, a.ledger)
 	if err != nil {

@@ -112,18 +112,18 @@ func TestProvidersReport_Goldens(t *testing.T) {
 		{State: report.Pass, Subject: "~/.config/shhh/providers.toml", Detail: "1 profile"},
 		{State: report.Skip, Subject: "~/.config/shhh/providers", Detail: "absent"},
 	}
-	populated := providersReport(names, sources, []profile.Profile{goldenProfile()}, nil, "")
+	populated := providersReport(names, sources, []profile.Profile{goldenProfile()}, nil, "", nil)
 	assertReportGolden(t, "providers", populated.Render(80))
 
 	broken := providersReport([]string{"anthropic", "openai"}, append(sources[1:], report.Row{
 		State: report.Fail, Subject: "~/.config/shhh/providers.toml", Outcome: "would not load",
 		Consequence: "provider \"corp-gw\": base_url is required",
 		Fix:         []string{"the other profiles still load; this file is skipped until it parses"},
-	}), nil, nil, "write ~/.config/shhh/providers.toml to add one")
+	}), nil, nil, "write ~/.config/shhh/providers.toml to add one", nil)
 	assertReportGolden(t, "providers.broken", broken.Render(80))
 
 	none := providersReport([]string{"anthropic", "openai"}, sources[1:], nil, nil,
-		"write ~/.config/shhh/providers.toml to add one")
+		"write ~/.config/shhh/providers.toml to add one", nil)
 	assertReportGolden(t, "providers.none", none.Render(80))
 }
 

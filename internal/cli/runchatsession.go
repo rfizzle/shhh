@@ -514,6 +514,7 @@ func (b *screenBuild) wiring() chat.Wiring {
 		Prices:               asm.prices,
 		ModelName:            env.modelName,
 		Ledger:               ledger,
+		KeepCacheReadings:    asm.caches.keep,
 		Secrets:              chat.Secrets{Manage: secretsManager(session.vault), Scrub: session.vault.ScrubMessage},
 		Scope:                asm.sc,
 		MaxToolRounds:        maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet),

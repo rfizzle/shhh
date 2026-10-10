@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -66,6 +67,19 @@ func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
 		f.Detail = joinDetail(f.Detail, err.Error())
 	} else if effort.On() {
 		f.Detail = joinDetail(f.Detail, "reasoning "+effort.String())
+	}
+	// And whether the model's prompt cache has been seen to work where it
+	// resolves to, from what earlier sessions' responses said — a gateway
+	// that strips the marks is a bill paid in full with nothing else to
+	// show for it.
+	// See docs/capabilities/providers.md#the-session-says-whether-the-cache-worked.
+	return withCacheNote(f, storedCacheReadings(), resolved.Provider, resolved.Model)
+}
+
+// withCacheNote is the model row with the cache's reading appended.
+func withCacheNote(f doctorFinding, readings []storage.CacheReading, providerName, model string) doctorFinding {
+	if note := cacheNote(readings, providerName, model); note != "" {
+		f.Detail = joinDetail(f.Detail, note)
 	}
 	return f
 }
