@@ -57,6 +57,10 @@ func TestProfile_RegisterRegistersWhatALineNarrows(t *testing.T) {
 	body := `name = "gw"
 base_url = "http://x/v1"
 
+[[models]]
+id = "wide"
+structured_outputs = false
+
 [[endpoint]]
 api = "anthropic-messages"
 base_url = "http://x/anthropic"
@@ -70,6 +74,7 @@ base_url = "http://x/anthropic"
 		t.Fatal(err)
 	}
 	want := map[string]provider.Declared{
+		"wide":   {Model: map[string]any{"structured_outputs": false}},
 		"scoped": {Flows: map[provider.Flow]map[string]any{provider.FlowClassifier: {"structured_outputs": false}}},
 	}
 	if got := loaded[0].declarations(); !reflect.DeepEqual(got, want) {
@@ -84,7 +89,7 @@ base_url = "http://x/anthropic"
 		t.Fatalf("DeclaredOn another flow = %v", got)
 	}
 	Register(nil)
-	if got := provider.DeclaredOn("scoped", provider.FlowClassifier, "structured_outputs"); got != nil {
+	if got := provider.DeclaredOn("wide", provider.FlowBacklog, "structured_outputs"); got != nil {
 		t.Fatalf("a second registration withdraws the first's declarations, got %v", got)
 	}
 }

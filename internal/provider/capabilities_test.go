@@ -90,14 +90,13 @@ func TestFamilyCapabilities_StructuredOutput(t *testing.T) {
 func TestSchemaFor_AProfileCanDeclareNoSchema(t *testing.T) {
 	SetCapabilityLookup(func(model string) (Capabilities, bool) {
 		switch model {
-		case "claude-sonnet-5-5":
-			return Capabilities{Reasoning: true, Adaptive: true, NoSchema: true}, true
-		case "claude-opus-5-5":
+		case "claude-sonnet-5-5", "claude-opus-5-5":
 			return Capabilities{Reasoning: true, Adaptive: true}, true
 		}
 		return Capabilities{}, false
 	})
 	defer SetCapabilityLookup(nil)
+	declare(t, "gw", map[string]Declared{"claude-sonnet-5-5": {Model: map[string]any{"structured_outputs": false}}})
 
 	opts := CompletionOpts{ResponseSchema: &ResponseSchema{Name: "verdict", Schema: []byte(`{"type":"object"}`)}}
 	if opts.SchemaFor("claude-sonnet-5-5") != nil {

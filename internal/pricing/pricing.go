@@ -90,11 +90,6 @@ type ModelPricing struct {
 	// knob needs to override a table that said it does. The public table
 	// never writes it; there, a set SupportsReasoning is the statement.
 	ReasoningKnown bool `json:"-"`
-
-	// NoStructuredOutputs is a profile's declaration that the model takes
-	// no response schema. The public table never writes it, and an overlay
-	// entry that does not say it keeps what it lands on.
-	NoStructuredOutputs bool `json:"-"`
 }
 
 // describesReasoning reports whether the entry's reasoning flags mean
@@ -104,7 +99,7 @@ func (p ModelPricing) describesReasoning() bool { return p.ReasoningKnown || p.S
 // known reports whether the entry carries anything worth keeping.
 func (p ModelPricing) known() bool {
 	return p.InputCostPerToken > 0 || p.OutputCostPerToken > 0 || p.MaxInputTokens > 0 ||
-		p.MaxOutputTokens > 0 || p.describesReasoning() || p.NoStructuredOutputs
+		p.MaxOutputTokens > 0 || p.describesReasoning()
 }
 
 type Table struct {
@@ -263,9 +258,6 @@ func (t *Table) Overlay(models map[string]ModelPricing) {
 		}
 		if p.MaxOutputTokens == 0 {
 			p.MaxOutputTokens = existing.MaxOutputTokens
-		}
-		if !p.NoStructuredOutputs {
-			p.NoStructuredOutputs = existing.NoStructuredOutputs
 		}
 		if !p.describesReasoning() {
 			// An entry that says nothing about thinking keeps the flags it

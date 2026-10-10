@@ -226,6 +226,9 @@ const keyStructuredOutputs = "structured_outputs"
 // whether it declares anything.
 func (m Model) declared() (provider.Declared, bool) {
 	var d provider.Declared
+	if m.StructuredOutputs != nil {
+		d.Model = map[string]any{keyStructuredOutputs: *m.StructuredOutputs}
+	}
 	for word, settings := range m.Flows {
 		if len(settings) == 0 {
 			continue
@@ -235,11 +238,8 @@ func (m Model) declared() (provider.Declared, bool) {
 		}
 		d.Flows[provider.Flow(word)] = settings
 	}
-	return d, d.Flows != nil
+	return d, d.Model != nil || d.Flows != nil
 }
-
-// NoSchema reports whether the model is declared to take no response schema.
-func (m Model) NoSchema() bool { return m.StructuredOutputs != nil && !*m.StructuredOutputs }
 
 func sortedKeys[V any](m map[string]V) []string {
 	keys := make([]string, 0, len(m))
