@@ -46,11 +46,11 @@ keys "command timeout"
 keys Enter
 keys BSpace BSpace BSpace
 keys "90" Enter
+snap 07-startup-staged "unwritten · next session" "1 change unwritten"
 keys Escape
 sleep 0.3
 keys Escape
 sleep 0.3
-snap 07-startup-staged "unwritten · next session" "[ctrl+s] write 1 change"
 keys C-s
 keys Escape
 snap 08-startup-receipt "behavior.command_timeout_seconds" "keeps the settings it started on"
