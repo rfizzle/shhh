@@ -360,6 +360,10 @@ const DenylistResult = "error: this command is on the deny list for this session
 // rule is where the reader learns which of their paths it was.
 const DenyReasonIrreplaceable = "irreplaceable target"
 
+// DenyReasonGitPath is the rule name a write to a path git runs or reads as
+// configuration carries (tools.GitProgramPath).
+const DenyReasonGitPath = "git program path"
+
 // RuleRefusal is the refusal nothing a session can grant reaches: the
 // person's deny list, then a destroying command pointed at something this
 // session may not destroy. It returns the rule name the row carries, and ok

@@ -169,7 +169,7 @@ func (m *Model) saveEditPane(s *editSession) (string, bool) {
 	}
 	record := changeRecording{store: m.changes, tracker: m.wiring.Tracker, turn: turn, path: s.abs, origin: changeset.ByPerson}
 	before := record.before()
-	if _, err := s.seen.ExecuteMutating(tools.WriteFileName, args); err != nil {
+	if _, err := s.seen.WriteByPerson(args); err != nil {
 		var stale tools.StaleError
 		if errors.As(err, &stale) {
 			// The file moved since the pane opened it. The save is refused

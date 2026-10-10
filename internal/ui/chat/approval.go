@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -332,6 +333,13 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 			return nil, fmt.Errorf("tool %s cannot be approved in this session", tc.Name)
 		}
 		mut, err := tools.PreviewMutation(tc.Name, json.RawMessage(tc.Arguments))
+		if errors.Is(err, tools.ErrGitProgramPath) {
+			// No preview is drawn for a path no card can allow; the request
+			// carries the classification so the standing rules refuse it
+			// before any card is built.
+			path := tools.WrittenPath(tc.Name, tc.Arguments)
+			return &approvalRequest{call: tc, class: call, kind: approvalDiff, title: "write " + path, path: path, summary: "write " + path}, nil
+		}
 		if err != nil {
 			return nil, fmt.Errorf("invalid arguments: %w", err)
 		}

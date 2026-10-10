@@ -524,6 +524,33 @@ Every one of them runs git the same way.
   submodule's own changes and its moved pointer are not in the tree notice,
   the survey's count, a writer's patch or the lines a history reading shows.
 
+- **No write from the file tools to a path git runs.** `write_file` and
+  `edit_file` run in shhh's own process, outside any container, so the mask
+  above does not reach them. They refuse a target under `.git/hooks/`, the
+  repository's `.git/config` and `config.worktree`, anything under
+  `.git/info/`, a worktree's or submodule's `.git` file, the hooks directory
+  `core.hooksPath` names and a file an `include` or `includeIf` in the
+  repository's config names. The repository read is the session's own,
+  through a worktree's `.git` file to its store and `commondir`, so both the
+  shared config and the worktree's are read, and a hooks directory or an
+  included file outside the workspace is refused as readily as one inside it.
+  The path is cleaned and resolved against the session's directory, and a
+  link that lands on one of these is refused as the place it lands, including
+  a link whose target does not exist yet. The refusal is a standing rule: the
+  screen answers it before a card is drawn, a scripted or served run before
+  its flags, and a child before its policy, in every permission mode and under
+  every grant, with one sentence the model reads everywhere. The tool itself
+  refuses too, so a model path that reaches it by no gate meets the same
+  answer. Your own save from the `/edit` pane is not the model's and is not
+  refused, as a command typed after `!` is not. The model is told in the write
+  tool's description that these paths are refused in every mode. A hooks
+  directory or an included file outside the workspace is refused to the file
+  tools but is not in a container sandbox at all, since its one writable mount
+  is the workspace, so nothing contained can write it. Git's `log`, `show`
+  and `diff` also run a textconv or diff driver that `.git/config` names, and
+  the read-only inspection allowlist cannot see that from the command line;
+  `.git/config` is the file this rule keeps a write out of.
+
 **The store is not pinned.** Git could be told, for every call, which store
 to use — the one found when the session started — and a `commondir` or a
 subdirectory `.git` written afterwards would then be ignored rather than

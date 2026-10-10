@@ -166,6 +166,20 @@ func (s *Supervisor) refuseUncontained(c *child, tc provider.ToolCall) (string, 
 	return c.env.CommandRefusal, true
 }
 
+// refuseGitProgramPath answers a child's write to a path git runs or reads as
+// configuration with the session's refusal, filed with the safety table's.
+func refuseGitProgramPath(c *child, name string, rooted json.RawMessage, title string) (string, bool) {
+	if !tools.IsMutating(name) || !tools.GitProgramPath(c.root, tools.WrittenPath(name, string(rooted))) {
+		return "", false
+	}
+	if c.rec.Decision != nil {
+		c.rec.Decision(c.pos(), observe.DecisionDeny, observe.ReasonSafety)
+	}
+	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused: " + title + " — " + agent.DenyReasonGitPath,
+		Result: tools.GitProgramPathResult})
+	return tools.GitProgramPathResult, true
+}
+
 // resolveGated is the child's approval path: the child's clamped mode policy
 // decides, and anything it would ask about routes to the parent user. Every
 // verdict along the way is recorded at the codes a session records its own
@@ -194,6 +208,13 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 	}
 	action = ruledAction(c, s.scopedAction(c, action), s.opts.ScopeDirs)
 	title := askTitle(tc.Name, action)
+	// A path git runs is refused ahead of the policy, the classifier and the
+	// card, as the session refuses it: no mode, grant or answer makes it a
+	// write the host's next git run is safe from. The path is the rooted one,
+	// read against the child's own directory.
+	if result, refused := refuseGitProgramPath(c, tc.Name, rooted, title); refused {
+		return result
+	}
 	policy := s.childPolicy(c)
 	decision, reason := policy.Decide(action)
 	// The policy's reason is free text until it goes through ReasonCode,

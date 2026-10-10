@@ -106,6 +106,8 @@ func TestApprovalRouter_ScreenAndHeadlessAgreeOnEveryRule(t *testing.T) {
 			rule: "containment", sameWords: true},
 		{name: "an edit behind the deny mask", call: write(filepath.Join(home, ".ssh", "config")),
 			rule: "scope", code: observe.ReasonOutOfScope},
+		{name: "a write to a git hook", call: write(filepath.Join(ws, ".git", "hooks", "pre-commit")),
+			rule: agent.DenyReasonGitPath, code: observe.ReasonSafety, sameWords: true},
 		{name: "a command no rule names", call: execCall("go version"), rule: none},
 		{name: "an edit inside the scope", call: write(filepath.Join(ws, "notes.txt")), rule: none},
 		{name: "a git write the deny list does not name", call: gitBranch, rule: none},

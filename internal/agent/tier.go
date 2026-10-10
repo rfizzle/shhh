@@ -143,7 +143,7 @@ func classify(name string, args json.RawMessage, has bool,
 		// is judged alike wherever the fetch was made.
 		return Classified{Tier: TierCommand, Action: Action{Kind: ActionFetch, Reading: web.ReadFetch(args)}}, nil
 	case tools.IsMutating(name):
-		return Classified{Tier: TierWrite, Action: Action{Kind: ActionEdit}}, nil
+		return Classified{Tier: TierWrite, Action: Action{Kind: ActionEdit, Path: tools.WrittenPath(name, string(args))}}, nil
 	case name == structural.GitWriteToolName:
 		// The writing half of git sits at the write tier and carries the line
 		// it stands for, so a deny-list entry for `git commit` refuses the

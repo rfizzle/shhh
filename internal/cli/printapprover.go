@@ -549,6 +549,12 @@ func (r headlessApproval) approveGitWrite(tc provider.ToolCall, call agent.Class
 
 // approveWrite answers a file modification.
 func (r headlessApproval) approveWrite(tc provider.ToolCall, call agent.Classified) string {
+	// Before --yes and before the judge, as the screen reads it before its
+	// card: a path git runs is no grant's to write.
+	if refusal, refused := r.rules.Rule(approval.CallOf(tc.Name, call)); refused {
+		r.refuse(tc, "", refusal.Code)
+		return refusal.Result
+	}
 	mut, mutErr := r.un.seen.PreviewMutation(tc.Name, json.RawMessage(tc.Arguments))
 	edit := call.Action
 	if mutErr == nil {

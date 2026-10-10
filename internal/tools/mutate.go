@@ -131,7 +131,7 @@ func PreviewMutation(name string, raw json.RawMessage) (Mutation, error) {
 func (r *Recorder) PreviewMutation(name string, raw json.RawMessage) (Mutation, error) {
 	switch name {
 	case WriteFileName:
-		args, err := parseWriteFileArgs(raw)
+		args, err := parseWriteFileArgs(raw, false)
 		if err != nil {
 			return Mutation{}, err
 		}
@@ -180,6 +180,7 @@ var writeFile = Definition{
 		Description: "Create or overwrite a file with the given content. content is written verbatim — never include read_file's line-number prefixes. " +
 			"Overwriting an existing file requires having read it in full first, and fails if it has changed since: prefer edit_file for changing part of a file you have already read. " +
 			"Missing parent directories are created automatically. " +
+			"A path git runs or reads as configuration — a hook, .git/config, .git/info, a worktree's .git file — is refused in every mode. " +
 			"Whether the change is applied straight away or is shown to the user as a diff for approval first is the session's permission mode's to decide; a declined call returns an error result.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
@@ -199,7 +200,7 @@ type writeFileArgs struct {
 	Content string `json:"content"`
 }
 
-func parseWriteFileArgs(raw json.RawMessage) (writeFileArgs, error) {
+func parseWriteFileArgs(raw json.RawMessage, byPerson bool) (writeFileArgs, error) {
 	var args writeFileArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return args, fmt.Errorf("invalid arguments: %w", err)
@@ -207,11 +208,28 @@ func parseWriteFileArgs(raw json.RawMessage) (writeFileArgs, error) {
 	if args.Path == "" {
 		return args, fmt.Errorf("path is required")
 	}
+	if !byPerson && GitProgramPath("", args.Path) {
+		return args, ErrGitProgramPath
+	}
 	return args, nil
 }
 
 func (r *Recorder) executeWriteFile(raw json.RawMessage) (string, error) {
-	args, err := parseWriteFileArgs(raw)
+	return r.writeFile(raw, false)
+}
+
+// WriteByPerson is the write tool's write for a file the person saves
+// themselves, in the edit pane. It is the same write with the same checks
+// against what it overwrites, minus the refusal of a path git runs: that
+// rule is about what the model may write, and a person who opens
+// .git/hooks/pre-commit and saves it has meant to, as they mean a command
+// typed after `!`. No model-facing path reaches it.
+func (r *Recorder) WriteByPerson(raw json.RawMessage) (string, error) {
+	return r.writeFile(raw, true)
+}
+
+func (r *Recorder) writeFile(raw json.RawMessage, byPerson bool) (string, error) {
+	args, err := parseWriteFileArgs(raw, byPerson)
 	if err != nil {
 		return "", err
 	}
@@ -319,6 +337,9 @@ func parseEditFileArgs(raw json.RawMessage) (editFileArgs, error) {
 	}
 	if args.Path == "" {
 		return args, fmt.Errorf("path is required")
+	}
+	if GitProgramPath("", args.Path) {
+		return args, ErrGitProgramPath
 	}
 	inline := args.OldText != "" || args.NewText != ""
 	switch {

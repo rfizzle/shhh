@@ -122,6 +122,8 @@ func (m Model) ruleRefusal(req *approvalRequest) (r approval.Refusal, why string
 		why = denyHostWhy
 	case agent.IsIrreplaceable(r.Reason):
 		why = irreplaceableWhy
+	case r.Reason == agent.DenyReasonGitPath:
+		why = gitPathWhy
 	default:
 		why = denylistWhy
 	}
@@ -134,6 +136,11 @@ func (m Model) ruleRefusal(req *approvalRequest) (r approval.Refusal, why string
 // nothing refuses it.
 const irreplaceableWhy = "refused by rule: it destroys something no session may destroy, in any mode, " +
 	"and nothing lifts that; run it yourself with ! if you mean it"
+
+// gitPathWhy is the sentence `/permissions why` prints under a write refused
+// for the path it names: git runs or reads it as configuration on the host.
+const gitPathWhy = "refused by rule: git runs or reads that path as configuration, in any mode, " +
+	"and nothing lifts that; edit it yourself if you mean it"
 
 // denylistWhy is the sentence `/permissions why` prints under a deny-list
 // refusal. "A rule said no" is only actionable when the reader is told which

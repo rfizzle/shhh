@@ -49,7 +49,7 @@ func TestApprovalCall_IsBuiltOnce(t *testing.T) {
 		{name: "a git write", tool: structural.GitWriteToolName, args: `{"verb":"commit","message":"feat: x"}`,
 			want: Call{Command: "git commit", Write: true}},
 		{name: "a file edit", tool: tools.WriteFileName, args: `{"path":"a.go","content":"x"}`,
-			want: Call{Write: true}},
+			want: Call{Write: true, Path: "a.go"}},
 		{name: "a fetch", tool: web.FetchToolName, args: `{"url":"https://evil.test/page"}`, host: "evil.test",
 			want: Call{Host: "evil.test"}},
 		{name: "a server's tool", tool: "github__create_issue", args: `{}`, want: Call{}},
