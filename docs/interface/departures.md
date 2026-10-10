@@ -301,7 +301,10 @@ greys are the published set's own faint tones, Iron, Oyster and Squid, which
 stand 1.93:1, 2.60:1 and 4.40:1 off its ground; lifting them would make the
 table something other than that palette. Its body, subtle and bright clear the
 bar, and the test pins the six shortfalls so that any other grey falling short,
-or one of these coming up, fails it. Bright on its selected row, Charple, is
+or one of these coming up, fails it. Four signal inks fall short the same way,
+on the band alone: Coral (del) at 3.74:1, Malibu (info) at 4.20:1, Cumin (code)
+at 4.26:1 and Hazy (key) at 3.30:1, pinned with the greys; on the light table
+the signal inks were moved to clear the floor instead. Bright on its selected row, Charple, is
 4.35:1 and is left the same way.
 
 ## The band's light and CharmTone values were chosen in the binary

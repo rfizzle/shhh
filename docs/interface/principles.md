@@ -416,7 +416,8 @@ switch for the same reason: turned off, no screen paints it.
 Every ink a table writes text in clears 4.5:1 against the table's ground and
 against its band: the hints, the key legend, the counts and the status line
 are instructions the interface gives, and the faintest grey on the screen is
-still text. The floor is under the hierarchy, not instead of it — chrome stays
+still text. The signal inks (add, delete, hunk, accent, info, spin, code and
+key) are held to it too: a diff's colour is read, not just seen. The floor is under the hierarchy, not instead of it — chrome stays
 the faintest grey, content above it, body above that — and Bright clears it on
 the selected row's ground as well. A named palette whose published tones fall
 under it records the shortfall in the departures rather than leaving it

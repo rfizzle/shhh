@@ -194,13 +194,17 @@ var fullPalette = ColorTokens{
 // table's stands off its ground by 5.47:1 and its band by 4.94:1. Both clear
 // the 4.5:1 floor on both of their grounds, which is what
 // TestPalette_EveryTextTokenClearsAA holds, and the body is equally readable.
+// The signal inks are held to the same floor: add (#005f00), del (#af0000),
+// hunk (#005f5f) and accent (#8f4f00) are the darker end of their own hue,
+// so a diff still tells green from red at a glance and none of them is the
+// faintest text on a light screen.
 var LightPalette = ColorTokens{
-	Add:     token("#008700", "2", "2"),
-	Del:     token("#d70000", "1", "1"),
+	Add:     token("#005f00", "2", "2"),
+	Del:     token("#af0000", "1", "1"),
 	addBg:   token("#d7ffd7", "194", "10"),
 	delBg:   token("#ffd7d7", "224", "9"),
-	Hunk:    token("#008787", "6", "6"),
-	Accent:  token("#af5f00", "130", "3"),
+	Hunk:    token("#005f5f", "6", "6"),
+	Accent:  token("#8f4f00", "130", "3"),
 	Info:    token("#005fd7", "4", "4"),
 	FocusBg: token("#d7d7ff", "189", "7"),
 	band:    band("#e4e4e4", "254"),

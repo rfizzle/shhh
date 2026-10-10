@@ -318,12 +318,12 @@ var lightTable = []struct {
 	ansi256 string
 	ansi16  string
 }{
-	{"add", LightPalette.Add, "#008700", "2", "2"},
-	{"del", LightPalette.Del, "#d70000", "1", "1"},
+	{"add", LightPalette.Add, "#005f00", "2", "2"},
+	{"del", LightPalette.Del, "#af0000", "1", "1"},
 	{"addBg", LightPalette.addBg, "#d7ffd7", "194", "10"},
 	{"delBg", LightPalette.delBg, "#ffd7d7", "224", "9"},
-	{"hunk", LightPalette.Hunk, "#008787", "6", "6"},
-	{"accent", LightPalette.Accent, "#af5f00", "130", "3"},
+	{"hunk", LightPalette.Hunk, "#005f5f", "6", "6"},
+	{"accent", LightPalette.Accent, "#8f4f00", "130", "3"},
 	{"info", LightPalette.Info, "#005fd7", "4", "4"},
 	{"focusBg", LightPalette.FocusBg, "#d7d7ff", "189", "7"},
 	{"band", LightPalette.band, "#e4e4e4", "254", noSixteen},
@@ -737,13 +737,19 @@ var charmShort = map[string]bool{
 	"dim:ground": true, "dim:band": true,
 	"dimmer:ground": true, "dimmer:band": true,
 	"status:ground": true, "status:band": true,
+	// The signal inks: CharmTone's Coral, Malibu, Cumin and Hazy on the
+	// Charcoal band, 3.3 to 4.3 short of the bar. Only the band: all four
+	// clear it on the ground.
+	"del:band": true, "info:band": true, "code:band": true, "key:band": true,
 }
 
 func TestPalette_EveryTextTokenClearsAA(t *testing.T) {
-	// The grey ladder: the words, hints, counts and status line. The signal
-	// inks (add, del, hunk, accent, info, spin, code, key) are marks beside a
-	// glyph or a word and are not held to the text bar here.
-	inks := []string{"dim", "dimmer", "status", "subtle", "body", "bright"}
+	// The grey ladder (the words, hints, counts and status line) and the
+	// signal inks (add, del, hunk, accent, info, spin, code, key): the inks
+	// are text too, a diff line or a name in prose, and are held to the same
+	// bar on the ground and on the band.
+	inks := []string{"dim", "dimmer", "status", "subtle", "body", "bright",
+		"add", "del", "hunk", "accent", "info", "spin", "code", "key"}
 	for _, name := range ThemeNames() {
 		th, ok := themes[name]
 		if !ok {
