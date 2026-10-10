@@ -51,7 +51,7 @@ func (k *cacheKeeper) keep() {
 	defer k.mu.Unlock()
 	for _, r := range k.ledger.CacheReadings() {
 		prev := k.written[r.CacheKey]
-		if r.Requests == prev.Requests {
+		if r.Requests == prev.Requests && r.SurvivedN == prev.SurvivedN && r.ExpiredN == prev.ExpiredN {
 			continue
 		}
 		row := storage.CacheReading{
@@ -65,7 +65,13 @@ func (k *cacheKeeper) keep() {
 			LastAt:     r.LastAt,
 			LastPct:    r.LastShare(),
 			Confirmed:  r.Confirmed,
-			Reports:    r.Reports.Names(),
+			// The bounds are the session's own, which the store narrows or
+			// widens its row by; the counts are what the session added.
+			SurvivedMax: r.SurvivedMax,
+			SurvivedN:   r.SurvivedN - prev.SurvivedN,
+			ExpiredMin:  r.ExpiredMin,
+			ExpiredN:    r.ExpiredN - prev.ExpiredN,
+			Reports:     r.Reports.Names(),
 		}
 		if err := k.db.UpsertCacheReading(row, k.now()); err != nil {
 			continue
@@ -127,12 +133,28 @@ func cacheRow(r storage.CacheReading) report.Row {
 	} else {
 		facts = append(facts, "reports no cache fields")
 	}
+	if lifetime := storedLifetime(r); lifetime != "" {
+		facts = append(facts, lifetime)
+	}
 	row.Detail = strings.Join(facts, " · ")
 	row.Outcome = r.Model
 	if r.Lease != "" {
 		row.Outcome += " · lease " + r.Lease
 	}
 	return row
+}
+
+// storedLifetime is what the store holds of the cache's measured lifetime,
+// `survived 48m, expired by 72m`, or nothing where no gap has been seen.
+func storedLifetime(r storage.CacheReading) string {
+	var parts []string
+	if r.SurvivedN > 0 {
+		parts = append(parts, "survived "+meter.GapLabel(r.SurvivedMax))
+	}
+	if r.ExpiredN > 0 {
+		parts = append(parts, "expired by "+meter.GapLabel(r.ExpiredMin))
+	}
+	return strings.Join(parts, ", ")
 }
 
 // cacheRowsFor is the stored readings under one provider and endpoint.

@@ -93,3 +93,18 @@ func TestDoctorModel_NamesTheCacheReading(t *testing.T) {
 		t.Errorf("a declared off: %q", f.Detail)
 	}
 }
+
+// `shhh providers` says on the cache row what has been measured of the
+// lifetime, and says nothing where no gap has been seen.
+func TestProviders_CacheRowCarriesTheMeasuredLifetime(t *testing.T) {
+	row := cacheRow(storage.CacheReading{Provider: "agoda", Model: "claude-sonnet-5-5", Lease: "1h",
+		Requests: 9, WithReads: 8, LastPct: 95,
+		SurvivedMax: 48 * time.Minute, SurvivedN: 6, ExpiredMin: 72 * time.Minute, ExpiredN: 1})
+	if !strings.Contains(row.Detail, "survived 48m, expired by 72m") {
+		t.Errorf("the cache row lacks the lifetime: %q", row.Detail)
+	}
+	quiet := cacheRow(storage.CacheReading{Provider: "agoda", Model: "m", Requests: 9, WithReads: 8})
+	if strings.Contains(quiet.Detail, "survived") || strings.Contains(quiet.Detail, "expired") {
+		t.Errorf("a row nothing was measured on says a lifetime: %q", quiet.Detail)
+	}
+}
