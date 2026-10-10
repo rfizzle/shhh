@@ -22,6 +22,9 @@ keys C-Space
 snap 04-card-holds-the-keyboard "notes.md" "[y] apply the change"
 keys y
 snap 05-answered "The note is written"
+# The steer folds into the run it steers, so the one close covers the write
+# (docs/interface/surfaces.md#the-turns-close).
+snap 05b-close "1 file changed" "+3"
 # The sentence typed at the card went with the answer as its note
 # (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next),
 # so the draft is empty and the first cancel arms the quit.

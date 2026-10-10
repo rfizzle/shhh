@@ -36,6 +36,10 @@ keys y
 # keyboard comes back to an empty draft
 # (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
 snap 05-answered "The note is written" "and say y"
+# The steer folds into the run it steers, so the one close covers the write:
+# the files row shows the change and no close says the run changed no files
+# (docs/interface/surfaces.md#the-turns-close).
+snap 05b-close "1 file changed" "+3"
 # The draft is empty, so the first press arms the quit rather than clearing.
 keys C-c
 snap 06-quit-armed "again quits"

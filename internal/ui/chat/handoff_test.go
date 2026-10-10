@@ -205,13 +205,13 @@ func TestHandoff_TheQuitOffersOneAndNoQuits(t *testing.T) {
 	}
 }
 
-// A steer is a turn of its own, so a run that wrote and then took a steer
-// closes on a turn that wrote nothing: the quit still owes the offer for the
-// work the turn before it left uncommitted.
+// A steered run closes once and the close folds the turn before the steer, so
+// the quit owes the offer by reading the close alone.
 func TestHandoff_ASteeredRunStillOwesTheOffer(t *testing.T) {
 	m, _ := handoffModel(t, &handoffProvider{})
+	m.runFrom, m.turnCount = 1, 2
 	m.changes.Add(1, changeset.Record{Path: "notes.md", After: "# Notes\n", AfterExists: true})
-	m.appendEntry(entry{kind: entryTurnClose, turn: 2, close: &components.TurnClose{}})
+	m.appendEntry(entry{kind: entryTurnClose, turn: 2, from: 1, close: &components.TurnClose{Changes: m.turnChangesRow(false)}})
 	m, _ = pressKey(t, m, ctrlC)
 	m, _ = pressKey(t, m, ctrlC)
 	if m.state != stateQuitConfirm || m.quitting {

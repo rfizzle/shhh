@@ -58,7 +58,7 @@ func (m Model) openReview(n int64) (tea.Model, tea.Cmd) {
 	// sitting that has already ended, are both still on record, and a turn
 	// that can be undone and not looked at first would be the wrong half of
 	// the pair to offer.
-	t, ok := m.changes.Recall(n)
+	t, ok := m.runChangeset(m.closeFrom(n), n, m.changes.Recall)
 	if !ok {
 		if m.changes.WasEvicted(n) {
 			return m.systemNotice(fmt.Sprintf(

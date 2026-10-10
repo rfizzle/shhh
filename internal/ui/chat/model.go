@@ -557,6 +557,9 @@ type entry struct {
 	// turn is the turn it closed — what its review and its commit act on.
 	close *components.TurnClose
 	turn  int64
+	// from is the first turn the close folds, where a steer made the run
+	// more than one turn; zero reads as the turn alone.
+	from int64
 	// restored marks a close block put back for a resumed conversation
 	// (restoreTurnClose): it carries the turn's files and none of its
 	// figures, which were never saved, so the turns screen draws it as a
@@ -1092,8 +1095,12 @@ type Model struct {
 	// time the summary lands, and a record left standing would be the next
 	// compaction's figures. Nil whenever no compaction is running, which is
 	// nearly always.
-	compactRun    *compactStart
-	turnCount     int64
+	compactRun *compactStart
+	turnCount  int64
+	// runFrom is the first turn of the run now going: the turn its sentence
+	// opened, before any steer moved turnCount on. The run's one close folds
+	// every changeset turn from here (close.go).
+	runFrom       int64
 	toolDefTokens int64
 	// toolDefs are the tool definitions the context surface itemises the
 	// tool category into, and toolDefTokens their total. They start as the

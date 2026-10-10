@@ -74,7 +74,7 @@ func (m *Model) appendTurnClose() {
 	// does not reset. A cap-paused turn is a real turn reading and repeats
 	// happily; one interrupted turn is one row (intervene.go).
 	m.recordIntervened(outcome)
-	m.appendEntry(entry{kind: entryTurnClose, turn: m.turnCount, close: m.turnCloseData()})
+	m.appendEntry(entry{kind: entryTurnClose, turn: m.turnCount, from: m.runFrom, close: m.turnCloseData()})
 	// The person's own commands at the turn's end, fired here because this is
 	// where the turn's accounting is closed and there is exactly one of these
 	// per turn.
@@ -208,11 +208,57 @@ func closeState(e receipt.TurnEnd) components.TurnState {
 // and the honest key for that is `git revert` — a sentence somebody types,
 // not a key shhh can put on a row. The commit row below says so in words.
 func (m Model) turnChangesRow(committed bool) *components.TurnChanges {
-	t, ok := m.changes.Turn(m.turnCount)
+	t, ok := m.runChangeset(m.runFrom, m.turnCount, m.changes.Turn)
 	if !ok {
 		return nil
 	}
-	return m.turnChangesFor(t, committed)
+	row := m.turnChangesFor(t, committed)
+	if row != nil && m.runFrom > 0 && m.runFrom < m.turnCount {
+		// /undo takes back one turn, and this row speaks for several.
+		row.Back = ""
+	}
+	return row
+}
+
+// runChangeset is what a run's close stands for: every turn from the one its
+// sentence opened to the one that closes it, folded into one changeset. A
+// steer is a turn in the transcript, but the run closes once, and what the
+// turns before the steer wrote is no less the run's work for having been
+// written before it (docs/interface/surfaces.md#the-turns-close). get is how
+// a turn is read: in memory for the row being drawn, from the record for a
+// review or a commit opened later.
+func (m Model) runChangeset(from, to int64, get func(int64) (changeset.Turn, bool)) (changeset.Turn, bool) {
+	if from <= 0 || from > to {
+		from = to
+	}
+	var turns []changeset.Turn
+	for n := from; n <= to; n++ {
+		if t, ok := get(n); ok {
+			turns = append(turns, t)
+		}
+	}
+	switch len(turns) {
+	case 0:
+		return changeset.Turn{}, false
+	case 1:
+		return turns[0], true
+	}
+	folded := changeset.Fold(turns)
+	folded.N = to
+	return folded, true
+}
+
+// closeFrom is the first turn the close row for turn n folds.
+func (m Model) closeFrom(n int64) int64 {
+	for _, e := range m.transcript {
+		if e.kind == entryTurnClose && e.turn == n && e.close != nil {
+			if e.from > 0 && e.from < n {
+				return e.from
+			}
+			break
+		}
+	}
+	return n
 }
 
 // ranUnvouched reports whether the turn ran a command, or a server call the

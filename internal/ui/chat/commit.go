@@ -179,7 +179,7 @@ func (m Model) commitHandover() (tea.Model, tea.Cmd, bool) {
 // decision whose facts moved between being read and being answered is not the
 // decision the reader took.
 func (m Model) openCommitCard(row int, turn int64) (tea.Model, tea.Cmd) {
-	t, ok := m.changes.Recall(turn)
+	t, ok := m.runChangeset(m.closeFrom(turn), turn, m.changes.Recall)
 	if !ok || t.Files() == 0 {
 		return m.systemNotice(fmt.Sprintf("turn %d changed no files; there is nothing to commit", turn))
 	}

@@ -422,6 +422,13 @@ The question after an agent stops is never "what did it say", it is "what did
 it change". So a turn closes on what it did, what changed, and whether the
 tests still pass.
 
+A run closes once. A steer, whether a sentence queued while it worked or the
+draft taken as a card's note, counts as a turn in the transcript, but it does
+not open a close of its own: the run's close covers every turn since the last
+close, steers included, so the files written before the steer are on the row
+that offers their review and their commit, and no `changed no files` row
+follows work that did change them.
+
 What it did is the turn's total, and the total is one slot in three states. It
 is the last line of its turn, and it appears when the turn ends: flat, dim, on
 no band, at the column a card puts its glyph in, and only the glyph changes.
