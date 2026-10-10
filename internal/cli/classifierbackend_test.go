@@ -30,6 +30,53 @@ func TestDoctorFlows_NamesTheClassifiersBackend(t *testing.T) {
 	}
 }
 
+// The flows row names, on a flow whose schema a declaration removed, what
+// goes out and which profile said so; after the classifier's backend note,
+// never on the decisions backend, and nowhere a flow has nothing to narrow.
+func TestDoctorFlows_NamesANarrowedSchema(t *testing.T) {
+	registerProfile(t, `
+name     = "agoda"
+base_url = "https://gw.example"
+
+[[models]]
+id    = "claude-sonnet-5-5"
+flows = { classifier = { structured_outputs = false } }
+
+[[models]]
+id                 = "claude-opus-5-5"
+structured_outputs = false
+`)
+	var cfg config.Config
+	cfg.Behavior.ClassifierModel = "claude-sonnet-5-5"
+	lines := flowsFinding(cfg, "agoda", resolveFlows(cfg, "agoda", "claude-opus-5-5"), false).Fix
+	line := func(name string) string {
+		for _, l := range lines {
+			if strings.HasPrefix(l, name+" — ") {
+				return l
+			}
+		}
+		t.Fatalf("no %s line in %q", name, lines)
+		return ""
+	}
+	if got, want := line("classifier"), "classifier — claude-sonnet-5-5 · flow key behavior.classifier_model · completion backend · its tool, not a schema (profile agoda)"; got != want {
+		t.Errorf("classifier:\n got %q\nwant %q", got, want)
+	}
+	// The backlog is on the session's model, whose declaration is model-wide.
+	if got := line("backlog"); !strings.HasSuffix(got, " · its tool, not a schema (profile agoda)") {
+		t.Errorf("backlog = %q", got)
+	}
+	// A flow that sends no schema keeps its line unchanged.
+	if got := line("title"); strings.Contains(got, "schema") {
+		t.Errorf("title = %q", got)
+	}
+
+	cfg.Behavior.ClassifierBackend = "decisions"
+	lines = flowsFinding(cfg, "agoda", resolveFlows(cfg, "agoda", "claude-opus-5-5"), false).Fix
+	if got := line("classifier"); strings.Contains(got, "schema") {
+		t.Errorf("the decisions backend sends no schema, got %q", got)
+	}
+}
+
 // The explanation reads with the classifier's model, except on the decisions
 // backend: a model that answers the Decisions API may answer nothing else, so
 // the explanation skips that link and takes the rest of the cheap chain. The

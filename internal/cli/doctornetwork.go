@@ -79,14 +79,49 @@ func probeFlows(_ context.Context, cfg config.Config) doctorFinding {
 		ConfigModel:    cfg.Provider.Model,
 	})
 	answers := resolveFlows(cfg, resolved.Provider, resolved.Model)
-	f := doctorFlows(answers)
 	replaced := promptSource("classifier", cfg.Prompts.Classifier, projectPrompts()).path != ""
+	return flowsFinding(cfg, resolved.Provider, answers, replaced)
+}
+
+// flowsFinding is the row with each line's notes: the classifier's backend,
+// then on any flow what a declaration narrowed.
+func flowsFinding(cfg config.Config, provName string, answers []flowModel, replaced bool) doctorFinding {
+	f := doctorFlows(answers)
 	for i, a := range answers {
-		if a.flow.name == flowClassifier.name {
-			f.Fix[i] += classifierBackendNote(cfg, resolved.Provider, a.model, replaced)
+		if a.flow.flow == provider.FlowClassifier {
+			f.Fix[i] += classifierBackendNote(cfg, provName, a.model, replaced)
+			if decisionsClassifier(cfg) {
+				// The decisions backend sends no schema, so nothing a
+				// declaration narrows reaches it.
+				continue
+			}
 		}
+		f.Fix[i] += declarationNote(a.flow.flow, a.model)
 	}
 	return f
+}
+
+// declarationNote is what a flow's line adds when a profile's declaration
+// narrowed its request, model-wide or scoped to the flow: what goes out
+// instead, and which profile said so. It reads the registered declarations
+// through the provider's registry, the same answer the request is sent
+// with, without loading prices; a flow the registry says has nothing to
+// narrow keeps its line as it was.
+// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
+func declarationNote(flow provider.Flow, model string) string {
+	if model == "" {
+		return ""
+	}
+	var note string
+	for _, d := range provider.Declarations() {
+		if !d.Scopes(flow) {
+			continue
+		}
+		if by := provider.DeclaredOn(model, flow, d.Key); len(by) > 0 {
+			note += " · " + d.Instead + " (profile " + strings.Join(by, ", ") + ")"
+		}
+	}
+	return note
 }
 
 // classifierBackendNote is what the classifier's line adds: the backend it
