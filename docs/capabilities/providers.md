@@ -755,6 +755,57 @@ re-sends its whole prompt every round and works alone for hundreds of them,
 so the record of what it cost is the one figure nobody was watching as it was
 spent, and pricing its total fresh reports several times the bill.
 
+## The session says whether the cache worked
+
+Marking the prefix is a request; whether anything was cached is the
+provider's answer, and a gateway can quietly decline. It can strip the marks,
+rewrite an hour's lease to five minutes, or drop the cache fields from what it
+sends back, and each of those is a full-price bill with nothing on the screen
+to say so. So every response's usage is read for what it says about the cache,
+at the same place every request is billed, and a session keeps one reading per
+endpoint: the cache is a property of the thing answering, not of the
+conversation, and the model is named beside it.
+
+The reading has four words. **Works** is any request that reported a read or a
+write. **Not seen** is three requests or more, each long enough that any
+provider would have cached it, and not one figure among them; three because
+the first request on a fresh prefix can honestly report only a write, and an
+endpoint with no cache reports nothing on every request — one request cannot
+tell those apart. **Off** is a profile's declaration, below. **None yet** is
+too little to say. Nothing is sent to find out: the reading is taken off the
+requests the session was making anyway, and the live check against a real
+endpoint stays a deliberate act a person runs.
+
+Two figures a gateway reports were dropped before this, and both are read now.
+A gateway in front of the Messages API reports what it wrote into the cache
+beside the read the OpenAI shape carries; read as fresh input, every write was
+billed at the base rate where the gateway charged the write premium, which on
+the hour's lease is twice the input rate on every round. And the Messages API
+says which lease it wrote for: it is the one evidence that a request asking
+for an hour was honoured as an hour, and a request written for five minutes
+instead is drawn in the warn tone, because that is the dearer write paid for
+the shorter cache. What the endpoint reports at all is kept too — the field
+names it sent — so a gateway that strips them reads as reporting no cache
+fields rather than as a cache that missed.
+
+The reading is drawn where the window is: on `/context`, under the cache
+reads it explains, from the first reply on. It is also kept past the session,
+so that `shhh providers` can show a cache row under each endpoint and `shhh
+doctor` can say on its model row whether the cache works where that model
+resolves to, with no session open.
+
+**A profile may declare that a model's endpoint keeps no cache**, with
+`prompt_cache = false` on its `[[models]]` line. The reading then says off,
+naming the profile, rather than waiting on figures that will never come; it
+outranks any figure that does arrive, and such a figure is still billed. The
+key only narrows: there is no `true`, because whether the cache works is read
+off the responses, and a declaration that it does would be a claim the reading
+could only contradict. No call can scope it, because caching is a property of
+the endpoint and not of any one call. And it changes nothing that goes out:
+the marks are still sent, because a marked request to an endpoint without a
+cache costs and says what it would have without them. The model is told none
+of this.
+
 ## Failures are classified before they are surfaced
 
 Every provider error is mapped into a closed set — unauthorised, rate limited,
