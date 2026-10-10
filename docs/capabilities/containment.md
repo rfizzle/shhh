@@ -565,8 +565,11 @@ when the session starts, from the released image or one prepared from it, with
 the workspace as its one mount, every capability dropped and no network under
 the netless profile; it is removed when the session ends, after the commands
 still running in it have been stopped, and a session resumed later gets a new
-one. The ownership record and the reaper behind it are the backstop for a
-session that ends without removing it.
+one. A quit, an error and a hang-up or termination while the screen is up all
+remove it at once, the signals after the same bounded stop of the commands a
+quit makes; the ownership record and the reaper behind it remove it after a
+kill that cannot be caught, a crash, or a signal that arrives before the
+screen is up.
 
 **What goes in is what starts a program.** The assistant's commands run in the
 container. What stays on this machine stays on purpose: the agent and its

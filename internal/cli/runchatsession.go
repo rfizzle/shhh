@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -60,6 +61,7 @@ type screenBuild struct {
 	// closeSandbox destroys a sandbox session's container; nil for every
 	// other session.
 	closeSandbox func()
+	closeOnce    sync.Once
 	hooks        *hook.Runner
 
 	// The readers built before the containment, in the order they always
@@ -104,11 +106,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 
 	// The container goes last of everything the session opened, so the
 	// commands attached to it have been stopped before it is removed.
-	defer func() {
-		if b.closeSandbox != nil {
-			b.closeSandbox()
-		}
-	}()
+	defer b.closeContainer()
 	if err := b.policy(); err != nil {
 		return err
 	}
@@ -1001,9 +999,24 @@ func (b *screenBuild) opening(model chat.Model, args []string) (_ chat.Model, do
 	return model, false, nil
 }
 
+// closeContainer removes a sandbox session's container, once: the way out
+// of the session and a signal that ends it both come here, and the second
+// waits for the first rather than removing it again.
+func (b *screenBuild) closeContainer() {
+	if b.closeSandbox != nil {
+		b.closeOnce.Do(b.closeSandbox)
+	}
+}
+
 // run is the program: alternate scroll off, the wheel filter, the loop, the
 // banner, and the stop seam.
 func (b *screenBuild) run(model chat.Model, programOpts []tea.ProgramOption) error {
+	// A hang-up or a termination skips the deferred removal, so the
+	// container goes on the signal while the screen is up
+	// (sandboxsignal.go).
+	if b.closeSandbox != nil {
+		defer watchSandboxSignals(b.closeContainer)()
+	}
 	// Ask the terminal to stop turning the wheel into arrow keys, which is what
 	// alternate scroll does to a full-screen program on most terminals — and
 	// what put hundreds of synthetic Up/Down presses into the draft
