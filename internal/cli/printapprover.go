@@ -205,13 +205,11 @@ func headlessApprover(ctx context.Context, r headlessApproval) func(provider.Too
 		holds.Command = process.CommandOf
 	}
 	// The two ways of running a command differ only here: what the refusal
-	// calls the call, whether a destroying command is read against the
-	// directory the call names, what a malformed call is told, and what
-	// runs once it is admitted.
+	// calls the call, what a malformed call is told, and what runs once it
+	// is admitted.
 	start := commandAdmission{
 		noun:     "process start",
 		denied:   "error: process start denied (",
-		inDir:    false,
 		parseErr: func(err error) string { return "error: " + err.Error() },
 		exec: func(tc provider.ToolCall, _ string) string {
 			exec := func(_ string, args json.RawMessage) (string, error) { return r.procSup.Execute(args) }
@@ -221,7 +219,6 @@ func headlessApprover(ctx context.Context, r headlessApproval) func(provider.Too
 	foreground := commandAdmission{
 		noun:     "command",
 		denied:   "error: command denied (",
-		inDir:    true,
 		parseErr: func(error) string { return "error: invalid command arguments" },
 		exec: func(_ provider.ToolCall, command string) string {
 			// The typed result, not an output/status pair: a command that
@@ -445,13 +442,12 @@ func (r headlessApproval) approveFetch(tc provider.ToolCall, call agent.Classifi
 
 // commandAdmission is what sets one way of running a command apart from the
 // other, for admitCommand: the noun its refusals use and the opening of its
-// safety refusal, whether a destroying command is read against the directory
-// the call names, what a call whose arguments did not parse is told, and what
-// runs once it is admitted.
+// safety refusal, what a call whose arguments did not parse is told, and what
+// runs once it is admitted. Whether a destroying command is read against the
+// directory the call names is the classification's (approval.CallOf).
 type commandAdmission struct {
 	noun     string
 	denied   string
-	inDir    bool
 	parseErr func(error) string
 	exec     func(tc provider.ToolCall, command string) string
 }
@@ -480,7 +476,7 @@ func (r headlessApproval) admitCommand(tc provider.ToolCall, call agent.Classifi
 	// out-rank would be a preference and not a rule. A destroying command
 	// pointed at something this run may not destroy is answered in the same
 	// place, through the function the session's policy asks.
-	if refusal, refused := r.rules.Rule(approval.Call{Command: command, InDir: how.inDir, Runs: true}); refused {
+	if refusal, refused := r.rules.Rule(approval.CallOf(tc.Name, call)); refused {
 		r.refuse(tc, command, refusal.Code)
 		return refusal.Result
 	}
@@ -516,7 +512,7 @@ func (r headlessApproval) admitCommand(tc provider.ToolCall, call agent.Classifi
 // refused `git commit` refused the act and not the spelling.
 func (r headlessApproval) approveGitWrite(tc provider.ToolCall, call agent.Classified) string {
 	line := call.Action.Command
-	if refusal, refused := r.rules.Rule(approval.Call{Command: line, Write: true}); refused {
+	if refusal, refused := r.rules.Rule(approval.CallOf(tc.Name, call)); refused {
 		r.refuse(tc, line, refusal.Code)
 		return refusal.Result
 	}

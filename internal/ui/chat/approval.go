@@ -101,7 +101,11 @@ const (
 // approvalRequest is the head of the approval queue: one tool call awaiting
 // the user's decision, with everything needed to preview and execute it.
 type approvalRequest struct {
-	call    provider.ToolCall
+	call provider.ToolCall
+	// class is the call's classification, with the host a fetch leaves for
+	// filled in from its preview: what the standing rules read it as
+	// (ruleCall).
+	class   agent.Classified
 	kind    approvalKind
 	command string      // approvalExec: the command handed to the runner; also set for a process start so mode policy treats it as a command
 	title   string      // the act, e.g. "edit main.go"
@@ -279,6 +283,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 		}
 		return &approvalRequest{
 			call:    tc,
+			class:   call,
 			kind:    approvalExec,
 			command: call.Action.Command,
 			summary: firstLine(call.Action.Command),
@@ -312,6 +317,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 		title := "start process " + name
 		return &approvalRequest{
 			call:    tc,
+			class:   call,
 			kind:    approvalGeneric,
 			title:   title,
 			command: call.Action.Command,
@@ -332,6 +338,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 		title := mut.Action + " " + mut.Path
 		return &approvalRequest{
 			call:    tc,
+			class:   call,
 			kind:    approvalDiff,
 			title:   title,
 			verb:    mut.Action,
@@ -353,6 +360,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 		title := action + " " + p.Path
 		return &approvalRequest{
 			call:    tc,
+			class:   call,
 			kind:    approvalDiff,
 			title:   title,
 			verb:    action,
@@ -387,8 +395,10 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 		// leave the reader nothing to check the sentence against.
 		title = firstLine(p.Summary)
 	}
+	call.Action.Host = p.Host
 	return &approvalRequest{
 		call:      tc,
+		class:     call,
 		kind:      approvalGeneric,
 		title:     title,
 		command:   p.DenyLine,

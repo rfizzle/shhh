@@ -12,7 +12,6 @@ import (
 	"github.com/rfizzle/shhh/internal/approval"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
-	"github.com/rfizzle/shhh/internal/receipt"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/web"
@@ -68,21 +67,13 @@ func (m Model) rules() approval.Router {
 	}
 }
 
-// ruleCall is a request as the standing rules read it. A command typed for
-// execute_command runs in the session's directory; a process start names one
-// of its own; a call at the write tier carries its line for the deny list
-// alone.
+// ruleCall is a request as the standing rules read it: its classification,
+// built into a Call the way an unattended run builds one.
 func ruleCall(req *approvalRequest) approval.Call {
 	if req == nil {
 		return approval.Call{}
 	}
-	return approval.Call{
-		Command: req.command,
-		Host:    req.host,
-		Write:   req.write,
-		InDir:   req.kind == approvalExec,
-		Runs:    req.kind == approvalExec || receipt.IsProcess(req.call.Name),
-	}
+	return approval.CallOf(req.call.Name, req.class)
 }
 
 // allowlist is the config's command allowlist and the session's own, in that

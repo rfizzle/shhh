@@ -20,6 +20,7 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/scope"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // Router is the standing rules of one session, built from what the session
@@ -46,8 +47,9 @@ type Router struct {
 	Containment string
 }
 
-// Call is one gated call as the rules read it. Each door fills it from what
-// it already knows of the call; nothing here reads a tool's arguments.
+// Call is one gated call as the rules read it. Each door builds it with
+// CallOf from the call's classification; nothing here reads a tool's
+// arguments.
 type Call struct {
 	// Command is the line the deny list is matched against: the command a
 	// command runs, a process start's, and the line a tool with a closed
@@ -69,6 +71,25 @@ type Call struct {
 	// process start — which is the whole of what the containment
 	// requirement is about.
 	Runs bool
+}
+
+// CallOf is a classified call as the rules read it, and the one place a Call
+// is filled in. Each door classifies the call it holds, adds what only it
+// can read — the host a fetch leaves for — and asks here, so a field added
+// to Call is filled at both doors or at neither.
+//
+// A command typed for the command tool runs in the session's own directory;
+// a process start names one of its own; a call at the write tier carries its
+// line for the deny list alone.
+func CallOf(name string, c agent.Classified) Call {
+	runs := c.Tier == agent.TierCommand && c.Action.Kind == agent.ActionCommand
+	return Call{
+		Command: c.Action.Command,
+		Host:    c.Action.Host,
+		Write:   c.Tier == agent.TierWrite,
+		InDir:   runs && name == tools.ExecCommandName,
+		Runs:    runs,
+	}
 }
 
 // Refusal is a rule's answer: what the model is told, the rule name the row
