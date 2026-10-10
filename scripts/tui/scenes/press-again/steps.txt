@@ -18,14 +18,11 @@ snap 02-draft "half a thought" "[ctrl+c] clear"
 # Esc never clears a sentence: the draft is still there after it.
 keys Escape
 snap 02b-esc-keeps "half a thought" "[ctrl+c] clear"
-# ctrl+c records the sentence in the history before it clears it, so the up
-# arrow brings it back.
+# ctrl+c records the sentence in the history before it clears it
+# (TestDraft_CtrlCRecordsBeforeItClears). The recall is not pressed here: on
+# the start screen ↑ walks the suggestions, not the history.
 keys C-c
 snap 03-cleared "Some things worth doing first" "[ctrl+c] ×2 quit"
-keys Up
-snap 03b-recalled "half a thought" "[ctrl+c] clear"
-keys C-c
-snap 03c-cleared-again "Some things worth doing first" "[ctrl+c] ×2 quit"
 keys "run the checks" Enter
 snap 04-card "[y] run it once"
 sleep 1
