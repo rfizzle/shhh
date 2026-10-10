@@ -334,6 +334,26 @@ looks in effect and does nothing. A refused schema is not retried as the tools; 
 model takes is declared, and a retry would hide a real fault behind a second
 request.
 
+**A declaration can be scoped to the one call a gateway refuses.** A gateway
+may refuse a request shape on one call and take it on another: the
+classifier's verdict refused, the backlog's proposals accepted, on the same
+model. So the line that answers that is
+`flows = { classifier = { structured_outputs = false } }`, and every other
+call on the model keeps the request it was built to send. Each request names
+its flow, set by the code that builds it, so the scope reaches that call and
+no other. The model-wide `structured_outputs = false` stays the form for a
+model that takes no schema on any call, and a scope written on top of it
+changes nothing: a declaration only narrows, model-wide first and then the
+flow's. Only the classifier and the backlog send a schema at all, so they
+are the only flows the key can be scoped to; a profile that scopes it to
+`title`, which sends none, is refused at load, because a setting with
+nothing to narrow is one that looks in effect and does nothing. An unknown
+flow word or an unknown setting is refused the same way, and a refused line
+takes its whole profile with it. These declarations are not prices: a line
+that declares only a narrowing leaves the model's price, context window and
+thinking to the table and the floor. The model is told none of it; what
+changes is the request.
+
 The narrowest answer of all is a probability, and one bounded call can ask
 for it: the permission classifier, through a model's Decisions API
 ([`approvals-and-safety.md`](approvals-and-safety.md#the-classifier-can-answer-as-a-probability)).

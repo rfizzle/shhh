@@ -626,6 +626,9 @@ on its `[[models]]` line. A replaced wording is not sent there.
 A gateway that refuses structured outputs on a model can say so on the same line with
 `structured_outputs = false`, and the classifier then asks for its verdict through
 its tool instead ([`providers.md`](providers.md#a-bounded-call-asks-for-the-shape-of-its-answer)).
+Beside it, `flows` scopes the same declaration to one call, as in
+`flows = { classifier = { structured_outputs = false } }`, which leaves the
+backlog's reading on the same model sending its schema.
 
 ## A failure is written down
 

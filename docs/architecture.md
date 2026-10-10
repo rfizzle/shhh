@@ -106,6 +106,10 @@ classes belong to the provider layer; what to *offer* the user about each one
 belongs to the interface. Splitting it there is why a new provider inherits
 every recovery path already built.
 
+A model's capabilities come from the model-data table, then the by-family
+floor, then the declarations that narrow them, and a declaration may be
+scoped to the flow that builds the request.
+
 See [`capabilities/providers.md`](capabilities/providers.md).
 
 ## Configuration resolves in one direction
