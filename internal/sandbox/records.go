@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/storage/datadir"
 )
 
 // Record is one durable sandbox-ownership entry. Every container shhh creates
@@ -38,7 +38,7 @@ type Store struct {
 // OpenStore opens the default ownership store, creating the state directory
 // (0700) if needed.
 func OpenStore() (*Store, error) {
-	dir, err := storage.Dir()
+	dir, err := datadir.Dir()
 	if err != nil {
 		return nil, err
 	}

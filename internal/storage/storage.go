@@ -10,6 +10,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/rfizzle/shhh/internal/storage/datadir"
 	_ "modernc.org/sqlite"
 )
 
@@ -38,7 +39,7 @@ type DB struct {
 }
 
 func Open() (*DB, error) {
-	dir, err := dataDir()
+	dir, err := datadir.Dir()
 	if err != nil {
 		return nil, err
 	}
@@ -143,27 +144,11 @@ func (db *DB) SQL() *sql.DB {
 }
 
 // Dir returns shhh's data directory without creating it, so other packages
-// (e.g. the sandbox deny mask) can reference the state location.
+// (e.g. the sandbox deny mask) can reference the state location. The layout
+// is datadir's, a leaf, so a package that only needs the path does not
+// take on the store.
 func Dir() (string, error) {
-	return dataDir()
-}
-
-// dataDir is one layout on every platform: XDG_DATA_HOME if it is set, then
-// ~/.local/share/shhh. macOS used to put the store under ~/Library/Application
-// Support alongside the config file, which mixed two kinds of state — settings
-// a person edits and a database they never touch — into one directory.
-// See docs/capabilities/configuration.md#one-layout-everywhere. A machine
-// still holding the old directory is detected by `shhh doctor`, which offers
-// to move it (internal/migrate).
-func dataDir() (string, error) {
-	if xdg := os.Getenv("XDG_DATA_HOME"); xdg != "" {
-		return filepath.Join(xdg, "shhh"), nil
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, ".local", "share", "shhh"), nil
+	return datadir.Dir()
 }
 
 // retentionCutoff is the moment a row is past a window of so many days,

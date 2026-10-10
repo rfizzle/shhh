@@ -21,7 +21,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/shell"
-	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/storage/datadir"
 )
 
 // Profile selects how much the contained command may reach. There are exactly
@@ -316,7 +316,7 @@ func ShhhPaths() []string {
 	for _, p := range config.Paths() {
 		out = append(out, filepath.Dir(p))
 	}
-	if dir, err := storage.Dir(); err == nil {
+	if dir, err := datadir.Dir(); err == nil {
 		out = append(out, dir)
 	}
 	return out
@@ -485,7 +485,7 @@ var hostTempCandidates = func() []string { return []string{"/tmp", os.TempDir()}
 // nested process. Reusing the inherited directory keeps the same isolation;
 // making another one would fail before the nested command starts.
 func sessionTmpDir() (string, error) {
-	state, err := storage.Dir()
+	state, err := datadir.Dir()
 	if err != nil {
 		return "", err
 	}
