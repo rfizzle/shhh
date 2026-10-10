@@ -671,6 +671,34 @@ var migrations = []string{
 	// the text. NULL is every result that carried none, and one stored
 	// before the column was.
 	`ALTER TABLE chat_messages ADD COLUMN value TEXT;`,
+
+	// What each endpoint's responses have said about its prompt cache
+	// (docs/capabilities/providers.md#the-session-says-whether-the-cache-worked),
+	// kept across sessions so it can be read with none open. Keyed where the
+	// cache lives: the provider, the endpoint inside it, the model and the
+	// lease, which on the Messages API makes two caches of one model. The
+	// lifetime bounds are measured from idle gaps the sessions already had,
+	// and zero is a bound nothing has measured yet. reports is the set of
+	// cache field names the endpoint has sent, comma-separated.
+	`CREATE TABLE IF NOT EXISTS cache_readings (
+		provider      TEXT NOT NULL,
+		endpoint      TEXT NOT NULL,
+		model         TEXT NOT NULL,
+		lease         TEXT NOT NULL,
+		requests      INTEGER NOT NULL DEFAULT 0,
+		with_reads    INTEGER NOT NULL DEFAULT 0,
+		with_writes   INTEGER NOT NULL DEFAULT 0,
+		last_at       TEXT NOT NULL DEFAULT '',
+		last_pct      INTEGER NOT NULL DEFAULT 0,
+		confirmed     TEXT NOT NULL DEFAULT '',
+		survived_max_s INTEGER NOT NULL DEFAULT 0,
+		survived_n    INTEGER NOT NULL DEFAULT 0,
+		expired_min_s INTEGER NOT NULL DEFAULT 0,
+		expired_n     INTEGER NOT NULL DEFAULT 0,
+		reports       TEXT NOT NULL DEFAULT '',
+		updated_at    TEXT NOT NULL,
+		PRIMARY KEY (provider, endpoint, model, lease)
+	);`,
 }
 
 const (
