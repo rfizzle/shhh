@@ -354,7 +354,10 @@ spending its rounds finding out. Researchers and reviewers run no command, so
 nothing changes for them. `agents.require_sandbox = false` hands a writer back
 to the session's rule; `sandbox.require` on the session still wins where it is
 set. Neither can be set by a checkout, because either decides the containment
-itself.
+itself. In a sandbox session a writer's commands are contained whatever either
+says, in a container of the writer's own, and the spawn card says so in the
+session indicator's words
+([a sandbox writer works in a container of its own](#a-sandbox-writer-works-in-a-container-of-its-own)).
 
 **A command you typed is never refused by it.** `/run` and `!` are yours, they
 are never contained, and a requirement about the assistant's commands has
@@ -621,10 +624,11 @@ the tree between rounds, which is the host's own git, already kept from
 running anything a command wrote; and the language servers, MCP servers and
 the web tools. A started process runs in the container too, and so do the
 quality gate's checks ([below](#a-sandboxs-checks-run-in-its-container)). A hook is not run
-and says so, and a sub-agent's commands are refused with a sentence, since they
-do not follow the session's into the container yet and a writer's worktree is
-outside its one mount; neither may fall back to running on the host, which
-would put the one thing outside the containment the person asked for.
+and says so. A writer's commands run in a container of the writer's own
+([below](#a-sandbox-writer-works-in-a-container-of-its-own)); any other
+sub-agent's commands are refused with a sentence. Neither may fall back to
+running on the host, which would put the one thing outside the containment
+the person asked for.
 
 **A command in the container is reached through its stream.** An engine's exec
 forwards no signal, so stopping the client on this machine would leave the
@@ -687,6 +691,43 @@ there and `allow_write` changes nothing. The verdict's fingerprint of the tree
 still catches a check that wrote. A generator that regenerates a file in a
 tree of its own is refused with a sentence, since that tree is outside the
 container's one mount; it is not run on this machine instead.
+
+### A sandbox writer works in a container of its own
+
+A writer works in a copy of the checkout made under this machine's temporary
+directory, outside the session container's one mount, and an engine cannot
+add a mount to a container that is running. So a writer spawned from a
+sandbox session gets a container of its own when it starts: made from the
+image the session's container was made from, prepared image included, with
+the same profile, the same ceilings and the same hardening, and with the
+writer's copy as its one mount. The key never enters it, and its network is
+the profile's: none under the netless profile. The session's secrets cross
+into it by name, as they cross into the session's.
+
+Everything the writer starts runs there: its commands, the ones that are
+checks among them, and a command still running at the ceiling, which is
+handed to the session's processes as any command is. Each is one more exec
+through the helper, so a cancel and the ceiling stop it through the stream,
+and through the second exec where the stream's hang-up does not arrive
+([below](#a-cancelled-command-takes-its-children-with-it)). Researchers and
+reviewers run no command and get no container; a sub-agent that changes
+nothing and still holds a command is refused with a sentence, because the
+only containers in the session are the session's and the writers'.
+
+The container is removed when the writer's copy is: once the writer can no
+longer be spoken to, and at the latest when the session ends. A quit, and a
+hang-up or termination while the screen is up, remove every writer's
+container still standing on the same path that removes the session's, inside
+the same bound; the ownership record and the reaper take one that a kill left
+behind. A container that cannot be made fails the writer with the engine's
+own sentence on its row — it is never run on this machine instead.
+
+The spawn card says all of this before you answer it: its commands row reads
+`contained · container sandbox`, the words the session's own indicator uses,
+with the container's being the writer's own, the profile and the network
+beside it. `/status` says the same on its line about a writer's commands.
+The writer is told it in its own prompt, in the block a session is told its
+commands run under ([the model is told](#the-model-is-told-what-its-commands-run-under)).
 
 ## A checkout declares the toolchain its work needs
 
@@ -1157,6 +1198,13 @@ A host list is the same wall with a door in it, and it is stated the same way:
 the hosts are named, with the proxy that carries them, so a `curl` to any
 other host is a refusal the model has already read about rather than a
 surprise it goes on to debug.
+
+A writer in a sandbox session is told the same block about its own container:
+the commands it runs are contained by a container of its own whose one mount
+is its copy, under the session's profile and with the session's network. It
+is told rather than left to find out, for the same reason the session is: a
+writer that thinks it runs on this machine looks for this machine's tools and
+this machine's network, and spends its rounds on both.
 
 The ceiling is stated in the same place and for the same reason. What happens
 at it is not the same on every surface — a surface with no process supervisor

@@ -510,6 +510,12 @@ mechanism they are refused rather than run as you, and the spawn card says
 which before you approve it. `agents.require_sandbox` turns that off, and
 `sandbox.require` is how a session insists on containment for its own commands
 too ([containment can be required](containment.md#containment-can-be-required)).
+In a sandbox session a writer's commands run in a container of the writer's
+own, made from the session's image with the session's profile and with the
+writer's copy as its one mount, and removed with the copy; the spawn card
+says so before you approve the writer. The directories added to the session
+are not in that container, whose one mount is the copy
+([a sandbox writer works in a container of its own](containment.md#a-sandbox-writer-works-in-a-container-of-its-own)).
 
 ## Limits are about attention, not resources
 
