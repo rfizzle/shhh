@@ -47,6 +47,10 @@ const closeMinNoteGap = 2
 type TurnChanges struct {
 	Files          int
 	Added, Removed int
+	// Ignored is how many of the files git's ignore rules cover. They are
+	// still changes the turn made and are counted in Files; only the quit's
+	// offer of a handoff leaves them out.
+	Ignored int
 	// Mode states a turn whose whole change is one file's permissions,
 	// already worded by the host. There are no lines to count for one, so it
 	// stands where the +N −M would: a row saying `1 file changed +0 −0` is

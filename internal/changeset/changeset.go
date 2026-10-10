@@ -78,6 +78,10 @@ const (
 	TrackUnknown Tracking = iota
 	TrackTracked
 	TrackUntracked
+	// TrackIgnored is an untracked file the checkout's ignore rules cover:
+	// git would not commit it. It is set when a turn's close is read
+	// (Tracker.MarkIgnored), never when the edit is applied.
+	TrackIgnored
 )
 
 func (t Tracking) String() string {
@@ -86,6 +90,8 @@ func (t Tracking) String() string {
 		return "tracked"
 	case TrackUntracked:
 		return "untracked"
+	case TrackIgnored:
+		return "ignored"
 	default:
 		return "unknown"
 	}

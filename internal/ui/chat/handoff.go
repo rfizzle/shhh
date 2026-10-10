@@ -367,7 +367,8 @@ func (m Model) handoffLines() []string {
 
 // handoffOwed reports a quit that should offer a handoff first: a session
 // that can write one, has kept none this sitting, and has a turn whose
-// changes are not committed — the work a next sitting would otherwise have
+// changes are not committed (a path the checkout ignores is not one a
+// commit would keep, so it does not count) — the work a next sitting would otherwise have
 // to reconstruct from the tree. A close a resume restored is the last
 // sitting's, which either left a handoff or was already asked.
 func (m Model) handoffOwed() bool {
@@ -378,7 +379,8 @@ func (m Model) handoffOwed() bool {
 		if e.kind != entryTurnClose || e.close == nil {
 			continue
 		}
-		if !e.restored && e.close.Commit == nil && e.close.Changes != nil {
+		if !e.restored && e.close.Commit == nil && e.close.Changes != nil &&
+			e.close.Changes.Files > e.close.Changes.Ignored {
 			return true
 		}
 	}

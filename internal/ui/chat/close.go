@@ -381,6 +381,9 @@ func (m Model) turnChangesFor(t changeset.Turn, committed bool) *components.Turn
 	if t.Files() == 0 {
 		return nil
 	}
+	// One check-ignore call for the turn, so the row and the quit's offer
+	// read the same word for a path git would not commit.
+	t = m.wiring.Tracker.MarkIgnored(t)
 	// Review or keep. Review is the row's own open and is drawn in front of
 	// this once the row is selected (inertkeys.go); keeping it is the
 	// handover, which opens the commit card, for as long as the changeset is
@@ -402,6 +405,7 @@ func (m Model) turnChangesFor(t changeset.Turn, committed bool) *components.Turn
 	return &components.TurnChanges{
 		ByYou:   byYou,
 		Files:   t.Files(),
+		Ignored: countTracking(t, changeset.TrackIgnored),
 		Added:   t.Added,
 		Removed: t.Removed,
 		Mode:    t.ModeChange(),
@@ -416,24 +420,41 @@ func (m Model) turnChangesFor(t changeset.Turn, committed bool) *components.Turn
 // answer is unknown, which is not the same as untracked, so the note says so
 // differently.
 func trackingNote(t changeset.Turn) string {
-	var tracked, untracked int
-	for _, r := range t.Records {
-		switch r.Track {
-		case changeset.TrackTracked:
-			tracked++
-		case changeset.TrackUntracked:
-			untracked++
-		}
-	}
+	tracked := countTracking(t, changeset.TrackTracked)
+	untracked := countTracking(t, changeset.TrackUntracked)
+	ignored := countTracking(t, changeset.TrackIgnored)
 	switch {
-	case tracked == 0 && untracked == 0:
+	case tracked == 0 && untracked == 0 && ignored == 0:
 		return "not a git repository"
+	case ignored > 0 && tracked == 0 && untracked == 0:
+		return "all ignored by git"
+	case ignored > 0:
+		var parts []string
+		if tracked > 0 {
+			parts = append(parts, fmt.Sprintf("%d tracked", tracked))
+		}
+		if untracked > 0 {
+			parts = append(parts, fmt.Sprintf("%d new", untracked))
+		}
+		parts = append(parts, fmt.Sprintf("%d ignored", ignored))
+		return strings.Join(parts, " · ")
 	case untracked == 0:
 		return "all tracked in git"
 	case tracked == 0:
 		return "all new to git"
 	}
 	return fmt.Sprintf("%d tracked · %d new", tracked, untracked)
+}
+
+// countTracking is how many of the turn's records carry the tracking word.
+func countTracking(t changeset.Turn, want changeset.Tracking) int {
+	n := 0
+	for _, r := range t.Records {
+		if r.Track == want {
+			n++
+		}
+	}
+	return n
 }
 
 // turnChecksRow is the verdict row: what the turn ran to check its own work.

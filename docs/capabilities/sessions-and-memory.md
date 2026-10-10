@@ -146,7 +146,10 @@ by name and edited before it is kept
 
 Leaving is when it is wanted, so a quit asks once: over a turn whose changes
 are not committed, in a session that has kept no handoff, the quit's confirm
-says so in one sentence and offers to write one first. Its no — the default,
+says so in one sentence and offers to write one first. The offer counts only
+changes git would commit: a path the checkout's ignore rules cover is left
+out, a tracked file that also matches a pattern is not, and outside a git
+checkout the offer stays. Its no — the default,
 and the quit chord pressed again — quits. Its yes writes the handoff, and the
 card's yes keeps it and then quits.
 
