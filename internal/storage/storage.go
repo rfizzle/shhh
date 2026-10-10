@@ -58,7 +58,14 @@ func OpenPath(path string) (*DB, error) {
 	// wait for another opener too: switching the journal mode takes a lock
 	// of its own — and the one wait SQLite refuses to make is why the
 	// migration is tried again (migrateWithRetry).
-	conn, err := sql.Open("sqlite", path+"?_pragma=busy_timeout(5000)&_pragma=journal_mode(wal)&_pragma=foreign_keys(on)&_pragma=recursive_triggers(on)")
+	//
+	// _txlock=immediate begins every transaction with BEGIN IMMEDIATE. Each
+	// transaction this store opens writes, and a deferred one that read before
+	// it wrote is refused at its upgrade the moment another writer has
+	// committed — a refusal the busy timeout never waits on. Taking the write
+	// lock at BEGIN lets the busy timeout queue the second writer instead.
+	// Single statements outside a transaction are unaffected.
+	conn, err := sql.Open("sqlite", path+"?_txlock=immediate&_pragma=busy_timeout(5000)&_pragma=journal_mode(wal)&_pragma=foreign_keys(on)&_pragma=recursive_triggers(on)")
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
@@ -92,8 +99,10 @@ const (
 //
 // The busy timeout in the DSN covers the ordinary wait, so most contention
 // never reaches here. The case it does not cover is the transaction that
-// reads before it writes, and every one of these writes is one:
-// database/sql begins deferred, so the transaction takes a read lock at its
+// reads before it writes, which the store's transactions no longer are:
+// they begin IMMEDIATE (OpenPath), so a second writer queues on the busy
+// timeout. The retry stays for the lock that outlasts it and for an upgrade
+// by any other route. A deferred transaction takes a read lock at its
 // first SELECT and asks to upgrade it at its first INSERT or UPDATE — and
 // SQLite refuses that upgrade outright when another connection has written
 // since the read began, because waiting could only deadlock against a writer

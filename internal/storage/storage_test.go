@@ -1855,6 +1855,49 @@ func TestStore_TwoWritersAtOnce(t *testing.T) {
 	}
 }
 
+// A write transaction that reads first and then writes, after another
+// connection has committed in between, is the one SQLite refuses at once in
+// WAL: the busy handler never waits for a read lock to be upgraded over a
+// newer snapshot. Beginning the transaction IMMEDIATE takes the write lock
+// first, so the other writer queues behind it instead.
+func TestStore_AWriteAfterAReadWaitsForTheOtherWriter(t *testing.T) {
+	first, second := twoStores(t)
+	if _, err := first.sql.Exec(`CREATE TABLE IF NOT EXISTS upgrade_probe (n INTEGER)`); err != nil {
+		t.Fatalf("create probe table: %v", err)
+	}
+
+	tx, err := first.sql.Begin()
+	if err != nil {
+		t.Fatalf("begin: %v", err)
+	}
+	defer tx.Rollback()
+	var n int
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM upgrade_probe`).Scan(&n); err != nil {
+		t.Fatalf("read first: %v", err)
+	}
+
+	other := make(chan error, 1)
+	go func() {
+		_, err := second.sql.Exec(`INSERT INTO upgrade_probe (n) VALUES (2)`)
+		other <- err
+	}()
+	// Long enough for a second writer that is not made to wait to commit.
+	time.Sleep(300 * time.Millisecond)
+
+	if _, err := tx.Exec(`INSERT INTO upgrade_probe (n) VALUES (1)`); err != nil {
+		t.Fatalf("the write after a read was refused instead of waited for: %v", err)
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("commit: %v", err)
+	}
+	if err := <-other; err != nil {
+		t.Fatalf("the other writer was refused: %v", err)
+	}
+	if err := first.sql.QueryRow(`SELECT COUNT(*) FROM upgrade_probe`).Scan(&n); err != nil || n != 2 {
+		t.Fatalf("probe rows = %d, %v; want both writes", n, err)
+	}
+}
+
 func TestListChats_MarksASlotARunningSessionStillHolds(t *testing.T) {
 	db := openTestDB(t)
 	liveOnly(t, 4242)
