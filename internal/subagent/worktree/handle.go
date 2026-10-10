@@ -164,3 +164,10 @@ func (w *Worktree) Reseed(patch string) error {
 	}
 	return regen.Failed
 }
+
+// ReseedMerging is Reseed for a patch that meets the work here, merged into
+// it three ways (ReseedMerging). The caller holds the lock the copy is written
+// under; landed and lane label the marks of a region no rule settles.
+func (w *Worktree) ReseedMerging(patch, landed, lane string) (*Reconciliation, error) {
+	return ReseedMerging(context.Background(), w.h.Dir, patch, w.gen, landed, lane)
+}

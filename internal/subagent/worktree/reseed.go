@@ -92,9 +92,22 @@ func ReseedWorktree(ctx context.Context, worktree, patch string, gen Regenerator
 		}
 		return regen, err
 	}
+	if undoable, err := moveBase(worktree, index); err != nil {
+		if undoable {
+			return undo(err)
+		}
+		return regen, err
+	}
+	return regenerateReseeded(ctx, gen, worktree, generated), nil
+}
+
+// moveBase commits the scratch index as the new base of the copy and puts the
+// copy's own index on it. It answers, with a failure, whether that left the
+// working tree and the base apart, which is the caller's to put back.
+func moveBase(worktree string, index []string) (bool, error) {
 	tree, err := hostgit.OutputWith(context.Background(), worktree, hostgit.Options{Env: index}, "write-tree")
 	if err != nil {
-		return undo(err)
+		return true, err
 	}
 	// The identity and the signing flag are CommitBase's, for its reasons;
 	// commit-tree runs no hooks.
@@ -102,26 +115,31 @@ func ReseedWorktree(ctx context.Context, worktree, patch string, gen Regenerator
 		"-c", "user.name=shhh", "-c", "user.email=shhh@localhost",
 		"commit-tree", strings.TrimSpace(tree), "-p", "HEAD", "--no-gpg-sign", "-m", reseededBaseMessage)
 	if err != nil {
-		return undo(err)
+		return true, err
 	}
 	if _, err := hostgit.Output(context.Background(), worktree, "update-ref", "--no-deref", "HEAD", strings.TrimSpace(commit)); err != nil {
-		return undo(err)
+		return true, err
 	}
 	// The writer's index is put back on the new base and the working tree
 	// left alone: an index still on the old base would read the landed change
 	// as the writer's own to anything that asked it.
-	if _, err := hostgit.Output(context.Background(), worktree, "reset", "--quiet"); err != nil {
-		return regen, err
-	}
+	_, err = hostgit.Output(context.Background(), worktree, "reset", "--quiet")
+	return false, err
+}
+
+// regenerateReseeded puts the landed patch's generated paths back to the new
+// base and runs their generators over the writer's own source change.
+func regenerateReseeded(ctx context.Context, gen Regenerator, worktree string, generated []string) reseedRegen {
+	var regen reseedRegen
 	if len(generated) == 0 {
-		return regen, nil
+		return regen
 	}
 	if err := restoreFromBase(worktree, generated); err != nil {
 		regen.Failed = err
-		return regen, nil
+		return regen
 	}
 	regen.Ran, regen.Failed = runGenerators(ctx, gen, worktree, generated)
-	return regen, nil
+	return regen
 }
 
 // reseedRegen is what a reseed did about the landed patch's generated paths:
@@ -138,6 +156,15 @@ type reseedRegen struct {
 // copy's base the patch would not apply to, and every landed path is as
 // likely a place to look as any other.
 func collidedPaths(worktree string, landed []string) []string {
+	if out := changedAmong(worktree, landed); len(out) > 0 {
+		return out
+	}
+	return landed
+}
+
+// changedAmong is which of these paths the writer has changed in its copy,
+// tracked or new.
+func changedAmong(worktree string, paths []string) []string {
 	changed := map[string]bool{}
 	for _, args := range [][]string{{"diff", "HEAD", "--name-only"}, {"ls-files", "--others", "--exclude-standard"}} {
 		out, err := hostgit.Output(context.Background(), worktree, args...)
@@ -149,13 +176,10 @@ func collidedPaths(worktree string, landed []string) []string {
 		}
 	}
 	var out []string
-	for _, p := range landed {
+	for _, p := range paths {
 		if changed[p] {
 			out = append(out, p)
 		}
-	}
-	if len(out) == 0 {
-		return landed
 	}
 	return out
 }

@@ -435,19 +435,56 @@ func (l *todoLane) catchUpLocked() (string, []string) {
 	var carried []string
 	for l.seen < len(l.set.landings) {
 		landed := l.set.landings[l.seen]
-		if err := l.wt.Reseed(landed.patch); err != nil {
-			var clash *worktree.ReseedCollision
-			if errors.As(err, &clash) {
-				return fmt.Sprintf("%s landed on the checkout (%s) and its patch does not carry into this lane's copy over %s, which this lane changed too: %s",
-					landed.slug, strings.Join(clash.Landed, ", "), strings.Join(clash.Files, ", "), clash.Reason), carried
+		err := l.wt.Reseed(landed.patch)
+		var clash *worktree.ReseedCollision
+		if errors.As(err, &clash) {
+			// The landing meets work this lane has: a rule settles the two
+			// shapes it can and the carry goes on, and anything else is put
+			// back and blocks with its regions quoted.
+			var why string
+			if why, err = l.merging(landed); why != "" {
+				return why, carried
 			}
-			return fmt.Sprintf("%s landed on the checkout and its patch could not be carried into this lane's copy: %s",
-				landed.slug, todoFirstProblem(err.Error())), carried
+		}
+		if err != nil {
+			return carryRefusal(landed.slug, err), carried
 		}
 		carried = append(carried, landed.slug)
 		l.seen++
 	}
 	return "", carried
+}
+
+// merging carries a landing that meets this lane's work by merging it three
+// ways (worktree.ReseedMerging). It answers with why the lane blocks where a
+// region no rule settles is left, the copy having been put back to the lane's
+// patch on its old base, and with the error where the landing cannot be
+// carried at all, which is the refusal a plain carry gives.
+func (l *todoLane) merging(landed todoLanding) (string, error) {
+	rec, err := l.wt.ReseedMerging(landed.patch, landed.slug, l.slug)
+	if err != nil {
+		return "", err
+	}
+	if len(rec.Unsettled) == 0 {
+		return "", rec.RegenFailed()
+	}
+	if err := rec.PutBack(); err != nil {
+		return "", fmt.Errorf("the copy could not be put back after a merge left %s marked: %w", strings.Join(rec.Unsettled, ", "), err)
+	}
+	return fmt.Sprintf("%s landed on the checkout and its patch does not carry into this lane's copy over %s, which this lane changed too: no rule settles the regions below, and the copy is as this lane left it\n\n%s",
+		landed.slug, strings.Join(rec.Unsettled, ", "), rec.Evidence), nil
+}
+
+// carryRefusal is the evidence a lane blocks on where a landing will not
+// carry into its copy.
+func carryRefusal(slug string, err error) string {
+	var clash *worktree.ReseedCollision
+	if errors.As(err, &clash) {
+		return fmt.Sprintf("%s landed on the checkout (%s) and its patch does not carry into this lane's copy over %s, which this lane changed too: %s",
+			slug, strings.Join(clash.Landed, ", "), strings.Join(clash.Files, ", "), clash.Reason)
+	}
+	return fmt.Sprintf("%s landed on the checkout and its patch could not be carried into this lane's copy: %s",
+		slug, todoFirstProblem(err.Error()))
 }
 
 // again writes on the lane's row that it is verifying a tree the named

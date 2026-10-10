@@ -285,8 +285,21 @@ func CheckoutSide(full string) (MergeSide, error) {
 // or one that is not text, has no merge short of choosing a winner, so it is
 // not clean. The mode is whichever side changed it.
 func mergeFile(scratch string, base, ours, theirs MergeSide) (MergeSide, bool, error) {
+	merged, conflicts, textual, err := mergeLines(scratch, base, ours, theirs, nil)
+	if err != nil || !textual || conflicts > 0 {
+		return MergeSide{}, false, err
+	}
+	return merged, true, nil
+}
+
+// mergeLines is `git merge-file -p` over three sides, with args added to the
+// command (the diff3 marking and the labels of a merge that keeps its
+// conflict regions). It answers with the merge as git wrote it, how many
+// regions it left in conflict, and whether the sides could be line-merged at
+// all; where they could not the merge is empty.
+func mergeLines(scratch string, base, ours, theirs MergeSide, args []string) (MergeSide, int, bool, error) {
 	if !base.Exists || !ours.Exists || !theirs.Exists || !base.Textual() || !ours.Textual() || !theirs.Textual() {
-		return MergeSide{}, false, nil
+		return MergeSide{}, 0, false, nil
 	}
 	mode := ours.Mode
 	switch {
@@ -294,34 +307,34 @@ func mergeFile(scratch string, base, ours, theirs MergeSide) (MergeSide, bool, e
 	case ours.Mode == base.Mode:
 		mode = theirs.Mode
 	case ours.Mode != theirs.Mode:
-		return MergeSide{}, false, nil
+		return MergeSide{}, 0, false, nil
 	}
 	names := make([]string, 3)
 	for i, side := range []MergeSide{ours, base, theirs} {
 		f, err := os.CreateTemp(scratch, "side-*")
 		if err != nil {
-			return MergeSide{}, false, err
+			return MergeSide{}, 0, false, err
 		}
 		_, werr := f.WriteString(side.Text)
 		cerr := f.Close()
 		if werr != nil || cerr != nil {
-			return MergeSide{}, false, errors.Join(werr, cerr)
+			return MergeSide{}, 0, false, errors.Join(werr, cerr)
 		}
 		names[i] = f.Name()
 	}
-	cmd := hostgit.Command(context.Background(), "", append([]string{"merge-file", "-p"}, names...)...)
+	cmd := hostgit.Command(context.Background(), "", append(append([]string{"merge-file", "-p"}, args...), names...)...)
 	var out, errBuf bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errBuf
 	err := cmd.Run()
 	var exit *exec.ExitError
 	switch {
 	case err == nil:
-		return MergeSide{Exists: true, Mode: mode, Text: out.String()}, true, nil
+		return MergeSide{Exists: true, Mode: mode, Text: out.String()}, 0, true, nil
 	case errors.As(err, &exit) && exit.ExitCode() > 0 && exit.ExitCode() < 128:
 		// The exit status is the number of conflict regions.
-		return MergeSide{}, false, nil
+		return MergeSide{Exists: true, Mode: mode, Text: out.String()}, exit.ExitCode(), true, nil
 	}
-	return MergeSide{}, false, fmt.Errorf("git merge-file: %s", strings.TrimSpace(errBuf.String()))
+	return MergeSide{}, 0, false, fmt.Errorf("git merge-file: %s", strings.TrimSpace(errBuf.String()))
 }
 
 // hashBlob writes text into the repository's object store as a blob and

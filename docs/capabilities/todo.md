@@ -1092,6 +1092,22 @@ every other lane's copy at that lane's next step — a step is what a round is
 to a writer — so what it verifies and what it is reviewed on is the tree it
 will land into.
 
+**Two collisions a rule settles are carried, not blocked.** A landing that
+meets the lane's own work on the same lines is merged three ways into the
+lane's copy, file by file, and git settles what it can. Of the regions it
+cannot, two shapes are settled by rule, with no model turn: a line where both
+sides moved one integer the same way, written as the sum of both changes
+(two items that each raised a count by one leave it raised by two), and a
+place where both inserted lines and share none, which keeps both with the
+landed lines first (two entries appended to one list, two sections appended to
+one document). The copy's base moves by the landing as it does for any carry,
+so the lane's patch is still its own work, and a settled carry is a carry
+that changed the copy: the lane verifies again before its review and its
+commit. A generated file is never merged — the key-list goldens and the
+settings reference are regenerated in the copy from what the lane changed
+over the landed text. Any other region, and any file that is not a line
+merge, still blocks, as below.
+
 **A lane commits only a tree its gate passed.** A carry that changed the
 copy after a verify passed sends the lane back to verify before its review
 or its commit, and spends no fix round: nothing failed, the verdict only
@@ -1109,8 +1125,9 @@ outside the sprint blocks the lane with the files named and its copy kept.
 A sprint asked for without commits lands the same way at the end and leaves
 the change uncommitted. Two endings differ from the
 session's, because an unattended run has nobody to steer: a landing that
-will not carry into a lane's copy blocks that lane's item with the collision
-as the evidence, and a merge that leaves a conflict blocks it with both
+will not carry into a lane's copy, and no rule settles, blocks that lane's
+item with the collision and its regions as the evidence and the copy put back
+to the lane's own work, and a merge that leaves a conflict blocks it with both
 patches kept — the one that landed first on the checkout, the lane's in its
 copy — and the files named, never a commit with conflict markers in it.
 Either way the lane is freed and its copy is kept for whoever reads the
