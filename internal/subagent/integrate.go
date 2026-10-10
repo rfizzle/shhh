@@ -58,14 +58,7 @@ type integration struct {
 	// workspace's side. A file still reading so at the end is one the
 	// integration writer did not reconcile.
 	conflicts []string
-	seeded    map[string]seededFile
-}
-
-// seededFile is one file as a copy held it: its text, and whether it was
-// there at all.
-type seededFile struct {
-	text   string
-	exists bool
+	seeded    map[string]wtree.SeededFile
 }
 
 // sourceName is the writer an integration reconciles, or "" for no
@@ -368,10 +361,9 @@ func (in *integration) seed(wt wtree.WorktreeHandle) error {
 			return fmt.Errorf("writing %s's merged files into the integration's copy: %w", in.source, err)
 		}
 	}
-	seeded := make(map[string]seededFile, len(m.Conflicts))
+	seeded := make(map[string]wtree.SeededFile, len(m.Conflicts))
 	for _, p := range m.Conflicts {
-		data, err := os.ReadFile(filepath.Join(wt.Dir, filepath.FromSlash(p)))
-		seeded[p] = seededFile{text: string(data), exists: err == nil}
+		seeded[p] = wtree.ReadSeeded(wt.Dir, p)
 	}
 	in.mu.Lock()
 	in.conflicts, in.seeded = m.Conflicts, seeded
@@ -381,38 +373,13 @@ func (in *integration) seed(wt wtree.WorktreeHandle) error {
 
 // unreconciled is the conflicting files an integration writer's copy does not
 // hold a reconciliation of: any still exactly as the workspace had it when
-// the copy was seeded, and any file the patch writes a conflict marker into.
-// Either is a patch that must not land as the one result.
+// the copy was seeded, and any file the patch writes a conflict marker into
+// (worktree.Unreconciled).
 func (in *integration) unreconciled(worktree, patch string) []string {
 	in.mu.Lock()
 	conflicts, seeded := in.conflicts, in.seeded
 	in.mu.Unlock()
-	var out []string
-	seen := map[string]bool{}
-	add := func(p string) {
-		if !seen[p] {
-			seen[p] = true
-			out = append(out, p)
-		}
-	}
-	for _, p := range conflicts {
-		data, err := os.ReadFile(filepath.Join(worktree, filepath.FromSlash(p)))
-		if (seededFile{text: string(data), exists: err == nil}) == seeded[p] {
-			add(p)
-		}
-	}
-	file := ""
-	for _, line := range strings.Split(patch, "\n") {
-		switch {
-		case strings.HasPrefix(line, "diff --git "):
-			file = wtree.ParseGitDiffPath(line)
-		case strings.HasPrefix(line, "+") && !strings.HasPrefix(line, "+++"):
-			if body := line[1:]; isMarker(body, "<<<<<<<") || isMarker(body, ">>>>>>>") {
-				add(file)
-			}
-		}
-	}
-	return out
+	return wtree.Unreconciled(worktree, patch, conflicts, seeded)
 }
 
 // unreconciledNote is what an integration writer that did not reconcile
