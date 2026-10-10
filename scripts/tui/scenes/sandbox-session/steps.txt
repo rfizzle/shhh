@@ -1,0 +1,24 @@
+# golden: TestGolden_SandboxSession (sandbox-session)
+#
+# A session whose commands run in a disposable container, driven on a host
+# with no engine: a stand-in `docker` (this directory) answers the create,
+# the probe, an exec and the remove, and runs an exec's argv here under the
+# built shhh as the helper, so the helper's flags and its stream are real.
+# Read the captures against the golden's layout block: /status names the
+# container sandbox and its profile, and says a writer's commands are
+# refused; the command's three lines arrive a second apart through the
+# helper, and the row settles with all three. The quit removes the container,
+# which the stand-in does not show and the program tests do.
+setup mkdir -p ../engine && cp "$scene/docker" ../engine/docker && chmod +x ../engine/docker
+snap 01-start "Some things worth doing first"
+keys "/status" Enter
+snap 02-status "container sandbox ·" "Containment" "a writer's commands: refused"
+keys "count to three" Enter
+snap 03-card "[y] run it once"
+keys y
+snap 04-tail "two" "▸ run"
+snap 05-settled "The three lines came back from the container" "three"
+keys C-c
+snap 06-quit-armed "again quits"
+keys C-c
+snap 07-exit "that is everything the screen was holding"

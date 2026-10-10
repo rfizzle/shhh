@@ -1,0 +1,56 @@
+#!/bin/sh
+# A stand-in container engine, put on PATH as `docker`, so a sandbox session
+# can be driven on a host with no engine at all. It answers the calls a
+# sandbox session makes: the engine probe, the create, an exec, and the
+# remove. An exec runs the argv after the container's name here, with the
+# built shhh standing in for the copy the image carries at the helper's path
+# — so the command still runs under the helper, with the flags the session
+# gave it, and its stream and its stop are the helper's own. The container's
+# one mount is remembered from the create, and --workdir is resolved under it.
+state=${HOME:?}/.sandbox-engine
+mkdir -p "$state"
+case "$1" in
+info)
+	echo '[name=seccomp name=rootless]'
+	;;
+run)
+	while [ $# -gt 0 ]; do
+		case "$1" in
+		--volume)
+			case "$2" in
+			*:/workspace) printf '%s\n' "${2%:/workspace}" > "$state/workspace" ;;
+			esac
+			shift
+			;;
+		esac
+		shift
+	done
+	echo 0123456789ab
+	;;
+exec)
+	shift
+	workdir=/workspace
+	while [ $# -gt 0 ]; do
+		case "$1" in
+		-i | -t) shift ;;
+		--workdir) workdir=$2; shift 2 ;;
+		--env) shift 2 ;;
+		*) break ;;
+		esac
+	done
+	# The container's name, then the helper's path inside the image.
+	shift 2
+	cd "$(cat "$state/workspace")${workdir#/workspace}" || exit 126
+	exec "$SHHH_BIN" "$@"
+	;;
+rm | inspect)
+	;;
+image)
+	echo 'Error: No such image' >&2
+	exit 1
+	;;
+*)
+	echo "stand-in engine: $1 is not answered here" >&2
+	exit 1
+	;;
+esac

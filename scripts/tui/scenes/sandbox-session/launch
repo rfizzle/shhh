@@ -1,0 +1,4 @@
+# The stand-in engine first on PATH, and a sandbox table naming it and a
+# digest-pinned image nothing pulls, appended after the [behavior] table the
+# driver wrote.
+printf '\n[sandbox]\ncontainer_engine = "docker"\ncontainer_image = "example.com/shhh-sandbox@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"\n' >> "$XDG_CONFIG_HOME/shhh/config.toml"; PATH="$HOME/../engine:$PATH" exec "$SHHH_BIN" code --sandbox

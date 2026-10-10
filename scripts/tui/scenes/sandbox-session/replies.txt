@@ -1,0 +1,7 @@
+# One command, printing three lines a second apart, so the row's live tail is
+# read as the lines cross from the container through the engine's exec. The
+# session's own queue, so /status asking for a reading of the session does
+# not take the reply written for the turn.
+[session]
+tool:execute_command:{"command":"echo one; sleep 1; echo two; sleep 1; echo three"}
+The three lines came back from the container.
