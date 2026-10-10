@@ -255,15 +255,11 @@ func readOneShotInput(cmd *cobra.Command, args []string, maxChars int, rawMode b
 		}
 		pipeMode = rawMode
 	case !stdinIsTTY && len(args) == 0:
-		scanner := bufio.NewScanner(os.Stdin)
-		var lines []string
-		for scanner.Scan() {
-			lines = append(lines, scanner.Text())
+		input, err := stdin.Read(os.Stdin, maxChars)
+		if err != nil {
+			return "", false, false, err
 		}
-		if err := scanner.Err(); err != nil {
-			return "", false, false, fmt.Errorf("reading stdin: %w", err)
-		}
-		userPrompt = strings.TrimSpace(strings.Join(lines, "\n"))
+		userPrompt = strings.TrimSpace(input)
 		if userPrompt == "" {
 			return "", false, false, fmt.Errorf("no prompt provided on stdin")
 		}

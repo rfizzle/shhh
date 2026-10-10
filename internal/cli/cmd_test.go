@@ -465,3 +465,31 @@ func BenchmarkOneShotTimeToRequest(b *testing.B) {
 	}
 	b.ReportMetric(float64(total.Nanoseconds())/float64(runs)/1e6, "ms/to-request")
 }
+
+// A prompt piped in without arguments is read whole: the line-by-line scanner
+// this path used to build for itself failed on a line over 64 KiB.
+func TestCmd_ReadsAHundredKiBFromStdin(t *testing.T) {
+	want := strings.Repeat("x", 100<<10)
+	f, err := os.CreateTemp(t.TempDir(), "stdin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(want + "\n"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		t.Fatal(err)
+	}
+	saved := os.Stdin
+	os.Stdin = f
+	t.Cleanup(func() { os.Stdin = saved })
+
+	got, pipe, ok, err := readOneShotInput(newCmdCmd(), nil, 1<<20, false)
+	if err != nil || !ok || !pipe {
+		t.Fatalf("readOneShotInput = ok %v pipe %v err %v", ok, pipe, err)
+	}
+	if got != want {
+		t.Fatalf("read %d bytes of %d", len(got), len(want))
+	}
+}
