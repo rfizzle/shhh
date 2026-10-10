@@ -26,9 +26,9 @@ snap 03a-draft "then wire the same handler"
 wide 110 keys -l $'\e[<0;7;24M' $'\e[<0;7;24m'
 narrow 110 keys -l $'\e[<0;7;25M' $'\e[<0;7;25m'
 snap 03b-clicked "copied block 2 · sh · 3 lines" "then wire the same handler"
-# Esc clears the draft; a second esc inside half a second is the rewind's,
-# so the next key waits that out.
-keys Escape
+# Esc leaves a draft as it is; ctrl+c is the chord that clears a sentence,
+# and a second press inside half a second would arm the quit, so wait it out.
+keys C-c
 sleep 0.6
 # From the draft: the card over the last reply's three blocks.
 keys "/copy code" Enter

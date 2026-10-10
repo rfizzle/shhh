@@ -38,7 +38,7 @@ snap 06-bang-card "[y] run it once"
 keys y
 snap 07-bang-row "echo hi" "ok · container"
 keys "start a ticker process" Enter
-snap 08-process-card "[y] run it once" "ticker"
+snap 08-process-card "[y] allow it" "ticker"
 keys y
 snap 09-process-read "The process printed ready inside the container"
 keys C-c
