@@ -1,2 +1,2 @@
-# No turn is taken: the scene suspends an idle session on its start screen.
-[session]
+# No completion is asked for: the scene lists the endpoint's models, opens the settings screen and leaves it.
+Nothing to say.

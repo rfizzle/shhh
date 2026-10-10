@@ -12,7 +12,7 @@
 # line and no remnant of the start screen; and, after fg, the start screen
 # painted whole again, the draft empty, nothing of the shell left on it. Read
 # the .gif by eye for the screen coming back clean.
-snap 00-shell "$ "
+snap 00-shell "$"
 keys '$SHHH_BIN code' Enter
 snap 01-start "Some things worth doing first"
 keys C-z
