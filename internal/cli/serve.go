@@ -20,10 +20,12 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
@@ -132,10 +134,23 @@ func runServe(cmd *cobra.Command, opts serveOpts) error {
 	})
 	defer srv.Close()
 
-	if opts.socket == "" {
-		return srv.ServeConn(cmd.Context(), os.Stdin, os.Stdout)
+	return serveUntilSignal(cmd.Context(), srv, opts.socket)
+}
+
+// serveUntilSignal serves on stdio, or on the socket when one is named, until
+// the context ends or the process is asked to stop with SIGINT or SIGTERM.
+//
+// The signal ends the serving the way the context does, so the socket is
+// unlinked by its own deferred remove and the sessions drain through the
+// server's close, rather than the process dying with the file left behind
+// for the next start to refuse.
+func serveUntilSignal(ctx context.Context, srv *rpc.Server, socket string) error {
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	if socket == "" {
+		return srv.ServeConn(ctx, os.Stdin, os.Stdout)
 	}
-	return serveOnSocket(cmd.Context(), srv, opts.socket)
+	return serveOnSocket(ctx, srv, socket)
 }
 
 // serveOnSocket listens on a unix socket and serves it until the context ends.
