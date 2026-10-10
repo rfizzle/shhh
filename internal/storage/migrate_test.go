@@ -38,6 +38,7 @@ var releasedMigrations = []string{
 	"1ecc266b88dca342", // 53: chat_sessions.handoff
 	"849da27ff7ef403d", // 54: chat_messages.value
 	"66a46c68b1f0e5db", // 55: cache_readings
+	"bdfab591d9cf9023", // 56: chat_sessions.account_owed
 }
 
 func migrationDigest(m string) string {

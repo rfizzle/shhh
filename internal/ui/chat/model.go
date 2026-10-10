@@ -1499,6 +1499,9 @@ func (m Model) saveCmd(revise func() string) tea.Cmd {
 	// And the session's working list, so a conversation opened again shows
 	// the steps it was on (worksteps.go).
 	steps := m.workSteps.Encode()
+	// And whether the account it carries is a reading behind, which a quit
+	// marks instead of waiting for the reading (quitCmd).
+	owed := m.account.owed
 	// And the mark saying the conversation is mid-turn, which is what makes
 	// quitting while held and starting again the same place (hold.go). It
 	// rides the save itself rather than a write beside it: the conversation
@@ -1555,8 +1558,9 @@ func (m Model) saveCmd(revise func() string) tea.Cmd {
 		// when the process started.
 		if revise != nil {
 			summary = revise()
+			owed = false
 		}
-		_ = db.SetChatResume(slot, storage.ChatResume{Summary: summary, Head: project.Head(dir), Root: project.Root(dir), Steps: steps})
+		_ = db.SetChatResume(slot, storage.ChatResume{Summary: summary, Head: project.Head(dir), Root: project.Root(dir), Steps: steps, Owed: owed})
 		// A move off a slot that holds a handoff this sitting did not keep
 		// carries that one: the last sitting's, which the slot was opened on.
 		if handoff == "" && slot != name {
@@ -1648,14 +1652,20 @@ func (m *Model) noteSlotMove(msg autosaveMovedMsg) {
 	m.syncViewport()
 }
 
-// quitCmd quits, autosaving first when possible. A session with nothing to
+// quitCmd quits, autosaving first when possible. The save carries the
+// account the session has and marks the slot as owing a reading when a turn
+// closed since the last one: the reading is a model request, and a quit that
+// waited on it would hold the terminal for as long as the provider took
+// (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write). A
+// session with nothing to
 // save gives its slot back on the way out: the claim was made at the start
 // so that no other session could take the name, and a row nothing will ever
 // be written to is one every later rename has to work around.
 func (m Model) quitCmd() tea.Cmd {
 	// An offer still standing at the session's end is ignored for good.
 	m.dropSuggestion()
-	if save := m.saveCmd(m.closingAccount()); save != nil {
+	m.account.owed = m.accountOwed()
+	if save := m.saveCmd(nil); save != nil {
 		return tea.Sequence(save, tea.Quit)
 	}
 	if m.wiring.DB != nil {
@@ -1861,6 +1871,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	// And its standing account (account.go), once enough turns have closed.
 	if read := mm.accountCloseCmd(); read != nil {
+		cmd = tea.Batch(cmd, read)
+	}
+	// Or the reading the last sitting left owing, taken before the first turn
+	// of this one (account.go).
+	if read := mm.owedAccountCmd(); read != nil {
 		cmd = tea.Batch(cmd, read)
 	}
 	// And the clipboard's offer on the top rail (attachoffer.go), read when the

@@ -13,9 +13,12 @@ package chat
 //   - It is asked at a turn's close, no more often than every
 //     summary.resume_interval_turns turns, as a background command like the
 //     title's: nothing waits for it and a failed reading changes nothing.
-//   - It is asked once more where the session is left — at the session
-//     boundary and at quit — when a turn has closed since the last one, and
-//     that reading rides the save that leaves the slot behind.
+//   - It is asked once more where the session is left by a new session,
+//     when a turn has closed since the last one, and that reading rides the
+//     save that leaves the slot behind. A quit never waits on a model
+//     request: it saves the account it has and marks the slot as owing a
+//     reading, which the next opening of the slot takes before the first
+//     turn (or the next turn's close, if that one fails).
 //   - Each reading revises the one before it, and whichever of an account
 //     and a compaction's handoff was written last is the one the slot keeps:
 //     a reading that lands after a compaction it did not see is dropped.
@@ -45,6 +48,12 @@ type accountState struct {
 	inFlight bool
 	readFor  string
 	cancel   context.CancelFunc
+	// owed is that the slot's account is a reading behind: the last sitting
+	// left without asking for the one it owed. It rides every save, and it
+	// is cleared by the reading that lands. asked is that the owed reading
+	// has been started this turn, so a reading that fails is retried at the
+	// next turn's close and not on every message.
+	owed, asked bool
 }
 
 // accountDoneMsg carries a finished reading back, with the slot it was read
@@ -64,6 +73,23 @@ func (m Model) accountEnabled() bool {
 // from the one place a turn's accounting is closed (appendTurnClose).
 func (m *Model) noteAccountTurn() {
 	m.account.turns++
+	m.account.asked = false
+}
+
+// readingOwed reports that the foot row should say the session is taking the
+// reading the last sitting left owing.
+func (m Model) readingOwed() bool {
+	return m.account.owed && m.account.inFlight
+}
+
+// accountOwed reports that the slot's account is behind the conversation: a
+// turn closed since the last reading, a reading is out and will not land, or
+// the slot already owed one when it was opened.
+func (m Model) accountOwed() bool {
+	if m.account.owed {
+		return true
+	}
+	return m.accountEnabled() && (m.account.turns > 0 || m.account.inFlight) && !m.accountRequest().Empty()
 }
 
 // accountRequest is the evidence a reading is taken from: the standing
@@ -79,8 +105,27 @@ func (m *Model) accountCloseCmd() tea.Cmd {
 	if !m.accountEnabled() || m.account.inFlight || m.account.turns < m.account.every {
 		return nil
 	}
+	return m.askAccount()
+}
+
+// owedAccountCmd takes the reading the last sitting left owing, once the
+// session opens on the slot and again at a turn's close if that one failed.
+// It is the quit's reading, moved to where a wait costs nothing: the screen
+// is up and the person has not yet typed.
+func (m *Model) owedAccountCmd() tea.Cmd {
+	if !m.account.owed || m.account.inFlight || m.account.asked || m.working() || !m.accountEnabled() {
+		return nil
+	}
+	m.account.asked = true
+	return m.askAccount()
+}
+
+// askAccount starts a reading over the conversation as it stands. Nil, and
+// nothing owed, when there is nothing to read.
+func (m *Model) askAccount() tea.Cmd {
 	req := m.accountRequest()
 	if req.Empty() {
+		m.account.owed = false
 		return nil
 	}
 	m.account.turns = 0
@@ -114,6 +159,7 @@ func (m *Model) finishAccount(msg accountDoneMsg) tea.Cmd {
 		return nil
 	}
 	m.compactSummary = msg.verdict.Account
+	m.account.owed = false
 	if m.wiring.DB == nil {
 		return nil
 	}
@@ -129,14 +175,18 @@ func (m *Model) finishAccount(msg accountDoneMsg) tea.Cmd {
 	}
 }
 
-// closingAccount is the reading a session owes the slot it is leaving — at
-// the boundary and at quit — where a turn has closed since the last reading
-// or a reading is still out and will not land. It answers with the work, for
-// the save that leaves the slot behind to run before it writes the resume
-// columns (saveCmd): the reading has to be in the save that carries it, and
-// nothing after the save is left to write it. Nil is nothing owed.
+// closingAccount is the reading a session owes the slot it is leaving for a
+// new conversation, where a turn has closed since the last reading or a
+// reading is still out and will not land. It answers with the work, for the
+// save that leaves the slot behind to run before it writes the resume columns
+// (saveCmd): the reading has to be in the save that carries it, and nothing
+// after the save is left to write it. Nil is nothing owed.
+//
+// The quit does not call it: a quit waiting on a model request is a terminal
+// that does not come back, so it marks the slot as owing a reading instead
+// and the next opening takes it (owedAccountCmd).
 func (m Model) closingAccount() func() string {
-	if !m.accountEnabled() || (m.account.turns == 0 && !m.account.inFlight) {
+	if !m.accountEnabled() || (m.account.turns == 0 && !m.account.inFlight && !m.account.owed) {
 		return nil
 	}
 	req := m.accountRequest()

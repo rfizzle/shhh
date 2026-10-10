@@ -318,6 +318,16 @@ func storedChatSummary(db *storage.DB, slot string) string {
 	return saved.Summary
 }
 
+// slotOwesReading is whether the slot was left without the account reading
+// it was owed. A store that cannot be read owes nothing.
+func slotOwesReading(db *storage.DB, slot string) bool {
+	if db == nil || slot == "" {
+		return false
+	}
+	saved, err := db.ChatResume(slot)
+	return err == nil && saved.Owed
+}
+
 // resumeConversation restores a saved conversation and tells it what the
 // checkout looks like now. Every path back to a stored conversation goes
 // through it — `--continue` and `--resume` on the way in, `/load` once the
@@ -349,6 +359,10 @@ func (m *Model) resumeConversation(slot string, msgs []provider.Message) {
 		m.dropHandoff()
 		m.adoptSlot(slot)
 		m.loadTitle()
+		// A slot the last sitting left owing a reading has it taken before
+		// the first turn (account.go).
+		m.account.owed = slotOwesReading(m.wiring.DB, slot)
+		m.account.asked = false
 	}
 	m.injectResumeContext()
 	m.restoreTurnClose()

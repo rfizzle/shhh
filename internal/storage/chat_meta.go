@@ -116,6 +116,10 @@ type ChatResume struct {
 	// text and never reads it.
 	// See docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
 	Steps string
+	// Owed is whether Summary is a reading behind: the sitting ended without
+	// asking for the one it owed, because a quit does not wait on a model
+	// request, and the next opening takes it.
+	Owed bool
 }
 
 // SetChatResume stores what the slot is opened again on. It is the title's
@@ -123,7 +127,7 @@ type ChatResume struct {
 // slot can never carry a summary from one sitting and a commit from another.
 func (db *DB) SetChatResume(name string, r ChatResume) error {
 	res, err := db.sql.Exec(
-		`UPDATE chat_sessions SET summary = ?, head = ?, root = ?, steps = ? WHERE name = ?`, r.Summary, r.Head, r.Root, r.Steps, name)
+		`UPDATE chat_sessions SET summary = ?, head = ?, root = ?, steps = ?, account_owed = ? WHERE name = ?`, r.Summary, r.Head, r.Root, r.Steps, r.Owed, name)
 	if err != nil {
 		return err
 	}
@@ -139,7 +143,7 @@ func (db *DB) SetChatResume(name string, r ChatResume) error {
 func (db *DB) ChatResume(name string) (ChatResume, error) {
 	var r ChatResume
 	err := db.sql.QueryRow(
-		`SELECT summary, head, root, steps FROM chat_sessions WHERE name = ?`, name).Scan(&r.Summary, &r.Head, &r.Root, &r.Steps)
+		`SELECT summary, head, root, steps, account_owed FROM chat_sessions WHERE name = ?`, name).Scan(&r.Summary, &r.Head, &r.Root, &r.Steps, &r.Owed)
 	if err == sql.ErrNoRows {
 		return ChatResume{}, nil
 	}

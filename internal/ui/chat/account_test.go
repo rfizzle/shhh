@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -128,29 +129,105 @@ func TestAccount_AReadingOlderThanACompactionIsDropped(t *testing.T) {
 	}
 }
 
-// Quitting with a turn closed since the last reading asks once more, and the
-// save on the way out carries the answer; quitting with none owed asks
-// nothing.
-func TestAccount_QuitCarriesTheClosingAccount(t *testing.T) {
-	p := &accountProvider{answers: []string{"Said hello. Left off before quitting."}}
+// blockingAccountProvider holds every account request until released, the
+// way a slow gateway does.
+type blockingAccountProvider struct {
+	accountProvider
+	release chan struct{}
+}
+
+func (p *blockingAccountProvider) StreamCompletion(ctx context.Context, msgs []provider.Message, o provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	select {
+	case <-p.release:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	return p.accountProvider.StreamCompletion(ctx, msgs, o)
+}
+
+// A quit saves the account the session has and never waits on a model
+// request: the slot is marked as owing a reading instead.
+func TestQuit_DoesNotWaitOnTheAccountWriter(t *testing.T) {
+	p := &blockingAccountProvider{accountProvider: accountProvider{answers: []string{"Never read."}}, release: make(chan struct{})}
+	defer close(p.release)
 	m, db := accountedModel(t, p, 5)
 	m, _ = closeTurn(t, m, "hello")
 
+	start := time.Now()
 	for _, c := range sequenceCmds(m.quitCmd()) {
 		if _, quit := c().(tea.QuitMsg); quit {
 			break
 		}
 	}
-	if len(p.asked) != 1 {
-		t.Fatalf("quitting with a turn owed should ask once, asked %d", len(p.asked))
+	if took := time.Since(start); took > 200*time.Millisecond {
+		t.Fatalf("the quit waited %v on the account writer", took)
 	}
-	if got, _ := db.ChatResume(m.sessionName); got.Summary != "Said hello. Left off before quitting." {
-		t.Fatalf("the save on the way out should carry the account, got %q", got.Summary)
+	if len(p.asked) != 0 {
+		t.Fatalf("the quit asked the writer %d times", len(p.asked))
+	}
+	got, _ := db.ChatResume(m.sessionName)
+	if !got.Owed {
+		t.Fatal("a quit that skipped the reading should mark the slot as owing one")
+	}
+	if chats, _ := db.ListChats(); len(chats) == 0 {
+		t.Fatal("the quit should still save the conversation")
 	}
 
 	fresh, _ := accountedModel(t, p, 5)
-	if fresh.closingAccount() != nil {
+	if fresh.accountOwed() {
 		t.Fatal("a session with no closed turn owes no account")
+	}
+}
+
+// A slot that quit owing a reading comes back with the same rail, takes the
+// reading before the first turn, and says so on the foot row while it does.
+func TestResume_TakesTheOwedReading(t *testing.T) {
+	p := &accountProvider{answers: []string{"Said hello. Left off before quitting."}}
+	m, db := accountedModel(t, p, 5)
+	m, _ = closeTurn(t, m, "hello")
+	for _, c := range sequenceCmds(m.quitCmd()) {
+		if _, quit := c().(tea.QuitMsg); quit {
+			break
+		}
+	}
+	slot := m.sessionName
+	msgs, err := db.LoadChat(slot)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reopened := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, multiTokenStream("hi there"), Wiring{
+		DB:           db,
+		Accountant:   agent.NewAccountant(p, agent.AccountConfig{Model: "fast"}),
+		AccountEvery: 5,
+	}).WithResumedMessages(slot, msgs)
+	updated, cmd := reopened.Update(tea.WindowSizeMsg{Width: 130, Height: 30})
+	reopened = updated.(Model)
+	if len(p.asked) != 0 {
+		t.Fatal("the resume asked before the screen took its first message")
+	}
+	if !strings.Contains(footRow(stripANSI(reopened.renderPromptFrame())), "reading the session…") {
+		t.Fatalf("the foot row should say the reading is being taken: %q", footRow(stripANSI(reopened.renderPromptFrame())))
+	}
+	msg, ok := driveAccount(t, cmd)
+	if !ok {
+		t.Fatal("the resume should take the owed reading before the first turn")
+	}
+	updated, write := reopened.Update(msg)
+	reopened = updated.(Model)
+	if write != nil {
+		write()
+	}
+	if strings.Contains(footRow(stripANSI(reopened.renderPromptFrame())), "reading the session") {
+		t.Fatal("the foot row should drop the word once the reading lands")
+	}
+	got, _ := db.ChatResume(slot)
+	if got.Summary != "Said hello. Left off before quitting." || got.Owed {
+		t.Fatalf("the slot should carry the reading and owe none, got %+v", got)
+	}
+	// And a reading taken is not asked for again.
+	if _, again := driveAccount(t, reopened.owedAccountCmd()); again {
+		t.Fatal("a reading that landed was asked for again")
 	}
 }
 

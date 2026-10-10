@@ -317,9 +317,10 @@ func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.
 		`UPDATE chat_sessions
 		    SET summary = (SELECT summary FROM chat_sessions WHERE name = ?),
 		        head    = (SELECT head    FROM chat_sessions WHERE name = ?),
-		        steps   = (SELECT steps   FROM chat_sessions WHERE name = ?)
+		        steps   = (SELECT steps   FROM chat_sessions WHERE name = ?),
+		        account_owed = (SELECT account_owed FROM chat_sessions WHERE name = ?)
 		  WHERE id = ?`,
-		parentName, parentName, parentName, branchID,
+		parentName, parentName, parentName, parentName, branchID,
 	); err != nil {
 		return fmt.Errorf("carry resume state to branch: %w", err)
 	}

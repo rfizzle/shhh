@@ -1311,7 +1311,7 @@ func slashSave(m *Model, parts []string) string {
 	// was written on would be the one copy that could not (reopen.go).
 	_ = m.wiring.DB.SetChatResume(name, storage.ChatResume{
 		Summary: m.compactSummary, Head: project.Head(m.wiring.Workspace), Root: project.Root(m.wiring.Workspace),
-		Steps: m.workSteps.Encode()})
+		Steps: m.workSteps.Encode(), Owed: m.account.owed})
 	// And the handoff the conversation holds, kept this sitting or opened
 	// on, so the copy's next sitting opens on it too (handoff.go).
 	handoff := m.handoff.kept

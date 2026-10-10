@@ -699,6 +699,12 @@ var migrations = []string{
 		updated_at    TEXT NOT NULL,
 		PRIMARY KEY (provider, endpoint, model, lease)
 	);`,
+
+	// Whether the slot's standing account owes a reading: a quit does not
+	// wait on a model request, so it saves the account it has and marks the
+	// slot, and the next opening takes the reading
+	// (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
+	`ALTER TABLE chat_sessions ADD COLUMN account_owed INTEGER NOT NULL DEFAULT 0;`,
 }
 
 const (

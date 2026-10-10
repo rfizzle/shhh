@@ -578,9 +578,14 @@ asking you and never when you come to resume:
 
 - **When.** At a turn's close, no more often than every
   `summary.resume_interval_turns` turns (three unless set; a negative turns
-  it off, and so does `summary.disabled`). Once more where the session is
-  left — at the session boundary and at quit — when a turn has closed since
-  the last reading, and that reading rides the save that leaves the slot. A
+  it off, and so does `summary.disabled`). Once more where a new session
+  leaves the old one, when a turn has closed since the last reading, and that
+  reading rides the save that leaves the slot. A quit never takes it: a quit
+  that waited on a model request would hold the terminal for as long as the
+  provider took, so it saves the account the session has and marks the slot
+  as owing a reading. The next time the slot is opened the reading is taken
+  before the first turn, with the foot row saying `reading the session…`
+  while it is out; one that fails is taken again when the next turn closes. A
   headless run takes one reading as it closes, except a stage of a backlog
   run, whose conversation the runner deletes once the item goes through; a
   served session keeps the screen's rhythm.
@@ -593,7 +598,7 @@ asking you and never when you come to resume:
   model's key, then the one cheap key, the provider's small model, the
   session's own — billed as a summary, so the rail's spend and `/stats` show
   it beside the title. At the default interval that is one request every
-  three turns and one at quit; a failed reading changes nothing.
+  three turns and one on the next opening after a quit; a failed reading changes nothing.
 - **Where it is read.** Under the title in the preview of the browser
   `--resume` and `shhh chats` open, after the readings on each row of the
   picker inside a session, on the line under each row of `shhh chats list`

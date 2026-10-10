@@ -509,6 +509,12 @@ func (m Model) frameHints(room int) string {
 			}
 			hints = append([]hintSeg{segAs(keys.Draft.TakeSuggestion, words)}, hints...)
 		}
+		// The reading a quit left owing is being taken: the one thing the
+		// row says about the wait, ahead of the keys, so a person who types
+		// into it knows why the account has not moved (account.go).
+		if m.readingOwed() {
+			hints = append([]hintSeg{{label: "reading the session…"}}, hints...)
+		}
 		ladder = true
 	}
 	// The key list takes the last slot while the draft holds the keyboard,
