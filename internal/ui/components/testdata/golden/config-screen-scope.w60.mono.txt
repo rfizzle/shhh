@@ -10,8 +10,8 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· the checkout's file · [shift+tab] offers yours
-shhh config · the checkout's file      [?] keys · [esc] back
+· project file · [shift+tab] offers global
+shhh config · project file             [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   SESSION
@@ -22,10 +22,10 @@ shhh config · the checkout's file      [?] keys · [esc] back
   ↓ 10 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
-[shift+tab] write yours · [esc] leave
+[shift+tab] write global · [esc] leave
 
-· your file · [shift+tab] offers the checkout's
-shhh config · your file                [?] keys · [esc] back
+· global file · [shift+tab] offers project
+shhh config · global file              [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   SESSION
@@ -36,10 +36,10 @@ shhh config · your file                [?] keys · [esc] back
   ↓ 10 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
-[shift+tab] write the checkout's · [esc] leave
+[shift+tab] write project · [esc] leave
 
-· your file older than the table · one word beside the path, outliving it
-shhh config · your file · outdated     [?] keys · [esc] back
+· global file older than the table · one word beside the path, outliving it
+shhh config · global file · outdated   [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   SESSION
@@ -50,10 +50,10 @@ shhh config · your file · outdated     [?] keys · [esc] back
   ↓ 10 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
-[shift+tab] write the checkout's · [esc] leave
+[shift+tab] write project · [esc] leave
 
 · a key the checkout may not decide · refused naming [shift+tab]
-shhh config · the checkout's file      [?] keys · [esc] back
+shhh config · project file             [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   SESSION
@@ -63,11 +63,11 @@ shhh config · the checkout's file      [?] keys · [esc] back
   ↓ 11 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
-[shift+tab] write yours · [esc] leave
+[shift+tab] write global · [esc] leave
 config key provider.api_key is not read from a checkout's f…
 
 · [?] · the switch is in the register
-shhh config · the checkout's file      [?] keys · [esc] back
+shhh config · project file             [?] keys · [esc] back
 ────────────────────────────────────────────────────────────
 
   …
@@ -81,10 +81,10 @@ in it
 [backspace] delete a character from the filter or the field
 being typed into
 [ctrl+r] reset this setting to its default
-[ctrl+s] write every staged change to the checkout's
+[ctrl+s] write every staged change to the project file,
 .shhh/config.toml
-[shift+tab] switch the write between the checkout's file and
-yours
+[shift+tab] switch the write between the project file and
+the global one
 [esc] clear the filter, then close it; leave the picker, or
 leave the screen writing nothing
 [esc] leave the screen writing nothing
@@ -107,8 +107,8 @@ $  a shell command
 [?] hide the keys
 
 ── ansi ────────────────────────────────────────────────────
-· the checkout's file · [shift+tab] offers yours
-␛[1;38;5;254mshhh config␛[m␛[38;5;244m · the checkout's file␛[m      ␛[38;5;244m[?] keys · [esc] back␛[m
+· project file · [shift+tab] offers global
+␛[1;38;5;254mshhh config␛[m␛[38;5;244m · project file␛[m             ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
@@ -119,10 +119,10 @@ $  a shell command
   ␛[38;5;244m↓ 10 more␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m
-␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write yours␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m
+␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write global␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m
 
-· your file · [shift+tab] offers the checkout's
-␛[1;38;5;254mshhh config␛[m␛[38;5;244m · your file␛[m                ␛[38;5;244m[?] keys · [esc] back␛[m
+· global file · [shift+tab] offers project
+␛[1;38;5;254mshhh config␛[m␛[38;5;244m · global file␛[m              ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
@@ -133,10 +133,10 @@ $  a shell command
   ␛[38;5;244m↓ 10 more␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m
-␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write the checkout's␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m
+␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write project␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m
 
-· your file older than the table · one word beside the path, outliving it
-␛[1;38;5;254mshhh config␛[m␛[38;5;244m · your file␛[m␛[38;5;254m · outdated␛[m     ␛[38;5;244m[?] keys · [esc] back␛[m
+· global file older than the table · one word beside the path, outliving it
+␛[1;38;5;254mshhh config␛[m␛[38;5;244m · global file␛[m␛[38;5;254m · outdated␛[m   ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
@@ -147,10 +147,10 @@ $  a shell command
   ␛[38;5;244m↓ 10 more␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m
-␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write the checkout's␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m
+␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write project␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m
 
 · a key the checkout may not decide · refused naming [shift+tab]
-␛[1;38;5;254mshhh config␛[m␛[38;5;244m · the checkout's file␛[m      ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh config␛[m␛[38;5;244m · project file␛[m             ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
@@ -160,11 +160,11 @@ $  a shell command
   ␛[38;5;244m↓ 11 more␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset␛[m
-␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write yours␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m
+␛[38;5;254m[shift+tab]␛[m␛[38;5;244m write global␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m leave␛[m
 ␛[38;5;244mconfig key provider.api_key is not read from a checkout's f…␛[m
 
 · [?] · the switch is in the register
-␛[1;38;5;254mshhh config␛[m␛[38;5;244m · the checkout's file␛[m      ␛[38;5;244m[?] keys · [esc] back␛[m
+␛[1;38;5;254mshhh config␛[m␛[38;5;244m · project file␛[m             ␛[38;5;244m[?] keys · [esc] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;244m…␛[m
@@ -178,10 +178,10 @@ $  a shell command
 ␛[38;5;254m[backspace]␛[m␛[38;5;244m delete a character from the filter or the field␛[m
 ␛[38;5;244mbeing typed into␛[m
 ␛[38;5;254m[ctrl+r]␛[m␛[38;5;244m reset this setting to its default␛[m
-␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write every staged change to the checkout's␛[m
+␛[38;5;254m[ctrl+s]␛[m␛[38;5;244m write every staged change to the project file,␛[m
 ␛[38;5;244m.shhh/config.toml␛[m
-␛[38;5;254m[shift+tab]␛[m␛[38;5;244m switch the write between the checkout's file and␛[m
-␛[38;5;244myours␛[m
+␛[38;5;254m[shift+tab]␛[m␛[38;5;244m switch the write between the project file and␛[m
+␛[38;5;244mthe global one␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m clear the filter, then close it; leave the picker, or␛[m
 ␛[38;5;244mleave the screen writing nothing␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m leave the screen writing nothing␛[m

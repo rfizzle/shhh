@@ -68,8 +68,8 @@ they did not ask for.
 ## The settings screen borrows two chords
 
 `ctrl+r` and `shift+tab` are the draft's history search and mode cycle, and
-the settings screen spends them as its reset and its switch between your file
-and the checkout's. They are the screen's own while it is up and nobody's
+the settings screen spends them as its reset and its switch between the global file
+and the project's. They are the screen's own while it is up and nobody's
 while it is not: a screen that takes the whole terminal holds the keyboard,
 so neither reaches the session underneath, and a key is inert until its
 surface holds it ([a key is inert until its surface holds the

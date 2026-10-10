@@ -3040,9 +3040,9 @@ func TestGolden_ConfigScreenScope(t *testing.T) {
 			return c
 		}
 		return []golden.Panel{
-			{Label: "the checkout's file · [shift+tab] offers yours", View: screen(false).View(width)},
-			{Label: "your file · [shift+tab] offers the checkout's", View: screen(true).View(width)},
-			{Label: "your file older than the table · one word beside the path, outliving it", View: func() string {
+			{Label: "project file · [shift+tab] offers global", View: screen(false).View(width)},
+			{Label: "global file · [shift+tab] offers project", View: screen(true).View(width)},
+			{Label: "global file older than the table · one word beside the path, outliving it", View: func() string {
 				c := screen(true)
 				c.Behind = true
 				return c.View(width)

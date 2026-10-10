@@ -3524,8 +3524,8 @@ The keyboard is seven keys. `↑↓` (and `jk`) move; `[enter]` opens the row
 under the pointer and takes what is in it; `[esc]` closes what is open, clears
 the filter, and then leaves, asking first over anything staged; `[/]` filters;
 `[ctrl+s]` writes every staged change; `[ctrl+r]` resets the row under the
-pointer to its default; and `[shift+tab]` switches the write between your file
-and the checkout's, where the screen stands in one. `[?]` is there because
+pointer to its default; and `[shift+tab]` switches the write between the global file
+and the project's, where the screen stands in one. `[?]` is there because
 every screen has it. A change always means the same thing: it stands as this
 session's until `[ctrl+s]` writes it to the file the header names. A setting
 a session reads at a turn boundary is taken as it is staged — at once between

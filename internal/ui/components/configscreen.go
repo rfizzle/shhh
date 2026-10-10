@@ -579,9 +579,18 @@ func (c *ConfigScreen) owner() string {
 	case !c.Scoped:
 		return ""
 	case c.Yours:
-		return "your "
+		return "global "
 	}
-	return "the checkout's "
+	return "project "
+}
+
+// writeTarget is where the write line says the staged changes go: the path,
+// and in a checkout the file's name for it ahead of the path.
+func (c *ConfigScreen) writeTarget() string {
+	if o := c.owner(); o != "" {
+		return "the " + o + "file, " + c.Path
+	}
+	return c.Path
 }
 
 // scopeOffer is the switch between the two files, worded as where it would
@@ -589,9 +598,9 @@ func (c *ConfigScreen) owner() string {
 // says that.
 func (c *ConfigScreen) scopeOffer() KeyOffer {
 	if c.Yours {
-		return keyOfferAs(keys.Screen.Scope, "write the checkout's")
+		return keyOfferAs(keys.Screen.Scope, "write project")
 	}
-	return keyOfferAs(keys.Screen.Scope, "write yours")
+	return keyOfferAs(keys.Screen.Scope, "write global")
 }
 
 // footer is the keys the screen offers and the field that annotates them.
@@ -669,10 +678,10 @@ func (c *ConfigScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Filter, "filter the settings by name"),
 		keyOfferAs(keys.Query.Rub, "delete a character from the filter or the field being typed into"),
 		keyOfferAs(keys.Screen.Reset, "reset this setting to its default"),
-		keyOfferAs(keys.Screen.Write, "write every staged change to "+c.owner()+c.Path),
+		keyOfferAs(keys.Screen.Write, "write every staged change to "+c.writeTarget()),
 	}
 	if c.Scoped {
-		list = append(list, keyOfferAs(keys.Screen.Scope, "switch the write between the checkout's file and yours"))
+		list = append(list, keyOfferAs(keys.Screen.Scope, "switch the write between the project file and the global one"))
 	}
 	return append(list, keyOfferAs(keys.Screen.Quit, "clear the filter, then close it; "+out), keyOfferAs(keys.Screen.Quit, quit))
 }

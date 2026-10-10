@@ -155,11 +155,10 @@ shhh config · 2 changes unwritten                          [?] keys · [esc] ba
 nothing is written until [ctrl+s]
 
 · staged in a session · a key read at the open says the next session takes it
-/config · the checkout's file · 2 changes unwritten        [?] keys · [esc] back
+/config · project file · 2 changes unwritten               [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────────
 
-  ↑ 4 more
-    compaction         gpt-5.2                                     session model
+  ↑ 5 more
 
   SESSION
     permission mode    ⏵⏵ auto — edits apply; allowlisted commands run      user
@@ -175,7 +174,8 @@ nothing is written until [ctrl+s]
   ↓ 6 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset
-[shift+tab] write yours · [ctrl+s] write 2 changes · [esc] discard, after asking
+[shift+tab] write global · [ctrl+s] write 2 changes
+[esc] discard, after asking
 nothing is written until [ctrl+s]
 
 · after a write · the receipt on the foot row, nothing left staged
@@ -303,7 +303,7 @@ $  a shell command
 [?] hide the keys
 
 · the flows section · each row says which link of the chain answered, or that the session holds it
-/config · the checkout's file · .shhh/config.toml          [?] keys · [esc] back
+/config · project file · .shhh/config.toml                 [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────────
 
   FLOWS
@@ -324,10 +324,10 @@ $  a shell command
   ↓ 9 more
 
 [↑↓/jk] move · [enter] change · [/] filter · [ctrl+r] reset          19 settings
-[shift+tab] write yours · [esc] leave
+[shift+tab] write global · [esc] leave
 
 · a flow's picker · the choice has three destinations on the key row
-/config · the checkout's file · .shhh/config.toml          [?] keys · [esc] back
+/config · project file · .shhh/config.toml                 [?] keys · [esc] back
 ────────────────────────────────────────────────────────────────────────────────
 
   FLOWS
@@ -496,11 +496,10 @@ $  a shell command
 ␛[38;5;241mnothing is written until [ctrl+s]␛[m
 
 · staged in a session · a key read at the open says the next session takes it
-␛[1;97m/config␛[m␛[38;5;241m · the checkout's file␛[m␛[38;5;214m · 2 changes unwritten␛[m        ␛[38;5;241m[?] keys · [esc] back␛[m
+␛[1;97m/config␛[m␛[38;5;241m · project file␛[m␛[38;5;214m · 2 changes unwritten␛[m               ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m↑ 4 more␛[m
-    ␛[38;5;252mcompaction␛[m         ␛[38;5;252mgpt-5.2␛[m                                     ␛[38;5;252msession model␛[m
+  ␛[38;5;241m↑ 5 more␛[m
 
   ␛[1;94mSESSION␛[m
     ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowlisted commands run␛[m      ␛[38;5;252muser␛[m
@@ -516,7 +515,8 @@ $  a shell command
   ␛[38;5;241m↓ 6 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;241m reset␛[m
-␛[38;5;103m[shift+tab]␛[m␛[38;5;241m write yours␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write 2 changes␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m discard, after asking␛[m
+␛[38;5;103m[shift+tab]␛[m␛[38;5;241m write global␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+s]␛[m␛[38;5;241m write 2 changes␛[m
+␛[92m[esc]␛[m␛[38;5;241m discard, after asking␛[m
 ␛[38;5;241mnothing is written until [ctrl+s]␛[m
 
 · after a write · the receipt on the foot row, nothing left staged
@@ -644,7 +644,7 @@ $  a shell command
 ␛[38;5;103m[?]␛[m␛[38;5;241m hide the keys␛[m
 
 · the flows section · each row says which link of the chain answered, or that the session holds it
-␛[1;97m/config␛[m␛[38;5;241m · the checkout's file␛[m␛[38;5;241m · .shhh/config.toml␛[m          ␛[38;5;241m[?] keys · [esc] back␛[m
+␛[1;97m/config␛[m␛[38;5;241m · project file␛[m␛[38;5;241m · .shhh/config.toml␛[m                 ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mFLOWS␛[m
@@ -665,10 +665,10 @@ $  a shell command
   ␛[38;5;241m↓ 9 more␛[m
 
 ␛[38;5;103m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;103m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[38;5;103m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[38;5;103m[ctrl+r]␛[m␛[38;5;241m reset␛[m          ␛[38;5;241m19 settings␛[m
-␛[38;5;103m[shift+tab]␛[m␛[38;5;241m write yours␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave␛[m
+␛[38;5;103m[shift+tab]␛[m␛[38;5;241m write global␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m leave␛[m
 
 · a flow's picker · the choice has three destinations on the key row
-␛[1;97m/config␛[m␛[38;5;241m · the checkout's file␛[m␛[38;5;241m · .shhh/config.toml␛[m          ␛[38;5;241m[?] keys · [esc] back␛[m
+␛[1;97m/config␛[m␛[38;5;241m · project file␛[m␛[38;5;241m · .shhh/config.toml␛[m                 ␛[38;5;241m[?] keys · [esc] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mFLOWS␛[m

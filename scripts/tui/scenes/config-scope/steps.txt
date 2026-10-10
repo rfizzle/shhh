@@ -31,11 +31,11 @@ sleep 0.3
 keys Escape
 sleep 0.5
 keys "/config" Enter
-snap 03-checkout "/config · the checkout's file · .shhh/config.toml" "[shift+tab] write yours" "FLOWS"
+snap 03-checkout "/config · project file · .shhh/config.toml" "[shift+tab] write global" "FLOWS"
 keys BTab
-snap 04-yours "/config · your file" "[shift+tab] write the checkout's"
+snap 04-global "/config · global file" "[shift+tab] write project"
 keys BTab
-snap 05-back "/config · the checkout's file" "[shift+tab] write yours"
+snap 05-back "/config · project file" "[shift+tab] write global"
 keys Enter
 snap 06-flow-picker "[enter] set it" "[esc] keep"
 keys "/"

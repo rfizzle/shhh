@@ -184,11 +184,47 @@ func TestConfigScreen_TheScopeKeyIsOfferedOnlyInACheckout(t *testing.T) {
 
 	c.Scoped = true
 	view := c.View(110)
-	if !strings.Contains(view, "the checkout's file") || !strings.Contains(view, "[shift+tab] write yours") {
+	if !strings.Contains(view, "project file") || !strings.Contains(view, "[shift+tab] write global") {
 		t.Fatalf("a screen in a checkout names whose file it writes and offers the other:\n%s", view)
 	}
 	if _, result := c.Update(key("shift+tab")); !result.Scope {
 		t.Fatal("shift+tab did not ask the host to switch the write")
+	}
+}
+
+// The two files are called global and project, the words `config init
+// --global` and the source column use, and no sentence on the screen calls
+// either one yours or the checkout's. A screen outside a checkout names no
+// owner.
+func TestConfigScreen_TheTwoFilesAreGlobalAndProject(t *testing.T) {
+	for _, width := range []int{60, 110} {
+		c := configFixture()
+		c.Scoped, c.Path = true, ".shhh/config.toml"
+		project := c.View(width)
+		c.Yours, c.Path = true, "~/.config/shhh/config.toml"
+		global := c.View(width)
+		for _, w := range []string{"project file", "[shift+tab] write global"} {
+			if !strings.Contains(project, w) {
+				t.Fatalf("at %d columns the project file's screen lacks %q:\n%s", width, w, project)
+			}
+		}
+		for _, w := range []string{"global file", "[shift+tab] write project"} {
+			if !strings.Contains(global, w) {
+				t.Fatalf("at %d columns the global file's screen lacks %q:\n%s", width, w, global)
+			}
+		}
+		c.keys = true
+		for _, view := range []string{project, c.View(width)} {
+			for _, old := range []string{"yours", "your file", "the checkout's"} {
+				if strings.Contains(view, old) {
+					t.Fatalf("at %d columns the screen still says %q:\n%s", width, old, view)
+				}
+			}
+		}
+		c = configFixture()
+		if v := c.View(width); strings.Contains(v, "global file") || strings.Contains(v, "project file") {
+			t.Fatalf("a screen outside a checkout names an owner:\n%s", v)
+		}
 	}
 }
 

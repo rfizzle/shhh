@@ -10,14 +10,14 @@
 # file under the scene's home, which lists that one key and leaves every
 # other out. The checkout's own file has no such row and says nothing; moving
 # the write to the person's own file (shift+tab) draws the header
-# `/config · your file · ~/.config/shhh/config.toml · outdated`, the word in
+# `/config · global file · ~/.config/shhh/config.toml · outdated`, the word in
 # the warn colour after the path.
 setup printf '# max_tool_rounds = 150\n' >> "$home/config/shhh/config.toml"
 snap 01-start "Some things worth doing first"
 keys "/config" Enter
-snap 02-checkout "/config · the checkout's file · .shhh/config.toml" "FLOWS"
+snap 02-checkout "/config · project file · .shhh/config.toml" "FLOWS"
 keys BTab
-snap 03-outdated "/config · your file" "config.toml · outdated"
+snap 03-outdated "/config · global file" "config.toml · outdated"
 keys Escape
 sleep 0.3
 keys Escape
