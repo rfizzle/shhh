@@ -134,6 +134,7 @@ func (m Model) spendScreenData() components.SpendScreen {
 	rows := []components.SpendRow{{
 		Kind: components.SpendTotal, Cost: m.totalsLabel(total),
 		Parts: m.billParts(), Tokens: tokensLabel(total), Requests: total.Requests,
+		Cache: m.leaseLines(),
 	}}
 	for _, share := range m.spendShares() {
 		row := components.SpendRow{
@@ -179,6 +180,30 @@ func (m Model) spendScreenData() components.SpendScreen {
 		rows = append(rows, components.SpendRow{Kind: components.SpendTurn, Cost: cost, Turn: t})
 	}
 	return components.SpendScreen{Rows: rows}
+}
+
+// leaseLines is what the cache lease cost the session, from the ledger's
+// counters: what the writes cost at the lease asked for, then what the other
+// lease would have cost for the same writes and pauses. It is the line that
+// makes the lease a choice with a visible consequence rather than a guess;
+// the other lease's figure is "about" because it is priced by the published
+// multipliers rather than by anything the provider billed. A session that
+// wrote nothing under a lease, or on a model with no price, has no line.
+// See docs/capabilities/providers.md#the-session-measures-how-long-the-cache-lives.
+func (m Model) leaseLines() []string {
+	var lines []string
+	for _, c := range m.wiring.Ledger.LeaseCosts() {
+		other := fmt.Sprintf("at %s about %s", c.OtherLease, formatCost(c.Other))
+		if c.Pauses > 0 {
+			if c.Lease == "1h" {
+				other += fmt.Sprintf(" (%d %s over 5 min)", c.Pauses, plural2(c.Pauses, "pause", "pauses"))
+			} else {
+				other += fmt.Sprintf(" (%d %s under the hour)", c.Pauses, plural2(c.Pauses, "expiry", "expiries"))
+			}
+		}
+		lines = append(lines, fmt.Sprintf("writes %s at %s", formatCost(c.Writes), c.Lease), other)
+	}
+	return lines
 }
 
 // billParts is the whole bill by kind of request, in the order each first

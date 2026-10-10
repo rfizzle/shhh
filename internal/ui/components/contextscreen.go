@@ -548,6 +548,13 @@ type ContextCache struct {
 	Lease, Confirmed string
 	// Share is the part of the last input read from the cache, `95%`.
 	Share string
+	// Lifetime is what has been measured of how long the cache lives,
+	// `survived 48m (6), no expiry seen`, drawn on a row of its own under
+	// the reading. Expired is an expiry seen inside the lease, `expired by
+	// 12m, lease 1h`, drawn after it in the warn tone: the gateway is not
+	// keeping the cache for as long as it was asked to. Idle is how long
+	// the cache has gone unused, `12m`. All three empty leave the row out.
+	Lifetime, Expired, Idle string
 }
 
 // rows is the reading as legend lines: the verdict and where it was taken,
@@ -574,10 +581,50 @@ func (c ContextCache) rows() []string {
 	if c.Share != "" {
 		parts = append(parts, sty.body.Render(c.Share)+sty.dim.Render(" of the last input"))
 	}
-	if len(parts) == 0 {
+	rows := []string{head}
+	if len(parts) > 0 {
+		rows = append(rows, sty.dim.Render("  ")+strings.Join(parts, sty.dim.Render(" · ")))
+	}
+	return append(rows, c.lifetimeRows()...)
+}
+
+// lifetimeFit is the widest the lifetime may be drawn on one line: the width
+// the legend has beside the grid at the narrowest window that draws them
+// side by side. A longer one moves the idle clock to a line of its own,
+// because a line clipped at the edge loses the figure it was drawn to state.
+const lifetimeFit = 52
+
+// lifetimeRows is the measured lifetime and the idle clock, under the cache
+// reading they explain: a cache idle for longer than it has been seen to
+// live is the next turn's rewrite.
+func (c ContextCache) lifetimeRows() []string {
+	if c.Lifetime == "" && c.Expired == "" && c.Idle == "" {
+		return nil
+	}
+	var parts []string
+	plain := "lifetime · " + c.Lifetime
+	if c.Lifetime != "" {
+		parts = append(parts, sty.body.Render(c.Lifetime))
+	}
+	if c.Expired != "" {
+		if c.Lifetime != "" {
+			plain += ", "
+		}
+		plain += c.Expired
+		parts = append(parts, sty.accent.Render(c.Expired))
+	}
+	head := sty.dim.Render("lifetime · ") + strings.Join(parts, sty.dim.Render(", "))
+	if c.Idle == "" {
 		return []string{head}
 	}
-	return []string{head, sty.dim.Render("  ") + strings.Join(parts, sty.dim.Render(" · "))}
+	idle := sty.dim.Render("idle ") + sty.body.Render(c.Idle)
+	switch {
+	case len(parts) == 0:
+		return []string{sty.dim.Render("lifetime · ") + idle}
+	case lipgloss.Width(plain+" · idle "+c.Idle) <= lifetimeFit:
+		return []string{head + sty.dim.Render(" · ") + idle}
+	}
+	return []string{head, sty.dim.Render("  ") + idle}
 }
 
 // categoryRow is one legend row: the swatch that keys the grid, the label,

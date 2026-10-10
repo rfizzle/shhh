@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -152,13 +153,45 @@ func (m Model) contextCache() components.ContextCache {
 	case meter.CacheNoneYet:
 		return components.ContextCache{Verdict: "none yet"}
 	}
-	return components.ContextCache{
+	c := components.ContextCache{
 		Verdict:   "works on " + r.Provider,
 		Model:     r.Model,
 		Lease:     r.Lease,
 		Confirmed: r.Confirmed,
 		Share:     fmt.Sprintf("%d%%", r.LastShare()),
 	}
+	c.Lifetime, c.Expired, c.Idle = cacheLifetimeWords(r, time.Now())
+	return c
+}
+
+// cacheLifetimeWords is what the reading says of how long the cache lives:
+// the longest gap it was seen to survive and the shortest it was seen to
+// expire within, each with its count, and an expiry inside the lease asked
+// for apart from them, since that one is the gateway not keeping its word.
+// The idle clock is how long the cache has gone unused as of now, left out
+// under a minute, where it says nothing a next turn would not.
+// See docs/capabilities/providers.md#the-session-measures-how-long-the-cache-lives.
+func cacheLifetimeWords(r meter.CacheReading, now time.Time) (lifetime, expired, idle string) {
+	var parts []string
+	if r.SurvivedN > 0 {
+		parts = append(parts, fmt.Sprintf("survived %s (%d)", meter.GapLabel(r.SurvivedMax), r.SurvivedN))
+	}
+	switch {
+	case r.ExpiredUnderLease():
+		expired = fmt.Sprintf("expired by %s, lease %s", meter.GapLabel(r.ExpiredMin), r.Lease)
+	case r.ExpiredN > 0:
+		parts = append(parts, fmt.Sprintf("expired by %s (%d)", meter.GapLabel(r.ExpiredMin), r.ExpiredN))
+	case r.SurvivedN > 0:
+		parts = append(parts, "no expiry seen")
+	}
+	since := r.LastStart
+	if since.IsZero() {
+		since = r.LastAt
+	}
+	if !since.IsZero() && now.Sub(since) >= time.Minute {
+		idle = meter.GapLabel(now.Sub(since))
+	}
+	return strings.Join(parts, ", "), expired, idle
 }
 
 // contextCategories is the legend: the accounting's categories in the

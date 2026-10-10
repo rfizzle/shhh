@@ -134,6 +134,7 @@ func (m *Model) accumulateUsage(u *provider.Usage) {
 	m.calibration.Observe(m.modelName, reported, estimated)
 	cost, priced := m.usageCost(*u)
 	m.vitals.record(m.modelName, *u, cost, priced)
+	m.noteCacheExpiries()
 	m.TotalTokensIn, m.TotalTokensOut = m.vitals.totalIn, m.vitals.totalOut
 	m.turnTokensIn, m.turnTokensOut = m.vitals.current.In, m.vitals.current.Out
 	// The report is anchored to the messages it described. Those are the

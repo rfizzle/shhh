@@ -86,6 +86,11 @@ type SpendRow struct {
 	// Tokens and Requests are what the figure was billed for.
 	Tokens   string
 	Requests int
+	// Cache is what the lease cost, on the session total: what the cache
+	// writes cost at the lease asked for, and what the other lease would
+	// have cost for the same writes and pauses, a line each. Empty where
+	// nothing was written under a lease or the model has no price.
+	Cache []string
 	// Turn is a turn row's turn, as the turns screen holds it — its number,
 	// how it ended and how long it took are that screen's words for it.
 	Turn *TurnsItem
@@ -200,6 +205,13 @@ func (s *SpendScreen) previewRows(width int) []string {
 		if r.Requests > 0 {
 			fields = append(fields, field{"requests", fmt.Sprint(r.Requests)})
 		}
+	}
+	for i, line := range r.Cache {
+		label := ""
+		if i == 0 {
+			label = "cache"
+		}
+		fields = append(fields, field{label, line})
 	}
 	for _, f := range fields {
 		if f.value != "" {
