@@ -23,10 +23,14 @@ keys Enter
 # Opened in place: the reads come back as one group under the card, listed
 # by name and counted past what the row holds, with the strip under them.
 snap 05-opened "./ one.go · two.go" "❯   ▾ read 12 files" "… +6"
-# The open card's group is a stop of its own: [-] there folds the group to
+# The open card's group is a stop of its own: esc there folds the group to
 # its head, the card staying open around it with its strip.
-keys "-"
+keys Escape
 snap 06-refolded "[enter] unfold it" "❯   ▸ read 12 files"
+# Esc is one level per press: the next closes the card the folded group
+# starts, and only the one after leaves reading mode.
+keys Escape
+snap 06b-card-closed "[enter] open it" "❯ ⚙ read 12 files"
 # The way out of reading mode, and the session's.
 keys Escape
 snap 07-prompt "[enter] send"

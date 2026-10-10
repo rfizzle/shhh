@@ -165,40 +165,25 @@ func TestReadingHint_CarriesTheModeKeysInOrder(t *testing.T) {
 	}
 }
 
-// [-] is offered only while the row under the cursor is open, and it closes
-// it. Where nothing is open it is a character like any other.
-func TestReadingHint_CollapseIsOfferedOnlyWhenSomethingIsOpen(t *testing.T) {
+// esc says "collapse" only while the row under the cursor is open, and with
+// nothing open it says it leaves.
+func TestReadingHint_EscSaysCollapseOnlyWhenSomethingIsOpen(t *testing.T) {
 	m := readingModel(t, 130)
 	m.moveFocus(-1)
 	m.moveFocus(-1)
-	if strings.Contains(ansi.Strip(m.readingKeyLine(m.contentWidth())), "[-] collapse") {
+	if strings.Contains(ansi.Strip(m.readingKeyLine(m.contentWidth())), "[esc] collapse") {
 		t.Fatal("nothing is open yet, so nothing should offer to close it")
-	}
-
-	// [-] with nothing open is a character, and it lands in the draft.
-	typed, _ := m.updateFocus(tea.KeyPressMsg{Code: []rune(keys.Shown(keys.Reading.Collapse))[0], Text: keys.Shown(keys.Reading.Collapse)})
-	if got := typed.(Model); got.state != stateFocus && got.input.Value() != keys.Shown(keys.Reading.Collapse) {
-		t.Fatalf("an unclaimed [-] should return to the draft carrying itself, got %q", got.input.Value())
 	}
 
 	opened, _ := m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = opened.(Model)
-	if !strings.Contains(ansi.Strip(m.readingKeyLine(m.contentWidth())), "[-] collapse") {
+	if !strings.Contains(ansi.Strip(m.readingKeyLine(m.contentWidth())), "[esc] collapse") {
 		t.Fatalf("an open row should offer to close it, got %q", ansi.Strip(m.readingKeyLine(m.contentWidth())))
 	}
 	// The position narrows before the keys give up a word, and at this width
 	// the longer move key has taken the room "1 row expanded" had.
 	if bar := ansi.Strip(m.readingKeyLine(m.contentWidth())); !strings.Contains(bar, "1 row expanded") && !strings.Contains(bar, "1 expanded") {
 		t.Fatalf("the position field reports what is open once something is: %q", bar)
-	}
-
-	closed, _ := m.updateFocus(tea.KeyPressMsg{Code: []rune(keys.Shown(keys.Reading.Collapse))[0], Text: keys.Shown(keys.Reading.Collapse)})
-	m = closed.(Model)
-	if m.state != stateFocus {
-		t.Fatalf("[-] on an open row is the mode's own key, got state %d", m.state)
-	}
-	if m.expandedRowCount() != 0 {
-		t.Fatal("[-] should have closed the row under the cursor")
 	}
 }
 
@@ -692,5 +677,52 @@ func TestEscFold_AClosedStepHidesTheSettingsRowsToo(t *testing.T) {
 
 	if m.pointer.foldNotice != "" {
 		t.Errorf("a pane whose rows are all folded shut said %q", m.pointer.foldNotice)
+	}
+}
+
+// The register is ten keys, and the arrows and the pages are one key each in
+// two halves: move, along the strip, expand, filter, match, the half page,
+// the page, copy, ? and esc. The retired letters answer nothing.
+func TestReading_TheRegisterIsTenKeys(t *testing.T) {
+	var got []string
+	for _, b := range keys.Reading.All() {
+		got = append(got, keys.Shown(b))
+	}
+	want := []string{"↑↓/jk", "←", "→", "enter", "c", "/", "n/N", "ctrl+u/ctrl+d", "pgup", "pgdn", "?", "esc"}
+	if strings.Join(got, " ") != strings.Join(want, " ") {
+		t.Errorf("the register is %v, want %v", got, want)
+	}
+	for _, gone := range []string{"-", "q", "u", "d", "y", "x", "ctrl+c"} {
+		for _, b := range keys.Reading.All() {
+			if keys.Is(gone, b) {
+				t.Errorf("%q still answers %q", gone, keys.Words(b))
+			}
+		}
+	}
+}
+
+// esc closes one level per press: the expanded row first, then the mode.
+func TestReading_EscClosesBeforeItLeaves(t *testing.T) {
+	m := readingModel(t, 130)
+	m.moveFocus(-1)
+	m.moveFocus(-1)
+	opened, _ := m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = opened.(Model)
+	if m.expandedRowCount() != 1 {
+		t.Fatalf("enter should have expanded the row, %d are", m.expandedRowCount())
+	}
+
+	closed, _ := m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = closed.(Model)
+	if m.state != stateFocus {
+		t.Fatalf("the first esc closed the row, it should not leave the mode (state %d)", m.state)
+	}
+	if m.expandedRowCount() != 0 {
+		t.Fatal("the first esc should have collapsed the row")
+	}
+
+	left, _ := m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if got := left.(Model); got.state == stateFocus {
+		t.Fatal("the second esc, with nothing open, should leave reading mode")
 	}
 }

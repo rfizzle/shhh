@@ -39,6 +39,10 @@ keys k
 snap 06-on-the-card "[enter] open it"
 keys Enter
 snap 07-rows "ok · 7 lines · auto-allowed · read-only" "exit 1 · auto-allowed · read-only" "denied · you"
+# Esc is one level per press: the first closes the card the cursor opened,
+# and only the next leaves reading mode.
+keys Escape
+sleep 0.3
 keys Escape
 sleep 0.3
 keys C-c

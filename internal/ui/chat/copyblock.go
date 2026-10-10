@@ -8,7 +8,7 @@ package chat
 // What reaches the clipboard is the block as the message wrote it — its body
 // from the markdown source, never the rows the renderer drew: no indent, no
 // fold, tabs kept as tabs, and no fence lines or language tag. The copy
-// rides the shared clipboard path (copyText) and fails the way /copy, [y]
+// rides the shared clipboard path (copyText) and fails the way /copy, [c]
 // and the drag do (copyFailure).
 
 import (
@@ -21,7 +21,7 @@ import (
 
 // copyBlock copies block n, counted from 1, of an assistant message's
 // markdown source, and says so where the reader is: in reading mode as the
-// rail's caption, the way [y] says it, and from the draft as a notice, which
+// rail's caption, the way [c] says it, and from the draft as a notice, which
 // has no rail to caption on. A number the message has no block for answers
 // with the range, the way /run does.
 //
@@ -40,7 +40,7 @@ func (m Model) copyBlock(src string, n int) (tea.Model, tea.Cmd) {
 	}
 	what := fmt.Sprintf("copied block %d · %s · %s", n, blockWord(b.lang), plural(blockLines(b.body), "line"))
 	if m.state == stateFocus {
-		// The caption stands as soon as the write leaves, as [y]'s does:
+		// The caption stands as soon as the write leaves, as [c]'s does:
 		// a write to the terminal has no reply to wait for.
 		m.readingCopied = "✓ " + what
 		return m, write
@@ -128,7 +128,7 @@ func (m Model) focusedBlocks() (string, []codeBlock) {
 // copyFocusedBlock answers [c]: the reply's one block is copied at once,
 // and several open the card over that reply's blocks — not the last
 // reply's, which is /copy code's. A row with no block hands the letter back
-// to the draft, the way [y] does on a row with nothing to copy.
+// to the draft, as a row with nothing to copy does.
 func (m Model) copyFocusedBlock(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	src, blocks := m.focusedBlocks()
 	switch len(blocks) {

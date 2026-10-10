@@ -567,7 +567,7 @@ func (m *Model) toggleCard(blk transcriptBlock, idx int) {
 // the rung draws it closed anyway the reader's answer is taken back rather
 // than recorded, so esc's fold has nothing of theirs to put back
 // (readinghint.go); at high, where the rung opens every card, the close is
-// the reader's answer and outranks it. It is [-] on an open card, enter and
+// the reader's answer and outranks it. It is esc on an open card, enter and
 // the header's click on one, and the strip's way back.
 func (m *Model) closeCard(blk transcriptBlock, idx int) {
 	es := *m.entries()

@@ -290,14 +290,14 @@ func TestMapCycleChordsHaveOneHome(t *testing.T) {
 }
 
 // TestReadingRowKeysHaveOneHome pins reading mode's bare letters the way the
-// realigned chords are pinned: the half-page, search and match bindings
-// belong to reading mode and to no other surface. The keystrokes themselves
-// have other lives — [/] opens a filter and [n] steps a hunk — but those are
-// other surfaces' bindings; these three may not quietly grow a second home.
-// The copy is not among them: [c] is the shared vocabulary's, and the same
-// binding on every surface that copies is the point of it.
+// realigned chords are pinned: the half-page and match bindings belong to
+// reading mode and to no other surface. The keystrokes themselves have other
+// lives — [n] steps a hunk — but those are other surfaces' bindings; these
+// two may not quietly grow a second home. The copy and the slash are not
+// among them: [c] and [/] are the shared vocabulary's, and the same binding
+// on every surface that copies or filters is the point of it.
 func TestReadingRowKeysHaveOneHome(t *testing.T) {
-	for _, b := range []Binding{Reading.Half, Reading.Search, Reading.Match} {
+	for _, b := range []Binding{Reading.Half, Reading.Match} {
 
 		sig := strings.Join(b.Keys(), ",") + "|" + Shown(b) + "|" + Words(b)
 		var homes []string

@@ -18,7 +18,7 @@ package chat
 //
 //   - A card's header: a step's, a fan-out's, a plan's. It names one card,
 //     and [enter] with reading mode's cursor on the card opens it and closes
-//     it again, [-] closes an open one; the click does the same, opening a
+//     it again, esc closes an open one; the click does the same, opening a
 //     closed card and closing an open one (card.go). Each has two depths and
 //     no fold: a step's opens onto its calls, a fan-out's onto its
 //     children's reports, a plan's onto the steps past its ceiling, and at

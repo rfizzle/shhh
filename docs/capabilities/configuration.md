@@ -859,9 +859,8 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `reading.strip_left` | `left` | along the strip, back | yes |
 | `reading.strip_right` | `right` | along the strip, on | yes |
 | `reading.expand` | `enter` | expand | yes |
-| `reading.collapse` | `-` | collapse | yes |
 | `reading.copy` | `c` | copy | yes |
-| `reading.search` | `/` | search | yes |
+| `reading.search` | `/` | filter | yes |
 | `reading.match` | `N`, `n` | match | yes |
 | `reading.half` | `ctrl+u`, `ctrl+d` | half page | yes |
 | `reading.page_up` | `pgup` | page up | yes |

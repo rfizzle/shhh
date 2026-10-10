@@ -87,8 +87,8 @@ func (m Model) openingCursor(idxs []int) int {
 }
 
 // closePointed is reading mode's collapse on the pointed row. With nothing
-// open under it the chord does nothing, which is what the mode's [-] does
-// too — minus the letter going to the draft, since a chord is not a letter.
+// open under it the chord does nothing, which is what the mode's esc does
+// too, short of the leave.
 func (m *Model) closePointed() {
 	if m.collapseFocused() {
 		m.refreshCursorView()

@@ -23,6 +23,10 @@ keys k
 keys k
 keys Enter
 snap 03b-allowed "auto-allowed · conversation read"
+# Esc is one level per press: the first closes the card the cursor opened,
+# and only the next leaves reading mode.
+keys Escape
+sleep 0.3
 keys Escape
 sleep 0.3
 keys BTab

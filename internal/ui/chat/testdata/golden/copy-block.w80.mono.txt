@@ -47,7 +47,7 @@
       snap 01-list "copy which block?"
 
 ────────────────────────────────────────────────────────────────────────────
-[↑↓/jk] move · [c] copy a block · [/] search · [esc] back to the prompt  1/1
+[↑↓/jk] move · [c] copy a block · [/] filter · [esc] back to the prompt  1/1
 
 
 
@@ -94,7 +94,7 @@
       snap 01-list "copy which block?"
 
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy a block␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m search␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m  ␛[38;5;244m1/1␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy a block␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m  ␛[38;5;244m1/1␛[m
 
 
 

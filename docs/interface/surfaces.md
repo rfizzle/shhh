@@ -335,7 +335,7 @@ own; it stays as the rung draws it until the reader opens or closes it, and
 the reader's answer outranks the rung
 ([`principles.md`](principles.md#density-is-one-ladder)). Under reading
 mode's cursor the card is the stop: enter opens a closed card and closes an
-open one, and `-` closes an open one. Nothing a reader does folds a card to
+open one, and `esc` closes an open one. Nothing a reader does folds a card to
 its header alone; that shape is the low rung's and no other.
 
 The pointer's control on a card is its header. A click there opens a closed
@@ -819,6 +819,18 @@ no line of its own after the work: it is a row of the card.
 The transcript gets a cursor, and the keyboard moves to it. This is the one
 mechanism behind every "expand" in the session, which is what lets the input
 keep every other key.
+
+**The register is ten keys.** `↑↓/jk` move; `←→` walk along an open card's
+strip; `enter` expands the row; `/` filters, with `n` and `N` for the next and
+previous match once a query stands; `pgup`/`pgdn` page and `ctrl+u`/`ctrl+d`
+move half a page; `c` copies; `?` lists the keys; and `esc` backs out one
+level per press. There is no key of its own for closing a row: the first `esc`
+collapses the row under the cursor, and only a press with nothing open leaves
+the mode, so the way out and the way to fold are the one key every surface
+already answers, and the bar says which of the two the next press will be.
+Nothing else is bound: `ctrl+c` does nothing here, and `y`, `q`, `-`, `u` and
+`d` are text that goes back to the draft. A row's own offers — a provider
+failure's, a dropped stream's — keep their letters behind the handover.
 
 The cursor is also reachable without the handover. Shift on the arrows
 moves it from the prompt — the pointer — and shift+→ and shift+← are enter

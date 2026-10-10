@@ -460,7 +460,6 @@ type ReadingKeys struct {
 	StripLeft  Binding
 	StripRight Binding
 	Expand     Binding
-	Collapse   Binding
 	Copy       Binding
 	Search     Binding
 	Match      Binding
@@ -474,7 +473,7 @@ type ReadingKeys struct {
 // All is reading mode's keys in the order it offers them, which is the order
 // `?` lists them in.
 func (k ReadingKeys) All() []Binding {
-	return []Binding{k.Move, k.StripLeft, k.StripRight, k.Expand, k.Collapse, k.Copy, k.Search,
+	return []Binding{k.Move, k.StripLeft, k.StripRight, k.Expand, k.Copy, k.Search,
 		k.Match, k.Half, k.PageUp, k.PageDown, k.List, k.Back}
 }
 
@@ -488,7 +487,6 @@ var Reading = ReadingKeys{
 	StripLeft:  bind("←", "along the strip, back", "left"),
 	StripRight: bind("→", "along the strip, on", "right"),
 	Expand:     bind("enter", "expand", "enter"),
-	Collapse:   bind("-", "collapse", "-"),
 	// Copy is the one copy every surface spells [c]: the fenced block under
 	// the cursor where the reply has one, and the whole row where it does
 	// not. It shares the letter with a dropped stream's "continue from here"
@@ -498,8 +496,10 @@ var Reading = ReadingKeys{
 	// Search is the slash every pager in the terminal opens a query with, and
 	// it is free here for the reason the bare letters are: nothing else on
 	// this surface is listening. On the input it is the palette's other door,
-	// which is a different surface and so a different key.
-	Search: bind("/", "search", "/"),
+	// which is a different surface and so a different key. It says "filter",
+	// the register's word for the slash, though here the query marks matches
+	// that n/N walk rather than narrowing the rows.
+	Search: bind("/", "filter", "/"),
 	// Match walks what the query found, and like Move it is one binding both
 	// ways with the dispatch reading which half was pressed. It is offered
 	// only while a search is live: with nothing found, n and N are letters
@@ -519,6 +519,9 @@ var Reading = ReadingKeys{
 	// by the same key. It is live here and nowhere near the draft, for the
 	// reason every bare letter in this file is.
 	List: bind("?", "keys", "?"),
+	// Back is esc, one level per press: it collapses the expanded row under
+	// the cursor, and only with nothing open does it leave the mode. There
+	// is no key of its own for the first half.
 	// Back does not answer the chord that opened the mode: that chord is
 	// declared once, on the input, and typing is the other way out anyway —
 	// a reader who forgot which pane they were in loses a mode, not a

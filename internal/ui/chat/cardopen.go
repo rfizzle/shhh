@@ -148,7 +148,7 @@ func (m Model) groupAt(es []entry, idx int) (transcriptBlock, receipt.Group, boo
 
 // toggleGroupFold folds the group whose line the entry at idx is kept on, or
 // unfolds it, and reports whether there was one. It is enter and a click on
-// the line, and [-] on an open one.
+// the line, and esc on an open one.
 func (m *Model) toggleGroupFold(idx int) bool {
 	es := *m.entries()
 	if _, _, ok := m.groupAt(es, idx); !ok {

@@ -159,6 +159,10 @@ func TestPointer_ReadingModeOpensOnThePointedRowAndLeavingDropsIt(t *testing.T) 
 	if m.state != stateFocus || m.focusIdx != 1 {
 		t.Fatalf("ctrl+o should open reading mode on the pointed row, got state %d idx %d", m.state, m.focusIdx)
 	}
+	// The pointed row is an open card: the first esc closes it, the second
+	// leaves.
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state != stateInput || m.pointerLit() {

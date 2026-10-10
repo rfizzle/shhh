@@ -289,7 +289,7 @@ citations that point here.
 An open card's stops are its group lines and the rows of its groups of one
 call. A run of calls nothing titled is kept on its first call, so once it is
 open the stop there is the first group's line, or that call's row, and enter
-acts on it: `-` folds that group and then closes the card, and a click on the
+acts on it: `esc` folds that group and then closes the card, and a click on the
 card's own header always means the card.
 
 ## A run nothing titled, and a refused call, are cards
@@ -1774,7 +1774,7 @@ list are not calls. At `low` a child waiting on you would hide behind the
 rung, so the header alone says `1 needs you` first, in del, and the chord that
 reaches the manager answers it from anywhere. Enter on an open fan-out whose
 report the bound cut still opens the whole of it full screen, as it did, and
-`-` or a click on the header closes the card; without that the lines the
+`esc` or a click on the header closes the card; without that the lines the
 bound held back would be the mouse's alone. The plan's header keeps the plan's
 own dim `▸` in its glyph column, which is the plan's mark and not a fold. The
 heading keeps its name for the citations that point here.

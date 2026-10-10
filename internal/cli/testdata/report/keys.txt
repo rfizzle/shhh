@@ -48,9 +48,8 @@
   · strip_left   left · along the strip, back  [shipped]
   · strip_right  right · along the strip, on  [shipped]
   · expand       enter · expand  [shipped]
-  · collapse     - · collapse  [shipped]
   ✓ copy         x · copy · shipped as c  [moved]
-  · search       / · search  [shipped]
+  · search       / · filter  [shipped]
   · match        N n · match  [shipped]
   · half         ctrl+u ctrl+d · half page  [shipped]
   · page_up      pgup · page up  [shipped]
@@ -349,4 +348,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  250 keys · 1 moved
+  249 keys · 1 moved

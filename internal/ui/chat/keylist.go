@@ -65,7 +65,7 @@ func (m Model) readingListOffers() []components.KeyOffer {
 	} else if words, ok := m.focusedCardWords(); ok {
 		segs = append(segs, segAs(keys.Reading.Expand, words))
 		if m.focusedRowOpen() {
-			segs = append(segs, segAs(keys.Reading.Collapse, cardCloseWords))
+			segs = append(segs, segAs(keys.Reading.Back, cardCloseWords))
 		}
 	}
 	offers := make([]components.KeyOffer, 0, len(segs))

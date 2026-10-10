@@ -51,7 +51,7 @@ var vocabulary = map[string]actSpelling{
 // letter budget below.
 var acts = map[string]string{
 	"reading.move": "move", "reading.copy": "copy", "reading.match": "match",
-	"reading.list": "keys", "reading.back": "back",
+	"reading.list": "keys", "reading.back": "back", "reading.search": "filter",
 	"staged.drop": "delete", "staged.back": "back", "staged.open": "open",
 	"queue.move": "move", "queue.cancel": "delete", "queue.back": "back",
 	"keylist.move": "move↑↓", "keylist.close": "back",
@@ -126,7 +126,6 @@ var owed = map[string]string{
 	"decision.explain": "x",
 	"rewind.code":      "c",
 	"wait.new_session": "n",
-	"reading.search":   "/",
 }
 
 // over is every surface carrying more than three letters of its own, with

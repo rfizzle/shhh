@@ -121,7 +121,7 @@
   ✗ go test ./internal/agent/... failing · exit 1 · 2…
 
 ────────────────────────────────────────────────────────
-[↑↓/jk] move · [-] collapse · [esc] prompt    1 expanded
+[↑↓/jk] move · [esc] collapse             1 row expanded
 
 
 
@@ -251,7 +251,7 @@
   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 2…␛[m
 
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[-]␛[m␛[38;5;244m collapse␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m prompt␛[m    ␛[38;5;244m1 expanded␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m collapse␛[m             ␛[38;5;244m1 row expanded␛[m
 
 
 

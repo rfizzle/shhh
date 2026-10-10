@@ -23,8 +23,7 @@ import (
 
 // copyFocusedRow answers [c] on a row with no block: the focused row's content goes to the
 // clipboard and the reading rail captions what was caught. A row with
-// nothing to copy hands the letter back to the draft, the way [-] does with
-// nothing open.
+// nothing to copy hands the letter back to the draft.
 //
 // The copy is the shared one (copyText): the terminal is offered the text
 // before any tool on this machine, which is the copy that survives ssh.

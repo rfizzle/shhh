@@ -53,6 +53,10 @@ keys Enter
 snap 08-folded "· compacted turn 1 into a "
 keys Enter
 snap 09-open "established loop.go as the owner"
+# Esc is one level per press: the first closes the open row, the next
+# leaves reading mode.
+keys Escape
+sleep 0.3
 # The way out of reading mode. The sleep is the terminal's rather than the
 # product's: esc and a chord written into the pty together arrive as one
 # escape sequence.

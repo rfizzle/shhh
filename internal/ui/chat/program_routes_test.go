@@ -348,7 +348,7 @@ func TestProgram_AFoldedRunOfReadsOpensInPlace(t *testing.T) {
 	waitForText(t, tm, "./ one.go")
 
 	frame := finalFrame(t, tm)
-	frameHas(t, frame, "▾ read 12 files", "./ one.go · two.go", "back to the prompt")
+	frameHas(t, frame, "▾ read 12 files", "./ one.go · two.go", "[esc] collapse")
 }
 
 // The route to one call: reading mode opens a card of twelve reads onto its

@@ -92,6 +92,10 @@ func TestFocusMode_EscReturnsToInputKeepingExpansion(t *testing.T) {
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
+	// esc would close the open row first; the cursor moves off it to leave
+	// it open (TestReading_EscClosesBeforeItLeaves).
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'j', Text: "j"})
+	m = updated.(Model)
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)

@@ -419,6 +419,13 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Reading.Back):
+		// One level per press: the row under the cursor closes first, and
+		// only a press with nothing open leaves the mode.
+		// See docs/interface/principles.md#esc-is-always-the-safe-answer.
+		if m.collapseFocused() {
+			m.refreshFocusView()
+			return m, nil
+		}
 		return m.exitFocusMode()
 	case keys.Is(pressed, keys.Reading.Search):
 		return m.openSearchQuery()
@@ -459,8 +466,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// here", which answers on its own row first. Elsewhere it is the one
 		// copy: a reply's fenced block where the row has one (copyblock.go),
 		// and the row itself, type-aware, where it does not (copyrow.go). A
-		// row with nothing to copy hands the letter back to the draft, the
-		// way [-] does with nothing open.
+		// row with nothing to copy hands the letter back to the draft.
 		if next, cmd, claimed := m.rowLetter(pressed); claimed {
 			return next, cmd
 		}
@@ -489,15 +495,6 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// (openAgentList); without one it keeps its line-editor meaning.
 		if m.wiring.Subagents != nil {
 			return m.openAgentList()
-		}
-		return m.returnToInput(msg)
-	case keys.Is(pressed, keys.Reading.Collapse):
-		// The explicit half of [enter]'s toggle. Where the row under
-		// the cursor has nothing open, [-] is a character like any other and
-		// goes back to the draft.
-		if m.collapseFocused() {
-			m.refreshFocusView()
-			return m, nil
 		}
 		return m.returnToInput(msg)
 	case keys.Is(pressed, keys.Reading.PageUp):

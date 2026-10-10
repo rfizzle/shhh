@@ -80,7 +80,7 @@ snap 06-on-the-card "[enter] open it" "Running the suite once more"
 keys Enter
 # Below 80 columns the bar sheds enter's words before collapse's.
 wide 80 snap 07-open "[enter] close it" "▾ read " "▾ ran 2 commands" "▎✗ printf"
-narrow 80 snap 07-open "[-] collapse" "▾ read " "▾ ran 2 commands"
+narrow 80 snap 07-open "[esc] collapse" "▾ read " "▾ ran 2 commands"
 # The first arrow puts the strip's cursor on the last call, the failed
 # command; the next two walk it back one call and on again.
 keys Left
@@ -99,7 +99,7 @@ snap 13-closed "[enter] open it" "Running the suite once more"
 # card — header, body and footer — never to its header alone.
 keys Enter
 wide 80 snap 14-open-again "[enter] close it" "▾ ran 2 commands"
-narrow 80 snap 14-open-again "[-] collapse" "▾ ran 2 commands"
+narrow 80 snap 14-open-again "[esc] collapse" "▾ ran 2 commands"
 keys Enter
 snap 15-closed-again "[enter] open it" "Running the suite once more" "--- FAIL: TestReplyGolden"
 # A click on a call's row inside the open card opens that call's own view,
@@ -109,16 +109,16 @@ snap 15-closed-again "[enter] open it" "Running the suite once more" "--- FAIL: 
 # row 31 at every width, its command from column 12.
 keys Enter
 wide 80 snap 15b-open-for-the-click "[enter] close it" "▎$ git status --short notes.md"
-narrow 80 snap 15b-open-for-the-click "[-] collapse" "▎$ git status --short notes.md"
+narrow 80 snap 15b-open-for-the-click "[esc] collapse" "▎$ git status --short notes.md"
 keys -l $'\e[<0;12;31M' $'\e[<0;12;31m'
 snap 16-the-clicked-call "output · [↑↓/jk] move" "$ git status --short notes.md" "?? notes.md" "[esc] back"
 keys Escape
 wide 80 snap 17-back-on-the-open-card "[enter] fold it" "❯   ▾ ran 2 commands" "▎$ git status"
-narrow 80 snap 17-back-on-the-open-card "[-] collapse" "❯   ▾ ran 2 commands" "▎$ git status"
+narrow 80 snap 17-back-on-the-open-card "[esc] collapse" "❯   ▾ ran 2 commands" "▎$ git status"
 keys k
 keys k
 wide 80 snap 17a-on-the-header "[enter] close it" "❯▎✗ read"
-narrow 80 snap 17a-on-the-header "[-] collapse" "❯▎✗ read"
+narrow 80 snap 17a-on-the-header "[esc] collapse" "❯▎✗ read"
 keys Enter
 snap 17b-closed "[enter] open it" "Running the suite once more" "--- FAIL: TestReplyGolden"
 keys Escape
@@ -167,7 +167,7 @@ keys k
 snap 22d-on-the-low-card "[enter] open it" "❯▎✗ read"
 keys Enter
 wide 80 snap 22e-low-open "[enter] close it" "▾ read 6 files" "▾ ran 2 commands" "Running the suite once more"
-narrow 80 snap 22e-low-open "[-] collapse" "▾ ran 2 commands"
+narrow 80 snap 22e-low-open "[esc] collapse" "▾ ran 2 commands"
 keys Enter
 snap 22f-low-closed "[enter] open it" "❯▎✗ read"
 keys Escape

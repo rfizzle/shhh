@@ -159,6 +159,9 @@ func TestSearch_LeavingTheModePutsTheSearchsFoldsBack(t *testing.T) {
 	m, _ = pressKey(t, m, enter)
 	m, _ = pressKey(t, m, enter)
 
+	// The fold the search opened is the row under the cursor: the first esc
+	// closes it, the second leaves.
+	m, _ = pressKey(t, m, escK)
 	m, _ = pressKey(t, m, escK)
 	if m.state == stateFocus {
 		t.Fatal("[esc] should leave reading mode")

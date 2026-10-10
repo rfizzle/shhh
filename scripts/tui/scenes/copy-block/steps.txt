@@ -8,7 +8,7 @@
 # second heading copies that block from a half-typed draft. /copy code opens
 # the numbered card over the later reply's blocks and a digit takes the
 # third; a number out of range answers with the range. Reading mode then
-# offers [c] beside [y] on a reply with a block: on the later reply it opens
+# offers [c] on a reply with a block: on the later reply it opens
 # the same card scoped to that reply, and on the earlier one it copies the
 # one block at once, with the caption on the bar. A click on a heading there
 # moves the cursor to its reply and copies with the same caption.

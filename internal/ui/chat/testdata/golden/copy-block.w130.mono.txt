@@ -47,12 +47,12 @@
       snap 01-list "copy which block?"
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[↑↓/jk] move · [enter] expand — nothing on this row expands · [c] copy a block · [/] search · [esc] back to the prompt  1 of 1
+[↑↓/jk] move · [enter] expand — nothing on this row expands · [c] copy a block · [/] filter · [esc] back to the prompt  1 of 1
 
 
 
 · a block taken · the caption on the bar
-[↑↓/jk] move · [c] copy a block · [/] search · [esc] back to the prompt                        ✓ copied block 2 · sh · 3 lines
+[↑↓/jk] move · [c] copy a block · [/] filter · [esc] back to the prompt                        ✓ copied block 2 · sh · 3 lines
 
 
 
@@ -94,11 +94,11 @@
       snap 01-list "copy which block?"
 
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter] expand — nothing on this row expands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy a block␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m search␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m  ␛[38;5;244m1 of 1␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter] expand — nothing on this row expands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy a block␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m  ␛[38;5;244m1 of 1␛[m
 
 
 
 · a block taken · the caption on the bar
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy a block␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m search␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                        ␛[38;5;244m✓ copied block 2 · sh · 3 lines␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy a block␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                        ␛[38;5;244m✓ copied block 2 · sh · 3 lines␛[m
 
 

@@ -27,10 +27,12 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// keys.Reading.Collapse is the explicit half of [enter]'s toggle. It is
-// offered only while the row under the cursor is actually open, so every key
-// on the bar is one the surface can honour — an offer nothing accepts is
-// worse than no offer at all.
+// The two things esc does here, offered by the row under the cursor: it
+// collapses an open row, and with nothing open it leaves reading mode.
+const (
+	collapseWords     = "collapse"
+	backToPromptWords = "back to the prompt"
+)
 
 // hintSeg is one offer on the hint bar: a key, what it does, and — for a key
 // that is on screen but cannot act — the reason, which is said in words
@@ -108,9 +110,6 @@ func (m Model) readingModeKeys() []hintSeg {
 			words = groupUnfoldWords
 		}
 		segs = append(segs, segAs(keys.Reading.Expand, words))
-		if m.focusedRowOpen() {
-			segs = append(segs, seg(keys.Reading.Collapse))
-		}
 	} else if _, ok := m.reviewableRow(m.focusIdx); ok {
 		// The row states what a turn changed, and enter opens that turn's
 		// review rather than a body (openCursorRow).
@@ -124,20 +123,14 @@ func (m Model) readingModeKeys() []hintSeg {
 		// A card prints no key of its own; the bar says what enter does to
 		// the one under the cursor (docs/interface/surfaces.md#the-step).
 		segs = append(segs, segAs(keys.Reading.Expand, words))
-		if m.focusedRowOpen() {
-			segs = append(segs, seg(keys.Reading.Collapse))
-		}
 	} else if m.focusedExpands() {
 		segs = append(segs, seg(keys.Reading.Expand))
-		if m.focusedRowOpen() {
-			segs = append(segs, seg(keys.Reading.Collapse))
-		}
 	} else {
 		expand := seg(keys.Reading.Expand)
 		expand.reason = "nothing on this row expands"
 		segs = append(segs, expand)
 	}
-	// Like [-], [c] is offered only while the row under the cursor can
+	// [c] is offered only while the row under the cursor can
 	// honour it — an offer nothing accepts is worse than no offer at all —
 	// and its words say which copy it is: one fenced block on a reply that
 	// holds one, the whole row everywhere else.
@@ -148,7 +141,7 @@ func (m Model) readingModeKeys() []hintSeg {
 	}
 	// [/] stands whether or not a search is open: it opens the query row, or
 	// reopens it on the query already in it. The step pair joins it only once
-	// there is something to step through, the way [-] joins once a row is
+	// there is something to step through, the way the collapse joins once a row is
 	// open.
 	segs = append(segs, seg(keys.Reading.Search))
 	if m.viewport.Searching() {
@@ -157,7 +150,12 @@ func (m Model) readingModeKeys() []hintSeg {
 	// The register's own key sits between the row's offers and the way out:
 	// it is the last thing a reader reaches for and the first the bar sheds.
 	segs = append(segs, seg(keys.Reading.List))
-	return append(segs, segAs(keys.Reading.Back, "back to the prompt"))
+	// esc is one level per press (updateFocus), so while the row under the
+	// cursor is open the bar says what the next press does to it.
+	if m.focusedRowOpen() {
+		return append(segs, segAs(keys.Reading.Back, collapseWords))
+	}
+	return append(segs, segAs(keys.Reading.Back, backToPromptWords))
 }
 
 // openTrayWords is what enter does on a sent picture's row.
@@ -276,7 +274,7 @@ func fitSegs(segs []hintSeg, room int) []hintSeg {
 func shortenBackKey(segs []hintSeg) []hintSeg {
 	out := append([]hintSeg(nil), segs...)
 	for i := range out {
-		if out[i].key == keys.Shown(keys.Reading.Back) {
+		if out[i].key == keys.Shown(keys.Reading.Back) && out[i].label == backToPromptWords {
 			out[i].label = "prompt"
 		}
 	}
@@ -391,7 +389,7 @@ func (m Model) readingStepOrdinal() int {
 }
 
 // expandedRowCount is how many rows the reader has opened — the count the
-// position field reports once there is one, and the reason [-] is on the bar.
+// position field reports once there is one, and the reason esc is on the bar.
 func (m Model) expandedRowCount() int {
 	n := 0
 	for _, e := range *m.entries() {
@@ -411,12 +409,12 @@ func (m Model) expandedRowCount() int {
 // It is a closed vocabulary rather than a condition spelled out at each call
 // site (docs/interface/principles.md#closed-vocabularies), because two
 // gestures act on it and they must not learn different lists: reading mode's
-// [-] closes whichever one the cursor is standing on, and esc on an empty
+// esc closes whichever one the cursor is standing on, and esc on an empty
 // draft puts every one the reader opened back at once.
 //
-// The two gestures ask different questions of the same list. [-] asks what is
+// The two gestures ask different questions of the same list. Reading mode's asks what is
 // open under the cursor, whatever opened it, because the reader is pointing
-// at that row and asking for it closed; esc asks what the *reader* opened, so
+// at that row and asking for it closed; the draft's asks what the *reader* opened, so
 // a body the verbosity is holding open is not its to fold
 // (docs/interface/surfaces.md#the-input-frame).
 type openKind int
@@ -441,7 +439,7 @@ const (
 )
 
 // focusedOpenKind is what the row under the cursor has open, or openNone.
-// Anything showing counts, the verbosity's doing included: [-] is the reader
+// Anything showing counts, the verbosity's doing included: esc is the reader
 // naming one row.
 func (m Model) focusedOpenKind() openKind {
 	es := *m.entries()
@@ -449,7 +447,7 @@ func (m Model) focusedOpenKind() openKind {
 		return openNone
 	}
 	if _, _, ok := m.groupAt(es, m.focusIdx); ok {
-		// A group line has its group open or folded; folded, what [-] has
+		// A group line has its group open or folded; folded, what esc has
 		// left to close on a run nothing titled is the card it starts.
 		switch _, isCard := m.cardBlockAt(es, m.focusIdx); {
 		case !es[m.focusIdx].groupFolded:
@@ -466,7 +464,7 @@ func (m Model) focusedOpenKind() openKind {
 		case es[m.focusIdx].detailFold == foldOpen:
 			// A card closed over an open detail: the rows are not on
 			// screen, but the answer that would show their bodies is still
-			// on record, and [-] takes it back.
+			// on record, and esc takes it back.
 			return openDetail
 		}
 		return openNone
@@ -481,7 +479,7 @@ func (m Model) focusedOpenKind() openKind {
 		return openBody
 	}
 	// The first call of an open run nothing titled is where its card is
-	// kept: with nothing of its own open, what [-] has to close is the card.
+	// kept: with nothing of its own open, what esc has to close is the card.
 	if _, ok := m.cardBlockAt(es, m.focusIdx); ok {
 		return openStep
 	}
@@ -494,8 +492,8 @@ func (m Model) focusedOpenKind() openKind {
 func (m Model) focusedRowOpen() bool { return m.focusedOpenKind() != openNone }
 
 // collapseFocused closes whatever the row under the cursor has open, and
-// reports whether there was anything to close. Where there is not, [-] is a
-// character like any other and belongs in the draft.
+// reports whether there was anything to close. Where there is not, esc
+// leaves reading mode.
 //
 // It writes the closed answer where the whole-pane fold writes the resting
 // one, and that is the difference between the two gestures: the reader

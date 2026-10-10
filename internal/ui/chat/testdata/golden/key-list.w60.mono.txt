@@ -55,9 +55,8 @@ keys · reading mode                             [?] back
 [←] along the strip, back
 [→] along the strip, on
 [enter] expand
-[-] collapse
 [c] copy
-[/] search
+[/] filter
 [n/N] match
 [ctrl+u/ctrl+d] half page
 [pgup] page up
@@ -90,16 +89,15 @@ keys · reading mode                             [?] back
 [←] along the strip, back
 [→] along the strip, on
 [enter] expand
-[-] collapse
 [c] copy
-[/] search
+[/] filter
 [n/N] match
 [ctrl+u/ctrl+d] half page
 [pgup] page up
 [pgdn] page down
 [esc] back
 ▎[enter] close it
-▎[-] close it
+▎[esc] close it
 
 glyphs
 ⚙  a read: a file, a search, a listing
@@ -126,9 +124,8 @@ keys · reading mode                             [?] back
 [←] along the strip, back
 [→] along the strip, on
 [enter] expand
-[-] collapse
 [c] copy
-[/] search
+[/] filter
 [n/N] match
 [ctrl+u/ctrl+d] half page
 [pgup] page up
@@ -201,9 +198,8 @@ keys · [esc] back to reading mode
 ␛[38;5;254m[←]␛[m␛[38;5;244m along the strip, back␛[m
 ␛[38;5;254m[→]␛[m␛[38;5;244m along the strip, on␛[m
 ␛[38;5;254m[enter]␛[m␛[38;5;244m expand␛[m
-␛[38;5;254m[-]␛[m␛[38;5;244m collapse␛[m
 ␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m
-␛[38;5;254m[/]␛[m␛[38;5;244m search␛[m
+␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m
 ␛[38;5;254m[n/N]␛[m␛[38;5;244m match␛[m
 ␛[38;5;254m[ctrl+u/ctrl+d]␛[m␛[38;5;244m half page␛[m
 ␛[38;5;254m[pgup]␛[m␛[38;5;244m page up␛[m
@@ -236,16 +232,15 @@ keys · [esc] back to reading mode
 ␛[38;5;254m[←]␛[m␛[38;5;244m along the strip, back␛[m
 ␛[38;5;254m[→]␛[m␛[38;5;244m along the strip, on␛[m
 ␛[38;5;254m[enter]␛[m␛[38;5;244m expand␛[m
-␛[38;5;254m[-]␛[m␛[38;5;244m collapse␛[m
 ␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m
-␛[38;5;254m[/]␛[m␛[38;5;244m search␛[m
+␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m
 ␛[38;5;254m[n/N]␛[m␛[38;5;244m match␛[m
 ␛[38;5;254m[ctrl+u/ctrl+d]␛[m␛[38;5;244m half page␛[m
 ␛[38;5;254m[pgup]␛[m␛[38;5;244m page up␛[m
 ␛[38;5;254m[pgdn]␛[m␛[38;5;244m page down␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 ␛[38;5;254m▎␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m close it␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m[-]␛[m␛[38;5;244m close it␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m close it␛[m
 
 ␛[38;5;244mglyphs␛[m
 ␛[38;5;244m⚙␛[m  ␛[38;5;244ma read: a file, a search, a listing␛[m
@@ -272,9 +267,8 @@ keys · [esc] back to reading mode
 ␛[38;5;254m[←]␛[m␛[38;5;244m along the strip, back␛[m
 ␛[38;5;254m[→]␛[m␛[38;5;244m along the strip, on␛[m
 ␛[38;5;254m[enter]␛[m␛[38;5;244m expand␛[m
-␛[38;5;254m[-]␛[m␛[38;5;244m collapse␛[m
 ␛[38;5;254m[c]␛[m␛[38;5;244m copy␛[m
-␛[38;5;254m[/]␛[m␛[38;5;244m search␛[m
+␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m
 ␛[38;5;254m[n/N]␛[m␛[38;5;244m match␛[m
 ␛[38;5;254m[ctrl+u/ctrl+d]␛[m␛[38;5;244m half page␛[m
 ␛[38;5;254m[pgup]␛[m␛[38;5;244m page up␛[m
