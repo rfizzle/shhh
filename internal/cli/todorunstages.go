@@ -140,9 +140,15 @@ func (d *todoDriver) work(ctx context.Context, it todo.Item, sp *run.Sprint) *ru
 		}
 		// A lane told the branch moved under it catches up before its next
 		// step, so the step reads the tree the lane will land into.
-		why, carried := d.lane.catchUp()
+		why, carried, r := d.lane.catchUp()
 		if why != "" {
 			step = st.Block(why)
+			continue
+		}
+		// A landing that met the lane's work in regions no rule settles is
+		// a turn of the run's remediation step, which returns to verify.
+		if r != nil {
+			step = d.reconcile(st, it, r)
 			continue
 		}
 		// A carry changed the copy, so a verdict reached before it is about
@@ -288,10 +294,16 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 		if st.ClosesWithGate() {
 			st.Checks(t.gate)
 		}
+		// A turn that was reconciling a landing is judged on the copy it
+		// left before its answer is read.
+		if why := d.lane.judged(d); why != "" {
+			return st.Block(why)
+		}
 		return st.Observe(it, t.text)
 	case run.ActionVerify:
 		v := d.verify(ctx, st, step.Command)
 		d.lane.again(nil)
+		d.lane.reconcileWords("")
 		if v.output != "" {
 			fmt.Fprintln(d.out, v.output)
 		}

@@ -229,9 +229,9 @@ func (s *laneStarted) wait(t *testing.T, who string) {
 }
 
 // A lane carries what another lane landed into its copy before its next
-// step, and where the landing meets the lane's own work the item blocks with
-// the collision as the evidence — nobody is there to be steered — and the
-// sprint goes on with the other lanes rather than stopping.
+// step, and where the landing meets the lane's own work and the lane's turn
+// does not reconcile it, the item blocks with the collision as the evidence
+// and the sprint goes on with the other lanes rather than stopping.
 func TestTodoRunHeadless_ALaneALandingWillNotCarryIntoBlocksAndTheSprintGoesOn(t *testing.T) {
 	root := todoRepo(t)
 	laneItem(t, root, "a-one", "a-one.go")
@@ -279,7 +279,7 @@ func TestTodoRunHeadless_ALaneALandingWillNotCarryIntoBlocksAndTheSprintGoesOn(t
 		t.Fatalf("a-one landed and is archived:\n%s", out.String())
 	}
 	it, _ := store.Find("b-two")
-	if it.Status != todo.StatusBlocked || !strings.Contains(it.Body, "does not carry into this lane's copy over a-one.go") {
+	if it.Status != todo.StatusBlocked || !strings.Contains(it.Body, "a-one landed on the checkout over a-one.go, which this lane changed too") {
 		t.Fatalf("b-two blocks with the collision as its evidence: %s\n%s", it.Status, it.Body)
 	}
 	if !strings.Contains(out.String(), "sprint over — 1 item done · "+run.SprintBlocked+": b-two blocked") {

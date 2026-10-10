@@ -17,15 +17,15 @@ import (
 // baseLabel is what the marked text calls the text both sides started from.
 const baseLabel = "base"
 
-// markerSize is how long the marks are written: longer than any run of
+// MarkerSize is how long the marks are written: longer than any run of
 // marker characters a line of a real file holds, so a setext underline or a
 // quoted conflict in the text is never mistaken for a mark.
-const markerSize = 25
+const MarkerSize = 25
 
 // mark is a marker line without its line ending, for the character c and a
 // label (none for the middle one).
 func mark(c, label string) string {
-	m := strings.Repeat(c, markerSize)
+	m := strings.Repeat(c, MarkerSize)
 	if label == "" {
 		return m
 	}
@@ -40,7 +40,7 @@ func isMark(line, marker string) bool {
 
 // stillMarked is whether text holds an opening mark at all, which a merge
 // that was settled must not.
-func stillMarked(text string) bool { return strings.Contains(text, strings.Repeat("<", markerSize)) }
+func stillMarked(text string) bool { return strings.Contains(text, strings.Repeat("<", MarkerSize)) }
 
 // region is one conflict region as three lists of lines, each line with its
 // newline: the landed side, the base both started from, and the lane's.

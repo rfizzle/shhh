@@ -155,6 +155,12 @@ type SprintLane struct {
 	Ledger  string    `json:"ledger,omitempty"`
 	Turns   int       `json:"turns,omitempty"`
 	Cost    float64   `json:"cost,omitempty"`
+
+	// Reconcile is the lane reconciling a landing that met its work in a
+	// turn of its own, as the board reads it after the step: `reconciling
+	// a-one's landing`, and once the turn is judged `reconciled a-one's
+	// landing in count.txt`. Empty otherwise.
+	Reconcile string `json:"reconcile,omitempty"`
 }
 
 // Where is the lane as the board reads it: its step, and what it is held up
@@ -165,6 +171,8 @@ func (l SprintLane) Where() string {
 		return string(l.Stage) + " — " + l.Wait
 	case l.Again != "":
 		return string(l.Stage) + " — " + l.Again
+	case l.Reconcile != "":
+		return string(l.Stage) + " · " + l.Reconcile
 	}
 	return string(l.Stage)
 }

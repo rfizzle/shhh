@@ -280,10 +280,12 @@ copy is gone: a patch that merges cleanly is put on the card merged, and one
 that conflicts starts its integration writer rather than a card for a patch
 that cannot land.
 
-A backlog run working several items at once cannot do this. It has no
-supervisor to start the integration writer under and nobody to review what one
-wrote, so a lane whose landing conflicts is blocked with both patches kept —
-the first on the checkout, the lane's in its copy — and the files named.
+A backlog run working several items at once does the same with its own
+model: a lane whose copy a landing met on lines no rule settles reconciles
+them in a turn of its item's run, judged by the same test an integration
+writer's patch is, then verified and reviewed with the item. Why that is
+safe unattended, and the two places it still blocks, are in
+[`todo.md`](todo.md#a-sprint-can-work-several-items-at-once).
 
 Two writers can also be put in one file on purpose. A claim is a writer's to
 itself by default, and a spawn that overlaps a running writer's is refused,

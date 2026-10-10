@@ -1106,7 +1106,39 @@ that changed the copy: the lane verifies again before its review and its
 commit. A generated file is never merged — the key-list goldens and the
 settings reference are regenerated in the copy from what the lane changed
 over the landed text. Any other region, and any file that is not a line
-merge, still blocks, as below.
+merge, is a turn of the lane's own, below.
+
+**A collision no rule settles is reconciled in a turn, not blocked.** The
+copy is left holding the merge, each region marked as `git merge-file
+--diff3` marks it, and the lane's run enters its remediation step for it:
+the turn is told, in that step's findings and nowhere else, which item
+landed, the files, how the regions are marked, what keeping both means for a
+count, a list and a section, and each region at its line. It returns to
+verify as every fix does, and the item is then reviewed and committed with
+the reconciliation in its diff. The turn's work is judged before anything
+else reads it: a file still holding a mark, one left as the merge wrote it,
+or one that is either side whole — which drops the other's change — is not a
+reconciliation, and the lane blocks with the files named and its copy put
+back to its own work on the base it had, the landed work staying on the
+checkout. A turn that also changed other files is not refused, since those
+are verified and reviewed with the rest, but the row names them. The row and
+`sprint.log` read `remediate · reconciling a-one's landing` during the turn
+and `reconciled a-one's landing in count.txt` after it, with `; also changed`
+and the paths where it wrote elsewhere. An item may take more than one
+reconciliation, because the files that collide are the shared ones and they
+collide again: as many as its grade's remediation rounds, counted apart from
+those rounds so a small item that spent its one on a landing can still fix
+its own failure, and the one past them blocks naming the count. A collision
+a rule settled counts nothing. This is what a session gives an integration
+writer ([`subagents.md`](subagents.md#a-conflict-is-a-task-for-a-writer)),
+done unattended, and it is safe to do without a person because the lane
+already has a model of its own, the reconciliation passes the same verify
+and review as the item's own work before it lands, and a turn that fails the
+judge ends exactly as an unreconciled collision always did. Two places still
+block, because no turn is left in them: a sprint asked for without commits
+lands each lane after its last step, so a landing that conflicts in that
+one-step window blocks with both patches kept, and a checkout moved by a
+hand outside the sprint blocks as below.
 
 **A lane commits only a tree its gate passed.** A carry that changed the
 copy after a verify passed sends the lane back to verify before its review
@@ -1114,7 +1146,9 @@ or its commit, and spends no fix round: nothing failed, the verdict only
 went stale, and the row reads `verifying again · a-one landed` while it
 runs. At its commit the lane takes the landing lock, carries anything still
 outstanding and, if anything carried, verifies again in its copy before it
-lands; a failure there is a fix round and not a commit. It lands only where
+lands; a failure there is a fix round and not a commit, and a collision no
+rule settles is a reconciling turn, taken with the lock let go, after which
+the lane verifies, is reviewed and commits again. It lands only where
 the checkout still holds, in every file the patch touches, what the copy's
 base holds, so the landing is a plain apply of the verified patch and never
 a merge of two trees nobody ran the checks over. The reason is that the
@@ -1123,16 +1157,15 @@ nothing else. Holding the lock for one verify serialises landings, which
 landing them one at a time already did. A checkout that moved by a hand
 outside the sprint blocks the lane with the files named and its copy kept.
 A sprint asked for without commits lands the same way at the end and leaves
-the change uncommitted. Two endings differ from the
-session's, because an unattended run has nobody to steer: a landing that
-will not carry into a lane's copy, and no rule settles, blocks that lane's
-item with the collision and its regions as the evidence and the copy put back
-to the lane's own work, and a merge that leaves a conflict blocks it with both
-patches kept — the one that landed first on the checkout, the lane's in its
-copy — and the files named, never a commit with conflict markers in it.
-Either way the lane is freed and its copy is kept for whoever reads the
-block. A declaration that turned out to be wrong is caught there, not
-trusted.
+the change uncommitted. Two endings still differ from the session's: a
+landing that will not carry into a lane's copy at all, because the copy's
+base will not take it, blocks that lane's item with the refusal as the
+evidence, and a merge at that uncommitted landing that leaves a conflict
+blocks it with both patches kept — the one that landed first on the
+checkout, the lane's in its copy — and the files named, never a commit with
+conflict markers in it. Either way the lane is freed and its copy is kept
+for whoever reads the block. A declaration that turned out to be wrong is
+caught there, not trusted.
 
 **A blocked lane does not stop the sprint.** The other lanes' items were
 ready, so none of them rests on the work that did not land. The sprint goes

@@ -124,7 +124,7 @@ func TestReseedMerging_AnEditedRegionIsMarkedAndNamed(t *testing.T) {
 	if !strings.Contains(rec.Evidence, "@@ line 7\n") || !strings.Contains(rec.Evidence, "// lane words") {
 		t.Fatalf("the regions should be quoted at their lines:\n%s", rec.Evidence)
 	}
-	if rec.Seeded["main.go"] != got || rec.Sides["main.go"][0] == rec.Sides["main.go"][1] {
+	if rec.Seeded["main.go"].Text != got || rec.Sides["main.go"][0] == rec.Sides["main.go"][1] {
 		t.Fatalf("the seeded text and the sides should be kept: %+v", rec)
 	}
 }

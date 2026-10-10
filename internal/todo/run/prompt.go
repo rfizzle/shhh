@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/subagent/worktree"
 	"github.com/rfizzle/shhh/internal/todo"
 )
 
@@ -364,4 +365,30 @@ func verdictKey() string {
 - gone: what it names is not in the tree at all.
 - already done: an acceptance criterion the tree already satisfies. ` + "`now:`" + ` is the criterion ticked, naming the commit that did it.
 - unknown: you could not settle it from the code. Say so rather than guessing; a guess written into the item is worse than the line it replaced.`
+}
+
+// CollisionFindings is what a reconciling turn is told, in its step's
+// findings block and nowhere else: which landing met the lane's work and in
+// which files, how the merge marked what it could not settle, what keeping
+// both intentions means for the shapes that collide most, and each region at
+// the line it starts at (evidence, the merge's own quote). It is the one
+// thing the model hears about the collision; the remediate wording's own
+// first line already scopes it to the findings.
+// See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
+func CollisionFindings(landed, lane string, files []string, evidence string) string {
+	bar := func(c string) string { return "`" + strings.Repeat(c, worktree.MarkerSize) + "`" }
+	paragraph := fmt.Sprintf("%s landed on the checkout while this item was being worked, and in %s the two changed the same lines. "+
+		"Your copy now holds %s's change with yours merged over it. "+
+		"Each region the merge could not settle is marked in the file as `git merge-file --diff3` marks it, with marks %d characters long: "+
+		"a line of %s and %s, then %s's text; a line of %s and base, then the text both started from; a line of %s, then yours, up to a line of %s and %s. "+
+		"Each region is quoted below under the line it starts at, and a file that is not a line merge is named and holds your version. "+
+		"Resolve each region so both intentions hold: a count both raised is raised by both amounts; a list both appended to keeps both entries, %s's first; a section both wrote keeps both. "+
+		"Leave no marker, and do not keep either side whole. "+
+		"Do not edit a generated file; change its source and it is regenerated. Change nothing outside these regions.",
+		landed, strings.Join(files, ", "), landed, worktree.MarkerSize,
+		bar("<"), landed, landed, bar("|"), bar("="), bar(">"), lane, landed)
+	if evidence = strings.TrimSpace(evidence); evidence == "" {
+		return paragraph
+	}
+	return paragraph + "\n\n" + evidence
 }

@@ -16,11 +16,14 @@ package cli
 // lane is a writer, so its patch lands through Worktree.Land — merged three
 // ways where the checkout moved under it — and every other lane carries what
 // landed into its copy at its next stage boundary (Worktree.Reseed), the way
-// a writer child carries it at its next round. What differs is only who is
-// there to answer: an unattended run has nobody to steer, so a landing that
-// will not carry into a lane's copy, and a merge that leaves a conflict,
-// block that lane's item with the files named and free the lane. The sprint
-// goes on with the rest.
+// a writer child carries it at its next round. What differs is who answers a
+// collision: where a carried landing meets the lane's work on lines no rule
+// settles, the lane's own run reconciles it in a turn of its remediation
+// step, judged, verified and reviewed with the item (todoDriver.reconcile),
+// where a session would start an integration writer. A turn that does not
+// reconcile, a landing that will not carry at all, and a landing refused at
+// the end of a run without commits block that lane's item with the files
+// named and free the lane. The sprint goes on with the rest.
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree and
 // docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
 
@@ -33,6 +36,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"syscall"
@@ -107,6 +111,9 @@ type todoLane struct {
 	// is left standing for a person to read, because what is in it did not
 	// land.
 	landed, kept bool
+	// reconciling is a landing the lane's next turn reconciles, from the
+	// carry that marked the copy until the turn is judged; nil otherwise.
+	reconciling *todoReconcile
 }
 
 // todoLaneResult is what a lane's item ended as, for the loop to record.
@@ -414,24 +421,32 @@ func (l *todoLane) boundary(d *todoDriver, st *run.State) {
 // one will not carry. It is the writer's reseed at the writer's boundary — a
 // stage here is what a round is to a child — so the copy's base moves by
 // exactly what landed and the lane's own work stays its own. Where a landing
-// meets that work the session steers the writer; here nobody would read the
-// steer, so the item blocks with the collision as its evidence.
-// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+// meets that work on the same lines and no rule settles a region, the session
+// would hand the collision to an integration writer; here the lane's own run
+// takes it, as a turn of its remediation step, and catchUp answers with the
+// reconciliation for that turn (todoDriver.reconcile).
+// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree and
+// docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
 //
 // It answers too with the slugs whose landings it carried, which are the
 // lane's copy having changed: a verdict reached before them is about another
 // tree (State.VerifyAgain).
-func (l *todoLane) catchUp() (string, []string) {
+func (l *todoLane) catchUp() (string, []string, *todoReconcile) {
 	if l == nil {
-		return "", nil
+		return "", nil, nil
 	}
 	l.set.land.Lock()
 	defer l.set.land.Unlock()
 	return l.catchUpLocked()
 }
 
-// catchUpLocked is catchUp for a caller that holds the land lock.
-func (l *todoLane) catchUpLocked() (string, []string) {
+// catchUpLocked is catchUp for a caller that holds the land lock. Nothing is
+// carried while a reconciliation's turn is owed: the copy holds marks, and
+// what landed since is carried at the boundary after the turn is judged.
+func (l *todoLane) catchUpLocked() (string, []string, *todoReconcile) {
+	if l.reconciling != nil {
+		return "", nil, nil
+	}
 	var carried []string
 	for l.seen < len(l.set.landings) {
 		landed := l.set.landings[l.seen]
@@ -439,40 +454,223 @@ func (l *todoLane) catchUpLocked() (string, []string) {
 		var clash *worktree.ReseedCollision
 		if errors.As(err, &clash) {
 			// The landing meets work this lane has: a rule settles the two
-			// shapes it can and the carry goes on, and anything else is put
-			// back and blocks with its regions quoted.
-			var why string
-			if why, err = l.merging(landed); why != "" {
-				return why, carried
+			// shapes it can and the carry goes on, and anything else is a
+			// turn of the lane's own.
+			var r *todoReconcile
+			if r, err = l.merging(landed); r != nil {
+				l.seen++
+				return "", carried, r
 			}
 		}
 		if err != nil {
-			return carryRefusal(landed.slug, err), carried
+			return carryRefusal(landed.slug, err), carried, nil
 		}
 		carried = append(carried, landed.slug)
 		l.seen++
 	}
-	return "", carried
+	return "", carried, nil
 }
 
 // merging carries a landing that meets this lane's work by merging it three
-// ways (worktree.ReseedMerging). It answers with why the lane blocks where a
-// region no rule settles is left, the copy having been put back to the lane's
-// patch on its old base, and with the error where the landing cannot be
-// carried at all, which is the refusal a plain carry gives.
-func (l *todoLane) merging(landed todoLanding) (string, error) {
+// ways (worktree.ReseedMerging). It answers with the reconciliation a turn
+// owes where a region no rule settles is left, the copy holding the regions
+// marked, and with the error where the landing cannot be carried at all,
+// which is the refusal a plain carry gives.
+func (l *todoLane) merging(landed todoLanding) (*todoReconcile, error) {
 	rec, err := l.wt.ReseedMerging(landed.patch, landed.slug, l.slug)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if len(rec.Unsettled) == 0 {
-		return "", rec.RegenFailed()
+		return nil, rec.RegenFailed()
 	}
-	if err := rec.PutBack(); err != nil {
-		return "", fmt.Errorf("the copy could not be put back after a merge left %s marked: %w", strings.Join(rec.Unsettled, ", "), err)
+	patch, err := worktree.WorktreePatch(rec.Dir())
+	if err != nil {
+		if back := rec.PutBack(); back != nil {
+			return nil, fmt.Errorf("the copy could not be put back after a merge left %s marked: %w", strings.Join(rec.Unsettled, ", "), back)
+		}
+		return nil, err
 	}
-	return fmt.Sprintf("%s landed on the checkout and its patch does not carry into this lane's copy over %s, which this lane changed too: no rule settles the regions below, and the copy is as this lane left it\n\n%s",
-		landed.slug, strings.Join(rec.Unsettled, ", "), rec.Evidence), nil
+	return &todoReconcile{slug: landed.slug, rec: rec, at: l.seen, before: patchByFile(patch),
+		findings: run.CollisionFindings(landed.slug, l.slug, rec.Unsettled, rec.Evidence)}, nil
+}
+
+// todoReconcile is a landing that met a lane's work in regions no rule
+// settles, owed a turn of the lane's remediation step: the landing's slug,
+// the merge that marked the copy, the landing's place in the set's list, the
+// lane's patch file by file as the merge left it, and what the turn is told.
+type todoReconcile struct {
+	slug     string
+	rec      *worktree.Reconciliation
+	at       int
+	before   map[string]string
+	findings string
+}
+
+// reconcile is the one place a lane takes a reconciling turn: the run enters
+// its remediation step for the landing (State.Reconcile), which blocks where
+// the item's reconciliations are spent, and the lane keeps the
+// reconciliation to judge the turn by (judged). A run that blocks here is put
+// back at its end, so a kept copy never holds marks.
+// See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
+func (d *todoDriver) reconcile(st *run.State, it todo.Item, r *todoReconcile) run.Step {
+	l := d.lane
+	l.reconciling = r
+	step := st.Reconcile(it, r.slug, r.findings)
+	if step.Action != run.ActionBlocked {
+		l.reconcileWords("reconciling " + r.slug + "'s landing")
+	}
+	return step
+}
+
+// judged answers for the turn a reconciliation was owed, once it has ended,
+// with why the lane blocks where the turn did not reconcile: a file still
+// holding a mark, one left as the merge wrote it, or one that is either side
+// of the merge whole, which drops the other's change
+// (worktree.Unreconciled, worktree.PickedSide). The copy is then put back to
+// the lane's own patch on the base it had, both patches kept as a block
+// keeps them. A reconciliation that holds is written on the row and in the
+// log, with any file the turn changed outside the regions, and the landing's
+// generated paths are regenerated over it. Nothing is owed outside a lane,
+// or where no reconciliation was.
+func (l *todoLane) judged(d *todoDriver) string {
+	if l == nil || l.reconciling == nil {
+		return ""
+	}
+	r := l.reconciling
+	l.set.land.Lock()
+	defer l.set.land.Unlock()
+	patch, err := worktree.WorktreePatch(r.rec.Dir())
+	if err != nil {
+		return l.putBack("the reconciling turn's work could not be read: " + todoFirstProblem(err.Error()))
+	}
+	files := r.rec.Unsettled
+	also := r.alsoChanged(patch)
+	// Marks are looked for only where the turn wrote: a line of the lane's
+	// own work elsewhere that quotes a conflict is not the turn's to answer.
+	byFile := patchByFile(patch)
+	var turned strings.Builder
+	for _, p := range append(slices.Clone(files), also...) {
+		turned.WriteString(byFile[p])
+	}
+	marked := worktree.Unreconciled(r.rec.Dir(), turned.String(), files, r.rec.Seeded)
+	picked := worktree.PickedSide(r.rec.Dir(), r.rec.Sides)
+	if len(marked) > 0 || len(picked) > 0 {
+		return l.putBack(fmt.Sprintf("%s landed on the checkout over %s, which this lane changed too, and the turn given the regions did not reconcile them: %s",
+			r.slug, strings.Join(files, ", "), r.refusals(marked, picked)))
+	}
+	words := "reconciled " + r.slug + "'s landing in " + strings.Join(files, ", ")
+	if len(also) > 0 {
+		words += "; also changed " + strings.Join(also, ", ")
+	}
+	if err := r.rec.Regenerate(context.Background()); err != nil {
+		return l.putBack(carryRefusal(r.slug, err))
+	}
+	l.reconciling = nil
+	l.reconcileWords(words)
+	fmt.Fprintf(d.out, "… %s %s\n", l.slug, words)
+	return ""
+}
+
+// refusals says, file by file, why a turn's work is not a reconciliation.
+func (r *todoReconcile) refusals(marked, picked []string) string {
+	var out []string
+	said := map[string]bool{}
+	for _, p := range marked {
+		said[p] = true
+		if worktree.ReadSeeded(r.rec.Dir(), p) == r.rec.Seeded[p] {
+			out = append(out, p+" is as the merge left it")
+		} else {
+			out = append(out, p+" still holds a conflict mark")
+		}
+	}
+	for _, p := range picked {
+		if said[p] {
+			continue
+		}
+		if worktree.ReadSeeded(r.rec.Dir(), p) == r.rec.Sides[p][0] {
+			out = append(out, p+" is "+r.slug+"'s side whole, which drops this lane's change")
+		} else {
+			out = append(out, p+" is this lane's side whole, which drops "+r.slug+"'s change")
+		}
+	}
+	return strings.Join(out, "; ") + "; the copy is put back to this lane's own work on the base it had, and " + r.slug + "'s stays on the checkout"
+}
+
+// alsoChanged is the files the turn changed outside the ones it was given:
+// not refused, since they are verified and reviewed with the item, but named
+// on the row so a widened edit is seen.
+func (r *todoReconcile) alsoChanged(patch string) []string {
+	given := map[string]bool{}
+	for _, p := range r.rec.Unsettled {
+		given[p] = true
+	}
+	after := patchByFile(patch)
+	var out []string
+	for p, text := range after {
+		if !given[p] && r.before[p] != text {
+			out = append(out, p)
+		}
+	}
+	for p := range r.before {
+		if _, still := after[p]; !still && !given[p] {
+			out = append(out, p)
+		}
+	}
+	slices.Sort(out)
+	return out
+}
+
+// putBack puts the copy back to the lane's own patch on the base it had
+// before the reconciliation's merge, and answers with why, which the run
+// blocks on. The caller holds the land lock.
+func (l *todoLane) putBack(why string) string {
+	r := l.reconciling
+	l.reconciling = nil
+	l.seen = r.at
+	l.reconcileWords("")
+	if err := r.rec.PutBack(); err != nil {
+		why += "; the copy could not be put back to this lane's own work, so it may still hold the marks: " + todoFirstProblem(err.Error())
+	}
+	return why
+}
+
+// patchByFile is a patch's text for each file it touches.
+func patchByFile(patch string) map[string]string {
+	out := map[string]string{}
+	file := ""
+	var b strings.Builder
+	flush := func() {
+		if file != "" {
+			out[file] = b.String()
+		}
+		b.Reset()
+	}
+	for _, line := range strings.SplitAfter(patch, "\n") {
+		if strings.HasPrefix(line, "diff --git ") {
+			flush()
+			file = worktree.ParseGitDiffPath(strings.TrimRight(line, "\n"))
+		}
+		b.WriteString(line)
+	}
+	flush()
+	return out
+}
+
+// reconcileWords writes on the lane's row what a reconciliation is doing, and
+// clears it with none. The row is the checkpoint's.
+func (l *todoLane) reconcileWords(words string) {
+	if l == nil {
+		return
+	}
+	l.set.mu.Lock()
+	defer l.set.mu.Unlock()
+	lane, ok := l.set.sp.Lane(l.slug)
+	if !ok || lane.Reconcile == words {
+		return
+	}
+	lane.Reconcile = words
+	l.set.saveLocked()
 }
 
 // carryRefusal is the evidence a lane blocks on where a landing will not
@@ -549,13 +747,14 @@ func (l *todoLane) land(plain bool) ([]string, error) {
 // integrateConflict answers a landing whose three-way merge left a conflict
 // region. Reconciling two intentions over one file is a model's judgement
 // under review, and never the merge's. A session hands it to an integration
-// writer its supervisor starts and puts its patch to the person; an
-// unattended run has neither a supervisor to host that writer nor a person to
-// review what it wrote, so the ending here is the session's when an
-// integration cannot reconcile: both patches kept — the one that landed first
-// on the checkout, this lane's in its copy — nothing committed with conflict
+// writer its supervisor starts and puts its patch to the person; a lane
+// reconciles a carry in a turn of its own run (todoDriver.reconcile), but a
+// landing that conflicts here comes after the run's last step, with no turn
+// left to take, so the ending here is the session's when an integration
+// cannot reconcile: both patches kept — the one that landed first on the
+// checkout, this lane's in its copy — nothing committed with conflict
 // markers, and the item blocked with the files named for the person to
-// reconcile. This is the one place a lane's conflict is answered.
+// reconcile. This is the one place a lane's landing conflict is answered.
 // See docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer.
 func (l *todoLane) integrateConflict(conflict *worktree.MergeConflict) error {
 	l.kept = true
@@ -567,17 +766,24 @@ func (l *todoLane) integrateConflict(conflict *worktree.MergeConflict) error {
 // it from the last look at the branch to the commit: it carries whatever
 // landed since its last boundary, verifies again in its copy if anything
 // carried, and lands only then. A failure in that verify is a fix round and
-// not a commit, and the lock is let go for it, so a landing during the fix is
-// carried at the next boundary. Holding the lock for one verify serialises
+// not a commit, and a carry that left regions for a turn is a reconciliation
+// and not a commit; the lock is let go for either, so a landing during the
+// turn is carried at the next boundary. Holding the lock for one verify serialises
 // landings, which landing them was already.
 // See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
 func (d *todoDriver) laneCommit(ctx context.Context, st *run.State, it todo.Item) run.Step {
 	l := d.lane
 	l.set.land.Lock()
 	defer l.set.land.Unlock()
-	why, carried := l.catchUpLocked()
+	why, carried, r := l.catchUpLocked()
 	if why != "" {
 		return st.Block(why)
+	}
+	// A collision no rule settles is a turn, and the lock is let go for it
+	// as it is for a fix round: the run verifies, is reviewed and commits
+	// again after it.
+	if r != nil {
+		return d.reconcile(st, it, r)
 	}
 	if step, redirected := d.verifyAfterCarry(ctx, st, it, carried, true); redirected {
 		return step
@@ -692,6 +898,15 @@ func todoRepoTop(root string) string {
 func (l *todoLane) end(ctx context.Context, d *todoDriver, st *run.State, it todo.Item) bool {
 	if l == nil {
 		return false
+	}
+	// A reconciliation whose turn never passed its judge leaves the copy
+	// holding marks; it is put back before anything reads what is kept.
+	if l.reconciling != nil {
+		l.set.land.Lock()
+		if why := l.putBack(""); why != "" {
+			fmt.Fprintln(d.out, "lane "+l.slug+":"+strings.TrimPrefix(why, ";"))
+		}
+		l.set.land.Unlock()
 	}
 	if ctx.Err() != nil && st.Stage != run.StageDone {
 		_ = todo.SetStatus(it.Path, todo.StatusOpen)

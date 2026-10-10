@@ -30,18 +30,35 @@ type Reconciliation struct {
 	// Evidence says, for each unsettled file, what could not be settled: its
 	// regions at their lines, or that it is not a line merge. Bounded.
 	Evidence string
-	// Seeded is each marked file as it was written, and Sides the landed and
-	// the lane's text it was merged from: what a later turn is judged
-	// against.
-	Seeded map[string]string
-	Sides  map[string][2]string
+	// Seeded is each unsettled file as the copy was left holding it — marked,
+	// or as the lane had it where it is not a line merge — and Sides the
+	// landed file and the lane's it was merged from: what a turn that
+	// reconciles them is judged against (Unreconciled, PickedSide).
+	Seeded map[string]SeededFile
+	Sides  map[string][2]SeededFile
 	// Regen is what the generators did, as a reseed reports it. It is empty
-	// where files are unsettled, which are put back before anything runs.
+	// where files are unsettled until a turn has reconciled them
+	// (Regenerate): the sources the generators read held marks.
 	Regen reseedRegen
 
 	dir       string
 	oldBase   string
 	lanePatch string
+	gen       Regenerator
+	generated []string
+}
+
+// Dir is the copy the reconciliation was made in, where a turn that
+// reconciles it is judged.
+func (r *Reconciliation) Dir() string { return r.dir }
+
+// Regenerate runs the generators for the landed patch's generated paths over
+// the copy as a turn reconciled it, which a carry that left regions unsettled
+// did not do: the sources they read held marks. A failure leaves those paths
+// at the landed text and is answered, as a reseed's is.
+func (r *Reconciliation) Regenerate(ctx context.Context) error {
+	r.Regen = regenerateReseeded(ctx, r.gen, r.dir, r.generated)
+	return r.Regen.Failed
 }
 
 // RegenFailed is the generator failure of a carry that settled, which leaves
@@ -121,8 +138,9 @@ func ReseedMerging(ctx context.Context, worktree, patch string, gen Regenerator,
 		return nil, err
 	}
 	rec := &Reconciliation{
-		Seeded: map[string]string{}, Sides: map[string][2]string{},
+		Seeded: map[string]SeededFile{}, Sides: map[string][2]SeededFile{},
 		dir: worktree, oldBase: strings.TrimSpace(oldBase), lanePatch: lanePatch,
+		gen: gen, generated: generated,
 	}
 
 	// Every merge is made before a file is written, so a failure while
@@ -133,7 +151,7 @@ func ReseedMerging(ctx context.Context, worktree, patch string, gen Regenerator,
 	}
 	var writes []write
 	var evidence strings.Builder
-	marks := []string{"--diff3", "--marker-size=" + strconv.Itoa(markerSize), "-L", landed, "-L", baseLabel, "-L", lane}
+	marks := []string{"--diff3", "--marker-size=" + strconv.Itoa(MarkerSize), "-L", landed, "-L", baseLabel, "-L", lane}
 	for _, p := range changed {
 		base, ours := treeSide(worktree, "HEAD", p), treeSide(worktree, landedTree, p)
 		theirs, err := CheckoutSide(filepath.Join(worktree, filepath.FromSlash(p)))
@@ -146,6 +164,7 @@ func ReseedMerging(ctx context.Context, worktree, patch string, gen Regenerator,
 		}
 		if !textual {
 			rec.Unsettled = append(rec.Unsettled, p)
+			rec.Seeded[p], rec.Sides[p] = ReadSeeded(worktree, p), [2]SeededFile{seededSide(ours), seededSide(theirs)}
 			fmt.Fprintf(&evidence, "## %s\n\nNot a line merge: %s landed a change to it and this lane changed it too, and it is not a text file both can be merged in line by line.\n\n", p, landed)
 			continue
 		}
@@ -164,7 +183,7 @@ func ReseedMerging(ctx context.Context, worktree, patch string, gen Regenerator,
 			merged.Text = text
 			if left > 0 {
 				rec.Unsettled = append(rec.Unsettled, p)
-				rec.Seeded[p], rec.Sides[p] = text, [2]string{ours.Text, theirs.Text}
+				rec.Seeded[p], rec.Sides[p] = SeededFile{Text: text, Exists: true}, [2]SeededFile{seededSide(ours), seededSide(theirs)}
 				quote := markedRegions(text, landed, lane, quotedContext)
 				if quote == "" {
 					quote = "The merge left marks that could not be read as regions; read the file."
@@ -208,6 +227,11 @@ func ReseedMerging(ctx context.Context, worktree, patch string, gen Regenerator,
 		rec.Regen = regenerateReseeded(ctx, gen, worktree, generated)
 	}
 	return rec, nil
+}
+
+// seededSide is one side of a merge as a copy would hold it.
+func seededSide(side MergeSide) SeededFile {
+	return SeededFile{Text: side.Text, Exists: side.Exists}
 }
 
 // treeSide is one file in a tree or commit, absent where it does not hold it.

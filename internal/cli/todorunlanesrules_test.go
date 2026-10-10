@@ -80,24 +80,6 @@ func TestTodoRunHeadless_ACollisionSettledByRuleVerifiesAgain(t *testing.T) {
 	}
 }
 
-// A region neither rule fits blocks the lane as a collision always did: the
-// regions quoted, the checkout holding the landed item alone, no marker in it.
-func TestTodoRunHeadless_AMarkedRegionStillBlocksAndKeepsBothPatches(t *testing.T) {
-	d, root, out := twoLanesOnOneLine(t, "x\nn = 3\ny\n", "x\nn = 1\ny\n")
-	if blocked := d.sprintParallel(context.Background(), 0, 2); !blocked {
-		t.Fatalf("a region no rule settles blocks the lane:\n%s", out())
-	}
-	it, _ := todo.Load(todo.BuiltinCode(), root).Find("b-two")
-	if it.Status != todo.StatusBlocked || !strings.Contains(it.Body, "no rule settles the regions below") ||
-		!strings.Contains(it.Body, "over count.txt") || !strings.Contains(it.Body, "@@ line 2") {
-		t.Fatalf("b-two blocks naming the file and quoting the region: %s\n%s", it.Status, it.Body)
-	}
-	got, _ := os.ReadFile(filepath.Join(root, "count.txt"))
-	if string(got) != "x\nn = 3\ny\n" {
-		t.Fatalf("the checkout holds the landed item alone, unmarked: %q", got)
-	}
-}
-
 // laneAtItsCommitOnCount is a lane at its commit step whose copy holds
 // count.txt as laneText over a checkout that has since landed `n = 3` on it,
 // from the same `n = 2` the copy was taken at.
@@ -149,8 +131,9 @@ func commitCount(t *testing.T, root, text, message string) {
 
 // The commit-time carry meets the same collisions a boundary carry does: one
 // a rule settles is verified in the copy and lands, and one no rule settles
-// blocks with the copy put back to the lane's own patch.
-func TestTodoRunHeadless_ACollisionAtTheCommitIsSettledOrBlocks(t *testing.T) {
+// is a turn, with the land lock let go for it and the copy holding the
+// regions marked.
+func TestTodoRunHeadless_ACollisionAtTheCommitIsSettledOrReconciled(t *testing.T) {
 	t.Run("a settled carry verifies again and lands the sum", func(t *testing.T) {
 		logf := filepath.Join(t.TempDir(), "verify.log")
 		d, _, st, it, root := laneAtItsCommitOnCount(t, "grep -q 'n = 5' count.txt && echo v >> "+logf, "x\nn = 4\ny\n")
@@ -164,14 +147,18 @@ func TestTodoRunHeadless_ACollisionAtTheCommitIsSettledOrBlocks(t *testing.T) {
 			t.Fatalf("the checkout holds the sum: %q", got)
 		}
 	})
-	t.Run("an unsettled region blocks and the copy is put back", func(t *testing.T) {
+	t.Run("an unsettled region is a turn and the lock is let go", func(t *testing.T) {
 		d, lane, st, it, root := laneAtItsCommitOnCount(t, "true", "x\nn = 1\ny\n")
 		step := d.laneCommit(context.Background(), st, it)
-		if step.Action != run.ActionBlocked || !strings.Contains(st.Blocked, "no rule settles the regions below") {
-			t.Fatalf("the lane blocks: %v %q", step.Action, st.Blocked)
+		if step.Action != run.ActionPrompt || st.Stage != run.StageRemediate || lane.reconciling == nil {
+			t.Fatalf("the lane takes a reconciling turn: %v %q", step.Action, st.Blocked)
 		}
-		if got, _ := os.ReadFile(filepath.Join(lane.wt.Root(), "count.txt")); string(got) != "x\nn = 1\ny\n" {
-			t.Fatalf("the copy holds the lane's own text, unmarked: %q", got)
+		if !lane.set.land.TryLock() {
+			t.Fatal("the land lock is let go for the turn")
+		}
+		lane.set.land.Unlock()
+		if got, _ := os.ReadFile(filepath.Join(lane.wt.Root(), "count.txt")); !strings.Contains(string(got), strings.Repeat("<", worktree.MarkerSize)+" a-one\n") {
+			t.Fatalf("the copy holds the region marked for the turn: %q", got)
 		}
 		if got, _ := os.ReadFile(filepath.Join(root, "count.txt")); string(got) != "x\nn = 3\ny\n" {
 			t.Fatalf("the checkout holds the landed item alone: %q", got)

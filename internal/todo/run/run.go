@@ -202,6 +202,10 @@ type State struct {
 
 	// Round counts remediation rounds used.
 	Round int `json:"round"`
+	// Reconciled counts the turns a lane spent reconciling a landing that
+	// met its work (Reconcile), which is a counter of its own: they are
+	// bounded by the same rounds and never spend the item's.
+	Reconciled int `json:"reconciled,omitempty"`
 	// Findings is what the run carries forward for a later step to read:
 	// what the last review or verify turned up, for the remediation prompt
 	// and, at the end, for the evidence — or what a gathering turn found,
@@ -1097,6 +1101,36 @@ func (s *State) remediate(it todo.Item, findings string) Step {
 	return Step{Action: ActionPrompt, Stage: ps.Stage(), Mode: ps.Access.Mode(),
 		Prompt: s.prompt(it, ps, answersBlock(s.Answers)),
 		Shown:  s.label(fmt.Sprintf("%s %d/%d", ps.Name, s.Round, s.Rounds()))}
+}
+
+// Reconcile is remediate for a landing that met the lane's work in regions
+// no rule settles: the same step, returning to verify as every remediation
+// does, told only the collision (CollisionFindings). It counts on a counter of
+// its own against the step's rounds at the item's grade, because a small item
+// that spent its one round on another item's landing would block on its first
+// real failure; the one past the bound blocks naming the count. A
+// remediation the run was about to take is not spent: the reconciliation is
+// taken in its place, and the verify or the review after it finds the
+// failure again.
+// See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
+func (s *State) Reconcile(it todo.Item, landed, findings string) Step {
+	ps, ok := s.Shape().Remediation()
+	if !ok {
+		return s.block("nothing in this run can reconcile a landing:\n" + findings)
+	}
+	if s.Reconciled >= s.Rounds() {
+		return s.block(fmt.Sprintf("reconciliations spent (%d): %s landed on the checkout and met this item's work again, and the copy is put back to the item's own work on the base it had; the turn would have been told:\n%s",
+			s.Reconciled, landed, findings))
+	}
+	if s.Stage == ps.Stage() && s.Round > 0 {
+		s.Round--
+	}
+	s.Reconciled++
+	s.Findings = findings
+	s.Stage = ps.Stage()
+	return Step{Action: ActionPrompt, Stage: ps.Stage(), Mode: ps.Access.Mode(),
+		Prompt: s.prompt(it, ps, answersBlock(s.Answers)),
+		Shown:  s.label(ps.Name + " · reconciling " + landed + "'s landing")}
 }
 
 // finish is the run's end, in whichever of the ways the step names.

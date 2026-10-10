@@ -3,6 +3,7 @@ package worktree
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -53,13 +54,30 @@ func Unreconciled(dir, patch string, conflicts []string, seeded map[string]Seede
 	return out
 }
 
-// conflictMark is whether a line opens or closes a conflict region as git
-// marks one.
+// conflictMark is whether a line opens or closes a conflict region, as git
+// marks one by default or as a lane's merge marks one (MarkerSize).
 func conflictMark(line string) bool {
-	for _, git := range []string{"<<<<<<<", ">>>>>>>"} {
-		if line == git || strings.HasPrefix(line, git+" ") {
+	for _, c := range []string{"<", ">"} {
+		git := strings.Repeat(c, 7)
+		if line == git || strings.HasPrefix(line, git+" ") || strings.HasPrefix(line, strings.Repeat(c, MarkerSize)) {
 			return true
 		}
 	}
 	return false
+}
+
+// PickedSide is the conflicting files a copy now holds exactly one side of:
+// the landed file whole, or the lane's whole. A file kept as either side has
+// dropped the other's change, which is a side picked and not a
+// reconciliation. sides holds each file's landed side, then the lane's.
+func PickedSide(dir string, sides map[string][2]SeededFile) []string {
+	var out []string
+	for p, two := range sides {
+		now := ReadSeeded(dir, p)
+		if now == two[0] || now == two[1] {
+			out = append(out, p)
+		}
+	}
+	slices.Sort(out)
+	return out
 }
