@@ -49,6 +49,10 @@ sleep 0.5
 # mark again — this is the Lists artboard's own surface.
 keys "/model" Enter
 snap 09-model "scripted-mini" "❯ 4. scripted-model  (current)"
+# The picker opens on its filter, so the first esc hands the keyboard to its
+# rows and the second keeps the model and closes it.
+keys Escape
+sleep 0.3
 keys Escape
 sleep 0.5
 # And back at the draft, which draws its own glyph rather than the reader's.

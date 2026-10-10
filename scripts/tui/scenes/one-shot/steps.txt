@@ -31,7 +31,7 @@ setup mkdir -p .tools && printf '#!/bin/sh\nexit 0\n' > .tools/lsof && chmod +x 
 snap 01-piped "lsof -nP -iTCP -sTCP:LISTEN"
 # The result surface. The key row is the surface's own and says how many other
 # commands the generation offered, so it is what the wait is on.
-snap 02-result "2 others" "[enter] run" "[ctrl+s] save" "⛨ no sudo"
+snap 02-result "2 others" "[enter] run" "[ctrl+s] write" "⛨ no sudo"
 # The ways it was not taken, the one on screen marked. The wait is on a
 # command only this card carries: a tradeoff is clipped to its column and the
 # column itself goes when the card is narrow, so waiting for one of those

@@ -15,7 +15,7 @@ setup printf '%s\n' '# critic — argues against a diff; kept read-only on purpo
 snap 01-start "Some things worth doing first"
 keys "/agents" Enter
 keys Down
-snap 02-manager "◆ older shape" "[m] move it into sections" "[e] open its file"
+snap 02-manager "◆ older shape" "[m] move it into sections" "[e] edit"
 keys m
 snap 03-migrated "Purpose · migrated" "Method ⚠ empty · the file says nothing about it" "Report · migrated"
 wide 100 snap 03-original "as the file wrote it" "│ You are a critic. Read the diff"
@@ -30,4 +30,4 @@ keys Up Enter
 snap 07-saved "wrote critic to"
 keys "/agents" Enter
 keys Down
-snap 08-current "[enter] open it" "[e] open its file"
+snap 08-current "[enter] open it" "[e] edit"
